@@ -363,7 +363,65 @@ def _diff(a: dict, b: dict, path: str = "") -> list:
     return diffs
 
 
+def _replay(path: str) -> int:
+    """H8: load an old holograph and display its state as if it were current.
+    Time-travel debugging — see exactly what HCI + verifier state was at that
+    moment. Useful for answering "what broke at time X?" after the fact."""
+    if not os.path.isfile(path):
+        sys.stderr.write(f"replay path not found: {path}\n")
+        return 2
+    try:
+        with open(path) as f:
+            snap = json.load(f)
+    except Exception as e:
+        sys.stderr.write(f"replay parse error: {e}\n")
+        return 2
+    print(f"# Holograph replay: {path}")
+    print(f"  Captured: {snap.get('captured_at_human', '?')}")
+    print(f"  Project:  {snap.get('project_root', '?')}")
+    print()
+    hci = snap.get("hci", {})
+    score = hci.get("hci", "?")
+    print(f"  HCI at that moment: {score}")
+    cats = hci.get("categories", {})
+    if cats:
+        for cat in sorted(cats.keys()):
+            info = cats[cat]
+            print(f"    {cat:12} {info.get('score', 0)*100:5.1f}%")
+    print()
+    verifiers = hci.get("verifiers", {})
+    failed = [(n, v) for n, v in verifiers.items() if v.get("status") in ("FAIL", "ERROR")]
+    warned = [(n, v) for n, v in verifiers.items() if v.get("status") == "WARN"]
+    if failed:
+        print(f"## FAIL/ERROR verifiers at that moment ({len(failed)})")
+        for n, v in failed:
+            print(f"  {v.get('status'):5}  {n:30}  {v.get('summary', '')}")
+    if warned:
+        print(f"## WARN verifiers ({len(warned)})")
+        for n, v in warned:
+            print(f"  WARN   {n:30}  {v.get('summary', '')}")
+    if not failed and not warned:
+        print("## All verifiers were passing at that moment")
+    print()
+    # Surface non-HCI state
+    onb = snap.get("onboarding", {})
+    print(f"Onboarding state: {onb.get('state', '?')} (target: {onb.get('target', '')})")
+    git = snap.get("git_state", {})
+    print(f"Git: branch={git.get('branch', '?')} dirty={git.get('dirty_count', 0)} last={git.get('last_commit', '?')[:60]}")
+    tool_surface = snap.get("tool_surface", {})
+    print(f"Tool surface: {tool_surface.get('count_public', '?')} public + {tool_surface.get('count_hidden', '?')} hidden")
+    return 0
+
+
 def main(argv: list) -> int:
+    if "--replay" in argv:
+        idx = argv.index("--replay")
+        replay_path = argv[idx + 1] if idx + 1 < len(argv) else None
+        if not replay_path:
+            sys.stderr.write("--replay requires a path to a holograph JSON file\n")
+            return 2
+        return _replay(replay_path)
+
     if "--diff" in argv:
         idx = argv.index("--diff")
         prior_path = argv[idx + 1] if idx + 1 < len(argv) else None

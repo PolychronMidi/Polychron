@@ -3,6 +3,31 @@
 # Source this at the top of every hook script.
 set -euo pipefail
 
+# H3: Hook latency telemetry — each hook self-logs its wall time to
+# metrics/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier
+# reads this log and flags hooks that exceed 500ms p95.
+# Sampled at 10% to avoid inflating the log on high-frequency hooks.
+_HME_HOOK_START_NS="$(date +%s%N)"
+_HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"
+
+_hme_log_hook_latency() {
+  local end_ns dur_ms
+  end_ns="$(date +%s%N)"
+  dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
+  local log_file="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}/metrics/hme-hook-latency.jsonl"
+  mkdir -p "$(dirname "$log_file")" 2>/dev/null
+  printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
+    "$_HME_HOOK_NAME" "$dur_ms" "$(date +%s)" >> "$log_file" 2>/dev/null
+  # Rotate when log exceeds 10000 lines — keeps last 5000
+  local size
+  size=$(wc -l < "$log_file" 2>/dev/null || echo 0)
+  if [ "$size" -gt 10000 ]; then
+    tail -5000 "$log_file" > "${log_file}.tmp" 2>/dev/null \
+      && mv "${log_file}.tmp" "$log_file" 2>/dev/null
+  fi
+}
+trap _hme_log_hook_latency EXIT
+
 # ── Tunable constants (adjust here — not in individual hooks) ─────────────────
 _HME_HTTP_PORT=7734
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'

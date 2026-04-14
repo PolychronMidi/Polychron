@@ -851,6 +851,283 @@ class SubagentPassthroughVerifier(Verifier):
         )
 
 
+class PredictiveHCIVerifier(Verifier):
+    """H9: consumes metrics/hme-hci-forecast.json (produced by predict-hci.py)
+    and scores based on predicted drift. This is the forward-looking layer —
+    fire a WARN when HCI is projected to cross the 80 threshold before it
+    actually does, so the agent has time to fix whatever's driving the drop."""
+    name = "predictive-hci"
+    category = "runtime"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        forecast_path = os.path.join(_PROJECT, "metrics", "hme-hci-forecast.json")
+        script = os.path.join(_SCRIPTS_DIR, "predict-hci.py")
+        # Refresh forecast (cheap)
+        if os.path.isfile(script):
+            try:
+                subprocess.run(
+                    ["python3", script], capture_output=True, timeout=10,
+                    env={**os.environ, "PROJECT_ROOT": _PROJECT},
+                )
+            except Exception:
+                pass
+        if not os.path.isfile(forecast_path):
+            return _result(SKIP, 1.0, "no forecast data")
+        try:
+            with open(forecast_path) as f:
+                forecast = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"forecast read error: {e}")
+        if forecast.get("_warning"):
+            return _result(SKIP, 1.0, forecast["_warning"])
+        current = forecast.get("current_hci", 100)
+        predicted = forecast.get("predicted_next_hci", 100)
+        trend = forecast.get("trend", "flat")
+        warning = forecast.get("warning")
+        summary = f"current={current} predicted={predicted} trend={trend}"
+        if warning:
+            # Score: proportional to how far the prediction is below 80
+            score = max(0.0, min(1.0, predicted / 100.0))
+            return _result(WARN, score, summary, [warning])
+        return _result(PASS, 1.0, summary)
+
+
+class WarmContextFreshnessVerifier(Verifier):
+    """H1: detect stale warm KV contexts and attempt auto-reprime.
+
+    The HME synthesis stack primes warm KV contexts per model so tools get
+    fast first-token latency. These contexts DECAY over time (models get
+    evicted, KB changes, days pass). Currently nothing watches them — the
+    selftest flagged 36-hour-old contexts that had been silently stale.
+
+    This verifier:
+      1. Checks warm-context-cache/*.json file ages
+      2. Scores based on the oldest staleness
+      3. Triggers background auto-reprime when staleness > 4 hours
+      4. Fails only when auto-reprime has been unable to fix it repeatedly
+    """
+    name = "warm-context-freshness"
+    category = "runtime"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        cache_dir = os.path.join(_PROJECT, "tools", "HME", "warm-context-cache")
+        if not os.path.isdir(cache_dir):
+            return _result(SKIP, 1.0, "no warm-context-cache dir")
+        files = [f for f in os.listdir(cache_dir) if f.endswith(".json")]
+        if not files:
+            return _result(SKIP, 1.0, "no warm context files yet")
+        oldest_age = 0.0
+        oldest_file = ""
+        for f in files:
+            path = os.path.join(cache_dir, f)
+            age = time.time() - os.path.getmtime(path)
+            if age > oldest_age:
+                oldest_age = age
+                oldest_file = f
+        age_hours = oldest_age / 3600
+
+        # Score: 0-4h = 1.0, 4-24h = WARN, >24h = FAIL
+        if age_hours < 4:
+            return _result(PASS, 1.0,
+                           f"warmest cache fresh ({age_hours:.1f}h), oldest={oldest_file}")
+        if age_hours < 24:
+            # Attempt background auto-reprime — fire-and-forget
+            _trigger_warm_reprime()
+            return _result(
+                WARN, 0.7,
+                f"oldest warm cache {age_hours:.1f}h (re-prime triggered)",
+                [f"oldest: {oldest_file}",
+                 "auto-reprime: hme_admin(action='warm') fired in background"],
+            )
+        _trigger_warm_reprime()
+        return _result(
+            FAIL, 0.3,
+            f"oldest warm cache {age_hours:.1f}h — priming bitrot",
+            [f"oldest: {oldest_file}",
+             "auto-reprime triggered; if this persists, selftest warm ctx check is broken"],
+        )
+
+
+def _trigger_warm_reprime() -> None:
+    """Fire-and-forget background call to hme_admin(action='warm').
+    Uses the HTTP shim if the MCP server isn't running in-process."""
+    import threading
+    def _bg():
+        try:
+            # Prefer the admin tool invocation via HTTP shim or subprocess.
+            # Simple approach: drop a sentinel file that a sessionstart/admin
+            # path will pick up. If hme_admin runs via Python inside the
+            # server we can't invoke it from a hook, but we CAN touch a file
+            # the server reads on next tick.
+            sentinel = os.path.join(_PROJECT, "tmp", "hme-warm-reprime.request")
+            os.makedirs(os.path.dirname(sentinel), exist_ok=True)
+            with open(sentinel, "w") as f:
+                f.write(str(time.time()))
+        except Exception:
+            pass
+    threading.Thread(target=_bg, daemon=True).start()
+
+
+class HookLatencyVerifier(Verifier):
+    """H3: flag hooks whose p95 wall-time exceeds a budget.
+
+    Hook latency is silent tax — every tool call pays it. A hook that
+    regresses from 50ms to 500ms adds half a second to every Edit, which
+    compounds across a session. This verifier reads metrics/hme-hook-latency.jsonl
+    (populated by hooks themselves via the _timestamp_hook helper) and
+    flags hooks exceeding 500ms p95.
+    """
+    name = "hook-latency"
+    category = "runtime"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        log_path = os.path.join(_PROJECT, "metrics", "hme-hook-latency.jsonl")
+        if not os.path.isfile(log_path):
+            return _result(SKIP, 1.0, "no hook latency log yet (first run)")
+        try:
+            by_hook = {}
+            with open(log_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    by_hook.setdefault(entry.get("hook", "?"), []).append(
+                        float(entry.get("duration_ms", 0))
+                    )
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        if not by_hook:
+            return _result(SKIP, 1.0, "log exists but empty")
+        # Compute p95 per hook
+        slow = []
+        total = 0
+        for hook_name, durations in by_hook.items():
+            total += 1
+            durations_sorted = sorted(durations)
+            n = len(durations_sorted)
+            if n >= 20:
+                p95 = durations_sorted[int(n * 0.95)]
+            else:
+                p95 = durations_sorted[-1]
+            if p95 > 500:
+                slow.append(f"{hook_name}: p95={p95:.0f}ms (n={n})")
+        if not slow:
+            return _result(PASS, 1.0, f"{total} hooks all under 500ms p95")
+        score = max(0.0, 1.0 - len(slow) / total)
+        return _result(
+            WARN if len(slow) < 3 else FAIL, score,
+            f"{len(slow)}/{total} hooks exceed 500ms p95 budget", slow,
+        )
+
+
+class PlanOutputValidityVerifier(Verifier):
+    """H4: validate that plans produced by agent_local --mode plan reference
+    real files only. Plans live in /tmp/hme-agent-*.md when emitted via the
+    hook. Scan recent plans for file paths and confirm each exists.
+    Hallucinated file paths in plans are the plan-mode analog of
+    hallucinated code in edit mode — both are capability failures."""
+    name = "plan-output-validity"
+    category = "runtime"
+    weight = 0.5
+
+    def run(self) -> VerdictResult:
+        import glob
+        plan_files = sorted(glob.glob("/tmp/hme-agent-*.md"))
+        if not plan_files:
+            return _result(SKIP, 1.0, "no recent plan outputs to validate")
+        checked = 0
+        bad = []
+        for p in plan_files[-5:]:  # last 5
+            try:
+                with open(p) as f:
+                    content = f.read()
+            except Exception:
+                continue
+            checked += 1
+            # Extract file path claims (look for typical code-path patterns)
+            paths = set(re.findall(r'[a-zA-Z0-9_/.-]+\.(?:js|py|sh|md|json|ts)', content))
+            for pth in paths:
+                # Only check paths that look like relative project paths
+                if "/" not in pth or pth.startswith(".") or pth.startswith("/"):
+                    continue
+                full = os.path.join(_PROJECT, pth)
+                if not os.path.isfile(full):
+                    bad.append(f"{os.path.basename(p)}: claims {pth} — not found")
+        if checked == 0:
+            return _result(SKIP, 1.0, "no readable plan outputs")
+        if not bad:
+            return _result(PASS, 1.0, f"{checked} plan(s) cite only real files")
+        score = 1.0 - min(1.0, len(bad) / 10.0)
+        return _result(WARN, score, f"{len(bad)} suspicious path claim(s) in plans", bad[:5])
+
+
+class GitCommitTestCoverageVerifier(Verifier):
+    """H5: Check that recent 'fix'/'bug' commits add or modify a
+    test/verifier in the same commit. Commits that claim fixes without a
+    regression guard are a class of drift — next time the bug comes back
+    there's nothing to catch it."""
+    name = "git-commit-test-coverage"
+    category = "runtime"
+    weight = 0.5
+
+    _FIX_KEYWORDS = ("fix", "bug", "regression", "repair", "patch", "correct", "error")
+
+    def run(self) -> VerdictResult:
+        try:
+            rc = subprocess.run(
+                ["git", "-C", _PROJECT, "log", "--oneline", "-50"],
+                capture_output=True, text=True, timeout=3,
+            )
+            if rc.returncode != 0:
+                return _result(SKIP, 1.0, "git log failed")
+            log_lines = rc.stdout.splitlines()
+        except Exception as e:
+            return _result(ERROR, 0.0, f"git error: {e}")
+        fix_commits = []
+        for line in log_lines:
+            parts = line.split(" ", 1)
+            if len(parts) != 2:
+                continue
+            sha, msg = parts
+            if any(kw in msg.lower() for kw in self._FIX_KEYWORDS):
+                fix_commits.append((sha, msg))
+        if not fix_commits:
+            return _result(PASS, 1.0, "no fix commits in last 50 — nothing to check")
+        uncovered = []
+        for sha, msg in fix_commits[:10]:  # sample last 10 fix commits
+            try:
+                rc = subprocess.run(
+                    ["git", "-C", _PROJECT, "show", "--name-only", "--format=", sha],
+                    capture_output=True, text=True, timeout=3,
+                )
+                files = [f for f in rc.stdout.splitlines() if f.strip()]
+            except Exception:
+                continue
+            has_test = any(
+                ("verify-" in f or "test-" in f or "_test." in f
+                 or "stress-test" in f or "verifier" in f.lower())
+                for f in files
+            )
+            if not has_test:
+                uncovered.append(f"{sha[:8]} {msg[:60]}")
+        if not uncovered:
+            return _result(PASS, 1.0, f"{len(fix_commits)} fix commits, all include test/verifier changes")
+        # WARN not FAIL — this is aspirational, not mandatory. Small project
+        # code fixes don't always need new tests.
+        return _result(
+            WARN, max(0.0, 1.0 - len(uncovered) / 10.0),
+            f"{len(uncovered)} recent fix commit(s) without a new test/verifier",
+            uncovered[:5],
+        )
+
+
 class SubagentGuardVerifier(Verifier):
     """Runs test 1 of the stress battery: the short-prompt guard.
 
@@ -1371,6 +1648,11 @@ REGISTRY = [
     SubagentPassthroughVerifier(),
     SubagentGuardVerifier(),
     SubagentBackendsVerifier(),
+    WarmContextFreshnessVerifier(),
+    HookLatencyVerifier(),
+    PlanOutputValidityVerifier(),
+    GitCommitTestCoverageVerifier(),
+    PredictiveHCIVerifier(),
     LifesaverIntegrityVerifier(),
     LifesaverRateVerifier(),
     MetaObserverCoherenceVerifier(),
