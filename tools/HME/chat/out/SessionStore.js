@@ -76,9 +76,20 @@ function writeJson(filePath, data) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
+/** Typed handle for a single JSON file. Eliminates repeated path threading. */
+class JsonStore {
+    constructor(filePath, fallback) {
+        this.filePath = filePath;
+        this.fallback = fallback;
+    }
+    read() { return readJson(this.filePath, this.fallback); }
+    write(data) { writeJson(this.filePath, data); }
+}
+function indexStore(projectRoot) {
+    return new JsonStore(indexPath(projectRoot), []);
+}
 function listSessions(projectRoot) {
-    return readJson(indexPath(projectRoot), [])
-        .sort((a, b) => b.updatedAt - a.updatedAt);
+    return indexStore(projectRoot).read().sort((a, b) => b.updatedAt - a.updatedAt);
 }
 function loadSession(projectRoot, id) {
     const entry = listSessions(projectRoot).find((s) => s.id === id);
@@ -99,15 +110,16 @@ function createSession(projectRoot, title) {
     const id = crypto.randomBytes(6).toString("hex");
     const now = Date.now();
     const entry = { id, title, createdAt: now, updatedAt: now, claudeSessionId: null };
-    const index = readJson(indexPath(projectRoot), []);
+    const store = indexStore(projectRoot);
+    const index = store.read();
     index.unshift(entry);
-    writeJson(indexPath(projectRoot), index);
+    store.write(index);
     writeJson(sessionPath(projectRoot, id), { messages: [], ollamaHistory: [] });
     return entry;
 }
 function saveSession(projectRoot, entry, messages, ollamaHistory, extra) {
-    // Update index entry
-    const index = readJson(indexPath(projectRoot), []);
+    const store = indexStore(projectRoot);
+    const index = store.read();
     const idx = index.findIndex((s) => s.id === entry.id);
     if (idx >= 0) {
         index[idx] = entry;
@@ -115,7 +127,7 @@ function saveSession(projectRoot, entry, messages, ollamaHistory, extra) {
     else {
         index.unshift(entry);
     }
-    writeJson(indexPath(projectRoot), index);
+    store.write(index);
     writeJson(sessionPath(projectRoot, entry.id), {
         messages, ollamaHistory,
         ...(extra?.contextTokens != null ? { contextTokens: extra.contextTokens } : {}),
@@ -131,16 +143,17 @@ function deleteSession(projectRoot, id) {
         if (e?.code !== "ENOENT")
             console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`);
     }
-    const index = readJson(indexPath(projectRoot), []).filter((s) => s.id !== id);
-    writeJson(indexPath(projectRoot), index);
+    const store = indexStore(projectRoot);
+    store.write(store.read().filter((s) => s.id !== id));
 }
 function renameSession(projectRoot, id, title) {
-    const index = readJson(indexPath(projectRoot), []);
+    const store = indexStore(projectRoot);
+    const index = store.read();
     const entry = index.find((s) => s.id === id);
     if (entry) {
         entry.title = title;
         entry.updatedAt = Date.now();
-        writeJson(indexPath(projectRoot), index);
+        store.write(index);
     }
 }
 /** Derive a session title from the first user message (first 60 chars). */

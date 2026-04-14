@@ -42,19 +42,22 @@ function buildClaudeEnv() {
     }
     return env;
 }
+// ── Shared CLI arg builder ────────────────────────────────────────────────
+function buildClaudeArgs(opts, sessionId, prefix) {
+    const args = [
+        ...prefix,
+        "--model", opts.model,
+        "--effort", opts.effort,
+        "--permission-mode", opts.permissionMode || "acceptEdits",
+    ];
+    if (sessionId)
+        args.push("--resume", sessionId);
+    return args;
+}
 // ── Claude CLI (pipe mode) ────────────────────────────────────────────────
 function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
-    const args = ["-p", "--output-format", "stream-json", "--verbose"];
-    args.push("--model", opts.model);
-    args.push("--effort", opts.effort);
-    args.push("--permission-mode", opts.permissionMode || "acceptEdits");
-    if (opts.thinking) {
-        // Extended thinking is available on Opus; --verbose surfaces the thinking blocks
-        // in stream-json output. Nothing extra needed — thinking blocks come through natively.
-    }
-    if (sessionId) {
-        args.push("--resume", sessionId);
-    }
+    // opts.thinking: Extended thinking blocks come through natively in stream-json --verbose.
+    const args = buildClaudeArgs(opts, sessionId, ["-p", "--output-format", "stream-json", "--verbose"]);
     const env = buildClaudeEnv();
     const proc = (0, child_process_1.spawn)("claude", args, {
         cwd: workingDir,
@@ -173,17 +176,33 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
     }
 }
 // ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
+const PTY_DONE_PATTERNS = [
+    /^>\s*$/m,
+    /\nHuman:\s*$/,
+    /\[H\]/,
+];
+/** Classify a single PTY text line into chunk type for onChunk. Returns null to suppress. */
+function classifyPtyLine(text, fullOutput) {
+    const trimmed = text.trim();
+    if (!trimmed)
+        return null;
+    if (/^(?:⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏)\s/.test(trimmed)) {
+        return { chunk: trimmed.replace(/^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*/, ""), type: "thinking" };
+    }
+    if (/^●\s/.test(trimmed) || /^\[.*\]/.test(trimmed)) {
+        return { chunk: trimmed, type: "tool" };
+    }
+    if (!PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-200)))) {
+        return { chunk: text, type: "text" };
+    }
+    return null;
+}
 function stripAnsi(str) {
     // eslint-disable-next-line no-control-regex
     return str.replace(/\x1b\[[\x20-\x3f]*[0-9;]*[\x20-\x7e]/g, "")
         .replace(/\x1b\][^\x07]*\x07/g, "")
         .replace(/\r/g, "");
 }
-const PTY_DONE_PATTERNS = [
-    /^>\s*$/m,
-    /\nHuman:\s*$/,
-    /\[H\]/,
-];
 function parseK(s) {
     const n = parseFloat(s);
     return s.endsWith("k") || s.endsWith("K") ? Math.round(n * 1000) : Math.round(n);
@@ -211,9 +230,8 @@ function parseContextOutput(text) {
 }
 function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError, onRawData, onPtyReady) {
     hmeLog(`streamClaudePty called model=${opts.model} effort=${opts.effort}`);
-    const args = ["--model", opts.model, "--effort", opts.effort, "--permission-mode", "bypassPermissions"];
-    if (sessionId)
-        args.push("--resume", sessionId);
+    // PTY always uses bypassPermissions (interactive hook-aware mode).
+    const args = buildClaudeArgs({ ...opts, permissionMode: "bypassPermissions" }, sessionId, []);
     const env = buildClaudeEnv();
     env["TERM"] = "xterm-256color";
     // Each PTY session writes context data to its own file so the main Claude Code
@@ -382,15 +400,9 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 onSessionId(sessionMatch[1]);
             }
         }
-        if (/^(?:⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏)\s/.test(text.trim())) {
-            onChunk(text.trim().replace(/^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*/, ""), "thinking");
-        }
-        else if (/^●\s/.test(text.trim()) || /^\[.*\]/.test(text.trim())) {
-            onChunk(text.trim(), "tool");
-        }
-        else if (text.trim() && !PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-200)))) {
-            onChunk(text, "text");
-        }
+        const classified = classifyPtyLine(text, fullOutput);
+        if (classified)
+            onChunk(classified.chunk, classified.type);
         if (PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-400)))) {
             scheduleContextQuery();
         }

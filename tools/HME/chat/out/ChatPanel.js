@@ -49,6 +49,8 @@ const ShimSupervisor_1 = require("./panel/ShimSupervisor");
 const MirrorTerminal_1 = require("./panel/MirrorTerminal");
 const ContextMeter_1 = require("./panel/ContextMeter");
 const ChainPerformer_1 = require("./panel/ChainPerformer");
+const StreamPersister_1 = require("./panel/StreamPersister");
+const webviewMessages_1 = require("./panel/webviewMessages");
 class ChatPanel {
     static _blankState() {
         return { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
@@ -177,6 +179,8 @@ class ChatPanel {
         this._mirror = new MirrorTerminal_1.MirrorTerminal(projectRoot);
         this._contextMeter = new ContextMeter_1.ContextMeter(projectRoot, this);
         this._chain = new ChainPerformer_1.ChainPerformer(projectRoot, this, this._chainBridge());
+        this._streamPersister = new StreamPersister_1.StreamPersister(this);
+        this._ctx = this._makeCtx();
         try {
             this._transcript = new TranscriptLogger_1.TranscriptLogger(projectRoot);
             this._transcript.setNarrativeCallback(async (entries) => {
@@ -265,54 +269,13 @@ class ChatPanel {
     }
     // ── Webview message dispatch ─────────────────────────────────────────────
     _handleMessage(msg) {
-        const handler = this._messageHandlers[msg.type];
-        if (handler)
-            handler(msg);
+        (0, webviewMessages_1.dispatchWebviewMessage)(msg, this._messageHandlers);
     }
     _displayMessages() {
         return this._state.messages.slice(-ChatPanel.DISPLAY_CAP);
     }
-    /**
-     * Track a streaming assistant message so partial text survives ext host crashes.
-     * Pushes a placeholder into _state.messages immediately and persists every 10s.
-     */
     _trackStream(assistantId, route) {
-        const partial = { id: assistantId, role: "assistant", text: "", route, ts: Date.now() };
-        this._state.messages.push(partial);
-        this._persistState();
-        const idx = this._state.messages.length - 1;
-        let dirty = false;
-        const timer = setInterval(() => {
-            if (dirty) {
-                dirty = false;
-                try {
-                    this._persistState();
-                }
-                catch (e) {
-                    this.postError("persist", `interval: ${e?.message ?? e}`);
-                }
-            }
-        }, ChatPanel.STREAM_PERSIST_MS);
-        return {
-            update: (text, tools, thinking) => {
-                partial.text = text;
-                if (tools?.length)
-                    partial.tools = tools;
-                if (thinking)
-                    partial.thinking = thinking;
-                dirty = true;
-            },
-            finalize: (final) => {
-                clearInterval(timer);
-                this._state.messages[idx] = final;
-                try {
-                    this._persistState();
-                }
-                catch (e) {
-                    this.postError("persist", `finalize: ${e?.message ?? e}`);
-                }
-            },
-        };
+        return this._streamPersister.track(assistantId, route, this._state.messages, () => this._persistState());
     }
     _makeCtx() {
         const self = this;
@@ -429,7 +392,7 @@ class ChatPanel {
         const assistantId = (0, streamUtils_1.uid)();
         this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
         const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
-        const ctx = this._makeCtx();
+        const ctx = this._ctx;
         if (resolvedRoute === "local") {
             (0, chatStreaming_1.streamOllamaMsg)(ctx, resolvedMsg, assistantId);
         }
@@ -479,7 +442,7 @@ class ChatPanel {
             safeDrain();
         } };
         this._cancelCurrent = () => cancelFns.forEach((fn) => fn());
-        const ctx = this._makeCtx();
+        const ctx = this._ctx;
         (0, chatStreaming_1.streamAgentMsg)(ctx, msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
         (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
     }
@@ -530,4 +493,3 @@ class ChatPanel {
 exports.ChatPanel = ChatPanel;
 // ── Stream tracking & session persistence ────────────────────────────────
 ChatPanel.DISPLAY_CAP = 100;
-ChatPanel.STREAM_PERSIST_MS = 10000;
