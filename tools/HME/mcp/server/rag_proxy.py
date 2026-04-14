@@ -65,15 +65,23 @@ def check_shim_rag_capable(port=_DEFAULT_PORT) -> bool:
 
 
 def _get_shim_status(port=_DEFAULT_PORT) -> dict:
-    """Single /health call returning parsed status dict. Shared by health + rag_capable checks."""
+    """Single /health call returning parsed status dict. Shared by health + rag_capable checks.
+
+    Sets 'healthy': True only when shim is fully ready (status=='ready' and kb_ready).
+    Sets 'loading': True when shim responded but is still initializing (training lock,
+    engines loading) — proxy monitor uses this to skip restart (process is alive).
+    """
     try:
         req = urllib.request.Request(f"http://127.0.0.1:{port}/health")
         with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
             data = json.loads(resp.read())
-            data["healthy"] = data.get("status") == "ready" and data.get("kb_ready", False)
+            is_ready = data.get("status") == "ready" and data.get("kb_ready", False)
+            is_loading = data.get("status") == "loading"
+            data["healthy"] = is_ready
+            data["loading"] = is_loading  # alive but engines not ready (training lock etc.)
             return data
     except Exception:
-        return {"healthy": False}
+        return {"healthy": False, "loading": False}
 
 
 def kill_shim_by_pid() -> bool:
@@ -223,7 +231,14 @@ def _proxy_health_monitor(port: int) -> None:
             time.sleep(_interval)
             if not _proxy_monitor_active:
                 break
-            if check_shim_health(port):
+            _shim_status = _get_shim_status(port)
+            if _shim_status.get("loading"):
+                # Shim is alive but engines are initializing (training lock, cold start, etc.)
+                # Do NOT restart — process is up, just not KB-ready yet. Skip this cycle.
+                logger.debug("Proxy health monitor: shim loading (engines not ready) — skipping restart")
+                _stable_since = 0.0  # not stable until fully ready
+                continue
+            if _shim_status.get("healthy"):
                 if _stable_since == 0:
                     _stable_since = time.time()  # mark start of stable window
                 crash_count = 0  # reset crash counter on healthy cycle
