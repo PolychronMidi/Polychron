@@ -13,6 +13,7 @@ logger = logging.getLogger("HME")
 # All reloadable tool modules (kept here so hme_selftest can inspect coverage via getsource).
 RELOADABLE = [
     "synthesis", "synthesis_config", "synthesis_ollama", "synthesis_gemini",
+    "synthesis_groq", "synthesis_openrouter",
     "synthesis_session", "synthesis_warm", "synthesis_pipeline",
     "warm_disk", "warm_persona",
     "tool_cache",
