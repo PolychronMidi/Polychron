@@ -249,8 +249,9 @@ regimeReactiveDamping = (() => {
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
     const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
     if (Number.isFinite(currentDensitySignal)) {
-      densityMeanEma += (currentDensitySignal - densityMeanEma) * _DENSITY_VAR_EMA_ALPHA;
-      const densityDevSq = (currentDensitySignal - densityMeanEma) * (currentDensitySignal - densityMeanEma);
+      const ds = /** @type {number} */ (currentDensitySignal);
+      densityMeanEma += (ds - densityMeanEma) * _DENSITY_VAR_EMA_ALPHA;
+      const densityDevSq = (ds - densityMeanEma) * (ds - densityMeanEma);
       densityVarEma += (densityDevSq - densityVarEma) * _DENSITY_VAR_EMA_ALPHA;
     }
     const densityArchScale = densityVarEma < _DENSITY_VAR_TARGET_LOW

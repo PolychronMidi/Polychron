@@ -118,8 +118,8 @@ couplingRefreshSetup = (() => {
     const recoveryDominantAxes = hs && Array.isArray(hs.recoveryDominantAxes) ? hs.recoveryDominantAxes : [];
     const shortRunRecoveryBias = V.optionalFinite(hs && hs.shortRunRecoveryBias, 0);
     const nonNudgeableTailPressure = V.optionalFinite(hs && hs.nonNudgeableTailPressure, 0);
-    const nonNudgeableTailPair = V.optionalType(hs && hs.nonNudgeableTailPair, 'string', '');
-    const telemetryBeatSpan = Number.isFinite(snap && snap.telemetryBeatSpan) ? clamp(m.round(snap.telemetryBeatSpan), 1, 8) : 1;
+    const nonNudgeableTailPair = hs && typeof hs.nonNudgeableTailPair === 'string' ? hs.nonNudgeableTailPair : '';
+    const telemetryBeatSpan = Number.isFinite(snap && snap.telemetryBeatSpan) ? clamp(m.round(/** @type {number} */ (snap.telemetryBeatSpan)), 1, 8) : 1;
 
     // Axis energy shares for entropy pressure
     const axisShareSnapshot = pipelineCouplingManagerSnapshot.buildAxisEnergyShare(couplingState.axisSmoothedAbsR);

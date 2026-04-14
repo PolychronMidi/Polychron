@@ -100,8 +100,8 @@ voiceLeadingCore = {
     }
 
     // Candidate weight bias
-    if (opts && Number.isFinite(opts.weight) && opts.weight > 0) {
-      totalCost -= m.min(8, opts.weight * 4);
+    if (opts && Number.isFinite(opts.weight) && /** @type {number} */ (opts.weight) > 0) {
+      totalCost -= m.min(8, /** @type {number} */ (opts.weight) * 4);
     }
 
     // Hard constraints
@@ -114,14 +114,19 @@ voiceLeadingCore = {
 
     const useCorpusVoiceLeadingPriors = opts && opts.useCorpusVoiceLeadingPriors === true;
     if (useCorpusVoiceLeadingPriors) {
-      const phrasePhase = V.optionalString(opts && opts.phase, null)
-        || V.optionalString(opts && opts.phraseContext && opts.phraseContext.phase, undefined);
+      const phrasePhase = (opts && typeof opts.phase === 'string' && opts.phase.length > 0)
+        ? opts.phase
+        : (opts && opts.phraseContext && typeof opts.phraseContext.phase === 'string' && opts.phraseContext.phase.length > 0)
+          ? opts.phraseContext.phase
+          : undefined;
 
-      const harmonicKey = V.optionalString(opts && opts.tonic, null)
-        || (harmonicContext.getField('key') || undefined);
+      const harmonicKey = (opts && typeof opts.tonic === 'string' && opts.tonic.length > 0)
+        ? opts.tonic
+        : (harmonicContext.getField('key') || undefined);
 
-      const harmonicQuality = V.optionalString(opts && opts.quality, null)
-        || (harmonicContext.getField('quality') || 'major');
+      const harmonicQuality = (opts && typeof opts.quality === 'string' && opts.quality.length > 0)
+        ? opts.quality
+        : (harmonicContext.getField('quality') || 'major');
 
       const corpusStrength = Number.isFinite(Number(opts && opts.corpusVoiceLeadingStrength))
         ? Number(opts.corpusVoiceLeadingStrength)

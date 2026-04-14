@@ -15,7 +15,7 @@ fragmentHelpers = (() => {
    * @returns {string[]} - array of fragment keys
    */
   function getPCFragments(length, windowSeconds, opts = {}) {
-    const fragLen = (Number.isFinite(length) && length >= 2) ? length : 3;
+    const fragLen = (Number.isFinite(length) && /** @type {number} */ (length) >= 2) ? /** @type {number} */ (length) : 3;
     const ws = V.optionalFinite(windowSeconds, 6);
     const { layer, signed } = opts;
     /** @type {any} */

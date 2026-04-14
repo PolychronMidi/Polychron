@@ -149,6 +149,9 @@ interface ValidatorInstance {
   optionalType(value: unknown, type: 'function'): (...args: any[]) => any | undefined;
   optionalType(value: unknown, type: string): unknown | undefined;
   optionalType<T>(value: unknown, type: string, fallback: T): T;
+  optionalString(value: unknown, fallback: string): string;
+  optionalString(value: unknown, fallback: null): string | null;
+  optionalString(value: unknown, fallback: undefined): string | undefined;
   requireDefined(value: unknown, label: string): unknown;
   requireType(value: unknown, type: string, label: string): unknown;
   requireEnum(value: unknown, allowed: unknown[], label: string): unknown;

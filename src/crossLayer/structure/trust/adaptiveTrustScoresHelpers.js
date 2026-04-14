@@ -98,7 +98,7 @@ adaptiveTrustScoresHelpers = (() => {
     // Discount hotspot pressure for semantically labeled "opposed" pairs.
     // Creative anti-correlations (phase-opposed-flicker, smooth-tension, etc.) are structural
     // features of the composition, not failures -- penalizing them suppresses valid patterns.
-    const couplingLabels = V.optionalType(signals.couplingLabels, 'object', null);
+    const couplingLabels = /** @type {Record<string,string>|null} */ (signals.couplingLabels && typeof signals.couplingLabels === 'object' ? signals.couplingLabels : null);
 
     const hotspotPairs = [];
     let maxPressure = 0;
@@ -113,7 +113,7 @@ adaptiveTrustScoresHelpers = (() => {
       const pair = pairList[i];
       const absCorrelation = V.optionalFinite(couplingPressures[pair], -1);
       if (absCorrelation < 0) continue;
-      const adaptiveEntry = V.optionalType(adaptiveSnapshot && adaptiveSnapshot[pair], 'object', null);
+      const adaptiveEntry = /** @type {any} */ (adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object' ? adaptiveSnapshot[pair] : null);
       const pairP95 = V.optionalFinite(adaptiveEntry && adaptiveEntry.p95AbsCorr, absCorrelation);
       const hotspotRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.hotspotRate, 0);
       const severeRate = V.optionalFinite(adaptiveEntry && adaptiveEntry.severeRate, 0);
