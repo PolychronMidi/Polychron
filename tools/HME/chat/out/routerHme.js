@@ -49,44 +49,32 @@ const streamUtils_1 = require("./streamUtils");
 const HME_HTTP_PORT = 7734;
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
 async function fetchHmeContext(query, topK = 5) {
-    return new Promise((resolve, reject) => {
-        let done = false;
-        const fail = (msg) => { if (!done) {
-            done = true;
-            reject(new Error(msg));
-        } };
-        const timer = setTimeout(() => { req.destroy(); fail("HME shim /enrich timeout (5s)"); }, 5000);
-        const body = JSON.stringify({ query, top_k: topK });
-        const req = http.request({
-            hostname: "127.0.0.1",
-            port: HME_HTTP_PORT,
-            path: "/enrich",
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Content-Length": Buffer.byteLength(body),
-            },
-        }, (res) => {
+    return shimPost("/enrich", JSON.stringify({ query, top_k: topK }), (raw) => {
+        const parsed = JSON.parse(raw);
+        const kb = parsed.kb ?? [];
+        return { warm: parsed.warm ?? "", kb, kbCount: kb.length };
+    });
+}
+function shimGet(path, parse, fallback, timeoutMs = 1000) {
+    return new Promise((resolve) => {
+        const req = http.get(`${HME_HTTP_URL}${path}`, (res) => {
             let raw = "";
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
-                clearTimeout(timer);
-                if (done)
-                    return;
-                done = true;
                 try {
-                    const parsed = JSON.parse(raw);
-                    const kb = parsed.kb ?? [];
-                    resolve({ warm: parsed.warm ?? "", kb, kbCount: kb.length });
+                    resolve(parse(raw));
                 }
                 catch (e) {
-                    reject(new Error(`HME shim /enrich parse error: ${e?.message ?? e}`));
+                    console.error(`[HME] shim ${path} parse error: ${e?.message ?? e}`);
+                    resolve(fallback);
                 }
             });
         });
-        req.on("error", (e) => { clearTimeout(timer); fail(`HME shim /enrich unreachable: ${e?.message ?? e}`); });
-        req.write(body);
-        req.end();
+        req.on("error", (e) => {
+            console.error(`[HME] shim ${path} unreachable: ${e?.message ?? e}`);
+            resolve(fallback);
+        });
+        req.setTimeout(timeoutMs, () => { req.destroy(); resolve(fallback); });
     });
 }
 function shimPost(path, body, parse, timeoutMs = 5000) {
@@ -141,27 +129,10 @@ async function postNarrative(narrative) {
     return shimPost("/narrative", JSON.stringify({ narrative }), () => undefined);
 }
 async function isHmeShimReady() {
-    return new Promise((resolve) => {
-        const req = http.get(`${HME_HTTP_URL}/health`, (res) => {
-            let raw = "";
-            res.on("data", (c) => { raw += c.toString("utf8"); });
-            res.on("end", () => {
-                try {
-                    const parsed = JSON.parse(raw);
-                    resolve({ ready: parsed.status === "ready", errors: parsed.recent_errors ?? [] });
-                }
-                catch (e) {
-                    console.error(`[HME] shim /health parse error: ${e?.message ?? e}`);
-                    resolve({ ready: false, errors: [{ message: `parse error: ${e?.message}` }] });
-                }
-            });
-        });
-        req.on("error", (e) => {
-            console.error(`[HME] shim /health unreachable: ${e?.message ?? e}`);
-            resolve({ ready: false, errors: [{ message: `unreachable: ${e?.message}` }] });
-        });
-        req.setTimeout(1000, () => { req.destroy(); resolve({ ready: false, errors: [{ message: "timeout" }] }); });
-    });
+    return shimGet("/health", (raw) => {
+        const parsed = JSON.parse(raw);
+        return { ready: parsed.status === "ready", errors: parsed.recent_errors ?? [] };
+    }, { ready: false, errors: [{ message: "unreachable or timeout" }] });
 }
 async function logShimError(source, message, detail = "") {
     return shimPost("/error", JSON.stringify({ source, message, detail }), () => undefined);

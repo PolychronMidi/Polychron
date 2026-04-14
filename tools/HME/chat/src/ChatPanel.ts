@@ -31,6 +31,7 @@ import {
   streamClaudeMsg, streamOllamaMsg, streamHybridMsg,
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
+import { buildCrossRouteContext } from "./crossRouteHistory";
 
 // Fire chain at 99% — meter reaches this before autocompact kicks in.
 const CHAIN_THRESHOLD_PCT = 99;
@@ -52,11 +53,11 @@ export class ChatPanel {
   private _chainingInProgress = false;
 
   private static _blankState(): SessionState {
-    return ChatPanel._blankState();
+    return { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
   }
 
   private static _blankContextTracker(): ContextTracker {
-    return ChatPanel._blankContextTracker();
+    return { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
   }
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
@@ -133,114 +134,116 @@ export class ChatPanel {
   }
 
   private _handleMessage(msg: any) {
-    switch (msg.type) {
-      // ── Stream control ───────────────────────────────────────────────────
-      case "send":
-        // Hard interrupt: cancel current stream + clear queue, start new message immediately.
-        if (this._isStreaming) {
-          this._cancelCurrent?.();
-          this._cancelCurrent = undefined;
-          this._messageQueue = [];
-          this._post({ type: "cancelConfirmed" });
-          this._isStreaming = false;
-        }
-        this._isStreaming = true;
-        this._onSend(msg).catch((e) => {
-          this._postError("send", String(e));
-          this._drainQueue();
-        });
-        break;
-      case "queue":
-        // Queue: waits behind current stream (explicit "send after current finishes").
-        if (this._isStreaming) {
-          const queuedUserMsg: ChatMessage = {
-            id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
-          };
-          this._post({ type: "message", message: queuedUserMsg });
-          this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
-        } else {
-          this._isStreaming = true;
-          this._onSend(msg).catch((e) => {
-            this._postError("send", String(e));
-            this._drainQueue();
-          });
-        }
-        break;
-      case "cancel":
+    const handler = this._messageHandlers[msg.type];
+    if (handler) handler(msg);
+  }
+
+  private readonly _messageHandlers: Record<string, (msg: any) => void> = {
+    // ── Stream control ───────────────────────────────────────────────────
+    send: (msg) => {
+      // Hard interrupt: cancel current stream + clear queue, start new message immediately.
+      if (this._isStreaming) {
         this._cancelCurrent?.();
         this._cancelCurrent = undefined;
         this._messageQueue = [];
         this._post({ type: "cancelConfirmed" });
         this._isStreaming = false;
-        break;
-      // ── Session management ───────────────────────────────────────────────
-      case "clearHistory":
+      }
+      this._isStreaming = true;
+      this._onSend(msg).catch((e) => {
+        this._postError("send", String(e));
+        this._drainQueue();
+      });
+    },
+    queue: (msg) => {
+      // Queue: waits behind current stream (explicit "send after current finishes").
+      if (this._isStreaming) {
+        const queuedUserMsg: ChatMessage = {
+          id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
+        };
+        this._post({ type: "message", message: queuedUserMsg });
+        this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
+      } else {
+        this._isStreaming = true;
+        this._onSend(msg).catch((e) => {
+          this._postError("send", String(e));
+          this._drainQueue();
+        });
+      }
+    },
+    cancel: () => {
+      this._cancelCurrent?.();
+      this._cancelCurrent = undefined;
+      this._messageQueue = [];
+      this._post({ type: "cancelConfirmed" });
+      this._isStreaming = false;
+    },
+    // ── Session management ───────────────────────────────────────────────
+    clearHistory: () => {
+      this._state = ChatPanel._blankState();
+      this._resetContextTracker();
+      this._post({ type: "historyCleared" });
+    },
+    listSessions: () => {
+      this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
+      if (this._restoreSessionId) {
+        const id = this._restoreSessionId;
+        this._restoreSessionId = null;
+        this._loadSession(id);
+      }
+    },
+    loadSession: (msg) => this._loadSession(msg.id),
+    deleteSession: (msg) => {
+      deleteSession(this._projectRoot, msg.id);
+      if (this._state.sessionEntry?.id === msg.id) {
         this._state = ChatPanel._blankState();
         this._resetContextTracker();
+        this._transcript.setSessionId("");
         this._post({ type: "historyCleared" });
-        break;
-      // ── HME features ─────────────────────────────────────────────────────
-      case "enrichPrompt":
-        this._post({ type: "enrichStatus", status: "enriching" });
-        enrichPrompt(msg.prompt, msg.frame ?? "").then((result) => {
-          this._post({ type: "enrichResult", ...result });
-        }).catch((e) => {
-          this._post({ type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
-            error: String(e), unchanged: true });
+      }
+      this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
+    },
+    renameSession: (msg) => {
+      renameSession(this._projectRoot, msg.id, msg.title);
+      this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
+    },
+    newSession: () => {
+      this._state = ChatPanel._blankState();
+      this._resetContextTracker();
+      this._post({ type: "historyCleared" });
+    },
+    // ── HME features ─────────────────────────────────────────────────────
+    enrichPrompt: (msg) => {
+      this._post({ type: "enrichStatus", status: "enriching" });
+      enrichPrompt(msg.prompt, msg.frame ?? "").then((result) => {
+        this._post({ type: "enrichResult", ...result });
+      }).catch((e) => {
+        this._post({
+          type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
+          error: String(e), unchanged: true,
         });
-        break;
-      case "checkHmeShim":
-        isHmeShimReady().then(({ ready }) => {
-          this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
-          if (!ready) this._startHmeShim();
-        });
-        break;
-      // ── Session management ───────────────────────────────────────────────
-      case "listSessions":
-        this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
-        if (this._restoreSessionId) {
-          const id = this._restoreSessionId;
-          this._restoreSessionId = null;
-          this._loadSession(id);
-        }
-        break;
-      case "loadSession":
-        this._loadSession(msg.id);
-        break;
-      case "deleteSession":
-        deleteSession(this._projectRoot, msg.id);
-        if (this._state.sessionEntry?.id === msg.id) {
-          this._state = ChatPanel._blankState();
-          this._resetContextTracker();
-          this._transcript.setSessionId("");
-          this._post({ type: "historyCleared" });
-        }
-        this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
-        break;
-      case "renameSession":
-        renameSession(this._projectRoot, msg.id, msg.title);
-        this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
-        break;
-      case "newSession":
-        this._state = ChatPanel._blankState();
-        this._resetContextTracker();
-        this._post({ type: "historyCleared" });
-        break;
-      // ── UI state ─────────────────────────────────────────────────────────
-      case "setZoomLevel":
-        if (typeof msg.level === "number") {
-          ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
-        }
-        break;
-      case "setMirrorMode":
-        this._mirrorMode = !!msg.enabled;
-        if (this._mirrorMode) {
-          this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
-        }
-        this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
-        break;
-    }
-  }
+      });
+    },
+    checkHmeShim: () => {
+      isHmeShimReady().then(({ ready }) => {
+        this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
+        if (!ready) this._startHmeShim();
+      });
+    },
+    // ── UI state ─────────────────────────────────────────────────────────
+    setZoomLevel: (msg) => {
+      if (typeof msg.level === "number") {
+        ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
+      }
+    },
+    setMirrorMode: (msg) => {
+      this._mirrorMode = !!msg.enabled;
+      if (this._mirrorMode) {
+        this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
+      }
+      this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
+    },
+  };
 
   private static readonly DISPLAY_CAP = 100;
   private static readonly STREAM_PERSIST_MS = 10_000;
@@ -393,28 +396,13 @@ export class ChatPanel {
     }
 
     // ── Cross-route history portability ──
-    let contextPrefix = "";
     if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
       this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
-      if (resolvedRoute === "local" || resolvedRoute === "hybrid") {
-        this._state.ollamaHistory = this._state.messages
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .map((m) => ({ role: m.role as "user" | "assistant", content: m.text || "" }));
-        this._state.ollamaHistory.pop();
-      }
-      if (resolvedRoute === "claude" && this._state.lastRoute !== "claude") {
-        this._state.claudeSessionId = null;
-        const prior = this._state.messages
-          .filter((m) => m.role === "user" || m.role === "assistant")
-          .slice(0, -1).slice(-12);
-        if (prior.length > 0) {
-          const lines = prior.map((m) =>
-            `${m.role === "user" ? "Human" : "Assistant"}: ${(m.text || "").slice(0, 600)}`
-          ).join("\n");
-          contextPrefix = `[Prior conversation via local model — use for context only]\n${lines}\n[End of prior context]\n\n`;
-        }
-      }
     }
+    const cross = buildCrossRouteContext(this._state.messages, this._state.lastRoute, resolvedRoute);
+    if (cross.ollamaHistory) this._state.ollamaHistory = cross.ollamaHistory;
+    if (cross.claudeSessionIdReset) this._state.claudeSessionId = null;
+    const contextPrefix = cross.contextPrefix;
     this._state.lastRoute = resolvedRoute;
 
     const assistantId = uid();
