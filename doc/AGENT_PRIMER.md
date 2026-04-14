@@ -43,7 +43,21 @@ learn(query='...')                      KB search
 learn(action='health')                  KB staleness check
 hme_admin(action='index')               reindex after batch changes
 hme_admin(action='reload')              hot-reload tool modules
+hme_todo(action='add', text=..., parent_id=..., critical=..., on_done=...)
+                                        hierarchical extension of TodoWrite (subs, critical,
+                                        on_done triggers 'reindex'/'learn'/'commit')
 ```
+
+## Todo system
+
+Native `TodoWrite` works as usual. The HME layer adds the following transparently:
+
+- **Subtodos + auto-completion.** Use `hme_todo(action='add', parent_id=N, text='...')` to add a sub under #N. A main todo is marked done only when all its subs are done; marking the last sub done auto-completes the parent. The native view shows subs as indented rows (`  └─ text`).
+- **Critical flag.** Pass `critical=True` on add. Critical items surface at every turn start via `userpromptsubmit.sh` until resolved. LIFESAVER alerts auto-append as critical.
+- **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `hme_admin(action='index')` in the background. `learn` queues a reminder to call `learn()` at the next turn. `commit` flags a commit nudge in the nexus.
+- **Onboarding walkthrough appears in your native todo list.** The current step is always marked `in_progress`, completed steps are marked done, upcoming steps are pending. You don't need to manage it — hooks do.
+- **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until `clear` is called.
+- **Live mermaid graph.** The store writes a live rendering to [metrics/todo-graph.md](../metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
 
 ## Guardrails
 

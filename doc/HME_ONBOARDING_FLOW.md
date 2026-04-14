@@ -134,6 +134,20 @@ Graduation is per-session. The next `SessionStart` re-initializes state to `boot
 
 The onboarding state file lives in `tmp/`, which survives compaction. No special PreCompact/PostCompact handling is required today. If we later need post-compaction re-priming, add a `postcompact.sh` rule that reads `_onb_state` and injects a status reminder into context.
 
+## Native TodoWrite integration (E4)
+
+The walkthrough state mirrors into the HME todo store as a parent todo with one sub per step. When the agent calls native `TodoWrite`, the `pretooluse_todowrite.sh` hook merges the onboarding tree into the agent's native list via `updatedInput`, so the walkthrough appears in the session-visible todo view alongside the agent's own work items.
+
+Flow:
+
+1. `set_state(new_state)` writes the state file AND calls `register_onboarding_tree(steps)` in [tools/HME/mcp/server/tools_analysis/todo.py](../tools/HME/mcp/server/tools_analysis/todo.py)
+2. The todo module rebuilds the parent's sub list, preserving existing sub IDs by matching on step text (no ID churn across transitions)
+3. On the next `TodoWrite` call, [pretooluse_todowrite.sh](../tools/HME/hooks/pretooluse_todowrite.sh) reads the HME store, calls `merge_native_todowrite()`, and returns the merged flat list as `hookSpecificOutput.updatedInput`
+4. Native TodoWrite runs with the merged list — the agent sees the walkthrough as indented sub-items under a parent `[HME onboarding] walkthrough`
+5. On graduation, `clear_onboarding_tree()` removes the parent + all subs
+
+The todo store is the single source of truth for visible work; the onboarding state file remains authoritative for the chain decider's gate logic (fast path, no JSON parsing needed).
+
 ## Failure modes
 
 | Condition | Behavior |

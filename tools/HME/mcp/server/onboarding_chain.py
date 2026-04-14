@@ -60,6 +60,18 @@ STEP_LABELS = {
     "graduated":   "graduated — blocks relax",
 }
 
+# Ordered step list for the todo tree mirror — index matches STATES order
+STEP_SHORT = [
+    "boot check (hme_admin action=selftest)",
+    "pick evolution target (evolve focus=design)",
+    "brief on target (read mode=before)",
+    "edit target module",
+    "audit changes (review mode=forget)",
+    "run pipeline (Bash: npm run main)",
+    "await pipeline verdict",
+    "persist learning (learn title=, content=)",
+]
+
 _PROJECT_ROOT = (
     os.environ.get("PROJECT_ROOT")
     or os.environ.get("CLAUDE_PROJECT_DIR")
@@ -87,7 +99,11 @@ def state() -> str:
 
 
 def set_state(s: str) -> None:
-    """Write new state. Deletes file on 'graduated'. Never raises."""
+    """Write new state. Deletes file on 'graduated'. Never raises.
+
+    Also mirrors the new state into the HME todo tree so the walkthrough is
+    visible in the agent's native todo view (E4 integration).
+    """
     if s not in STATES:
         logger.warning(f"onboarding: rejected invalid state {s!r}")
         return
@@ -98,12 +114,46 @@ def set_state(s: str) -> None:
                     os.remove(f)
                 except FileNotFoundError:
                     pass
+            _mirror_to_todo_tree_graduated()
             return
         os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
         with open(_STATE_FILE, "w") as f:
             f.write(s)
+        _mirror_to_todo_tree(s)
     except Exception as e:
         logger.warning(f"onboarding: state write failed: {e}")
+
+
+def _mirror_to_todo_tree(current_state: str) -> None:
+    """Project the current state onto the HME todo tree as a parent with subs
+    per step. Called on every state transition. Soft-fails if the todo module
+    can't be loaded (e.g., during early server bootstrap)."""
+    try:
+        from server.tools_analysis.todo import register_onboarding_tree
+    except Exception:
+        return
+    cur_idx = step_index(current_state)
+    steps = []
+    for i, short in enumerate(STEP_SHORT):
+        if i < cur_idx:
+            status = "completed"
+        elif i == cur_idx:
+            status = "in_progress"
+        else:
+            status = "pending"
+        steps.append((short, status))
+    try:
+        register_onboarding_tree(steps)
+    except Exception as e:
+        logger.warning(f"onboarding: todo tree mirror failed: {e}")
+
+
+def _mirror_to_todo_tree_graduated() -> None:
+    try:
+        from server.tools_analysis.todo import clear_onboarding_tree
+        clear_onboarding_tree()
+    except Exception:
+        pass
 
 
 def target() -> str:

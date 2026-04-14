@@ -50,6 +50,37 @@ if [ -f "$ERROR_LOG" ]; then
   fi
 fi
 
+# ── HME critical todos — surface unresolved critical items at turn start ────
+# Reads the HME store, filters critical+open items, emits them so the agent
+# cannot miss LIFESAVER alerts, high-priority work, or unresolved trigger notes.
+CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/mcp" python3 <<'PYEOF' 2>/dev/null
+try:
+    from server.tools_analysis.todo import list_critical
+    items = list_critical()
+    if items:
+        print("HME CRITICAL TODOS (unresolved):")
+        for i in items:
+            src = f" [{i['source']}]" if i.get('source') else ""
+            print(f"  !!! #{i['id']} {i['text']}{src}")
+except Exception:
+    pass
+PYEOF
+)
+if [ -n "$CRIT_OUT" ]; then
+  echo "" >&2
+  echo "$CRIT_OUT" >&2
+  echo "" >&2
+fi
+
+# Surface any learn() prompt reminders queued by on_done triggers from previous turns
+LEARN_PROMPTS="$PROJECT/tmp/hme-todo-learn-prompts.log"
+if [ -f "$LEARN_PROMPTS" ] && [ -s "$LEARN_PROMPTS" ]; then
+  echo "HME learn() reminders (from completed on_done triggers):" >&2
+  cat "$LEARN_PROMPTS" >&2
+  echo "" >&2
+  > "$LEARN_PROMPTS"
+fi
+
 # Detect evolution-related prompts and inject Evolver awareness
 if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab|sketch'; then
   echo 'EVOLVER CONTEXT: Remember to use before_editing before modifying files, what_did_i_forget after changes, and add_knowledge after confirmed rounds. Check metrics/journal.md for the latest round context.' >&2
