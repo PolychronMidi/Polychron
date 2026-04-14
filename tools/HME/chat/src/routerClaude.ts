@@ -212,7 +212,9 @@ export function streamClaudePty(
   onChunk: ChunkCallback,
   onSessionId: (id: string) => void,
   onDone: (usage?: TokenUsage) => void,
-  onError: (msg: string) => void
+  onError: (msg: string) => void,
+  onRawData?: (raw: string) => void,
+  onPtyReady?: (writeFn: (data: string) => void) => void
 ): () => void {
   hmeLog(`streamClaudePty called model=${opts.model} effort=${opts.effort}`);
   const args: string[] = ["--model", opts.model, "--effort", opts.effort, "--permission-mode", "bypassPermissions"];
@@ -244,6 +246,8 @@ export function streamClaudePty(
     onError(`PTY spawn failed: ${e?.message ?? e}`);
     return () => {};
   }
+
+  onPtyReady?.((data) => { try { proc.write(data); } catch {} });
 
   let fullOutput = "";
   let sentMessage = false;
@@ -305,6 +309,7 @@ export function streamClaudePty(
   };
 
   proc.onData((raw: string) => {
+    onRawData?.(raw);
     const text = stripAnsi(raw);
 
     if (!sentMessage) {

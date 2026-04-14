@@ -168,7 +168,7 @@ function streamClaudeMsg(ctx, msg, assistantId) {
     cancelFn = (0, router_1.streamClaudePty)(effectiveText, ctx.state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, ctx.projectRoot, onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, onDone, (err) => {
         console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
         cancelFn = (0, router_1.streamClaude)(effectiveText, ctx.state.claudeSessionId, { model: msg.claudeModel, effort: msg.claudeEffort, thinking: msg.claudeThinking, permissionMode: "bypassPermissions" }, ctx.projectRoot, onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, (_cost, usage) => { onDone(usage); }, onError);
-    });
+    }, ctx.mirrorPty ? (raw) => ctx.mirrorPty.onRawData(raw) : undefined, ctx.mirrorPty ? (fn) => ctx.mirrorPty.onPtyReady(fn) : undefined);
 }
 function streamOllamaMsg(ctx, msg, assistantId) {
     const contextMessages = msg._contextPrefix
