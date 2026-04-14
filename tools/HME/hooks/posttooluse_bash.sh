@@ -91,6 +91,11 @@ print('wrote hci=' + str(d['hci']))
   # H11 (revised): rebuild the interactive HTML dashboard alongside pipeline output
   DASHBOARD_SCRIPT="$PROJECT/tools/HME/scripts/build-dashboard.py"
   [ -f "$DASHBOARD_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$DASHBOARD_SCRIPT" > /dev/null 2>&1 &
+  # H-compact optimization #10: eager chain snapshot after every pipeline run.
+  # Pipeline completion is a natural "stable point" — the session has
+  # achieved something concrete. Snapshot for free (no LLM, background).
+  CHAIN_SNAPSHOT_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
+  [ -f "$CHAIN_SNAPSHOT_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$CHAIN_SNAPSHOT_SCRIPT" --eager > /dev/null 2>&1 &
   # H15: emit HCI as a structured composition-layer signal
   EMIT_SIGNAL="$PROJECT/tools/HME/scripts/emit-hci-signal.py"
   [ -f "$EMIT_SIGNAL" ] && PROJECT_ROOT="$PROJECT" python3 "$EMIT_SIGNAL" > /dev/null 2>&1 &

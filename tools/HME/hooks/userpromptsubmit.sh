@@ -17,6 +17,33 @@ fi
 # accumulates within a turn and would never reset without this. The
 # pretooluse_bash hook reads and increments it; this hook resets it.
 rm -f /tmp/polychron-task-poll-count 2>/dev/null
+rm -f /tmp/hme-chain-snapshot-fired 2>/dev/null
+
+# H-compact optimization #6: user-correction capture channel.
+# The user's corrections carry the deepest signal in a session. Grep the
+# prompt for correction phrases and persist to hme-user-corrections.jsonl so
+# chain-snapshot can preserve them verbatim across compaction.
+_CORRECTION_FILE="${PROJECT}/tmp/hme-user-corrections.jsonl"
+if [ -n "$PROMPT" ]; then
+  _IS_CORRECTION=0
+  # Case-insensitive grep for correction language
+  if echo "$PROMPT" | grep -qiE '\b(actually|instead|don.?t|no,|not quite|reverse|revert|rollback|wrong|incorrect|fix this|that.?s wrong|stop|cancel|undo)\b'; then
+    _IS_CORRECTION=1
+  fi
+  if [ "$_IS_CORRECTION" -eq 1 ]; then
+    mkdir -p "$(dirname "$_CORRECTION_FILE")"
+    python3 -c "
+import json, sys, time
+entry = {
+    'ts': int(time.time()),
+    'ts_human': time.strftime('%Y-%m-%d %H:%M:%S'),
+    'prompt_preview': sys.argv[1][:500],
+}
+with open('$_CORRECTION_FILE', 'a') as f:
+    f.write(json.dumps(entry) + '\n')
+" "$PROMPT" 2>/dev/null || true
+  fi
+fi
 
 # ── LIFESAVER — HME Error Log Monitor ───────────────────────────────────────
 # LIFE-OR-DEATH: The HME Chat panel writes errors to log/hme-errors.log.

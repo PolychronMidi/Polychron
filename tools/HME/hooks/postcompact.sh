@@ -77,4 +77,70 @@ fi
 
 echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
+# H-compact optimization #11 + #7: hydrate the new window from the latest
+# chain link. This is the REAL purpose of the chain system — the new
+# conversation wakes up with structured session state from the link, not
+# from scratch. Dumps the link YAML to stderr so Claude sees it as part
+# of post-compaction context.
+LATEST_LINK="$PROJECT/metrics/chain-history/latest.yaml"
+if [ -f "$LATEST_LINK" ]; then
+  echo "" >&2
+  echo "━━━ CHAIN LINK HYDRATION (PostCompact) ━━━" >&2
+  echo "  Loading state from: $(readlink -f "$LATEST_LINK")" >&2
+  python3 <<'PYEOF' 2>/dev/null >&2
+import json, os
+link_path = "$LATEST_LINK"
+import os
+project = os.environ.get("CLAUDE_PROJECT_DIR", "/home/jah/Polychron")
+latest = os.path.join(project, "metrics", "chain-history", "latest.yaml")
+try:
+    with open(latest) as f:
+        data = json.load(f)
+except Exception as e:
+    print(f"[chain hydrate failed: {e}]")
+    raise SystemExit(0)
+
+# Surface the highest-signal sections:
+# 1. User corrections (most fragile, most valuable)
+corrections = data.get("user_corrections", [])
+if corrections:
+    print(f"  User corrections ({len(corrections)} this session):")
+    for c in corrections[-5:]:
+        print(f"    [{c.get('ts_human', '?')}] {c.get('prompt_preview', '')[:120]}")
+
+# 2. Decision rationale (local-LLM distillation)
+rationale = data.get("decision_rationale", "")
+if rationale and "[local LLM unavailable" not in rationale:
+    print(f"  Decision rationale: {rationale[:400]}")
+
+# 3. HCI delta
+hci = data.get("hci", {})
+if hci:
+    print(f"  HCI at snapshot: {hci.get('hci', '?')} | "
+          f"fail_verifiers: {hci.get('fail_verifiers', [])[:3]} | "
+          f"warn: {hci.get('warn_verifiers', [])[:3]}")
+
+# 4. Git delta
+gd = data.get("git_delta", {})
+if gd:
+    print(f"  Git delta: {len(gd.get('commits', []))} commits, "
+          f"{len(gd.get('files_touched', []))} files touched")
+
+# 5. Nexus pending
+pend = data.get("nexus_pending", [])
+if pend:
+    print(f"  Nexus pending ({len(pend)} items):")
+    for p in pend[:3]:
+        print(f"    {p[:100]}")
+
+# 6. Onboarding state
+onb = data.get("onboarding", {})
+if onb and onb.get("state") != "graduated":
+    print(f"  Onboarding: state={onb.get('state')} target={onb.get('target', '')}")
+
+print("  (full link readable at metrics/chain-history/latest.yaml)")
+PYEOF
+  echo "━━━ END CHAIN LINK HYDRATION ━━━" >&2
+fi
+
 exit 0
