@@ -432,26 +432,63 @@ def _execute_tool(call: dict) -> str | None:
 
 
 def _extract_search_terms(prompt: str) -> list[str]:
-    """Extract key search terms from the research prompt."""
-    # Remove common words and extract meaningful terms
-    stop = {"the", "a", "an", "in", "of", "to", "for", "is", "are", "how", "does",
-            "what", "where", "when", "which", "this", "that", "from", "with", "all",
-            "key", "list", "find", "show", "get", "codebase", "polychron", "files",
-            "functions", "involved", "happen", "happens", "code", "project"}
-    words = re.findall(r'[a-zA-Z_][a-zA-Z0-9_]*', prompt)
-    terms = []
-    for w in words:
-        if w.lower() not in stop and len(w) > 2:
-            terms.append(w)
+    """Extract key search terms from the research prompt.
+
+    Aggressive stopword list eliminates conversational scaffolding so only
+    meaningful identifiers, keywords, and domain terms survive as search
+    targets. Prioritizes: snake_case / camelCase identifiers > PascalCase
+    > plain words. Identifiers are strong signals; words are noise.
+    """
+    stop = {
+        # Articles / prepositions
+        "the", "a", "an", "in", "of", "to", "for", "from", "with", "on", "at",
+        "by", "into", "onto", "via", "as", "this", "that", "these", "those",
+        "and", "or", "but", "nor", "if", "then", "else", "than",
+        # Question words
+        "how", "what", "where", "when", "which", "who", "whom", "why",
+        "does", "do", "did", "is", "are", "was", "were", "be", "been", "being",
+        "have", "has", "had", "can", "could", "should", "would", "will", "may",
+        # Imperatives / conversational fillers
+        "list", "find", "show", "get", "tell", "give", "provide", "explain",
+        "describe", "detail", "identify", "locate", "search", "look", "check",
+        "count", "verify", "confirm", "plan", "design", "implement",
+        # Meta / project-wide
+        "codebase", "polychron", "project", "code", "file", "files", "function",
+        "functions", "module", "modules", "system", "systems", "all", "every",
+        "any", "some", "many", "most",
+        # Domain conversational
+        "actively", "used", "using", "uses", "source", "sources", "reference",
+        "references", "consumer", "consumers", "defined", "implementation",
+        "implementations", "purpose", "role", "happen", "happens", "happened",
+        "involved", "key", "says", "said", "mentions", "mentioned", "claim",
+        "claims", "state", "states", "stated",
+        # Pronouns / adverbs / connectors
+        "it", "its", "they", "them", "their", "we", "us", "our", "you", "your",
+        "he", "she", "his", "her", "him", "me", "my", "mine",
+        "also", "only", "just", "even", "still", "well", "here", "there",
+        "much", "more", "less", "very", "such", "each", "other", "another",
+    }
+    # First pass: preserve identifiers (snake_case, camelCase, has _ or mixed case)
+    identifiers = []
+    plain_words = []
+    for w in re.findall(r'[a-zA-Z_][a-zA-Z0-9_]*', prompt):
+        if w.lower() in stop or len(w) <= 2:
+            continue
+        if "_" in w or re.search(r'[a-z][A-Z]|[A-Z][a-z]', w):
+            identifiers.append(w)
+        else:
+            plain_words.append(w)
+    # Identifiers first, then plain words (prioritizes real symbols)
+    combined = identifiers + plain_words
     # Deduplicate preserving order
     seen = set()
     unique = []
-    for t in terms:
+    for t in combined:
         low = t.lower()
         if low not in seen:
             seen.add(low)
             unique.append(t)
-    return unique[:6]
+    return unique[:8]  # cap 8 instead of 6 — more signal when arbiter skipped
 
 
 def _pre_research(prompt: str) -> tuple[str, list[str]]:
@@ -516,33 +553,119 @@ def _pre_research(prompt: str) -> tuple[str, list[str]]:
     return "\n\n".join(sections), tools_used
 
 
-def run_agent(prompt: str, project_root: str = None) -> dict:
-    """Two-stage local research: arbiter plans, tools execute, reasoner synthesizes."""
+_MODE_CONFIGS = {
+    # explore: code research (existing behavior, default)
+    "explore": {
+        "system": (
+            "You are a code research expert. Synthesize the search results into a comprehensive answer. "
+            "Critical rule: GREP RESULTS ARE GROUND TRUTH. Knowledge Base entries are metadata and may be "
+            "incomplete — never say 'no info' just because the KB is silent if there are grep results. "
+            "Always cite exact file paths and line numbers from grep matches. Count matches when asked."
+        ),
+        "synth_suffix": (
+            "INSTRUCTIONS:\n"
+            "- Answer the question using the search results above.\n"
+            "- 'Grep Results' are LITERAL file:line:content — ground truth.\n"
+            "- 'Knowledge Base' entries are metadata, may be incomplete. KB silence means 'unknown', NOT 'absent'.\n"
+            "- Cite every relevant file, line number, and function. Count matches when asked.\n"
+        ),
+        "max_files": 6,
+        "file_lines": 80,
+        # Fast mode: skip arbiter (10-30s saved) and use keyword extraction
+        # + directory inference as the planning substitute. Arbiter JSON
+        # planning is mostly redundant with the improved _extract_search_terms
+        # + _infer_directories and the CPU 4b model is slow.
+        "skip_arbiter": True,
+    },
+    # plan: architecture-level implementation planner
+    "plan": {
+        "system": (
+            "You are a software architect creating implementation plans. Produce a STEP-BY-STEP plan with: "
+            "(1) numbered implementation steps in execution order, "
+            "(2) critical files that will be touched (exact paths from grep results), "
+            "(3) architectural tradeoffs and risks, "
+            "(4) verification criteria (how will we know this worked). "
+            "Do NOT write code. Propose the plan; the human will implement. "
+            "GREP RESULTS are ground truth — every file path you mention must come from the search results."
+        ),
+        "synth_suffix": (
+            "INSTRUCTIONS — PLANNING MODE:\n"
+            "Produce a structured implementation plan:\n"
+            "## Summary\n"
+            "1-3 sentences describing the proposed change\n\n"
+            "## Critical files (quote exact paths from grep results)\n"
+            "Bulleted list with file:line where each change lands\n\n"
+            "## Implementation steps\n"
+            "Numbered steps in execution order. Each step: what + where + why\n\n"
+            "## Architectural tradeoffs\n"
+            "What this approach costs. What alternatives were considered. Why this one.\n\n"
+            "## Risks\n"
+            "What could go wrong. How to detect it.\n\n"
+            "## Verification\n"
+            "How we know it worked. Specific tests/checks.\n"
+        ),
+        "max_files": 12,       # read more files for planning
+        "file_lines": 150,     # deeper reads
+    },
+}
+
+
+def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> dict:
+    """Local research subagent. Modes:
+        explore (default): code research, read-only, matches Explore subagent
+        plan: architecture-level planner, matches Plan subagent
+    """
     global PROJECT_ROOT
     if project_root:
         PROJECT_ROOT = project_root
+    mode_cfg = _MODE_CONFIGS.get(mode, _MODE_CONFIGS["explore"])
+
+    # Guard: trivially short/empty prompts cannot produce useful research.
+    # Early-exit so we don't waste 120s on an arbiter call that can't succeed.
+    stripped = (prompt or "").strip()
+    if len(stripped) < 3 or len(stripped.split()) < 2:
+        return {
+            "answer": (
+                "[agent declined: prompt too short to research]\n\n"
+                f"Received: {stripped!r}\n\n"
+                "Provide a question with at least 2 words so the research planner "
+                "can extract search terms."
+            ),
+            "iterations": 0,
+            "tools_used": ["guard(short_prompt)"],
+            "elapsed_s": 0.0,
+            "model": "guard",
+            "mode": mode,
+        }
 
     t0 = time.time()
     tools_used = []
     arbiter_plan = None
 
     # ── Stage 1: Arbiter plans the research strategy ──
-    # Fast (4b CPU, ~2-5s): extracts search terms, grep patterns, file globs
-    try:
-        arbiter_plan = _call_arbiter(
-            prompt,
-            system=("You are a research planner. Given a question about a JavaScript/Python codebase, "
-                    "output a JSON research plan. Format:\n"
-                    '{"terms": ["term1", "term2"], '
-                    '"grep_patterns": ["pattern1"], '
-                    '"glob_patterns": ["src/**/*pattern*"], '
-                    '"directories": ["src/crossLayer/", "src/conductor/"]}\n'
-                    "Output ONLY valid JSON, nothing else."),
-            max_tokens=512,
-        )
-        tools_used.append("ARBITER(plan)")
-    except Exception as e:
-        logger.warning(f"Arbiter failed ({e}), falling back to keyword extraction")
+    # The CPU 4b model takes 10-60s on amateur hardware. For most queries,
+    # _extract_search_terms + _infer_directories produces an equivalent plan
+    # in 0ms. The arbiter is only genuinely useful for Plan mode where
+    # architectural disambiguation matters. Skip it when the mode says so.
+    skip_arbiter = mode_cfg.get("skip_arbiter", False)
+    if not skip_arbiter:
+        try:
+            arbiter_plan = _call_arbiter(
+                prompt,
+                system=("You are a research planner. Given a question about a JavaScript/Python codebase, "
+                        "output a JSON research plan. Format:\n"
+                        '{"terms": ["term1", "term2"], '
+                        '"grep_patterns": ["pattern1"], '
+                        '"glob_patterns": ["src/**/*pattern*"], '
+                        '"directories": ["src/crossLayer/", "src/conductor/"]}\n'
+                        "Output ONLY valid JSON, nothing else."),
+                max_tokens=512,
+            )
+            tools_used.append("ARBITER(plan)")
+        except Exception as e:
+            logger.warning(f"Arbiter failed ({e}), falling back to keyword extraction")
+    else:
+        tools_used.append("ARBITER(skipped:fast_path)")
 
     # Parse arbiter's plan or fall back to keyword extraction
     search_terms = []
@@ -636,7 +759,9 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
                 sections.append(f"=== Files matching '*{term}*' ===\n{result}")
                 tools_used.append(f"GLOB(*{term}*)")
 
-    # Read key files found in grep (first 80 lines of top matches)
+    # Read key files found in grep. Budget varies by mode: explore=6×80, plan=12×150.
+    _max_files = mode_cfg.get("max_files", 6)
+    _file_lines = mode_cfg.get("file_lines", 80)
     files_seen = set()
     files_to_read = []
     for result in grep_results.values():
@@ -644,14 +769,14 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
             match = re.match(r'^([^:]+\.[a-z]+):\d+:', line)
             if match:
                 fpath = match.group(1)
-                if fpath not in files_seen and len(files_to_read) < 6:
+                if fpath not in files_seen and len(files_to_read) < _max_files:
                     files_seen.add(fpath)
                     files_to_read.append(fpath)
 
     for fpath in files_to_read:
-        read_result = _exec_read(fpath, 1, 80)
+        read_result = _exec_read(fpath, 1, _file_lines)
         if not read_result.startswith("ERROR"):
-            sections.append(f"=== {fpath} (lines 1-80) ===\n{read_result}")
+            sections.append(f"=== {fpath} (lines 1-{_file_lines}) ===\n{read_result}")
             tools_used.append(f"READ({fpath})")
 
     research_context = "\n\n".join(sections)
@@ -665,30 +790,19 @@ def run_agent(prompt: str, project_root: str = None) -> dict:
             "model": f"{_ARBITER_MODEL} + {_REASONER_MODEL}",
         }
 
-    # ── Stage 3: Synthesize (routed: coder for code queries, reasoner for architecture) ──
+    # ── Stage 3: Synthesize. System prompt + instructions vary by mode.
     synth_prompt = f"""{research_context}
 
 ---
 Question: {prompt}
 
-INSTRUCTIONS:
-- Answer the question using the search results above.
-- The "Grep Results" section contains LITERAL file:line:content matches from the actual codebase. These are GROUND TRUTH.
-- The "Knowledge Base" section is descriptive metadata that may be incomplete. Treat KB silence as "unknown", NOT as "absent". KB silence does NOT mean a file doesn't exist.
-- If grep results show file paths matching the question, USE THEM in your answer — list every match.
-- If you say something doesn't exist, you must FIRST verify there are zero grep matches for it. Don't conflate "KB has no entry" with "file doesn't exist".
-- Be specific: name every relevant file, line number, and function. Count matches when asked."""
+{mode_cfg["synth_suffix"]}"""
 
     try:
         answer, model_label = _call_synthesizer(
             synth_prompt,
-            system=(
-                "You are a code research expert. Synthesize the search results into a comprehensive answer. "
-                "Critical rule: GREP RESULTS ARE GROUND TRUTH. Knowledge Base entries are metadata and may be "
-                "incomplete — never say 'no info' just because the KB is silent if there are grep results. "
-                "Always cite exact file paths and line numbers from grep matches. Count matches when asked."
-            ),
-            max_tokens=4096,
+            system=mode_cfg["system"],
+            max_tokens=4096 if mode == "explore" else 6144,  # plans need more tokens
             query_prompt=prompt,
         )
         tools_used.append(f"{model_label.upper()}(synthesize)")
@@ -758,24 +872,31 @@ def main():
     parser.add_argument("--stdin", action="store_true", help="Read JSON from stdin")
     parser.add_argument("--project", default=PROJECT_ROOT, help="Project root")
     parser.add_argument("--json", action="store_true", help="Output JSON")
+    parser.add_argument(
+        "--mode", default="explore", choices=list(_MODE_CONFIGS.keys()),
+        help="Subagent mode: explore (code research), plan (architecture plan)",
+    )
     args = parser.parse_args()
 
     if args.stdin:
         data = json.load(sys.stdin)
         prompt = data.get("prompt", "")
+        mode = data.get("mode", args.mode)
     elif args.prompt:
         prompt = args.prompt
+        mode = args.mode
     else:
         parser.error("--prompt or --stdin required")
         return
 
-    result = run_agent(prompt, project_root=args.project)
+    result = run_agent(prompt, project_root=args.project, mode=mode)
+    result["mode"] = mode
 
     if args.json:
         print(json.dumps(result))
     else:
         print(result["answer"])
-        print(f"\n---\n[{result['model']} | {result['iterations']} iterations | "
+        print(f"\n---\n[mode={mode} | {result['model']} | {result['iterations']} iterations | "
               f"{len(result['tools_used'])} tools | {result['elapsed_s']}s]")
 
 
