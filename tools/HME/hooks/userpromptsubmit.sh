@@ -13,6 +13,11 @@ if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null || true
 fi
 
+# Reset the psychopathic-polling counter at turn start — the counter
+# accumulates within a turn and would never reset without this. The
+# pretooluse_bash hook reads and increments it; this hook resets it.
+rm -f /tmp/polychron-task-poll-count 2>/dev/null
+
 # ── LIFESAVER — HME Error Log Monitor ───────────────────────────────────────
 # LIFE-OR-DEATH: The HME Chat panel writes errors to log/hme-errors.log.
 # THIS is the ONLY mechanism that makes those errors visible to this agent.
