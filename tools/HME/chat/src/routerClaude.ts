@@ -153,9 +153,16 @@ function handleStreamEvent(
   }
 
   if (evt.type === "result") {
+    const inputTokens: number | undefined = evt.input_tokens;
+    const outputTokens: number | undefined = evt.output_tokens;
     const usage: TokenUsage | undefined =
-      (evt.input_tokens != null && evt.output_tokens != null)
-        ? { inputTokens: evt.input_tokens, outputTokens: evt.output_tokens }
+      (inputTokens != null && outputTokens != null)
+        ? {
+            inputTokens,
+            outputTokens,
+            // All current Claude models have a 200k context window.
+            usedPct: Math.round((inputTokens / 200000) * 1000) / 10,
+          }
         : undefined;
     onDone(evt.cost_usd ?? undefined, usage);
     return;
@@ -290,9 +297,12 @@ export function streamClaudePty(
   const finalizeTurn = () => {
     if (!turnDone) {
       turnDone = true;
-      const ctxParsed = parseContextOutput(contextQueryBuf);
-      hmeLog(`ctx: buf=${JSON.stringify(contextQueryBuf.slice(0, 300))}`);
-      hmeLog(`ctx: parsed=${JSON.stringify(ctxParsed)}`);
+      // Try contextQueryBuf first (from /context command), then fall back to
+      // parsing fullOutput directly — Claude CLI may emit token info in its footer.
+      const ctxParsed = parseContextOutput(contextQueryBuf) ?? parseContextOutput(fullOutput);
+      hmeLog(`finalize: ctxBuf=${JSON.stringify(contextQueryBuf.slice(0, 200))}`);
+      hmeLog(`finalize: ctxParsed=${JSON.stringify(ctxParsed)}`);
+      hmeLog(`finalize: fullTail=${JSON.stringify(fullOutput.slice(-400))}`);
       onDone(ctxParsed ?? _buildPtyUsage());
       try { proc.kill(); } catch {}
     }
@@ -314,11 +324,13 @@ export function streamClaudePty(
 
     if (!sentMessage) {
       initBuf += text;
+      // Wait for the prompt character at the very end of the buffer — never trigger
+      // on │ (box-drawing borders in the startup banner) which causes the remainder
+      // of the banner, including "bypassPermissions" notices, to leak into chat.
       const ready =
-        initBuf.includes("> ") ||
-        initBuf.includes("│") ||
+        />\s*$/.test(initBuf.slice(-20)) ||
         initBuf.includes("Human:") ||
-        initBuf.length > 200;
+        initBuf.length > 2000;
       if (ready) {
         sentMessage = true;
         proc.write(message.replace(/\r?\n/g, " ") + "\r");
