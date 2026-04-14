@@ -245,7 +245,12 @@ class ChatPanel {
         const timer = setInterval(() => {
             if (dirty) {
                 dirty = false;
-                this._persistState();
+                try {
+                    this._persistState();
+                }
+                catch (e) {
+                    this._postError("persist", `interval: ${e?.message ?? e}`);
+                }
             }
         }, ChatPanel.STREAM_PERSIST_MS);
         return {
@@ -260,7 +265,12 @@ class ChatPanel {
             finalize: (final) => {
                 clearInterval(timer);
                 this._state.messages[idx] = final;
-                this._persistState();
+                try {
+                    this._persistState();
+                }
+                catch (e) {
+                    this._postError("persist", `finalize: ${e?.message ?? e}`);
+                }
             },
         };
     }
@@ -490,6 +500,14 @@ class ChatPanel {
         if (!this._state.sessionEntry || this._chainingInProgress)
             return;
         this._chainingInProgress = true;
+        try {
+            await this._performChainInner(msg);
+        }
+        finally {
+            this._chainingInProgress = false;
+        }
+    }
+    async _performChainInner(msg) {
         const sessionId = this._state.sessionEntry.id;
         const linkIndex = this._state.chainIndex;
         this._post({ type: "notice", level: "info", text: `Context chain: saving link ${linkIndex + 1} and generating summary...` });
@@ -540,7 +558,6 @@ class ChatPanel {
         this._post({ type: "chainCompleted", linkIndex, chainIndex: this._state.chainIndex });
         this._post({ type: "notice", level: "info", text: `Context chain: link ${linkIndex + 1} saved. Fresh context resumed.` });
         this._postContextUpdate();
-        this._chainingInProgress = false;
     }
     // ── Error handling ─────────────────────────────────────────────────────────
     _postError(source, message) {

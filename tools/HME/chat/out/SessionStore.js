@@ -169,7 +169,9 @@ function listChainLinks(projectRoot, sessionId) {
             .filter((n) => !isNaN(n))
             .sort((a, b) => a - b);
     }
-    catch {
+    catch (e) {
+        if (e?.code !== "ENOENT")
+            console.error(`[SessionStore] listChainLinks failed for ${sessionId}: ${e?.message ?? e}`);
         return [];
     }
 }
