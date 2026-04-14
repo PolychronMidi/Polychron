@@ -41,7 +41,11 @@ CRITICAL: never invent file paths, function names, or module names. \
 If a name does not appear in VERIFIED FACTS, do not use it.\
 """
 
-_API_KEY = os.environ.get("GROQ_API_KEY", "")
+def _api_key() -> str:
+    """Read env on every call so keys added mid-session take effect as soon as
+    .env is re-parsed by synthesis_reasoning._refresh_env."""
+    return os.environ.get("GROQ_API_KEY", "")
+
 _BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
 _TIMEOUT = 60
 
@@ -175,7 +179,7 @@ def _call_model(model: str, prompt: str, system: str,
         _BASE_URL, data=json.dumps(body).encode(),
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {_API_KEY}",
+            "Authorization": f"Bearer {_api_key()}",
             "User-Agent": "HME-Polychron/1.0",
         }, method="POST",
     )
@@ -197,14 +201,14 @@ def _call_model(model: str, prompt: str, system: str,
 
 
 def available() -> bool:
-    if not _API_KEY:
+    if not _api_key():
         return False
     return any(_quota_ok(t) and _cb_allow(t) for t in _TIERS)
 
 
 def call(prompt: str, system: str = "", max_tokens: int = 2048,
          temperature: float = 0.3) -> str | None:
-    if not _API_KEY:
+    if not _api_key():
         return None
 
     for tier in _TIERS:

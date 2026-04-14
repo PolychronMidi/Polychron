@@ -40,7 +40,8 @@ CRITICAL: never invent file paths, function names, or module names. \
 If a name does not appear in VERIFIED FACTS, do not use it.\
 """
 
-_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+def _api_key() -> str:
+    return os.environ.get("OPENROUTER_API_KEY", "")
 _BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 _TIMEOUT = 90  # OpenRouter can be slower via upstream hops
 
@@ -161,7 +162,7 @@ def _call_model(model: str, prompt: str, system: str,
         _BASE_URL, data=json.dumps(body).encode(),
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {_API_KEY}",
+            "Authorization": f"Bearer {_api_key()}",
             "User-Agent": "HME-Polychron/1.0",
             "HTTP-Referer": "https://github.com/anthropics/claude-code",
             "X-Title": "HME Polychron",
@@ -185,7 +186,7 @@ def _call_model(model: str, prompt: str, system: str,
 
 
 def available() -> bool:
-    if not _API_KEY:
+    if not _api_key():
         return False
     if not _quota_ok():
         return False
@@ -200,7 +201,7 @@ def _mark_exhausted() -> None:
 
 def call(prompt: str, system: str = "", max_tokens: int = 2048,
          temperature: float = 0.3) -> str | None:
-    if not _API_KEY:
+    if not _api_key():
         return None
     if not _quota_ok():
         logger.info("OpenRouter skipped: RPD hit")

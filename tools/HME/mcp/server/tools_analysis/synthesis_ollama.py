@@ -585,47 +585,26 @@ def _local_chat(messages: list[dict], model: str | None = None,
 
 def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
                      temperature: float = 0.2, **kwargs) -> str | None:
-    """Reasoning tier with automatic free-provider cascade.
+    """Reasoning tier — global quality-ranked cascade across all free providers.
 
     Drop-in replacement for _local_think(..., model=_REASONING_MODEL).
 
-    Cascade (best-first), each provider rotates through its own internal tiers:
-      1. Gemini      — 3-flash-preview → flash-latest → 2.5-flash → 2.0-flash → 2.5-flash-lite
-      2. Groq        — deepseek-r1-distill-llama-70b → llama-3.3-70b-versatile
-      3. OpenRouter  — deepseek-r1:free → llama-3.3-70b:free
-      4. Local       — qwen3:30b-a3b (final fallback)
-
-    Each provider gracefully drops out when its quota/RPM/circuit is exhausted.
+    Delegates to synthesis_reasoning.call() which walks a single absolute ranking
+    of (provider, model) pairs — strongest first — regardless of provider. Each
+    slot checks its own quota/RPM/circuit. Falls back to local qwen3:30b-a3b
+    when every ranked slot is exhausted. See synthesis_reasoning.py for the
+    ordered list.
     """
     from .synthesis_config import _THINK_SYSTEM
     _sys = system or _THINK_SYSTEM
 
     try:
-        from .synthesis_gemini import call as _gemini_call, available as _gemini_available
-        if _gemini_available():
-            result = _gemini_call(prompt, system=_sys, max_tokens=max_tokens, temperature=temperature)
-            if result:
-                return result
+        from .synthesis_reasoning import call as _ranked_call
+        result = _ranked_call(prompt, system=_sys, max_tokens=max_tokens, temperature=temperature)
+        if result:
+            return result
     except Exception as e:
-        logger.warning(f"_reasoning_think Gemini stage error: {type(e).__name__}: {e}")
-
-    try:
-        from .synthesis_groq import call as _groq_call, available as _groq_available
-        if _groq_available():
-            result = _groq_call(prompt, system=_sys, max_tokens=max_tokens, temperature=temperature)
-            if result:
-                return result
-    except Exception as e:
-        logger.warning(f"_reasoning_think Groq stage error: {type(e).__name__}: {e}")
-
-    try:
-        from .synthesis_openrouter import call as _or_call, available as _or_available
-        if _or_available():
-            result = _or_call(prompt, system=_sys, max_tokens=max_tokens, temperature=temperature)
-            if result:
-                return result
-    except Exception as e:
-        logger.warning(f"_reasoning_think OpenRouter stage error: {type(e).__name__}: {e}")
+        logger.warning(f"_reasoning_think dispatcher error: {type(e).__name__}: {e}")
 
     return _local_think(prompt, max_tokens=max_tokens, model=_REASONING_MODEL,
                         system=_sys, temperature=temperature, **kwargs)

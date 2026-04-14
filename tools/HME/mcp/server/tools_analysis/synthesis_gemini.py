@@ -43,7 +43,8 @@ CRITICAL: never invent file paths, function names, or module names. \
 If a name does not appear in VERIFIED FACTS, do not use it.\
 """
 
-_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+def _api_key() -> str:
+    return os.environ.get("GEMINI_API_KEY", "")
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _TIMEOUT = 60  # seconds
 
@@ -177,7 +178,7 @@ def _call_model(model: str, prompt: str, system: str,
             "thinkingConfig": {"thinkingBudget": 0},
         },
     }
-    url = f"{_BASE_URL}/{model}:generateContent?key={_API_KEY}"
+    url = f"{_BASE_URL}/{model}:generateContent?key={_api_key()}"
     req = urllib.request.Request(
         url, data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"}, method="POST",
@@ -203,7 +204,7 @@ def _call_model(model: str, prompt: str, system: str,
 
 def available() -> bool:
     """True if any Gemini tier has quota and an open circuit."""
-    if not _API_KEY:
+    if not _api_key():
         return False
     return any(_quota_ok(t) and _cb_allow(t) for t in _TIERS)
 
@@ -214,7 +215,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     Try tiers in order. Returns None when every tier exhausted —
     caller falls back to next provider or local.
     """
-    if not _API_KEY:
+    if not _api_key():
         return None
 
     for tier in _TIERS:
