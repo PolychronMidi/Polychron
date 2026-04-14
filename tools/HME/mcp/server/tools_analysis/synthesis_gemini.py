@@ -22,6 +22,24 @@ from collections import deque
 
 logger = logging.getLogger("HME.gemini")
 
+# Grounding header prepended to every system prompt.
+# Purpose: prevent cold-start hallucination (inventing .cpp/.py files, wrong architecture).
+# HME is named explicitly because it's the analytical lens — Gemini needs to know
+# it's operating as part of HME, not as a generic code assistant.
+# VERIFIED FACTS contract is the most important line: cascade stage 2 already extracted
+# real paths/names from source; Gemini must trust those and not override them.
+_GROUNDING_HEADER = """\
+You are operating as the HME (Hybrid Model Engine) synthesis tier for the Polychron project.
+Polychron is a JavaScript algorithmic composition system: all source files are .js IIFEs \
+under src/, organized as globals (no imports/exports). Subsystems load in order: \
+utils → conductor → rhythm → time → composers → fx → crossLayer → writer → play.
+HME is the evolutionary nervous system: a 6-tool MCP server that enriches queries with \
+KB constraints, source code, and caller graphs before synthesis. You receive pre-extracted \
+VERIFIED FACTS from real source files — treat them as ground truth.
+CRITICAL: never invent file paths, function names, or module names. \
+If a name does not appear in VERIFIED FACTS, do not use it.\
+"""
+
 _API_KEY = os.environ.get("GEMINI_API_KEY", "")
 _MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -149,15 +167,20 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     url = f"{_BASE_URL}/{_MODEL}:generateContent?key={_API_KEY}"
 
     contents = [{"role": "user", "parts": [{"text": prompt}]}]
+    # Always prepend grounding header so Gemini knows it's operating inside HME
+    # and must trust VERIFIED FACTS rather than hallucinating from training data.
+    full_system = _GROUNDING_HEADER + ("\n\n" + system if system else "")
     body: dict = {
         "contents": contents,
         "generationConfig": {
             "maxOutputTokens": max_tokens,
             "temperature": temperature,
+            # Disable thinking for synthesis calls: verified facts are pre-extracted,
+            # thinking overhead wastes tokens and truncates output at token budgets.
+            "thinkingConfig": {"thinkingBudget": 0},
         },
+        "systemInstruction": {"parts": [{"text": full_system}]},
     }
-    if system:
-        body["systemInstruction"] = {"parts": [{"text": system}]}
 
     payload = json.dumps(body).encode()
     req = urllib.request.Request(
