@@ -167,49 +167,47 @@ def status(mode: str = "all") -> str:
     except Exception:
         pass
 
-    # Free reasoning-tier cascade: Gemini → Groq → OpenRouter → local
+    # Reasoning tier cascade — global quality ranking across all providers
     try:
-        lines = ["## Reasoning Tier Cascade"]
+        lines = ["## Reasoning Cascade (absolute quality order)"]
+        from .synthesis_reasoning import get_status as _rank_status
+        ranking = _rank_status()
         any_up = False
+        for entry in ranking:
+            mark = "OK " if entry["available"] else "HIT"
+            if entry["available"]:
+                any_up = True
+            lines.append(f"  #{entry['rank']:2d} {mark} [{entry['provider']:10s}] {entry['model']}")
 
+        # Per-provider quota summary
+        lines.append("")
+        lines.append("  Provider quotas:")
         try:
-            from .synthesis_gemini import get_quota_status as _gem_status
-            gq = _gem_status()
-            lines.append("  Gemini:")
-            for t in gq["tiers"]:
-                mark = "OK" if t["available"] else "HIT"
-                lines.append(f"    {t['label']} {mark} {t['tokens_used']:,}/{t['daily_limit']:,} ({t['pct_used']}%) {t['model']}")
-            any_up = any_up or gq["any_available"]
-        except Exception as e:
-            lines.append(f"  Gemini: error ({e})")
-
+            from .synthesis_gemini import get_quota_status as _gs
+            g = _gs()
+            used = sum(t["tokens_used"] for t in g["tiers"])
+            total = sum(t["daily_limit"] for t in g["tiers"])
+            lines.append(f"    gemini:     {used:,}/{total:,} tok today across {len(g['tiers'])} tiers")
+        except Exception: pass
         try:
-            from .synthesis_groq import get_quota_status as _grq_status
-            gr = _grq_status()
-            lines.append("  Groq:")
-            for t in gr["tiers"]:
-                mark = "OK" if t["available"] else "HIT"
-                lines.append(f"    {t['label']} {mark} {t['requests_today']}/{t['rpd_limit']} ({t['pct_used']}%) {t['model']}")
-            any_up = any_up or gr["any_available"]
-        except Exception as e:
-            lines.append(f"  Groq: error ({e})")
-
+            from .synthesis_groq import get_quota_status as _grs
+            gr = _grs()
+            used = sum(t["requests_today"] for t in gr["tiers"])
+            total = sum(t["rpd_limit"] for t in gr["tiers"])
+            lines.append(f"    groq:       {used}/{total} req today across {len(gr['tiers'])} tiers")
+        except Exception: pass
         try:
-            from .synthesis_openrouter import get_quota_status as _or_status
-            orq = _or_status()
-            lines.append(f"  OpenRouter: {orq['requests_today']}/{orq['rpd_limit']} ({orq['pct_used']}%) shared")
-            for t in orq["tiers"]:
-                mark = "OK" if t["available"] else "HIT"
-                lines.append(f"    {t['label']} {mark} {t['model']}")
-            any_up = any_up or orq["any_available"]
-        except Exception as e:
-            lines.append(f"  OpenRouter: error ({e})")
+            from .synthesis_openrouter import get_quota_status as _ors
+            o = _ors()
+            lines.append(f"    openrouter: {o['requests_today']}/{o['rpd_limit']} req today (shared)")
+        except Exception: pass
 
         if not any_up:
+            lines.append("")
             lines.append("  → Fallback: local qwen3:30b-a3b")
         parts.append("\n".join(lines))
-    except Exception:
-        pass
+    except Exception as e:
+        parts.append(f"## Reasoning Cascade\n  error: {e}")
 
     return _budget_gate("\n\n".join(parts), budget=BUDGET_COMPOUND)
 
