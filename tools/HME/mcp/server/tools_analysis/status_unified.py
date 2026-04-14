@@ -167,14 +167,47 @@ def status(mode: str = "all") -> str:
     except Exception:
         pass
 
-    # Gemini T3 quota status
+    # Free reasoning-tier cascade: Gemini → Groq → OpenRouter → local
     try:
-        from .synthesis_gemini import get_quota_status
-        gq = get_quota_status()
-        t1 = f"{'OK' if gq['t1_available'] else 'QUOTA HIT'} {gq['t1_tokens_used']:,}/{gq['t1_daily_limit']:,} ({gq['t1_pct_used']}%) {gq['t1_model']}"
-        t2 = f"{'OK' if gq['t2_available'] else 'QUOTA HIT'} {gq['t2_tokens_used']:,}/{gq['t2_daily_limit']:,} ({gq['t2_pct_used']}%) {gq['t2_model']}"
-        fallback = "local qwen3:30b-a3b" if not gq["any_available"] else ""
-        parts.append(f"## Gemini T3\n  T1: {t1}\n  T2: {t2}" + (f"\n  → Fallback: {fallback}" if fallback else ""))
+        lines = ["## Reasoning Tier Cascade"]
+        any_up = False
+
+        try:
+            from .synthesis_gemini import get_quota_status as _gem_status
+            gq = _gem_status()
+            lines.append("  Gemini:")
+            for t in gq["tiers"]:
+                mark = "OK" if t["available"] else "HIT"
+                lines.append(f"    {t['label']} {mark} {t['tokens_used']:,}/{t['daily_limit']:,} ({t['pct_used']}%) {t['model']}")
+            any_up = any_up or gq["any_available"]
+        except Exception as e:
+            lines.append(f"  Gemini: error ({e})")
+
+        try:
+            from .synthesis_groq import get_quota_status as _grq_status
+            gr = _grq_status()
+            lines.append("  Groq:")
+            for t in gr["tiers"]:
+                mark = "OK" if t["available"] else "HIT"
+                lines.append(f"    {t['label']} {mark} {t['requests_today']}/{t['rpd_limit']} ({t['pct_used']}%) {t['model']}")
+            any_up = any_up or gr["any_available"]
+        except Exception as e:
+            lines.append(f"  Groq: error ({e})")
+
+        try:
+            from .synthesis_openrouter import get_quota_status as _or_status
+            orq = _or_status()
+            lines.append(f"  OpenRouter: {orq['requests_today']}/{orq['rpd_limit']} ({orq['pct_used']}%) shared")
+            for t in orq["tiers"]:
+                mark = "OK" if t["available"] else "HIT"
+                lines.append(f"    {t['label']} {mark} {t['model']}")
+            any_up = any_up or orq["any_available"]
+        except Exception as e:
+            lines.append(f"  OpenRouter: error ({e})")
+
+        if not any_up:
+            lines.append("  → Fallback: local qwen3:30b-a3b")
+        parts.append("\n".join(lines))
     except Exception:
         pass
 
