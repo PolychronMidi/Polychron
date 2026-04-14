@@ -115,10 +115,7 @@ function makeOnChunk(ctx, assistantId, acc, state, tracker, route, opts = {}) {
     };
 }
 // ── Streaming methods ─────────────────────────────────────────────────────────
-const AGENTIC_SYSTEM = {
-    role: "system",
-    content: "You are an agentic coding assistant with access to bash, read_file, and write_file tools. When asked to perform a task — create files, edit code, run commands, implement features — call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks without calling a tool first.",
-};
+const AGENTIC_SYSTEM = { role: "system", content: streamUtils_1.AGENTIC_SYSTEM_PROMPT };
 function streamClaudeMsg(ctx, msg, assistantId) {
     const state = { text: "", thinking: "", tools: [] };
     const acc = (0, streamUtils_1.makeBlockAccumulator)();

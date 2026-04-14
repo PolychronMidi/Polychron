@@ -47,14 +47,20 @@ const chatStreaming_1 = require("./chatStreaming");
 // Fire chain at 99% — meter reaches this before autocompact kicks in.
 const CHAIN_THRESHOLD_PCT = 99;
 class ChatPanel {
+    static _blankState() {
+        return ChatPanel._blankState();
+    }
+    static _blankContextTracker() {
+        return ChatPanel._blankContextTracker();
+    }
     constructor(panel, projectRoot, restoreSessionId) {
-        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+        this._state = ChatPanel._blankState();
         this._isStreaming = false;
         this._messageQueue = [];
         this._disposables = [];
         this._restoreSessionId = null;
         this._disposed = false;
-        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
+        this._contextTracker = ChatPanel._blankContextTracker();
         this._chainingInProgress = false;
         // ── HME shim process management ────────────────────────────────────────────
         // ── Mirror terminal ────────────────────────────────────────────────────────
@@ -162,7 +168,7 @@ class ChatPanel {
                 break;
             // ── Session management ───────────────────────────────────────────────
             case "clearHistory":
-                this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+                this._state = ChatPanel._blankState();
                 this._resetContextTracker();
                 this._post({ type: "historyCleared" });
                 break;
@@ -198,7 +204,7 @@ class ChatPanel {
             case "deleteSession":
                 (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
                 if (this._state.sessionEntry?.id === msg.id) {
-                    this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+                    this._state = ChatPanel._blankState();
                     this._resetContextTracker();
                     this._transcript.setSessionId("");
                     this._post({ type: "historyCleared" });
@@ -210,7 +216,7 @@ class ChatPanel {
                 this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
                 break;
             case "newSession":
-                this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+                this._state = ChatPanel._blankState();
                 this._resetContextTracker();
                 this._post({ type: "historyCleared" });
                 break;
@@ -452,7 +458,7 @@ class ChatPanel {
     }
     // ── Context tracking & chain ───────────────────────────────────────────────
     _resetContextTracker(restoredPct) {
-        this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
+        this._contextTracker = ChatPanel._blankContextTracker();
         if (restoredPct) {
             this._contextTracker.usedPct = restoredPct;
         }

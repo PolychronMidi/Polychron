@@ -40,7 +40,7 @@ export class ChatPanel {
   private static _globalState: vscode.Memento | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private readonly _projectRoot: string;
-  private _state: SessionState = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+  private _state: SessionState = ChatPanel._blankState();
   private _cancelCurrent?: () => void;
   private _isStreaming = false;
   private _messageQueue: any[] = [];
@@ -48,8 +48,16 @@ export class ChatPanel {
   private _transcript: TranscriptLogger;
   private _restoreSessionId: string | null = null;
   private _disposed = false;
-  private _contextTracker: ContextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
+  private _contextTracker: ContextTracker = ChatPanel._blankContextTracker();
   private _chainingInProgress = false;
+
+  private static _blankState(): SessionState {
+    return ChatPanel._blankState();
+  }
+
+  private static _blankContextTracker(): ContextTracker {
+    return ChatPanel._blankContextTracker();
+  }
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
     this._panel = panel;
@@ -167,7 +175,7 @@ export class ChatPanel {
         break;
       // ── Session management ───────────────────────────────────────────────
       case "clearHistory":
-        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+        this._state = ChatPanel._blankState();
         this._resetContextTracker();
         this._post({ type: "historyCleared" });
         break;
@@ -202,7 +210,7 @@ export class ChatPanel {
       case "deleteSession":
         deleteSession(this._projectRoot, msg.id);
         if (this._state.sessionEntry?.id === msg.id) {
-          this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+          this._state = ChatPanel._blankState();
           this._resetContextTracker();
           this._transcript.setSessionId("");
           this._post({ type: "historyCleared" });
@@ -214,7 +222,7 @@ export class ChatPanel {
         this._post({ type: "sessionList", sessions: listSessions(this._projectRoot) });
         break;
       case "newSession":
-        this._state = { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+        this._state = ChatPanel._blankState();
         this._resetContextTracker();
         this._post({ type: "historyCleared" });
         break;
@@ -468,7 +476,7 @@ export class ChatPanel {
   // ── Context tracking & chain ───────────────────────────────────────────────
 
   private _resetContextTracker(restoredPct?: number) {
-    this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
+    this._contextTracker = ChatPanel._blankContextTracker();
     if (restoredPct) {
       this._contextTracker.usedPct = restoredPct;
     }
@@ -660,7 +668,12 @@ export class ChatPanel {
       const poll = () => {
         attempts++;
         isHmeShimReady().then(({ ready }) => {
-          if (ready) { started = true; this._shimPollTimer = null; this._post({ type: "hmeShimStatus", ready: true }); return; }
+          if (ready) {
+            started = true;
+            this._shimPollTimer = null;
+            this._post({ type: "hmeShimStatus", ready: true });
+            return;
+          }
           if (attempts < 5 && this._shimProc) {
             this._post({ type: "hmeShimStatus", ready: false, failed: false });
             this._shimPollTimer = setTimeout(poll, 2000);

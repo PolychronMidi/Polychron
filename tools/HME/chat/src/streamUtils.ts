@@ -4,6 +4,12 @@ import { TranscriptLogger } from "./TranscriptLogger";
 import { SessionEntry } from "./SessionStore";
 
 export const CHARS_PER_TOKEN = 3.5;
+
+export const AGENTIC_SYSTEM_PROMPT =
+  "You are an agentic coding assistant with access to bash, read_file, and write_file tools. " +
+  "When asked to perform a task — create files, edit code, run commands, implement features — " +
+  "call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks " +
+  "without calling a tool first.";
 export const OLLAMA_OUTPUT_BUFFER = 4096;
 
 export function uid(): string {

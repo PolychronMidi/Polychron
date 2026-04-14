@@ -129,7 +129,11 @@ export function saveSession(
 
 export function deleteSession(projectRoot: string, id: string): void {
   // Delete file first — if it fails the index stays consistent; file-before-index prevents orphaned entries
-  try { fs.unlinkSync(sessionPath(projectRoot, id)); } catch (e: any) { if (e?.code !== "ENOENT") console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`); }
+  try {
+    fs.unlinkSync(sessionPath(projectRoot, id));
+  } catch (e: any) {
+    if (e?.code !== "ENOENT") console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`);
+  }
   const index = readJson<SessionEntry[]>(indexPath(projectRoot), []).filter((s) => s.id !== id);
   writeJson(indexPath(projectRoot), index);
 }
