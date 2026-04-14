@@ -109,16 +109,10 @@ from server import system_phase as _sp
 _sp.set_phase(_sp.SystemPhase.WARMING, "main.py starting")
 
 # --- MCP App (created BEFORE model load so handshake is instant) ---
-mcp = FastMCP(
-    "HME",
-    instructions=(
-        "Use search_knowledge before modifying a module to check for existing constraints.\n"
-        "Use search_code or find_callers for open-ended code searches (they add KB context that Grep misses).\n"
-        "After batch code changes: run index_codebase once. File watcher handles individual saves.\n"
-        "After user-confirmed rounds: add_knowledge for calibration anchors and decisions.\n"
-        "See doc/HME.md for the full workflow."
-    ),
-)
+# No instructions= field: the HME plugin's SKILL.md is the single source of truth
+# for the tool surface. An instructions block here would either duplicate SKILL.md
+# or drift out of sync with it (as it did until 2026-04-14).
+mcp = FastMCP("HME")
 
 # --- Populate shared context for tool modules (mcp set; engines will be set by background thread) ---
 from server import context
