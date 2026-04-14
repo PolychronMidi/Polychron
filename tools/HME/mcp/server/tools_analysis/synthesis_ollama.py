@@ -966,22 +966,38 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
             max_tokens=max_tokens, model=_REASONING_MODEL, system=_THINK_SYSTEM,
         )
 
-    # Stage 3: Reasoner deep synthesis using coder's verified facts
-    result = _local_think(
+    # Stage 3: Deep synthesis — Gemini 2.5 Flash (T3) preferred, local reasoner fallback
+    from .synthesis_gemini import call as _gemini_call, available as _gemini_available
+    _synthesis_prompt = (
         f"Question: {prompt[:300]}\n\n"
         f"VERIFIED FACTS (trust these paths/names):\n{coder_out}\n\n"
         "Synthesize: module interactions, architectural implications, recommendations.\n"
-        "Use ONLY names from verified facts. Max 600 words.",
-        max_tokens=max_tokens, model=_REASONING_MODEL,
-        system=_THINK_SYSTEM, temperature=0.2,
+        "Use ONLY names from verified facts. Max 600 words."
     )
+    _tier = "local"
+    result = None
+    if _gemini_available():
+        result = _gemini_call(
+            _synthesis_prompt,
+            system=_THINK_SYSTEM,
+            max_tokens=max_tokens,
+            temperature=0.2,
+        )
+        if result:
+            _tier = "gemini"
+    if not result:
+        result = _local_think(
+            _synthesis_prompt,
+            max_tokens=max_tokens, model=_REASONING_MODEL,
+            system=_THINK_SYSTEM, temperature=0.2,
+        )
     if result:
         logger.info(
-            f"cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→reasoner({len(result)}c)"
+            f"cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→{_tier}({len(result)}c)"
         )
         result += (
             f"\n\n*cascade: arbiter({len(plan)}c)"
-            f"→coder({len(coder_out)}c)→reasoner({len(result)}c)*"
+            f"→coder({len(coder_out)}c)→{_tier}({len(result)}c)*"
         )
     return result
 
