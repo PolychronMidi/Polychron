@@ -73,7 +73,7 @@ harmonicIntervalGuard = (() => {
     const dissonanceTarget = V.optionalFinite(intent.dissonanceTarget, 0.5);
 
     // Use pre-computed pitch bias if provided; avoids re-calling feedbackOscillator.applyFeedback
-    const pitchBias = (Number.isFinite(externalPitchBias) && externalPitchBias >= 0) ? externalPitchBias : -1;
+    const pitchBias = (Number.isFinite(externalPitchBias) && /** @type {number} */ (externalPitchBias) >= 0) ? /** @type {number} */ (externalPitchBias) : -1;
 
     // Find other layer's most recent note from ATW
     const otherLayer = crossLayerHelpers.getOtherLayer(activeLayer);

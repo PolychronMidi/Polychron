@@ -13,7 +13,7 @@ octaveHelpers = (() => {
    */
   function getOctaveHistogram(windowSeconds, bands, layer) {
     const ws = V.optionalFinite(windowSeconds, 6);
-    const numBands = (Number.isFinite(bands) && bands > 0) ? bands : 11;
+    const numBands = (Number.isFinite(bands) && /** @type {number} */ (bands) > 0) ? /** @type {number} */ (bands) : 11;
     /** @type {any} */
     const query = { windowSeconds: ws };
     if (typeof layer === 'string' && layer.length > 0) query.layer = layer;

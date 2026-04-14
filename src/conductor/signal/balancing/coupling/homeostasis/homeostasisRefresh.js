@@ -99,7 +99,7 @@ homeostasisRefresh = (() => {
     for (let i = 0; i < TAIL_TRACKED_PAIRS.length; i++) {
       const pair = TAIL_TRACKED_PAIRS[i];
       const pairAbs = V.optionalFinite(S.pairAbsR[pair], 0);
-      const adaptiveEntry = V.optionalType(adaptiveSnapshot && adaptiveSnapshot[pair], 'object', null);
+      const adaptiveEntry = /** @type {any} */ (adaptiveSnapshot && adaptiveSnapshot[pair] && typeof adaptiveSnapshot[pair] === 'object' ? adaptiveSnapshot[pair] : null);
       const baseline = V.optionalFinite(adaptiveEntry && adaptiveEntry.baseline, 0.25);
       const targetAnchor = V.optionalFinite(adaptiveEntry && adaptiveEntry.current, baseline);
       const pairP95 = V.optionalFinite(adaptiveEntry && adaptiveEntry.p95AbsCorr, pairAbs);
