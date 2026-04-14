@@ -88,9 +88,9 @@ print('wrote hci=' + str(d['hci']))
   [ -f "$EFF_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 &
   [ -f "$TRAJ_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 &
   [ -f "$COUPLING_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$COUPLING_SCRIPT" > /dev/null 2>&1 &
-  # H11: sonify HCI as MIDI drone alongside the pipeline output
-  SONIFY_SCRIPT="$PROJECT/tools/HME/scripts/sonify-hci.py"
-  [ -f "$SONIFY_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$SONIFY_SCRIPT" > /dev/null 2>&1 &
+  # H11 (revised): rebuild the interactive HTML dashboard alongside pipeline output
+  DASHBOARD_SCRIPT="$PROJECT/tools/HME/scripts/build-dashboard.py"
+  [ -f "$DASHBOARD_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$DASHBOARD_SCRIPT" > /dev/null 2>&1 &
   # H15: emit HCI as a structured composition-layer signal
   EMIT_SIGNAL="$PROJECT/tools/HME/scripts/emit-hci-signal.py"
   [ -f "$EMIT_SIGNAL" ] && PROJECT_ROOT="$PROJECT" python3 "$EMIT_SIGNAL" > /dev/null 2>&1 &
