@@ -187,3 +187,50 @@ The threshold I've set in `verify-coherence.py` is 80 — exit code 1 below that
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.
 
 This document will rot too. The verifier should catch that.
+
+## The LIFESAVER no-dilution rule
+
+LIFESAVER (the critical-error banner surfaced via `register_critical_failure()` and drained on every tool response) exists for exactly one reason: to be **intolerable until the root cause is fixed**. It is not a notification system. It is pain, by design.
+
+This means:
+
+1. **No cooldowns on LIFESAVER fires.** If a condition is real and recurring, LIFESAVER must fire every single time. Rate-limiting would hide the severity of the situation from the agent and allow the underlying problem to persist indefinitely.
+
+2. **No deduplication, no throttling, no "seen this before" flags.** Each fire is a fresh reminder that the system is degraded.
+
+3. **"False positive" LIFESAVER is itself a critical bug.** If an alert fires repeatedly for a condition that isn't actually a problem, the detector is wrong — and that is a **life-critical bug** to fix with the same urgency as the original. Silencing a false positive is worse than the false positive itself, because it dilutes every real alert that comes after.
+
+4. **The only way to make LIFESAVER quieter is to fix the underlying condition.** Either:
+   - The system state causing the fire is bad → fix the state, fire stops automatically
+   - The detector is broken → fix the detector at full urgency, fire stops automatically
+   
+   Any path that involves adding a cooldown, a dedup set, a time-based guard, a "we already warned about this" flag, a `_last_fired_at` timestamp, or any other mechanism that suppresses the alert without eliminating its cause is a **subversion** and must be reverted.
+
+### Enforcement: `LifesaverIntegrityVerifier`
+
+The [LifesaverIntegrityVerifier](../tools/HME/scripts/verify-coherence.py) scans the call paths of `register_critical_failure` across:
+- `tools/HME/mcp/server/rag_proxy.py`
+- `tools/HME/mcp/server/context.py`
+- `tools/HME/mcp/server/meta_observer.py`
+
+It fails (weight 5.0, score 0.0 — enough to crater the HCI on its own) if any of these patterns appear near a LIFESAVER fire site:
+
+- `cooldown` identifier in scope
+- `_last_*_alert` timestamp variable
+- `dedupe` / `_suppress` / `alerted_set`
+- Time-based guard (`if now - X >= N:`) immediately before `register_critical_failure`
+
+A PASS on this verifier means LIFESAVER is allowed to scream freely. A FAIL means someone introduced dampening and HCI tanks until it's reverted.
+
+The verifier exists because this exact subversion was attempted once during construction — the "fix" for the high LIFESAVER rate was almost a 30-minute cooldown, which would have silenced the real symptom of HME's instability. The verifier is the immune system against that class of mistake recurring.
+
+### What to do when LIFESAVER is loud
+
+1. **Read the alert.** Don't dismiss.
+2. **Identify the root cause.** Usually it's a sticky condition (slow tool response, degraded coherence, failing shim).
+3. **Fix the root cause.** Not the detector. Not the alert. The CAUSE.
+4. **LIFESAVER stops on its own** once the condition clears.
+
+If after fixing you believe the detector was wrong, **that is itself a critical bug** — escalate it to the same urgency as the original. Do not add a cooldown. Fix the detector's logic so it correctly distinguishes the real condition from the false one.
+
+This is the principle that keeps HME honest with itself.
