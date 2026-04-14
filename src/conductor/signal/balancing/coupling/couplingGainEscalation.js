@@ -186,7 +186,7 @@ couplingGainEscalation = (() => {
           rate *= 1.15;
           ps.heatPenalty = m.min((V.optionalFinite(ps.heatPenalty, 0)) + 0.01, 1.0);
         }
-        const eff = ps.effectivenessEma || 0.5;
+        const eff = V.optionalFinite(ps.effectivenessEma, 0.5);
         if (eff < 0.50) rate *= m.max(0.25, eff / 0.50);
         const hp = V.optionalFinite(ps.heatPenalty, 0);
         if (hp > 0.30) rate *= m.max(0.35, 1.0 - hp);
@@ -208,11 +208,11 @@ couplingGainEscalation = (() => {
         }
         if (key === S.hpPromotedPair) pairGainMax = m.max(pairGainMax, HP_GAIN_MAX);
         if ((dimA === 'flicker' || dimB === 'flicker') && S.flickerGuardState === 'guarding' &&
-            typeof setup.flickerProd === 'number' && setup.flickerProd < FLICKER_PAIR_GAIN_CAP_THRESHOLD) {
+            Number.isFinite(setup.flickerProd) && setup.flickerProd < FLICKER_PAIR_GAIN_CAP_THRESHOLD) {
           pairGainMax = m.min(pairGainMax, FLICKER_PAIR_GAIN_CAP);
         }
         if ((dimA === 'density' || dimB === 'density') && S.densityGuardState === 'guarding' &&
-            typeof setup.densityProd === 'number' && setup.densityProd < DENSITY_PAIR_GAIN_CAP_THRESHOLD) {
+            Number.isFinite(setup.densityProd) && setup.densityProd < DENSITY_PAIR_GAIN_CAP_THRESHOLD) {
           pairGainMax = m.min(pairGainMax, DENSITY_PAIR_GAIN_CAP);
         }
 
@@ -266,7 +266,7 @@ couplingGainEscalation = (() => {
     // Effectiveness EMA update
     if (ps.gain > GAIN_INIT * 1.2 && absCorr > target) {
       const improved = absCorr < ps.lastAbsCorr ? 1 : 0;
-      ps.effectivenessEma = (ps.effectivenessEma || 0.5) * 0.95 + improved * 0.05;
+      ps.effectivenessEma = V.optionalFinite(ps.effectivenessEma, 0.5) * 0.95 + improved * 0.05;
       ps.effActiveBeats = (V.optionalFinite(ps.effActiveBeats, 0)) + 1;
       ps.effMin = m.min(ps.effMin !== undefined ? ps.effMin : 1.0, ps.effectivenessEma);
       ps.effMax = m.max(ps.effMax !== undefined ? ps.effMax : 0.0, ps.effectivenessEma);
@@ -320,7 +320,7 @@ couplingGainEscalation = (() => {
         let tCount = 0;
         const entries = Object.values(ts || {});
         for (let i = 0; i < entries.length; i++) {
-          if (entries[i] && typeof entries[i].score === 'number') {
+          if (entries[i] && Number.isFinite(entries[i].score)) {
             avgTrust += entries[i].score;
             tCount++;
           }

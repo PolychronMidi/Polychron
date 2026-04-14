@@ -73,7 +73,7 @@ closedLoopController = (() => {
     const observe = config.observe;
     const target = config.target;
     const gainCfg = config.gain;
-    const gainFn = typeof gainCfg === 'function' ? gainCfg : null;
+    const gainFn = V.optionalType(gainCfg, 'function', null);
     const gainVal = gainFn ? 0 : V.optionalFinite(/** @type {number|undefined} */ (gainCfg), 0.5);
     const smoothing = clamp(V.optionalFinite(config.smoothing, 0.3), 0, 0.99);
     const lo = Array.isArray(config.clampRange) ? V.requireFinite(config.clampRange[0], 'clampRange[0]') : 0.7;

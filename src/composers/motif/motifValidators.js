@@ -94,7 +94,7 @@ motifValidators = {
 
     const scalePCs = new Set();
     for (const s of scaleNotes) {
-      const pc = (typeof s.note === 'number') ? s.note : (typeof s === 'number' ? s : 0);
+      const pc = Number.isFinite(s && s.note) ? s.note : V.optionalFinite(s, 0);
       scalePCs.add(((pc % 12) + 12) % 12);
     }
 

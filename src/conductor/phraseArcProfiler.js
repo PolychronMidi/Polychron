@@ -3,13 +3,15 @@
 // Provides breath profile, phase classification, and arc profile generation.
 
 phraseArcProfiler = (() => {
+  const V = validator.create('phraseArcProfiler');
+
   /**
    * Get phrase breath parameters from conductorConfig with built-in fallback.
    * @returns {Object} breath profile with registerRange, densityRange, independence, dynamism
    */
   function getBreathProfile() {
     const bp = conductorConfig.getPhraseBreathParams();
-    if (bp && typeof bp === 'object') {
+    if (bp && V.optionalType(bp, 'object')) {
       return bp;
     }
     return {
@@ -71,25 +73,25 @@ phraseArcProfiler = (() => {
       throw new Error('phraseArcProfiler.generateArcProfiles: PHRASES_ARC_CURVES global is not defined - ensure conductorConfig is loaded first');
     }
     const bp = getBreathProfile();
-    const ind = bp.independence || {};
-    const dyn = bp.dynamism || {};
+    const ind = bp.independence;
+    const dyn = bp.dynamism;
     // R29 E1: wire dormant phraseBreath.independence config into arc curves.
     // Profile values provide per-arc-type base; regime modulation adapts dynamically.
     const indFns = {
-      'arch': (pos) => (ind.archOuter || 0.3) + ((ind.archInner || 0.7) - (ind.archOuter || 0.3)) * m.sin(Number(pos) * m.PI),
-      'wave': (pos) => (ind.waveBase || 0.4) + (ind.waveAmplitude || 0.4) * m.sin(Number(pos) * m.PI * 2),
-      'rise-fall': (pos) => (ind.riseFallOuter || 0.4) + ((ind.riseFallInner || 0.6) - (ind.riseFallOuter || 0.4)) * Number(pos),
-      'build-resolve': (pos) => (ind.buildResolveOuter || 0.3) + ((ind.buildResolveInner || 0.8) - (ind.buildResolveOuter || 0.3)) * Number(pos)
+      'arch': (pos) => V.optionalFinite(ind.archOuter, 0.3) + (V.optionalFinite(ind.archInner, 0.7) - V.optionalFinite(ind.archOuter, 0.3)) * m.sin(Number(pos) * m.PI),
+      'wave': (pos) => V.optionalFinite(ind.waveBase, 0.4) + V.optionalFinite(ind.waveAmplitude, 0.4) * m.sin(Number(pos) * m.PI * 2),
+      'rise-fall': (pos) => V.optionalFinite(ind.riseFallOuter, 0.4) + (V.optionalFinite(ind.riseFallInner, 0.6) - V.optionalFinite(ind.riseFallOuter, 0.4)) * Number(pos),
+      'build-resolve': (pos) => V.optionalFinite(ind.buildResolveOuter, 0.3) + (V.optionalFinite(ind.buildResolveInner, 0.8) - V.optionalFinite(ind.buildResolveOuter, 0.3)) * Number(pos)
     };
     // R29 E1: wire dormant phraseBreath.dynamism config into arc curves.
     // R62: added 0.20*sin(pos*4pi) micro-oscillation to arch/rise-fall/build-resolve (2 cycles/phrase)
     // and doubled wave to sin(pos*4pi) for micro-term dense/atmospheric variation.
     // Values may briefly exceed [0,1] -- dynamismEngine clamps before use.
     const dynFns = {
-      'arch': (pos) => (dyn.archBase || 0.5) + (dyn.archAmplitude || 0.40) * m.sin(Number(pos) * m.PI) + 0.20 * m.sin(Number(pos) * m.PI * 4),
-      'wave': (pos) => (dyn.waveBase || 0.5) + (dyn.waveAmplitude || 0.5) * m.sin(Number(pos) * m.PI * 4),
-      'rise-fall': (pos) => (dyn.riseFallBase || 0.4) + (dyn.riseFallAmplitude || 0.45) * Number(pos) + 0.20 * m.sin(Number(pos) * m.PI * 4),
-      'build-resolve': (pos) => (dyn.buildResolveBase || 0.3) + (dyn.buildResolveSlope || 0.55) * m.min(Number(pos), (dyn.buildResolveEnd || 0.2) + 0.8) + 0.20 * m.sin(Number(pos) * m.PI * 4)
+      'arch': (pos) => V.optionalFinite(dyn.archBase, 0.5) + V.optionalFinite(dyn.archAmplitude, 0.40) * m.sin(Number(pos) * m.PI) + 0.20 * m.sin(Number(pos) * m.PI * 4),
+      'wave': (pos) => V.optionalFinite(dyn.waveBase, 0.5) + V.optionalFinite(dyn.waveAmplitude, 0.5) * m.sin(Number(pos) * m.PI * 4),
+      'rise-fall': (pos) => V.optionalFinite(dyn.riseFallBase, 0.4) + V.optionalFinite(dyn.riseFallAmplitude, 0.45) * Number(pos) + 0.20 * m.sin(Number(pos) * m.PI * 4),
+      'build-resolve': (pos) => V.optionalFinite(dyn.buildResolveBase, 0.3) + V.optionalFinite(dyn.buildResolveSlope, 0.55) * m.min(Number(pos), V.optionalFinite(dyn.buildResolveEnd, 0.2) + 0.8) + 0.20 * m.sin(Number(pos) * m.PI * 4)
     };
     /** @type {{ [key: string]: { register: Function, density: Function, independence: Function, dynamism: Function, spectralDensity: Function } }} */
     const adapted = {};
@@ -103,7 +105,7 @@ phraseArcProfiler = (() => {
           ? (pos) => {
             const base = indFn(pos);
             const reg = regimeClassifier.getLastRegime();
-            const mod = INDEPENDENCE_REGIME_MOD[reg] || 0;
+            const mod = V.optionalFinite(INDEPENDENCE_REGIME_MOD[reg], 0);
             return clamp(base + mod, 0.05, 0.95);
           }
           : (pos) => (curve.independence ? curve.independence(pos) : 0.5),

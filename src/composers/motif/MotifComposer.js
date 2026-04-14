@@ -83,7 +83,7 @@ MotifComposer = class MotifComposer {
       this.measureComposer = null;
     }
 
-    this.MotifComposerMotifInstanceId = (typeof opts.motifInstanceId === 'string' && opts.motifInstanceId) ? opts.motifInstanceId : ('motif-' + ri(1e9 - 1));
+    this.MotifComposerMotifInstanceId = V.optionalString(opts.motifInstanceId, null) || ('motif-' + ri(1e9 - 1));
     this.MotifComposerMotifSequenceId = 0;
   }
 
@@ -193,7 +193,7 @@ MotifComposer = class MotifComposer {
       // Prefer notes from developer feed when available, but constrain to scale candidates
       if (devNotes && devNotes.length > 0) {
         const n = devNotes[i % devNotes.length];
-        const devNote = (typeof n.note === 'number') ? n.note : (typeof n === 'number' ? n : 60);
+        const devNote = Number.isFinite(n && n.note) ? n.note : (Number.isFinite(n) ? n : 60);
         // Constrain developer note to nearest note in the scale
         const normalized = devNote % 12;
         const matchInCandidates = candidates.find(c => (c % 12) === normalized);
@@ -212,7 +212,8 @@ MotifComposer = class MotifComposer {
               throw new Error(`MotifComposer.generate: measureComposer ${compName} supplied invalid VoiceLeadingScore`);
             }
           }
-          const intent = mc && typeof mc.getVoicingIntent === 'function' ? mc.getVoicingIntent(avail) : null;
+          let intent = null;
+          if (mc && typeof mc.getVoicingIntent === 'function') intent = mc.getVoicingIntent(avail);
           if (intent !== null) {
             V.requireType(intent, 'object', 'intent');
             if (Array.isArray(intent)) {

@@ -176,67 +176,44 @@ regimeReactiveDamping = (() => {
     }
 
     const couplingMatrix = snap ? snap.couplingMatrix : null;
-    const densityFlickerPressure = couplingMatrix && typeof couplingMatrix['density-flicker'] === 'number' && Number.isFinite(couplingMatrix['density-flicker'])
-      ? clamp((m.abs(couplingMatrix['density-flicker']) - 0.76) / 0.18, 0, 1)
-      : 0;
-    const tensionFlickerPressure = couplingMatrix && typeof couplingMatrix['tension-flicker'] === 'number' && Number.isFinite(couplingMatrix['tension-flicker'])
-      ? clamp((m.abs(couplingMatrix['tension-flicker']) - 0.76) / 0.16, 0, 1)
-      : 0;
-    const densityTrustPressure = couplingMatrix && typeof couplingMatrix['density-trust'] === 'number' && Number.isFinite(couplingMatrix['density-trust'])
-      ? clamp((m.abs(couplingMatrix['density-trust']) - 0.72) / 0.18, 0, 1)
-      : 0;
-    const flickerTrustPressure = couplingMatrix && typeof couplingMatrix['flicker-trust'] === 'number' && Number.isFinite(couplingMatrix['flicker-trust'])
-      ? clamp((m.abs(couplingMatrix['flicker-trust']) - 0.68) / 0.18, 0, 1)
-      : 0;
+    const densityFlickerPressure = clamp((m.abs(V.optionalFinite(couplingMatrix && couplingMatrix['density-flicker'], 0)) - 0.76) / 0.18, 0, 1);
+    const tensionFlickerPressure = clamp((m.abs(V.optionalFinite(couplingMatrix && couplingMatrix['tension-flicker'], 0)) - 0.76) / 0.16, 0, 1);
+    const densityTrustPressure = clamp((m.abs(V.optionalFinite(couplingMatrix && couplingMatrix['density-trust'], 0)) - 0.72) / 0.18, 0, 1);
+    const flickerTrustPressure = clamp((m.abs(V.optionalFinite(couplingMatrix && couplingMatrix['flicker-trust'], 0)) - 0.68) / 0.18, 0, 1);
     const axisEnergy = pipelineCouplingManager.getAxisEnergyShare();
-    const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
-      ? axisEnergy.shares.phase
-      : 1.0 / 6.0;
-    const trustShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.trust === 'number'
-      ? axisEnergy.shares.trust
-      : 1.0 / 6.0;
+    const axisShares = axisEnergy && axisEnergy.shares;
+    const phaseShare = V.optionalFinite(axisShares && axisShares.phase, 1.0 / 6.0);
+    const trustShare = V.optionalFinite(axisShares && axisShares.trust, 1.0 / 6.0);
     const signalHealth = safePreBoot.call(() => signalHealthAnalyzer.getHealth(), null);
     const densityHealth = signalHealth && signalHealth.density ? signalHealth.density : null;
     const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
     const phaseContainmentTarget = 0.09;
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
     const phaseRecoveryCredit = clamp((phaseShare - phaseContainmentTarget) / 0.05, 0, 1);
-    const flickerPhasePressure = couplingMatrix && typeof couplingMatrix['flicker-phase'] === 'number' && Number.isFinite(couplingMatrix['flicker-phase'])
-      ? clamp((m.abs(couplingMatrix['flicker-phase']) - 0.62) / 0.18, 0, 1)
-      : 0;
+    const flickerPhasePressure = clamp((m.abs(V.optionalFinite(couplingMatrix && couplingMatrix['flicker-phase'], 0)) - 0.62) / 0.18, 0, 1);
     const trustSharePressure = clamp((trustShare - 0.17) / 0.08, 0, 1);
     const densitySaturationPressure = densityHealth
       ? clamp((densityHealth.saturated ? 0.45 : 0) + clamp((densityHealth.crushFactor - 0.35) / 0.40, 0, 1) * 0.55, 0, 1)
       : 0;
-    const evolvingShare = dynamicSnap && typeof dynamicSnap.evolvingShare === 'number'
-      ? dynamicSnap.evolvingShare
-      : 0;
+    const evolvingShare = V.optionalFinite(dynamicSnap && dynamicSnap.evolvingShare, 0);
     const evolvingRecoveryPressure = clamp((0.10 - evolvingShare) / 0.10, 0, 1);
-    const topPairConcentration = dynamicSnap && typeof dynamicSnap.hotspotTop2Concentration === 'number'
-      ? dynamicSnap.hotspotTop2Concentration
-      : 0;
+    const topPairConcentration = V.optionalFinite(dynamicSnap && dynamicSnap.hotspotTop2Concentration, 0);
     const containedTailRecovery = clamp((0.78 - topPairConcentration) / 0.18, 0, 1) * (1 - densityFlickerPressure * 0.55) * (1 - tensionFlickerPressure * 0.45);
     const longFormBuildPressure = totalSections >= 5 && sectionIndex > 0 && sectionIndex < totalSections - 1 ? 1 : 0;
-    const densityAxisShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.density === 'number'
-      ? axisEnergy.shares.density
-      : 1.0 / 6.0;
+    const densityAxisShare = V.optionalFinite(axisShares && axisShares.density, 1.0 / 6.0);
     const densityAxisDeficit = clamp((1.0 / 6.0 - densityAxisShare) / 0.05, 0, 1);
     const regimeFlickerHotspotBrake = clamp(
       (densityFlickerPressure * 0.08 + tensionFlickerPressure * 0.12 + flickerTrustPressure * 0.10 + lowPhasePressure * 0.02 + trustSharePressure * 0.03 + densitySaturationPressure * 0.04 + flickerPhasePressure * (0.05 + phaseRecoveryCredit * 0.08) + clamp((topPairConcentration - 0.72) / 0.20, 0, 1) * 0.04) * ((currentRegime === 'exploring' || currentRegime === 'coherent') ? 1 : 0.6),
       0,
       0.20
     );
-    const flickerShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.flicker === 'number'
-      ? axisEnergy.shares.flicker
-      : 1.0 / 6.0;
+    const flickerShare = V.optionalFinite(axisShares && axisShares.flicker, 1.0 / 6.0);
     const flickerDeficit = clamp((1.0 / 6.0 - flickerShare) / 0.05, 0, 1);
     const flickerRecoveryRelief = 1.0 - flickerDeficit * 0.25;
     const adjustedFlickerHotspotBrake = regimeFlickerHotspotBrake * flickerRecoveryRelief;
     const densityHotspotBrake = clamp((densityFlickerPressure * (0.010 + phaseRecoveryCredit * 0.015) + densityTrustPressure * 0.020 + trustSharePressure * 0.022 + densitySaturationPressure * (0.032 + lowPhasePressure * 0.025) + clamp((topPairConcentration - 0.70) / 0.15, 0, 1) * densityFlickerPressure * 0.020) * (0.45 + phaseRecoveryCredit * 0.55), 0, 0.09);
     const tensionSignal = safePreBoot.call(() => conductorState.getField('tension'), null);
-    const tensionValue = typeof tensionSignal === 'number' && Number.isFinite(tensionSignal)
-      ? tensionSignal
-      : 0.5;
+    const tensionValue = V.optionalFinite(tensionSignal, 0.5);
     const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * (1 - tensionFlickerPressure * 0.45) * 0.02;
     // R19: exploring brake strengthened. Duration-proportional component pushes
     // system toward evolving/coherent when exploring persists >100 beats.
@@ -271,7 +248,7 @@ regimeReactiveDamping = (() => {
     const sectionTensionNudge = m.sin(sectionProgress * m.PI) * 0.045;
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
     const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
-    if (typeof currentDensitySignal === 'number' && Number.isFinite(currentDensitySignal)) {
+    if (Number.isFinite(currentDensitySignal)) {
       densityMeanEma += (currentDensitySignal - densityMeanEma) * _DENSITY_VAR_EMA_ALPHA;
       const densityDevSq = (currentDensitySignal - densityMeanEma) * (currentDensitySignal - densityMeanEma);
       densityVarEma += (densityDevSq - densityVarEma) * _DENSITY_VAR_EMA_ALPHA;
@@ -303,9 +280,7 @@ regimeReactiveDamping = (() => {
     const dtCoMovementPush = journeyBoldness > 0.25
       ? clamp((journeyBoldness - 0.25) / 0.60, 0, 1) * 0.030
       : 0;
-    const tensionShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.tension === 'number'
-      ? axisEnergy.shares.tension
-      : 1.0 / 6.0;
+    const tensionShare = V.optionalFinite(axisShares && axisShares.tension, 1.0 / 6.0);
     const dtShareGap = clamp(tensionShare - densityShare, 0, 0.12) / 0.12;
     const dtShareBridgeLift = dtAbs > 0.45
       ? clamp((dtAbs - 0.45) / 0.35, 0, 1) * dtShareGap * 0.015

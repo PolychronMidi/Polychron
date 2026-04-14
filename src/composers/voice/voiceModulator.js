@@ -19,7 +19,7 @@ voiceModulator = (function() {
    * @returns {{ note: number, channel: number, velocity: number }[]}
    */
   function distribute(selectedNotes, options = {}) {
-    if (!Array.isArray(selectedNotes)) throw new Error('voiceModulator.distribute: selectedNotes array required');
+    V.assertArray(selectedNotes, 'selectedNotes');
     const base = Number.isFinite(Number(options && options.baseVelocity)) ? Number(options.baseVelocity) : 90;
     // Voice spread params from conductorConfig (profile-driven)
     const vsCfg = conductorConfig.getVoiceSpreadScaling();
