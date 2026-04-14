@@ -1,32 +1,51 @@
-"""Reasoning tier dispatcher — global quality-ranked cascade across all providers.
+"""Reasoning/coder tier dispatcher — two quality-ranked cascades across providers.
 
-Rather than iterating provider-by-provider (which would call a weak Gemini lite
-model before a strong Groq model), this module holds a single absolute ranking
-of (provider, model) pairs sorted by quality, and walks it in order.
+Two profiles — callers pass `profile="reasoning"` (default) or `profile="coder"`.
+Each profile has its own ordered (provider, model) list so reasoning fallbacks
+pick reasoning-strong models and coder fallbacks pick code-strong models.
 
-Each entry consults its provider's quota/RPM/circuit before firing. Providers
-still manage their own rate-limit state — we just change iteration order from
-provider-first to quality-first.
+Both rankings share the same provider modules and quota pools — splitting the
+order only changes which slot fires first, not which free tiers are consumed.
 
-Ranking (strongest → weakest):
-     1. OpenRouter  deepseek/deepseek-r1:free             — full R1, top open reasoning
-     2. Cerebras    qwen-3-235b-a22b-instruct-2507        — 235B MoE, wafer-scale fast
-     3. Mistral     magistral-medium-latest               — Mistral reasoning flagship
-     4. Groq        openai/gpt-oss-120b                   — 120B OpenAI-open, Groq flagship free
-     5. Mistral     mistral-large-latest                  — Mistral general flagship
-     6. Groq        moonshotai/kimi-k2-instruct-0905      — Kimi K2, 262k context
-     7. Mistral     devstral-medium-latest                — agentic coding specialist
-     8. Gemini      gemini-3-flash-preview                — newest Gemini 3 flash
-     9. Mistral     codestral-latest                      — code completion specialist
-    10. Gemini      gemini-flash-latest                   — floating alias
-    11. Groq        llama-3.3-70b-versatile               — Meta 70B, fast on Groq
-    12. Mistral     mistral-medium-latest                 — smaller Mistral general
-    13. OpenRouter  meta-llama/llama-3.3-70b-instruct:free — same weights, slower host
-    14. Mistral     magistral-small-latest                — small reasoning fallback
-    15. Gemini      gemini-2.5-flash                      — solid workhorse
-    16. Gemini      gemini-2.0-flash                      — older 2.x
-    17. Cerebras    llama3.1-8b                           — 8B weak fallback, fast
-    18. Gemini      gemini-2.5-flash-lite                 — lite, last before local
+profile="reasoning" — general analysis, architecture, deep think:
+     1. openrouter  deepseek/deepseek-r1:free              R1, top open reasoning
+     2. cerebras    qwen-3-235b-a22b-instruct-2507         235B MoE, wafer-scale
+     3. mistral     magistral-medium-latest                Mistral reasoning flagship
+     4. groq        openai/gpt-oss-120b                    120B OpenAI-open
+     5. mistral     mistral-large-latest                   Mistral general flagship
+     6. groq        moonshotai/kimi-k2-instruct-0905       Kimi K2, 262k context
+     7. gemini      gemini-3-flash-preview                 newest Gemini flash
+     8. gemini      gemini-flash-latest                    floating alias
+     9. mistral     mistral-medium-latest                  smaller general
+    10. groq        llama-3.3-70b-versatile                Meta 70B
+    11. openrouter  meta-llama/llama-3.3-70b-instruct:free slower 70B host
+    12. mistral     magistral-small-latest                 small reasoning
+    13. gemini      gemini-2.5-flash                       workhorse
+    14. gemini      gemini-2.0-flash                       older 2.x
+    15. cerebras    llama3.1-8b                            weak fallback
+    16. gemini      gemini-2.5-flash-lite                  last before local
+
+profile="coder" — structural code extraction, verified facts, file-aware work:
+     1. groq        openai/gpt-oss-120b                    strong code + fast
+     2. cerebras    qwen-3-235b-a22b-instruct-2507         235B, great on code
+     3. mistral     devstral-medium-latest                 agentic coding specialist
+     4. mistral     codestral-latest                       code completion specialist
+     5. groq        moonshotai/kimi-k2-instruct-0905       Kimi K2, strong code
+     6. openrouter  deepseek/deepseek-r1:free              R1 (also good at code)
+     7. gemini      gemini-3-flash-preview                 Gemini 3
+     8. mistral     mistral-large-latest                   flagship general
+     9. gemini      gemini-flash-latest                    floating alias
+    10. groq        llama-3.3-70b-versatile                Meta 70B
+    11. openrouter  meta-llama/llama-3.3-70b-instruct:free slower 70B
+    12. mistral     mistral-medium-latest                  medium general
+    13. gemini      gemini-2.5-flash                       workhorse
+    14. gemini      gemini-2.0-flash                       older 2.x
+    15. cerebras    llama3.1-8b                            weak fallback
+    16. gemini      gemini-2.5-flash-lite                  last before local
+
+Reasoning models (magistral-*, deepseek-r1) are demoted on the coder profile
+because they waste output tokens on chain-of-thought that then gets discarded
+when the caller only wants file paths and function names.
 
 Z.ai provider omitted: all GLM models on z.ai are paywalled despite "free tier"
 marketing — API returns "insufficient balance" on every request.
@@ -75,19 +94,17 @@ def _refresh_env() -> None:
 
 # (provider_key, model_id) in absolute quality order.
 # provider_key must match a key in _PROVIDERS below.
-_RANKING: list[tuple[str, str]] = [
+_RANKING_REASONING: list[tuple[str, str]] = [
     ("openrouter", "deepseek/deepseek-r1:free"),
     ("cerebras",   "qwen-3-235b-a22b-instruct-2507"),
     ("mistral",    "magistral-medium-latest"),
     ("groq",       "openai/gpt-oss-120b"),
     ("mistral",    "mistral-large-latest"),
     ("groq",       "moonshotai/kimi-k2-instruct-0905"),
-    ("mistral",    "devstral-medium-latest"),
     ("gemini",     "gemini-3-flash-preview"),
-    ("mistral",    "codestral-latest"),
     ("gemini",     "gemini-flash-latest"),
-    ("groq",       "llama-3.3-70b-versatile"),
     ("mistral",    "mistral-medium-latest"),
+    ("groq",       "llama-3.3-70b-versatile"),
     ("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
     ("mistral",    "magistral-small-latest"),
     ("gemini",     "gemini-2.5-flash"),
@@ -95,6 +112,30 @@ _RANKING: list[tuple[str, str]] = [
     ("cerebras",   "llama3.1-8b"),
     ("gemini",     "gemini-2.5-flash-lite"),
 ]
+
+_RANKING_CODER: list[tuple[str, str]] = [
+    ("groq",       "openai/gpt-oss-120b"),
+    ("cerebras",   "qwen-3-235b-a22b-instruct-2507"),
+    ("mistral",    "devstral-medium-latest"),
+    ("mistral",    "codestral-latest"),
+    ("groq",       "moonshotai/kimi-k2-instruct-0905"),
+    ("openrouter", "deepseek/deepseek-r1:free"),
+    ("gemini",     "gemini-3-flash-preview"),
+    ("mistral",    "mistral-large-latest"),
+    ("gemini",     "gemini-flash-latest"),
+    ("groq",       "llama-3.3-70b-versatile"),
+    ("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
+    ("mistral",    "mistral-medium-latest"),
+    ("gemini",     "gemini-2.5-flash"),
+    ("gemini",     "gemini-2.0-flash"),
+    ("cerebras",   "llama3.1-8b"),
+    ("gemini",     "gemini-2.5-flash-lite"),
+]
+
+_RANKINGS = {
+    "reasoning": _RANKING_REASONING,
+    "coder":     _RANKING_CODER,
+}
 
 
 def _load_providers():
@@ -112,19 +153,20 @@ def _load_providers():
     }
 
 
-def get_ranking() -> list[tuple[str, str]]:
-    """Return the active ranked list, allowing env overrides in the future."""
-    return list(_RANKING)
+def get_ranking(profile: str = "reasoning") -> list[tuple[str, str]]:
+    """Return the active ranked list for the given profile ('reasoning' or 'coder')."""
+    return list(_RANKINGS.get(profile, _RANKING_REASONING))
 
 
-def available() -> bool:
+def available(profile: str = "reasoning") -> bool:
     """True if any ranked (provider, model) pair is reachable right now."""
     _refresh_env()
     try:
         providers = _load_providers()
     except Exception:
         return False
-    for provider_key, model in _RANKING:
+    ranking = _RANKINGS.get(profile, _RANKING_REASONING)
+    for provider_key, model in ranking:
         mod = providers.get(provider_key)
         if mod is None:
             continue
@@ -243,11 +285,14 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
 
 
 def call(prompt: str, system: str = "", max_tokens: int = 2048,
-         temperature: float = 0.3) -> str | None:
-    """Walk the global ranking best→worst, returning the first successful result.
+         temperature: float = 0.3, profile: str = "reasoning") -> str | None:
+    """Walk the ranking for the given profile best→worst, returning the first success.
+
+    profile='reasoning' (default) — deep think, architecture, analysis.
+    profile='coder'                — structural code extraction, verified facts.
 
     Returns None only when every ranked slot is exhausted — caller falls back
-    to local qwen3:30b-a3b.
+    to local qwen3-coder:30b-a3b.
     """
     _refresh_env()
     try:
@@ -256,7 +301,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.warning(f"reasoning dispatcher: provider load failed: {e}")
         return None
 
-    for provider_key, model in _RANKING:
+    ranking = _RANKINGS.get(profile, _RANKING_REASONING)
+    for provider_key, model in ranking:
         mod = providers.get(provider_key)
         if mod is None:
             continue
@@ -264,28 +310,29 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             continue
         result = _call_specific(mod, provider_key, model, prompt, system, max_tokens, temperature)
         if result:
-            logger.info(f"reasoning: {provider_key}/{model} ({len(result)}c)")
+            logger.info(f"{profile}: {provider_key}/{model} ({len(result)}c)")
             return result
 
     return None
 
 
-def get_status() -> list[dict]:
+def get_status(profile: str = "reasoning") -> list[dict]:
     """Return the ranking annotated with current availability, for status display."""
     _refresh_env()
     try:
         providers = _load_providers()
     except Exception:
         return []
+    ranking = _RANKINGS.get(profile, _RANKING_REASONING)
     out = []
-    for i, (provider_key, model) in enumerate(_RANKING, start=1):
+    for i, (provider_key, model) in enumerate(ranking, start=1):
         mod = providers.get(provider_key)
         if mod is None:
-            out.append({"rank": i, "provider": provider_key, "model": model, "available": False, "reason": "no module"})
+            out.append({"rank": i, "provider": provider_key, "model": model, "available": False, "reason": "no module", "profile": profile})
             continue
         try:
             ok = _model_available(mod, provider_key, model)
-            out.append({"rank": i, "provider": provider_key, "model": model, "available": ok})
+            out.append({"rank": i, "provider": provider_key, "model": model, "available": ok, "profile": profile})
         except Exception as e:
-            out.append({"rank": i, "provider": provider_key, "model": model, "available": False, "reason": str(e)[:40]})
+            out.append({"rank": i, "provider": provider_key, "model": model, "available": False, "reason": str(e)[:40], "profile": profile})
     return out

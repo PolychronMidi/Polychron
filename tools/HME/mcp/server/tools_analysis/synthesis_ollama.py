@@ -589,29 +589,33 @@ def _local_chat(messages: list[dict], model: str | None = None,
 
 
 def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
-                     temperature: float = 0.2, **kwargs) -> str | None:
-    """Reasoning tier — global quality-ranked cascade across all free providers.
+                     temperature: float = 0.2, profile: str = "reasoning",
+                     **kwargs) -> str | None:
+    """Cloud cascade — quality-ranked fallback across free providers.
 
-    Drop-in replacement for _local_think(..., model=_REASONING_MODEL).
+    profile='reasoning' (default): deep think, architecture, analysis.
+        Local fallback: qwen3:30b-a3b (reasoner, GPU1 slot).
+    profile='coder': structural code extraction, verified facts, file-aware.
+        Local fallback: qwen3-coder:30b (coder, GPU0).
 
-    Delegates to synthesis_reasoning.call() which walks a single absolute ranking
-    of (provider, model) pairs — strongest first — regardless of provider. Each
-    slot checks its own quota/RPM/circuit. Falls back to local qwen3:30b-a3b
-    when every ranked slot is exhausted. See synthesis_reasoning.py for the
-    ordered list.
+    Delegates to synthesis_reasoning.call(profile=...) which walks the matching
+    ranked list. Each slot checks its own quota/RPM/circuit. Falls back to the
+    local model for the profile when every ranked slot is exhausted.
     """
     from .synthesis_config import _THINK_SYSTEM
     _sys = system or _THINK_SYSTEM
 
     try:
         from .synthesis_reasoning import call as _ranked_call
-        result = _ranked_call(prompt, system=_sys, max_tokens=max_tokens, temperature=temperature)
+        result = _ranked_call(prompt, system=_sys, max_tokens=max_tokens,
+                              temperature=temperature, profile=profile)
         if result:
             return result
     except Exception as e:
-        logger.warning(f"_reasoning_think dispatcher error: {type(e).__name__}: {e}")
+        logger.warning(f"_reasoning_think ({profile}) dispatcher error: {type(e).__name__}: {e}")
 
-    return _local_think(prompt, max_tokens=max_tokens, model=_REASONING_MODEL,
+    _fallback_model = _LOCAL_MODEL if profile == "coder" else _REASONING_MODEL
+    return _local_think(prompt, max_tokens=max_tokens, model=_fallback_model,
                         system=_sys, temperature=temperature, **kwargs)
 
 
@@ -991,10 +995,10 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         temperature=0.1, priority="interactive",
     )
     if not coder_out or len(coder_out) < 40:
-        logger.info("cascade: coder failed, reasoner with plan")
+        logger.info("cascade: local coder failed, cloud coder-profile fallback")
         return _reasoning_think(
             f"Plan:\n{plan}\n\n{enriched_prompt}",
-            max_tokens=max_tokens, system=_THINK_SYSTEM,
+            max_tokens=max_tokens, system=_THINK_SYSTEM, profile="coder",
         )
 
     # Stage 3: Deep synthesis — _reasoning_think cascades Gemini T1→T2→local automatically
