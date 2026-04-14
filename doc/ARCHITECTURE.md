@@ -128,6 +128,18 @@ On load, all values are clamped to safe ranges to prevent stressed-state boot lo
 
 Together these prevent the ~30-beat lag where warm-started EMA values pull toward the previous run's terminal state before converging to the new run's actual conditions.
 
+### Density-Pressure Homeostasis
+
+`crossLayerClimaxEngine` accumulates pressure when density > 0.62 during climax approach. Regime-aware relief (exploring 0.15, evolving 0.12, coherent 0.20) self-reduces play/entropy boost. Same architecture as cadenceAlignment tension-accumulation. Prevents aural crowding at peaks without static tension gates.
+
+### Phrase Breath Independence/Dynamism
+
+`phraseArcProfiler.generateArcProfiles()` wires per-profile `phraseBreath.independence` and `phraseBreath.dynamism` config into arc curve functions. Regime-responsive modulation: exploring +0.10 independence (more contrapuntal), coherent -0.08 (more unified).
+
+### Effectiveness-Weighted Convergence
+
+Controller effectiveness EMA alpha scales with proven effectiveness (0.02-0.12 range). Rate multiplier authority +/-25%.
+
 ## Regime Classification
 
 7 regime states with hysteresis:
