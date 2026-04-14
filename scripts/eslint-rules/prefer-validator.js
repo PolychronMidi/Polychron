@@ -5,7 +5,7 @@
 // Catches two classes:
 // 1. Negative guards: typeof x !== 'type', !Number.isFinite(x), !Array.isArray(x)
 // 2. Positive ternary fallbacks: typeof x === 'number' ? x : 0
-//    (the silent-fallback antipattern — use V.optionalFinite / V.optionalType instead)
+//    (the silent-fallback antipattern -- use V.optionalFinite / V.optionalType instead)
 
 module.exports = {
   meta: {
@@ -121,7 +121,7 @@ module.exports = {
         const consq = node.consequent;
         const alt = node.alternate;
         // If consequent does real work on the value (property access, method call, arithmetic,
-        // object construction), it's a discriminant/transform, not a silent fallback — skip.
+        // object construction), it's a discriminant/transform, not a silent fallback -- skip.
         if (consq && (
           consq.type === 'MemberExpression' ||
           consq.type === 'CallExpression' ||

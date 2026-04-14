@@ -1,229 +1,101 @@
-# Polychron - Coding Rules
+# Polychron — Coding Rules
 
-> Concise rules guide for AI assistants and contributors.
-> For project overview and architecture, see [README.md](../README.md).
+> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
 
 ## Run
 
-```bash
-npm run main   # full pipeline: lint, typecheck, compose, render, perceptual analysis, snapshot
-```
-
-Only use "npm run main" to run the full pipeline, never run individual pipeline scripts directly. The main command ensures all steps run in the correct order with necessary validations and context. Pipeline now includes render-lite (MIDI→WAV), perceptual analysis (EnCodec+CLAP), and run-history snapshot with perceptual data.
+`npm run main` — full pipeline. **Never run individual pipeline scripts directly.**
 
 ## Five Core Principles
 
-### 1. Globals And Clean Self-Documenting Code
+1. **Globals via side-effect `require()` in `index.js`.** Never `global.` / `globalThis.` / `/* global */`. Reference globals directly — never alias. To add: side-effect module → require from subsystem `index.js` → declare in `globals.d.ts`. **Never hand-edit `VALIDATED_GLOBALS`** (auto-generated). Critical globals throw on missing; advisory globals (`/** @boot-advisory */`) warn only. Never `typeof` a boot-validated global.
+2. **Fail fast.** Every module throws on bad input. No silent early returns. No `|| 0` / `|| []` fallbacks. No graceful degradation. Use `validator.create('ModuleName')` for all validation. Use `optionalFinite(val, fallback)` only for legitimately optional numerics.
+3. **Self-registration.** Modules self-register at load time via `crossLayerRegistry` or `conductorIntelligence`. To add: write file, self-register at end of IIFE, require from subsystem `index.js`. **Never manually tune constants that a meta-controller already manages** (see Hypermeta-First below).
+4. **Single-Manager Hub per subsystem.** One `*Manager` per subsystem (Facade + service locator). Helpers load first via `index.js`, then the manager. When a file exceeds ~200 lines, extract a focused helper loaded **before** the consumer.
+5. **Coherent files, one responsibility.** Target ≤200 lines. File name matches main export. `const` and pure functions preferred. Only classes use PascalCase; everything else camelCase.
 
-Globals are assigned as side-effects of `require()` calls in `index.js` files. Never use `global.`, `globalThis.`, or `/* global */` comments (ESLint-enforced).
+## Code Style
 
-- Reference globals directly - never alias into intermediary variables.
-- To add a new global: create a side-effect module, require it from the subsystem's `index.js`, declare in `globals.d.ts`. **Never hand-edit `VALIDATED_GLOBALS`** - `scripts/generate-globals-dts.js` rewrites it automatically.
-- Boot validation is **graduated**: critical globals throw on missing, advisory globals (annotated `/** @boot-advisory */` in `globals.d.ts`) warn only. ESLint `local/no-typeof-validated-global` bans redundant `typeof` probes.
-
-### 2. Fail Fast - Loud Crashes, Never Silent Corruption
-
-Every module throws on bad input. No silent early returns. No `|| 0` fallbacks. No graceful degradation.
-
-Use `validator.create('ModuleName')` for all validation:
-```js
-const V = validator.create('ModuleName');
-const ms = V.requireFinite(timeMs, 'timeMs');
-```
-Use `optionalFinite(val, fallback)` **only** for legitimately optional numerics.
-
-### 3. Self-Registration
-
-Modules self-register at load time. Two registries:
-- **`crossLayerRegistry`** - `register(name, module, scopes)` where scopes ⊆ `['all','section','phrase']`
-- **`conductorIntelligence`** - `registerDensityBias`, `registerTensionBias`, `registerFlickerModifier`, `registerRecorder`, `registerStateProvider`, `registerModule`
-
-19 hypermeta self-calibrating controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, meta-telemetry, inter-controller conflict detection, whole-system coupling energy homeostasis, axis-level energy equilibration (two-layer pair-hotspot + axis-balance with graduated coherent gate), phase energy floor (adaptive collapse detection and graduated boost), per-pair gain ceilings (adaptive ceiling from rolling p95 EMA), and section-0 warmup ramps (adaptive per-pair ramp from S0 exceedance history). The regime classifier additionally self-balances coherent share via auto-adjusting `coherentThresholdScale`. Never manually tune constants that a meta-controller already manages.
-
-To add a module: write the file, self-register at end of IIFE, require from subsystem `index.js`.
-
-### 4. Single-Manager Hub per Subsystem
-
-One `*Manager` per subsystem (Facade + service locator). Helpers load first via `index.js`, then the manager. When a file exceeds ~200 lines, extract a focused helper loaded **before** the consumer.
-
-### 5. Coherent Files, One Responsibility
-
-Target ≤ 200 lines. File name matches main export. `const` and pure functions preferred. Comments reserved for complex logic. Only classes use PascalCase; everything else camelCase.
-
-## Code Style Rules
-
-- **Language:** JavaScript (CommonJS), TypeScript checking via `tsc --noEmit`
-- **Console output:** script start, successful output, and temporary debug traces only. Limited `console.warn('Acceptable warning: ...')`.
-- **No ad-hoc validation:** use `validator`, not `typeof` / `|| []` / `|| 0` / ternary fallbacks.
-- **No typeof on boot-validated globals:** trust bootstrap; reference directly.
-- **Globals are truth:** initialize correctly at the source. Never sanitize downstream.
+- JavaScript (CommonJS); TypeScript checking via `tsc --noEmit`.
+- Console output: script start, successful output, temporary debug traces only. `console.warn` must use `'Acceptable warning: ...'` format.
+- No ad-hoc validation: use `validator`, never raw `typeof` / `|| []` / `|| 0` / ternary fallbacks.
+- Globals are truth: initialize correctly at the source. Never sanitize downstream.
+- Comments are terse. No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
 
 ## Load Order
 
 `src/index.js` requires subsystems in this exact order:
+`utils → conductor → rhythm → time → composers → fx → crossLayer → writer → play`
 
-```
-utils - conductor - rhythm - time - composers - fx - crossLayer - writer - play
-```
+Each subsystem `index.js`: helpers first, manager/orchestrator last.
 
-Each subsystem `index.js`: helpers first, then manager/orchestrator last.
+## Architectural Boundaries (rules — no exceptions)
 
-## Architectural Boundaries
-
-- **Cross-layer cannot write to conductor** - only local `playProb`/`stutterProb` modifications and `explainabilityBus` diagnostics.
-- **Conductor cannot mutate cross-layer state** - read-only access via getters is fine; writes are banned (ESLint `local/no-direct-crosslayer-write-from-conductor`).
+- **Cross-layer cannot write to conductor.** Only local `playProb`/`stutterProb` and `explainabilityBus` diagnostics.
+- **Conductor cannot mutate cross-layer state.** Read-only via getters is fine; writes are banned (`local/no-direct-crosslayer-write-from-conductor`).
 - **Signal reading:** always through `signalReader`, never `conductorIntelligence.getSignalSnapshot()` directly.
-- **New feedback loops** must register with `feedbackRegistry` to prevent catastrophic resonance. Declare in `metrics/feedback_graph.json` and ensure `scripts/validate-feedback-graph.js` passes.
-- **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*` constants. Never hardcode trust name strings. Boot validation asserts completeness.
-- **Cross-layer emission:** route all cross-layer buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
-- **Meta-controller constants** (coupling targets, pair baselines, coherent relaxation, coherent threshold scale, progressive strength, flicker dampening base, axis energy distribution, global gain multiplier) are managed by hypermeta self-calibrating controllers. Never hand-tune these; modify the controller logic instead. Never set `coherentThresholdScale` per-profile -- the regime self-balancer owns it. Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
-- **Hypermeta-first rule (no whack-a-mole overrides):** Never add manual axis floors/caps/thresholds in `axisEnergyEquilibratorAxisAdjustments.js` SpecialCaps or similar locations. The 18 hypermeta controllers already manage all 6 axes. When an axis is suppressed or dominant, diagnose WHY the responsible controller isn't working and fix its logic (e.g., dead thresholds, asymmetric handlers, self-reinforcing decay). Pipeline script `check-hypermeta-jurisdiction.js` enforces this across 4 phases: Phase 1 (SpecialCaps overrides), Phase 2 (coupling matrix reads), Phase 3 (bias registration bounds lock — 93 registrations locked against `scripts/bias-bounds-manifest.json`), Phase 4 (5 watched controller-managed constants). New manual overrides, changed bias bounds, or watched constant violations cause pipeline failure. Legacy violations are allowlisted and tracked for removal. To update the bias manifest after legitimate structural changes: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`.
-- **Coupling matrix firewall:** Never read `.couplingMatrix` from `systemDynamicsProfiler.getSnapshot()` outside the coupling engine (`src/conductor/signal/balancing/`), meta-controllers (`src/conductor/signal/meta/`), profiler, diagnostics, or pipeline plumbing. Modules that need coupling awareness must register a bias via `conductorIntelligence` and respond through the controller chain. ESLint `local/no-direct-coupling-matrix-read` enforces this; `check-hypermeta-jurisdiction.js` Phase 2 detects violations at pipeline time. Legacy violations are allowlisted and tracked for removal.
-- **Inter-module communication** via `absoluteTimeGrid` channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants (defined in `src/time/l0Channels.js`). ESLint `local/no-bare-l0-channel` enforces this — bare string literals in `L0.post/getLast/query/count/getBounds/findClosest/reset` are a hard error. To add a new channel: add it to `l0Channels.js` and declare it in `globals.d.ts`.
-- **Firewall ports** are the 9 controlled openings in the architectural firewalls — each declared in `metrics/feedback_graph.json` under `firewallPorts`. Every port has a direction, mechanism, enforcement, and data shape. Validated by `scripts/pipeline/validate-feedback-graph.js`. When adding a new cross-boundary data flow, declare it as a firewall port.
+- **New feedback loops:** must register with `feedbackRegistry` and declare in `metrics/feedback_graph.json`.
+- **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*`. Never hardcode strings.
+- **Cross-layer emission:** route all buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
+- **Inter-module communication:** via `absoluteTimeGrid` (L0) channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants; bare strings in L0 method calls are a hard error (`local/no-bare-l0-channel`). New channel: add to `l0Channels.js`, declare in `globals.d.ts`.
+- **Firewall ports:** the 9 controlled cross-boundary openings are declared in `metrics/feedback_graph.json` under `firewallPorts`. New cross-boundary data flow → declare a port.
+
+### Hypermeta-First (no whack-a-mole overrides)
+
+The 19 hypermeta self-calibrating controllers manage all 6 axes and own coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, axis equilibration, phase energy floor, per-pair gain ceilings, section-0 warmup ramps, and `coherentThresholdScale`.
+
+- **Never hand-tune meta-controller constants.** Modify the controller logic instead.
+- **Never set `coherentThresholdScale` per-profile** — the regime self-balancer owns it.
+- **Never add manual axis floors/caps/thresholds** (e.g. SpecialCaps in `axisEnergyEquilibratorAxisAdjustments.js`). When an axis is suppressed/dominant, diagnose WHY the responsible controller isn't working and fix its logic.
+- **Coupling matrix firewall:** never read `.couplingMatrix` from `systemDynamicsProfiler.getSnapshot()` outside the coupling engine, meta-controllers, profiler, diagnostics, or pipeline plumbing. Modules needing coupling awareness register a bias via `conductorIntelligence` and respond through the controller chain (`local/no-direct-coupling-matrix-read`).
+- **Bias bounds are locked:** 93 registrations validated against `scripts/bias-bounds-manifest.json`. Snapshot after legitimate structural changes: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`.
+
+Enforced by `check-hypermeta-jurisdiction.js` (4 phases). Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
 
 ## Layer Isolation (L1/L2 Polyrhythmic Safety)
 
 Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed between layers unless explicitly per-layer.
 
-- **Per-layer globals** live in `LM.perLayerState`, saved/restored by `loadLayerToGlobals`/`saveGlobalsToLayer` on every `activate()` call. Currently: crossModulation, lastCrossMod, balOffset, sideBias, lBal, rBal, cBal, cBal2, cBal3, refVar, bassVar, flipBin.
-- **Conductor recorders** tick L1-only via registry gate in `conductorRecorderRegistry.runRecorders()`. Only `conductorSignalBridge` runs on L2 (needs per-layer signal refresh). Never add beat counters or ring buffers to recorders without accounting for this.
-- **Closure-based per-layer state** (stutterTempoFeel, crossLayerDynamicEnvelope, journeyRhythmCoupler, emissionFeedbackListener) uses `byLayer` maps keyed by `LM.activeLayer`.
-- **When adding new mutable state**: ask "does this get written during per-beat processing and read by both layers?" If yes, it needs per-layer treatment.
+- **Per-layer globals** live in `LM.perLayerState`, saved/restored on every `activate()` call. Currently: `crossModulation, lastCrossMod, balOffset, sideBias, lBal, rBal, cBal, cBal2, cBal3, refVar, bassVar, flipBin`.
+- **Conductor recorders** tick L1-only via the registry gate. Only `conductorSignalBridge` runs on L2. Never add beat counters or ring buffers to recorders without accounting for this.
+- **Closure-based per-layer state** uses `byLayer` maps keyed by `LM.activeLayer` (e.g. `stutterTempoFeel`, `crossLayerDynamicEnvelope`, `journeyRhythmCoupler`, `emissionFeedbackListener`).
+- **Adding new mutable state:** ask "is this written per-beat and read by both layers?" If yes, it needs per-layer treatment.
 
-## Adaptive System Infrastructure
+## Pipeline Discipline
 
-- **Cross-run warm-start**: `metrics/adaptive-state.json` persists terminal EMA values (healthEma, exceedanceTrendEma). Loaded by `hyperMetaManagerState` on boot. Values are clamped to safe ranges on load to prevent stressed-state boot loops.
-- **Reconvergence accelerator**: `reconvergenceAccelerator.js` detects structural input discontinuities and temporarily spikes EMA alphas for fast reconvergence (50 ticks, decaying).
-- **Regime-adaptive alphas**: `regimeTransitionAlphaBoost` in hyperMetaManager spikes 3x on regime transitions, decays at 0.88/tick.
-- **Effectiveness-weighted convergence**: controller effectiveness EMA alpha scales with proven effectiveness (0.02-0.12 range). Rate multiplier authority +/-25%.
-- **Density-pressure homeostasis**: `crossLayerClimaxEngine` accumulates pressure when density > 0.62 during climax approach. Regime-aware relief (exploring 0.15, evolving 0.12, coherent 0.20) self-reduces play/entropy boost. Same architecture as cadenceAlignment tension-accumulation. Prevents aural crowding at peaks without static tension gates.
-- **Phrase breath independence/dynamism**: `phraseArcProfiler.generateArcProfiles()` wires dormant per-profile `phraseBreath.independence` and `phraseBreath.dynamism` config into arc curve functions. Regime-responsive modulation: exploring +0.10 independence (more contrapuntal), coherent -0.08 (more unified).
-- **Emergent rhythm engine**: `emergentRhythmEngine` accumulates 6 L0 event channels (stutterContagion, emergentDownbeat, feedbackLoop, onset, cadenceAlignment, regimeTransition) into a 16-slot subdivision grid. Self-calibrating density/complexity EMAs adjust grid sensitivity. Regime-adaptive window (exploring 3 beats, coherent 1.5). Posts `emergentRhythm` to L0, consumed by crossModulateRhythms, stutterVariants, convergenceDetector, feedbackOscillator, and emergentDownbeat. 4th link in getRhythm.js bias chain.
-- **Emergent melodic engine**: `emergentMelodicEngine` synthesizes 6 conductor melodic trackers (melodicContourTracker, intervalDirectionMemory, tessituraPressureMonitor, thematicRecallDetector, ambitusMigrationTracker, counterpointMotionTracker) into a per-beat melodic context. Three bias surfaces: `nudgeNoveltyWeight()` in harmonicIntervalGuard amplifies interval novelty hunting when territory is stale; `getMelodicWeights()` adds a 12th signal dimension to stutterVariants (contour/freshness/tessiture/counterpoint shift variant weights); `getContourAscendBias()` in alienArpeggio modulates pitch direction by melodic arc. Posts `emergentMelody` to L0. CIM harmonic-pitchCorrection dial scales authority. Lives in `src/crossLayer/melody/`.
-
-## Stutter Variant System
-
-19 stutter note variants in `src/fx/stutter/variants/`, selected per-beat by `stutterVariants.selectForBeat()`. Selection is weighted by 12 signal dimensions: regime, section phase, hocket mode, articulation, harmonic journey distance, phrase boundary, coupling labels, entropy reversal, call-response, self-balancing inverse-frequency, emergent rhythm density/complexity, and melodic context (contour/freshness/tessiture/counterpoint). Per-step gating in `stutterNotes.js` via `stutterSteps.shouldEmit()` applies two layers: Euclidean pattern gate (75% activation) then sustain-proportional probabilistic gate. New variants: create file in `variants/`, self-register with `stutterVariants.register(name, fn, weight, { selfGate, maxPerSection })`, add to `variants/index.js`, add to `REGIME_WEIGHTS` in `stutterVariants.js`.
-
-## Coordination Independence Manager (CIM)
-
-`src/crossLayer/coordinationIndependenceManager.js` manages 12 module-pair coordination dials (0=independent, 1=coordinated). Lives in crossLayer (reads conductor via `conductorSignalBridge`, writes to peer crossLayer modules via `setCoordinationScale()`). Phase-gated: adjusts during stabilized/converging, freezes during oscillating (unless health < 0.4). Has chaos mode (`setChaosMode(true)`) and oscillation mode (`setOscillationMode(true)`). Intent-aware: reads `sectionIntentCurves.interactionTarget` for 35% of target blend. Per-pair staggered evaluation (`PAIR_DWELL_STAGGER=1`) isolates health attribution for effectiveness tracking.
-
-## Binaural Detune Prevention
-
-`setBinaural.js` pitch bend glide must complete WITHIN the volume crossfade window (0.06-0.12s), not over the full shift interval. Post-crossfade snap event ensures final pitch bend is applied. `flipBinCrossfadeWindow` global exposes the exact crossfade window for `stereoScatter` variant. Per-layer flipBin state in `LM.perLayerState` prevents L1/L2 pitch bend desync.
-
-## Perceptual Intelligence (Neural Audio Analysis)
-
-Three-phase perceptual stack on Tesla M40 GPU, all at **15% confidence** until verified against listening:
-- **Phase 1**: Run-history snapshots (`scripts/pipeline/snapshot-run.js`) — trace features auto-captured per pipeline run. Label with `--label STABLE` or `--label-bulk VERDICT --since ISO --until ISO`. Training at 15 labeled runs; `train-verdict-predictor.js` runs each pipeline, outputting predicted verdict probability from LogisticRegression weights in `metrics/verdict-model.json`.
-- **Phase 2**: EnCodec 24kHz neural audio codec — per-section token entropy (musical complexity). Validated: conductor tension correlates r=0.644 with CB0 entropy. CB0 deviation per section → tension bias modifier in `src/conductor/melodic/perceptualTensionBias.js` (±0.08 max, confidence-scaled, closes the tension→CB0→tension loop).
-- **Phase 3**: CLAP (HTSAT-tiny) — natural language audio queries. Per-section xenolinguistic probes (alien/organic/chaotic/sparse) stored in `encodec_sections[sec].clap`. CLAP guidance feeds `sectionIntentCurves.js` (±0.06 per target, confidence-scaled) to nudge density/dissonance/interaction away from dominant section character.
-
-Perceptual snapshot with audio: `node scripts/pipeline/snapshot-run.js --perceptual` (checks WAV freshness).
-
-## Pipeline Scripts
-
-Pipeline step scripts live in `scripts/pipeline/`. Lab runner at `lab/run.js` uses isolated temp working directories (never touches `output/`). Lab runner timeout is 180s with explicit timeout message.
-
-**Non-fatal step error scanning**: `main-pipeline.js` captures stdout+stderr from all non-fatal (post-composition) steps and scans for error keywords (Traceback, RuntimeError, CUDA error, OOM, MemoryError, FATAL, segfault, killed). Detected errors are reported in the pipeline summary and written to `metrics/pipeline-summary.json` under `errorPatterns`. The `posttooluse_bash.sh` hook reads this after `npm run main` and emits a loud banner. **A non-fatal step marked OK with exit code 0 can still contain real failures** — always check `errorPatterns` in the summary. Never ignore these.
-
-## Custom ESLint Rules
-
-22 project-specific rules in `scripts/eslint-rules/`:
-
-- **`case-conventions`** - PascalCase for classes, camelCase for everything else
-- **`no-bare-l0-channel`** - ban bare string literals in L0 method calls; use `L0_CHANNELS.xxx` constants
-- **`no-bare-math`** - ban direct `Math.*` access; use the project `m = Math` alias
-- **`no-conductor-registration-from-crosslayer`** - prevent cross-layer modules from registering with conductor
-- **`no-console-acceptable-warning`** - restrict `console.warn` to `'Acceptable warning: ...'` format
-- **`no-direct-buffer-push-from-crosslayer`** - ban direct buffer `push()` in cross-layer modules (use `crossLayerEmissionGateway.emit()`)
-- **`no-direct-conductor-state-from-crosslayer`** - prevent cross-layer modules from reading `conductorState` directly (must use `conductorSignalBridge`)
-- **`no-direct-coupling-matrix-read`** - ban `.couplingMatrix` reads outside coupling engine, meta-controllers, and pipeline plumbing (use controller chain)
-- **`no-direct-crosslayer-write-from-conductor`** - prevent conductor modules from mutating cross-layer state (read-only access allowed)
-- **`no-direct-signal-read`** - ban `conductorIntelligence.getSignalSnapshot()` - use `signalReader`
-- **`no-empty-catch`** - ban empty catch blocks - errors must be handled or rethrown
-- **`no-math-random`** - ban `Math.random()` - use project random sources
-- **`no-non-ascii`** - ban non-ASCII characters in source
-- **`no-requires-outside-index`** - restrict `require()` to `index.js` files
-- **`no-silent-early-return`** - ban silent early returns - fail fast
-- **`no-typeof-validated-global`** - ban `typeof` checks on boot-validated globals
-- **`no-unregistered-feedback-loop`** - require feedback loop registration with `feedbackRegistry` (closedLoopController auto-registers)
-- **`no-unstamped-validator`** - require module name stamp on `validator.create()`
-- **`no-useless-expose-dependencies-comments`** - ban `/* expose-dependencies */` comments
-- **`only-error-throws`** - require `throw new Error(...)` - no throwing strings/objects
-- **`prefer-validator`** - prefer `validator` methods over ad-hoc `typeof`/`Number.isFinite`/`Array.isArray` guards
-- **`validator-name-matches-filename`** - require validator stamp to match filename
+- **Lab runner** at `lab/run.js` uses isolated temp working directories — never touches `output/`. 180s timeout.
+- **Non-fatal step error scanning:** `main-pipeline.js` captures stdout+stderr from post-composition steps and scans for error keywords. Detected errors are written to `metrics/pipeline-summary.json` under `errorPatterns`. **A non-fatal step marked OK with exit code 0 can still contain real failures** — always check `errorPatterns` in the summary.
+- **Lab sketches:** every `postBoot()` must contain real implementation code that creates the described behavior. A `setActiveProfile()`-only postBoot is empty and tests nothing. Monkey-patching globals/functions in postBoot is the integration prototyping mechanism.
 
 ## Hard Rules (Never Violate)
 
-- **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. setBinaural runs from grandFinale post-loop walk ONLY, never from processBeat.
-- **Never remove `tmp/run.lock`.** If a lock exists, it's because you abandoned a run without canceling it. Do not suggest, attempt, or execute removal. Enforced by PreToolUse hook + deny rule in `.claude/settings.json`.
-- **Never delete unused code/config before checking if it should be implemented.** Only delete code which can't be reasonably adapted and whose concerns are already covered elsewhere in a better manner, otherwise — wire it up and implement.
+- **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. `setBinaural` runs from `grandFinale` post-loop walk ONLY, never from `processBeat`.
+- **Never remove `tmp/run.lock`.** A lock means a run was abandoned without canceling. Do not suggest, attempt, or execute removal. Enforced by PreToolUse hook + deny rule.
+- **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
-- **Comments are terse.** No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
-- **Never abandon a plan mid-execution.** When executing a task, finish the current atomic unit before pivoting. If user feedback changes the direction, explicitly acknowledge the pivot, state what was left undone, and get confirmation before switching. Never leave code/tools in a broken intermediate state while switching to a different approach. Clarifying questions belong BEFORE starting implementation, not after. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed. Enforced: KB entry 524061657661, Stop hook plan-abandonment check.
+- **Never abandon a plan mid-execution.** Finish the current atomic unit before pivoting. If user feedback changes direction, explicitly acknowledge the pivot, state what was left undone, and confirm before switching. Never leave code/tools in a broken intermediate state. Clarifying questions belong BEFORE starting implementation. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed.
 
 ## Working Style
 
-**User messages via system-reminder:** Respond immediately — do not wait for any running process, background task, or tool call to finish first. Drop everything and reply now. Resume prior work after responding, unless the message says to stop.
+- **User messages via system-reminder:** respond immediately. Do not wait for any running process or tool call to finish first. Drop everything and reply now. Resume prior work after responding, unless the message says to stop.
+- **Context budget:** when the window has headroom, be greedy — use parallel research agents, read full files, investigate deeply. Only economize when window pressure is high or the task is clearly trivial. Default to thoroughness.
+- **Auto-commits:** after each verified non-regressive pipeline run (STABLE or EVOLVED), auto-commit all changed files with format `RXX: brief description`. Do not commit DRIFTED runs or failed pipelines.
+- **Act on feedback immediately and thoroughly.** Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
+- **If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.**
 
-**Context budget:** When the context window has significant headroom (e.g. after compaction or early in a session), be greedy — use parallel research agents, read full files, investigate deeply, explore multiple approaches. Only economize context when window pressure is actually high or the task is clearly simple/familiar. Default to thoroughness; err on the side of over-researching rather than under-researching.
+## HyperMeta Mandatory Workflow
 
-**Auto-commits:** After each verified non-regressive pipeline run (STABLE or EVOLVED), auto-commit all changed files with a descriptive message summarizing the round's evolutions. This creates natural reversion points. Do not commit DRIFTED runs or failed pipelines. Format: `RXX: brief description of changes`.
+All file/search operations route through HME mega-tools for KB enrichment. Full reference: [doc/HME.md](../doc/HME.md).
 
-**Enforcement:** This file is loaded every prompt. Hooks in `.claude/settings.json` enforce HME usage, Evolver phases, lab rules, and Grep blocking. If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.
-
-Act on feedback immediately and thoroughly. Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing to update or confirm. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
-
-## Lab Sketches
-
-Every sketch `postBoot()` must contain **real implementation code** that creates the described behavior. A postBoot that only calls `setActiveProfile('atmospheric')` with no other code is an empty sketch -- it tests nothing and produces no actionable verdict. Monkey-patching globals/functions in postBoot is the mechanism for prototyping behavior before integration into /src.
-
-## Lab Findings (Calibration Anchors)
-
-[metrics/journal.md](../metrics/journal.md) - Listening-confirmed constraints from lab sessions, with detailed descriptions and results. Use these to anchor calibration and validate that changes have the intended effect. Track whether changes took effect at all, and if so, whether the effect size is in the expected direction and magnitude. "Inconclusive" is a valid outcome when the effect is too small to confirm or deny with confidence, but "opposite effect" is a red flag that the change may not be working as intended, in which case it should be abandoned or revised.
-
-## HyperMeta Ecstasy
-
-Master executive for hypermeta evolutionary intelligence. 13 MCP mega-tools — the full stack that makes self-evolving composition possible: MCP server (`tools/HME/`), CLAUDE.md, skills (`/HME`), hooks, Evolver, and lab. All layers evolve together. Full reference: [doc/HME.md](../doc/HME.md)
-
-**Mandatory usage (not optional):**
-- **Before modifying a file:** `read("moduleName", mode="before")` -- ONE CALL assembles KB constraints, callers, boundary warnings, file structure. Accepts module names or paths — auto-resolves.
-- **After implementing changes:** `review(mode='forget')` -- auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
-- **For any search:** use `find(query)` instead of Grep. Auto-routes by intent (callers/boundary/grep/semantic). Adds KB cross-referencing.
+- **Before modifying a file:** `read("moduleName", mode="before")` — assembles KB constraints, callers, boundary warnings, file structure. Auto-resolves module names → paths.
+- **After implementing changes:** `review(mode='forget')` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
 - **After each listen-confirmed round:** `learn(title='...', content='...', category='pattern')` for calibration anchors. Do NOT add until user confirms task complete.
-- **When pipeline fails:** `find("paste error text", mode="diagnose")` -- traces source, finds similar KB bugs, suggests fix patterns.
+- **When pipeline fails:** read pipeline output, fix root cause. `read("moduleName", mode="before")` on the failing file.
 
-**Core workflow:**
-```
-/HME
-read("crossLayerClimaxEngine", mode="before")                                   -- pre-edit briefing (auto-resolves path)
-find("where does convergence detection happen")                                  -- semantic search
-read("crossLayerClimaxEngine", mode="story")                                     -- living biography
-review(mode='forget')                                                            -- post-change audit (auto-detects from git)
-review(mode='health')                                                            -- full-repo sweep
-learn(query='density suppression')                                               -- KB search
-evolve(focus='contradict')                                                       -- scan KB for conflicting entries
-evolve(focus='stress')                                                           -- 35 enforcement probes across LIFESAVER, hooks, ESLint, docs
-evolve(focus='invariants')                                                       -- declarative battery from config/invariants.json (no Python needed)
-```
+## Reference Pointers
 
-**13 tools, 3 layers:** reactive search, architectural analysis, collaborative reasoning. All search/file operations route through HME mega-tools for KB enrichment.
-
-## Related Documentation
-
-- [doc/HME.md](../doc/HME.md) - Comprehensive setup, usage, and maintenance guide for HME
-- [README.md](../README.md) - Comprehensive project overview, architecture, subsystem details, diagnostics
-- [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) - Beat lifecycle deep-dive, signal flow from conductor to emission
-- [doc/TUNING_MAP.md](../doc/TUNING_MAP.md) - Feedback loop constants, interaction partners, cross-constant invariants
-- [metrics/journal.md](../metrics/journal.md) - Evolution journal with lab findings and calibration anchors
-- [metrics/feedback_graph.json](../metrics/feedback_graph.json) - Feedback loop topology (source of truth for visualization). 11 loops, auto-generated by `scripts/generate-feedback-graph.js` and cross-validated by `scripts/validate-feedback-graph.js` on every pipeline run.
-- `metrics/conductor-map.md` - Auto-generated conductor intelligence map (per-run)
-- `metrics/crosslayer-map.md` - Auto-generated cross-layer intelligence map (per-run)
-- `metrics/narrative-digest.md` - Auto-generated prose narrative with section character + coupling semantics (per-run)
-- `metrics/trace-replay.json` - Per-section/phrase breakdown: regime, tension, note counts, profile (per-run)
-- `metrics/feedback-graph.html` - Interactive feedback graph visualization (per-run)
-- `metrics/runtime-snapshots.json` - CIM dials, stutter variant counts, correlation shuffler state, section history (per-run)
-- `metrics/adaptive-state.json` - Cross-run warm-start state for hypermeta EMAs (persisted across runs)
+- Lab calibration anchors → [metrics/journal.md](../metrics/journal.md)
+- ESLint rules (22) → `scripts/eslint-rules/` (enforced at lint time; no need to memorize)
+- Per-run diagnostics → `metrics/conductor-map.md`, `metrics/crosslayer-map.md`, `metrics/narrative-digest.md`, `metrics/trace-replay.json`, `metrics/runtime-snapshots.json`, `metrics/feedback-graph.html`
+- Cross-run state → `metrics/adaptive-state.json`
+- Feedback loop topology → [metrics/feedback_graph.json](../metrics/feedback_graph.json)
