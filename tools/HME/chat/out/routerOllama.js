@@ -349,7 +349,8 @@ function streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onErro
                         ? JSON.parse(tc.function.arguments)
                         : (tc.function?.arguments ?? {});
                 }
-                catch {
+                catch (e) {
+                    onChunk(`⚠ [${fnName}] failed to parse tool args: ${e?.message ?? e}`, "error");
                     args = {};
                 }
                 onChunk(`[${fnName}] ${JSON.stringify(args).slice(0, 120)}`, "tool");

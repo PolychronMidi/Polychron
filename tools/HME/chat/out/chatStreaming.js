@@ -68,7 +68,7 @@ function reindexFromTools(tools) {
     }
     const indexable = [...files].filter(f => INDEXABLE_EXTS.has(path.extname(f).toLowerCase()));
     if (indexable.length > 0) {
-        (0, router_1.reindexFiles)(indexable).catch(() => { });
+        (0, router_1.reindexFiles)(indexable).catch((e) => console.error(`[HME] reindexFiles failed: ${e?.message ?? e}`));
     }
     return files;
 }

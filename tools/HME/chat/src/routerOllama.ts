@@ -317,7 +317,10 @@ export function streamOllamaAgentic(
           args = typeof tc.function?.arguments === "string"
             ? JSON.parse(tc.function.arguments)
             : (tc.function?.arguments ?? {});
-        } catch { args = {}; }
+        } catch (e: any) {
+          onChunk(`⚠ [${fnName}] failed to parse tool args: ${e?.message ?? e}`, "error");
+          args = {};
+        }
 
         onChunk(`[${fnName}] ${JSON.stringify(args).slice(0, 120)}`, "tool");
 

@@ -31,7 +31,7 @@ export function reindexFromTools(tools: string[]): Set<string> {
   }
   const indexable = [...files].filter(f => INDEXABLE_EXTS.has(path.extname(f).toLowerCase()));
   if (indexable.length > 0) {
-    reindexFiles(indexable).catch(() => {});
+    reindexFiles(indexable).catch((e: any) => console.error(`[HME] reindexFiles failed: ${e?.message ?? e}`));
   }
   return files;
 }
