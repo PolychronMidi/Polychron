@@ -190,10 +190,17 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             ready = _engine_ready.is_set() and _project_engine is not None
             recent_errors = _get_recent_errors(minutes=120)
+            _training_lock = os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")
+            _training_locked = os.path.exists(_training_lock)
+            # During training, report as ready+healthy so the proxy monitor doesn't
+            # restart-loop the shim. Training lock intentionally blocks engine init.
+            # `training_locked: true` signals to callers that RAG is unavailable.
+            _effective_ready = ready or _training_locked
             self._send_json(200, {
-                "status": "ready" if ready else "loading",
+                "status": "ready" if _effective_ready else "loading",
                 "transcript_entries": len(_transcript_entries),
-                "kb_ready": _project_engine is not None,
+                "kb_ready": _project_engine is not None or _training_locked,
+                "training_locked": _training_locked,
                 "recent_errors": recent_errors[-10:],
                 "error_count": len(recent_errors),
                 "pid": os.getpid(),  # Layer 1: shim identity for cross-component correlation
