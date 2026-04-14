@@ -58,6 +58,8 @@ class ChatPanel {
         this._chainingInProgress = false;
         // ── HME shim process management ────────────────────────────────────────────
         // ── Mirror terminal ────────────────────────────────────────────────────────
+        // A live native VS Code terminal running Claude directly — fully interactive.
+        // The hidden node-pty session still handles chat rendering independently.
         this._mirrorMode = false;
         this._shimProc = null;
         this._shimFailed = false;
@@ -221,10 +223,7 @@ class ChatPanel {
             case "setMirrorMode":
                 this._mirrorMode = !!msg.enabled;
                 if (this._mirrorMode) {
-                    this._ensureMirrorTerminal();
-                }
-                else {
-                    this._ptyWriteFn = undefined;
+                    this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
                 }
                 this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
                 break;
@@ -278,14 +277,6 @@ class ChatPanel {
             updateContextTracker: (t, th, m, u) => self._updateContextTracker(t, th, m, u),
             checkChainThreshold: (msg) => self._checkChainThreshold(msg),
             setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
-            get mirrorPty() {
-                if (!self._mirrorMode)
-                    return undefined;
-                return {
-                    onRawData: (raw) => self._writeEmitter?.fire(raw),
-                    onPtyReady: (fn) => { self._ptyWriteFn = fn; },
-                };
-            },
         };
     }
     _loadSession(id) {
@@ -567,18 +558,18 @@ class ChatPanel {
             }
         });
     }
-    _ensureMirrorTerminal() {
-        if (this._mirrorTerminal && !this._mirrorTerminal.exitStatus)
+    _ensureMirrorTerminal(model, effort) {
+        if (this._mirrorTerminal && !this._mirrorTerminal.exitStatus) {
+            this._mirrorTerminal.show(true);
             return;
-        this._writeEmitter = new vscode.EventEmitter();
-        const writeEmitter = this._writeEmitter;
-        const pty = {
-            onDidWrite: writeEmitter.event,
-            open: () => writeEmitter.fire("HME Chat — Claude terminal mirror\r\n"),
-            close: () => { this._mirrorTerminal = undefined; },
-            handleInput: (data) => { this._ptyWriteFn?.(data); },
-        };
-        this._mirrorTerminal = vscode.window.createTerminal({ name: "HME Claude", pty });
+        }
+        const args = ["--model", model, "--effort", effort, "--permission-mode", "bypassPermissions"];
+        this._mirrorTerminal = vscode.window.createTerminal({
+            name: "HME Claude",
+            shellPath: "claude",
+            shellArgs: args,
+            cwd: this._projectRoot,
+        });
         this._mirrorTerminal.show(true);
     }
     _startHmeShim() {
