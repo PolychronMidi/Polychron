@@ -80,6 +80,14 @@ print('wrote hci=' + str(d['hci']))
   if [ -f "$HOLO_SCRIPT" ]; then
     PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" > /dev/null 2>&1 &
   fi
+  # Refresh tool-effectiveness + trajectory + coupling matrix after each pipeline
+  # run so the next HCI computation has fresh data to score against.
+  EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
+  TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
+  COUPLING_SCRIPT="$PROJECT/tools/HME/scripts/build-hme-coupling-matrix.py"
+  [ -f "$EFF_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 &
+  [ -f "$TRAJ_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 &
+  [ -f "$COUPLING_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$COUPLING_SCRIPT" > /dev/null 2>&1 &
 
   cat >&2 <<MSG
 EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100} complete. You MUST now:
