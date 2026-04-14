@@ -249,15 +249,41 @@ Pipeline:
 
 The Maxwell trap (#8) is the most painful because it's silent: loss prints as 0.0, gradient prints as NaN, training "completes" successfully, and the saved adapter weights are effectively zero. Nothing in the stock `transformers.Trainer` path fails loudly. The only way to catch it is to look at the loss values and notice they were 0.0 from step 1.
 
-**Trained adapter:** `Qwen/Qwen2.5-0.5B-Instruct` (0.5B params, fp32) with LoRA r=8 α=16, 3 epochs, 262 examples, lr=1e-4, gradient checkpointing. Fits in 24GB with room.
+**Trained adapter:** `Qwen/Qwen2.5-0.5B-Instruct` (0.5B params, fp32) with LoRA r=8 α=16, 3 epochs, 262 examples, lr=1e-4, gradient checkpointing. Final train_loss=3.21 (healthy, not NaN). Fits in 24GB with room. Training took 271 seconds (~4.5 min).
+
+**Artifacts produced:**
+- `metrics/hme-arbiter-adapter-v2/` — LoRA adapter (4.35MB)
+- `metrics/hme-arbiter-merged/` — merged base+adapter (full model weights)
+- `metrics/hme-arbiter.gguf` — 949MB f16 GGUF, loadable by Ollama
+- `ollama list` shows `hme-arbiter:latest` (994MB) registered and callable
+
+**Quality assessment (the honest outcome):**
+
+The mechanical pipeline works end-to-end. Every stage succeeds. The fine-tuned model responds at **1.3 seconds** vs the stock `qwen3:4b` CPU model's 8 seconds (and the stock model returned empty output on the same prompt, while the fine-tuned model produced fluent text). Speed improvement is real and significant.
+
+**BUT** the content quality is not yet a net improvement:
+- JSON research plans have the right schema keys but contain lists-of-lists and duplicated values
+- Prose responses are fluent but factually hallucinated (e.g., the model decided "HME" stands for "Hypothetical Modern ECMAScript" — a plausible-sounding but completely wrong expansion invented from nothing in the training data)
+- The model learned the surface structure (JSON keys, explanatory tone) but didn't internalize the domain facts
+
+**Root cause:** 262 examples × 3 epochs on a 0.5B model is insufficient to actually teach a new domain. The model learned the format but not the facts.
+
+**What's needed for a real quality leap:**
+1. **More data** — target 1000+ examples. Sources: expand per-KB-entry synthesis (currently 2-3 examples per entry), add session narrative history, add successful research plans from the stress test battery, add synthetic examples from doc/*.md content.
+2. **Larger base** — the 1.5B or 3B variant actually fits the domain better. Needs training hardware that tolerates fp16 (Ampere+) or fp32 with the larger memory budget. Current M40 Maxwell cards cap this.
+3. **Task-specific data splits** — don't mix "explain this module" and "output JSON plan" examples in the same training set. Train two adapters or use an instruction-tuning dataset format that the model can route on.
+4. **Val set + early stopping** — catch overfitting or format drift before the final checkpoint.
+
+**Decision: do NOT flip the default.** `_ARBITER_MODEL` remains `qwen3:4b` by default. The fine-tuned variant is available via `HME_ARBITER_MODEL=hme-arbiter:latest` env var for opt-in testing. Explore mode keeps `skip_arbiter=True` — the fast path still dominates because the arbiter (fine-tuned or not) hasn't yet produced research plans meaningfully better than keyword extraction + path inference on this corpus size.
 
 Every one of these traps is now documented in this log so the next training round starts from a known-good configuration. The scripts that encode this knowledge are:
 - `tools/HME/scripts/finetune-arbiter.py` — scaffolding + config + plan
-- `/tmp/train-arbiter-v2.py` — the working training script (Maxwell-safe)
+- `/tmp/train-arbiter-v2.py` — the working training script (Maxwell-safe, fp32, 0.5B)
 - `/tmp/build-corpus.py` — corpus builder (two-pass KB fetch)
+- `/tmp/post-training-pipeline.sh` — merge → GGUF → ollama register → test
 - `~/tools/llama-cpp-convert/convert_hf_to_gguf.py` — pinned to b3800
 
-The fine-tuned arbiter, if successful, produces research plans that speak Polychron's native vocabulary and can be re-enabled in `_MODE_CONFIGS["explore"]["skip_arbiter"] = False` once its quality is verified to exceed the keyword-extraction fallback.
+**The pipeline is proven end-to-end.** Iteration 2 with a richer corpus and larger base model should produce a real quality lift. The substrate is ready; the data and hardware are the current bottleneck.
 
 ## The principle
 
