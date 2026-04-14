@@ -153,6 +153,11 @@ def what_did_i_forget(changed_files: str) -> str:
                 all_warnings.append(
                     f"[{rel_path}] DOC CHECK: update doc/HME.md hook descriptions if behavior changed."
                 )
+        elif rel_path.startswith(("tools/", "scripts/", "lab/")):
+            # KB constraints are for the composition system (src/). Tooling files (chat
+            # plugin, MCP server, scripts) have different semantics and produce spurious
+            # matches against src/ architecture entries (e.g. "router" → "gateway").
+            pass
         else:
             # Check KB for constraints on this module — split actionable vs historical
             kb_results = cached_kb_search(module_name, min(limits["kb_entries"], 5), ctx.project_engine)

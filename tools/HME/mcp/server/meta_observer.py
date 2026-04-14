@@ -1536,10 +1536,14 @@ _ARCHAEOLOGY_INTERVAL = 21600       # 6 hours
 _KB_CONFIDENCE_INTERVAL = 3600      # 1 hour
 
 
+_ALERT_LOG_COOLDOWN = 1800  # each alert type logs at most once per 30 minutes
+
+
 def _meta_loop() -> None:
     global _last_correlations, _last_narration_ts, _last_env_ts, _last_entangle_ts
     global _last_env_snapshot, _last_synthesis_pattern_ts
     global _last_intent_ts, _last_archaeology_ts, _last_kb_confidence_ts
+    _alert_last_logged: dict[str, float] = {}
     cycle = 0
     while _active:
         try:
@@ -1561,7 +1565,11 @@ def _meta_loop() -> None:
                 _last_correlations = _correlate(history)
                 if _last_correlations.get("alerts"):
                     for alert in _last_correlations["alerts"]:
-                        logger.warning(f"Meta-observer L14: {alert['type']} — {alert['message']}")
+                        atype = alert["type"]
+                        last = _alert_last_logged.get(atype, 0)
+                        if now - last >= _ALERT_LOG_COOLDOWN:
+                            logger.warning(f"Meta-observer L14: {atype} — {alert['message']}")
+                            _alert_last_logged[atype] = now
 
             # L15: narrative synthesis + L24 anticipatory lookahead + L∞∞ ceiling check
             if now - _last_narration_ts >= _NARRATION_INTERVAL and _last_correlations:
