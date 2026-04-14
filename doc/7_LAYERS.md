@@ -22,7 +22,7 @@ Each layer has: current state and items for next dedicated pass.
 **State**: 6 thinking artifact patterns stripped. JS-native hierarchy (IIFE dep graph, de-facto hubs, subsystem rollup, outgoing deps). Forge re-prompts with valid symbol list on >2 unknown methods. Hierarchy de-facto hub median now excludes single-use helpers and helper-suffix files. Symbol index: 716 files, 3244 chunks, 4600 symbols.
 
 ### Next pass
-- ongoing: reindex after major batch changes if watcher hasn't caught up (index drifts under compaction — clear_index rebuilds from scratch)
+- ongoing: reindex after major batch changes if watcher hasn't caught up (index drifts under compaction — `hme_admin(action='clear_index')` rebuilds from scratch)
 
 ## Layer 4: Data Coherence (SOLID)
 

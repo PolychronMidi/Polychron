@@ -142,6 +142,86 @@ def hme_selftest() -> str:
     except Exception as e:
         results.append(f"FAIL: doc sync -- {e}")
 
+    # Doc-code stale-reference verifier (catches legacy tool name drift across
+    # all doc/*.md files, not just HME.md). Runs as a subprocess so a broken
+    # verifier can't crash the selftest.
+    _project_root = os.environ.get("PROJECT_ROOT") or os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    try:
+        import subprocess
+        verifier = os.path.join(_project_root, "tools", "HME", "scripts", "verify-doc-sync.py")
+        if os.path.isfile(verifier):
+            rc = subprocess.run(
+                ["python3", verifier],
+                capture_output=True, text=True, timeout=30,
+                env={**os.environ, "PROJECT_ROOT": _project_root},
+            )
+            hits = None
+            for ln in rc.stdout.splitlines():
+                if ln.startswith("Drift hits:"):
+                    try:
+                        hits = int(ln.split(":", 1)[1].strip())
+                    except ValueError:
+                        pass
+                    break
+            if hits is None:
+                results.append("WARN: doc stale-ref scan -- could not parse verifier output")
+            elif hits == 0:
+                results.append("PASS: doc stale-ref scan -- no legacy tool references detected")
+            else:
+                results.append(f"FAIL: doc stale-ref scan -- {hits} legacy tool reference(s) detected (run tools/HME/scripts/verify-doc-sync.py for details)")
+        else:
+            results.append("INFO: doc stale-ref scan -- verifier script not found")
+    except Exception as e:
+        results.append(f"WARN: doc stale-ref scan -- {e}")
+
+    # Onboarding flow dry-run — simulates a full walkthrough in isolation and
+    # verifies every state transition + todo-tree mirror + graduation path.
+    # Catches integration bugs in the chain decider before real agents hit them.
+    try:
+        import subprocess
+        verifier = os.path.join(_project_root, "tools", "HME", "scripts", "verify-onboarding-flow.py")
+        if os.path.isfile(verifier):
+            rc = subprocess.run(
+                ["python3", verifier],
+                capture_output=True, text=True, timeout=30,
+                env={**os.environ, "PROJECT_ROOT": _project_root},
+            )
+            if rc.returncode == 0:
+                results.append("PASS: onboarding flow dry-run -- all transitions fire correctly")
+            else:
+                fail_line = next(
+                    (ln for ln in rc.stdout.splitlines() if "failure" in ln.lower()),
+                    "onboarding flow verifier returned nonzero",
+                )
+                results.append(f"FAIL: onboarding flow dry-run -- {fail_line}")
+        else:
+            results.append("INFO: onboarding flow dry-run -- verifier script not found")
+    except Exception as e:
+        results.append(f"WARN: onboarding flow dry-run -- {e}")
+
+    # STATES sync verifier — catches Python-shell state list drift.
+    try:
+        import subprocess
+        verifier = os.path.join(_project_root, "tools", "HME", "scripts", "verify-states-sync.py")
+        if os.path.isfile(verifier):
+            rc = subprocess.run(
+                ["python3", verifier],
+                capture_output=True, text=True, timeout=5,
+                env={**os.environ, "PROJECT_ROOT": _project_root},
+            )
+            if rc.returncode == 0:
+                results.append("PASS: STATES sync -- Python and shell arrays match")
+            elif rc.returncode == 1:
+                results.append(f"FAIL: STATES sync -- drift between onboarding_chain.py and _onboarding.sh (run verify-states-sync.py for diff)")
+            else:
+                results.append(f"WARN: STATES sync -- verifier parse error")
+        else:
+            results.append("INFO: STATES sync -- verifier script not found")
+    except Exception as e:
+        results.append(f"WARN: STATES sync -- {e}")
+
     status: dict = {}
     try:
         ctx.ensure_ready_sync()

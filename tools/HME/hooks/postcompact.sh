@@ -5,6 +5,7 @@ cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HOOKS_DIR/_nexus.sh"
+source "$HOOKS_DIR/_onboarding.sh"
 
 PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 HME_LOG="$PROJECT/log/hme.log"
@@ -63,6 +64,17 @@ LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 [ -n "$LAST_COMMIT" ] && ORIENT="$ORIENT\n  Last commit: $LAST_COMMIT"
 PENDING=$(_nexus_pending)
 [ -n "$PENDING" ] && ORIENT="$ORIENT\n  Pending:$PENDING"
+
+# F2: Re-prime the onboarding walkthrough after compaction. If state is mid-
+# walkthrough, the agent lost conversational memory of WHY they're in that
+# state — reinject the current step + target so they can resume cleanly.
+if ! _onb_is_graduated; then
+  ONB_STEP="$(_onb_step_label)"
+  ONB_TARGET="$(_onb_target)"
+  ORIENT="$ORIENT\n  Onboarding: $ONB_STEP"
+  [ -n "$ONB_TARGET" ] && ORIENT="$ORIENT\n  Target module: $ONB_TARGET"
+fi
+
 echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 
 exit 0

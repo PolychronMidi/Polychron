@@ -99,9 +99,29 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     pass
             try:
                 from .workflow_audit import what_did_i_forget as _wdif
-                parts.append(_wdif(_cf or ""))
+                _wdif_out = _wdif(_cf or "")
+                parts.append(_wdif_out)
+                # D2: emit structured verdict marker so onboarding_chain can
+                # advance state deterministically regardless of output format.
+                try:
+                    from server.onboarding_chain import emit_review_verdict_marker
+                    lo = _wdif_out.lower()
+                    if "warnings: none" in lo or "no changed files" in lo:
+                        verdict = "clean"
+                    elif "warning" in lo:
+                        verdict = "warnings"
+                    else:
+                        verdict = "clean"  # No explicit warnings → treat as clean
+                    parts.append(emit_review_verdict_marker(verdict))
+                except Exception:
+                    pass
             except Exception as _fe:
                 parts.append(f"what_did_i_forget error: {_fe}")
+                try:
+                    from server.onboarding_chain import emit_review_verdict_marker
+                    parts.append(emit_review_verdict_marker("error"))
+                except Exception:
+                    pass
         elif m == "convention":
             if not file_path:
                 parts.append("Error: convention mode requires file_path.")

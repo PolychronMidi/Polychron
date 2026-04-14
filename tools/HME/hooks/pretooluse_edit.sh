@@ -10,22 +10,12 @@ if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(e
   exit 2
 fi
 
-# Onboarding gate (per user spec b3): block edits on /src/ when state is earlier
-# than 'briefed' — agent must call read(target, mode='before') first.
-# After 'briefed', edits are unrestricted (off-target edits get a warn only).
+# Warn if the edit is off-target during onboarding (per user spec: warn, not block)
 if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
-  if _onb_before "briefed"; then
-    MODULE=$(_extract_module "$FILE")
-    CUR_STEP=$(_onb_step_label)
-    jq -n --arg module "$MODULE" --arg step "$CUR_STEP" \
-      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("HME onboarding " + $step + "\n\nYou are editing src/ before the KB briefing step.\n\nAUTO-CHAIN: call mcp__HME__read(target=\"" + $module + "\", mode=\"before\") first.\nThe chain decider will advance onboarding to 'briefed' and your next Edit will go through.\n\nThis gate fires once per session — graduated agents skip it.")}}'
-    exit 0
-  fi
-  # Briefed or later: check if edit is on the target module, warn if not
   MODULE=$(_extract_module "$FILE")
   TARGET=$(_onb_target)
   if [ -n "$TARGET" ] && [ "$MODULE" != "$TARGET" ]; then
-    echo "NEXUS: Editing $MODULE but onboarding target is $TARGET. Proceeding (this is a warning, not a block)." >&2
+    echo "NEXUS: Editing $MODULE but onboarding target is $TARGET. Proceeding (warning, not a block)." >&2
   fi
 fi
 

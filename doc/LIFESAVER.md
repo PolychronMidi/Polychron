@@ -226,7 +226,7 @@ Detects pipeline commands with `run_in_background=true`, then:
 - If pipeline still running: require 20+ real tool calls before exit
 - If pipeline complete: require 5+ real tool calls
 
-Block message lists substantive work: index_codebase, next evolution, what_did_i_forget, docs/KB updates.
+Block message lists substantive work: `hme_admin(action='index')`, next evolution, `review(mode='forget')`, docs/KB updates.
 
 ### 5. Plan abandonment
 

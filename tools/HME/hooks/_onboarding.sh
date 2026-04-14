@@ -14,7 +14,11 @@ _ONB_TARGET_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.target"
 _ONB_PY="${_ONB_PROJECT}/tools/HME/mcp/server/onboarding_chain.py"
 
 # Ordered state list — must match STATES in onboarding_chain.py
-_ONB_STATES=(boot selftest_ok targeted briefed edited reviewed piped verified graduated)
+# Source of truth is the Python module; this array mirrors it. C1: a codegen
+# check could pull STATES from onboarding_chain.py on every source. For now
+# the arrays are kept in sync manually — if they drift, _onb_is_graduated
+# becomes unreliable.
+_ONB_STATES=(boot selftest_ok targeted edited reviewed piped verified graduated)
 
 _onb_state() {
   # Fast path: read file directly (no Python spawn)
@@ -85,14 +89,13 @@ _onb_advance_to() {
 _onb_step_label() {
   local s; s="$(_onb_state)"
   case "$s" in
-    boot)        echo "1/8 boot check (run hme_admin selftest)" ;;
-    selftest_ok) echo "2/8 pick evolution target (run evolve focus=design)" ;;
-    targeted)    echo "3/8 brief on target (run read mode=before)" ;;
-    briefed)     echo "4/8 edit target module (Edit tool)" ;;
-    edited)      echo "5/8 audit changes (run review mode=forget)" ;;
-    reviewed)    echo "6/8 run pipeline (Bash: npm run main)" ;;
-    piped)       echo "7/8 await verdict (hooks advance automatically)" ;;
-    verified)    echo "8/8 persist learning (run learn title=, content=)" ;;
+    boot)        echo "1/7 boot check (run hme_admin selftest)" ;;
+    selftest_ok) echo "2/7 pick evolution target (run evolve focus=design)" ;;
+    targeted)    echo "3/7 edit target module (Edit tool — briefing auto-chains)" ;;
+    edited)      echo "4/7 audit changes (run review mode=forget)" ;;
+    reviewed)    echo "5/7 run pipeline (Bash: npm run main)" ;;
+    piped)       echo "6/7 await verdict (hooks advance automatically)" ;;
+    verified)    echo "7/7 persist learning (run learn title=, content=)" ;;
     graduated)   echo "graduated" ;;
     *)           echo "unknown ($s)" ;;
   esac

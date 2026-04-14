@@ -24,7 +24,7 @@ HME evolves alongside Polychron. Every confirmed evolution round feeds back into
 Observe (tools surface patterns)
     -> Diagnose (KB constrains interpretation)
         -> Evolve (code changes + new KB entries)
-            -> Persist (add_knowledge, compact_knowledge, doc updates)
+            -> Persist (learn add/compact, doc updates)
                 -> Repeat (next session starts smarter)
 ```
 
@@ -51,22 +51,23 @@ tools/HME/               The single source of truth
       main.py                           FastMCP entry point, background model loading
       context.py                        Shared engine references (project_engine, etc.)
       helpers.py                        Budget limits, formatters; loads project-rules.json
-      tools_analysis/                   All 13 registered tools live here:
+      tools_analysis/                   Public tool surface (6 agent-callable) lives here:
         evolution_evolve.py               evolve — evolution planning hub
         review_unified.py                 review — post-pipeline review hub
-        read_unified.py                   read — smart code reader
         learn_unified.py                  learn — unified KB interface
         trace_unified.py                  trace — signal flow tracing
-        status_unified.py                 (automated — surfaced by lifecycle hooks)
-        search_unified.py                 (automated — search routing via passthru)
-        evolution_admin.py                hme_admin + fix_antipattern
-        runtime.py                        beat_snapshot
-        workflow.py                       before_editing (cache warming automated at startup)
-        enrich_prompt.py                enrich_prompt — local prompt enrichment
-        (+ 20 internal modules: coupling, reasoning, symbols, etc.)
-      tools_search.py                   Internal: grep, search_code, find_callers, file_lines
-      tools_knowledge.py                Internal: add/search/list/compact/export/graph/dream/health
-      tools_index.py                    Internal: index_codebase, clear_index
+        evolution_admin.py                hme_admin — selftest / reload / index / warm / fix_antipattern
+        todo.py                           hme_todo — hierarchical todo (hidden utility, merged into TodoWrite)
+        read_unified.py                   read — smart code reader (HIDDEN: auto-chained into Edit hooks, not agent-callable)
+        status_unified.py                 status — lifecycle surfacer (HIDDEN: used by internal banners)
+        tools_passthru.py                 grep / glob_search / edit (HIDDEN: enriched passthrus of native tools)
+        runtime.py                        beat_snapshot helper (called by trace)
+        workflow.py                       before_editing briefing (called by Edit hook)
+        enrich_prompt.py                  enrich_prompt — local prompt enrichment
+        (+ ~20 internal modules: coupling, reasoning, symbols, etc.)
+      tools_search.py                   Internal: low-level search helpers (used by learn/trace)
+      tools_knowledge.py                Internal: KB CRUD (used by learn)
+      tools_index.py                    Internal: index_codebase, clear_index (used by hme_admin)
     rag_engine/                         LanceDB + BM25 + RRF fusion + cross-encoder reranking
     watcher.py                          Auto-reindex on file changes (5s debounce, 5min cooldown)
     chunker.py, lang_registry.py        IIFE-aware code chunking
@@ -127,8 +128,8 @@ HME is the cognitive backbone of every Evolver phase. The Evolver doesn't just *
 | Phase | HME Role | Tools |
 |-------|----------|-------|
 | **1. Perceive** | Surface patterns from metrics, KB context on changed files | `learn(query='...')` |
-| **2. Diagnose** | Trace causal chains with KB constraints, find anti-patterns | `find(query, mode='callers'/'boundary'/'think'/'diagnose')` |
-| **3. Evolve** | Pre-edit briefing, constraint checking, boundary enforcement | `read(target, mode='before')`, `learn(query='module')` |
+| **2. Diagnose** | Trace causal chains with KB constraints, find anti-patterns | `trace(target)`, `evolve(focus='blast', query='...')` |
+| **3. Evolve** | KB briefing auto-chained into Edit hook (no explicit call needed) | `Edit` (hook surfaces KB constraints), `learn(query='module')` |
 | **4. Run** | Pipeline executes; file watcher auto-reindexes (5min cooldown) | (automatic) |
 | **5. Verify** | Post-change audit, missed constraint detection | `review(mode='forget')`, `review(mode='convention')`, `review(mode='health')` |
 | **6. Journal** | Persist findings as KB entries, link related knowledge | `learn(title='...', content='...')`, `learn(action='graph')` |
@@ -155,16 +156,18 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 1. Write sketch with real implementation code
 2. Run via `node lab/run.js`
 3. Listen to output, compare with baseline
-4. If confirmed: extract to `/src`, `add_knowledge` for the finding
-5. If refuted: `add_knowledge category="pattern"` to prevent re-attempting
+4. If confirmed: extract to `/src`, `learn(title=, content=, category='pattern')` for the finding
+5. If refuted: `learn(title=, content=, category='pattern')` to prevent re-attempting
 
 ## Mandatory Workflow
 
-The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest → evolve → read → edit → review → pipeline → commit → learn).
+The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest → evolve → edit → review → pipeline → commit → learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
 
 ### Before Editing Code
 
-**`read("moduleName", mode="before")`** — ONE CALL gets everything: KB constraints, callers, boundary warnings, file structure, evolutionary potential. Accepts module names OR file paths — auto-resolves `crossLayerSilhouette` → `src/crossLayer/structure/form/crossLayerSilhouette.js`.
+The `pretooluse_edit.sh` hook surfaces KB constraints automatically whenever you call the native `Edit` tool on a file under `/src/`. You do NOT need to call any HME tool first — the briefing is auto-chained into every Edit. KB constraints appear as `systemMessage` on the permission-allow response before the edit runs.
+
+The full-briefing internal function (`read(target, mode='before')`) still exists as a hidden utility for scripted use, but agents never call it directly — hooks handle everything transparently.
 
 ### After Code Changes
 
@@ -180,11 +183,11 @@ The per-session walkthrough that enforces this workflow is specified in [HME_ONB
 
 ### For Any Search
 
-Use `find(query)` — NOT Grep. Auto-routes by intent: "callers of X" → call graph, regex → grep, natural language → semantic search. All searches add KB cross-referencing that Grep misses.
+Use `learn(query='...')` for KB semantic search, `trace(target)` for signal flow / caller chains, or the native `Grep` tool (which is passthru-enriched with KB context via the HME hook). All searches add KB cross-referencing that bare Grep misses.
 
 ### When Pipeline Fails
 
-`find("paste error text", mode="diagnose")` — traces source, finds similar KB bugs, suggests fix patterns.
+Read pipeline output, then `evolve(focus='blast', query='<symbol>')` for dependency traces or `learn(query='<error text>')` for similar-KB-bug lookup.
 
 ## Autonomous Evolver Loop
 
@@ -245,9 +248,9 @@ The prompt body (everything after the second `---`) is injected verbatim as the 
 | Enrich a prompt with project context | `enrich_prompt(prompt='...', frame='focus on...')` |
 | Search 2-3 specific files | Read tool (not HME — overkill) |
 
-## The 6 Tools — Complete Reference
+## The Public Tool Surface — Complete Reference
 
-All capabilities route through these 6 tools. Internal functions (search_code, find_callers, module_intel, etc.) are called by these tools — never directly.
+Six agent-callable MCP tools route every public capability: `evolve`, `review`, `learn`, `trace`, `hme_admin`, and `hme_todo` (hierarchical todo). Internal helpers (`search_code`, `find_callers`, `module_intel`, `before_editing`, etc.) are called BY these tools — agents never invoke them directly. The `read` tool exists as a hidden utility auto-chained into the Edit hook.
 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
@@ -400,7 +403,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
 | `posttooluse_hme_read.sh` | PostToolUse | mcp__HME__read | Track briefed files to NEXUS; reset streak |
 | `posttooluse_hme_review.sh` | PostToolUse | mcp__HME__review | Clear NEXUS edit backlog on `forget` mode; point to next step (pipeline / commit) |
-| `posttooluse_addknowledge.sh` | PostToolUse | mcp__HME__add_knowledge | Clear `KB:` entries from tab after save |
+| `posttooluse_addknowledge.sh` | PostToolUse | mcp__HME__learn | Clear `KB:` entries from tab after `learn(title=, content=)` add call |
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |
 | `precompact.sh` | PreCompact | * | Surface `KB:`/`FILE:` entries from tab + untracked `tmp/` files |
 | `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |
@@ -424,7 +427,7 @@ Polychron's primary module pattern: `globalName = (() => { function tick() {...}
 
 ### Symbol Indexing
 
-321 IIFE globals + 1914 inner functions = 3848+ total symbols. `lookup_symbol` and `find_callers` work with Polychron's global-assignment pattern.
+321 IIFE globals + 1914 inner functions = 3848+ total symbols. Internal helpers `lookup_symbol` and `find_callers` (callable via `trace(target)` for callers and `read(target)` internally for symbol lookup) work with Polychron's global-assignment pattern.
 
 ### Three-Model Ollama Fleet
 
@@ -433,7 +436,7 @@ HME runs a three-model local synthesis fleet. No external API. All synthesis is 
 **GPU0 — Extractor** (`qwen3-coder:30b`, 18.6GB VRAM, `/api/generate`):
 - Specialized persona: "expert code extractor — facts, file paths, module names, no speculation"
 - Runs Stage 1A in parallel two-stage synthesis
-- Default model for `_local_think`, `before_editing` edit risks, `blast_radius`, `codebase_health`, `knowledge_graph`, `memory_dream`
+- Default model for `_local_think` (evolve focus=think), `before_editing` edit risks (hook-chained), `evolve(focus='blast')` dependency tracing, `review(mode='health')`, `learn(action='graph')`, `learn(action='dream')`
 - Configured via `HME_LOCAL_MODEL` + `HME_LOCAL_URL`
 
 **GPU1 — Reasoner** (`qwen3:30b-a3b`, 18.6GB VRAM, `/api/chat` streaming):
@@ -525,8 +528,8 @@ A running prose thread of what's happening this session — orthogonal to KB (st
 **What it provides:** session direction, key decisions, pipeline verdicts, arbiter resolutions — a coherent "what we're building and what was decided" context available to ALL models.
 
 **Architecture:** NOT baked into warm KV cache (too dynamic). A live string prepended to every synthesis call's prompt. Updated automatically by:
-- Every `think` call (via `store_think_history`)
-- Every `add_knowledge` call (new calibration anchor logged)
+- Every `evolve(focus='think')` call (via `store_think_history`)
+- Every `learn(title=, content=)` add call (new calibration anchor logged)
 - Every `_resolve_complex_conflict` call (COMPLEX arbiter resolution logged)
 
 **Injection points:** Every `_local_think(system=_THINK_SYSTEM)` call (GPU0, GPU1) and every `_arbiter_check` prompt — so all three models share the same session thread.
@@ -554,7 +557,7 @@ KB entries < 1 day: 1.05x boost. > 7 days: gradual decay (0.7x at 37 days). Rece
 
 ### Knowledge Relationships
 
-`add_knowledge` supports `related_to="<entry_id>"` with `relation_type`: `caused_by`, `fixed_by`, `depends_on`, `contradicts`, `similar_to`, `supersedes`. Creates typed graph edges for `knowledge_graph()` traversal.
+`learn(title=, content=)` supports `related_to="<entry_id>"` with `relation_type`: `caused_by`, `fixed_by`, `depends_on`, `contradicts`, `similar_to`, `supersedes`. Creates typed graph edges for `learn(action='graph')` traversal.
 
 ## HME Chat — Custom VS Code Chat Panel
 
