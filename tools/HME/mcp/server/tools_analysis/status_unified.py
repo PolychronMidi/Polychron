@@ -171,10 +171,10 @@ def status(mode: str = "all") -> str:
     try:
         from .synthesis_gemini import get_quota_status
         gq = get_quota_status()
-        if gq["available"]:
-            parts.append(f"## Gemini T3\n  {gq['tokens_used']:,}/{gq['daily_limit']:,} tokens ({gq['pct_used']}% used) — {gq['model']}")
-        else:
-            parts.append(f"## Gemini T3\n  QUOTA HIT — {gq['tokens_used']:,}/{gq['daily_limit']:,} tokens. Falling back to local.")
+        t1 = f"{'OK' if gq['t1_available'] else 'QUOTA HIT'} {gq['t1_tokens_used']:,}/{gq['t1_daily_limit']:,} ({gq['t1_pct_used']}%) {gq['t1_model']}"
+        t2 = f"{'OK' if gq['t2_available'] else 'QUOTA HIT'} {gq['t2_tokens_used']:,}/{gq['t2_daily_limit']:,} ({gq['t2_pct_used']}%) {gq['t2_model']}"
+        fallback = "local qwen3:30b-a3b" if not gq["any_available"] else ""
+        parts.append(f"## Gemini T3\n  T1: {t1}\n  T2: {t2}" + (f"\n  → Fallback: {fallback}" if fallback else ""))
     except Exception:
         pass
 

@@ -583,6 +583,25 @@ def _local_chat(messages: list[dict], model: str | None = None,
         return None
 
 
+def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
+                     temperature: float = 0.2, **kwargs) -> str | None:
+    """Reasoning tier with automatic Gemini T1→T2→local cascade.
+
+    Drop-in replacement for _local_think(..., model=_REASONING_MODEL).
+    Tries Gemini 2.5 Flash first (best quality, free), overflows to
+    Gemini 2.0 Flash, then falls back to local qwen3:30b-a3b.
+    """
+    from .synthesis_gemini import call as _gemini_call, available as _gemini_available
+    from .synthesis_config import _THINK_SYSTEM
+    _sys = system or _THINK_SYSTEM
+    if _gemini_available():
+        result = _gemini_call(prompt, system=_sys, max_tokens=max_tokens, temperature=temperature)
+        if result:
+            return result
+    return _local_think(prompt, max_tokens=max_tokens, model=_REASONING_MODEL,
+                        system=_sys, temperature=temperature, **kwargs)
+
+
 def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
                               model: str | None = None) -> str | None:
     """Call local Ollama model with an explicit system prompt (rarely used, no warm ctx)."""
@@ -924,8 +943,7 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         plan = plan[plan.rfind("</think>") + len("</think>"):].strip()
     if not plan or len(plan) < 30:
         logger.info("cascade: arbiter plan failed, enriched fallback")
-        return _local_think(enriched_prompt, max_tokens=max_tokens,
-                           model=_REASONING_MODEL, system=_THINK_SYSTEM)
+        return _reasoning_think(enriched_prompt, max_tokens=max_tokens, system=_THINK_SYSTEM)
 
     # Source injection from arbiter plan: any new camelCase names the plan introduced
     _plan_modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', plan)
@@ -961,44 +979,23 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     )
     if not coder_out or len(coder_out) < 40:
         logger.info("cascade: coder failed, reasoner with plan")
-        return _local_think(
+        return _reasoning_think(
             f"Plan:\n{plan}\n\n{enriched_prompt}",
-            max_tokens=max_tokens, model=_REASONING_MODEL, system=_THINK_SYSTEM,
+            max_tokens=max_tokens, system=_THINK_SYSTEM,
         )
 
-    # Stage 3: Deep synthesis — Gemini 2.5 Flash (T3) preferred, local reasoner fallback
-    from .synthesis_gemini import call as _gemini_call, available as _gemini_available
+    # Stage 3: Deep synthesis — _reasoning_think cascades Gemini T1→T2→local automatically
     _synthesis_prompt = (
         f"Question: {prompt[:300]}\n\n"
         f"VERIFIED FACTS (trust these paths/names):\n{coder_out}\n\n"
         "Synthesize: module interactions, architectural implications, recommendations.\n"
         "Use ONLY names from verified facts. Max 600 words."
     )
-    _tier = "local"
-    result = None
-    if _gemini_available():
-        result = _gemini_call(
-            _synthesis_prompt,
-            system=_THINK_SYSTEM,
-            max_tokens=max_tokens,
-            temperature=0.2,
-        )
-        if result:
-            _tier = "gemini"
-    if not result:
-        result = _local_think(
-            _synthesis_prompt,
-            max_tokens=max_tokens, model=_REASONING_MODEL,
-            system=_THINK_SYSTEM, temperature=0.2,
-        )
+    result = _reasoning_think(_synthesis_prompt, max_tokens=max_tokens,
+                              system=_THINK_SYSTEM, temperature=0.2)
     if result:
-        logger.info(
-            f"cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→{_tier}({len(result)}c)"
-        )
-        result += (
-            f"\n\n*cascade: arbiter({len(plan)}c)"
-            f"→coder({len(coder_out)}c)→{_tier}({len(result)}c)*"
-        )
+        logger.info(f"cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→reasoning({len(result)}c)")
+        result += f"\n\n*cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→reasoning({len(result)}c)*"
     return result
 
 
@@ -1017,8 +1014,8 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
                                    system=_THINK_SYSTEM, temperature=0.15, priority="parallel")
 
     def _g1():
-        results[1] = _local_think(prompt, max_tokens=max_tokens, model=_REASONING_MODEL,
-                                   system=_THINK_SYSTEM, temperature=0.2, priority="parallel")
+        results[1] = _reasoning_think(prompt, max_tokens=max_tokens,
+                                      system=_THINK_SYSTEM, temperature=0.2)
 
     t0 = _threading.Thread(target=_g0, daemon=True)
     t1 = _threading.Thread(target=_g1, daemon=True)
@@ -1126,12 +1123,11 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
         result = _local_think(prompt, max_tokens=min(max_tokens, 4096), model=model,
                              system=_THINK_SYSTEM, priority=priority)
 
-    # Auto-escalate on failure: try alt GPU with enriched context → cascade
+    # Auto-escalate on failure: try reasoning tier (Gemini T1→T2→local) with enriched context → cascade
     if not result and strategy != "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
-        alt = _REASONING_MODEL if route_model(prompt) == _LOCAL_MODEL else _LOCAL_MODEL
-        result = _local_think(enriched, max_tokens=max_tokens, model=alt,
-                             system=_THINK_SYSTEM, priority=priority)
+        result = _reasoning_think(enriched, max_tokens=max_tokens,
+                                  system=_THINK_SYSTEM, temperature=0.2)
     if not result and strategy != "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
         result = _cascade_synthesis(prompt, enriched, max_tokens)
