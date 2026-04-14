@@ -157,6 +157,9 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
     if (evt.type === "result") {
         const inputTokens = evt.input_tokens;
         const outputTokens = evt.output_tokens;
+        if (inputTokens == null || outputTokens == null) {
+            onChunk("[HME] WARN: result event missing token counts — context % will not update", "error");
+        }
         const usage = (inputTokens != null && outputTokens != null)
             ? {
                 inputTokens,
@@ -248,6 +251,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     let doneTimer = null;
     let contextQueryActive = false;
     let contextQueryBuf = "";
+    let donePatternMatched = false;
     const PTY_INACTIVITY_MS = 15000;
     let ptyInactivityTimer = null;
     const resetPtyInactivity = () => {
@@ -278,8 +282,11 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
                 modelName: ctxData.model_name || undefined,
             };
         }
-        catch { }
-        return undefined;
+        catch (e) {
+            if (e?.code !== "ENOENT")
+                hmeLog(`WARN _buildPtyUsage: ${e?.message ?? e}`);
+            return undefined;
+        }
     };
     const finalizeTurn = () => {
         if (!turnDone) {
@@ -287,10 +294,20 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
             // Try contextQueryBuf first (from /context command), then fall back to
             // parsing fullOutput directly — Claude CLI may emit token info in its footer.
             const ctxParsed = parseContextOutput(contextQueryBuf) ?? parseContextOutput(fullOutput);
+            hmeLog(`finalize: donePatternMatched=${donePatternMatched}`);
             hmeLog(`finalize: ctxBuf=${JSON.stringify(contextQueryBuf.slice(0, 200))}`);
             hmeLog(`finalize: ctxParsed=${JSON.stringify(ctxParsed)}`);
             hmeLog(`finalize: fullTail=${JSON.stringify(fullOutput.slice(-400))}`);
-            onDone(ctxParsed ?? _buildPtyUsage());
+            if (!fullOutput.trim()) {
+                hmeLog(`WARN finalize: fullOutput is empty — message may not have been sent or PTY died before responding`);
+                onChunk("[HME] WARN: PTY produced no output — message may not have been received", "error");
+            }
+            const usage = ctxParsed ?? _buildPtyUsage();
+            if (!usage) {
+                hmeLog(`WARN finalize: no context data — done patterns ${donePatternMatched ? "matched but /context parse failed" : "never matched (PTY output format may have changed)"}`);
+                onChunk(`[HME] WARN: context % unavailable — ${donePatternMatched ? "/context parse failed" : "PTY done patterns never matched, check hme-ctx-debug.log"}`, "error");
+            }
+            onDone(usage);
             try {
                 proc.kill();
             }
@@ -304,6 +321,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
             clearTimeout(ptyInactivityTimer);
             ptyInactivityTimer = null;
         }
+        donePatternMatched = true;
         contextQueryActive = true;
         contextQueryBuf = "";
         hmeLog("ctx: sending /context");
@@ -311,7 +329,8 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
             proc.write("/context\r");
         }
         catch (e) {
-            hmeLog(`ctx: write failed: ${e}`);
+            hmeLog(`ERROR ctx: /context write failed: ${e?.message ?? e}`);
+            onError(`PTY /context write failed: ${e?.message ?? e}`);
         }
         doneTimer = setTimeout(finalizeTurn, 1500);
     };
@@ -323,10 +342,13 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
             // Wait for the prompt character at the very end of the buffer — never trigger
             // on │ (box-drawing borders in the startup banner) which causes the remainder
             // of the banner, including "bypassPermissions" notices, to leak into chat.
-            const ready = />\s*$/.test(initBuf.slice(-20)) ||
-                initBuf.includes("Human:") ||
-                initBuf.length > 2000;
+            const promptFound = />\s*$/.test(initBuf.slice(-20)) || initBuf.includes("Human:");
+            const ready = promptFound || initBuf.length > 2000;
             if (ready) {
+                if (!promptFound) {
+                    hmeLog(`WARN init fallback: prompt not found in ${initBuf.length} chars — banner format may have changed. Head: ${JSON.stringify(initBuf.slice(0, 300))}`);
+                    onChunk("[HME] WARN: PTY prompt not detected — banner format may have changed, see hme-ctx-debug.log", "error");
+                }
                 sentMessage = true;
                 proc.write(message.replace(/\r?\n/g, " ") + "\r");
                 resetPtyInactivity();
