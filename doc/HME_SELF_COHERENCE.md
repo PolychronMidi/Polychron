@@ -226,24 +226,38 @@ Fix: source-based transient detection (`if source in _transient_sources and "tim
 
 ### Round 7: Local QLoRA fine-tune of the arbiter
 
-The ultimate hypermeta leap: train a domain-specialized arbiter on the Polychron KB. Built during this session from scratch:
+The ultimate hypermeta leap: train a domain-specialized arbiter on the Polychron KB. Built during this session from scratch. The happy-path design was clean; **every layer of the stack had a silent trap**.
 
-1. Exported 262 training examples from 112 KB entries via `build-corpus.py`
-2. Unloaded `qwen3-coder:30b` from GPU0 via Ollama `keep_alive:0`
-3. Trained Qwen2.5-1.5B-Instruct with LoRA (r=16, α=32, 3 epochs, fp16, gradient checkpointing, 4.35M trainable params = 0.28% of total)
-4. Merged adapter and converted to GGUF via `llama.cpp/convert_hf_to_gguf.py`
-5. Registered as Ollama model `hme-arbiter:latest`
-6. Pointed `agent_local.py _ARBITER_MODEL` at the fine-tuned variant
-7. Re-enabled arbiter in explore mode (fast path OFF) now that the arbiter is actually useful
+Pipeline:
+1. Export 262 training examples from 112 KB entries via `build-corpus.py` (two-pass: `list_knowledge` for titles, `search_knowledge` per title for full content, since `list_knowledge` omits content)
+2. Unload `qwen3-coder:30b` from GPU0 via `POST /api/generate {"keep_alive":0}` to free 22GB VRAM
+3. Train with LoRA on GPU0 → merge adapter → convert to GGUF → register as Ollama `hme-arbiter:latest` → update `agent_local.py _ARBITER_MODEL` → re-enable arbiter in explore mode
+4. Reload `qwen3-coder:30b` back onto GPU0
 
-Trade-offs exposed along the way:
-- M40 Maxwell GPUs don't support bf16 or Tensor Cores → had to use fp16 + eager attention
-- `peft 0.19` was incompatible with `torch 2.5.1` (references `float8_e8m0fnu`) → downgraded to `peft 0.13.2`
-- `DataCollatorForLanguageModeling` + custom labels → let the collator handle labels from input_ids
-- LoRA + gradient_checkpointing → need `model.enable_input_require_grads()`
-- llama.cpp's `convert_hf_to_gguf.py` from master requires a newer `gguf` library than pip publishes → pinned to tagged release `b3800`
+**Traps discovered along the way, in order:**
 
-Every one of these was a silent trap in the stock ML stack. Each is now documented in this log so the next training round starts from a known-good configuration.
+| # | Layer | Trap | Fix |
+|---|---|---|---|
+| 1 | `pip` | PEP 668 blocks user installs on Debian | `--break-system-packages` flag |
+| 2 | `peft 0.19.0` | References `torch.float8_e8m0fnu` which doesn't exist in `torch 2.5.1` | Downgrade to `peft==0.13.2` |
+| 3 | `DataCollatorForLanguageModeling` | Can't pad a manually-set `labels` field (expects ints, gets lists) | Don't set labels in `fmt()`; let the collator handle them from `input_ids` via `mlm=False` |
+| 4 | `peft + gradient_checkpointing` | `RuntimeError: element 0 does not require grad` | `model.enable_input_require_grads()` after `get_peft_model()` |
+| 5 | `list_knowledge` shim method | Returns only `{id, title, category, tags}` — no content | Two-pass: list for titles, `search_knowledge` per title for content |
+| 6 | `llama.cpp convert_hf_to_gguf.py` from master | References `GEMMA4` arch that newer `gguf` library doesn't have | Fetch from tagged release `b3800` that matches `gguf 0.18.0` |
+| 7 | `llama.cpp b6780` convert script | Requires `mistral_common` package not in our env | Same fix: use `b3800` instead |
+| 8 | **Maxwell architecture (Tesla M40)** | fp16 training diverges to NaN from step 1 — attention/softmax overflow without Tensor Cores / bf16 / flash attention | **fp32 training only**. Use a smaller base model (0.5B not 1.5B) to fit in 24GB VRAM with gradient checkpointing. |
+
+The Maxwell trap (#8) is the most painful because it's silent: loss prints as 0.0, gradient prints as NaN, training "completes" successfully, and the saved adapter weights are effectively zero. Nothing in the stock `transformers.Trainer` path fails loudly. The only way to catch it is to look at the loss values and notice they were 0.0 from step 1.
+
+**Trained adapter:** `Qwen/Qwen2.5-0.5B-Instruct` (0.5B params, fp32) with LoRA r=8 α=16, 3 epochs, 262 examples, lr=1e-4, gradient checkpointing. Fits in 24GB with room.
+
+Every one of these traps is now documented in this log so the next training round starts from a known-good configuration. The scripts that encode this knowledge are:
+- `tools/HME/scripts/finetune-arbiter.py` — scaffolding + config + plan
+- `/tmp/train-arbiter-v2.py` — the working training script (Maxwell-safe)
+- `/tmp/build-corpus.py` — corpus builder (two-pass KB fetch)
+- `~/tools/llama-cpp-convert/convert_hf_to_gguf.py` — pinned to b3800
+
+The fine-tuned arbiter, if successful, produces research plans that speak Polychron's native vocabulary and can be re-enabled in `_MODE_CONFIGS["explore"]["skip_arbiter"] = False` once its quality is verified to exceed the keyword-extraction fallback.
 
 ## The principle
 

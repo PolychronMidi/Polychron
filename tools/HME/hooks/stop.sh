@@ -248,7 +248,19 @@ for line in reversed(lines):
             inp = block.get('input', {})
             if block.get('name') == 'Bash' and inp.get('run_in_background'):
                 cmd = inp.get('command', '')
-                if 'npm run main' in cmd or 'npm run snapshot' in cmd or 'node lab/run' in cmd:
+                # Original pipeline markers
+                _pipeline_bg = ('npm run main' in cmd or 'npm run snapshot' in cmd or 'node lab/run' in cmd)
+                # Widened: any long-running background python/bash process.
+                # Training runs, batch analyzers, stress-test batteries all count.
+                _generic_bg = (
+                    'python3 /tmp/train' in cmd
+                    or 'python3 /tmp/' in cmd and ('train' in cmd or 'merge' in cmd or 'convert' in cmd)
+                    or 'stress-test' in cmd
+                    or 'accelerate launch' in cmd
+                    or 'unsloth' in cmd
+                    or 'axolotl' in cmd
+                )
+                if _pipeline_bg or _generic_bg:
                     found_bg = True
             elif found_bg:
                 calls_after_bg += 1

@@ -35,6 +35,9 @@ _SHIM_PORT = int(os.environ.get("HME_SHIM_PORT", "7734"))
 # Model config — shared with synthesis_ollama.py when running inside MCP,
 # standalone-capable when called from hooks
 _ARBITER_PORT = int(os.environ.get("HME_OLLAMA_PORT_CPU", "11436"))
+# HME_ARBITER_MODEL env var overrides the default. After a successful QLoRA
+# fine-tune + Ollama registration, set this to "hme-arbiter:latest" to route
+# arbiter calls through the domain-specialized model.
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 _CODER_PORT = int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))
 _CODER_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
