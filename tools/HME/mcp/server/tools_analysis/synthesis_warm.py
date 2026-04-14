@@ -160,7 +160,13 @@ def _flush_pending_entries():
             _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
             _url_for, _KEEP_ALIVE, _num_ctx_for,
         )
-        if not any(m in _warm_ctx for m in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]):
+        import os as _os
+        _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+        _active_models = [_LOCAL_MODEL, _ARBITER_MODEL]
+        if _reasoner_warm:
+            _active_models.insert(1, _REASONING_MODEL)
+
+        if not any(m in _warm_ctx for m in _active_models):
             restored = _load_all_warm_caches()
             if restored == 0:
                 logger.info("incr KB flush: no warm contexts in memory or cache — skipping (will prime on next use)")
@@ -201,10 +207,10 @@ def _flush_pending_entries():
                 return model, None, e
 
         updated = 0
-        with ThreadPoolExecutor(max_workers=3) as ex:
+        with ThreadPoolExecutor(max_workers=len(_active_models)) as ex:
             futures = {
                 ex.submit(_update_one, m): m
-                for m in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]
+                for m in _active_models
             }
             for fut in _as_completed(futures):
                 model, result, status = fut.result()
@@ -235,7 +241,7 @@ def _flush_pending_entries():
                 pass
         n = len(entries)
         logger.info(
-            f"incr KB update: {updated}/3 models updated to kb_ver={new_kb_ver}"
+            f"incr KB update: {updated}/{len(_active_models)} models updated to kb_ver={new_kb_ver}"
             + (f" ({n} entries batched)" if n > 1 else "")
         )
 
@@ -377,9 +383,11 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
 
 
 def _init_ollama_models() -> str:
-    """Explicitly load all three models to their correct devices at startup.
+    """Explicitly load models to their correct devices at startup.
 
-    Load order: GPU0 (extractor) → GPU1 (reasoner) → CPU (arbiter).
+    Load order: GPU0 (extractor) → GPU1 (arbiter).
+    Reasoner (qwen3:30b-a3b) is NOT loaded — cloud cascade handles all reasoning calls;
+    local reasoner remains as code fallback only (HME_REASONER_WARM=1 to re-enable).
     Uses keep_alive=-1 so models stay resident. Yields to interactive between each model.
     Post-load: VRAM headroom check warns if KV cache is spilling to RAM.
     """
@@ -395,11 +403,13 @@ def _init_ollama_models() -> str:
         _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _url_for,
         _ollama_background_yield,
     )
+    _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
     models_config = [
-        (_LOCAL_MODEL,     {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
-        (_REASONING_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
-        (_ARBITER_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
+        (_LOCAL_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
+        (_ARBITER_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
     ]
+    if _reasoner_warm:
+        models_config.insert(1, (_REASONING_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}))
     results = {}
     failures = 0
     for model, options in models_config:
@@ -458,29 +468,36 @@ def _init_ollama_models() -> str:
 
 
 def _prime_all_gpus() -> str:
-    """Prime all three models sequentially. Yields to interactive between each model.
+    """Prime active models sequentially. Yields to interactive between each model.
 
     Sequential so each model finishes before the next starts — interactive calls
     cancel the active priming via _ollama_interactive and _cancellable_urlopen.
+    Reasoner priming only runs when HME_REASONER_WARM=1 (default: skip — cloud handles reasoning).
     """
     if _priming_in_progress.is_set():
         logger.info("_prime_all_gpus: already running, skipping duplicate")
         return "Warm context priming already in progress"
     _priming_in_progress.set()
     try:
+        import os as _os
         from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+        _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+        active_models = [_LOCAL_MODEL, _ARBITER_MODEL]
+        if _reasoner_warm:
+            active_models.insert(1, _REASONING_MODEL)
+        n = len(active_models)
         results = {}
         restored = _load_all_warm_caches()
-        if restored == 3:
-            for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+        if restored >= n:
+            for model in active_models:
                 results[model] = True
-            parts = [f"Warm context restored from cache (0.0s, all 3 models):"]
+            parts = [f"Warm context restored from cache (0.0s, {n} models):"]
             for model in results:
                 ctx_len = len(_warm_ctx.get(model, []))
                 parts.append(f"  {model}: CACHED ({ctx_len} ctx tokens)")
             return "\n".join(parts)
         t0 = _time.time()
-        for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+        for model in active_models:
             results[model] = _prime_warm_context(model)
         elapsed = _time.time() - t0
         cached = sum(1 for m in results if m in _warm_ctx and _warm_ctx_kb_ver.get(m) == getattr(ctx, "_kb_version", 0))
@@ -496,12 +513,17 @@ def _prime_all_gpus() -> str:
 
 def warm_context_status() -> dict:
     """Health dict of warm contexts for selftest."""
+    import os as _os
     from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     from .synthesis_session import session_state_counts
     from .warm_disk import _TMPFS_PATHS
+    _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+    _active = [_LOCAL_MODEL, _ARBITER_MODEL]
+    if _reasoner_warm:
+        _active.insert(1, _REASONING_MODEL)
     now = _time.time()
     status = {}
-    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+    for model in _active:
         if model in _warm_ctx:
             cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
             baseline = _warm_ctx_baseline_tokens.get(model, 0)
@@ -540,10 +562,12 @@ def ensure_warm(model: str):
     _lazy_prime_attempted = True
     def _bg():
         global _lazy_prime_attempted
+        import os as _os
         from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+        _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
         try:
             ok0 = _prime_warm_context(_LOCAL_MODEL)
-            ok1 = _prime_warm_context(_REASONING_MODEL)
+            ok1 = _prime_warm_context(_REASONING_MODEL) if _reasoner_warm else False
             ok2 = _prime_warm_context(_ARBITER_MODEL)
             if not any([ok0, ok1, ok2]):
                 _lazy_prime_attempted = False
