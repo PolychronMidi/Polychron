@@ -73,5 +73,24 @@ else
   echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":null,\"remaining_pct\":null,\"ctx_size\":null,\"meter_age_s\":null,\"note\":\"no_statusline_data\"}" >> "$LOG"
 fi
 
-echo "[PreCompact] Context compaction starting — chain preemption did not fire" >&2
+# H-compact optimization #1 fallback: if preemption didn't fire at 70%, at
+# least take the chain snapshot NOW (before compaction destroys context)
+# so postcompact has something fresh to hydrate from. This is a safety net.
+CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
+LATEST_LINK="$PROJECT/metrics/chain-history/latest.yaml"
+_NEEDS_FALLBACK=1
+if [ -f "$LATEST_LINK" ]; then
+  # If a link exists and is < 10 min old, assume preemption fired
+  LINK_AGE=$(( $(date +%s) - $(stat -c %Y "$LATEST_LINK" 2>/dev/null || echo 0) ))
+  if [ "$LINK_AGE" -lt 600 ]; then
+    _NEEDS_FALLBACK=0
+    echo "[PreCompact] chain link fresh (age ${LINK_AGE}s) — preemption fired cleanly" >&2
+  fi
+fi
+if [ "$_NEEDS_FALLBACK" -eq 1 ] && [ -f "$CHAIN_SCRIPT" ]; then
+  echo "[PreCompact] preemption missed — taking fallback snapshot NOW" >&2
+  PROJECT_ROOT="$PROJECT" python3 "$CHAIN_SCRIPT" --imminent > /dev/null 2>&1
+fi
+
+echo "[PreCompact] Context compaction starting — chain link ready for postcompact hydration" >&2
 exit 0

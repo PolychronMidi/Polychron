@@ -972,6 +972,66 @@ class TransientErrorFilterVerifier(Verifier):
         return _result(PASS, 1.0, "_log_error uses source-based transient detection")
 
 
+class ContextBudgetVerifier(Verifier):
+    """H-compact optimization #13: verify that chain-link snapshots are
+    being taken frequently enough relative to context consumption. Fails
+    if used_pct is high AND the latest chain link is stale (or missing),
+    because that means auto-compaction will likely strike before a
+    replacement snapshot exists.
+    """
+    name = "context-budget"
+    category = "runtime"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        ctx_file = os.environ.get("HME_CTX_FILE", "/tmp/claude-context.json")
+        if not os.path.isfile(ctx_file):
+            return _result(SKIP, 1.0, "no statusline data yet")
+        try:
+            with open(ctx_file) as f:
+                ctx = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"ctx read failed: {e}")
+        used = ctx.get("used_pct")
+        if used is None:
+            return _result(SKIP, 1.0, "no used_pct in statusline data")
+
+        link_latest = os.path.join(_PROJECT, "metrics", "chain-history", "latest.yaml")
+        link_age_s = None
+        if os.path.isfile(link_latest) or os.path.islink(link_latest):
+            try:
+                link_age_s = time.time() - os.path.getmtime(link_latest)
+            except Exception:
+                pass
+
+        # Policy:
+        #   used < 50%          → fine, no link needed
+        #   50-70%               → WARN if no link in last 30 min
+        #   70-85%               → FAIL if no link in last 10 min
+        #   > 85%                → FAIL if no link in last 5 min (compaction imminent)
+        if used < 50:
+            return _result(PASS, 1.0, f"context at {used}% — safe")
+        if used < 70:
+            if link_age_s is None or link_age_s > 1800:
+                return _result(WARN, 0.7,
+                               f"context {used}%, no chain link in last 30min",
+                               ["run: python3 tools/HME/scripts/chain-snapshot.py --eager"])
+            return _result(PASS, 0.9, f"context {used}%, link age {link_age_s:.0f}s")
+        if used < 85:
+            if link_age_s is None or link_age_s > 600:
+                return _result(FAIL, 0.3,
+                               f"context {used}% nearing compaction + no recent link",
+                               ["statusline preemption should have fired at 70%",
+                                "run: python3 tools/HME/scripts/chain-snapshot.py --imminent"])
+            return _result(WARN, 0.6, f"context {used}%, link age {link_age_s:.0f}s")
+        # > 85% — compaction imminent
+        if link_age_s is None or link_age_s > 300:
+            return _result(FAIL, 0.0,
+                           f"context {used}% — COMPACTION IMMINENT with no fresh chain link",
+                           ["CRITICAL: take a snapshot NOW before auto-compaction destroys state"])
+        return _result(WARN, 0.5, f"context {used}%, link age {link_age_s:.0f}s")
+
+
 class PredictiveHCIVerifier(Verifier):
     """H9: consumes metrics/hme-hci-forecast.json (produced by predict-hci.py)
     and scores based on predicted drift. This is the forward-looking layer —
@@ -1776,6 +1836,7 @@ REGISTRY = [
     TransientErrorFilterVerifier(),
     VerifierCoverageGapVerifier(),
     MemeticDriftVerifier(),
+    ContextBudgetVerifier(),
     PredictiveHCIVerifier(),
     LifesaverIntegrityVerifier(),
     LifesaverRateVerifier(),
