@@ -7,6 +7,7 @@ import {
 import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit, AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 import { claudeOptsFromMsg, ollamaOptsFromMsg } from "./msgHelpers";
 import { ChatMessage } from "./types";
+import type { SendMsg } from "./panel/webviewMessages";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,37 +181,75 @@ function runStream(opts: RunStreamOpts): { cancel: () => void; handle: HarnessHa
   };
 }
 
-/** Build a ChatMessage from the captured chunk state. */
-function toFinalMessage(
+interface FinalizeOpts {
+  includeThinking?: boolean;
+  pushOllama?: boolean;
+  userText?: string;
+  checkChain?: boolean;
+  model?: string;
+  skipMirror?: boolean;
+}
+
+/**
+ * Build the final ChatMessage, finalize the tracker, post streamEnd, run side-effects.
+ * Returns the built message so callers can inspect it if needed.
+ */
+function finalizeStream(
+  h: HarnessHandle,
+  ctx: ChatCtx,
   assistantId: string,
   route: string,
-  state: ChunkState,
-  acc: ReturnType<typeof makeBlockAccumulator>,
-  includeThinking = false,
+  opts: FinalizeOpts = {},
 ): ChatMessage {
   const msg: ChatMessage = {
-    id: assistantId, role: "assistant", text: state.text,
-    tools: state.tools.length ? state.tools : undefined,
-    blocks: acc.blocks.length ? acc.blocks : undefined,
+    id: assistantId, role: "assistant", text: h.state.text,
+    tools: h.state.tools.length ? h.state.tools : undefined,
+    blocks: h.acc.blocks.length ? h.acc.blocks : undefined,
     route, ts: Date.now(),
   };
-  if (includeThinking && state.thinking) msg.thinking = state.thinking;
+  if (opts.includeThinking && h.state.thinking) msg.thinking = h.state.thinking;
+  h.tracker.finalize(msg);
+  h.postStreamEnd();
+  if (opts.pushOllama && opts.userText !== undefined) {
+    ctx.state.ollamaHistory.push({ role: "user", content: opts.userText });
+    ctx.state.ollamaHistory.push({ role: "assistant", content: h.state.text });
+  }
+  ctx.transcript.logAssistant(h.state.text, route, opts.model, h.state.tools);
+  if (!opts.skipMirror) mirrorAssistantToShim(ctx, h.state.text, route, opts.model, h.state.tools);
+  const changedFiles = reindexFromTools(h.state.tools);
+  runPostAudit(ctx, changedFiles);
+  if (opts.checkChain) ctx.checkChainThreshold();
   return msg;
 }
 
-/** Common finalize side-effects (reindex + audit), optionally pushing to ollamaHistory. */
-function finalizeSideEffects(ctx: ChatCtx, state: ChunkState, route: string, model: string | undefined, pushOllama: boolean, userText?: string) {
-  if (pushOllama && userText !== undefined) {
-    ctx.state.ollamaHistory.push({ role: "user", content: userText });
-    ctx.state.ollamaHistory.push({ role: "assistant", content: state.text });
-  }
-  ctx.transcript.logAssistant(state.text, route, model, state.tools);
-  mirrorAssistantToShim(ctx, state.text, route, model, state.tools);
-  const changedFiles = reindexFromTools(state.tools);
-  runPostAudit(ctx, changedFiles);
+/**
+ * Attach a promise-returned cancel fn to the harness.
+ * Aborts immediately if the harness was already aborted before the promise resolves.
+ * On rejection, calls onError then signals the harness ended via onForceEnd.
+ */
+function attachPromiseCancel(
+  h: HarnessHandle,
+  promise: Promise<() => void>,
+  onError: (err: string) => void,
+  onForceEnd?: () => void,
+): void {
+  promise.then((cancel) => {
+    if (h.isAborted()) { cancel(); return; }
+    h.setCancel(cancel);
+  }).catch((err) => {
+    if (h.isAborted()) return;
+    onError(String(err));
+    if (!h.isEnded()) {
+      if (onForceEnd) { h.markEnded(); h.postStreamEnd(); onForceEnd(); }
+      else { h.postStreamEnd(); h.safeEnd(); }
+    }
+  });
 }
 
 // ── Streaming methods ─────────────────────────────────────────────────────────
+
+/** SendMsg enriched by _onSend before routing to a specific stream function. */
+type ResolvedMsg = SendMsg & { _resolvedRoute?: string; _contextPrefix?: string };
 
 const AGENTIC_SYSTEM: OllamaMessage = { role: "system", content: AGENTIC_SYSTEM_PROMPT };
 
@@ -223,7 +262,7 @@ function contextPrefixMessages(prefix: string | undefined): OllamaMessage[] {
     : [];
 }
 
-export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
+export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const route = msg._resolvedRoute ?? msg.route ?? "claude";
   const effectiveText = (msg._contextPrefix ?? "") + msg.text;
   const claudeOpts = claudeOptsFromMsg(msg);
@@ -234,10 +273,7 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
       const onDone = (usage?: TokenUsage) => {
         if (h.isAborted()) return;
         ctx.updateContextTracker(h.state.text, h.state.thinking, msg.claudeModel, usage);
-        h.tracker.finalize(toFinalMessage(assistantId, route, h.state, h.acc, true));
-        h.postStreamEnd();
-        finalizeSideEffects(ctx, h.state, route, msg.claudeModel, false);
-        ctx.checkChainThreshold(msg);
+        finalizeStream(h, ctx, assistantId, route, { includeThinking: true, model: msg.claudeModel, checkChain: true });
         h.safeEnd();
       };
       const onError = (err: string) => {
@@ -270,7 +306,7 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
   });
 }
 
-export function streamOllamaMsg(ctx: ChatCtx, msg: any, assistantId: string) {
+export function streamOllamaMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const contextMessages = contextPrefixMessages(msg._contextPrefix);
   const trimmed = trimHistoryToFit(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
   const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
@@ -280,9 +316,7 @@ export function streamOllamaMsg(ctx: ChatCtx, msg: any, assistantId: string) {
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        h.tracker.finalize(toFinalMessage(assistantId, "local", h.state, h.acc));
-        h.postStreamEnd();
-        finalizeSideEffects(ctx, h.state, "local", msg.ollamaModel, true, msg.text);
+        finalizeStream(h, ctx, assistantId, "local", { pushOllama: true, userText: msg.text, model: msg.ollamaModel });
         h.safeEnd();
       };
       h.setCancel(streamOllamaAgentic(
@@ -298,7 +332,7 @@ export function streamOllamaMsg(ctx: ChatCtx, msg: any, assistantId: string) {
   });
 }
 
-export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
+export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const contextMessages = contextPrefixMessages(msg._contextPrefix);
   const history = [...contextMessages, ...ctx.state.ollamaHistory];
 
@@ -308,9 +342,7 @@ export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        h.tracker.finalize(toFinalMessage(assistantId, "hybrid", h.state, h.acc));
-        h.postStreamEnd();
-        finalizeSideEffects(ctx, h.state, "hybrid", msg.ollamaModel, true, msg.text);
+        finalizeStream(h, ctx, assistantId, "hybrid", { pushOllama: true, userText: msg.text, model: msg.ollamaModel });
         h.safeEnd();
       };
       const onError = (err: string) => {
@@ -318,26 +350,18 @@ export function streamHybridMsg(ctx: ChatCtx, msg: any, assistantId: string) {
         if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
         ctx.postError("hybrid", err);
       };
-      streamHybrid(
-        msg.text, history,
-        ollamaOptsFromMsg(msg),
-        ctx.projectRoot, h.onChunk,
-        onDone, onError,
-      ).then((cancel) => {
-        if (h.isAborted()) { cancel(); return; }
-        h.setCancel(cancel);
-      }).catch((err) => {
-        if (h.isAborted()) return;
-        if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
-        ctx.postError("hybrid", String(err));
-      });
+      attachPromiseCancel(
+        h,
+        streamHybrid(msg.text, history, ollamaOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
+        (err) => ctx.postError("hybrid", err),
+      );
     },
   });
 }
 
 export function streamAgentMsg(
   ctx: ChatCtx,
-  msg: any,
+  msg: SendMsg,
   assistantId: string,
   label: "local" | "hybrid",
   onBothDone: () => void,
@@ -353,15 +377,10 @@ export function streamAgentMsg(
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        if (label === "local") {
-          ctx.state.ollamaHistory.push({ role: "user", content: msg.text });
-          ctx.state.ollamaHistory.push({ role: "assistant", content: h.state.text });
-        }
-        h.tracker.finalize(toFinalMessage(assistantId, label, h.state, h.acc));
-        h.postStreamEnd();
-        ctx.transcript.logAssistant(h.state.text, label, msg.ollamaModel, h.state.tools);
-        const changedFiles = reindexFromTools(h.state.tools);
-        runPostAudit(ctx, changedFiles);
+        finalizeStream(h, ctx, assistantId, label, {
+          pushOllama: label === "local", userText: msg.text,
+          model: msg.ollamaModel, skipMirror: true,
+        });
         h.safeEnd();
       };
       h.setCancel(streamOllamaAgentic(
@@ -383,7 +402,7 @@ export function streamAgentMsg(
 
 export function streamAgentHybridMsg(
   ctx: ChatCtx,
-  msg: any,
+  msg: SendMsg,
   assistantId: string,
   label: "local" | "hybrid",
   onBothDone: () => void,
@@ -399,11 +418,7 @@ export function streamAgentHybridMsg(
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        h.tracker.finalize(toFinalMessage(assistantId, "hybrid", h.state, h.acc));
-        h.postStreamEnd();
-        ctx.transcript.logAssistant(h.state.text, "hybrid", msg.ollamaModel, h.state.tools);
-        const changedFiles = reindexFromTools(h.state.tools);
-        runPostAudit(ctx, changedFiles);
+        finalizeStream(h, ctx, assistantId, "hybrid", { model: msg.ollamaModel, skipMirror: true });
         h.safeEnd();
       };
       const onError = (err: string) => {
@@ -414,22 +429,12 @@ export function streamAgentHybridMsg(
         h.postStreamEnd();
         onForceDrain();
       };
-      streamHybrid(
-        msg.text, history,
-        ollamaOptsFromMsg(msg),
-        ctx.projectRoot, h.onChunk,
-        onDone, onError,
-      ).then((c) => {
-        if (h.isAborted()) { c(); return; }
-        h.setCancel(c);
-      }).catch((err) => {
-        if (h.isAborted()) return;
-        ctx.postError(label, String(err));
-        if (h.isEnded()) return;
-        h.markEnded();
-        h.postStreamEnd();
-        onForceDrain();
-      });
+      attachPromiseCancel(
+        h,
+        streamHybrid(msg.text, history, ollamaOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
+        (err) => ctx.postError(label, err),
+        onForceDrain,
+      );
     },
   });
   cancelFns.push(cancel);

@@ -7,8 +7,6 @@ import logging
 
 logger = logging.getLogger("HME")
 
-_ALERT_LOG_COOLDOWN = 300  # seconds between repeated alert log lines
-
 
 def correlate(
     history: list[dict],

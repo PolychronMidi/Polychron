@@ -62,6 +62,7 @@ class ChatPanel {
         this._disposables = [];
         this._restoreSessionId = null;
         this._disposed = false;
+        // ── Webview message dispatch ─────────────────────────────────────────────
         this._messageHandlers = {
             // ── Stream control ───────────────────────────────────────────────────
             send: (msg) => {
@@ -180,7 +181,19 @@ class ChatPanel {
         this._contextMeter = new ContextMeter_1.ContextMeter(projectRoot, this);
         this._chain = new ChainPerformer_1.ChainPerformer(projectRoot, this, this._chainBridge());
         this._streamPersister = new StreamPersister_1.StreamPersister(this);
-        this._ctx = this._makeCtx();
+        const self = this;
+        this._ctx = {
+            get projectRoot() { return self._projectRoot; },
+            get transcript() { return self._transcript; },
+            get state() { return self._state; },
+            post: (data) => self.post(data),
+            postError: (s, m) => self.postError(s, m),
+            drainQueue: () => self._drainQueue(),
+            trackStream: (id, r) => self._trackStream(id, r),
+            updateContextTracker: (t, th, m, u) => self._contextMeter.update(t, th, m, u, self._ctxArgs()),
+            checkChainThreshold: () => self._chain.maybeChain(),
+            setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
+        };
         try {
             this._transcript = new TranscriptLogger_1.TranscriptLogger(projectRoot);
             this._transcript.setNarrativeCallback(async (entries) => {
@@ -204,7 +217,7 @@ class ChatPanel {
         }
         this._panel.webview.html = this._getHtml();
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-        this._panel.webview.onDidReceiveMessage((msg) => this._handleMessage(msg), null, this._disposables);
+        this._panel.webview.onDidReceiveMessage((msg) => (0, webviewMessages_1.dispatchWebviewMessage)(msg, this._messageHandlers), null, this._disposables);
         // retainContextWhenHidden keeps the webview alive when the tab is hidden —
         // scroll position, model/effort/thinking controls, and streaming state are
         // all preserved automatically. Only refresh the context meter on show.
@@ -267,30 +280,11 @@ class ChatPanel {
         const restoreSessionId = state?.activeSessionId;
         ChatPanel.current = new ChatPanel(panel, projectRoot, restoreSessionId);
     }
-    // ── Webview message dispatch ─────────────────────────────────────────────
-    _handleMessage(msg) {
-        (0, webviewMessages_1.dispatchWebviewMessage)(msg, this._messageHandlers);
-    }
     _displayMessages() {
         return this._state.messages.slice(-ChatPanel.DISPLAY_CAP);
     }
     _trackStream(assistantId, route) {
         return this._streamPersister.track(assistantId, route, this._state.messages, () => this._persistState());
-    }
-    _makeCtx() {
-        const self = this;
-        return {
-            get projectRoot() { return self._projectRoot; },
-            get transcript() { return self._transcript; },
-            get state() { return self._state; },
-            post: (data) => self.post(data),
-            postError: (s, m) => self.postError(s, m),
-            drainQueue: () => self._drainQueue(),
-            trackStream: (id, r) => self._trackStream(id, r),
-            updateContextTracker: (t, th, m, u) => self._contextMeter.update(t, th, m, u, self._ctxArgs()),
-            checkChainThreshold: () => self._chain.maybeChain(),
-            setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
-        };
     }
     _loadSession(id) {
         const persisted = (0, SessionStore_1.loadSession)(this._projectRoot, id);
@@ -383,11 +377,7 @@ class ChatPanel {
             this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
         }
         const cross = (0, crossRouteHistory_1.buildCrossRouteContext)(this._state.messages, this._state.lastRoute, resolvedRoute);
-        if (cross.ollamaHistory)
-            this._state.ollamaHistory = cross.ollamaHistory;
-        if (cross.claudeSessionIdReset)
-            this._state.claudeSessionId = null;
-        const contextPrefix = cross.contextPrefix;
+        const contextPrefix = (0, crossRouteHistory_1.applyCrossRouteContext)(this._state, cross);
         this._state.lastRoute = resolvedRoute;
         const assistantId = (0, streamUtils_1.uid)();
         this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });

@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import threading
 import time
+from dataclasses import dataclass, field
 
 logger = logging.getLogger("HME")
 
@@ -32,40 +33,47 @@ _ENV_CHECK_INTERVAL = 180    # 3 minutes between environment scans
 _ENTANGLE_INTERVAL = 120     # 2 minutes between conversation checkpoints
 _COUNTERFACTUAL_FILE_SUFFIX = "hme-counterfactuals.jsonl"
 
+
+@dataclass
+class MetaState:
+    """All file paths and runtime state for the meta-observer, initialized in start()."""
+    heartbeat_file: str = ""
+    coherence_file: str = ""
+    narrative_file: str = ""
+    ops_file: str = ""
+    counterfactual_file: str = ""
+    entanglement_file: str = ""
+    synthesis_file: str = ""           # hme-synthesis.jsonl (L19/L20)
+    synthesis_patterns_file: str = ""  # hme-synthesis-patterns.json (L∞)
+
+
 _active = False
 _thread: threading.Thread | None = None
-_heartbeat_file = ""
-_coherence_file = ""
-_narrative_file = ""
-_ops_file = ""
-_counterfactual_file = ""
-_entanglement_file = ""
-_synthesis_file = ""          # hme-synthesis.jsonl (L19/L20)
-_synthesis_patterns_file = "" # hme-synthesis-patterns.json (L∞)
+_ms = MetaState()  # populated by start(); safe to read as empty strings before then
 
 
 def start(project_root: str) -> None:
-    global _active, _thread, _heartbeat_file, _coherence_file, _narrative_file
-    global _ops_file, _counterfactual_file, _entanglement_file
-    global _synthesis_file, _synthesis_patterns_file
+    global _active, _thread, _ms
     if _active:
         return
-    _heartbeat_file = os.path.join(project_root, "tmp", "hme-meta-observer.heartbeat")
-    _coherence_file = os.path.join(project_root, "metrics", "hme-coherence.jsonl")
-    _narrative_file = os.path.join(project_root, "metrics", "hme-narrative.jsonl")
-    _ops_file = os.path.join(project_root, "tmp", "hme-ops.json")
-    _counterfactual_file = os.path.join(project_root, "metrics", _COUNTERFACTUAL_FILE_SUFFIX)
-    _entanglement_file = os.path.join(project_root, "tmp", "hme-entanglement.json")
-    _synthesis_file = os.path.join(project_root, "metrics", "hme-synthesis.jsonl")
-    _synthesis_patterns_file = os.path.join(project_root, "metrics", "hme-synthesis-patterns.json")
-    os.makedirs(os.path.dirname(_heartbeat_file), exist_ok=True)
-    os.makedirs(os.path.dirname(_narrative_file), exist_ok=True)
+    _ms = MetaState(
+        heartbeat_file=os.path.join(project_root, "tmp", "hme-meta-observer.heartbeat"),
+        coherence_file=os.path.join(project_root, "metrics", "hme-coherence.jsonl"),
+        narrative_file=os.path.join(project_root, "metrics", "hme-narrative.jsonl"),
+        ops_file=os.path.join(project_root, "tmp", "hme-ops.json"),
+        counterfactual_file=os.path.join(project_root, "metrics", _COUNTERFACTUAL_FILE_SUFFIX),
+        entanglement_file=os.path.join(project_root, "tmp", "hme-entanglement.json"),
+        synthesis_file=os.path.join(project_root, "metrics", "hme-synthesis.jsonl"),
+        synthesis_patterns_file=os.path.join(project_root, "metrics", "hme-synthesis-patterns.json"),
+    )
+    os.makedirs(os.path.dirname(_ms.heartbeat_file), exist_ok=True)
+    os.makedirs(os.path.dirname(_ms.narrative_file), exist_ok=True)
 
     gap = _detect_observation_gap()
     if gap:
         logger.warning(f"Meta-observer: observation gap detected — {gap}")
 
-    if not os.path.exists(_synthesis_file):
+    if not os.path.exists(_ms.synthesis_file):
         logger.info("Meta-observer: hme-synthesis.jsonl absent — L22/L25/L∞ layers dormant until first synthesis call")
 
     _active = True
@@ -151,7 +159,7 @@ def _try_restart_monitor():
 
 def _write_heartbeat() -> None:
     try:
-        with open(_heartbeat_file, "w") as f:
+        with open(_ms.heartbeat_file, "w") as f:
             json.dump({"ts": time.time(), "pid": os.getpid()}, f)
     except OSError:
         pass
@@ -159,7 +167,7 @@ def _write_heartbeat() -> None:
 
 def _read_heartbeat() -> dict | None:
     try:
-        with open(_heartbeat_file) as f:
+        with open(_ms.heartbeat_file) as f:
             return json.load(f)
     except (OSError, json.JSONDecodeError):
         return None
@@ -184,12 +192,12 @@ _SYNTHESIS_WINDOW = 3600  # 1 hour of synthesis records for pattern detection
 
 def _load_synthesis_history() -> list[dict]:
     """Load recent synthesis call records from hme-synthesis.jsonl (L19/L20)."""
-    if not _synthesis_file:
+    if not _ms.synthesis_file:
         return []
     try:
         entries = []
         cutoff = time.time() - _SYNTHESIS_WINDOW
-        with open(_synthesis_file) as f:
+        with open(_ms.synthesis_file) as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -209,7 +217,7 @@ def _load_coherence_history() -> list[dict]:
     try:
         entries = []
         cutoff = time.time() - _CORRELATION_WINDOW
-        with open(_coherence_file) as f:
+        with open(_ms.coherence_file) as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -238,7 +246,7 @@ def _correlate(history: list[dict]) -> dict:
     # Load ops state for cross-reference, then delegate pure logic to meta_correlator
     ops: dict = {}
     try:
-        with open(_ops_file) as f:
+        with open(_ms.ops_file) as f:
             ops = json.load(f)
     except (OSError, json.JSONDecodeError):
         pass
@@ -366,7 +374,7 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
 def _write_narrative(narrative: str) -> None:
     try:
         entry = json.dumps({"ts": time.time(), "narrative": narrative})
-        with open(_narrative_file, "a") as f:
+        with open(_ms.narrative_file, "a") as f:
             f.write(entry + "\n")
         _trim_narrative_file()
     except OSError as e:
@@ -375,10 +383,10 @@ def _write_narrative(narrative: str) -> None:
 
 def _trim_narrative_file() -> None:
     try:
-        with open(_narrative_file) as f:
+        with open(_ms.narrative_file) as f:
             lines = f.readlines()
         if len(lines) > _MAX_NARRATIVE_LINES:
-            with open(_narrative_file, "w") as f:
+            with open(_ms.narrative_file, "w") as f:
                 f.writelines(lines[-_MAX_NARRATIVE_LINES:])
     except OSError:
         pass
@@ -386,7 +394,7 @@ def _trim_narrative_file() -> None:
 
 def _read_last_narrative() -> dict | None:
     try:
-        with open(_narrative_file) as f:
+        with open(_ms.narrative_file) as f:
             last = None
             for line in f:
                 line = line.strip()
@@ -520,7 +528,7 @@ def _checkpoint_entanglement() -> None:
 
         # Operational state cross-reference + L19/L21
         try:
-            with open(_ops_file) as f:
+            with open(_ms.ops_file) as f:
                 ops = json.load(f)
             state["restarts_today"] = ops.get("restarts_today", 0)
             state["recovery_rate"] = ops.get("recovery_success_rate_ema")
@@ -592,17 +600,17 @@ def _checkpoint_entanglement() -> None:
             pass
 
         # Write atomically
-        tmp = _entanglement_file + ".tmp"
+        tmp = _ms.entanglement_file + ".tmp"
         with open(tmp, "w") as f:
             json.dump(state, f, indent=2)
-        os.replace(tmp, _entanglement_file)
+        os.replace(tmp, _ms.entanglement_file)
     except Exception as e:
         logger.warning(f"Meta-observer L17: entanglement checkpoint failed: {e}")
 
 
 def _read_entanglement() -> dict | None:
     try:
-        with open(_entanglement_file) as f:
+        with open(_ms.entanglement_file) as f:
             return json.load(f)
     except (OSError, json.JSONDecodeError):
         return None
@@ -747,7 +755,7 @@ def _expire_predictions() -> None:
 
 def _write_counterfactual(pred: dict) -> None:
     try:
-        with open(_counterfactual_file, "a") as f:
+        with open(_ms.counterfactual_file, "a") as f:
             f.write(json.dumps(pred) + "\n")
         _trim_counterfactuals_file()
     except OSError:
@@ -756,10 +764,10 @@ def _write_counterfactual(pred: dict) -> None:
 
 def _trim_counterfactuals_file(max_lines: int = 2000) -> None:
     try:
-        with open(_counterfactual_file) as f:
+        with open(_ms.counterfactual_file) as f:
             lines = f.readlines()
         if len(lines) > max_lines:
-            with open(_counterfactual_file, "w") as f:
+            with open(_ms.counterfactual_file, "w") as f:
                 f.writelines(lines[-max_lines:])
     except OSError:
         pass
@@ -768,10 +776,10 @@ def _trim_counterfactuals_file(max_lines: int = 2000) -> None:
 def _compute_effectiveness() -> dict:
     """Compute intervention effectiveness from counterfactual history."""
     try:
-        if not os.path.exists(_counterfactual_file):
+        if not os.path.exists(_ms.counterfactual_file):
             return {"total_predictions": 0}
         resolved = []
-        with open(_counterfactual_file) as f:
+        with open(_ms.counterfactual_file) as f:
             for line in f:
                 try:
                     pred = json.loads(line.strip())
@@ -813,11 +821,11 @@ def _detect_synthesis_patterns() -> None:
     This is the recursive step: the system's synthesis behavior becomes legible
     from data, allowing the narrator to surface actionable grounding guidance.
     """
-    if not _synthesis_file or not _synthesis_patterns_file:
+    if not _ms.synthesis_file or not _ms.synthesis_patterns_file:
         return
     try:
         entries = []
-        with open(_synthesis_file) as f:
+        with open(_ms.synthesis_file) as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -861,10 +869,10 @@ def _detect_synthesis_patterns() -> None:
             "cascade_rate": round(sum(1 for e in entries if e.get("used_cascade")) / max(total, 1), 3),
             "escalation_rate": round(sum(1 for e in entries if e.get("escalated")) / max(total, 1), 3),
         }
-        tmp = _synthesis_patterns_file + ".tmp"
+        tmp = _ms.synthesis_patterns_file + ".tmp"
         with open(tmp, "w") as f:
             json.dump(patterns, f, indent=2)
-        os.replace(tmp, _synthesis_patterns_file)
+        os.replace(tmp, _ms.synthesis_patterns_file)
         logger.debug(
             f"Meta-observer L∞: synthesis self-model updated "
             f"({total} calls, gate_rate={patterns['quality_gate_rate']:.0%}, "
@@ -937,11 +945,11 @@ def _causal_attribution() -> dict | None:
     Each factor's contribution = correlation with phantom_rate across recent synthesis records.
     Returns attribution dict or None if insufficient data.
     """
-    if not _synthesis_file:
+    if not _ms.synthesis_file:
         return None
     try:
         entries = []
-        with open(_synthesis_file) as f:
+        with open(_ms.synthesis_file) as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -1372,8 +1380,8 @@ def _enumerate_unprovable_claims() -> list[dict]:
     claims = list(_UNPROVABLE_CLAIMS)
     # Dynamic: check if any recent synthesis patterns have untestable aspects
     try:
-        if os.path.exists(_synthesis_patterns_file):
-            with open(_synthesis_patterns_file) as f:
+        if os.path.exists(_ms.synthesis_patterns_file):
+            with open(_ms.synthesis_patterns_file) as f:
                 patterns = json.load(f)
             if patterns.get("quality_gate_rate", 0) > 0 and patterns.get("total_calls_analyzed", 0) > 50:
                 claims.append({
