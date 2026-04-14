@@ -102,9 +102,9 @@ class _LoggingMCP:
     def __init__(self, inner: FastMCP):
         self._inner = inner
 
-    def tool(self):
+    def tool(self, **kwargs):
         """Decorator that wraps the tool function with logging."""
-        original_decorator = self._inner.tool()
+        original_decorator = self._inner.tool(**kwargs)
 
         def wrapper(fn):
             @functools.wraps(fn)

@@ -14,7 +14,7 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 def read(target: str, mode: str = "auto") -> str:
     """Smart code reader — auto-routes by target format.
     'src/path/file.js' → file_intel (structure + KB).

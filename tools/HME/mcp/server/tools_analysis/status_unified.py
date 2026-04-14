@@ -14,7 +14,7 @@ from .synthesis_session import append_session_narrative, get_session_narrative, 
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 def status(mode: str = "all") -> str:
     """System health hub. mode='all' (default): pipeline + selftest + auto-warm.
     mode='pipeline': pipeline status only. mode='health': codebase health sweep.

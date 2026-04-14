@@ -86,7 +86,7 @@ def _detect_search_intent(query: str) -> str:
     return "semantic"
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 def grep(pattern: str, path: str = "", glob: str = "", type: str = "",
          output_mode: str = "content", context: int = 0,
          case_insensitive: bool = False, head_limit: int = 50,
@@ -235,7 +235,7 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
 # glob_search — absorbs find's structural modes (map, hierarchy, symbols, etc.)
 # ---------------------------------------------------------------------------
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 def glob_search(pattern: str, path: str = "", mode: str = "auto",
                 enrich: str = "light") -> str:
     """File/symbol search with KB enrichment. Drop-in for native Glob + structural find modes.
@@ -332,7 +332,7 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
 # edit — file editing with KB constraint surfacing
 # ---------------------------------------------------------------------------
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 def edit(file_path: str, old_string: str, new_string: str,
          replace_all: bool = False, enrich: str = "light") -> str:
     """File edit with KB constraint check. Drop-in for native Edit.
