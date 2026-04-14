@@ -146,7 +146,7 @@ function handleStreamEvent(
       } else if (block.type === "text" && block.text) {
         onChunk(block.text, "text");
       } else if (block.type === "tool_use") {
-        onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}).slice(0, 120)}`, "tool");
+        onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}, null, 2)}`, "tool");
       }
     }
     return;
