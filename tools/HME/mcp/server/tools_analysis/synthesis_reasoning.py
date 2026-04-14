@@ -8,40 +8,52 @@ Both rankings share the same provider modules and quota pools — splitting the
 order only changes which slot fires first, not which free tiers are consumed.
 
 profile="reasoning" — general analysis, architecture, deep think:
-     1. openrouter  deepseek/deepseek-r1:free              R1, top open reasoning
-     2. cerebras    qwen-3-235b-a22b-instruct-2507         235B MoE, wafer-scale
-     3. mistral     magistral-medium-latest                Mistral reasoning flagship
-     4. groq        openai/gpt-oss-120b                    120B OpenAI-open
-     5. mistral     mistral-large-latest                   Mistral general flagship
-     6. groq        moonshotai/kimi-k2-instruct-0905       Kimi K2, 262k context
-     7. gemini      gemini-3-flash-preview                 newest Gemini flash
-     8. gemini      gemini-flash-latest                    floating alias
-     9. mistral     mistral-medium-latest                  smaller general
-    10. groq        llama-3.3-70b-versatile                Meta 70B
-    11. openrouter  meta-llama/llama-3.3-70b-instruct:free slower 70B host
-    12. mistral     magistral-small-latest                 small reasoning
-    13. gemini      gemini-2.5-flash                       workhorse
-    14. gemini      gemini-2.0-flash                       older 2.x
-    15. cerebras    llama3.1-8b                            weak fallback
-    16. gemini      gemini-2.5-flash-lite                  last before local
+     1. nvidia     deepseek-ai/deepseek-v3.2              full DeepSeek V3.2
+     2. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
+     3. openrouter deepseek/deepseek-r1:free              R1 reasoning
+     4. nvidia     nvidia/llama-3.1-nemotron-ultra-253b   253B Nemotron Ultra
+     5. nvidia     qwen/qwen3.5-397b-a17b                 397B Qwen 3.5
+     6. cerebras   qwen-3-235b-a22b-instruct-2507         235B, wafer-scale fast
+     7. mistral    magistral-medium-latest                Mistral reasoning
+     8. nvidia     z-ai/glm5                              GLM-5 (paywalled elsewhere)
+     9. groq       openai/gpt-oss-120b                    120B OpenAI-open
+    10. mistral    mistral-large-latest                   Mistral general flagship
+    11. groq       moonshotai/kimi-k2-instruct-0905       Kimi K2
+    12. nvidia     meta/llama-3.3-70b-instruct            Meta 70B on NVIDIA
+    13. gemini     gemini-3-flash-preview                 newest Gemini flash
+    14. gemini     gemini-flash-latest                    floating alias
+    15. mistral    mistral-medium-latest                  smaller general
+    16. groq       llama-3.3-70b-versatile                Meta 70B on Groq
+    17. openrouter meta-llama/llama-3.3-70b-instruct:free slower 70B host
+    18. mistral    magistral-small-latest                 small reasoning
+    19. gemini     gemini-2.5-flash                       workhorse
+    20. gemini     gemini-2.0-flash                       older 2.x
+    21. cerebras   llama3.1-8b                            weak fallback
+    22. gemini     gemini-2.5-flash-lite                  last before local
 
 profile="coder" — structural code extraction, verified facts, file-aware work:
-     1. groq        openai/gpt-oss-120b                    strong code + fast
-     2. cerebras    qwen-3-235b-a22b-instruct-2507         235B, great on code
-     3. mistral     devstral-medium-latest                 agentic coding specialist
-     4. mistral     codestral-latest                       code completion specialist
-     5. groq        moonshotai/kimi-k2-instruct-0905       Kimi K2, strong code
-     6. openrouter  deepseek/deepseek-r1:free              R1 (also good at code)
-     7. gemini      gemini-3-flash-preview                 Gemini 3
-     8. mistral     mistral-large-latest                   flagship general
-     9. gemini      gemini-flash-latest                    floating alias
-    10. groq        llama-3.3-70b-versatile                Meta 70B
-    11. openrouter  meta-llama/llama-3.3-70b-instruct:free slower 70B
-    12. mistral     mistral-medium-latest                  medium general
-    13. gemini      gemini-2.5-flash                       workhorse
-    14. gemini      gemini-2.0-flash                       older 2.x
-    15. cerebras    llama3.1-8b                            weak fallback
-    16. gemini      gemini-2.5-flash-lite                  last before local
+     1. nvidia     qwen/qwen3-coder-480b-a35b-instruct    480B Qwen3 coder flagship
+     2. nvidia     mistralai/devstral-2-123b-instruct     123B agentic coder
+     3. nvidia     deepseek-ai/deepseek-v3.2              strong all-round coder
+     4. groq       openai/gpt-oss-120b                    strong code + fast
+     5. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
+     6. cerebras   qwen-3-235b-a22b-instruct-2507         235B, great on code
+     7. nvidia     z-ai/glm5                              GLM-5 (strong on SWE-Bench)
+     8. mistral    devstral-medium-latest                 agentic coder (Mistral direct)
+     9. mistral    codestral-latest                       code completion specialist
+    10. groq       moonshotai/kimi-k2-instruct-0905       Kimi K2
+    11. openrouter deepseek/deepseek-r1:free              R1 (also good at code)
+    12. nvidia     meta/llama-3.3-70b-instruct            Meta 70B on NVIDIA
+    13. gemini     gemini-3-flash-preview                 Gemini 3
+    14. mistral    mistral-large-latest                   flagship general
+    15. gemini     gemini-flash-latest                    floating alias
+    16. groq       llama-3.3-70b-versatile                Meta 70B on Groq
+    17. openrouter meta-llama/llama-3.3-70b-instruct:free slower 70B
+    18. mistral    mistral-medium-latest                  medium general
+    19. gemini     gemini-2.5-flash                       workhorse
+    20. gemini     gemini-2.0-flash                       older 2.x
+    21. cerebras   llama3.1-8b                            weak fallback
+    22. gemini     gemini-2.5-flash-lite                  last before local
 
 Reasoning models (magistral-*, deepseek-r1) are demoted on the coder profile
 because they waste output tokens on chain-of-thought that then gets discarded
@@ -95,12 +107,18 @@ def _refresh_env() -> None:
 # (provider_key, model_id) in absolute quality order.
 # provider_key must match a key in _PROVIDERS below.
 _RANKING_REASONING: list[tuple[str, str]] = [
+    ("nvidia",     "deepseek-ai/deepseek-v3.2"),
+    ("nvidia",     "mistralai/mistral-large-3-675b-instruct-2512"),
     ("openrouter", "deepseek/deepseek-r1:free"),
+    ("nvidia",     "nvidia/llama-3.1-nemotron-ultra-253b-v1"),
+    ("nvidia",     "qwen/qwen3.5-397b-a17b"),
     ("cerebras",   "qwen-3-235b-a22b-instruct-2507"),
     ("mistral",    "magistral-medium-latest"),
+    ("nvidia",     "z-ai/glm5"),
     ("groq",       "openai/gpt-oss-120b"),
     ("mistral",    "mistral-large-latest"),
     ("groq",       "moonshotai/kimi-k2-instruct-0905"),
+    ("nvidia",     "meta/llama-3.3-70b-instruct"),
     ("gemini",     "gemini-3-flash-preview"),
     ("gemini",     "gemini-flash-latest"),
     ("mistral",    "mistral-medium-latest"),
@@ -114,12 +132,18 @@ _RANKING_REASONING: list[tuple[str, str]] = [
 ]
 
 _RANKING_CODER: list[tuple[str, str]] = [
+    ("nvidia",     "qwen/qwen3-coder-480b-a35b-instruct"),
+    ("nvidia",     "mistralai/devstral-2-123b-instruct-2512"),
+    ("nvidia",     "deepseek-ai/deepseek-v3.2"),
     ("groq",       "openai/gpt-oss-120b"),
+    ("nvidia",     "mistralai/mistral-large-3-675b-instruct-2512"),
     ("cerebras",   "qwen-3-235b-a22b-instruct-2507"),
+    ("nvidia",     "z-ai/glm5"),
     ("mistral",    "devstral-medium-latest"),
     ("mistral",    "codestral-latest"),
     ("groq",       "moonshotai/kimi-k2-instruct-0905"),
     ("openrouter", "deepseek/deepseek-r1:free"),
+    ("nvidia",     "meta/llama-3.3-70b-instruct"),
     ("gemini",     "gemini-3-flash-preview"),
     ("mistral",    "mistral-large-latest"),
     ("gemini",     "gemini-flash-latest"),
@@ -142,7 +166,7 @@ def _load_providers():
     """Lazy-load provider modules so this file has no import-time deps."""
     from . import (
         synthesis_gemini, synthesis_groq, synthesis_openrouter,
-        synthesis_cerebras, synthesis_mistral,
+        synthesis_cerebras, synthesis_mistral, synthesis_nvidia,
     )
     return {
         "gemini":     synthesis_gemini,
@@ -150,6 +174,7 @@ def _load_providers():
         "openrouter": synthesis_openrouter,
         "cerebras":   synthesis_cerebras,
         "mistral":    synthesis_mistral,
+        "nvidia":     synthesis_nvidia,
     }
 
 
