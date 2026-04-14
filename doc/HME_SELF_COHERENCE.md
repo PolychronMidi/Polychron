@@ -10,16 +10,16 @@ This document describes the substrate that makes that possible — the **HME Coh
 
 ### The HME Coherence Index (HCI)
 
-The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from 15 weighted verifiers across 6 categories:
+The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **37 weighted verifiers** across 6 categories:
 
-| Category | Verifiers | What it measures |
+| Category | Verifiers (partial list — 37 total) | What it measures |
 |---|---|---|
-| **doc** | doc-drift, tool-docstrings | Documentation matches code reality |
-| **code** | python-syntax, shell-syntax, hook-executability, decorator-order | Source code can run and decorators are wired correctly |
-| **state** | states-sync, onboarding-flow, onboarding-state-integrity, todo-store-schema | Runtime state machines are valid and consistent |
-| **coverage** | hook-registration, tool-surface-coverage | Every declared interface points to a real implementation |
-| **runtime** | shim-health, error-log | Live services are responsive and errors are acknowledged |
-| **topology** | feedback-graph | Cross-boundary structures are declared |
+| **doc** | doc-drift, tool-docstrings, memetic-drift | Documentation matches code reality; CLAUDE.md rules aren't silently violated |
+| **code** | python-syntax, shell-syntax, hook-executability, decorator-order, todowrite-hook-nonblock | Source code can run; decorator order correct; TodoWrite hook stays non-blocking |
+| **state** | states-sync, onboarding-flow, onboarding-state-integrity, todo-store-schema, reloadable-sync, onboarding-chain-importable | Runtime state machines are valid and consistent |
+| **coverage** | hook-registration, hook-matcher-validity, subagent-mode-sync, subagent-general-purpose-passthrough, mcp-instructions-empty, tool-surface-coverage | Every declared interface points to a real implementation; subagents routed correctly |
+| **runtime** | shim-health, error-log, lifesaver-integrity, lifesaver-rate, meta-observer-coherence, tool-response-latency, trajectory-trend, subagent-backends, subagent-short-prompt-guard, warm-context-freshness, hook-latency, plan-output-validity, git-commit-test-coverage, transient-error-filter, verifier-coverage-gap, predictive-hci | Live services responsive; alerts honest; subagent stack functional; latency within baseline; detector not drifting |
+| **topology** | feedback-graph | Cross-boundary structures declared |
 
 Each verifier returns a `VerdictResult` with `status` (PASS/WARN/FAIL/SKIP/ERROR), `score` (0-1), `summary`, and `details`. The aggregate is a weighted mean × 100.
 
@@ -181,6 +181,69 @@ The HCI alone doesn't tell you everything — drill into the per-category and pe
 | 0-49 | Foundational failure; HME may not be safe to use |
 
 The threshold I've set in `verify-coherence.py` is 80 — exit code 1 below that. Pipeline integration should fail the build below 80.
+
+## Session evolutions log
+
+The HCI substrate + supporting infrastructure evolved in discrete rounds. Each round encoded a lesson that would have been lost if left implicit. Key rounds:
+
+### Round 1: The LIFESAVER no-dilution rule
+
+The first real test of the self-coherence philosophy. A verifier was flagging 16 LIFESAVER events / session as a real problem. The instinct to "add a 30-minute cooldown" would have silenced a real symptom and masked the underlying system degradation. The correction: **LIFESAVER must stay painful until the root cause is fixed**. Any cooldown/throttle/dedup/suppression near `register_critical_failure` is a structural violation.
+
+Ship: `LifesaverIntegrityVerifier` at weight 5.0 that parses the fire sites and fails on any time-based gate pattern near a LIFESAVER call. Caught the subversion during its own construction and proved load-bearing (HCI dropped from 86.9 → 75.0 when the forbidden pattern was injected; restored on removal).
+
+### Round 2: Detector calibration vs. alert dampening
+
+Two follow-on issues surfaced: "tool-response-latency 11 seconds is bad" (absolute threshold) and "health_topology coherence < 0.5" (immature detector). The temptation was to silence both. The correct fix was to **calibrate the detectors**: make latency baseline-relative per machine (11s on amateur hardware is normal), and gate health_topology alerts until the detector has 50+ samples to establish a baseline.
+
+Lesson: calibration (the detector stops claiming knowledge it doesn't have) is allowed; dampening (the detector knows but hides) is forbidden. The line is encoded in examples in the "LIFESAVER no-dilution rule" section of this doc.
+
+### Round 3: Subagent grep backend silent failure
+
+The HME local subagent pipeline was producing zero-value results for every query for weeks. Root cause: `ripgrep` was not installed on the host, so every `_exec_grep` call returned `ERROR: ripgrep (rg) not found` and the synthesizer worked from KB-only context. The agent silently said "I don't have this information" for every question.
+
+Fix: `_resolve_grep()` falls back to GNU grep when `rg` is absent, with equivalent flags. `SubagentBackendsVerifier` (weight 1.5) checks that grep + Ollama + shim are reachable on every HCI run — would have caught this in one pass if it had existed earlier.
+
+**Quality leap from this fix alone:** the subagent went from 0/4 correct answers on the `_tab_helpers` adversarial test to 4/4 correct answers with exact line numbers in 262 seconds (later 105s after the arbiter-skip fast path shipped).
+
+### Round 4: The subagent fast path (skip the arbiter)
+
+Empirical observation: the 4B arbiter model (qwen3:4b on CPU) takes 10-60s to produce a JSON research plan, and the plan it produces is mostly redundant with `_extract_search_terms + _infer_directories`. Skipping the arbiter entirely in explore mode cut per-query time from 262s to 105s (**2.5× speedup**) with zero measurable quality loss.
+
+Ship: `skip_arbiter=True` in the explore mode config. Plan mode still uses the arbiter because architectural disambiguation genuinely benefits from reasoning. The distinction is now encoded in `_MODE_CONFIGS` and enforced by `SubagentModeVerifier`.
+
+### Round 5: Load-bearing via recency windows
+
+The first `LifesaverRateVerifier` implementation counted all events in the last 24h and let historical events from a stale detector drag the HCI down permanently. The fix: **multi-window recency buckets (acute 1h / medium 6h / recent 24h) with weighted penalty**. Acute events dominate; stale events age out automatically.
+
+This is the general pattern for any "is X happening RIGHT NOW" verifier: track in multiple windows, weight heavily on acute, let recent events decay. Encoded in `analyze-tool-effectiveness.py` as `_ACUTE_WINDOW_S=3600`, `_MEDIUM_WINDOW_S=21600`, `_RECENT_WINDOW_S=86400`.
+
+### Round 6: Drift-proof source-based transient filtering
+
+A LIFESAVER false positive fired because `_log_error`'s transient-detection check was regex-matching `/reindex` in the message string — a pattern from when the function lived inside an HTTP handler. The function moved; the message format changed; the detector drifted silently. Nothing caught the drift until the LIFESAVER itself fired.
+
+Fix: source-based transient detection (`if source in _transient_sources and "timeout" in message.lower()`). The `source` argument is supplied by the caller and never drifts. `TransientErrorFilterVerifier` (weight 1.5) scans `_log_error` for URL-path substring matching patterns and FAILs if it finds any — encoding the rule that format-based classifiers are fragile and source-based classifiers are robust.
+
+### Round 7: Local QLoRA fine-tune of the arbiter
+
+The ultimate hypermeta leap: train a domain-specialized arbiter on the Polychron KB. Built during this session from scratch:
+
+1. Exported 262 training examples from 112 KB entries via `build-corpus.py`
+2. Unloaded `qwen3-coder:30b` from GPU0 via Ollama `keep_alive:0`
+3. Trained Qwen2.5-1.5B-Instruct with LoRA (r=16, α=32, 3 epochs, fp16, gradient checkpointing, 4.35M trainable params = 0.28% of total)
+4. Merged adapter and converted to GGUF via `llama.cpp/convert_hf_to_gguf.py`
+5. Registered as Ollama model `hme-arbiter:latest`
+6. Pointed `agent_local.py _ARBITER_MODEL` at the fine-tuned variant
+7. Re-enabled arbiter in explore mode (fast path OFF) now that the arbiter is actually useful
+
+Trade-offs exposed along the way:
+- M40 Maxwell GPUs don't support bf16 or Tensor Cores → had to use fp16 + eager attention
+- `peft 0.19` was incompatible with `torch 2.5.1` (references `float8_e8m0fnu`) → downgraded to `peft 0.13.2`
+- `DataCollatorForLanguageModeling` + custom labels → let the collator handle labels from input_ids
+- LoRA + gradient_checkpointing → need `model.enable_input_require_grads()`
+- llama.cpp's `convert_hf_to_gguf.py` from master requires a newer `gguf` library than pip publishes → pinned to tagged release `b3800`
+
+Every one of these was a silent trap in the stock ML stack. Each is now documented in this log so the next training round starts from a known-good configuration.
 
 ## The principle
 

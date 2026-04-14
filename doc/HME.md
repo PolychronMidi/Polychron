@@ -2,9 +2,11 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **6 MCP tools** provide the entire interface — every sub-capability routes through them. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop.
+HME is five layers integrated into one executive. **6 MCP tools** (agent-facing) plus a self-coherence substrate of **37 verifiers** at weight 0-5 each, producing an aggregate HME Coherence Index (HCI) on a 0-100 scale. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop. A local-LLM subagent pipeline (Explore + Plan modes) with a domain-specialized QLoRA-fine-tuned arbiter handles code research at amateur-hardware speeds.
 
 No layer is optional. Removing any one collapses the executive.
+
+**See also:** [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) for the HCI verifier substrate + LIFESAVER no-dilution rule + detector calibration philosophy. Every session evolution lives there in the "Session evolutions log" section as an append-only rolling history.
 
 ## The Five Layers
 
@@ -75,9 +77,27 @@ tools/HME/               The single source of truth
   config/
     project-rules.json                  Declarative project rules (boundary violations,
                                           L0 channels, registration patterns, etc.)
-  hooks/                                Hook scripts (22 scripts + hooks.json plugin manifest)
+  hooks/                                Hook scripts (hooks.json plugin manifest)
   agents/
     Evolver.agent.md                    7-phase evolution loop agent
+  scripts/                              Verifier engine, stress tests, analyzers:
+    verify-coherence.py                   Unified HCI engine (37 verifiers, 0-100 score)
+    verify-doc-sync.py                    Stale tool name drift detector
+    verify-onboarding-flow.py             18-test dry run of onboarding state machine
+    verify-states-sync.py                 Python↔shell STATES list diff
+    snapshot-holograph.py                 Time-travel snapshot + --diff + --replay
+    analyze-hci-trajectory.py             HCI trend + linear-regression forecast
+    analyze-tool-effectiveness.py         Multi-window (1h/6h/24h) session stats
+    build-hme-coupling-matrix.py          Tool co-occurrence + antagonist bridges
+    stress-test-subagent.py               5-case adversarial battery for agent_local
+    suggest-verifiers.py                  Verifier-that-invents-verifiers (H13)
+    memetic-drift.py                      CLAUDE.md rule violation scanner (H16)
+    promote-global-kb.py                  Cross-project KB promotion (H12)
+    build-dashboard.py                    Interactive plotly.js dashboard
+    emit-hci-signal.py                    HCI → composition-layer signal (H15 scaffold)
+    finetune-arbiter.py                   QLoRA training entry (H10)
+    learn-stopwords.py                    Self-improving stopwords (H7)
+    predict-hci.py                        Predictive HCI model (H9)
   doc                                   -> doc/ (symlink)
 ```
 
