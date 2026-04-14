@@ -212,6 +212,8 @@ def _proxy_health_monitor(port: int) -> None:
     """
     crash_count = 0
     _stable_since: float = 0.0  # epoch when shim last became continuously healthy
+    _coherence_alert_last: float = 0.0  # cooldown: at most once per 30min
+    _COHERENCE_ALERT_COOLDOWN = 1800.0
     while _proxy_monitor_active:
         try:
             # Layer 5: adaptive interval — reduce overhead when system is stable
@@ -244,25 +246,34 @@ def _proxy_health_monitor(port: int) -> None:
                     from server import health_topology as ht
                     import json as _jc
                     topo = ht.get_topology()
-                    coherence = topo.get("coherence", 0.0)
-                    _pr = os.environ.get("PROJECT_ROOT", "")
-                    if _pr:
-                        _mdir = os.path.join(_pr, "metrics")
-                        os.makedirs(_mdir, exist_ok=True)
-                        _entry = _jc.dumps({
-                            "ts": time.time(),
-                            "coherence": coherence,
-                            "shim_ms": topo.get("nodes", {}).get("shim", {}).get("response_ms"),
-                        })
-                        with open(os.path.join(_mdir, "hme-coherence.jsonl"), "a") as _f:
-                            _f.write(_entry + "\n")
-                    if coherence < 0.5:
-                        from server import context as _ctx
-                        _ctx.register_critical_failure(
-                            "health_topology",
-                            f"System coherence below threshold: {coherence:.0%} — multiple components degraded",
-                            severity="WARNING",
-                        )
+                    # ts==0 means the cache is empty (no build has completed yet) —
+                    # the returned coherence of 0.0 is a sentinel, not a real reading.
+                    # Skip logging and alerting until a real topology build finishes.
+                    if topo.get("ts", 0) == 0:
+                        pass
+                    else:
+                        coherence = topo.get("coherence", 0.0)
+                        _pr = os.environ.get("PROJECT_ROOT", "")
+                        if _pr:
+                            _mdir = os.path.join(_pr, "metrics")
+                            os.makedirs(_mdir, exist_ok=True)
+                            _entry = _jc.dumps({
+                                "ts": time.time(),
+                                "coherence": coherence,
+                                "shim_ms": topo.get("nodes", {}).get("shim", {}).get("response_ms"),
+                            })
+                            with open(os.path.join(_mdir, "hme-coherence.jsonl"), "a") as _f:
+                                _f.write(_entry + "\n")
+                        if coherence < 0.5:
+                            _now_ca = time.time()
+                            if _now_ca - _coherence_alert_last >= _COHERENCE_ALERT_COOLDOWN:
+                                _coherence_alert_last = _now_ca
+                                from server import context as _ctx
+                                _ctx.register_critical_failure(
+                                    "health_topology",
+                                    f"System coherence below threshold: {coherence:.0%} — multiple components degraded",
+                                    severity="WARNING",
+                                )
                 except Exception:
                     pass
                 continue
