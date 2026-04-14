@@ -36,9 +36,22 @@ def init_store(project_root: str) -> None:
 
 def _log_error(source: str, message: str, detail: str = "") -> None:
     """Append a critical error to the in-memory log and hme-errors.log.
-    Transient timeouts go to memory only (not disk) — they're operational, not code defects."""
+    Transient timeouts go to memory only (not disk) — they're operational, not code defects.
+
+    Transient detection is SOURCE-based, not message-based. The source argument
+    is exactly the dimension we want to filter on, and message formats drift
+    over time (the "/reindex" URL-path pattern was a bug from when this ran
+    inside an HTTP handler; the function is now called from arbitrary places
+    where the message has no URL shape at all). Source-based filtering is
+    drift-proof because the source argument is supplied by the caller and
+    never varies per message.
+    """
     global _error_log
-    _transient = "timeout" in message.lower() and ("unreachable" in message.lower() or "/enrich" in message or "/audit" in message or "/reindex" in message)
+    _transient_sources = {"reindex", "enrich", "audit"}
+    _transient = (
+        (source in _transient_sources and "timeout" in message.lower())
+        or "unreachable" in message.lower()
+    )
     entry = {
         "ts": int(time.time() * 1000),
         "ts_str": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

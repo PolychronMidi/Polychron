@@ -851,6 +851,63 @@ class SubagentPassthroughVerifier(Verifier):
         )
 
 
+class TransientErrorFilterVerifier(Verifier):
+    """Ensures _log_error in hme_http_store.py uses SOURCE-based transient
+    detection, not message-substring matching. The old detector looked for
+    '/reindex' as a URL-path substring which broke when reindex timeout
+    messages started with 'timeout indexing /home/...' (no /reindex in that
+    string). This class of bug (format drift vs. classifier) must not return.
+    """
+    name = "transient-error-filter"
+    category = "runtime"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        store_py = os.path.join(_SERVER_DIR, "..", "hme_http_store.py")
+        store_py = os.path.normpath(store_py)
+        if not os.path.isfile(store_py):
+            return _result(SKIP, 1.0, "hme_http_store.py not found")
+        try:
+            with open(store_py) as f:
+                src = f.read()
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        # Find the _log_error function
+        m = re.search(
+            r'def _log_error\([^)]*\)[^:]*:(.*?)(?=\ndef |\Z)',
+            src, re.DOTALL,
+        )
+        if not m:
+            return _result(FAIL, 0.0, "could not find _log_error definition")
+        body = m.group(1)
+        # Source-based markers we REQUIRE
+        has_source_set = (
+            "_transient_sources" in body
+            or "source in {" in body
+            or "source in (" in body
+        )
+        # URL-path markers we FORBID (regression guards)
+        has_url_path_match = bool(
+            re.search(r'"/reindex"\s+in\s+message', body)
+            or re.search(r'"/enrich"\s+in\s+message', body)
+            or re.search(r'"/audit"\s+in\s+message', body)
+        )
+        if has_url_path_match:
+            return _result(
+                FAIL, 0.0,
+                "_log_error uses URL-path substring matching on message — "
+                "drift-prone, will silently break when message format changes",
+                ['refactor to source-based: "if source in _transient_sources and \'timeout\' in message"'],
+            )
+        if not has_source_set:
+            return _result(
+                WARN, 0.5,
+                "_log_error transient detection is not source-based",
+                ["recommended: check source argument instead of substring-matching the message"],
+            )
+        return _result(PASS, 1.0, "_log_error uses source-based transient detection")
+
+
 class PredictiveHCIVerifier(Verifier):
     """H9: consumes metrics/hme-hci-forecast.json (produced by predict-hci.py)
     and scores based on predicted drift. This is the forward-looking layer —
@@ -1652,6 +1709,7 @@ REGISTRY = [
     HookLatencyVerifier(),
     PlanOutputValidityVerifier(),
     GitCommitTestCoverageVerifier(),
+    TransientErrorFilterVerifier(),
     PredictiveHCIVerifier(),
     LifesaverIntegrityVerifier(),
     LifesaverRateVerifier(),
