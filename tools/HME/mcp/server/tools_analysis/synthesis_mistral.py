@@ -1,20 +1,26 @@
 """Mistral La Plateforme synthesis tier — free Experiment tier cascade.
 
-Mistral's free Experiment tier gives access to ALL models (Large, Codestral,
-Small, Pixtral) with 1 billion tokens/month. Rate is limited: 2 RPM, 500K TPM.
-Best used for differentiated calls where token budget matters more than RPM
-burst. OpenAI-compatible at https://api.mistral.ai/v1.
+Mistral's free Experiment tier gives access to ALL models with 1B tokens/month.
+Rate limit is strict: 2 RPM, 500K TPM. Best used for high-quality calls where
+token budget matters more than RPM burst. OpenAI-compatible at
+https://api.mistral.ai/v1.
 
 Free tier cascade (best-first):
-    T1: mistral-large-latest — flagship Mistral Large, strong reasoning
-    T2: codestral-latest     — code specialist
-    T3: mistral-small-latest — smaller fallback
+    T1: magistral-medium-latest — reasoning specialist, frontier-tier
+    T2: mistral-large-latest     — flagship general
+    T3: devstral-medium-latest   — agentic coding specialist
+    T4: codestral-latest         — code completion specialist
+    T5: mistral-medium-latest    — smaller general
+    T6: magistral-small-latest   — small reasoning fallback
+
+Magistral models return `content` as a list of `{type:"thinking"|"text"}` blocks
+instead of a plain string — `_flatten_content()` handles that shape.
 
 Returns None when RPM/RPD exhausted or quota hit — caller cascades to next provider.
 
 Config (env vars):
     MISTRAL_API_KEY       — required to enable
-    MISTRAL_MODEL_T1..T3  — override tier model
+    MISTRAL_MODEL_T1..T6  — override tier model
     MISTRAL_RPD_LIMIT_*   — per-tier requests-per-day cap (default: 500)
     MISTRAL_RPM_LIMIT_*   — per-tier requests-per-minute cap (default: 2)
 """
@@ -49,9 +55,12 @@ _BASE_URL = "https://api.mistral.ai/v1/chat/completions"
 _TIMEOUT = 60
 
 _TIER_DEFS = [
-    ("T1", os.environ.get("MISTRAL_MODEL_T1", "mistral-large-latest")),
-    ("T2", os.environ.get("MISTRAL_MODEL_T2", "codestral-latest")),
-    ("T3", os.environ.get("MISTRAL_MODEL_T3", "mistral-small-latest")),
+    ("T1", os.environ.get("MISTRAL_MODEL_T1", "magistral-medium-latest")),
+    ("T2", os.environ.get("MISTRAL_MODEL_T2", "mistral-large-latest")),
+    ("T3", os.environ.get("MISTRAL_MODEL_T3", "devstral-medium-latest")),
+    ("T4", os.environ.get("MISTRAL_MODEL_T4", "codestral-latest")),
+    ("T5", os.environ.get("MISTRAL_MODEL_T5", "mistral-medium-latest")),
+    ("T6", os.environ.get("MISTRAL_MODEL_T6", "magistral-small-latest")),
 ]
 
 
@@ -161,6 +170,23 @@ def _strip_think(text: str) -> str:
     return text.strip()
 
 
+def _flatten_content(content) -> str:
+    """Magistral reasoning models return content as a list of typed blocks
+    [{type: 'thinking', thinking: [...]}, {type: 'text', text: '...'}].
+    Extract only the final text blocks; drop thinking."""
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    out = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "text":
+            out.append(block.get("text", ""))
+    return "\n".join(out)
+
+
 def _call_model(model: str, prompt: str, system: str,
                 max_tokens: int, temperature: float) -> str | None:
     full_system = _GROUNDING_HEADER + ("\n\n" + system if system else "")
@@ -187,7 +213,8 @@ def _call_model(model: str, prompt: str, system: str,
         choices = data.get("choices", [])
         if not choices:
             return None
-        text = choices[0].get("message", {}).get("content", "")
+        raw = choices[0].get("message", {}).get("content", "")
+        text = _flatten_content(raw)
         return _strip_think(text) or None
     except urllib.error.HTTPError as e:
         err = e.read().decode(errors="ignore")[:200]
