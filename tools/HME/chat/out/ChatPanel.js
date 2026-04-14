@@ -42,17 +42,16 @@ const SessionStore_1 = require("./SessionStore");
 const TranscriptLogger_1 = require("./TranscriptLogger");
 const Arbiter_1 = require("./Arbiter");
 const streamUtils_1 = require("./streamUtils");
-const chatChain_1 = require("./chatChain");
 const chatStreaming_1 = require("./chatStreaming");
 const crossRouteHistory_1 = require("./crossRouteHistory");
-// Fire chain at 99% — meter reaches this before autocompact kicks in.
-const CHAIN_THRESHOLD_PCT = 99;
+const ErrorSink_1 = require("./panel/ErrorSink");
+const ShimSupervisor_1 = require("./panel/ShimSupervisor");
+const MirrorTerminal_1 = require("./panel/MirrorTerminal");
+const ContextMeter_1 = require("./panel/ContextMeter");
+const ChainPerformer_1 = require("./panel/ChainPerformer");
 class ChatPanel {
     static _blankState() {
         return { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
-    }
-    static _blankContextTracker() {
-        return { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
     }
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = ChatPanel._blankState();
@@ -61,8 +60,6 @@ class ChatPanel {
         this._disposables = [];
         this._restoreSessionId = null;
         this._disposed = false;
-        this._contextTracker = ChatPanel._blankContextTracker();
-        this._chainingInProgress = false;
         this._messageHandlers = {
             // ── Stream control ───────────────────────────────────────────────────
             send: (msg) => {
@@ -71,12 +68,12 @@ class ChatPanel {
                     this._cancelCurrent?.();
                     this._cancelCurrent = undefined;
                     this._messageQueue = [];
-                    this._post({ type: "cancelConfirmed" });
+                    this.post({ type: "cancelConfirmed" });
                     this._isStreaming = false;
                 }
                 this._isStreaming = true;
                 this._onSend(msg).catch((e) => {
-                    this._postError("send", String(e));
+                    this.postError("send", String(e));
                     this._drainQueue();
                 });
             },
@@ -86,13 +83,13 @@ class ChatPanel {
                     const queuedUserMsg = {
                         id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
                     };
-                    this._post({ type: "message", message: queuedUserMsg });
+                    this.post({ type: "message", message: queuedUserMsg });
                     this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
                 }
                 else {
                     this._isStreaming = true;
                     this._onSend(msg).catch((e) => {
-                        this._postError("send", String(e));
+                        this.postError("send", String(e));
                         this._drainQueue();
                     });
                 }
@@ -101,17 +98,17 @@ class ChatPanel {
                 this._cancelCurrent?.();
                 this._cancelCurrent = undefined;
                 this._messageQueue = [];
-                this._post({ type: "cancelConfirmed" });
+                this.post({ type: "cancelConfirmed" });
                 this._isStreaming = false;
             },
             // ── Session management ───────────────────────────────────────────────
             clearHistory: () => {
                 this._state = ChatPanel._blankState();
-                this._resetContextTracker();
-                this._post({ type: "historyCleared" });
+                this._contextMeter.reset(this._ctxArgs());
+                this.post({ type: "historyCleared" });
             },
             listSessions: () => {
-                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+                this.post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
                 if (this._restoreSessionId) {
                     const id = this._restoreSessionId;
                     this._restoreSessionId = null;
@@ -123,28 +120,28 @@ class ChatPanel {
                 (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
                 if (this._state.sessionEntry?.id === msg.id) {
                     this._state = ChatPanel._blankState();
-                    this._resetContextTracker();
+                    this._contextMeter.reset(this._ctxArgs());
                     this._transcript.setSessionId("");
-                    this._post({ type: "historyCleared" });
+                    this.post({ type: "historyCleared" });
                 }
-                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+                this.post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
             },
             renameSession: (msg) => {
                 (0, SessionStore_1.renameSession)(this._projectRoot, msg.id, msg.title);
-                this._post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
+                this.post({ type: "sessionList", sessions: (0, SessionStore_1.listSessions)(this._projectRoot) });
             },
             newSession: () => {
                 this._state = ChatPanel._blankState();
-                this._resetContextTracker();
-                this._post({ type: "historyCleared" });
+                this._contextMeter.reset(this._ctxArgs());
+                this.post({ type: "historyCleared" });
             },
             // ── HME features ─────────────────────────────────────────────────────
             enrichPrompt: (msg) => {
-                this._post({ type: "enrichStatus", status: "enriching" });
+                this.post({ type: "enrichStatus", status: "enriching" });
                 (0, router_1.enrichPrompt)(msg.prompt, msg.frame ?? "").then((result) => {
-                    this._post({ type: "enrichResult", ...result });
+                    this.post({ type: "enrichResult", ...result });
                 }).catch((e) => {
-                    this._post({
+                    this.post({
                         type: "enrichResult", enriched: msg.prompt, original: msg.prompt,
                         error: String(e), unchanged: true,
                     });
@@ -152,9 +149,9 @@ class ChatPanel {
             },
             checkHmeShim: () => {
                 (0, router_1.isHmeShimReady)().then(({ ready }) => {
-                    this._post({ type: "hmeShimStatus", ready, failed: !ready && this._shimFailed });
+                    this.post({ type: "hmeShimStatus", ready, failed: !ready && this._shim.failed });
                     if (!ready)
-                        this._startHmeShim();
+                        this._shim.start();
                 });
             },
             // ── UI state ─────────────────────────────────────────────────────────
@@ -164,24 +161,22 @@ class ChatPanel {
                 }
             },
             setMirrorMode: (msg) => {
-                this._mirrorMode = !!msg.enabled;
-                if (this._mirrorMode) {
-                    this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
-                }
-                this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
+                const enabled = !!msg.enabled;
+                this._mirror.setEnabled(enabled, msg.model || "claude-sonnet-4-6", msg.effort || "high");
+                this.post({ type: "mirrorModeChanged", enabled });
             },
         };
-        // ── HME shim process management ────────────────────────────────────────────
-        // ── Mirror terminal ────────────────────────────────────────────────────────
-        // A live native VS Code terminal running Claude directly — fully interactive.
-        // The hidden node-pty session still handles chat rendering independently.
-        this._mirrorMode = false;
-        this._shimProc = null;
-        this._shimFailed = false;
-        this._shimPollTimer = null;
         this._panel = panel;
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
+        // PanelHost methods (post/postError) delegate to the panel via
+        // `this.post` / `this.postError` below. The extracted components
+        // receive `this` typed as PanelHost to keep the coupling narrow.
+        this._errorSink = new ErrorSink_1.ErrorSink(projectRoot);
+        this._shim = new ShimSupervisor_1.ShimSupervisor(projectRoot, this);
+        this._mirror = new MirrorTerminal_1.MirrorTerminal(projectRoot);
+        this._contextMeter = new ContextMeter_1.ContextMeter(projectRoot, this);
+        this._chain = new ChainPerformer_1.ChainPerformer(projectRoot, this, this._chainBridge());
         try {
             this._transcript = new TranscriptLogger_1.TranscriptLogger(projectRoot);
             this._transcript.setNarrativeCallback(async (entries) => {
@@ -189,7 +184,7 @@ class ChatPanel {
                     const narrative = await (0, Arbiter_1.synthesizeNarrative)(entries);
                     if (narrative) {
                         (0, router_1.postTranscript)([{ ts: Date.now(), type: "narrative", content: narrative }])
-                            .catch((e) => this._postError("narrative", String(e)));
+                            .catch((e) => this.postError("narrative", String(e)));
                     }
                     return narrative;
                 }
@@ -211,9 +206,44 @@ class ChatPanel {
         // all preserved automatically. Only refresh the context meter on show.
         this._panel.onDidChangeViewState(() => {
             if (this._panel.visible) {
-                this._postContextUpdate();
+                this._contextMeter.post(this._ctxArgs());
             }
         }, null, this._disposables);
+    }
+    // ── PanelHost implementation ─────────────────────────────────────────────
+    post(data) {
+        this._panel.webview.postMessage(data);
+    }
+    postError(source, message) {
+        this._errorSink.post(source, message);
+    }
+    // ── Extracted-component support ──────────────────────────────────────────
+    _ctxArgs() {
+        return {
+            sessionId: this._state.sessionEntry?.id ?? null,
+            chainIndex: this._state.chainIndex,
+        };
+    }
+    _chainBridge() {
+        return {
+            getSessionId: () => this._state.sessionEntry?.id ?? null,
+            getMessages: () => this._state.messages,
+            getChainIndex: () => this._state.chainIndex,
+            getClaudeSessionId: () => this._state.claudeSessionId,
+            getContextPct: () => this._contextMeter.pctUsed,
+            rotate: (continuationMsg, newChainIndex) => {
+                // Rotate session state without firing the context meter post — the
+                // ChainPerformer will request a final post after chainCompleted + notice
+                // so the webview sees events in the original order.
+                this._state.messages = [];
+                this._state.claudeSessionId = null;
+                this._state.chainIndex = newChainIndex;
+                this._contextMeter.resetSilently();
+                this._state.messages.push(continuationMsg);
+                this._persistState();
+            },
+            postContextUpdate: () => this._contextMeter.post(this._ctxArgs()),
+        };
     }
     static setGlobalState(state) {
         ChatPanel._globalState = state;
@@ -233,6 +263,7 @@ class ChatPanel {
         const restoreSessionId = state?.activeSessionId;
         ChatPanel.current = new ChatPanel(panel, projectRoot, restoreSessionId);
     }
+    // ── Webview message dispatch ─────────────────────────────────────────────
     _handleMessage(msg) {
         const handler = this._messageHandlers[msg.type];
         if (handler)
@@ -258,7 +289,7 @@ class ChatPanel {
                     this._persistState();
                 }
                 catch (e) {
-                    this._postError("persist", `interval: ${e?.message ?? e}`);
+                    this.postError("persist", `interval: ${e?.message ?? e}`);
                 }
             }
         }, ChatPanel.STREAM_PERSIST_MS);
@@ -278,7 +309,7 @@ class ChatPanel {
                     this._persistState();
                 }
                 catch (e) {
-                    this._postError("persist", `finalize: ${e?.message ?? e}`);
+                    this.postError("persist", `finalize: ${e?.message ?? e}`);
                 }
             },
         };
@@ -289,12 +320,12 @@ class ChatPanel {
             get projectRoot() { return self._projectRoot; },
             get transcript() { return self._transcript; },
             get state() { return self._state; },
-            post: (data) => self._post(data),
-            postError: (s, m) => self._postError(s, m),
+            post: (data) => self.post(data),
+            postError: (s, m) => self.postError(s, m),
             drainQueue: () => self._drainQueue(),
             trackStream: (id, r) => self._trackStream(id, r),
-            updateContextTracker: (t, th, m, u) => self._updateContextTracker(t, th, m, u),
-            checkChainThreshold: (msg) => self._checkChainThreshold(msg),
+            updateContextTracker: (t, th, m, u) => self._contextMeter.update(t, th, m, u, self._ctxArgs()),
+            checkChainThreshold: () => self._chain.maybeChain(),
             setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
         };
     }
@@ -312,14 +343,17 @@ class ChatPanel {
             sessionEntry: persisted.entry,
             chainIndex,
         };
-        this._resetContextTracker(persisted.contextTokens);
+        this._contextMeter.reset(this._ctxArgs(), persisted.contextTokens);
         this._transcript.setSessionId(persisted.entry.id);
         this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
         const display = this._displayMessages();
         const pruned = display.length < persisted.messages.length;
-        this._post({ type: "sessionLoaded", id: persisted.entry.id, messages: display, title: persisted.entry.title });
+        this.post({ type: "sessionLoaded", id: persisted.entry.id, messages: display, title: persisted.entry.title });
         if (pruned) {
-            this._post({ type: "notice", level: "info", text: `Showing last ${display.length} of ${persisted.messages.length} messages` });
+            this.post({
+                type: "notice", level: "info",
+                text: `Showing last ${display.length} of ${persisted.messages.length} messages`,
+            });
         }
     }
     _persistState() {
@@ -332,10 +366,11 @@ class ChatPanel {
         };
         this._state.sessionEntry = entry;
         (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
-            contextTokens: this._contextTracker.usedPct ?? 0,
+            contextTokens: this._contextMeter.pctUsed,
             chainIndex: this._state.chainIndex,
         });
     }
+    // ── Send pipeline ────────────────────────────────────────────────────────
     async _onSend(msg) {
         if (msg.route === "agent") {
             return this._onSendAgent(msg);
@@ -353,7 +388,7 @@ class ChatPanel {
             this._state.sessionEntry = entry;
             this._transcript.setSessionId(entry.id);
             this._transcript.logSessionStart(entry.id, entry.title, false);
-            this._post({ type: "sessionCreated", session: entry });
+            this.post({ type: "sessionCreated", session: entry });
         }
         const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.ollamaModel : msg.claudeModel;
         this._transcript.logUser(msg.text, resolvedRoute, model);
@@ -361,24 +396,24 @@ class ChatPanel {
             this._transcript.logValidation(msg.text, warnings.length, blocks.length);
             if (blocks.length > 0) {
                 const notice = blocks.map((b) => `⛔ [${b.title}] ${b.content}`).join("\n");
-                this._post({ type: "notice", level: "block", text: `HME anti-pattern alert:\n${notice}` });
+                this.post({ type: "notice", level: "block", text: `HME anti-pattern alert:\n${notice}` });
             }
             else if (warnings.length > 0) {
                 const notice = warnings.map((w) => `⚠ [${w.title}]`).join(" · ");
-                this._post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
+                this.post({ type: "notice", level: "warn", text: `HME constraints: ${notice}` });
             }
-        }).catch((e) => this._postError("validation", String(e)));
+        }).catch((e) => this.postError("validation", String(e)));
         (0, router_1.postTranscript)([{
                 ts: Date.now(), type: "user", route: resolvedRoute, model,
                 content: msg.text, summary: `User [${resolvedRoute}]: ${msg.text.slice(0, 100)}`,
-            }]).catch((e) => this._postError("transcript", String(e)));
+            }]).catch((e) => this.postError("transcript", String(e)));
         const userMsg = msg._queuedUserMsg ?? {
             id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
         this._state.messages.push(userMsg);
         this._persistState();
         if (!msg._queuedUserMsg) {
-            this._post({ type: "message", message: userMsg });
+            this.post({ type: "message", message: userMsg });
         }
         // ── Cross-route history portability ──
         if (this._state.lastRoute && this._state.lastRoute !== resolvedRoute) {
@@ -392,7 +427,7 @@ class ChatPanel {
         const contextPrefix = cross.contextPrefix;
         this._state.lastRoute = resolvedRoute;
         const assistantId = (0, streamUtils_1.uid)();
-        this._post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
+        this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
         const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
         const ctx = this._makeCtx();
         if (resolvedRoute === "local") {
@@ -416,22 +451,22 @@ class ChatPanel {
             this._state.sessionEntry = entry;
             this._transcript.setSessionId(entry.id);
             this._transcript.logSessionStart(entry.id, entry.title, false);
-            this._post({ type: "sessionCreated", session: entry });
+            this.post({ type: "sessionCreated", session: entry });
         }
         this._transcript.logUser(msg.text, "agent", msg.ollamaModel);
         (0, router_1.postTranscript)([{
                 ts: Date.now(), type: "user", route: "agent", model: msg.ollamaModel,
                 content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
-            }]).catch((e) => this._postError("transcript", String(e)));
+            }]).catch((e) => this.postError("transcript", String(e)));
         const userMsg = { id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: "local", ts: Date.now() };
         this._state.messages.push(userMsg);
         this._persistState();
-        this._post({ type: "message", message: userMsg });
-        this._post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
+        this.post({ type: "message", message: userMsg });
+        this.post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
         const localId = (0, streamUtils_1.uid)();
         const hybridId = (0, streamUtils_1.uid)();
-        this._post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.ollamaModel}` });
-        this._post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.ollamaModel}` });
+        this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.ollamaModel}` });
+        this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.ollamaModel}` });
         let doneCount = 0;
         let drained = false;
         const cancelFns = [];
@@ -448,221 +483,18 @@ class ChatPanel {
         (0, chatStreaming_1.streamAgentMsg)(ctx, msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
         (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
     }
-    // ── Context tracking & chain ───────────────────────────────────────────────
-    _resetContextTracker(restoredPct) {
-        this._contextTracker = ChatPanel._blankContextTracker();
-        if (restoredPct) {
-            this._contextTracker.usedPct = restoredPct;
-        }
-        this._postContextUpdate();
-    }
-    _updateContextTracker(text, thinking, model, usage) {
-        this._contextTracker.model = model;
-        this._contextTracker.totalChars += text.length + (thinking?.length ?? 0);
-        if (usage) {
-            this._contextTracker.lastInputTokens = usage.inputTokens;
-            this._contextTracker.lastOutputTokens = usage.outputTokens;
-            if (usage.usedPct != null)
-                this._contextTracker.usedPct = usage.usedPct;
-            if (usage.modelId)
-                this._contextTracker.cliModelId = usage.modelId;
-            if (usage.modelName)
-                this._contextTracker.cliModelName = usage.modelName;
-        }
-        this._postContextUpdate();
-    }
-    _getContextPct() {
-        return this._contextTracker.usedPct ?? 0;
-    }
-    _postContextUpdate() {
-        const pct = this._getContextPct();
-        const chainLinks = this._state.sessionEntry
-            ? (0, SessionStore_1.listChainLinks)(this._projectRoot, this._state.sessionEntry.id).length
-            : 0;
-        this._post({
-            type: "contextUpdate", pct, chainLinks, chainIndex: this._state.chainIndex,
-            cliModel: this._contextTracker.cliModelName || this._contextTracker.cliModelId || undefined,
-        });
-    }
-    _checkChainThreshold(msg) {
-        const pct = this._getContextPct();
-        if (pct < CHAIN_THRESHOLD_PCT || this._chainingInProgress)
-            return;
-        this._performChain(msg).catch((e) => {
-            console.error(`[HME Chat] Chain failed: ${e}`);
-            this._postError("chain", String(e));
-            this._chainingInProgress = false;
-        });
-    }
-    async _performChain(msg) {
-        if (!this._state.sessionEntry || this._chainingInProgress)
-            return;
-        this._chainingInProgress = true;
-        try {
-            await this._performChainInner(msg);
-        }
-        finally {
-            this._chainingInProgress = false;
-        }
-    }
-    async _performChainInner(msg) {
-        const sessionId = this._state.sessionEntry.id;
-        const linkIndex = this._state.chainIndex;
-        this._post({ type: "notice", level: "info", text: `Context chain: saving link ${linkIndex + 1} and generating summary...` });
-        let todos = [];
-        try {
-            const todoPath = path.join(process.env["HOME"] ?? process.env["USERPROFILE"] ?? "~", ".claude", "mcp", "HME", "todos.json");
-            todos = JSON.parse(fs.readFileSync(todoPath, "utf8"));
-        }
-        catch (e) {
-            if (e?.code !== "ENOENT")
-                console.error(`[HME] Failed to load todos.json: ${e?.message ?? e}`);
-        }
-        const priorSummaries = (0, SessionStore_1.loadChainSummaries)(this._projectRoot, sessionId);
-        const recentMessages = this._state.messages.slice(-20);
-        const summaryPrompt = (0, chatChain_1.buildSummaryPrompt)(recentMessages, todos, priorSummaries);
-        let summary = "";
-        try {
-            summary = await (0, Arbiter_1.synthesizeChainSummary)(summaryPrompt);
-        }
-        catch (e) {
-            console.error(`[HME Chat] Chain summary via local model failed: ${e}`);
-            summary = (0, chatChain_1.buildFallbackSummary)(recentMessages, todos, priorSummaries);
-        }
-        const link = {
-            index: linkIndex,
-            sessionId,
-            messages: [...this._state.messages],
-            summary,
-            todos,
-            contextTokens: this._contextTracker.usedPct ?? 0,
-            claudeSessionId: this._state.claudeSessionId,
-            createdAt: Date.now(),
-        };
-        (0, SessionStore_1.saveChainLink)(this._projectRoot, link);
-        this._state.messages = [];
-        this._state.claudeSessionId = null;
-        this._state.chainIndex = linkIndex + 1;
-        this._resetContextTracker();
-        const contextMsg = {
-            id: (0, streamUtils_1.uid)(),
-            role: "user",
-            text: `[Context Chain — Link ${linkIndex + 1} continuation]\n\n${summary}`,
-            route: "claude",
-            ts: Date.now(),
-        };
-        this._state.messages.push(contextMsg);
-        this._persistState();
-        this._post({ type: "chainCompleted", linkIndex, chainIndex: this._state.chainIndex });
-        this._post({ type: "notice", level: "info", text: `Context chain: link ${linkIndex + 1} saved. Fresh context resumed.` });
-        this._postContextUpdate();
-    }
-    // ── Error handling ─────────────────────────────────────────────────────────
-    _postError(source, message) {
-        // Errors route to hme-errors.log only — Lifesaver reads it for Claude's awareness.
-        // No UI notices: the user reads logs when they want to; this channel is not for them.
-        (0, router_1.logShimError)(source, message).catch((e) => {
-            console.error(`[HME FAILFAST] logShimError failed for [${source}] ${message}: ${e?.message ?? e}`);
-            const errLine = `[${new Date().toISOString()}] [${source}] ${message}\n`;
-            try {
-                fs.mkdirSync(path.join(this._projectRoot, "log"), { recursive: true });
-                fs.appendFileSync(path.join(this._projectRoot, "log", "hme-errors.log"), errLine);
-            }
-            catch (fileErr) {
-                console.error(`[HME FAILFAST] Disk fallback also failed for [${source}] ${message}: ${fileErr?.message ?? fileErr}`);
-            }
-        });
-    }
-    _ensureMirrorTerminal(model, effort) {
-        if (this._mirrorTerminal && !this._mirrorTerminal.exitStatus) {
-            this._mirrorTerminal.show(true);
-            return;
-        }
-        const args = ["--model", model, "--effort", effort, "--permission-mode", "bypassPermissions"];
-        this._mirrorTerminal = vscode.window.createTerminal({
-            name: "HME Claude",
-            shellPath: "claude",
-            shellArgs: args,
-            cwd: this._projectRoot,
-        });
-        this._mirrorTerminal.show(true);
-    }
-    _startHmeShim() {
-        if (this._shimProc && !this._shimProc.killed)
-            return;
-        this._shimFailed = false;
-        const shimPath = path.join(__dirname, "..", "..", "mcp", "hme_http.py");
-        const env = { ...process.env };
-        if (!env["PATH"]?.includes(".local/bin")) {
-            env["PATH"] = `/home/${process.env["USER"] ?? "jah"}/.local/bin:${env["PATH"] ?? "/usr/local/bin:/usr/bin:/bin"}`;
-        }
-        try {
-            this._shimProc = require("child_process").spawn("python3", [shimPath], {
-                cwd: this._projectRoot, env, detached: false, stdio: "ignore",
-            });
-            let started = false;
-            this._shimProc.on("error", (e) => {
-                this._shimProc = null;
-                this._post({ type: "hmeShimStatus", ready: false });
-                this._postError("shim", `HME shim failed to start: ${e.message}`);
-            });
-            this._shimProc.on("exit", (code) => {
-                const wasStarted = started;
-                this._shimProc = null;
-                this._post({ type: "hmeShimStatus", ready: false });
-                if (!wasStarted) {
-                    this._postError("shim", `HME shim exited before becoming ready (code ${code ?? "?"})`);
-                }
-                else if (!this._disposed) {
-                    setTimeout(() => { if (!this._disposed)
-                        this._startHmeShim(); }, 3000);
-                }
-            });
-            let attempts = 0;
-            const poll = () => {
-                attempts++;
-                (0, router_1.isHmeShimReady)().then(({ ready }) => {
-                    if (ready) {
-                        started = true;
-                        this._shimPollTimer = null;
-                        this._post({ type: "hmeShimStatus", ready: true });
-                        return;
-                    }
-                    if (attempts < 5 && this._shimProc) {
-                        this._post({ type: "hmeShimStatus", ready: false, failed: false });
-                        this._shimPollTimer = setTimeout(poll, 2000);
-                    }
-                    else {
-                        this._shimPollTimer = null;
-                        this._shimFailed = true;
-                        this._post({ type: "hmeShimStatus", ready: false, failed: true });
-                        this._postError("shim", `HME shim started but /health not ready after ${attempts * 2}s — check log/hme-errors.log or run mcp/hme_http.py manually`);
-                    }
-                });
-            };
-            if (this._shimPollTimer)
-                clearTimeout(this._shimPollTimer);
-            this._shimPollTimer = setTimeout(poll, 2000);
-        }
-        catch (e) {
-            this._postError("shim", `HME shim spawn error: ${e?.message ?? e}`);
-        }
-    }
-    // ── Message queue & webview plumbing ───────────────────────────────────────
+    // ── Message queue & webview plumbing ─────────────────────────────────────
     _drainQueue() {
         this._isStreaming = false;
         if (this._messageQueue.length > 0) {
             const next = this._messageQueue.shift();
             this._isStreaming = true;
             this._onSend(next).catch((e) => {
-                this._postError("send", String(e));
-                this._post({ type: "streamEnd", id: "err" });
+                this.postError("send", String(e));
+                this.post({ type: "streamEnd", id: "err" });
                 this._drainQueue();
             });
         }
-    }
-    _post(data) {
-        this._panel.webview.postMessage(data);
     }
     _getHtml() {
         const htmlPath = path.join(__dirname, "..", "webview", "index.html");
@@ -680,10 +512,7 @@ class ChatPanel {
         this._messageQueue = [];
         this._isStreaming = false;
         ChatPanel.current = undefined;
-        if (this._shimPollTimer) {
-            clearTimeout(this._shimPollTimer);
-            this._shimPollTimer = null;
-        }
+        this._shim.dispose();
         try {
             this._persistState();
         }
@@ -693,17 +522,12 @@ class ChatPanel {
         const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
         const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
         await Promise.race([narrativeWork, timeout]);
-        try {
-            this._shimProc?.kill();
-        }
-        catch (e) {
-            console.error(`[HME] shimProc kill failed: ${e?.message ?? e}`);
-        }
         this._panel.dispose();
         this._disposables.forEach((d) => d.dispose());
         this._disposables = [];
     }
 }
 exports.ChatPanel = ChatPanel;
+// ── Stream tracking & session persistence ────────────────────────────────
 ChatPanel.DISPLAY_CAP = 100;
 ChatPanel.STREAM_PERSIST_MS = 10000;
