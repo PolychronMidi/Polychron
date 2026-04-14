@@ -88,6 +88,30 @@ LAST_COMMIT=$(git -C "$PROJECT" log --oneline -1 2>/dev/null)
 ONB_STEP="$(_onb_step_label)"
 echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" >&2
 
+# Surface carried-over open todos from previous session — so the agent resumes
+# with full visibility into unfinished work. LIFESAVER criticals surface first,
+# then everything else. The TodoWrite hook will re-merge these into native view
+# on the next TodoWrite call.
+CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/mcp" python3 <<'PYEOF' 2>/dev/null
+try:
+    from server.tools_analysis.todo import list_carried_over
+    items = list_carried_over()
+    if items:
+        print("\nCarried-over HME todos (" + str(len(items)) + " open):")
+        crit = [i for i in items if i['critical']]
+        normal = [i for i in items if not i['critical']]
+        for i in crit:
+            print("  !!! #" + str(i['id']) + " " + i['text'][:120] + " [" + i['source'] + "]")
+        for i in normal:
+            tag = " (" + str(i['open_subs']) + " open subs)" if i['open_subs'] else ""
+            src = " [" + i['source'] + "]" if i['source'] else ""
+            print("  [ ] #" + str(i['id']) + " " + i['text'][:100] + tag + src)
+except Exception:
+    pass
+PYEOF
+)
+[ -n "$CARRIED" ] && echo "$CARRIED" >&2
+
 # Previous session pending items (surfaced as a warning after main message)
 if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
