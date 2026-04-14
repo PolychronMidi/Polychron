@@ -24,7 +24,7 @@ import { TranscriptLogger, nullTranscript } from "./TranscriptLogger";
 import { synthesizeNarrative, synthesizeChainSummary } from "./Arbiter";
 import {
   uid,
-  SessionState, ContextTracker, StreamTracker, ChatCtx, MirrorPty,
+  SessionState, ContextTracker, StreamTracker, ChatCtx,
 } from "./streamUtils";
 import { buildSummaryPrompt, buildFallbackSummary } from "./chatChain";
 import {
@@ -227,9 +227,7 @@ export class ChatPanel {
       case "setMirrorMode":
         this._mirrorMode = !!msg.enabled;
         if (this._mirrorMode) {
-          this._ensureMirrorTerminal();
-        } else {
-          this._ptyWriteFn = undefined;
+          this._ensureMirrorTerminal(msg.model || "claude-sonnet-4-6", msg.effort || "high");
         }
         this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
         break;
@@ -284,13 +282,6 @@ export class ChatPanel {
       updateContextTracker: (t, th, m, u) => self._updateContextTracker(t, th, m, u),
       checkChainThreshold: (msg) => self._checkChainThreshold(msg),
       setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
-      get mirrorPty() {
-        if (!self._mirrorMode) return undefined;
-        return {
-          onRawData: (raw: string) => self._writeEmitter?.fire(raw),
-          onPtyReady: (fn: (data: string) => void) => { self._ptyWriteFn = fn; },
-        };
-      },
     };
   }
 
@@ -601,22 +592,23 @@ export class ChatPanel {
   // ── HME shim process management ────────────────────────────────────────────
 
   // ── Mirror terminal ────────────────────────────────────────────────────────
+  // A live native VS Code terminal running Claude directly — fully interactive.
+  // The hidden node-pty session still handles chat rendering independently.
   private _mirrorMode = false;
-  private _writeEmitter: vscode.EventEmitter<string> | undefined;
-  private _ptyWriteFn: ((data: string) => void) | undefined;
   private _mirrorTerminal: vscode.Terminal | undefined;
 
-  private _ensureMirrorTerminal() {
-    if (this._mirrorTerminal && !this._mirrorTerminal.exitStatus) return;
-    this._writeEmitter = new vscode.EventEmitter<string>();
-    const writeEmitter = this._writeEmitter;
-    const pty: vscode.Pseudoterminal = {
-      onDidWrite: writeEmitter.event,
-      open: () => writeEmitter.fire("HME Chat — Claude terminal mirror\r\n"),
-      close: () => { this._mirrorTerminal = undefined; },
-      handleInput: (data) => { this._ptyWriteFn?.(data); },
-    };
-    this._mirrorTerminal = vscode.window.createTerminal({ name: "HME Claude", pty });
+  private _ensureMirrorTerminal(model: string, effort: string) {
+    if (this._mirrorTerminal && !this._mirrorTerminal.exitStatus) {
+      this._mirrorTerminal.show(true);
+      return;
+    }
+    const args = ["--model", model, "--effort", effort, "--permission-mode", "bypassPermissions"];
+    this._mirrorTerminal = vscode.window.createTerminal({
+      name: "HME Claude",
+      shellPath: "claude",
+      shellArgs: args,
+      cwd: this._projectRoot,
+    });
     this._mirrorTerminal.show(true);
   }
 

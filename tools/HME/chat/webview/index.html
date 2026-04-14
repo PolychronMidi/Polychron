@@ -704,7 +704,12 @@ const mirrorBtn   = document.getElementById('mirror-btn');
 let _mirrorMode = false;
 mirrorBtn?.addEventListener('click', () => {
   _mirrorMode = !_mirrorMode;
-  vscode.postMessage({ type: 'setMirrorMode', enabled: _mirrorMode });
+  vscode.postMessage({
+    type: 'setMirrorMode',
+    enabled: _mirrorMode,
+    model: claudeModel?.value || 'claude-sonnet-4-6',
+    effort: claudeEffort?.value || 'high',
+  });
 });
 window.addEventListener('message', (event) => {
   if (event.data?.type === 'mirrorModeChanged') {
