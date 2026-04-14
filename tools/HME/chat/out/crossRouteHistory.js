@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildCrossRouteContext = buildCrossRouteContext;
+exports.applyCrossRouteContext = applyCrossRouteContext;
 /**
  * When the user switches routes mid-session, per-route history must be
  * synthesized from the other side so the new route sees prior context.
@@ -36,4 +37,15 @@ function buildCrossRouteContext(messages, lastRoute, resolvedRoute) {
         }
     }
     return result;
+}
+/**
+ * Apply the cross-route result to session state in-place.
+ * Returns the contextPrefix for use in the outgoing message.
+ */
+function applyCrossRouteContext(state, cross) {
+    if (cross.ollamaHistory)
+        state.ollamaHistory = cross.ollamaHistory;
+    if (cross.claudeSessionIdReset)
+        state.claudeSessionId = null;
+    return cross.contextPrefix;
 }

@@ -25,7 +25,7 @@ import {
   streamClaudeMsg, streamOllamaMsg, streamHybridMsg,
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
-import { buildCrossRouteContext } from "./crossRouteHistory";
+import { buildCrossRouteContext, applyCrossRouteContext } from "./crossRouteHistory";
 import { PanelHost } from "./panel/PanelHost";
 import { ErrorSink } from "./panel/ErrorSink";
 import { ShimSupervisor } from "./panel/ShimSupervisor";
@@ -33,7 +33,7 @@ import { MirrorTerminal } from "./panel/MirrorTerminal";
 import { ContextMeter, ContextPostArgs } from "./panel/ContextMeter";
 import { ChainPerformer, ChainSessionBridge } from "./panel/ChainPerformer";
 import { StreamPersister } from "./panel/StreamPersister";
-import { dispatchWebviewMessage } from "./panel/webviewMessages";
+import { dispatchWebviewMessage, SendMsg } from "./panel/webviewMessages";
 
 export class ChatPanel implements PanelHost {
   public static current: ChatPanel | undefined;
@@ -76,7 +76,19 @@ export class ChatPanel implements PanelHost {
     this._contextMeter = new ContextMeter(projectRoot, this);
     this._chain = new ChainPerformer(projectRoot, this, this._chainBridge());
     this._streamPersister = new StreamPersister(this);
-    this._ctx = this._makeCtx();
+    const self = this;
+    this._ctx = {
+      get projectRoot() { return self._projectRoot; },
+      get transcript() { return self._transcript; },
+      get state() { return self._state; },
+      post: (data) => self.post(data),
+      postError: (s, m) => self.postError(s, m),
+      drainQueue: () => self._drainQueue(),
+      trackStream: (id, r) => self._trackStream(id, r),
+      updateContextTracker: (t, th, m, u) => self._contextMeter.update(t, th, m, u, self._ctxArgs()),
+      checkChainThreshold: () => self._chain.maybeChain(),
+      setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
+    };
 
     try {
       this._transcript = new TranscriptLogger(projectRoot);
@@ -101,7 +113,7 @@ export class ChatPanel implements PanelHost {
     this._panel.webview.html = this._getHtml();
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     this._panel.webview.onDidReceiveMessage(
-      (msg) => this._handleMessage(msg),
+      (msg) => dispatchWebviewMessage(msg, this._messageHandlers),
       null,
       this._disposables,
     );
@@ -188,10 +200,6 @@ export class ChatPanel implements PanelHost {
   }
 
   // ── Webview message dispatch ─────────────────────────────────────────────
-
-  private _handleMessage(msg: any) {
-    dispatchWebviewMessage(msg, this._messageHandlers);
-  }
 
   private readonly _messageHandlers: import("./panel/webviewMessages").WebviewHandlers = {
     // ── Stream control ───────────────────────────────────────────────────
@@ -314,22 +322,6 @@ export class ChatPanel implements PanelHost {
     );
   }
 
-  private _makeCtx(): ChatCtx {
-    const self = this;
-    return {
-      get projectRoot() { return self._projectRoot; },
-      get transcript() { return self._transcript; },
-      get state() { return self._state; },
-      post: (data) => self.post(data),
-      postError: (s, m) => self.postError(s, m),
-      drainQueue: () => self._drainQueue(),
-      trackStream: (id, r) => self._trackStream(id, r),
-      updateContextTracker: (t, th, m, u) => self._contextMeter.update(t, th, m, u, self._ctxArgs()),
-      checkChainThreshold: () => self._chain.maybeChain(),
-      setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
-    };
-  }
-
   private _loadSession(id: string) {
     const persisted = loadSession(this._projectRoot, id);
     if (!persisted) return;
@@ -373,14 +365,7 @@ export class ChatPanel implements PanelHost {
 
   // ── Send pipeline ────────────────────────────────────────────────────────
 
-  private async _onSend(msg: {
-    text: string;
-    route: "claude" | "local" | "hybrid" | "auto" | "agent";
-    claudeModel: string;
-    claudeEffort: string;
-    claudeThinking: boolean;
-    ollamaModel: string;
-  }) {
+  private async _onSend(msg: SendMsg & { _queuedUserMsg?: ChatMessage }) {
     if (msg.route === "agent") {
       return this._onSendAgent(msg);
     }
@@ -434,9 +419,7 @@ export class ChatPanel implements PanelHost {
       this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
     }
     const cross = buildCrossRouteContext(this._state.messages, this._state.lastRoute, resolvedRoute);
-    if (cross.ollamaHistory) this._state.ollamaHistory = cross.ollamaHistory;
-    if (cross.claudeSessionIdReset) this._state.claudeSessionId = null;
-    const contextPrefix = cross.contextPrefix;
+    const contextPrefix = applyCrossRouteContext(this._state, cross);
     this._state.lastRoute = resolvedRoute;
 
     const assistantId = uid();
@@ -458,7 +441,7 @@ export class ChatPanel implements PanelHost {
    * Neither response writes to ollamaHistory to avoid double-appending;
    * local result wins for history after both complete.
    */
-  private async _onSendAgent(msg: any) {
+  private async _onSendAgent(msg: SendMsg) {
     if (!this._state.sessionEntry) {
       const entry = createSession(this._projectRoot, deriveTitle(msg.text));
       this._state.sessionEntry = entry;

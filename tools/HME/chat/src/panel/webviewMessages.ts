@@ -1,10 +1,20 @@
+/** Shape shared by "send" and "queue" messages — the send payload. */
+export interface SendMsg {
+  text: string;
+  route: "claude" | "local" | "hybrid" | "auto" | "agent";
+  claudeModel: string;
+  claudeEffort: string;
+  claudeThinking: boolean;
+  ollamaModel: string;
+}
+
 /**
  * Discriminated union of all messages the webview can post to the extension.
  * Exhaustive-checked at compile time via the typed dispatch helper below.
  */
 export type WebviewMessage =
-  | { type: "send"; text: string; route: "claude" | "local" | "hybrid" | "auto" | "agent"; claudeModel: string; claudeEffort: string; claudeThinking: boolean; ollamaModel: string }
-  | { type: "queue"; text: string; route: "claude" | "local" | "hybrid" | "auto" | "agent"; claudeModel: string; claudeEffort: string; claudeThinking: boolean; ollamaModel: string }
+  | (SendMsg & { type: "send" })
+  | (SendMsg & { type: "queue" })
   | { type: "cancel" }
   | { type: "clearHistory" }
   | { type: "listSessions" }

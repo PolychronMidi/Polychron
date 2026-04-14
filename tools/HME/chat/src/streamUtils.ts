@@ -95,7 +95,7 @@ export interface ChatCtx {
   drainQueue(): void;
   trackStream(id: string, route: string): StreamTracker;
   updateContextTracker(text: string, thinking: string, model: string, usage?: TokenUsage): void;
-  checkChainThreshold(msg: any): void;
+  checkChainThreshold(): void;
   setCancelCurrent(fn?: () => void): void;
   mirrorPty?: MirrorPty;
 }

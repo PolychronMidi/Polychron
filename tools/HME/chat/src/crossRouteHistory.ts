@@ -1,5 +1,6 @@
 import { ChatMessage } from "./types";
 import { OllamaMessage } from "./router";
+import { SessionState } from "./streamUtils";
 
 type Route = "claude" | "local" | "hybrid";
 
@@ -52,4 +53,14 @@ export function buildCrossRouteContext(
   }
 
   return result;
+}
+
+/**
+ * Apply the cross-route result to session state in-place.
+ * Returns the contextPrefix for use in the outgoing message.
+ */
+export function applyCrossRouteContext(state: SessionState, cross: CrossRouteResult): string {
+  if (cross.ollamaHistory) state.ollamaHistory = cross.ollamaHistory;
+  if (cross.claudeSessionIdReset) state.claudeSessionId = null;
+  return cross.contextPrefix;
 }
