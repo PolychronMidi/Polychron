@@ -431,6 +431,27 @@ def _execute_tool(call: dict) -> str | None:
         return f"Unknown tool: {tool}. Available: GREP, GLOB, READ, KB"
 
 
+_LEARNED_STOPWORDS: set = set()
+
+
+def _load_learned_stopwords() -> None:
+    """H7: load stopwords mined from prompt history.
+    Augments the hardcoded list without replacing it."""
+    global _LEARNED_STOPWORDS
+    path = os.path.join(PROJECT_ROOT, "metrics", "hme-learned-stopwords.json")
+    if not os.path.isfile(path):
+        return
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        _LEARNED_STOPWORDS = set(data.get("candidates", []))
+    except Exception:
+        _LEARNED_STOPWORDS = set()
+
+
+_load_learned_stopwords()
+
+
 def _extract_search_terms(prompt: str) -> list[str]:
     """Extract key search terms from the research prompt.
 
@@ -438,6 +459,10 @@ def _extract_search_terms(prompt: str) -> list[str]:
     meaningful identifiers, keywords, and domain terms survive as search
     targets. Prioritizes: snake_case / camelCase identifiers > PascalCase
     > plain words. Identifiers are strong signals; words are noise.
+
+    The hardcoded stopword set is augmented at load time by learned
+    stopwords from metrics/hme-learned-stopwords.json (H7 — prompt-history-
+    driven stopword tuning). To refresh: run learn-stopwords.py.
     """
     stop = {
         # Articles / prepositions
@@ -468,6 +493,8 @@ def _extract_search_terms(prompt: str) -> list[str]:
         "also", "only", "just", "even", "still", "well", "here", "there",
         "much", "more", "less", "very", "such", "each", "other", "another",
     }
+    # Merge hardcoded stop set with learned stopwords (H7)
+    stop = stop | _LEARNED_STOPWORDS
     # First pass: preserve identifiers (snake_case, camelCase, has _ or mixed case)
     identifiers = []
     plain_words = []
@@ -718,11 +745,26 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
         tools_used.append("KB(query)")
 
     # Grep with arbiter-planned patterns across inferred directories.
-    # Widen to 6 patterns × 4 directories (was 5×3) for better coverage.
-    grep_results = {}
+    # Parallel: 6 patterns × 4 directories = 24 possible greps. I/O bound,
+    # thread-safe (subprocess), safe to parallelize. Typical saving: 5-10s
+    # per query on warm cache. ThreadPoolExecutor bounds at 8 concurrent so
+    # we don't blow out file descriptors.
+    from concurrent.futures import ThreadPoolExecutor
+    grep_tasks = []
     for pattern in grep_patterns[:6]:
         for directory in directories[:4]:
-            result = _exec_grep(pattern, directory)
+            grep_tasks.append((pattern, directory))
+    grep_results = {}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {
+            pool.submit(_exec_grep, p, d): (p, d) for p, d in grep_tasks
+        }
+        for fut in futures:
+            pattern, directory = futures[fut]
+            try:
+                result = fut.result(timeout=15)
+            except Exception:
+                continue
             if not result.startswith("No matches") and not result.startswith("ERROR"):
                 key = f"{pattern} in {directory}"
                 grep_results[key] = result
