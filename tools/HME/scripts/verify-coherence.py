@@ -661,6 +661,133 @@ class ErrorLogVerifier(Verifier):
 # Verifiers — TOPOLOGY category
 # --------------------------------------------------------------------------
 
+class LifesaverRateVerifier(Verifier):
+    """Reads metrics/hme-tool-effectiveness.json and scores LIFESAVER events
+    from the last 24h (recency-weighted). Historical events don't punish
+    forever — only the last day's rate matters for the current HCI."""
+    name = "lifesaver-rate"
+    category = "runtime"
+    weight = 2.0  # high: recurring LIFESAVER events are a major health signal
+
+    def run(self) -> VerdictResult:
+        data_path = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
+        if not os.path.isfile(data_path):
+            return _result(SKIP, 1.0, "no effectiveness data yet — run analyze-tool-effectiveness.py")
+        try:
+            with open(data_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        # Prefer recent window; fall back to all-time if not present
+        recent = data.get("lifesaver_recent_events", None)
+        if recent is None:
+            recent = data.get("lifesaver_total_events", 0)
+        # Score: 0 events = 1.0, 5+ events in 24h = 0.0
+        score = max(0.0, 1.0 - recent / 5.0)
+        all_time = data.get("lifesaver_total_events", 0)
+        if recent == 0:
+            return _result(PASS, 1.0, f"0 LIFESAVER events in last 24h (all-time: {all_time})")
+        if recent >= 5:
+            return _result(
+                FAIL, score,
+                f"{recent} LIFESAVER events in last 24h (all-time: {all_time})",
+                ["investigate log/hme-errors.log", "threshold: 5+ events in 24h = fail"],
+            )
+        return _result(
+            WARN if recent >= 2 else PASS, score,
+            f"{recent} LIFESAVER events in last 24h (all-time: {all_time})",
+        )
+
+
+class MetaObserverCoherenceVerifier(Verifier):
+    """Reads meta-observer (L14) coherence events from the last 24h only.
+    Historical degradation doesn't matter — we want to know if HME is
+    currently unstable, which is a RECENT signal."""
+    name = "meta-observer-coherence"
+    category = "runtime"
+    weight = 2.0
+
+    def run(self) -> VerdictResult:
+        data_path = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
+        if not os.path.isfile(data_path):
+            return _result(SKIP, 1.0, "no effectiveness data yet")
+        try:
+            with open(data_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        # Prefer recent window; fall back if not present
+        events = data.get("recent_coherence_events", None)
+        if events is None:
+            events = data.get("coherence_events", {})
+        if not events:
+            return _result(PASS, 1.0, "no recent coherence events")
+        degradation = events.get("deep_degradation", 0)
+        restart_churn = events.get("restart_churn", 0)
+        declining = events.get("coherence_declining", 0)
+        instability = events.get("frequent_instability", 0)
+        worst = max(degradation, restart_churn)
+        # Score: 0 events = 1.0, 30+ events in 24h = 0.0
+        score = max(0.0, 1.0 - worst / 30.0)
+        summary = (
+            f"last 24h: degradation={degradation} churn={restart_churn} "
+            f"declining={declining} instability={instability}"
+        )
+        if worst >= 20:
+            return _result(FAIL, score, summary,
+                           ["HME unstable in last 24h — check meta-observer recovery logic"])
+        if worst >= 10:
+            return _result(WARN, score, summary,
+                           ["elevated recent coherence events"])
+        return _result(PASS, score, summary)
+
+
+class TrajectoryTrendVerifier(Verifier):
+    """Reads metrics/hme-trajectory.json and scores the HCI trend direction.
+    A prolonged downward trend or a predicted drift below threshold 80 is a
+    FAIL even if the CURRENT HCI is still green — predictive coherence."""
+    name = "trajectory-trend"
+    category = "runtime"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        data_path = os.path.join(_PROJECT, "metrics", "hme-trajectory.json")
+        if not os.path.isfile(data_path):
+            return _result(SKIP, 1.0, "no trajectory data — run analyze-hci-trajectory.py")
+        try:
+            with open(data_path) as f:
+                data = json.load(f)
+        except Exception as e:
+            return _result(ERROR, 0.0, f"read error: {e}")
+        if data.get("holograph_count", 0) < 2:
+            return _result(SKIP, 1.0, "need 2+ holographs for trend analysis")
+        trend = data.get("trend", {})
+        pred = data.get("prediction") or {}
+        direction = trend.get("direction", "flat")
+        slope = trend.get("slope_per_day", 0.0)
+        current = data.get("current", {}).get("hci", 100)
+
+        # Predicted drop below 80 is a hard fail
+        if pred.get("warning"):
+            return _result(
+                FAIL, 0.4,
+                f"trajectory warning: {pred.get('warning')}",
+                [f"current={current:.1f}", f"predicted={pred.get('next_hci_predicted', '?')}"],
+            )
+        if direction == "down" and abs(slope) > 1.0:
+            return _result(
+                WARN, 0.7,
+                f"HCI declining at {slope:.2f}/day",
+                ["downward trend >1 point/day"],
+            )
+        if direction == "down":
+            return _result(
+                PASS, 0.9,
+                f"HCI flat-ish downward ({slope:.2f}/day) — monitor",
+            )
+        return _result(PASS, 1.0, f"HCI trend {direction} ({slope:+.2f}/day)")
+
+
 class FeedbackGraphVerifier(Verifier):
     """metrics/feedback_graph.json validates against scripts/validate-feedback-graph.js"""
     name = "feedback-graph"
@@ -828,6 +955,9 @@ REGISTRY = [
     ToolSurfaceCoverageVerifier(),
     ShimHealthVerifier(),
     ErrorLogVerifier(),
+    LifesaverRateVerifier(),
+    MetaObserverCoherenceVerifier(),
+    TrajectoryTrendVerifier(),
     FeedbackGraphVerifier(),
 ]
 

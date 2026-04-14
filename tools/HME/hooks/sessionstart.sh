@@ -134,6 +134,22 @@ if [ -f "$HOLO_SCRIPT" ]; then
   PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout > "$SESSION_HOLO" 2>/dev/null &
 fi
 
+# Refresh the tool-effectiveness analysis in the background. Reads log/hme.log
+# and writes metrics/hme-tool-effectiveness.json, which the LifesaverRate
+# and MetaObserverCoherence verifiers consume to compute the HCI.
+EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
+[ -f "$EFF_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 &
+
+# Update HCI trajectory in the background for time-series analysis
+TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
+[ -f "$TRAJ_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 &
+
+# Surface the current HCI trajectory summary so agents see the health arc
+if [ -f "$TRAJ_SCRIPT" ]; then
+  TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>/dev/null)
+  [ -n "$TRAJ_LINE" ] && echo "$TRAJ_LINE" >&2
+fi
+
 # Previous session pending items (surfaced as a warning after main message)
 if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
