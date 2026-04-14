@@ -75,6 +75,11 @@ export interface StreamTracker {
   finalize(msg: ChatMessage): void;
 }
 
+export interface MirrorPty {
+  onRawData(raw: string): void;
+  onPtyReady(writeFn: (data: string) => void): void;
+}
+
 export interface ChatCtx {
   readonly projectRoot: string;
   readonly transcript: TranscriptLogger;
@@ -86,4 +91,5 @@ export interface ChatCtx {
   updateContextTracker(text: string, thinking: string, model: string, usage?: TokenUsage): void;
   checkChainThreshold(msg: any): void;
   setCancelCurrent(fn?: () => void): void;
+  mirrorPty?: MirrorPty;
 }

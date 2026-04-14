@@ -57,6 +57,8 @@ class ChatPanel {
         this._contextTracker = { lastInputTokens: null, lastOutputTokens: null, usedPct: null, totalChars: 0, model: "", cliModelId: null, cliModelName: null };
         this._chainingInProgress = false;
         // ── HME shim process management ────────────────────────────────────────────
+        // ── Mirror terminal ────────────────────────────────────────────────────────
+        this._mirrorMode = false;
         this._shimProc = null;
         this._shimFailed = false;
         this._shimPollTimer = null;
@@ -216,6 +218,16 @@ class ChatPanel {
                     ChatPanel._globalState?.update("hme.zoomLevel", msg.level);
                 }
                 break;
+            case "setMirrorMode":
+                this._mirrorMode = !!msg.enabled;
+                if (this._mirrorMode) {
+                    this._ensureMirrorTerminal();
+                }
+                else {
+                    this._ptyWriteFn = undefined;
+                }
+                this._post({ type: "mirrorModeChanged", enabled: this._mirrorMode });
+                break;
         }
     }
     _displayMessages() {
@@ -266,6 +278,14 @@ class ChatPanel {
             updateContextTracker: (t, th, m, u) => self._updateContextTracker(t, th, m, u),
             checkChainThreshold: (msg) => self._checkChainThreshold(msg),
             setCancelCurrent: (fn) => { self._cancelCurrent = fn; },
+            get mirrorPty() {
+                if (!self._mirrorMode)
+                    return undefined;
+                return {
+                    onRawData: (raw) => self._writeEmitter?.fire(raw),
+                    onPtyReady: (fn) => { self._ptyWriteFn = fn; },
+                };
+            },
         };
     }
     _loadSession(id) {
@@ -546,6 +566,20 @@ class ChatPanel {
                 console.error(`[HME FAILFAST] Disk fallback also failed for [${source}] ${message}: ${fileErr?.message ?? fileErr}`);
             }
         });
+    }
+    _ensureMirrorTerminal() {
+        if (this._mirrorTerminal && !this._mirrorTerminal.exitStatus)
+            return;
+        this._writeEmitter = new vscode.EventEmitter();
+        const writeEmitter = this._writeEmitter;
+        const pty = {
+            onDidWrite: writeEmitter.event,
+            open: () => writeEmitter.fire("HME Chat — Claude terminal mirror\r\n"),
+            close: () => { this._mirrorTerminal = undefined; },
+            handleInput: (data) => { this._ptyWriteFn?.(data); },
+        };
+        this._mirrorTerminal = vscode.window.createTerminal({ name: "HME Claude", pty });
+        this._mirrorTerminal.show(true);
     }
     _startHmeShim() {
         if (this._shimProc && !this._shimProc.killed)

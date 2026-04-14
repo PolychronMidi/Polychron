@@ -156,7 +156,9 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: any, assistantId: string) {
         (_cost, usage) => { onDone(usage); },
         onError
       );
-    }
+    },
+    ctx.mirrorPty ? (raw) => ctx.mirrorPty!.onRawData(raw) : undefined,
+    ctx.mirrorPty ? (fn) => ctx.mirrorPty!.onPtyReady(fn) : undefined
   );
 }
 

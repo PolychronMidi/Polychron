@@ -611,6 +611,7 @@
     <label for="thinking-toggle">Thinking</label>
   </div>
 
+  <button id="mirror-btn" title="Toggle terminal mirror — show Claude PTY in a visible terminal panel" style="font-size:10px;padding:2px 6px;">BG</button>
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
   <button id="clear-btn">Clear</button>
 </div>
@@ -697,6 +698,23 @@ const stopBtn     = document.getElementById('stop-btn');
 const queueBtn    = document.getElementById('queue-btn');
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
+const mirrorBtn   = document.getElementById('mirror-btn');
+
+// ── Mirror mode toggle ────────────────────────────────────────────────────
+let _mirrorMode = false;
+mirrorBtn?.addEventListener('click', () => {
+  _mirrorMode = !_mirrorMode;
+  vscode.postMessage({ type: 'setMirrorMode', enabled: _mirrorMode });
+});
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'mirrorModeChanged') {
+    _mirrorMode = event.data.enabled;
+    if (mirrorBtn) {
+      mirrorBtn.textContent = _mirrorMode ? 'MIR' : 'BG';
+      mirrorBtn.style.color = _mirrorMode ? 'var(--btn-bg)' : '';
+    }
+  }
+});
 
 // ── Enrich ────────────────────────────────────────────────────────────────
 const enrichBtn    = document.getElementById('enrich-btn');

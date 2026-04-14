@@ -199,7 +199,7 @@ function parseContextOutput(text) {
     }
     return undefined;
 }
-function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
+function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError, onRawData, onPtyReady) {
     hmeLog(`streamClaudePty called model=${opts.model} effort=${opts.effort}`);
     const args = ["--model", opts.model, "--effort", opts.effort, "--permission-mode", "bypassPermissions"];
     if (sessionId)
@@ -229,6 +229,10 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         onError(`PTY spawn failed: ${e?.message ?? e}`);
         return () => { };
     }
+    onPtyReady?.((data) => { try {
+        proc.write(data);
+    }
+    catch { } });
     let fullOutput = "";
     let sentMessage = false;
     let turnDone = false;
@@ -302,6 +306,7 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
         doneTimer = setTimeout(finalizeTurn, 1500);
     };
     proc.onData((raw) => {
+        onRawData?.(raw);
         const text = stripAnsi(raw);
         if (!sentMessage) {
             initBuf += text;
