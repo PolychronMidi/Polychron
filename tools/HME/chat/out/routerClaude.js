@@ -149,7 +149,7 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
                 onChunk(block.text, "text");
             }
             else if (block.type === "tool_use") {
-                onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}).slice(0, 120)}`, "tool");
+                onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}, null, 2)}`, "tool");
             }
         }
         return;
