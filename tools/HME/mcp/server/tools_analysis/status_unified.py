@@ -167,6 +167,17 @@ def status(mode: str = "all") -> str:
     except Exception:
         pass
 
+    # Gemini T3 quota status
+    try:
+        from .synthesis_gemini import get_quota_status
+        gq = get_quota_status()
+        if gq["available"]:
+            parts.append(f"## Gemini T3\n  {gq['tokens_used']:,}/{gq['daily_limit']:,} tokens ({gq['pct_used']}% used) — {gq['model']}")
+        else:
+            parts.append(f"## Gemini T3\n  QUOTA HIT — {gq['tokens_used']:,}/{gq['daily_limit']:,} tokens. Falling back to local.")
+    except Exception:
+        pass
+
     return _budget_gate("\n\n".join(parts), budget=BUDGET_COMPOUND)
 
 
