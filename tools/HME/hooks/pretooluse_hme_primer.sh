@@ -10,6 +10,25 @@ FLAG="${PROJECT}/tmp/hme-primer-needed.flag"
 if [ -f "$FLAG" ]; then
   PRIMER="${PROJECT}/doc/AGENT_PRIMER.md"
   rm -f "$FLAG"
+
+  # H14: Agent fingerprint — read the model ID from env if Claude Code sets
+  # it, else from the last assistant message in the transcript. Different
+  # agents get different walkthrough depth:
+  #   opus*    → full walkthrough (context-rich)
+  #   sonnet*  → medium walkthrough
+  #   haiku*   → terse walkthrough (context-sensitive)
+  #   local*   → KB-heavy walkthrough with coupling hints
+  AGENT_FINGERPRINT="${CLAUDE_MODEL_ID:-unknown}"
+  case "$AGENT_FINGERPRINT" in
+    *opus*|claude-opus*)   AGENT_TIER="rich" ;;
+    *sonnet*|claude-sonnet*) AGENT_TIER="medium" ;;
+    *haiku*|claude-haiku*) AGENT_TIER="terse" ;;
+    *)                     AGENT_TIER="medium" ;;
+  esac
+  # Persist fingerprint so other hooks can consult it
+  mkdir -p "${PROJECT}/tmp"
+  echo "$AGENT_FINGERPRINT" > "${PROJECT}/tmp/hme-agent-fingerprint.txt"
+  echo "$AGENT_TIER" > "${PROJECT}/tmp/hme-agent-tier.txt"
   if [ -f "$PRIMER" ]; then
     CONTENT=$(cat "$PRIMER")
     CUR_STEP=$(_onb_step_label)
@@ -45,7 +64,15 @@ PYEOF
 )
     fi
     [ -n "$COUPLING_HINT" ] && COUPLING_HINT=$'\n\n'"$COUPLING_HINT"
-    WALKTHROUGH="━━━ ONBOARDING ACTIVE — current step: ${CUR_STEP} ━━━
+    # Walkthrough content tier-selected by agent fingerprint (H14)
+    case "$AGENT_TIER" in
+      terse)
+        WALKTHROUGH="━━━ ONBOARDING — step: ${CUR_STEP} ━━━
+Loop: selftest → evolve(design) → Edit → review(forget) → npm run main → STABLE → learn()
+Hooks auto-advance. Out-of-order tools get redirected. Notice HME issues → report in learn() content."
+        ;;
+      rich|medium|*)
+        WALKTHROUGH="━━━ ONBOARDING ACTIVE — current step: ${CUR_STEP} ━━━
 The HME chain decider runs prerequisites silently inside tool handlers.
 Hooks advance state automatically as you make tool calls. Out-of-order tools
 get a one-line redirect; no retry dance.
@@ -65,7 +92,11 @@ One full loop — composition evolution AND HME self-monitoring in a single pass
 While editing, if you notice anything about HME ITSELF (stale KB entries, wrong
 constraints, missing hook coverage, broken enforcement), add an 'HME
 observations' section to your learn() content at step 7. Composition is the
-carrier wave; self-monitoring rides along in the same loop."
+carrier wave; self-monitoring rides along in the same loop.
+
+[agent tier: ${AGENT_TIER}, fingerprint: ${AGENT_FINGERPRINT}]"
+        ;;
+    esac
     jq -n --arg content "$CONTENT" --arg walk "$WALKTHROUGH" --arg coupling "$COUPLING_HINT" \
       '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━\n\n" + $walk + $coupling)}'
     exit 0
