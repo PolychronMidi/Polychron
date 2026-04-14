@@ -44,7 +44,19 @@ class RAGEngine(
     RAGEngineSymbolsMixin,
     RAGKnowledgeMixin,
 ):
-    def __init__(self, db_path: str, model_name: str = "all-mpnet-base-v2", model: "Optional[SentenceTransformer]" = None):
+    def __init__(self, db_path: str, model_name: str = "all-mpnet-base-v2",
+                 model: "Optional[SentenceTransformer]" = None,
+                 code_model: "Optional[SentenceTransformer]" = None,
+                 reranker=None):
+        """
+        model / text_model     — general-text embedder (bge-base-en) for knowledge + symbols.
+        code_model             — code-specialized embedder (jina v2 base-code) for code_chunks.
+        reranker               — CrossEncoder (bge-reranker-v2-m3) for search rerank.
+
+        `model` is the legacy kwarg; it maps to text_model. If code_model is None
+        it falls back to text_model (bge) — guarantees correctness while still
+        letting callers opt into the dual-index by passing code_model explicitly.
+        """
         import lancedb as _lancedb
         self.db_path = db_path
         self.db = _lancedb.connect(db_path)
@@ -53,20 +65,25 @@ class RAGEngine(
             _device = _pick_embed_device()
             try:
                 model = _ST(model_name, device=_device)
-                logger.info(f"Embedding model on {_device}")
+                logger.info(f"Text embedding model on {_device}")
             except Exception as e:
-                logger.warning(f"Embedding model failed on {_device}, falling back to cpu: {e}")
+                logger.warning(f"Text embedding model failed on {_device}, falling back to cpu: {e}")
                 model = _ST(model_name, device="cpu")
                 _device = "cpu"
         else:
             _device = str(getattr(getattr(model, "device", None), "type", "cpu"))
-        self.model = model
+        self.text_model = model
+        self.model = model  # legacy alias — external callers still reference self.model
+        self.code_model = code_model if code_model is not None else model
+        self.reranker = reranker
         self._embed_batch_size = 256 if _device.startswith("cuda") else 64
-        # Dynamic vector dimension from the actual model
-        self._dim = self.model.get_sentence_embedding_dimension()
-        self._code_schema = _code_schema(self._dim)
-        self._knowledge_schema = _knowledge_schema(self._dim)
-        self._symbol_schema = _symbol_schema(self._dim)
+        # Dynamic vector dimension from the actual models — both must match the table schema
+        self._text_dim = self.text_model.get_sentence_embedding_dimension()
+        self._code_dim = self.code_model.get_sentence_embedding_dimension()
+        self._dim = self._text_dim  # legacy: some callers read self._dim
+        self._code_schema = _code_schema(self._code_dim)
+        self._knowledge_schema = _knowledge_schema(self._text_dim)
+        self._symbol_schema = _symbol_schema(self._text_dim)
         self.table = None
         self.knowledge_table = None
         self.symbol_table = None

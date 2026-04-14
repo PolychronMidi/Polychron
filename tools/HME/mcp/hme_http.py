@@ -44,8 +44,13 @@ MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
 _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
-_shared_model = None
+_shared_model = None           # bge-base-en-v1.5 — text/knowledge/symbols embedder
+_shared_code_model = None      # jina-embeddings-v2-base-code — code_chunks embedder
+_shared_reranker = None        # bge-reranker-v2-m3 — cross-encoder for rerank
 _lib_engines: dict = {}  # key = lib_rel path
+
+CODE_MODEL_NAME = os.environ.get("RAG_CODE_MODEL", "jinaai/jina-embeddings-v2-base-code")
+RERANKER_NAME = os.environ.get("RAG_RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
 
 # Initialise stores with paths before any request can arrive
 from hme_http_store import init_store
@@ -79,28 +84,83 @@ def _ensure_ollama_daemon():
 
 
 def _load_engines():
-    global _project_engine, _global_engine, _shared_model, _lib_engines
+    global _project_engine, _global_engine, _shared_model, _shared_code_model, _shared_reranker, _lib_engines
     try:
-        from sentence_transformers import SentenceTransformer
+        from sentence_transformers import SentenceTransformer, CrossEncoder
         from rag_engine import RAGEngine
         from file_walker import init_config, get_lib_dirs
         from watcher import start_watcher
         init_config(PROJECT_ROOT)
         os.makedirs(PROJECT_DB, exist_ok=True)
         os.makedirs(GLOBAL_DB, exist_ok=True)
+
+        # Device selection: GPU0 is the coder (saturated), GPU1 has headroom for
+        # RAG models. Force GPU1 if it has ≥2GB free, else CPU fallback.
+        # Never default to cuda:0 — sentence-transformers' default picks it and
+        # OOMs immediately.
+        _rag_device = "cpu"
+        try:
+            import torch
+            if torch.cuda.is_available() and torch.cuda.device_count() >= 2:
+                free1, _ = torch.cuda.mem_get_info(1)
+                if free1 >= 2 * 1024 * 1024 * 1024:
+                    _rag_device = "cuda:1"
+                else:
+                    free0, _ = torch.cuda.mem_get_info(0)
+                    if free0 >= 2 * 1024 * 1024 * 1024:
+                        _rag_device = "cuda:0"
+            elif torch.cuda.is_available():
+                free0, _ = torch.cuda.mem_get_info(0)
+                if free0 >= 2 * 1024 * 1024 * 1024:
+                    _rag_device = "cuda:0"
+        except Exception:
+            pass
+        logger.info(f"RAG device: {_rag_device}")
+
+        # Text embedder (bge-base-en-v1.5) — knowledge_table + symbol_table
+        # ONNX backend is CPU-only and small (~400MB RAM) — intentionally NOT on GPU.
         try:
             _shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, model_kwargs={"file_name": "onnx/model.onnx"})
-            logger.info(f"Loaded {MODEL_NAME} with {MODEL_BACKEND} backend")
+            logger.info(f"Text embedder: {MODEL_NAME} ({MODEL_BACKEND})")
         except Exception as e:
-            logger.warning(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
-            _shared_model = SentenceTransformer(MODEL_NAME)
-        _project_engine = RAGEngine(PROJECT_DB, model_name=MODEL_NAME, model=_shared_model)
-        _global_engine = RAGEngine(GLOBAL_DB, model_name=MODEL_NAME, model=_shared_model)
+            logger.warning(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch on {_rag_device}")
+            _shared_model = SentenceTransformer(MODEL_NAME, device=_rag_device)
+
+        # Code embedder (jina-embeddings-v2-base-code) — code_chunks table
+        # Placed on GPU1 (or CPU fallback). trust_remote_code required for JinaBERT.
+        try:
+            _shared_code_model = SentenceTransformer(
+                CODE_MODEL_NAME, trust_remote_code=True, device=_rag_device,
+            )
+            logger.info(f"Code embedder: {CODE_MODEL_NAME} on {_shared_code_model.device}")
+        except Exception as e:
+            logger.warning(f"Code embedder load failed ({e}), falling back to text embedder for code_chunks")
+            _shared_code_model = _shared_model
+
+        # Cross-encoder reranker (bge-reranker-v2-m3) — rerank top candidates
+        try:
+            _shared_reranker = CrossEncoder(RERANKER_NAME, max_length=512, device=_rag_device)
+            logger.info(f"Reranker: {RERANKER_NAME} on {_rag_device}")
+        except Exception as e:
+            logger.warning(f"Reranker load failed ({e}) — search will fall back to RRF-only")
+            _shared_reranker = None
+
+        _project_engine = RAGEngine(
+            PROJECT_DB, model_name=MODEL_NAME,
+            model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
+        )
+        _global_engine = RAGEngine(
+            GLOBAL_DB, model_name=MODEL_NAME,
+            model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
+        )
         for _lib_rel in get_lib_dirs():
             _lib_name = _lib_rel.replace("/", "_").replace("\\", "_").strip("_")
             _lib_db = os.path.join(PROJECT_DB, "libs", _lib_name)
             os.makedirs(_lib_db, exist_ok=True)
-            _lib_engines[_lib_rel] = RAGEngine(db_path=_lib_db, model=_shared_model)
+            _lib_engines[_lib_rel] = RAGEngine(
+                db_path=_lib_db,
+                model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
+            )
         start_watcher(PROJECT_ROOT, _project_engine)
         logger.info(f"HME HTTP: engines + file watcher ready | libs={list(_lib_engines.keys())}")
     except Exception as e:
