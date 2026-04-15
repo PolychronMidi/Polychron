@@ -212,69 +212,30 @@ _PRIORITY_MAP = {
 }
 
 
-def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0,
+def _llamacpp_generate(payload: dict, wall_timeout: float = 30.0,
                        priority: str = "interactive") -> dict | None:
-    """Translate an llamacpp-shape payload into an OpenAI chat-completions call
-    against the appropriate llama-server, routed through the priority-queued
-    request coordinator. Returns a dict shaped like an llamacpp /api/generate
-    response so downstream text-cleanup code works unchanged:
-        {"response": <text>, "context": []}
-    Wall-clock enforced by the coordinator's thread-abandon dispatch.
+    """Route synthesis through the llama.cpp daemon.
+
+    Historical: this function used to translate llamacpp-shape payloads into
+    OpenAI chat-completions and call a dedicated request_coordinator with
+    its own thread-abandon wall-clock machinery. That duplicated the daemon's
+    enforcement and produced stacked timeouts (caller + coordinator + daemon)
+    that let tool calls hang 3-4× longer than any single configured budget.
+
+    Per the architectural rule "all llama.cpp timeouts live in
+    llamacpp_daemon.py", we now delegate the entire call (translation,
+    wall-clock enforcement, and routing) to the daemon's /generate endpoint.
+    Priority is still exposed in the signature for caller-side use (arbiter
+    busy flag, interactive event) but the daemon currently handles
+    requests FIFO — if preemption becomes important again it must be added
+    to the daemon, not re-invented at this layer.
     """
-    from . import request_coordinator as _rc
-
     model = payload.get("model", "")
-    prompt = payload.get("prompt", "")
-    system = payload.get("system", "")
-    options = payload.get("options", {}) or {}
-
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
-
-    oai_payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": options.get("temperature", 0.3),
-        "max_tokens": options.get("num_predict", 2048),
-        "stream": False,
-        "cache_prompt": True,  # reuse KV across calls on matching prefix
-    }
-
-    base = _llamacpp_url_for(model)
-    # Coordinator name: stable ID per endpoint URL (arbiter/coder).
-    name = "arbiter" if base == _LLAMACPP_ARBITER_URL else "coder"
-    inst = _rc.get_instance(name, base)
-    prio = _PRIORITY_MAP.get(priority, _rc.INTERACTIVE)
-
-    # Arbiter requests set the RAG routing flag on the llamacpp daemon so any
-    # concurrent embedding/reranking falls back to the CPU mirror while this
-    # request is using the shared GPU. We wrap the entire submit+wait so the
-    # flag stays set through the actual generation, not just the submit.
-    _is_arbiter_request = (name == "arbiter")
-
+    _is_arbiter_request = (_llamacpp_url_for(model) == _LLAMACPP_ARBITER_URL)
     try:
         if _is_arbiter_request:
             _set_arbiter_busy(True)
-        try:
-            future = inst.submit(oai_payload, priority=prio, wall_timeout=wall_timeout)
-        except _rc.CoordinatorOverloaded as _over:
-            logger.warning(f"llamacpp coord[{name}]: overloaded — {_over}")
-            return None
-
-        # Block caller on future. Add a small grace over wall_timeout so dispatch
-        # handoff doesn't race — 2s should cover dispatcher wake + preempt drain.
-        try:
-            shaped = future.result(timeout=wall_timeout + 2.0)
-        except TimeoutError:
-            logger.warning(f"llamacpp coord[{name}]: future wait exceeded {wall_timeout+2}s for {model}")
-            return None
-
-        if shaped is None and future.preempted:
-            logger.info(f"llamacpp coord[{name}]: request preempted ({_PRIORITY_MAP.get(priority)} {priority})")
-            return None
-        return shaped
+        return _daemon_generate(payload, wall_timeout=wall_timeout)
     finally:
         if _is_arbiter_request:
             _set_arbiter_busy(False)
@@ -305,15 +266,26 @@ def _set_arbiter_busy(busy: bool) -> None:
         _l.getLogger("HME").debug(f"arbiter-busy signal failed: {type(_e).__name__}: {_e}")
 
 
-def _daemon_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
-    """Route generation through the daemon's /generate proxy for wall-clock enforcement.
-    Returns the llama.cpp response dict, or None if the daemon is unreachable.
-    Hard-capped: urllib timeout = min(wall_timeout + 2, 15). Never blocks MCP for long."""
+def _daemon_generate(payload: dict, wall_timeout: float = 30.0) -> dict | None:
+    """Route generation through the daemon's /generate proxy.
+
+    This is the ONE canonical path for local llama.cpp synthesis. The
+    daemon is the single source of truth for wall-clock enforcement
+    (see doc/HME.md — "all llama.cpp timeouts live in llamacpp_daemon.py").
+    The urllib client timeout here is a trivial grace on top of the
+    daemon's own wall_timeout: if the daemon is alive it will have
+    already returned a {"error": "wall timeout"} JSON by then.
+
+    Returns the llama.cpp response dict, or None if the daemon is
+    unreachable or the daemon itself returned an error envelope.
+    """
     import urllib.request as _ur
     payload["wall_timeout"] = wall_timeout
     body = json.dumps(payload).encode()
     req = _ur.Request(_DAEMON_URL, data=body, headers={"Content-Type": "application/json"})
-    _http_timeout = min(wall_timeout + 2, 15)
+    # +2s grace so the daemon's own wall_timeout is always the thing that
+    # fires first. If the daemon is dead the socket will fail fast anyway.
+    _http_timeout = wall_timeout + 2
     try:
         with _ur.urlopen(req, timeout=_http_timeout) as resp:
             result = json.loads(resp.read())
