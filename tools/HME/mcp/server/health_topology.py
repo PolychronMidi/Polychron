@@ -104,21 +104,20 @@ def _build_topology() -> dict:
     # Track response time for Layer 7 predictive health
     _record_shim_response_ms(shim.get("response_ms", _HEALTH_TIMEOUT * 1000))
 
-    # Check Ollama daemon (independent subtree)
-    daemon = _check_daemon()
+    # Check local inference — llama-server instances (arbiter + coder) replaced
+    # ollama in commit 0577c0f7. The old ollama/daemon checks probed dead ports
+    # and flooded LIFESAVER with coherence-below-threshold warnings.
+    daemon = {"healthy": True, "note": "retired; llama-server is authoritative"}
+    local_infer = _check_llamacpp_instances()
 
-    # Check Ollama instances — prefer daemon data (authoritative), fall back to direct
-    if daemon.get("healthy"):
-        ollama_instances = _check_ollama_from_daemon(daemon)
-    else:
-        ollama_instances = {
-            "gpu0": _check_ollama_direct(int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))),
-            "gpu1": _check_ollama_direct(int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))),
-            "cpu":  _check_ollama_direct(int(os.environ.get("HME_OLLAMA_PORT_CPU",  "11436"))),
-        }
-
-    coherence = _compute_coherence(shim, daemon, ollama_instances)
+    coherence = _compute_coherence(shim, daemon, local_infer)
     slowdown = _check_shim_slowdown()
+
+    # Auto-resolve stale failures whose target is now healthy. Without this,
+    # a transient crash of e.g. the arbiter leaves a CRITICAL entry in the
+    # LIFESAVER queue forever, surfacing on every tool response even after
+    # the service recovered.
+    _auto_resolve_stale_failures(shim=shim, llamacpp=local_infer)
 
     # L13-15: meta-observer status
     meta_obs = {}
@@ -137,7 +136,7 @@ def _build_topology() -> dict:
         "nodes": {
             "shim": shim,
             "daemon": daemon,
-            "ollama": ollama_instances,
+            "llamacpp": local_infer,
         },
         "meta_observer": meta_obs,
     }
@@ -183,40 +182,112 @@ def _check_daemon(port: int = 7735) -> dict:
         return {"healthy": False, "error": str(e)}
 
 
-def _check_ollama_from_daemon(daemon_data: dict) -> dict:
-    """Extract Ollama instance status from daemon health data (single authoritative source)."""
-    models = daemon_data.get("models", {})
+def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
+    """Mark failures resolved when their backing component is now healthy.
+
+    Called after each topology build. Walks the active failure list from
+    failure_genealogy and resolves entries whose source string matches a
+    component that is currently reported healthy. Prevents stale CRITICALs
+    from pinning the LIFESAVER banner after a transient outage recovers.
+    """
+    try:
+        from server import failure_genealogy as fg
+        active = fg.get_active_failures()
+    except Exception as e:
+        logger.warning(f"auto-resolve: failure_genealogy unavailable: {e}")
+        return
+
+    if not active:
+        return
+
+    healthy_signals: list[tuple[str, bool]] = []
+    if shim.get("healthy"):
+        healthy_signals.append(("shim", True))
+        healthy_signals.append(("rag_proxy", True))
+    for key, info in llamacpp.items():
+        if info.get("healthy"):
+            healthy_signals.append((key, True))
+            # Match synthesis_ollama's model_init source names too.
+            # Arbiter model name comes from .env HME_ARBITER_MODEL.
+            if key == "arbiter":
+                arbiter_alias = os.environ.get("HME_ARBITER_MODEL", "")
+                if arbiter_alias:
+                    healthy_signals.append((f"model_init({arbiter_alias})", True))
+            if key == "coder":
+                local_model = os.environ.get("HME_LOCAL_MODEL", "")
+                if local_model:
+                    healthy_signals.append((f"model_init({local_model})", True))
+
+    resolved_count = 0
+    for f in active:
+        source = f.get("source", "")
+        for sig_src, _ in healthy_signals:
+            if sig_src and sig_src in source:
+                try:
+                    fg.resolve_failure(f["id"])
+                    resolved_count += 1
+                except Exception as e:
+                    logger.warning(f"auto-resolve: could not resolve {f.get('id')}: {e}")
+                break
+    if resolved_count:
+        logger.info(f"auto-resolve: cleared {resolved_count} stale failure(s) on recovery")
+
+
+def _check_llamacpp_instances() -> dict:
+    """Probe both llama-server instances (arbiter + coder) via their /health endpoints.
+
+    URLs come from HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL so this
+    tracks whatever .env says; falls back to the default port mapping from
+    commit 0577c0f7 (arbiter 8080, coder 8081).
+    """
+    arbiter_url = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
+    coder_url   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
     result = {}
-    for key, info in models.items():
-        result[key] = {"healthy": info.get("loaded", False), "source": "daemon"}
-    if not result:
-        result["(daemon_empty)"] = {"healthy": False, "source": "daemon"}
+    for key, url in (("arbiter", arbiter_url), ("coder", coder_url)):
+        t0 = time.time()
+        try:
+            req = urllib.request.Request(f"{url}/health")
+            with urllib.request.urlopen(req, timeout=_HEALTH_TIMEOUT) as resp:
+                body = resp.read().decode("utf-8", errors="replace")
+                try:
+                    data = json.loads(body)
+                except ValueError:
+                    data = {}
+                status = data.get("status", "")
+                # llama-server returns {"status":"ok"} when serving, or
+                # {"error":{"code":503,"type":"unavailable_error","message":"Loading model"}}
+                # during model load. Treat "ok" as healthy; anything else as unhealthy.
+                healthy = (resp.status == 200 and status == "ok")
+                result[key] = {
+                    "healthy": healthy,
+                    "url": url,
+                    "status": status or body[:80],
+                    "response_ms": round((time.time() - t0) * 1000, 1),
+                }
+        except Exception as e:
+            result[key] = {
+                "healthy": False,
+                "url": url,
+                "error": str(e)[:120],
+                "response_ms": round((time.time() - t0) * 1000, 1),
+            }
     return result
 
 
-def _check_ollama_direct(port: int) -> dict:
-    try:
-        req = urllib.request.Request(f"http://localhost:{port}/api/tags")
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            return {"healthy": resp.status == 200, "source": "direct"}
-    except Exception as e:
-        return {"healthy": False, "error": str(e), "source": "direct"}
-
-
-def _compute_coherence(shim: dict, daemon: dict, ollama: dict) -> float:
+def _compute_coherence(shim: dict, daemon: dict, llamacpp: dict) -> float:
     """Compute a [0.0, 1.0] system coherence score.
 
-    Weighted: shim health (60%) + Ollama availability (40%).
-    Shim is more critical — without it, no RAG operations work at all.
+    Weighted: shim (40%) + daemon (20%) + local inference (40%).
+    Shim is the root of all RAG operations; llama-server instances host the
+    arbiter and coder that power the HME cascade.
     """
     shim_score = 1.0 if shim.get("healthy") else 0.0
     daemon_score = 1.0 if daemon.get("healthy") else 0.0
-    ollama_up = sum(1 for v in ollama.values() if v.get("healthy"))
-    ollama_total = max(len(ollama), 1)
-    ollama_score = ollama_up / ollama_total
+    llamacpp_up = sum(1 for v in llamacpp.values() if v.get("healthy"))
+    llamacpp_total = max(len(llamacpp), 1)
+    llamacpp_score = llamacpp_up / llamacpp_total
 
-    # Shim 40%, daemon 20%, ollama 40%
-    coherence = 0.4 * shim_score + 0.2 * daemon_score + 0.4 * ollama_score
+    coherence = 0.4 * shim_score + 0.2 * daemon_score + 0.4 * llamacpp_score
     return round(coherence, 3)
 
 
@@ -256,8 +327,7 @@ def describe_topology(topo: dict) -> str:
     if not nodes:
         return "[topology: pending first check]"
     shim = nodes.get("shim", {})
-    daemon = nodes.get("daemon", {})
-    ollama = nodes.get("ollama", {})
+    llamacpp = nodes.get("llamacpp", {})
     coherence = topo.get("coherence", 0.0)
 
     parts = []
@@ -268,15 +338,14 @@ def describe_topology(topo: dict) -> str:
         err = shim.get("error", shim.get("phase", "?"))
         parts.append(f"shim DOWN ({err})")
 
-    if daemon.get("healthy"):
-        wc = daemon.get("warm_caches", {})
-        fresh = sum(1 for v in wc.values() if v.get("fresh")) if wc else 0
-        parts.append(f"daemon OK ({fresh}/{max(len(wc), 1)} caches warm)")
+    llamacpp_up = sum(1 for v in llamacpp.values() if v.get("healthy"))
+    llamacpp_total = max(len(llamacpp), 1)
+    if llamacpp_up == llamacpp_total:
+        names = ",".join(sorted(llamacpp.keys()))
+        parts.append(f"llamacpp {llamacpp_up}/{llamacpp_total} ({names}) OK")
     else:
-        parts.append("daemon UNREACHABLE")
-
-    ollama_up = sum(1 for v in ollama.values() if v.get("healthy"))
-    parts.append(f"Ollama {ollama_up}/{len(ollama)} models")
+        down = [k for k, v in llamacpp.items() if not v.get("healthy")]
+        parts.append(f"llamacpp {llamacpp_up}/{llamacpp_total} — DOWN: {','.join(down)}")
 
     slowdown = topo.get("slowdown_warning")
     if slowdown:

@@ -188,10 +188,20 @@ def _try_checkpoint_recovery(model: str) -> bool:
 
 
 def _load_all_warm_caches() -> int:
-    """Try to restore all model caches from disk. Returns count of successfully restored."""
+    """Try to restore all model caches from disk. Returns count of successfully restored.
+
+    Deduplicates by model name — _LOCAL_MODEL and _REASONING_MODEL can resolve to the
+    same alias (e.g. both set to qwen3-coder:30b in .env), and double-counting caused
+    `_prime_all_gpus` to short-circuit past an unprimed arbiter when local+reasoner
+    already satisfied n.
+    """
     from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+    seen: set[str] = set()
     restored = 0
-    for model in [_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL]:
+    for model in (_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL):
+        if model in seen:
+            continue
+        seen.add(model)
         if _load_warm_cache(model):
             restored += 1
     return restored

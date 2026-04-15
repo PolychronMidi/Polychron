@@ -41,11 +41,16 @@ def register_critical_failure(
     """
     try:
         from server import failure_genealogy as fg
-        fid = fg.record_failure(source, error, severity, caused_by)
+        fid, is_new = fg.record_failure(source, error, severity, caused_by)
     except Exception as _fge:
-        fid = "?"
+        fid, is_new = "?", True
         logger.error(f"LIFESAVER failure_genealogy.record_failure failed — failure may be lost: {_fge}")
-    logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
+    # Only log the first occurrence of a dedup group. The count is tracked
+    # inside failure_genealogy; the LIFESAVER banner at drain time already
+    # shows ×N repeats. Logging every call flooded hme.log (see
+    # health_topology coherence-below-threshold stampede).
+    if is_new:
+        logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
     # Layer 10: notify resonance detector
     try:
         from server import resonance_detector as rd

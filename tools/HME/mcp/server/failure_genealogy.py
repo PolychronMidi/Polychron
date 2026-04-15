@@ -31,8 +31,14 @@ def record_failure(
     error: str,
     severity: str = "CRITICAL",
     caused_by: str | None = None,
-) -> str:
-    """Record a failure. Returns the failure_id (new or existing deduplicated)."""
+) -> tuple[str, bool]:
+    """Record a failure. Returns (failure_id, is_new).
+
+    is_new=False means the caller hit an existing dedup entry — the count was
+    incremented but no new record was created. Callers can use this to
+    suppress duplicate log lines so the same alert doesn't spam hme.log on
+    every monitor tick (see commit fix: health_topology LIFESAVER flood).
+    """
     with _failures_lock:
         now = time.time()
         # Deduplication: same source + error text within window → increment count only
@@ -44,7 +50,7 @@ def record_failure(
                 and now - f["ts"] < _DEDUP_WINDOW
             ):
                 f["count"] = f.get("count", 1) + 1
-                return fid
+                return fid, False
 
         fid = str(uuid.uuid4())[:8]
         _failures[fid] = {
@@ -62,7 +68,7 @@ def record_failure(
             oldest = sorted(_failures, key=lambda k: _failures[k]["ts"])
             for old_id in oldest[:50]:
                 del _failures[old_id]
-        return fid
+        return fid, True
 
 
 def resolve_failure(failure_id: str) -> None:

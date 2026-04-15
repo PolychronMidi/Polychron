@@ -350,6 +350,77 @@ print('psycho' if (saw_wakeup and saw_bg_launch) else 'ok')
   fi
 fi
 
+# ── Acknowledge-and-move-on detection ────────────────────────────────────────
+# Detect: an HME tool in this turn surfaced LIFESAVER CRITICAL/FAIL items, but
+# the turn is about to stop without any Edit/Write calls after those surfaces.
+# The rule is "fix it, don't just note it" — spawning a sweep Agent, writing a
+# doc about it, or saying "I'll park that" instead of editing code is a
+# violation. Minimum proof of fixing: at least one Edit/Write tool_use AFTER
+# the CRITICAL/FAIL surfaced in a tool_result this turn.
+if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
+  ACK_SKIP=$(python3 -c "
+import json
+data = open('$TRANSCRIPT_PATH').read()
+lines = data.strip().split('\n')
+# Walk the current turn in forward order so we can track ordering of
+# 'surfaced a failure' vs 'actually edited something after'.
+turn_lines: list[dict] = []
+found_user = False
+for line in reversed(lines):
+    try:
+        obj = json.loads(line)
+    except Exception:
+        continue
+    role = obj.get('role','')
+    if role == 'user' and not found_user:
+        found_user = True
+    elif role == 'user' and found_user:
+        break
+    turn_lines.append(obj)
+turn_lines.reverse()
+
+surfaced_at = -1  # index where a CRITICAL/FAIL surfaced in a tool result
+edit_after = False
+for i, obj in enumerate(turn_lines):
+    for block in obj.get('content', []):
+        if not isinstance(block, dict):
+            continue
+        if block.get('type') == 'tool_result':
+            parts = block.get('content', [])
+            # Extract text from result
+            text = ''
+            if isinstance(parts, list):
+                for p in parts:
+                    if isinstance(p, dict) and p.get('type') == 'text':
+                        text += p.get('text','')
+                    elif isinstance(p, str):
+                        text += p
+            elif isinstance(parts, str):
+                text = parts
+            if 'LIFESAVER: CRITICAL FAILURES' in text or '[CRITICAL]' in text.upper() or '  FAIL:' in text:
+                if surfaced_at == -1:
+                    surfaced_at = i
+        elif block.get('type') == 'tool_use':
+            name = block.get('name','')
+            if surfaced_at >= 0 and i > surfaced_at:
+                if name in ('Edit', 'Write', 'NotebookEdit'):
+                    edit_after = True
+
+if surfaced_at >= 0 and not edit_after:
+    print('ack_skip')
+else:
+    print('ok')
+" 2>/dev/null || echo ok)
+
+  if [[ "$ACK_SKIP" == "ack_skip" ]]; then
+    jq -n '{
+      "decision": "block",
+      "reason": "ACKNOWLEDGE-AND-MOVE-ON: HME surfaced a CRITICAL/FAIL this turn but you have not made any Edit/Write calls since. \"Noting\" a failure, \"flagging\" it, saving it for a sweep, or spawning an Agent to survey instead of fixing it is the antipattern the fix_antipattern wiring exists to block. Required action now: diagnose root cause, Edit the offending code, re-run the HME tool to verify the CRITICAL cleared. If the CRITICAL is from a long-running background process that will resolve itself, say so EXPLICITLY in text before stopping — but fix it if you can."
+    }'
+    exit 0
+  fi
+fi
+
 # ── Plan-abandonment detection ────────────────────────────────────────────────
 # Detect: Agent spawned for KB/HME work (should use HME tools directly),
 # or a sweep was started (edit/grep loop) but fewer than expected completions.
