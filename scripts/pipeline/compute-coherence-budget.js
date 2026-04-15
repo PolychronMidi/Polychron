@@ -1,19 +1,19 @@
 // scripts/pipeline/compute-coherence-budget.js
 //
-// Phase 5.2 — coherence budget (homeostatic governance).
+// Phase 5.2 -- coherence budget (homeostatic governance).
 //
 // Based on the Phase 5 thesis: HME maximizing coherence may suppress the
 // productive chaos that generates musical emergence. Instead of optimizing
 // the coherence score toward 1.0, we compute an *optimal band* derived
-// from history — the coherence range at which rounds actually produced
-// strong musical outcomes — and report whether the current round sits in
+// from history -- the coherence range at which rounds actually produced
+// strong musical outcomes -- and report whether the current round sits in
 // the band, above it (too disciplined), or below it (too chaotic).
 //
 // Algorithm:
 //   1. Read metrics/hme-musical-correlation.json history.
 //   2. Rank rounds by a composite "musical outcome" score = 0.5*
 //      perceptual_complexity_avg + 0.3*clap_tension + 0.2*verdict_numeric.
-//   3. Take the top quartile — those are the "good rounds".
+//   3. Take the top quartile -- those are the "good rounds".
 //   4. The optimal coherence band = [min, max] of `hme_coherence` in
 //      those good rounds.
 //   5. If history is too short (< 8 rounds), fall back to prior [0.55, 0.85].
@@ -25,9 +25,9 @@
 // prescription = specific guidance for the proxy (inject MORE or LESS)
 //
 // The proxy reads this file and adjusts its injection aggressiveness:
-//   - BELOW    → inject forcefully (KB context + bias bounds + hypotheses)
-//   - OPTIMAL  → normal injection
-//   - ABOVE    → relaxed injection (skip non-critical warnings, flag round
+//   - BELOW    -> inject forcefully (KB context + bias bounds + hypotheses)
+//   - OPTIMAL  -> normal injection
+//   - ABOVE    -> relaxed injection (skip non-critical warnings, flag round
 //                as "emergence-licensed", allow writes into low-coverage
 //                territory without coherence_violation emission)
 //
@@ -63,7 +63,7 @@ function musicalOutcomeScore(snapshot) {
     weights += 0.5;
   }
   if (typeof snapshot.clap_tension === 'number') {
-    // CLAP similarity scores are typically 0..0.3 — rescale
+    // CLAP similarity scores are typically 0..0.3 -- rescale
     score += 0.3 * Math.min(1, snapshot.clap_tension * 3);
     weights += 0.3;
   }
@@ -104,7 +104,7 @@ function main() {
 
   if (scored.length < MIN_HISTORY) {
     band = PRIOR_BAND.slice();
-    bandSource = `prior (${scored.length}/${MIN_HISTORY} rounds — using default)`;
+    bandSource = `prior (${scored.length}/${MIN_HISTORY} rounds -- using default)`;
   } else {
     // Sort by outcome descending and take top quartile (at least 2)
     const sortedByOutcome = scored.slice().sort((a, b) => b.outcome - a.outcome);
@@ -131,13 +131,13 @@ function main() {
   } else if (currentCoherence < band[0]) {
     state = 'BELOW';
     prescription = (
-      'TIGHTEN: coherence below optimal band. Proxy should inject forcefully — ' +
+      'TIGHTEN: coherence below optimal band. Proxy should inject forcefully -- ' +
       'KB context, bias bounds, and open hypotheses for every write target.'
     );
   } else if (currentCoherence > band[1]) {
     state = 'ABOVE';
     prescription = (
-      'RELAX: coherence above optimal band. System may be too disciplined — ' +
+      'RELAX: coherence above optimal band. System may be too disciplined -- ' +
       'emergence suppressed. Proxy should skip non-critical warnings, ' +
       'flag round as emergence-licensed, allow writes into low-coverage ' +
       'territory without penalizing as incoherence.'

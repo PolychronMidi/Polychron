@@ -1,6 +1,6 @@
 // scripts/pipeline/compute-intention-gap.js
 //
-// Phase 4.3 — intention vs execution gap tracking.
+// Phase 4.3 -- intention vs execution gap tracking.
 //
 // The HME todo store (`.claude/mcp/HME/todos.json`) is the structured record
 // of the Evolver's intentions within a session: every substantive plan item
@@ -10,15 +10,15 @@
 // report.
 //
 // Improvement vs doc: doc suggested parsing proposed evolutions out of the
-// journal (prose). The todo store gives the same signal in clean JSON form —
+// journal (prose). The todo store gives the same signal in clean JSON form --
 // no fuzzy text parsing, no heuristics. Every todo entry has `text`,
 // `status`, `done`, `ts`.
 //
 // Classification per todo:
-//   completed+done=true, text mentions files that were written → fully_executed
-//   completed but no file activity in scope    → partially_executed
-//   pending/in_progress at round_complete      → abandoned
-//   completed with no scope mention anywhere   → untrackable (dropped)
+//   completed+done=true, text mentions files that were written -> fully_executed
+//   completed but no file activity in scope    -> partially_executed
+//   pending/in_progress at round_complete      -> abandoned
+//   completed with no scope mention anywhere   -> untrackable (dropped)
 //
 // Output: metrics/hme-intention-gap.json with per-round snapshot + rolling
 // gap EMA. Surfaced via status(mode='intention_gap').
@@ -74,8 +74,8 @@ function sliceToRound(events) {
 
 function extractMentionedFiles(todoText) {
   // Pull out any "src/..." path, or any file mentioned with a .js/.py/.sh
-  // extension, or any CamelCase module-name token ≥4 chars. Heuristic but
-  // stable — the intent is to identify the files a todo nominally targets.
+  // extension, or any CamelCase module-name token >=4 chars. Heuristic but
+  // stable -- the intent is to identify the files a todo nominally targets.
   if (!todoText) return { paths: [], modules: [] };
   const paths = Array.from(todoText.matchAll(/\b(?:src|tools\/HME|scripts)\/[A-Za-z0-9_\-./]+\.(?:js|py|sh|md|json)\b/g)).map((m) => m[0]);
   const modules = Array.from(todoText.matchAll(/\b([a-z][a-zA-Z0-9]{3,}(?:[A-Z][a-zA-Z0-9]+)+)\b/g)).map((m) => m[1]);
@@ -97,7 +97,7 @@ function main() {
     }
   }
 
-  // Consider only todos that existed during this round — we approximate by
+  // Consider only todos that existed during this round -- we approximate by
   // filtering to todos with status in ('pending','in_progress','completed')
   // and any timestamp (no per-round history available yet). This captures
   // the current session's intentions.

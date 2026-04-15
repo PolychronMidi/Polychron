@@ -1,6 +1,6 @@
 // scripts/pipeline/compute-compositional-trajectory.js
 //
-// Phase 5.1 — cross-round compositional trajectory.
+// Phase 5.1 -- cross-round compositional trajectory.
 //
 // Fits a linear trend to the last 20 rounds of perceptual signals and
 // reports whether the music is GROWING, on a PLATEAU, or DECLINING.
@@ -8,7 +8,7 @@
 // script maintains as rolling history) and produces a per-round
 // trajectory snapshot keyed by signal.
 //
-// Variance is tracked alongside slope as a "surprise" proxy — a
+// Variance is tracked alongside slope as a "surprise" proxy -- a
 // composition with high variance is still exploring; zero variance
 // means it's locked into a single mode.
 //
@@ -89,7 +89,7 @@ function rollupVerdict(perSignal) {
   if (votes.length === 0) return 'INSUFFICIENT_DATA';
   const counts = { GROWING: 0, PLATEAU: 0, DECLINING: 0 };
   for (const v of votes) counts[v] = (counts[v] || 0) + 1;
-  // Simple majority; tie → PLATEAU (conservative)
+  // Simple majority; tie -> PLATEAU (conservative)
   let best = 'PLATEAU';
   let bestN = 0;
   for (const [k, n] of Object.entries(counts)) {
@@ -114,7 +114,7 @@ function main() {
     const report = {
       meta,
       verdict: 'INSUFFICIENT_DATA',
-      reason: `need ≥${MIN_ROUNDS} rounds, have ${window.length}`,
+      reason: `need >=${MIN_ROUNDS} rounds, have ${window.length}`,
       signals: {},
       history: [],
     };

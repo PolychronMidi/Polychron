@@ -1,6 +1,6 @@
 // scripts/pipeline/reconcile-predictions.js
 //
-// Phase 3.4 — post-pipeline reconciler that compares cascade predictions
+// Phase 3.4 -- post-pipeline reconciler that compares cascade predictions
 // logged during the session against the actual fingerprint delta produced
 // by the pipeline run.
 //
@@ -17,7 +17,7 @@
 // moving average of accuracy across rounds.
 //
 // Writes a per-round record to the accuracy file (capped to last 50 rounds).
-// Non-fatal — produces a diagnostic, doesn't gate the pipeline.
+// Non-fatal -- produces a diagnostic, doesn't gate the pipeline.
 
 'use strict';
 
@@ -92,13 +92,13 @@ function main() {
   const history = loadJsonMaybe(ACCURACY_OUT) || { meta: {}, rounds: [], ema: null };
 
   if (predictions.length === 0) {
-    console.log('reconcile-predictions: no predictions logged this round — skipping');
+    console.log('reconcile-predictions: no predictions logged this round -- skipping');
     return;
   }
 
   const shifted = extractShiftedModules(fingerprint);
 
-  // Phase 6.1 — split predictions into clean (prediction made post-hoc,
+  // Phase 6.1 -- split predictions into clean (prediction made post-hoc,
   // with no proxy injection in the loop) vs injected (prediction surfaced
   // to the Evolver before the edit). Clean predictions are a true test of
   // the cascade model; injected ones are influence (self-fulfilling).
@@ -110,7 +110,7 @@ function main() {
   }
   const predictedAll = new Set([...cleanPredicted, ...injectedPredicted]);
 
-  // Classification — single aggregate view
+  // Classification -- single aggregate view
   const confirmed = [];
   const refuted = [];
   for (const m of predictedAll) {
@@ -155,7 +155,7 @@ function main() {
     newEma = prevEma * (1 - EMA_ALPHA) + accuracy * EMA_ALPHA;
   }
 
-  // Phase 6.1 — reflexivity ratio: what fraction of this round's
+  // Phase 6.1 -- reflexivity ratio: what fraction of this round's
   // predicted modules came from INJECTED (contaminated) predictions?
   const reflexivityRatio =
     predictedAll.size > 0
