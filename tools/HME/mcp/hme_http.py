@@ -367,9 +367,18 @@ def _load_engines():
             logger.warning(f"GPU detection failed, using CPU: {type(e).__name__}: {e}")
         logger.info(f"RAG device: {_rag_device}")
 
+        # All three RAG models are loaded in fp16 to fit alongside arbiter
+        # on GPU0. SentenceTransformer defaults to fp32 which DOUBLES VRAM
+        # for no quality benefit on our inference workload. M40 Maxwell
+        # emulates fp16 math in software (no speed win) but fp16 storage is
+        # native — we pay ~10% throughput for ~50% VRAM savings. Worth it
+        # because fp32 loads caused active-offload to churn continuously.
+        import torch as _torch_fp16
+        _fp16_kwargs = {"torch_dtype": _torch_fp16.float16}
+
         # Text embedder (Qwen3-Embedding-0.6B) — knowledge_table + symbol_table.
-        # 1024-dim, Apache 2.0. Tries ONNX backend first (honors RAG_BACKEND env
-        # and any future ONNX export); falls through to torch on GPU.
+        # 1024-dim, Apache 2.0. Tries ONNX backend first; falls through to
+        # torch fp16 on GPU when no ONNX export is shipped.
         try:
             _shared_model = SentenceTransformer(
                 MODEL_NAME, backend=MODEL_BACKEND,
@@ -379,17 +388,19 @@ def _load_engines():
         except Exception as e:
             logger.warning(
                 f"{MODEL_BACKEND} backend failed ({type(e).__name__}), "
-                f"falling back to torch on {_rag_device}"
+                f"falling back to torch fp16 on {_rag_device}"
             )
             _shared_model = SentenceTransformer(
                 MODEL_NAME, device=_rag_device, trust_remote_code=True,
+                model_kwargs=_fp16_kwargs,
             )
 
         # Code embedder (BAAI/bge-code-v1) — code_chunks table.
-        # 1536-dim, Apache 2.0, Qwen2-based, 32K context.
+        # 1536-dim, Apache 2.0, Qwen2-based, 32K context. fp16 to fit in VRAM.
         try:
             _shared_code_model = SentenceTransformer(
                 CODE_MODEL_NAME, trust_remote_code=True, device=_rag_device,
+                model_kwargs=_fp16_kwargs,
             )
             logger.info(f"Code embedder: {CODE_MODEL_NAME} on {_shared_code_model.device}")
         except Exception as e:
@@ -397,9 +408,12 @@ def _load_engines():
             _shared_code_model = _shared_model
 
         # Cross-encoder reranker (mxbai-rerank-base-v2) — rerank top candidates.
-        # 500M params, Apache 2.0, Qwen2.5-based.
+        # 500M params, Apache 2.0, Qwen2.5-based. fp16 to fit in VRAM.
         try:
-            _shared_reranker = CrossEncoder(RERANKER_NAME, max_length=512, device=_rag_device)
+            _shared_reranker = CrossEncoder(
+                RERANKER_NAME, max_length=512, device=_rag_device,
+                model_kwargs=_fp16_kwargs,
+            )
             logger.info(f"Reranker: {RERANKER_NAME} on {_rag_device}")
         except Exception as e:
             logger.warning(f"Reranker load failed ({e}) — search will fall back to RRF-only")
@@ -563,12 +577,14 @@ def _load_engines():
 
         _project_engine = RAGEngine(
             PROJECT_DB, model_name=MODEL_NAME,
-            model=_shared_model, code_model=_code_model_router, reranker=_reranker_router,
+            model=_text_model_router, code_model=_code_model_router,
+            reranker=_reranker_router,
         )
         _project_engine._embed_batch_size = _CODE_EMBED_BATCH
         _global_engine = RAGEngine(
             GLOBAL_DB, model_name=MODEL_NAME,
-            model=_shared_model, code_model=_code_model_router, reranker=_reranker_router,
+            model=_text_model_router, code_model=_code_model_router,
+            reranker=_reranker_router,
         )
         _global_engine._embed_batch_size = _CODE_EMBED_BATCH
         for _lib_rel in get_lib_dirs():
@@ -577,7 +593,8 @@ def _load_engines():
             os.makedirs(_lib_db, exist_ok=True)
             _eng = RAGEngine(
                 db_path=_lib_db,
-                model=_shared_model, code_model=_code_model_router, reranker=_reranker_router,
+                model=_text_model_router, code_model=_code_model_router,
+                reranker=_reranker_router,
             )
             _eng._embed_batch_size = _CODE_EMBED_BATCH
             _lib_engines[_lib_rel] = _eng
@@ -645,8 +662,13 @@ class _Handler(BaseHTTPRequestHandler):
             if method == "_symbol_table_list":
                 result = engine.symbol_table.to_arrow().to_pylist() if engine.symbol_table is not None else []
             elif method == "_encode":
+                # Route through the engine's model (which is the dispatcher
+                # when the text embedder is VramManager-managed) so this
+                # debug path respects pressure / offload / CPU fallback.
+                # Never use _shared_model directly — see invariant
+                # "no-direct-shared-model-encode" in workflow_audit.py.
                 texts = kwargs.get("texts", [])
-                result = _shared_model.encode(texts).tolist() if _shared_model else []
+                result = engine.text_model.encode(texts).tolist() if engine.text_model is not None else []
             elif method == "_get_file_hashes":
                 result = dict(getattr(engine, "_file_hashes", {}))
             elif hasattr(engine, method) and callable(getattr(engine, method)):
