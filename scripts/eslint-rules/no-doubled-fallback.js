@@ -8,7 +8,7 @@
 // tension-gating incident where `safePreBoot.call(..., 0.5) || 0.5` converted
 // every real 0 tension reading to 0.5, skewing regime transition logic.
 //
-// Fix guidance reported in the message — use the inner value directly, or
+// Fix guidance reported in the message -- use the inner value directly, or
 // replace `||` with `??` if the intent was specifically to catch undefined.
 
 module.exports = {
@@ -16,13 +16,13 @@ module.exports = {
     type: 'problem',
     docs: {
       description:
-        'Ban doubled fallback patterns — they either hide bugs or coerce legitimate falsy values.'
+        'Ban doubled fallback patterns -- they either hide bugs or coerce legitimate falsy values.'
     },
     schema: []
   },
   create(context) {
     function isValidatorCallWithFallback(node) {
-      // V.optionalFinite(x, fallback) — two arguments
+      // V.optionalFinite(x, fallback) -- two arguments
       if (
         node &&
         node.type === 'CallExpression' &&
@@ -42,7 +42,7 @@ module.exports = {
     }
 
     function isSafePreBootWithFallback(node) {
-      // safePreBoot.call(fn, fallback) — two arguments
+      // safePreBoot.call(fn, fallback) -- two arguments
       if (
         node &&
         node.type === 'CallExpression' &&
@@ -62,7 +62,7 @@ module.exports = {
     }
 
     function isTernaryWithDefault(node) {
-      // cond ? value : fallback — both alternates are defined
+      // cond ? value : fallback -- both alternates are defined
       if (
         node &&
         node.type === 'ConditionalExpression' &&
@@ -92,7 +92,7 @@ module.exports = {
         if (node.operator !== '||') return;
         const srcName = leftSideSource(node.left);
         if (!srcName) return;
-        // Right side must be a literal (number/string/boolean) — otherwise the
+        // Right side must be a literal (number/string/boolean) -- otherwise the
         // outer `||` might be intentional routing logic.
         const right = node.right;
         const rightIsLiteral =
