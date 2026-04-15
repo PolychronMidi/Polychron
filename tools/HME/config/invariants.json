@@ -584,6 +584,35 @@
       "type": "shell_output_empty",
       "shell": "grep -rnE '\\.get\\([^)]*\\)\\s*\\|\\|\\s*0\\b' src/conductor/ --include='*.js' | grep -v '//.*nullish' | grep -v '\\.size'",
       "severity": "error"
+    },
+    {
+      "id": "activity-emitter-exists",
+      "description": "Phase 1 activity bridge (openshell_features_to_mimic.md) \u2014 shared event emitter CLI must exist so hooks can append to hme-activity.jsonl",
+      "type": "file_exists",
+      "path": "tools/HME/activity/emit.py",
+      "severity": "error"
+    },
+    {
+      "id": "activity-digest-in-reloadable",
+      "description": "activity_digest module must be in RELOADABLE so hot-reload picks up changes",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/evolution_selftest.py",
+      "pattern": "\"activity_digest\"",
+      "severity": "error"
+    },
+    {
+      "id": "activity-mode-in-status",
+      "description": "status_unified must dispatch mode='activity' to activity_digest",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "pattern": "from \\.activity_digest import activity_digest",
+      "severity": "error"
+    },
+    {
+      "id": "activity-hook-wiring",
+      "description": "Hooks that touch src/ or tools/HME/ edits must call tools/HME/activity/emit.py so the activity stream captures structural changes",
+      "type": "shell_output_empty",
+      "shell": "for f in tools/HME/hooks/posttooluse_edit.sh tools/HME/hooks/posttooluse_bash.sh tools/HME/hooks/stop.sh tools/HME/hooks/pretooluse_edit.sh; do grep -q 'activity/emit.py' \"$f\" || echo \"$f missing activity emit\"; done"
     }
   ]
 }

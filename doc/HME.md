@@ -397,6 +397,22 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 
 All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks/hooks.json` (Claude Code plugin format). This keeps hook logic version-controlled, testable, and visible from the HME directory.
 
+### Activity Bridge
+
+Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` — a zero-dependency CLI invoked from bash hooks in the background.
+
+| Event | Source hook | Fields |
+|-------|-------------|--------|
+| `edit_pending` | `pretooluse_edit.sh` | file, module, hme_read_prior |
+| `file_written` | `posttooluse_edit.sh` | file, module, hme_read_prior |
+| `coherence_violation` | `posttooluse_edit.sh` | file, module, reason (only after onboarding graduation) |
+| `pipeline_run` | `posttooluse_bash.sh` | verdict, passed, wall_s, hci |
+| `round_complete` | `stop.sh` | session |
+
+Query the stream via `status(mode='activity')` — surfaces event counts, coherence ratio (writes with vs. without prior HME read), pipeline runs, and recent writes. Window defaults to "round" (events since last `round_complete`).
+
+The bridge is additive: no state is kept outside the JSONL itself, and `activity_digest.py` reads the tail lazily. Future phases (inference proxy, policy engine) will share the same event stream.
+
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
 All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.
@@ -406,7 +422,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `sessionstart.sh` | SessionStart | * | Reset compact tab, capture previous session's nexus pending state before reset, inject HME awareness (pipeline verdict + wall time, last journal round, uncommitted changes, last commit), surface previous session unfinished items |
 | `pretooluse_lifesaver.sh` | PreToolUse | * | **LIFESAVER**: stamp start time to `/tmp/hme_lifesaver_{session}_{tool}` for every tool call |
 | `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; **enrich** project source reads with KB titles via `systemMessage` (Read proceeds + KB injected, no extra turn) |
-| `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")` |
+| `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")`; **emit `edit_pending`** activity event |
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim (titles only); multiline exempt |
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
@@ -415,10 +431,10 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
 | `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
-| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
+| `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main`; **emit `pipeline_run`** activity event with verdict/wall/hci |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_read.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
-| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files |
+| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files; **emit `file_written` + `coherence_violation`** (when no prior HME read) activity events |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
 | `posttooluse_hme_read.sh` | PostToolUse | mcp__HME__read | Track briefed files to NEXUS; reset streak |
@@ -427,7 +443,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |
 | `precompact.sh` | PreCompact | * | Surface `KB:`/`FILE:` entries from tab + untracked `tmp/` files |
 | `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |
-| `stop.sh` | Stop | * | Verify all work is implemented in code, not just documented |
+| `stop.sh` | Stop | * | Verify all work is implemented in code, not just documented; **emit `round_complete`** activity event |
 
 ### Adding a New Hook
 

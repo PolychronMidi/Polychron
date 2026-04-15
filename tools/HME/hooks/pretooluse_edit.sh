@@ -1,10 +1,29 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_onboarding.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
 # HME PreToolUse: Edit — surface live KB constraints before editing project files.
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
+SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
+PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+
+# Activity bridge: emit edit_pending for src/ and tools/HME/ edits.
+if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts))/'; then
+  _EDIT_MODULE=$(_extract_module "$FILE")
+  _EDIT_READ_PRIOR=false
+  if _nexus_has BRIEF "$_EDIT_MODULE" || _nexus_has BRIEF "$FILE"; then
+    _EDIT_READ_PRIOR=true
+  fi
+  python3 "$PROJECT/tools/HME/activity/emit.py" \
+    --event=edit_pending \
+    --session="$SESSION_ID" \
+    --file="$FILE" \
+    --module="$_EDIT_MODULE" \
+    --hme_read_prior="$_EDIT_READ_PRIOR" >/dev/null 2>&1 &
+fi
+
 if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
   _emit_block "BLOCKED: Edit new_string contains comment-ellipsis stub placeholder. Use the ACTUAL replacement content — no stubs."
   exit 2
@@ -20,7 +39,7 @@ if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
 fi
 
 # Nexus: check if file was briefed with read(mode='before') — legacy soft warn
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+# (_nexus.sh is already sourced at top of file)
 if echo "$FILE" | grep -qE '/Polychron/src/'; then
   MODULE=$(_extract_module "$FILE")
   if ! _nexus_has BRIEF "$MODULE" && ! _nexus_has BRIEF "$FILE" && _onb_is_graduated; then
