@@ -84,7 +84,6 @@ class InstanceSpec:
 # Environment overrides let the user retune without a code edit.
 def _default_instances() -> list[InstanceSpec]:
     arbiter_model = ENV.require("HME_ARBITER")
-    arbiter_lora  = ENV.require("HME_ARBITER_ADAPTER")
     coder_model   = ENV.require("HME_CODER")
     # ARCHITECTURE INVARIANT: each model owns its GPU end-to-end. Full offload
     # only — partial offload to CPU is forbidden. n_gpu_layers is hardcoded to
@@ -98,7 +97,6 @@ def _default_instances() -> list[InstanceSpec]:
             device=ENV.require("HME_ARBITER_VULKAN"),
             alias=ENV.require("HME_ARBITER_MODEL"),
             ctx_size=ENV.require_int("HME_ARBITER_CTX"),
-            lora_path=arbiter_lora if os.path.isfile(arbiter_lora) else None,
             n_gpu_layers=999,  # full offload — invariant
         ),
         InstanceSpec(
