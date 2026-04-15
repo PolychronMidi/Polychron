@@ -196,7 +196,7 @@ def main():
     # Remove lock
     try:
         os.remove(lock_path)
-    except Exception:
+    except OSError:
         pass
 
 

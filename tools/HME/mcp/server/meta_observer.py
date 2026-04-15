@@ -1432,7 +1432,7 @@ def _check_coherence_ceiling() -> dict | None:
         try:
             with operational_state._state_lock:  # type: ignore[attr-defined]
                 outcomes = operational_state._state.get("prediction_outcomes_today")  # type: ignore[attr-defined]
-        except Exception:
+        except AttributeError:
             pass
         return {
             "ceiling_hit": True,

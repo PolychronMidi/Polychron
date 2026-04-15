@@ -24,6 +24,18 @@ if __name__ == "__main__":
             print(f"ERROR: {label} not found: {path}")
             sys.exit(1)
 
+    # Merged f16 is ~28 GB; require at least 35 GB free on /tmp's filesystem
+    import shutil
+    tmp_free = shutil.disk_usage("/tmp").free
+    if tmp_free < 35 * 10**9:
+        print(f"ERROR: /tmp has only {tmp_free/1e9:.1f} GB free; need ≥35 GB for f16 intermediate")
+        sys.exit(1)
+
+    out_dir = os.path.dirname(OUTPUT_GGUF)
+    if not os.path.isdir(out_dir):
+        print(f"ERROR: output directory does not exist: {out_dir}")
+        sys.exit(1)
+
     print(f"Step 1: Merging LoRA into base GGUF → {MERGED_F16}")
     r = subprocess.run([EXPORT_LORA, "-m", BASE_GGUF, "--lora", LORA_GGUF, "-o", MERGED_F16], check=False)
     if r.returncode != 0:
