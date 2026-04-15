@@ -124,6 +124,9 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 
 ### Status mode map — which mode answers which question
 
+(23 new modes landed 2026-04-15. Plus pre-existing: `pipeline`, `health`, `coupling`, `trust`, `perceptual`, `hme`, `freshness`, `vram`, `introspect`, `resume`, `all`.)
+
+
 | Question | Mode |
 |---|---|
 | Did the pipeline produce good music? | `music_truth` (hme_coherence vs perceptual correlation) |

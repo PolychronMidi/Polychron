@@ -10,9 +10,9 @@ This document describes the substrate that makes that possible — the **HME Coh
 
 ### The HME Coherence Index (HCI)
 
-The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **37 weighted verifiers** across 6 categories:
+The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **38 weighted verifiers** across 6 categories:
 
-| Category | Verifiers (partial list — 37 total) | What it measures |
+| Category | Verifiers (partial list — 38 total) | What it measures |
 |---|---|---|
 | **doc** | doc-drift, tool-docstrings, memetic-drift | Documentation matches code reality; CLAUDE.md rules aren't silently violated |
 | **code** | python-syntax, shell-syntax, hook-executability, decorator-order, todowrite-hook-nonblock | Source code can run; decorator order correct; TodoWrite hook stays non-blocking |
