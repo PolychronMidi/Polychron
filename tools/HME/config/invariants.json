@@ -613,6 +613,35 @@
       "description": "Hooks that touch src/ or tools/HME/ edits must call tools/HME/activity/emit.py so the activity stream captures structural changes",
       "type": "shell_output_empty",
       "shell": "for f in tools/HME/hooks/posttooluse_edit.sh tools/HME/hooks/posttooluse_bash.sh tools/HME/hooks/stop.sh tools/HME/hooks/pretooluse_edit.sh; do grep -q 'activity/emit.py' \"$f\" || echo \"$f missing activity emit\"; done"
+    },
+    {
+      "id": "hme-proxy-exists",
+      "description": "Phase 2 (inference proxy) \u2014 hme_proxy.js must exist so ANTHROPIC_BASE_URL routing is available",
+      "type": "file_exists",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "severity": "error"
+    },
+    {
+      "id": "hme-proxy-syntactic-node",
+      "description": "hme_proxy.js must parse as valid Node so starting the daemon never fails at syntax level",
+      "type": "shell_output_empty",
+      "shell": "node --check tools/HME/proxy/hme_proxy.js 2>&1 | grep -v '^$'",
+      "severity": "error"
+    },
+    {
+      "id": "check-hme-coherence-exists",
+      "description": "Phase 3 (policy engine) \u2014 check-hme-coherence.js must exist as the pipeline gate reading hme-activity.jsonl",
+      "type": "file_exists",
+      "path": "scripts/pipeline/check-hme-coherence.js",
+      "severity": "error"
+    },
+    {
+      "id": "check-hme-coherence-wired",
+      "description": "main-pipeline.js PRE_COMPOSITION must include check-hme-coherence so violations block composition",
+      "type": "pattern_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "pattern": "check-hme-coherence\\.js",
+      "severity": "error"
     }
   ]
 }

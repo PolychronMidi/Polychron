@@ -411,7 +411,25 @@ Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hook
 
 Query the stream via `status(mode='activity')` — surfaces event counts, coherence ratio (writes with vs. without prior HME read), pipeline runs, and recent writes. Window defaults to "round" (events since last `round_complete`).
 
-The bridge is additive: no state is kept outside the JSONL itself, and `activity_digest.py` reads the tail lazily. Future phases (inference proxy, policy engine) will share the same event stream.
+The bridge is additive: no state is kept outside the JSONL itself, and `activity_digest.py` reads the tail lazily. Phases 2 and 3 share this event stream.
+
+### Inference Proxy
+
+Phase 2 of the feature mapping. `tools/HME/proxy/hme_proxy.js` is a Node.js HTTP chokepoint between Claude Code and the Anthropic API. Point Claude Code at it by setting `ANTHROPIC_BASE_URL=http://127.0.0.1:9099` and launching `node tools/HME/proxy/hme_proxy.js`.
+
+Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks, HME read calls (`mcp__HME__read`, `mcp__HME__before_editing`) are compared against write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`, `mcp__HME__edit`). Every call emits one `inference_call` event into `metrics/hme-activity.jsonl`; write-intent without a prior read adds a `coherence_violation` event with `source=proxy` and the offending tool name.
+
+Streaming SSE responses pipe through verbatim — no buffering, no latency penalty. The proxy never modifies request bodies in v1 (observability only). System-prompt injection is deliberately deferred to a future phase so the observation signal can be validated in isolation.
+
+Test mode: `node tools/HME/proxy/hme_proxy.js --test < payload.json` prints the scan result and exits non-zero on violation. Used by unit tests without spinning up a listener.
+
+### Pipeline Policy Gate
+
+Phase 3 of the feature mapping. `scripts/pipeline/check-hme-coherence.js` runs as a PRE_COMPOSITION step in `main-pipeline.js` (after `check-registration-coherence`, before `check-safe-preboot-audit`). It reads the activity stream, slices to the current round (events since the last `round_complete`), and fails the pipeline with exit code 1 if any `coherence_violation` events fired.
+
+Output: `metrics/hme-violations.json` — a full audit record with meta (window size, write coverage %), violations array (split by hook vs proxy source), and ISO timestamps. Picked up by `posttooluse_bash.sh`'s LIFESAVER scanner when the pipeline completes.
+
+Because `coherence_violation` emission in `posttooluse_edit.sh` is gated on `_onb_is_graduated`, pre-graduation sessions never trip this check — the gate ramps in naturally once the agent has gone through one full onboarding loop.
 
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
