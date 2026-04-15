@@ -24,12 +24,52 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts))/'
     --module="$MODULE" \
     --hme_read_prior="$HME_READ_PRIOR" >/dev/null 2>&1 &
   if [ "$HME_READ_PRIOR" = "false" ] && _onb_is_graduated; then
-    python3 "$PROJECT/tools/HME/activity/emit.py" \
-      --event=coherence_violation \
-      --session="$SESSION_ID" \
-      --file="$FILE" \
-      --module="$MODULE" \
-      --reason=write_without_hme_read >/dev/null 2>&1 &
+    # Phase 3.2: split coherence_violation into lazy vs productive. Lazy =
+    # KB has coverage but the agent skipped read. Productive = KB has no
+    # coverage yet, so there was nothing meaningful to read first — this is
+    # exploratory territory and should be rewarded, not penalized.
+    STALENESS_FILE="$PROJECT/metrics/kb-staleness.json"
+    COVERAGE_STATUS=UNKNOWN
+    if [ -f "$STALENESS_FILE" ]; then
+      COVERAGE_STATUS=$(_safe_py3 "
+import json, sys
+d = json.load(open('$STALENESS_FILE'))
+for m in d.get('modules', []):
+    if m.get('module') == '$MODULE':
+        print(m.get('status','UNKNOWN'))
+        break
+else:
+    print('UNKNOWN')
+" "UNKNOWN")
+    fi
+    case "$COVERAGE_STATUS" in
+      MISSING)
+        # Exploratory: no KB coverage → productive, not lazy
+        python3 "$PROJECT/tools/HME/activity/emit.py" \
+          --event=productive_incoherence \
+          --session="$SESSION_ID" \
+          --file="$FILE" \
+          --module="$MODULE" \
+          --coverage="$COVERAGE_STATUS" \
+          --reason=exploratory_write_into_uncovered_territory >/dev/null 2>&1 &
+        python3 "$PROJECT/tools/HME/activity/emit.py" \
+          --event=learn_suggested \
+          --session="$SESSION_ID" \
+          --file="$FILE" \
+          --module="$MODULE" \
+          --reason=capture_novel_findings >/dev/null 2>&1 &
+        ;;
+      *)
+        # FRESH / STALE / UNKNOWN — treat as lazy violation
+        python3 "$PROJECT/tools/HME/activity/emit.py" \
+          --event=coherence_violation \
+          --session="$SESSION_ID" \
+          --file="$FILE" \
+          --module="$MODULE" \
+          --coverage="$COVERAGE_STATUS" \
+          --reason=write_without_hme_read >/dev/null 2>&1 &
+        ;;
+    esac
   fi
   _nexus_add EDIT "$FILE"
   EDIT_COUNT=$(_nexus_count EDIT)

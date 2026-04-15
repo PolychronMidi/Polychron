@@ -4,12 +4,20 @@
 // coherence score for the current round by cross-referencing the activity
 // bridge event stream with the KB staleness index and the violations log.
 //
-//   coherence_score = read_coverage * violation_penalty * staleness_penalty
+//   coherence_score = (read_coverage * violation_penalty * staleness_penalty)
+//                     * exploration_bonus
 //
 // Where:
-//   read_coverage     = files_written_with_prior_hme_read / total_files_written
-//   violation_penalty = max(0, 1 - violation_count * 0.1)
-//   staleness_penalty = 1 - (touches_on_stale_modules / total_touches)
+//   read_coverage      = files_written_with_prior_hme_read / total_files_written
+//   violation_penalty  = max(0, 1 - lazy_violation_count * 0.1)
+//   staleness_penalty  = 1 - (touches_on_stale_modules / total_touches)
+//   exploration_bonus  = 1 + min(0.2, productive_incoherence_count * 0.05)
+//
+// Phase 3.2 split: lazy `coherence_violation` events (FRESH coverage, agent
+// skipped the read) count against violation_penalty. `productive_incoherence`
+// events (MISSING coverage, exploratory write into uncharted territory) boost
+// the score up to +20% — rewarding the Evolver for pushing into genuinely
+// novel ground rather than converging to a local optimum.
 //
 // Output: metrics/hme-coherence.json with the score, components, and trend
 // delta against the previous round (if metrics/snapshots/ has one).
@@ -72,14 +80,23 @@ function main() {
   const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true).length;
   const readCoverage = writes.length > 0 ? writesWithPriorRead / writes.length : 1;
 
-  // Component 2: violation penalty
+  // Component 2: violation penalty (lazy violations only).
+  // productive_incoherence events do NOT count here — they feed the
+  // exploration bonus below.
   const hookViolations = windowEvents.filter((e) => e && e.event === 'coherence_violation');
   const violationsFromFile = loadJsonMaybe(VIOLATIONS);
-  const violationCount = hookViolations.length +
+  const lazyViolationCount = hookViolations.length +
     (violationsFromFile && Array.isArray(violationsFromFile.violations)
       ? violationsFromFile.violations.length
       : 0);
-  const violationPenalty = clamp(1 - violationCount * 0.1, 0, 1);
+  const violationPenalty = clamp(1 - lazyViolationCount * 0.1, 0, 1);
+
+  // Phase 3.2: exploration bonus for productive incoherence events
+  const productiveEvents = windowEvents.filter(
+    (e) => e && e.event === 'productive_incoherence',
+  );
+  const productiveCount = productiveEvents.length;
+  const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
   // Component 3: staleness penalty — ratio of write events that touched a
   // STALE or MISSING module. Uses the index built in the previous step.
@@ -107,7 +124,8 @@ function main() {
     }
   }
 
-  const score = clamp(readCoverage * violationPenalty * stalenessPenalty, 0, 1);
+  const baseScore = readCoverage * violationPenalty * stalenessPenalty;
+  const score = clamp(baseScore * explorationBonus, 0, 1);
 
   // Trend: diff against previous hme-coherence.json (if there's a backup)
   // We don't have a snapshot system for this file yet — use the existing
@@ -133,7 +151,7 @@ function main() {
       },
       violation_penalty: Number(violationPenalty.toFixed(4)),
       violation_detail: {
-        count: violationCount,
+        count: lazyViolationCount,
         from_activity_stream: hookViolations.length,
         from_violations_file: violationsFromFile && Array.isArray(violationsFromFile.violations)
           ? violationsFromFile.violations.length : 0,
@@ -143,6 +161,12 @@ function main() {
         touches_on_stale_or_missing: touchesOnStale,
         touches_with_index_info: touchesWithIndexInfo,
       },
+      exploration_bonus: Number(explorationBonus.toFixed(4)),
+      exploration_detail: {
+        productive_incoherence_count: productiveCount,
+        bonus_cap: 1.2,
+      },
+      base_score: Number(baseScore.toFixed(4)),
     },
   };
 
@@ -154,8 +178,9 @@ function main() {
   console.log(
     `compute-coherence-score: ${pct}/100${deltaStr}  ` +
       `[read=${(readCoverage * 100).toFixed(0)}% ` +
-      `viol=${violationCount} ` +
-      `stale_penalty=${(stalenessPenalty * 100).toFixed(0)}%]`,
+      `lazy=${lazyViolationCount} ` +
+      `stale_pen=${(stalenessPenalty * 100).toFixed(0)}% ` +
+      `expl_bonus=${((explorationBonus - 1) * 100).toFixed(0)}% (${productiveCount} productive)]`,
   );
 }
 

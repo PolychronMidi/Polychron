@@ -483,18 +483,82 @@ Also exposes `cascade_summary(target)` as a compact dict for the inference proxy
 
 ### Real-Time Jurisdiction Injection
 
-Phase 2.1 of the feature mapping, landing inside the inference proxy. On every request the proxy extracts the `file_path` / `path` / `target` field from every write-bearing tool_use block in the most recent assistant turn, then checks whether the target falls inside a tracked zone (`src/conductor/signal/meta/`, `src/conductor/signal/profiling/`) **or** matches any file in the 93-entry bias bounds manifest (`scripts/pipeline/bias-bounds-manifest.json`).
+Phase 2.1 of the feature mapping, landing inside the inference proxy. On every request the proxy extracts the `file_path` / `path` / `target` field from every write-bearing tool_use block in the most recent assistant turn, then checks whether the target falls inside a tracked zone (`src/conductor/signal/meta/`, `src/conductor/signal/profiling/`) **or** matches any file in the 93-entry bias bounds manifest (`scripts/pipeline/bias-bounds-manifest.json`). Phase 3 extended the detection to also trigger on modules with **open hypotheses** (Phase 3.1) or **semantic drift warnings** (Phase 3.3).
 
 If any target matches, the proxy builds a structured jurisdiction block containing:
 
 - Zone tag (if the file is inside a controller authority boundary)
 - Every locked bias registration for that file with exact `[lo, hi]` bounds
 - KB staleness status for the module (FRESH/STALE/MISSING, delta days, match count)
-- Remediation command for re-snapshotting stale bounds
+- **Open hypotheses** whose `modules` list includes this file (id, claim, falsifier)
+- **Semantic drift warning** if the module's structural signature has diverged from its KB baseline
+- Remediation commands for re-snapshotting stale bounds and re-capturing drifted signatures
 
 The block is appended to `payload.system` (supports both the string and array-of-content-blocks forms) before upstream dispatch. `Content-Length` is recomputed. An `injected=true` flag is attached to the `inference_call` activity event, and a separate `jurisdiction_inject` event is emitted so the activity digest and pipeline gate can observe how often injection fires.
 
 Set `HME_PROXY_INJECT=0` to disable injection and run the proxy in pure observability mode. Default is on.
+
+### Hypothesis Lifecycle Registry
+
+Phase 3.1 of the feature mapping. Every causal claim the Evolver makes about the system gets a first-class machine-queryable record in `metrics/hme-hypotheses.json` — proposer round, claim, **falsification criterion**, list of rounds in which the hypothesis was tested, status (OPEN/CONFIRMED/REFUTED/INCONCLUSIVE/ABANDONED), and the modules it applies to.
+
+CRUD via the existing `learn` tool (no new top-level tool):
+
+- `learn(action='hypothesize', title=CLAIM, content=FALSIFIER, tags=[modules], query=ROUND, listening_notes=evidence)` — register
+- `learn(action='hypothesis_test', remove=ID, content=VERDICT, query=ROUND, listening_notes=evidence)` — record a test
+- `learn(action='hypotheses')` or `status(mode='hypotheses')` — list all, grouped by status
+
+The proxy loads OPEN hypotheses at request time and injects them for any write target whose module appears in a hypothesis's modules list — so the Evolver sees relevant standing claims before it makes an edit that might confirm or refute them.
+
+### Productive Incoherence Detection
+
+Phase 3.2 of the feature mapping. The coherence score previously penalized every write-without-HME-read equally. `posttooluse_edit.sh` now cross-references the KB staleness index at emit time and splits the event stream:
+
+- **Lazy violation** — module has FRESH KB coverage but the agent skipped `read(mode='before')`. Emits `coherence_violation` (penalized).
+- **Productive incoherence** — module has MISSING KB coverage, so there was nothing meaningful to read first. Emits `productive_incoherence` (rewarded) plus a `learn_suggested` hint for the Evolver to capture findings afterward.
+
+`compute-coherence-score.js` gains an `exploration_bonus` term:
+
+```
+score = read_coverage × violation_penalty × staleness_penalty × exploration_bonus
+exploration_bonus = 1 + min(0.2, productive_incoherence_count × 0.05)
+```
+
+A round with 4+ productive explorations can gain up to +20% on top of the base score. Keeps HME disciplined in well-understood territory while actively rewarding the Evolver for pushing into uncharted ground.
+
+### KB Semantic Drift Verification
+
+Phase 3.3 of the feature mapping. Staleness says "the file was edited after the KB entry". Drift says "even if the KB entry is recent, the module's structural relationships have shifted enough that the description is likely wrong". Two scripts implement this:
+
+- `scripts/pipeline/capture-kb-signatures.py` — bootstraps/refreshes `metrics/kb-signatures.json`. For every KB entry, picks a candidate module (from title → tags → content), then computes a mechanical structural signature: caller count (from dependency graph), provides/consumes globals, bias registration keys, firewall ports, L0 channel reads/writes, content hash prefix. Captured at learn time; re-run to refresh baselines.
+
+- `scripts/pipeline/check-kb-semantic-drift.py` — runs every pipeline. Re-derives each module's current signature and diffs against the baseline. Entries with ≥2 structural differences (tunable via `HME_DRIFT_THRESHOLD`) are flagged in `metrics/hme-semantic-drift.json`. Surfaced via `status(mode='drift')`.
+
+Parallel signature index, not an extension to the lance schema — works without touching existing KB entries.
+
+### Prediction Accuracy Scoring
+
+Phase 3.4 of the feature mapping. Every time `trace(target, mode='impact')` runs (either manually or via proxy injection), the cascade analyzer appends a prediction record to `metrics/hme-predictions.jsonl` containing the target module and the list of predicted affected modules (BFS depth 2 forward reach).
+
+A post-composition reconciler (`scripts/pipeline/reconcile-predictions.js`) reads the log + `metrics/fingerprint-comparison.json` after the pipeline, then classifies each prediction:
+
+- **Confirmed** — predicted module appears in the fingerprint delta
+- **Refuted** — predicted but didn't shift
+- **Missed** — shifted but was not in any prediction
+
+Computes per-round accuracy + an exponential moving average (α=0.2) across 50 rounds into `metrics/hme-prediction-accuracy.json`. Surfaced via `status(mode='accuracy')`.
+
+Rising EMA = HME's causal model is learning. Falling EMA = predictions diverging from reality, which is a stronger signal than staleness alone (staleness says a file changed, low accuracy says HME's understanding of what the file *does* is wrong).
+
+### Pattern Crystallization
+
+Phase 3.5 of the feature mapping. `tools_analysis/crystallizer.py` scans the KB every pipeline for multi-round patterns: groups entries by substantive tag membership (metadata tags like `legendary`/`stable`/`bugfix` blacklisted), then for each tag pools all `R\d+` round references from member content. Clusters with ≥3 members across ≥3 distinct rounds qualify as crystallized patterns and land in `metrics/hme-crystallized.json`.
+
+Each pattern record includes: shared tags (strict intersection of member tag sets), pooled round list, synthesis (first sentence of the most recent member), and member KB entry ids for traceability.
+
+Run on demand: `learn(action='crystallize')`. Read: `status(mode='crystallized')`.
+
+Rule-based in v1 — no LLM synthesis. First run promoted 19 patterns from 116 entries (`emergentMelodicEngine` 8 members × 8 rounds, `antagonism-bridge` 6 × 7, `melodic-coupling` 6 × 6, etc.) — exactly the standing principles the Evolver previously had to reconstruct from journal archaeology each session.
 
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
@@ -517,7 +581,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main`; **emit `pipeline_run`** activity event with verdict/wall/hci |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
 | `posttooluse_read.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
-| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files; **emit `file_written` + `coherence_violation`** (when no prior HME read) activity events |
+| `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
 | `posttooluse_hme_read.sh` | PostToolUse | mcp__HME__read | Track briefed files to NEXUS; reset streak |
