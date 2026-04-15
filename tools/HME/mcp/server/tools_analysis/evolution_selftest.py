@@ -145,7 +145,12 @@ def hme_selftest() -> str:
         from .health import doc_sync_check
         sync = doc_sync_check("doc/HME.md")
         is_sync = "IN SYNC" in sync
-        results.append(f"{'PASS' if is_sync else 'FAIL'}: doc sync -- {sync[:80]}")
+        # Don't truncate the sync report — identifier names can be long and
+        # the truncation masks the actual symbol being flagged.
+        if is_sync:
+            results.append(f"PASS: doc sync -- {sync[:80]}")
+        else:
+            results.append(f"FAIL: doc sync -- {sync}")
     except Exception as e:
         results.append(f"FAIL: doc sync -- {e}")
 

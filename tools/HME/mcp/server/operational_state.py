@@ -361,13 +361,27 @@ def get_multiscale_coherence() -> dict:
 
 
 def is_coherence_ceiling() -> bool:
-    """L∞∞: detect when all timescale EMAs exceed 0.95 — system may be over-modeled."""
+    """L∞∞: detect when the system's predictions are too perfect to generate
+    learning signal — i.e. the Brier score EMA has stayed near zero long
+    enough that novel inputs are no longer perturbing the self-model.
+
+    Historically this was wired to the shim-health multi-scale coherence
+    EMAs, which trivially saturate at 1.0 whenever the shim is stable —
+    producing spurious "over-modeled" warnings on a perfectly-ordinary
+    healthy process. Brier score is the real "am I predicting too well"
+    signal: it's derived from resolved predictions, so it only saturates
+    when the self-model is genuinely out of novelty.
+
+    Fires only when BOTH:
+      - brier_score_ema is defined and < 0.05 (near-perfect predictions)
+      - prediction_outcomes_today >= 10 (enough samples to be meaningful)
+    """
     with _state_lock:
-        vals = [_state.get(k) for k in (
-            "coherence_beat_ema", "coherence_phrase_ema",
-            "coherence_section_ema", "coherence_structure_ema",
-        )]
-        return all(v is not None and v > 0.95 for v in vals)
+        brier = _state.get("brier_score_ema")
+        outcomes = _state.get("prediction_outcomes_today") or 0
+        if brier is None or outcomes < 10:
+            return False
+        return brier < 0.05
 
 
 # ── Layer 29: Prediction Accuracy (Brier Score) ──────────────────────────

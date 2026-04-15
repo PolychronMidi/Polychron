@@ -78,8 +78,13 @@ def music_truth_report() -> str:
         for k, c in corr.items():
             r = c.get("r")
             n = c.get("n", 0)
+            degenerate = c.get("degenerate", False)
+            reason = c.get("reason", "")
             r_s = f"{r:+.3f}" if isinstance(r, (int, float)) else "n/a"
-            lines.append(f"  {k:<55} r={r_s}  n={n}")
+            tail = f"  n={n}"
+            if degenerate and reason:
+                tail += f"  (degenerate: {reason})"
+            lines.append(f"  {k:<55} r={r_s}{tail}")
 
     if strongest is not None:
         lines.append("")
