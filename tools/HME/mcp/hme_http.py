@@ -83,6 +83,34 @@ def _ensure_ollama_daemon():
         logger.warning(f"Ollama daemon start failed: {e}")
 
 
+def _ensure_vram_monitor():
+    """Start the VRAM monitor daemon if not already running. Appends free/used
+    memory snapshots to metrics/vram-history.jsonl every 30s. Idempotent."""
+    _monitor_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vram_monitor.py")
+    if not os.path.exists(_monitor_path):
+        return
+    _pid_file = "/tmp/hme-vram-monitor.pid"
+    try:
+        with open(_pid_file) as _f:
+            _pid = int(_f.read().strip())
+        os.kill(_pid, 0)
+        return  # live instance already running
+    except (FileNotFoundError, ValueError, ProcessLookupError):
+        pass
+    import subprocess
+    env = os.environ.copy()
+    env["PROJECT_ROOT"] = PROJECT_ROOT
+    try:
+        subprocess.Popen(
+            ["python3", _monitor_path],
+            env=env, start_new_session=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        logger.info("VRAM monitor started (30s polling → metrics/vram-history.jsonl)")
+    except Exception as e:
+        logger.warning(f"VRAM monitor start failed: {e}")
+
+
 def _load_engines():
     global _project_engine, _global_engine, _shared_model, _shared_code_model, _shared_reranker, _lib_engines
     try:
@@ -190,6 +218,8 @@ def _load_engines():
         init_handlers(_engine_ready, _project_engine, _global_engine, PROJECT_ROOT)
     # Start Ollama daemon after engines ready — non-blocking
     threading.Thread(target=_ensure_ollama_daemon, daemon=True, name="HME-ollama-daemon-start").start()
+    # Start VRAM monitor (lightweight 30s polling) — non-blocking
+    threading.Thread(target=_ensure_vram_monitor, daemon=True, name="HME-vram-monitor-start").start()
 
 
 threading.Thread(target=_load_engines, daemon=True).start()

@@ -34,3 +34,4 @@ log/
 
 # metrics - track only intentional files (journal, adaptive-state, named snapshots)
 /metrics/run-history/
+/metrics/vram-history.jsonl

@@ -41,13 +41,30 @@ warnings.filterwarnings('ignore')
 
 import torch, torchaudio, numpy as np, librosa
 
+def pick_gpu_or_cpu(min_free_gb, label=''):
+    """Pick GPU with most free VRAM above threshold, else CPU. Same logic as HME shim."""
+    try:
+        if torch.cuda.is_available():
+            best_idx, best_free = -1, 0
+            for i in range(torch.cuda.device_count()):
+                free, _ = torch.cuda.mem_get_info(i)
+                if free >= min_free_gb * (1024 ** 3) and free > best_free:
+                    best_free, best_idx = free, i
+            if best_idx >= 0:
+                dev = f'cuda:{best_idx}'
+                print(f'{label}: {dev} ({best_free / (1024 ** 3):.1f} GB free)', file=sys.stderr)
+                return dev
+    except Exception as e:
+        print(f'{label}: GPU detect failed ({e}), using CPU', file=sys.stderr)
+    print(f'{label}: cpu (no GPU has {min_free_gb:.1f} GB free)', file=sys.stderr)
+    return 'cpu'
+
 # --- Phase 2: EnCodec ---
 from encodec import EncodecModel
 from encodec.utils import convert_audio
 
-# Force CPU: Ollama KV cache processes occupy GPU; EnCodec + CLAP run CPU-only
-# to avoid torch.OutOfMemoryError when warm contexts are resident on GPU 0.
-device = 'cpu'
+# EnCodec needs ~500 MB peak. Place on whichever GPU has >= 1 GB free, else CPU.
+device = pick_gpu_or_cpu(1.0, 'EnCodec')
 model = EncodecModel.encodec_model_24khz()
 model.set_target_bandwidth(6.0)
 model.to(device).eval()
@@ -107,7 +124,9 @@ corr = float(np.corrcoef(tensions, cb0_ents)[0,1]) if len(tensions) > 2 else 0
 del model, wav, codes  # free memory
 
 import laion_clap
-clap = laion_clap.CLAP_Module(enable_fusion=False, device='cpu', amodel='HTSAT-tiny')
+# CLAP peak ~3 GB (weights + encoder activations + similarity). Need >= 4 GB free.
+clap_device = pick_gpu_or_cpu(4.0, 'CLAP')
+clap = laion_clap.CLAP_Module(enable_fusion=False, device=clap_device, amodel='HTSAT-tiny')
 clap.load_ckpt()
 
 queries = [

@@ -14,32 +14,65 @@ _PERCEPTUAL_CONFIDENCE = 0.15  # raised as predictions correlate with verdicts
 _encodec_model = None
 _encodec_device = None
 _clap_model = None
+_clap_device = None
+
+
+def pick_gpu_or_cpu(min_free_gb: float, label: str = "") -> str:
+    """Return the best torch device for a model needing at least `min_free_gb`
+    of free VRAM on a GPU. Picks whichever GPU has the most free memory above
+    the threshold, else falls back to 'cpu'. Safe to call from any context.
+    """
+    try:
+        import torch
+        if torch.cuda.is_available():
+            best_idx, best_free = -1, 0
+            for i in range(torch.cuda.device_count()):
+                free, _ = torch.cuda.mem_get_info(i)
+                free_gb = free / (1024 ** 3)
+                if free >= min_free_gb * (1024 ** 3) and free > best_free:
+                    best_free, best_idx = free, i
+            if best_idx >= 0:
+                dev = f"cuda:{best_idx}"
+                if label:
+                    logger.info(f"{label}: {dev} ({best_free / (1024 ** 3):.1f} GB free, needed {min_free_gb:.1f} GB)")
+                return dev
+    except Exception as e:
+        logger.warning(f"{label or 'pick_gpu'}: GPU detection failed ({e}), using CPU")
+    if label:
+        logger.info(f"{label}: cpu (no GPU has {min_free_gb:.1f} GB free)")
+    return "cpu"
 
 
 def _get_encodec():
-    """Lazy-load EnCodec 24kHz model, cached for the server process lifetime."""
+    """Lazy-load EnCodec 24kHz model, cached for the server process lifetime.
+    Placed on the GPU with the most free VRAM if any has >= 1 GB free, else CPU.
+    Peak need: ~500 MB for weights + activations on 30-sec chunks.
+    """
     global _encodec_model, _encodec_device
     if _encodec_model is None:
-        import torch
         from encodec import EncodecModel
-        _encodec_device = "cpu"  # GPUs reserved for Ollama instances
+        _encodec_device = pick_gpu_or_cpu(min_free_gb=1.0, label="EnCodec")
         logger.info("Loading EnCodec 24kHz model onto %s (one-time)...", _encodec_device)
         _encodec_model = EncodecModel.encodec_model_24khz()
         _encodec_model.set_target_bandwidth(6.0)
         _encodec_model.to(_encodec_device).eval()
-        logger.info("EnCodec ready.")
+        logger.info("EnCodec ready (%s).", _encodec_device)
     return _encodec_model, _encodec_device
 
 
 def _get_clap():
-    """Lazy-load CLAP HTSAT-tiny model, cached for the server process lifetime."""
-    global _clap_model
+    """Lazy-load CLAP HTSAT-tiny model, cached for the server process lifetime.
+    Placed on the GPU with the most free VRAM if any has >= 4 GB free, else CPU.
+    Peak need: ~3 GB (weights + audio/text encoder activations + similarity matrix).
+    """
+    global _clap_model, _clap_device
     if _clap_model is None:
         import laion_clap
-        logger.info("Loading CLAP HTSAT-tiny model onto CPU (GPUs reserved for Ollama)...")
-        _clap_model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny', device='cpu')
+        _clap_device = pick_gpu_or_cpu(min_free_gb=4.0, label="CLAP")
+        logger.info("Loading CLAP HTSAT-tiny model onto %s (one-time)...", _clap_device)
+        _clap_model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny', device=_clap_device)
         _clap_model.load_ckpt()
-        logger.info("CLAP ready (CPU).")
+        logger.info("CLAP ready (%s).", _clap_device)
     return _clap_model
 
 
