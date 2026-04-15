@@ -514,7 +514,9 @@ def _prime_all_gpus() -> str:
 def warm_context_status() -> dict:
     """Health dict of warm contexts for selftest."""
     import os as _os
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _refresh_arbiter
+    _refresh_arbiter()
+    from .synthesis_ollama import _ARBITER_MODEL
     from .synthesis_session import session_state_counts
     from .warm_disk import _TMPFS_PATHS
     _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"

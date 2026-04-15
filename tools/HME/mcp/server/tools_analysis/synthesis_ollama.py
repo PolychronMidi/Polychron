@@ -119,10 +119,38 @@ _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3-coder:30b")
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
 
 
+_ENV_PATH = os.path.join(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"), ".env")
+_ENV_MTIME = 0.0
+
+def _load_env_file() -> None:
+    """Parse .env and push values into os.environ so .env edits take effect
+    without restarting the MCP process. mtime-gated to avoid disk reads per call."""
+    global _ENV_MTIME
+    try:
+        mt = os.path.getmtime(_ENV_PATH)
+    except OSError:
+        return
+    if mt <= _ENV_MTIME:
+        return
+    _ENV_MTIME = mt
+    try:
+        with open(_ENV_PATH) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k, v = k.strip(), v.strip().strip('"').strip("'")
+                if k.startswith("HME_"):
+                    os.environ[k] = v
+    except OSError:
+        pass
+
 def _refresh_arbiter() -> None:
-    """Re-read HME_ARBITER_MODEL / HME_ARBITER_PORT from env (updated by synthesis_reasoning
-    _refresh_env). Updates module-level routing constants in-place."""
+    """Re-read HME_ARBITER_MODEL / HME_ARBITER_PORT from .env + env.
+    Updates module-level routing constants in-place."""
     global _ARBITER_MODEL, _OLLAMA_PORT_ARBITER
+    _load_env_file()
     _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
     _OLLAMA_PORT_ARBITER = int(os.environ.get("HME_ARBITER_PORT", str(_OLLAMA_PORT_GPU1)))
 
