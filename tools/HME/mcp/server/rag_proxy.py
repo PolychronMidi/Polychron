@@ -60,7 +60,8 @@ def check_shim_rag_capable(port=_DEFAULT_PORT) -> bool:
             return True
     except urllib.error.HTTPError as e:
         return e.code != 404
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except rag_proxy.py:63: {type(_err).__name__}: {_err}")
         return False
 
 
@@ -80,7 +81,8 @@ def _get_shim_status(port=_DEFAULT_PORT) -> dict:
             data["healthy"] = is_ready
             data["loading"] = is_loading  # alive but engines not ready (training lock etc.)
             return data
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except rag_proxy.py:83: {type(_err).__name__}: {_err}")
         return {"healthy": False, "loading": False}
 
 
@@ -666,7 +668,8 @@ class _SymbolTableProxy:
             try:
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     self._data = json.loads(resp.read()).get("result", [])
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except rag_proxy.py:669: {type(_err).__name__}: {_err}")
                 self._data = []
         return self._data
 
@@ -691,5 +694,6 @@ class _ModelProxy:
                 if _single and result.ndim == 2 and len(result) > 0:
                     return result[0]
                 return result
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except rag_proxy.py:694: {type(_err).__name__}: {_err}")
             return None

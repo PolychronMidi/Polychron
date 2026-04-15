@@ -44,7 +44,8 @@ def _load_l0_channels(src_root: str) -> dict:
     try:
         with open(l0c_path, encoding="utf-8") as f:
             content = f.read()
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except coupling_channels.py:47: {type(_err).__name__}: {_err}")
         return {}
     pat = re.compile(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*[\'"]([^\'"]+)[\'"]')
     return {k: v for k, v in pat.findall(content)}
@@ -72,7 +73,8 @@ def _scan_l0_topology(src_root: str) -> dict:
             try:
                 with open(fpath, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except coupling_channels.py:75: {type(_err).__name__}: {_err}")
                 continue
             module_name = fname.replace(".js", "")
             consts: dict[str, str] = {k: v for k, v in _const_re.findall(content)}
@@ -188,7 +190,8 @@ def _count_direct_callers(module_name: str) -> int:
                 with open(fpath, encoding="utf-8", errors="ignore") as f:
                     if pat.search(f.read()):
                         count += 1
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except coupling_channels.py:191: {type(_err).__name__}: {_err}")
                 continue
     return count
 

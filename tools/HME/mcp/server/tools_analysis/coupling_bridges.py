@@ -243,7 +243,8 @@ def get_top_bridges(n: int = 3, threshold: float = -0.30) -> list:
                 break
         _bridge_cache[cache_key] = results
         return results
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except coupling_bridges.py:246: {type(_err).__name__}: {_err}")
         return []
 
 

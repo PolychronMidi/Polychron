@@ -40,7 +40,8 @@ def drama_map(top_n: int = 5) -> str:
                         "tension": float(tension) if isinstance(tension, (int, float)) else 0.5,
                         "notes": note_count, "regime": regime, "trust": trust,
                     })
-                except Exception:
+                except Exception as _err:
+                    logger.debug(f"unnamed-except drama_map.py:43: {type(_err).__name__}: {_err}")
                     continue
     except Exception as e:
         return f"Error reading trace: {e}"

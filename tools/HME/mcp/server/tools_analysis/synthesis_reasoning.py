@@ -85,7 +85,8 @@ def _refresh_env() -> None:
     try:
         from server import context as _ctx
         env_path = os.path.join(_ctx.PROJECT_ROOT, ".env")
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except synthesis_reasoning.py:88: {type(_err).__name__}: {_err}")
         env_path = os.path.join(os.environ.get("PROJECT_ROOT", ""), ".env")
     if not os.path.exists(env_path):
         return
@@ -188,7 +189,8 @@ def available(profile: str = "reasoning") -> bool:
     _refresh_env()
     try:
         providers = _load_providers()
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except synthesis_reasoning.py:191: {type(_err).__name__}: {_err}")
         return False
     ranking = _RANKINGS.get(profile, _RANKING_REASONING)
     for provider_key, model in ranking:
@@ -198,7 +200,8 @@ def available(profile: str = "reasoning") -> bool:
         try:
             if _model_available(mod, provider_key, model):
                 return True
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except synthesis_reasoning.py:201: {type(_err).__name__}: {_err}")
             continue
     return False
 
@@ -213,7 +216,8 @@ def _model_available(mod, provider_key: str, model: str) -> bool:
     try:
         if not mod.available():
             return False
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except synthesis_reasoning.py:216: {type(_err).__name__}: {_err}")
         return False
 
     if provider_key == "openrouter":
@@ -227,7 +231,8 @@ def _model_available(mod, provider_key: str, model: str) -> bool:
             if model == mod._MODEL_T2:
                 return mod._cb_allow("T2")
             return False
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except synthesis_reasoning.py:230: {type(_err).__name__}: {_err}")
             return False
 
     # gemini / groq: find the tier matching `model` and check it directly.
@@ -235,7 +240,8 @@ def _model_available(mod, provider_key: str, model: str) -> bool:
         for tier in mod._TIERS:
             if tier.model == model:
                 return mod._quota_ok(tier) and mod._cb_allow(tier)
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except synthesis_reasoning.py:238: {type(_err).__name__}: {_err}")
         return False
     return False
 
@@ -346,7 +352,8 @@ def get_status(profile: str = "reasoning") -> list[dict]:
     _refresh_env()
     try:
         providers = _load_providers()
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except synthesis_reasoning.py:349: {type(_err).__name__}: {_err}")
         return []
     ranking = _RANKINGS.get(profile, _RANKING_REASONING)
     out = []

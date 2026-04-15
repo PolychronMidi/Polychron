@@ -130,7 +130,8 @@ def _mirror_to_todo_tree(current_state: str) -> None:
     can't be loaded (e.g., during early server bootstrap)."""
     try:
         from server.tools_analysis.todo import register_onboarding_tree
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except onboarding_chain.py:133: {type(_err).__name__}: {_err}")
         return
     cur_idx = step_index(current_state)
     steps = []
@@ -161,7 +162,8 @@ def target() -> str:
     try:
         with open(_TARGET_FILE) as f:
             return f.read().strip()
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except onboarding_chain.py:164: {type(_err).__name__}: {_err}")
         return ""
 
 
@@ -320,7 +322,8 @@ def chained(tool_name: str) -> Callable:
 
             try:
                 result = fn(*args, **kwargs)
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except onboarding_chain.py:323: {type(_err).__name__}: {_err}")
                 import traceback
                 result = f"Error: {traceback.format_exc()}"
 

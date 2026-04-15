@@ -326,7 +326,8 @@ def _vram_report() -> str:
             _pid = int(_f.read().strip())
         os.kill(_pid, 0)
         parts.append(f"Monitor daemon: alive (pid {_pid})")
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except status_unified.py:329: {type(_err).__name__}: {_err}")
         parts.append("Monitor daemon: NOT running — restart shim to respawn")
 
     return "\n".join(parts)
@@ -439,7 +440,8 @@ def _resume_briefing() -> str:
         parts.append(f"  Wall time: {wall:.0f}s | Failed steps: {failed}")
         if errors:
             parts.append(f"  Error patterns: {', '.join(str(e) for e in errors[:3])}")
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except status_unified.py:442: {type(_err).__name__}: {_err}")
         parts.append("\n## Pipeline: no summary available")
 
     # 3. Nexus lifecycle state (bash hook state read directly)

@@ -45,7 +45,8 @@ def recent_changes(since: str = "1 hour ago") -> str:
             capture_output=True, text=True, timeout=5
         )
         unstaged = [f for f in result.stdout.strip().split("\n") if f.strip()]
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except tools_index.py:48: {type(_err).__name__}: {_err}")
         unstaged = []
     try:
         result = subprocess.run(
@@ -53,7 +54,8 @@ def recent_changes(since: str = "1 hour ago") -> str:
             capture_output=True, text=True, timeout=5
         )
         staged = [f for f in result.stdout.strip().split("\n") if f.strip()]
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except tools_index.py:56: {type(_err).__name__}: {_err}")
         staged = []
     try:
         result = subprocess.run(
@@ -61,7 +63,8 @@ def recent_changes(since: str = "1 hour ago") -> str:
             capture_output=True, text=True, timeout=5
         )
         committed = list(set(f for f in result.stdout.strip().split("\n") if f.strip()))
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except tools_index.py:64: {type(_err).__name__}: {_err}")
         committed = []
     all_files = sorted(set(unstaged + staged + committed))
     if not all_files:

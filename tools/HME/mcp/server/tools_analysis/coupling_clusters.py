@@ -28,7 +28,8 @@ def _compute_clusters(min_r: float = 0.35) -> tuple:
 
     try:
         records = _load_trace(trace_path)
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except coupling_clusters.py:31: {type(_err).__name__}: {_err}")
         return None, {}, [], 0, {}, {}
 
     if len(records) < 50:

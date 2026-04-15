@@ -401,7 +401,8 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
         if min_free is not None and min_free < min_headroom_mb:
             return (f"VRAM TIGHT: {model} — only {min_free}MB free "
                     f"(need {min_headroom_mb}MB). KV cache may be in RAM, crippling speed.")
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except synthesis_warm.py:404: {type(_err).__name__}: {_err}")
         return None
     return None
 

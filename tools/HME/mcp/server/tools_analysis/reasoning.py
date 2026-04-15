@@ -63,7 +63,8 @@ def build_evolutionary_potential(module_name: str) -> list[str]:
                 evo_parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
                 evo_parts.append(f"    musical logic: {b['why']}")
         return evo_parts
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except reasoning.py:66: {type(_err).__name__}: {_err}")
         return []
 
 

@@ -147,7 +147,8 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
                 total_beats += 1
                 try:
                     record = json.loads(line)
-                except Exception:
+                except Exception as _err:
+                    logger.debug(f"unnamed-except evolution_trace.py:150: {type(_err).__name__}: {_err}")
                     continue
                 beat_key = record.get("beatKey", "?")
                 regime = record.get("regime", "?")

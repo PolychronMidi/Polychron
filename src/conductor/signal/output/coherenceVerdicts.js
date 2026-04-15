@@ -55,7 +55,7 @@ coherenceVerdicts = (() => {
     }
 
     // Overall assessment
-    const sr = sh.saturationRate || {};
+    const sr = sh.saturationRate ?? {};
     const saturatedPipelines = Object.entries(sr).filter(([, r]) => r > 0.2);
     if (saturatedPipelines.length > 0) {
       const names = saturatedPipelines.map(([p, r]) => `${p} (${(r * 100).toFixed(0)}%)`).join(', ');

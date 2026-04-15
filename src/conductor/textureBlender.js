@@ -66,8 +66,8 @@ textureBlender = (() => {
   function getStutterCoupling() {
     if (StutterManager && StutterManager.beatContext) {
       const bc = StutterManager.beatContext;
-      const reflCount = (bc.selectedReflectionChannels && bc.selectedReflectionChannels.size) || 0;
-      const bassCount = (bc.selectedBassChannels && bc.selectedBassChannels.size) || 0;
+      const reflCount = (bc.selectedReflectionChannels && bc.selectedReflectionChannels.size) ?? 0;
+      const bassCount = (bc.selectedBassChannels && bc.selectedBassChannels.size) ?? 0;
       const channelLoad = reflCount + bassCount;
       if (channelLoad > 0) {
         // Proportional suppression: light stutter (1 channel) clips less than heavy (3+)

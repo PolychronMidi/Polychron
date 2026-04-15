@@ -67,7 +67,8 @@ def _scan_coupling_state(src_root: str) -> dict:
             try:
                 with open(fpath, encoding="utf-8", errors="ignore") as f:
                     content = f.read()
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except coupling_data.py:70: {type(_err).__name__}: {_err}")
                 continue
 
             module_name = fname.replace(".js", "")
@@ -144,7 +145,8 @@ def _load_trust_scores(project_root: str) -> dict:
         _trust_scores_cache["mtime"] = mt
         _trust_scores_cache["scores"] = scores
         return scores
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except coupling_data.py:147: {type(_err).__name__}: {_err}")
         return {}
 
 

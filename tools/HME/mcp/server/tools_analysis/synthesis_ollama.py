@@ -524,7 +524,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                     return (None, []) if return_context else None
                 raise cancel_err
             result = json.loads(raw_bytes)
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except synthesis_ollama.py:527: {type(_err).__name__}: {_err}")
             raise
     else:
         _wall = 12 if _effective_model == _ARBITER_MODEL else 15

@@ -244,7 +244,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             else:
                 _cb_failure(tier)
                 logger.info(f"Gemini {tier.label} failed ({e.code}), trying next")
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except synthesis_gemini.py:247: {type(_err).__name__}: {_err}")
             _cb_failure(tier)
             logger.info(f"Gemini {tier.label} failed, trying next")
 

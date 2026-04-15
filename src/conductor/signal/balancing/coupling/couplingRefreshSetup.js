@@ -123,7 +123,7 @@ couplingRefreshSetup = (() => {
 
     // Axis energy shares for entropy pressure
     const axisShareSnapshot = pipelineCouplingManagerSnapshot.buildAxisEnergyShare(couplingState.axisSmoothedAbsR);
-    const axisShares = (axisShareSnapshot && axisShareSnapshot.shares) || {};
+    const axisShares = (axisShareSnapshot && axisShareSnapshot.shares) ?? {};
     const entropyAxisShare = V.optionalFinite(axisShares.entropy, 0);
     const entropyAxisPressure = clamp((entropyAxisShare - 0.20) / 0.08, 0, 1);
 

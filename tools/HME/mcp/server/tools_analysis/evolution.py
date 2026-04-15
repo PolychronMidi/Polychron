@@ -144,7 +144,8 @@ def kb_seed(top_n: int = 15) -> str:
     try:
         all_kb = ctx.project_engine.list_knowledge()
         kb_names = {e.lower() for e in all_kb} if all_kb else set()
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except evolution.py:147: {type(_err).__name__}: {_err}")
         kb_names = set()
 
     # Find candidates: high caller count + zero KB

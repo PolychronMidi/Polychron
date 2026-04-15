@@ -1024,7 +1024,8 @@ def _anticipatory_lookahead() -> dict | None:
         from server import operational_state
         ms = operational_state.get_multiscale_coherence()
         phrase_ema = avg if ms.get("phrase") is None else ms["phrase"]
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1027: {type(_err).__name__}: {_err}")
         phrase_ema = avg
 
     # Simple linear projection from current trend
@@ -1101,7 +1102,8 @@ def _correlate_composition_runs() -> dict | None:
     try:
         from server import operational_state
         sessions = operational_state.load_recent_sessions(max_age_days=14)
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1104: {type(_err).__name__}: {_err}")
         return None
     if not sessions:
         return None
@@ -1166,13 +1168,15 @@ def _update_kb_confidence() -> dict | None:
         entries = [e for e in all_entries if "hme-infrastructure" in (e.get("tags") or "")]
         if not entries:
             return None
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1169: {type(_err).__name__}: {_err}")
         return None
 
     try:
         from server import operational_state
         ops = operational_state.snapshot()
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1175: {type(_err).__name__}: {_err}")
         return None
 
     results = {"tested": 0, "supported": 0, "contradicted": 0, "untestable": 0}
@@ -1271,7 +1275,8 @@ def _classify_intent() -> dict:
             "hints": hints.get(best_mode, []),
         }
         return _current_intent
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1274: {type(_err).__name__}: {_err}")
         return _current_intent
 
 
@@ -1291,7 +1296,8 @@ def _session_archaeology() -> dict | None:
     try:
         from server import operational_state
         sessions = operational_state.load_recent_sessions(max_age_days=7)
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1294: {type(_err).__name__}: {_err}")
         return None
 
     if len(sessions) < 5:
@@ -1418,7 +1424,8 @@ def _check_coherence_ceiling() -> dict | None:
                 "make predictions with low confidence to gain calibration signal."
             ),
         }
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except meta_observer.py:1421: {type(_err).__name__}: {_err}")
         return None
 
 

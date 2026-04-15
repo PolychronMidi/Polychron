@@ -228,7 +228,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
                 return None
             _cb_failure(label, model)
             logger.info(f"OpenRouter {label} failed ({e.code}), trying next")
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except synthesis_openrouter.py:231: {type(_err).__name__}: {_err}")
             _cb_failure(label, model)
             logger.info(f"OpenRouter {label} failed, trying next")
 

@@ -67,7 +67,8 @@ def get_context_budget() -> str:
         with open("/tmp/claude-context.json") as _f:
             ctx_data = json.load(_f)
         remaining = ctx_data.get("remaining_pct") or 50
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except helpers.py:70: {type(_err).__name__}: {_err}")
         remaining = 50
 
     # Session intent adjustment (soft signal — safe to skip if session module

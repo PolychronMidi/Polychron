@@ -33,7 +33,8 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
                 budget = 3000
             else:
                 budget = 800
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except search_context.py:36: {type(_err).__name__}: {_err}")
             budget = 8000  # safe default when context file unavailable
     lang = language if language else None
     # When path filtering, search much wider to compensate for post-filter loss

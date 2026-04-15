@@ -46,7 +46,8 @@ def _load_synthesis_cache_from_disk() -> dict:
                 mtime = float(mtime_str)
                 if os.path.exists(abs_path) and abs(os.path.getmtime(abs_path) - mtime) < 1.0:
                     valid[(abs_path, mtime)] = synthesis
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except workflow.py:49: {type(_err).__name__}: {_err}")
                 continue
         logger.info(f"before-editing cache: loaded {len(valid)}/{len(raw)} valid entries from disk")
         return valid
@@ -78,7 +79,8 @@ def _disk_entry_still_valid(key_str: str) -> bool:
     try:
         abs_path, mtime_str = key_str.rsplit("::", 1)
         return os.path.exists(abs_path) and abs(os.path.getmtime(abs_path) - float(mtime_str)) < 1.0
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except workflow.py:81: {type(_err).__name__}: {_err}")
         return False
 
 
@@ -203,7 +205,8 @@ def before_editing(file_path: str) -> str:
                     warnings.append(_pw)
             except Exception as _err3:
                 logger.debug(f"warnings.append: {type(_err3).__name__}: {_err3}")
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except workflow.py:206: {type(_err).__name__}: {_err}")
         warnings.append("file unreadable")
 
     # File summary
@@ -215,7 +218,8 @@ def before_editing(file_path: str) -> str:
     # Edit risks synthesis
     try:
         _cache_key = (abs_path, os.path.getmtime(abs_path))
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except workflow.py:218: {type(_err).__name__}: {_err}")
         _cache_key = (abs_path, 0)
     _be_cache = _get_before_editing_cache()
     synthesis = _be_cache.get(_cache_key)
@@ -437,7 +441,8 @@ def _hme_self_aware_context(abs_path: str, py_stem: str) -> str | None:
                 importers.append(rel)
             elif _re.search(rf'from\s+server\.tools_analysis\.{_re.escape(py_stem)}\s+import\b', src):
                 importers.append(rel)
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except workflow.py:440: {type(_err).__name__}: {_err}")
             continue
     if importers:
         parts.append(f"  Imported by: {', '.join(sorted(importers))}")
@@ -523,7 +528,8 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
         module_name = os.path.basename(fpath).replace(".js", "")
         try:
             mtime = os.path.getmtime(fpath)
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except workflow.py:526: {type(_err).__name__}: {_err}")
             continue
         caller_key = (fpath, mtime)
         kb_key = (module_name, kb_version)
@@ -551,7 +557,8 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
     for fpath in hot_files:
         try:
             mtime = os.path.getmtime(fpath)
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except workflow.py:554: {type(_err).__name__}: {_err}")
             continue
         _cache_key = (fpath, mtime)
         if _cache_key in _be_cache:
@@ -570,7 +577,8 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
         try:
             sym_data = _fs(fpath)
             symbols = sym_data.get("symbols") if not sym_data.get("error") else None
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except workflow.py:573: {type(_err).__name__}: {_err}")
             symbols = None
         # Mid-loop cooldown check: abort synthesis tier if timeout fired during this warm run
         from .synthesis_ollama import _last_think_failure as _ltf, _last_think_failure_ts as _ltf_ts
