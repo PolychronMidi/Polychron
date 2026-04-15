@@ -117,11 +117,11 @@
     },
     {
       "id": "eslint-rules-count",
-      "description": "Must have at least 22 custom ESLint rules",
+      "description": "Must have at least 23 custom ESLint rules",
       "type": "glob_count_gte",
       "glob": "scripts/eslint-rules/*.js",
       "exclude": ["index.js"],
-      "min_count": 22,
+      "min_count": 23,
       "severity": "error"
     },
     {
@@ -357,10 +357,10 @@
     },
     {
       "id": "claude-md-eslint-count",
-      "description": "CLAUDE.md must document the correct ESLint rule count (22)",
+      "description": "CLAUDE.md must document the correct ESLint rule count (23)",
       "type": "pattern_in_file",
       "path": "CLAUDE.md",
-      "pattern": "ESLint rules \\(22\\)",
+      "pattern": "ESLint rules \\(23\\)",
       "severity": "warning"
     },
     {
@@ -413,10 +413,10 @@
     },
     {
       "id": "hme-py-no-silent-catchall",
-      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp.",
+      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared — any new instance is a regression.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/mcp/server",
-      "severity": "warning"
+      "severity": "error"
     },
     {
       "id": "hme-py-meta-has-trim",
@@ -455,6 +455,42 @@
       "type": "shell_output_empty",
       "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_ollama.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null | grep -v '# llamacpp-ok'",
       "severity": "error"
+    },
+    {
+      "id": "lifesaver-todo-mirror-dedup",
+      "description": "register_todo_from_lifesaver must dedupe by text+source so a monitor loop cannot flood the todo store with zombie entries (116 such entries polluted todos.json before this rule landed).",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/todo.py",
+      "pattern": "existing.get\\(.source.\\) == .lifesaver.",
+      "severity": "error"
+    },
+    {
+      "id": "no-hardcoded-ollama-ports",
+      "description": "HME server files must not hardcode ollama ports 11434/11435/11436 — they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy ollama branch guarded by HME_ARBITER_BACKEND.",
+      "type": "shell_output_empty",
+      "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/mcp/server/ --include='*.py' | grep -v 'HME_OLLAMA_PORT' | grep -v '# ollama-legacy-ok'",
+      "severity": "error"
+    },
+    {
+      "id": "conductor-no-or-zero-on-validator-output",
+      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0→0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
+      "type": "shell_output_empty",
+      "shell": "grep -rnE '(V\\.optionalFinite\\([^)]*,[^)]*\\)|safePreBoot\\.call\\([^)]*,[^)]*\\))\\s*\\|\\|' src/ --include='*.js'",
+      "severity": "error"
+    },
+    {
+      "id": "hme-py-exception-must-have-name",
+      "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell — you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-unnamed-except.py tools/HME/mcp/server",
+      "severity": "warning"
+    },
+    {
+      "id": "conductor-histogram-uses-nullish",
+      "description": "Map/object histogram counter reads should use `?? 0` not `|| 0`. A zero count in `(counts.get(k) || 0) + 1` is coerced to 0 + 1 — correct here — but the idiom is brittle; `?? 0` documents intent and won't break if the counter type changes to allow falsy non-undefined values.",
+      "type": "shell_output_empty",
+      "shell": "grep -rnE '\\.get\\([^)]*\\)\\s*\\|\\|\\s*0\\b' src/conductor/ --include='*.js' | grep -v '//.*nullish' | grep -v '\\.size'",
+      "severity": "warning"
     }
   ]
 }

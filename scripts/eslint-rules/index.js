@@ -21,6 +21,7 @@ module.exports = {
     'no-bare-math': require('./no-bare-math'),
     'no-direct-coupling-matrix-read': require('./no-direct-coupling-matrix-read'),
     'no-empty-catch': require('./no-empty-catch'),
-    'no-bare-l0-channel': require('./no-bare-l0-channel')
+    'no-bare-l0-channel': require('./no-bare-l0-channel'),
+    'no-doubled-fallback': require('./no-doubled-fallback')
   }
 };

@@ -97,7 +97,8 @@ export default [
       'local/no-bare-math': 'error',
       'local/no-direct-coupling-matrix-read': 'error',
       'local/no-empty-catch': 'error',
-      'local/no-bare-l0-channel': 'error'
+      'local/no-bare-l0-channel': 'error',
+      'local/no-doubled-fallback': 'error'
     },
 
   },
