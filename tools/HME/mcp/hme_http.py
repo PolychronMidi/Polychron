@@ -145,22 +145,32 @@ def _load_engines():
             logger.warning(f"Reranker load failed ({e}) — search will fall back to RRF-only")
             _shared_reranker = None
 
+        # Reduce jina code-embedding batch size on GPU to avoid OOM spikes when
+        # arbiter f16 (6.2GB) co-resides on GPU1. BGE/ONNX (CPU) keeps BATCH_SIZE=64.
+        _CODE_EMBED_BATCH = int(os.environ.get("HME_CODE_EMBED_BATCH", "8"))
+        if _rag_device.startswith("cuda"):
+            os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
         _project_engine = RAGEngine(
             PROJECT_DB, model_name=MODEL_NAME,
             model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
         )
+        _project_engine._embed_batch_size = _CODE_EMBED_BATCH
         _global_engine = RAGEngine(
             GLOBAL_DB, model_name=MODEL_NAME,
             model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
         )
+        _global_engine._embed_batch_size = _CODE_EMBED_BATCH
         for _lib_rel in get_lib_dirs():
             _lib_name = _lib_rel.replace("/", "_").replace("\\", "_").strip("_")
             _lib_db = os.path.join(PROJECT_DB, "libs", _lib_name)
             os.makedirs(_lib_db, exist_ok=True)
-            _lib_engines[_lib_rel] = RAGEngine(
+            _eng = RAGEngine(
                 db_path=_lib_db,
                 model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
             )
+            _eng._embed_batch_size = _CODE_EMBED_BATCH
+            _lib_engines[_lib_rel] = _eng
         start_watcher(PROJECT_ROOT, _project_engine)
         logger.info(f"HME HTTP: engines + file watcher ready | libs={list(_lib_engines.keys())}")
     except Exception as e:
