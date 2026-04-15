@@ -32,7 +32,7 @@ if __name__ == "__main__":
     print(f"  done. ({os.path.getsize(MERGED_F16)/1e9:.1f} GB)")
 
     print(f"Step 2: Quantizing f16 → Q4_K_M at {OUTPUT_GGUF}")
-    r = subprocess.run([QUANTIZE, MERGED_F16, OUTPUT_GGUF, "Q4_K_M"], check=False)
+    r = subprocess.run([QUANTIZE, "--allow-requantize", MERGED_F16, OUTPUT_GGUF, "Q4_K_M"], check=False)
     if r.returncode != 0:
         print(f"  FAILED (rc={r.returncode})")
         sys.exit(1)
