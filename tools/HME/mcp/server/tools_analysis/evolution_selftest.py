@@ -283,9 +283,10 @@ def hme_selftest() -> str:
 
     try:
         test = _local_think("respond with OK", max_tokens=5)
-        results.append(f"{'PASS' if test else 'FAIL'}: Ollama -- {'connected' if test else 'no response'}")
+        _backend_label = os.environ.get("HME_ARBITER_BACKEND", "llamacpp")
+        results.append(f"{'PASS' if test else 'FAIL'}: local inference ({_backend_label}) -- {'connected' if test else 'no response'}")
     except Exception as e:
-        results.append(f"FAIL: Ollama -- {e}")
+        results.append(f"FAIL: local inference -- {e}")
 
     try:
         from .synthesis import warm_context_status
