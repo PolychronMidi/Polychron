@@ -12,8 +12,13 @@ from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME.http")
 
-# Injected by hme_http.py
-_engine_ready: threading.Event = None  # type: ignore
+# Injected by hme_http.py via init_handlers(). Initialized here as a
+# pre-set-empty Event so incoming requests during the brief startup
+# window (between HTTP server accept and _load_engines finally block)
+# get a clean `deferred: engines starting` response instead of an
+# AttributeError on None.is_set(). init_handlers replaces this with the
+# real engine_ready Event once engines are loaded.
+_engine_ready: threading.Event = threading.Event()
 _project_engine = None
 _global_engine = None
 PROJECT_ROOT: str = ""
