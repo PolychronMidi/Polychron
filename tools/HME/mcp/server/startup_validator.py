@@ -140,8 +140,8 @@ def _check_ollama_connectivity() -> None:
                 logger.info(f"Ollama connectivity: OK via daemon ({len(loaded)} model(s) loaded)")
             return
         # Daemon running but no models yet — fall through to port probing
-    except Exception:
-        pass
+    except Exception as _daemon_err:
+        logger.debug(f"ollama daemon probe failed (will fall through to direct port probe): {type(_daemon_err).__name__}: {_daemon_err}")
 
     # Fallback: probe each Ollama instance directly
     instances = [

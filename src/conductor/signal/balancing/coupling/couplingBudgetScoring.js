@@ -328,7 +328,7 @@ couplingBudgetScoring = (() => {
     for (let ti = 0; ti < topK; ti++) {
       const dims = rankedPairs[ti].key.split('-');
       for (let di = 0; di < dims.length; di++) {
-        axisBudgetDominance[dims[di]] = (axisBudgetDominance[dims[di]] || 0) + 1;
+        axisBudgetDominance[dims[di]] = (axisBudgetDominance[dims[di]] ?? 0) + 1;
       }
     }
     /** @type {string | null} */
