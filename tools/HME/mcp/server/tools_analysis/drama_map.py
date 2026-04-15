@@ -193,7 +193,7 @@ def drama_map(top_n: int = 5) -> str:
         if arc_synth:
             out.append(f"## Dramatic Arc *(adaptive)*")
             out.append(f"  {arc_synth.strip()}")
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f"out.append: {type(_err1).__name__}: {_err1}")
 
     return "\n".join(out)

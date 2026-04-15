@@ -83,7 +83,7 @@ def get_context(query: str, max_tokens: int = 0, language: str = "", path: str =
         with open("/tmp/claude-context.json") as _ctxf:
             _ctx_data = _json.load(_ctxf)
         ctx_info = f" | context: {_ctx_data.get('remaining_pct', '?')}% remaining"
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f'silent-except search_context.py:86: {type(_err1).__name__}: {_err1}')
     parts.append(f"\n---\nUsed ~{total_tokens} tokens of {budget} budget ({len(results)} chunks){ctx_info}")
     return "\n".join(parts)

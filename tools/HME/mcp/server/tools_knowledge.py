@@ -194,8 +194,8 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
         try:
             from server.tools_analysis.synthesis_warm import queue_tombstone
             queue_tombstone(entry_id=entry_id, new_kb_ver=ctx._kb_version)
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"queue_tombstone: {type(_err1).__name__}: {_err1}")
         return f"Knowledge entry '{entry_id}' removed from {scope}."
     return f"Failed to remove entry '{entry_id}' from {scope}. It may not exist."
 

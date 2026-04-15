@@ -226,11 +226,24 @@ def _write_graph_file(todos: list) -> None:
 # --------------------------------------------------------------------------
 
 def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
-    """LIFESAVER entry point — unchanged public signature, now routes through
-    the canonical _write_todo_entry helper for schema consistency."""
+    """LIFESAVER entry point — dedup-aware.
+
+    Dedupes by the canonical text (severity+source+error) so a monitor
+    loop hammering the same failure doesn't flood the todo store. If an
+    unresolved entry with the same text already exists, this is a no-op.
+    Pairs with failure_genealogy.record_failure which dedups the same
+    alerts at the LIFESAVER log layer.
+    """
     text = f"CRITICAL ERROR - LIFESAVER ALERT: [{severity}] {source}: {error}"
     with _todo_lock:
         meta, todos = _load_todos()
+        for existing in todos:
+            if (
+                existing.get("source") == "lifesaver"
+                and existing.get("text") == text
+                and not _check_main_done(existing)
+            ):
+                return  # already queued — count is tracked in failure_genealogy
         entry = _write_todo_entry(
             meta, text=text, status="pending",
             critical=True, source="lifesaver",
@@ -238,6 +251,32 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
         todos.append(entry)
         _save_todos(meta, todos)
     logger.info(f"LIFESAVER→TODO #{entry['id']}: {text[:120]}")
+
+
+def resolve_lifesaver_todos(source_substring: str) -> int:
+    """Mark all open lifesaver-sourced todos whose source matches the given
+    substring as resolved. Called by health_topology._auto_resolve_stale_failures
+    so recovery in the live system cleans up the mirrored todo entries.
+
+    Returns count of entries resolved.
+    """
+    if not source_substring:
+        return 0
+    resolved = 0
+    with _todo_lock:
+        meta, todos = _load_todos()
+        for t in todos:
+            if t.get("source") != "lifesaver" or _check_main_done(t):
+                continue
+            if source_substring in t.get("text", ""):
+                t["status"] = "completed"
+                t["resolved_ts"] = time.time()
+                resolved += 1
+        if resolved:
+            _save_todos(meta, todos)
+    if resolved:
+        logger.info(f"LIFESAVER→TODO auto-resolved {resolved} entries matching '{source_substring}'")
+    return resolved
 
 
 def list_critical() -> list:

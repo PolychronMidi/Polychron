@@ -70,7 +70,9 @@ def get_context_budget() -> str:
     except Exception:
         remaining = 50
 
-    # Session intent adjustment
+    # Session intent adjustment (soft signal — safe to skip if session module
+    # isn't loaded yet, but we surface parse/attribute errors at debug so they
+    # don't silently persist).
     try:
         from tools_analysis import get_session_intent
         intent = get_session_intent()
@@ -78,8 +80,8 @@ def get_context_budget() -> str:
             remaining += 15  # boost: audit wants maximum data
         elif intent == "editing":
             remaining -= 15  # reduce: editing wants concise KB constraints
-    except Exception:
-        pass
+    except (ImportError, AttributeError) as _intent_err:
+        logger.debug(f"session intent unavailable: {type(_intent_err).__name__}")
 
     if remaining > 75:
         return "greedy"

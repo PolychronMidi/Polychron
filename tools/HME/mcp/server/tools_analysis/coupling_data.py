@@ -164,8 +164,8 @@ def _detect_traced_modules(project_root: str) -> set:
                     found.add(sys_name)
                     if sys_name in _TRUST_FILE_ALIASES:
                         found.add(_TRUST_FILE_ALIASES[sys_name])
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f"found.add: {type(_err1).__name__}: {_err1}")
     return found
 
 
@@ -178,8 +178,8 @@ def _detect_kb_covered_modules(project_root: str) -> set:
             text = (entry.get("title", "") + " " + entry.get("content", "")[:300]).lower()
             for m in re.findall(r'[a-z][a-zA-Z]{8,}', text):
                 found.add(m)
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f"found.add: {type(_err2).__name__}: {_err2}")
     return found
 
 
@@ -195,6 +195,6 @@ def _detect_documented_modules(project_root: str) -> set:
                 content = f.read().lower()
             for m in re.findall(r'[a-z][a-zA-Z]{8,}', content):
                 found.add(m)
-        except Exception:
-            pass
+        except Exception as _err3:
+            logger.debug(f"found.add: {type(_err3).__name__}: {_err3}")
     return found

@@ -79,8 +79,8 @@ def _kb_newest_mtime() -> float:
                 mt = os.path.getmtime(f)
                 if mt > newest:
                     newest = mt
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"mt: {type(_err1).__name__}: {_err1}")
     return newest
 
 

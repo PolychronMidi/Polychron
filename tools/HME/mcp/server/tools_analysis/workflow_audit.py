@@ -209,10 +209,10 @@ def what_did_i_forget(changed_files: str) -> str:
                                     f"[{rel_path}] HME TOOL REGISTRATION: '{module_stem}' not imported in "
                                     f"__init__.py — tools {tool_funcs} will be invisible to MCP"
                                 )
-                        except Exception:
-                            pass
-        except Exception:
-            pass
+                        except Exception as _err1:
+                            logger.debug(f'silent-except workflow_audit.py:212: {type(_err1).__name__}: {_err1}')
+        except Exception as _err2:
+            logger.debug(f'silent-except workflow_audit.py:214: {type(_err2).__name__}: {_err2}')
         # Track doc update needs (path triggers from project-rules.json)
         for path_prefix, docs in DOC_UPDATE_TRIGGERS.items():
             if path_prefix in rel_path:
@@ -256,8 +256,8 @@ def what_did_i_forget(changed_files: str) -> str:
             capture_output=True, text=True, timeout=3,
         )
         diff_context = _diff_result.stdout[:4000]
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f'silent-except workflow_audit.py:259: {type(_err3).__name__}: {_err3}')
 
     # Parse diff for ±20-line hunk context in changed .py files (up to 1000 chars total).
     # Skipped when diff is already large (>2000 chars) to keep synthesis prompt within
@@ -305,8 +305,8 @@ def what_did_i_forget(changed_files: str) -> str:
                     pass
             if hunk_parts:
                 hunk_context = "\nChanged file context (±10 lines around diff hunks):\n" + "\n\n".join(hunk_parts)
-        except Exception:
-            pass
+        except Exception as _err4:
+            logger.debug(f'silent-except workflow_audit.py:308: {type(_err4).__name__}: {_err4}')
 
     # Adaptive synthesis — thorough bug probe, no artificial bullet limit, no default "Nothing missed"
     warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
@@ -405,8 +405,8 @@ def diagnose_error(error_text: str) -> str:
                             marker = ">>>" if ln_idx == lineno - 1 else "   "
                             parts.append(f"  {marker} {ln_idx+1}: {file_lines[ln_idx].rstrip()}")
                         parts.append("  ```")
-                    except Exception:
-                        pass
+                    except Exception as _err5:
+                        logger.debug(f'silent-except workflow_audit.py:408: {type(_err5).__name__}: {_err5}')
     # Search KB for similar bugs — by error message AND by module names from stack
     kb_query = error_type.group(2)[:60] if error_type else error_text[:80]
     kb_results = cached_kb_search(kb_query, 5, ctx.project_engine)

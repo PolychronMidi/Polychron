@@ -219,8 +219,8 @@ def beat_snapshot(beat_key: str) -> str:
                     if i == idx:
                         try:
                             record = json.loads(line)
-                        except Exception:
-                            pass
+                        except Exception as _err1:
+                            logger.debug(f"json.loads: {type(_err1).__name__}: {_err1}")
                         break
             elif section_match:
                 # Section shorthand: find first beat in that section

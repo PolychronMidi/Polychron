@@ -238,7 +238,7 @@ def _trace_delta(focus: str = "") -> str:
                         f"tension={s.get('avgTension', '?')} "
                         f"[{phrase_info}]"
                     )
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"): {type(_err1).__name__}: {_err1}")
 
     return "\n".join(parts)

@@ -62,8 +62,8 @@ def status(mode: str = "all") -> str:
                     if "IN PROGRESS" in pipeline_status or "BLOCKED" in pipeline_status:
                         return ("Perceptual analysis unavailable: GPU busy (composition pipeline is running).\n"
                                 "Re-run after pipeline completes.")
-                except Exception:
-                    pass
+                except Exception as _err1:
+                    logger.debug(f'silent-except status_unified.py:65: {type(_err1).__name__}: {_err1}')
                 return ("Perceptual analysis unavailable: GPU out of memory.\n"
                         "Another process may be using the GPU. Check with `nvidia-smi`.")
             return f"Perceptual analysis unavailable: {e}"
@@ -117,8 +117,8 @@ def status(mode: str = "all") -> str:
                 _flags.append(f"SYNC:trace+run-history differ by {_delta/60:.0f}m")
         if _flags:
             parts.append(f"## Data Freshness\n  " + " | ".join(_flags) + "\n  Run `npm run main` or `status(mode='freshness')` for details.")
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f'silent-except status_unified.py:120: {type(_err2).__name__}: {_err2}')
 
     # VRAM snapshot — one-line summary from the monitor's latest sample
     try:
@@ -141,8 +141,8 @@ def status(mode: str = "all") -> str:
                     )
                 if _gpu_parts:
                     parts.append(f"## VRAM  {' | '.join(_gpu_parts)}  (status mode=vram for trend)")
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f'silent-except status_unified.py:144: {type(_err3).__name__}: {_err3}')
 
     # Pipeline status
     try:
@@ -191,8 +191,8 @@ def status(mode: str = "all") -> str:
                 parts.append("  Background warm prime started.")
             except Exception as e:
                 parts.append(f"  Warm prime failed: {e}")
-    except Exception:
-        pass
+    except Exception as _err4:
+        logger.debug(f'silent-except status_unified.py:194: {type(_err4).__name__}: {_err4}')
 
     # Reasoning tier cascade — global quality ranking across all providers
     try:
@@ -475,8 +475,8 @@ def _resume_briefing() -> str:
                         parts.append(f"  - {p}")
                 if briefs:
                     parts.append(f"  Briefed files: {', '.join(briefs[:5])}")
-    except Exception:
-        pass
+    except Exception as _err5:
+        logger.debug(f'silent-except status_unified.py:478: {type(_err5).__name__}: {_err5}')
 
     # 4. Session narrative (what has the session been doing?)
     narrative = get_session_narrative(max_entries=12)

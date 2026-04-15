@@ -152,8 +152,8 @@ def _mirror_to_todo_tree_graduated() -> None:
     try:
         from server.tools_analysis.todo import clear_onboarding_tree
         clear_onboarding_tree()
-    except Exception:
-        pass
+    except (ImportError, AttributeError) as _clr_err:
+        logger.debug(f"onboarding: clear_onboarding_tree unavailable: {_clr_err}")
 
 
 def target() -> str:

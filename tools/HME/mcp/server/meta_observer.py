@@ -240,8 +240,8 @@ def _correlate(history: list[dict]) -> dict:
         try:
             from server import operational_state
             operational_state.record_coherence_multiscale(coherence_values[-1])
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"operational_state.record_coherence_multi: {type(_err1).__name__}: {_err1}")
 
     # Load ops state for cross-reference, then delegate pure logic to meta_correlator
     ops: dict = {}
@@ -327,8 +327,8 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
                 f"Multi-scale coherence: beat={ms['beat']:.2f} phrase={ms['phrase']:.2f} "
                 f"section={ms.get('section', 0):.2f} structure={ms.get('structure', 0):.2f}."
             )
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f"): {type(_err2).__name__}: {_err2}")
 
     # L29: prediction accuracy
     try:
@@ -337,8 +337,8 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         if brier is not None:
             quality = "well-calibrated" if brier < 0.15 else "degraded" if brier > 0.25 else "adequate"
             parts.append(f"Prediction calibration: {quality} (Brier={brier:.3f}).")
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f"parts.append: {type(_err3).__name__}: {_err3}")
 
     # L34: thermodynamic efficiency
     try:
@@ -347,8 +347,8 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         thermo_ent = _ops34.get("thermo_entropy_ema")
         if thermo_eff is not None:
             parts.append(f"Thermodynamic: efficiency={thermo_eff:.3f}, entropy={thermo_ent:.3f}.")
-    except Exception:
-        pass
+    except Exception as _err4:
+        logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # L32: intent context
     if intent.get("mode"):
@@ -714,8 +714,8 @@ def resolve_prediction(pred_id: str, outcome_occurred: bool) -> None:
                 predicted_prob = (pred["confidence"] if pred.get("confidence") is not None
                                   else (0.8 if pred["intervention"] is None else 0.6))
                 operational_state.record_prediction_brier(predicted_prob, outcome_occurred)
-            except Exception:
-                pass
+            except Exception as _err5:
+                logger.debug(f"operational_state.record_prediction_brie: {type(_err5).__name__}: {_err5}")
             verb = "occurred" if outcome_occurred else "was prevented"
             logger.info(f"Meta-observer L18: {pred_id} resolved — predicted outcome {verb}"
                         f"{' (intervention: ' + pred['intervention'] + ')' if pred['intervention'] else ''}")
@@ -745,8 +745,8 @@ def _expire_predictions() -> None:
                 predicted_prob = (pred["confidence"] if pred.get("confidence") is not None
                                   else (0.8 if pred["intervention"] is None else 0.6))
                 operational_state.record_prediction_brier(predicted_prob, False)
-            except Exception:
-                pass
+            except Exception as _err6:
+                logger.debug(f"operational_state.record_prediction_brie: {type(_err6).__name__}: {_err6}")
     # Prune resolved predictions older than 1 hour
     _predictions[:] = [p for p in _predictions if
                        p["outcome"] is None or
@@ -1539,8 +1539,8 @@ def _meta_loop() -> None:
                 try:
                     from server import operational_state
                     operational_state.write_session_document()
-                except Exception:
-                    pass
+                except Exception as _err7:
+                    logger.debug(f"operational_state.write_session_document: {type(_err7).__name__}: {_err7}")
 
         except Exception as e:
             logger.error(f"Meta-observer loop error: {e}")

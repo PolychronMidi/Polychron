@@ -123,8 +123,8 @@ def _prefetch_gpu0_if_needed():
             )
             with _req.urlopen(req, timeout=90) as resp:
                 resp.read()
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"resp.read: {type(_err1).__name__}: {_err1}")
     _threading.Thread(target=_ping, daemon=True, name="HME-gpu0-prefetch").start()
 
 
@@ -237,8 +237,8 @@ def _flush_pending_entries():
             try:
                 from .tool_cache import cache_invalidate_kb
                 cache_invalidate_kb()
-            except Exception:
-                pass
+            except Exception as _err2:
+                logger.debug(f"cache_invalidate_kb: {type(_err2).__name__}: {_err2}")
         n = len(entries)
         logger.info(
             f"incr KB update: {updated}/{len(_active_models)} models updated to kb_ver={new_kb_ver}"
@@ -521,8 +521,8 @@ def _init_ollama_models() -> str:
             err_body = ""
             try:
                 err_body = e.read().decode("utf-8", errors="ignore")[:200]
-            except Exception:
-                pass
+            except Exception as _err3:
+                logger.debug(f"e.read: {type(_err3).__name__}: {_err3}")
             results[model] = f"FAILED: HTTP {e.code} — {err_body or e}"
             ctx.register_critical_failure(
                 f"model_init({model})",

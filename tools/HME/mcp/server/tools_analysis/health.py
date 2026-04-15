@@ -101,8 +101,8 @@ def codebase_health() -> str:
             parts.append("\n## Dead Code (top 5)")
             for l in lines[1:6]:
                 parts.append(l)
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f"parts.append: {type(_err1).__name__}: {_err1}")
 
     # Symbol importance (top 10)
     try:
@@ -111,15 +111,15 @@ def codebase_health() -> str:
         parts.append("\n## Symbol Importance (top 10)")
         for l in lines[1:12]:
             parts.append(l)
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f"parts.append: {type(_err2).__name__}: {_err2}")
 
     # Doc sync check
     try:
         sync = doc_sync_check()
         parts.append(f"\n## Doc Sync: {sync[:120]}")
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f"parts.append: {type(_err3).__name__}: {_err3}")
 
     # KB-to-code freshness: check if KB entries reference modules that no longer exist
     try:
@@ -141,8 +141,8 @@ def codebase_health() -> str:
             parts.append(f"\n## KB Staleness ({len(stale_kb)} entries reference missing modules)")
             for s in stale_kb[:8]:
                 parts.append(s)
-    except Exception:
-        pass
+    except Exception as _err4:
+        logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     return "\n".join(parts)
 
@@ -216,8 +216,8 @@ def doc_sync_check(doc_path: str = "") -> str:
                     _lines = _f.readlines()
                 actual_tools += sum(1 for l in _lines if l.strip() == "@ctx.mcp.tool()")
                 server_content_parts.append("".join(_lines))
-            except Exception:
-                pass
+            except Exception as _err5:
+                logger.debug(f"server_content_parts.append: {type(_err5).__name__}: {_err5}")
     if count_match:
         claimed = int(count_match.group(1))
         # Accept "50+" style — only flag if exact count AND it's wrong

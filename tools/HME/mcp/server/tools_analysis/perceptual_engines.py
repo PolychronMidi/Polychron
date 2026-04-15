@@ -305,7 +305,7 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
                         f"  S{sec_num} ({dom_regime}): CLAP sees \"{sec_character[:45]}\" "
                         f"-- expected {dom_regime} character. Check density/tension tuning."
                     )
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f"): {type(_err1).__name__}: {_err1}")
 
     return "\n".join(parts)

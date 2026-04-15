@@ -129,8 +129,8 @@ def before_editing(file_path: str) -> str:
                         break
                     _did_you_mean = [c.replace(ctx.PROJECT_ROOT + "/", "") for c in _candidates[:5]]
                     break
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"break: {type(_err1).__name__}: {_err1}")
         if not os.path.isfile(abs_path):
             _hint = (f"\nDid you mean?\n" + "\n".join(f"  {p}" for p in _did_you_mean)) if _did_you_mean else \
                     "\nUse find(query, mode='map') to find files by directory."
@@ -150,8 +150,8 @@ def before_editing(file_path: str) -> str:
         )
         if _git.stdout.strip():
             _recent_commits = _git.stdout.strip()
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f"_git.stdout.strip: {type(_err2).__name__}: {_err2}")
 
     # KB constraints + callers — cached parallel fetch
     from . import _filter_kb_relevance
@@ -201,8 +201,8 @@ def before_editing(file_path: str) -> str:
                 from .workflow_audit import _scan_python_bug_patterns as _sbp
                 for _pw in _sbp(rel_path, content):
                     warnings.append(_pw)
-            except Exception:
-                pass
+            except Exception as _err3:
+                logger.debug(f"warnings.append: {type(_err3).__name__}: {_err3}")
     except Exception:
         warnings.append("file unreadable")
 
@@ -282,8 +282,8 @@ def before_editing(file_path: str) -> str:
                     parts.append(f"  OPPORTUNITY r={b['r']:+.3f} vs {partner} — bridge via `{b['field']}`")
                     parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
                     parts.append(f"    {b['why']}")
-    except Exception:
-        pass
+    except Exception as _err4:
+        logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # P4. Edit Risks — synthesized danger zones
     if synthesis:
@@ -327,8 +327,8 @@ def before_editing(file_path: str) -> str:
                 parts.append(f"  POSTS: {', '.join(_posts)}")
             if _reads:
                 parts.append(f"  READS: {', '.join(_reads)}")
-    except Exception:
-        pass
+    except Exception as _err5:
+        logger.debug(f"parts.append: {type(_err5).__name__}: {_err5}")
 
     # R4. Evolutionary Potential
     if abs_path.endswith(".js") and "/src/" in abs_path:
@@ -339,8 +339,8 @@ def before_editing(file_path: str) -> str:
             if actionable:
                 parts.append(f"\n## Evolutionary Potential")
                 parts.extend(evo_lines)
-        except Exception:
-            pass
+        except Exception as _err6:
+            logger.debug(f"parts.extend: {type(_err6).__name__}: {_err6}")
 
     # R5. Musical Context
     if comp:
@@ -461,8 +461,8 @@ def _hme_self_aware_context(abs_path: str, py_stem: str) -> str | None:
                         parts.append(f"  RELOAD ORDER: {imp_stem}[{imp_idx}] loads before {py_stem}[{idx}] — reload both")
         else:
             parts.append(f"  NOT in RELOADABLE — hot-reload won't pick up changes")
-    except Exception:
-        pass
+    except Exception as _err7:
+        logger.debug(f"parts.append: {type(_err7).__name__}: {_err7}")
 
     try:
         with open(abs_path, encoding="utf-8", errors="ignore") as f:
@@ -470,8 +470,8 @@ def _hme_self_aware_context(abs_path: str, py_stem: str) -> str | None:
         tools_found = _re.findall(r'@ctx\.mcp\.tool\(\)\n\s*def\s+(\w+)', src)
         if tools_found:
             parts.append(f"  MCP tools: {', '.join(tools_found)}")
-    except Exception:
-        pass
+    except Exception as _err8:
+        logger.debug(f"parts.append: {type(_err8).__name__}: {_err8}")
 
     try:
         log_dir = os.path.join(ctx.PROJECT_ROOT, "log")
@@ -491,8 +491,8 @@ def _hme_self_aware_context(abs_path: str, py_stem: str) -> str | None:
                 for e in errors[-3:]:
                     parts.append(f"    {e.strip()[:120]}")
                 break
-    except Exception:
-        pass
+    except Exception as _err9:
+        logger.debug(f"break: {type(_err9).__name__}: {_err9}")
 
     return "\n".join(parts) if parts else None
 

@@ -55,8 +55,8 @@ def suggest_evolution() -> str:
                     ]
             signals["couplingLabels"] = ts.get("aggregateCouplingLabels", {})
             signals["axisEnergy"] = ts.get("axisEnergy", {})
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f'silent-except evolution_suggest.py:58: {type(_err1).__name__}: {_err1}')
 
     # 2. Perceptual report — CLAP character + CB0
     perc_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "perceptual-report.json")
@@ -89,8 +89,8 @@ def suggest_evolution() -> str:
                         sec_chars[f"S{sec_id}"] = f"{top}({sc.get(top, 0):.2f})"
                 if sec_chars:
                     signals["per_section_character"] = sec_chars
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f'silent-except evolution_suggest.py:92: {type(_err2).__name__}: {_err2}')
 
     # 3. Coupling state
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
@@ -109,8 +109,8 @@ def suggest_evolution() -> str:
     if os.path.isfile(trace_raw_path):
         try:
             trace_records = _load_trace(trace_raw_path)
-        except Exception:
-            pass
+        except Exception as _err3:
+            logger.debug(f'silent-except evolution_suggest.py:112: {type(_err3).__name__}: {_err3}')
     if trace_records:
         cluster_targets = _rank_by_cluster_pull(coupling_state, trace_records)
         if cluster_targets:
@@ -131,8 +131,8 @@ def suggest_evolution() -> str:
         try:
             with open(narrative_path, encoding="utf-8") as f:
                 signals["narrative_excerpt"] = f.read()[:2000]
-        except Exception:
-            pass
+        except Exception as _err4:
+            logger.debug(f'silent-except evolution_suggest.py:134: {type(_err4).__name__}: {_err4}')
 
     # 5. KB evolution patterns
     kb_results = ctx.project_engine.search_knowledge("evolution legendary pattern coupling", top_k=5)
@@ -150,8 +150,8 @@ def suggest_evolution() -> str:
             fi = mdl.get("feature_importance", [])
             if fi:
                 signals["verdict_top_features"] = fi[:5]
-        except Exception:
-            pass
+        except Exception as _err5:
+            logger.debug(f'silent-except evolution_suggest.py:153: {type(_err5).__name__}: {_err5}')
 
     # 7. Rut detection
     try:
@@ -185,8 +185,8 @@ def suggest_evolution() -> str:
                                 "new engine, or structural refactor)")
                 }
             signals["recent_evo_arc"] = rut_types[:6]
-    except Exception:
-        pass
+    except Exception as _err6:
+        logger.debug(f'silent-except evolution_suggest.py:188: {type(_err6).__name__}: {_err6}')
 
     # ── Build output ──
     parts = ["# Evolution Suggestions\n"]
@@ -232,8 +232,8 @@ def suggest_evolution() -> str:
             try:
                 kb_hits = ctx.project_engine.search_knowledge(name, top_k=2)
                 parts.append(f"**KB:** {kb_hits[0].get('title', '?')[:80]}" if kb_hits else "**KB:** no entries (blind spot)")
-            except Exception:
-                pass
+            except Exception as _err7:
+                logger.debug(f'silent-except evolution_suggest.py:235: {type(_err7).__name__}: {_err7}')
             if is_rhythm_fallback:
                 parts.append(f"**Pattern:** `const rhythmEntry = L0.getLast('emergentRhythm', {{layer: 'both'}}); const val = rhythmEntry?.{suggested_r or 'density'} ?? 0;`")
             else:
@@ -255,8 +255,8 @@ def suggest_evolution() -> str:
         momentum = evolution_momentum()
         if momentum and "Error" not in momentum[:30]:
             parts.append("\n" + momentum)
-    except Exception:
-        pass
+    except Exception as _err8:
+        logger.debug(f'silent-except evolution_suggest.py:258: {type(_err8).__name__}: {_err8}')
 
     # Dead-end L0 channels
     try:
@@ -273,8 +273,8 @@ def suggest_evolution() -> str:
             parts.append("*Adding L0.getLast consumers to these channels unlocks existing data flows.*\n")
             for ch, prods in sorted(dead):
                 parts.append(f"  `{ch}` — posted by {', '.join(sorted(prods))}")
-    except Exception:
-        pass
+    except Exception as _err9:
+        logger.debug(f'silent-except evolution_suggest.py:276: {type(_err9).__name__}: {_err9}')
 
     # Antagonism bridge opportunities
     try:
@@ -290,8 +290,8 @@ def suggest_evolution() -> str:
                 parts.append(f"  {br['pair_a']}: {br['eff_a']}")
                 parts.append(f"  {br['pair_b']}: {br['eff_b']}")
                 parts.append(f"  Why: {br['why']}\n")
-    except Exception:
-        pass
+    except Exception as _err10:
+        logger.debug(f'silent-except evolution_suggest.py:293: {type(_err10).__name__}: {_err10}')
 
     # Adaptive synthesis prescription
     try:
@@ -305,8 +305,8 @@ def suggest_evolution() -> str:
                 _a = _TRUST_FILE_ALIASES.get(_bt[0]["pair_a"], _bt[0]["pair_a"])
                 _b = _TRUST_FILE_ALIASES.get(_bt[0]["pair_b"], _bt[0]["pair_b"])
                 _bridge_top = f"{_a}↔{_b} r={_bt[0]['r']:+.3f} via `{_bt[0]['field']}`"
-        except Exception:
-            pass
+        except Exception as _err11:
+            logger.debug(f'silent-except evolution_suggest.py:308: {type(_err11).__name__}: {_err11}')
         _rut = signals.get("evolution_rut", {})
         _arc = signals.get("recent_evo_arc", [])
         _recent_kb_titles = ""
@@ -319,8 +319,8 @@ def suggest_evolution() -> str:
                     _num_kb2.append((int(_m2.group(1)), _k2.get("title", ""), _k2.get("content", "")[:80]))
             _num_kb2.sort(key=lambda x: -x[0])
             _recent_kb_titles = "\n".join(f"  R{r}: {t} — {c}" for r, t, c in _num_kb2[:6])
-        except Exception:
-            pass
+        except Exception as _err12:
+            logger.debug(f'silent-except evolution_suggest.py:322: {type(_err12).__name__}: {_err12}')
         from .synthesis_session import get_session_narrative
         _session_ctx = get_session_narrative(max_entries=5, categories=["pipeline", "kb", "commit", "review"])
         _synthesis_ctx = (
@@ -350,8 +350,8 @@ def suggest_evolution() -> str:
         if _prescription:
             parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(synthesized)*\n")
             parts.append(_prescription)
-    except Exception:
-        pass
+    except Exception as _err13:
+        logger.debug(f'silent-except evolution_suggest.py:353: {type(_err13).__name__}: {_err13}')
 
     result = "\n".join(parts)
     if len(result) > 20000:
