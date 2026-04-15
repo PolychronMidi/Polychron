@@ -1,4 +1,14 @@
-"""HME Ollama synthesis layer — local model inference, priority queue, compress_for_claude."""
+"""HME llama.cpp synthesis layer — local model inference, priority queue, compress_for_claude.
+
+All local inference routes through llama-server (Vulkan) instances managed by
+the llamacpp_daemon + supervisor:
+  arbiter → 127.0.0.1:8080 (phi-4 + HME v6 LoRA, Vulkan1/GPU0)
+  coder   → 127.0.0.1:8081 (qwen3-coder:30b, Vulkan2/GPU1)
+
+Requests use llama-server's OpenAI-compatible /v1/chat/completions shape.
+Each model owns its GPU end-to-end — partial offload is a hard invariant
+violation enforced by llamacpp_daemon._check_gpu_fits.
+"""
 import json
 import os
 import re
@@ -110,13 +120,12 @@ def _get_circuit_breaker(model: str) -> _CircuitBreaker:
 
 _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
 # Reasoning model: kept as local fallback only. Cloud cascade in synthesis_reasoning.py
-# handles all live reasoning calls. qwen3:30b-a3b stays in config for warm-priming
-# continuity; GPU1 is now freed for the upgraded arbiter model.
+# handles all live reasoning calls.
 _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3-coder:30b")
-# Arbiter model: upgraded from qwen3:4b (CPU) to GPU1 now that reasoner uses cloud.
-# HME_ARBITER_MODEL: set to pulled model via .env; read dynamically so .env changes
-# take effect without restarting the MCP process (picked up by _refresh_arbiter()).
-_ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
+# Arbiter model: phi-4 + HME v6 LoRA served by llama-server on Vulkan1 (GPU0).
+# HME_ARBITER_MODEL: set via .env; read dynamically so .env changes take effect
+# without restarting the MCP process (picked up by _refresh_arbiter()).
+_ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
 
 
 _ENV_PATH = os.path.join(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"), ".env")
@@ -149,13 +158,11 @@ def _load_env_file() -> None:
 def _refresh_arbiter() -> None:
     """Re-read HME_* routing config from .env + env on every call.
     Updates module-level routing constants in-place."""
-    global _ARBITER_MODEL, _OLLAMA_PORT_ARBITER, _ARBITER_BACKEND
+    global _ARBITER_MODEL
     global _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL
     global _LOCAL_MODEL, _REASONING_MODEL
     _load_env_file()
-    _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "qwen3:4b")
-    _OLLAMA_PORT_ARBITER = int(os.environ.get("HME_ARBITER_PORT", str(_OLLAMA_PORT_GPU1)))
-    _ARBITER_BACKEND = os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower()
+    _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
     _LLAMACPP_ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
     _LLAMACPP_CODER_URL = os.environ.get("HME_LLAMACPP_CODER_URL", "http://127.0.0.1:8081")
     _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", _LOCAL_MODEL)
@@ -174,44 +181,17 @@ def _num_ctx_for(model: str) -> int:
     _refresh_arbiter()
     return _NUM_CTX_4B if model == _ARBITER_MODEL else _NUM_CTX_30B
 
-# ── Per-model Ollama instance routing ──────────────────────────────────────
-# 3 isolated Ollama instances: GPU0 (:11434), GPU1 (:11435), CPU (:11436).
-# Each instance sees only its assigned device via CUDA_VISIBLE_DEVICES.
-# Arbiter now defaults to GPU1 (11435) — reasoner GPU freed for upgraded arbiter.
-# Override with HME_ARBITER_PORT=11436 to put arbiter back on CPU if needed.
-_OLLAMA_PORT_GPU0 = int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))
-_OLLAMA_PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
-_OLLAMA_PORT_CPU  = int(os.environ.get("HME_OLLAMA_PORT_CPU",  "11436"))
-_OLLAMA_PORT_ARBITER = int(os.environ.get("HME_ARBITER_PORT", str(_OLLAMA_PORT_GPU1)))
-
-def _url_for(model: str, endpoint: str = "generate") -> str:
-    """Route model to its dedicated Ollama instance."""
-    _refresh_arbiter()
-    if model == _LOCAL_MODEL:
-        port = _OLLAMA_PORT_GPU0
-    elif model == _ARBITER_MODEL:
-        port = _OLLAMA_PORT_ARBITER
-    else:
-        # Reasoner and unknown models → GPU1 (reasoner slot, kept for local fallback)
-        port = _OLLAMA_PORT_GPU1
-    return f"http://localhost:{port}/api/{endpoint}"
-
-# Legacy compat — used by callers that don't pass model
-_LOCAL_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/generate"
-_LOCAL_CHAT_URL = f"http://localhost:{_OLLAMA_PORT_GPU0}/api/chat"
-
-_DAEMON_PORT = int(os.environ.get("HME_OLLAMA_DAEMON_PORT", "7735"))
-_DAEMON_URL = f"http://127.0.0.1:{_DAEMON_PORT}/generate"
-
 # ── llama-server (Vulkan) routing ──────────────────────────────────────────
-# Two llama-server instances replace ollama for local models:
-#   arbiter → 8080 (Vulkan2 / nvidia-smi GPU1) — phi-4 + v6 LoRA
-#   coder   → 8081 (Vulkan1 / nvidia-smi GPU0) — qwen3-coder:30b
-# Both expose OpenAI-compatible /v1/chat/completions. The `backend` env var
-# flips the whole stack: "llamacpp" (default now) or "ollama" (legacy fallback).
-_ARBITER_BACKEND = os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower()
+# Two llama-server instances, each owning its GPU end-to-end:
+#   arbiter → 8080 (Vulkan1 = CUDA 0 / GPU0) — phi-4 + HME v6 LoRA
+#   coder   → 8081 (Vulkan2 = CUDA 1 / GPU1) — qwen3-coder:30b
+# Both expose OpenAI-compatible /v1/chat/completions. The llamacpp_daemon
+# supervisor enforces the full-offload invariant at spawn time.
 _LLAMACPP_ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
 _LLAMACPP_CODER_URL   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+
+_DAEMON_PORT = int(os.environ.get("HME_LLAMACPP_DAEMON_PORT", "7735"))
+_DAEMON_URL = f"http://127.0.0.1:{_DAEMON_PORT}/generate"
 
 
 def _llamacpp_url_for(model: str) -> str:
@@ -337,15 +317,15 @@ def route_model(prompt: str) -> str:
 
 
 # ── Ollama priority ────────────────────────────────────────────────────────
-# _ollama_interactive: set by interactive callers. Background checks this flag and
+# _interactive_event: set by interactive callers. Background checks this flag and
 # yields (before sending) or cancels mid-stream (via socket timeout in _cancellable_urlopen).
 # No Python locks — Ollama handles its own per-model FIFO queue.
-_ollama_interactive = _threading.Event()
+_interactive_event = _threading.Event()
 
 
-def _ollama_background_yield():
+def _background_yield():
     """Yield to interactive calls before each background Ollama request."""
-    while _ollama_interactive.is_set():
+    while _interactive_event.is_set():
         import time as _t
         _t.sleep(0.5)
 
@@ -449,9 +429,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     # interactive (no yielding, uses interactive timeout) but does NOT set the
     # interactive preemption flag (which would block the sibling parallel thread).
     if priority == "background":
-        _ollama_background_yield()
+        _background_yield()
     elif priority == "interactive":
-        _ollama_interactive.set()
+        _interactive_event.set()
 
     _effective_model = model or _LOCAL_MODEL
 
@@ -495,48 +475,18 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         payload["context"] = context
     body = json.dumps(payload).encode()
 
-    # Route through ollama_daemon /generate for wall-clock enforcement.
-    # Background calls use direct Ollama with cancellable streaming.
-    # Non-background calls NEVER fall back to direct Ollama — daemon-only.
-    # When HME_ARBITER_BACKEND=llamacpp, bypass ollama entirely and go direct
-    # to llama-server (Vulkan) via OpenAI chat-completions. Wall-clock is
-    # enforced inside _llamacpp_generate via thread-abandonment.
-    result = None
-    if _ARBITER_BACKEND == "llamacpp":
-        _wall = 30 if priority == "background" else (20 if _effective_model == _ARBITER_MODEL else 30)
-        result = _llamacpp_generate(payload, wall_timeout=_wall, priority=priority)
-        if result is None:
-            logger.warning(f"_local_think: llamacpp unavailable, skipping synthesis ({_effective_model})")
-            if priority == "interactive":
-                _ollama_interactive.clear()
-            return (None, []) if return_context else None
-    elif priority == "background":
-        req = urllib.request.Request(
-            _url_for(_effective_model), data=body,
-            headers={"Content-Type": "application/json"},
-        )
-        try:
-            _ollama_background_yield()
-            raw_bytes, cancel_err = _cancellable_urlopen(body, _url_for(_effective_model), timeout=120, cancel_event=_ollama_interactive)
-            if cancel_err:
-                if isinstance(cancel_err, InterruptedError):
-                    return (None, []) if return_context else None
-                raise cancel_err
-            result = json.loads(raw_bytes)
-        except Exception as _err:
-            logger.debug(f"unnamed-except synthesis_ollama.py:527: {type(_err).__name__}: {_err}")
-            raise
-    else:
-        _wall = 12 if _effective_model == _ARBITER_MODEL else 15
-        result = _daemon_generate(payload, wall_timeout=_wall)
-        if result is None:
-            logger.warning(f"_local_think: daemon unavailable, skipping synthesis ({_effective_model})")
-            if priority == "interactive":
-                _ollama_interactive.clear()
-            return (None, []) if return_context else None
+    # All dispatch goes through llama-server (Vulkan) via OpenAI chat-completions.
+    # Wall-clock is enforced inside _llamacpp_generate via thread-abandonment.
+    _wall = 30 if priority == "background" else (20 if _effective_model == _ARBITER_MODEL else 30)
+    result = _llamacpp_generate(payload, wall_timeout=_wall, priority=priority)
+    if result is None:
+        logger.warning(f"_local_think: llamacpp unavailable, skipping synthesis ({_effective_model})")
+        if priority == "interactive":
+            _interactive_event.clear()
+        return (None, []) if return_context else None
 
     if priority == "interactive":
-        _ollama_interactive.clear()
+        _interactive_event.clear()
 
     try:
         text = result.get("response", "").strip()
@@ -621,7 +571,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         return text
     except Exception as e:
         if priority == "interactive":
-            _ollama_interactive.clear()
+            _interactive_event.clear()
         _err_str = str(e).lower()
         _is_timeout = ("timed out" in _err_str or "timeout" in type(e).__name__.lower()
                        or "urlopen error" in _err_str)
@@ -666,120 +616,68 @@ def _local_chat(messages: list[dict], model: str | None = None,
     """Call a local model with a multi-turn messages array.
 
     Model sees prior outputs as assistant turns — better coherence for multi-stage synthesis.
-    Uses llama-server OpenAI /v1/chat/completions when backend=llamacpp, else ollama /api/chat.
+    Uses llama-server OpenAI /v1/chat/completions.
     """
     import urllib.request
+    import threading as _th
     _m = model or _REASONING_MODEL
     _cb = _get_circuit_breaker(_m)
     if not _cb.allow():
         logger.warning(f"_local_chat REFUSED — circuit breaker OPEN for {_m}")
         return None
 
-    if _ARBITER_BACKEND == "llamacpp":
-        import threading as _th
-        base = _llamacpp_url_for(_m)
-        url = f"{base}/v1/chat/completions"
-        oai_payload = {
-            "model": _m, "messages": messages,
-            "temperature": temperature, "max_tokens": max_tokens,
-            "stream": False, "cache_prompt": True,
-        }
-        req = urllib.request.Request(
-            url, data=json.dumps(oai_payload).encode(),
-            headers={"Content-Type": "application/json"},
-        )
-        _holder = {"_data": None, "_err": None}
-        def _worker():
-            try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
-                    _holder["_data"] = json.loads(resp.read())
-            except Exception as e:
-                _holder["_err"] = e
-        t = _th.Thread(target=_worker, daemon=True)
-        t.start()
-        t.join(timeout=60)  # llamacpp-ok: _local_chat llamacpp branch, no daemon path
-        if t.is_alive() or _holder["_err"] is not None:
-            err = _holder["_err"]
-            _cb.record_failure(is_timeout=(t.is_alive() or (err is not None and "time" in str(err).lower())))
-            if err is not None:
-                logger.warning(f"_local_chat unavailable ({_m}): {type(err).__name__}: {err}")
-            else:
-                logger.warning(f"_local_chat wall timeout ({_m})")
-            return None
-        data = _holder["_data"] or {}
-        choices = data.get("choices") or []
-        if not choices:
-            return None
-        msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
-        text = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
-        text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
-        if "<|im_start|>" in text:
-            import re as _re2c
-            _asst = _re2c.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2c.IGNORECASE)
-            if _asst:
-                text = _asst[-1].strip()
-            else:
-                text = _re2c.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
-        if "</think>" in text:
-            text = text[text.rfind("</think>") + len("</think>"):].strip()
-        text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-        _cb.record_success()
-        return text if text else None
-
-    payload = {
-        "model": _m, "messages": messages, "stream": False,
-        "keep_alive": _KEEP_ALIVE,
-        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
+    base = _llamacpp_url_for(_m)
+    url = f"{base}/v1/chat/completions"
+    oai_payload = {
+        "model": _m, "messages": messages,
+        "temperature": temperature, "max_tokens": max_tokens,
+        "stream": False, "cache_prompt": True,
     }
-    body = json.dumps(payload).encode()
-    req = urllib.request.Request(_url_for(_m, "chat"), data=body, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            result = json.loads(resp.read())
-            msg = result.get("message", {})
-            text = msg.get("content", "").strip() if isinstance(msg, dict) else ""
-            text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
-            if "<|im_start|>" in text:
-                import re as _re2c
-                _asst = _re2c.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2c.IGNORECASE)
-                if _asst:
-                    text = _asst[-1].strip()
-                else:
-                    text = _re2c.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
-            if "<|answer|>" in text:
-                text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
-            elif "<|thinking|>" in text:
-                after = text[text.rfind("<|/thinking|>") + len("<|/thinking|>"):].strip() if "<|/thinking|>" in text else ""
-                before = text[:text.find("<|thinking|>")].strip()
-                text = after or before or ""
-            if "</think>" in text:
-                text = text[text.rfind("</think>") + len("</think>"):].strip()
-            elif "<think>" in text:
-                text = text[text.find("<think>") + len("<think>"):].strip()
-            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-            _reasoning_markers = [
-                "but note:", "however,", "let's look", "we are to", "given the above",
-                "so we", "but we don't know", "we have to", "let's consider",
-                "we need to find", "we can assume", "first, note that",
-                "now, let's", "let's structure",
-            ]
-            reasoning_hits = sum(1 for m in _reasoning_markers if m in text.lower())
-            if reasoning_hits >= 3 and len(text) > 200:
-                for marker in ["therefore,", "so the answer", "in summary", "answer:", "file:", "pair:"]:
-                    idx = text.lower().rfind(marker)
-                    if idx != -1:
-                        text = text[idx:].strip()
-                        break
-            _cb.record_success()
-            return text if text else None
-    except Exception as e:
-        _cb.record_failure(is_timeout="timed out" in str(e).lower())
-        _err_str = str(e).lower()
-        if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
-            ctx.register_critical_failure(f"_local_chat({_m})", f"{type(e).__name__}: {e}")
+    req = urllib.request.Request(
+        url, data=json.dumps(oai_payload).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    _holder = {"_data": None, "_err": None}
+    def _worker():
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                _holder["_data"] = json.loads(resp.read())
+        except Exception as e:
+            _holder["_err"] = e
+    t = _th.Thread(target=_worker, daemon=True)
+    t.start()
+    t.join(timeout=60)
+    if t.is_alive() or _holder["_err"] is not None:
+        err = _holder["_err"]
+        _cb.record_failure(is_timeout=(t.is_alive() or (err is not None and "time" in str(err).lower())))
+        if err is not None:
+            _err_str = str(err).lower()
+            if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
+                ctx.register_critical_failure(f"_local_chat({_m})", f"{type(err).__name__}: {err}")
+            else:
+                logger.warning(f"_local_chat unavailable ({_m}): {type(err).__name__}: {err}")
         else:
-            logger.warning(f"_local_chat unavailable ({_m}): {type(e).__name__}: {e}")
+            logger.warning(f"_local_chat wall timeout ({_m})")
         return None
+    data = _holder["_data"] or {}
+    choices = data.get("choices") or []
+    if not choices:
+        return None
+    msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
+    text = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
+    text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
+    if "<|im_start|>" in text:
+        import re as _re2c
+        _asst = _re2c.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2c.IGNORECASE)
+        if _asst:
+            text = _asst[-1].strip()
+        else:
+            text = _re2c.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
+    if "</think>" in text:
+        text = text[text.rfind("</think>") + len("</think>"):].strip()
+    text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+    _cb.record_success()
+    return text if text else None
 
 
 def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
@@ -829,39 +727,17 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
         "options": {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": _num_ctx_for(_m)},
     }
 
-    if _ARBITER_BACKEND == "llamacpp":
-        result = _llamacpp_generate(payload, wall_timeout=60.0)
-        if result is None:
-            _cb.record_failure(is_timeout=True)
-            return None
-        text = (result.get("response", "") or "").strip()
-        if "</think>" in text:
-            text = text[text.rfind("</think>") + len("</think>"):].strip()
-        text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-        _cb.record_success()
-        return text if text else None
-
-    body = json.dumps(payload).encode()
-    req = urllib.request.Request(_url_for(_m), data=body, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            result = json.loads(resp.read())
-            text = result.get("response", "").strip()
-            if not text:
-                text = result.get("thinking", "").strip()
-            if "</think>" in text:
-                text = text[text.rfind("</think>") + len("</think>"):].strip()
-            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-            _cb.record_success()
-            return text if text else None
-    except Exception as e:
-        _cb.record_failure(is_timeout="timed out" in str(e).lower())
-        _err_str = str(e).lower()
-        if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
-            ctx.register_critical_failure(f"_local_think_with_system({_m})", f"{type(e).__name__}: {e}")
-        else:
-            logger.warning(f"_local_think_with_system unavailable ({_m}): {type(e).__name__}: {e}")
+    result = _llamacpp_generate(payload, wall_timeout=60.0)
+    if result is None:
+        _cb.record_failure(is_timeout=True)
+        logger.warning(f"_local_think_with_system unavailable ({_m}): llamacpp generate returned None")
         return None
+    text = (result.get("response", "") or "").strip()
+    if "</think>" in text:
+        text = text[text.rfind("</think>") + len("</think>"):].strip()
+    text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+    _cb.record_success()
+    return text if text else None
 
 
 def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:

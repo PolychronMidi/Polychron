@@ -207,7 +207,7 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
     for key, info in llamacpp.items():
         if info.get("healthy"):
             healthy_signals.append((key, True))
-            # Match synthesis_ollama's model_init source names too.
+            # Match synthesis_llamacpp's model_init source names too.
             # Arbiter model name comes from .env HME_ARBITER_MODEL.
             if key == "arbiter":
                 arbiter_alias = os.environ.get("HME_ARBITER_MODEL", "")

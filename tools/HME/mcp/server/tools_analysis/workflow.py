@@ -546,7 +546,7 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
     # Early-abort: skip entire synthesis tier if Ollama cooldown is active.
     # Without this check, the sequential loop hammers _local_think for all hot_files
     # and generates one REFUSED log per file in ~40ms — pure noise.
-    from .synthesis_ollama import _last_think_failure, _last_think_failure_ts, _TIMEOUT_COOLDOWN_S
+    from .synthesis_llamacpp import _last_think_failure, _last_think_failure_ts, _TIMEOUT_COOLDOWN_S
     import time as _time_check
     if _last_think_failure == "timeout" and (_time_check.monotonic() - _last_think_failure_ts) < _TIMEOUT_COOLDOWN_S:
         _remaining_s = int(_TIMEOUT_COOLDOWN_S - (_time_check.monotonic() - _last_think_failure_ts))
@@ -581,7 +581,7 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
             logger.debug(f"unnamed-except workflow.py:573: {type(_err).__name__}: {_err}")
             symbols = None
         # Mid-loop cooldown check: abort synthesis tier if timeout fired during this warm run
-        from .synthesis_ollama import _last_think_failure as _ltf, _last_think_failure_ts as _ltf_ts
+        from .synthesis_llamacpp import _last_think_failure as _ltf, _last_think_failure_ts as _ltf_ts
         if _ltf == "timeout" and (_time_check.monotonic() - _ltf_ts) < _TIMEOUT_COOLDOWN_S:
             logger.info(f"warm_pre_edit_cache: synthesis aborted mid-loop — timeout fired. {synth_warmed} files warmed before abort.")
             break

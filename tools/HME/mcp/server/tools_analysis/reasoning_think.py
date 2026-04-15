@@ -10,7 +10,7 @@ from .synthesis import (
     store_think_history, get_think_history_context,
     _read_module_source,
 )
-from .synthesis_ollama import _cascade_synthesis, _assess_complexity, _fuzzy_find_modules
+from .synthesis_llamacpp import _cascade_synthesis, _assess_complexity, _fuzzy_find_modules
 
 logger = logging.getLogger("HME")
 
@@ -322,7 +322,7 @@ def think(about: str, context: str = "") -> str:
 
     # Template fallback (Ollama unavailable): minimal context, no injected_state echo
     # Access _last_think_failure via module reference — direct import gives stale value after mutation.
-    from . import synthesis_ollama as _syn_mod
+    from . import synthesis_llamacpp as _syn_mod
     _fallback_label = (
         "Ollama TIMEOUT — queue may be stacked. Do NOT retry. Wait for queue to drain or restart Ollama."
         if _syn_mod._last_think_failure == "timeout"
@@ -452,7 +452,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
                                  system=_THINK_SYSTEM)
         if synthesis:
-            from .synthesis_ollama import compress_for_claude
+            from .synthesis_llamacpp import compress_for_claude
             synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"blast radius risk for {symbol_name}")
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)

@@ -58,7 +58,7 @@ def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
 def _gpu_persona(model: str) -> str:
     """Build model-specialized warm persona. GPU0=extractor, GPU1=reasoner, arbiter=hallucination guard."""
     import glob as _glob
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+    from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     from .synthesis_config import _THINK_SYSTEM
 
     full_kb = ""

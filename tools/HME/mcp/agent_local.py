@@ -32,17 +32,18 @@ logger = logging.getLogger("HME.agent_local")
 PROJECT_ROOT = os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "/home/jah/Polychron"))
 _SHIM_PORT = int(os.environ.get("HME_SHIM_PORT", "7734"))
 
-# Model config — llama-server (OpenAI) by default, ollama legacy fallback.
-_BACKEND = os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower()
+# Model config — llama-server (OpenAI /v1/chat/completions) is the only backend.
 _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
 _CODER_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
 _REASONER_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3-coder:30b")
 _LLAMACPP_ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
 _LLAMACPP_CODER_URL   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
-# Legacy ollama ports kept for fallback when HME_ARBITER_BACKEND=ollama.
-_ARBITER_PORT  = int(os.environ.get("HME_ARBITER_PORT",     "11435"))
-_CODER_PORT    = int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434"))
-_REASONER_PORT = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
+# Deprecated port constants — kept only as placeholders for _route_model's
+# (model, port, label) tuple shape; not used for actual HTTP dispatch under
+# llama-server (which uses base URLs, not ports).
+_ARBITER_PORT  = 8080
+_CODER_PORT    = 8081
+_REASONER_PORT = 8081
 
 _MAX_TOOL_OUTPUT = 8000   # was 3000 — bigger tool outputs for comprehensive audits
 _ARBITER_TIMEOUT = 120    # was 30 — CPU 4b model needs more time for JSON planning
@@ -170,48 +171,31 @@ def _llamacpp_base_for(model: str) -> str:
 def _call_model(prompt: str, model: str, port: int, system: str = "",
                 max_tokens: int = 4096, temperature: float = 0.3, timeout: int = 180) -> str:
     """Unified model call with think-tag stripping.
-    Uses llama-server /v1/chat/completions when _BACKEND=llamacpp, else ollama /api/generate.
+    All dispatch uses llama-server /v1/chat/completions. The `port` argument
+    is retained for legacy tuple shape but ignored — routing is by model name.
     """
-    if _BACKEND == "llamacpp":
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
-        payload = json.dumps({
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": False,
-            "cache_prompt": True,
-        }).encode()
-        url = f"{_llamacpp_base_for(model)}/v1/chat/completions"
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read())
-        choices = data.get("choices") or []
-        if not choices:
-            return ""
-        msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
-        text = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
-        return _strip_think(text)
-
-    num_ctx = 8192 if model == _ARBITER_MODEL else 16384
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
     payload = json.dumps({
         "model": model,
-        "prompt": prompt,
-        "system": system,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
         "stream": False,
-        "keep_alive": "10m",
-        "options": {"temperature": temperature, "num_predict": max_tokens, "num_ctx": num_ctx},
+        "cache_prompt": True,
     }).encode()
-    req = urllib.request.Request(
-        f"http://localhost:{port}/api/generate",
-        data=payload, headers={"Content-Type": "application/json"},
-    )
+    url = f"{_llamacpp_base_for(model)}/v1/chat/completions"
+    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        result = json.loads(resp.read())
-    return _strip_think(result.get("response", "").strip())
+        data = json.loads(resp.read())
+    choices = data.get("choices") or []
+    if not choices:
+        return ""
+    msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
+    text = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
+    return _strip_think(text)
 
 
 def _call_arbiter(prompt: str, system: str = "", max_tokens: int = 1024) -> str:

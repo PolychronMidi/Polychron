@@ -95,45 +95,26 @@ def queue_tombstone(entry_id: str, new_kb_ver: int):
 
 
 def _prefetch_gpu0_if_needed():
-    """Poke GPU0 so it starts VRAM reload during the debounce window.
+    """No-op under llama.cpp.
 
-    If GPU0 was evicted, this ping forces Ollama to reload it before the real
-    incremental update arrives. By the time the debounce fires, GPU0 is hot.
-    Throttled to max once per 30s to avoid spamming.
+    The old ollama flow evicted models when GPU memory got tight, so this
+    function used to ping the coder to force a reload before the real
+    incremental KB update landed. llama-server mmap's the GGUF and never
+    evicts — the warm-prefetch is moot. Kept as a stub so callers don't break.
     """
     global _last_prefetch_ts
-    import os as _os
-    if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
-        return
-    now = _time.time()
-    if now - _last_prefetch_ts < 30.0:
-        return
-    _last_prefetch_ts = now
-    def _ping():
-        try:
-            import urllib.request as _req
-            from .synthesis_ollama import _LOCAL_MODEL, _url_for, _KEEP_ALIVE
-            payload = _json.dumps({
-                "model": _LOCAL_MODEL, "prompt": "", "stream": False,
-                "keep_alive": _KEEP_ALIVE, "options": {"num_predict": 0},
-            }).encode()
-            req = _req.Request(
-                _url_for(_LOCAL_MODEL), data=payload,
-                headers={"Content-Type": "application/json"},
-            )
-            with _req.urlopen(req, timeout=90) as resp:
-                resp.read()
-        except Exception as _err1:
-            logger.debug(f"resp.read: {type(_err1).__name__}: {_err1}")
-    _threading.Thread(target=_ping, daemon=True, name="HME-gpu0-prefetch").start()
+    _last_prefetch_ts = _time.time()
 
 
 def _flush_pending_entries():
-    """Flush queued KB entries to all warm contexts — GPU0 and GPU1 updated in parallel (#1).
+    """Flush queued KB entries into tracked warm-context metadata.
 
-    Builds one concatenated prompt from all pending entries and sends a num_predict=1
-    Ollama call to each model concurrently via ThreadPoolExecutor. Saves caches and
-    runs GC check after each successful update.
+    Under the old ollama backend this function re-called each model with
+    `context=[prior_tokens]` to append new KB content to the KV cache. llama-
+    server's KV cache is internal and is reused automatically across calls
+    with matching prompt prefixes (cache_prompt=true), so there is nothing
+    to push. We advance kb_ver, persist metadata, and let the next real
+    synthesis call warm the cache organically.
     """
     global _batch_timer
     if _priming_in_progress.is_set():
@@ -150,88 +131,26 @@ def _flush_pending_entries():
             _batch_timer = None
 
         new_kb_ver = entries[-1]["kb_ver"]
-        entry_text = "".join(
-            f"\n\n[KB #{e['kb_ver']}] [{e['category']}] {e['title']}: {e['content'][:400]}"
-            for e in entries
-        )
-        import urllib.request as _req
-        from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
-        from .synthesis_ollama import (
-            _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
-            _url_for, _KEEP_ALIVE, _num_ctx_for,
-        )
+        from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
         import os as _os
         _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
         _active_models = [_LOCAL_MODEL, _ARBITER_MODEL]
         if _reasoner_warm:
             _active_models.insert(1, _REASONING_MODEL)
 
-        if not any(m in _warm_ctx for m in _active_models):
-            restored = _load_all_warm_caches()
-            if restored == 0:
-                logger.info("incr KB flush: no warm contexts in memory or cache — skipping (will prime on next use)")
-                return
-            logger.info(f"incr KB flush: restored {restored} contexts from cache for update")
-
-        # Dense 30B (GPU0) may need up to 90s to reload from VRAM eviction before eval
-        _incr_timeout = {_LOCAL_MODEL: 90, _REASONING_MODEL: 45, _ARBITER_MODEL: 45}
-
-        def _update_one(model):
-            if model not in _warm_ctx:
-                return model, None, "not_primed"
-            if _warm_ctx_kb_ver.get(model) == new_kb_ver:
-                return model, None, "already_fresh"
-            old_len = len(_warm_ctx[model])
-            num_ctx = _num_ctx_for(model)
-            if old_len > num_ctx - 500:
-                return model, None, "near_limit"
-            t0 = _time.time()
-            try:
-                payload = _json.dumps({
-                    "model": model, "prompt": entry_text, "context": _warm_ctx[model],
-                    "stream": False, "keep_alive": _KEEP_ALIVE,
-                    "options": {"num_predict": 1, "temperature": 0.0, "num_ctx": num_ctx},
-                }).encode()
-                req = _req.Request(
-                    _url_for(model), data=payload,
-                    headers={"Content-Type": "application/json"},
-                )
-                with _req.urlopen(req, timeout=_incr_timeout.get(model, 60)) as resp:
-                    data = _json.loads(resp.read())
-                elapsed = _time.time() - t0
-                new_ctx = data.get("context", [])
-                if new_ctx and len(new_ctx) > old_len:
-                    return model, (old_len, new_ctx, elapsed), "ok"
-                return model, None, "no_new_ctx"
-            except Exception as e:
-                return model, None, e
-
         updated = 0
-        with ThreadPoolExecutor(max_workers=len(_active_models)) as ex:
-            futures = {
-                ex.submit(_update_one, m): m
-                for m in _active_models
-            }
-            for fut in _as_completed(futures):
-                model, result, status = fut.result()
-                if status == "ok":
-                    old_len, new_ctx, elapsed = result
-                    _warm_ctx[model] = new_ctx
-                    _warm_ctx_kb_ver[model] = new_kb_ver
-                    _warm_ctx_ts[model] = _time.time()
-                    _warm_ctx_append_count[model] = _warm_ctx_append_count.get(model, 0) + len(entries)
-                    _warm_ctx_incr_latency[model] = round(elapsed, 1)
-                    logger.info(
-                        f"incr KB update: {model} {old_len}→{len(new_ctx)} tokens, "
-                        f"kb_ver→{new_kb_ver} ({elapsed:.1f}s)"
-                    )
-                    _save_warm_cache(model)
-                    updated += 1
-                    _check_and_schedule_gc(model)
-                elif status == "near_limit":
-                    logger.info(f"incr KB update: {model} ctx near limit, marking stale for full re-prime")
-                elif isinstance(status, Exception):
-                    logger.warning(f"incr KB update: {model} failed: {type(status).__name__}: {status}")
+        for model in _active_models:
+            # Advance the KB version marker so warm_context_status reports
+            # fresh. The actual KV cache reflow happens on the next real call
+            # via llama-server's cache_prompt behavior.
+            _warm_ctx_kb_ver[model] = new_kb_ver
+            _warm_ctx_ts[model] = _time.time()
+            _warm_ctx_append_count[model] = _warm_ctx_append_count.get(model, 0) + len(entries)
+            try:
+                _save_warm_cache(model)
+            except Exception as _save_err:
+                logger.debug(f"_save_warm_cache({model}): {type(_save_err).__name__}: {_save_err}")
+            updated += 1
 
         if updated > 0:
             try:
@@ -241,7 +160,7 @@ def _flush_pending_entries():
                 logger.debug(f"cache_invalidate_kb: {type(_err2).__name__}: {_err2}")
         n = len(entries)
         logger.info(
-            f"incr KB update: {updated}/{len(_active_models)} models updated to kb_ver={new_kb_ver}"
+            f"incr KB marker: bumped {updated}/{len(_active_models)} models to kb_ver={new_kb_ver}"
             + (f" ({n} entries batched)" if n > 1 else "")
         )
 
@@ -294,14 +213,11 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
     Tries disk cache first (instant) before falling back to a prime request (~30s).
     force=True: skip freshness check and rebuild from persona (used by GC to clean drift).
 
-    Backend differences:
-      - ollama: returns a context[] array of token IDs that must be round-tripped
-        to warm the KV cache. We store the array in _warm_ctx.
-      - llamacpp: llama-server holds KV internally via cache_prompt=true. A
-        successful persona response is the priming signal; we store a sentinel
-        "primed=true" token list so downstream warm_context_status reports it.
+    llama-server holds KV internally via cache_prompt=true. A successful
+    persona response is the priming signal; we store a sentinel token list
+    (sized to the persona) so downstream warm_context_status reports primed.
     """
-    from .synthesis_ollama import _local_think, _ARBITER_BACKEND
+    from .synthesis_llamacpp import _local_think
     kb_ver = getattr(ctx, "_kb_version", 0)
     if not force:
         if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
@@ -323,7 +239,7 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         max_tokens=8, model=model, priority="background",
         temperature=0.0, return_context=True,
     )
-    from .synthesis_ollama import _COOLDOWN_REFUSED
+    from .synthesis_llamacpp import _COOLDOWN_REFUSED
     if isinstance(result, tuple):
         text_result, ctx_array = result
     else:
@@ -332,15 +248,15 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         logger.info(f"warm ctx priming SKIPPED: {model} — cooldown active, will retry next cycle")
         return False
     if text_result is None and not ctx_array:
-        from .synthesis_ollama import _ollama_interactive
-        cause = "cancelled by interactive call" if _ollama_interactive.is_set() else "backend took too long"
+        from .synthesis_llamacpp import _interactive_event
+        cause = "cancelled by interactive call" if _interactive_event.is_set() else "backend took too long"
         logger.info(f"warm ctx priming CANCELLED: {model} — {cause} ({len(persona)} char persona)")
         return False
-    # llamacpp path: a text response proves the server primed its cache_prompt KV.
-    # llama-server doesn't expose context[] arrays, so store an approximate token
-    # count derived from the persona length (≈4 chars/token). This keeps warm
-    # context status reporting honest without forcing callers to special-case.
-    if _ARBITER_BACKEND == "llamacpp" and text_result is not None and not ctx_array:
+    # A text response proves llama-server primed its cache_prompt KV.
+    # llama-server doesn't expose a context[] array, so we store an
+    # approximate token count derived from the persona length (≈4 chars/token).
+    # This keeps warm_context_status reporting honest.
+    if text_result is not None:
         approx_tokens = max(1, len(persona) // 4)
         _warm_ctx[model] = [0] * approx_tokens
         _warm_ctx_kb_ver[model] = kb_ver
@@ -348,23 +264,11 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         _warm_ctx_append_count[model] = 0
         _warm_ctx_baseline_tokens[model] = approx_tokens
         logger.info(
-            f"warm ctx PRIMED (llamacpp): {model} (~{approx_tokens} tokens via cache_prompt, kb_ver={kb_ver})"
+            f"warm ctx PRIMED: {model} (~{approx_tokens} tokens via cache_prompt, kb_ver={kb_ver})"
         )
         _save_warm_cache(model)
         return True
-    if ctx_array:
-        _warm_ctx[model] = ctx_array
-        _warm_ctx_kb_ver[model] = kb_ver
-        _warm_ctx_ts[model] = _time.time()
-        _warm_ctx_append_count[model] = 0
-        _warm_ctx_baseline_tokens[model] = len(ctx_array)
-        logger.info(f"warm ctx PRIMED: {model} ({len(ctx_array)} ctx tokens, kb_ver={kb_ver})")
-        _save_warm_cache(model)
-        return True
-    logger.warning(
-        f"warm ctx priming FAILED: {model} — text={'present' if text_result else 'None'}, "
-        f"ctx_array={'present' if ctx_array else 'None'}"
-    )
+    logger.warning(f"warm ctx priming FAILED: {model} — no text response")
     return False
 
 
@@ -407,147 +311,72 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
     return None
 
 
-def _init_ollama_models() -> str:
-    """Explicitly load models to their correct devices at startup.
+def _init_local_models() -> str:
+    """Verify llama-server instances are healthy at startup.
 
-    Load order: GPU0 (extractor) → GPU1 (arbiter).
-    Reasoner (qwen3:30b-a3b) is NOT loaded — cloud cascade handles all reasoning calls;
-    local reasoner remains as code fallback only (HME_REASONER_WARM=1 to re-enable).
-    Uses keep_alive=-1 so models stay resident. Yields to interactive between each model.
-    Post-load: VRAM headroom check warns if KV cache is spilling to RAM.
-
-    When HME_ARBITER_BACKEND=llamacpp (default now), the llama-server instances
-    have already loaded their models via systemd (--model flag) — this function
-    becomes a health probe that does NOT touch the ollama API. Probing ollama
-    ports 11434/11435/11436 on a pure llamacpp stack produces
-    ConnectionRefused errors and a LIFESAVER flood (see commit that introduced
-    _check_llamacpp_instances in health_topology.py).
+    llama-server instances (arbiter on Vulkan1, coder on Vulkan2) are spawned
+    by llamacpp_supervisor / llamacpp_daemon; this function is a health probe
+    that does NOT touch any legacy inference API. It reports readiness to the
+    shim and fires a CRITICAL LIFESAVER if an instance is unreachable.
     """
     import urllib.request as _req
     import json as _json
     import time as _t
     import os as _os
     if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
-        logger.info("_init_ollama_models: training lock present, skipping startup load")
+        logger.info("_init_local_models: training lock present, skipping health probe")
         return "training_locked"
-    from .synthesis_ollama import (
-        _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL, _ARBITER_BACKEND,
-        _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _url_for,
-        _llamacpp_url_for, _ollama_background_yield,
-    )
-    _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+    from .synthesis_llamacpp import _LOCAL_MODEL, _ARBITER_MODEL
 
-    # llama-server path: probe /health on each configured llama-server URL
-    # instead of forcing a model load via ollama /api/generate.
-    if _ARBITER_BACKEND == "llamacpp":
-        results = {}
-        failures = 0
-        targets = [
-            (_LOCAL_MODEL,   _os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")),
-            (_ARBITER_MODEL, _os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")),
-        ]
-        for model, base in targets:
-            t0 = _t.time()
-            try:
-                req = _req.Request(f"{base}/health")
-                with _req.urlopen(req, timeout=5) as resp:
-                    body = resp.read().decode("utf-8", errors="ignore")
-                    try:
-                        data = _json.loads(body)
-                    except ValueError:
-                        data = {}
-                    if resp.status == 200 and data.get("status") == "ok":
-                        elapsed = _t.time() - t0
-                        results[model] = f"OK ({elapsed:.2f}s llamacpp)"
-                        logger.info(f"model init (llamacpp): {model} ready at {base}")
-                    else:
-                        results[model] = f"FAILED: llama-server {base} status={data.get('status') or resp.status}"
-                        ctx.register_critical_failure(
-                            f"model_init({model})",
-                            f"llama-server {base} not healthy: {body[:120]}",
-                        )
-                        failures += 1
-            except Exception as e:
-                results[model] = f"FAILED: {type(e).__name__}: {e}"
-                ctx.register_critical_failure(
-                    f"model_init({model})",
-                    f"llama-server {base} unreachable: {type(e).__name__}: {e}",
-                )
-                failures += 1
-        summary = "Model init (llamacpp): " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
-        if failures:
-            summary += f" ({failures} FAILED)"
-        return summary
-
-    # Legacy ollama path (HME_ARBITER_BACKEND=ollama)
-    models_config = [
-        (_LOCAL_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
-        (_ARBITER_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
-    ]
-    if _reasoner_warm:
-        models_config.insert(1, (_REASONING_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_30B}))
     results = {}
     failures = 0
-    for model, options in models_config:
-        _ollama_background_yield()
+    targets = [
+        (_LOCAL_MODEL,   _os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")),
+        (_ARBITER_MODEL, _os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")),
+    ]
+    for model, base in targets:
         t0 = _t.time()
-        logger.info(f"model init: loading {model} on {_url_for(model)} (options={options})...")
-        payload = {"model": model, "prompt": "", "stream": False,
-                   "keep_alive": _KEEP_ALIVE, "options": options}
-        request = _req.Request(_url_for(model), data=_json.dumps(payload).encode(),
-                               headers={"Content-Type": "application/json"})
         try:
-            with _req.urlopen(request, timeout=120) as resp:
-                body = resp.read()
-                if resp.status >= 500:
-                    err_detail = body.decode("utf-8", errors="ignore")[:200]
-                    results[model] = f"FAILED: HTTP {resp.status} — {err_detail}"
+            req = _req.Request(f"{base}/health")
+            with _req.urlopen(req, timeout=5) as resp:
+                body = resp.read().decode("utf-8", errors="ignore")
+                try:
+                    data = _json.loads(body)
+                except ValueError:
+                    data = {}
+                if resp.status == 200 and data.get("status") == "ok":
+                    elapsed = _t.time() - t0
+                    results[model] = f"OK ({elapsed:.2f}s llamacpp)"
+                    logger.info(f"model init: {model} ready at {base}")
+                else:
+                    results[model] = f"FAILED: llama-server {base} status={data.get('status') or resp.status}"
                     ctx.register_critical_failure(
                         f"model_init({model})",
-                        f"HTTP {resp.status}: {err_detail}",
+                        f"llama-server {base} not healthy: {body[:120]}",
                     )
                     failures += 1
-                    continue
-            elapsed = _t.time() - t0
-            vram_warn = _check_vram_headroom(model, _url_for(model))
-            if vram_warn:
-                results[model] = f"OK ({elapsed:.1f}s) ⚠ {vram_warn}"
-                ctx.register_critical_failure(
-                    f"model_init({model})", vram_warn, severity="WARNING",
-                )
-            else:
-                results[model] = f"OK ({elapsed:.1f}s)"
-                logger.info(f"model init: {model} ready ({elapsed:.1f}s)")
-        except _req.HTTPError as e:
-            err_body = ""
-            try:
-                err_body = e.read().decode("utf-8", errors="ignore")[:200]
-            except Exception as _err3:
-                logger.debug(f"e.read: {type(_err3).__name__}: {_err3}")
-            results[model] = f"FAILED: HTTP {e.code} — {err_body or e}"
-            ctx.register_critical_failure(
-                f"model_init({model})",
-                f"HTTP {e.code}: {err_body or e}",
-            )
-            failures += 1
         except Exception as e:
             results[model] = f"FAILED: {type(e).__name__}: {e}"
             ctx.register_critical_failure(
                 f"model_init({model})",
-                f"{type(e).__name__}: {e}",
+                f"llama-server {base} unreachable: {type(e).__name__}: {e}",
             )
             failures += 1
-    summary = "Model init: " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
+    summary = "Model init (llamacpp): " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
     if failures:
-        summary += f" ({failures} FAILED — warm priming will be skipped for failed models)"
+        summary += f" ({failures} FAILED)"
     return summary
+
+
+# Legacy alias — some callers still import _init_ollama_models.
+_init_ollama_models = _init_local_models
 
 
 def _prime_all_gpus() -> str:
     """Prime active models sequentially. Yields to interactive between each model.
 
     Sequential so each model finishes before the next starts — interactive calls
-    cancel the active priming via _ollama_interactive and _cancellable_urlopen.
+    cancel the active priming via _interactive_event and _cancellable_urlopen.
     Reasoner priming only runs when HME_REASONER_WARM=1 (default: skip — cloud handles reasoning).
     """
     if _priming_in_progress.is_set():
@@ -556,7 +385,7 @@ def _prime_all_gpus() -> str:
     _priming_in_progress.set()
     try:
         import os as _os
-        from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+        from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
         _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
         active_models = [_LOCAL_MODEL, _ARBITER_MODEL]
         if _reasoner_warm:
@@ -590,9 +419,9 @@ def _prime_all_gpus() -> str:
 def warm_context_status() -> dict:
     """Health dict of warm contexts for selftest."""
     import os as _os
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _refresh_arbiter
+    from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _refresh_arbiter
     _refresh_arbiter()
-    from .synthesis_ollama import _ARBITER_MODEL
+    from .synthesis_llamacpp import _ARBITER_MODEL
     from .synthesis_session import session_state_counts
     from .warm_disk import _TMPFS_PATHS
     _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
@@ -641,7 +470,7 @@ def ensure_warm(model: str):
     def _bg():
         global _lazy_prime_attempted
         import os as _os
-        from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+        from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
         _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
         try:
             ok0 = _prime_warm_context(_LOCAL_MODEL)
