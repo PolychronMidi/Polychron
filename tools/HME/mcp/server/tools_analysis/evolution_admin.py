@@ -19,7 +19,7 @@ logger = logging.getLogger("HME")
 def hme_admin(action: str = "selftest", modules: str = "",
               antipattern: str = "", hook_target: str = "pretooluse_bash") -> str:
     """HME maintenance dispatcher. action='selftest': verify tool registration, doc sync,
-    index integrity, Ollama, KB health, symlinks. action='reload': hot-reload tool modules
+    index integrity, llama.cpp, KB health, symlinks. action='reload': hot-reload tool modules
     without restarting server (pass modules='health,evolution' or 'all'). action='index':
     reindex all code chunks and symbols (run after batch code changes when file watcher
     hasn't caught up). action='clear_index': wipe hash cache + chunk store then rebuild.

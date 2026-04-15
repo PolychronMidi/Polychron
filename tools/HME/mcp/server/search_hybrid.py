@@ -48,7 +48,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
     # Extract code identifiers from query (camelCase, snake_case, module names).
     # Grep for them in parallel with semantic search. Files found by BOTH methods
     # get a score boost. Keyword-only files are appended as fallback results.
-    # This is the Ollama-context-equivalent for search: two orthogonal retrieval
+    # This is the llama.cpp-context-equivalent for search: two orthogonal retrieval
     # strategies fused into a single result set for higher precision and recall.
     import re as _re_hybrid, subprocess as _sp_hybrid
     _HYBRID_STOPWORDS = {"where", "does", "which", "what", "when", "that", "this",

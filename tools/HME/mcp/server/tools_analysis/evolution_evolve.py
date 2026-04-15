@@ -929,7 +929,7 @@ def _adversarial_stress() -> str:
             suggestions.append(f"[HIGH] Recovery rate {recovery_rate:.0%} — shim revive often failing; check startup logs")
         if cb_total >= 3:
             top_model = max(cb_trips, key=cb_trips.get)
-            suggestions.append(f"[MEDIUM] {cb_total} circuit breaker trips today ({top_model}: {cb_trips[top_model]}) — Ollama model unstable")
+            suggestions.append(f"[MEDIUM] {cb_total} circuit breaker trips today ({top_model}: {cb_trips[top_model]}) — llama.cpp model unstable")
         if startup_ms and startup_ms > 15000:
             suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms — shim cold-start is slow; consider keepalive")
 
@@ -949,7 +949,7 @@ def _adversarial_stress() -> str:
                 if avg_coh < 0.6:
                     suggestions.append(f"[HIGH] Avg coherence {avg_coh:.0%} over last {len(scores)} monitor cycles — multiple components degraded")
                 elif avg_coh < 0.8:
-                    suggestions.append(f"[LOW] Avg coherence {avg_coh:.0%} — Ollama partially unavailable; shim healthy")
+                    suggestions.append(f"[LOW] Avg coherence {avg_coh:.0%} — llama.cpp partially unavailable; shim healthy")
 
         label = f"Infrastructure trends ({len(suggestions)} suggestion(s))"
         detail = "; ".join(suggestions) if suggestions else "no anomalies detected"

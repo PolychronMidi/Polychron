@@ -1,6 +1,6 @@
 import * as http from "http";
-import { OllamaMessage, ChunkCallback } from "./router";
-import { streamLlamacppAgentic as streamOllamaAgentic } from "./routerLlamacpp";
+import { LlamacppMessage, ChunkCallback } from "./router";
+import { streamLlamacppAgentic as streamLlamacppAgentic } from "./routerLlamacpp";
 import { AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 
 const HME_HTTP_PORT = 7734;
@@ -135,7 +135,7 @@ export async function logShimError(source: string, message: string, detail: stri
 
 export async function streamHybrid(
   message: string,
-  history: OllamaMessage[],
+  history: LlamacppMessage[],
   opts: { model: string; url: string },
   workingDir: string,
   onChunk: ChunkCallback,
@@ -150,7 +150,7 @@ export async function streamHybrid(
     onChunk(`FAILFAST: HME context enrichment failed: ${e?.message ?? e}`, "error");
   }
 
-  const messages: OllamaMessage[] = [];
+  const messages: LlamacppMessage[] = [];
 
   const systemContent = [
     AGENTIC_SYSTEM_PROMPT,
@@ -160,5 +160,5 @@ export async function streamHybrid(
   messages.push({ role: "system", content: systemContent });
   messages.push(...history, { role: "user", content: message });
 
-  return streamOllamaAgentic(messages, opts, workingDir, onChunk, onDone, onError);
+  return streamLlamacppAgentic(messages, opts, workingDir, onChunk, onDone, onError);
 }

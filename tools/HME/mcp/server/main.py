@@ -233,7 +233,7 @@ threading.Thread(target=_background_load, daemon=True, name="HME-startup").start
 def _background_startup_chain():
     """Ordered startup chain — runs after RAG engine is ready.
 
-    Step 1: _init_ollama_models() — load models to correct devices (GPU0, GPU1, CPU)
+    Step 1: _init_local_models() — load models to correct devices (GPU0, GPU1, CPU)
             in deterministic order before any priming requests fly.
     Step 2: _prime_all_gpus() — sequential KV cache warm (one model at a time,
             yields to interactive between each). Interactive calls jump ahead.
@@ -253,7 +253,7 @@ def _background_startup_chain():
         )
         return
 
-    # Layer 5: crash loop → skip Ollama steps to minimize resource waste
+    # Layer 5: crash loop → skip llama.cpp steps to minimize resource waste
     in_crash_loop = _ops.is_crash_loop()
     if in_crash_loop:
         logger.warning(
@@ -262,10 +262,10 @@ def _background_startup_chain():
             f"{_ops.get('restarts_today', 0)} restarts today)"
         )
     else:
-        from server.tools_analysis.synthesis_warm import _init_ollama_models, _prime_all_gpus
+        from server.tools_analysis.synthesis_warm import _init_local_models, _prime_all_gpus
 
         # Single daemon health gate: if daemon is ready AND all warm caches are fresh, skip steps 1+2.
-        _skip_ollama_steps = False
+        _skip_llamacpp_steps = False
         try:
             import urllib.request as _ureq, json as _js
             with _ureq.urlopen(_ureq.Request("http://127.0.0.1:7735/health"), timeout=2) as _r:
@@ -273,15 +273,15 @@ def _background_startup_chain():
             _wc = _daemon_status.get("warm_caches", {})
             if _daemon_status.get("status") == "ready" and _wc and all(v.get("fresh") for v in _wc.values()):
                 logger.info("startup chain [1+2/3]: daemon ready + all caches fresh — skipping model init and priming")
-                _skip_ollama_steps = True
+                _skip_llamacpp_steps = True
         except Exception as _daemon_err:
-            logger.debug(f"startup chain: ollama daemon unreachable ({type(_daemon_err).__name__}), running init+prime directly")
+            logger.debug(f"startup chain: llamacpp daemon unreachable ({type(_daemon_err).__name__}), running init+prime directly")
 
-        if not _skip_ollama_steps:
+        if not _skip_llamacpp_steps:
             init_result = ""
             try:
-                logger.info("startup chain [1/3]: initializing Ollama models to correct devices...")
-                init_result = _init_ollama_models()
+                logger.info("startup chain [1/3]: initializing llama.cpp models to correct devices...")
+                init_result = _init_local_models()
                 logger.info(f"startup chain [1/3]: {init_result}")
             except Exception as _e:
                 context.register_critical_failure(
@@ -334,7 +334,7 @@ def _background_startup_chain():
 
 
 threading.Thread(target=_background_startup_chain, daemon=True, name="HME-startup-chain").start()
-# Wire recovery hook so in-process recovery re-runs the full startup chain (Ollama init + priming + cache warm).
+# Wire recovery hook so in-process recovery re-runs the full startup chain (llama.cpp init + priming + cache warm).
 context._post_recovery_hook = lambda: threading.Thread(
     target=_background_startup_chain, daemon=True, name="HME-recovery-chain"
 ).start()

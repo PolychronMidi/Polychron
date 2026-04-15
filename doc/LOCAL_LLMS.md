@@ -32,13 +32,13 @@ Model files live in `/home/jah/models/`. LoRA adapters live in `/home/jah/Polych
 
 Both services use `Restart=on-failure` with a 5 s back-off, so a crash self-heals unless the underlying problem (OOM, missing file) persists.
 
-### Why llama.cpp instead of ollama
+### Why llama.cpp instead of llamacpp
 
 Switched in commit `0577c0f7`. llama.cpp gives:
 
-- **Parallel slot execution** via `--parallel N` — ollama is one-at-a-time per instance.
+- **Parallel slot execution** via `--parallel N` — llamacpp is one-at-a-time per instance.
 - **Loose LoRA adapters** via `--lora FILE.gguf` — no merge step needed, swap at runtime via `POST /lora-adapters`.
-- **Per-slot KV cache** with `cache_prompt` — warm contexts without ollama's context[] hack.
+- **Per-slot KV cache** with `cache_prompt` — warm contexts without llamacpp's context[] hack.
 - **No CUDA toolkit needed** — the Vulkan backend runs with just the stock NVIDIA driver, which is critical on Maxwell (M40) where modern CUDA toolchains have dropped sm_52 support.
 - **Standard OpenAI API** — not vendor-locked, drop-in replacement for any OpenAI-SDK consumer.
 
@@ -49,7 +49,7 @@ Between the MCP host and llama-server sits `tools/HME/mcp/hme_http.py` on `127.0
 - Holds the RAG engine (jina-embeddings-v2-base-code on one GPU, bge-reranker-v2-m3 on CPU or GPU)
 - Routes MCP tool calls to the right llama-server URL based on the requested model alias
 - Enforces wall-clock timeouts via thread abandonment so one stuck synthesis can't jam the queue
-- Re-reads `.env` on every routing call so model / backend / URL changes take effect without a shim restart (see `_refresh_arbiter()` in `synthesis_ollama.py`)
+- Re-reads `.env` on every routing call so model / backend / URL changes take effect without a shim restart (see `_refresh_arbiter()` in `synthesis_llamacpp.py`)
 
 Env vars the shim reads (authoritative list in `.env`):
 

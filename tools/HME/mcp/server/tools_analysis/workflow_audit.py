@@ -374,7 +374,7 @@ def what_did_i_forget(changed_files: str) -> str:
                 logger.warning("what_did_i_forget: synthesis timed out — LIFESAVER recorded")
             parts.append("\n## What You May Have Missed *(adaptive)*\nSkipped — coder model timed out (GPU busy or service down).")
         else:
-            logger.warning("what_did_i_forget: adaptive synthesis unavailable (timeout or Ollama down)")
+            logger.warning("what_did_i_forget: adaptive synthesis unavailable (timeout or llama.cpp down)")
 
     # Auto-draft: suggest a learn() call if warnings found KB-worthy patterns
     if all_warnings:

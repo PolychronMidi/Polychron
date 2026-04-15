@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
-import { OllamaMessage } from "./router";
+import { LlamacppMessage } from "./router";
 import { ChatMessage } from "./types";
 
 export interface SessionEntry {
@@ -15,7 +15,7 @@ export interface SessionEntry {
 export interface PersistedSession {
   entry: SessionEntry;
   messages: ChatMessage[];
-  ollamaHistory: OllamaMessage[];
+  llamacppHistory: LlamacppMessage[];
   contextTokens?: number;
   chainIndex?: number;
 }
@@ -87,7 +87,7 @@ export function listSessions(projectRoot: string): SessionEntry[] {
 export function loadSession(projectRoot: string, id: string): PersistedSession | null {
   const entry = listSessions(projectRoot).find((s) => s.id === id);
   if (!entry) return null;
-  const data = readJson<{ messages: ChatMessage[]; ollamaHistory: OllamaMessage[]; contextTokens?: number; chainIndex?: number } | null>(
+  const data = readJson<{ messages: ChatMessage[]; llamacppHistory: LlamacppMessage[]; contextTokens?: number; chainIndex?: number } | null>(
     sessionPath(projectRoot, id),
     null
   );
@@ -95,7 +95,7 @@ export function loadSession(projectRoot: string, id: string): PersistedSession |
   return {
     entry,
     messages: data.messages ?? [],
-    ollamaHistory: data.ollamaHistory ?? [],
+    llamacppHistory: data.llamacppHistory ?? [],
     contextTokens: data.contextTokens,
     chainIndex: data.chainIndex,
   };
@@ -110,7 +110,7 @@ export function createSession(projectRoot: string, title: string): SessionEntry 
   const index = store.read();
   index.unshift(entry);
   store.write(index);
-  writeJson(sessionPath(projectRoot, id), { messages: [], ollamaHistory: [] });
+  writeJson(sessionPath(projectRoot, id), { messages: [], llamacppHistory: [] });
 
   return entry;
 }
@@ -119,7 +119,7 @@ export function saveSession(
   projectRoot: string,
   entry: SessionEntry,
   messages: ChatMessage[],
-  ollamaHistory: OllamaMessage[],
+  llamacppHistory: LlamacppMessage[],
   extra?: { contextTokens?: number; chainIndex?: number }
 ): void {
   const store = indexStore(projectRoot);
@@ -128,7 +128,7 @@ export function saveSession(
   if (idx >= 0) { index[idx] = entry; } else { index.unshift(entry); }
   store.write(index);
   writeJson(sessionPath(projectRoot, entry.id), {
-    messages, ollamaHistory,
+    messages, llamacppHistory,
     ...(extra?.contextTokens != null ? { contextTokens: extra.contextTokens } : {}),
     ...(extra?.chainIndex != null ? { chainIndex: extra.chainIndex } : {}),
   });

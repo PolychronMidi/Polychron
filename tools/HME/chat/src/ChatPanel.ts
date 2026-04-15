@@ -22,7 +22,7 @@ import {
   SessionState, StreamTracker, ChatCtx,
 } from "./streamUtils";
 import {
-  streamClaudeMsg, streamOllamaMsg, streamHybridMsg,
+  streamClaudeMsg, streamllama.cppMsg, streamHybridMsg,
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
 import { buildCrossRouteContext, applyCrossRouteContext } from "./crossRouteHistory";
@@ -59,7 +59,7 @@ export class ChatPanel implements PanelHost {
   private readonly _ctx: ChatCtx;
 
   private static _blankState(): SessionState {
-    return { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+    return { messages: [], claudeSessionId: null, llamacppHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
   }
 
   private constructor(panel: vscode.WebviewPanel, projectRoot: string, restoreSessionId?: string) {
@@ -330,7 +330,7 @@ export class ChatPanel implements PanelHost {
     this._state = {
       messages: persisted.messages,
       claudeSessionId: persisted.entry.claudeSessionId,
-      ollamaHistory: persisted.ollamaHistory,
+      llamacppHistory: persisted.llamacppHistory,
       lastRoute: null,
       sessionEntry: persisted.entry,
       chainIndex,
@@ -357,7 +357,7 @@ export class ChatPanel implements PanelHost {
       updatedAt: Date.now(),
     };
     this._state.sessionEntry = entry;
-    saveSession(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
+    saveSession(this._projectRoot, entry, this._state.messages, this._state.llamacppHistory, {
       contextTokens: this._contextMeter.pctUsed,
       chainIndex: this._state.chainIndex,
     });
@@ -386,7 +386,7 @@ export class ChatPanel implements PanelHost {
       this.post({ type: "sessionCreated", session: entry });
     }
 
-    const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.ollamaModel : msg.claudeModel;
+    const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.llamacppModel : msg.claudeModel;
     this._transcript.logUser(msg.text, resolvedRoute, model);
 
     validateMessage(msg.text).then(({ warnings, blocks }) => {
@@ -428,7 +428,7 @@ export class ChatPanel implements PanelHost {
     const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
     const ctx = this._ctx;
     if (resolvedRoute === "local") {
-      streamOllamaMsg(ctx, resolvedMsg, assistantId);
+      streamllama.cppMsg(ctx, resolvedMsg, assistantId);
     } else if (resolvedRoute === "hybrid") {
       streamHybridMsg(ctx, resolvedMsg, assistantId);
     } else {
@@ -438,7 +438,7 @@ export class ChatPanel implements PanelHost {
 
   /**
    * Agent route: fires local AND hybrid in parallel for side-by-side comparison.
-   * Neither response writes to ollamaHistory to avoid double-appending;
+   * Neither response writes to llamacppHistory to avoid double-appending;
    * local result wins for history after both complete.
    */
   private async _onSendAgent(msg: SendMsg) {
@@ -449,9 +449,9 @@ export class ChatPanel implements PanelHost {
       this._transcript.logSessionStart(entry.id, entry.title, false);
       this.post({ type: "sessionCreated", session: entry });
     }
-    this._transcript.logUser(msg.text, "agent", msg.ollamaModel);
+    this._transcript.logUser(msg.text, "agent", msg.llamacppModel);
     postTranscript([{
-      ts: Date.now(), type: "user", route: "agent", model: msg.ollamaModel,
+      ts: Date.now(), type: "user", route: "agent", model: msg.llamacppModel,
       content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
     }]).catch((e: any) => this.postError("transcript", String(e)));
 
@@ -463,8 +463,8 @@ export class ChatPanel implements PanelHost {
 
     const localId = uid();
     const hybridId = uid();
-    this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.ollamaModel}` });
-    this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.ollamaModel}` });
+    this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.llamacppModel}` });
+    this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.llamacppModel}` });
 
     let doneCount = 0;
     let drained = false;

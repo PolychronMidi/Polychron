@@ -202,7 +202,7 @@ Lesson: calibration (the detector stops claiming knowledge it doesn't have) is a
 
 The HME local subagent pipeline was producing zero-value results for every query for weeks. Root cause: `ripgrep` was not installed on the host, so every `_exec_grep` call returned `ERROR: ripgrep (rg) not found` and the synthesizer worked from KB-only context. The agent silently said "I don't have this information" for every question.
 
-Fix: `_resolve_grep()` falls back to GNU grep when `rg` is absent, with equivalent flags. `SubagentBackendsVerifier` (weight 1.5) checks that grep + Ollama + shim are reachable on every HCI run — would have caught this in one pass if it had existed earlier.
+Fix: `_resolve_grep()` falls back to GNU grep when `rg` is absent, with equivalent flags. `SubagentBackendsVerifier` (weight 1.5) checks that grep + llama.cpp + shim are reachable on every HCI run — would have caught this in one pass if it had existed earlier.
 
 **Quality leap from this fix alone:** the subagent went from 0/4 correct answers on the `_tab_helpers` adversarial test to 4/4 correct answers with exact line numbers in 262 seconds (later 105s after the arbiter-skip fast path shipped).
 
@@ -231,7 +231,7 @@ The ultimate hypermeta leap: train a domain-specialized arbiter on the Polychron
 Pipeline:
 1. Export 262 training examples from 112 KB entries via `build-corpus.py` (two-pass: `list_knowledge` for titles, `search_knowledge` per title for full content, since `list_knowledge` omits content)
 2. Unload `qwen3-coder:30b` from GPU0 via `POST /api/generate {"keep_alive":0}` to free 22GB VRAM
-3. Train with LoRA on GPU0 → merge adapter → convert to GGUF → register as Ollama `hme-arbiter:latest` → update `agent_local.py _ARBITER_MODEL` → re-enable arbiter in explore mode
+3. Train with LoRA on GPU0 → merge adapter → convert to GGUF → register as llama.cpp `hme-arbiter:latest` → update `agent_local.py _ARBITER_MODEL` → re-enable arbiter in explore mode
 4. Reload `qwen3-coder:30b` back onto GPU0
 
 **Traps discovered along the way, in order:**
@@ -254,8 +254,8 @@ The Maxwell trap (#8) is the most painful because it's silent: loss prints as 0.
 **Artifacts produced:**
 - `metrics/hme-arbiter-adapter-v2/` — LoRA adapter (4.35MB)
 - `metrics/hme-arbiter-merged/` — merged base+adapter (full model weights)
-- `metrics/hme-arbiter.gguf` — 949MB f16 GGUF, loadable by Ollama
-- `ollama list` shows `hme-arbiter:latest` (994MB) registered and callable
+- `metrics/hme-arbiter.gguf` — 949MB f16 GGUF, loadable by llama.cpp
+- `llamacpp list` shows `hme-arbiter:latest` (994MB) registered and callable
 
 **Quality assessment (the honest outcome):**
 
@@ -280,7 +280,7 @@ Every one of these traps is now documented in this log so the next training roun
 - `tools/HME/scripts/finetune-arbiter.py` — scaffolding + config + plan
 - `/tmp/train-arbiter-v2.py` — the working training script (Maxwell-safe, fp32, 0.5B)
 - `/tmp/build-corpus.py` — corpus builder (two-pass KB fetch)
-- `/tmp/post-training-pipeline.sh` — merge → GGUF → ollama register → test
+- `/tmp/post-training-pipeline.sh` — merge → GGUF → llamacpp register → test
 - `~/tools/llama-cpp-convert/convert_hf_to_gguf.py` — pinned to b3800
 
 **The pipeline is proven end-to-end.** Iteration 2 with a richer corpus and larger base model should produce a real quality lift. The substrate is ready; the data and hardware are the current bottleneck.

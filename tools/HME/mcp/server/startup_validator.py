@@ -22,7 +22,7 @@ def validate_startup(context, project_root: str) -> None:
     _check_kb_accessible(context)
     _check_project_root(project_root)
     _check_required_metrics_dirs(project_root)
-    _check_ollama_connectivity()  # warning only — Ollama may start later
+    _check_llamacpp_connectivity()  # warning only — llama.cpp may start later
     logger.info("HME startup validation PASSED")
 
 
@@ -118,5 +118,5 @@ def _check_llamacpp_connectivity() -> None:
         logger.info("llama-server connectivity: OK (arbiter + coder healthy)")
 
 
-# Legacy alias — some callers still import _check_ollama_connectivity.
-_check_ollama_connectivity = _check_llamacpp_connectivity
+# Legacy alias — some callers still import _check_llamacpp_connectivity.
+_check_llamacpp_connectivity = _check_llamacpp_connectivity

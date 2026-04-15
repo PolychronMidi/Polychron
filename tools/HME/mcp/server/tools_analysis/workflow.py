@@ -25,7 +25,7 @@ from .tool_cache import cached_kb_search, cached_find_callers, _cache_set, _TTL_
 
 logger = logging.getLogger("HME")
 
-# Synthesis cache — keyed (abs_path, mtime), eliminates repeated Ollama waits.
+# Synthesis cache — keyed (abs_path, mtime), eliminates repeated llama.cpp waits.
 # Persisted to disk so cache survives server restarts. Stale entries (mtime mismatch)
 # are silently dropped on load; valid entries are used immediately without re-synthesis.
 _SYNTHESIS_CACHE_PATH = os.path.join(
@@ -539,20 +539,20 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
             _kb_cache[kb_key] = ctx.project_engine.search_knowledge(module_name, 8)
         warmed += 1
     # Tier 2: pre-synthesize Edit Risks for most recently modified files.
-    # Uses Ollama queue with low priority — interactive calls (think, before_editing)
-    # pop to top of stack via ollama_priority_call().
+    # Uses llama.cpp queue with low priority — interactive calls (think, before_editing)
+    # pop to top of stack via llamacpp_priority_call().
     hot_files = sorted(js_files, key=lambda f: os.path.getmtime(f) if os.path.exists(f) else 0, reverse=True)[:synthesis_hot]
     synth_warmed = 0
-    # Early-abort: skip entire synthesis tier if Ollama cooldown is active.
+    # Early-abort: skip entire synthesis tier if llama.cpp cooldown is active.
     # Without this check, the sequential loop hammers _local_think for all hot_files
     # and generates one REFUSED log per file in ~40ms — pure noise.
     from .synthesis_llamacpp import _last_think_failure, _last_think_failure_ts, _TIMEOUT_COOLDOWN_S
     import time as _time_check
     if _last_think_failure == "timeout" and (_time_check.monotonic() - _last_think_failure_ts) < _TIMEOUT_COOLDOWN_S:
         _remaining_s = int(_TIMEOUT_COOLDOWN_S - (_time_check.monotonic() - _last_think_failure_ts))
-        logger.info(f"warm_pre_edit_cache: synthesis tier skipped — Ollama cooldown active ({_remaining_s}s remaining).")
+        logger.info(f"warm_pre_edit_cache: synthesis tier skipped — llama.cpp cooldown active ({_remaining_s}s remaining).")
         return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
-                f"Synthesis skipped — Ollama cooldown active ({_remaining_s}s remaining).")
+                f"Synthesis skipped — llama.cpp cooldown active ({_remaining_s}s remaining).")
     from structure import file_summary as _fs
     for fpath in hot_files:
         try:

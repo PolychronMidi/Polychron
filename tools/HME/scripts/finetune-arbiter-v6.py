@@ -494,7 +494,7 @@ weight_decay: 0.01
 
 # After training:
 #   python3 tools/HME/scripts/finetune-arbiter-v6.py --merge
-#   ollama create hme-arbiter -f metrics/Modelfile-v6
+#   llamacpp create hme-arbiter -f metrics/Modelfile-v6
 #   Then set HME_ARBITER_MODEL=hme-arbiter in .env and restart shim
 """
     os.makedirs(os.path.dirname(_CONFIG), exist_ok=True)
@@ -574,7 +574,7 @@ def merge() -> int:
         f.write("PARAMETER stop <|im_start|>\n")
         f.write("PARAMETER temperature 0.2\n")
     print(f"Modelfile written: {modelfile}")
-    print("Run: ollama create hme-arbiter -f metrics/Modelfile-v6")
+    print("Run: llamacpp create hme-arbiter -f metrics/Modelfile-v6")
     return 0
 
 

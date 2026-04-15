@@ -1,12 +1,12 @@
 import { ChatMessage } from "./types";
-import { OllamaMessage } from "./router";
+import { LlamacppMessage } from "./router";
 import { SessionState } from "./streamUtils";
 
 type Route = "claude" | "local" | "hybrid";
 
 export interface CrossRouteResult {
   contextPrefix: string;
-  ollamaHistory?: OllamaMessage[];
+  llamacppHistory?: LlamacppMessage[];
   claudeSessionIdReset?: boolean;
 }
 
@@ -14,7 +14,7 @@ export interface CrossRouteResult {
  * When the user switches routes mid-session, per-route history must be
  * synthesized from the other side so the new route sees prior context.
  *
- * - Switching TO local/hybrid: rebuild `ollamaHistory` from the canonical
+ * - Switching TO local/hybrid: rebuild `llamacppHistory` from the canonical
  *   `messages` list (drops the newly-appended user turn with .pop()).
  * - Switching TO claude: drop the prior claude session id (old id was bound
  *   to a different process) and return a `[Prior conversation]` text prefix.
@@ -35,7 +35,7 @@ export function buildCrossRouteContext(
       .filter((m) => m.role === "user" || m.role === "assistant")
       .map((m) => ({ role: m.role as "user" | "assistant", content: m.text || "" }));
     history.pop();
-    result.ollamaHistory = history;
+    result.llamacppHistory = history;
   }
 
   if (resolvedRoute === "claude" && lastRoute !== "claude") {
@@ -60,7 +60,7 @@ export function buildCrossRouteContext(
  * Returns the contextPrefix for use in the outgoing message.
  */
 export function applyCrossRouteContext(state: SessionState, cross: CrossRouteResult): string {
-  if (cross.ollamaHistory) state.ollamaHistory = cross.ollamaHistory;
+  if (cross.llamacppHistory) state.llamacppHistory = cross.llamacppHistory;
   if (cross.claudeSessionIdReset) state.claudeSessionId = null;
   return cross.contextPrefix;
 }

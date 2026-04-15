@@ -5,7 +5,7 @@
  */
 const path = require("path");
 const {
-  streamOllama, streamOllamaAgentic, streamHybrid,
+  streamllama.cpp, streamLlamacppAgentic, streamHybrid,
   fetchHmeContext, validateMessage, auditChanges,
   postTranscript, reindexFiles, postNarrative, isHmeShimReady,
 } = require("./out/router");
@@ -144,12 +144,12 @@ async function run() {
   else console.log(`[SHIM] all OK`);
   results["shim-utils"] = shimOk;
 
-  // 1e. streamOllama (basic)
-  const r1 = await testRoute("STREAM_OLLAMA", (c, d, e) => streamOllama(MSG, OPTS, c, d, e));
-  results["stream-ollama"] = r1.ok;
+  // 1e. streamllama.cpp (basic)
+  const r1 = await testRoute("STREAM_OLLAMA", (c, d, e) => streamllama.cpp(MSG, OPTS, c, d, e));
+  results["stream-llamacpp"] = r1.ok;
 
-  // 1f. streamOllamaAgentic
-  const r2 = await testRoute("LOCAL", (c, d, e) => streamOllamaAgentic(MSG, OPTS, PROJECT, c, d, e));
+  // 1f. streamLlamacppAgentic
+  const r2 = await testRoute("LOCAL", (c, d, e) => streamLlamacppAgentic(MSG, OPTS, PROJECT, c, d, e));
   results["local-agentic"] = r2.ok;
 
   // 1g. streamHybrid
@@ -172,25 +172,25 @@ async function run() {
   // SECTION 2: STRESS — error paths must surface, never hang
   // ═══════════════════════════════════════════════════════════════
 
-  // 2a. streamOllama to dead port — must fire onError with CRITICAL, not hang
+  // 2a. streamllama.cpp to dead port — must fire onError with CRITICAL, not hang
   const s1 = await expectError("DEAD_OLLAMA", (c, d, e) =>
-    streamOllama(MSG, { model: "qwen3-coder:30b", url: "http://localhost:19999" }, c, d, e)
+    streamllama.cpp(MSG, { model: "qwen3-coder:30b", url: "http://localhost:19999" }, c, d, e)
   );
-  results["stress-dead-ollama"] = s1.ok;
+  results["stress-dead-llamacpp"] = s1.ok;
 
-  // 2b. streamOllamaAgentic to dead port
+  // 2b. streamLlamacppAgentic to dead port
   const s2 = await expectError("DEAD_OLLAMA_AGENTIC", (c, d, e) =>
-    streamOllamaAgentic(MSG, { model: "qwen3-coder:30b", url: "http://localhost:19999" }, PROJECT, c, d, e)
+    streamLlamacppAgentic(MSG, { model: "qwen3-coder:30b", url: "http://localhost:19999" }, PROJECT, c, d, e)
   );
   results["stress-dead-agentic"] = s2.ok;
 
-  // 2c. streamOllama with bogus model name — Ollama should return 404
+  // 2c. streamllama.cpp with bogus model name — llama.cpp should return 404
   const s3 = await expectError("BOGUS_MODEL", (c, d, e) =>
-    streamOllama(MSG, { model: "THIS_MODEL_DOES_NOT_EXIST_12345", url: "http://localhost:11434" }, c, d, e)
+    streamllama.cpp(MSG, { model: "THIS_MODEL_DOES_NOT_EXIST_12345", url: "http://localhost:11434" }, c, d, e)
   );
   results["stress-bogus-model"] = s3.ok;
 
-  // 2d. Arbiter classify with dead Ollama — must return isError:true, not hang
+  // 2d. Arbiter classify with dead llama.cpp — must return isError:true, not hang
   console.log("\n=== STRESS: ARBITER_DEAD_OLLAMA ===");
   t0 = Date.now();
   // Temporarily test against a dead port by modifying OLLAMA_URL... we can't do this
@@ -213,11 +213,11 @@ async function run() {
     results["stress-shim-context"] = true;  // rejection = correct behavior if shim is down
   }
 
-  // 2f. streamOllama with empty messages array
+  // 2f. streamllama.cpp with empty messages array
   const s6 = await testRoute("EMPTY_MESSAGES", (c, d, e) =>
-    streamOllama([], OPTS, c, d, e)
+    streamllama.cpp([], OPTS, c, d, e)
   );
-  results["stress-empty-msgs"] = s6.ok;  // Ollama handles empty messages
+  results["stress-empty-msgs"] = s6.ok;  // llama.cpp handles empty messages
 
   // ═══════════════════════════════════════════════════════════════
   // SUMMARY

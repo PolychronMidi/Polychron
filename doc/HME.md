@@ -369,7 +369,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 
 | action | What it does |
 |--------|-------------|
-| `"selftest"` (default) | Verify tool registration, doc sync, index, Ollama, KB, symlinks |
+| `"selftest"` (default) | Verify tool registration, doc sync, index, llama.cpp, KB, symlinks |
 | `"reload"` | Hot-reload tool modules (modules='module1,module2' or 'all') |
 | `"both"` | Reload then selftest |
 | `"index"` | Reindex all code chunks + symbols |
@@ -391,7 +391,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 | `architecture` | 27 | Boundary rules, module profiles, system topology | "feedbackOscillator — 198 lines, highest hotspot rate 31.7%" |
 | `decision` | 17 | Calibration anchors, threshold choices, confirmed rounds | "R80 LEGENDARY: complexity triple-bridge" |
 | `pattern` | 15 | Anti-patterns, proven patterns, evolution recipes | "antagonism bridge: couple BOTH sides of antagonist pair" |
-| `bugfix` | 9 | Root causes, fixes, prevention rules | "perceptual OOM: force CPU when Ollama warm contexts resident" |
+| `bugfix` | 9 | Root causes, fixes, prevention rules | "perceptual OOM: force CPU when llama.cpp warm contexts resident" |
 
 ## Hooks Integration
 
@@ -413,7 +413,7 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** — writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
 | `pretooluse_hme_primer.sh` | PreToolUse | mcp__HME__ | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `hme_admin(action='selftest')` + `evolve(focus='invariants')`); clears flag so it only fires once |
 | `pretooluse_check_pipeline.sh` | PreToolUse | mcp__HME__check_pipeline | **Redirect** — deny repeated check_pipeline calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
-| `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local Ollama agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on Ollama unreachable or empty answer |
+| `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: scan all `mcp__HME__*` tool output for FAIL lines → `hme-errors.log`; warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main` |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
@@ -449,7 +449,7 @@ Polychron's primary module pattern: `globalName = (() => { function tick() {...}
 
 321 IIFE globals + 1914 inner functions = 3848+ total symbols. Internal helpers `lookup_symbol` and `find_callers` (callable via `trace(target)` for callers and `read(target)` internally for symbol lookup) work with Polychron's global-assignment pattern.
 
-### Three-Model Ollama Fleet
+### Three-Model llama.cpp Fleet
 
 HME runs a three-model local synthesis fleet. No external API. All synthesis is local on two dedicated GPUs + CPU RAM.
 
@@ -492,7 +492,7 @@ Each model maintains an independent pre-tokenized KV context cache. The system p
 **How it works:**
 - On the first interactive synthesis call, `_ensure_warm()` spawns a background daemon thread that primes all three models in parallel via `_prime_all_gpus()`
 - Each model gets a *different* warm context tailored to its persona — not a shared global cache
-- Warm context is embedded in the PROMPT field (not `system=`), so Ollama's KV cache captures it
+- Warm context is embedded in the PROMPT field (not `system=`), so llama.cpp's KV cache captures it
 - On subsequent `_local_think` calls with `system=_THINK_SYSTEM`, the system auto-swaps `system=` for `context=warm_ctx` transparently — no caller changes needed
 - Arbiter passes `payload["context"] = arbiter_warm_ctx` for every conflict check
 
@@ -590,7 +590,7 @@ tools/HME/chat/
   src/
     extension.ts          VS Code activation entrypoint (Ctrl+Shift+H)
     ChatPanel.ts          WebviewPanel with inline HTML/CSS/JS chat UI
-    router.ts             Claude CLI, PTY, Ollama, Hybrid streaming + HME HTTP calls
+    router.ts             Claude CLI, PTY, llama.cpp, Hybrid streaming + HME HTTP calls
     Arbiter.ts            Local qwen3:4b classifies message complexity for auto-routing
     TranscriptLogger.ts   Append-only JSONL session transcript (survives compaction)
     SessionStore.ts       Persistent session storage (~/.config/hme-chat/workspaces/)
@@ -605,8 +605,8 @@ tools/HME/chat/
 |-------|---------|----------------|------|
 | **Auto** | Arbiter decides | Full: validation + enrichment + audit + transcript | Free classification, then Claude or Local |
 | **Claude** | `claude` via PTY (hooks fire) | Hooks enforce constraints, PostToolUse logs to transcript | Subscription (Max/Pro) |
-| **Local** | Ollama (qwen3-coder:30b) | Pre-send validation, post-response audit, transcript | Free |
-| **Hybrid** | HME HTTP enrich → Ollama | KB + transcript context injected as system prompt | Free |
+| **Local** | llama.cpp (qwen3-coder:30b) | Pre-send validation, post-response audit, transcript | Free |
+| **Hybrid** | HME HTTP enrich → llama.cpp | KB + transcript context injected as system prompt | Free |
 | _(fallback)_ | `claude -p` stream-json | No hooks, but pre/post validation still runs | Subscription |
 
 ### HME Integration Pipeline
@@ -622,7 +622,7 @@ User types message
     │
     ├─ TranscriptLogger.logUser() + POST /transcript (mirror to HTTP shim)
     │
-    ├─ Dispatch to backend (PTY Claude / Ollama / Hybrid)
+    ├─ Dispatch to backend (PTY Claude / llama.cpp / Hybrid)
     │  └─ Tool calls logged to transcript in real-time
     │
     ├─ TranscriptLogger.logAssistant() + mirror to shim
@@ -633,7 +633,7 @@ User types message
     │
     ├─ Every 8 turns: qwen3:4b synthesizes narrative digest → POST /narrative
     │
-    └─ Session saved to disk (messages + claudeSessionId + ollamaHistory)
+    └─ Session saved to disk (messages + claudeSessionId + llamacppHistory)
 ```
 
 ### HME HTTP Shim
@@ -673,7 +673,7 @@ PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py
 Sessions stored at `~/.config/hme-chat/workspaces/{hash}/`:
 - Auto-created on first message (title from first 60 chars)
 - `claudeSessionId` persisted for `--resume` across VS Code restarts
-- `ollamaHistory` persisted for local/hybrid conversation continuity
+- `llamacppHistory` persisted for local/hybrid conversation continuity
 - Session sidebar: click to load, `+` for new, `×` to delete
 
 ### PostToolUse Transcript Hook

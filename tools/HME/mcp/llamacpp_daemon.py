@@ -16,10 +16,10 @@ This daemon is HME's single source of truth for local inference. It owns:
    The shim's RAG call sites ask this daemon which backend to use, then
    dispatch to either the GPU-resident or CPU-mirror embedder/reranker.
 
-3. **Generation proxy** — `POST /generate` translates ollama-shape
+3. **Generation proxy** — `POST /generate` translates llamacpp-shape
    `/api/generate` requests into llama-server OpenAI `/v1/chat/completions`
    calls. Wall-clock timeouts enforced per-request. This keeps legacy
-   callers in HME that speak the old ollama shape working during migration.
+   callers in HME that speak the old llamacpp shape working during migration.
 
 4. **Health aggregation** — `GET /health` returns combined supervisor +
    instance status. Used by the MCP shim's startup probe to decide whether
@@ -414,7 +414,7 @@ def rag_route() -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  Generation proxy (ollama-shape → llama-server OpenAI-shape)
+#  Generation proxy (llamacpp-shape → llama-server OpenAI-shape)
 # ══════════════════════════════════════════════════════════════════════════
 
 def _resolve_base_url(model: str, instances: list[InstanceSpec]) -> str:
@@ -431,7 +431,7 @@ def _resolve_base_url(model: str, instances: list[InstanceSpec]) -> str:
 
 def _generate_with_timeout(payload: dict, wall_timeout: float,
                            instances: list[InstanceSpec]) -> dict:
-    """Translate an ollama /api/generate-shape request to llama-server
+    """Translate an llamacpp /api/generate-shape request to llama-server
     OpenAI /v1/chat/completions and enforce a hard wall-clock cap."""
     model = payload.get("model", "")
     base = _resolve_base_url(model, instances)
@@ -483,7 +483,7 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             return {"error": f"wall timeout after {wall_timeout}s", "timeout": True}
         if result_box[1]:
             return {"error": result_box[1], "timeout": "timed out" in result_box[1].lower()}
-        # Translate OpenAI response back to ollama-shape for legacy callers.
+        # Translate OpenAI response back to llamacpp-shape for legacy callers.
         resp_body = result_box[0] or {}
         choices = resp_body.get("choices") or []
         text = ""

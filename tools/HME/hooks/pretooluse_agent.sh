@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-# HME PreToolUse: Agent — intercept read-only research subagents → local Ollama + RAG.
+# HME PreToolUse: Agent — intercept read-only research subagents → local llama.cpp + RAG.
 # Async pattern: creates placeholder file, launches agent in background, returns
 # immediately with file reference — mirrors Claude subagent behavior.
 #
@@ -31,9 +31,9 @@ case "$SUBAGENT_TYPE" in
   *)       exit 0 ;;  # passthrough for general-purpose, claude-code-guide, statusline-setup
 esac
 
-# Check Ollama reachable
+# Check llama.cpp reachable
 if ! curl -sf --max-time 2 "http://127.0.0.1:11435/api/tags" > /dev/null 2>&1; then
-  printf '%s INFO hook: Agent PASSTHROUGH — Ollama unreachable\n' \
+  printf '%s INFO hook: Agent PASSTHROUGH — llama.cpp unreachable\n' \
     "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null
   exit 0
 fi

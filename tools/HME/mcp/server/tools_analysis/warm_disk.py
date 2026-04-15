@@ -24,7 +24,7 @@ _warm_ctx_incr_latency: dict = {}
 
 # ── Disk persistence config ───────────────────────────────────────────────────
 # Prefer tmpfs buffer (instant I/O) → fallback to project disk.
-_TMPFS_PATHS = ["/mnt/ollama-buffer-gpu0", "/mnt/ollama-buffer-gpu1"]
+_TMPFS_PATHS = ["/mnt/llamacpp-buffer-gpu0", "/mnt/llamacpp-buffer-gpu1"]
 _DISK_CACHE_DIR = None  # lazily initialized
 _MODEL_CACHE_NAMES = {}  # model → cache file stem, set after model constants load
 

@@ -171,7 +171,7 @@ def _validate(query: str) -> dict:
 def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     """Prompt enrichment via local models — self-contained, no MCP server imports.
 
-    Uses the shim's own _project_engine for KB and calls Ollama directly.
+    Uses the shim's own _project_engine for KB and calls llama.cpp directly.
     Returns {enriched, original, triage, trace}.
     """
     import json as _json
