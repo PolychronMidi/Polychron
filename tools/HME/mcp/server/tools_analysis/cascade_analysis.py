@@ -28,8 +28,30 @@ from . import _track
 
 DEP_GRAPH_REL = os.path.join("metrics", "dependency-graph.json")
 FEEDBACK_GRAPH_REL = os.path.join("metrics", "feedback_graph.json")
+PREDICTIONS_LOG_REL = os.path.join("metrics", "hme-predictions.jsonl")
 
 _CACHE: dict[str, Any] = {}
+
+
+def _log_prediction(target_module: str, affected_modules: list[str]) -> None:
+    """Phase 3.4 — append one prediction record to hme-predictions.jsonl so
+    the post-pipeline reconciler can later compare against fingerprint shifts.
+    Best-effort; never raises."""
+    try:
+        import json as _json
+        import time as _time
+        path = os.path.join(ctx.PROJECT_ROOT, PREDICTIONS_LOG_REL)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        record = {
+            "ts": int(_time.time()),
+            "event": "cascade_prediction",
+            "target": target_module,
+            "predicted": affected_modules,
+        }
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(_json.dumps(record, separators=(",", ":")) + "\n")
+    except OSError:
+        pass
 
 
 def _load_dep_graph() -> dict:
@@ -180,6 +202,16 @@ def cascade_report(target: str, depth: int = 3) -> str:
     by_hop: dict[int, list[tuple[str, list[str]]]] = {}
     for hop, node, via in forward:
         by_hop.setdefault(hop, []).append((node, via))
+
+    # Phase 3.4: log this prediction so post-pipeline can reconcile. Use
+    # module stems (not full paths) to match how fingerprint-comparison
+    # reports changed trust systems / modules.
+    affected_stems: list[str] = []
+    for _hop, node, _via in forward:
+        s = os.path.splitext(os.path.basename(node))[0]
+        if s and s not in affected_stems:
+            affected_stems.append(s)
+    _log_prediction(target_module=stem, affected_modules=affected_stems)
 
     # Reverse callers (1 hop only, for centrality context)
     callers = _reverse_callers(path)

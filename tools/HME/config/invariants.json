@@ -711,6 +711,130 @@
         "jurisdiction_inject"
       ],
       "severity": "error"
+    },
+    {
+      "id": "hypothesis-registry-module-exists",
+      "description": "Phase 3.1 \u2014 hypothesis registry module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/hypothesis_registry.py",
+      "severity": "error"
+    },
+    {
+      "id": "hypothesis-actions-in-learn",
+      "description": "learn_unified must dispatch hypothesize/hypothesis_test actions",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/learn_unified.py",
+      "patterns": [
+        "action == \"hypothesize\"",
+        "action == \"hypothesis_test\""
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "productive-incoherence-hook-wired",
+      "description": "posttooluse_edit.sh must split lazy vs productive violations using the staleness index",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse_edit.sh",
+      "patterns": [
+        "productive_incoherence",
+        "kb-staleness.json",
+        "COVERAGE_STATUS"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "exploration-bonus-in-coherence-score",
+      "description": "compute-coherence-score.js must include an exploration_bonus term from productive_incoherence events",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/compute-coherence-score.js",
+      "patterns": [
+        "productive_incoherence",
+        "explorationBonus"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "semantic-drift-scripts-exist",
+      "description": "Phase 3.3 \u2014 semantic drift checker + signature capture must exist",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "patterns": [
+        "check-kb-semantic-drift\\.py",
+        "reconcile-predictions\\.js"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "drift-checker-file-exists",
+      "description": "check-kb-semantic-drift.py must be present for the pipeline step to run",
+      "type": "file_exists",
+      "path": "scripts/pipeline/check-kb-semantic-drift.py",
+      "severity": "error"
+    },
+    {
+      "id": "signature-capture-exists",
+      "description": "capture-kb-signatures.py must exist so baselines can be bootstrapped",
+      "type": "file_exists",
+      "path": "scripts/pipeline/capture-kb-signatures.py",
+      "severity": "error"
+    },
+    {
+      "id": "prediction-reconciler-exists",
+      "description": "Phase 3.4 \u2014 prediction reconciler must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/reconcile-predictions.js",
+      "severity": "error"
+    },
+    {
+      "id": "cascade-logs-predictions",
+      "description": "cascade_analysis must log every prediction so the reconciler can score accuracy",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
+      "patterns": [
+        "_log_prediction",
+        "hme-predictions.jsonl"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "crystallizer-module-exists",
+      "description": "Phase 3.5 \u2014 pattern crystallizer module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/crystallizer.py",
+      "severity": "error"
+    },
+    {
+      "id": "crystallize-action-in-learn",
+      "description": "learn_unified must dispatch action='crystallize'",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/learn_unified.py",
+      "pattern": "action == \"crystallize\"",
+      "severity": "error"
+    },
+    {
+      "id": "status-phase3-modes",
+      "description": "status_unified must dispatch the Phase 3 modes (hypotheses, drift, accuracy, crystallized)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "patterns": [
+        "mode == \"hypotheses\"",
+        "mode == \"drift\"",
+        "mode == \"accuracy\"",
+        "mode == \"crystallized\""
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "proxy-extended-injections",
+      "description": "hme_proxy.js must inject open hypotheses and semantic drift warnings alongside jurisdiction context",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "patterns": [
+        "loadOpenHypothesesMap",
+        "loadDriftMap",
+        "Open hypotheses"
+      ],
+      "severity": "error"
     }
   ]
 }

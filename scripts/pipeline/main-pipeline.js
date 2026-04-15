@@ -57,7 +57,9 @@ const POST_COMPOSITION = [
   { label: 'snapshot-run',            cmd: 'node scripts/pipeline/snapshot-run.js --perceptual' },
   { label: 'train-verdict-predictor', cmd: 'node scripts/pipeline/train-verdict-predictor.js' },
   { label: 'build-kb-staleness-index', cmd: 'python3 scripts/pipeline/build-kb-staleness-index.py' },
+  { label: 'check-kb-semantic-drift',  cmd: 'python3 scripts/pipeline/check-kb-semantic-drift.py' },
   { label: 'compute-coherence-score',  cmd: 'node scripts/pipeline/compute-coherence-score.js' },
+  { label: 'reconcile-predictions',    cmd: 'node scripts/pipeline/reconcile-predictions.js' },
 ];
 
 // runner

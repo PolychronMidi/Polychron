@@ -94,6 +94,22 @@ def status(mode: str = "all") -> str:
         from .blindspots import blindspots as _bs
         return _bs()
 
+    if mode == "hypotheses":
+        from .hypothesis_registry import hypotheses_report as _hr
+        return _hr()
+
+    if mode == "drift":
+        from .semantic_drift_report import semantic_drift_report as _sd
+        return _sd()
+
+    if mode == "accuracy":
+        from .prediction_accuracy import prediction_accuracy_report as _pa
+        return _pa()
+
+    if mode == "crystallized":
+        from .crystallizer import crystallized_report as _cr
+        return _cr()
+
     if mode == "freshness":
         return _freshness_report()
 

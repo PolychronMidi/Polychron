@@ -30,7 +30,14 @@ def learn(query: str = "", title: str = "", content: str = "",
     action='export' → export KB as markdown.
     action='graph' → spreading-activation knowledge graph (uses query).
     action='dream' → pairwise similarity pass, find hidden connections.
-    action='health' → KB staleness check."""
+    action='health' → KB staleness check.
+    action='hypothesize' → register a hypothesis (title=claim, content=
+      falsification criterion, tags=modules, query=round tag,
+      listening_notes=initial evidence).
+    action='hypothesis_test' → record a test verdict (remove=id,
+      content=CONFIRMED|REFUTED|INCONCLUSIVE, query=round,
+      listening_notes=evidence).
+    action='hypotheses' → list hypotheses (category=OPEN|CONFIRMED|...)."""
     _track("learn")
     _act = action or ("add" if title else "search" if query else "other")
     append_session_narrative("kb_add" if _act == "add" else "search", f"learn({_act}): {title or query or action}")
@@ -60,6 +67,38 @@ def learn(query: str = "", title: str = "", content: str = "",
     if action == "health":
         from server.tools_knowledge import kb_health as _kbh
         return _kbh()
+
+    # Hypothesis lifecycle — Phase 3.1 of openshell_features_to_mimic.md
+    if action == "hypothesize":
+        # title = claim, content = falsification criterion, tags = modules,
+        # query = proposer round tag (R93 etc), listening_notes = initial evidence
+        from .hypothesis_registry import add_hypothesis as _ah
+        return _ah(
+            claim=title,
+            falsification=content,
+            modules=list(tags) if tags else [],
+            round_tag=query,
+            evidence=listening_notes,
+        )
+
+    if action == "hypothesis_test":
+        # remove = hypothesis id, content = verdict, query = round,
+        # listening_notes = evidence
+        from .hypothesis_registry import test_hypothesis as _th
+        return _th(
+            hypothesis_id=remove,
+            verdict=content,
+            round_tag=query,
+            evidence=listening_notes,
+        )
+
+    if action == "hypotheses":
+        from .hypothesis_registry import hypotheses_report as _hr
+        return _hr(status_filter=category if category != "general" else "")
+
+    if action == "crystallize":
+        from .crystallizer import crystallize_cli as _cc
+        return _cc()
 
     # Remove action
     if remove:

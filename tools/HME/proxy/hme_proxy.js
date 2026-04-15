@@ -74,6 +74,8 @@ const HME_READ_TOOLS = new Set([
 // case the manifest is regenerated mid-flight.
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'scripts/pipeline/bias-bounds-manifest.json');
 const STALENESS_PATH = path.join(PROJECT_ROOT, 'metrics/kb-staleness.json');
+const HYPOTHESES_PATH = path.join(PROJECT_ROOT, 'metrics/hme-hypotheses.json');
+const DRIFT_PATH = path.join(PROJECT_ROOT, 'metrics/hme-semantic-drift.json');
 const JURISDICTION_ZONES = [
   'src/conductor/signal/meta/',
   'src/conductor/signal/profiling/',
@@ -82,6 +84,10 @@ let _biasByFile = null;
 let _biasLoadedAt = 0;
 let _stalenessByModule = null;
 let _stalenessLoadedAt = 0;
+let _openHypothesesByModule = null;
+let _hypothesesLoadedAt = 0;
+let _driftByModule = null;
+let _driftLoadedAt = 0;
 const REFRESH_INTERVAL_MS = 60_000;
 
 function loadBiasManifest() {
@@ -127,6 +133,51 @@ function loadStalenessMap() {
   return _stalenessByModule;
 }
 
+function loadOpenHypothesesMap() {
+  // Phase 3.1 extension: surface OPEN hypotheses for modules in scope.
+  const now = Date.now();
+  if (_openHypothesesByModule && now - _hypothesesLoadedAt < REFRESH_INTERVAL_MS) {
+    return _openHypothesesByModule;
+  }
+  _openHypothesesByModule = new Map();
+  try {
+    const raw = fs.readFileSync(HYPOTHESES_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const h of data.hypotheses || []) {
+      if (h.status !== 'OPEN') continue;
+      for (const mod of h.modules || []) {
+        const arr = _openHypothesesByModule.get(mod) || [];
+        arr.push(h);
+        _openHypothesesByModule.set(mod, arr);
+      }
+    }
+  } catch (_err) {
+    // no registry yet
+  }
+  _hypothesesLoadedAt = now;
+  return _openHypothesesByModule;
+}
+
+function loadDriftMap() {
+  // Phase 3.3 extension: surface semantic drift warnings for modules in scope.
+  const now = Date.now();
+  if (_driftByModule && now - _driftLoadedAt < REFRESH_INTERVAL_MS) {
+    return _driftByModule;
+  }
+  _driftByModule = new Map();
+  try {
+    const raw = fs.readFileSync(DRIFT_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const d of data.drifted_entries || []) {
+      if (d.module) _driftByModule.set(d.module, d);
+    }
+  } catch (_err) {
+    // no drift report yet
+  }
+  _driftLoadedAt = now;
+  return _driftByModule;
+}
+
 function isJurisdictionFile(filePath) {
   if (!filePath) return false;
   if (JURISDICTION_ZONES.some((z) => filePath.includes(z))) return true;
@@ -136,6 +187,12 @@ function isJurisdictionFile(filePath) {
   for (const manifestPath of biasMap.keys()) {
     if (filePath.endsWith(manifestPath)) return true;
   }
+  // Phase 3: also flag files that have OPEN hypotheses or drift warnings.
+  const stem = path.basename(filePath, path.extname(filePath));
+  const hyp = loadOpenHypothesesMap();
+  if (hyp.has(stem)) return true;
+  const drift = loadDriftMap();
+  if (drift.has(stem)) return true;
   return false;
 }
 
@@ -143,6 +200,8 @@ function buildJurisdictionContext(filePaths) {
   if (!filePaths || filePaths.length === 0) return null;
   const biasMap = loadBiasManifest();
   const staleMap = loadStalenessMap();
+  const hypMap = loadOpenHypothesesMap();
+  const driftMap = loadDriftMap();
   const lines = [];
   let anyMatched = false;
   for (const fp of filePaths) {
@@ -152,8 +211,10 @@ function buildJurisdictionContext(filePaths) {
     const stem = path.basename(rel, path.extname(rel));
     const bias = biasMap.get(rel) || [];
     const stale = staleMap.get(stem);
+    const hypotheses = hypMap.get(stem) || [];
+    const drifted = driftMap.get(stem);
     const inZone = JURISDICTION_ZONES.some((z) => rel.includes(z));
-    if (!inZone && bias.length === 0 && !stale) continue;
+    if (!inZone && bias.length === 0 && !stale && hypotheses.length === 0 && !drifted) continue;
     anyMatched = true;
     lines.push(`### ${rel}`);
     if (inZone) {
@@ -173,6 +234,26 @@ function buildJurisdictionContext(filePaths) {
       const ds = typeof days === 'number' ? `${days.toFixed(1)}d` : '?';
       lines.push(`- KB status: ${st}  (${hits} entry matches, delta ${ds})`);
     }
+    if (hypotheses.length > 0) {
+      lines.push(`- Open hypotheses (${hypotheses.length}) — this edit may confirm or refute:`);
+      for (const h of hypotheses.slice(0, 4)) {
+        lines.push(`    \`${h.id}\`: ${String(h.claim || '').slice(0, 140)}`);
+        lines.push(`      falsifier: ${String(h.falsification || '').slice(0, 120)}`);
+      }
+      if (hypotheses.length > 4) {
+        lines.push(`    … (+${hypotheses.length - 4} more)`);
+      }
+    }
+    if (drifted) {
+      const fieldsChanged = (drifted.diffs || [])
+        .filter((d) => d.field !== 'content_hash_prefix')
+        .map((d) => d.field);
+      lines.push(
+        `- ⚠ KB semantic drift: the baseline signature for this module has diverged ` +
+          `(${fieldsChanged.length} structural field(s): ${fieldsChanged.slice(0, 4).join(', ')}). ` +
+          `KB description may be wrong.`,
+      );
+    }
     lines.push('');
   }
   if (!anyMatched) return null;
@@ -185,6 +266,9 @@ function buildJurisdictionContext(filePaths) {
     ...lines,
     'If any bias bound is stale, re-snapshot with:',
     '  node scripts/pipeline/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
+    '',
+    'If a drifted KB entry is shown, re-capture its signature after updating the description:',
+    '  python3 scripts/pipeline/capture-kb-signatures.py',
     '',
   ].join('\n');
 }
