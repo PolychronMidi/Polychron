@@ -35,6 +35,7 @@ RELOADABLE = [
     "cascade_analysis", "hypothesis_registry", "prediction_accuracy",
     "semantic_drift_report", "crystallizer", "self_audit", "probe",
     "epistemic_reports", "negative_space", "cognitive_load", "ground_truth",
+    "phase6_reports", "multi_agent",
 ]
 TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]

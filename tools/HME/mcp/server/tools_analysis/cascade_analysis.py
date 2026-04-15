@@ -33,10 +33,17 @@ PREDICTIONS_LOG_REL = os.path.join("metrics", "hme-predictions.jsonl")
 _CACHE: dict[str, Any] = {}
 
 
-def _log_prediction(target_module: str, affected_modules: list[str]) -> None:
+def _log_prediction(target_module: str, affected_modules: list[str], injected: bool = False) -> None:
     """Phase 3.4 — append one prediction record to hme-predictions.jsonl so
     the post-pipeline reconciler can later compare against fingerprint shifts.
-    Best-effort; never raises."""
+    Best-effort; never raises.
+
+    Phase 6.1 addition: `injected` flag marks whether this prediction was
+    surfaced to the Evolver via proxy injection BEFORE the edit was made.
+    Injected predictions are *influence*, not *accuracy* — the Evolver
+    acted knowing the prediction, so confirmation is partly self-fulfilling.
+    The reconciler splits these into separate buckets.
+    """
     try:
         import json as _json
         import time as _time
@@ -47,6 +54,7 @@ def _log_prediction(target_module: str, affected_modules: list[str]) -> None:
             "event": "cascade_prediction",
             "target": target_module,
             "predicted": affected_modules,
+            "injected": bool(injected),
         }
         with open(path, "a", encoding="utf-8") as f:
             f.write(_json.dumps(record, separators=(",", ":")) + "\n")

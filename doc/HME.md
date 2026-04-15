@@ -683,6 +683,61 @@ Phase 5.4 of the feature mapping. HME models Polychron's architecture and its ow
 
 Output: `metrics/hme-cognitive-load.json` with current signature, historical distribution, and load level. Surfaced via `status(mode='cognitive_load')`. Needs ≥5 closed rounds before percentile classification activates.
 
+### Reflexivity Model — Injected vs Clean Predictions
+
+Phase 6.1 of the feature mapping. HME's prediction accuracy scores have been contaminated by HME's own injections: when the cascade indexer predicts that editing X will affect Y and Z, and the proxy surfaces that prediction to the Evolver before the edit, the resulting "confirmation" is partly self-fulfilling — the Evolver knew the prediction and acted on it.
+
+Fix: every `cascade_prediction` record carries an `injected: bool` flag. `reconcile-predictions.js` splits predictions into two buckets:
+
+- **Clean bucket** — predictions made post-hoc with no injection influence. True accuracy test of the cascade model.
+- **Injected bucket** — predictions the Evolver saw before acting. Measures *influence*, not *accuracy*.
+
+A `reflexivity_ratio` per round records what fraction of predicted modules came from injected predictions. High injected-bucket confirmation but flat clean-bucket accuracy means HME is changing what the Evolver does without actually predicting better — influence without understanding. Surfaced via `status(mode='reflexivity')`.
+
+### Constitutional Identity Layer
+
+Phase 6.2 of the feature mapping. CLAUDE.md says what Polychron *can't be* (prohibitions). `metrics/hme-constitution.json` says what Polychron *fundamentally IS* (positive affirmations).
+
+`scripts/pipeline/derive-constitution.py` extracts constitutional claims from three evidence sources:
+
+1. **Structural** — every feedback loop and firewall port in `metrics/feedback_graph.json` is an architectural invariant. All confidence 1.0.
+2. **Methodological** — crystallized patterns with ≥4 rounds and ≥3 members become standing architectural fixtures. Confidence scales with evidence breadth.
+3. **Musical** — human ground truth entries with compelling/surprising/moving sentiment, grouped by (section, moment_type). Confidence scales with record count.
+
+Each claim carries an evidence trail: rounds, pattern ids, ground-truth ids. Surfaced via `status(mode='constitution')`. First run produced **37 claims**: 20 structural + 16 methodological + 1 musical from 19 crystallized patterns and 1 ground-truth entry.
+
+The distinction between rules and identity is the one that allows genuine evolution rather than endless constraint accumulation.
+
+### Doc Drift Detection
+
+Phase 6.3 of the feature mapping — living documentation as detection, not auto-generation. `scripts/pipeline/detect-doc-drift.py` cross-references the KB's architectural claims against the hand-maintained docs:
+
+- KB entries referencing modules that no longer exist in `src/`
+- Backtick-fenced module-name tokens in ARCHITECTURE.md / SUBSYSTEMS.md / HME.md / TUNING_MAP.md / CLAUDE.md that don't resolve to a source file
+- Hard rules that have generated ≥5 productive_incoherence events (blocking exploration — refinement candidate)
+- Hard rules with zero coherence_violation events over ≥10 closed rounds (consistently honored — constitutional promotion candidate)
+
+Output: `metrics/hme-doc-drift.json`. v1 is deliberately noisy — checks only backtick-fenced tokens to avoid false positives from natural English. Surfaced via `status(mode='doc_drift')`. DETECTION signal only; human review required before claiming any doc change.
+
+### Generalization Extraction
+
+Phase 6.4 of the feature mapping. `scripts/pipeline/extract-generalizations.py` separates project-specific crystallized patterns from structurally general ones by scoring each pattern on `project_specificity`: the fraction of tokens (in tags + synthesis + seed) that match a Polychron-specific vocabulary list.
+
+Patterns below the threshold (default 0.3) become generalization candidates. Each gets a templated DRAFT abstraction appended to `doc/hme-discoveries.md` — the system's externalized intellectual contribution. Templates require human polish before becoming claims. Over enough rounds this becomes the most valuable artifact the project produces: a body of knowledge about emergent musical systems design that exists nowhere else.
+
+First run flagged 14 of 19 crystallized patterns as generalization candidates. Surfaced via `status(mode='generalizations')`.
+
+### Multi-Agent Observability Scaffold
+
+Phase 6.5 of the feature mapping. HME can't unilaterally split the Evolver into Perceiver / Proposer / Implementer agents — that's a process-level decision outside HME's jurisdiction. What HME provides is the scaffold so that IF the loop is run multi-agent, HME tracks inter-agent coherence.
+
+Activity events gain an optional `role` field (perceiver / proposer / implementer / single). Hypotheses and todos gain an optional `agent_role` tag. `tools_analysis/multi_agent.py` computes:
+
+- **perceiver → proposer coherence** — fraction of proposer-role hypotheses that share modules with recent perceiver-role activity
+- **proposer → implementer coherence** — fraction of implementer-role file_written events targeting modules mentioned in proposer-role todos/hypotheses
+
+When all events carry `role=single`, inter-agent coherence is N/A — single-agent operation isn't broken, it just can't be scored against the multi-agent ideal. Surfaced via `status(mode='multi_agent')`.
+
 ### Human Ground Truth — The Grounding Anchor
 
 Phase 5.5 of the feature mapping — the answer to the circularity problem. Every HME metric eventually grounds out in HME's own outputs. Musical correlation was a partial external anchor but EnCodec and CLAP measure audio features, not musical meaning. The only complete anchor is a human listener finding the composition genuinely moving.
