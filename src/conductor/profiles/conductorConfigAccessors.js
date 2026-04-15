@@ -73,12 +73,14 @@ conductorConfigAccessors = (deps) => {
       }
       let arcType = V.assertNonEmptyString(arcMapping[sectionPhase], `conductorConfig.arcMapping.${sectionPhase}`);
       // R21: feedback energy can override arc type. High energy = build-resolve, oscillating = wave.
+      // compositeIntensity is legitimately optional during preBoot before the signal bridge has
+      // data; use optionalFinite with 0 baseline rather than `|| 0` (which would also swallow NaN).
       const fbEnergy = safePreBoot.call(() => {
         const sigs = conductorSignalBridge.getSignals();
-        return sigs.compositeIntensity || 0;
+        return V.optionalFinite(sigs.compositeIntensity, 0);
       }, 0);
-      if (typeof fbEnergy === 'number' && fbEnergy > 0.7 && rf() < 0.3) arcType = 'build-resolve';
-      else if (typeof fbEnergy === 'number' && fbEnergy < 0.25 && rf() < 0.2) arcType = 'wave';
+      if (fbEnergy > 0.7 && rf() < 0.3) arcType = 'build-resolve';
+      else if (fbEnergy < 0.25 && rf() < 0.2) arcType = 'wave';
       return arcType;
     }
     return Object.assign({}, arcMapping);

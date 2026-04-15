@@ -171,7 +171,7 @@ hyperMetaManagerHealth = (() => {
   function recordExceedance(pair) {
     const axes = pair.split('-');
     for (let i = 0; i < axes.length; i++) {
-      ST.axisExceedanceCounts[axes[i]] = (ST.axisExceedanceCounts[axes[i]] || 0) + 1;
+      ST.axisExceedanceCounts[axes[i]] = V.optionalFinite(ST.axisExceedanceCounts[axes[i]], 0) + 1;
     }
     // Per-pair tracking for monopoly detection (E1)
     ST.pairExceedanceCounts[pair] = (V.optionalFinite(ST.pairExceedanceCounts[pair], 0)) + 1;

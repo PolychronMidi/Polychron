@@ -16,7 +16,7 @@ regimeReactiveDampingEquilibrator = (() => {
 
     const shares = {};
     for (let i = 0; i < args.regimeRing.length; i++) {
-      shares[args.regimeRing[i]] = (shares[args.regimeRing[i]] || 0) + 1;
+      shares[args.regimeRing[i]] = (shares[args.regimeRing[i]] ?? 0) + 1;
     }
     for (const key in shares) shares[key] /= args.regimeRing.length;
 

@@ -46,7 +46,7 @@ outputAnalyzer = (() => {
     const sorted = [...notes].sort((a, b) => a.startMs - b.startMs);
     for (let i = 1; i < sorted.length; i++) {
       const iv = m.abs(sorted[i].pitch - sorted[i - 1].pitch) % 12;
-      intervals.set(iv, (intervals.get(iv) || 0) + 1);
+      intervals.set(iv, (intervals.get(iv) ?? 0) + 1);
     }
 
     // Temporal density (notes per second, windowed)

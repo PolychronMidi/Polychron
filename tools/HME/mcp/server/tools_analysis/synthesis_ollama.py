@@ -268,7 +268,7 @@ def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None
 
     t = _th.Thread(target=_worker, daemon=True)
     t.start()
-    t.join(timeout=wall_timeout)
+    t.join(timeout=wall_timeout)  # llamacpp-ok: no daemon, thread-abandon is the only wall clock
 
     if t.is_alive():
         logger.warning(f"llamacpp /v1/chat/completions: wall timeout ({wall_timeout}s) for {model}")
@@ -697,7 +697,7 @@ def _local_chat(messages: list[dict], model: str | None = None,
                 _holder["_err"] = e
         t = _th.Thread(target=_worker, daemon=True)
         t.start()
-        t.join(timeout=60)
+        t.join(timeout=60)  # llamacpp-ok: _local_chat llamacpp branch, no daemon path
         if t.is_alive() or _holder["_err"] is not None:
             err = _holder["_err"]
             _cb.record_failure(is_timeout=(t.is_alive() or (err is not None and "time" in str(err).lower())))

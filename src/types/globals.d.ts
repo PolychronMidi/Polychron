@@ -2005,7 +2005,10 @@ declare var eventBus: EventBusAPI;
 declare var eventCatalog: EventCatalogAPI;
 declare var trustSystems: TrustSystemsAPI;
 declare var safePreBoot: {
-  call<T>(fn: () => T, fallback?: T): T | undefined;
+  // No fallback: may return undefined if fn throws before boot.
+  call<T>(fn: () => T): T | undefined;
+  // Explicit fallback: return type excludes undefined — fn throwing falls back.
+  call<T>(fn: () => T, fallback: T): T;
 };
 declare var traceSummaryData: any;
 declare var telemetryHealthData: any;

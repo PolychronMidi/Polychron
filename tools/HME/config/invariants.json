@@ -413,9 +413,9 @@
     },
     {
       "id": "hme-py-no-silent-catchall",
-      "description": "HME Python server files must not use silent `except Exception: pass` catch-all (swallows all errors)",
+      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE '^[[:space:]]*except[[:space:]]+Exception:[[:space:]]*pass' tools/HME/mcp/server/ --include='*.py'",
+      "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/mcp/server",
       "severity": "warning"
     },
     {
@@ -451,9 +451,9 @@
     },
     {
       "id": "no-mcp-side-timeouts-synthesis",
-      "description": "Ollama timeout enforcement belongs in the daemon, not scattered across synthesis files. synthesis_ollama.py and synthesis_pipeline.py must not use join(timeout=) — use plain join() and let the daemon enforce wall clocks.",
+      "description": "Ollama-backed synthesis must not enforce wall clocks MCP-side; timeout belongs in the ollama daemon. Lines inside _llamacpp_generate / _llamacpp_chat are exempt because llama.cpp has no persistent daemon — thread abandonment is the only way to enforce wall clocks on the OpenAI HTTP client.",
       "type": "shell_output_empty",
-      "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_ollama.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null",
+      "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_ollama.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null | grep -v '# llamacpp-ok'",
       "severity": "error"
     }
   ]

@@ -264,8 +264,8 @@ def _background_startup_chain():
             if _daemon_status.get("status") == "ready" and _wc and all(v.get("fresh") for v in _wc.values()):
                 logger.info("startup chain [1+2/3]: daemon ready + all caches fresh — skipping model init and priming")
                 _skip_ollama_steps = True
-        except Exception:
-            pass
+        except Exception as _daemon_err:
+            logger.debug(f"startup chain: ollama daemon unreachable ({type(_daemon_err).__name__}), running init+prime directly")
 
         if not _skip_ollama_steps:
             init_result = ""
@@ -301,8 +301,8 @@ def _background_startup_chain():
             if age_s < 600:
                 logger.info(f"startup chain [3/3]: skipped — cache warmed {age_s:.0f}s ago (< 600s)")
                 skip_warming = True
-    except Exception:
-        pass
+    except OSError as _stamp_err:
+        logger.debug(f"startup chain: cache stamp read failed, falling through to warm: {_stamp_err}")
 
     if not skip_warming:
         try:
