@@ -39,20 +39,21 @@ logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %
 logger = logging.getLogger("HME.http")
 logger.setLevel(logging.INFO)
 
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT") or os.getcwd()
-PROJECT_DB = os.environ.get("RAG_DB_PATH") or os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME")
+PROJECT_ROOT = ENV.require("PROJECT_ROOT")
+PROJECT_DB = ENV.require("RAG_DB_PATH")
 GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HME", "global_kb")
-MODEL_NAME = os.environ.get("RAG_MODEL", "BAAI/bge-base-en-v1.5")
-MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
+MODEL_NAME = ENV.require("RAG_MODEL")
+MODEL_BACKEND = ENV.require("RAG_BACKEND")
 
 _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
-_shared_model = None           # bge-base-en-v1.5 — text/knowledge/symbols embedder (ONNX/CPU)
-_shared_code_model = None      # jina-embeddings-v2-base-code — code_chunks embedder (GPU primary)
-_shared_reranker = None        # bge-reranker-v2-m3 — cross-encoder for rerank (GPU primary)
-_shared_code_model_cpu = None  # jina — CPU mirror, used when arbiter is busy on shared GPU
-_shared_reranker_cpu = None    # bge-reranker — CPU mirror, used when arbiter is busy on shared GPU
+_shared_model = None           # Qwen3-Embedding-0.6B — text/knowledge/symbols embedder (GPU primary)
+_shared_model_cpu = None       # Qwen3-Embedding-0.6B — CPU mirror
+_shared_code_model = None      # bge-code-v1 — code_chunks embedder (GPU primary)
+_shared_reranker = None        # mxbai-rerank-base-v2 — cross-encoder for rerank (GPU primary)
+_shared_code_model_cpu = None  # bge-code-v1 — CPU mirror
+_shared_reranker_cpu = None    # mxbai-rerank-base-v2 — CPU mirror
 
 
 # ── RAG routing: GPU vs CPU mirror ────────────────────────────────────────
@@ -62,9 +63,7 @@ _shared_reranker_cpu = None    # bge-reranker — CPU mirror, used when arbiter 
 # "cpu" based on its in-memory _arbiter_busy flag (set around every arbiter
 # request dispatch). We cache the last answer for 100 ms so bursty RAG calls
 # don't DoS the daemon with HTTP probes.
-_LLAMACPP_DAEMON_URL = os.environ.get(
-    "HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735"
-)
+_LLAMACPP_DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 _rag_route_cache = {"route": "gpu", "ts": 0.0}
 _rag_route_ttl_s = 0.1
 
@@ -86,7 +85,7 @@ def _rag_route() -> str:
         import urllib.request as _ur
         # Ask for RAG's specific Vulkan device; the daemon returns whether
         # that device currently has an in-flight generation.
-        _tag = os.environ.get("HME_RAG_VULKAN", "Vulkan1")
+        _tag = ENV.require("HME_RAG_VULKAN")
         with _ur.urlopen(
             f"{_LLAMACPP_DAEMON_URL}/rag-route?device={_tag}", timeout=0.2,
         ) as resp:
@@ -240,8 +239,8 @@ class _RagDispatcher:
         return getattr(inst, name)
 _lib_engines: dict = {}  # key = lib_rel path
 
-CODE_MODEL_NAME = os.environ.get("RAG_CODE_MODEL", "jinaai/jina-embeddings-v2-base-code")
-RERANKER_NAME = os.environ.get("RAG_RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+CODE_MODEL_NAME = ENV.require("RAG_CODE_MODEL")
+RERANKER_NAME = ENV.require("RAG_RERANKER_MODEL")
 
 # Initialise stores with paths before any request can arrive
 from hme_http_store import init_store
@@ -368,17 +367,26 @@ def _load_engines():
             logger.warning(f"GPU detection failed, using CPU: {type(e).__name__}: {e}")
         logger.info(f"RAG device: {_rag_device}")
 
-        # Text embedder (bge-base-en-v1.5) — knowledge_table + symbol_table
-        # ONNX backend is CPU-only and small (~400MB RAM) — intentionally NOT on GPU.
+        # Text embedder (Qwen3-Embedding-0.6B) — knowledge_table + symbol_table.
+        # 1024-dim, Apache 2.0. Tries ONNX backend first (honors RAG_BACKEND env
+        # and any future ONNX export); falls through to torch on GPU.
         try:
-            _shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, model_kwargs={"file_name": "onnx/model.onnx"})
+            _shared_model = SentenceTransformer(
+                MODEL_NAME, backend=MODEL_BACKEND,
+                model_kwargs={"file_name": "onnx/model.onnx"},
+            )
             logger.info(f"Text embedder: {MODEL_NAME} ({MODEL_BACKEND})")
         except Exception as e:
-            logger.warning(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch on {_rag_device}")
-            _shared_model = SentenceTransformer(MODEL_NAME, device=_rag_device)
+            logger.warning(
+                f"{MODEL_BACKEND} backend failed ({type(e).__name__}), "
+                f"falling back to torch on {_rag_device}"
+            )
+            _shared_model = SentenceTransformer(
+                MODEL_NAME, device=_rag_device, trust_remote_code=True,
+            )
 
-        # Code embedder (jina-embeddings-v2-base-code) — code_chunks table
-        # Placed on GPU1 (or CPU fallback). trust_remote_code required for JinaBERT.
+        # Code embedder (BAAI/bge-code-v1) — code_chunks table.
+        # 1536-dim, Apache 2.0, Qwen2-based, 32K context.
         try:
             _shared_code_model = SentenceTransformer(
                 CODE_MODEL_NAME, trust_remote_code=True, device=_rag_device,
@@ -388,7 +396,8 @@ def _load_engines():
             logger.warning(f"Code embedder load failed ({e}), falling back to text embedder for code_chunks")
             _shared_code_model = _shared_model
 
-        # Cross-encoder reranker (bge-reranker-v2-m3) — rerank top candidates
+        # Cross-encoder reranker (mxbai-rerank-base-v2) — rerank top candidates.
+        # 500M params, Apache 2.0, Qwen2.5-based.
         try:
             _shared_reranker = CrossEncoder(RERANKER_NAME, max_length=512, device=_rag_device)
             logger.info(f"Reranker: {RERANKER_NAME} on {_rag_device}")
@@ -397,11 +406,19 @@ def _load_engines():
             _shared_reranker = None
 
         # CPU mirrors — loaded when RAG primary is on GPU so embedding / rerank
-        # requests can fall back to CPU instances whenever the arbiter is busy
-        # on the shared GPU. Daemon's /rag-route endpoint owns the decision.
+        # requests can fall back to CPU instances whenever the GPU is contended
+        # or the model has been offloaded by the VramManager.
+        _shared_model_cpu = None
         _shared_code_model_cpu = None
         _shared_reranker_cpu = None
         if _rag_device.startswith("cuda"):
+            try:
+                _shared_model_cpu = SentenceTransformer(
+                    MODEL_NAME, device="cpu", trust_remote_code=True,
+                )
+                logger.info(f"Text embedder (CPU mirror): {MODEL_NAME}")
+            except Exception as e:
+                logger.warning(f"CPU-mirror text embedder load failed ({e}) — GPU-only fallback")
             try:
                 _shared_code_model_cpu = SentenceTransformer(
                     CODE_MODEL_NAME, trust_remote_code=True, device="cpu",
@@ -421,20 +438,35 @@ def _load_engines():
         if _rag_device.startswith("cuda"):
             os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-        # Wrap code_model + reranker in _RagDispatcher so concurrent requests
-        # stack across the GPU + CPU-mirror worker pair and the next free
-        # compatible worker serves each queued waiter. When running on GPU,
-        # each model is registered with a VramManager so active offload
-        # kicks in whenever arbiter grows its KV cache past the safe
-        # headroom threshold. The text_model (bge ONNX) is CPU-only and
-        # stays unwrapped.
+        # Wrap text / code / reranker in _RagDispatcher so concurrent requests
+        # stack across GPU + CPU-mirror worker pairs and the next free worker
+        # serves each queued waiter. When running on GPU, each model is
+        # registered with a VramManager for active offload under pressure.
+        #
+        # Offload priority: SMALLEST FIRST. Under crowding, the smallest model
+        # drops to CPU first (cheapest CPU fallback latency), keeping the
+        # most expensive-to-run-on-CPU large model resident as long as
+        # possible. Reload (after pressure clears) is reverse order: the
+        # smallest comes back last, after the larger ones are already safe.
+        #
+        # GPU0 residents (after swap 2026-04-15):
+        #   reranker: mxbai-rerank-base-v2     ~1.0 GB  priority 1 (smallest)
+        #   text:     Qwen3-Embedding-0.6B     ~1.3 GB  priority 2
+        #   code:     BAAI/bge-code-v1         ~4.0 GB  priority 3 (largest)
         _vram_mgr = None
+        _mm_text = None
         _mm_code = None
         _mm_rerank = None
         if _rag_device.startswith("cuda"):
             from vram_manager import VramManager, ManagedModel, start_reload_poller
             _gpu_idx = int(_rag_device.split(":", 1)[1])
             _vram_mgr = VramManager(gpu_idx=_gpu_idx)
+
+            def _make_text_gpu():
+                return SentenceTransformer(
+                    MODEL_NAME, device=f"cuda:{_gpu_idx}",
+                    trust_remote_code=True,
+                )
 
             def _make_code_gpu():
                 return SentenceTransformer(
@@ -447,38 +479,74 @@ def _load_engines():
                     RERANKER_NAME, max_length=512, device=f"cuda:{_gpu_idx}",
                 )
 
-            _mm_code = ManagedModel(
-                name="jina-code-embedder",
-                gpu_idx=_gpu_idx,
-                priority=4,        # last to offload; hottest path
-                size_gb=1.0,
-                headroom_gb=0.5,
-                gpu_factory=_make_code_gpu,
-                gpu_instance=_shared_code_model,
-                cpu_instance=_shared_code_model_cpu,
-            )
-            _vram_mgr.register(_mm_code)
-
+            # Register in smallest-first priority order (priority=1 offloads
+            # first). Register order doesn't matter — VramManager.register
+            # sorts by priority internally.
             if _shared_reranker is not None:
                 _mm_rerank = ManagedModel(
-                    name="bge-reranker-v2-m3",
+                    name="mxbai-rerank-base-v2",
                     gpu_idx=_gpu_idx,
-                    priority=3,    # offloaded before jina
-                    size_gb=2.2,
-                    headroom_gb=1.0,
+                    priority=1,        # smallest → first to offload
+                    size_gb=1.0,
+                    headroom_gb=0.5,
                     gpu_factory=_make_rerank_gpu,
                     gpu_instance=_shared_reranker,
                     cpu_instance=_shared_reranker_cpu,
                 )
                 _vram_mgr.register(_mm_rerank)
 
+            # Text embedder on GPU — only register if it's actually on cuda.
+            # The ONNX backend path loads to CPU and wouldn't be a managed
+            # GPU instance; detect via `.device`.
+            _text_is_gpu = False
+            try:
+                _text_is_gpu = str(getattr(_shared_model, "device", "cpu")).startswith("cuda")
+            except Exception as _e:
+                logger.debug(f"text-device probe failed: {type(_e).__name__}: {_e}")
+            if _text_is_gpu:
+                _mm_text = ManagedModel(
+                    name="qwen3-embedding-0.6b-text",
+                    gpu_idx=_gpu_idx,
+                    priority=2,        # mid-sized
+                    size_gb=1.3,
+                    headroom_gb=0.5,
+                    gpu_factory=_make_text_gpu,
+                    gpu_instance=_shared_model,
+                    cpu_instance=_shared_model_cpu,
+                )
+                _vram_mgr.register(_mm_text)
+
+            _mm_code = ManagedModel(
+                name="bge-code-v1",
+                gpu_idx=_gpu_idx,
+                priority=3,        # largest → last to offload
+                size_gb=4.0,
+                headroom_gb=1.5,
+                gpu_factory=_make_code_gpu,
+                gpu_instance=_shared_code_model,
+                cpu_instance=_shared_code_model_cpu,
+            )
+            _vram_mgr.register(_mm_code)
+
             # Background poller: reload offloaded models on busy→idle edge
             # of the RAG GPU's Vulkan device.
-            _rag_vulkan_tag = os.environ.get("HME_RAG_VULKAN", "Vulkan1")
+            _rag_vulkan_tag = ENV.require("HME_RAG_VULKAN")
             start_reload_poller(
                 _vram_mgr, _LLAMACPP_DAEMON_URL, _rag_vulkan_tag,
                 poll_interval_s=2.0,
             )
+
+        # Wrap text in a dispatcher only if it actually has a GPU/CPU pair
+        # worth dispatching between. If ONNX CPU-only loaded it (or CPU-
+        # mirror load failed with no GPU instance either), fall back to the
+        # raw object so RAGEngine's .encode() path still works.
+        if _mm_text is not None:
+            _text_model_router = _RagDispatcher(
+                _shared_model, _shared_model_cpu, "text",
+                managed_model=_mm_text, vram_manager=_vram_mgr,
+            )
+        else:
+            _text_model_router = _shared_model  # raw, unmanaged
 
         _code_model_router = _RagDispatcher(
             _shared_code_model, _shared_code_model_cpu, "code",
