@@ -212,8 +212,8 @@ def evolution_momentum() -> str:
                     bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
                     out.append(f"  VIRGIN: {a}↔{bn} r={b['r']:+.3f} → bridge on `{b['field']}`")
                 out.append("")
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"out.append: {type(_err1).__name__}: {_err1}")
 
     # --- 4. Subsystem receptivity from journal ---
     # Split into lines for ±5-line window search (subsystem name and verdict rarely co-occur on same line)

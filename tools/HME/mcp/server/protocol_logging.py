@@ -34,8 +34,8 @@ class _LoggingBuffer:
                     logger.info(f"PROTO tools/call → {name_}")
                 elif method and not method.startswith("notifications/"):
                     logger.info(f"PROTO {method}")
-            except Exception:
-                pass
+            except Exception as _err1:
+                logger.debug(f"logger.info: {type(_err1).__name__}: {_err1}")
 
     def read(self, n=-1):
         d = self._inner.read(n)

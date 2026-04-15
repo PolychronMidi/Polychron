@@ -33,8 +33,8 @@ def _log_arbiter_decision(tool: str, question: str, classification: str,
         })
         with open(_ARBITER_LOG, "a") as f:
             f.write(entry + "\n")
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f"f.write: {type(_err1).__name__}: {_err1}")
 
 
 def _log_synthesis_trace(tool: str, question: str, trace: dict):
@@ -46,8 +46,8 @@ def _log_synthesis_trace(tool: str, question: str, trace: dict):
                              "query_hash": hash(question) & 0xFFFFFFFF, **trace})
         with open(_TRACE_LOG, "a") as f:
             f.write(entry + "\n")
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f"f.write: {type(_err2).__name__}: {_err2}")
 
 
 def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,

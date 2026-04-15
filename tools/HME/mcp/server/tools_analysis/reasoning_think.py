@@ -65,8 +65,8 @@ def think(about: str, context: str = "") -> str:
             )
             if _log.stdout.strip():
                 context = f"Recent git activity:\n{_log.stdout.strip()[:800]}"
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f'silent-except reasoning_think.py:68: {type(_err1).__name__}: {_err1}')
 
     # Multi-term KB search for richer context than single-query lookup
     kb_hits: list = []
@@ -126,8 +126,8 @@ def think(about: str, context: str = "") -> str:
             if os.path.isfile(hme_doc):
                 with open(hme_doc, encoding="utf-8") as _f:
                     injected_state = "## HME Tool Reference (from doc/HME.md):\n" + _f.read()[:3000]
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f'silent-except reasoning_think.py:129: {type(_err2).__name__}: {_err2}')
         injected_state += "\n\n## Recent HME Evolution History (from KB):\n"
         _hme_keywords = {"hme", "mcp", "server", "tool", "evolution_", "coupling_",
                          "synthesis", "reasoning", "before_editing", "module_intel",
@@ -148,8 +148,8 @@ def think(about: str, context: str = "") -> str:
             injected_state += leverage_full[:1600]
             injected_state += "\n\n### Dimension gaps (underused coupling signals):\n"
             injected_state += _dim_gaps()[:400]
-        except Exception:
-            pass
+        except Exception as _err3:
+            logger.debug(f'silent-except reasoning_think.py:151: {type(_err3).__name__}: {_err3}')
 
     # For dead-channel / signal questions: inject topology + producer source code
     _CHANNEL_TERMS = {"channel", "signal", "dead", "consumer", "producer", "l0", "posted", "consumed", "harvest"}
@@ -180,8 +180,8 @@ def think(about: str, context: str = "") -> str:
                                 start = max(0, post_match.start() - 100)
                                 snippet = src[start:post_match.end() + 50]
                                 injected_state += f"\n\n## Producer source for '{ch_name}' (from {prod}.js):\n```\n{snippet}\n```"
-        except Exception:
-            pass
+        except Exception as _err4:
+            logger.debug(f'silent-except reasoning_think.py:183: {type(_err4).__name__}: {_err4}')
 
     # Directive prompt for free-form questions
     if about in prompts:

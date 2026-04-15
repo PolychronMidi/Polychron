@@ -83,8 +83,8 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                         capture_output=True, text=True, timeout=2
                     )
                     _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
-                except Exception:
-                    pass
+                except Exception as _err1:
+                    logger.debug(f'silent-except review_unified.py:86: {type(_err1).__name__}: {_err1}')
             # If still no files (e.g. auto-committed before review), read EDIT backlog from nexus
             if not _cf:
                 import os as _os
@@ -95,8 +95,8 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     _nexus_files = [e.split(":", 2)[2] for e in _edit_entries if e.count(":") >= 2]
                     if _nexus_files:
                         _cf = ",".join(_nexus_files)
-                except Exception:
-                    pass
+                except Exception as _err2:
+                    logger.debug(f'silent-except review_unified.py:98: {type(_err2).__name__}: {_err2}')
             try:
                 from .workflow_audit import what_did_i_forget as _wdif
                 _wdif_out = _wdif(_cf or "")
@@ -113,15 +113,15 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     else:
                         verdict = "clean"  # No explicit warnings → treat as clean
                     parts.append(emit_review_verdict_marker(verdict))
-                except Exception:
-                    pass
+                except Exception as _err3:
+                    logger.debug(f'silent-except review_unified.py:116: {type(_err3).__name__}: {_err3}')
             except Exception as _fe:
                 parts.append(f"what_did_i_forget error: {_fe}")
                 try:
                     from server.onboarding_chain import emit_review_verdict_marker
                     parts.append(emit_review_verdict_marker("error"))
-                except Exception:
-                    pass
+                except Exception as _err4:
+                    logger.debug(f'silent-except review_unified.py:123: {type(_err4).__name__}: {_err4}')
         elif m == "convention":
             if not file_path:
                 parts.append("Error: convention mode requires file_path.")
@@ -186,8 +186,8 @@ def _unified_evolution_recommender() -> str:
                 "title": f"Fix orphan channel '{ch}'",
                 "detail": f"Read by {', '.join(cons)} but never posted. Stale read or missing producer.",
             })
-    except Exception:
-        pass
+    except Exception as _err5:
+        logger.debug(f'silent-except review_unified.py:189: {type(_err5).__name__}: {_err5}')
 
     # 2. Cascade bypass detection (direct callers >> L0 consumers)
     try:
@@ -206,8 +206,8 @@ def _unified_evolution_recommender() -> str:
                         "title": f"Route {prod} callers through L0 '{ch}'",
                         "detail": f"{direct} direct callers vs {l0_count} L0 consumers — {direct - l0_count} bypass L0.",
                     })
-    except Exception:
-        pass
+    except Exception as _err6:
+        logger.debug(f'silent-except review_unified.py:209: {type(_err6).__name__}: {_err6}')
 
     # 3. Dimension gaps (underused coupling signals)
     try:
@@ -225,8 +225,8 @@ def _unified_evolution_recommender() -> str:
                     "title": f"Expand '{lowest[0]}' coverage ({lowest[1]} consumers)",
                     "detail": f"Least-used coupling dimension. Adding consumers here creates new signal paths.",
                 })
-    except Exception:
-        pass
+    except Exception as _err7:
+        logger.debug(f'silent-except review_unified.py:228: {type(_err7).__name__}: {_err7}')
 
     # 4. Unexplored antagonist pairs (from leverage analysis KB history)
     try:
@@ -240,8 +240,8 @@ def _unified_evolution_recommender() -> str:
                     "title": f"Bridge {b['pair_a']} <-> {b['pair_b']} (r={b['r']:.3f})",
                     "detail": f"Antagonist pair with 0 bridges. Field: {b['field']} ({b['eff_a']} / {b['eff_b']})",
                 })
-    except Exception:
-        pass
+    except Exception as _err8:
+        logger.debug(f'silent-except review_unified.py:243: {type(_err8).__name__}: {_err8}')
 
     # 5. Low-trust systems needing attention
     try:
@@ -259,8 +259,8 @@ def _unified_evolution_recommender() -> str:
                         "title": f"Investigate low-trust system '{name}' (score={score:.2f})",
                         "detail": "Consistently underperforming — may need outcome scoring recalibration.",
                     })
-    except Exception:
-        pass
+    except Exception as _err9:
+        logger.debug(f'silent-except review_unified.py:262: {type(_err9).__name__}: {_err9}')
 
     # Sort by priority descending and format
     recommendations.sort(key=lambda r: -r["priority"])

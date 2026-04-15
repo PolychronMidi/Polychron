@@ -159,8 +159,8 @@ def module_story(module_name: str) -> str:
                     parts.append(f"  POSTS: {', '.join(_posts)}")
                 if _reads:
                     parts.append(f"  READS: {', '.join(_reads)}")
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"parts.append: {type(_err1).__name__}: {_err1}")
 
     # Musical impact — compositional awareness + runtime trace
     comp = _get_compositional_context(module_name)
@@ -193,8 +193,8 @@ def module_story(module_name: str) -> str:
                 if runtime_lines:
                     parts.append(f"\n## Runtime Behavior (last run)")
                     parts.extend(runtime_lines)
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f"parts.extend: {type(_err2).__name__}: {_err2}")
 
     # Runtime interactions (top cooperative/competitive modules)
     try:
@@ -206,8 +206,8 @@ def module_story(module_name: str) -> str:
             for line in imap_lines[1:9]:  # skip header, show top 8
                 if line.strip():
                     parts.append(line)
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f"parts.append: {type(_err3).__name__}: {_err3}")
 
     # Semantic neighbors
     sim_limit = limits["similar"]
@@ -234,8 +234,8 @@ def module_story(module_name: str) -> str:
                     parts.append(f"\n## Similar Modules")
                     for r in filtered:
                         parts.append(f"  {r['source'].replace(ctx.PROJECT_ROOT + '/', '')} ({fmt_sim_score(r['score'])})")
-        except Exception:
-            pass
+        except Exception as _err4:
+            logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # Blind spots — what HME can't see about this module
     blind_spots = []
@@ -256,8 +256,8 @@ def module_story(module_name: str) -> str:
                 if module_name.lower() not in _doc_text:
                     if len(caller_files) >= 5:
                         blind_spots.append(f"NOT IN {doc_name}: high-dependency module undocumented in key architecture docs")
-            except Exception:
-                pass
+            except Exception as _err5:
+                logger.debug(f"blind_spots.append: {type(_err5).__name__}: {_err5}")
     if blind_spots:
         parts.append(f"\n## Blind Spots ({len(blind_spots)})")
         for bs in blind_spots:

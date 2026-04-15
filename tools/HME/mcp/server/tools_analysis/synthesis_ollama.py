@@ -82,8 +82,8 @@ class _CircuitBreaker:
                 try:
                     from server import operational_state as _ops
                     _ops.record_circuit_breaker_flap(self.name)
-                except Exception:
-                    pass
+                except Exception as _err1:
+                    logger.debug(f"_ops.record_circuit_breaker_flap: {type(_err1).__name__}: {_err1}")
             elif len(self._failures) >= self._failure_threshold:
                 self._state = self.OPEN
                 self._opened_at = now
@@ -95,8 +95,8 @@ class _CircuitBreaker:
                 try:
                     from server import operational_state as _ops
                     _ops.record_circuit_breaker_trip(self.name)
-                except Exception:
-                    pass
+                except Exception as _err2:
+                    logger.debug(f"_ops.record_circuit_breaker_trip: {type(_err2).__name__}: {_err2}")
 
 
 _circuit_breakers: dict[str, _CircuitBreaker] = {}
@@ -408,8 +408,8 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
         if cancel_event.is_set():
             try:
                 resp.close()
-            except Exception:
-                pass
+            except Exception as _err3:
+                logger.debug(f"resp.close: {type(_err3).__name__}: {_err3}")
             logger.info("_cancellable_urlopen: cancelled in %.1fs", __import__("time").time() - (deadline - timeout))
             return None, InterruptedError("cancelled by interactive call")
         final_result["response"] = "".join(chunks)
@@ -419,8 +419,8 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
             return None, InterruptedError("cancelled by interactive call")
         try:
             resp.close()
-        except Exception:
-            pass
+        except Exception as _err4:
+            logger.debug(f"resp.close: {type(_err4).__name__}: {_err4}")
         return None, e
 
 
@@ -1097,8 +1097,8 @@ def _inject_context(prompt: str) -> str:
             alerts.append(f"recovery={ops['recovery_success_rate_ema']:.0%}")
         if alerts:
             parts.append(f"[Health: {', '.join(alerts)}]")
-    except Exception:
-        pass
+    except Exception as _err5:
+        logger.debug(f"parts.append: {type(_err5).__name__}: {_err5}")
 
     # L26: morphogenetic pre-loading — inject semantic field from intent + patterns
     try:
@@ -1115,8 +1115,8 @@ def _inject_context(prompt: str) -> str:
                 field_parts.append("[Intent: stress testing — be precise about enforcement gaps]")
             if field_parts:
                 parts = field_parts + parts
-    except Exception:
-        pass
+    except Exception as _err6:
+        logger.debug(f"field_parts + parts: {type(_err6).__name__}: {_err6}")
 
     # L25: surface historical phantom risk for this prompt type
     patterns = _load_patterns_cache()
@@ -1388,8 +1388,8 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
             verified=_verified_count, phantom=_phantom_count,
             elapsed_s=elapsed, cache_hit=False,
         )
-    except Exception:
-        pass
+    except Exception as _err7:
+        logger.debug(f"): {type(_err7).__name__}: {_err7}")
 
     from .synthesis_session import append_session_narrative
     append_session_narrative(

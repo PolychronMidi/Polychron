@@ -37,8 +37,8 @@ def _get_architectural_globals() -> list[str]:
                     name = m.group(1)
                     if len(name) >= 10:  # architectural globals only
                         names.append(name)
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f'silent-except symbols.py:40: {type(_err1).__name__}: {_err1}')
     _GLOBALS_CACHE = names
     return _GLOBALS_CACHE
 
@@ -82,8 +82,8 @@ def get_dependency_graph(file_path: str) -> str:
             if referenced:
                 parts.append(f"Referenced Globals ({len(referenced)}):\n" +
                               "\n".join(f"  {g}" for g in sorted(referenced)))
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f'silent-except symbols.py:85: {type(_err2).__name__}: {_err2}')
 
     return "\n\n".join(parts)
 
@@ -418,8 +418,8 @@ def cross_language_trace(symbol_name: str) -> str:
                     parts.append(f"  Signature: {d['signature'][:120]}")
             else:
                 parts.append(f"\nDefinition: not in symbol index (may be an IIFE global)")
-        except Exception:
-            pass
+        except Exception as _err3:
+            logger.debug(f'silent-except symbols.py:421: {type(_err3).__name__}: {_err3}')
 
     # 2. Direct callers (who uses this symbol in src/)
     callers = _find_callers(symbol_name, ctx.PROJECT_ROOT)
@@ -485,8 +485,8 @@ def cross_language_trace(symbol_name: str) -> str:
                         parts.append(f"\n**Outgoing dependencies** ({len(outgoing)} architectural globals read):")
                         for g in sorted(outgoing):
                             parts.append(f"  {g}")
-        except Exception:
-            pass
+        except Exception as _err4:
+            logger.debug(f'silent-except symbols.py:488: {type(_err4).__name__}: {_err4}')
 
     # 5. Exported API (what methods does this module expose?)
     if ctx.project_engine.symbol_table is not None:
@@ -507,8 +507,8 @@ def cross_language_trace(symbol_name: str) -> str:
                         parts.append(sig)
                     if len(api) > 20:
                         parts.append(f"  ... and {len(api) - 20} more")
-        except Exception:
-            pass
+        except Exception as _err5:
+            logger.debug(f'silent-except symbols.py:510: {type(_err5).__name__}: {_err5}')
 
     # 6. KB constraints
     kb = ctx.project_engine.search_knowledge(symbol_name, top_k=3)

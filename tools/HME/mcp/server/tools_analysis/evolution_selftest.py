@@ -132,8 +132,8 @@ def hme_selftest() -> str:
                         for line in _pyf:
                             if line.strip() == "@ctx.mcp.tool()":
                                 tool_count += 1
-                except Exception:
-                    pass
+                except Exception as _err1:
+                    logger.debug(f"1: {type(_err1).__name__}: {_err1}")
     results.append(f"{'PASS' if tool_count >= 6 else 'FAIL'}: {tool_count} tools registered")
 
     try:
@@ -351,8 +351,8 @@ def hme_selftest() -> str:
             results.append(f"FAIL: Ollama cooldown -- timeout {int(_cooldown_remaining)}s remaining, synthesis calls blocked")
         elif _so._last_think_failure == "error":
             results.append(f"WARN: Ollama last failure -- non-timeout error (will retry)")
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f"results.append: {type(_err2).__name__}: {_err2}")
 
     try:
         _log_path = os.path.join(ctx.PROJECT_ROOT, "log", "hme.log")
@@ -373,8 +373,8 @@ def hme_selftest() -> str:
                     results.append(f"  > ({_count}x) {_msg}")
             else:
                 results.append("PASS: hme.log -- no warnings/errors in last 200 lines")
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f"results.append: {type(_err3).__name__}: {_err3}")
 
     for name, target in [
         ("~/.claude/mcp/HME", "mcp symlink"),

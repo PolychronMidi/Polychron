@@ -34,8 +34,8 @@ def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
                 continue
             try:
                 candidates.append((os.path.getsize(fpath), fpath))
-            except Exception:
-                pass
+            except Exception as _err1:
+                logger.debug(f"candidates.append: {type(_err1).__name__}: {_err1}")
     candidates.sort()
     parts = []
     used = 0
@@ -50,8 +50,8 @@ def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
                 entry = entry[:char_budget - used]
             parts.append(entry)
             used += len(entry)
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f"len: {type(_err2).__name__}: {_err2}")
     return "".join(parts)
 
 
@@ -68,8 +68,8 @@ def _gpu_persona(model: str) -> str:
             f"  [{k.get('category','')}] {k.get('title','')}: {k.get('content','')[:300]}"
             for k in all_kb
         )
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f"): {type(_err3).__name__}: {_err3}")
 
     _modules = []
     try:
@@ -80,8 +80,8 @@ def _gpu_persona(model: str) -> str:
             os.path.basename(f).replace(".js", "") for f in _cl_files
             if not os.path.basename(f).startswith("index")
         ))
-    except Exception:
-        pass
+    except Exception as _err4:
+        logger.debug(f")): {type(_err4).__name__}: {_err4}")
     modules_str = ", ".join(_modules) if _modules else "(unavailable)"
 
     if model == _LOCAL_MODEL:
@@ -116,11 +116,11 @@ def _gpu_persona(model: str) -> str:
                 try:
                     _txt = open(_f).read(4000)
                     _signal_fields += _re.findall(r"'([a-z][a-zA-Z]+)'", _txt)[:5]
-                except Exception:
-                    pass
+                except Exception as _err5:
+                    logger.debug(f"_re.findall: {type(_err5).__name__}: {_err5}")
             _signal_fields = sorted(set(_signal_fields))[:40]
-        except Exception:
-            pass
+        except Exception as _err6:
+            logger.debug(f"sorted: {type(_err6).__name__}: {_err6}")
         if not _signal_fields:
             _signal_fields = ["contourShape", "counterpoint", "thematicDensity",
                               "tessituraPressure", "intervalFreshness", "density",

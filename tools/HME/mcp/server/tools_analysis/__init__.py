@@ -253,8 +253,8 @@ def _get_compositional_context(module_name: str) -> str:
                 parts.append("**Narrative mentions:**")
                 for l in matched[:5]:
                     parts.append(f"  {l[:200]}")
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"parts.append: {type(_err1).__name__}: {_err1}")
     if os.path.isfile(summary_path):
         try:
             with open(summary_path) as f:
@@ -274,8 +274,8 @@ def _get_compositional_context(module_name: str) -> str:
             if dominant:
                 top = [f"{s['system']}({s.get('score', 0):.2f})" for s in dominant[:3]]
                 parts.append(f"**Top trust systems:** {', '.join(top)}")
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f"parts.append: {type(_err2).__name__}: {_err2}")
     result = "\n".join(parts) if parts else ""
     _compositional_context_cache[cache_key] = result
     # Evict stale entries (keep cache bounded — only current mtime matters)

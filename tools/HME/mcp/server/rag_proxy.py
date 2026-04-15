@@ -148,8 +148,8 @@ def start_proxy_monitor(port: int = _DEFAULT_PORT) -> None:
     try:
         from server import meta_observer
         meta_observer.register_monitor_thread(_t)
-    except Exception:
-        pass
+    except (ImportError, AttributeError) as _mo_err:
+        logger.debug(f"meta_observer thread registration unavailable: {_mo_err}")
     logger.info(f"Proxy health monitor started (interval={_MONITOR_INTERVAL}s)")
 
 
@@ -197,8 +197,8 @@ def _intent_propagation_tick() -> None:
         from server import context as _ctx
         from server.tools_analysis.workflow import _warm_pre_edit_cache_sync
         _warm_pre_edit_cache_sync(max_files=len(targets), target_hints=targets)
-    except Exception:
-        pass  # strictly non-fatal: this is a latency optimization
+    except Exception as _intent_err:
+        logger.debug(f"intent_propagation pre-warm failed (non-fatal): {type(_intent_err).__name__}: {_intent_err}")
 
 
 def _check_ollama_daemon_health() -> None:
@@ -258,8 +258,8 @@ def _proxy_health_monitor(port: int) -> None:
                             "shim_decay_precursor", "shim_latency_crash"
                         ) and time.time() > pred["deadline"]:
                             _mo18.resolve_prediction(pred["id"], outcome_occurred=False)
-                except Exception:
-                    pass
+                except Exception as _pred_err:
+                    logger.debug(f"monitor: prediction resolve failed (non-fatal): {type(_pred_err).__name__}: {_pred_err}")
                 _check_ollama_daemon_health()
                 _intent_propagation_tick()  # Layer 11: pre-warm cache from transcript
                 # Layer 8: coherence snapshot → metrics/hme-coherence.jsonl
@@ -298,8 +298,8 @@ def _proxy_health_monitor(port: int) -> None:
                             try:
                                 with open(_coherence_log) as _clf:
                                     _sample_count = sum(1 for _ln in _clf if _ln.strip())
-                            except Exception:
-                                pass
+                            except OSError as _sc_err:
+                                logger.debug(f"coherence sample count read failed: {_sc_err}")
                         _MATURITY_THRESHOLD = 50  # readings required before alerts are trusted
                         if coherence < 0.5:
                             if _sample_count < _MATURITY_THRESHOLD:
@@ -331,8 +331,8 @@ def _proxy_health_monitor(port: int) -> None:
                         "shim_decay_precursor", "shim_latency_crash"
                     ):
                         _mo18.resolve_prediction(pred["id"], outcome_occurred=True)
-            except Exception:
-                pass
+            except Exception as _pred_err2:
+                logger.debug(f"monitor: crash prediction resolve failed (non-fatal): {type(_pred_err2).__name__}: {_pred_err2}")
             logger.warning("Proxy health monitor: shim unhealthy — attempting restart")
             # Layer 0 + 2: mark RECOVERING, record crash
             try:
@@ -340,8 +340,8 @@ def _proxy_health_monitor(port: int) -> None:
                 from server import operational_state as ops
                 sp.set_phase(sp.SystemPhase.RECOVERING, "proxy_monitor: shim unhealthy")
                 ops.record_shim_crash()
-            except Exception:
-                pass
+            except (ImportError, AttributeError) as _phase_err:
+                logger.debug(f"monitor: phase/ops transition unavailable: {_phase_err}")
             # Layer 4 + 10: register failure as parent (triggers cascade detection), capture ID
             monitor_fid = None
             try:
@@ -351,8 +351,8 @@ def _proxy_health_monitor(port: int) -> None:
                     "Shim health check failed — attempting restart",
                     severity="WARNING",
                 )
-            except Exception:
-                pass
+            except (ImportError, AttributeError) as _reg_err:
+                logger.debug(f"monitor: context.register_critical_failure unavailable: {_reg_err}")
             if ensure_shim_running(port):
                 logger.info("Proxy health monitor: shim recovered")
                 try:
@@ -362,8 +362,8 @@ def _proxy_health_monitor(port: int) -> None:
                     _ctx._recovery_last_attempt = 0.0
                     sp.set_phase(sp.SystemPhase.READY, "proxy_monitor: shim revived")
                     rd.resolve_cascade("shim revived by proxy monitor")
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as _rev_err:
+                    logger.debug(f"monitor: recovery-side hooks unavailable: {_rev_err}")
             else:
                 try:
                     from server import context as _ctx
@@ -375,8 +375,8 @@ def _proxy_health_monitor(port: int) -> None:
                     )
                     from server import system_phase as sp
                     sp.set_phase(sp.SystemPhase.DEGRADED, "proxy_monitor: shim restart failed")
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as _dead_err:
+                    logger.debug(f"monitor: dead-shim hooks unavailable: {_dead_err}")
         except Exception as _e:
             crash_count += 1
             logger.error(f"Proxy health monitor crashed (#{crash_count}): {type(_e).__name__}: {_e}")
@@ -389,8 +389,8 @@ def _proxy_health_monitor(port: int) -> None:
                         f"Monitor loop crashed #{crash_count}: {type(_e).__name__}: {_e} — watchdog restarting",
                         severity="WARNING",
                     )
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as _wd_err:
+                    logger.debug(f"monitor: watchdog register unavailable: {_wd_err}")
                 time.sleep(5)
             else:
                 logger.error("Proxy health monitor: too many crashes — giving up")
@@ -405,8 +405,8 @@ def _revive_dead_shim(port: int, engine_name: str, error: str, caused_by: str = 
         try:
             from server import context as _ctx
             _ctx._recovery_last_attempt = 0.0  # allow recovery path to re-run
-        except Exception:
-            pass
+        except (ImportError, AttributeError) as _rec_err:
+            logger.debug(f"revive_dead_shim: context reset unavailable: {_rec_err}")
     else:
         try:
             from server import context as _ctx
@@ -417,8 +417,8 @@ def _revive_dead_shim(port: int, engine_name: str, error: str, caused_by: str = 
                 severity="CRITICAL",
                 caused_by=caused_by,  # Layer 4: causal chain from connection failure
             )
-        except Exception:
-            pass
+        except (ImportError, AttributeError) as _reg_err:
+            logger.debug(f"revive_dead_shim: failure register unavailable: {_reg_err}")
 
 
 def _notify_proxy_degraded(engine_name: str, fail_count: int) -> None:
@@ -457,7 +457,7 @@ class RAGProxy:
         try:
             from server import context as _ctx
             session_id = _ctx.SESSION_ID
-        except Exception:
+        except (ImportError, AttributeError):
             session_id = "unknown"
         req = urllib.request.Request(
             f"{self._base}/rag", data=body,
@@ -475,8 +475,8 @@ class RAGProxy:
                         from server import system_phase as sp
                         if sp.is_degraded_or_worse():
                             sp.set_phase(sp.SystemPhase.READY, f"{self._engine} proxy recovered")
-                    except Exception:
-                        pass
+                    except (ImportError, AttributeError) as _recov_err:
+                        logger.debug(f"proxy recovery phase set unavailable: {_recov_err}")
                 return json.loads(resp.read()).get("result")
         except urllib.error.HTTPError as e:
             if e.code == 404:
@@ -487,15 +487,15 @@ class RAGProxy:
                     try:
                         from server import system_phase as sp
                         sp.set_phase(sp.SystemPhase.DEGRADED, f"{self._engine}: repeated 404 on /rag")
-                    except Exception:
-                        pass
+                    except (ImportError, AttributeError) as _deg_err:
+                        logger.debug(f"proxy 404 degrade: phase unavailable: {_deg_err}")
                     # Layer 10: only notify if not already in cascade (prevent amplification)
                     _cascade_404 = False
                     try:
                         from server import resonance_detector as rd
                         _cascade_404 = rd.is_cascade_active()
-                    except Exception:
-                        pass
+                    except (ImportError, AttributeError) as _cas_err:
+                        logger.debug(f"proxy 404: cascade detector unavailable: {_cas_err}")
                     if not _cascade_404:
                         threading.Thread(
                             target=_notify_proxy_degraded,
@@ -512,8 +512,8 @@ class RAGProxy:
                 try:
                     from server import system_phase as sp
                     sp.set_phase(sp.SystemPhase.DEGRADED, f"{self._engine}: connection failed ({type(e).__name__})")
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as _deg_err:
+                    logger.debug(f"proxy connection degrade: phase unavailable: {_deg_err}")
                 # Layer 4 + 10: register failure (triggers cascade detection), capture ID for causal chain
                 conn_fid = None
                 try:
@@ -523,15 +523,15 @@ class RAGProxy:
                         f"Shim connection failed ({type(e).__name__}) — attempting revival",
                         severity="WARNING",
                     )
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as _reg_err:
+                    logger.debug(f"proxy connection: register_critical_failure unavailable: {_reg_err}")
                 # Layer 10: check cascade gate — don't amplify an already-cascading failure storm
                 _cascade = False
                 try:
                     from server import resonance_detector as rd
                     _cascade = rd.is_cascade_active()
-                except Exception:
-                    pass
+                except (ImportError, AttributeError) as _cas_err:
+                    logger.debug(f"proxy connection: cascade detector unavailable: {_cas_err}")
                 if not _cascade:
                     threading.Thread(
                         target=_revive_dead_shim,

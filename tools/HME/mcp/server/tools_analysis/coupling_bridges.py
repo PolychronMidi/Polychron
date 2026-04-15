@@ -1,11 +1,14 @@
 """Antagonism bridge intelligence — leverage analysis, bridge cache, field guides, and design synthesis."""
 import glob as _glob_mod
+import logging
 import os
 import re
 from collections import defaultdict
 
 from server import context as ctx
 from . import _track
+
+logger = logging.getLogger("HME")
 from .coupling_data import (
     _TRUST_FILE_ALIASES,
     _scan_coupling_state, _load_trust_scores,
@@ -348,8 +351,8 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
                     pair_key = f"{a_name}:{b_name}"
                     if round_label not in _kb_pair_rounds[pair_key]:
                         _kb_pair_rounds[pair_key].append(round_label)
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f'silent-except coupling_bridges.py:354: {type(_err1).__name__}: {_err1}')
 
     # Get latest round number for staleness computation
     _latest_round = 0
@@ -361,8 +364,8 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
                 first_match = _re_j.search(r'\bR(\d+)\b', _jf.read(500))
                 if first_match:
                     _latest_round = int(first_match.group(1))
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f'silent-except coupling_bridges.py:367: {type(_err2).__name__}: {_err2}')
 
     out = [f"# Antagonism Leverage Analysis  ({len(antagonists)} strong pairs, {n_beats} beats)\n"]
     out.append("For each antagonist pair: candidate bridge fields that couple BOTH modules")
@@ -454,8 +457,8 @@ def _read_module_src(module_name: str, max_chars: int = 2000) -> str:
             try:
                 with open(matches[0], encoding="utf-8", errors="ignore") as f:
                     return f.read()[:max_chars]
-            except Exception:
-                pass
+            except Exception as _err3:
+                logger.debug(f'silent-except coupling_bridges.py:460: {type(_err3).__name__}: {_err3}')
     return f"(source for {module_name} not found)"
 
 
@@ -681,8 +684,8 @@ def forge_bridges(top_n: int = 2) -> str:
                         ]
                         if valid_methods:
                             module_methods[mod_name] = valid_methods
-                except Exception:
-                    pass
+                except Exception as _err4:
+                    logger.debug(f'silent-except coupling_bridges.py:687: {type(_err4).__name__}: {_err4}')
 
             # Re-prompt if too many unknown API calls — inject valid symbol list as constraint
             if len(unknown_refs) > 2 and ctx.project_engine.symbol_table is not None:

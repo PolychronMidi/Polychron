@@ -65,8 +65,8 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
                     ps = json.load(f)
                 verdict = ps.get("verdict", "unknown")
                 assembled_parts.append(f"[Pipeline: {verdict}]")
-            except Exception:
-                pass
+            except Exception as _err1:
+                logger.debug(f"assembled_parts.append: {type(_err1).__name__}: {_err1}")
 
     assembled = "\n\n".join(assembled_parts) if assembled_parts else ""
     trace["assembly_ms"] = int((time.monotonic() - t1) * 1000)

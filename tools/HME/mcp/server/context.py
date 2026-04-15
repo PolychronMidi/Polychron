@@ -135,8 +135,8 @@ class _LoggingMCP:
                     try:
                         from server import operational_state as ops
                         ops.update_ema("tool_response_ms_ema", elapsed * 1000)
-                    except Exception:
-                        pass
+                    except (ImportError, AttributeError) as _ema_err:
+                        logger.debug(f"operational_state EMA update unavailable: {_ema_err}")
                     # Log immediately — post-processing must not delay this timestamp
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {str(result)[:200]}")
                     # Layer 4: LIFESAVER drain with causal tree format
@@ -213,8 +213,8 @@ def _try_recover_from_proxy_error() -> bool:
     try:
         from server import system_phase as sp
         sp.set_phase(sp.SystemPhase.RECOVERING, "in-process recovery attempt")
-    except Exception:
-        pass
+    except (ImportError, AttributeError) as _sp_err:
+        logger.debug(f"recovery phase transition unavailable: {_sp_err}")
 
     try:
         from server.rag_proxy import RAGProxy, check_shim_rag_capable, get_lib_engines
@@ -225,8 +225,8 @@ def _try_recover_from_proxy_error() -> bool:
                 from server import operational_state as ops
                 sp.set_phase(sp.SystemPhase.DEGRADED, "shim not rag-capable")
                 ops.record_recovery(False)
-            except Exception:
-                pass
+            except (ImportError, AttributeError) as _rec_err:
+                logger.debug(f"recovery: phase/ops unavailable: {_rec_err}")
             return False
         new_project = RAGProxy("project")
         new_global = RAGProxy("global")
@@ -239,8 +239,8 @@ def _try_recover_from_proxy_error() -> bool:
                 from server import operational_state as ops
                 sp.set_phase(sp.SystemPhase.DEGRADED, "proxy self-test failed")
                 ops.record_recovery(False)
-            except Exception:
-                pass
+            except (ImportError, AttributeError) as _st_err:
+                logger.debug(f"recovery: self-test fail transition unavailable: {_st_err}")
             return False
         project_engine = new_project
         global_engine = new_global
@@ -254,8 +254,8 @@ def _try_recover_from_proxy_error() -> bool:
             from server import operational_state as ops
             sp.set_phase(sp.SystemPhase.READY, "proxy self-test passed")
             ops.record_recovery(True)
-        except Exception:
-            pass
+        except (ImportError, AttributeError) as _ok_err:
+            logger.debug(f"recovery: success transition unavailable: {_ok_err}")
 
         logger.info(f"HME: auto-recovered — shim healthy + /rag verified ({len(test_result)} KB entries)")
         register_critical_failure(
@@ -278,8 +278,8 @@ def _try_recover_from_proxy_error() -> bool:
             from server import operational_state as ops
             sp.set_phase(sp.SystemPhase.DEGRADED, f"recovery exception: {type(e).__name__}")
             ops.record_recovery(False)
-        except Exception:
-            pass
+        except (ImportError, AttributeError) as _ex_err:
+            logger.debug(f"recovery: exception transition unavailable: {_ex_err}")
         return False
 
 

@@ -127,8 +127,8 @@ def check_pipeline() -> str:
                     break
             _check_pipeline_blocked = True
             return f"Pipeline: IN PROGRESS ({last_step} — log modified {log_age_s:.0f}s ago)"
-    except Exception:
-        pass
+    except Exception as _err1:
+        logger.debug(f'silent-except digest.py:130: {type(_err1).__name__}: {_err1}')
 
     # Failed
     _check_pipeline_blocked = False
@@ -196,8 +196,8 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
                     f"  Top trust: {trust_str}\n"
                     f"  Fingerprints: {fp_verdict}\n"
                 )
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f'silent-except digest.py:199: {type(_err2).__name__}: {_err2}')
         return (
             "pipeline_digest: no new pipeline output since last digest.\n"
             f"{status}"
@@ -401,8 +401,8 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
                     out.append(f"## Run Delta  ({prev.get('timestamp','?')[:16]} → {cur.get('timestamp','?')[:16]})")
                     out.extend(delta_lines)
                     out.append("")
-            except Exception:
-                pass
+            except Exception as _err3:
+                logger.debug(f'silent-except digest.py:404: {type(_err3).__name__}: {_err3}')
 
     # --- Optional critique ---
     if critique:

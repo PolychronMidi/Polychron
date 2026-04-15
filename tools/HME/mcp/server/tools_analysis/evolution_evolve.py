@@ -80,8 +80,8 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
             tgt = _et(_design_out)
             if tgt:
                 _design_out = _design_out + "\n\n" + emit_target_marker(tgt)
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f'silent-except evolution_evolve.py:83: {type(_err1).__name__}: {_err1}')
         return _design_out
 
     if focus == "curate":
@@ -344,8 +344,8 @@ def _auto_curate() -> str:
                             f"Record which module pairs produce it and its musical effect."
                         ),
                     })
-    except Exception:
-        pass
+    except Exception as _err2:
+        logger.debug(f'silent-except evolution_evolve.py:347: {type(_err2).__name__}: {_err2}')
 
     # 5. Section count change
     if len(runs) >= 2:
@@ -608,8 +608,8 @@ def _detect_contradictions() -> str:
                         "id": _e["id"], "title": _e["title"], "symbol": _sym,
                     })
                     break  # one mismatch per entry is sufficient
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f'silent-except evolution_evolve.py:611: {type(_err3).__name__}: {_err3}')
 
     if code_mismatches:
         parts.append(f"\n## Code-vs-KB Grounding ({len(code_mismatches)} stale claim(s))\n")
@@ -938,8 +938,8 @@ def _adversarial_stress() -> str:
             for ln in raw_lines:
                 try:
                     scores.append(json.loads(ln).get("coherence", 1.0))
-                except Exception:
-                    pass
+                except Exception as _err4:
+                    logger.debug(f'silent-except evolution_evolve.py:941: {type(_err4).__name__}: {_err4}')
             if scores:
                 avg_coh = sum(scores) / len(scores)
                 if avg_coh < 0.6:

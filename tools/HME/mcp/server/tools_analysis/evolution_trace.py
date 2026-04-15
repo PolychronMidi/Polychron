@@ -58,8 +58,8 @@ def causal_trace(symptom: str, max_depth: int = 3) -> str:
             tuning_lines = [l for l in tuning.split("\n") if symptom.lower() in l.lower()]
             if tuning_lines:
                 tuning_context = "Tuning map references:\n" + "\n".join(tuning_lines[:10])
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f'silent-except evolution_trace.py:61: {type(_err1).__name__}: {_err1}')
 
     source_parts = []
     candidate_modules = re.findall(r'[a-z][a-zA-Z]{8,}', symptom)

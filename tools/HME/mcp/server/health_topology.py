@@ -124,8 +124,8 @@ def _build_topology() -> dict:
     try:
         from server import meta_observer
         meta_obs = meta_observer.get_status()
-    except Exception:
-        pass
+    except (ImportError, AttributeError) as _mo_err:
+        logger.debug(f"meta_observer status unavailable: {_mo_err}")
 
     return {
         "ts": time.time(),
@@ -219,6 +219,7 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
                     healthy_signals.append((f"model_init({local_model})", True))
 
     resolved_count = 0
+    resolved_sources: set[str] = set()
     for f in active:
         source = f.get("source", "")
         for sig_src, _ in healthy_signals:
@@ -226,11 +227,21 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
                 try:
                     fg.resolve_failure(f["id"])
                     resolved_count += 1
+                    resolved_sources.add(source)
                 except Exception as e:
                     logger.warning(f"auto-resolve: could not resolve {f.get('id')}: {e}")
                 break
     if resolved_count:
         logger.info(f"auto-resolve: cleared {resolved_count} stale failure(s) on recovery")
+        # Also sweep the mirrored todo store so the LIFESAVER todo entries
+        # don't remain as dangling [pending] items after the underlying
+        # component recovered.
+        try:
+            from server.tools_analysis.todo import resolve_lifesaver_todos
+            for src in resolved_sources:
+                resolve_lifesaver_todos(src)
+        except (ImportError, AttributeError) as _tl_err:
+            logger.debug(f"auto-resolve: todo sweep unavailable: {_tl_err}")
 
 
 def _check_llamacpp_instances() -> dict:

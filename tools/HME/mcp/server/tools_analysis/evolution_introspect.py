@@ -65,8 +65,8 @@ def hme_introspect() -> str:
                     latest_section = latest_section[:cut if cut > 0 else 1500] + "\n  ... (truncated)"
                 parts.append("\n### Latest Journal Entry")
                 parts.append(latest_section)
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"parts.append: {type(_err1).__name__}: {_err1}")
 
     kb_count = 0
     kb_categories: dict = {}
@@ -81,8 +81,8 @@ def hme_introspect() -> str:
         try:
             all_kb = ctx.project_engine.list_knowledge()
             kb_count = len(all_kb)
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f"len: {type(_err2).__name__}: {_err2}")
     idx = {"files": 0, "chunks": 0, "symbols": 0}
     try:
         status = ctx.project_engine.get_status()
@@ -90,8 +90,8 @@ def hme_introspect() -> str:
         idx["chunks"] = status.get("total_chunks", 0)
         sym_status = ctx.project_engine.get_symbol_status()
         idx["symbols"] = sym_status.get("total_symbols", 0) if sym_status.get("indexed") else 0
-    except Exception:
-        pass
+    except Exception as _err3:
+        logger.debug(f"sym_status.get: {type(_err3).__name__}: {_err3}")
     parts.append(f"\n### System Health")
     parts.append(f"  KB entries: {kb_count}")
     if kb_categories:

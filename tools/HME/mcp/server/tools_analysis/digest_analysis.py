@@ -113,8 +113,8 @@ def composition_critique() -> str:
         try:
             with open(narrative_path, encoding="utf-8") as f:
                 context_parts.append(f"NARRATIVE:\n{f.read()[:3000]}")
-        except Exception:
-            pass
+        except Exception as _err1:
+            logger.debug(f"context_parts.append: {type(_err1).__name__}: {_err1}")
 
     perc_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "perceptual-report.json")
     if os.path.isfile(perc_path):
@@ -146,8 +146,8 @@ def composition_critique() -> str:
                         )
             if perc_lines:
                 context_parts.append("PERCEPTUAL:\n" + "\n".join(perc_lines))
-        except Exception:
-            pass
+        except Exception as _err2:
+            logger.debug(f"context_parts.append: {type(_err2).__name__}: {_err2}")
 
     replay_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-replay.json")
     if os.path.isfile(replay_path):
@@ -165,8 +165,8 @@ def composition_critique() -> str:
                     )
             if replay_lines:
                 context_parts.append("SECTIONS:\n" + "\n".join(replay_lines))
-        except Exception:
-            pass
+        except Exception as _err3:
+            logger.debug(f"context_parts.append: {type(_err3).__name__}: {_err3}")
 
     if not context_parts:
         return "No pipeline data available. Run `npm run main` first."

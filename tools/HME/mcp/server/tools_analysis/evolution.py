@@ -173,8 +173,8 @@ def kb_seed(top_n: int = 15) -> str:
                     with open(filepath, encoding="utf-8") as _f:
                         src = _f.read()[:1500]
                     source_snippets.append(f"### {name} ({count} callers)\n```\n{src}\n```")
-                except Exception:
-                    pass
+                except Exception as _err1:
+                    logger.debug(f"source_snippets.append: {type(_err1).__name__}: {_err1}")
 
         if source_snippets:
             prompt = (
