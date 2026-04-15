@@ -59,7 +59,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
             state.axisAdjustments++;
             if (context.currentRegime === 'coherent' && axisTightenScale > 0) state.coherentHotspotAxisAdj++;
             state.perAxisAdj[axis] = (V.optionalFinite(state.perAxisAdj[axis], 0)) + 1;
-            state.regimeAxisAdj[context.regimeKey] = (state.regimeAxisAdj[context.regimeKey] || 0) + 1;
+            state.regimeAxisAdj[context.regimeKey] = V.optionalFinite(state.regimeAxisAdj[context.regimeKey], 0) + 1;
           }
         }
       } else if (share < config.AXIS_UNDERSHOOT && share > 0.001) {
@@ -145,7 +145,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
             state.pairLastRelaxBeat[pair] = state.beatCount;
             state.axisAdjustments++;
             state.perAxisAdj[axis] = (V.optionalFinite(state.perAxisAdj[axis], 0)) + 1;
-            state.regimeAxisAdj[context.regimeKey] = (state.regimeAxisAdj[context.regimeKey] || 0) + 1;
+            state.regimeAxisAdj[context.regimeKey] = V.optionalFinite(state.regimeAxisAdj[context.regimeKey], 0) + 1;
           }
         }
       }

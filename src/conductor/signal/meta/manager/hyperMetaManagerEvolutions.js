@@ -70,7 +70,7 @@ hyperMetaManagerEvolutions = (() => {
     // is stressed, aggressive phase exemption competes with other controllers.
     // Health-gate the max: 2.5x when healthy, 1.5x when stressed. This preserves
     // the escalation mechanism but prevents runaway amplification under load.
-    if (state.phaseFloor && state.phaseFloor.shareEma < (state.phaseFloor.collapseThreshold || 0.05)) {
+    if (state.phaseFloor && state.phaseFloor.shareEma < (state.phaseFloor.collapseThreshold ?? 0.05)) {
       // Health gate: only accumulate fatigue when system is stable enough to act on it.
       // Stressed systems (healthEma <= 0.75) skip accumulation -- the E5 escalation
       // would compete with other controllers and overshoot during recovery.

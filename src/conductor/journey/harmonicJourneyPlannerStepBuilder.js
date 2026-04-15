@@ -29,7 +29,7 @@ harmonicJourneyPlannerStepBuilder = (() => {
 
     function appendStep(step) {
       steps.push(step);
-      tonicVisits.set(step.key, (tonicVisits.get(step.key) || 0) + 1);
+      tonicVisits.set(step.key, (tonicVisits.get(step.key) ?? 0) + 1);
     }
 
     for (let s = 1; s < totalSections; s++) {
@@ -209,7 +209,7 @@ harmonicJourneyPlannerStepBuilder = (() => {
       const tonicCounts = new Map([[originKey, 1]]);
       for (let i = 0; i < steps.length; i++) {
         const k = steps[i].key;
-        tonicCounts.set(k, (tonicCounts.get(k) || 0) + 1);
+        tonicCounts.set(k, (tonicCounts.get(k) ?? 0) + 1);
       }
       for (const [tonic, count] of tonicCounts) {
         if (count <= maxAllowed) continue;
@@ -355,7 +355,7 @@ harmonicJourneyPlannerStepBuilder = (() => {
     if (steps.length >= 2) {
       const modeCounts = new Map([[originMode, 1]]);
       for (let i = 0; i < steps.length; i++) {
-        modeCounts.set(steps[i].mode, (modeCounts.get(steps[i].mode) || 0) + 1);
+        modeCounts.set(steps[i].mode, (modeCounts.get(steps[i].mode) ?? 0) + 1);
       }
       let dominantMode = '';
       let dominantCount = 0;

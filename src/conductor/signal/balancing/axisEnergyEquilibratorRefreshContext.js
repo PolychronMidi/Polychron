@@ -106,8 +106,8 @@ axisEnergyEquilibratorRefreshContext = (() => {
     if (coherentColdspotFreeze) state.coherentFreezeBeats++;
 
     const regimeKey = currentRegime || 'unknown';
-    state.regimeBeats[regimeKey] = (state.regimeBeats[regimeKey] || 0) + 1;
-    state.regimeTightenBudget[regimeKey] = (state.regimeTightenBudget[regimeKey] || 0) + tightenScale;
+    state.regimeBeats[regimeKey] = (state.regimeBeats[regimeKey] ?? 0) + 1;
+    state.regimeTightenBudget[regimeKey] = (state.regimeTightenBudget[regimeKey] ?? 0) + tightenScale;
 
     const axisTotals = pipelineCouplingManager.getAxisCouplingTotals();
     const axisTotalValues = [];
