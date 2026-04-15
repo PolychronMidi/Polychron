@@ -975,6 +975,87 @@
         "\"tier\": \"HIGH\""
       ],
       "severity": "error"
+    },
+    {
+      "id": "reflexivity-flag-in-cascade",
+      "description": "Phase 6.1 \u2014 cascade_analysis._log_prediction must carry an injected flag",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
+      "pattern": "injected: bool = False",
+      "severity": "error"
+    },
+    {
+      "id": "reflexivity-split-in-reconciler",
+      "description": "reconcile-predictions.js must split predictions into clean vs injected buckets",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/reconcile-predictions.js",
+      "patterns": [
+        "cleanPredicted",
+        "injectedPredicted",
+        "reflexivity_ratio"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "constitution-script-exists",
+      "description": "Phase 6.2 \u2014 constitutional identity derivation script must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/derive-constitution.py",
+      "severity": "error"
+    },
+    {
+      "id": "doc-drift-script-exists",
+      "description": "Phase 6.3 \u2014 doc drift detector must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/detect-doc-drift.py",
+      "severity": "error"
+    },
+    {
+      "id": "generalizations-script-exists",
+      "description": "Phase 6.4 \u2014 generalization extractor must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/extract-generalizations.py",
+      "severity": "error"
+    },
+    {
+      "id": "multi-agent-module-exists",
+      "description": "Phase 6.5 \u2014 multi-agent observability scaffold must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/multi_agent.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase6-reports-module-exists",
+      "description": "Phase 6 reports module (constitution/doc_drift/generalizations/reflexivity) must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/phase6_reports.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase6-pipeline-steps-wired",
+      "description": "main-pipeline.js POST_COMPOSITION must run Phase 6 scripts",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "patterns": [
+        "derive-constitution\\.py",
+        "detect-doc-drift\\.py",
+        "extract-generalizations\\.py"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "phase6-status-modes",
+      "description": "status_unified must dispatch the Phase 6 modes (constitution, doc_drift, generalizations, reflexivity, multi_agent)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "patterns": [
+        "mode == \"constitution\"",
+        "mode == \"doc_drift\"",
+        "mode == \"generalizations\"",
+        "mode == \"reflexivity\"",
+        "mode == \"multi_agent\""
+      ],
+      "severity": "error"
     }
   ]
 }

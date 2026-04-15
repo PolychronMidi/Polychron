@@ -148,6 +148,26 @@ def status(mode: str = "all") -> str:
         from .ground_truth import ground_truth_report as _gt
         return _gt()
 
+    if mode == "constitution":
+        from .phase6_reports import constitution_report as _c
+        return _c()
+
+    if mode == "doc_drift":
+        from .phase6_reports import doc_drift_report as _dd
+        return _dd()
+
+    if mode == "generalizations":
+        from .phase6_reports import generalizations_report as _gr
+        return _gr()
+
+    if mode == "reflexivity":
+        from .phase6_reports import reflexivity_report as _rr
+        return _rr()
+
+    if mode == "multi_agent":
+        from .multi_agent import multi_agent_report as _ma
+        return _ma()
+
     if mode == "freshness":
         return _freshness_report()
 

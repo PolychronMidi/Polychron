@@ -65,6 +65,9 @@ const POST_COMPOSITION = [
   { label: 'compute-coherence-budget', cmd: 'node scripts/pipeline/compute-coherence-budget.js' },
   { label: 'compute-kb-trust-weights', cmd: 'python3 scripts/pipeline/compute-kb-trust-weights.py' },
   { label: 'compute-intention-gap',    cmd: 'node scripts/pipeline/compute-intention-gap.js' },
+  { label: 'derive-constitution',      cmd: 'python3 scripts/pipeline/derive-constitution.py' },
+  { label: 'detect-doc-drift',         cmd: 'python3 scripts/pipeline/detect-doc-drift.py' },
+  { label: 'extract-generalizations',  cmd: 'python3 scripts/pipeline/extract-generalizations.py' },
 ];
 
 // runner

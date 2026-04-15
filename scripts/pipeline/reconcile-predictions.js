@@ -97,13 +97,20 @@ function main() {
   }
 
   const shifted = extractShiftedModules(fingerprint);
-  // Aggregate all predicted modules across the session
-  const predictedAll = new Set();
-  for (const p of predictions) {
-    for (const m of p.predicted || []) predictedAll.add(m);
-  }
 
-  // Classification
+  // Phase 6.1 — split predictions into clean (prediction made post-hoc,
+  // with no proxy injection in the loop) vs injected (prediction surfaced
+  // to the Evolver before the edit). Clean predictions are a true test of
+  // the cascade model; injected ones are influence (self-fulfilling).
+  const cleanPredicted = new Set();
+  const injectedPredicted = new Set();
+  for (const p of predictions) {
+    const target = p.injected ? injectedPredicted : cleanPredicted;
+    for (const m of p.predicted || []) target.add(m);
+  }
+  const predictedAll = new Set([...cleanPredicted, ...injectedPredicted]);
+
+  // Classification — single aggregate view
   const confirmed = [];
   const refuted = [];
   for (const m of predictedAll) {
@@ -114,6 +121,25 @@ function main() {
   for (const m of shifted) {
     if (!predictedAll.has(m)) missed.push(m);
   }
+
+  // Per-lineage classification
+  function classifyBucket(predictedSet) {
+    const c = [];
+    const r = [];
+    for (const m of predictedSet) {
+      if (shifted.has(m)) c.push(m);
+      else r.push(m);
+    }
+    const t = c.length + r.length;
+    return {
+      confirmed: c.length,
+      refuted: r.length,
+      total: t,
+      accuracy: t > 0 ? Number((c.length / t).toFixed(4)) : null,
+    };
+  }
+  const cleanBucket = classifyBucket(cleanPredicted);
+  const injectedBucket = classifyBucket(injectedPredicted);
 
   const total = confirmed.length + refuted.length;
   const accuracy = total > 0 ? confirmed.length / total : null;
@@ -129,6 +155,13 @@ function main() {
     newEma = prevEma * (1 - EMA_ALPHA) + accuracy * EMA_ALPHA;
   }
 
+  // Phase 6.1 — reflexivity ratio: what fraction of this round's
+  // predicted modules came from INJECTED (contaminated) predictions?
+  const reflexivityRatio =
+    predictedAll.size > 0
+      ? Number((injectedPredicted.size / predictedAll.size).toFixed(4))
+      : 0;
+
   const roundRecord = {
     timestamp: new Date().toISOString(),
     predictions_total: predictions.length,
@@ -139,6 +172,10 @@ function main() {
     missed,
     accuracy: accuracy !== null ? Number(accuracy.toFixed(4)) : null,
     ema_after: newEma !== null ? Number(newEma.toFixed(4)) : null,
+    // Phase 6.1 reflexivity breakdown
+    clean_bucket: cleanBucket,
+    injected_bucket: injectedBucket,
+    reflexivity_ratio: reflexivityRatio,
   };
 
   const rounds = Array.isArray(history.rounds) ? history.rounds.slice(-HISTORY_CAP + 1) : [];
