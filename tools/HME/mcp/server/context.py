@@ -126,47 +126,7 @@ class _LoggingMCP:
                 name = fn.__name__
                 t0 = time.time()
                 try:
-                    # Per-tool wall-clock. Default 120s; override via
-                    # HME_TOOL_TIMEOUT_<NAME> env (e.g. HME_TOOL_TIMEOUT_review=300)
-                    # or HME_TOOL_TIMEOUT_DEFAULT. Without this, any tool that
-                    # blocks on I/O (llama.cpp hang, DB lock, stuck KB search)
-                    # wedges the entire MCP request with no error feedback.
-                    import os as _os
-                    import concurrent.futures as _cf
-                    _per_tool_env = f"HME_TOOL_TIMEOUT_{name}"
-                    _default_env = "HME_TOOL_TIMEOUT_DEFAULT"
-                    try:
-                        _wall = float(_os.environ.get(_per_tool_env)
-                                      or _os.environ.get(_default_env)
-                                      or "120")
-                    except (TypeError, ValueError):
-                        _wall = 120.0
-                    # wall<=0 disables the timeout — used for long-running tools
-                    # that manage their own background work.
-                    if _wall <= 0:
-                        result = fn(*args, **kwargs)
-                    else:
-                        _ex = _cf.ThreadPoolExecutor(max_workers=1, thread_name_prefix=f"hme-tool-{name}")
-                        _fut = _ex.submit(fn, *args, **kwargs)
-                        try:
-                            result = _fut.result(timeout=_wall)
-                        except _cf.TimeoutError:
-                            elapsed_to = time.time() - t0
-                            # Abandon the thread — we can't safely kill a Python
-                            # thread, but we can refuse to wait for it.
-                            _ex.shutdown(wait=False, cancel_futures=True)
-                            logger.error(
-                                f"ERR  {name} [{elapsed_to:.1f}s] "
-                                f"wall-clock timeout after {_wall}s — thread abandoned"
-                            )
-                            raise TimeoutError(
-                                f"{name} exceeded the {_wall:.0f}s per-tool wall-clock. "
-                                f"The worker thread has been abandoned; the next call will "
-                                f"run in a fresh thread. If this tool legitimately needs "
-                                f"more time, raise HME_TOOL_TIMEOUT_{name} in the shim env."
-                            )
-                        finally:
-                            _ex.shutdown(wait=False)
+                    result = fn(*args, **kwargs)
                     elapsed = time.time() - t0
                     if result is None:
                         logger.error(f"ERR  {name} returned None — tool must return a string")
