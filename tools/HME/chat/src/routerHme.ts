@@ -1,6 +1,6 @@
 import * as http from "http";
 import { OllamaMessage, ChunkCallback } from "./router";
-import { streamOllamaAgentic } from "./routerOllama";
+import { streamLlamacppAgentic as streamOllamaAgentic } from "./routerLlamacpp";
 import { AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 
 const HME_HTTP_PORT = 7734;

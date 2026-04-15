@@ -38,7 +38,7 @@ export interface TokenUsage {
 
 // Re-export all functions from split modules so existing imports from "./router" keep working.
 export { streamClaude, streamClaudePty } from "./routerClaude";
-export { streamOllama, streamOllamaAgentic, GPU_NUM_CTX } from "./routerOllama";
+export { streamOllama, streamOllamaAgentic, streamLlamacpp, streamLlamacppAgentic, GPU_NUM_CTX } from "./routerLlamacpp";
 export {
   fetchHmeContext,
   enrichPrompt,

@@ -21,6 +21,7 @@ Usage:
 import os
 import sys
 import json
+import time
 import logging
 import argparse
 import threading
@@ -44,9 +45,91 @@ MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
 _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
-_shared_model = None           # bge-base-en-v1.5 — text/knowledge/symbols embedder
-_shared_code_model = None      # jina-embeddings-v2-base-code — code_chunks embedder
-_shared_reranker = None        # bge-reranker-v2-m3 — cross-encoder for rerank
+_shared_model = None           # bge-base-en-v1.5 — text/knowledge/symbols embedder (ONNX/CPU)
+_shared_code_model = None      # jina-embeddings-v2-base-code — code_chunks embedder (GPU primary)
+_shared_reranker = None        # bge-reranker-v2-m3 — cross-encoder for rerank (GPU primary)
+_shared_code_model_cpu = None  # jina — CPU mirror, used when arbiter is busy on shared GPU
+_shared_reranker_cpu = None    # bge-reranker — CPU mirror, used when arbiter is busy on shared GPU
+
+
+# ── RAG routing: GPU vs CPU mirror ────────────────────────────────────────
+# When the arbiter is actively processing a request on the shared GPU, we
+# route jina / bge-reranker work to the CPU mirrors to avoid contending for
+# compute. The llamacpp_daemon exposes /rag-route which answers "gpu" or
+# "cpu" based on its in-memory _arbiter_busy flag (set around every arbiter
+# request dispatch). We cache the last answer for 100 ms so bursty RAG calls
+# don't DoS the daemon with HTTP probes.
+_LLAMACPP_DAEMON_URL = os.environ.get(
+    "HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735"
+)
+_rag_route_cache = {"route": "gpu", "ts": 0.0}
+_rag_route_ttl_s = 0.1
+
+
+def _rag_route() -> str:
+    """Return 'gpu' or 'cpu' for the next RAG op.
+
+    Falls back to 'gpu' if the daemon is unreachable or no CPU mirror exists.
+    Cache-gated to ~100ms so a single tool call's batch of encode/rerank calls
+    doesn't spam the daemon.
+    """
+    if _shared_code_model_cpu is None and _shared_reranker_cpu is None:
+        return "gpu"
+    now = time.time()
+    if now - _rag_route_cache["ts"] < _rag_route_ttl_s:
+        return _rag_route_cache["route"]
+    try:
+        import urllib.request as _ur
+        with _ur.urlopen(f"{_LLAMACPP_DAEMON_URL}/rag-route", timeout=0.2) as resp:
+            data = json.loads(resp.read())
+            route = data.get("route", "gpu")
+    except Exception:
+        route = "gpu"
+    _rag_route_cache["route"] = route
+    _rag_route_cache["ts"] = now
+    return route
+
+
+class _RagRouterProxy:
+    """Delegates encode/predict to the GPU or CPU instance based on arbiter busy state.
+
+    Presents the same attribute surface (.encode / .predict / .device) as the
+    underlying SentenceTransformer or CrossEncoder so callers in rag_engine/
+    don't need to know which backend they're hitting.
+    """
+
+    __slots__ = ("_gpu", "_cpu", "_label")
+
+    def __init__(self, gpu_instance, cpu_instance, label: str):
+        self._gpu = gpu_instance
+        self._cpu = cpu_instance
+        self._label = label
+
+    def _pick(self):
+        if self._cpu is None:
+            return self._gpu
+        if self._gpu is None:
+            return self._cpu
+        return self._cpu if _rag_route() == "cpu" else self._gpu
+
+    def encode(self, *args, **kwargs):
+        inst = self._pick()
+        return inst.encode(*args, **kwargs)
+
+    def predict(self, *args, **kwargs):
+        inst = self._pick()
+        return inst.predict(*args, **kwargs)
+
+    @property
+    def device(self):
+        inst = self._pick()
+        return getattr(inst, "device", "unknown")
+
+    def __getattr__(self, name):
+        # Delegate anything else (tokenizer access, max_seq_length, etc.) to
+        # the GPU instance if present, else the CPU instance.
+        inst = self._gpu if self._gpu is not None else self._cpu
+        return getattr(inst, name)
 _lib_engines: dict = {}  # key = lib_rel path
 
 CODE_MODEL_NAME = os.environ.get("RAG_CODE_MODEL", "jinaai/jina-embeddings-v2-base-code")
@@ -57,10 +140,15 @@ from hme_http_store import init_store
 init_store(PROJECT_ROOT)
 
 
-def _ensure_ollama_daemon():
-    """Start the Ollama persistence daemon if not already running."""
+def _ensure_llamacpp_daemon():
+    """Start the llama.cpp persistence daemon if not already running.
+
+    Owns llamacpp_supervisor (spawns/adopts llama-server instances for arbiter
+    and coder), the arbiter-busy flag that drives RAG CPU/GPU routing, and the
+    generation proxy for legacy callers.
+    """
     import urllib.request as _urlreq
-    _daemon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ollama_daemon.py")
+    _daemon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "llamacpp_daemon.py")
     if not os.path.exists(_daemon_path):
         return
     try:
@@ -78,9 +166,9 @@ def _ensure_ollama_daemon():
             env=env, start_new_session=True,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-        logger.info("Ollama daemon started (port 7735)")
+        logger.info("llamacpp daemon started (port 7735)")
     except Exception as e:
-        logger.warning(f"Ollama daemon start failed: {e}")
+        logger.warning(f"llamacpp daemon start failed: {e}")
 
 
 def _ensure_vram_monitor():
@@ -112,7 +200,7 @@ def _ensure_vram_monitor():
 
 
 def _load_engines():
-    global _project_engine, _global_engine, _shared_model, _shared_code_model, _shared_reranker, _lib_engines
+    global _project_engine, _global_engine, _shared_model, _shared_code_model, _shared_reranker, _shared_code_model_cpu, _shared_reranker_cpu, _lib_engines
     try:
         from sentence_transformers import SentenceTransformer, CrossEncoder
         from rag_engine import RAGEngine
@@ -204,20 +292,46 @@ def _load_engines():
             logger.warning(f"Reranker load failed ({e}) — search will fall back to RRF-only")
             _shared_reranker = None
 
+        # CPU mirrors — loaded when RAG primary is on GPU so embedding / rerank
+        # requests can fall back to CPU instances whenever the arbiter is busy
+        # on the shared GPU. Daemon's /rag-route endpoint owns the decision.
+        _shared_code_model_cpu = None
+        _shared_reranker_cpu = None
+        if _rag_device.startswith("cuda"):
+            try:
+                _shared_code_model_cpu = SentenceTransformer(
+                    CODE_MODEL_NAME, trust_remote_code=True, device="cpu",
+                )
+                logger.info(f"Code embedder (CPU mirror): {CODE_MODEL_NAME}")
+            except Exception as e:
+                logger.warning(f"CPU-mirror code embedder load failed ({e}) — GPU-only fallback")
+            try:
+                _shared_reranker_cpu = CrossEncoder(RERANKER_NAME, max_length=512, device="cpu")
+                logger.info(f"Reranker (CPU mirror): {RERANKER_NAME}")
+            except Exception as e:
+                logger.warning(f"CPU-mirror reranker load failed ({e}) — GPU-only fallback")
+
         # Reduce jina code-embedding batch size on GPU to avoid OOM spikes when
-        # arbiter f16 (6.2GB) co-resides on GPU1. BGE/ONNX (CPU) keeps BATCH_SIZE=64.
+        # arbiter f16 co-resides on the shared GPU. BGE/ONNX (CPU) stays at BATCH_SIZE=64.
         _CODE_EMBED_BATCH = int(os.environ.get("HME_CODE_EMBED_BATCH", "8"))
         if _rag_device.startswith("cuda"):
             os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
+        # Wrap code_model + reranker in _RagRouterProxy so per-call dispatch can
+        # swing to the CPU mirror whenever the arbiter is busy on GPU0 (daemon
+        # /rag-route answers 'cpu'). The text_model (bge ONNX) is CPU-only and
+        # stays unwrapped.
+        _code_model_router = _RagRouterProxy(_shared_code_model, _shared_code_model_cpu, "code")
+        _reranker_router = _RagRouterProxy(_shared_reranker, _shared_reranker_cpu, "reranker") if _shared_reranker is not None else None
+
         _project_engine = RAGEngine(
             PROJECT_DB, model_name=MODEL_NAME,
-            model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
+            model=_shared_model, code_model=_code_model_router, reranker=_reranker_router,
         )
         _project_engine._embed_batch_size = _CODE_EMBED_BATCH
         _global_engine = RAGEngine(
             GLOBAL_DB, model_name=MODEL_NAME,
-            model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
+            model=_shared_model, code_model=_code_model_router, reranker=_reranker_router,
         )
         _global_engine._embed_batch_size = _CODE_EMBED_BATCH
         for _lib_rel in get_lib_dirs():
@@ -226,7 +340,7 @@ def _load_engines():
             os.makedirs(_lib_db, exist_ok=True)
             _eng = RAGEngine(
                 db_path=_lib_db,
-                model=_shared_model, code_model=_shared_code_model, reranker=_shared_reranker,
+                model=_shared_model, code_model=_code_model_router, reranker=_reranker_router,
             )
             _eng._embed_batch_size = _CODE_EMBED_BATCH
             _lib_engines[_lib_rel] = _eng
@@ -238,8 +352,8 @@ def _load_engines():
         _engine_ready.set()
         from hme_http_handlers import init_handlers
         init_handlers(_engine_ready, _project_engine, _global_engine, PROJECT_ROOT)
-    # Start Ollama daemon after engines ready — non-blocking
-    threading.Thread(target=_ensure_ollama_daemon, daemon=True, name="HME-ollama-daemon-start").start()
+    # Start llama.cpp daemon after engines ready — non-blocking
+    threading.Thread(target=_ensure_llamacpp_daemon, daemon=True, name="HME-llamacpp-daemon-start").start()
     # Start VRAM monitor (lightweight 30s polling) — non-blocking
     threading.Thread(target=_ensure_vram_monitor, daemon=True, name="HME-vram-monitor-start").start()
 

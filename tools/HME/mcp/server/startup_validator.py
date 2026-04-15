@@ -93,77 +93,30 @@ def _check_required_metrics_dirs(project_root: str) -> None:
             raise RuntimeError(f"Cannot create required directory {dirpath}: {e}") from e
 
 
-def _check_ollama_connectivity() -> None:
+def _check_llamacpp_connectivity() -> None:
     """Warn if local inference models are not loaded — synthesis will fall back to templates.
 
-    When HME_ARBITER_BACKEND=llamacpp (default after commit 0577c0f7), probes
-    the llama-server /health endpoints for arbiter (8080) and coder (8081)
-    instead of ollama/daemon ports. The ollama path remains available as a
-    legacy fallback for HME_ARBITER_BACKEND=ollama.
+    Probes the llama-server /health endpoints for arbiter (8080) and coder
+    (8081). These URLs are owned by llamacpp_daemon + llamacpp_supervisor.
     """
     import urllib.request
-    import urllib.error
-    import json
 
-    backend = os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower()
-    if backend == "llamacpp":
-        arbiter_url = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-        coder_url   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
-        failed = []
-        for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
-            try:
-                with urllib.request.urlopen(f"{base}/health", timeout=3) as resp:
-                    body = resp.read().decode("utf-8", errors="ignore")
-                    if resp.status != 200 or '"status":"ok"' not in body:
-                        failed.append(f"{role}@{base}")
-            except Exception as e:
-                failed.append(f"{role}@{base} ({type(e).__name__})")
-        if failed:
-            logger.warning(f"llama-server connectivity: {len(failed)} instance(s) unreachable: {failed}")
-        else:
-            logger.info("llama-server connectivity: OK (arbiter + coder healthy)")
-        return
-
-    # Prefer daemon: single call, authoritative per-model loaded status
-    try:
-        with urllib.request.urlopen(
-            urllib.request.Request("http://127.0.0.1:7735/health"), timeout=2
-        ) as resp:
-            daemon_status = json.loads(resp.read())
-        models = daemon_status.get("models", {})
-        if models:
-            loaded = [m for m, s in models.items() if s.get("loaded")]
-            failed = [m for m, s in models.items() if not s.get("loaded")]
-            if failed:
-                logger.warning(f"Ollama daemon: {len(failed)} model(s) not loaded: {failed}")
-            else:
-                logger.info(f"Ollama connectivity: OK via daemon ({len(loaded)} model(s) loaded)")
-            return
-        # Daemon running but no models yet — fall through to port probing
-    except Exception as _daemon_err:
-        logger.debug(f"ollama daemon probe failed (will fall through to direct port probe): {type(_daemon_err).__name__}: {_daemon_err}")
-
-    # Fallback: probe each Ollama instance directly
-    instances = [
-        (int(os.environ.get("HME_OLLAMA_PORT_GPU0", "11434")), "GPU0 extractor"),
-        (int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435")), "GPU1 reasoner"),
-        (int(os.environ.get("HME_OLLAMA_PORT_CPU",  "11436")), "CPU arbiter"),
-    ]
-    ok_count = 0
-    for port, role in instances:
-        url = f"http://localhost:{port}/api/tags"
+    arbiter_url = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
+    coder_url   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+    failed = []
+    for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
         try:
-            with urllib.request.urlopen(url, timeout=3) as resp:
-                if resp.status == 200:
-                    ok_count += 1
-                    continue
-        except urllib.error.URLError as e:
-            logger.warning(f"Ollama {role} not reachable at localhost:{port} ({e})")
+            with urllib.request.urlopen(f"{base}/health", timeout=3) as resp:
+                body = resp.read().decode("utf-8", errors="ignore")
+                if resp.status != 200 or '"status":"ok"' not in body:
+                    failed.append(f"{role}@{base}")
         except Exception as e:
-            logger.warning(f"Ollama {role} check failed at localhost:{port}: {type(e).__name__}: {e}")
-    if ok_count == len(instances):
-        logger.info(f"Ollama connectivity: OK (all {len(instances)} instances)")
-    elif ok_count > 0:
-        logger.warning(f"Ollama connectivity: {ok_count}/{len(instances)} instances reachable — synthesis degraded")
+            failed.append(f"{role}@{base} ({type(e).__name__})")
+    if failed:
+        logger.warning(f"llama-server connectivity: {len(failed)} instance(s) unreachable: {failed}")
     else:
-        logger.warning("Ollama connectivity: NO instances reachable — synthesis will use template fallback")
+        logger.info("llama-server connectivity: OK (arbiter + coder healthy)")
+
+
+# Legacy alias — some callers still import _check_ollama_connectivity.
+_check_ollama_connectivity = _check_llamacpp_connectivity

@@ -1,3 +1,15 @@
+// llama.cpp chat router — OpenAI /v1/chat/completions client for the chat UI.
+//
+// Replaces the former ollama /api/chat client. Exposes legacy symbol names
+// (streamOllama, streamOllamaAgentic, GPU_NUM_CTX) as aliases so routerHme,
+// chatStreaming, ChatPanel, etc. keep building without a coordinated rename.
+//
+// Wire protocol:
+//   Streaming  → POST /v1/chat/completions with stream: true → SSE frames
+//                (data: {...}\n\n, terminator data: [DONE])
+//   Agentic    → POST /v1/chat/completions with stream: false → JSON
+//                {choices: [{message: {content, tool_calls}}]}
+
 import { execSync } from "child_process";
 import * as http from "http";
 import * as fs from "fs";
@@ -6,13 +18,11 @@ import { OllamaOptions, OllamaMessage, ChunkCallback } from "./router";
 
 export const GPU_NUM_CTX = 49152;
 
-function ollamaErrMsg(e: any, url: string): string {
+function llamacppErrMsg(e: any, url: string): string {
   return e?.code === "ECONNREFUSED"
-    ? `CRITICAL: Ollama not running — connection refused — Ollama is NOT responding at ${url}`
+    ? `CRITICAL: llama-server not running — connection refused — NOT responding at ${url}`
     : (e?.message ?? String(e));
 }
-
-// ── Ollama streaming ──────────────────────────────────────────────────────
 
 function stripThinkTags(text: string): string {
   if (!text) return text;
@@ -23,7 +33,17 @@ function stripThinkTags(text: string): string {
   return text;
 }
 
-export function streamOllama(
+// ── Streaming: SSE parsing ────────────────────────────────────────────────
+//
+// llama-server streams OpenAI-compatible SSE:
+//   data: {"choices":[{"delta":{"content":"…"}}],…}
+//   data: {"choices":[{"delta":{"content":"…"},"finish_reason":null}],…}
+//   …
+//   data: [DONE]
+//
+// We split on "\n\n", strip the "data: " prefix, parse each JSON frame, and
+// pull content deltas out of choices[0].delta.content.
+export function streamLlamacpp(
   messages: OllamaMessage[],
   opts: OllamaOptions,
   onChunk: ChunkCallback,
@@ -34,10 +54,11 @@ export function streamOllama(
     model: opts.model,
     messages,
     stream: true,
-    think: true,
-    options: { temperature: 0.7, num_predict: 4096, num_gpu: 99, num_ctx: GPU_NUM_CTX },
+    temperature: 0.7,
+    max_tokens: 4096,
+    cache_prompt: true,
   });
-  const url = new URL(`${opts.url}/api/chat`);
+  const url = new URL(`${opts.url}/v1/chat/completions`);
   let aborted = false;
   let accText = "";
   let accThink = "";
@@ -51,6 +72,7 @@ export function streamOllama(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept": "text/event-stream",
         "Content-Length": Buffer.byteLength(body),
       },
     },
@@ -59,36 +81,46 @@ export function streamOllama(
       res.on("data", (chunk: Buffer) => {
         if (aborted) return;
         buf += chunk.toString("utf8");
-        const lines = buf.split("\n");
-        buf = lines.pop() ?? "";
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const obj = JSON.parse(line);
-            if (obj.done) {
+        // SSE frames are separated by a blank line
+        const frames = buf.split("\n\n");
+        buf = frames.pop() ?? "";
+        for (const frame of frames) {
+          if (!frame.trim()) continue;
+          // Each frame may have multiple "data: " lines — usually just one
+          for (const rawLine of frame.split("\n")) {
+            const line = rawLine.trim();
+            if (!line || !line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") {
               if (accThink) onChunk(accThink.trim(), "thinking");
               if (accText) onChunk(stripThinkTags(accText.trim()), "text");
               onDone();
               return;
             }
-            const content = obj?.message?.content ?? "";
-            if (!content) continue;
+            try {
+              const obj = JSON.parse(payload);
+              const choices = obj?.choices ?? [];
+              if (!choices.length) continue;
+              const delta = choices[0]?.delta ?? {};
+              const content: string = delta.content ?? "";
+              if (!content) continue;
 
-            if (content.includes("<think>")) {
-              inThink = true;
-              accThink += content.replace("<think>", "");
-              continue;
-            }
-            if (content.includes("</think>")) {
-              inThink = false;
-              accThink += content.replace("</think>", "");
-              onChunk(accThink.trim(), "thinking");
-              accThink = "";
-              continue;
-            }
-            if (inThink) { accThink += content; continue; }
-            accText += content;
-          } catch {}
+              if (content.includes("<think>")) {
+                inThink = true;
+                accThink += content.replace("<think>", "");
+                continue;
+              }
+              if (content.includes("</think>")) {
+                inThink = false;
+                accThink += content.replace("</think>", "");
+                onChunk(accThink.trim(), "thinking");
+                accThink = "";
+                continue;
+              }
+              if (inThink) { accThink += content; continue; }
+              accText += content;
+            } catch {}
+          }
         }
       });
       res.on("end", () => {
@@ -102,7 +134,7 @@ export function streamOllama(
     }
   );
   req.on("error", (e: any) => {
-    if (!aborted) onError(ollamaErrMsg(e, opts.url));
+    if (!aborted) onError(llamacppErrMsg(e, opts.url));
   });
   req.write(body);
   req.end();
@@ -110,9 +142,9 @@ export function streamOllama(
   return () => { aborted = true; req.destroy(); };
 }
 
-// ── Ollama agentic tool loop ──────────────────────────────────────────────
+// ── Agentic tool loop ─────────────────────────────────────────────────────
 
-const OLLAMA_TOOLS = [
+const LLAMACPP_TOOLS = [
   {
     type: "function",
     function: {
@@ -154,21 +186,24 @@ const OLLAMA_TOOLS = [
   },
 ];
 
-const OLLAMA_HARD_TIMEOUT_MS = 120000;
+const LLAMACPP_HARD_TIMEOUT_MS = 120000;
 
-function isOllamaAlive(url: string): Promise<boolean> {
+function isLlamacppAlive(url: string): Promise<boolean> {
   return new Promise((resolve) => {
     const u = new URL(url);
-    const req = http.get({ hostname: u.hostname, port: u.port || 80, path: "/api/tags", timeout: 3000 }, (res) => {
-      res.resume();
-      resolve(res.statusCode === 200);
-    });
+    const req = http.get(
+      { hostname: u.hostname, port: u.port || 80, path: "/health", timeout: 3000 },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      }
+    );
     req.on("error", () => resolve(false));
     req.on("timeout", () => { req.destroy(); resolve(false); });
   });
 }
 
-function ollamaChatOnce(
+function llamacppChatOnce(
   messages: any[],
   tools: any[],
   opts: OllamaOptions
@@ -178,8 +213,11 @@ function ollamaChatOnce(
 
   const promise = new Promise<any>((resolve, reject) => {
     hardTimer = setTimeout(
-      () => { req?.destroy(); reject(new Error(`Ollama timeout: no response after ${OLLAMA_HARD_TIMEOUT_MS / 1000}s`)); },
-      OLLAMA_HARD_TIMEOUT_MS
+      () => {
+        req?.destroy();
+        reject(new Error(`llama-server timeout: no response after ${LLAMACPP_HARD_TIMEOUT_MS / 1000}s`));
+      },
+      LLAMACPP_HARD_TIMEOUT_MS
     );
     if ((hardTimer as any).unref) (hardTimer as any).unref();
 
@@ -188,10 +226,11 @@ function ollamaChatOnce(
       messages,
       tools,
       stream: false,
-      think: false,
-      options: { temperature: 0.7, num_predict: 4096, num_ctx: GPU_NUM_CTX },
+      temperature: 0.7,
+      max_tokens: 4096,
+      cache_prompt: true,
     });
-    const url = new URL(`${opts.url}/api/chat`);
+    const url = new URL(`${opts.url}/v1/chat/completions`);
     req = http.request(
       {
         hostname: url.hostname,
@@ -206,25 +245,28 @@ function ollamaChatOnce(
         res.on("end", () => {
           if (hardTimer) clearTimeout(hardTimer);
           if (res.statusCode && res.statusCode >= 400) {
-            try { reject(new Error((JSON.parse(raw) as any).error ?? `Ollama HTTP ${res.statusCode}`)); }
-            catch { reject(new Error(`Ollama HTTP ${res.statusCode}: ${raw.slice(0, 200)}`)); }
+            try { reject(new Error((JSON.parse(raw) as any)?.error?.message ?? (JSON.parse(raw) as any).error ?? `llama-server HTTP ${res.statusCode}`)); }
+            catch { reject(new Error(`llama-server HTTP ${res.statusCode}: ${raw.slice(0, 200)}`)); }
             return;
           }
           try {
             const parsed = JSON.parse(raw);
-            if (parsed?.message?.content) {
-              parsed.message.content = stripThinkTags(parsed.message.content);
+            // Translate OpenAI envelope → ollama-ish message shape the caller expects.
+            const choice = parsed?.choices?.[0] ?? {};
+            const msg = choice.message ?? {};
+            if (typeof msg.content === "string") {
+              msg.content = stripThinkTags(msg.content);
             }
-            resolve(parsed);
+            resolve({ message: msg, _raw: parsed });
           }
-          catch (e) { reject(new Error(`Ollama parse error: ${raw.slice(0, 200)}`)); }
+          catch (e) { reject(new Error(`llama-server parse error: ${raw.slice(0, 200)}`)); }
         });
         res.on("error", (e) => { if (hardTimer) clearTimeout(hardTimer); reject(e); });
       }
     );
     req.on("error", (e: any) => {
       if (hardTimer) clearTimeout(hardTimer);
-      reject(new Error(ollamaErrMsg(e, opts.url)));
+      reject(new Error(llamacppErrMsg(e, opts.url)));
     });
     req.write(body);
     req.end();
@@ -253,7 +295,7 @@ function parseXmlFunctionCalls(content: string): any[] {
   return calls;
 }
 
-export function streamOllamaAgentic(
+export function streamLlamacppAgentic(
   messages: OllamaMessage[],
   opts: OllamaOptions,
   workingDir: string,
@@ -274,20 +316,20 @@ export function streamOllamaAgentic(
     const MAX = 15;
 
     while (iterations++ < MAX && !aborted) {
-      onChunk(`⏳ Ollama thinking…`, "tool");
+      onChunk(`⏳ llama-server thinking…`, "tool");
       let response: any;
       try {
-        currentRequest = ollamaChatOnce(current, OLLAMA_TOOLS, opts);
+        currentRequest = llamacppChatOnce(current, LLAMACPP_TOOLS, opts);
         response = await currentRequest.promise;
         currentRequest = null;
       } catch (e: any) {
         currentRequest = null;
         if (aborted) return;
-        const alive = await isOllamaAlive(opts.url);
+        const alive = await isLlamacppAlive(opts.url);
         if (alive) {
-          onChunk(`⚠ Timeout but Ollama is alive — model may be slow. Retrying once…`, "error");
+          onChunk(`⚠ Timeout but llama-server is alive — model may be slow. Retrying once…`, "error");
           try {
-            currentRequest = ollamaChatOnce(current, OLLAMA_TOOLS, opts);
+            currentRequest = llamacppChatOnce(current, LLAMACPP_TOOLS, opts);
             response = await currentRequest.promise;
             currentRequest = null;
           } catch (retryErr: any) {
@@ -296,7 +338,7 @@ export function streamOllamaAgentic(
             return;
           }
         } else {
-          const errMsg = ollamaErrMsg(e, opts.url);
+          const errMsg = llamacppErrMsg(e, opts.url);
           onError(errMsg.startsWith("CRITICAL") ? errMsg : `CRITICAL: ${errMsg}`);
           return;
         }
@@ -369,3 +411,10 @@ export function streamOllamaAgentic(
   runLoop().catch((e) => { if (!aborted) onError(e?.message ?? String(e)); });
   return abort;
 }
+
+// ── Legacy aliases ────────────────────────────────────────────────────────
+// routerHme, chatStreaming, ChatPanel, and router still import the old
+// ollama-flavored names. Alias them to the llama.cpp implementations so
+// nothing else in the chat extension needs to be touched simultaneously.
+export const streamOllama = streamLlamacpp;
+export const streamOllamaAgentic = streamLlamacppAgentic;

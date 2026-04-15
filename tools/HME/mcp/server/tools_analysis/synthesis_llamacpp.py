@@ -248,24 +248,58 @@ def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0,
     inst = _rc.get_instance(name, base)
     prio = _PRIORITY_MAP.get(priority, _rc.INTERACTIVE)
 
-    try:
-        future = inst.submit(oai_payload, priority=prio, wall_timeout=wall_timeout)
-    except _rc.CoordinatorOverloaded as _over:
-        logger.warning(f"llamacpp coord[{name}]: overloaded — {_over}")
-        return None
+    # Arbiter requests set the RAG routing flag on the llamacpp daemon so any
+    # concurrent embedding/reranking falls back to the CPU mirror while this
+    # request is using the shared GPU. We wrap the entire submit+wait so the
+    # flag stays set through the actual generation, not just the submit.
+    _is_arbiter_request = (name == "arbiter")
 
-    # Block caller on future. Add a small grace over wall_timeout so dispatch
-    # handoff doesn't race — 2s should cover dispatcher wake + preempt drain.
     try:
-        shaped = future.result(timeout=wall_timeout + 2.0)
-    except TimeoutError:
-        logger.warning(f"llamacpp coord[{name}]: future wait exceeded {wall_timeout+2}s for {model}")
-        return None
+        if _is_arbiter_request:
+            _set_arbiter_busy(True)
+        try:
+            future = inst.submit(oai_payload, priority=prio, wall_timeout=wall_timeout)
+        except _rc.CoordinatorOverloaded as _over:
+            logger.warning(f"llamacpp coord[{name}]: overloaded — {_over}")
+            return None
 
-    if shaped is None and future.preempted:
-        logger.info(f"llamacpp coord[{name}]: request preempted ({_PRIORITY_MAP.get(priority)} {priority})")
-        return None
-    return shaped
+        # Block caller on future. Add a small grace over wall_timeout so dispatch
+        # handoff doesn't race — 2s should cover dispatcher wake + preempt drain.
+        try:
+            shaped = future.result(timeout=wall_timeout + 2.0)
+        except TimeoutError:
+            logger.warning(f"llamacpp coord[{name}]: future wait exceeded {wall_timeout+2}s for {model}")
+            return None
+
+        if shaped is None and future.preempted:
+            logger.info(f"llamacpp coord[{name}]: request preempted ({_PRIORITY_MAP.get(priority)} {priority})")
+            return None
+        return shaped
+    finally:
+        if _is_arbiter_request:
+            _set_arbiter_busy(False)
+
+
+_LLAMACPP_DAEMON_URL = os.environ.get("HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735")
+
+def _set_arbiter_busy(busy: bool) -> None:
+    """Signal the llamacpp daemon to set/clear its arbiter-busy flag.
+
+    The daemon uses this flag to route RAG embedding / rerank requests to
+    the CPU mirror whenever the arbiter is actively using its GPU. Silently
+    ignores daemon unreachability — the routing degrades to GPU-only, which
+    is the pre-migration behavior and safe.
+    """
+    try:
+        import urllib.request as _ur
+        body = json.dumps({"state": "set" if busy else "clear"}).encode()
+        req = _ur.Request(
+            f"{_LLAMACPP_DAEMON_URL}/arbiter-busy", data=body,
+            headers={"Content-Type": "application/json"},
+        )
+        _ur.urlopen(req, timeout=0.3).read()
+    except Exception:
+        pass
 
 
 def _daemon_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
