@@ -223,15 +223,25 @@ def _llamacpp_url_for(model: str) -> str:
     return _LLAMACPP_CODER_URL
 
 
-def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
+_PRIORITY_MAP = {
+    "critical": 5,    # request_coordinator.CRITICAL
+    "interactive": 4, # request_coordinator.INTERACTIVE
+    "parallel": 3,    # request_coordinator.PARALLEL
+    "bulk": 2,        # request_coordinator.BULK
+    "background": 1,  # request_coordinator.BACKGROUND
+}
+
+
+def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0,
+                       priority: str = "interactive") -> dict | None:
     """Translate an ollama-shape payload into an OpenAI chat-completions call
-    against the appropriate llama-server. Returns a dict shaped like an ollama
-    /api/generate response so downstream text-cleanup code works unchanged:
+    against the appropriate llama-server, routed through the priority-queued
+    request coordinator. Returns a dict shaped like an ollama /api/generate
+    response so downstream text-cleanup code works unchanged:
         {"response": <text>, "context": []}
-    Thread-abandons on wall_timeout — mirrors daemon behavior.
+    Wall-clock enforced by the coordinator's thread-abandon dispatch.
     """
-    import urllib.request as _ur
-    import threading as _th
+    from . import request_coordinator as _rc
 
     model = payload.get("model", "")
     prompt = payload.get("prompt", "")
@@ -253,40 +263,29 @@ def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None
     }
 
     base = _llamacpp_url_for(model)
-    url = f"{base}/v1/chat/completions"
-    body = json.dumps(oai_payload).encode()
-    req = _ur.Request(url, data=body, headers={"Content-Type": "application/json"})
+    # Coordinator name: stable ID per endpoint URL (arbiter/coder).
+    name = "arbiter" if base == _LLAMACPP_ARBITER_URL else "coder"
+    inst = _rc.get_instance(name, base)
+    prio = _PRIORITY_MAP.get(priority, _rc.INTERACTIVE)
 
-    result = {"_err": None, "_data": None}
-
-    def _worker():
-        try:
-            with _ur.urlopen(req, timeout=wall_timeout) as resp:
-                result["_data"] = json.loads(resp.read())
-        except Exception as e:
-            result["_err"] = e
-
-    t = _th.Thread(target=_worker, daemon=True)
-    t.start()
-    t.join(timeout=wall_timeout)  # llamacpp-ok: no daemon, thread-abandon is the only wall clock
-
-    if t.is_alive():
-        logger.warning(f"llamacpp /v1/chat/completions: wall timeout ({wall_timeout}s) for {model}")
+    try:
+        future = inst.submit(oai_payload, priority=prio, wall_timeout=wall_timeout)
+    except _rc.CoordinatorOverloaded as _over:
+        logger.warning(f"llamacpp coord[{name}]: overloaded — {_over}")
         return None
 
-    if result["_err"] is not None:
-        e = result["_err"]
-        logger.info(f"llamacpp unavailable ({model}): {type(e).__name__}: {e}")
+    # Block caller on future. Add a small grace over wall_timeout so dispatch
+    # handoff doesn't race — 2s should cover dispatcher wake + preempt drain.
+    try:
+        shaped = future.result(timeout=wall_timeout + 2.0)
+    except TimeoutError:
+        logger.warning(f"llamacpp coord[{name}]: future wait exceeded {wall_timeout+2}s for {model}")
         return None
 
-    data = result["_data"] or {}
-    choices = data.get("choices") or []
-    if not choices:
+    if shaped is None and future.preempted:
+        logger.info(f"llamacpp coord[{name}]: request preempted ({_PRIORITY_MAP.get(priority)} {priority})")
         return None
-    msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
-    text = msg.get("content", "") if isinstance(msg, dict) else ""
-    # Shape like ollama so downstream code works unchanged.
-    return {"response": text, "context": [], "done": True}
+    return shaped
 
 
 def _daemon_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
@@ -505,7 +504,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     result = None
     if _ARBITER_BACKEND == "llamacpp":
         _wall = 30 if priority == "background" else (20 if _effective_model == _ARBITER_MODEL else 30)
-        result = _llamacpp_generate(payload, wall_timeout=_wall)
+        result = _llamacpp_generate(payload, wall_timeout=_wall, priority=priority)
         if result is None:
             logger.warning(f"_local_think: llamacpp unavailable, skipping synthesis ({_effective_model})")
             if priority == "interactive":
