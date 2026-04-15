@@ -289,11 +289,13 @@ def _proxy_health_monitor(port: int) -> None:
                     # ts==0 means the cache is empty (no build has completed yet) —
                     # the returned coherence of 0.0 is a sentinel, not a real reading.
                     # Skip logging and alerting until a real topology build finishes.
-                    if topo.get("ts", 0) == 0:
+                    _ts = topo.get("ts")
+                    if _ts is None or _ts == 0:
                         pass
                     else:
-                        coherence = topo.get("coherence", 0.0)
-                        _pr = os.environ.get("PROJECT_ROOT", "")
+                        _coh = topo.get("coherence")
+                        coherence = 0.0 if _coh is None else _coh
+                        _pr = ENV.require("PROJECT_ROOT")
                         if _pr:
                             _mdir = os.path.join(_pr, "metrics")
                             os.makedirs(_mdir, exist_ok=True)
@@ -523,8 +525,10 @@ class RAGProxy:
                         ).start()
             logger.warning(f"RAG proxy {self._engine}.{method}: {e}")
             return None
-        except (urllib.error.URLError, TimeoutError, OSError) as e:
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, TypeError) as e:
             # Connection refused / timeout — shim is dead. Trigger immediate restart.
+            # (ValueError/TypeError added so numeric parses in the response body
+            # don't escape past the handler into the outer proxy invariant.)
             if not self._connection_failed:
                 self._connection_failed = True
                 # Layer 0: mark DEGRADED
@@ -606,13 +610,40 @@ class RAGProxy:
     # ── Index methods ────────────────────────────────────────────────────────
 
     def index_directory(self, directory):
-        return self._call("index_directory", directory=directory, timeout=120) or {}
+        # Fail-loud on shim unavailability. `or {}` used to silently
+        # return an empty dict, which downstream code (tools_index.
+        # index_codebase) then hit with KeyError on expected keys like
+        # 'total_files' and 'indexed'. Better to raise than to pretend
+        # the index succeeded with zero files.
+        result = self._call("index_directory", directory=directory, timeout=120)
+        if not isinstance(result, dict) or "total_files" not in result:
+            raise RuntimeError(
+                f"rag_proxy.index_directory: shim returned malformed response "
+                f"(type={type(result).__name__}, has_total_files="
+                f"{isinstance(result, dict) and 'total_files' in result}). "
+                f"Likely a shim connection failure — check /health and retry."
+            )
+        return result
 
     def index_symbols(self, symbols):
-        return self._call("index_symbols", symbols=symbols, timeout=60) or {}
+        result = self._call("index_symbols", symbols=symbols, timeout=60)
+        if not isinstance(result, dict) or "indexed" not in result:
+            raise RuntimeError(
+                f"rag_proxy.index_symbols: shim returned malformed response "
+                f"(type={type(result).__name__}). Likely a shim connection "
+                f"failure — check /health and retry."
+            )
+        return result
 
     def index_file(self, path):
-        return self._call("index_file", path=path, timeout=10) or {}
+        result = self._call("index_file", path=path, timeout=10)
+        if not isinstance(result, dict):
+            raise RuntimeError(
+                f"rag_proxy.index_file: shim returned malformed response "
+                f"(type={type(result).__name__}). Likely a shim connection "
+                f"failure — check /health and retry."
+            )
+        return result
 
     def clear(self):
         return self._call("clear", timeout=30)
