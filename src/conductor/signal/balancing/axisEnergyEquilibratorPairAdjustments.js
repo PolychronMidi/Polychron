@@ -123,7 +123,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
           state.pairAdjustments++;
           if (context.currentRegime === 'coherent' && pairTightenScale > 0) state.coherentHotspotPairAdj++;
           state.perPairAdj[pair] = (V.optionalFinite(state.perPairAdj[pair], 0)) + 1;
-          state.regimePairAdj[context.regimeKey] = (state.regimePairAdj[context.regimeKey] || 0) + 1;
+          state.regimePairAdj[context.regimeKey] = V.optionalFinite(state.regimePairAdj[context.regimeKey], 0) + 1;
         }
       } else if (rolling < config.COLDSPOT_RATIO * baseline && rolling < config.COLDSPOT_ABS_MAX) {
         if (context.coherentColdspotFreeze || pairP95 > config.RESIDUAL_COLDSPOT_P95_MAX || hotspotRate > 0.06 || severeRate > 0.02) {
@@ -141,7 +141,7 @@ axisEnergyEquilibratorPairAdjustments = (() => {
           state.pairLastRelaxBeat[pair] = state.beatCount;
           state.pairAdjustments++;
           state.perPairAdj[pair] = (V.optionalFinite(state.perPairAdj[pair], 0)) + 1;
-          state.regimePairAdj[context.regimeKey] = (state.regimePairAdj[context.regimeKey] || 0) + 1;
+          state.regimePairAdj[context.regimeKey] = V.optionalFinite(state.regimePairAdj[context.regimeKey], 0) + 1;
         }
       }
     }

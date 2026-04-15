@@ -25,7 +25,7 @@ homeostasisTick = (() => {
     // (entropy-trust p95 0.896) drags budget without correction. Decay after
     // 1 tick, floored at 85% of raw value (75 ticks to reach floor).
     if (nonNudgeableTailPressure > 0) {
-      S.nonNudgeableTailIdleTicks = (S.nonNudgeableTailIdleTicks || 0) + 1;
+      S.nonNudgeableTailIdleTicks = (S.nonNudgeableTailIdleTicks ?? 0) + 1;
       nonNudgeableTailPressure *= m.max(0.85, 1.0 - S.nonNudgeableTailIdleTicks * 0.002);
     } else {
       S.nonNudgeableTailIdleTicks = 0;
@@ -185,7 +185,7 @@ homeostasisTick = (() => {
         const val = dynamicsSnapshot.couplingMatrix[pair];
         const rolling = V.optionalFinite(val);
         if (rolling !== undefined && m.abs(rolling) > 0.85) {
-          S.exceedanceTicks[pair] = (S.exceedanceTicks[pair] || 0) + 1;
+          S.exceedanceTicks[pair] = (S.exceedanceTicks[pair] ?? 0) + 1;
           const limitTicks = m.max(5, m.floor(S.tickCount * 0.015));
           if (S.exceedanceTicks[pair] >= limitTicks) applyBrake = true;
         } else {

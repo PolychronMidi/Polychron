@@ -50,7 +50,7 @@ sectionMemory = (() => {
     // R33: quality scoring -- coherent share + low exceedance + coupling stability = high quality
     const regimeBalance = snap && snap.regime === 'coherent' ? 0.8 : snap && snap.regime === 'evolving' ? 0.5 : 0.3;
     const coherenceQuality = clamp(coherenceBias, 0.5, 1.5) / 1.5;
-    const transitionPenalty = clamp(1.0 - (sectionMemoryPrev.regimeTransitionCount || 0) * 0.08, 0.3, 1.0);
+    const transitionPenalty = clamp(1.0 - (sectionMemoryPrev.regimeTransitionCount ?? 0) * 0.08, 0.3, 1.0);
     const quality = clamp(regimeBalance * 0.4 + coherenceQuality * 0.3 + transitionPenalty * 0.3, 0, 1);
     qualityHistory.push(quality);
     if (qualityHistory.length > 8) qualityHistory.shift();

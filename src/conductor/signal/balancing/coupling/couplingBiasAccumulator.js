@@ -74,7 +74,7 @@ couplingBiasAccumulator = (() => {
       const hpAt = S.adaptiveTargets[S.hpPromotedPair];
       const hpPs = S.pairState[S.hpPromotedPair];
       const hpResolved = hpAt && hpAt.rawRollingAbsCorr < HP_ROLLING_THRESHOLD * 0.8;
-      const hpLowEffectiveness = hpPs && (hpPs.effectivenessEma || 0.5) < 0.30;
+      const hpLowEffectiveness = hpPs && (hpPs.effectivenessEma ?? 0.5) < 0.30;
       if (S.hpBeats >= HP_MAX_BEATS || hpResolved || hpLowEffectiveness || !hpAt || !hpPs) {
         if (hpPs) {
           const normalMax = (S.hpPromotedPair === 'density-flicker') ? S.densityFlickerGainCeiling : GAIN_MAX;
@@ -96,7 +96,7 @@ couplingBiasAccumulator = (() => {
         if (ps.gain >= GAIN_MAX * 0.95 && at.rawRollingAbsCorr > HP_ROLLING_THRESHOLD) {
           const hpDims = ak.split('-');
           if (!NUDGEABLE_SET.has(hpDims[0]) && !NUDGEABLE_SET.has(hpDims[1])) continue;
-          if ((ps.effectivenessEma || 0.5) < 0.35) continue;
+          if ((ps.effectivenessEma ?? 0.5) < 0.35) continue;
           if (at.rawRollingAbsCorr > worstRolling) {
             worstRolling = at.rawRollingAbsCorr;
             worstKey = ak;

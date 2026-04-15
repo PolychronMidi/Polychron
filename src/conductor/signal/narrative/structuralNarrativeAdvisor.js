@@ -26,7 +26,7 @@ structuralNarrativeAdvisor = (() => {
     }
     familyHistory.push(family);
     if (familyHistory.length > MAX_HISTORY) familyHistory.shift();
-    familyCounts.set(family, (familyCounts.get(family) || 0) + 1);
+    familyCounts.set(family, (familyCounts.get(family) ?? 0) + 1);
     structuralNarrativeAdvisorRecompute();
   }
 

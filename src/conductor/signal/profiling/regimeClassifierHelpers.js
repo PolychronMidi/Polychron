@@ -18,7 +18,7 @@ regimeClassifierHelpers = (() => {
       state.runTransitionCount++;
     }
     state.runBeatCount += span;
-    state.runResolvedRegimeCounts[resolvedRegime] = (state.runResolvedRegimeCounts[resolvedRegime] || 0) + span;
+    state.runResolvedRegimeCounts[resolvedRegime] = (state.runResolvedRegimeCounts[resolvedRegime] ?? 0) + span;
 
     if (resolvedRegime === 'coherent') {
       state.runCoherentBeats = state.runLastResolvedRegime === 'coherent' ? state.runCoherentBeats + span : span;
@@ -37,7 +37,7 @@ regimeClassifierHelpers = (() => {
     const span = m.max(1, state.V.optionalFinite(beatSpan, 1));
     const projectedRunBeatCount = state.runBeatCount + span;
     const projectedResolvedCounts = Object.assign({}, state.runResolvedRegimeCounts);
-    projectedResolvedCounts[resolvedRegime] = (projectedResolvedCounts[resolvedRegime] || 0) + span;
+    projectedResolvedCounts[resolvedRegime] = (projectedResolvedCounts[resolvedRegime] ?? 0) + span;
     const projectedCoherentShare = projectedRunBeatCount > 0
       ? (V.optionalFinite(projectedResolvedCounts.coherent, 0)) / projectedRunBeatCount
       : 0;
