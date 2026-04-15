@@ -76,7 +76,8 @@ fi
 # before Python is alive. Topology overrides come from env; defaults match
 # the committed supervisor config.
 LLAMA_BIN="${HME_LLAMA_SERVER_BIN:-/home/jah/tools/llama-cpp-vulkan/llama-b8797/llama-server}"
-if [ -x "$LLAMA_BIN" ]; then
+# DISABLED — user explicitly cancelled all auto-launch. Set HME_AUTOLAUNCH_LLAMA=1 to re-enable.
+if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "$LLAMA_BIN" ]; then
   _start_llama() {
     local name="$1" port="$2" model="$3" device="$4" alias="$5" ctx="$6" lora="$7"
     if curl -sf --max-time 2 "http://127.0.0.1:${port}/health" 2>/dev/null | grep -q '"status":"ok"'; then
