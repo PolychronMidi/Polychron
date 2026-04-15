@@ -34,7 +34,7 @@ RELOADABLE = [
     "todo", "enrich_prompt", "tools_passthru", "activity_digest", "blindspots",
     "cascade_analysis", "hypothesis_registry", "prediction_accuracy",
     "semantic_drift_report", "crystallizer", "self_audit", "probe",
-    "epistemic_reports",
+    "epistemic_reports", "negative_space", "cognitive_load", "ground_truth",
 ]
 TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]

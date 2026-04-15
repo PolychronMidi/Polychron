@@ -203,12 +203,32 @@ def main() -> int:
         entry_ts = float(row.get("timestamp", 0) or 0)
         if entry_ts <= 0:
             entry_ts = now  # fall back to now for entries without timestamps
-        score = compute_trust(entry_ts, coherence_hist, accuracy_hist, musical_hist, now)
+
+        # Phase 5.5 — human ground-truth entries always inherit HIGH tier
+        # regardless of the normal trust formula.
+        tags_str = str(row.get("tags", "") or "")
+        is_ground_truth = "human_ground_truth" in tags_str
+        if is_ground_truth:
+            score = {
+                "trust": 1.0,
+                "tier": "HIGH",
+                "components": {
+                    "coherence_at_write": None,
+                    "accuracy_at_write": None,
+                    "verdict_bonus": None,
+                    "age_decay": None,
+                    "verdict": None,
+                    "override": "human_ground_truth",
+                },
+            }
+        else:
+            score = compute_trust(entry_ts, coherence_hist, accuracy_hist, musical_hist, now)
         entries[entry_id] = {
             "id": entry_id,
             "title": str(row.get("title", ""))[:120],
             "category": str(row.get("category", "")),
             "timestamp": entry_ts,
+            "ground_truth": is_ground_truth,
             **score,
         }
         tier_counts[score["tier"]] += 1

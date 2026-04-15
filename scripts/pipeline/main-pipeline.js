@@ -61,6 +61,8 @@ const POST_COMPOSITION = [
   { label: 'compute-coherence-score',  cmd: 'node scripts/pipeline/compute-coherence-score.js' },
   { label: 'reconcile-predictions',    cmd: 'node scripts/pipeline/reconcile-predictions.js' },
   { label: 'compute-musical-correlation', cmd: 'node scripts/pipeline/compute-musical-correlation.js' },
+  { label: 'compute-compositional-trajectory', cmd: 'node scripts/pipeline/compute-compositional-trajectory.js' },
+  { label: 'compute-coherence-budget', cmd: 'node scripts/pipeline/compute-coherence-budget.js' },
   { label: 'compute-kb-trust-weights', cmd: 'python3 scripts/pipeline/compute-kb-trust-weights.py' },
   { label: 'compute-intention-gap',    cmd: 'node scripts/pipeline/compute-intention-gap.js' },
 ];
