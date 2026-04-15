@@ -70,8 +70,9 @@ _rag_route_ttl_s = 0.1
 
 
 def _rag_route() -> str:
-    """Return 'gpu' or 'cpu' for the next RAG op.
+    """Return 'gpu' or 'cpu' for the next RAG op on the RAG GPU.
 
+    Queries the daemon's per-device /rag-route?device=<RAG's Vulkan tag>.
     Falls back to 'gpu' if the daemon is unreachable or no CPU mirror exists.
     Cache-gated to ~100ms so a single tool call's batch of encode/rerank calls
     doesn't spam the daemon.
@@ -83,7 +84,12 @@ def _rag_route() -> str:
         return _rag_route_cache["route"]
     try:
         import urllib.request as _ur
-        with _ur.urlopen(f"{_LLAMACPP_DAEMON_URL}/rag-route", timeout=0.2) as resp:
+        # Ask for RAG's specific Vulkan device; the daemon returns whether
+        # that device currently has an in-flight generation.
+        _tag = os.environ.get("HME_RAG_VULKAN", "Vulkan1")
+        with _ur.urlopen(
+            f"{_LLAMACPP_DAEMON_URL}/rag-route?device={_tag}", timeout=0.2,
+        ) as resp:
             data = json.loads(resp.read())
             route = data["route"]
     except Exception as _e:
@@ -95,66 +101,112 @@ def _rag_route() -> str:
 
 
 class _RagDispatcher:
-    """Queue-aware dispatcher over a (GPU, CPU) worker pair.
+    """Queue-aware dispatcher over a (GPU, CPU) worker pair, with optional
+    VramManager-backed active offload.
 
-    Replaces the old _RagRouterProxy. Acquire semantics:
-      1. Prefer GPU when the daemon reports the RAG GPU is idle AND the GPU
-         worker's slot is free.
-      2. Fall back to the CPU mirror when the GPU is contended OR its slot
-         is held by another in-flight RAG call.
-      3. When both slots are held, the caller blocks on a condition variable
-         and is woken by the next release. Re-polls the daemon flag every
-         second in case arbiter finished mid-wait.
+    Acquire semantics:
+      1. Prefer GPU when the daemon reports the RAG GPU is idle AND the
+         managed model's GPU instance is currently resident (ManagedModel.
+         gpu_instance is not None) AND the GPU worker's slot is free.
+      2. Before handing out the GPU instance, call VramManager.request_room()
+         to guarantee headroom. If that fails (not enough free VRAM even
+         after offloading lower-priority residents), fall through to CPU.
+      3. Fall back to the CPU mirror when the GPU is contended, offloaded,
+         or the GPU-side semaphore is already held by another in-flight
+         RAG call.
+      4. When both slots are held, the caller blocks on a condition variable
+         and is woken by the next release. Re-polls the daemon flag and
+         managed-model state every second in case arbiter finished or
+         VramManager reloaded the GPU instance mid-wait.
 
     Both workers get a semaphore with one slot. When multiple concurrent
     encode/predict calls arrive, they stack across the two workers (first
     takes GPU, second takes CPU) and additional callers queue on the CV.
-    The first free compatible worker wins the next waiter.
 
     If only one worker exists (CPU load failed, or GPU-only mode), the
     dispatcher degrades to that single worker with straightforward blocking
     acquire. Full interface compatibility with SentenceTransformer /
     CrossEncoder — .encode, .predict, .device, and arbitrary attribute
     delegation via __getattr__.
+
+    managed_model (optional): the VramManager.ManagedModel registered for
+    this instance. When present, the dispatcher reads ManagedModel.
+    gpu_instance on every acquire (so offload/reload take effect immediately)
+    and calls VramManager.request_room() for pressure-based offload. When
+    None, behavior is the static two-instance dispatcher (old shape).
     """
 
-    def __init__(self, gpu_instance, cpu_instance, label: str):
-        self._gpu = gpu_instance
+    def __init__(
+        self,
+        gpu_instance,
+        cpu_instance,
+        label: str,
+        managed_model=None,
+        vram_manager=None,
+    ):
+        self._gpu = gpu_instance      # used only when managed_model is None
         self._cpu = cpu_instance
         self._label = label
-        self._gpu_sem = threading.Semaphore(1) if gpu_instance is not None else None
+        self._mm = managed_model      # dynamic GPU-instance source when set
+        self._vram = vram_manager
+        self._gpu_sem = threading.Semaphore(1) if self._current_gpu() is not None else None
         self._cpu_sem = threading.Semaphore(1) if cpu_instance is not None else None
         self._cv = threading.Condition()
 
+    def _current_gpu(self):
+        """Resolve the GPU instance at call time. With a managed model, the
+        source is ManagedModel.gpu_instance (may flip to None when offloaded).
+        Without, it's the static pointer given at construction."""
+        if self._mm is not None:
+            return self._mm.gpu_instance
+        return self._gpu
+
     def _acquire(self):
         """Return (instance, release_fn). Blocks until a worker is free."""
-        # Fast paths for degraded modes
-        if self._gpu is None and self._cpu is not None:
+        # Fast paths for degraded modes (one-sided). Re-check on every call
+        # since a managed model can flip between resident / offloaded.
+        cpu = self._cpu
+        gpu_at_start = self._current_gpu()
+        if gpu_at_start is None and cpu is not None:
+            cpu.acquire_sem = None  # type hint suppression
             self._cpu_sem.acquire()
-            return self._cpu, self._release_cpu
-        if self._cpu is None and self._gpu is not None:
+            return cpu, self._release_cpu
+        if cpu is None and gpu_at_start is not None:
             self._gpu_sem.acquire()
-            return self._gpu, self._release_gpu
+            return gpu_at_start, self._release_gpu
 
         with self._cv:
             while True:
-                # 1. Prefer GPU if daemon says GPU is free and slot is open
-                if _rag_route() == "gpu" and self._gpu_sem.acquire(blocking=False):
-                    return self._gpu, self._release_gpu
-                # 2. Fall back to CPU if slot is open
-                if self._cpu_sem.acquire(blocking=False):
-                    return self._cpu, self._release_cpu
-                # 3. Both slots held — wait for a release (re-poll daemon at 1s)
+                gpu = self._current_gpu()
+                gpu_ok = gpu is not None and _rag_route() == "gpu"
+                if gpu_ok and self._gpu_sem is not None and self._gpu_sem.acquire(blocking=False):
+                    # Pressure check: ensure headroom before committing to GPU.
+                    if self._vram is not None and self._mm is not None:
+                        ok = self._vram.request_room(self._mm.headroom_gb, caller=self._mm)
+                        if not ok:
+                            # Couldn't free enough; release the GPU slot and try CPU.
+                            self._gpu_sem.release()
+                            self._cv.notify_all()
+                        else:
+                            return gpu, self._release_gpu
+                    else:
+                        return gpu, self._release_gpu
+                # Fall back to CPU if available
+                if self._cpu_sem is not None and self._cpu_sem.acquire(blocking=False):
+                    return cpu, self._release_cpu
+                # Both slots unavailable — wait for a release (re-poll at 1s)
                 self._cv.wait(timeout=1.0)
 
     def _release_gpu(self):
         with self._cv:
-            self._gpu_sem.release()
+            if self._gpu_sem is not None:
+                self._gpu_sem.release()
             self._cv.notify_all()
 
     def _release_cpu(self):
         with self._cv:
-            self._cpu_sem.release()
+            if self._cpu_sem is not None:
+                self._cpu_sem.release()
             self._cv.notify_all()
 
     def encode(self, *args, **kwargs):
@@ -173,13 +225,16 @@ class _RagDispatcher:
 
     @property
     def device(self):
-        inst = self._gpu if self._gpu is not None else self._cpu
+        inst = self._current_gpu() or self._cpu
         return getattr(inst, "device", "unknown")
 
     def __getattr__(self, name):
         # Delegate non-dispatch attributes (tokenizer, max_seq_length, etc.)
-        # to whichever instance exists, preferring GPU for config consistency.
-        inst = self.__dict__.get("_gpu") or self.__dict__.get("_cpu")
+        # to whichever instance exists. Prefer GPU when resident for config
+        # consistency, fall back to CPU when offloaded or GPU-less.
+        mm = self.__dict__.get("_mm")
+        gpu = mm.gpu_instance if mm is not None else self.__dict__.get("_gpu")
+        inst = gpu if gpu is not None else self.__dict__.get("_cpu")
         if inst is None:
             raise AttributeError(name)
         return getattr(inst, name)
@@ -368,10 +423,75 @@ def _load_engines():
 
         # Wrap code_model + reranker in _RagDispatcher so concurrent requests
         # stack across the GPU + CPU-mirror worker pair and the next free
-        # compatible worker serves each queued waiter. The text_model (bge
-        # ONNX) is CPU-only and stays unwrapped.
-        _code_model_router = _RagDispatcher(_shared_code_model, _shared_code_model_cpu, "code")
-        _reranker_router = _RagDispatcher(_shared_reranker, _shared_reranker_cpu, "reranker") if _shared_reranker is not None else None
+        # compatible worker serves each queued waiter. When running on GPU,
+        # each model is registered with a VramManager so active offload
+        # kicks in whenever arbiter grows its KV cache past the safe
+        # headroom threshold. The text_model (bge ONNX) is CPU-only and
+        # stays unwrapped.
+        _vram_mgr = None
+        _mm_code = None
+        _mm_rerank = None
+        if _rag_device.startswith("cuda"):
+            from vram_manager import VramManager, ManagedModel, start_reload_poller
+            _gpu_idx = int(_rag_device.split(":", 1)[1])
+            _vram_mgr = VramManager(gpu_idx=_gpu_idx)
+
+            def _make_code_gpu():
+                return SentenceTransformer(
+                    CODE_MODEL_NAME, trust_remote_code=True,
+                    device=f"cuda:{_gpu_idx}",
+                )
+
+            def _make_rerank_gpu():
+                return CrossEncoder(
+                    RERANKER_NAME, max_length=512, device=f"cuda:{_gpu_idx}",
+                )
+
+            _mm_code = ManagedModel(
+                name="jina-code-embedder",
+                gpu_idx=_gpu_idx,
+                priority=4,        # last to offload; hottest path
+                size_gb=1.0,
+                headroom_gb=0.5,
+                gpu_factory=_make_code_gpu,
+                gpu_instance=_shared_code_model,
+                cpu_instance=_shared_code_model_cpu,
+            )
+            _vram_mgr.register(_mm_code)
+
+            if _shared_reranker is not None:
+                _mm_rerank = ManagedModel(
+                    name="bge-reranker-v2-m3",
+                    gpu_idx=_gpu_idx,
+                    priority=3,    # offloaded before jina
+                    size_gb=2.2,
+                    headroom_gb=1.0,
+                    gpu_factory=_make_rerank_gpu,
+                    gpu_instance=_shared_reranker,
+                    cpu_instance=_shared_reranker_cpu,
+                )
+                _vram_mgr.register(_mm_rerank)
+
+            # Background poller: reload offloaded models on busy→idle edge
+            # of the RAG GPU's Vulkan device.
+            _rag_vulkan_tag = os.environ.get("HME_RAG_VULKAN", "Vulkan1")
+            start_reload_poller(
+                _vram_mgr, _LLAMACPP_DAEMON_URL, _rag_vulkan_tag,
+                poll_interval_s=2.0,
+            )
+
+        _code_model_router = _RagDispatcher(
+            _shared_code_model, _shared_code_model_cpu, "code",
+            managed_model=_mm_code, vram_manager=_vram_mgr,
+        )
+        _reranker_router = (
+            _RagDispatcher(
+                _shared_reranker, _shared_reranker_cpu, "reranker",
+                managed_model=_mm_rerank, vram_manager=_vram_mgr,
+            )
+            if _shared_reranker is not None
+            else None
+        )
 
         _project_engine = RAGEngine(
             PROJECT_DB, model_name=MODEL_NAME,

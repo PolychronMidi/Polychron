@@ -1,7 +1,27 @@
-"""HME perceptual engines — EnCodec and CLAP model inference, called by audio_analyze."""
+"""HME perceptual engines — EnCodec and CLAP model inference, called by audio_analyze.
+
+Placement contract:
+  - Audio models are pinned to the audio GPU (HME_AUDIO_GPU env, default 1)
+    so they predictably live next to the coder LLM rather than competing
+    with the RAG stack on the arbiter GPU.
+  - BOTH a GPU instance AND a CPU mirror are loaded at startup (eager),
+    so dispatchers can fall back instantly when the GPU is contended or
+    the model has been offloaded by the VramManager.
+  - Each model registers with a shared VramManager for the audio GPU;
+    under VRAM pressure (coder KV cache growing), lower-priority audio
+    models are offloaded first (EnCodec before CLAP) to free room, and a
+    background poller reloads them on busy→idle edges of the daemon's
+    per-GPU flag.
+  - Audio generations flip the daemon's per-GPU busy flag for the audio
+    GPU so any coder generate concurrently scheduled there routes
+    appropriately. Legacy `pick_gpu_or_cpu()` is preserved for any callers
+    that need a one-off device probe.
+"""
 import json
 import os
 import logging
+import threading
+from contextlib import contextmanager
 
 from server import context as ctx
 
@@ -10,18 +30,27 @@ logger = logging.getLogger("HME")
 # Perceptual confidence starts low — earns trust through verified accuracy
 _PERCEPTUAL_CONFIDENCE = 0.15  # raised as predictions correlate with verdicts
 
-# Module-level model cache — loaded once per MCP server process, reused across tool calls
-_encodec_model = None
-_encodec_device = None
-_clap_model = None
-_clap_device = None
+# ── VramManager integration ────────────────────────────────────────────────
+# Single manager instance per process, covering the audio GPU.
+_audio_vram: "VramManager | None" = None        # type: ignore[name-defined]
+_mm_encodec = None                                # ManagedModel for EnCodec
+_mm_clap = None                                   # ManagedModel for CLAP
+_encodec_cpu = None                               # CPU mirror (always resident)
+_clap_cpu = None                                  # CPU mirror (always resident)
+_audio_lock = threading.Lock()                    # serialize audio_analyze calls
+_audio_init_lock = threading.Lock()               # one-shot eager init gate
+_audio_init_done = False
+
+# Device selection
+_AUDIO_GPU_IDX = int(os.environ.get("HME_AUDIO_GPU", "1"))
+_AUDIO_VULKAN = os.environ.get("HME_AUDIO_VULKAN", f"Vulkan{_AUDIO_GPU_IDX + 1}")
+_DAEMON_URL = os.environ.get("HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735")
 
 
 def pick_gpu_or_cpu(min_free_gb: float, label: str = "") -> str:
-    """Return the best torch device for a model needing at least `min_free_gb`
-    of free VRAM on a GPU. Picks whichever GPU has the most free memory above
-    the threshold, else falls back to 'cpu'. Safe to call from any context.
-    """
+    """Legacy helper: return the best torch device for a model needing at
+    least `min_free_gb` of free VRAM. Kept for any out-of-band probes that
+    don't route through the managed model system."""
     try:
         import torch
         if torch.cuda.is_available():
@@ -43,37 +72,244 @@ def pick_gpu_or_cpu(min_free_gb: float, label: str = "") -> str:
     return "cpu"
 
 
-def _get_encodec():
-    """Lazy-load EnCodec 24kHz model, cached for the server process lifetime.
-    Placed on the GPU with the most free VRAM if any has >= 1 GB free, else CPU.
-    Peak need: ~500 MB for weights + activations on 30-sec chunks.
+def _build_encodec_gpu():
+    """Factory: create a fresh EnCodec instance pinned to the audio GPU.
+    Called both during eager startup and when VramManager.try_reload decides
+    to bring EnCodec back after being offloaded."""
+    from encodec import EncodecModel
+    m = EncodecModel.encodec_model_24khz()
+    m.set_target_bandwidth(6.0)
+    m.to(f"cuda:{_AUDIO_GPU_IDX}").eval()
+    return m
+
+
+def _build_encodec_cpu():
+    from encodec import EncodecModel
+    m = EncodecModel.encodec_model_24khz()
+    m.set_target_bandwidth(6.0)
+    m.to("cpu").eval()
+    return m
+
+
+def _build_clap_gpu():
+    import laion_clap
+    m = laion_clap.CLAP_Module(
+        enable_fusion=False, amodel='HTSAT-tiny',
+        device=f"cuda:{_AUDIO_GPU_IDX}",
+    )
+    m.load_ckpt()
+    return m
+
+
+def _build_clap_cpu():
+    import laion_clap
+    m = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny', device="cpu")
+    m.load_ckpt()
+    return m
+
+
+def _ensure_audio_initialized() -> None:
+    """Eager-load GPU + CPU instances for EnCodec and CLAP on first call,
+    register them with a VramManager for the audio GPU, and start a reload
+    poller. Idempotent under _audio_init_lock."""
+    global _audio_vram, _mm_encodec, _mm_clap, _encodec_cpu, _clap_cpu
+    global _audio_init_done
+    with _audio_init_lock:
+        if _audio_init_done:
+            return
+        try:
+            import torch
+            if not torch.cuda.is_available():
+                logger.warning("audio init: no CUDA — both GPU and CPU mirrors will load to CPU")
+        except Exception as _e:
+            logger.warning(f"audio init: torch unavailable ({_e})")
+
+        # Load CPU mirrors first (always resident, lower failure risk).
+        try:
+            _encodec_cpu = _build_encodec_cpu()
+            logger.info("EnCodec CPU mirror ready.")
+        except Exception as _e:
+            logger.warning(f"EnCodec CPU mirror load failed: {type(_e).__name__}: {_e}")
+        try:
+            _clap_cpu = _build_clap_cpu()
+            logger.info("CLAP CPU mirror ready.")
+        except Exception as _e:
+            logger.warning(f"CLAP CPU mirror load failed: {type(_e).__name__}: {_e}")
+
+        # Load GPU instances (may fail if audio GPU is too tight).
+        encodec_gpu = None
+        clap_gpu = None
+        try:
+            encodec_gpu = _build_encodec_gpu()
+            logger.info(f"EnCodec GPU loaded on cuda:{_AUDIO_GPU_IDX}.")
+        except Exception as _e:
+            logger.warning(f"EnCodec GPU load failed: {type(_e).__name__}: {_e} — CPU-only")
+        try:
+            clap_gpu = _build_clap_gpu()
+            logger.info(f"CLAP GPU loaded on cuda:{_AUDIO_GPU_IDX}.")
+        except Exception as _e:
+            logger.warning(f"CLAP GPU load failed: {type(_e).__name__}: {_e} — CPU-only")
+
+        # Register with VramManager
+        try:
+            import sys as _sys
+            # vram_manager.py lives one level up from server/ (in tools/HME/mcp/)
+            _mcp_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            if _mcp_dir not in _sys.path:
+                _sys.path.insert(0, _mcp_dir)
+            from vram_manager import VramManager, ManagedModel, start_reload_poller
+            _audio_vram = VramManager(gpu_idx=_AUDIO_GPU_IDX)
+
+            _mm_encodec = ManagedModel(
+                name="encodec-24khz",
+                gpu_idx=_AUDIO_GPU_IDX,
+                priority=1,        # first to offload (smallest, least hot)
+                size_gb=0.5,
+                headroom_gb=0.5,
+                gpu_factory=_build_encodec_gpu,
+                gpu_instance=encodec_gpu,
+                cpu_instance=_encodec_cpu,
+            )
+            _audio_vram.register(_mm_encodec)
+
+            _mm_clap = ManagedModel(
+                name="clap-htsat-tiny",
+                gpu_idx=_AUDIO_GPU_IDX,
+                priority=2,        # offloaded after encodec
+                size_gb=4.0,
+                headroom_gb=1.5,
+                gpu_factory=_build_clap_gpu,
+                gpu_instance=clap_gpu,
+                cpu_instance=_clap_cpu,
+            )
+            _audio_vram.register(_mm_clap)
+
+            start_reload_poller(
+                _audio_vram, _DAEMON_URL, _AUDIO_VULKAN,
+                poll_interval_s=2.0,
+            )
+        except Exception as _e:
+            logger.warning(
+                f"audio VramManager init failed ({type(_e).__name__}: {_e}) — "
+                f"audio tools will use static device selection without active offload"
+            )
+
+        _audio_init_done = True
+
+
+def _audio_gpu_ok() -> bool:
+    """Cheap check: does the daemon say the audio GPU is free right now?"""
+    try:
+        import urllib.request
+        with urllib.request.urlopen(
+            f"{_DAEMON_URL}/rag-route?device={_AUDIO_VULKAN}", timeout=0.4,
+        ) as resp:
+            return json.loads(resp.read()).get("route") == "gpu"
+    except Exception:
+        return True  # daemon unreachable — assume idle, GPU was the fast path
+
+
+@contextmanager
+def _acquire_audio_model(mm, cpu_fallback, label: str):
+    """Serialized acquire for an audio model. Yields (model, device_tag).
+
+    Serialization matters here because audio tools run batch work that
+    allocates large intermediate tensors, and two simultaneous CLAP calls
+    would either OOM or thrash. We take a process-wide lock so only one
+    audio tool call runs at a time (RAG stack and arbiter run in
+    parallel to audio — this lock only governs audio).
     """
-    global _encodec_model, _encodec_device
-    if _encodec_model is None:
-        from encodec import EncodecModel
-        _encodec_device = pick_gpu_or_cpu(min_free_gb=1.0, label="EnCodec")
-        logger.info("Loading EnCodec 24kHz model onto %s (one-time)...", _encodec_device)
-        _encodec_model = EncodecModel.encodec_model_24khz()
-        _encodec_model.set_target_bandwidth(6.0)
-        _encodec_model.to(_encodec_device).eval()
-        logger.info("EnCodec ready (%s).", _encodec_device)
-    return _encodec_model, _encodec_device
+    with _audio_lock:
+        # Pressure check before using GPU
+        use_gpu = (
+            mm is not None
+            and mm.gpu_instance is not None
+            and _audio_gpu_ok()
+        )
+        if use_gpu and _audio_vram is not None:
+            ok = _audio_vram.request_room(mm.headroom_gb, caller=mm)
+            if not ok:
+                use_gpu = False
+
+        if use_gpu:
+            yield mm.gpu_instance, f"cuda:{_AUDIO_GPU_IDX}"
+        elif cpu_fallback is not None:
+            yield cpu_fallback, "cpu"
+        elif mm is not None and mm.gpu_instance is not None:
+            # CPU mirror missing but GPU still exists — use GPU unconditionally
+            yield mm.gpu_instance, f"cuda:{_AUDIO_GPU_IDX}"
+        else:
+            raise RuntimeError(f"{label}: no instance available (neither GPU nor CPU)")
+
+
+def _get_encodec():
+    """Back-compat: returns (model, device). Prefer `_acquire_encodec()` for
+    new code. This exists so tests and ad-hoc scripts can still probe."""
+    _ensure_audio_initialized()
+    if _mm_encodec is not None and _mm_encodec.gpu_instance is not None:
+        return _mm_encodec.gpu_instance, f"cuda:{_AUDIO_GPU_IDX}"
+    if _encodec_cpu is not None:
+        return _encodec_cpu, "cpu"
+    raise RuntimeError("EnCodec: not loaded")
 
 
 def _get_clap():
-    """Lazy-load CLAP HTSAT-tiny model, cached for the server process lifetime.
-    Placed on the GPU with the most free VRAM if any has >= 4 GB free, else CPU.
-    Peak need: ~3 GB (weights + audio/text encoder activations + similarity matrix).
+    """Back-compat: returns model. Prefer `_acquire_clap()` for new code."""
+    _ensure_audio_initialized()
+    if _mm_clap is not None and _mm_clap.gpu_instance is not None:
+        return _mm_clap.gpu_instance
+    if _clap_cpu is not None:
+        return _clap_cpu
+    raise RuntimeError("CLAP: not loaded")
+
+
+@contextmanager
+def _acquire_encodec():
+    """Context manager: yields (model, device_tag) with proper serialization
+    and daemon busy-flag signaling. Flips the audio GPU busy flag for the
+    duration of the call so concurrent coder generations route appropriately."""
+    _ensure_audio_initialized()
+    _set_audio_busy(True)
+    try:
+        with _acquire_audio_model(_mm_encodec, _encodec_cpu, "EnCodec") as (m, dev):
+            yield m, dev
+    finally:
+        _set_audio_busy(False)
+
+
+@contextmanager
+def _acquire_clap():
+    """Context manager: yields model (with internal device) with proper
+    serialization and daemon busy-flag signaling."""
+    _ensure_audio_initialized()
+    _set_audio_busy(True)
+    try:
+        with _acquire_audio_model(_mm_clap, _clap_cpu, "CLAP") as (m, _dev):
+            yield m
+    finally:
+        _set_audio_busy(False)
+
+
+def _set_audio_busy(busy: bool) -> None:
+    """POST to daemon's /gpu-busy endpoint to flip the audio GPU's busy
+    flag. Concurrent generators on the audio GPU (coder generations, other
+    future workloads) read this flag via /rag-route?device=<audio> and
+    route accordingly. Silent on failure — daemon may be down during probes.
     """
-    global _clap_model, _clap_device
-    if _clap_model is None:
-        import laion_clap
-        _clap_device = pick_gpu_or_cpu(min_free_gb=4.0, label="CLAP")
-        logger.info("Loading CLAP HTSAT-tiny model onto %s (one-time)...", _clap_device)
-        _clap_model = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny', device=_clap_device)
-        _clap_model.load_ckpt()
-        logger.info("CLAP ready (%s).", _clap_device)
-    return _clap_model
+    try:
+        import urllib.request
+        payload = json.dumps({
+            "device": _AUDIO_VULKAN,
+            "state": "set" if busy else "clear",
+        }).encode()
+        req = urllib.request.Request(
+            f"{_DAEMON_URL}/gpu-busy",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=0.3).read()
+    except Exception as _e:
+        logger.debug(f"_set_audio_busy({busy}): daemon unreachable ({type(_e).__name__})")
 
 
 def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
@@ -86,24 +322,24 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
     except ImportError as e:
         return f"Missing dependency: {e}. Install: pip install encodec torchaudio"
 
-    model, device = _get_encodec()
+    with _acquire_encodec() as (model, device):
+        # Load and convert audio inside the acquire block so offload/reload
+        # decisions from the VramManager apply cleanly to the whole pass.
+        wav, sr = torchaudio.load(wav_path)
+        wav = convert_audio(wav, sr, model.sample_rate, model.channels)
+        wav = wav.unsqueeze(0).to(device)
 
-    # Load and convert audio
-    wav, sr = torchaudio.load(wav_path)
-    wav = convert_audio(wav, sr, model.sample_rate, model.channels)
-    wav = wav.unsqueeze(0).to(device)
-
-    # Encode in chunks to manage memory
-    chunk_size = model.sample_rate * 30  # 30 second chunks
-    all_codes = []
-    with torch.no_grad():
-        for start in range(0, wav.shape[-1], chunk_size):
-            chunk = wav[..., start:start + chunk_size]
-            if chunk.shape[-1] < model.sample_rate:
-                continue
-            encoded = model.encode(chunk)
-            codes = encoded[0][0][0]  # list -> tuple(codes, scale) -> codes [n_codebooks, n_frames]
-            all_codes.append(codes.cpu())
+        # Encode in chunks to manage memory
+        chunk_size = model.sample_rate * 30  # 30 second chunks
+        all_codes = []
+        with torch.no_grad():
+            for start in range(0, wav.shape[-1], chunk_size):
+                chunk = wav[..., start:start + chunk_size]
+                if chunk.shape[-1] < model.sample_rate:
+                    continue
+                encoded = model.encode(chunk)
+                codes = encoded[0][0][0]  # list -> tuple(codes, scale) -> codes [n_codebooks, n_frames]
+                all_codes.append(codes.cpu())
 
     if not all_codes:
         return "Audio too short for EnCodec analysis."
@@ -189,9 +425,7 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     else:
         query_list = default_queries
 
-    model = _get_clap()
-
-    # Load and chunk audio into ~10s sections
+    # Load and chunk audio into ~10s sections (CPU-only, no model needed)
     y, sr = librosa.load(wav_path, sr=48000, mono=True)
     chunk_seconds = 10
     chunk_samples = chunk_seconds * sr
@@ -204,10 +438,6 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     if not chunks:
         return "Audio too short for CLAP analysis."
 
-    # Get text embeddings
-    text_embed = model.get_text_embedding(query_list, use_tensor=True)
-
-    # Get audio embeddings per chunk
     parts = [f"# CLAP Audio Analysis\n"]
     parts.append(f"Chunks: {len(chunks)} x {chunk_seconds}s | Queries: {len(query_list)}")
     using_custom = bool(queries.strip())
@@ -216,29 +446,43 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
         parts.append(f"  Probes: {' | '.join(q[:40] for q in query_list)}")
     parts.append("")
 
-    # Process chunks
-    audio_embeds = []
-    for chunk in chunks:
-        # CLAP expects float32 torch tensors
-        chunk_tensor = torch.from_numpy(chunk).float().unsqueeze(0)
-        embed = model.get_audio_embedding_from_data(
-            chunk_tensor, use_tensor=True
-        )
-        audio_embeds.append(embed)
+    # All model calls go inside the acquire block so offload/reload
+    # decisions apply cleanly across the whole pass. The final similarity
+    # matrix is moved to CPU as numpy at the boundary so the rest of the
+    # analysis runs device-independently.
+    with _acquire_clap() as model:
+        text_embed = model.get_text_embedding(query_list, use_tensor=True)
 
-    audio_embed = torch.cat(audio_embeds, dim=0)  # [n_chunks, embed_dim]
+        audio_embeds = []
+        for chunk in chunks:
+            # CLAP expects float32 torch tensors
+            chunk_tensor = torch.from_numpy(chunk).float().unsqueeze(0)
+            embed = model.get_audio_embedding_from_data(
+                chunk_tensor, use_tensor=True
+            )
+            audio_embeds.append(embed)
 
-    # Compute similarity matrix
-    similarity = torch.nn.functional.cosine_similarity(
-        text_embed.unsqueeze(1),  # [n_queries, 1, dim]
-        audio_embed.unsqueeze(0),  # [1, n_chunks, dim]
-        dim=2
-    )  # [n_queries, n_chunks]
+        audio_embed = torch.cat(audio_embeds, dim=0)  # [n_chunks, embed_dim]
 
-    # Report: for each query, which chunks match best
+        # Compute similarity matrix
+        similarity_t = torch.nn.functional.cosine_similarity(
+            text_embed.unsqueeze(1),   # [n_queries, 1, dim]
+            audio_embed.unsqueeze(0),  # [1, n_chunks, dim]
+            dim=2,
+        )  # [n_queries, n_chunks]
+
+        # Detach to CPU numpy before exiting the acquire block so the
+        # remainder of the function can run even if the model gets
+        # offloaded by a subsequent VramManager pressure event.
+        similarity = similarity_t.detach().cpu().numpy()
+        del text_embed, audio_embed, similarity_t
+
+    # Report: for each query, which chunks match best.
+    # `similarity` is now a numpy array (moved off device inside the
+    # _acquire_clap block), so the rest of the analysis is device-independent.
     parts.append("## Query Matches (chunk = ~10s window)")
     for qi, query in enumerate(query_list):
-        scores = similarity[qi].detach().cpu().numpy()
+        scores = similarity[qi]
         best_chunk = int(np.argmax(scores))
         best_score = float(scores[best_chunk])
         avg_score = float(np.mean(scores))
@@ -252,7 +496,7 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
         parts.append(f"    peak={best_score:.3f} at {best_chunk*chunk_seconds}s | avg={avg_score:.3f} [{spark}]")
 
     # Overall composition character (highest avg similarity query)
-    avg_per_query = similarity.mean(dim=1).detach().cpu().numpy()
+    avg_per_query = similarity.mean(axis=1)
     top_qi = int(np.argmax(avg_per_query))
     parts.append(f"\n## Dominant Character: \"{query_list[top_qi]}\" (avg={avg_per_query[top_qi]:.3f})")
 
@@ -298,7 +542,7 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
                 chunk_end = min(chunk_start + n_chunks_per_section, len(chunks))
                 if chunk_start >= len(chunks):
                     continue
-                sec_scores = similarity[:, chunk_start:chunk_end].mean(dim=1).detach().cpu().numpy()
+                sec_scores = similarity[:, chunk_start:chunk_end].mean(axis=1)
                 sec_top_qi = int(np.argmax(sec_scores))
                 sec_character = query_list[sec_top_qi]
                 if sec_character not in expected:
