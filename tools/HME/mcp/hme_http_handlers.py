@@ -3,7 +3,12 @@ import concurrent.futures
 import logging
 import os
 import subprocess
+import sys
 import threading
+
+# Central .env loader — fail-fast semantics.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME.http")
 
@@ -179,9 +184,9 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     import urllib.request as _urlreq
 
     # All enrichment dispatch goes through llama-server /v1/chat/completions.
-    _ENRICH_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
-    _ENRICH_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080") + "/v1/chat/completions"
-    _NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
+    _ENRICH_MODEL = ENV.require("HME_ARBITER_MODEL")
+    _ENRICH_URL = ENV.require("HME_LLAMACPP_ARBITER_URL") + "/v1/chat/completions"
+    _NUM_CTX_30B = ENV.require_int("HME_NUM_CTX_30B")
 
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
     t0 = _time.monotonic()

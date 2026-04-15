@@ -118,79 +118,57 @@ def _get_circuit_breaker(model: str) -> _CircuitBreaker:
     return _circuit_breakers[model]
 
 
-_LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
+# All routing config comes from the central .env loader. No defaults.
+# See tools/HME/mcp/hme_env.py — fail-fast if any key is missing.
+import sys as _sys
+_mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _mcp_root not in _sys.path:
+    _sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
+
+_LOCAL_MODEL = ENV.require("HME_LOCAL_MODEL")
 # Reasoning model: kept as local fallback only. Cloud cascade in synthesis_reasoning.py
 # handles all live reasoning calls.
-_REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3-coder:30b")
+_REASONING_MODEL = ENV.require("HME_REASONING_MODEL")
 # Arbiter model: phi-4 + HME v6 LoRA served by llama-server on Vulkan1 (GPU0).
-# HME_ARBITER_MODEL: set via .env; read dynamically so .env changes take effect
-# without restarting the MCP process (picked up by _refresh_arbiter()).
-_ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
+_ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
 
-
-_ENV_PATH = os.path.join(os.environ.get("PROJECT_ROOT", "/home/jah/Polychron"), ".env")
-_ENV_MTIME = 0.0
-
-def _load_env_file() -> None:
-    """Parse .env and push values into os.environ so .env edits take effect
-    without restarting the MCP process. mtime-gated to avoid disk reads per call."""
-    global _ENV_MTIME
-    try:
-        mt = os.path.getmtime(_ENV_PATH)
-    except OSError:
-        return
-    if mt <= _ENV_MTIME:
-        return
-    _ENV_MTIME = mt
-    try:
-        with open(_ENV_PATH) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                k, v = k.strip(), v.strip().strip('"').strip("'")
-                if k.startswith("HME_"):
-                    os.environ[k] = v
-    except OSError:
-        pass
 
 def _refresh_arbiter() -> None:
-    """Re-read HME_* routing config from .env + env on every call.
-    Updates module-level routing constants in-place."""
-    global _ARBITER_MODEL
-    global _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL
+    """Reload .env so routing constants reflect any in-session .env edits.
+    Kept as a thin wrapper around ENV.load(force=True) for call-site
+    backwards compatibility — the module-level constants themselves are
+    re-bound from the refreshed ENV."""
+    global _ARBITER_MODEL, _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL
     global _LOCAL_MODEL, _REASONING_MODEL
-    _load_env_file()
-    _ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
-    _LLAMACPP_ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-    _LLAMACPP_CODER_URL = os.environ.get("HME_LLAMACPP_CODER_URL", "http://127.0.0.1:8081")
-    _LOCAL_MODEL = os.environ.get("HME_LOCAL_MODEL", _LOCAL_MODEL)
-    _REASONING_MODEL = os.environ.get("HME_REASONING_MODEL", _REASONING_MODEL)
+    ENV.load(force=True)
+    _ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
+    _LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
+    _LLAMACPP_CODER_URL = ENV.require("HME_LLAMACPP_CODER_URL")
+    _LOCAL_MODEL = ENV.require("HME_LOCAL_MODEL")
+    _REASONING_MODEL = ENV.require("HME_REASONING_MODEL")
 
 # keep_alive=-1: pin models permanently. num_ctx sized to fit KV cache in VRAM.
 # 30B Q4_K_M on M40 24GB: model weights ~18.5GB, KV ~69KB/token.
 # At 32K ctx: KV ≈ 2.2GB, total ≈ 20.7GB, leaving ~1.8GB headroom.
 # At 65K ctx: KV ≈ 4.3GB, total ≈ 22.8GB — overflows VRAM, KV spills to RAM,
 # inference drops to ~0.02 tok/s (114s for 2 tokens). Never exceed VRAM.
-_KEEP_ALIVE = int(os.environ.get("HME_KEEP_ALIVE", "-1"))
-_NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
-_NUM_CTX_4B  = int(os.environ.get("HME_NUM_CTX_4B",  "32768"))
+_KEEP_ALIVE = ENV.require_int("HME_KEEP_ALIVE")
+_NUM_CTX_30B = ENV.require_int("HME_NUM_CTX_30B")
+_NUM_CTX_4B  = ENV.require_int("HME_NUM_CTX_4B")
 
 def _num_ctx_for(model: str) -> int:
     _refresh_arbiter()
     return _NUM_CTX_4B if model == _ARBITER_MODEL else _NUM_CTX_30B
 
 # ── llama-server (Vulkan) routing ──────────────────────────────────────────
-# Two llama-server instances, each owning its GPU end-to-end:
-#   arbiter → 8080 (Vulkan1 = CUDA 0 / GPU0) — phi-4 + HME v6 LoRA
-#   coder   → 8081 (Vulkan2 = CUDA 1 / GPU1) — qwen3-coder:30b
-# Both expose OpenAI-compatible /v1/chat/completions. The llamacpp_daemon
-# supervisor enforces the full-offload invariant at spawn time.
-_LLAMACPP_ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-_LLAMACPP_CODER_URL   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+# Two llama-server instances, each owning its GPU end-to-end. Both expose
+# OpenAI-compatible /v1/chat/completions. llamacpp_daemon enforces the
+# full-offload invariant at spawn time.
+_LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
+_LLAMACPP_CODER_URL   = ENV.require("HME_LLAMACPP_CODER_URL")
 
-_DAEMON_PORT = int(os.environ.get("HME_LLAMACPP_DAEMON_PORT", "7735"))
+_DAEMON_PORT = ENV.require_int("HME_LLAMACPP_DAEMON_PORT")
 _DAEMON_URL = f"http://127.0.0.1:{_DAEMON_PORT}/generate"
 
 
@@ -241,7 +219,7 @@ def _llamacpp_generate(payload: dict, wall_timeout: float = 30.0,
             _set_arbiter_busy(False)
 
 
-_LLAMACPP_DAEMON_URL = os.environ.get("HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735")
+_LLAMACPP_DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 
 def _set_arbiter_busy(busy: bool) -> None:
     """Signal the llamacpp daemon to set/clear its arbiter-busy flag.

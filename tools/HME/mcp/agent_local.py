@@ -27,17 +27,22 @@ import time
 import urllib.error
 import urllib.request
 
+# Central .env loader — fail-fast semantics.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hme_env import ENV  # noqa: E402
+
 logger = logging.getLogger("HME.agent_local")
 
+# PROJECT_ROOT stays env-based because it bootstraps .env discovery itself.
 PROJECT_ROOT = os.environ.get("PROJECT_ROOT", os.environ.get("CLAUDE_PROJECT_DIR", "/home/jah/Polychron"))
-_SHIM_PORT = int(os.environ.get("HME_SHIM_PORT", "7734"))
+_SHIM_PORT = ENV.require_int("HME_SHIM_PORT")
 
 # Model config — llama-server (OpenAI /v1/chat/completions) is the only backend.
-_ARBITER_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
-_CODER_MODEL = os.environ.get("HME_LOCAL_MODEL", "qwen3-coder:30b")
-_REASONER_MODEL = os.environ.get("HME_REASONING_MODEL", "qwen3-coder:30b")
-_LLAMACPP_ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-_LLAMACPP_CODER_URL   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+_ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
+_CODER_MODEL = ENV.require("HME_LOCAL_MODEL")
+_REASONER_MODEL = ENV.require("HME_REASONING_MODEL")
+_LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
+_LLAMACPP_CODER_URL   = ENV.require("HME_LLAMACPP_CODER_URL")
 # Deprecated port constants — kept only as placeholders for _route_model's
 # (model, port, label) tuple shape; not used for actual HTTP dispatch under
 # llama-server (which uses base URLs, not ports).

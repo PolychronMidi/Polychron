@@ -8,17 +8,23 @@ import json
 import logging
 import os
 import subprocess
+import sys
 import time
 import threading
 import urllib.error
 import urllib.request
 
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
+
 logger = logging.getLogger("HME")
 
-_DEFAULT_PORT = 7734
+_DEFAULT_PORT = ENV.require_int("HME_SHIM_PORT")
 _DISPATCH_TIMEOUT = 30
 _HEALTH_TIMEOUT = 2
-_SHIM_MAX_WAIT = int(os.environ.get("HME_SHIM_WAIT", "40"))  # seconds; override via env
+_SHIM_MAX_WAIT = ENV.require_int("HME_SHIM_WAIT")
 _MAX_CONSECUTIVE_404S = 5  # consecutive /rag 404s before LIFESAVER fires
 _MONITOR_INTERVAL = 60     # seconds between shim health checks in proxy monitor
 _PID_FILE = "/tmp/hme-http-shim.pid"

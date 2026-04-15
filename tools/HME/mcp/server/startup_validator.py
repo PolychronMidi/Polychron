@@ -7,7 +7,13 @@ returning degraded output.
 Philosophy: mirrors src/ fail-fast (loud crashes, never silent corruption).
 """
 import os
+import sys
 import logging
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME")
 
@@ -101,8 +107,8 @@ def _check_llamacpp_connectivity() -> None:
     """
     import urllib.request
 
-    arbiter_url = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-    coder_url   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+    arbiter_url = ENV.require("HME_LLAMACPP_ARBITER_URL")
+    coder_url   = ENV.require("HME_LLAMACPP_CODER_URL")
     failed = []
     for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
         try:

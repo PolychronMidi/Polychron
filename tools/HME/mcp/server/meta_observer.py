@@ -18,9 +18,15 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 from dataclasses import dataclass, field
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME")
 
@@ -141,7 +147,7 @@ def _check_monitor_alive() -> dict:
 def _try_restart_monitor():
     try:
         from server import rag_proxy
-        port = int(os.environ.get("HME_SHIM_PORT", "7734"))
+        port = ENV.require_int("HME_SHIM_PORT")
         if hasattr(rag_proxy, '_proxy_monitor_active'):
             rag_proxy._proxy_monitor_active = True
             t = threading.Thread(

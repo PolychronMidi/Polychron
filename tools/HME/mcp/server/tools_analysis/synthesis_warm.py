@@ -13,6 +13,7 @@ import time as _time
 import threading as _threading
 
 from server import context as ctx
+from hme_env import ENV
 from .warm_disk import (
     _warm_ctx, _warm_ctx_kb_ver, _warm_ctx_ts,
     _warm_ctx_append_count, _warm_ctx_baseline_tokens, _warm_ctx_incr_latency,
@@ -133,7 +134,7 @@ def _flush_pending_entries():
         new_kb_ver = entries[-1]["kb_ver"]
         from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
         import os as _os
-        _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+        _reasoner_warm = ENV.require_bool("HME_REASONER_WARM")
         _active_models = [_LOCAL_MODEL, _ARBITER_MODEL]
         if _reasoner_warm:
             _active_models.insert(1, _REASONING_MODEL)
@@ -323,7 +324,7 @@ def _init_local_models() -> str:
     import json as _json
     import time as _t
     import os as _os
-    if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
+    if _os.path.exists(ENV.require("HME_TRAINING_LOCK")):
         logger.info("_init_local_models: training lock present, skipping health probe")
         return "training_locked"
     from .synthesis_llamacpp import _LOCAL_MODEL, _ARBITER_MODEL
@@ -331,8 +332,8 @@ def _init_local_models() -> str:
     results = {}
     failures = 0
     targets = [
-        (_LOCAL_MODEL,   _os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")),
-        (_ARBITER_MODEL, _os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")),
+        (_LOCAL_MODEL,   ENV.require("HME_LLAMACPP_CODER_URL")),
+        (_ARBITER_MODEL, ENV.require("HME_LLAMACPP_ARBITER_URL")),
     ]
     for model, base in targets:
         t0 = _t.time()
@@ -386,7 +387,7 @@ def _prime_all_gpus() -> str:
     try:
         import os as _os
         from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
-        _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+        _reasoner_warm = ENV.require_bool("HME_REASONER_WARM")
         active_models = [_LOCAL_MODEL, _ARBITER_MODEL]
         if _reasoner_warm:
             active_models.insert(1, _REASONING_MODEL)
@@ -424,7 +425,7 @@ def warm_context_status() -> dict:
     from .synthesis_llamacpp import _ARBITER_MODEL
     from .synthesis_session import session_state_counts
     from .warm_disk import _TMPFS_PATHS
-    _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+    _reasoner_warm = ENV.require_bool("HME_REASONER_WARM")
     _active = [_LOCAL_MODEL, _ARBITER_MODEL]
     if _reasoner_warm:
         _active.insert(1, _REASONING_MODEL)
@@ -463,7 +464,7 @@ def ensure_warm(model: str):
     if _lazy_prime_attempted or _priming_in_progress.is_set():
         return
     import os as _os
-    if _os.path.exists(_os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")):
+    if _os.path.exists(ENV.require("HME_TRAINING_LOCK")):
         logger.info("ensure_warm: training lock present, skipping warm priming")
         return
     _lazy_prime_attempted = True
@@ -471,7 +472,7 @@ def ensure_warm(model: str):
         global _lazy_prime_attempted
         import os as _os
         from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
-        _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+        _reasoner_warm = ENV.require_bool("HME_REASONER_WARM")
         try:
             ok0 = _prime_warm_context(_LOCAL_MODEL)
             ok1 = _prime_warm_context(_REASONING_MODEL) if _reasoner_warm else False

@@ -20,9 +20,13 @@ import subprocess
 import sys
 import time
 
+# Central .env loader — fail-fast semantics.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hme_env import ENV  # noqa: E402
+
 PID_FILE = "/tmp/hme-vram-monitor.pid"
-POLL_INTERVAL = int(os.environ.get("HME_VRAM_POLL_S", "30"))
-MAX_SAMPLES = int(os.environ.get("HME_VRAM_MAX_SAMPLES", "2000"))
+POLL_INTERVAL = ENV.require_int("HME_VRAM_POLL_S")
+MAX_SAMPLES = ENV.require_int("HME_VRAM_MAX_SAMPLES")
 PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
 HISTORY_FILE = os.path.join(PROJECT_ROOT, "metrics", "vram-history.jsonl")
 

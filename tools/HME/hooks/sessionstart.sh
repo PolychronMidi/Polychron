@@ -100,18 +100,18 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "$LLAMA_BIN" ]; then
     echo "llama-server ${name} started (pid $!) on :${port} ${device}" >&2
   }
   _start_llama arbiter \
-    "${HME_ARBITER_PORT:-8080}" \
-    "${HME_ARBITER_GGUF:-/home/jah/models/phi-4-Q4_K_M.gguf}" \
-    "${HME_ARBITER_VULKAN:-Vulkan1}" \
-    "${HME_ARBITER_MODEL:-hme-arbiter-v6}" \
-    "${HME_ARBITER_CTX:-4096}" \
-    "${HME_ARBITER_LORA:-/home/jah/Polychron/metrics/hme-arbiter-v6-lora.gguf}"
+    "${HME_ARBITER_PORT:?HME_ARBITER_PORT not in .env}" \
+    "${HME_ARBITER:?HME_ARBITER not in .env}" \
+    "${HME_ARBITER_VULKAN:?HME_ARBITER_VULKAN not in .env}" \
+    "${HME_ARBITER_MODEL:?HME_ARBITER_MODEL not in .env}" \
+    "${HME_ARBITER_CTX:?HME_ARBITER_CTX not in .env}" \
+    "${HME_ARBITER_ADAPTER:?HME_ARBITER_ADAPTER not in .env}"
   _start_llama coder \
-    "${HME_CODER_PORT:-8081}" \
-    "${HME_CODER_GGUF:-/home/jah/models/qwen3-coder-30b-Q4_K_M.gguf}" \
-    "${HME_CODER_VULKAN:-Vulkan2}" \
-    "${HME_CODER_ALIAS:-qwen3-coder:30b}" \
-    "${HME_CODER_CTX:-8192}" \
+    "${HME_CODER_PORT:?HME_CODER_PORT not in .env}" \
+    "${HME_CODER:?HME_CODER not in .env}" \
+    "${HME_CODER_VULKAN:?HME_CODER_VULKAN not in .env}" \
+    "${HME_CODER_ALIAS:?HME_CODER_ALIAS not in .env}" \
+    "${HME_CODER_CTX:?HME_CODER_CTX not in .env}" \
     ""
 else
   echo "WARN: llama-server binary missing at $LLAMA_BIN — skipping local inference launch" >&2
