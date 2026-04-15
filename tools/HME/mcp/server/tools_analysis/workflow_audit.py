@@ -46,9 +46,11 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     if null_sentinel:
         warnings.append(
             f"[{rel_path}] PYTHON: {len(null_sentinel)} .get(key, default) call(s) in "
-            "arithmetic/comparison context — "
-            "if the key can exist with None, .get(key, X) returns None not X. "
-            "Use `(d.get(key) or X)` or `if d.get(key) is None`."
+            "arithmetic/comparison context — silent fallback. "
+            "If the key is always present, use `d[key]` (fail-fast). "
+            "For legitimately-optional boundary inputs, use an explicit named "
+            "check: `x = d.get(key); if x is None: x = default`. "
+            "Do NOT swap to `.get(key) or X` — that's the same silent fallback."
         )
 
     # 2. int()/float() conversion inside a try block that only catches OSError-family.
@@ -80,9 +82,12 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     zero_or = re.findall(r'\.get\([^)]+\)\s+or\s+(?:[0-9]+\.?[0-9]*|time\.\w+\(\))', content)
     if zero_or:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(zero_or)} `.get() or X` — "
-            "returns fallback for 0, 0.0, and '' too, not just None. "
-            "Use `if .get() is None else X` when zero is a valid value."
+            f"[{rel_path}] PYTHON: {len(zero_or)} `.get() or X` — silent fallback. "
+            "Returns fallback for 0, 0.0, and '' too, not just None. "
+            "If the key is always present, use `d[key]` (fail-fast). "
+            "For legitimately-optional boundary inputs, use an explicit named "
+            "check: `x = d.get(key); if x is None: x = default`. "
+            "Do NOT swap to `.get(key, X)` — that's the same silent fallback."
         )
 
     # 5. Bare variable reference that might be used outside the `if` guard defining it.
@@ -126,9 +131,62 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     if none_attr:
         warnings.append(
             f"[{rel_path}] PYTHON: {len(none_attr)} `.get(...).attribute` without None guard — "
-            "absent/None key raises AttributeError. "
-            "Use `(d.get(key) or obj).attr` or check `is not None` first."
+            "absent/None key raises AttributeError. Use `x = d.get(key); "
+            "if x is None: ...` or ensure the key is guaranteed and use `d[key].attr`."
         )
+
+    # 9. Operator-swap evasion of the silent-fallback rule.
+    # Detect: the same `.get("k", N)` → `.get("k") or N` (or the reverse)
+    # flipped in an uncommitted change. Swapping the operator does NOT
+    # address "no silent fallback" — it's the same pattern in a different
+    # shape. Runs via `git diff HEAD -- <file>`, so it only fires when the
+    # evasion is in the current uncommitted delta.
+    try:
+        import subprocess as _sp
+        _diff = _sp.run(
+            ["git", "diff", "HEAD", "--", rel_path],
+            cwd=ctx.PROJECT_ROOT, capture_output=True, text=True, timeout=3,
+        ).stdout
+    except Exception:
+        _diff = ""
+    if _diff:
+        _rm_comma = re.findall(
+            r'^-[^\n]*\.get\((["\'][^"\']+["\']),\s*([^)]+)\)',
+            _diff, re.M,
+        )
+        _add_or = re.findall(
+            r'^\+[^\n]*\.get\((["\'][^"\']+["\'])\)\s+or\s+(\S+)',
+            _diff, re.M,
+        )
+        _rm_or = re.findall(
+            r'^-[^\n]*\.get\((["\'][^"\']+["\'])\)\s+or\s+(\S+)',
+            _diff, re.M,
+        )
+        _add_comma = re.findall(
+            r'^\+[^\n]*\.get\((["\'][^"\']+["\']),\s*([^)]+)\)',
+            _diff, re.M,
+        )
+        _swap_hits = []
+        for (rk, _) in _rm_comma:
+            for (ak, _) in _add_or:
+                if rk == ak:
+                    _swap_hits.append(rk)
+                    break
+        for (rk, _) in _rm_or:
+            for (ak, _) in _add_comma:
+                if rk == ak:
+                    _swap_hits.append(rk)
+                    break
+        if _swap_hits:
+            warnings.append(
+                f"[{rel_path}] PYTHON: {len(_swap_hits)} operator-swap evasion(s) "
+                f"on key(s) {sorted(set(_swap_hits))} — "
+                "`.get(key, X)` and `.get(key) or X` are the SAME silent fallback "
+                "in different shapes. Swapping the operator to dodge one rule while "
+                "tripping the other is rule-gaming, not fixing. "
+                "Use `d[key]` to fail-fast, or `x = d.get(key); if x is None: ...` "
+                "for legitimately-optional boundary inputs."
+            )
 
     return warnings
 
