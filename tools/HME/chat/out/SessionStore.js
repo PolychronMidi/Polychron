@@ -101,7 +101,7 @@ function loadSession(projectRoot, id) {
     return {
         entry,
         messages: data.messages ?? [],
-        ollamaHistory: data.ollamaHistory ?? [],
+        llamacppHistory: data.llamacppHistory ?? [],
         contextTokens: data.contextTokens,
         chainIndex: data.chainIndex,
     };
@@ -114,10 +114,10 @@ function createSession(projectRoot, title) {
     const index = store.read();
     index.unshift(entry);
     store.write(index);
-    writeJson(sessionPath(projectRoot, id), { messages: [], ollamaHistory: [] });
+    writeJson(sessionPath(projectRoot, id), { messages: [], llamacppHistory: [] });
     return entry;
 }
-function saveSession(projectRoot, entry, messages, ollamaHistory, extra) {
+function saveSession(projectRoot, entry, messages, llamacppHistory, extra) {
     const store = indexStore(projectRoot);
     const index = store.read();
     const idx = index.findIndex((s) => s.id === entry.id);
@@ -129,7 +129,7 @@ function saveSession(projectRoot, entry, messages, ollamaHistory, extra) {
     }
     store.write(index);
     writeJson(sessionPath(projectRoot, entry.id), {
-        messages, ollamaHistory,
+        messages, llamacppHistory,
         ...(extra?.contextTokens != null ? { contextTokens: extra.contextTokens } : {}),
         ...(extra?.chainIndex != null ? { chainIndex: extra.chainIndex } : {}),
     });

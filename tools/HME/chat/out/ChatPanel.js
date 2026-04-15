@@ -53,7 +53,7 @@ const StreamPersister_1 = require("./panel/StreamPersister");
 const webviewMessages_1 = require("./panel/webviewMessages");
 class ChatPanel {
     static _blankState() {
-        return { messages: [], claudeSessionId: null, ollamaHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
+        return { messages: [], claudeSessionId: null, llamacppHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
     }
     constructor(panel, projectRoot, restoreSessionId) {
         this._state = ChatPanel._blankState();
@@ -295,7 +295,7 @@ class ChatPanel {
         this._state = {
             messages: persisted.messages,
             claudeSessionId: persisted.entry.claudeSessionId,
-            ollamaHistory: persisted.ollamaHistory,
+            llamacppHistory: persisted.llamacppHistory,
             lastRoute: null,
             sessionEntry: persisted.entry,
             chainIndex,
@@ -322,7 +322,7 @@ class ChatPanel {
             updatedAt: Date.now(),
         };
         this._state.sessionEntry = entry;
-        (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.ollamaHistory, {
+        (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.llamacppHistory, {
             contextTokens: this._contextMeter.pctUsed,
             chainIndex: this._state.chainIndex,
         });
@@ -347,7 +347,7 @@ class ChatPanel {
             this._transcript.logSessionStart(entry.id, entry.title, false);
             this.post({ type: "sessionCreated", session: entry });
         }
-        const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.ollamaModel : msg.claudeModel;
+        const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.llamacppModel : msg.claudeModel;
         this._transcript.logUser(msg.text, resolvedRoute, model);
         (0, router_1.validateMessage)(msg.text).then(({ warnings, blocks }) => {
             this._transcript.logValidation(msg.text, warnings.length, blocks.length);
@@ -384,7 +384,7 @@ class ChatPanel {
         const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
         const ctx = this._ctx;
         if (resolvedRoute === "local") {
-            (0, chatStreaming_1.streamOllamaMsg)(ctx, resolvedMsg, assistantId);
+            (0, chatStreaming_1.streamLlamacppMsg)(ctx, resolvedMsg, assistantId);
         }
         else if (resolvedRoute === "hybrid") {
             (0, chatStreaming_1.streamHybridMsg)(ctx, resolvedMsg, assistantId);
@@ -395,7 +395,7 @@ class ChatPanel {
     }
     /**
      * Agent route: fires local AND hybrid in parallel for side-by-side comparison.
-     * Neither response writes to ollamaHistory to avoid double-appending;
+     * Neither response writes to llamacppHistory to avoid double-appending;
      * local result wins for history after both complete.
      */
     async _onSendAgent(msg) {
@@ -406,9 +406,9 @@ class ChatPanel {
             this._transcript.logSessionStart(entry.id, entry.title, false);
             this.post({ type: "sessionCreated", session: entry });
         }
-        this._transcript.logUser(msg.text, "agent", msg.ollamaModel);
+        this._transcript.logUser(msg.text, "agent", msg.llamacppModel);
         (0, router_1.postTranscript)([{
-                ts: Date.now(), type: "user", route: "agent", model: msg.ollamaModel,
+                ts: Date.now(), type: "user", route: "agent", model: msg.llamacppModel,
                 content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
             }]).catch((e) => this.postError("transcript", String(e)));
         const userMsg = { id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: "local", ts: Date.now() };
@@ -418,8 +418,8 @@ class ChatPanel {
         this.post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
         const localId = (0, streamUtils_1.uid)();
         const hybridId = (0, streamUtils_1.uid)();
-        this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.ollamaModel}` });
-        this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.ollamaModel}` });
+        this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.llamacppModel}` });
+        this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.llamacppModel}` });
         let doneCount = 0;
         let drained = false;
         const cancelFns = [];

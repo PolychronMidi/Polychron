@@ -22,7 +22,7 @@ import {
   SessionState, StreamTracker, ChatCtx,
 } from "./streamUtils";
 import {
-  streamClaudeMsg, streamllama.cppMsg, streamHybridMsg,
+  streamClaudeMsg, streamLlamacppMsg, streamHybridMsg,
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
 import { buildCrossRouteContext, applyCrossRouteContext } from "./crossRouteHistory";
@@ -428,7 +428,7 @@ export class ChatPanel implements PanelHost {
     const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
     const ctx = this._ctx;
     if (resolvedRoute === "local") {
-      streamllama.cppMsg(ctx, resolvedMsg, assistantId);
+      streamLlamacppMsg(ctx, resolvedMsg, assistantId);
     } else if (resolvedRoute === "hybrid") {
       streamHybridMsg(ctx, resolvedMsg, assistantId);
     } else {

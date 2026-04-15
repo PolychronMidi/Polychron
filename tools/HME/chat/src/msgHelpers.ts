@@ -1,6 +1,6 @@
 import { ClaudeOptions, LlamacppOptions } from "./router";
 
-export const OLLAMA_URL = "http://localhost:11434";
+export const LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.0.0.1:8080";
 
 export function claudeOptsFromMsg(msg: any): ClaudeOptions {
   return {
@@ -12,5 +12,5 @@ export function claudeOptsFromMsg(msg: any): ClaudeOptions {
 }
 
 export function llamacppOptsFromMsg(msg: any): LlamacppOptions {
-  return { model: msg.llamacppModel, url: OLLAMA_URL };
+  return { model: msg.llamacppModel, url: LLAMACPP_URL };
 }

@@ -37,7 +37,7 @@ exports.mirrorAssistantToShim = mirrorAssistantToShim;
 exports.reindexFromTools = reindexFromTools;
 exports.runPostAudit = runPostAudit;
 exports.streamClaudeMsg = streamClaudeMsg;
-exports.streamOllamaMsg = streamOllamaMsg;
+exports.streamLlamacppMsg = streamLlamacppMsg;
 exports.streamHybridMsg = streamHybridMsg;
 exports.streamAgentMsg = streamAgentMsg;
 exports.streamAgentHybridMsg = streamAgentHybridMsg;
@@ -63,9 +63,9 @@ function reindexFromTools(tools) {
         const fileMatch = t.match(/"file_path"\s*:\s*"([^"]+)"/);
         if (fileMatch)
             files.add(fileMatch[1]);
-        const ollamaMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
-        if (ollamaMatch)
-            files.add(ollamaMatch[2]);
+        const llamacppMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
+        if (llamacppMatch)
+            files.add(llamacppMatch[2]);
     }
     const indexable = [...files].filter(f => INDEXABLE_EXTS.has(path.extname(f).toLowerCase()));
     if (indexable.length > 0) {
@@ -178,9 +178,9 @@ function finalizeStream(h, ctx, assistantId, route, opts = {}) {
         msg.thinking = h.state.thinking;
     h.tracker.finalize(msg);
     h.postStreamEnd();
-    if (opts.pushOllama && opts.userText !== undefined) {
-        ctx.state.ollamaHistory.push({ role: "user", content: opts.userText });
-        ctx.state.ollamaHistory.push({ role: "assistant", content: h.state.text });
+    if (opts.pushLlamacpp && opts.userText !== undefined) {
+        ctx.state.llamacppHistory.push({ role: "user", content: opts.userText });
+        ctx.state.llamacppHistory.push({ role: "assistant", content: h.state.text });
     }
     ctx.transcript.logAssistant(h.state.text, route, opts.model, h.state.tools);
     if (!opts.skipMirror)
@@ -260,9 +260,9 @@ function streamClaudeMsg(ctx, msg, assistantId) {
         },
     });
 }
-function streamOllamaMsg(ctx, msg, assistantId) {
+function streamLlamacppMsg(ctx, msg, assistantId) {
     const contextMessages = contextPrefixMessages(msg._contextPrefix);
-    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
+    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
     const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user", content: msg.text }];
     runStream({
         ctx, assistantId, route: "local",
@@ -270,10 +270,10 @@ function streamOllamaMsg(ctx, msg, assistantId) {
             const onDone = () => {
                 if (h.isAborted())
                     return;
-                finalizeStream(h, ctx, assistantId, "local", { pushOllama: true, userText: msg.text, model: msg.ollamaModel });
+                finalizeStream(h, ctx, assistantId, "local", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
                 h.safeEnd();
             };
-            h.setCancel((0, router_1.streamOllamaAgentic)(requestHistory, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
+            h.setCancel((0, router_1.streamLlamacppAgentic)(requestHistory, (0, msgHelpers_1.llamacppOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
                 if (!h.isEnded()) {
                     h.postStreamEnd();
                     h.safeEnd();
@@ -285,7 +285,7 @@ function streamOllamaMsg(ctx, msg, assistantId) {
 }
 function streamHybridMsg(ctx, msg, assistantId) {
     const contextMessages = contextPrefixMessages(msg._contextPrefix);
-    const history = [...contextMessages, ...ctx.state.ollamaHistory];
+    const history = [...contextMessages, ...ctx.state.llamacppHistory];
     runStream({
         ctx, assistantId, route: "hybrid",
         preludeChunk: "[HME] Enriching with KB context…",
@@ -293,7 +293,7 @@ function streamHybridMsg(ctx, msg, assistantId) {
             const onDone = () => {
                 if (h.isAborted())
                     return;
-                finalizeStream(h, ctx, assistantId, "hybrid", { pushOllama: true, userText: msg.text, model: msg.ollamaModel });
+                finalizeStream(h, ctx, assistantId, "hybrid", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
                 h.safeEnd();
             };
             const onError = (err) => {
@@ -305,12 +305,12 @@ function streamHybridMsg(ctx, msg, assistantId) {
                 }
                 ctx.postError("hybrid", err);
             };
-            attachPromiseCancel(h, (0, router_1.streamHybrid)(msg.text, history, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, onError), (err) => ctx.postError("hybrid", err));
+            attachPromiseCancel(h, (0, router_1.streamHybrid)(msg.text, history, (0, msgHelpers_1.llamacppOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, onError), (err) => ctx.postError("hybrid", err));
         },
     });
 }
 function streamAgentMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
-    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM]);
+    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM]);
     const requestHistory = [AGENTIC_SYSTEM, ...trimmed, { role: "user", content: msg.text }];
     const { cancel } = runStream({
         ctx, assistantId, route: label,
@@ -320,12 +320,12 @@ function streamAgentMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, 
                 if (h.isAborted())
                     return;
                 finalizeStream(h, ctx, assistantId, label, {
-                    pushOllama: label === "local", userText: msg.text,
-                    model: msg.ollamaModel, skipMirror: true,
+                    pushLlamacpp: label === "local", userText: msg.text,
+                    model: msg.llamacppModel, skipMirror: true,
                 });
                 h.safeEnd();
             };
-            h.setCancel((0, router_1.streamOllamaAgentic)(requestHistory, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
+            h.setCancel((0, router_1.streamLlamacppAgentic)(requestHistory, (0, msgHelpers_1.llamacppOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
                 ctx.postError(label, err);
                 if (h.isEnded())
                     return;
@@ -338,7 +338,7 @@ function streamAgentMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, 
     cancelFns.push(cancel);
 }
 function streamAgentHybridMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
-    const history = (0, streamUtils_1.trimHistoryToFit)(ctx.state.ollamaHistory, msg.text);
+    const history = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text);
     const { cancel } = runStream({
         ctx, assistantId, route: "hybrid",
         preludeChunk: "[HME] Enriching with KB context…",
@@ -347,7 +347,7 @@ function streamAgentHybridMsg(ctx, msg, assistantId, label, onBothDone, onForceD
             const onDone = () => {
                 if (h.isAborted())
                     return;
-                finalizeStream(h, ctx, assistantId, "hybrid", { model: msg.ollamaModel, skipMirror: true });
+                finalizeStream(h, ctx, assistantId, "hybrid", { model: msg.llamacppModel, skipMirror: true });
                 h.safeEnd();
             };
             const onError = (err) => {
@@ -360,7 +360,7 @@ function streamAgentHybridMsg(ctx, msg, assistantId, label, onBothDone, onForceD
                 h.postStreamEnd();
                 onForceDrain();
             };
-            attachPromiseCancel(h, (0, router_1.streamHybrid)(msg.text, history, (0, msgHelpers_1.ollamaOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, onError), (err) => ctx.postError(label, err), onForceDrain);
+            attachPromiseCancel(h, (0, router_1.streamHybrid)(msg.text, history, (0, msgHelpers_1.llamacppOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, onError), (err) => ctx.postError(label, err), onForceDrain);
         },
     });
     cancelFns.push(cancel);
