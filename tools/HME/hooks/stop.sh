@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-# HME Stop: enforce implementation completeness + drive autonomous Evolver loop
+# HME Stop: enforce implementation completeness + drive autonomous Evolver loop.
+# Antipattern detection logic lives in tools/HME/scripts/detectors/*.py — each
+# detector is a standalone script that reads a transcript path from argv and
+# prints a status token. This hook captures tokens and dispatches.
 INPUT=$(cat)
+_DETECTORS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../scripts/detectors"
 
 # ── Context meter: merge token counts into existing statusLine data ───────────
 # StatusLine writes authoritative used_pct/remaining_pct/size from the API.
@@ -10,31 +14,7 @@ INPUT=$(cat)
 _CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
-  python3 -c "
-import json,sys
-try:
-    ctx_file = sys.argv[2]
-    try:
-        existing = json.loads(open(ctx_file).read())
-    except Exception:
-        existing = {}
-    with open(sys.argv[1]) as f:
-        lines=[l for l in f if l.strip()]
-    for line in reversed(lines):
-        obj=json.loads(line)
-        if obj.get('type')=='assistant':
-            u=obj.get('message',{}).get('usage',{})
-            if u:
-                inp=(u.get('input_tokens',0)+u.get('cache_read_input_tokens',0)
-                     +u.get('cache_creation_input_tokens',0))
-                out=u.get('output_tokens',0)
-                existing['input_tokens']=inp
-                existing['output_tokens']=out
-                open(ctx_file,'w').write(json.dumps(existing))
-                break
-except Exception:
-    pass
-" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null
+  python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null
 fi
 
 # ── Auto-commit snapshot ──────────────────────────────────────────────────────
@@ -164,37 +144,7 @@ fi
 # (repeated check_pipeline calls). Both are the same antipattern.
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  POLL_COUNT=$(python3 -c "
-import json, sys
-data = open('$TRANSCRIPT_PATH').read()
-lines = data.strip().split('\n')
-in_turn = False
-bash_polls = 0
-mcp_polls = 0
-for line in reversed(lines):
-    try:
-        obj = json.loads(line)
-    except Exception:
-        continue
-    role = obj.get('role','')
-    if role == 'user' and not in_turn:
-        continue
-    if role == 'assistant':
-        in_turn = True
-    if role == 'user' and in_turn:
-        break
-    if in_turn:
-        for block in obj.get('content', []):
-            if isinstance(block, dict) and block.get('type') == 'tool_use':
-                name = block.get('name', '')
-                if name == 'Bash':
-                    cmd = block.get('input', {}).get('command', '')
-                    if '/tasks/' in cmd and '.output' in cmd:
-                        bash_polls += 1
-                elif name == 'mcp__HME__check_pipeline':
-                    mcp_polls += 1
-print(max(bash_polls, mcp_polls))
-" 2>/dev/null || echo 0)
+  POLL_COUNT=$(python3 "$_DETECTORS_DIR/poll_count.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
 
   if [[ "$POLL_COUNT" -ge 2 ]]; then
     jq -n '{
@@ -210,86 +160,7 @@ fi
 #   a) The output file signals pipeline completion, OR
 #   b) 20+ tool calls have been made after the launch (enough real work done)
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  IDLE_AFTER_BG=$(python3 -c "
-import json, os, re, sys
-
-data = open('$TRANSCRIPT_PATH').read()
-lines = data.strip().split('\n')
-in_turn = False
-found_bg = False
-calls_after_bg = 0
-bg_output_path = None
-
-for line in reversed(lines):
-    try:
-        obj = json.loads(line)
-    except Exception:
-        continue
-    role = obj.get('role','')
-    if role == 'user' and not in_turn:
-        continue
-    if role == 'assistant':
-        in_turn = True
-    if role == 'user' and in_turn:
-        break
-    if in_turn:
-        for block in obj.get('content', []):
-            if not isinstance(block, dict):
-                continue
-            # Capture background task output path from tool result
-            if block.get('type') == 'tool_result':
-                for part in block.get('content', []):
-                    if isinstance(part, dict) and part.get('type') == 'text':
-                        m = re.search(r'Output is being written to: (\S+)', part.get('text',''))
-                        if m and bg_output_path is None:
-                            bg_output_path = m.group(1)
-            if block.get('type') != 'tool_use':
-                continue
-            inp = block.get('input', {})
-            if block.get('name') == 'Bash' and inp.get('run_in_background'):
-                cmd = inp.get('command', '')
-                # Original pipeline markers
-                _pipeline_bg = ('npm run main' in cmd or 'npm run snapshot' in cmd or 'node lab/run' in cmd)
-                # Widened: any long-running background python/bash process.
-                # Training runs, batch analyzers, stress-test batteries all count.
-                _generic_bg = (
-                    'python3 /tmp/train' in cmd
-                    or ('python3' in cmd and ('train' in cmd or 'merge_' in cmd or 'convert_hf_to_gguf' in cmd or 'finetune' in cmd))
-                    or 'stress-test' in cmd
-                    or 'accelerate launch' in cmd
-                    or 'unsloth' in cmd
-                    or 'axolotl' in cmd
-                    or 'pip3 install' in cmd
-                    or 'pip install' in cmd
-                    or 'nohup' in cmd
-                    or 'trainer.train' in cmd
-                )
-                if _pipeline_bg or _generic_bg:
-                    found_bg = True
-            elif found_bg:
-                calls_after_bg += 1
-
-if not found_bg:
-    print('ok')
-    sys.exit(0)
-
-# Check if pipeline output file signals completion
-if bg_output_path and os.path.isfile(bg_output_path):
-    try:
-        tail = open(bg_output_path).read()[-2000:]
-        # npm run main ends with success/error markers
-        done_signals = ['Pipeline complete', 'pipeline complete', 'npm ERR!', 'Snapshot saved',
-                        'error Command failed', 'DONE', 'Finished in', 'exited with code']
-        if any(sig in tail for sig in done_signals):
-            # Pipeline done — still require minimum work was done
-            print('idle' if calls_after_bg < 5 else 'ok')
-            sys.exit(0)
-    except Exception:
-        pass
-
-# Pipeline still running (or output not readable): require 20 real calls
-print('idle' if calls_after_bg < 20 else 'ok')
-" 2>/dev/null || echo ok)
+  IDLE_AFTER_BG=$(python3 "$_DETECTORS_DIR/idle_after_bg.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
 
   if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
     jq -n '{
@@ -307,39 +178,7 @@ fi
 # schedule a wakeup and end the turn. Wakeup is reserved for genuinely idle waits
 # with no other productive work possible.
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  PSYCHO_STOP=$(python3 -c "
-import json
-data = open('$TRANSCRIPT_PATH').read()
-lines = data.strip().split('\n')
-in_turn = False
-saw_bg_launch = False
-saw_wakeup = False
-for line in reversed(lines):
-    try:
-        obj = json.loads(line)
-    except Exception:
-        continue
-    role = obj.get('role','')
-    if role == 'user' and not in_turn:
-        continue
-    if role == 'assistant':
-        in_turn = True
-    if role == 'user' and in_turn:
-        break
-    if in_turn:
-        for block in obj.get('content', []):
-            if not isinstance(block, dict) or block.get('type') != 'tool_use':
-                continue
-            name = block.get('name','')
-            inp  = block.get('input', {}) or {}
-            if name == 'ScheduleWakeup':
-                saw_wakeup = True
-            if name == 'Bash' and inp.get('run_in_background'):
-                cmd = inp.get('command','')
-                if any(kw in cmd for kw in ('train', 'pip install', 'pip3 install', 'nohup', 'accelerate', 'axolotl', 'unsloth', 'merge_', 'convert_hf_to_gguf', 'finetune', 'stress-test')):
-                    saw_bg_launch = True
-print('psycho' if (saw_wakeup and saw_bg_launch) else 'ok')
-" 2>/dev/null || echo ok)
+  PSYCHO_STOP=$(python3 "$_DETECTORS_DIR/psycho_stop.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
 
   if [[ "$PSYCHO_STOP" == "psycho" ]]; then
     jq -n '{
@@ -358,59 +197,7 @@ fi
 # violation. Minimum proof of fixing: at least one Edit/Write tool_use AFTER
 # the CRITICAL/FAIL surfaced in a tool_result this turn.
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  ACK_SKIP=$(python3 -c "
-import json
-data = open('$TRANSCRIPT_PATH').read()
-lines = data.strip().split('\n')
-# Walk the current turn in forward order so we can track ordering of
-# 'surfaced a failure' vs 'actually edited something after'.
-turn_lines: list[dict] = []
-found_user = False
-for line in reversed(lines):
-    try:
-        obj = json.loads(line)
-    except Exception:
-        continue
-    role = obj.get('role','')
-    if role == 'user' and not found_user:
-        found_user = True
-    elif role == 'user' and found_user:
-        break
-    turn_lines.append(obj)
-turn_lines.reverse()
-
-surfaced_at = -1  # index where a CRITICAL/FAIL surfaced in a tool result
-edit_after = False
-for i, obj in enumerate(turn_lines):
-    for block in obj.get('content', []):
-        if not isinstance(block, dict):
-            continue
-        if block.get('type') == 'tool_result':
-            parts = block.get('content', [])
-            # Extract text from result
-            text = ''
-            if isinstance(parts, list):
-                for p in parts:
-                    if isinstance(p, dict) and p.get('type') == 'text':
-                        text += p.get('text','')
-                    elif isinstance(p, str):
-                        text += p
-            elif isinstance(parts, str):
-                text = parts
-            if 'LIFESAVER: CRITICAL FAILURES' in text or '[CRITICAL]' in text.upper() or '  FAIL:' in text:
-                if surfaced_at == -1:
-                    surfaced_at = i
-        elif block.get('type') == 'tool_use':
-            name = block.get('name','')
-            if surfaced_at >= 0 and i > surfaced_at:
-                if name in ('Edit', 'Write', 'NotebookEdit'):
-                    edit_after = True
-
-if surfaced_at >= 0 and not edit_after:
-    print('ack_skip')
-else:
-    print('ok')
-" 2>/dev/null || echo ok)
+  ACK_SKIP=$(python3 "$_DETECTORS_DIR/ack_skip.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
 
   if [[ "$ACK_SKIP" == "ack_skip" ]]; then
     jq -n '{
@@ -425,47 +212,7 @@ fi
 # Detect: Agent spawned for KB/HME work (should use HME tools directly),
 # or a sweep was started (edit/grep loop) but fewer than expected completions.
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  ABANDON_CHECK=$(python3 -c "
-import json, sys
-data = open('$TRANSCRIPT_PATH').read()
-lines = data.strip().split('\n')
-in_turn = False
-agent_for_kb = False
-edits_started = 0
-edits_note = ''
-
-for line in reversed(lines):
-    try:
-        obj = json.loads(line)
-    except Exception:
-        continue
-    role = obj.get('role','')
-    if role == 'user' and not in_turn:
-        continue
-    if role == 'assistant':
-        in_turn = True
-    if role == 'user' and in_turn:
-        break
-    if in_turn:
-        for block in obj.get('content', []):
-            if not isinstance(block, dict): continue
-            if block.get('type') == 'tool_use':
-                name = block.get('name','')
-                inp = block.get('input', {})
-                # Agent spawned for KB/HME work
-                if name == 'Agent':
-                    prompt = inp.get('prompt','').lower()
-                    if any(kw in prompt for kw in ['knowledge', 'kb ', 'hme', 'search_knowledge', 'compact', 'remove_knowledge']):
-                        agent_for_kb = True
-                # Count edits — proxy for sweep progress
-                if name == 'Edit':
-                    edits_started += 1
-
-if agent_for_kb:
-    print('AGENT_FOR_KB')
-else:
-    print('ok')
-" 2>/dev/null || echo ok)
+  ABANDON_CHECK=$(python3 "$_DETECTORS_DIR/abandon_check.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
 
   if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
     jq -n '{
@@ -512,34 +259,7 @@ fi
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 # Stop-work antipattern: detect when Claude's last turn was text-only with no tool calls,
 # or contained dismissive phrases like "No response requested". Both indicate premature stop.
-STOP_WORK=$(python3 -c "
-import json, sys
-data = open('$TRANSCRIPT_PATH').read()
-lines = data.strip().split('\n')
-# Find the last assistant message
-for line in reversed(lines):
-    try:
-        obj = json.loads(line)
-    except Exception:
-        continue
-    if obj.get('role') == 'assistant':
-        blocks = obj.get('content', [])
-        has_tool_use = any(isinstance(b, dict) and b.get('type') == 'tool_use' for b in blocks)
-        text_parts = [b.get('text','') for b in blocks if isinstance(b, dict) and b.get('type') == 'text']
-        full_text = ' '.join(text_parts).strip().lower()
-        dismissive = ['no response requested', 'nothing to do', 'no action needed',
-                      'no further action', 'no work remaining', 'all done']
-        if any(d in full_text for d in dismissive):
-            print('DISMISSIVE')
-        elif not has_tool_use and len(full_text) < 200:
-            print('TEXT_ONLY_SHORT')
-        else:
-            print('ok')
-        sys.exit(0)
-    elif obj.get('role') == 'user':
-        break
-print('ok')
-" 2>/dev/null || echo ok)
+STOP_WORK=$(python3 "$_DETECTORS_DIR/stop_work.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
 
 if [[ "$STOP_WORK" == "DISMISSIVE" ]]; then
   jq -n '{
