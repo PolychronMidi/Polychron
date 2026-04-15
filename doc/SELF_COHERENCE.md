@@ -101,14 +101,14 @@ Written atomically on every state transition. Read on startup. Now `_background_
 
 ### Layer 3: Unified Health Topology
 
-**Gap:** Five health checks run independently (shim /health, daemon /health, three Ollama /api/ps), each with different intervals and semantics. No unified view. No dependency awareness — if the shim is down, checking Ollama is pointless. (Finding 8.5: no cross-system failure correlation.)
+**Gap:** Five health checks run independently (shim /health, daemon /health, three llama.cpp /api/ps), each with different intervals and semantics. No unified view. No dependency awareness — if the shim is down, checking llama.cpp is pointless. (Finding 8.5: no cross-system failure correlation.)
 
 **Concrete:** A `SystemHealth` snapshot assembled from all components, with dependency edges:
 
 ```
 MCP Server → RAG Proxy → HTTP Shim → { ProjectEngine, GlobalEngine }
                                     → File Watcher
-           → Startup Chain → Ollama Daemon → { GPU0, GPU1, CPU }
+           → Startup Chain → llama.cpp Daemon → { GPU0, GPU1, CPU }
 ```
 
 When a node is unhealthy, all downstream nodes are marked UNKNOWN (not assumed healthy). The proxy monitor assembles this topology on every 60s cycle and writes a one-line structured log. `is_degraded()` becomes topology-aware: "degraded because shim is recovering AND gpu0 model evicted." The `[DEGRADED]` banner gets rich context instead of a generic warning.
@@ -141,8 +141,8 @@ One causal tree instead of five orphaned errors. The current LIFESAVER deduplica
 
 - **First boot today:** Full startup chain, aggressive warming, log verbosely.
 - **Stable session (>30min, no crashes):** Reduce monitor interval to 120s, skip redundant health checks.
-- **Crash loop (>5 restarts in 10min):** Minimal startup — proxy mode only, skip Ollama entirely, skip cache warming. Log: "crash loop detected, minimal startup."
-- **Recovery after crash loop:** Gradually re-enable features (Ollama first, then priming, then cache warming) — like the reconvergence accelerator in the conductor.
+- **Crash loop (>5 restarts in 10min):** Minimal startup — proxy mode only, skip llama.cpp entirely, skip cache warming. Log: "crash loop detected, minimal startup."
+- **Recovery after crash loop:** Gradually re-enable features (llama.cpp first, then priming, then cache warming) — like the reconvergence accelerator in the conductor.
 
 The system adapts its own behavior to its observed rhythm. Not just reacting to the current state, but reading the pattern of states over time.
 
@@ -157,7 +157,7 @@ The system adapts its own behavior to its observed rhythm. Not just reacting to 
 ```
 [HME STATUS] I've been running for 47 minutes (12th restart today). The shim
 crashed 90 seconds ago during a heavy index operation and was revived after 12s.
-Ollama GPU0 model was evicted during the crash and is being reloaded (ETA ~30s).
+llama.cpp GPU0 model was evicted during the crash and is being reloaded (ETA ~30s).
 Search results are currently from the proxy but may be incomplete until the KB
 finishes reindexing the 3 files that were being indexed when the crash occurred.
 The pre-edit cache is stale (last warmed 35 minutes ago). Synthesis will use
@@ -225,14 +225,14 @@ When HME encounters a startup failure, `find("startup failed", mode="diagnose")`
 
 ### Layer 10: Resonance Detection
 
-**Gap:** Multiple simultaneous failures create cascades that are worse than the sum of their parts. Shim crash + Ollama eviction + MCP restart = total system collapse for 60+ seconds. Each failure is handled independently; the cascade isn't recognized or handled as a unit. (Finding 3.4: startup chain steps not bound together.)
+**Gap:** Multiple simultaneous failures create cascades that are worse than the sum of their parts. Shim crash + llama.cpp eviction + MCP restart = total system collapse for 60+ seconds. Each failure is handled independently; the cascade isn't recognized or handled as a unit. (Finding 3.4: startup chain steps not bound together.)
 
 **Concrete:** A `resonance_detector` that watches for temporal clustering of failures:
 
 - If ≥3 failures within 10 seconds from different components → declare CASCADE
 - Cascade handling is different from individual failure handling:
   - Suppress duplicate restart attempts (currently proxy + monitor + recovery all try simultaneously)
-  - Single orchestrated recovery sequence: verify shim → verify daemon → verify Ollama → restart what's needed → verify all
+  - Single orchestrated recovery sequence: verify shim → verify daemon → verify llama.cpp → restart what's needed → verify all
   - Single LIFESAVER with the full causal tree
   - Extend recovery cooldown during cascades
 
@@ -263,7 +263,7 @@ When `read("crossLayerClimaxEngine", mode="before")` is called, the cache is alr
 
 - Run all 35 enforcement probes PLUS:
   - Simulate shim death during tool call → did recovery fire? How long?
-  - Simulate Ollama timeout → did circuit breaker trip? Did it surface?
+  - Simulate llama.cpp timeout → did circuit breaker trip? Did it surface?
   - Simulate concurrent restart attempts → did they interfere?
   - Check operational_state.json for recurring failure patterns → suggest targeted fixes
 
@@ -303,12 +303,12 @@ All layers implemented. Adversarial stress-tested across two sessions.
 | 0 | Lifecycle State Machine | **COMPLETE** | `server/system_phase.py` — COLD→WARMING→READY/DEGRADED/RECOVERING/FAILED; wired in `main.py`, `rag_proxy.py`, `context.py` |
 | 1 | Cross-Component Identity | **COMPLETE** | `context.SESSION_ID` (12-char UUID per process); `X-HME-Session` header on every `/rag` call; shim `/health` returns `pid` |
 | 2 | Self-Knowledge | **COMPLETE** | `server/operational_state.py` → `tmp/hme-ops.json`; restarts, shim crashes, recovery EMAs, startup timing, crash loop detection |
-| 3 | Unified Health Topology | **COMPLETE** | `server/health_topology.py`; dependency-aware snapshot; shim/daemon/ollama nodes; 10s cache; wired into self-narration |
+| 3 | Unified Health Topology | **COMPLETE** | `server/health_topology.py`; dependency-aware snapshot; shim/daemon/llamacpp nodes; 10s cache; wired into self-narration |
 | 4 | Failure Genealogy | **COMPLETE** | `server/failure_genealogy.py`; `failure_id` UUIDs; `caused_by` causal chains wired in `rag_proxy._call()` and `_proxy_health_monitor()` |
-| 5 | Temporal Rhythm Awareness | **COMPLETE** | Crash loop detection → skips Ollama steps; adaptive monitor interval: 60s normally → 120s after 30min uninterrupted health (`_stable_since` clock in `_proxy_health_monitor`, reset on any unhealthy event) |
+| 5 | Temporal Rhythm Awareness | **COMPLETE** | Crash loop detection → skips llama.cpp steps; adaptive monitor interval: 60s normally → 120s after 30min uninterrupted health (`_stable_since` clock in `_proxy_health_monitor`, reset on any unhealthy event) |
 | 6 | Self-Narration | **COMPLETE** | `server/self_narration.py`; rich paragraph from all layers; prepended to tool responses when not READY |
 | 7 | Predictive Health | **COMPLETE** | `health_topology._check_shim_slowdown()`; response time EMA vs baseline; 3× + >1000ms threshold warns before OOM |
-| 8 | Coherence Metrics | **COMPLETE** | `_compute_coherence()` in topology (shim 40% + daemon 20% + ollama 40%); written to `metrics/hme-coherence.jsonl` every monitor cycle; <0.5 fires LIFESAVER |
+| 8 | Coherence Metrics | **COMPLETE** | `_compute_coherence()` in topology (shim 40% + daemon 20% + llamacpp 40%); written to `metrics/hme-coherence.jsonl` every monitor cycle; <0.5 fires LIFESAVER |
 | 9 | Self-Healing Knowledge | **COMPLETE** | 6 KB entries: stale pyc, boot loop, old shim, cascade pattern, ops.json schema, layer architecture |
 | 10 | Resonance Detection | **COMPLETE** | `server/resonance_detector.py`; CASCADE on 3+ distinct sources in 10s window; cascade gate in `rag_proxy._call()` prevents revival amplification |
 | 11 | Intent Propagation | **COMPLETE** | `_intent_propagation_tick()` in proxy monitor healthy cycle; `_warm_pre_edit_cache_sync(target_hints=...)` prioritizes mentioned files |
@@ -328,8 +328,8 @@ All layers implemented. Adversarial stress-tested across two sessions.
 | 22 | Causal Attribution Graph | **COMPLETE** | `meta_observer._causal_attribution()` decomposes phantom_rate into structural causes (cascade_usage, escalation, prompt_length, elapsed_s) via correlation analysis across synthesis JSONL. Surfaces primary cause + correlation coefficient. Runs every 30min alongside L∞. |
 | 23 | Multi-Timescale Coherence | **COMPLETE** | `operational_state.record_coherence_multiscale()` maintains 4 EMA timescales: beat (α=0.8), phrase (α=0.3), section (α=0.1), structure (α=0.05). Updated every L14 correlation cycle. L15 narrator surfaces multi-scale snapshot. L17 checkpoints for compaction. `is_coherence_ceiling()` feeds L∞∞. |
 | 24 | Anticipatory Lookahead | **COMPLETE** | `meta_observer._anticipatory_lookahead()` projects coherence trajectory at T+5/15/30min from current trend. When T+30 < 0.5, logs intervention suggestion. Runs every narration cycle (5min). |
-| 25 | Adaptive Synthesis Routing | **COMPLETE** | `synthesis_ollama._assess_complexity()` reads `hme-synthesis-patterns.json` (5min TTL cache). Adjusts complexity score based on historical per-strategy phantom rates and known phantom-trigger words. High direct/enriched phantom rates nudge toward cascade. |
-| 26 | Morphogenetic Pre-Loading | **COMPLETE** | `synthesis_ollama._inject_context()` reads L32 intent classification via `meta_observer.get_current_intent()`. Pre-shapes semantic field based on conversation mode (debugging/design/stress_testing). Surfaces L25 phantom risk per strategy. |
+| 25 | Adaptive Synthesis Routing | **COMPLETE** | `synthesis_llamacpp._assess_complexity()` reads `hme-synthesis-patterns.json` (5min TTL cache). Adjusts complexity score based on historical per-strategy phantom rates and known phantom-trigger words. High direct/enriched phantom rates nudge toward cascade. |
+| 26 | Morphogenetic Pre-Loading | **COMPLETE** | `synthesis_llamacpp._inject_context()` reads L32 intent classification via `meta_observer.get_current_intent()`. Pre-shapes semantic field based on conversation mode (debugging/design/stress_testing). Surfaces L25 phantom risk per strategy. |
 | 27 | Composition-Infrastructure Correlation | **COMPLETE** | `meta_observer._correlate_composition_runs()` matches Polychron run outcomes from `metrics/run-history/` (individual JSON files per run) to HME session documents. ISO timestamps converted to Unix for session overlap matching. Compares phantom_rate/coherence between STABLE vs DRIFTED runs. Requires user-labeled verdicts. Runs every 30min. |
 | 28 | Living KB Confidence | **COMPLETE** | `meta_observer._update_kb_confidence()` tests self-coherence KB entries against operational data. Classifies claims as supported/contradicted/untestable. Runs every hour. |
 | 29 | Second-Order Accuracy | **COMPLETE** | `operational_state.record_prediction_brier()` tracks Brier score EMA from L18 prediction resolutions. Calibration quality visible in L15 narrative and L17 entanglement. Brier > 0.25 = degraded self-model. Baseline `coherence_stable` prediction generated every 15min during healthy operation to seed Brier signal outside stress periods. |
@@ -382,7 +382,7 @@ L19  Synthesis Observability ─ "what route did synthesize() take?" ───�
 
 L19 makes synthesis routing legible — every `synthesize()` call records its path (direct/enriched/cascade), quality gate outcome, and timing. L20 feeds that signal into L14 via EMAs so pattern detection catches grounding degradation before users notice. L21 catches CB flapping (partial recovery → immediate re-failure) which is a distinct failure mode from steady-state OPEN. L∞ closes the cognitive loop: the system analyzes its own synthesis history to understand which question types reliably ground and which tend to hallucinate — and surfaces this as prescriptive guidance.
 
-### Adaptive multi-stage synthesis (synthesis_ollama.py)
+### Adaptive multi-stage synthesis (synthesis_llamacpp.py)
 
 ```
 synthesize(prompt)

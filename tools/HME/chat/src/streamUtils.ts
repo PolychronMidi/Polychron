@@ -1,4 +1,4 @@
-import { OllamaMessage, GPU_NUM_CTX, TokenUsage } from "./router";
+import { LlamacppMessage, GPU_NUM_CTX, TokenUsage } from "./router";
 import { ContentBlock, ChatMessage } from "./types";
 import { TranscriptLogger } from "./TranscriptLogger";
 import { SessionEntry } from "./SessionStore";
@@ -23,10 +23,10 @@ export function estimateTokens(messages: { content: string }[]): number {
 }
 
 export function trimHistoryToFit(
-  history: OllamaMessage[],
+  history: LlamacppMessage[],
   currentMsg: string,
-  extraMessages: OllamaMessage[] = []
-): OllamaMessage[] {
+  extraMessages: LlamacppMessage[] = []
+): LlamacppMessage[] {
   const budget = GPU_NUM_CTX - OLLAMA_OUTPUT_BUFFER;
   const fixedTokens = estimateTokens([...extraMessages, { content: currentMsg }]);
   const available = budget - fixedTokens;
@@ -60,7 +60,7 @@ export function makeBlockAccumulator() {
 export interface SessionState {
   messages: ChatMessage[];
   claudeSessionId: string | null;
-  ollamaHistory: OllamaMessage[];
+  llamacppHistory: LlamacppMessage[];
   lastRoute: "claude" | "local" | "hybrid" | "agent" | null;
   sessionEntry: SessionEntry | null;
   chainIndex: number;

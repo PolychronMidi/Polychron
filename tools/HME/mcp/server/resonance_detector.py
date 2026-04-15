@@ -3,7 +3,7 @@
 Detects cascading failure patterns where multiple components fail in rapid
 succession — a failure resonance that's worse than the sum of its parts.
 
-Without detection: shim crash + Ollama eviction + MCP restart each spawn
+Without detection: shim crash + llama.cpp eviction + MCP restart each spawn
 independent recovery threads that pile up, interfere, and amplify the failure.
 
 With detection: when 3+ distinct failure sources occur within _CASCADE_WINDOW

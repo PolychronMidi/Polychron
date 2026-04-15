@@ -286,7 +286,7 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
         dips = correlations.get("dip_count", 0)
         if dips > 0:
             parts.append(f"Recommendation: {dips} instability dips detected. "
-                         "If recurring, investigate Ollama memory pressure or shim resource exhaustion.")
+                         "If recurring, investigate llama.cpp memory pressure or shim resource exhaustion.")
     elif correlations.get("status") == "insufficient_data":
         parts.append(f"Only {correlations.get('samples', 0)} coherence samples — too early for pattern detection.")
 

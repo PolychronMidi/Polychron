@@ -36,7 +36,7 @@ Three independent antagonism pairs across rhythm, structure, and harmony — all
 - **E3: ascendRatio → convergenceHarmonicTrigger↔verticalIntervalMonitor** (r=-0.450): ascending melodic momentum boosts harmonic trigger probability (×up to 1.12) while tightening collision penalty (×up to 1.10). Ascending motion demands harmonic assertiveness AND harmonic discipline simultaneously.
 
 **HME evolutions (R88):**
-- `think` tool: max_tokens=1024 cap on final Ollama chat stage (prevents 546s generation from default 8192 at 15 tok/s)
+- `think` tool: max_tokens=1024 cap on final llama.cpp chat stage (prevents 546s generation from default 8192 at 15 tok/s)
 - `/no_think` placement fix: must be at START of qwen3 message (first token), placing at end still triggers full chain-of-thought
 - `module_intel` Similar Modules: set-based dedup by source path — prevents duplicate file entries from multi-chunk returns
 - `coupling_intel` why field: now module-specific (`"{a} ↔ {b}: {base_why}"`) — more informative than generic template alone

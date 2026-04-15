@@ -170,8 +170,8 @@ weight_decay: 0.0
 # After training, merge adapter and convert to GGUF:
 #   python3 -m unsloth.save_gguf ./lora-out-hme-arbiter \\
 #       --outfile hme-arbiter.gguf --quantization q4_k_m
-# Then load into Ollama:
-#   ollama create hme-arbiter -f Modelfile
+# Then load into llama.cpp:
+#   llamacpp create hme-arbiter -f Modelfile
 # And update agent_local.py _ARBITER_MODEL to "hme-arbiter:latest"
 """
     os.makedirs(os.path.dirname(_CONFIG), exist_ok=True)
@@ -196,7 +196,7 @@ def show_plan() -> int:
     print(f"                          {os.path.relpath(_CONFIG, _PROJECT)}")
     print("  4. Merge adapter:     python3 -m unsloth.save_gguf ./lora-out-hme-arbiter \\")
     print("                          --outfile hme-arbiter.gguf --quantization q4_k_m")
-    print("  5. Load into Ollama:  ollama create hme-arbiter -f Modelfile")
+    print("  5. Load into llama.cpp:  llamacpp create hme-arbiter -f Modelfile")
     print("  6. Update agent_local.py: _ARBITER_MODEL = 'hme-arbiter:latest'")
     print("  7. Re-enable arbiter in explore mode: skip_arbiter=False in _MODE_CONFIGS")
     print()

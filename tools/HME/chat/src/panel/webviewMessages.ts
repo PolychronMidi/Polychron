@@ -5,7 +5,7 @@ export interface SendMsg {
   claudeModel: string;
   claudeEffort: string;
   claudeThinking: boolean;
-  ollamaModel: string;
+  llamacppModel: string;
 }
 
 /**

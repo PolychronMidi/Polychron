@@ -12,7 +12,7 @@ Topology:
                 ├── GlobalEngine
                 └── File Watcher
     └── Startup Chain
-          └── Ollama Daemon (7735)
+          └── llama.cpp Daemon (7735)
                 ├── GPU0 Extractor (11434)
                 ├── GPU1 Reasoner  (11435)
                 └── CPU Arbiter    (11436)
@@ -105,7 +105,7 @@ def _build_topology() -> dict:
     _record_shim_response_ms(shim.get("response_ms", _HEALTH_TIMEOUT * 1000))
 
     # Check local inference — llama-server instances (arbiter + coder) replaced
-    # ollama in commit 0577c0f7. The old ollama/daemon checks probed dead ports
+    # llamacpp in commit 0577c0f7. The old llamacpp/daemon checks probed dead ports
     # and flooded LIFESAVER with coherence-below-threshold warnings.
     daemon = {"healthy": True, "note": "retired; llama-server is authoritative"}
     local_infer = _check_llamacpp_instances()

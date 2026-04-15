@@ -21,7 +21,7 @@ from .synthesis_config import _THINK_SYSTEM
 logger = logging.getLogger("HME")
 
 # Backward-compat: callers in workflow.py, evolution_admin.py, reasoning_think.py
-# check these to skip synthesis when Ollama is down. Updated by circuit breaker state.
+# check these to skip synthesis when llama.cpp is down. Updated by circuit breaker state.
 _last_think_failure: str | None = None
 _last_think_failure_ts: float = 0.0
 _TIMEOUT_COOLDOWN_S = 15  # matches circuit breaker recovery_s
@@ -214,9 +214,9 @@ _PRIORITY_MAP = {
 
 def _llamacpp_generate(payload: dict, wall_timeout: float = 15.0,
                        priority: str = "interactive") -> dict | None:
-    """Translate an ollama-shape payload into an OpenAI chat-completions call
+    """Translate an llamacpp-shape payload into an OpenAI chat-completions call
     against the appropriate llama-server, routed through the priority-queued
-    request coordinator. Returns a dict shaped like an ollama /api/generate
+    request coordinator. Returns a dict shaped like an llamacpp /api/generate
     response so downstream text-cleanup code works unchanged:
         {"response": <text>, "context": []}
     Wall-clock enforced by the coordinator's thread-abandon dispatch.
@@ -304,7 +304,7 @@ def _set_arbiter_busy(busy: bool) -> None:
 
 def _daemon_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
     """Route generation through the daemon's /generate proxy for wall-clock enforcement.
-    Returns the Ollama response dict, or None if the daemon is unreachable.
+    Returns the llama.cpp response dict, or None if the daemon is unreachable.
     Hard-capped: urllib timeout = min(wall_timeout + 2, 15). Never blocks MCP for long."""
     import urllib.request as _ur
     payload["wall_timeout"] = wall_timeout
@@ -350,15 +350,15 @@ def route_model(prompt: str) -> str:
     return _REASONING_MODEL  # default: reasoner for ambiguous queries
 
 
-# ── Ollama priority ────────────────────────────────────────────────────────
+# ── llama.cpp priority ────────────────────────────────────────────────────────
 # _interactive_event: set by interactive callers. Background checks this flag and
 # yields (before sending) or cancels mid-stream (via socket timeout in _cancellable_urlopen).
-# No Python locks — Ollama handles its own per-model FIFO queue.
+# No Python locks — llama.cpp handles its own per-model FIFO queue.
 _interactive_event = _threading.Event()
 
 
 def _background_yield():
-    """Yield to interactive calls before each background Ollama request."""
+    """Yield to interactive calls before each background llama.cpp request."""
     while _interactive_event.is_set():
         import time as _t
         _t.sleep(0.5)
@@ -367,7 +367,7 @@ def _background_yield():
 def _cancellable_urlopen(req_data, url, timeout, cancel_event):
     """Streaming urlopen that aborts when cancel_event fires.
 
-    Full timeout for initial urlopen (Ollama queues requests and won't send headers
+    Full timeout for initial urlopen (llama.cpp queues requests and won't send headers
     until it starts processing ours). Then 2s socket timeout for reads so cancel_event
     is checked every 2s during prompt eval. Returns (response_bytes, None) or (None, exception).
     """
@@ -441,10 +441,10 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                  priority: str = "interactive", system: str = "",
                  temperature: float = 0.3, context: list | None = None,
                  return_context: bool = False) -> str | tuple | None:
-    """Call local Ollama model for synthesis tasks.
+    """Call local llama.cpp model for synthesis tasks.
 
-    Returns None if Ollama isn't running. Returns (text, context_array) when
-    return_context=True — context_array is the Ollama KV cache state for reuse.
+    Returns None if llama.cpp isn't running. Returns (text, context_array) when
+    return_context=True — context_array is the llama.cpp KV cache state for reuse.
     On empty text (model used all tokens for thinking), returns (None, context_array)
     so warm priming can capture the KV state even without visible output.
     system: auto-swapped for warm KV context when system==_THINK_SYSTEM (transparent speedup).
@@ -806,7 +806,7 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     _cb = _get_circuit_breaker(_ARBITER_MODEL)
     if not _cb.allow():
         return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
-    # Daemon-only: wall-clock enforced, no direct Ollama fallback.
+    # Daemon-only: wall-clock enforced, no direct llama.cpp fallback.
     daemon_result = _daemon_generate(payload, wall_timeout=10)
     if daemon_result:
         compressed = daemon_result.get("response", "").strip()

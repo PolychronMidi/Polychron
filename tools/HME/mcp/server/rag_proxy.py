@@ -220,7 +220,7 @@ def _check_llamacpp_daemon_health() -> None:
 
 
 # Legacy alias — preserved so existing callers in rag_proxy don't break.
-_check_ollama_daemon_health = _check_llamacpp_daemon_health
+_check_llamacpp_daemon_health = _check_llamacpp_daemon_health
 
 
 def _proxy_health_monitor(port: int) -> None:
@@ -264,7 +264,7 @@ def _proxy_health_monitor(port: int) -> None:
                             _mo18.resolve_prediction(pred["id"], outcome_occurred=False)
                 except Exception as _pred_err:
                     logger.debug(f"monitor: prediction resolve failed (non-fatal): {type(_pred_err).__name__}: {_pred_err}")
-                _check_ollama_daemon_health()
+                _check_llamacpp_daemon_health()
                 # llama-server supervision — restart dead instances (arbiter/coder)
                 try:
                     from server import llamacpp_supervisor as _sup

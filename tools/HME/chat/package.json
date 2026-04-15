@@ -1,7 +1,7 @@
 {
   "name": "hme-chat",
   "displayName": "HME Chat",
-  "description": "HME unified chat — route to Claude (Max/Pro), Ollama, or hybrid",
+  "description": "HME unified chat — route to Claude (Max/Pro), llama.cpp, or hybrid",
   "version": "1.0.0",
   "engines": {
     "vscode": "^1.85.0"

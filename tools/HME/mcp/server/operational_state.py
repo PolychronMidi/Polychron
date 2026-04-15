@@ -215,7 +215,7 @@ def is_crash_loop() -> bool:
     """Return True if shim crash frequency suggests a crash loop.
 
     Layer 5 (Temporal Rhythm): used to skip expensive startup steps when the
-    system is clearly in trouble — don't waste time on Ollama priming if the
+    system is clearly in trouble — don't waste time on llama.cpp priming if the
     shim crashes every 2 minutes.
 
     MCP restarts are routine (~70/day from Claude Code kill/restart cycle).
@@ -240,7 +240,7 @@ def record_circuit_breaker_trip(model: str) -> int:
     """Record a circuit breaker opening for a model. Returns total trips for this model today.
 
     Layer 2: persists circuit breaker state across MCP restarts so operational memory
-    reflects Ollama instability that predates the current process.
+    reflects llama.cpp instability that predates the current process.
     """
     with _state_lock:
         trips = _state.setdefault("circuit_breaker_trips", {})
@@ -253,7 +253,7 @@ def record_circuit_breaker_trip(model: str) -> int:
 def record_circuit_breaker_flap(model: str) -> int:
     """Record a HALF_OPEN → OPEN flap for a model (probe fired but failed immediately).
 
-    Layer 21: Flapping is distinct from steady-state OPEN — it means Ollama is partially
+    Layer 21: Flapping is distinct from steady-state OPEN — it means llama.cpp is partially
     available but too unstable for recovery. Tracked separately from trips so the
     L14 correlator can detect sustained instability vs one-time outages.
     """

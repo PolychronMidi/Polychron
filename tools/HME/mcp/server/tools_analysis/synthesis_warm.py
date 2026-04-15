@@ -1,6 +1,6 @@
 """HME warm KV context — priming, incremental updates, GC, and status.
 
-Warm context = each model's specialized persona + full KB pre-tokenized into Ollama's KV
+Warm context = each model's specialized persona + full KB pre-tokenized into llama.cpp's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
 
 Disk persistence and shared state live in warm_disk.py.
@@ -32,7 +32,7 @@ _incremental_update_lock = _threading.Lock()
 _MAX_INCREMENTAL_APPENDS = 8       # schedule GC re-prime after N incremental appends
 _GC_TOKEN_GROWTH_RATIO = 0.20      # or if token count grew > 20% above full-prime baseline
 
-# Batch debounce queue — coalesces rapid-fire learn() calls into one Ollama round-trip (#3)
+# Batch debounce queue — coalesces rapid-fire learn() calls into one llama.cpp round-trip (#3)
 _pending_entries: list = []
 _batch_timer = None
 _batch_lock = _threading.Lock()
@@ -97,7 +97,7 @@ def queue_tombstone(entry_id: str, new_kb_ver: int):
 def _prefetch_gpu0_if_needed():
     """No-op under llama.cpp.
 
-    The old ollama flow evicted models when GPU memory got tight, so this
+    The old llamacpp flow evicted models when GPU memory got tight, so this
     function used to ping the coder to force a reload before the real
     incremental KB update landed. llama-server mmap's the GGUF and never
     evicts — the warm-prefetch is moot. Kept as a stub so callers don't break.
@@ -109,7 +109,7 @@ def _prefetch_gpu0_if_needed():
 def _flush_pending_entries():
     """Flush queued KB entries into tracked warm-context metadata.
 
-    Under the old ollama backend this function re-called each model with
+    Under the old llamacpp backend this function re-called each model with
     `context=[prior_tokens]` to append new KB content to the KV cache. llama-
     server's KV cache is internal and is reused automatically across calls
     with matching prompt prefixes (cache_prompt=true), so there is nothing
@@ -368,8 +368,8 @@ def _init_local_models() -> str:
     return summary
 
 
-# Legacy alias — some callers still import _init_ollama_models.
-_init_ollama_models = _init_local_models
+# Legacy alias — some callers still import _init_local_models.
+_init_local_models = _init_local_models
 
 
 def _prime_all_gpus() -> str:

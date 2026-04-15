@@ -148,7 +148,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     appends suggest_evolution output so no separate call is needed. critique=True
     appends a musical prose critique via Claude synthesis. Replaces pipeline_digest +
     regime_anomaly + evolution_delta + composition_critique + suggest_evolution.
-    critique=True uses local Ollama reasoning model (GPU1, temperature=0.55) for prose.
+    critique=True uses local llama.cpp reasoning model (GPU1, temperature=0.55) for prose.
     FRESHNESS GUARD: only runs if pipeline output files are newer than last digest call.
     If stale, auto-runs check_pipeline and returns its status instead."""
     ctx.ensure_ready_sync()

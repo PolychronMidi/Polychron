@@ -56,7 +56,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
         logger.warning("append_session_narrative failed: %s", e)
 
     # Incremental warm context update — batched and parallelized across all 3 models.
-    # Debounced 3s so rapid-fire learn() calls coalesce into one Ollama round-trip.
+    # Debounced 3s so rapid-fire learn() calls coalesce into one llama.cpp round-trip.
     try:
         from server.tools_analysis.synthesis_warm import queue_incremental_update
         queue_incremental_update(title=title, content=content, category=category, new_kb_ver=_new_kb_ver)

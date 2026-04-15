@@ -3,7 +3,7 @@
 Assembles a rich, contextual status narrative from all available signals:
   - System phase and lifecycle history (Layer 0)
   - Operational memory: restart count, crash frequency, recovery rate (Layer 2)
-  - Health topology: shim, daemon, Ollama models (Layer 3)
+  - Health topology: shim, daemon, llama.cpp models (Layer 3)
   - Failure genealogy: active causal chains (Layer 4)
   - Resonance status: cascade in progress? (Layer 10)
 
@@ -93,7 +93,7 @@ def build_status_narrative() -> str:
         if ops.is_crash_loop():
             lines.append(
                 "Crash loop pattern detected (≥3 shim crashes or ≥8 restarts today). "
-                "Expensive startup steps (Ollama priming, cache warm) are being skipped. "
+                "Expensive startup steps (llama.cpp priming, cache warm) are being skipped. "
                 "Check system resources: OOM, disk full, CUDA errors."
             )
 

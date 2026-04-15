@@ -9,12 +9,12 @@ export interface ClaudeOptions {
   permissionMode: string;
 }
 
-export interface OllamaOptions {
+export interface LlamacppOptions {
   model: string;
   url: string;
 }
 
-export interface OllamaMessage {
+export interface LlamacppMessage {
   role: "system" | "user" | "assistant";
   content: string;
 }
@@ -22,7 +22,7 @@ export interface OllamaMessage {
 export interface RouterOptions {
   route: Route;
   claude: ClaudeOptions;
-  ollama: OllamaOptions;
+  llamacpp: LlamacppOptions;
   workingDir: string;
 }
 
@@ -38,7 +38,7 @@ export interface TokenUsage {
 
 // Re-export all functions from split modules so existing imports from "./router" keep working.
 export { streamClaude, streamClaudePty } from "./routerClaude";
-export { streamOllama, streamOllamaAgentic, streamLlamacpp, streamLlamacppAgentic, GPU_NUM_CTX } from "./routerLlamacpp";
+export { streamllama.cpp, streamLlamacppAgentic, streamLlamacpp, streamLlamacppAgentic, GPU_NUM_CTX } from "./routerLlamacpp";
 export {
   fetchHmeContext,
   enrichPrompt,

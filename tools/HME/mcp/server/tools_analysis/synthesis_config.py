@@ -9,9 +9,9 @@ logger = logging.getLogger("HME")
 
 
 # These names are retained for import compatibility (callers import them by name).
-# All synthesis goes through Ollama — see synthesis_llamacpp.py for _LOCAL_MODEL/_REASONING_MODEL.
-_THINK_MODEL = "ollama/qwen3-coder:30b"
-_DEEP_MODEL = "ollama/qwen3:30b-a3b"
+# All synthesis goes through llama.cpp — see synthesis_llamacpp.py for _LOCAL_MODEL/_REASONING_MODEL.
+_THINK_MODEL = "llamacpp/qwen3-coder:30b"
+_DEEP_MODEL = "llamacpp/qwen3:30b-a3b"
 
 
 def _build_think_system() -> str:
@@ -23,11 +23,11 @@ def _build_think_system() -> str:
         "loop that converts negative trust correlations into constructive musical tension via "
         "coupling BOTH modules of a negatively-correlated pair to the SAME signal with OPPOSING "
         "effects. Evolution verdicts: LEGENDARY > STABLE > EVOLVED > DRIFTED. "
-        "HME (HyperMeta Ecstasy) is the Ollama-powered MCP intelligence layer: 26 tools spanning "
+        "HME (HyperMeta Ecstasy) is the llama.cpp-powered MCP intelligence layer: 26 tools spanning "
         "reactive search (search_code, find_callers, grep), architectural analysis (module_intel, "
         "coupling_intel, codebase_health), pre/post-edit workflow (before_editing, what_did_i_forget), "
         "and synthesis (think, pipeline_digest, suggest_evolution, diagnose_error). "
-        "All synthesis runs on local Ollama: qwen3-coder:30b (GPU0, extraction) + "
+        "All synthesis runs on local llama.cpp: qwen3-coder:30b (GPU0, extraction) + "
         "qwen3:30b-a3b (GPU1, reasoning) — parallel two-stage for evolution questions, "
         "single-stage for meta-HME and constraint questions. "
         "Ground every claim in KB constraints or injected code. "

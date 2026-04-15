@@ -102,5 +102,5 @@ if __name__ == "__main__":
     step3_cleanup()
     print("\nDone.")
     print("Next:")
-    print(f"  ollama create hme-arbiter-v6 -f metrics/Modelfile-v6")
+    print(f"  llamacpp create hme-arbiter-v6 -f metrics/Modelfile-v6")
     print(f"  Update .env: HME_ARBITER_MODEL=hme-arbiter-v6")

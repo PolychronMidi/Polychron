@@ -1,6 +1,6 @@
 """Request coordinator — priority-queued dispatch to llama-server instances.
 
-Replaces the ollama-era threading.Event + preemption-flag design with an
+Replaces the llamacpp-era threading.Event + preemption-flag design with an
 explicit per-endpoint queue. One `CoordinatorInstance` per llama-server
 (arbiter on :8080, coder on :8081). Callers submit via `coordinator.submit()`
 and get back a `Future` that resolves when the request completes, times out,

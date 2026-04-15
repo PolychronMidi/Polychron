@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""HME local agentic research — replaces Claude subagents with Ollama + RAG + tools.
+"""HME local agentic research — replaces Claude subagents with llama.cpp + RAG + tools.
 
-Read-only agentic loop: Ollama reasons over RAG context and can issue
+Read-only agentic loop: llama.cpp reasons over RAG context and can issue
 grep/glob/read/kb commands, iterating until the answer is complete.
 
 Advantages over Claude agents:
@@ -87,7 +87,7 @@ def _infer_directories(prompt: str) -> list[str]:
     if "hook" in lower or "pretooluse" in lower or "posttooluse" in lower or "sessionstart" in lower:
         if "tools/HME/hooks/" not in dirs:
             dirs.append("tools/HME/hooks/")
-    if "mcp" in lower or "server" in lower or "ollama" in lower or "verifier" in lower or "onboard" in lower:
+    if "mcp" in lower or "server" in lower or "llamacpp" in lower or "verifier" in lower or "onboard" in lower:
         if "tools/HME/mcp/" not in dirs:
             dirs.append("tools/HME/mcp/")
     if "chat" in lower or "typescript" in lower:

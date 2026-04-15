@@ -34,7 +34,7 @@ def _ground_file_paths(text: str) -> str:
 
 
 def think(about: str, context: str = "") -> str:
-    """Structured reflection tool. Uses Ollama hybrid synthesis (qwen3-coder extract +
+    """Structured reflection tool. Uses llama.cpp hybrid synthesis (qwen3-coder extract +
     qwen3:30b-a3b reason) with project-grounded context injection. Routes by question type:
     meta-HME tool questions → single-stage with HME doc+KB injection; evolution/coupling →
     parallel two-stage with antagonist map + dimension gaps; channel questions → topology +
@@ -217,7 +217,7 @@ def think(about: str, context: str = "") -> str:
             f"If something is already done per the KB, skip it. Max 4 items."
         )
 
-    # Ollama path: route by question type for best quality
+    # llama.cpp path: route by question type for best quality
     raw_context = ""
 
     # Inject query-aware session narrative — callers/search queries get search+think
@@ -320,13 +320,13 @@ def think(about: str, context: str = "") -> str:
             store_think_history(about, local_answer)
             return f"# Think: {about} *(parallel-two-stage)*\n\n{local_answer}"
 
-    # Template fallback (Ollama unavailable): minimal context, no injected_state echo
+    # Template fallback (llama.cpp unavailable): minimal context, no injected_state echo
     # Access _last_think_failure via module reference — direct import gives stale value after mutation.
     from . import synthesis_llamacpp as _syn_mod
     _fallback_label = (
-        "Ollama TIMEOUT — queue may be stacked. Do NOT retry. Wait for queue to drain or restart Ollama."
+        "llama.cpp TIMEOUT — queue may be stacked. Do NOT retry. Wait for queue to drain or restart llama.cpp."
         if _syn_mod._last_think_failure == "timeout"
-        else "Ollama unavailable — fallback"
+        else "llama.cpp unavailable — fallback"
     )
     logger.warning(f"think({about!r}): synthesis unavailable — returning KB-only template fallback")
     parts = [f"# Think: {about} *({_fallback_label})*\n"]

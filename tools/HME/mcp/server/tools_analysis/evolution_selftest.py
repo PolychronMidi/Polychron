@@ -119,7 +119,7 @@ def hme_hot_reload(modules: str = "") -> str:
 
 
 def hme_selftest() -> str:
-    """Verify HME's own health: tool registration, doc sync, index integrity, Ollama, KB."""
+    """Verify HME's own health: tool registration, doc sync, index integrity, llama.cpp, KB."""
     _track("hme_selftest")
     results = []
 
@@ -349,9 +349,9 @@ def hme_selftest() -> str:
         if _so._last_think_failure == "timeout":
             import time as _ts_time
             _cooldown_remaining = max(0, _so._TIMEOUT_COOLDOWN_S - (_ts_time.monotonic() - _so._last_think_failure_ts))
-            results.append(f"FAIL: Ollama cooldown -- timeout {int(_cooldown_remaining)}s remaining, synthesis calls blocked")
+            results.append(f"FAIL: llama.cpp cooldown -- timeout {int(_cooldown_remaining)}s remaining, synthesis calls blocked")
         elif _so._last_think_failure == "error":
-            results.append(f"WARN: Ollama last failure -- non-timeout error (will retry)")
+            results.append(f"WARN: llama.cpp last failure -- non-timeout error (will retry)")
     except Exception as _err2:
         logger.debug(f"results.append: {type(_err2).__name__}: {_err2}")
 

@@ -1,11 +1,11 @@
 import * as path from "path";
 import {
-  OllamaMessage, TokenUsage,
-  streamClaude, streamClaudePty, streamOllamaAgentic, streamHybrid,
+  LlamacppMessage, TokenUsage,
+  streamClaude, streamClaudePty, streamLlamacppAgentic, streamHybrid,
   postTranscript, reindexFiles, auditChanges,
 } from "./router";
 import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit, AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
-import { claudeOptsFromMsg, ollamaOptsFromMsg } from "./msgHelpers";
+import { claudeOptsFromMsg, llamacppOptsFromMsg } from "./msgHelpers";
 import { ChatMessage } from "./types";
 import type { SendMsg } from "./panel/webviewMessages";
 
@@ -29,8 +29,8 @@ export function reindexFromTools(tools: string[]): Set<string> {
   for (const t of tools) {
     const fileMatch = t.match(/"file_path"\s*:\s*"([^"]+)"/);
     if (fileMatch) files.add(fileMatch[1]);
-    const ollamaMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
-    if (ollamaMatch) files.add(ollamaMatch[2]);
+    const llamacppMatch = t.match(/\[(write_file|read_file|bash)\]\s*\{[^}]*"path"\s*:\s*"([^"]+)"/);
+    if (llamacppMatch) files.add(llamacppMatch[2]);
   }
   const indexable = [...files].filter(f => INDEXABLE_EXTS.has(path.extname(f).toLowerCase()));
   if (indexable.length > 0) {
@@ -183,7 +183,7 @@ function runStream(opts: RunStreamOpts): { cancel: () => void; handle: HarnessHa
 
 interface FinalizeOpts {
   includeThinking?: boolean;
-  pushOllama?: boolean;
+  pushllama.cpp?: boolean;
   userText?: string;
   checkChain?: boolean;
   model?: string;
@@ -210,9 +210,9 @@ function finalizeStream(
   if (opts.includeThinking && h.state.thinking) msg.thinking = h.state.thinking;
   h.tracker.finalize(msg);
   h.postStreamEnd();
-  if (opts.pushOllama && opts.userText !== undefined) {
-    ctx.state.ollamaHistory.push({ role: "user", content: opts.userText });
-    ctx.state.ollamaHistory.push({ role: "assistant", content: h.state.text });
+  if (opts.pushllama.cpp && opts.userText !== undefined) {
+    ctx.state.llamacppHistory.push({ role: "user", content: opts.userText });
+    ctx.state.llamacppHistory.push({ role: "assistant", content: h.state.text });
   }
   ctx.transcript.logAssistant(h.state.text, route, opts.model, h.state.tools);
   if (!opts.skipMirror) mirrorAssistantToShim(ctx, h.state.text, route, opts.model, h.state.tools);
@@ -251,9 +251,9 @@ function attachPromiseCancel(
 /** SendMsg enriched by _onSend before routing to a specific stream function. */
 type ResolvedMsg = SendMsg & { _resolvedRoute?: string; _contextPrefix?: string };
 
-const AGENTIC_SYSTEM: OllamaMessage = { role: "system", content: AGENTIC_SYSTEM_PROMPT };
+const AGENTIC_SYSTEM: LlamacppMessage = { role: "system", content: AGENTIC_SYSTEM_PROMPT };
 
-function contextPrefixMessages(prefix: string | undefined): OllamaMessage[] {
+function contextPrefixMessages(prefix: string | undefined): LlamacppMessage[] {
   return prefix
     ? [
         { role: "user", content: prefix },
@@ -306,9 +306,9 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
   });
 }
 
-export function streamOllamaMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
+export function streamllama.cppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const contextMessages = contextPrefixMessages(msg._contextPrefix);
-  const trimmed = trimHistoryToFit(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
+  const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
   const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
 
   runStream({
@@ -316,12 +316,12 @@ export function streamOllamaMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        finalizeStream(h, ctx, assistantId, "local", { pushOllama: true, userText: msg.text, model: msg.ollamaModel });
+        finalizeStream(h, ctx, assistantId, "local", { pushllama.cpp: true, userText: msg.text, model: msg.llamacppModel });
         h.safeEnd();
       };
-      h.setCancel(streamOllamaAgentic(
+      h.setCancel(streamLlamacppAgentic(
         requestHistory,
-        ollamaOptsFromMsg(msg),
+        llamacppOptsFromMsg(msg),
         ctx.projectRoot, h.onChunk, onDone,
         (err) => {
           if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
@@ -334,7 +334,7 @@ export function streamOllamaMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
 
 export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const contextMessages = contextPrefixMessages(msg._contextPrefix);
-  const history = [...contextMessages, ...ctx.state.ollamaHistory];
+  const history = [...contextMessages, ...ctx.state.llamacppHistory];
 
   runStream({
     ctx, assistantId, route: "hybrid",
@@ -342,7 +342,7 @@ export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        finalizeStream(h, ctx, assistantId, "hybrid", { pushOllama: true, userText: msg.text, model: msg.ollamaModel });
+        finalizeStream(h, ctx, assistantId, "hybrid", { pushllama.cpp: true, userText: msg.text, model: msg.llamacppModel });
         h.safeEnd();
       };
       const onError = (err: string) => {
@@ -352,7 +352,7 @@ export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
       };
       attachPromiseCancel(
         h,
-        streamHybrid(msg.text, history, ollamaOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
+        streamHybrid(msg.text, history, llamacppOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
         (err) => ctx.postError("hybrid", err),
       );
     },
@@ -368,7 +368,7 @@ export function streamAgentMsg(
   onForceDrain: () => void,
   cancelFns: Array<() => void>,
 ) {
-  const trimmed = trimHistoryToFit(ctx.state.ollamaHistory, msg.text, [AGENTIC_SYSTEM]);
+  const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM]);
   const requestHistory = [AGENTIC_SYSTEM, ...trimmed, { role: "user" as const, content: msg.text }];
 
   const { cancel } = runStream({
@@ -378,14 +378,14 @@ export function streamAgentMsg(
       const onDone = () => {
         if (h.isAborted()) return;
         finalizeStream(h, ctx, assistantId, label, {
-          pushOllama: label === "local", userText: msg.text,
-          model: msg.ollamaModel, skipMirror: true,
+          pushllama.cpp: label === "local", userText: msg.text,
+          model: msg.llamacppModel, skipMirror: true,
         });
         h.safeEnd();
       };
-      h.setCancel(streamOllamaAgentic(
+      h.setCancel(streamLlamacppAgentic(
         requestHistory,
-        ollamaOptsFromMsg(msg),
+        llamacppOptsFromMsg(msg),
         ctx.projectRoot, h.onChunk, onDone,
         (err) => {
           ctx.postError(label, err);
@@ -409,7 +409,7 @@ export function streamAgentHybridMsg(
   onForceDrain: () => void,
   cancelFns: Array<() => void>,
 ) {
-  const history = trimHistoryToFit(ctx.state.ollamaHistory, msg.text);
+  const history = trimHistoryToFit(ctx.state.llamacppHistory, msg.text);
 
   const { cancel } = runStream({
     ctx, assistantId, route: "hybrid",
@@ -418,7 +418,7 @@ export function streamAgentHybridMsg(
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        finalizeStream(h, ctx, assistantId, "hybrid", { model: msg.ollamaModel, skipMirror: true });
+        finalizeStream(h, ctx, assistantId, "hybrid", { model: msg.llamacppModel, skipMirror: true });
         h.safeEnd();
       };
       const onError = (err: string) => {
@@ -431,7 +431,7 @@ export function streamAgentHybridMsg(
       };
       attachPromiseCancel(
         h,
-        streamHybrid(msg.text, history, ollamaOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
+        streamHybrid(msg.text, history, llamacppOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
         (err) => ctx.postError(label, err),
         onForceDrain,
       );

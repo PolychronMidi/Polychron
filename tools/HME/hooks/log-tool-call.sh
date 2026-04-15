@@ -70,7 +70,7 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]] && [ "$ELAPSED_S" -gt 0 ]; then
   if [ "$ELAPSED_S" -ge "$THRESHOLD" ]; then
     echo "LIFESAVER: ${TOOL_NAME} took ${ELAPSED_S}s (threshold: ${THRESHOLD}s)." >&2
     echo "  Slow MCP tools = stuck synthesis or model not loaded. Check:" >&2
-    echo "  1. ollama ps — is qwen3:30b-a3b or qwen3-coder:30b actually running?" >&2
+    echo "  1. llamacpp ps — is qwen3:30b-a3b or qwen3-coder:30b actually running?" >&2
     echo "  2. HME log for _local_think TIMEOUT / REFUSED entries" >&2
     echo "  3. _local_think has 60s interactive timeout — if it exceeded that, something else blocked" >&2
   fi

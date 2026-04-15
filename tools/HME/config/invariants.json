@@ -544,9 +544,9 @@
     },
     {
       "id": "no-mcp-side-timeouts-synthesis",
-      "description": "Ollama-backed synthesis must not enforce wall clocks MCP-side; timeout belongs in the ollama daemon. Lines inside _llamacpp_generate / _llamacpp_chat are exempt because llama.cpp has no persistent daemon \u2014 thread abandonment is the only way to enforce wall clocks on the OpenAI HTTP client.",
+      "description": "llama.cpp-backed synthesis must not enforce wall clocks MCP-side; timeout belongs in the llamacpp daemon. Lines inside _llamacpp_generate / _llamacpp_chat are exempt because llama.cpp has no persistent daemon \u2014 thread abandonment is the only way to enforce wall clocks on the OpenAI HTTP client.",
       "type": "shell_output_empty",
-      "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_ollama.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null | grep -v '# llamacpp-ok'",
+      "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null | grep -v '# llamacpp-ok'",
       "severity": "error"
     },
     {
@@ -558,10 +558,10 @@
       "severity": "error"
     },
     {
-      "id": "no-hardcoded-ollama-ports",
-      "description": "HME server files must not hardcode ollama ports 11434/11435/11436 \u2014 they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy ollama branch guarded by HME_ARBITER_BACKEND.",
+      "id": "no-hardcoded-llamacpp-ports",
+      "description": "HME server files must not hardcode llamacpp ports 11434/11435/11436 \u2014 they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy llamacpp branch guarded by HME_ARBITER_BACKEND.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/mcp/server/ --include='*.py' | grep -v 'HME_OLLAMA_PORT' | grep -v '# ollama-legacy-ok'",
+      "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/mcp/server/ --include='*.py' | grep -v 'HME_LLAMACPP_PORT' | grep -v '# llamacpp-legacy-ok'",
       "severity": "error"
     },
     {

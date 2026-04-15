@@ -1380,17 +1380,17 @@ class SubagentBackendsVerifier(Verifier):
         # 2. Python (always available since we're running)
         backends["python"] = "python3"
 
-        # 3. Ollama daemon (CPU port 11436 for arbiter)
+        # 3. llama.cpp daemon (CPU port 11436 for arbiter)
         try:
             import urllib.request
             req = urllib.request.Request("http://127.0.0.1:11436/api/tags")
             with urllib.request.urlopen(req, timeout=2) as r:
                 if r.status == 200:
-                    backends["ollama_arbiter"] = "11436"
+                    backends["llamacpp_arbiter"] = "11436"
                 else:
-                    backends["ollama_arbiter"] = None
+                    backends["llamacpp_arbiter"] = None
         except Exception:
-            backends["ollama_arbiter"] = None
+            backends["llamacpp_arbiter"] = None
 
         # 4. HME shim (port 7734 for RAG)
         try:

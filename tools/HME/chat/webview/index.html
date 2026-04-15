@@ -798,7 +798,7 @@ function send() {
     claudeModel: claudeModel.value,
     claudeEffort: isClaude ? claudeEffort.value : undefined,
     claudeThinking: isClaude ? thinkingChk.checked : false,
-    ollamaModel: 'qwen3-coder:30b',
+    llamacppModel: 'qwen3-coder:30b',
   });
   // Show stop/queue immediately — don't wait for streamStart which may be delayed
   // by arbiter classification (up to 60s on auto route).
@@ -833,7 +833,7 @@ queueBtn.addEventListener('click', () => {
     claudeModel: qModel,
     claudeEffort: qIsHaiku ? undefined : claudeEffort.value,
     claudeThinking: qIsHaiku ? false : thinkingChk.checked,
-    ollamaModel: 'qwen3-coder:30b',
+    llamacppModel: 'qwen3-coder:30b',
   });
 });
 clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));

@@ -1,7 +1,7 @@
 // llama.cpp chat router — OpenAI /v1/chat/completions client for the chat UI.
 //
-// Replaces the former ollama /api/chat client. Exposes legacy symbol names
-// (streamOllama, streamOllamaAgentic, GPU_NUM_CTX) as aliases so routerHme,
+// Replaces the former llamacpp /api/chat client. Exposes legacy symbol names
+// (streamllama.cpp, streamLlamacppAgentic, GPU_NUM_CTX) as aliases so routerHme,
 // chatStreaming, ChatPanel, etc. keep building without a coordinated rename.
 //
 // Wire protocol:
@@ -14,7 +14,7 @@ import { execSync } from "child_process";
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
-import { OllamaOptions, OllamaMessage, ChunkCallback } from "./router";
+import { LlamacppOptions, LlamacppMessage, ChunkCallback } from "./router";
 
 export const GPU_NUM_CTX = 49152;
 
@@ -44,8 +44,8 @@ function stripThinkTags(text: string): string {
 // We split on "\n\n", strip the "data: " prefix, parse each JSON frame, and
 // pull content deltas out of choices[0].delta.content.
 export function streamLlamacpp(
-  messages: OllamaMessage[],
-  opts: OllamaOptions,
+  messages: LlamacppMessage[],
+  opts: LlamacppOptions,
   onChunk: ChunkCallback,
   onDone: () => void,
   onError: (msg: string) => void
@@ -206,7 +206,7 @@ function isLlamacppAlive(url: string): Promise<boolean> {
 function llamacppChatOnce(
   messages: any[],
   tools: any[],
-  opts: OllamaOptions
+  opts: LlamacppOptions
 ): { promise: Promise<any>; cancel: () => void } {
   let req: ReturnType<typeof http.request> | null = null;
   let hardTimer: ReturnType<typeof setTimeout> | null = null;
@@ -251,7 +251,7 @@ function llamacppChatOnce(
           }
           try {
             const parsed = JSON.parse(raw);
-            // Translate OpenAI envelope → ollama-ish message shape the caller expects.
+            // Translate OpenAI envelope → llamacpp-ish message shape the caller expects.
             const choice = parsed?.choices?.[0] ?? {};
             const msg = choice.message ?? {};
             if (typeof msg.content === "string") {
@@ -296,8 +296,8 @@ function parseXmlFunctionCalls(content: string): any[] {
 }
 
 export function streamLlamacppAgentic(
-  messages: OllamaMessage[],
-  opts: OllamaOptions,
+  messages: LlamacppMessage[],
+  opts: LlamacppOptions,
   workingDir: string,
   onChunk: ChunkCallback,
   onDone: () => void,
@@ -414,7 +414,7 @@ export function streamLlamacppAgentic(
 
 // ── Legacy aliases ────────────────────────────────────────────────────────
 // routerHme, chatStreaming, ChatPanel, and router still import the old
-// ollama-flavored names. Alias them to the llama.cpp implementations so
+// llamacpp-flavored names. Alias them to the llama.cpp implementations so
 // nothing else in the chat extension needs to be touched simultaneously.
-export const streamOllama = streamLlamacpp;
-export const streamOllamaAgentic = streamLlamacppAgentic;
+export const streamllama.cpp = streamLlamacpp;
+export const streamLlamacppAgentic = streamLlamacppAgentic;

@@ -78,4 +78,4 @@ if __name__ == "__main__":
     step1_merge()
     step2_convert()
     step3_quantize()
-    print("\nDone. Run: ollama create hme-arbiter -f /path/to/Modelfile")
+    print("\nDone. Run: llamacpp create hme-arbiter -f /path/to/Modelfile")
