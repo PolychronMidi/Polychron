@@ -23,20 +23,30 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     Checks for null-sentinel .get() traps, unguarded ValueError in OSError handlers,
     unbounded append-only file growth, `or` idioms that mask 0.0, and variable-before-
     assignment across guard boundaries.
+
+    Self-exclusion: this scanner lives in workflow_audit.py and contains the
+    patterns it looks for AS REGEX STRINGS. Scanning the scanner produces
+    hits on those literals — not real bugs. Skip.
     """
+    if rel_path.endswith("workflow_audit.py"):
+        return []
     import re
     warnings = []
 
-    # 1. dict.get(key, non-None-default) where key could exist with None value.
-    # Pattern: .get("...", <number_or_call>) used in arithmetic/comparison/subtraction.
-    # The default is only used when the KEY IS ABSENT — not when it's present with None.
+    # 1. dict.get(key, non-None-default) used in a context where a returned
+    # None would cause a TypeError — i.e. arithmetic or comparison against a
+    # number. Display-only .get (f-string interpolation, print, return-value
+    # aggregation) is safe: None formats fine and doesn't raise.
+    # Heuristic: look for `.get(...,N) + X` / `X - .get(...,N)` / comparisons.
     null_sentinel = re.findall(
-        r'\.get\(["\'][^"\']+["\'],\s*(?:0|time\.\w+\(\)|[0-9]+\.?[0-9]*)\)',
+        r'\.get\(["\'][^"\']+["\'],\s*(?:0|time\.\w+\(\)|[0-9]+\.?[0-9]*)\)'
+        r'\s*(?:[-+*/<>=]|[-+]=|!=)',
         content
     )
     if null_sentinel:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(null_sentinel)} .get(key, default) call(s) — "
+            f"[{rel_path}] PYTHON: {len(null_sentinel)} .get(key, default) call(s) in "
+            "arithmetic/comparison context — "
             "if the key can exist with None, .get(key, X) returns None not X. "
             "Use `(d.get(key) or X)` or `if d.get(key) is None`."
         )
@@ -219,6 +229,24 @@ def what_did_i_forget(changed_files: str) -> str:
                 for d in docs:
                     doc_updates_needed.add(d)
 
+    # Python-specific static bug pattern scan (HME server + all .py files).
+    # MUST run BEFORE the Warnings display section below, otherwise warnings
+    # added here get counted in total_issues but never rendered to the user,
+    # causing the nexus REVIEW_ISSUES count to get stuck with invisible
+    # failures. (Historical bug — the scan used to run after the display.)
+    py_files = [f.strip() for f in changed_files.split(",") if f.strip().endswith(".py")]
+    for py_path in py_files:
+        abs_py = validate_project_path(py_path, ctx.PROJECT_ROOT)
+        if abs_py is None:
+            continue
+        rel_py = abs_py.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
+        try:
+            with open(abs_py, encoding="utf-8", errors="ignore") as _pyf:
+                py_content = _pyf.read()
+            all_warnings.extend(_scan_python_bug_patterns(rel_py, py_content))
+        except OSError:
+            pass
+
     if all_warnings:
         parts.append(f"## Warnings ({len(all_warnings)})")
         for w in all_warnings:
@@ -232,20 +260,6 @@ def what_did_i_forget(changed_files: str) -> str:
     parts.append(f"\n## Reminders")
     parts.append("  - hme_admin(action='index') after batch changes (file watcher handles individual saves)")
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
-
-    # Python-specific static bug pattern scan (HME server + all .py files)
-    py_files = [f.strip() for f in changed_files.split(",") if f.strip().endswith(".py")]
-    for py_path in py_files:
-        abs_py = validate_project_path(py_path, ctx.PROJECT_ROOT)
-        if abs_py is None:
-            continue
-        rel_py = abs_py.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
-        try:
-            with open(abs_py, encoding="utf-8", errors="ignore") as _pyf:
-                py_content = _pyf.read()
-            all_warnings.extend(_scan_python_bug_patterns(rel_py, py_content))
-        except OSError:
-            pass
 
     # Collect git diff for synthesis context (bounded to 4000 chars)
     diff_context = ""

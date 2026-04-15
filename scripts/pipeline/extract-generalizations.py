@@ -105,7 +105,7 @@ def main() -> int:
     try:
         with open(CRYSTALLIZED, encoding="utf-8") as f:
             data = json.load(f)
-    except (OSError, json.JSONDecodeError) as _e:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError) as _e:
         print(f"extract-generalizations: read failed: {type(_e).__name__}: {_e}", file=sys.stderr)
         return 0
     patterns = data.get("patterns") or []

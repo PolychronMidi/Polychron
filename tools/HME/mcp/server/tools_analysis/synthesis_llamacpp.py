@@ -866,7 +866,7 @@ def _load_patterns_cache() -> dict | None:
             _patterns_cache = json.load(f)
         _patterns_cache_ts = now
         return _patterns_cache
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, ValueError, TypeError):
         return None
 
 
@@ -896,7 +896,8 @@ def _assess_complexity(prompt: str) -> dict:
     # L25: adaptive adjustment from historical synthesis patterns
     l25_adj = 0.0
     patterns = _load_patterns_cache()
-    if patterns and patterns.get("total_calls_analyzed", 0) >= 20:
+    _tc = patterns.get("total_calls_analyzed") if patterns else None
+    if _tc is not None and _tc >= 20:
         strat_phantoms = patterns.get("strategy_phantom_rates", {})
         direct_pr = strat_phantoms.get("direct", 0.0)
         enriched_pr = strat_phantoms.get("enriched", 0.0)
@@ -1004,10 +1005,15 @@ def _inject_context(prompt: str) -> str:
         from server import operational_state
         ops = operational_state.snapshot()
         alerts = []
-        if ops.get("shim_crashes_today", 0) > 0:
-            alerts.append(f"shim_crashes={ops['shim_crashes_today']}")
-        if ops.get("recovery_success_rate_ema", 1.0) < 0.8:
-            alerts.append(f"recovery={ops['recovery_success_rate_ema']:.0%}")
+        _crashes = ops.get("shim_crashes_today")
+        if _crashes is not None and _crashes > 0:
+            alerts.append(f"shim_crashes={_crashes}")
+        _recovery = ops.get("recovery_success_rate_ema")
+        # 0.0 recovery rate is worse than "unknown" — must trigger alert,
+        # so we branch on `is not None` rather than `or 1.0` which would
+        # mask 0.0 as "healthy" and hide the alert.
+        if _recovery is not None and _recovery < 0.8:
+            alerts.append(f"recovery={_recovery:.0%}")
         if alerts:
             parts.append(f"[Health: {', '.join(alerts)}]")
     except Exception as _err5:

@@ -50,7 +50,7 @@ def _load_json(path: str):
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, ValueError, TypeError):
         return None
 
 
