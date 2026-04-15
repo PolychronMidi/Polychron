@@ -105,7 +105,7 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "$LLAMA_BIN" ]; then
     "${HME_ARBITER_VULKAN:?HME_ARBITER_VULKAN not in .env}" \
     "${HME_ARBITER_MODEL:?HME_ARBITER_MODEL not in .env}" \
     "${HME_ARBITER_CTX:?HME_ARBITER_CTX not in .env}" \
-    "${HME_ARBITER_ADAPTER:?HME_ARBITER_ADAPTER not in .env}"
+    ""
   _start_llama coder \
     "${HME_CODER_PORT:?HME_CODER_PORT not in .env}" \
     "${HME_CODER:?HME_CODER not in .env}" \
