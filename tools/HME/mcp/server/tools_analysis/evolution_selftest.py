@@ -288,7 +288,10 @@ def hme_selftest() -> str:
         results.append(f"FAIL: Ollama -- {e}")
 
     try:
-        from .synthesis import warm_context_status, _ARBITER_MODEL
+        from .synthesis import warm_context_status
+        from . import synthesis_ollama as _so
+        _so._refresh_arbiter()
+        _ARBITER_MODEL = _so._ARBITER_MODEL
         wcs = warm_context_status()
         for model_name, info in wcs.items():
             if model_name in ("arbiter", "think_history", "session_narrative"):
