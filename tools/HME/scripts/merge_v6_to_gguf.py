@@ -21,6 +21,7 @@ MERGED_PATH  = "/tmp/hme-arbiter-v6-merged"
 GGUF_F16     = "/tmp/hme-arbiter-v6-f16.gguf"
 LLAMA_CPP    = "/home/jah/tools/llama.cpp"
 CONVERT      = f"{LLAMA_CPP}/convert_hf_to_gguf.py"
+PHI4_HF_CACHE = "/home/jah/.cache/huggingface/hub/models--microsoft--phi-4"
 
 
 def step1_merge():
@@ -51,6 +52,15 @@ def step1_merge():
     print("  Step 1 done.")
 
 
+def step1b_drop_hf_cache():
+    """Delete phi-4 HF cache to free ~28 GB before conversion."""
+    print(f"Step 1b: Deleting phi-4 HF cache at {PHI4_HF_CACHE}")
+    if os.path.isdir(PHI4_HF_CACHE):
+        shutil.rmtree(PHI4_HF_CACHE)
+    subprocess.run(["df", "-h", "/"], check=False)
+    print("  Step 1b done.")
+
+
 def step2_convert():
     print(f"Step 2: Converting HF → GGUF f16 at {GGUF_F16}")
     result = subprocess.run(
@@ -72,6 +82,7 @@ def step3_cleanup():
 
 if __name__ == "__main__":
     step1_merge()
+    step1b_drop_hf_cache()
     step2_convert()
     step3_cleanup()
     print("\nDone.")
