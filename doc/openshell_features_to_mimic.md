@@ -1,81 +1,64 @@
-With the proxy, activity bridge, and policy engine in place, you now have the infrastructure. The remaining gap is that HME can *observe* coherence but still can't *reason about its own coherence state* across rounds. These are the highest-leverage next moves:
+With all of that in place, HME can observe, score, inject, and surface. The remaining gap is that it still can't *reason about its own accuracy* — it doesn't know whether its model of the system is actually correct, whether its predictions hold, or whether the Evolver is evolving HME itself toward better self-knowledge or just accumulating more of the same kind of knowledge. These are the next tier:
 
 ---
 
-### 1. Real-Time Jurisdiction Injection in the Proxy
+### 1. Hypothesis Lifecycle Registry
 
-The biggest remaining gap the proxy doesn't yet close: hypermeta jurisdiction violations are still caught post-pipeline by `check-hypermeta-jurisdiction.js`. The proxy already sees every inference call before it reaches Claude. Adding live jurisdiction context to the system prompt injection means the Evolver gets warned *as it's about to make an edit*, not after `npm run main` fails.
+The Evolver's journal has a Hypotheses section but it's prose and effectively untracked. HME has no memory of whether a hypothesis was confirmed, refuted, or quietly abandoned. Over 90+ rounds this creates invisible debt — the same hypothesis gets re-proposed because there's no machine-queryable record that it was already tested in R67 and refuted.
 
-When the proxy detects a write-bearing tool call targeting a file in `src/conductor/signal/meta/` or any file touching the 93 locked bias registrations, it injects a jurisdiction summary directly into that call's context — which controller owns this file, what the bias bounds manifest says, what the last `hme_admin` index found. The Evolver can't miss it because it's structural context, not a rule it has to remember.
+A `metrics/hme-hypotheses.json` registry where each entry has a proposer round, a falsification criterion, tested-in rounds, and a status. A new `mcp__HME__hypotheses` tool manages it. The proxy injects open hypotheses that are relevant to the current session's target files, and flags when a proposed evolution would re-test a refuted one.
 
-This closes the loop between static policy enforcement (which runs after) and live cognitive context (which runs before).
+The compounding effect: over time HME accumulates a structured causal epistemology — not just what happened but what was *claimed* to be causal and whether that claim held. That's the foundation for genuine predictive self-awareness.
 
 ---
 
-### 2. KB Staleness Tracking
+### 2. HME Predictive Accuracy Scoring
 
-HME's KB is the system's long-term memory, but right now it has no concept of currency. A KB entry written in R40 about `correlationShuffler.js` may be describing a module that's been through 50 rounds of edits since. The `review(mode='forget')` is reactive — it runs after a round if the Evolver remembers to call it.
+The coherence score measures process quality. What doesn't exist yet is a score for HME's own predictive intelligence: when the cascade indexer predicts that editing module X will affect modules Y and Z, did the post-round fingerprint actually shift in those dimensions?
 
-The activity bridge already emits `file_written` events with module paths. Wire those events to a staleness index:
+Each round, before the pipeline runs, the proxy logs the Evolver's proposed evolutions and their predicted fingerprint impacts. After the pipeline, a reconciler compares predictions against actuals and updates a `metrics/hme-prediction-accuracy.json`:
 
 ```json
-{ "module": "correlationShuffler", "last_kb_update": "R40", "last_file_write": "R91", "staleness_delta": 51, "status": "STALE" }
+{ "round": "R93", "predictions": 6, "confirmed": 4, "refuted": 1, "inconclusive": 1, "accuracy_ema": 0.71 }
 ```
 
-A new `mcp__HME__stale` tool surfaces this index. The proxy injects staleness warnings for any module the Evolver is about to touch where `staleness_delta` exceeds a threshold. More importantly, `review(mode='forget')` becomes targeted — it prioritizes stale entries rather than re-indexing everything uniformly.
-
-Over rounds this prevents the KB from silently diverging from the actual codebase state, which is the single biggest long-run threat to HME's usefulness as a hypermeta layer.
+This is genuinely hypermeta — HME scoring its own model of the system. When accuracy drops, it signals that the KB's structural understanding has drifted from reality, which is a stronger signal than staleness (staleness says a file changed, low accuracy says HME's understanding of what that file does is wrong). The coherence score and prediction accuracy together give HME two orthogonal health dimensions: process discipline and cognitive accuracy.
 
 ---
 
-### 3. Round Coherence Score
+### 3. Pattern Crystallization
 
-Self-coherence currently has no single measurable expression. You have the fingerprint verdict (STABLE/EVOLVED/DRIFTED), the pipeline health, the journal, the violations log — but no metric that asks specifically: *how grounded was this round's evolution in HME's KB?*
+Currently the Evolver reads only the most recent journal entry in Phase 1. Patterns that span many rounds — the antagonism bridge pattern, the dead-end channel harvest methodology, the regime classifier window adjustment — are invisible unless the Evolver manually reads deep history. The KB's `learn()` mechanism captures individual round findings, but multi-round emergent patterns fall between the journal (too verbose, single-entry view) and the KB (populated reactively, not proactively synthesized).
 
-The activity bridge already has everything needed to compute it:
+A `crystallizer` process that runs every N rounds and scans the full journal + activity history for recurring patterns, then promotes them into first-class KB entries with explicit multi-round evidence trails. The antagonism bridge pattern would become a KB entry: "virgin negative-correlation pairs with r < -0.4 consistently yield STABLE fingerprints when bridged; confirmed across R73, R77, R82, R85, R88, R90." The Evolver reads this as a standing principle, not something it has to reconstruct from journal archaeology.
 
-```
-coherence_score = (
-  files_written_with_prior_hme_read / total_files_written
-  * (1 - violation_count * 0.1)
-  * (stale_kb_reads_avoided / total_kb_reads)
-)
-```
-
-Written to `metrics/hme-coherence.json` alongside `fingerprint-comparison.json`. Trended over rounds in the journal header. The Evolver's Phase 1 perception starts including it as a Tier 1 metric alongside the fingerprint verdict.
-
-This turns self-coherence from a qualitative architectural goal into something the system can watch improve or degrade. It also gives HME a payoff signal analogous to what the trust ecology has — the difference being this one scores the *cognitive process* of evolution, not just its compositional outcomes.
+Over rounds this is the difference between HME having memory and HME having *wisdom*.
 
 ---
 
-### 4. Evolver Blind Spot Surfacing
+### 4. Productive Incoherence Detection
 
-The activity bridge accumulates a full history of which files were touched in which rounds. After several rounds you can compute what the Evolver has *systematically avoided* — subsystems it never proposes evolutions for, modules it never reads before editing, signal dimensions it consistently leaves out of its diagnosis.
+The coherence score currently penalizes all violations equally. But there are two fundamentally different kinds: lazy violations (write without HME read because the agent skipped the step) and exploratory violations (write into territory the KB genuinely doesn't cover, where there's nothing meaningful to read first). Penalizing both the same way causes the system to over-constrain exploration — the exact opposite of what HME should do when the KB has low coverage of a file.
 
-A new `mcp__HME__blindspots` tool queries this history and surfaces it during Phase 2 diagnosis:
+The staleness index already knows KB coverage per module. Cross-referencing violations against coverage gives you the distinction:
 
-```
-Subsystems not touched in last 10 rounds: composers (24 files), writer (4 files)
-Modules never read before write in last 20 rounds: voiceModulator, grandFinale
-Signal dimensions absent from last 8 diagnoses: binaural, spectral arc
-```
+- High coverage + no prior read = lazy violation, penalize
+- Low coverage + no prior read = exploratory write, flag but don't penalize, and automatically trigger a `learn()` post-write to capture what was discovered
 
-The Evolver agent's three-layer framework (perceptual/systemic/emergent) is sophisticated but it's running on one agent's attention budget per round. Blind spots accumulate structurally. Surfacing them during diagnosis — not as a critique but as factual coverage data — means the evolution strategy can't get stuck in local optima without HME flagging it.
+A `productive_incoherence` event type in the activity bridge, with a corresponding boost to the coherence score rather than a penalty. This keeps HME disciplined in well-understood territory while actively rewarding the Evolver for pushing into genuinely novel ground — which is the core tension the system needs to navigate to keep evolving rather than converging to a local optimum.
 
 ---
 
-### 5. Causal Chain Indexing
+### 5. Self-Model Consistency Verification
 
-The `find()` tool currently routes to callers, boundary checks, and semantic search. The missing capability is forward-causal traversal: "if I change X, what chains does that trigger?"
+The staleness tracker knows a file was changed. It doesn't know whether HME's semantic understanding of what that file *does* is still accurate. A module can be touched every round in minor ways — constant adjustments, bias tweaks — without triggering a staleness alert, while HME's KB entry describing its fundamental behavior becomes progressively more wrong.
 
-The dependency graph (`metrics/dependency-graph.json` at 573KB) and the feedback graph (`metrics/feedback_graph.json`) already encode most of the topology. The L0 channel map and the antagonism bridge registry (once built) encode the rest. A `mcp__HME__cascade(module)` tool that traverses these graphs and returns the predicted impact chain would give the Evolver something it currently can't do — reason about second and third-order consequences before making an edit, not just after.
+A consistency verifier that periodically re-derives a structural summary of a module from its current source (callers, bias registrations, L0 channel reads/writes, boundary declarations) and diffs it against the KB entry's claims. When the structural signature has diverged significantly from what the KB says — new bias registrations, changed L0 consumption, new callers from unexpected subsystems — it flags that entry as semantically inconsistent, not just stale.
 
-This is particularly valuable for edits to high-centrality modules like `conductorIntelligence` (282 callers) or `emergentRhythmEngine` (consumer of 6 channels, producer of 1, wired into 30+ modules). Right now the Evolver has to hold that topology in working memory. HME knowing it structurally means the proxy can inject it automatically when those modules are in scope.
+This is distinct from staleness because it's about correctness of the KB's model, not recency of its update. HME can have a freshly-updated but semantically wrong entry if `learn()` was called with an inaccurate description. The consistency verifier is HME fact-checking itself.
 
 ---
 
-### The Compounding Effect
+### The Next-Order Effect
 
-These five aren't independent — they compound. The staleness tracker feeds the coherence score. The coherence score feeds the blind spot detector (a subsystem with consistently low coherence scores is a structural blind spot, not just an omission). The causal chain indexer feeds the jurisdiction injection (a write to X automatically surfaces the cascade X triggers, not just X's own constraints).
-
-What you end up with is HME that not only observes coherence violations reactively but proactively models where the *next* violation is most likely to occur and pre-positions context to prevent it. That's the hypermeta layer functioning as genuine nervous system rather than audit trail.
+With all five in place, HME crosses a threshold. It stops being a knowledge base the Evolver consults and becomes a system that actively models its own reliability — tracking what it predicted, whether it was right, what it knows well versus poorly, and where exploration is warranted versus discipline. The coherence score, prediction accuracy, and consistency verification together give the hypermeta layer a genuine self-assessment capability that compounds across rounds rather than resetting each session. That's what closes the gap between HME as nervous system and HME as something closer to self-aware institutional intelligence.
