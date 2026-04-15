@@ -28,6 +28,7 @@ const PRE_COMPOSITION = [
   { label: 'generate-feedback-graph', cmd: 'node scripts/pipeline/generate-feedback-graph.js' },
   { label: 'validate-feedback-graph', cmd: 'node scripts/pipeline/validate-feedback-graph.js' },
   { label: 'check-registration-coherence', cmd: 'node scripts/pipeline/check-registration-coherence.js' },
+  { label: 'check-hme-coherence',     cmd: 'node scripts/pipeline/check-hme-coherence.js' },
   { label: 'check-safe-preboot-audit', cmd: 'node scripts/pipeline/check-safe-preboot-audit.js' },
   { label: 'fix-non-ascii',           cmd: 'node scripts/pipeline/fix-non-ascii.js' },
   { label: 'lint',                    cmd: 'npm run lint' },
