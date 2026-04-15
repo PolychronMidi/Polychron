@@ -37,7 +37,7 @@ exports.classifyMessage = classifyMessage;
 exports.synthesizeNarrative = synthesizeNarrative;
 exports.synthesizeChainSummary = synthesizeChainSummary;
 /**
- * Arbiter — local Ollama model that classifies message complexity and routes
+ * Arbiter — local llama.cpp model that classifies message complexity and routes
  * between Claude (expensive, high capability) and local models (free, fast).
  *
  * When the user selects "auto" route, the arbiter:
@@ -79,12 +79,12 @@ const CLASSIFY_FORMAT = {
     required: ["route", "confidence", "reason"],
 };
 /**
- * Shared NDJSON streaming helper for Ollama API calls.
+ * Shared NDJSON streaming helper for llama.cpp API calls.
  * Accumulates message.content fields across chunks. Throws on HTTP errors,
  * hard timeout, inactivity timeout, or connection failure.
  * Inactivity timer starts at first byte (covers cold model loads before that).
  */
-function ollamaStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
+function llamacppStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
     return new Promise((resolve, reject) => {
         let done = false;
         const fail = (err) => { if (!done) {
@@ -92,12 +92,12 @@ function ollamaStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
             req?.destroy();
             reject(err);
         } };
-        const hardTimer = setTimeout(() => fail(new Error(`Ollama timeout (${hardMs / 1000}s)`)), hardMs);
+        const hardTimer = setTimeout(() => fail(new Error(`llama.cpp timeout (${hardMs / 1000}s)`)), hardMs);
         let inactivityTimer = null;
         const resetInactivity = () => {
             if (inactivityTimer)
                 clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => fail(new Error(`Ollama inactive (${inactivityMs / 1000}s mid-stream)`)), inactivityMs);
+            inactivityTimer = setTimeout(() => fail(new Error(`llama.cpp inactive (${inactivityMs / 1000}s mid-stream)`)), inactivityMs);
         };
         let req;
         req = http.request({
@@ -150,7 +150,7 @@ function ollamaStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
             clearTimeout(hardTimer);
             if (inactivityTimer)
                 clearTimeout(inactivityTimer);
-            const msg = e?.code === "ECONNREFUSED" ? "Ollama not running" : (e?.message ?? String(e));
+            const msg = e?.code === "ECONNREFUSED" ? "llama.cpp not running" : (e?.message ?? String(e));
             fail(new Error(msg));
         });
         req.write(body);
@@ -159,7 +159,7 @@ function ollamaStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
 }
 /**
  * Ask the local arbiter to classify a message.
- * Uses Ollama structured JSON output — eliminates CoT bleed into content field.
+ * Uses llama.cpp structured JSON output — eliminates CoT bleed into content field.
  * Falls back to "claude" on any error; isError=true flags the failure downstream.
  */
 async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
@@ -176,11 +176,11 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
     });
     let contentAccum;
     try {
-        contentAccum = await ollamaStreamNdjson("localhost", 11436, body, 60000, 15000);
+        contentAccum = await llamacppStreamNdjson("localhost", 11436, body, 60000, 15000);
     }
     catch (e) {
         const reason = e?.message?.includes("not running")
-            ? "arbiter unreachable — Ollama not running"
+            ? "arbiter unreachable — llama.cpp not running"
             : `arbiter ${e?.message ?? e}`;
         return { route: "claude", confidence: 0.5, reason, escalated: false, isError: true };
     }
@@ -217,13 +217,13 @@ Digest:`;
     });
     // 180s cap — CPU-only qwen3:4b for 512 tokens can exceed 60s when busy.
     // Narrative is background enrichment; timeout is expected and non-actionable.
-    const content = await ollamaStreamNdjson("localhost", 11436, body, 180000, 30000);
+    const content = await llamacppStreamNdjson("localhost", 11436, body, 180000, 30000);
     return content.trim().slice(0, 500);
 }
 /**
  * Chain link summary — ask local reasoning model to generate a continuation
  * summary for context chaining. Uses qwen3:30b-a3b (GPU, reasoning-capable)
- * on the main Ollama port, not the tiny arbiter model.
+ * on the main llama.cpp port, not the tiny arbiter model.
  */
 async function synthesizeChainSummary(prompt) {
     const body = JSON.stringify({
@@ -232,6 +232,6 @@ async function synthesizeChainSummary(prompt) {
         stream: true,
         options: { temperature: 0.3, num_predict: 2048, num_ctx: 49152 },
     });
-    const content = await ollamaStreamNdjson("localhost", 11434, body, 180000, 30000);
+    const content = await llamacppStreamNdjson("localhost", 11434, body, 180000, 30000);
     return content.trim();
 }

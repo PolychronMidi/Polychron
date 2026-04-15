@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OLLAMA_URL = void 0;
+exports.LLAMACPP_URL = void 0;
 exports.claudeOptsFromMsg = claudeOptsFromMsg;
-exports.ollamaOptsFromMsg = ollamaOptsFromMsg;
-exports.OLLAMA_URL = "http://localhost:11434";
+exports.llamacppOptsFromMsg = llamacppOptsFromMsg;
+exports.LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.0.0.1:8080";
 function claudeOptsFromMsg(msg) {
     return {
         model: msg.claudeModel,
@@ -12,6 +12,6 @@ function claudeOptsFromMsg(msg) {
         permissionMode: "bypassPermissions",
     };
 }
-function ollamaOptsFromMsg(msg) {
-    return { model: msg.ollamaModel, url: exports.OLLAMA_URL };
+function llamacppOptsFromMsg(msg) {
+    return { model: msg.llamacppModel, url: exports.LLAMACPP_URL };
 }

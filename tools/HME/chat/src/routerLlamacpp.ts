@@ -1,8 +1,7 @@
 // llama.cpp chat router — OpenAI /v1/chat/completions client for the chat UI.
 //
-// Replaces the former llamacpp /api/chat client. Exposes legacy symbol names
-// (streamllama.cpp, streamLlamacppAgentic, GPU_NUM_CTX) as aliases so routerHme,
-// chatStreaming, ChatPanel, etc. keep building without a coordinated rename.
+// Replaces the former ollama /api/chat client. Exports streamLlamacpp,
+// streamLlamacppAgentic, and GPU_NUM_CTX for routerHme, chatStreaming, ChatPanel.
 //
 // Wire protocol:
 //   Streaming  → POST /v1/chat/completions with stream: true → SSE frames
@@ -412,9 +411,3 @@ export function streamLlamacppAgentic(
   return abort;
 }
 
-// ── Legacy aliases ────────────────────────────────────────────────────────
-// routerHme, chatStreaming, ChatPanel, and router still import the old
-// llamacpp-flavored names. Alias them to the llama.cpp implementations so
-// nothing else in the chat extension needs to be touched simultaneously.
-export const streamllama.cpp = streamLlamacpp;
-export const streamLlamacppAgentic = streamLlamacppAgentic;

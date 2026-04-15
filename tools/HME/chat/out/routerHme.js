@@ -44,7 +44,7 @@ exports.isHmeShimReady = isHmeShimReady;
 exports.logShimError = logShimError;
 exports.streamHybrid = streamHybrid;
 const http = __importStar(require("http"));
-const routerOllama_1 = require("./routerOllama");
+const routerLlamacpp_1 = require("./routerLlamacpp");
 const streamUtils_1 = require("./streamUtils");
 const HME_HTTP_PORT = 7734;
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
@@ -156,5 +156,5 @@ async function streamHybrid(message, history, opts, workingDir, onChunk, onDone,
     ].join("").trim();
     messages.push({ role: "system", content: systemContent });
     messages.push(...history, { role: "user", content: message });
-    return (0, routerOllama_1.streamOllamaAgentic)(messages, opts, workingDir, onChunk, onDone, onError);
+    return (0, routerLlamacpp_1.streamLlamacppAgentic)(messages, opts, workingDir, onChunk, onDone, onError);
 }

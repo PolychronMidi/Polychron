@@ -10,7 +10,7 @@ export const AGENTIC_SYSTEM_PROMPT =
   "When asked to perform a task — create files, edit code, run commands, implement features — " +
   "call the appropriate tool immediately. Never respond with suggestions, plans, or code blocks " +
   "without calling a tool first.";
-export const OLLAMA_OUTPUT_BUFFER = 4096;
+export const LLAMACPP_OUTPUT_BUFFER = 4096;
 
 export function uid(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -27,7 +27,7 @@ export function trimHistoryToFit(
   currentMsg: string,
   extraMessages: LlamacppMessage[] = []
 ): LlamacppMessage[] {
-  const budget = GPU_NUM_CTX - OLLAMA_OUTPUT_BUFFER;
+  const budget = GPU_NUM_CTX - LLAMACPP_OUTPUT_BUFFER;
   const fixedTokens = estimateTokens([...extraMessages, { content: currentMsg }]);
   const available = budget - fixedTokens;
   if (available <= 0) return [];

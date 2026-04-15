@@ -183,7 +183,7 @@ function runStream(opts: RunStreamOpts): { cancel: () => void; handle: HarnessHa
 
 interface FinalizeOpts {
   includeThinking?: boolean;
-  pushllama.cpp?: boolean;
+  pushLlamacpp?: boolean;
   userText?: string;
   checkChain?: boolean;
   model?: string;
@@ -210,7 +210,7 @@ function finalizeStream(
   if (opts.includeThinking && h.state.thinking) msg.thinking = h.state.thinking;
   h.tracker.finalize(msg);
   h.postStreamEnd();
-  if (opts.pushllama.cpp && opts.userText !== undefined) {
+  if (opts.pushLlamacpp && opts.userText !== undefined) {
     ctx.state.llamacppHistory.push({ role: "user", content: opts.userText });
     ctx.state.llamacppHistory.push({ role: "assistant", content: h.state.text });
   }
@@ -306,7 +306,7 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
   });
 }
 
-export function streamllama.cppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
+export function streamLlamacppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const contextMessages = contextPrefixMessages(msg._contextPrefix);
   const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
   const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
@@ -316,7 +316,7 @@ export function streamllama.cppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: 
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        finalizeStream(h, ctx, assistantId, "local", { pushllama.cpp: true, userText: msg.text, model: msg.llamacppModel });
+        finalizeStream(h, ctx, assistantId, "local", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
         h.safeEnd();
       };
       h.setCancel(streamLlamacppAgentic(
@@ -342,7 +342,7 @@ export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
     start: (h) => {
       const onDone = () => {
         if (h.isAborted()) return;
-        finalizeStream(h, ctx, assistantId, "hybrid", { pushllama.cpp: true, userText: msg.text, model: msg.llamacppModel });
+        finalizeStream(h, ctx, assistantId, "hybrid", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
         h.safeEnd();
       };
       const onError = (err: string) => {
@@ -378,7 +378,7 @@ export function streamAgentMsg(
       const onDone = () => {
         if (h.isAborted()) return;
         finalizeStream(h, ctx, assistantId, label, {
-          pushllama.cpp: label === "local", userText: msg.text,
+          pushLlamacpp: label === "local", userText: msg.text,
           model: msg.llamacppModel, skipMirror: true,
         });
         h.safeEnd();
