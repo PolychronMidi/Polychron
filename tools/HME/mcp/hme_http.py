@@ -93,45 +93,94 @@ def _rag_route() -> str:
     return route
 
 
-class _RagRouterProxy:
-    """Delegates encode/predict to the GPU or CPU instance based on arbiter busy state.
+class _RagDispatcher:
+    """Queue-aware dispatcher over a (GPU, CPU) worker pair.
 
-    Presents the same attribute surface (.encode / .predict / .device) as the
-    underlying SentenceTransformer or CrossEncoder so callers in rag_engine/
-    don't need to know which backend they're hitting.
+    Replaces the old _RagRouterProxy. Acquire semantics:
+      1. Prefer GPU when the daemon reports the RAG GPU is idle AND the GPU
+         worker's slot is free.
+      2. Fall back to the CPU mirror when the GPU is contended OR its slot
+         is held by another in-flight RAG call.
+      3. When both slots are held, the caller blocks on a condition variable
+         and is woken by the next release. Re-polls the daemon flag every
+         second in case arbiter finished mid-wait.
+
+    Both workers get a semaphore with one slot. When multiple concurrent
+    encode/predict calls arrive, they stack across the two workers (first
+    takes GPU, second takes CPU) and additional callers queue on the CV.
+    The first free compatible worker wins the next waiter.
+
+    If only one worker exists (CPU load failed, or GPU-only mode), the
+    dispatcher degrades to that single worker with straightforward blocking
+    acquire. Full interface compatibility with SentenceTransformer /
+    CrossEncoder — .encode, .predict, .device, and arbitrary attribute
+    delegation via __getattr__.
     """
-
-    __slots__ = ("_gpu", "_cpu", "_label")
 
     def __init__(self, gpu_instance, cpu_instance, label: str):
         self._gpu = gpu_instance
         self._cpu = cpu_instance
         self._label = label
+        self._gpu_sem = threading.Semaphore(1) if gpu_instance is not None else None
+        self._cpu_sem = threading.Semaphore(1) if cpu_instance is not None else None
+        self._cv = threading.Condition()
 
-    def _pick(self):
-        if self._cpu is None:
-            return self._gpu
-        if self._gpu is None:
-            return self._cpu
-        return self._cpu if _rag_route() == "cpu" else self._gpu
+    def _acquire(self):
+        """Return (instance, release_fn). Blocks until a worker is free."""
+        # Fast paths for degraded modes
+        if self._gpu is None and self._cpu is not None:
+            self._cpu_sem.acquire()
+            return self._cpu, self._release_cpu
+        if self._cpu is None and self._gpu is not None:
+            self._gpu_sem.acquire()
+            return self._gpu, self._release_gpu
+
+        with self._cv:
+            while True:
+                # 1. Prefer GPU if daemon says GPU is free and slot is open
+                if _rag_route() == "gpu" and self._gpu_sem.acquire(blocking=False):
+                    return self._gpu, self._release_gpu
+                # 2. Fall back to CPU if slot is open
+                if self._cpu_sem.acquire(blocking=False):
+                    return self._cpu, self._release_cpu
+                # 3. Both slots held — wait for a release (re-poll daemon at 1s)
+                self._cv.wait(timeout=1.0)
+
+    def _release_gpu(self):
+        with self._cv:
+            self._gpu_sem.release()
+            self._cv.notify_all()
+
+    def _release_cpu(self):
+        with self._cv:
+            self._cpu_sem.release()
+            self._cv.notify_all()
 
     def encode(self, *args, **kwargs):
-        inst = self._pick()
-        return inst.encode(*args, **kwargs)
+        inst, release = self._acquire()
+        try:
+            return inst.encode(*args, **kwargs)
+        finally:
+            release()
 
     def predict(self, *args, **kwargs):
-        inst = self._pick()
-        return inst.predict(*args, **kwargs)
+        inst, release = self._acquire()
+        try:
+            return inst.predict(*args, **kwargs)
+        finally:
+            release()
 
     @property
     def device(self):
-        inst = self._pick()
+        inst = self._gpu if self._gpu is not None else self._cpu
         return getattr(inst, "device", "unknown")
 
     def __getattr__(self, name):
-        # Delegate anything else (tokenizer access, max_seq_length, etc.) to
-        # the GPU instance if present, else the CPU instance.
-        inst = self._gpu if self._gpu is not None else self._cpu
+        # Delegate non-dispatch attributes (tokenizer, max_seq_length, etc.)
+        # to whichever instance exists, preferring GPU for config consistency.
+        inst = self.__dict__.get("_gpu") or self.__dict__.get("_cpu")
+        if inst is None:
+            raise AttributeError(name)
         return getattr(inst, name)
 _lib_engines: dict = {}  # key = lib_rel path
 
@@ -316,12 +365,12 @@ def _load_engines():
         if _rag_device.startswith("cuda"):
             os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-        # Wrap code_model + reranker in _RagRouterProxy so per-call dispatch can
-        # swing to the CPU mirror whenever the arbiter is busy on GPU0 (daemon
-        # /rag-route answers 'cpu'). The text_model (bge ONNX) is CPU-only and
-        # stays unwrapped.
-        _code_model_router = _RagRouterProxy(_shared_code_model, _shared_code_model_cpu, "code")
-        _reranker_router = _RagRouterProxy(_shared_reranker, _shared_reranker_cpu, "reranker") if _shared_reranker is not None else None
+        # Wrap code_model + reranker in _RagDispatcher so concurrent requests
+        # stack across the GPU + CPU-mirror worker pair and the next free
+        # compatible worker serves each queued waiter. The text_model (bge
+        # ONNX) is CPU-only and stays unwrapped.
+        _code_model_router = _RagDispatcher(_shared_code_model, _shared_code_model_cpu, "code")
+        _reranker_router = _RagDispatcher(_shared_reranker, _shared_reranker_cpu, "reranker") if _shared_reranker is not None else None
 
         _project_engine = RAGEngine(
             PROJECT_DB, model_name=MODEL_NAME,

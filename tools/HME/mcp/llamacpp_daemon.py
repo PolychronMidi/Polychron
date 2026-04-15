@@ -388,27 +388,84 @@ class _Supervisor:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  Arbiter-busy flag + RAG routing
+#  RAG-GPU-busy flag + routing
 # ══════════════════════════════════════════════════════════════════════════
-# Simple binary flag: set when an arbiter request starts, cleared when it
-# finishes. RAG embed/rerank calls read this flag to choose GPU (arbiter
-# idle) or CPU mirror (arbiter working) so embedding work never contends
-# with an in-flight arbiter generation on the same GPU.
+# Flag represents "some LLM instance is actively generating on the GPU that
+# the RAG stack (jina + bge-reranker) lives on". RAG embed/rerank calls read
+# this flag to route GPU (idle) or CPU mirror (busy) so embedding work never
+# contends with an in-flight generation on the same physical GPU.
+#
+# Semantics (vs the old `arbiter_busy` flag):
+#   - Not name-based. Any instance whose spec.device matches the RAG GPU's
+#     Vulkan tag flips the flag. Default: arbiter's device (assumption holds
+#     unless HME_RAG_VULKAN overrides it).
+#   - Watchdog: if flag stays set for > WATCHDOG_S the daemon force-clears
+#     with a warning so a bug in set/clear pairing can't permanently strand
+#     RAG on CPU.
+#   - Backcompat shims below preserve `arbiter_busy_set / _clear /
+#     _arbiter_busy.is_set()` for any old callers.
 
-_arbiter_busy = threading.Event()
+_rag_gpu_busy = threading.Event()
+_rag_gpu_busy_set_ts = 0.0
+_rag_gpu_busy_lock = threading.Lock()
+_RAG_GPU_WATCHDOG_S = 300.0  # 5 min max — longest legit arbiter generation
+
+
+def rag_gpu_busy_set() -> None:
+    global _rag_gpu_busy_set_ts
+    with _rag_gpu_busy_lock:
+        _rag_gpu_busy.set()
+        _rag_gpu_busy_set_ts = time.time()
+
+
+def rag_gpu_busy_clear() -> None:
+    with _rag_gpu_busy_lock:
+        _rag_gpu_busy.clear()
+
+
+def _rag_gpu_busy_current() -> bool:
+    """Read flag with watchdog — auto-clear if held past WATCHDOG_S."""
+    with _rag_gpu_busy_lock:
+        if _rag_gpu_busy.is_set():
+            age = time.time() - _rag_gpu_busy_set_ts
+            if age > _RAG_GPU_WATCHDOG_S:
+                logger.warning(
+                    f"rag_gpu_busy watchdog: flag held {age:.0f}s > {_RAG_GPU_WATCHDOG_S:.0f}s — "
+                    f"force-clearing. Check for a stuck generation or missing /arbiter-busy clear."
+                )
+                _rag_gpu_busy.clear()
+                return False
+            return True
+        return False
+
+
+# Backcompat aliases (old /arbiter-busy endpoint + inline calls)
+_arbiter_busy = _rag_gpu_busy
 
 
 def arbiter_busy_set() -> None:
-    _arbiter_busy.set()
+    rag_gpu_busy_set()
 
 
 def arbiter_busy_clear() -> None:
-    _arbiter_busy.clear()
+    rag_gpu_busy_clear()
 
 
 def rag_route() -> str:
-    """Return 'cpu' if the arbiter is currently processing a request, else 'gpu'."""
-    return "cpu" if _arbiter_busy.is_set() else "gpu"
+    """Return 'cpu' if the RAG GPU is currently under generation load, else 'gpu'."""
+    return "cpu" if _rag_gpu_busy_current() else "gpu"
+
+
+def _resolve_rag_gpu_device(instances: list) -> str | None:
+    """The Vulkan tag of the physical GPU that RAG lives on. Explicit
+    HME_RAG_VULKAN env overrides; default is the arbiter instance's device."""
+    explicit = os.environ.get("HME_RAG_VULKAN", "").strip()
+    if explicit:
+        return explicit
+    for spec in instances:
+        if spec.name == "arbiter":
+            return spec.device
+    return None
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -476,9 +533,18 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
 
     result_box: list = [None, None]  # [response_dict, error_string]
-    is_arbiter = any(spec.alias == model and spec.name == "arbiter" for spec in instances)
-    if is_arbiter:
-        arbiter_busy_set()
+    # Flip the RAG-GPU flag if the target instance lives on the RAG GPU.
+    # Device-based, not name-based: any generator sharing RAG's physical GPU
+    # should gate RAG onto the CPU mirror for the duration of the call.
+    rag_gpu_device = _resolve_rag_gpu_device(instances)
+    target_spec = next((spec for spec in instances if spec.alias == model), None)
+    contends_with_rag = (
+        rag_gpu_device is not None
+        and target_spec is not None
+        and target_spec.device == rag_gpu_device
+    )
+    if contends_with_rag:
+        rag_gpu_busy_set()
 
     def _worker():
         try:
@@ -514,8 +580,8 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             "total_duration": 0,
         }
     finally:
-        if is_arbiter:
-            arbiter_busy_clear()
+        if contends_with_rag:
+            rag_gpu_busy_clear()
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -558,14 +624,21 @@ class _Handler(BaseHTTPRequestHandler):
                 s.get("last_health_ok", 0) > time.time() - _HEALTH_INTERVAL * 2
                 for s in stats
             ) if stats else False
+            _busy = _rag_gpu_busy_current()
             self._send_json(200, {
                 "status": "ready" if all_healthy else "degraded",
                 "training_locked": _training_locked(),
                 "instances": stats,
-                "arbiter_busy": _arbiter_busy.is_set(),
+                "arbiter_busy": _busy,       # legacy alias
+                "rag_gpu_busy": _busy,
             })
         elif self.path == "/rag-route":
-            self._send_json(200, {"route": rag_route(), "arbiter_busy": _arbiter_busy.is_set()})
+            _busy = _rag_gpu_busy_current()
+            self._send_json(200, {
+                "route": "cpu" if _busy else "gpu",
+                "arbiter_busy": _busy,       # legacy alias
+                "rag_gpu_busy": _busy,
+            })
         elif self.path == "/stats":
             self._send_json(200, {"instances": _supervisor_singleton.stats()})
         else:
