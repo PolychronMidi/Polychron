@@ -544,9 +544,9 @@
     },
     {
       "id": "no-mcp-side-timeouts-synthesis",
-      "description": "llama.cpp wall-clock enforcement belongs exclusively in llamacpp_daemon.py. No synthesis file may spawn a thread and join(timeout=) on it — the daemon does this internally. Previously exempted _local_chat has been rerouted through _daemon_generate.",
+      "description": "llama.cpp wall-clock enforcement belongs exclusively in llamacpp_daemon.py. No synthesis file may (a) spawn a thread and join(timeout=) on it, or (b) urlopen a llama-server inference URL (_LLAMACPP_ARBITER_URL / _LLAMACPP_CODER_URL) directly — all inference must route through _daemon_generate. Health/probe endpoints (/health, /api/ps) are exempt since they are not inference. _cancellable_urlopen is the preemption primitive and is exempt via marker.",
       "type": "shell_output_empty",
-      "shell": "grep -n \"join(timeout=\" tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null",
+      "shell": "grep -nE \"join\\(timeout=\" tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/synthesis_warm.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null; grep -nE \"urlopen\\([^)]*_LLAMACPP_(ARBITER|CODER)_URL\" tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_warm.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py 2>/dev/null | grep -vE \"/health|/api/ps|# preemption-ok\"",
       "severity": "error"
     },
     {
