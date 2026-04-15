@@ -110,6 +110,26 @@ def status(mode: str = "all") -> str:
         from .crystallizer import crystallized_report as _cr
         return _cr()
 
+    if mode == "music_truth":
+        from .epistemic_reports import music_truth_report as _mt
+        return _mt()
+
+    if mode == "kb_trust":
+        from .epistemic_reports import kb_trust_report as _kt
+        return _kt()
+
+    if mode == "intention_gap":
+        from .epistemic_reports import intention_gap_report as _ig
+        return _ig()
+
+    if mode == "self_audit":
+        from .self_audit import self_audit_report as _sa
+        return _sa()
+
+    if mode == "probes":
+        from .probe import probes_report as _pr
+        return _pr()
+
     if mode == "freshness":
         return _freshness_report()
 

@@ -1,0 +1,251 @@
+// scripts/pipeline/compute-musical-correlation.js
+//
+// Phase 4.1 of openshell_features_to_mimic.md — the external anchor.
+//
+// Every HME metric so far (coherence score, prediction accuracy, staleness,
+// drift, crystallization confidence) is internally circular. A perfectly
+// coherent HME that produces musically incoherent compositions has
+// optimized the wrong thing entirely. This script correlates HME's own
+// per-round self-assessment with the actual musical output the pipeline
+// produced and treats that correlation as the ground-truth validator for
+// everything HME does.
+//
+// Data sources (all already present post-pipeline):
+//   metrics/hme-coherence.json              round coherence score (Phase 2.3)
+//   metrics/hme-prediction-accuracy.json    EMA + per-round history (Phase 3.4)
+//   metrics/fingerprint-comparison.json     STABLE/EVOLVED/DRIFTED verdict
+//   metrics/perceptual-report.json          EnCodec entropy + CLAP similarity
+//
+// Output: metrics/hme-musical-correlation.json containing a per-round
+// snapshot plus rolling-window Pearson correlations between each HME
+// self-assessment signal and each musical-reality signal. If the
+// correlations drop below a threshold (default 0.2), we emit a LIFESAVER
+// warning because it means HME's self-model has structurally decoupled
+// from musical outcomes.
+//
+// Non-fatal. Runs post-composition after both compute-coherence-score.js
+// and reconcile-predictions.js have written their files.
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '../..');
+const COHERENCE    = path.join(ROOT, 'metrics', 'hme-coherence.json');
+const ACCURACY     = path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json');
+const FINGERPRINT  = path.join(ROOT, 'metrics', 'fingerprint-comparison.json');
+const PERCEPTUAL   = path.join(ROOT, 'metrics', 'perceptual-report.json');
+const OUT          = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
+
+const ROLLING_WINDOW = 20;
+const HISTORY_CAP = 60;
+const WARN_THRESHOLD = parseFloat(process.env.HME_MUSICAL_WARN_THRESHOLD || '0.2');
+
+function loadJsonMaybe(p) {
+  if (!fs.existsSync(p)) return null;
+  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
+  catch (_e) { return null; }
+}
+
+function extractPerceptualSignals(p) {
+  // Returns { complexity_avg, clap_tension, encodec_entropy_avg } — all 0..1ish
+  if (!p || typeof p !== 'object') return null;
+  const out = { complexity_avg: null, clap_tension: null, encodec_entropy_avg: null };
+
+  // EnCodec section-level tension (average over all sections)
+  const sections = p.encodec && p.encodec.sections;
+  if (sections && typeof sections === 'object') {
+    const tensions = [];
+    const entropies = [];
+    for (const secKey of Object.keys(sections)) {
+      const sec = sections[secKey];
+      if (sec && typeof sec.tension === 'number') tensions.push(sec.tension);
+      if (sec && sec.entropies && typeof sec.entropies === 'object') {
+        for (const v of Object.values(sec.entropies)) {
+          if (typeof v === 'number') entropies.push(v);
+        }
+      }
+    }
+    if (tensions.length > 0) {
+      out.complexity_avg = tensions.reduce((a, b) => a + b, 0) / tensions.length;
+    }
+    if (entropies.length > 0) {
+      out.encodec_entropy_avg = entropies.reduce((a, b) => a + b, 0) / entropies.length;
+    }
+  }
+
+  // CLAP tension query peak (single scalar that represents "does this
+  // composition register as tension-building to a music model?")
+  const clap = p.clap && p.clap.queries;
+  if (clap && typeof clap === 'object') {
+    // Prefer explicit tension query; fall back to average peak
+    const preferredKey = Object.keys(clap).find((k) => /tension/i.test(k));
+    if (preferredKey && typeof clap[preferredKey].peak === 'number') {
+      out.clap_tension = clap[preferredKey].peak;
+    } else {
+      const peaks = Object.values(clap)
+        .map((q) => (q && typeof q.peak === 'number' ? q.peak : null))
+        .filter((x) => x !== null);
+      if (peaks.length > 0) {
+        out.clap_tension = peaks.reduce((a, b) => a + b, 0) / peaks.length;
+      }
+    }
+  }
+  return out;
+}
+
+function pearson(xs, ys) {
+  // Returns Pearson r, or null if undefined (zero-variance or <3 points)
+  const n = Math.min(xs.length, ys.length);
+  if (n < 3) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0;
+  let dx2 = 0;
+  let dy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - mx;
+    const dy = ys[i] - my;
+    num += dx * dy;
+    dx2 += dx * dx;
+    dy2 += dy * dy;
+  }
+  if (dx2 === 0 || dy2 === 0) return null;
+  return num / Math.sqrt(dx2 * dy2);
+}
+
+function main() {
+  const coherence   = loadJsonMaybe(COHERENCE);
+  const accuracy    = loadJsonMaybe(ACCURACY);
+  const fingerprint = loadJsonMaybe(FINGERPRINT);
+  const perceptual  = loadJsonMaybe(PERCEPTUAL);
+  const prev        = loadJsonMaybe(OUT);
+
+  const hmeCoherence = coherence && typeof coherence.score === 'number' ? coherence.score : null;
+  const hmeAccuracy  = accuracy && typeof accuracy.ema === 'number' ? accuracy.ema : null;
+  const verdict      = (fingerprint && (fingerprint.verdict || fingerprint.result)) || null;
+  const percSignals  = extractPerceptualSignals(perceptual) || {};
+
+  // Verdict → numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0, other=0.5
+  const verdictMap = { STABLE: 1, EVOLVED: 1.1, DRIFTED: 0, UNKNOWN: 0.5 };
+  const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;
+
+  const snapshot = {
+    timestamp: new Date().toISOString(),
+    hme_coherence: hmeCoherence,
+    hme_prediction_accuracy: hmeAccuracy,
+    fingerprint_verdict: verdict,
+    verdict_numeric: verdictNumeric,
+    perceptual_complexity_avg: percSignals.complexity_avg,
+    clap_tension: percSignals.clap_tension,
+    encodec_entropy_avg: percSignals.encodec_entropy_avg,
+  };
+
+  // Append to history
+  const history = Array.isArray(prev && prev.history) ? prev.history.slice() : [];
+  history.push(snapshot);
+  const trimmed = history.slice(-HISTORY_CAP);
+
+  // Compute rolling-window correlations over the last ROLLING_WINDOW rounds
+  const window = trimmed.slice(-ROLLING_WINDOW);
+  const xs = {
+    coherence: window.map((s) => s.hme_coherence).filter((x) => typeof x === 'number'),
+    accuracy: window.map((s) => s.hme_prediction_accuracy).filter((x) => typeof x === 'number'),
+  };
+  const ys = {
+    verdict: window.map((s) => s.verdict_numeric).filter((x) => typeof x === 'number'),
+    complexity: window.map((s) => s.perceptual_complexity_avg).filter((x) => typeof x === 'number'),
+    clap: window.map((s) => s.clap_tension).filter((x) => typeof x === 'number'),
+  };
+
+  // For correlation we need aligned pairs
+  function aligned(xKey, yKey) {
+    const pairs = [];
+    for (const s of window) {
+      const xv = s[xKey];
+      const yv = s[yKey];
+      if (typeof xv === 'number' && typeof yv === 'number') {
+        pairs.push([xv, yv]);
+      }
+    }
+    return {
+      xs: pairs.map((p) => p[0]),
+      ys: pairs.map((p) => p[1]),
+      n: pairs.length,
+    };
+  }
+
+  const correlations = {};
+  const targets = [
+    ['hme_coherence', 'verdict_numeric'],
+    ['hme_coherence', 'perceptual_complexity_avg'],
+    ['hme_coherence', 'clap_tension'],
+    ['hme_prediction_accuracy', 'verdict_numeric'],
+    ['hme_prediction_accuracy', 'perceptual_complexity_avg'],
+    ['hme_prediction_accuracy', 'clap_tension'],
+  ];
+  for (const [xk, yk] of targets) {
+    const { xs: xv, ys: yv, n } = aligned(xk, yk);
+    const r = pearson(xv, yv);
+    correlations[`${xk}__${yk}`] = { r, n };
+  }
+
+  // Aggregate: is HME coherence meaningfully tracking something external?
+  const validCorrelations = Object.values(correlations)
+    .map((c) => c.r)
+    .filter((r) => typeof r === 'number');
+  const strongestCorrelation = validCorrelations.length
+    ? validCorrelations.reduce((a, b) => (Math.abs(a) > Math.abs(b) ? a : b))
+    : null;
+
+  let warning = null;
+  if (
+    window.length >= 5 &&
+    strongestCorrelation !== null &&
+    Math.abs(strongestCorrelation) < WARN_THRESHOLD
+  ) {
+    warning = (
+      `FATAL: HME self-assessment has decoupled from musical outcomes. ` +
+      `Strongest correlation over ${window.length} rounds is ${strongestCorrelation.toFixed(2)} ` +
+      `(threshold ${WARN_THRESHOLD}). HME is optimizing its own metrics without ` +
+      `that optimization translating to musical coherence. Audit the coherence ` +
+      `score formula and prediction-accuracy definition.`
+    );
+  }
+
+  const report = {
+    meta: {
+      script: 'compute-musical-correlation.js',
+      timestamp: new Date().toISOString(),
+      history_length: trimmed.length,
+      rolling_window: ROLLING_WINDOW,
+      warn_threshold: WARN_THRESHOLD,
+    },
+    latest: snapshot,
+    correlations,
+    strongest_correlation: strongestCorrelation,
+    warning,
+    history: trimmed,
+  };
+
+  fs.mkdirSync(path.dirname(OUT), { recursive: true });
+  fs.writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n');
+
+  const bits = [];
+  bits.push(`coh=${hmeCoherence !== null ? (hmeCoherence * 100).toFixed(0) + '%' : 'n/a'}`);
+  bits.push(`acc=${hmeAccuracy !== null ? (hmeAccuracy * 100).toFixed(0) + '%' : 'n/a'}`);
+  bits.push(`verdict=${verdict || '?'}`);
+  bits.push(
+    `perc_tension=${percSignals.complexity_avg !== null && percSignals.complexity_avg !== undefined ? percSignals.complexity_avg.toFixed(2) : 'n/a'}`,
+  );
+  bits.push(
+    `strongest_r=${strongestCorrelation !== null ? strongestCorrelation.toFixed(2) : 'n/a'}`,
+  );
+  console.log(`compute-musical-correlation: ${bits.join('  ')}`);
+  if (warning) {
+    console.warn(warning);
+  }
+}
+
+main();

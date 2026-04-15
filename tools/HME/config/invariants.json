@@ -835,6 +835,67 @@
         "Open hypotheses"
       ],
       "severity": "error"
+    },
+    {
+      "id": "musical-correlation-script-exists",
+      "description": "Phase 4.1 \u2014 musical ground truth correlator must exist (the external anchor)",
+      "type": "file_exists",
+      "path": "scripts/pipeline/compute-musical-correlation.js",
+      "severity": "error"
+    },
+    {
+      "id": "kb-trust-weights-script-exists",
+      "description": "Phase 4.2 \u2014 KB trust weight computer must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/compute-kb-trust-weights.py",
+      "severity": "error"
+    },
+    {
+      "id": "intention-gap-script-exists",
+      "description": "Phase 4.3 \u2014 intention-execution gap tracker must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/compute-intention-gap.js",
+      "severity": "error"
+    },
+    {
+      "id": "self-audit-module-exists",
+      "description": "Phase 4.4 \u2014 HME self-audit module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/self_audit.py",
+      "severity": "error"
+    },
+    {
+      "id": "probe-module-exists",
+      "description": "Phase 4.5 \u2014 adversarial probe generator must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/probe.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase4-pipeline-steps-wired",
+      "description": "main-pipeline.js POST_COMPOSITION must run all 3 Phase 4 scripts",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "patterns": [
+        "compute-musical-correlation\\.js",
+        "compute-kb-trust-weights\\.py",
+        "compute-intention-gap\\.js"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "phase4-status-modes",
+      "description": "status_unified must dispatch the Phase 4 modes (music_truth, kb_trust, intention_gap, self_audit, probes)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "patterns": [
+        "mode == \"music_truth\"",
+        "mode == \"kb_trust\"",
+        "mode == \"intention_gap\"",
+        "mode == \"self_audit\"",
+        "mode == \"probes\""
+      ],
+      "severity": "error"
     }
   ]
 }
