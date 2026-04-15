@@ -85,7 +85,7 @@ def _rag_route() -> str:
         import urllib.request as _ur
         with _ur.urlopen(f"{_LLAMACPP_DAEMON_URL}/rag-route", timeout=0.2) as resp:
             data = json.loads(resp.read())
-            route = data.get("route") or "gpu"
+            route = data["route"]
     except Exception as _e:
         logger.debug(f"_rag_route: daemon unreachable ({type(_e).__name__}), defaulting to gpu")
         route = "gpu"
