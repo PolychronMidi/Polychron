@@ -575,8 +575,8 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             "response": text,
             "done": True,
             "done_reason": "stop",
-            "prompt_eval_count": usage.get("prompt_tokens", 0),
-            "eval_count": usage.get("completion_tokens", 0),
+            "prompt_eval_count": usage.get("prompt_tokens") or 0,
+            "eval_count": usage.get("completion_tokens") or 0,
             "total_duration": 0,
         }
     finally:
@@ -621,7 +621,7 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             stats = _supervisor_singleton.stats()
             all_healthy = all(
-                s.get("last_health_ok", 0) > time.time() - _HEALTH_INTERVAL * 2
+                (s.get("last_health_ok") or 0) > time.time() - _HEALTH_INTERVAL * 2
                 for s in stats
             ) if stats else False
             _busy = _rag_gpu_busy_current()
@@ -646,7 +646,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            length = int(self.headers.get("Content-Length", 0))
+            length = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(length)) if length else {}
         except Exception:
             self._send_json(400, {"error": "bad request"})

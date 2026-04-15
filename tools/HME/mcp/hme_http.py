@@ -85,8 +85,9 @@ def _rag_route() -> str:
         import urllib.request as _ur
         with _ur.urlopen(f"{_LLAMACPP_DAEMON_URL}/rag-route", timeout=0.2) as resp:
             data = json.loads(resp.read())
-            route = data.get("route", "gpu")
-    except Exception:
+            route = data.get("route") or "gpu"
+    except Exception as _e:
+        logger.debug(f"_rag_route: daemon unreachable ({type(_e).__name__}), defaulting to gpu")
         route = "gpu"
     _rag_route_cache["route"] = route
     _rag_route_cache["ts"] = now
@@ -207,8 +208,8 @@ def _ensure_llamacpp_daemon():
         with _urlreq.urlopen(_urlreq.Request("http://127.0.0.1:7735/health"), timeout=1) as _r:
             if _r.status == 200:
                 return  # already running
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug(f"_ensure_llamacpp_daemon: daemon probe failed ({type(_e).__name__}), will spawn")
     import subprocess
     env = os.environ.copy()
     env["PROJECT_ROOT"] = PROJECT_ROOT
