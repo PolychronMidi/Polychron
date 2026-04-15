@@ -33,7 +33,7 @@ RELOADABLE = [
     "read_unified", "learn_unified", "status_unified", "trace_unified",
     "todo", "enrich_prompt", "tools_passthru",
 ]
-TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge"]
+TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]
 
 

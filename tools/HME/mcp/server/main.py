@@ -179,6 +179,16 @@ def _background_load():
             context.shared_model = context.project_engine.model
             context.lib_engines = get_lib_engines()
             start_proxy_monitor()
+            # Ensure llama-server instances are up before the monitor loop
+            # starts supervising them. sessionstart.sh handles cold boot from
+            # the bash side; this handles MCP process restarts that happen
+            # mid-session (e.g. hot-reload, crash recovery).
+            try:
+                from server import llamacpp_supervisor as _sup
+                _sup_status = _sup.ensure_all_running()
+                logger.info(f"llamacpp_supervisor: {_sup_status}")
+            except Exception as _sup_err:
+                logger.warning(f"llamacpp_supervisor startup failed: {type(_sup_err).__name__}: {_sup_err}")
             logger.info(f"HME ready (proxy mode) | project={PROJECT_ROOT} | libs={list(context.lib_engines.keys())}")
         else:
             logger.warning("HTTP shim unavailable — loading RAG engines locally (duplicate, wasteful)")

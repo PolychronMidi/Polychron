@@ -123,35 +123,57 @@ def _load_engines():
         os.makedirs(GLOBAL_DB, exist_ok=True)
 
         # Device selection with VRAM reservation:
-        # llama-server instances hold ~9.5 GB (arbiter on GPU1) + ~19 GB (coder
-        # on GPU0) plus compute buffers. Never land a sentence-transformer on a
-        # GPU that doesn't have at least _MIN_FREE_GB free AFTER those are loaded.
-        # Default: require 6 GB free for the shim's RAG stack (bge, jina, reranker
-        # together peak around 4-5 GB in steady state).
+        # llama-server instances hold ~9.5 GB (arbiter, Vulkan1 = GPU0) + ~19 GB
+        # (coder, Vulkan2 = GPU1) plus compute buffers. Never land a
+        # sentence-transformer on a GPU that doesn't have at least _MIN_FREE_GB
+        # free AFTER those are loaded. The llamacpp_supervisor owns that
+        # allocation — see server/llamacpp_supervisor.py for the authoritative
+        # topology. Default: require 6 GB free for the shim's RAG stack
+        # (bge, jina, reranker together peak around 4-5 GB in steady state).
         # Override via HME_RAG_MIN_FREE_GB.
         _MIN_FREE_GB = float(os.environ.get("HME_RAG_MIN_FREE_GB", "6"))
         _rag_device = "cpu"
+        # HME_RAG_GPU: explicit override. Defaults to "0" so the RAG stack
+        # lands on GPU0 (co-resident with the arbiter) and leaves GPU1
+        # completely clear for the coder llama-server. Set to "-1" to force
+        # CPU; set to "auto" to fall back to the free-memory heuristic.
+        _rag_gpu_env = os.environ.get("HME_RAG_GPU", "0").strip()
         try:
             import torch
             if torch.cuda.is_available():
-                _best_gpu = -1
-                _best_free = 0
-                for _gpu_idx in range(torch.cuda.device_count()):
+                if _rag_gpu_env == "-1":
+                    pass  # explicit CPU
+                elif _rag_gpu_env == "auto":
+                    _best_gpu = -1
+                    _best_free = 0
+                    for _gpu_idx in range(torch.cuda.device_count()):
+                        _free, _total = torch.cuda.mem_get_info(_gpu_idx)
+                        _free_gb = _free / (1024 ** 3)
+                        logger.info(f"GPU{_gpu_idx}: {_free_gb:.1f} GB free / {_total / (1024 ** 3):.1f} GB total")
+                        if _free_gb >= _MIN_FREE_GB and _free > _best_free:
+                            _best_free = _free
+                            _best_gpu = _gpu_idx
+                    if _best_gpu >= 0:
+                        _rag_device = f"cuda:{_best_gpu}"
+                    else:
+                        logger.info(
+                            f"No GPU has >= {_MIN_FREE_GB} GB free — RAG stack stays on CPU "
+                            f"(llama-server instances own the GPUs)"
+                        )
+                else:
+                    _gpu_idx = int(_rag_gpu_env)
                     _free, _total = torch.cuda.mem_get_info(_gpu_idx)
                     _free_gb = _free / (1024 ** 3)
-                    logger.info(f"GPU{_gpu_idx}: {_free_gb:.1f} GB free / {_total / (1024 ** 3):.1f} GB total")
-                    if _free_gb >= _MIN_FREE_GB and _free > _best_free:
-                        _best_free = _free
-                        _best_gpu = _gpu_idx
-                if _best_gpu >= 0:
-                    _rag_device = f"cuda:{_best_gpu}"
-                else:
-                    logger.info(
-                        f"No GPU has >= {_MIN_FREE_GB} GB free — RAG stack stays on CPU "
-                        f"(llama-server instances own the GPUs)"
-                    )
+                    logger.info(f"RAG target GPU{_gpu_idx}: {_free_gb:.1f} GB free / {_total / (1024 ** 3):.1f} GB total")
+                    if _free_gb >= _MIN_FREE_GB:
+                        _rag_device = f"cuda:{_gpu_idx}"
+                    else:
+                        logger.warning(
+                            f"HME_RAG_GPU={_gpu_idx} has only {_free_gb:.1f} GB free "
+                            f"(< {_MIN_FREE_GB}) — RAG stack falling back to CPU"
+                        )
         except Exception as e:
-            logger.warning(f"GPU detection failed, using CPU: {e}")
+            logger.warning(f"GPU detection failed, using CPU: {type(e).__name__}: {e}")
         logger.info(f"RAG device: {_rag_device}")
 
         # Text embedder (bge-base-en-v1.5) — knowledge_table + symbol_table
