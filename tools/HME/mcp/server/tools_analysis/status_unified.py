@@ -75,6 +75,9 @@ def status(mode: str = "all") -> str:
     if mode == "freshness":
         return _freshness_report()
 
+    if mode == "vram":
+        return _vram_report()
+
     if mode == "introspect":
         from .evolution_admin import hme_introspect as _hi
         return _hi()
@@ -114,6 +117,30 @@ def status(mode: str = "all") -> str:
                 _flags.append(f"SYNC:trace+run-history differ by {_delta/60:.0f}m")
         if _flags:
             parts.append(f"## Data Freshness\n  " + " | ".join(_flags) + "\n  Run `npm run main` or `status(mode='freshness')` for details.")
+    except Exception:
+        pass
+
+    # VRAM snapshot — one-line summary from the monitor's latest sample
+    try:
+        import json as _json_vram
+        _vram_hist = os.path.join(ctx.PROJECT_ROOT, "metrics", "vram-history.jsonl")
+        if os.path.isfile(_vram_hist):
+            with open(_vram_hist) as _vf:
+                _last = None
+                for _line in _vf:
+                    _line = _line.strip()
+                    if _line:
+                        _last = _line
+            if _last:
+                _rec = _json_vram.loads(_last)
+                _gpu_parts = []
+                for _g in _rec.get("gpus", []):
+                    _gpu_parts.append(
+                        f"GPU{_g['index']}: {_g['used_mb']/1024:.1f}/{_g['total_mb']/1024:.1f} GB "
+                        f"({_g['util_pct']}%)"
+                    )
+                if _gpu_parts:
+                    parts.append(f"## VRAM  {' | '.join(_gpu_parts)}  (status mode=vram for trend)")
     except Exception:
         pass
 
@@ -213,6 +240,96 @@ def status(mode: str = "all") -> str:
         parts.append(f"## Reasoning Cascade\n  error: {e}")
 
     return _budget_gate("\n\n".join(parts), budget=BUDGET_COMPOUND)
+
+
+def _vram_report() -> str:
+    """Read metrics/vram-history.jsonl and render recent GPU memory trend.
+
+    The monitor daemon (vram_monitor.py) writes one JSON record per 30s with
+    free/used/total MB per GPU. This renders the last ~30 minutes as a compact
+    sparkline plus current state, so you can see pressure building before it
+    becomes a crash. Also flags the minimum free-VRAM window seen, which is
+    the metric that matters for deciding if partial offload is needed.
+    """
+    import json as _json
+    from datetime import datetime as _dt
+
+    hist_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "vram-history.jsonl")
+    if not os.path.isfile(hist_path):
+        return (
+            "VRAM monitor has not written any samples yet. If this persists,\n"
+            "check that the shim started vram_monitor.py (see hme_http.py\n"
+            "_ensure_vram_monitor) and that nvidia-smi is on PATH."
+        )
+    try:
+        with open(hist_path) as _f:
+            _lines = _f.readlines()[-60:]  # last ~30 minutes at 30s polling
+    except OSError as e:
+        return f"VRAM history read failed: {e}"
+    if not _lines:
+        return "VRAM history file is empty."
+
+    samples = []
+    for _line in _lines:
+        try:
+            samples.append(_json.loads(_line))
+        except ValueError:
+            continue
+    if not samples:
+        return "VRAM history has no valid samples."
+
+    # Organize per-GPU time series
+    per_gpu: dict = {}
+    for s in samples:
+        for g in s.get("gpus", []):
+            idx = g.get("index")
+            if idx is None:
+                continue
+            per_gpu.setdefault(idx, []).append(g)
+
+    parts = ["# VRAM History (last ~30 min)\n"]
+    parts.append(f"Samples: {len(samples)}  |  Polling: 30s  |  File: metrics/vram-history.jsonl\n")
+
+    for idx in sorted(per_gpu.keys()):
+        rows = per_gpu[idx]
+        total_mb = rows[-1].get("total_mb", 0)
+        cur_free = rows[-1].get("free_mb", 0)
+        cur_used = rows[-1].get("used_mb", 0)
+        min_free = min(r.get("free_mb", 0) for r in rows)
+        max_used = max(r.get("used_mb", 0) for r in rows)
+        avg_util = sum(r.get("util_pct", 0) for r in rows) / max(len(rows), 1)
+
+        # Sparkline of free_mb, downsampled to 20 characters
+        frees = [r.get("free_mb", 0) for r in rows]
+        step = max(1, len(frees) // 20)
+        sampled = frees[::step][:20]
+        lo, hi = min(sampled), max(sampled)
+        rng = max(hi - lo, 1)
+        spark = "".join("▁▂▃▄▅▆▇█"[min(7, int((v - lo) / rng * 7))] for v in sampled)
+
+        parts.append(
+            f"GPU{idx}: {cur_used/1024:.1f} GB used / {total_mb/1024:.1f} GB total  "
+            f"({cur_free/1024:.1f} GB free, {avg_util:.0f}% avg util)"
+        )
+        parts.append(f"  free trend [{spark}]  min_free={min_free/1024:.1f} GB  max_used={max_used/1024:.1f} GB")
+        # Flag pressure
+        if min_free / 1024 < 1.0:
+            parts.append(f"  ⚠ min_free dipped below 1 GB — consider partial offload or model shuffle")
+        elif min_free / 1024 < 3.0:
+            parts.append(f"  ⚡ min_free dipped below 3 GB — watch for pressure during next compute spike")
+
+    # Monitor daemon liveness
+    pid_file = "/tmp/hme-vram-monitor.pid"
+    parts.append("")
+    try:
+        with open(pid_file) as _f:
+            _pid = int(_f.read().strip())
+        os.kill(_pid, 0)
+        parts.append(f"Monitor daemon: alive (pid {_pid})")
+    except Exception:
+        parts.append("Monitor daemon: NOT running — restart shim to respawn")
+
+    return "\n".join(parts)
 
 
 def _freshness_report() -> str:
