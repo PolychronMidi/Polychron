@@ -58,6 +58,10 @@ def main():
     parser.add_argument("--sanity", action="store_true", help="50-step smoke test only")
     parser.add_argument("--base", default="3b", choices=list(BASE_MODELS.keys()),
                         help="Base model key (3b or phi4)")
+    parser.add_argument("--warm-from", default=None,
+                        help="Warm-start LoRA adapter from this checkpoint dir")
+    parser.add_argument("--epochs", type=int, default=None,
+                        help="Override num_epochs (default: 1 sanity / 2 full)")
     args = parser.parse_args()
 
     base_model_id = BASE_MODELS[args.base]
@@ -66,7 +70,7 @@ def main():
         f"hme-arbiter-adapter-v6-{'sanity' if args.sanity else args.base}"
     )
     max_steps = 50 if args.sanity else -1
-    num_epochs = 1 if args.sanity else 4
+    num_epochs = args.epochs if args.epochs is not None else (1 if args.sanity else 2)
     eval_steps = 25 if args.sanity else 100
     save_steps = 50 if args.sanity else 200
     batch_acc  = 2 if args.sanity else 4
@@ -108,16 +112,21 @@ def main():
     tokenizer.model_max_length = 2048
 
     # ── LoRA ───────────────────────────────────────────────────────────────────
-    lora_cfg = LoraConfig(
-        r=32,
-        lora_alpha=64,
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM",
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
-                         "gate_proj", "up_proj", "down_proj"],
-    )
-    model = get_peft_model(model, lora_cfg)
+    if args.warm_from:
+        from peft import PeftModel
+        print(f"Warm-starting from adapter: {args.warm_from}")
+        model = PeftModel.from_pretrained(model, args.warm_from, is_trainable=True)
+    else:
+        lora_cfg = LoraConfig(
+            r=32,
+            lora_alpha=64,
+            lora_dropout=0.05,
+            bias="none",
+            task_type="CAUSAL_LM",
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                             "gate_proj", "up_proj", "down_proj"],
+        )
+        model = get_peft_model(model, lora_cfg)
     model.print_trainable_parameters()
 
     # ── Dataset ────────────────────────────────────────────────────────────────
