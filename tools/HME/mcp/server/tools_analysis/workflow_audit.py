@@ -340,14 +340,18 @@ def what_did_i_forget(changed_files: str) -> str:
         "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
     synthesis = None
+    _synthesis_timed_out = False
     try:
         result = _local_think("/no_think\n" + user_text, max_tokens=400,
                               model=_REASONING_MODEL, system=_THINK_SYSTEM)
         if result:
             from .synthesis_ollama import compress_for_claude
             synthesis = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")
+        elif result is None:
+            _synthesis_timed_out = True
     except Exception as _e:
         logger.warning(f"what_did_i_forget: synthesis error: {_e}")
+        _synthesis_timed_out = True
 
     if synthesis:
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
@@ -359,7 +363,18 @@ def what_did_i_forget(changed_files: str) -> str:
                 "to surface any remaining bugs (iterate until 0 remaining)._"
             )
     else:
-        logger.warning("what_did_i_forget: adaptive synthesis unavailable (timeout or Ollama down)")
+        if _synthesis_timed_out:
+            from server.failure_genealogy import record_failure
+            _fid, _is_new = record_failure(
+                source="review(mode='forget')",
+                error="synthesis timed out — coder model unavailable or GPU busy; adaptive 'What You May Have Missed' section skipped",
+                severity="WARN",
+            )
+            if _is_new:
+                logger.warning("what_did_i_forget: synthesis timed out — LIFESAVER recorded")
+            parts.append("\n## What You May Have Missed *(adaptive)*\nSkipped — coder model timed out (GPU busy or service down).")
+        else:
+            logger.warning("what_did_i_forget: adaptive synthesis unavailable (timeout or Ollama down)")
 
     # Auto-draft: suggest a learn() call if warnings found KB-worthy patterns
     if all_warnings:

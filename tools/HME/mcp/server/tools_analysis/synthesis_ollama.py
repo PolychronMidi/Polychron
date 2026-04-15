@@ -504,7 +504,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     # enforced inside _llamacpp_generate via thread-abandonment.
     result = None
     if _ARBITER_BACKEND == "llamacpp":
-        _wall = 30 if priority == "background" else (20 if _effective_model == _ARBITER_MODEL else 30)
+        # Interactive coder calls cap at 15s (short synthesis, 400 tokens max) to avoid
+        # 60s double-timeout (socket + join) when GPU is busy. Arbiter stays at 20s.
+        _wall = 30 if priority == "background" else (20 if _effective_model == _ARBITER_MODEL else 15)
         result = _llamacpp_generate(payload, wall_timeout=_wall)
         if result is None:
             logger.warning(f"_local_think: llamacpp unavailable, skipping synthesis ({_effective_model})")
