@@ -86,10 +86,92 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 - **Comments terse.** One-line inline where logic is not self-evident. No essays.
 - **Auto-commit** after verified STABLE/EVOLVED runs. Never commit DRIFTED/FAILED.
 
+## Phase 1-6 HME infrastructure (landed 2026-04-15)
+
+30 features across 6 phases. All wired into `main-pipeline.js` POST_COMPOSITION — every `npm run main` refreshes them. Surfaced through new `status(mode=...)` branches. You don't need to remember the internals; just the per-round workflow below and which mode answers which question.
+
+### Per-round workflow when the user reports a listening verdict
+
+```
+1. learn(action='ground_truth', title=SECTION, content=COMMENT,
+         tags=[moment_type, sentiment], query=ROUND_TAG)
+   (SECTION: S0..S6 or 'all'. moment_type: convergence|climax|breath|
+   arrival|misfire|... sentiment: compelling|surprising|moving|flat|
+   mechanical|... Writes metrics/hme-ground-truth.jsonl + mirrors to
+   KB with tag `human_ground_truth` → unconditional HIGH trust tier)
+
+2. learn(title='RNN ...', content='...', category='decision')
+   Normal KB calibration anchor.
+
+3. python3 tools/HME/activity/emit.py --event=round_complete \
+       --session=R96 --verdict=STABLE
+   CRITICAL: your edits before the user ran the pipeline are still in
+   the activity window. The coherence score will report 0 until you
+   emit round_complete to close that window. Do this BEFORE rebuilding
+   the derived metrics — order matters.
+
+4. node scripts/pipeline/compute-coherence-score.js
+   python3 scripts/pipeline/compute-kb-trust-weights.py
+   python3 scripts/pipeline/derive-constitution.py
+   Rebuild the derived metrics against the now-bounded window. The
+   pipeline POST_COMPOSITION already ran them once but with the
+   polluted pre-round_complete window; this is the clean pass.
+
+5. status(mode='music_truth') / status(mode='budget') /
+   status(mode='trajectory') — inspect what the round did to the
+   rolling metrics. Report deltas to the user.
+```
+
+### Status mode map — which mode answers which question
+
+| Question | Mode |
+|---|---|
+| Did the pipeline produce good music? | `music_truth` (hme_coherence vs perceptual correlation) |
+| Is coherence in the sweet spot? | `budget` (homeostatic band, state BELOW/OPTIMAL/ABOVE) |
+| Is the music evolving or plateauing? | `trajectory` (GROWING/PLATEAU/DECLINING over N rounds) |
+| Is HME's causal model learning? | `accuracy` (clean vs injected prediction EMA) |
+| Which KB entries are most trustworthy? | `kb_trust` (HIGH/MED/LOW tiers + ground-truth override) |
+| What patterns has HME crystallized? | `crystallized` (multi-round patterns from ≥3 members × ≥3 rounds) |
+| What does Polychron fundamentally IS? | `constitution` (positive identity claims) |
+| What KB modules are stale / missing? | `staleness` / `doc_drift` |
+| What has the Evolver structurally avoided? | `blindspots` |
+| Where might cascade predictions be wrong? | `probes` (adversarial candidates) |
+| What architectural gaps does topology predict? | `negative_space` |
+| What is the Evolver's cognitive load? | `cognitive_load` |
+| What's in the hypothesis registry? | `hypotheses` |
+| What activity events just fired? | `activity` |
+| Which proposals did HME propose but not execute? | `intention_gap` |
+| Does HME's self-model influence its own predictions? | `reflexivity` |
+| Which patterns could generalize beyond Polychron? | `generalizations` |
+| Are any docs drifted from KB reality? | `doc_drift` |
+| Is HME's own architecture failing anywhere? | `self_audit` |
+| Ground-truth entries recorded? | `ground_truth` |
+| Multi-agent inter-role coherence (if split)? | `multi_agent` |
+
+### History depth requirements (as of R96 landing)
+
+Most derived metrics need history to become meaningful:
+
+| metric | needs | current | gap |
+|---|---|---|---|
+| trajectory verdict | ≥5 rounds | 3 | 2 more rounds |
+| coherence budget derived band | ≥8 rounds | 3 | 5 more (uses prior [0.55, 0.85] until then) |
+| prediction-accuracy EMA | ≥10 rounds + cascade calls logged | 0 | invoke `trace(target, mode='impact')` to seed |
+| crystallizer patterns | ≥3 members × ≥3 rounds | ✓ 19 promoted | done |
+| musical-correlation r | ≥3 aligned pairs | borderline | 1-2 more rounds |
+
+**DO NOT edit `src/` while accumulating the baseline.** Keep composition frozen for 5-8 runs so Phase 4-6 metrics calibrate on a stable codebase. After that, every evolution has a real signal on whether it moved the system inside/outside the productive coherence band.
+
+### Gotcha: coherence score = 0 after an active edit session
+
+The activity bridge emits `file_written` events for every edit under `src/` or `tools/HME/(mcp|chat|activity|hooks|scripts)/`. If you edited HME instrumentation in your turn (or a previous compaction did), those events are in the current round window and tank `read_coverage`. **Always emit `round_complete` via `tools/HME/activity/emit.py` before you trust the score.** The `stop.sh` hook does this automatically at turn end, but a mid-turn pipeline run won't have triggered it yet.
+
 ## Reference (consult as needed)
 
 - [doc/HME_ONBOARDING_FLOW.md](./HME_ONBOARDING_FLOW.md) — state machine spec (read this if the chain surprises you)
 - [CLAUDE.md](../CLAUDE.md) — complete rule set, loaded every prompt
 - [doc/ARCHITECTURE.md](./ARCHITECTURE.md) — beat lifecycle, signal flow, L1/L2 layer isolation
-- [doc/HME.md](./HME.md) — HME internals, databases, evolution loop
+- [doc/HME.md](./HME.md) — HME internals + Phase 1-6 per-subsystem narrative
+- [doc/openshell_features_to_mimic.md](./openshell_features_to_mimic.md) — design doc that spawned Phases 1-6
+- [doc/hme-discoveries.md](./hme-discoveries.md) — externalized generalizations (v1 DRAFT templates)
 - [metrics/journal.md](../metrics/journal.md) — listening verdicts and calibration anchors
