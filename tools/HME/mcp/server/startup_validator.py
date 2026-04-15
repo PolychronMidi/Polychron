@@ -94,16 +94,35 @@ def _check_required_metrics_dirs(project_root: str) -> None:
 
 
 def _check_ollama_connectivity() -> None:
-    """Warn if Ollama models are not loaded — synthesis will fall back to templates.
+    """Warn if local inference models are not loaded — synthesis will fall back to templates.
 
-    Checks the Ollama persistence daemon first (port 7735) — it has authoritative
-    model-loaded status for all three instances. Falls back to probing each Ollama
-    port directly if the daemon is not running.
-    Non-fatal: Ollama may not be running yet, or may be on a different host.
+    When HME_ARBITER_BACKEND=llamacpp (default after commit 0577c0f7), probes
+    the llama-server /health endpoints for arbiter (8080) and coder (8081)
+    instead of ollama/daemon ports. The ollama path remains available as a
+    legacy fallback for HME_ARBITER_BACKEND=ollama.
     """
     import urllib.request
     import urllib.error
     import json
+
+    backend = os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower()
+    if backend == "llamacpp":
+        arbiter_url = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
+        coder_url   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+        failed = []
+        for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
+            try:
+                with urllib.request.urlopen(f"{base}/health", timeout=3) as resp:
+                    body = resp.read().decode("utf-8", errors="ignore")
+                    if resp.status != 200 or '"status":"ok"' not in body:
+                        failed.append(f"{role}@{base}")
+            except Exception as e:
+                failed.append(f"{role}@{base} ({type(e).__name__})")
+        if failed:
+            logger.warning(f"llama-server connectivity: {len(failed)} instance(s) unreachable: {failed}")
+        else:
+            logger.info("llama-server connectivity: OK (arbiter + coder healthy)")
+        return
 
     # Prefer daemon: single call, authoritative per-model loaded status
     try:

@@ -202,7 +202,15 @@ def _intent_propagation_tick() -> None:
 
 
 def _check_ollama_daemon_health() -> None:
-    """Warn if Ollama persistence daemon (port 7735) is unreachable — non-fatal, logged only."""
+    """Warn if Ollama persistence daemon (port 7735) is unreachable — non-fatal, logged only.
+
+    Skipped when HME_ARBITER_BACKEND=llamacpp (default now) — the ollama
+    daemon was retired in commit 0577c0f7 when local inference moved to
+    llama-server. Probing a port that doesn't exist floods hme.log with
+    warnings every monitor tick.
+    """
+    if os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower() == "llamacpp":
+        return
     try:
         req = urllib.request.Request("http://127.0.0.1:7735/health")
         with urllib.request.urlopen(req, timeout=2):

@@ -291,9 +291,17 @@ def _schedule_reprime_async(delay: float = 5.0):
 
 def _prime_warm_context(model: str, force: bool = False) -> bool:
     """Prime warm KV context for a model. Background priority, skips if KB unchanged.
-    Tries disk cache first (instant) before falling back to Ollama prime (~30s).
-    force=True: skip freshness check and rebuild from persona (used by GC to clean drift)."""
-    from .synthesis_ollama import _local_think
+    Tries disk cache first (instant) before falling back to a prime request (~30s).
+    force=True: skip freshness check and rebuild from persona (used by GC to clean drift).
+
+    Backend differences:
+      - ollama: returns a context[] array of token IDs that must be round-tripped
+        to warm the KV cache. We store the array in _warm_ctx.
+      - llamacpp: llama-server holds KV internally via cache_prompt=true. A
+        successful persona response is the priming signal; we store a sentinel
+        "primed=true" token list so downstream warm_context_status reports it.
+    """
+    from .synthesis_ollama import _local_think, _ARBITER_BACKEND
     kb_ver = getattr(ctx, "_kb_version", 0)
     if not force:
         if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
@@ -309,7 +317,7 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
     except Exception as e:
         logger.warning(f"warm ctx priming FAILED: {model} (_gpu_persona crashed: {type(e).__name__}: {e})")
         return False
-    logger.info(f"warm ctx priming: {model} — persona built ({len(persona)} chars), sending Ollama request...")
+    logger.info(f"warm ctx priming: {model} — persona built ({len(persona)} chars), sending request...")
     result = _local_think(
         persona + "\n\nI understand this codebase context. Ready.",
         max_tokens=8, model=model, priority="background",
@@ -325,9 +333,25 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         return False
     if text_result is None and not ctx_array:
         from .synthesis_ollama import _ollama_interactive
-        cause = "cancelled by interactive call" if _ollama_interactive.is_set() else "Ollama took too long"
+        cause = "cancelled by interactive call" if _ollama_interactive.is_set() else "backend took too long"
         logger.info(f"warm ctx priming CANCELLED: {model} — {cause} ({len(persona)} char persona)")
         return False
+    # llamacpp path: a text response proves the server primed its cache_prompt KV.
+    # llama-server doesn't expose context[] arrays, so store an approximate token
+    # count derived from the persona length (≈4 chars/token). This keeps warm
+    # context status reporting honest without forcing callers to special-case.
+    if _ARBITER_BACKEND == "llamacpp" and text_result is not None and not ctx_array:
+        approx_tokens = max(1, len(persona) // 4)
+        _warm_ctx[model] = [0] * approx_tokens
+        _warm_ctx_kb_ver[model] = kb_ver
+        _warm_ctx_ts[model] = _time.time()
+        _warm_ctx_append_count[model] = 0
+        _warm_ctx_baseline_tokens[model] = approx_tokens
+        logger.info(
+            f"warm ctx PRIMED (llamacpp): {model} (~{approx_tokens} tokens via cache_prompt, kb_ver={kb_ver})"
+        )
+        _save_warm_cache(model)
+        return True
     if ctx_array:
         _warm_ctx[model] = ctx_array
         _warm_ctx_kb_ver[model] = kb_ver
@@ -390,6 +414,13 @@ def _init_ollama_models() -> str:
     local reasoner remains as code fallback only (HME_REASONER_WARM=1 to re-enable).
     Uses keep_alive=-1 so models stay resident. Yields to interactive between each model.
     Post-load: VRAM headroom check warns if KV cache is spilling to RAM.
+
+    When HME_ARBITER_BACKEND=llamacpp (default now), the llama-server instances
+    have already loaded their models via systemd (--model flag) — this function
+    becomes a health probe that does NOT touch the ollama API. Probing ollama
+    ports 11434/11435/11436 on a pure llamacpp stack produces
+    ConnectionRefused errors and a LIFESAVER flood (see commit that introduced
+    _check_llamacpp_instances in health_topology.py).
     """
     import urllib.request as _req
     import json as _json
@@ -399,11 +430,55 @@ def _init_ollama_models() -> str:
         logger.info("_init_ollama_models: training lock present, skipping startup load")
         return "training_locked"
     from .synthesis_ollama import (
-        _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
+        _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL, _ARBITER_BACKEND,
         _KEEP_ALIVE, _NUM_CTX_30B, _NUM_CTX_4B, _url_for,
-        _ollama_background_yield,
+        _llamacpp_url_for, _ollama_background_yield,
     )
     _reasoner_warm = _os.environ.get("HME_REASONER_WARM", "0") == "1"
+
+    # llama-server path: probe /health on each configured llama-server URL
+    # instead of forcing a model load via ollama /api/generate.
+    if _ARBITER_BACKEND == "llamacpp":
+        results = {}
+        failures = 0
+        targets = [
+            (_LOCAL_MODEL,   _os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")),
+            (_ARBITER_MODEL, _os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")),
+        ]
+        for model, base in targets:
+            t0 = _t.time()
+            try:
+                req = _req.Request(f"{base}/health")
+                with _req.urlopen(req, timeout=5) as resp:
+                    body = resp.read().decode("utf-8", errors="ignore")
+                    try:
+                        data = _json.loads(body)
+                    except ValueError:
+                        data = {}
+                    if resp.status == 200 and data.get("status") == "ok":
+                        elapsed = _t.time() - t0
+                        results[model] = f"OK ({elapsed:.2f}s llamacpp)"
+                        logger.info(f"model init (llamacpp): {model} ready at {base}")
+                    else:
+                        results[model] = f"FAILED: llama-server {base} status={data.get('status') or resp.status}"
+                        ctx.register_critical_failure(
+                            f"model_init({model})",
+                            f"llama-server {base} not healthy: {body[:120]}",
+                        )
+                        failures += 1
+            except Exception as e:
+                results[model] = f"FAILED: {type(e).__name__}: {e}"
+                ctx.register_critical_failure(
+                    f"model_init({model})",
+                    f"llama-server {base} unreachable: {type(e).__name__}: {e}",
+                )
+                failures += 1
+        summary = "Model init (llamacpp): " + "; ".join(f"{m.split(':')[0]}={r}" for m, r in results.items())
+        if failures:
+            summary += f" ({failures} FAILED)"
+        return summary
+
+    # Legacy ollama path (HME_ARBITER_BACKEND=ollama)
     models_config = [
         (_LOCAL_MODEL,   {"num_predict": 1, "num_ctx": _NUM_CTX_30B}),
         (_ARBITER_MODEL, {"num_predict": 1, "num_ctx": _NUM_CTX_4B}),
