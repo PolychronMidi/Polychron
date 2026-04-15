@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **6 MCP tools** (agent-facing) plus a self-coherence substrate of **37 verifiers** at weight 0-5 each, producing an aggregate HME Coherence Index (HCI) on a 0-100 scale. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop. A local-LLM subagent pipeline (Explore + Plan modes) with a domain-specialized QLoRA-fine-tuned arbiter handles code research at amateur-hardware speeds.
+HME is five layers integrated into one executive. **6 MCP tools** (agent-facing) plus a self-coherence substrate of **38 verifiers** at weight 0-5 each, producing an aggregate HME Coherence Index (HCI) on a 0-100 scale. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop. A local-LLM subagent pipeline (Explore + Plan modes) with a domain-specialized QLoRA-fine-tuned arbiter handles code research at amateur-hardware speeds.
 
 No layer is optional. Removing any one collapses the executive.
 
@@ -15,8 +15,10 @@ No layer is optional. Removing any one collapses the executive.
 | **MCP Server** | `tools/HME/` | 6 tools: evolve / review / read / learn / trace / hme_admin |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
-| **Hooks** | `hooks/` (22 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
+| **Hooks** | `hooks/` (27 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
 | **Evolver + Lab** | `agents/Evolver.agent.md` + `lab/` | 7-phase evolution loop + experimental harness |
+
+On top of that substrate, Phase 1-6 (landed 2026-04-15 from [openshell_features_to_mimic.md](openshell_features_to_mimic.md)) adds 30 observability/governance features: the activity bridge, inference proxy, pipeline policy gate, staleness + drift + cascade indexes, hypothesis registry, crystallizer, musical correlation, trust-weighted KB, coherence budget, negative space discovery, human ground truth, reflexivity model, constitutional identity, and a multi-agent scaffold. Surfaced through 23 new `status(mode=...)` branches (activity, staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized, music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget, negative_space, cognitive_load, ground_truth, constitution, doc_drift, generalizations, reflexivity, multi_agent) — search this file for "Phase N.M of the feature mapping" for each subsystem's narrative.
 
 ## Self-Evolution
 
@@ -81,7 +83,7 @@ tools/HME/               The single source of truth
   agents/
     Evolver.agent.md                    7-phase evolution loop agent
   scripts/                              Verifier engine, stress tests, analyzers:
-    verify-coherence.py                   Unified HCI engine (37 verifiers, 0-100 score)
+    verify-coherence.py                   Unified HCI engine (38 verifiers, 0-100 score)
     verify-doc-sync.py                    Stale tool name drift detector
     verify-onboarding-flow.py             18-test dry run of onboarding state machine
     verify-states-sync.py                 Python↔shell STATES list diff

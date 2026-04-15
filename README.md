@@ -24,9 +24,9 @@ node lab/run.js sketch-name        # run specific sketch
 
 The system has three interacting layers:
 
-**Conductor** (193 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 19 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
+**Conductor** (196 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 19 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
 
-**Cross-Layer** (58 files) -- 45 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 12 module-pair dials.
+**Cross-Layer** (64 files) -- 45 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 12 module-pair dials.
 
 **Play Loop** -- alternates L1/L2 via `LM.activate()` with full per-layer state isolation (crossModulation, balance, flipBin). Each beat: conductor tick -> processBeat -> playNotes -> crossLayerBeatRecord -> trust/feedback updates.
 
