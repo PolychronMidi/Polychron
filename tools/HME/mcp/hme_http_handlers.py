@@ -178,15 +178,9 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     import time as _time
     import urllib.request as _urlreq
 
-    # Backend routing — llama-server (OpenAI) by default, ollama fallback.
-    _BACKEND = os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower()
+    # All enrichment dispatch goes through llama-server /v1/chat/completions.
     _ENRICH_MODEL = os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6")
-    if _BACKEND == "llamacpp":
-        _ENRICH_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080") + "/v1/chat/completions"
-    else:
-        _PORT_GPU1 = int(os.environ.get("HME_OLLAMA_PORT_GPU1", "11435"))
-        _ENRICH_URL = f"http://localhost:{_PORT_GPU1}/api/chat"
-    _KEEP_ALIVE  = int(os.environ.get("HME_KEEP_ALIVE",   "-1"))
+    _ENRICH_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080") + "/v1/chat/completions"
     _NUM_CTX_30B = int(os.environ.get("HME_NUM_CTX_30B", "32768"))
 
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
@@ -273,33 +267,21 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         {"role": "user",   "content": enrich_content},
     ]
     try:
-        if _BACKEND == "llamacpp":
-            body = _json.dumps({
-                "model": _ENRICH_MODEL,
-                "messages": messages,
-                "temperature": 0.2,
-                "max_tokens": 4096,
-                "stream": False,
-                "cache_prompt": True,
-            }).encode()
-        else:
-            body = _json.dumps({
-                "model": _ENRICH_MODEL,
-                "messages": messages,
-                "stream": False,
-                "keep_alive": _KEEP_ALIVE,
-                "options": {"temperature": 0.2, "num_predict": 16000, "num_ctx": _NUM_CTX_30B},
-            }).encode()
+        body = _json.dumps({
+            "model": _ENRICH_MODEL,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 4096,
+            "stream": False,
+            "cache_prompt": True,
+        }).encode()
         req = _urlreq.Request(_ENRICH_URL, data=body, headers={"Content-Type": "application/json"})
         with _urlreq.urlopen(req, timeout=180) as resp:
             resp_data = _json.loads(resp.read())
-            if _BACKEND == "llamacpp":
-                choices = resp_data.get("choices") or []
-                if choices and isinstance(choices[0], dict):
-                    msg = choices[0].get("message", {}) or {}
-                    enriched = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
-            else:
-                enriched = resp_data.get("message", {}).get("content", "").strip()
+            choices = resp_data.get("choices") or []
+            if choices and isinstance(choices[0], dict):
+                msg = choices[0].get("message", {}) or {}
+                enriched = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
             if "</think>" in enriched:
                 enriched = enriched[enriched.rfind("</think>") + len("</think>"):].strip()
     except Exception as e:

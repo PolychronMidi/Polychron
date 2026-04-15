@@ -9,7 +9,7 @@ logger = logging.getLogger("HME")
 
 
 # These names are retained for import compatibility (callers import them by name).
-# All synthesis goes through Ollama — see synthesis_ollama.py for _LOCAL_MODEL/_REASONING_MODEL.
+# All synthesis goes through Ollama — see synthesis_llamacpp.py for _LOCAL_MODEL/_REASONING_MODEL.
 _THINK_MODEL = "ollama/qwen3-coder:30b"
 _DEEP_MODEL = "ollama/qwen3:30b-a3b"
 

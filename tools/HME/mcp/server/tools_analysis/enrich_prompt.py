@@ -16,7 +16,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     KB/context assembly runs instantly, reasoning model enriches,
     arbiter compresses if needed. All local, zero Claude tokens.
     """
-    from .synthesis_ollama import (
+    from .synthesis_llamacpp import (
         _local_think, _REASONING_MODEL, compress_for_claude,
     )
     from .synthesis_session import get_session_narrative

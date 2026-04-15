@@ -1,0 +1,23 @@
+[Unit]
+Description=llama.cpp coder — qwen3-coder:30b on Vulkan2 (GPU1)
+After=network-online.target
+
+[Service]
+ExecStart=/home/jah/tools/llama-cpp-vulkan/llama-b8797/llama-server \
+    --model /home/jah/models/qwen3-coder-30b-Q4_K_M.gguf \
+    --host 127.0.0.1 \
+    --port 8081 \
+    --ctx-size 8192 \
+    --n-gpu-layers 999 \
+    --device Vulkan2 \
+    --alias qwen3-coder:30b \
+    --timeout 30 \
+    --jinja
+User=jah
+Group=jah
+Restart=always
+RestartSec=3
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+
+[Install]
+WantedBy=default.target

@@ -114,7 +114,7 @@ def section_a_factual(module_map: dict) -> list[dict]:
 # ── Section B: Planning (cascade-format) ───────────────────────────────────────
 
 # Real investigation plan patterns observed from system usage.
-# Format matches synthesis_ollama.py line 963-965:
+# Format matches synthesis_llamacpp.py line 963-965:
 #   "Break into 3-5 investigation steps:\n\n{question}\n\n"
 #   "Known project modules (use exact names): {comma list}\n\n"
 #   "Each step: WHAT (exact module name from list above), WHERE (subsystem), WHY (relevance)."

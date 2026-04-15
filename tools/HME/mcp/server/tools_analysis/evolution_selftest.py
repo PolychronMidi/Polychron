@@ -12,7 +12,7 @@ logger = logging.getLogger("HME")
 
 # All reloadable tool modules (kept here so hme_selftest can inspect coverage via getsource).
 RELOADABLE = [
-    "synthesis", "synthesis_config", "synthesis_ollama", "synthesis_gemini",
+    "synthesis", "synthesis_config", "synthesis_llamacpp", "synthesis_gemini",
     "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
     "synthesis_mistral", "synthesis_nvidia", "synthesis_reasoning",
     "synthesis_session", "synthesis_warm", "synthesis_pipeline",
@@ -291,7 +291,7 @@ def hme_selftest() -> str:
 
     try:
         from .synthesis import warm_context_status
-        from . import synthesis_ollama as _so
+        from . import synthesis_llamacpp as _so
         _so._refresh_arbiter()
         _ARBITER_MODEL = _so._ARBITER_MODEL
         wcs = warm_context_status()
@@ -346,7 +346,7 @@ def hme_selftest() -> str:
         results.append(f"WARN: hot-reload coverage -- check failed: {e}")
 
     try:
-        from . import synthesis_ollama as _so
+        from . import synthesis_llamacpp as _so
         if _so._last_think_failure == "timeout":
             import time as _ts_time
             _cooldown_remaining = max(0, _so._TIMEOUT_COOLDOWN_S - (_ts_time.monotonic() - _so._last_think_failure_ts))

@@ -1281,7 +1281,7 @@ def _classify_intent() -> dict:
 
 
 def get_current_intent() -> dict:
-    """Public accessor for L26 morphogenetic pre-loading in synthesis_ollama."""
+    """Public accessor for L26 morphogenetic pre-loading in synthesis_llamacpp."""
     return _current_intent
 
 

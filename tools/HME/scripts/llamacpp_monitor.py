@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Ollama fleet monitor — logs model sizes, VRAM/RAM, context, and temps every 60s.
+"""llama.cpp fleet monitor — logs per-instance health, VRAM/RAM, thermals.
 
-Writes JSONL to log/ollama-monitor.jsonl. Alerts on:
-  - Model exceeding size limit (GPU: VRAM-500MB, CPU: 12GB)
-  - Model unloaded/unreachable
-  - CPU or GPU thermal throttle thresholds
+Writes JSONL to log/llamacpp-monitor.jsonl. Alerts on:
+  - Instance /health not 'ok' or unreachable
+  - Instance model size exceeds assigned GPU VRAM (offload invariant)
+  - Active slots stuck > SLOT_STUCK_SECONDS
+  - GPU or CPU thermal throttle thresholds
   - RAM pressure (available < 8GB)
 
-Run: python3 tools/HME/scripts/ollama_monitor.py [--interval 60] [--once]
+HME architecture: each model owns its GPU end-to-end. Partial offload is a
+critical failure — never a graceful degradation. This monitor verifies the
+invariant every tick.
+
+Run: python3 tools/HME/scripts/llamacpp_monitor.py [--interval 60] [--once]
 """
 import json
 import os
@@ -18,15 +23,15 @@ import urllib.request
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT = os.path.normpath(os.path.join(_DIR, "..", "..", ".."))
-LOG_PATH = os.path.join(_PROJECT, "log", "ollama-monitor.jsonl")
+LOG_PATH = os.path.join(_PROJECT, "log", "llamacpp-monitor.jsonl")
 
+# Topology matches llamacpp_supervisor + systemd units. Each instance owns
+# one GPU via Vulkan device index; CUDA idx is used for nvidia-smi queries.
 INSTANCES = [
-    {"name": "GPU0", "port": 11434, "type": "gpu", "gpu_idx": 0,
-     "max_mb": 23040 - 500},
-    {"name": "GPU1", "port": 11435, "type": "gpu", "gpu_idx": 1,
-     "max_mb": 23040 - 500},
-    {"name": "CPU",  "port": 11436, "type": "cpu", "gpu_idx": -1,
-     "max_mb": 12 * 1024},
+    {"name": "arbiter", "port": 8080, "cuda_idx": 0, "vulkan": "Vulkan1",
+     "max_mb": 23040 - 500, "model": "phi-4-Q4_K_M.gguf + v6 LoRA"},
+    {"name": "coder",   "port": 8081, "cuda_idx": 1, "vulkan": "Vulkan2",
+     "max_mb": 23040 - 500, "model": "qwen3-coder-30b-Q4_K_M.gguf"},
 ]
 
 GPU_TEMP_WARN = 80
@@ -34,15 +39,52 @@ GPU_TEMP_CRIT = 88
 CPU_TEMP_WARN = 90
 CPU_TEMP_CRIT = 100
 RAM_LOW_MB = 8192
+SLOT_STUCK_SECONDS = 120
 
 
-def _query_ollama(port: int) -> dict:
+def _query_llamacpp(port: int) -> dict:
+    """Probe llama-server /health + /slots + /props. Returns a normalized dict."""
+    base = f"http://localhost:{port}"
+    result = {"port": port}
     try:
-        req = urllib.request.Request(f"http://localhost:{port}/api/ps")
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return json.loads(resp.read())
+        with urllib.request.urlopen(f"{base}/health", timeout=5) as resp:
+            h = json.loads(resp.read())
+            result["health"] = h.get("status", "?")
     except Exception as e:
-        return {"error": str(e)[:80]}
+        result["error"] = str(e)[:80]
+        return result
+
+    # /slots reports active generation slots. Each slot has state 0=idle, 1=processing.
+    try:
+        with urllib.request.urlopen(f"{base}/slots", timeout=5) as resp:
+            slots = json.loads(resp.read())
+            if isinstance(slots, list):
+                result["n_slots"] = len(slots)
+                result["active_slots"] = sum(
+                    1 for s in slots if isinstance(s, dict) and s.get("state") == 1
+                )
+                # Longest-running active slot — surface if stuck
+                longest = 0.0
+                for s in slots:
+                    if isinstance(s, dict) and s.get("state") == 1:
+                        age = s.get("t_start_process_prompt", 0)
+                        if isinstance(age, (int, float)) and age > longest:
+                            longest = age
+                result["longest_active_ms"] = longest
+    except Exception as e:
+        result["slots_error"] = str(e)[:60]
+
+    # /props reports model metadata including loaded model file.
+    try:
+        with urllib.request.urlopen(f"{base}/props", timeout=5) as resp:
+            props = json.loads(resp.read())
+            dm = props.get("default_generation_settings", {}) or {}
+            result["ctx_size"] = dm.get("n_ctx") or props.get("n_ctx")
+            result["model_path"] = props.get("model_path") or props.get("default_model")
+    except Exception as e:
+        result["props_error"] = str(e)[:60]
+
+    return result
 
 
 def _gpu_stats() -> list[dict]:
@@ -70,7 +112,6 @@ def _gpu_stats() -> list[dict]:
 
 
 def _cpu_temp() -> float | None:
-    # Try coretemp via sysfs (most reliable on Intel)
     try:
         base = "/sys/class/hwmon"
         for hwmon in sorted(os.listdir(base)):
@@ -79,14 +120,12 @@ def _cpu_temp() -> float | None:
                 with open(name_path) as f:
                     name = f.read().strip()
                 if name == "coretemp":
-                    # Read Package id 0 (temp1_input) — the die temp
                     pkg_path = os.path.join(base, hwmon, "temp1_input")
                     if os.path.exists(pkg_path):
                         with open(pkg_path) as f:
                             return int(f.read().strip()) / 1000.0
     except Exception:
         pass
-    # Fallback: thermal_zone
     try:
         for zone in sorted(os.listdir("/sys/class/thermal/")):
             if zone.startswith("thermal_zone"):
@@ -119,10 +158,10 @@ def _ram_info() -> dict:
 
 
 def _tmpfs_buffer_status() -> list[dict]:
-    """Check if tmpfs overflow buffers exist and report their usage."""
+    """Check llama.cpp tmpfs overflow buffers (setup_llamacpp_buffers.sh)."""
     buffers = []
     for name in ("gpu0", "gpu1"):
-        path = f"/mnt/ollama-buffer-{name}"
+        path = f"/mnt/llamacpp-buffer-{name}"
         if os.path.ismount(path):
             try:
                 st = os.statvfs(path)
@@ -140,46 +179,62 @@ def _tmpfs_buffer_status() -> list[dict]:
 def monitor_tick() -> dict:
     ts = time.time()
     entry = {"ts": ts, "iso": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(ts)),
-             "models": [], "gpu": [], "cpu_temp_c": None, "ram": {},
+             "instances": [], "gpu": [], "cpu_temp_c": None, "ram": {},
              "buffers": [], "alerts": []}
 
-    # ── Ollama instances ──
+    gpu_by_idx = {g.get("idx"): g for g in _gpu_stats() if isinstance(g, dict) and "idx" in g}
+    entry["gpu"] = list(gpu_by_idx.values())
+
+    # ── llama-server instances ──
     for inst in INSTANCES:
-        data = _query_ollama(inst["port"])
-        if "error" in data:
-            entry["alerts"].append(f"{inst['name']}: UNREACHABLE ({data['error'][:40]})")
-            entry["models"].append({"instance": inst["name"], "status": "unreachable"})
+        status = _query_llamacpp(inst["port"])
+        status["name"] = inst["name"]
+        status["vulkan"] = inst["vulkan"]
+        status["cuda_idx"] = inst["cuda_idx"]
+        status["expected_model"] = inst["model"]
+
+        if "error" in status:
+            entry["alerts"].append(
+                f"{inst['name']} UNREACHABLE at :{inst['port']} ({status['error'][:40]})"
+            )
+            entry["instances"].append(status)
             continue
-        models = data.get("models", [])
-        if not models:
-            entry["alerts"].append(f"{inst['name']}: NO MODEL LOADED — cold start latency imminent")
-            entry["models"].append({"instance": inst["name"], "status": "unloaded"})
-            continue
-        for m in models:
-            size_mb = m.get("size", 0) / (1024 * 1024)
-            vram_mb = m.get("size_vram", 0) / (1024 * 1024)
-            ctx = m.get("context_length", 0)
-            model_entry = {
-                "instance": inst["name"],
-                "model": m.get("name", "?"),
-                "size_mb": round(size_mb, 1),
-                "vram_mb": round(vram_mb, 1),
-                "context": ctx,
-                "type": inst["type"],
-            }
-            entry["models"].append(model_entry)
-            # Size limit check
-            effective_mb = vram_mb if inst["type"] == "gpu" else size_mb
-            if effective_mb > inst["max_mb"]:
-                overshoot = effective_mb - inst["max_mb"]
+
+        if status.get("health") != "ok":
+            entry["alerts"].append(
+                f"{inst['name']} /health={status.get('health','?')} (port {inst['port']})"
+            )
+
+        # Invariant check: the GPU assigned to this instance must hold the
+        # model weights — if VRAM is suspiciously low, the process probably
+        # fell back to CPU offload.
+        gpu = gpu_by_idx.get(inst["cuda_idx"])
+        if gpu:
+            vram_used = gpu.get("mem_used_mb", 0)
+            vram_total = gpu.get("mem_total_mb", 0)
+            status["gpu_vram_used_mb"] = vram_used
+            status["gpu_vram_total_mb"] = vram_total
+            # Coder needs ~18 GB, arbiter needs ~9 GB. If less than 5 GB in use,
+            # the model is almost certainly not fully on this GPU.
+            min_expected = 5000
+            if vram_used < min_expected:
                 entry["alerts"].append(
-                    f"{inst['name']} OVER LIMIT: {effective_mb:.0f}MB "
-                    f"(+{overshoot:.0f}MB over {inst['max_mb']}MB cap) "
-                    f"model={m.get('name','?')} ctx={ctx}"
+                    f"{inst['name']} OFFLOAD INVARIANT VIOLATED: only {vram_used} MB "
+                    f"on cuda:{inst['cuda_idx']} ({inst['vulkan']}) — expected >= {min_expected} MB. "
+                    f"Model likely fell back to CPU."
                 )
 
-    # ── GPU stats ──
-    entry["gpu"] = _gpu_stats()
+        # Stuck-slot check
+        longest = status.get("longest_active_ms", 0) or 0
+        if longest > SLOT_STUCK_SECONDS * 1000:
+            entry["alerts"].append(
+                f"{inst['name']} slot stuck: longest active request "
+                f"{longest / 1000:.0f}s (threshold {SLOT_STUCK_SECONDS}s)"
+            )
+
+        entry["instances"].append(status)
+
+    # ── GPU thermals ──
     for g in entry["gpu"]:
         if "error" in g:
             continue
@@ -213,23 +268,28 @@ def monitor_tick() -> dict:
 
 def _fmt_summary(entry: dict) -> str:
     parts = []
-    for m in entry["models"]:
-        if m.get("model"):
-            if m["type"] == "gpu":
-                parts.append(f"{m['instance']}:{m['model']}={m['vram_mb']:.0f}MB/VRAM ctx={m['context']}")
-            else:
-                parts.append(f"{m['instance']}:{m['model']}={m['size_mb']:.0f}MB/RAM ctx={m['context']}")
-        elif m.get("status"):
-            parts.append(f"{m['instance']}:{m['status']}")
-    gpu_temps = [f"GPU{g['idx']}:{g['temp_c']}°C/{g['power_w']}W"
-                 for g in entry.get("gpu", []) if isinstance(g, dict) and "temp_c" in g]
+    for inst in entry["instances"]:
+        if "error" in inst:
+            parts.append(f"{inst['name']}:DOWN")
+            continue
+        active = inst.get("active_slots", 0) or 0
+        n = inst.get("n_slots", 0) or 0
+        vram = inst.get("gpu_vram_used_mb", 0) or 0
+        parts.append(
+            f"{inst['name']}:{inst.get('health','?')} "
+            f"slots={active}/{n} vram={vram}MB"
+        )
+    gpu_temps = [
+        f"GPU{g['idx']}:{g.get('temp_c','?')}°C/{g.get('power_w','?')}W"
+        for g in entry.get("gpu", []) if isinstance(g, dict) and "idx" in g
+    ]
     cpu_t = f"CPU:{entry['cpu_temp_c']:.0f}°C" if entry.get("cpu_temp_c") else ""
     ram = entry.get("ram", {})
     ram_t = f"RAM:{ram.get('used_mb', 0)//1024}G/{ram.get('total_mb', 0)//1024}G" if ram else ""
-    buf_parts = []
-    for b in entry.get("buffers", []):
-        if b.get("mounted"):
-            buf_parts.append(f"buf-{b['name']}:{b.get('used_mb', 0)}MB/{b.get('total_mb', 0)}MB")
+    buf_parts = [
+        f"buf-{b['name']}:{b.get('used_mb', 0)}MB/{b.get('total_mb', 0)}MB"
+        for b in entry.get("buffers", []) if b.get("mounted")
+    ]
     return (f"{entry['iso']} | {' | '.join(parts)} | "
             f"{' '.join(gpu_temps)} {cpu_t} {ram_t}"
             + (f" | {' '.join(buf_parts)}" if buf_parts else ""))
@@ -237,8 +297,9 @@ def _fmt_summary(entry: dict) -> str:
 
 def run_daemon(interval: int = 60):
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
-    print(f"Ollama monitor started (interval={interval}s, log={LOG_PATH})")
-    print(f"Limits: GPU={INSTANCES[0]['max_mb']}MB, CPU={INSTANCES[2]['max_mb']}MB")
+    print(f"llama.cpp monitor started (interval={interval}s, log={LOG_PATH})")
+    _inst_desc = ", ".join(f"{i['name']}@:{i['port']}" for i in INSTANCES)
+    print(f"Instances: {_inst_desc}")
     print(f"Thresholds: GPU {GPU_TEMP_WARN}/{GPU_TEMP_CRIT}°C, CPU {CPU_TEMP_WARN}/{CPU_TEMP_CRIT}°C, RAM<{RAM_LOW_MB}MB")
     print("---")
     while True:
@@ -257,7 +318,7 @@ def run_daemon(interval: int = 60):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Ollama fleet monitor")
+    parser = argparse.ArgumentParser(description="llama.cpp fleet monitor")
     parser.add_argument("--interval", type=int, default=60)
     parser.add_argument("--once", action="store_true", help="Single tick, JSON to stdout")
     args = parser.parse_args()

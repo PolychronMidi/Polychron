@@ -195,7 +195,7 @@ def _load_all_warm_caches() -> int:
     `_prime_all_gpus` to short-circuit past an unprimed arbiter when local+reasoner
     already satisfied n.
     """
-    from .synthesis_ollama import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+    from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
     seen: set[str] = set()
     restored = 0
     for model in (_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL):

@@ -62,9 +62,7 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     """
     if not gpu0_out or not gpu1_out or len(gpu0_out) < 30 or len(gpu1_out) < 30:
         return None
-    import urllib.request
-    from .synthesis_ollama import _ARBITER_MODEL, _KEEP_ALIVE, _NUM_CTX_4B, _url_for
-    from .synthesis_warm import _warm_ctx, _warm_ctx_kb_ver
+    from .synthesis_llamacpp import _ARBITER_MODEL, _NUM_CTX_4B, _llamacpp_generate
     from .synthesis_session import get_session_narrative
 
     session_ctx = get_session_narrative()
@@ -85,48 +83,39 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     )
     payload = {
         "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
-        "keep_alive": _KEEP_ALIVE,
         "options": {"temperature": 0.0, "num_predict": 600, "num_ctx": _NUM_CTX_4B},
     }
-    arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
-    if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
-        payload["context"] = arbiter_ctx
-        logger.debug(f"arbiter: warm ctx hit ({len(arbiter_ctx)} tokens)")
-    body = __import__("json").dumps(payload).encode()
-    req = urllib.request.Request(_url_for(_ARBITER_MODEL), data=body, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=45) as resp:
-            result = __import__("json").loads(resp.read())
-            text = result.get("response", "").strip() or result.get("thinking", "").strip()
-            if "</think>" in text:
-                text = text[text.rfind("</think>") + len("</think>"):].strip()
-            text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
-            if not text:
-                return None
-            text_upper = text.upper()
-            if "ALIGNED" in text_upper and "MINOR" not in text_upper and "COMPLEX" not in text_upper:
-                logger.info("arbiter: ALIGNED")
-                _log_arbiter_decision("arbiter", question, "ALIGNED",
-                                      len(gpu0_out or ""), len(gpu1_out or ""))
-                return None
-            if "COMPLEX" in text_upper:
-                logger.info(f"arbiter: COMPLEX — {text[:200]}")
-                _log_arbiter_decision("arbiter", question, "COMPLEX",
-                                      len(gpu0_out or ""), len(gpu1_out or ""))
-                return {"severity": "complex", "report": text}
-            logger.info(f"arbiter: MINOR — {text[:200]}")
-            _log_arbiter_decision("arbiter", question, "MINOR",
-                                  len(gpu0_out or ""), len(gpu1_out or ""))
-            return {"severity": "minor", "report": text}
-    except Exception as e:
-        logger.warning(f"arbiter unavailable: {type(e).__name__}: {e}")
+    result = _llamacpp_generate(payload, wall_timeout=45.0, priority="interactive")
+    if result is None:
+        logger.warning("arbiter unavailable: llamacpp generate returned None")
         return None
+    text = (result.get("response", "") or "").strip()
+    if "</think>" in text:
+        text = text[text.rfind("</think>") + len("</think>"):].strip()
+    text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+    if not text:
+        return None
+    text_upper = text.upper()
+    if "ALIGNED" in text_upper and "MINOR" not in text_upper and "COMPLEX" not in text_upper:
+        logger.info("arbiter: ALIGNED")
+        _log_arbiter_decision("arbiter", question, "ALIGNED",
+                              len(gpu0_out or ""), len(gpu1_out or ""))
+        return None
+    if "COMPLEX" in text_upper:
+        logger.info(f"arbiter: COMPLEX — {text[:200]}")
+        _log_arbiter_decision("arbiter", question, "COMPLEX",
+                              len(gpu0_out or ""), len(gpu1_out or ""))
+        return {"severity": "complex", "report": text}
+    logger.info(f"arbiter: MINOR — {text[:200]}")
+    _log_arbiter_decision("arbiter", question, "MINOR",
+                          len(gpu0_out or ""), len(gpu1_out or ""))
+    return {"severity": "minor", "report": text}
 
 
 def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
                                arbiter_report: str, question: str) -> str | None:
     """Stage 1.75: resolve COMPLEX arbiter conflict via the reasoning model."""
-    from .synthesis_ollama import _local_think, _REASONING_MODEL
+    from .synthesis_llamacpp import _local_think, _REASONING_MODEL
     from .synthesis_session import append_session_narrative
 
     resolve_prompt = (
@@ -152,7 +141,7 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
                      answer_format: str | None = None) -> str | None:
     """Sequential two-stage synthesis: extract → gap-fill → reason. Fallback for _parallel_two_stage_think."""
-    from .synthesis_ollama import _local_think, _LOCAL_MODEL, _REASONING_MODEL
+    from .synthesis_llamacpp import _local_think, _LOCAL_MODEL, _REASONING_MODEL
 
     _STAGE1_SYSTEM = (
         "You are a code extraction assistant for the Polychron music synthesis project. "
@@ -212,8 +201,8 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     2 GPU1 final synthesis via /api/chat.
     Falls back to _two_stage_think if both Stage 1 branches fail.
     """
-    from .synthesis_ollama import (
-        _local_think, _local_chat, _LOCAL_MODEL, _REASONING_MODEL, _ollama_interactive
+    from .synthesis_llamacpp import (
+        _local_think, _local_chat, _LOCAL_MODEL, _REASONING_MODEL, _interactive_event
     )
     from .synthesis_session import get_session_narrative
 
@@ -229,7 +218,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         "Output: file paths, signal fields, correlation values, bridge status. NO function names."
     )
 
-    _ollama_interactive.set()
+    _interactive_event.set()
     results = [None, None]
 
     def _gpu0_extract():
@@ -270,7 +259,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
         t0.join()
         t1.join()
     finally:
-        _ollama_interactive.clear()
+        _interactive_event.clear()
 
     gpu0_out, gpu1_out = results[0], results[1]
     if not gpu0_out and not gpu1_out:
