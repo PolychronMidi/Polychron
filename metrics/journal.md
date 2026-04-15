@@ -1231,3 +1231,19 @@ Listen verdict: **"amazing new level of legendary xenolinguistics"**. The alien-
 **HME improvements:**
 - fix_antipattern MCP tool added (permanent hook enforcement via bash synthesis)
 - pretooluse_bash.sh: anti-wait injection for long-running commands
+
+## R92 — 2026-04-15 — **NEW TIER OF LEGENDARY** (atmospheric, first post-Phase-1-6)
+
+**Run:** 2026-04-15T18:41:56 · 1308 beats · 50825 notes · 7 sections · wall=883s · 41/41 steps pass
+
+**Regime:** coherent 50.7% / evolving 27.9% / exploring 21.2%
+
+**Features:** profile=atmospheric · cb0Entropy 6.15 · pitchEntropy 6.43 · tensionArcShape 0.165 · axisGini 0.101 · healthScore 0.45 · couplingLabelCount 1 · topTrust motifEcho 0.689 / spread 0.42
+
+**Sections:** S0 99b evolving · S1 141b coherent t=0.90 · S2 150b evolving t=0.66 · S3 255b coherent · S4 321b coherent · S5 165b evolving · S6 177b evolving
+
+**Listening verdict:** "new tier of legendary" — surpasses prior LEGENDARY anchors (R26/R27/R28/R40). Ground truth recorded with `transcendent/compelling` tags.
+
+**HME paradox:** Coherence budget state = ABOVE (100% vs band [55%, 85%]), proxy wants "relax / emergence suppressed" — but listener reports transcendence. Strongest n=4 correlation: `hme_coherence × perceptual_complexity_avg = −1.000`. Either the proxy's "coherence above band = emergence suppressed" heuristic is mis-calibrated for atmospheric profile, or `perceptual_complexity_avg` is reading structural clarity as stagnation. Do NOT adjust the proxy on n=4 — need ≥8 rounds before recalibrating.
+
+**Baseline freeze:** Per AGENT_PRIMER, do not edit `src/` for 5-8 runs while Phase 4-6 derived metrics calibrate on a stable codebase. R92 is baseline round 1 post-Phase-1-6 landing.
