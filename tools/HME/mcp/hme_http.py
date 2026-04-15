@@ -94,27 +94,36 @@ def _load_engines():
         os.makedirs(PROJECT_DB, exist_ok=True)
         os.makedirs(GLOBAL_DB, exist_ok=True)
 
-        # Device selection: GPU0 is the coder (saturated), GPU1 has headroom for
-        # RAG models. Force GPU1 if it has ≥2GB free, else CPU fallback.
-        # Never default to cuda:0 — sentence-transformers' default picks it and
-        # OOMs immediately.
+        # Device selection with VRAM reservation:
+        # llama-server instances hold ~9.5 GB (arbiter on GPU1) + ~19 GB (coder
+        # on GPU0) plus compute buffers. Never land a sentence-transformer on a
+        # GPU that doesn't have at least _MIN_FREE_GB free AFTER those are loaded.
+        # Default: require 6 GB free for the shim's RAG stack (bge, jina, reranker
+        # together peak around 4-5 GB in steady state).
+        # Override via HME_RAG_MIN_FREE_GB.
+        _MIN_FREE_GB = float(os.environ.get("HME_RAG_MIN_FREE_GB", "6"))
         _rag_device = "cpu"
         try:
             import torch
-            if torch.cuda.is_available() and torch.cuda.device_count() >= 2:
-                free1, _ = torch.cuda.mem_get_info(1)
-                if free1 >= 2 * 1024 * 1024 * 1024:
-                    _rag_device = "cuda:1"
+            if torch.cuda.is_available():
+                _best_gpu = -1
+                _best_free = 0
+                for _gpu_idx in range(torch.cuda.device_count()):
+                    _free, _total = torch.cuda.mem_get_info(_gpu_idx)
+                    _free_gb = _free / (1024 ** 3)
+                    logger.info(f"GPU{_gpu_idx}: {_free_gb:.1f} GB free / {_total / (1024 ** 3):.1f} GB total")
+                    if _free_gb >= _MIN_FREE_GB and _free > _best_free:
+                        _best_free = _free
+                        _best_gpu = _gpu_idx
+                if _best_gpu >= 0:
+                    _rag_device = f"cuda:{_best_gpu}"
                 else:
-                    free0, _ = torch.cuda.mem_get_info(0)
-                    if free0 >= 2 * 1024 * 1024 * 1024:
-                        _rag_device = "cuda:0"
-            elif torch.cuda.is_available():
-                free0, _ = torch.cuda.mem_get_info(0)
-                if free0 >= 2 * 1024 * 1024 * 1024:
-                    _rag_device = "cuda:0"
-        except Exception:
-            pass
+                    logger.info(
+                        f"No GPU has >= {_MIN_FREE_GB} GB free — RAG stack stays on CPU "
+                        f"(llama-server instances own the GPUs)"
+                    )
+        except Exception as e:
+            logger.warning(f"GPU detection failed, using CPU: {e}")
         logger.info(f"RAG device: {_rag_device}")
 
         # Text embedder (bge-base-en-v1.5) — knowledge_table + symbol_table

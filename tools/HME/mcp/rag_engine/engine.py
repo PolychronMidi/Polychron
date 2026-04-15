@@ -20,17 +20,23 @@ logger = logging.getLogger(__name__)
 
 
 def _pick_embed_device() -> str:
-    """Pick best device for embedding model: CUDA if >=800MB free, else CPU."""
+    """Pick best device for embedding model with VRAM reservation for llama-server.
+
+    llama-server instances can consume ~9-19 GB per GPU. Only land embedding
+    models on a GPU that has HME_RAG_MIN_FREE_GB free after those are loaded
+    (default: 6 GB, matches shim bge+jina+reranker steady state).
+    """
+    import os as _os
+    _min_free_gb = float(_os.environ.get("HME_RAG_MIN_FREE_GB", "6"))
     try:
         import torch
         if torch.cuda.is_available():
-            # Prefer the GPU with the most free memory (avoid stealing from active inference)
-            best_idx, best_free = 0, 0
+            best_idx, best_free = -1, 0
             for i in range(torch.cuda.device_count()):
                 free, _ = torch.cuda.mem_get_info(i)
-                if free > best_free:
+                if free >= _min_free_gb * (1024 ** 3) and free > best_free:
                     best_free, best_idx = free, i
-            if best_free >= 800 * 1024 * 1024:  # need at least 800MB free
+            if best_idx >= 0:
                 return f"cuda:{best_idx}"
     except Exception:
         pass
