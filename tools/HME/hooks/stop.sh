@@ -254,11 +254,15 @@ for line in reversed(lines):
                 # Training runs, batch analyzers, stress-test batteries all count.
                 _generic_bg = (
                     'python3 /tmp/train' in cmd
-                    or 'python3 /tmp/' in cmd and ('train' in cmd or 'merge' in cmd or 'convert' in cmd)
+                    or ('python3' in cmd and ('train' in cmd or 'merge_' in cmd or 'convert_hf_to_gguf' in cmd or 'finetune' in cmd))
                     or 'stress-test' in cmd
                     or 'accelerate launch' in cmd
                     or 'unsloth' in cmd
                     or 'axolotl' in cmd
+                    or 'pip3 install' in cmd
+                    or 'pip install' in cmd
+                    or 'nohup' in cmd
+                    or 'trainer.train' in cmd
                 )
                 if _pipeline_bg or _generic_bg:
                     found_bg = True
@@ -291,6 +295,56 @@ print('idle' if calls_after_bg < 20 else 'ok')
     jq -n '{
       "decision": "block",
       "reason": "ANTI-IDLE: Pipeline is running in background — do NOT stop. Continue with real work now:\n1. Run index_codebase (KB stays fresh for next round)\n2. Pick next evolution targets from the suggest_evolution output and implement them\n3. Run what_did_i_forget on any recently changed files\n4. Update docs or KB entries for this round\nDo not end your turn until the pipeline completes or you have done 20+ tool calls of substantive work."
+    }'
+    exit 0
+  fi
+fi
+
+# ── Psychopathic-stop detection ───────────────────────────────────────────────
+# ScheduleWakeup called in the same turn where a long background job was launched
+# (or where polling happened) is the "defer-instead-of-work" antipattern. When a
+# slow process runs in the background, continue with OTHER real work — do not
+# schedule a wakeup and end the turn. Wakeup is reserved for genuinely idle waits
+# with no other productive work possible.
+if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
+  PSYCHO_STOP=$(python3 -c "
+import json
+data = open('$TRANSCRIPT_PATH').read()
+lines = data.strip().split('\n')
+in_turn = False
+saw_bg_launch = False
+saw_wakeup = False
+for line in reversed(lines):
+    try:
+        obj = json.loads(line)
+    except Exception:
+        continue
+    role = obj.get('role','')
+    if role == 'user' and not in_turn:
+        continue
+    if role == 'assistant':
+        in_turn = True
+    if role == 'user' and in_turn:
+        break
+    if in_turn:
+        for block in obj.get('content', []):
+            if not isinstance(block, dict) or block.get('type') != 'tool_use':
+                continue
+            name = block.get('name','')
+            inp  = block.get('input', {}) or {}
+            if name == 'ScheduleWakeup':
+                saw_wakeup = True
+            if name == 'Bash' and inp.get('run_in_background'):
+                cmd = inp.get('command','')
+                if any(kw in cmd for kw in ('train', 'pip install', 'pip3 install', 'nohup', 'accelerate', 'axolotl', 'unsloth', 'merge_', 'convert_hf_to_gguf', 'finetune', 'stress-test')):
+                    saw_bg_launch = True
+print('psycho' if (saw_wakeup and saw_bg_launch) else 'ok')
+" 2>/dev/null || echo ok)
+
+  if [[ "$PSYCHO_STOP" == "psycho" ]]; then
+    jq -n '{
+      "decision": "block",
+      "reason": "PSYCHOPATHIC-STOP: You launched a long background process, then called ScheduleWakeup to defer work. This is the stop-during-long-process antipattern. Continue with OTHER real work now — unrelated tasks, KB maintenance, doc updates, code reviews, fixing surfaced warnings. Wakeup is only valid when there is genuinely nothing productive you can do. Resume immediately."
     }'
     exit 0
   fi
