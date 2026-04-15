@@ -463,46 +463,28 @@ def gpu_busy_snapshot() -> dict[str, bool]:
     return {d: gpu_busy_current(d) for d in devices}
 
 
-def _get_default_device() -> str | None:
-    """Return the device used when callers don't specify one. Cached after
-    the first arbiter spec is resolved so repeated lookups are free."""
+def _get_default_device() -> str:
+    """Return the device used when callers don't specify one. Reads from the
+    central .env via ENV.require — no silent fallbacks, no supervisor-probe
+    inference. If HME_RAG_VULKAN is missing the process fails loud."""
     global _default_device_cache
     if _default_device_cache is not None:
         return _default_device_cache
-    explicit = os.environ.get("HME_RAG_VULKAN", "").strip()
-    if explicit:
-        _default_device_cache = explicit
-        return _default_device_cache
-    try:
-        for spec in _supervisor_singleton.instances():
-            if spec.name == "arbiter":
-                _default_device_cache = spec.device
-                return _default_device_cache
-    except Exception as _e:
-        logger.debug(
-            f"_get_default_device: supervisor not ready ({type(_e).__name__}: {_e})"
-        )
-    return None
+    _default_device_cache = ENV.require("HME_RAG_VULKAN")
+    return _default_device_cache
 
 
 # ── Backcompat shims (single-flag API targets the default/arbiter device) ─
 def rag_gpu_busy_set() -> None:
-    device = _get_default_device()
-    if device is not None:
-        gpu_busy_set(device)
+    gpu_busy_set(_get_default_device())
 
 
 def rag_gpu_busy_clear() -> None:
-    device = _get_default_device()
-    if device is not None:
-        gpu_busy_clear(device)
+    gpu_busy_clear(_get_default_device())
 
 
 def _rag_gpu_busy_current() -> bool:
-    device = _get_default_device()
-    if device is None:
-        return False
-    return gpu_busy_current(device)
+    return gpu_busy_current(_get_default_device())
 
 
 class _LegacyRagFlag:
@@ -529,21 +511,13 @@ def rag_route(device: str | None = None) -> str:
     generation load, else 'gpu'."""
     if device is None:
         device = _get_default_device()
-    if device is None:
-        return "gpu"
     return "cpu" if gpu_busy_current(device) else "gpu"
 
 
 def _resolve_rag_gpu_device(instances: list) -> str | None:
-    """The Vulkan tag of the physical GPU that RAG lives on. Explicit
-    HME_RAG_VULKAN env overrides; default is the arbiter instance's device."""
-    explicit = os.environ.get("HME_RAG_VULKAN", "").strip()
-    if explicit:
-        return explicit
-    for spec in instances:
-        if spec.name == "arbiter":
-            return spec.device
-    return None
+    """The Vulkan tag of the physical GPU that RAG lives on. Reads
+    HME_RAG_VULKAN from .env via ENV.require — no silent default."""
+    return ENV.require("HME_RAG_VULKAN")
 
 
 # ══════════════════════════════════════════════════════════════════════════
