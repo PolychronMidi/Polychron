@@ -430,17 +430,27 @@ def _resolve_base_url(model: str, instances: list[InstanceSpec]) -> str:
 def _generate_with_timeout(payload: dict, wall_timeout: float,
                            instances: list[InstanceSpec]) -> dict:
     """Translate an llamacpp /api/generate-shape request to llama-server
-    OpenAI /v1/chat/completions and enforce a hard wall-clock cap."""
+    OpenAI /v1/chat/completions and enforce a hard wall-clock cap.
+
+    Accepts two payload shapes:
+      - Single-turn: prompt + optional system → constructed messages array
+      - Multi-turn:  messages array (pre-built OpenAI format) used directly
+    Top-level max_tokens/temperature override options.* equivalents.
+    """
     model = payload.get("model", "")
     base = _resolve_base_url(model, instances)
     url = f"{base}/v1/chat/completions"
 
-    prompt = payload.get("prompt", "")
-    system = payload.get("system") or None
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
+    if "messages" in payload:
+        # Multi-turn path: _local_chat passes a pre-built messages array.
+        messages = payload["messages"]
+    else:
+        prompt = payload.get("prompt", "")
+        system = payload.get("system") or None
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
 
     options = payload.get("options") or {}
     openai_payload = {
@@ -448,9 +458,14 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
         "messages": messages,
         "stream": False,
     }
-    if "num_predict" in options:
+    # Top-level max_tokens/temperature take precedence over options.*
+    if "max_tokens" in payload:
+        openai_payload["max_tokens"] = int(payload["max_tokens"])
+    elif "num_predict" in options:
         openai_payload["max_tokens"] = int(options["num_predict"])
-    if "temperature" in options:
+    if "temperature" in payload:
+        openai_payload["temperature"] = float(payload["temperature"])
+    elif "temperature" in options:
         openai_payload["temperature"] = float(options["temperature"])
     if "top_p" in options:
         openai_payload["top_p"] = float(options["top_p"])

@@ -603,55 +603,31 @@ def _local_chat(messages: list[dict], model: str | None = None,
     """Call a local model with a multi-turn messages array.
 
     Model sees prior outputs as assistant turns — better coherence for multi-stage synthesis.
-    Uses llama-server OpenAI /v1/chat/completions.
+    Wall-clock enforcement lives in llamacpp_daemon.py — this function never sets its own timeout.
     """
-    import urllib.request
-    import threading as _th
     _m = model or _REASONING_MODEL
     _cb = _get_circuit_breaker(_m)
     if not _cb.allow():
         logger.warning(f"_local_chat REFUSED — circuit breaker OPEN for {_m}")
         return None
-
-    base = _llamacpp_url_for(_m)
-    url = f"{base}/v1/chat/completions"
-    oai_payload = {
-        "model": _m, "messages": messages,
-        "temperature": temperature, "max_tokens": max_tokens,
-        "stream": False, "cache_prompt": True,
-    }
-    req = urllib.request.Request(
-        url, data=json.dumps(oai_payload).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    _holder = {"_data": None, "_err": None}
-    def _worker():
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                _holder["_data"] = json.loads(resp.read())
-        except Exception as e:
-            _holder["_err"] = e
-    t = _th.Thread(target=_worker, daemon=True)
-    t.start()
-    t.join(timeout=60)  # llamacpp-ok: _local_chat is OpenAI HTTP client, same rationale as _llamacpp_chat
-    if t.is_alive() or _holder["_err"] is not None:
-        err = _holder["_err"]
-        _cb.record_failure(is_timeout=(t.is_alive() or (err is not None and "time" in str(err).lower())))
-        if err is not None:
-            _err_str = str(err).lower()
-            if any(k in _err_str for k in ("cuda", "500", "oom", "out of memory", "killed", "internal server error", "panic")):
-                ctx.register_critical_failure(f"_local_chat({_m})", f"{type(err).__name__}: {err}")
-            else:
-                logger.warning(f"_local_chat unavailable ({_m}): {type(err).__name__}: {err}")
-        else:
-            logger.warning(f"_local_chat wall timeout ({_m})")
+    _is_arbiter_request = (_llamacpp_url_for(_m) == _LLAMACPP_ARBITER_URL)
+    try:
+        if _is_arbiter_request:
+            _set_arbiter_busy(True)
+        result = _daemon_generate({
+            "model": _m,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }, wall_timeout=60.0)
+    finally:
+        if _is_arbiter_request:
+            _set_arbiter_busy(False)
+    if result is None:
+        _cb.record_failure(is_timeout=True)
+        logger.warning(f"_local_chat wall timeout or unavailable ({_m})")
         return None
-    data = _holder["_data"] or {}
-    choices = data.get("choices") or []
-    if not choices:
-        return None
-    msg = choices[0].get("message", {}) if isinstance(choices[0], dict) else {}
-    text = (msg.get("content", "") or "").strip() if isinstance(msg, dict) else ""
+    text = (result.get("response", "") or "").strip()
     text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
     if "<|im_start|>" in text:
         import re as _re2c
