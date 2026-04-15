@@ -83,6 +83,10 @@ def _default_instances() -> list[InstanceSpec]:
     arbiter_model = os.environ.get("HME_ARBITER_GGUF", "/home/jah/models/phi-4-Q4_K_M.gguf")
     arbiter_lora  = os.environ.get("HME_ARBITER_LORA", "/home/jah/Polychron/metrics/hme-arbiter-v6-lora.gguf")
     coder_model   = os.environ.get("HME_CODER_GGUF",   "/home/jah/models/qwen3-coder-30b-Q4_K_M.gguf")
+    # ARCHITECTURE INVARIANT: each model owns its GPU end-to-end. Full offload
+    # only — partial offload to CPU is forbidden. n_gpu_layers is hardcoded to
+    # 999 (offload everything). Spawn refuses with CRITICAL LIFESAVER if the
+    # model + KV cache won't fit in the assigned device's free VRAM.
     return [
         InstanceSpec(
             name="arbiter",
@@ -92,6 +96,7 @@ def _default_instances() -> list[InstanceSpec]:
             alias=os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6"),
             ctx_size=int(os.environ.get("HME_ARBITER_CTX", "4096")),
             lora_path=arbiter_lora if arbiter_lora and os.path.isfile(arbiter_lora) else None,
+            n_gpu_layers=999,  # full offload — invariant
         ),
         InstanceSpec(
             name="coder",
@@ -100,12 +105,7 @@ def _default_instances() -> list[InstanceSpec]:
             device=os.environ.get("HME_CODER_VULKAN", "Vulkan2"),
             alias=os.environ.get("HME_CODER_ALIAS", "qwen3-coder:30b"),
             ctx_size=int(os.environ.get("HME_CODER_CTX", "8192")),
-            # 30b Q4 full-offload needs ~18.5 GB. GPU1 shares with the shim's
-            # RAG stack (~7 GB) until HME_RAG_GPU=0 takes effect at next shim
-            # restart. Partial offload keeps the working set at ~10 GB so it
-            # fits alongside the shim. Override with HME_CODER_GPU_LAYERS once
-            # the shim has moved off GPU1.
-            n_gpu_layers=int(os.environ.get("HME_CODER_GPU_LAYERS", "30")),
+            n_gpu_layers=999,  # full offload — invariant
         ),
     ]
 
@@ -165,10 +165,106 @@ class _Supervisor:
             logger.debug(f"llamacpp_supervisor: /health probe failed for {spec.base_url()}: {type(_probe_err).__name__}: {_probe_err}")
             return False
 
+    # ── GPU residence invariant ──────────────────────────────────────────
+    def _vulkan_to_cuda_index(self, device: str) -> int | None:
+        """Map a Vulkan device label to a CUDA-compatible index for nvidia-smi.
+
+        HME topology: Vulkan0=Intel iGPU, Vulkan1=M40 #0 (CUDA 0), Vulkan2=M40 #1 (CUDA 1).
+        Returns None for unknown devices (caller should treat as CPU = invariant violation).
+        """
+        if device == "Vulkan1":
+            return 0
+        if device == "Vulkan2":
+            return 1
+        return None
+
+    def _gpu_free_mb(self, cuda_idx: int) -> int | None:
+        """Return free VRAM on the given CUDA index in MiB, or None if probe fails."""
+        try:
+            out = subprocess.check_output(
+                ["nvidia-smi", f"--query-gpu=memory.free", "--format=csv,noheader,nounits", f"--id={cuda_idx}"],
+                stderr=subprocess.DEVNULL,
+                timeout=3,
+            )
+            return int(out.decode().strip().splitlines()[0])
+        except Exception as _gpu_err:
+            logger.warning(f"llamacpp_supervisor: nvidia-smi probe failed for cuda:{cuda_idx}: {_gpu_err}")
+            return None
+
+    def _check_gpu_fits(self, spec: InstanceSpec) -> tuple[bool, str]:
+        """Return (True, '') if model+KV cache fits in assigned GPU free VRAM
+        with the configured headroom, else (False, reason).
+
+        Conservative estimate: model file size (GGUF on-disk ≈ on-GPU) plus a
+        KV-cache budget of ctx_size * 0.5 MB (rough for 30B-class). Headroom of
+        1024 MB on top.
+        """
+        cuda_idx = self._vulkan_to_cuda_index(spec.device)
+        if cuda_idx is None:
+            return False, f"unknown Vulkan device {spec.device!r} — cannot guarantee full offload"
+
+        free_mb = self._gpu_free_mb(cuda_idx)
+        if free_mb is None:
+            return False, f"could not probe free VRAM on cuda:{cuda_idx} ({spec.device})"
+
+        # If our own previous instance is alive on this GPU, its memory is
+        # already counted as "used" — adopting it should still be allowed even
+        # though free_mb looks low. The adoption path runs before spawn, so
+        # reaching _check_gpu_fits means we're spawning fresh and the prior
+        # process (if any) needs to be considered killed.
+        try:
+            model_mb = os.path.getsize(spec.model_path) // (1024 * 1024)
+        except OSError as _stat_err:
+            return False, f"could not stat model file: {_stat_err}"
+
+        # KV cache budget: bytes ≈ 2 (K+V) * n_layers * hidden * ctx_size * dtype_bytes.
+        # Without parsing the GGUF, use a conservative per-token estimate that
+        # covers both arbiter (phi-4 14B, ~70 KB/token) and coder (qwen3-coder
+        # 30B MoE, ~80 KB/token). 0.5 MB/token = 512 KB/token, generous.
+        kv_mb = (spec.ctx_size * 512) // 1024
+        headroom_mb = 1024
+        needed_mb = model_mb + kv_mb + headroom_mb
+
+        if needed_mb > free_mb:
+            return False, (
+                f"won't fit on {spec.device} (cuda:{cuda_idx}): "
+                f"need {needed_mb} MB (model {model_mb} + kv {kv_mb} + headroom {headroom_mb}), "
+                f"only {free_mb} MB free"
+            )
+        return True, ""
+
+    def _fire_offload_violation(self, spec: InstanceSpec, reason: str) -> None:
+        """ARCHITECTURE INVARIANT VIOLATION: model would offload to CPU.
+
+        Each model owns its GPU end-to-end. Partial offload is a hard failure
+        — never a graceful degradation. Refuses spawn and registers a CRITICAL
+        LIFESAVER so the operator knows to free the assigned GPU.
+        """
+        msg = (
+            f"GPU offload invariant violated: {spec.name} ({os.path.basename(spec.model_path)}) "
+            f"on {spec.device} — {reason}. "
+            f"Each HME model OWNS its GPU. Free the assigned device and restart the shim."
+        )
+        logger.error(f"llamacpp_supervisor: {msg}")
+        try:
+            from server import context as _ctx
+            _ctx.register_critical_failure(
+                f"llamacpp_offload_invariant({spec.name})",
+                msg,
+                severity="CRITICAL",
+            )
+        except Exception as _life_err:
+            logger.error(f"llamacpp_supervisor: failed to register LIFESAVER for offload violation: {_life_err}")
+
     # ── spawn ────────────────────────────────────────────────────────────
     def _spawn(self, spec: InstanceSpec) -> bool:
         """Launch spec as a detached subprocess. Returns True if the process
-        started (not that it's healthy yet — that's for the next health tick)."""
+        started (not that it's healthy yet — that's for the next health tick).
+
+        ARCHITECTURE INVARIANT: refuses to spawn if model would offload to CPU.
+        Full GPU residence is guaranteed by HME's design. A model that doesn't
+        fit on its assigned device is a CRITICAL LIFESAVER, not a degradation.
+        """
         if not os.path.isfile(self._bin):
             logger.error(f"llamacpp_supervisor: binary not found at {self._bin}")
             return False
@@ -178,6 +274,19 @@ class _Supervisor:
         if spec.lora_path and not os.path.isfile(spec.lora_path):
             logger.warning(f"llamacpp_supervisor: {spec.name} lora missing: {spec.lora_path} — launching without lora")
             spec.lora_path = None
+
+        # Invariant check: full offload must fit in assigned GPU's free VRAM.
+        # n_gpu_layers must be 999 (full) per HME architecture.
+        if spec.n_gpu_layers != 999:
+            self._fire_offload_violation(
+                spec,
+                f"n_gpu_layers={spec.n_gpu_layers} (must be 999 for full offload)",
+            )
+            return False
+        fits, reason = self._check_gpu_fits(spec)
+        if not fits:
+            self._fire_offload_violation(spec, reason)
+            return False
 
         # Rate-limit restarts to avoid spinning on a broken config
         now = time.time()
