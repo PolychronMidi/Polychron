@@ -24,41 +24,56 @@ CONVERT      = f"{LLAMA_CPP}/convert_hf_to_gguf.py"
 PHI4_HF_CACHE = "/home/jah/.cache/huggingface/hub/models--microsoft--phi-4"
 
 
-def step1_merge():
+def step1_merge_and_save():
+    """Load base + adapter, merge in RAM, force-materialize tensors, drop HF
+    cache from disk, THEN save merged model. This keeps peak disk usage to
+    only the merged size (29 GB) instead of (phi-4 cache 28 GB + merged 29 GB).
+    """
     print("Step 1: Merging v6 adapter into phi-4...")
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from peft import PeftModel
 
-    print(f"  Loading base: {BASE_MODEL} (bf16)")
+    print(f"  Loading base: {BASE_MODEL} (bf16, forced into RAM — no mmap)")
+    # low_cpu_mem_usage=False + explicit no mmap forces real RAM copy so we can
+    # delete the underlying safetensors files without segfault.
     base = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
         torch_dtype=torch.bfloat16,
         device_map="cpu",
         trust_remote_code=True,
+        low_cpu_mem_usage=False,
     )
+    # Force copy every parameter into fresh RAM-owned tensors (severs mmap).
+    print("  Materializing base weights into RAM...")
+    for p in base.parameters():
+        p.data = p.data.clone()
+    for b in base.buffers():
+        b.data = b.data.clone()
+
     print(f"  Loading adapter: {ADAPTER_PATH}")
     model = PeftModel.from_pretrained(base, ADAPTER_PATH)
     print("  Merging...")
     merged = model.merge_and_unload()
+    for p in merged.parameters():
+        p.data = p.data.clone()
+
+    # Save tokenizer from cache BEFORE we delete it.
+    print("  Loading tokenizer into RAM...")
+    tok = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+
+    # Now safe to drop HF cache — everything we need is in RAM.
+    print(f"  Dropping phi-4 HF cache at {PHI4_HF_CACHE}")
+    if os.path.isdir(PHI4_HF_CACHE):
+        shutil.rmtree(PHI4_HF_CACHE)
+    subprocess.run(["df", "-h", "/"], check=False)
 
     print(f"  Saving merged model to {MERGED_PATH}")
     os.makedirs(MERGED_PATH, exist_ok=True)
     merged.save_pretrained(MERGED_PATH, safe_serialization=True)
-
-    print("  Saving tokenizer...")
-    tok = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
     tok.save_pretrained(MERGED_PATH)
-    print("  Step 1 done.")
-
-
-def step1b_drop_hf_cache():
-    """Delete phi-4 HF cache to free ~28 GB before conversion."""
-    print(f"Step 1b: Deleting phi-4 HF cache at {PHI4_HF_CACHE}")
-    if os.path.isdir(PHI4_HF_CACHE):
-        shutil.rmtree(PHI4_HF_CACHE)
     subprocess.run(["df", "-h", "/"], check=False)
-    print("  Step 1b done.")
+    print("  Step 1 done.")
 
 
 def step2_convert():
