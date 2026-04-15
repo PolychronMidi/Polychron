@@ -1,5 +1,5 @@
 {
-  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON \u2014 no Python changes needed.",
+  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON — no Python changes needed.",
   "_types": {
     "files_executable": "All files matching glob (minus exclude) must be executable",
     "files_referenced": "All files matching glob must appear in reference_file. match_mode='stem' strips extension before matching",
@@ -401,7 +401,7 @@
     },
     {
       "id": "git-no-untracked",
-      "description": "No untracked files exist outside .gitignore \u2014 every intentional file must be committed",
+      "description": "No untracked files exist outside .gitignore — every intentional file must be committed",
       "type": "shell_output_empty",
       "shell": "git ls-files --others --exclude-standard",
       "severity": "error"
@@ -445,7 +445,7 @@
     },
     {
       "id": "tab-helpers-exists",
-      "description": "_tab_helpers.sh must exist \u2014 sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
+      "description": "_tab_helpers.sh must exist — sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
       "type": "file_exists",
       "path": "tools/HME/hooks/_tab_helpers.sh",
       "severity": "error"
@@ -498,7 +498,7 @@
     },
     {
       "id": "hme-py-no-silent-catchall",
-      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared \u2014 any new instance is a regression.",
+      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared — any new instance is a regression.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/mcp/server",
       "severity": "error"
@@ -544,9 +544,9 @@
     },
     {
       "id": "no-mcp-side-timeouts-synthesis",
-      "description": "llama.cpp-backed synthesis must not enforce wall clocks MCP-side; timeout belongs in the llamacpp daemon. Lines inside _llamacpp_generate / _llamacpp_chat are exempt because llama.cpp has no persistent daemon \u2014 thread abandonment is the only way to enforce wall clocks on the OpenAI HTTP client.",
+      "description": "llama.cpp wall-clock enforcement belongs exclusively in llamacpp_daemon.py. No synthesis file may spawn a thread and join(timeout=) on it — the daemon does this internally. Previously exempted _local_chat has been rerouted through _daemon_generate.",
       "type": "shell_output_empty",
-      "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null | grep -v '# llamacpp-ok'",
+      "shell": "grep -n \"join(timeout=\" tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null",
       "severity": "error"
     },
     {
@@ -559,35 +559,35 @@
     },
     {
       "id": "no-hardcoded-llamacpp-ports",
-      "description": "HME server files must not hardcode llamacpp ports 11434/11435/11436 \u2014 they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy llamacpp branch guarded by HME_ARBITER_BACKEND.",
+      "description": "HME server files must not hardcode llamacpp ports 11434/11435/11436 — they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy llamacpp branch guarded by HME_ARBITER_BACKEND.",
       "type": "shell_output_empty",
       "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/mcp/server/ --include='*.py' | grep -v 'HME_LLAMACPP_PORT' | grep -v '# llamacpp-legacy-ok'",
       "severity": "error"
     },
     {
       "id": "conductor-no-or-zero-on-validator-output",
-      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0\u21920.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
+      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0→0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '(V\\.optionalFinite\\([^)]*,[^)]*\\)|safePreBoot\\.call\\([^)]*,[^)]*\\))\\s*\\|\\|' src/ --include='*.js'",
       "severity": "error"
     },
     {
       "id": "hme-py-exception-must-have-name",
-      "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell \u2014 you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case.",
+      "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell — you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-unnamed-except.py tools/HME/mcp/server",
       "severity": "error"
     },
     {
       "id": "conductor-histogram-uses-nullish",
-      "description": "Map/object histogram counter reads should use `?? 0` not `|| 0`. A zero count in `(counts.get(k) || 0) + 1` is coerced to 0 + 1 \u2014 correct here \u2014 but the idiom is brittle; `?? 0` documents intent and won't break if the counter type changes to allow falsy non-undefined values.",
+      "description": "Map/object histogram counter reads should use `?? 0` not `|| 0`. A zero count in `(counts.get(k) || 0) + 1` is coerced to 0 + 1 — correct here — but the idiom is brittle; `?? 0` documents intent and won't break if the counter type changes to allow falsy non-undefined values.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '\\.get\\([^)]*\\)\\s*\\|\\|\\s*0\\b' src/conductor/ --include='*.js' | grep -v '//.*nullish' | grep -v '\\.size'",
       "severity": "error"
     },
     {
       "id": "activity-emitter-exists",
-      "description": "Phase 1 activity bridge (openshell_features_to_mimic.md) \u2014 shared event emitter CLI must exist so hooks can append to hme-activity.jsonl",
+      "description": "Phase 1 activity bridge (openshell_features_to_mimic.md) — shared event emitter CLI must exist so hooks can append to hme-activity.jsonl",
       "type": "file_exists",
       "path": "tools/HME/activity/emit.py",
       "severity": "error"
@@ -616,7 +616,7 @@
     },
     {
       "id": "hme-proxy-exists",
-      "description": "Phase 2 (inference proxy) \u2014 hme_proxy.js must exist so ANTHROPIC_BASE_URL routing is available",
+      "description": "Phase 2 (inference proxy) — hme_proxy.js must exist so ANTHROPIC_BASE_URL routing is available",
       "type": "file_exists",
       "path": "tools/HME/proxy/hme_proxy.js",
       "severity": "error"
@@ -630,7 +630,7 @@
     },
     {
       "id": "check-hme-coherence-exists",
-      "description": "Phase 3 (policy engine) \u2014 check-hme-coherence.js must exist as the pipeline gate reading hme-activity.jsonl",
+      "description": "Phase 3 (policy engine) — check-hme-coherence.js must exist as the pipeline gate reading hme-activity.jsonl",
       "type": "file_exists",
       "path": "scripts/pipeline/check-hme-coherence.js",
       "severity": "error"
@@ -645,14 +645,14 @@
     },
     {
       "id": "kb-staleness-index-exists",
-      "description": "Phase 2.2 \u2014 KB staleness index builder must exist",
+      "description": "Phase 2.2 — KB staleness index builder must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/build-kb-staleness-index.py",
       "severity": "error"
     },
     {
       "id": "coherence-score-exists",
-      "description": "Phase 2.3 \u2014 round coherence score computer must exist",
+      "description": "Phase 2.3 — round coherence score computer must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/compute-coherence-score.js",
       "severity": "error"
@@ -662,19 +662,22 @@
       "description": "main-pipeline.js POST_COMPOSITION must wire the staleness index + coherence score so they regenerate every run",
       "type": "patterns_all_in_file",
       "path": "scripts/pipeline/main-pipeline.js",
-      "patterns": ["build-kb-staleness-index\\.py", "compute-coherence-score\\.js"],
+      "patterns": [
+        "build-kb-staleness-index\\.py",
+        "compute-coherence-score\\.js"
+      ],
       "severity": "error"
     },
     {
       "id": "blindspots-module-exists",
-      "description": "Phase 2.4 \u2014 blind-spot surfacing module must exist under tools_analysis",
+      "description": "Phase 2.4 — blind-spot surfacing module must exist under tools_analysis",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/blindspots.py",
       "severity": "error"
     },
     {
       "id": "cascade-analysis-module-exists",
-      "description": "Phase 2.5 \u2014 causal cascade analysis module must exist",
+      "description": "Phase 2.5 — causal cascade analysis module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
       "severity": "error"
@@ -689,7 +692,7 @@
     },
     {
       "id": "status-new-modes-dispatched",
-      "description": "status_unified must dispatch the Phase 2.2\u20132.4 modes (staleness, coherence, blindspots)",
+      "description": "status_unified must dispatch the Phase 2.2–2.4 modes (staleness, coherence, blindspots)",
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
       "patterns": [
@@ -701,7 +704,7 @@
     },
     {
       "id": "proxy-jurisdiction-injection-wired",
-      "description": "hme_proxy.js must implement jurisdiction injection (Phase 2.1) \u2014 looks up write targets against the bias bounds manifest and injects context into the system prompt",
+      "description": "hme_proxy.js must implement jurisdiction injection (Phase 2.1) — looks up write targets against the bias bounds manifest and injects context into the system prompt",
       "type": "patterns_all_in_file",
       "path": "tools/HME/proxy/hme_proxy.js",
       "patterns": [
@@ -714,7 +717,7 @@
     },
     {
       "id": "hypothesis-registry-module-exists",
-      "description": "Phase 3.1 \u2014 hypothesis registry module must exist",
+      "description": "Phase 3.1 — hypothesis registry module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/hypothesis_registry.py",
       "severity": "error"
@@ -755,7 +758,7 @@
     },
     {
       "id": "semantic-drift-scripts-exist",
-      "description": "Phase 3.3 \u2014 semantic drift checker + signature capture must exist",
+      "description": "Phase 3.3 — semantic drift checker + signature capture must exist",
       "type": "patterns_all_in_file",
       "path": "scripts/pipeline/main-pipeline.js",
       "patterns": [
@@ -780,7 +783,7 @@
     },
     {
       "id": "prediction-reconciler-exists",
-      "description": "Phase 3.4 \u2014 prediction reconciler must exist",
+      "description": "Phase 3.4 — prediction reconciler must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/reconcile-predictions.js",
       "severity": "error"
@@ -798,7 +801,7 @@
     },
     {
       "id": "crystallizer-module-exists",
-      "description": "Phase 3.5 \u2014 pattern crystallizer module must exist",
+      "description": "Phase 3.5 — pattern crystallizer module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/crystallizer.py",
       "severity": "error"
@@ -838,35 +841,35 @@
     },
     {
       "id": "musical-correlation-script-exists",
-      "description": "Phase 4.1 \u2014 musical ground truth correlator must exist (the external anchor)",
+      "description": "Phase 4.1 — musical ground truth correlator must exist (the external anchor)",
       "type": "file_exists",
       "path": "scripts/pipeline/compute-musical-correlation.js",
       "severity": "error"
     },
     {
       "id": "kb-trust-weights-script-exists",
-      "description": "Phase 4.2 \u2014 KB trust weight computer must exist",
+      "description": "Phase 4.2 — KB trust weight computer must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/compute-kb-trust-weights.py",
       "severity": "error"
     },
     {
       "id": "intention-gap-script-exists",
-      "description": "Phase 4.3 \u2014 intention-execution gap tracker must exist",
+      "description": "Phase 4.3 — intention-execution gap tracker must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/compute-intention-gap.js",
       "severity": "error"
     },
     {
       "id": "self-audit-module-exists",
-      "description": "Phase 4.4 \u2014 HME self-audit module must exist",
+      "description": "Phase 4.4 — HME self-audit module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/self_audit.py",
       "severity": "error"
     },
     {
       "id": "probe-module-exists",
-      "description": "Phase 4.5 \u2014 adversarial probe generator must exist",
+      "description": "Phase 4.5 — adversarial probe generator must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/probe.py",
       "severity": "error"
@@ -899,35 +902,35 @@
     },
     {
       "id": "trajectory-script-exists",
-      "description": "Phase 5.1 \u2014 compositional trajectory script must exist",
+      "description": "Phase 5.1 — compositional trajectory script must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/compute-compositional-trajectory.js",
       "severity": "error"
     },
     {
       "id": "coherence-budget-script-exists",
-      "description": "Phase 5.2 \u2014 coherence budget script must exist (homeostatic governance vs. maximization)",
+      "description": "Phase 5.2 — coherence budget script must exist (homeostatic governance vs. maximization)",
       "type": "file_exists",
       "path": "scripts/pipeline/compute-coherence-budget.js",
       "severity": "error"
     },
     {
       "id": "negative-space-module-exists",
-      "description": "Phase 5.3 \u2014 architectural negative space discovery module must exist",
+      "description": "Phase 5.3 — architectural negative space discovery module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/negative_space.py",
       "severity": "error"
     },
     {
       "id": "cognitive-load-module-exists",
-      "description": "Phase 5.4 \u2014 Evolver cognitive load modeling module must exist",
+      "description": "Phase 5.4 — Evolver cognitive load modeling module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/cognitive_load.py",
       "severity": "error"
     },
     {
       "id": "ground-truth-module-exists",
-      "description": "Phase 5.5 \u2014 human ground truth module must exist",
+      "description": "Phase 5.5 — human ground truth module must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/ground_truth.py",
       "severity": "error"
@@ -978,7 +981,7 @@
     },
     {
       "id": "reflexivity-flag-in-cascade",
-      "description": "Phase 6.1 \u2014 cascade_analysis._log_prediction must carry an injected flag",
+      "description": "Phase 6.1 — cascade_analysis._log_prediction must carry an injected flag",
       "type": "pattern_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
       "pattern": "injected: bool = False",
@@ -998,28 +1001,28 @@
     },
     {
       "id": "constitution-script-exists",
-      "description": "Phase 6.2 \u2014 constitutional identity derivation script must exist",
+      "description": "Phase 6.2 — constitutional identity derivation script must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/derive-constitution.py",
       "severity": "error"
     },
     {
       "id": "doc-drift-script-exists",
-      "description": "Phase 6.3 \u2014 doc drift detector must exist",
+      "description": "Phase 6.3 — doc drift detector must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/detect-doc-drift.py",
       "severity": "error"
     },
     {
       "id": "generalizations-script-exists",
-      "description": "Phase 6.4 \u2014 generalization extractor must exist",
+      "description": "Phase 6.4 — generalization extractor must exist",
       "type": "file_exists",
       "path": "scripts/pipeline/extract-generalizations.py",
       "severity": "error"
     },
     {
       "id": "multi-agent-module-exists",
-      "description": "Phase 6.5 \u2014 multi-agent observability scaffold must exist",
+      "description": "Phase 6.5 — multi-agent observability scaffold must exist",
       "type": "file_exists",
       "path": "tools/HME/mcp/server/tools_analysis/multi_agent.py",
       "severity": "error"
