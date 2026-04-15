@@ -23,6 +23,18 @@ from _transcript import iter_tool_uses, load_turn_events  # noqa: E402
 BG_KEYWORDS = (
     "train", "pip install", "pip3 install", "nohup", "accelerate", "axolotl",
     "unsloth", "merge_", "convert_hf_to_gguf", "finetune", "stress-test",
+    # Generic long-running python scripts — `python3 /tmp/foo.py` or inline
+    # `python3 <<EOF ... EOF` in a background command. Catches reindex
+    # loops, download scripts, migration wrappers, and anything launched
+    # from /tmp as a batch one-shot. The presence of `&` at end OR heredoc
+    # marker also indicates the command was intended to run long.
+    "python3 /tmp/", "python3 <<", "python <<",
+    # Shim / daemon restarts deferred via nohup are not the same pattern
+    # (those are quick) — they're caught elsewhere. But if a nohup or
+    # disown appears in the command AND there's a wakeup, that's defer.
+    "disown", "/reindex", "reindex",
+    # HF / large model downloads
+    "snapshot_download", "hf_hub_download", "huggingface_hub",
 )
 
 
@@ -40,6 +52,15 @@ def main() -> int:
                 cmd = tu["input"].get("command", "")
                 if any(kw in cmd for kw in BG_KEYWORDS):
                     saw_bg = True
+            # Also catch the heredoc-in-foreground-then-disown pattern:
+            # `python3 <<'EOF' ... EOF &` with disown on a subsequent line.
+            # Those aren't flagged as run_in_background by the harness but
+            # they ARE background jobs.
+            if tu["name"] == "Bash" and not tu["input"].get("run_in_background"):
+                cmd = tu["input"].get("command", "")
+                if " &" in cmd and "disown" in cmd:
+                    if any(kw in cmd for kw in BG_KEYWORDS):
+                        saw_bg = True
     print("psycho" if (saw_bg and saw_wakeup) else "ok")
     return 0
 

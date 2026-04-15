@@ -48,10 +48,15 @@ MODEL_BACKEND = ENV.require("RAG_BACKEND")
 _engine_ready = threading.Event()
 _project_engine = None
 _global_engine = None
-_shared_model = None           # Qwen3-Embedding-0.6B — text/knowledge/symbols embedder (GPU primary)
+# NOTE: GPU instances are intentionally NOT held at module scope. They're
+# owned by ManagedModel.gpu_instance and nowhere else, so VramManager's
+# offload (which nulls ManagedModel.gpu_instance and calls
+# torch.cuda.empty_cache) can actually release the VRAM. Holding a
+# secondary _shared_model reference here would pin the torch module
+# permanently and silently defeat offload. The `_RagDispatcher` reads the
+# current GPU instance via `_current_gpu()` → `managed_model.gpu_instance`.
+# CPU mirrors stay at module scope — they don't pressure VRAM.
 _shared_model_cpu = None       # Qwen3-Embedding-0.6B — CPU mirror
-_shared_code_model = None      # bge-code-v1 — code_chunks embedder (GPU primary)
-_shared_reranker = None        # mxbai-rerank-base-v2 — cross-encoder for rerank (GPU primary)
 _shared_code_model_cpu = None  # bge-code-v1 — CPU mirror
 _shared_reranker_cpu = None    # mxbai-rerank-base-v2 — CPU mirror
 
@@ -143,7 +148,13 @@ class _RagDispatcher:
         managed_model=None,
         vram_manager=None,
     ):
-        self._gpu = gpu_instance      # used only when managed_model is None
+        # Critical: when a managed_model is provided, DO NOT store the
+        # gpu_instance on self. The ManagedModel owns the single GPU
+        # reference so VramManager offload can actually release VRAM when
+        # it nulls ManagedModel.gpu_instance. Holding a duplicate pointer
+        # here would pin the torch module and silently defeat offload.
+        # This is enforced by the `no-direct-shared-model-encode` invariant.
+        self._gpu = None if managed_model is not None else gpu_instance
         self._cpu = cpu_instance
         self._label = label
         self._mm = managed_model      # dynamic GPU-instance source when set
@@ -167,7 +178,6 @@ class _RagDispatcher:
         cpu = self._cpu
         gpu_at_start = self._current_gpu()
         if gpu_at_start is None and cpu is not None:
-            cpu.acquire_sem = None  # type hint suppression
             self._cpu_sem.acquire()
             return cpu, self._release_cpu
         if cpu is None and gpu_at_start is not None:
@@ -307,7 +317,13 @@ def _ensure_vram_monitor():
 
 
 def _load_engines():
-    global _project_engine, _global_engine, _shared_model, _shared_code_model, _shared_reranker, _shared_code_model_cpu, _shared_reranker_cpu, _lib_engines
+    global _project_engine, _global_engine, _shared_model_cpu, _shared_code_model_cpu, _shared_reranker_cpu, _lib_engines
+    # Note: GPU instances (_shared_model / _shared_code_model / _shared_reranker)
+    # are intentionally local here so VramManager offload can free their VRAM.
+    # See the comment on the module-level variable declarations above.
+    _shared_model = None
+    _shared_code_model = None
+    _shared_reranker = None
     try:
         from sentence_transformers import SentenceTransformer, CrossEncoder
         from rag_engine import RAGEngine
