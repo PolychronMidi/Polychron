@@ -388,58 +388,131 @@ class _Supervisor:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  RAG-GPU-busy flag + routing
+#  Per-GPU busy flags + RAG routing
 # ══════════════════════════════════════════════════════════════════════════
-# Flag represents "some LLM instance is actively generating on the GPU that
-# the RAG stack (jina + bge-reranker) lives on". RAG embed/rerank calls read
-# this flag to route GPU (idle) or CPU mirror (busy) so embedding work never
-# contends with an in-flight generation on the same physical GPU.
+# Each physical GPU (keyed by Vulkan tag) has its own busy flag. A generation
+# call flips the flag for the GPU its target instance lives on; callers on
+# that GPU (RAG stack on GPU0, audio models on GPU1, etc.) read the flag to
+# route GPU (idle) or CPU mirror (busy). Flag is device-based, not name-
+# based — so future instances scheduled onto either GPU participate without
+# code changes.
 #
-# Semantics (vs the old `arbiter_busy` flag):
-#   - Not name-based. Any instance whose spec.device matches the RAG GPU's
-#     Vulkan tag flips the flag. Default: arbiter's device (assumption holds
-#     unless HME_RAG_VULKAN overrides it).
-#   - Watchdog: if flag stays set for > WATCHDOG_S the daemon force-clears
-#     with a warning so a bug in set/clear pairing can't permanently strand
-#     RAG on CPU.
-#   - Backcompat shims below preserve `arbiter_busy_set / _clear /
-#     _arbiter_busy.is_set()` for any old callers.
+# Watchdog: if any flag stays set for > WATCHDOG_S the daemon force-clears
+# with a warning so a bug in set/clear pairing can't permanently strand
+# callers on CPU.
+#
+# Backcompat: the pre-existing single-flag API (_rag_gpu_busy,
+# arbiter_busy_set/clear, rag_route()) still works — it targets the "default"
+# device (arbiter's), so old callers behave exactly as before.
 
-_rag_gpu_busy = threading.Event()
-_rag_gpu_busy_set_ts = 0.0
-_rag_gpu_busy_lock = threading.Lock()
-_RAG_GPU_WATCHDOG_S = 300.0  # 5 min max — longest legit arbiter generation
+_gpu_busy_flags: dict[str, dict] = {}  # vulkan_tag → {event, set_ts}
+_gpu_busy_lock = threading.Lock()
+_GPU_BUSY_WATCHDOG_S = 300.0  # 5 min max — longest legit arbiter/coder generation
+_default_device_cache: str | None = None  # first arbiter device we saw
 
 
-def rag_gpu_busy_set() -> None:
-    global _rag_gpu_busy_set_ts
-    with _rag_gpu_busy_lock:
-        _rag_gpu_busy.set()
-        _rag_gpu_busy_set_ts = time.time()
+def _ensure_device_slot_locked(device: str) -> dict:
+    """Must hold _gpu_busy_lock. Lazily create the per-device state."""
+    if device not in _gpu_busy_flags:
+        _gpu_busy_flags[device] = {
+            "event": threading.Event(),
+            "set_ts": 0.0,
+        }
+    return _gpu_busy_flags[device]
 
 
-def rag_gpu_busy_clear() -> None:
-    with _rag_gpu_busy_lock:
-        _rag_gpu_busy.clear()
+def gpu_busy_set(device: str) -> None:
+    """Mark `device` busy. Device is a Vulkan tag like 'Vulkan1'."""
+    with _gpu_busy_lock:
+        slot = _ensure_device_slot_locked(device)
+        slot["event"].set()
+        slot["set_ts"] = time.time()
 
 
-def _rag_gpu_busy_current() -> bool:
-    """Read flag with watchdog — auto-clear if held past WATCHDOG_S."""
-    with _rag_gpu_busy_lock:
-        if _rag_gpu_busy.is_set():
-            age = time.time() - _rag_gpu_busy_set_ts
-            if age > _RAG_GPU_WATCHDOG_S:
+def gpu_busy_clear(device: str) -> None:
+    with _gpu_busy_lock:
+        slot = _ensure_device_slot_locked(device)
+        slot["event"].clear()
+
+
+def gpu_busy_current(device: str) -> bool:
+    """Read device flag with watchdog — auto-clear if held past WATCHDOG_S."""
+    with _gpu_busy_lock:
+        slot = _gpu_busy_flags.get(device)
+        if slot is None:
+            return False
+        if slot["event"].is_set():
+            age = time.time() - slot["set_ts"]
+            if age > _GPU_BUSY_WATCHDOG_S:
                 logger.warning(
-                    f"rag_gpu_busy watchdog: flag held {age:.0f}s > {_RAG_GPU_WATCHDOG_S:.0f}s — "
-                    f"force-clearing. Check for a stuck generation or missing /arbiter-busy clear."
+                    f"gpu_busy watchdog ({device}): flag held {age:.0f}s > "
+                    f"{_GPU_BUSY_WATCHDOG_S:.0f}s — force-clearing. Check for "
+                    f"a stuck generation or missing clear."
                 )
-                _rag_gpu_busy.clear()
+                slot["event"].clear()
                 return False
             return True
         return False
 
 
-# Backcompat aliases (old /arbiter-busy endpoint + inline calls)
+def gpu_busy_snapshot() -> dict[str, bool]:
+    """All known device flags as a dict, with watchdog applied. Used for
+    multi-device health / status endpoints."""
+    with _gpu_busy_lock:
+        devices = list(_gpu_busy_flags.keys())
+    return {d: gpu_busy_current(d) for d in devices}
+
+
+def _get_default_device() -> str | None:
+    """Return the device used when callers don't specify one. Cached after
+    the first arbiter spec is resolved so repeated lookups are free."""
+    global _default_device_cache
+    if _default_device_cache is not None:
+        return _default_device_cache
+    explicit = os.environ.get("HME_RAG_VULKAN", "").strip()
+    if explicit:
+        _default_device_cache = explicit
+        return _default_device_cache
+    try:
+        for spec in _supervisor_singleton.instances():
+            if spec.name == "arbiter":
+                _default_device_cache = spec.device
+                return _default_device_cache
+    except Exception as _e:
+        logger.debug(
+            f"_get_default_device: supervisor not ready ({type(_e).__name__}: {_e})"
+        )
+    return None
+
+
+# ── Backcompat shims (single-flag API targets the default/arbiter device) ─
+def rag_gpu_busy_set() -> None:
+    device = _get_default_device()
+    if device is not None:
+        gpu_busy_set(device)
+
+
+def rag_gpu_busy_clear() -> None:
+    device = _get_default_device()
+    if device is not None:
+        gpu_busy_clear(device)
+
+
+def _rag_gpu_busy_current() -> bool:
+    device = _get_default_device()
+    if device is None:
+        return False
+    return gpu_busy_current(device)
+
+
+class _LegacyRagFlag:
+    """Lightweight stand-in for the old `_rag_gpu_busy = threading.Event()`
+    reference. Exposes `.is_set()` so stale code paths keep compiling."""
+    def is_set(self) -> bool:
+        return _rag_gpu_busy_current()
+
+
+_rag_gpu_busy = _LegacyRagFlag()
 _arbiter_busy = _rag_gpu_busy
 
 
@@ -451,9 +524,14 @@ def arbiter_busy_clear() -> None:
     rag_gpu_busy_clear()
 
 
-def rag_route() -> str:
-    """Return 'cpu' if the RAG GPU is currently under generation load, else 'gpu'."""
-    return "cpu" if _rag_gpu_busy_current() else "gpu"
+def rag_route(device: str | None = None) -> str:
+    """Return 'cpu' if `device` (or the default device) is currently under
+    generation load, else 'gpu'."""
+    if device is None:
+        device = _get_default_device()
+    if device is None:
+        return "gpu"
+    return "cpu" if gpu_busy_current(device) else "gpu"
 
 
 def _resolve_rag_gpu_device(instances: list) -> str | None:
@@ -533,18 +611,13 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
 
     result_box: list = [None, None]  # [response_dict, error_string]
-    # Flip the RAG-GPU flag if the target instance lives on the RAG GPU.
-    # Device-based, not name-based: any generator sharing RAG's physical GPU
-    # should gate RAG onto the CPU mirror for the duration of the call.
-    rag_gpu_device = _resolve_rag_gpu_device(instances)
+    # Flip the busy flag for the GPU that this generation's target instance
+    # lives on. Per-GPU: callers on that device (RAG on GPU0, audio on GPU1,
+    # future models on either) route to CPU for the duration of the call.
     target_spec = next((spec for spec in instances if spec.alias == model), None)
-    contends_with_rag = (
-        rag_gpu_device is not None
-        and target_spec is not None
-        and target_spec.device == rag_gpu_device
-    )
-    if contends_with_rag:
-        rag_gpu_busy_set()
+    busy_device = target_spec.device if target_spec is not None else None
+    if busy_device is not None:
+        gpu_busy_set(busy_device)
 
     def _worker():
         try:
@@ -580,8 +653,8 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             "total_duration": 0,
         }
     finally:
-        if contends_with_rag:
-            rag_gpu_busy_clear()
+        if busy_device is not None:
+            gpu_busy_clear(busy_device)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -618,28 +691,40 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path == "/health":
+        # Parse ?device=VulkanN query param once for any endpoint that needs it.
+        from urllib.parse import urlparse, parse_qs
+        _parsed = urlparse(self.path)
+        _path = _parsed.path
+        _qs = parse_qs(_parsed.query)
+        _device = (_qs.get("device") or [None])[0]
+
+        if _path == "/health":
             stats = _supervisor_singleton.stats()
             all_healthy = all(
                 s["last_health_ok"] > time.time() - _HEALTH_INTERVAL * 2
                 for s in stats
             ) if stats else False
-            _busy = _rag_gpu_busy_current()
+            _legacy_busy = _rag_gpu_busy_current()
             self._send_json(200, {
                 "status": "ready" if all_healthy else "degraded",
                 "training_locked": _training_locked(),
                 "instances": stats,
-                "arbiter_busy": _busy,       # legacy alias
-                "rag_gpu_busy": _busy,
+                "arbiter_busy": _legacy_busy,       # legacy alias
+                "rag_gpu_busy": _legacy_busy,       # legacy alias (= default device)
+                "gpu_busy": gpu_busy_snapshot(),    # per-device dict
             })
-        elif self.path == "/rag-route":
-            _busy = _rag_gpu_busy_current()
+        elif _path == "/rag-route":
+            if _device is not None:
+                _busy = gpu_busy_current(_device)
+            else:
+                _busy = _rag_gpu_busy_current()
             self._send_json(200, {
+                "device": _device,
                 "route": "cpu" if _busy else "gpu",
                 "arbiter_busy": _busy,       # legacy alias
                 "rag_gpu_busy": _busy,
             })
-        elif self.path == "/stats":
+        elif _path == "/stats":
             self._send_json(200, {"instances": _supervisor_singleton.stats()})
         else:
             self._send_json(404, {"error": "not found"})
@@ -677,6 +762,22 @@ class _Handler(BaseHTTPRequestHandler):
             elif state == "clear":
                 arbiter_busy_clear()
                 self._send_json(200, {"arbiter_busy": False})
+            else:
+                self._send_json(400, {"error": "state must be 'set' or 'clear'"})
+        elif self.path == "/gpu-busy":
+            # Per-device flag update. Used by callers whose work isn't an
+            # llm-generate (audio tools, future GPU workloads) but still
+            # wants to gate siblings on the same physical GPU.
+            device = body.get("device", "")
+            state = body.get("state", "")
+            if not device:
+                self._send_json(400, {"error": "device required (e.g. Vulkan1)"})
+            elif state == "set":
+                gpu_busy_set(device)
+                self._send_json(200, {"device": device, "busy": True})
+            elif state == "clear":
+                gpu_busy_clear(device)
+                self._send_json(200, {"device": device, "busy": False})
             else:
                 self._send_json(400, {"error": "state must be 'set' or 'clear'"})
         else:
