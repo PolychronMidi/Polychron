@@ -60,6 +60,9 @@ const POST_COMPOSITION = [
   { label: 'check-kb-semantic-drift',  cmd: 'python3 scripts/pipeline/check-kb-semantic-drift.py' },
   { label: 'compute-coherence-score',  cmd: 'node scripts/pipeline/compute-coherence-score.js' },
   { label: 'reconcile-predictions',    cmd: 'node scripts/pipeline/reconcile-predictions.js' },
+  { label: 'compute-musical-correlation', cmd: 'node scripts/pipeline/compute-musical-correlation.js' },
+  { label: 'compute-kb-trust-weights', cmd: 'python3 scripts/pipeline/compute-kb-trust-weights.py' },
+  { label: 'compute-intention-gap',    cmd: 'node scripts/pipeline/compute-intention-gap.js' },
 ];
 
 // runner

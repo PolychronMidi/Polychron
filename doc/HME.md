@@ -560,6 +560,76 @@ Run on demand: `learn(action='crystallize')`. Read: `status(mode='crystallized')
 
 Rule-based in v1 — no LLM synthesis. First run promoted 19 patterns from 116 entries (`emergentMelodicEngine` 8 members × 8 rounds, `antagonism-bridge` 6 × 7, `melodic-coupling` 6 × 6, etc.) — exactly the standing principles the Evolver previously had to reconstruct from journal archaeology each session.
 
+### Musical Ground Truth Correlation
+
+Phase 4.1 of the feature mapping — **the external anchor**. Every previous HME metric (coherence, prediction accuracy, staleness, drift, crystallization) is internally circular. `scripts/pipeline/compute-musical-correlation.js` runs post-composition to correlate HME's self-assessment signals against the actual musical output the pipeline produced:
+
+- `hme_coherence` vs `fingerprint_verdict` (numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0)
+- `hme_coherence` vs `perceptual_complexity_avg` (EnCodec section tension)
+- `hme_coherence` vs `clap_tension` (CLAP query peak)
+- same triplet for `hme_prediction_accuracy`
+
+Computes rolling-window Pearson correlation over the last 20 rounds, keeps 60 rounds of history in `metrics/hme-musical-correlation.json`. If the strongest correlation drops below 0.2 over ≥5 points, emits a FATAL warning: HME's self-model has decoupled from musical outcomes and is optimizing its own metrics without that optimization translating to emergence.
+
+Surfaced via `status(mode='music_truth')`. The correlation trend is the ultimate validator for the entire HME architecture — a perfectly coherent HME that produces musically incoherent compositions has optimized the wrong thing entirely.
+
+### Trust-Weighted KB
+
+Phase 4.2 of the feature mapping. Every KB entry gains an epistemic trust weight derived from the round it was written in:
+
+```
+trust = 0.4 × coherence_at_write
+      + 0.3 × accuracy_at_write
+      + 0.2 × verdict_bonus
+      + 0.1 × age_decay
+```
+
+`scripts/pipeline/compute-kb-trust-weights.py` matches each entry's timestamp against the musical-correlation and prediction-accuracy histories (within 14 days), falling back to a 0.5 uniform prior when history is too sparse or distant. Tiers: HIGH ≥ 0.75, MED ≥ 0.5, LOW < 0.5. Requires ≥3 history points before history-derived components activate (otherwise a single degenerate round would drag every entry's trust to the floor).
+
+Output: `metrics/kb-trust-weights.json` keyed by entry id with trust score, tier, and per-component breakdown. Parallel index — no modifications to the lance schema.
+
+Surfaced via `status(mode='kb_trust')`. The proxy reads this file at injection time and labels injected entries by tier so the Evolver sees *how well HME knows something*, not just *what HME knows*.
+
+### Intention-Execution Gap Tracking
+
+Phase 4.3 of the feature mapping. `scripts/pipeline/compute-intention-gap.js` reads the HME todo store (`.claude/mcp/HME/todos.json`) and cross-references each todo against `file_written` events from the activity bridge. Every trackable todo lands in one of three buckets:
+
+- **fully_executed** — status=completed+done=true AND at least one file/module mentioned in the todo text appears in the round's write events
+- **partially_executed** — status=completed but none of the expected targets were actually written
+- **abandoned** — status=pending/in_progress at round end, with at least one trackable target
+
+Untrackable todos (completed with no file references) are dropped from the gap metric.
+
+Improvement vs doc: doc proposed parsing proposed evolutions out of the prose journal. The todo store gives the same signal in clean JSON form — no fuzzy text parsing. Every todo already has `text`, `status`, `done`, `ts`.
+
+Rolling 30-round EMA in `metrics/hme-intention-gap.json`. Surfaced via `status(mode='intention_gap')`. Over many rounds, structural patterns emerge — certain subsystems consistently proposed-but-not-executed (blind spots with extra friction), certain file combinations consistently partial (boundary complexity underestimated).
+
+### HME Self-Audit
+
+Phase 4.4 of the feature mapping. `tools_analysis/self_audit.py` queries three utility signals and surfaces architectural inefficiencies as *evolution candidates*:
+
+1. **KB category usage** — categories with ≥15 entries and zero retrievals (UNUSED), or ≥10 entries with retrievals < entries/10 (UNDER_QUERIED)
+2. **Silent injections** — proxy `jurisdiction_inject` events not followed by `mcp__HME__read` in the same session before `round_complete`
+3. **Cascade overconfidence** — prediction-accuracy EMA < 0.5 over ≥5 rounds
+
+Data sources: `.claude/mcp/HME/knowledge_access.json`, `metrics/hme-activity.jsonl`, `metrics/hme-prediction-accuracy.json`. Read-only — never modifies anything, just reports.
+
+Surfaced via `status(mode='self_audit')`. This is the first step toward HME being subject to the same "structural over parametric" and "never delete — implement" laws that govern Polychron itself: when HME identifies a part of its own architecture that isn't working, that becomes an evolution candidate alongside Polychron candidates in the Evolver's Phase 3 selection.
+
+### Adversarial Self-Probing
+
+Phase 4.5 of the feature mapping. `tools_analysis/probe.py` generates *candidate* probes — deliberately boundary-pushing evolution proposals targeting modules where HME's current model is most likely to be wrong.
+
+Candidates are drawn from the intersection of:
+
+1. **Subsystem intersection modules** — modules whose forward edges cross ≥3 distinct subsystems (from the dependency graph). These are structural intersection points where cascade confidence is most likely mis-calibrated.
+2. **KB trust gaps** — modules with NONE or LOW trust-tier KB coverage (score multiplier ×2).
+3. **Cascade accuracy** — if the prediction-accuracy EMA is unknown or below 0.5, everything gets a ×2 multiplier because the cascade model itself is suspect.
+
+For each candidate, the probe carries a predicted cascade summary (depth-2 forward reach, direct callers, feedback loops) and a predicted_confidence tier. The Evolver runs the probe in a lab sketch (never `main`), observes the actual outcome, and feeds the delta back into HME's trust weights and cascade model.
+
+Surfaced via `status(mode='probes')`. This module never *runs* a probe — it produces candidates and lets the Evolver decide which to execute. Controlled failure is more epistemically valuable than repeated success in familiar territory; the probe mechanism gives HME a way to actively stress-test its own model rather than waiting for the Evolver to accidentally discover blind spots.
+
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
 All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.
