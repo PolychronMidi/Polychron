@@ -1,4 +1,4 @@
-"""HME self-test and hot-reload — tool registration, doc sync, index integrity, Ollama health."""
+"""HME self-test and hot-reload — tool registration, doc sync, index integrity, llama.cpp health."""
 import os
 import logging
 import sys
@@ -284,8 +284,7 @@ def hme_selftest() -> str:
 
     try:
         test = _local_think("respond with OK", max_tokens=5)
-        _backend_label = os.environ.get("HME_ARBITER_BACKEND", "llamacpp")
-        results.append(f"{'PASS' if test else 'FAIL'}: local inference ({_backend_label}) -- {'connected' if test else 'no response'}")
+        results.append(f"{'PASS' if test else 'FAIL'}: local inference (llamacpp) -- {'connected' if test else 'no response'}")
     except Exception as e:
         results.append(f"FAIL: local inference -- {e}")
 

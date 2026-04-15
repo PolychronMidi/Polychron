@@ -203,22 +203,24 @@ def _intent_propagation_tick() -> None:
         logger.debug(f"intent_propagation pre-warm failed (non-fatal): {type(_intent_err).__name__}: {_intent_err}")
 
 
-def _check_ollama_daemon_health() -> None:
-    """Warn if Ollama persistence daemon (port 7735) is unreachable — non-fatal, logged only.
+def _check_llamacpp_daemon_health() -> None:
+    """Warn if llamacpp persistence daemon (port 7735) is unreachable.
 
-    Skipped when HME_ARBITER_BACKEND=llamacpp (default now) — the ollama
-    daemon was retired in commit 0577c0f7 when local inference moved to
-    llama-server. Probing a port that doesn't exist floods hme.log with
-    warnings every monitor tick.
+    The daemon owns llamacpp_supervisor (arbiter + coder llama-server lifecycle)
+    and the arbiter-busy flag that drives RAG CPU/GPU routing. A missing daemon
+    means no supervised restart, no offload-invariant enforcement, no CPU RAG
+    fallback during arbiter-busy periods. Non-fatal but surfaced as a warning.
     """
-    if os.environ.get("HME_ARBITER_BACKEND", "llamacpp").lower() == "llamacpp":
-        return
     try:
         req = urllib.request.Request("http://127.0.0.1:7735/health")
         with urllib.request.urlopen(req, timeout=2):
             return  # daemon alive
     except Exception as e:
-        logger.warning(f"Proxy health monitor: Ollama daemon (port 7735) unreachable: {type(e).__name__}")
+        logger.warning(f"Proxy health monitor: llamacpp daemon (port 7735) unreachable: {type(e).__name__}")
+
+
+# Legacy alias — preserved so existing callers in rag_proxy don't break.
+_check_ollama_daemon_health = _check_llamacpp_daemon_health
 
 
 def _proxy_health_monitor(port: int) -> None:
