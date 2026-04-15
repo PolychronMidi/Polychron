@@ -428,7 +428,15 @@ def what_did_i_forget(changed_files: str) -> str:
     if synthesis:
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
         parts.append(synthesis)
-        total_issues = len(all_warnings) + synthesis.count("\n- ") + synthesis.count("\n* ")
+        # Informational scaffolding prompts (HOOK CHANGE, DOC CHECK, SKIPPED, KB)
+        # are prompts-to-consider, not code defects. They shouldn't inflate the
+        # issue count that NEXUS uses as a stop-gate. Only count actionable
+        # warnings (PYTHON bug patterns, BOUNDARY violations, NEW L0 CHANNEL,
+        # RHYTHM COUPLING, UNKNOWN RHYTHM FIELDS, etc.) plus adaptive synthesis
+        # bullets.
+        _scaffold_prefixes = ("] HOOK CHANGE:", "] DOC CHECK:", "] SKIPPED:", "] KB:")
+        _actionable = [w for w in all_warnings if not any(p in w for p in _scaffold_prefixes)]
+        total_issues = len(_actionable) + synthesis.count("\n- ") + synthesis.count("\n* ")
         if total_issues >= 4:
             parts.append(
                 f"\n_Found {total_issues} issues total — run `review(mode='forget')` again after fixing "
