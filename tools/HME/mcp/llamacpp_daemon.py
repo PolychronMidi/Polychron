@@ -44,16 +44,16 @@ from dataclasses import dataclass, field
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 
+# Central .env loader — fail-fast semantics. See tools/HME/mcp/hme_env.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hme_env import ENV  # noqa: E402
+
 logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("HME.llamacpp")
 logger.setLevel(logging.INFO)
 
 PID_FILE = "/tmp/hme-llamacpp-daemon.pid"
-TRAINING_LOCK = os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")
-
-# llama-server binary — override with HME_LLAMA_SERVER_BIN
-_DEFAULT_BIN = "/home/jah/tools/llama-cpp-vulkan/llama-b8797/llama-server"
-_LOG_DIR_DEFAULT = "/home/jah/Polychron/tools/HME/mcp/log"
+TRAINING_LOCK = ENV.require("HME_TRAINING_LOCK")
 
 _DEFAULT_WALL_TIMEOUT = 45  # hard wall-clock cap for /generate proxy
 _HEALTH_INTERVAL = 60       # self-health-tick interval (s)
@@ -115,27 +115,27 @@ class InstanceSpec:
 # ARCHITECTURE INVARIANT: n_gpu_layers is always 999 (full offload). Any
 # partial-offload scenario fires a CRITICAL LIFESAVER and refuses to spawn.
 def _default_instances() -> list[InstanceSpec]:
-    arbiter_model = os.environ.get("HME_ARBITER_GGUF", "/home/jah/models/phi-4-Q4_K_M.gguf")
-    arbiter_lora  = os.environ.get("HME_ARBITER_LORA", "/home/jah/Polychron/metrics/hme-arbiter-v6-lora.gguf")
-    coder_model   = os.environ.get("HME_CODER_GGUF",   "/home/jah/models/qwen3-coder-30b-Q4_K_M.gguf")
+    arbiter_model = ENV.require("HME_ARBITER")
+    arbiter_lora  = ENV.require("HME_ARBITER_ADAPTER")
+    coder_model   = ENV.require("HME_CODER")
     return [
         InstanceSpec(
             name="arbiter",
             model_path=arbiter_model,
-            port=int(os.environ.get("HME_ARBITER_PORT", "8080")),
-            device=os.environ.get("HME_ARBITER_VULKAN", "Vulkan1"),
-            alias=os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6"),
-            ctx_size=int(os.environ.get("HME_ARBITER_CTX", "4096")),
-            lora_path=arbiter_lora if arbiter_lora and os.path.isfile(arbiter_lora) else None,
+            port=ENV.require_int("HME_ARBITER_PORT"),
+            device=ENV.require("HME_ARBITER_VULKAN"),
+            alias=ENV.require("HME_ARBITER_MODEL"),
+            ctx_size=ENV.require_int("HME_ARBITER_CTX"),
+            lora_path=arbiter_lora if os.path.isfile(arbiter_lora) else None,
             n_gpu_layers=999,  # invariant
         ),
         InstanceSpec(
             name="coder",
             model_path=coder_model,
-            port=int(os.environ.get("HME_CODER_PORT", "8081")),
-            device=os.environ.get("HME_CODER_VULKAN", "Vulkan2"),
-            alias=os.environ.get("HME_CODER_ALIAS", "qwen3-coder:30b"),
-            ctx_size=int(os.environ.get("HME_CODER_CTX", "8192")),
+            port=ENV.require_int("HME_CODER_PORT"),
+            device=ENV.require("HME_CODER_VULKAN"),
+            alias=ENV.require("HME_CODER_ALIAS"),
+            ctx_size=ENV.require_int("HME_CODER_CTX"),
             n_gpu_layers=999,  # invariant
         ),
     ]
@@ -148,10 +148,10 @@ class _Supervisor:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._instances: dict[str, InstanceSpec] = {}
-        self._bin = os.environ.get("HME_LLAMA_SERVER_BIN", _DEFAULT_BIN)
-        self._log_dir = os.environ.get("HME_LLAMA_LOG_DIR", _LOG_DIR_DEFAULT)
-        self._health_timeout_s = float(os.environ.get("HME_LLAMA_HEALTH_TIMEOUT", "3"))
-        self._min_restart_interval = float(os.environ.get("HME_LLAMA_RESTART_COOLDOWN", "30"))
+        self._bin = ENV.require("HME_LLAMA_SERVER_BIN")
+        self._log_dir = ENV.require("HME_LLAMA_LOG_DIR")
+        self._health_timeout_s = ENV.require_float("HME_LLAMA_HEALTH_TIMEOUT")
+        self._min_restart_interval = ENV.require_float("HME_LLAMA_RESTART_COOLDOWN")
 
     def configure(self, instances: list[InstanceSpec] | None = None) -> None:
         instances = instances or _default_instances()

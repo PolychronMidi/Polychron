@@ -32,6 +32,9 @@ _tool_root = os.path.dirname(os.path.abspath(__file__))
 if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
+# Central .env loader — fail-fast semantics.
+from hme_env import ENV  # noqa: E402
+
 logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("HME.http")
 logger.setLevel(logging.INFO)
@@ -216,16 +219,12 @@ def _load_engines():
         # sentence-transformer on a GPU that doesn't have at least _MIN_FREE_GB
         # free AFTER those are loaded. The llamacpp_supervisor owns that
         # allocation — see server/llamacpp_supervisor.py for the authoritative
-        # topology. Default: require 6 GB free for the shim's RAG stack
-        # (bge, jina, reranker together peak around 4-5 GB in steady state).
-        # Override via HME_RAG_MIN_FREE_GB.
-        _MIN_FREE_GB = float(os.environ.get("HME_RAG_MIN_FREE_GB", "6"))
+        # topology. Declared in .env (HME_RAG_MIN_FREE_GB).
+        _MIN_FREE_GB = ENV.require_float("HME_RAG_MIN_FREE_GB")
         _rag_device = "cpu"
-        # HME_RAG_GPU: explicit override. Defaults to "0" so the RAG stack
-        # lands on GPU0 (co-resident with the arbiter) and leaves GPU1
-        # completely clear for the coder llama-server. Set to "-1" to force
-        # CPU; set to "auto" to fall back to the free-memory heuristic.
-        _rag_gpu_env = os.environ.get("HME_RAG_GPU", "0").strip()
+        # HME_RAG_GPU: "0"/"1" = fixed GPU index, "-1" = force CPU,
+        # "auto" = free-memory heuristic.
+        _rag_gpu_env = ENV.require("HME_RAG_GPU").strip()
         try:
             import torch
             if torch.cuda.is_available():
@@ -313,7 +312,7 @@ def _load_engines():
 
         # Reduce jina code-embedding batch size on GPU to avoid OOM spikes when
         # arbiter f16 co-resides on the shared GPU. BGE/ONNX (CPU) stays at BATCH_SIZE=64.
-        _CODE_EMBED_BATCH = int(os.environ.get("HME_CODE_EMBED_BATCH", "8"))
+        _CODE_EMBED_BATCH = ENV.require_int("HME_CODE_EMBED_BATCH")
         if _rag_device.startswith("cuda"):
             os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
@@ -435,7 +434,7 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             ready = _engine_ready.is_set() and _project_engine is not None
             recent_errors = _get_recent_errors(minutes=120)
-            _training_lock = os.environ.get("HME_TRAINING_LOCK", "/home/jah/Polychron/tmp/hme-training.lock")
+            _training_lock = ENV.require("HME_TRAINING_LOCK")
             _training_locked = os.path.exists(_training_lock)
             # During training, report as ready+healthy so the proxy monitor doesn't
             # restart-loop the shim. Training lock intentionally blocks engine init.

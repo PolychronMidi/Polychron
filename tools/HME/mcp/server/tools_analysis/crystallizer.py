@@ -31,10 +31,11 @@ from typing import Any
 
 from server import context as ctx
 from . import _track
+from hme_env import ENV
 
 OUT_REL = os.path.join("metrics", "hme-crystallized.json")
-MIN_ENTRIES = int(os.environ.get("HME_CRYSTALLIZE_MIN_ENTRIES", "3"))
-MIN_ROUNDS = int(os.environ.get("HME_CRYSTALLIZE_MIN_ROUNDS", "3"))
+MIN_ENTRIES = ENV.require_int("HME_CRYSTALLIZE_MIN_ENTRIES")
+MIN_ROUNDS = ENV.require_int("HME_CRYSTALLIZE_MIN_ROUNDS")
 # Tags that are purely metadata / status and shouldn't seed a crystallized
 # pattern by themselves (they group too much unrelated stuff).
 META_TAG_BLACKLIST = {

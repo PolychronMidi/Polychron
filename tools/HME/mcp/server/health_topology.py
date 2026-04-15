@@ -24,10 +24,16 @@ healthy components weighted by criticality.
 """
 import json
 import os
+import sys
 import time
 import threading
 import urllib.request
 import logging
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME")
 
@@ -210,13 +216,11 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
             # Match synthesis_llamacpp's model_init source names too.
             # Arbiter model name comes from .env HME_ARBITER_MODEL.
             if key == "arbiter":
-                arbiter_alias = os.environ.get("HME_ARBITER_MODEL", "")
-                if arbiter_alias:
-                    healthy_signals.append((f"model_init({arbiter_alias})", True))
+                arbiter_alias = ENV.require("HME_ARBITER_MODEL")
+                healthy_signals.append((f"model_init({arbiter_alias})", True))
             if key == "coder":
-                local_model = os.environ.get("HME_LOCAL_MODEL", "")
-                if local_model:
-                    healthy_signals.append((f"model_init({local_model})", True))
+                local_model = ENV.require("HME_LOCAL_MODEL")
+                healthy_signals.append((f"model_init({local_model})", True))
 
     resolved_count = 0
     resolved_sources: set[str] = set()
@@ -245,14 +249,12 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
 
 
 def _check_llamacpp_instances() -> dict:
-    """Probe both llama-server instances (arbiter + coder) via their /health endpoints.
-
-    URLs come from HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL so this
-    tracks whatever .env says; falls back to the default port mapping from
-    commit 0577c0f7 (arbiter 8080, coder 8081).
+    """Probe both llama-server instances (arbiter + coder) via their /health
+    endpoints. URLs come from .env (HME_LLAMACPP_ARBITER_URL /
+    HME_LLAMACPP_CODER_URL) via the central loader — no silent fallbacks.
     """
-    arbiter_url = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-    coder_url   = os.environ.get("HME_LLAMACPP_CODER_URL",   "http://127.0.0.1:8081")
+    arbiter_url = ENV.require("HME_LLAMACPP_ARBITER_URL")
+    coder_url   = ENV.require("HME_LLAMACPP_CODER_URL")
     result = {}
     for key, url in (("arbiter", arbiter_url), ("coder", coder_url)):
         t0 = time.time()

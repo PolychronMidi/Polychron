@@ -27,7 +27,12 @@ def _pick_embed_device() -> str:
     (default: 6 GB, matches shim bge+jina+reranker steady state).
     """
     import os as _os
-    _min_free_gb = float(_os.environ.get("HME_RAG_MIN_FREE_GB", "6"))
+    import sys as _sys
+    _mcp_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _mcp_root not in _sys.path:
+        _sys.path.insert(0, _mcp_root)
+    from hme_env import ENV  # noqa: E402
+    _min_free_gb = ENV.require_float("HME_RAG_MIN_FREE_GB")
     try:
         import torch
         if torch.cuda.is_available():

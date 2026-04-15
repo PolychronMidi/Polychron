@@ -21,16 +21,19 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
 from dataclasses import dataclass, field
 
-logger = logging.getLogger("HME")
+# Central .env loader — fail-fast semantics.
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
-# Default binary — override with HME_LLAMA_SERVER_BIN
-_DEFAULT_BIN = "/home/jah/tools/llama-cpp-vulkan/llama-b8797/llama-server"
-_LOG_DIR_DEFAULT = "/home/jah/Polychron/tools/HME/mcp/log"
+logger = logging.getLogger("HME")
 
 
 @dataclass
@@ -80,9 +83,9 @@ class InstanceSpec:
 # Vulkan device indices: Vulkan0 = Intel iGPU, Vulkan1 = M40 #1, Vulkan2 = M40 #2.
 # Environment overrides let the user retune without a code edit.
 def _default_instances() -> list[InstanceSpec]:
-    arbiter_model = os.environ.get("HME_ARBITER_GGUF", "/home/jah/models/phi-4-Q4_K_M.gguf")
-    arbiter_lora  = os.environ.get("HME_ARBITER_LORA", "/home/jah/Polychron/metrics/hme-arbiter-v6-lora.gguf")
-    coder_model   = os.environ.get("HME_CODER_GGUF",   "/home/jah/models/qwen3-coder-30b-Q4_K_M.gguf")
+    arbiter_model = ENV.require("HME_ARBITER")
+    arbiter_lora  = ENV.require("HME_ARBITER_ADAPTER")
+    coder_model   = ENV.require("HME_CODER")
     # ARCHITECTURE INVARIANT: each model owns its GPU end-to-end. Full offload
     # only — partial offload to CPU is forbidden. n_gpu_layers is hardcoded to
     # 999 (offload everything). Spawn refuses with CRITICAL LIFESAVER if the
@@ -91,20 +94,20 @@ def _default_instances() -> list[InstanceSpec]:
         InstanceSpec(
             name="arbiter",
             model_path=arbiter_model,
-            port=int(os.environ.get("HME_ARBITER_PORT", "8080")),
-            device=os.environ.get("HME_ARBITER_VULKAN", "Vulkan1"),
-            alias=os.environ.get("HME_ARBITER_MODEL", "hme-arbiter-v6"),
-            ctx_size=int(os.environ.get("HME_ARBITER_CTX", "4096")),
-            lora_path=arbiter_lora if arbiter_lora and os.path.isfile(arbiter_lora) else None,
+            port=ENV.require_int("HME_ARBITER_PORT"),
+            device=ENV.require("HME_ARBITER_VULKAN"),
+            alias=ENV.require("HME_ARBITER_MODEL"),
+            ctx_size=ENV.require_int("HME_ARBITER_CTX"),
+            lora_path=arbiter_lora if os.path.isfile(arbiter_lora) else None,
             n_gpu_layers=999,  # full offload — invariant
         ),
         InstanceSpec(
             name="coder",
             model_path=coder_model,
-            port=int(os.environ.get("HME_CODER_PORT", "8081")),
-            device=os.environ.get("HME_CODER_VULKAN", "Vulkan2"),
-            alias=os.environ.get("HME_CODER_ALIAS", "qwen3-coder:30b"),
-            ctx_size=int(os.environ.get("HME_CODER_CTX", "8192")),
+            port=ENV.require_int("HME_CODER_PORT"),
+            device=ENV.require("HME_CODER_VULKAN"),
+            alias=ENV.require("HME_CODER_ALIAS"),
+            ctx_size=ENV.require_int("HME_CODER_CTX"),
             n_gpu_layers=999,  # full offload — invariant
         ),
     ]
@@ -115,10 +118,10 @@ class _Supervisor:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._instances: dict[str, InstanceSpec] = {}
-        self._bin = os.environ.get("HME_LLAMA_SERVER_BIN", _DEFAULT_BIN)
-        self._log_dir = os.environ.get("HME_LLAMA_LOG_DIR", _LOG_DIR_DEFAULT)
-        self._health_timeout_s = float(os.environ.get("HME_LLAMA_HEALTH_TIMEOUT", "3"))
-        self._min_restart_interval = float(os.environ.get("HME_LLAMA_RESTART_COOLDOWN", "30"))
+        self._bin = ENV.require("HME_LLAMA_SERVER_BIN")
+        self._log_dir = ENV.require("HME_LLAMA_LOG_DIR")
+        self._health_timeout_s = ENV.require_float("HME_LLAMA_HEALTH_TIMEOUT")
+        self._min_restart_interval = ENV.require_float("HME_LLAMA_RESTART_COOLDOWN")
         self._started = False
 
     def configure(self, instances: list[InstanceSpec] | None = None) -> None:

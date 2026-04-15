@@ -24,11 +24,12 @@ from typing import Any
 
 from server import context as ctx
 from . import _track
+from hme_env import ENV
 
 ACTIVITY_PATH_REL = os.path.join("metrics", "hme-activity.jsonl")
 STALENESS_PATH_REL = os.path.join("metrics", "kb-staleness.json")
 
-DEFAULT_WINDOW = int(os.environ.get("HME_BLINDSPOT_WINDOW", "10"))
+DEFAULT_WINDOW = ENV.require_int("HME_BLINDSPOT_WINDOW")
 
 SUBSYSTEMS = [
     "utils",
