@@ -298,8 +298,11 @@ def _set_arbiter_busy(busy: bool) -> None:
             headers={"Content-Type": "application/json"},
         )
         _ur.urlopen(req, timeout=0.3).read()
-    except Exception:
-        pass
+    except Exception as _e:
+        # Daemon unreachable is expected during boot / upgrades. Log at
+        # debug level only — the routing degrades safely to GPU-only.
+        import logging as _l
+        _l.getLogger("HME").debug(f"arbiter-busy signal failed: {type(_e).__name__}: {_e}")
 
 
 def _daemon_generate(payload: dict, wall_timeout: float = 15.0) -> dict | None:
@@ -680,7 +683,7 @@ def _local_chat(messages: list[dict], model: str | None = None,
             _holder["_err"] = e
     t = _th.Thread(target=_worker, daemon=True)
     t.start()
-    t.join(timeout=60)
+    t.join(timeout=60)  # llamacpp-ok: _local_chat is OpenAI HTTP client, same rationale as _llamacpp_chat
     if t.is_alive() or _holder["_err"] is not None:
         err = _holder["_err"]
         _cb.record_failure(is_timeout=(t.is_alive() or (err is not None and "time" in str(err).lower())))

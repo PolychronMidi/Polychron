@@ -16,14 +16,14 @@
 // Phase 3.2 split: lazy `coherence_violation` events (FRESH coverage, agent
 // skipped the read) count against violation_penalty. `productive_incoherence`
 // events (MISSING coverage, exploratory write into uncharted territory) boost
-// the score up to +20% — rewarding the Evolver for pushing into genuinely
+// the score up to +20% -- rewarding the Evolver for pushing into genuinely
 // novel ground rather than converging to a local optimum.
 //
 // Output: metrics/hme-coherence.json with the score, components, and trend
 // delta against the previous round (if metrics/snapshots/ has one).
 //
 // Runs as a POST_COMPOSITION step so the staleness index is already built.
-// Non-fatal — produces a diagnostic, doesn't gate the pipeline (that's
+// Non-fatal -- produces a diagnostic, doesn't gate the pipeline (that's
 // check-hme-coherence.js's job in PRE_COMPOSITION).
 
 'use strict';
@@ -81,7 +81,7 @@ function main() {
   const readCoverage = writes.length > 0 ? writesWithPriorRead / writes.length : 1;
 
   // Component 2: violation penalty (lazy violations only).
-  // productive_incoherence events do NOT count here — they feed the
+  // productive_incoherence events do NOT count here -- they feed the
   // exploration bonus below.
   const hookViolations = windowEvents.filter((e) => e && e.event === 'coherence_violation');
   const violationsFromFile = loadJsonMaybe(VIOLATIONS);
@@ -98,7 +98,7 @@ function main() {
   const productiveCount = productiveEvents.length;
   const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
-  // Component 3: staleness penalty — ratio of write events that touched a
+  // Component 3: staleness penalty -- ratio of write events that touched a
   // STALE or MISSING module. Uses the index built in the previous step.
   const stalenessIdx = loadJsonMaybe(STALENESS);
   let stalenessPenalty = 1;
@@ -128,7 +128,7 @@ function main() {
   const score = clamp(baseScore * explorationBonus, 0, 1);
 
   // Trend: diff against previous hme-coherence.json (if there's a backup)
-  // We don't have a snapshot system for this file yet — use the existing
+  // We don't have a snapshot system for this file yet -- use the existing
   // report as "previous" by loading it before we overwrite.
   const prev = loadJsonMaybe(OUT);
   const prevScore = prev && typeof prev.score === 'number' ? prev.score : null;

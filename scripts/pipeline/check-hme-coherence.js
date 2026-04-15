@@ -8,7 +8,7 @@
 // A "round" is the window since the most recent round_complete event, or
 // the full tail if no round boundary exists yet (fresh log).
 //
-// Runs as a pre-composition step so violations surface fast — before the
+// Runs as a pre-composition step so violations surface fast -- before the
 // 10-minute composition, not after. Exit code non-zero aborts npm run main.
 //
 // Violations are written to metrics/hme-violations.json for the posttooluse
@@ -38,7 +38,7 @@ function readEvents() {
     try {
       events.push(JSON.parse(s));
     } catch (_e) {
-      // corrupt line — skip
+      // corrupt line -- skip
     }
   }
   return events;
@@ -81,7 +81,7 @@ if (events.length === 0) {
     },
     violations: [],
   });
-  console.log('check-hme-coherence: PASS (no activity log yet — nothing to audit)');
+  console.log('check-hme-coherence: PASS (no activity log yet -- nothing to audit)');
   process.exit(0);
 }
 
@@ -124,17 +124,17 @@ writeReport(report);
 
 if (violations.length > 0) {
   console.log(
-    `check-hme-coherence: FAIL — ${violations.length} coherence violation(s) in current round ` +
+    `check-hme-coherence: FAIL -- ${violations.length} coherence violation(s) in current round ` +
       `(${hookViolations.length} hook, ${proxyViolations.length} proxy)`,
   );
   const preview = violations.slice(0, 10);
   for (const v of preview) {
     const label = v.file || v.module || '?';
     const src = v.source || 'hook';
-    console.log(`  ${fmtTs(v.ts)}  [${src}]  ${label}  — ${v.reason || '?'}`);
+    console.log(`  ${fmtTs(v.ts)}  [${src}]  ${label}  -- ${v.reason || '?'}`);
   }
   if (violations.length > preview.length) {
-    console.log(`  … and ${violations.length - preview.length} more`);
+    console.log(`  ... and ${violations.length - preview.length} more`);
   }
   console.log(`  Full report: metrics/hme-violations.json`);
   console.log(
@@ -145,6 +145,6 @@ if (violations.length > 0) {
 
 console.log(
   `check-hme-coherence: PASS (${writes.length} write event(s) in window, ` +
-    `${writesWithPriorRead.length} with prior HME read — ${report.meta.coverage_pct}%)`,
+    `${writesWithPriorRead.length} with prior HME read -- ${report.meta.coverage_pct}%)`,
 );
 process.exit(0);

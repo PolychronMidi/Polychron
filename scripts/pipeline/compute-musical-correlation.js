@@ -1,6 +1,6 @@
 // scripts/pipeline/compute-musical-correlation.js
 //
-// Phase 4.1 of openshell_features_to_mimic.md — the external anchor.
+// Phase 4.1 of openshell_features_to_mimic.md -- the external anchor.
 //
 // Every HME metric so far (coherence score, prediction accuracy, staleness,
 // drift, crystallization confidence) is internally circular. A perfectly
@@ -49,7 +49,7 @@ function loadJsonMaybe(p) {
 }
 
 function extractPerceptualSignals(p) {
-  // Returns { complexity_avg, clap_tension, encodec_entropy_avg } — all 0..1ish
+  // Returns { complexity_avg, clap_tension, encodec_entropy_avg } -- all 0..1ish
   if (!p || typeof p !== 'object') return null;
   const out = { complexity_avg: null, clap_tension: null, encodec_entropy_avg: null };
 
@@ -127,7 +127,7 @@ function main() {
   const verdict      = (fingerprint && (fingerprint.verdict || fingerprint.result)) || null;
   const percSignals  = extractPerceptualSignals(perceptual) || {};
 
-  // Verdict → numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0, other=0.5
+  // Verdict -> numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0, other=0.5
   const verdictMap = { STABLE: 1, EVOLVED: 1.1, DRIFTED: 0, UNKNOWN: 0.5 };
   const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;
 
