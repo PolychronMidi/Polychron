@@ -22,6 +22,8 @@ def status(mode: str = "all") -> str:
     mode='trust': trust ecology leaderboard (all 27 systems, 200-beat sample).
     mode='perceptual': perceptual stack status (EnCodec/CLAP/verdict model).
     mode='hme': HME selftest + introspection.
+    mode='activity': HME activity-bridge digest — reads metrics/hme-activity.jsonl,
+    summarizes event counts, coherence-violation ratio, pipeline runs, recent writes.
     mode='freshness': age of every data source — flags stale or out-of-sync data.
     mode='resume': cold-start session briefing — synthesizes git state, nexus lifecycle,
     pipeline verdict, session narrative, and think history for context recovery."""
@@ -71,6 +73,10 @@ def status(mode: str = "all") -> str:
     if mode == "hme":
         from .evolution_admin import hme_selftest as _st
         return _st()
+
+    if mode == "activity":
+        from .activity_digest import activity_digest as _ad
+        return _ad(window="round")
 
     if mode == "freshness":
         return _freshness_report()

@@ -5,9 +5,32 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_onboarding.sh"
 # PostToolUse: Edit — track edited files, remind about review when backlog grows.
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
+SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
+PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
 
 # Only track src/ and tools/HME/ edits (not docs, configs, etc.)
-if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat))/'; then
+if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts))/'; then
+  MODULE=$(_extract_module "$FILE")
+  # Did HME read() run before this edit for the same module? The nexus BRIEF
+  # marker is set by read_unified when mode='before'; if present, coherence holds.
+  HME_READ_PRIOR=false
+  if _nexus_has BRIEF "$MODULE" || _nexus_has BRIEF "$FILE"; then
+    HME_READ_PRIOR=true
+  fi
+  python3 "$PROJECT/tools/HME/activity/emit.py" \
+    --event=file_written \
+    --session="$SESSION_ID" \
+    --file="$FILE" \
+    --module="$MODULE" \
+    --hme_read_prior="$HME_READ_PRIOR" >/dev/null 2>&1 &
+  if [ "$HME_READ_PRIOR" = "false" ] && _onb_is_graduated; then
+    python3 "$PROJECT/tools/HME/activity/emit.py" \
+      --event=coherence_violation \
+      --session="$SESSION_ID" \
+      --file="$FILE" \
+      --module="$MODULE" \
+      --reason=write_without_hme_read >/dev/null 2>&1 &
+  fi
   _nexus_add EDIT "$FILE"
   EDIT_COUNT=$(_nexus_count EDIT)
   if [ "$EDIT_COUNT" -ge 5 ]; then
