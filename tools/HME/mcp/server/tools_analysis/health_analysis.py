@@ -49,7 +49,8 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
             continue
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except health_analysis.py:52: {type(_err).__name__}: {_err}")
             continue
         iife_names = _find_iife_globals(content)
         for name in iife_names:
@@ -77,7 +78,8 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
             continue
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except health_analysis.py:80: {type(_err).__name__}: {_err}")
             continue
         fpath_str = str(fpath)
         for m in combined.finditer(content):
@@ -240,7 +242,8 @@ def convention_check(file_path: str) -> str:
             try:
                 with open(sfp, encoding="utf-8", errors="ignore") as _sfpf:
                     sample_lines.append(sum(1 for _ in _sfpf))
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except health_analysis.py:243: {type(_err).__name__}: {_err}")
                 continue
         if sample_lines:
             import statistics
@@ -267,5 +270,6 @@ def _symbol_exists_in_src(name: str, project_root: str) -> bool:
             capture_output=True, text=True, timeout=5
         )
         return bool(result.stdout.strip())
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except health_analysis.py:270: {type(_err).__name__}: {_err}")
         return False

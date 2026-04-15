@@ -145,7 +145,8 @@ def _loc_offenders(top_n: int = 8) -> str:
             continue
         try:
             lc = sum(1 for _ in open(fpath, encoding="utf-8", errors="ignore"))
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except evolution_evolve.py:148: {type(_err).__name__}: {_err}")
             continue
         if lc > LINE_COUNT_CRITICAL:
             oversize.append((rel, lc))
@@ -247,7 +248,8 @@ def _auto_curate() -> str:
         try:
             with open(os.path.join(history_dir, fname), encoding="utf-8") as f:
                 runs.append(json.load(f))
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except evolution_evolve.py:250: {type(_err).__name__}: {_err}")
             continue
 
     if not runs:

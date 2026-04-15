@@ -193,7 +193,7 @@ pipelineCouplingManager = (() => {
 
   /** Raw Math.abs(r) per pair key, populated each beat. Use instead of snap.couplingMatrix outside the firewall. */
   function getCouplingPressures() {
-    return pipelineCouplingManagerCache.rawPairAbsValues || {};
+    return pipelineCouplingManagerCache.rawPairAbsValues ?? {};
   }
 
   /** @param {string} pairKey  @param {number} newBaseline */

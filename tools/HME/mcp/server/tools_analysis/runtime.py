@@ -52,7 +52,8 @@ def drama_finder(top_n: int = 10) -> str:
             for line in f:
                 try:
                     record = json.loads(line)
-                except Exception:
+                except Exception as _err:
+                    logger.debug(f"unnamed-except runtime.py:55: {type(_err).__name__}: {_err}")
                     continue
                 beat_key = record.get("beatKey", "?")
                 regime = record.get("regime", "?")
@@ -228,7 +229,8 @@ def beat_snapshot(beat_key: str) -> str:
                 for line in f:
                     try:
                         r = json.loads(line)
-                    except Exception:
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except runtime.py:231: {type(_err).__name__}: {_err}")
                         continue
                     bk = r.get("beatKey", "")
                     if bk.startswith(section_num + ":"):
@@ -239,7 +241,8 @@ def beat_snapshot(beat_key: str) -> str:
                 for line in f:
                     try:
                         r = json.loads(line)
-                    except Exception:
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except runtime.py:242: {type(_err).__name__}: {_err}")
                         continue
                     bk = r.get("beatKey", "")
                     if bk == target or bk.startswith(target + ":"):
@@ -253,7 +256,8 @@ def beat_snapshot(beat_key: str) -> str:
         try:
             with open(trace_path, encoding="utf-8") as f:
                 total = sum(1 for _ in f)
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except runtime.py:256: {type(_err).__name__}: {_err}")
             total = "?"
         return (f"Beat '{beat_key}' not found in trace.jsonl ({total} records total).\n"
                 f"Accepted formats: '2:1:3:0' (exact key), '2:1' (prefix), '400' (Nth record), 'S3' (section 3)")

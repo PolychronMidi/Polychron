@@ -412,7 +412,8 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
                     try:
                         with open(fp, encoding="utf-8", errors="ignore") as _f:
                             content = _f.read()
-                    except Exception:
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except reasoning_think.py:415: {type(_err).__name__}: {_err}")
                         continue
                     rel = fp.replace(ctx.PROJECT_ROOT + "/", "")
                     for pat in read_pats:

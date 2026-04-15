@@ -31,7 +31,8 @@ def codebase_health() -> str:
         file_count += 1
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except health.py:34: {type(_err).__name__}: {_err}")
             continue
         lines = content.split("\n")
         line_count = len(lines)
@@ -243,7 +244,8 @@ def doc_sync_check(doc_path: str = "") -> str:
         _rules_path = os.path.join(ctx.PROJECT_ROOT, "tools/HME/config/project-rules.json")
         with open(_rules_path) as _rf:
             _live_non_tools = frozenset(_json.load(_rf).get("known_non_tool_identifiers", []))
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except health.py:246: {type(_err).__name__}: {_err}")
         _live_non_tools = frozenset()
     known_non_tools = param_names | {
         "response_format", "file_type", "top_k", "top_n", "max_depth", "max_tokens",

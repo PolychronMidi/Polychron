@@ -17,7 +17,7 @@ hyperMetaManagerTelemetry = (() => {
     if (!traceSummary || !traceSummary.adaptiveTelemetryReconciliation) return;
 
     const reconciliation = traceSummary.adaptiveTelemetryReconciliation;
-    const pairs = Object.keys(reconciliation.pairs || {});
+    const pairs = Object.keys(reconciliation.pairs ?? {});
 
     for (let i = 0; i < pairs.length; i++) {
       const pair = pairs[i];

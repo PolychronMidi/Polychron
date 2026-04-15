@@ -77,7 +77,8 @@ def hme_introspect() -> str:
         for entry in all_kb_full:
             cat = entry.get("category", "unknown")
             kb_categories[cat] = kb_categories.get(cat, 0) + 1
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except evolution_introspect.py:80: {type(_err).__name__}: {_err}")
         try:
             all_kb = ctx.project_engine.list_knowledge()
             kb_count = len(all_kb)

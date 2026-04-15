@@ -149,7 +149,8 @@ class _LoggingMCP:
                         narration = sn.build_status_narrative()
                         if narration:
                             result = narration + str(result)
-                    except Exception:
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except context.py:152: {type(_err).__name__}: {_err}")
                         # Fallback: bare degraded flag if narration fails
                         if is_degraded():
                             result = "[DEGRADED] RAG proxy unhealthy — shim may be restarting.\n" + str(result)

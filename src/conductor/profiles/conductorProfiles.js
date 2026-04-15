@@ -25,7 +25,7 @@ function conductorProfilesWithAnalysisSettings(profileName, profile) {
     }
   };
   return Object.assign({}, profile, {
-    analysis: Object.assign({}, analysisDefaults, profileAnalysis[profileName] || {}, profile && typeof profile.analysis === 'object' ? profile.analysis : {})
+    analysis: Object.assign({}, analysisDefaults, profileAnalysis[profileName] ?? {}, profile && typeof profile.analysis === 'object' ? profile.analysis : {})
   });
 }
 

@@ -303,7 +303,8 @@ def _git_run(args: list, cwd: str, timeout: int = 5) -> str:
     try:
         r = _subprocess_git.run(args, capture_output=True, text=True, timeout=timeout, cwd=cwd)
         result = r.stdout
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except __init__.py:306: {type(_err).__name__}: {_err}")
         result = ""
     _git_cache[cache_key] = (_time_git.monotonic(), result)
     return result
@@ -323,7 +324,8 @@ def _load_trace(trace_path: str) -> list[dict]:
         for line in f:
             try:
                 records.append(_json.loads(line))
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except __init__.py:326: {type(_err).__name__}: {_err}")
                 continue
     _trace_cache["path"] = trace_path
     _trace_cache["mtime"] = mt

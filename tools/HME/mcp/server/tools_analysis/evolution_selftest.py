@@ -316,7 +316,8 @@ def hme_selftest() -> str:
         results.append(f"INFO: arbiter ({_ARBITER_MODEL[:20]}) -- {arbiter_state}")
         results.append(f"INFO: think history -- {wcs.get('think_history', 0)} exchanges")
         results.append(f"INFO: session narrative -- {wcs.get('session_narrative', 0)} events")
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except evolution_selftest.py:319: {type(_err).__name__}: {_err}")
         results.append("INFO: warm ctx -- not available")
 
     try:

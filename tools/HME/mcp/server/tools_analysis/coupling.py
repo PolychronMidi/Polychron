@@ -213,7 +213,8 @@ def bridge_ledger() -> str:
         return f"Bridge ledger unavailable: {e}"
     try:
         all_kb = ctx.project_engine.list_knowledge_full() or []
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except coupling.py:216: {type(_err).__name__}: {_err}")
         all_kb = []
 
     def _pair_kb_refs(a: str, b: str) -> list[dict]:

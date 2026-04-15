@@ -152,7 +152,8 @@ def _check_symbols_used(inv: dict) -> tuple[bool, str]:
         try:
             with open(uf, encoding="utf-8") as f:
                 file_contents[uf] = f.read()
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except evolution_invariants.py:155: {type(_err).__name__}: {_err}")
             continue
 
     unused = []
@@ -223,7 +224,8 @@ def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
                 title = kb_entry.get("title", "").lower()
                 content = kb_entry.get("content", "").lower()
                 kb_titles_lower.add(title + " " + content[:200])
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except evolution_invariants.py:226: {type(_err).__name__}: {_err}")
                 continue
 
     uncovered = []

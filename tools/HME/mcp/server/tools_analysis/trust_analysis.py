@@ -198,7 +198,8 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
         # Extract section index from beatKey (format: section:phrase:bar:beat)
         try:
             sec = int(str(bk).split(":")[0])
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except trust_analysis.py:201: {type(_err).__name__}: {_err}")
             sec = -1
         if sec not in section_leads:
             section_leads[sec] = {system_a: 0, system_b: 0}
@@ -279,7 +280,8 @@ def trust_report(system_a: str = "", system_b: str = "", mode: str = "both") -> 
                         break
                     try:
                         records.append(json.loads(_line))
-                    except Exception:
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except trust_analysis.py:282: {type(_err).__name__}: {_err}")
                         continue
             agg: dict = defaultdict(lambda: {"weights": [], "scores": [], "hotspot": []})
             for rec in records:

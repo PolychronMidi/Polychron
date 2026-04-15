@@ -37,7 +37,8 @@ def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]
         for line in f:
             try:
                 rec = json.loads(line)
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except perceptual.py:40: {type(_err).__name__}: {_err}")
                 continue
             bk = rec.get("beatKey", "")
             parts = bk.split(":")
@@ -122,7 +123,8 @@ def _run_intent_loop(max_runs: int = 6) -> str:
                 "verdict": snap.get("verdict", "?"),
                 "sections": secs,
             })
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except perceptual.py:125: {type(_err).__name__}: {_err}")
             continue
 
     if len(run_data) < 2:

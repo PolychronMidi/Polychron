@@ -24,7 +24,7 @@ conductorConfigMergeProfileTuning = (base, override, seen = new WeakMap()) => {
 
   const result = {};
   seenOverrides.set(overrideKey, result);
-  const keys = new Set([...Object.keys(base), ...Object.keys(override || {})]);
+  const keys = new Set([...Object.keys(base), ...Object.keys(override ?? {})]);
   for (const key of keys) {
     const baseValue = base[key];
     const overrideValue = override ? override[key] : undefined;

@@ -130,7 +130,8 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
                 n = sum(1 for _ in _f)
             rel = str(fpath).replace(ctx.PROJECT_ROOT + "/", "")
             counts.append((n, rel))
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except search_basic.py:133: {type(_err).__name__}: {_err}")
             continue
     counts.sort(key=lambda x: -x[0])
     parts = [f"## Line Counts ({len(counts)} .{file_type} files in {path})\n"]

@@ -234,7 +234,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
             else:
                 _cb_failure(tier)
                 logger.info(f"Cerebras {tier.label} failed ({e.code}), trying next")
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except synthesis_cerebras.py:237: {type(_err).__name__}: {_err}")
             _cb_failure(tier)
             logger.info(f"Cerebras {tier.label} failed, trying next")
 

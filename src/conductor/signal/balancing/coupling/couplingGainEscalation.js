@@ -318,7 +318,7 @@ couplingGainEscalation = (() => {
         const ts = safePreBoot.call(() => adaptiveTrustScores.getSnapshot(), {});
         let avgTrust = 0;
         let tCount = 0;
-        const entries = Object.values(ts || {});
+        const entries = Object.values(ts);
         for (let i = 0; i < entries.length; i++) {
           if (entries[i] && Number.isFinite(entries[i].score)) {
             avgTrust += entries[i].score;

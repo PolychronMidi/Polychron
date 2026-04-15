@@ -243,7 +243,8 @@ def type_hierarchy(type_name: str = "") -> str:
         basename = os.path.basename(js_file).replace(".js", "")
         try:
             content = open(js_file, encoding="utf-8", errors="ignore").read()
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except symbols.py:246: {type(_err).__name__}: {_err}")
             continue
         # Find all global names referenced in this file (skip its own definition)
         used = set()
@@ -458,7 +459,8 @@ def cross_language_trace(symbol_name: str) -> str:
                 reqs = require_pat.findall(content)
                 matching = [r for r in reqs if symbol_name.lower() in r.lower()]
                 index_files.append((rel, matching))
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except symbols.py:461: {type(_err).__name__}: {_err}")
             continue
     if index_files:
         parts.append(f"\n**Require chain** (index.js files loading this):")
@@ -590,7 +592,8 @@ def get_function_body(function_name: str, file_path: str = "", language: str = "
         try:
             with open(sym["file"], encoding="utf-8", errors="ignore") as _f:
                 content = _f.read()
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except symbols.py:593: {type(_err).__name__}: {_err}")
             continue
         lang = language if language else ext_to_lang(os.path.splitext(sym["file"])[1])
         result = _get_body(content, lang, function_name)
@@ -633,7 +636,8 @@ def l0_channel_map(channel: str = "") -> str:
             try:
                 with open(fpath, encoding="utf-8", errors="ignore") as f:
                     lines = f.readlines()
-            except Exception:
+            except Exception as _err:
+                logger.debug(f"unnamed-except symbols.py:636: {type(_err).__name__}: {_err}")
                 continue
             rel = fpath.replace(ctx.PROJECT_ROOT + "/", "")
             for i, line in enumerate(lines, 1):

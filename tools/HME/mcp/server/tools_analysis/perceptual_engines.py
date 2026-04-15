@@ -266,7 +266,8 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
                 for line in _tf:
                     try:
                         rec = json.loads(line)
-                    except Exception:
+                    except Exception as _err:
+                        logger.debug(f"unnamed-except perceptual_engines.py:269: {type(_err).__name__}: {_err}")
                         continue
                     bk = rec.get("beatKey", "")
                     p = bk.split(":")

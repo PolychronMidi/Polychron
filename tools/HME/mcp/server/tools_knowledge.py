@@ -76,7 +76,8 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
     """Check if a new KB entry contradicts existing entries. Returns warning string or empty."""
     try:
         related = engine.search_knowledge(f"{title} {content}", top_k=5)
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except tools_knowledge.py:79: {type(_err).__name__}: {_err}")
         return ""
     candidates = [e for e in related if 0.3 < e.get("score", 0) < 0.9]
     if not candidates:
@@ -106,7 +107,8 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
             system="You are a strict KB consistency checker. You RARELY flag contradictions. When in doubt, say OK.",
             temperature=0.05,
         )
-    except Exception:
+    except Exception as _err:
+        logger.debug(f"unnamed-except tools_knowledge.py:109: {type(_err).__name__}: {_err}")
         return ""
 
     if not result:

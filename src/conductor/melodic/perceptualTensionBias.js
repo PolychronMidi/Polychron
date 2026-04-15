@@ -12,13 +12,13 @@ perceptualTensionBias = (() => {
       const fs = require('fs');
       const statePath = require('path').join(process.cwd(), 'metrics', 'perceptual-report.json');
       const rep = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-      const secs = (rep.encodec && rep.encodec.sections) || {};
+      const secs = (rep.encodec && rep.encodec.sections) ?? {};
       const cb0Values = Object.values(secs)
         .map(s => s.entropies && s.entropies.cb0)
         .filter(Number.isFinite);
       if (cb0Values.length === 0) return null;
       const meanCb0 = cb0Values.reduce((a, b) => a + b, 0) / cb0Values.length;
-      return { secs, meanCb0, confidence: rep.confidence || 0 };
+      return { secs, meanCb0, confidence: rep.confidence ?? 0 };
     } catch { return null; }
   })();
 

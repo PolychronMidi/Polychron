@@ -1,5 +1,5 @@
 {
-  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON — no Python changes needed.",
+  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON \u2014 no Python changes needed.",
   "_types": {
     "files_executable": "All files matching glob (minus exclude) must be executable",
     "files_referenced": "All files matching glob must appear in reference_file. match_mode='stem' strips extension before matching",
@@ -23,7 +23,9 @@
       "description": "Every hook script must be executable",
       "type": "files_executable",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh"],
+      "exclude": [
+        "_*.sh"
+      ],
       "severity": "error"
     },
     {
@@ -31,7 +33,11 @@
       "description": "Every hook script (excluding helpers) must be registered in tools/HME/hooks/hooks.json",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh", "hooks.json", "statusline.sh"],
+      "exclude": [
+        "_*.sh",
+        "hooks.json",
+        "statusline.sh"
+      ],
       "reference_file": "tools/HME/hooks/hooks.json",
       "severity": "error"
     },
@@ -40,7 +46,9 @@
       "description": "Every custom ESLint rule must be registered in eslint.config.mjs",
       "type": "files_referenced",
       "glob": "scripts/eslint-rules/*.js",
-      "exclude": ["index.js"],
+      "exclude": [
+        "index.js"
+      ],
       "reference_file": "eslint.config.mjs",
       "match_mode": "stem",
       "severity": "error"
@@ -120,7 +128,9 @@
       "description": "Must have at least 23 custom ESLint rules",
       "type": "glob_count_gte",
       "glob": "scripts/eslint-rules/*.js",
-      "exclude": ["index.js"],
+      "exclude": [
+        "index.js"
+      ],
       "min_count": 23,
       "severity": "error"
     },
@@ -129,7 +139,9 @@
       "description": "Must have at least 19 stutter variant files",
       "type": "glob_count_gte",
       "glob": "src/fx/stutter/variants/*.js",
-      "exclude": ["index.js"],
+      "exclude": [
+        "index.js"
+      ],
       "min_count": 19,
       "severity": "warning"
     },
@@ -147,7 +159,16 @@
       "description": "Stop hook must have all 8 critical enforcement sections",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/stop.sh",
-      "patterns": ["hme-errors\\.log", "hme-evolver\\.local\\.md", "_nexus_pending", "ANTI-POLLING", "PLAN-ABANDONMENT", "ANTI-IDLE", "DISMISSIVE", "TEXT_ONLY_SHORT"],
+      "patterns": [
+        "hme-errors\\.log",
+        "hme-evolver\\.local\\.md",
+        "_nexus_pending",
+        "ANTI-POLLING",
+        "PLAN-ABANDONMENT",
+        "ANTI-IDLE",
+        "DISMISSIVE",
+        "TEXT_ONLY_SHORT"
+      ],
       "severity": "error"
     },
     {
@@ -155,7 +176,11 @@
       "description": "log-tool-call.sh must scan HME tool output for FAIL and write to hme-errors.log",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/log-tool-call.sh",
-      "patterns": ["FAIL", "hme-errors\\.log", "mcp__HME__"],
+      "patterns": [
+        "FAIL",
+        "hme-errors\\.log",
+        "mcp__HME__"
+      ],
       "severity": "error"
     },
     {
@@ -163,7 +188,24 @@
       "description": "_safety.sh must define all required helper functions",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/_safety.sh",
-      "patterns": ["_safe_jq", "_safe_py3", "_safe_int", "_safe_curl", "_hme_enrich", "_hme_kb_count", "_hme_kb_titles", "_hme_validate", "_streak_tick", "_streak_reset", "_streak_check", "_emit_enrich_allow", "_emit_block", "_is_project_src", "_is_project_edit_src", "_extract_module"],
+      "patterns": [
+        "_safe_jq",
+        "_safe_py3",
+        "_safe_int",
+        "_safe_curl",
+        "_hme_enrich",
+        "_hme_kb_count",
+        "_hme_kb_titles",
+        "_hme_validate",
+        "_streak_tick",
+        "_streak_reset",
+        "_streak_check",
+        "_emit_enrich_allow",
+        "_emit_block",
+        "_is_project_src",
+        "_is_project_edit_src",
+        "_extract_module"
+      ],
       "severity": "error"
     },
     {
@@ -210,7 +252,15 @@
       "description": "hooks/hooks.json must register hooks for all 7 lifecycle events",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/hooks.json",
-      "patterns": ["SessionStart", "PreToolUse", "PostToolUse", "UserPromptSubmit", "PreCompact", "PostCompact", "Stop"],
+      "patterns": [
+        "SessionStart",
+        "PreToolUse",
+        "PostToolUse",
+        "UserPromptSubmit",
+        "PreCompact",
+        "PostCompact",
+        "Stop"
+      ],
       "severity": "error"
     },
     {
@@ -218,7 +268,9 @@
       "description": "Every shell script in scripts/ must be executable",
       "type": "files_executable",
       "glob": "scripts/*.sh",
-      "exclude": ["_*.sh"],
+      "exclude": [
+        "_*.sh"
+      ],
       "severity": "error"
     },
     {
@@ -299,9 +351,17 @@
       "type": "patterns_all_in_file",
       "path": "doc/ARCHITECTURE.md",
       "patterns": [
-        "density-entropy", "density-flicker", "density-phase", "density-tension",
-        "entropy-phase", "entropy-trust", "flicker-entropy", "flicker-phase",
-        "tension-entropy", "tension-flicker", "tension-phase"
+        "density-entropy",
+        "density-flicker",
+        "density-phase",
+        "density-tension",
+        "entropy-phase",
+        "entropy-trust",
+        "flicker-entropy",
+        "flicker-phase",
+        "tension-entropy",
+        "tension-flicker",
+        "tension-phase"
       ],
       "severity": "warning"
     },
@@ -341,7 +401,7 @@
     },
     {
       "id": "git-no-untracked",
-      "description": "No untracked files exist outside .gitignore — every intentional file must be committed",
+      "description": "No untracked files exist outside .gitignore \u2014 every intentional file must be committed",
       "type": "shell_output_empty",
       "shell": "git ls-files --others --exclude-standard",
       "severity": "error"
@@ -351,7 +411,11 @@
       "description": "Every hook script (excluding helpers) must also be registered in hooks.json",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh", "hooks.json", "statusline.sh"],
+      "exclude": [
+        "_*.sh",
+        "hooks.json",
+        "statusline.sh"
+      ],
       "reference_file": "tools/HME/hooks/hooks.json",
       "severity": "error"
     },
@@ -381,7 +445,7 @@
     },
     {
       "id": "tab-helpers-exists",
-      "description": "_tab_helpers.sh must exist — sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
+      "description": "_tab_helpers.sh must exist \u2014 sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
       "type": "file_exists",
       "path": "tools/HME/hooks/_tab_helpers.sh",
       "severity": "error"
@@ -391,7 +455,12 @@
       "description": "Every hook script must be documented in doc/HME.md hook table",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh", "hooks.json", "statusline.sh", "pretooluse_glob.sh"],
+      "exclude": [
+        "_*.sh",
+        "hooks.json",
+        "statusline.sh",
+        "pretooluse_glob.sh"
+      ],
       "reference_file": "doc/HME.md",
       "severity": "warning"
     },
@@ -400,7 +469,18 @@
       "description": "_nexus.sh must define all 10 lifecycle state functions",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/_nexus.sh",
-      "patterns": ["_nexus_ensure", "_nexus_reset", "_nexus_add", "_nexus_mark", "_nexus_clear_type", "_nexus_has", "_nexus_count", "_nexus_get", "_nexus_list", "_nexus_pending"],
+      "patterns": [
+        "_nexus_ensure",
+        "_nexus_reset",
+        "_nexus_add",
+        "_nexus_mark",
+        "_nexus_clear_type",
+        "_nexus_has",
+        "_nexus_count",
+        "_nexus_get",
+        "_nexus_list",
+        "_nexus_pending"
+      ],
       "severity": "error"
     },
     {
@@ -408,12 +488,17 @@
       "description": "_tab_helpers.sh must define all 4 compact tab functions",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/_tab_helpers.sh",
-      "patterns": ["_tab_path", "_ensure_tab", "_append_file_to_tab", "_extract_bg_output_path"],
+      "patterns": [
+        "_tab_path",
+        "_ensure_tab",
+        "_append_file_to_tab",
+        "_extract_bg_output_path"
+      ],
       "severity": "error"
     },
     {
       "id": "hme-py-no-silent-catchall",
-      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared — any new instance is a regression.",
+      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared \u2014 any new instance is a regression.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/mcp/server",
       "severity": "error"
@@ -423,7 +508,9 @@
       "description": "meta_observer.py must define a trim helper (_trim_) alongside its append-only file writes",
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/meta_observer.py",
-      "patterns": ["_trim_"],
+      "patterns": [
+        "_trim_"
+      ],
       "severity": "warning"
     },
     {
@@ -438,7 +525,10 @@
       "description": "posttooluse_hme_review.sh must extract depth meter count and write REVIEW_ISSUES to nexus",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/posttooluse_hme_review.sh",
-      "patterns": ["REVIEW_ISSUES", "issues total"],
+      "patterns": [
+        "REVIEW_ISSUES",
+        "issues total"
+      ],
       "severity": "error"
     },
     {
@@ -446,12 +536,15 @@
       "description": "_nexus_pending() must check REVIEW_ISSUES count and block stop when count > 3",
       "type": "patterns_all_in_file",
       "path": "tools/HME/hooks/_nexus.sh",
-      "patterns": ["REVIEW_ISSUES", "ri_count"],
+      "patterns": [
+        "REVIEW_ISSUES",
+        "ri_count"
+      ],
       "severity": "error"
     },
     {
       "id": "no-mcp-side-timeouts-synthesis",
-      "description": "Ollama-backed synthesis must not enforce wall clocks MCP-side; timeout belongs in the ollama daemon. Lines inside _llamacpp_generate / _llamacpp_chat are exempt because llama.cpp has no persistent daemon — thread abandonment is the only way to enforce wall clocks on the OpenAI HTTP client.",
+      "description": "Ollama-backed synthesis must not enforce wall clocks MCP-side; timeout belongs in the ollama daemon. Lines inside _llamacpp_generate / _llamacpp_chat are exempt because llama.cpp has no persistent daemon \u2014 thread abandonment is the only way to enforce wall clocks on the OpenAI HTTP client.",
       "type": "shell_output_empty",
       "shell": "grep -n 'join(timeout=' tools/HME/mcp/server/tools_analysis/synthesis_ollama.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null | grep -v '# llamacpp-ok'",
       "severity": "error"
@@ -466,31 +559,31 @@
     },
     {
       "id": "no-hardcoded-ollama-ports",
-      "description": "HME server files must not hardcode ollama ports 11434/11435/11436 — they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy ollama branch guarded by HME_ARBITER_BACKEND.",
+      "description": "HME server files must not hardcode ollama ports 11434/11435/11436 \u2014 they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy ollama branch guarded by HME_ARBITER_BACKEND.",
       "type": "shell_output_empty",
       "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/mcp/server/ --include='*.py' | grep -v 'HME_OLLAMA_PORT' | grep -v '# ollama-legacy-ok'",
       "severity": "error"
     },
     {
       "id": "conductor-no-or-zero-on-validator-output",
-      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0→0.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
+      "description": "Doubled fallback: `V.optionalFinite(x, N) || M` or `safePreBoot.call(fn, N) || M` is a dead outer fallback that also silently rewrites legitimate 0/false readings (see the regimeClassifierClassification 0\u21920.5 tension bug). Use the inner value directly, or nullish coalescing (??) if you want to catch only undefined.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '(V\\.optionalFinite\\([^)]*,[^)]*\\)|safePreBoot\\.call\\([^)]*,[^)]*\\))\\s*\\|\\|' src/ --include='*.js'",
       "severity": "error"
     },
     {
       "id": "hme-py-exception-must-have-name",
-      "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell — you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case.",
+      "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell \u2014 you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-unnamed-except.py tools/HME/mcp/server",
-      "severity": "warning"
+      "severity": "error"
     },
     {
       "id": "conductor-histogram-uses-nullish",
-      "description": "Map/object histogram counter reads should use `?? 0` not `|| 0`. A zero count in `(counts.get(k) || 0) + 1` is coerced to 0 + 1 — correct here — but the idiom is brittle; `?? 0` documents intent and won't break if the counter type changes to allow falsy non-undefined values.",
+      "description": "Map/object histogram counter reads should use `?? 0` not `|| 0`. A zero count in `(counts.get(k) || 0) + 1` is coerced to 0 + 1 \u2014 correct here \u2014 but the idiom is brittle; `?? 0` documents intent and won't break if the counter type changes to allow falsy non-undefined values.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '\\.get\\([^)]*\\)\\s*\\|\\|\\s*0\\b' src/conductor/ --include='*.js' | grep -v '//.*nullish' | grep -v '\\.size'",
-      "severity": "warning"
+      "severity": "error"
     }
   ]
 }

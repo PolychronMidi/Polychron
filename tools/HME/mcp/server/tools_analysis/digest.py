@@ -101,7 +101,8 @@ def check_pipeline() -> str:
         try:
             log_age_s = _time.time() - os.path.getmtime(log_path)
             result = f"Pipeline: IN PROGRESS — `{step_name}` (log updated {log_age_s:.0f}s ago)"
-        except Exception:
+        except Exception as _err:
+            logger.debug(f"unnamed-except digest.py:104: {type(_err).__name__}: {_err}")
             result = f"Pipeline: IN PROGRESS — `{step_name}`"
         _check_pipeline_blocked = True
         return result
