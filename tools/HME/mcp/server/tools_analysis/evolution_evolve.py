@@ -716,9 +716,11 @@ def _adversarial_stress() -> str:
                 for cmd in h.get("hooks", []):
                     script = cmd.get("command", "").split("/")[-1]
                     registered_scripts.add(script)
+        # statusline.sh is registered as a Claude statusLine command, not a hook event
+        _STRESS_HOOK_EXCLUDE = {"statusline.sh"}
         hook_scripts = {
             f for f in os.listdir(hooks_dir)
-            if f.endswith(".sh") and not f.startswith("_")
+            if f.endswith(".sh") and not f.startswith("_") and f not in _STRESS_HOOK_EXCLUDE
         }
         unregistered = hook_scripts - registered_scripts
         results.append((f"hooks.json: hook registration ({len(hook_scripts)} scripts)",
