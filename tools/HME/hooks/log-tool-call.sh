@@ -46,7 +46,7 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   # "failure", "failing", "fallback", "default" that contain "fail" as a substring.
   # Exclude lines containing PASS (test passed), "fail-fast" (project term), or prose infinitive/modal
   # constructions ("fail to", "may fail", "might fail", "could fail") from Edit Risks narrative text.
-  FAILS=$(echo "$TOOL_RESULT" | grep -iE '\bFAIL(ED)?\b' | grep -v 'PASS' | grep -vi 'fail-fast\|fail to\|may fail\|might fail\|could fail' 2>/dev/null)
+  FAILS=$(echo "$TOOL_RESULT" | grep -iE '\bFAIL(ED)?\b' | grep -v 'PASS' | grep -vi 'fail-fast\|fail to\|may fail\|might fail\|could fail' 2>/dev/null || true)
   if [[ -n "$FAILS" ]]; then
     PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
     ERROR_LOG="$PROJECT/log/hme-errors.log"

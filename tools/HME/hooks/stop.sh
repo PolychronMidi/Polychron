@@ -84,10 +84,12 @@ if [[ -f "$LOOP_FILE" ]]; then
   # Parse frontmatter
   FM=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$LOOP_FILE")
 
-  ENABLED=$(echo "$FM" | grep '^enabled:' | sed 's/enabled: *//')
-  ITERATION=$(echo "$FM" | grep '^iteration:' | sed 's/iteration: *//')
-  MAX=$(echo "$FM" | grep '^max_iterations:' | sed 's/max_iterations: *//')
-  DONE_SIGNAL=$(echo "$FM" | grep '^done_signal:' | sed 's/done_signal: *//' | sed 's/^"\(.*\)"$/\1/')
+  # `|| true` on each so set -euo pipefail doesn't kill the stop hook when
+  # an optional frontmatter field is absent (grep returns 1 on no-match).
+  ENABLED=$(echo "$FM" | grep '^enabled:' | sed 's/enabled: *//' || true)
+  ITERATION=$(echo "$FM" | grep '^iteration:' | sed 's/iteration: *//' || true)
+  MAX=$(echo "$FM" | grep '^max_iterations:' | sed 's/max_iterations: *//' || true)
+  DONE_SIGNAL=$(echo "$FM" | grep '^done_signal:' | sed 's/done_signal: *//' | sed 's/^"\(.*\)"$/\1/' || true)
 
   # Skip if disabled
   if [[ "$ENABLED" != "true" ]]; then
@@ -246,7 +248,7 @@ if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
   DIFF_OUT=$(PROJECT_ROOT="$_AC_PROJECT" python3 "$HOLO_SCRIPT" --diff "$SESSION_HOLO" 2>/dev/null)
   if [ -n "$DIFF_OUT" ] && ! echo "$DIFF_OUT" | grep -q "No drift"; then
     # Filter noise — only surface dimensions that actually matter
-    FILTERED=$(echo "$DIFF_OUT" | grep -vE "^  (hci|streak|onboarding|git_state|kb_summary|pipeline_history|codebase|todo_store)\.")
+    FILTERED=$(echo "$DIFF_OUT" | grep -vE "^  (hci|streak|onboarding|git_state|kb_summary|pipeline_history|codebase|todo_store)\." || true)
     if [ -n "$FILTERED" ] && [ "$(echo "$FILTERED" | wc -l)" -gt 1 ]; then
       echo "$FILTERED" | head -20 >&2
       echo "" >&2
