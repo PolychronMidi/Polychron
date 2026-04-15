@@ -415,7 +415,7 @@
       "id": "hme-py-no-silent-catchall",
       "description": "HME Python server files must not use silent `except Exception: pass` catch-all (swallows all errors)",
       "type": "shell_output_empty",
-      "shell": "grep -rn 'except Exception: *pass' tools/HME/mcp/server/ --include='*.py'",
+      "shell": "grep -rnE '^[[:space:]]*except[[:space:]]+Exception:[[:space:]]*pass' tools/HME/mcp/server/ --include='*.py'",
       "severity": "warning"
     },
     {
