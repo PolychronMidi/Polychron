@@ -630,6 +630,81 @@ For each candidate, the probe carries a predicted cascade summary (depth-2 forwa
 
 Surfaced via `status(mode='probes')`. This module never *runs* a probe — it produces candidates and lets the Evolver decide which to execute. Controlled failure is more epistemically valuable than repeated success in familiar territory; the probe mechanism gives HME a way to actively stress-test its own model rather than waiting for the Evolver to accidentally discover blind spots.
 
+### Compositional Trajectory
+
+Phase 5.1 of the feature mapping. `scripts/pipeline/compute-compositional-trajectory.js` fits a linear trend to the last 20 rounds of perceptual signals from `metrics/hme-musical-correlation.json`:
+
+- `perceptual_complexity_avg` — average EnCodec section tension
+- `clap_tension` — CLAP tension-query peak similarity
+- `encodec_entropy_avg` — mean codebook entropy
+
+Per-signal slope is classified GROWING / PLATEAU / DECLINING against a per-signal threshold. Overall verdict is a majority vote with PLATEAU as the conservative tiebreaker.
+
+Output: `metrics/hme-trajectory.json` with per-signal slope/intercept/variance and a rolling 60-round verdict history. Surfaced via `status(mode='trajectory')`. Feeds the coherence budget — when the trajectory shows PLATEAU or DECLINING, HME's guidance shifts toward structural novelty regardless of how well individual rounds are executed.
+
+### Coherence Budget (Homeostatic Governance)
+
+Phase 5.2 of the feature mapping — **the inversion point**. The previous phases all optimized HME toward more discipline. This one recognizes that maximum discipline may suppress the productive chaos that generates musical emergence — and instead *calibrates* coherence to an optimal band derived from history.
+
+`scripts/pipeline/compute-coherence-budget.js` algorithm:
+
+1. Read musical-correlation history and compute each round's composite musical-outcome score (`0.5 × perceptual_complexity + 0.3 × clap_tension + 0.2 × verdict_numeric`).
+2. Take the top quartile of rounds by outcome — "the good rounds".
+3. The optimal coherence band = [25th, 75th] percentile of `hme_coherence` values in those good rounds.
+4. If history has <8 rounds, use a prior band of [0.55, 0.85].
+5. Classify current coherence as BELOW / OPTIMAL / ABOVE the band and emit a prescription:
+   - **BELOW**: TIGHTEN — proxy injects forcefully (full KB context + bias bounds + open hypotheses)
+   - **OPTIMAL**: NORMAL injection
+   - **ABOVE**: RELAX — proxy skips non-critical warnings, allows writes into low-coverage territory without emitting `coherence_violation`, flags the round as "emergence-licensed"
+
+Output: `metrics/hme-coherence-budget.json` with band, current state, and prescription. Surfaced via `status(mode='budget')`. Stops maximizing coherence and starts *governing* it homeostatically — the same pattern Polychron's own conductors use for density, tension, and flicker.
+
+### Architectural Negative Space Discovery
+
+Phase 5.3 of the feature mapping. `tools_analysis/negative_space.py` finds structural gaps in Polychron's topology that aren't blind spots (the Evolver never considered them) but genuine theoretical absences the system's own structure predicts.
+
+Two mechanical detectors (v1 deliberately avoids semantic similarity):
+
+1. **Feedback loop near-misses** — for each registered feedback loop, compute the set of modules whose dependency-graph edges touch ≥⌊|loop|/2⌋ of the loop's participants but aren't themselves registered in the loop. Universal infrastructure modules (those with producer fan-out ≥30) are filtered out so `validator`/`clamps`/`index` don't dominate. Top candidate on first run: `stutterVariants → entropy-regulator` at 1.0 confidence (3/3 participants touched, not in loop).
+2. **Co-consumed orphan pairs** — module pairs imported together by ≥5 shared consumers (excluding universal modules) with no direct producer→consumer edge between them. The architecture treats them as functionally related without explicit wiring. Top result: `stutterNotes ↔ stutterVariants` (20 shared consumers).
+
+Surfaced via `status(mode='negative_space')`. These become first-class evolution candidates that the Evolver didn't have to think of — they emerge from HME's structural model of the system.
+
+### Evolver Cognitive Load Modeling
+
+Phase 5.4 of the feature mapping. HME models Polychron's architecture and its own KB. This module adds a model of the agent running the loop.
+
+`tools_analysis/cognitive_load.py` walks the activity bridge and computes per-closed-round load signatures: total tool calls, file writes, edit pendings. Maintains a rolling distribution and classifies the current session:
+
+- **LOW** — tool_calls below p50 of historical workload
+- **MEDIUM** — tool_calls above p50
+- **MEDIUM_HIGH** — tool_calls and file_writes both above p75
+- **HIGH** — tool_calls above p90 (top decile of workloads)
+
+Output: `metrics/hme-cognitive-load.json` with current signature, historical distribution, and load level. Surfaced via `status(mode='cognitive_load')`. Needs ≥5 closed rounds before percentile classification activates.
+
+### Human Ground Truth — The Grounding Anchor
+
+Phase 5.5 of the feature mapping — the answer to the circularity problem. Every HME metric eventually grounds out in HME's own outputs. Musical correlation was a partial external anchor but EnCodec and CLAP measure audio features, not musical meaning. The only complete anchor is a human listener finding the composition genuinely moving.
+
+`tools_analysis/ground_truth.py` makes human feedback a first-class HME signal:
+
+```
+learn(action='ground_truth',
+      title=SECTION,              # S0..S6 or 'all'
+      tags=[moment_type, sentiment],
+      content=COMMENT,
+      query=round_tag)
+```
+
+Records land in two places:
+1. `metrics/hme-ground-truth.jsonl` — append-only stream keyed by timestamp
+2. The KB via `add_knowledge`, tagged `human_ground_truth`, category `decision`
+
+**Trust override**: `compute-kb-trust-weights.py` detects the `human_ground_truth` tag and unconditionally assigns tier HIGH (trust=1.0). When an HME prediction conflicts with a ground-truth entry, the ground-truth wins and the conflict is surfaced. HME can be as sophisticated as it becomes, but the ultimate coherence validator is whether a human finds the music meaningful — and the system should never be able to optimize its way around that.
+
+Surfaced via `status(mode='ground_truth')`.
+
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
 All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.

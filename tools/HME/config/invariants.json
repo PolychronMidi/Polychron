@@ -896,6 +896,85 @@
         "mode == \"probes\""
       ],
       "severity": "error"
+    },
+    {
+      "id": "trajectory-script-exists",
+      "description": "Phase 5.1 \u2014 compositional trajectory script must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/compute-compositional-trajectory.js",
+      "severity": "error"
+    },
+    {
+      "id": "coherence-budget-script-exists",
+      "description": "Phase 5.2 \u2014 coherence budget script must exist (homeostatic governance vs. maximization)",
+      "type": "file_exists",
+      "path": "scripts/pipeline/compute-coherence-budget.js",
+      "severity": "error"
+    },
+    {
+      "id": "negative-space-module-exists",
+      "description": "Phase 5.3 \u2014 architectural negative space discovery module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/negative_space.py",
+      "severity": "error"
+    },
+    {
+      "id": "cognitive-load-module-exists",
+      "description": "Phase 5.4 \u2014 Evolver cognitive load modeling module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/cognitive_load.py",
+      "severity": "error"
+    },
+    {
+      "id": "ground-truth-module-exists",
+      "description": "Phase 5.5 \u2014 human ground truth module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/ground_truth.py",
+      "severity": "error"
+    },
+    {
+      "id": "phase5-pipeline-steps-wired",
+      "description": "main-pipeline.js POST_COMPOSITION must run Phase 5 scripts (trajectory + budget)",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "patterns": [
+        "compute-compositional-trajectory\\.js",
+        "compute-coherence-budget\\.js"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "phase5-status-modes",
+      "description": "status_unified must dispatch the Phase 5 modes (trajectory, budget, negative_space, cognitive_load, ground_truth)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "patterns": [
+        "mode == \"trajectory\"",
+        "mode == \"budget\"",
+        "mode == \"negative_space\"",
+        "mode == \"cognitive_load\"",
+        "mode == \"ground_truth\""
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "ground-truth-action-in-learn",
+      "description": "learn_unified must dispatch action='ground_truth'",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/learn_unified.py",
+      "pattern": "action == \"ground_truth\"",
+      "severity": "error"
+    },
+    {
+      "id": "ground-truth-kb-override",
+      "description": "compute-kb-trust-weights.py must unconditionally tier human_ground_truth KB entries as HIGH",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/compute-kb-trust-weights.py",
+      "patterns": [
+        "human_ground_truth",
+        "\"tier\": \"HIGH\""
+      ],
+      "severity": "error"
     }
   ]
 }

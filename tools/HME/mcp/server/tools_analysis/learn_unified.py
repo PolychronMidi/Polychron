@@ -100,6 +100,23 @@ def learn(query: str = "", title: str = "", content: str = "",
         from .crystallizer import crystallize_cli as _cc
         return _cc()
 
+    if action == "ground_truth":
+        # Phase 5.5 — human ground-truth feedback. We reuse the learn()
+        # parameter surface: title=section, tags[0]=moment_type,
+        # tags[1]=sentiment, query=round_tag, content=comment,
+        # listening_notes=also-comment (either works).
+        from .ground_truth import record_ground_truth as _gt
+        _moment = tags[0] if tags and len(tags) > 0 else ""
+        _sent = tags[1] if tags and len(tags) > 1 else ""
+        _comment = content or listening_notes or ""
+        return _gt(
+            section=title,
+            moment_type=_moment,
+            sentiment=_sent,
+            comment=_comment,
+            round_tag=query,
+        )
+
     # Remove action
     if remove:
         from server.tools_knowledge import remove_knowledge as _rk

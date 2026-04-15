@@ -130,6 +130,24 @@ def status(mode: str = "all") -> str:
         from .probe import probes_report as _pr
         return _pr()
 
+    if mode == "trajectory":
+        return _trajectory_report()
+
+    if mode == "budget":
+        return _budget_report()
+
+    if mode == "negative_space":
+        from .negative_space import negative_space_report as _ns
+        return _ns()
+
+    if mode == "cognitive_load":
+        from .cognitive_load import cognitive_load_report as _cl
+        return _cl()
+
+    if mode == "ground_truth":
+        from .ground_truth import ground_truth_report as _gt
+        return _gt()
+
     if mode == "freshness":
         return _freshness_report()
 
@@ -563,6 +581,80 @@ def _resume_briefing() -> str:
             parts.append(f"  {line}")
 
     return "\n".join(parts)
+
+
+def _trajectory_report() -> str:
+    """Render metrics/hme-trajectory.json (Phase 5.1)."""
+    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-trajectory.json")
+    if not os.path.exists(path):
+        return (
+            "# Compositional Trajectory\n\n"
+            "metrics/hme-trajectory.json not found.\n"
+            "Run: node scripts/pipeline/compute-compositional-trajectory.js"
+        )
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as _e:
+        return f"# Compositional Trajectory\n\nCould not read: {type(_e).__name__}: {_e}"
+    meta = data.get("meta", {}) or {}
+    verdict = data.get("verdict", "?")
+    signals = data.get("signals", {}) or {}
+    history = data.get("history", []) or []
+    lines = [
+        "# Compositional Trajectory",
+        "",
+        f"**Verdict:** {verdict}",
+        f"Window: {meta.get('rounds_used', '?')}/{meta.get('window', '?')} rounds",
+        "",
+        "## Per-signal analysis",
+    ]
+    for k, s in signals.items():
+        slope = s.get("slope")
+        slope_s = f"{slope:+.5f}" if isinstance(slope, (int, float)) else "n/a"
+        rng = s.get("range")
+        rng_s = f"[{rng[0]:.3f}, {rng[1]:.3f}]" if isinstance(rng, list) and len(rng) == 2 else "n/a"
+        lines.append(f"  {k:<30} {s.get('verdict', '?'):<12}  slope={slope_s}  range={rng_s}")
+    if history:
+        recent = history[-5:]
+        lines.append("")
+        lines.append("## Recent verdict history")
+        for h in recent:
+            lines.append(f"  {h.get('timestamp', '?')[-19:-5]}  {h.get('verdict', '?')}")
+    return "\n".join(lines)
+
+
+def _budget_report() -> str:
+    """Render metrics/hme-coherence-budget.json (Phase 5.2)."""
+    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-coherence-budget.json")
+    if not os.path.exists(path):
+        return (
+            "# Coherence Budget\n\n"
+            "metrics/hme-coherence-budget.json not found.\n"
+            "Run: node scripts/pipeline/compute-coherence-budget.js"
+        )
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as _e:
+        return f"# Coherence Budget\n\nCould not read: {type(_e).__name__}: {_e}"
+    band = data.get("band") or [0, 0]
+    cur = data.get("current_coherence")
+    state = data.get("state", "?")
+    prescription = data.get("prescription", "")
+    meta = data.get("meta", {}) or {}
+    lines = [
+        "# Coherence Budget",
+        "",
+        f"**State:** {state}",
+        f"**Band:** [{band[0] * 100:.0f}%, {band[1] * 100:.0f}%]",
+        f"**Current coherence:** {cur * 100:.0f}%" if isinstance(cur, (int, float)) else "**Current coherence:** n/a",
+        f"**Source:** {meta.get('band_source', '?')}",
+        "",
+        "## Prescription",
+        prescription,
+    ]
+    return "\n".join(lines)
 
 
 def _staleness_report() -> str:
