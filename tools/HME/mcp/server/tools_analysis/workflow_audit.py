@@ -135,6 +135,31 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
             "if x is None: ...` or ensure the key is guaranteed and use `d[key].attr`."
         )
 
+    # 8b. Dispatcher-bypass: direct use of the `_shared_*` RAG model globals
+    # from call positions (`_shared_model.encode(...)`, etc.) is a load-bearing
+    # anti-pattern — it bypasses the VramManager + _RagDispatcher, holds a
+    # strong GPU reference that blocks offload, and ignores the daemon's
+    # per-GPU busy flag. Callers must go through the dispatcher (either
+    # `engine.text_model` / `engine.code_model` / `engine.reranker`, or the
+    # `_text_model_router` / `_code_model_router` / `_reranker_router` locals
+    # in hme_http.py). The module-level definitions of the dispatchers
+    # themselves reference `_shared_*` — that's the one legitimate site and
+    # it gets excluded by the regex below.
+    _bypass_pattern = re.compile(
+        r'(?<!_)_shared_(?:model|code_model|reranker)(?:_cpu)?'
+        r'\s*\.\s*(?:encode|predict|get_sentence_embedding_dimension|__call__)\b'
+    )
+    _bypass = _bypass_pattern.findall(content)
+    if _bypass:
+        warnings.append(
+            f"[{rel_path}] PYTHON: {len(_bypass)} direct `_shared_*.encode/"
+            "predict/…` call(s) — bypasses _RagDispatcher + VramManager. "
+            "Route through `engine.text_model` / `engine.code_model` / "
+            "`engine.reranker` (or the `_*_router` locals in hme_http.py "
+            "construction). Direct use blocks active-offload and ignores "
+            "the daemon per-GPU busy flag."
+        )
+
     # 9. Operator-swap evasion of the silent-fallback rule.
     # Detect: the same `.get("k", N)` → `.get("k") or N` (or the reverse)
     # flipped in an uncommitted change. Swapping the operator does NOT
