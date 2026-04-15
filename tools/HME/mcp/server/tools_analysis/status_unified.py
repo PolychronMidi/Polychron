@@ -24,6 +24,12 @@ def status(mode: str = "all") -> str:
     mode='hme': HME selftest + introspection.
     mode='activity': HME activity-bridge digest — reads metrics/hme-activity.jsonl,
     summarizes event counts, coherence-violation ratio, pipeline runs, recent writes.
+    mode='staleness': KB staleness index — which modules have KB entries older than
+    their source code (reads metrics/kb-staleness.json).
+    mode='coherence': round coherence score (0..100) — reads metrics/hme-coherence.json,
+    components: read_coverage * violation_penalty * staleness_penalty.
+    mode='blindspots': subsystems/modules the Evolver has structurally avoided
+    in the last N closed rounds (HME_BLINDSPOT_WINDOW, default 10).
     mode='freshness': age of every data source — flags stale or out-of-sync data.
     mode='resume': cold-start session briefing — synthesizes git state, nexus lifecycle,
     pipeline verdict, session narrative, and think history for context recovery."""
@@ -77,6 +83,16 @@ def status(mode: str = "all") -> str:
     if mode == "activity":
         from .activity_digest import activity_digest as _ad
         return _ad(window="round")
+
+    if mode == "staleness":
+        return _staleness_report()
+
+    if mode == "coherence":
+        return _coherence_report()
+
+    if mode == "blindspots":
+        from .blindspots import blindspots as _bs
+        return _bs()
 
     if mode == "freshness":
         return _freshness_report()
@@ -511,3 +527,107 @@ def _resume_briefing() -> str:
             parts.append(f"  {line}")
 
     return "\n".join(parts)
+
+
+def _staleness_report() -> str:
+    """Render metrics/kb-staleness.json. Phase 2.2 of openshell feature mapping."""
+    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "kb-staleness.json")
+    if not os.path.exists(path):
+        return (
+            "# KB Staleness Index\n\n"
+            "metrics/kb-staleness.json not found.\n"
+            "Run: python3 scripts/pipeline/build-kb-staleness-index.py"
+        )
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as _e:
+        return f"# KB Staleness Index\n\nCould not read: {type(_e).__name__}: {_e}"
+    meta = data.get("meta", {})
+    modules = data.get("modules", [])
+    by_status = meta.get("by_status", {})
+    stale = [m for m in modules if m.get("status") == "STALE"]
+    stale.sort(key=lambda m: m.get("staleness_days") or 0, reverse=True)
+    missing = [m for m in modules if m.get("status") == "MISSING"]
+    lines = [
+        "# KB Staleness Index",
+        "",
+        f"Generated: {meta.get('timestamp_iso', '?')}  "
+        f"modules={meta.get('modules_tracked', '?')}  "
+        f"KB entries={meta.get('kb_entries_total', '?')}",
+        f"Threshold: {meta.get('stale_days_threshold', '?')} days",
+        "",
+        "## Status counts",
+        f"  FRESH   {by_status.get('FRESH', 0)}",
+        f"  STALE   {by_status.get('STALE', 0)}",
+        f"  MISSING {by_status.get('MISSING', 0)}",
+    ]
+    if stale:
+        lines.append("")
+        lines.append("## Stale modules (KB older than code)")
+        for m in stale[:25]:
+            days = m.get("staleness_days")
+            days_s = f"{days:6.1f}d" if isinstance(days, (int, float)) else "  ?"
+            lines.append(
+                f"  {days_s}  {m.get('module', '?'):<30}  "
+                f"{m.get('kb_entries_matched', 0)} hits  {m.get('file_path', '?')}"
+            )
+        if len(stale) > 25:
+            lines.append(f"  … and {len(stale) - 25} more")
+    if missing:
+        lines.append("")
+        lines.append(f"## Modules with no KB coverage ({len(missing)} total, showing first 20)")
+        for m in missing[:20]:
+            lines.append(f"  - {m.get('module', '?')}  ({m.get('file_path', '?')})")
+    return "\n".join(lines)
+
+
+def _coherence_report() -> str:
+    """Render metrics/hme-coherence.json. Phase 2.3 of openshell feature mapping."""
+    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-coherence.json")
+    if not os.path.exists(path):
+        return (
+            "# Round Coherence Score\n\n"
+            "metrics/hme-coherence.json not found.\n"
+            "Run: node scripts/pipeline/compute-coherence-score.js"
+        )
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as _e:
+        return f"# Round Coherence Score\n\nCould not read: {type(_e).__name__}: {_e}"
+    score = data.get("score", 0)
+    prev = data.get("previous_score")
+    delta = data.get("delta")
+    comps = data.get("components", {}) or {}
+
+    def _pct(v):
+        try:
+            return f"{float(v) * 100:.1f}"
+        except (TypeError, ValueError):
+            return "?"
+
+    delta_s = ""
+    if isinstance(delta, (int, float)):
+        sign = "+" if delta >= 0 else ""
+        delta_s = f" ({sign}{delta * 100:+.1f} vs prev)"
+    lines = [
+        "# Round Coherence Score",
+        "",
+        f"**{_pct(score)}/100**{delta_s}  "
+        f"({data.get('meta', {}).get('window_events', '?')} events in window)",
+        "",
+        "## Components",
+        f"  read_coverage      {_pct(comps.get('read_coverage'))}   "
+        f"({comps.get('read_coverage_detail', {}).get('writes_with_prior_read', 0)}"
+        f"/{comps.get('read_coverage_detail', {}).get('total_writes', 0)} writes)",
+        f"  violation_penalty  {_pct(comps.get('violation_penalty'))}   "
+        f"(count={comps.get('violation_detail', {}).get('count', 0)})",
+        f"  staleness_penalty  {_pct(comps.get('staleness_penalty'))}   "
+        f"({comps.get('staleness_detail', {}).get('touches_on_stale_or_missing', 0)}"
+        f"/{comps.get('staleness_detail', {}).get('touches_with_index_info', 0)} touches stale)",
+    ]
+    if prev is not None:
+        lines.append("")
+        lines.append(f"Previous round: {_pct(prev)}")
+    return "\n".join(lines)

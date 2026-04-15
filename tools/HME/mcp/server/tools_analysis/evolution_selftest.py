@@ -31,7 +31,8 @@ RELOADABLE = [
     "drama_map", "health_analysis", "section_labels",
     "evolution_evolve", "evolution_invariants", "search_unified", "review_unified",
     "read_unified", "learn_unified", "status_unified", "trace_unified",
-    "todo", "enrich_prompt", "tools_passthru", "activity_digest",
+    "todo", "enrich_prompt", "tools_passthru", "activity_digest", "blindspots",
+    "cascade_analysis",
 ]
 TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]

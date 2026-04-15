@@ -431,6 +431,71 @@ Output: `metrics/hme-violations.json` — a full audit record with meta (window 
 
 Because `coherence_violation` emission in `posttooluse_edit.sh` is gated on `_onb_is_graduated`, pre-graduation sessions never trip this check — the gate ramps in naturally once the agent has gone through one full onboarding loop.
 
+### KB Staleness Index
+
+Phase 2.2 of the feature mapping. `scripts/pipeline/build-kb-staleness-index.py` runs as a POST_COMPOSITION step, cross-references KB entry timestamps (lance `knowledge` table) against source-file mtimes and `file_written` events from the activity bridge, and writes `metrics/kb-staleness.json`. Every module lands in one of three buckets:
+
+- **FRESH** — most recent KB entry touching the module is newer than (or within `HME_STALENESS_STALE_DAYS`, default 7d, of) the last file write.
+- **STALE** — module has KB coverage but edits have outpaced it by > threshold.
+- **MISSING** — no KB entry mentions the module at all.
+
+Surfaced via `status(mode='staleness')`. Read by the inference proxy at request time to annotate jurisdiction injections (see below) and by the coherence-score computer.
+
+Matching uses word-boundary regex on title/tags (primary) and content (only for stems ≥6 chars), so short names like "Motif" don't over-match generic prose.
+
+### Round Coherence Score
+
+Phase 2.3 of the feature mapping. `scripts/pipeline/compute-coherence-score.js` computes a single 0..100 metric per round from three components:
+
+```
+coherence_score = read_coverage * violation_penalty * staleness_penalty
+```
+
+- `read_coverage` = `file_written` events with `hme_read_prior=true` / total writes
+- `violation_penalty` = `max(0, 1 − violation_count × 0.1)`
+- `staleness_penalty` = 1 − (touches on STALE/MISSING modules / touches with index info)
+
+Output: `metrics/hme-coherence.json` with score, delta vs previous round, and per-component breakdown. Surfaced via `status(mode='coherence')`.
+
+### Evolver Blind-Spot Surfacing
+
+Phase 2.4 of the feature mapping. `tools_analysis/blindspots.py` walks the full activity-bridge history, splits events into closed rounds at each `round_complete`, and over the last N rounds (default 10, `HME_BLINDSPOT_WINDOW` env var) computes three coverage gaps:
+
+- Subsystems (utils/conductor/rhythm/time/composers/fx/crossLayer/writer/play) with zero `file_written` events in the window
+- Modules written chronically without a prior HME read (≥2 occurrences)
+- Touched modules that have no KB coverage at all (cross-reference with the staleness index)
+
+Surfaced via `status(mode='blindspots')`. Factual coverage data, not a critique — the decision about whether to rotate attention remains the Evolver's.
+
+### Causal Cascade Indexing
+
+Phase 2.5 of the feature mapping. `tools_analysis/cascade_analysis.py` merges `metrics/dependency-graph.json`, `metrics/feedback_graph.json`, and node provides/consumes registries into a forward BFS that answers *"if I change X, what does that trigger?"*.
+
+Invoked via `trace(target='moduleName', mode='impact')`. Returns:
+
+- Forward impact chain at depth 1..3 (file-level, with the global name bridging each edge)
+- Blast-radius histogram grouped by subsystem
+- Feedback loops the module participates in
+- Firewall ports it touches
+- Top reverse callers (1 hop) for centrality context
+
+Also exposes `cascade_summary(target)` as a compact dict for the inference proxy to consume on hot paths.
+
+### Real-Time Jurisdiction Injection
+
+Phase 2.1 of the feature mapping, landing inside the inference proxy. On every request the proxy extracts the `file_path` / `path` / `target` field from every write-bearing tool_use block in the most recent assistant turn, then checks whether the target falls inside a tracked zone (`src/conductor/signal/meta/`, `src/conductor/signal/profiling/`) **or** matches any file in the 93-entry bias bounds manifest (`scripts/pipeline/bias-bounds-manifest.json`).
+
+If any target matches, the proxy builds a structured jurisdiction block containing:
+
+- Zone tag (if the file is inside a controller authority boundary)
+- Every locked bias registration for that file with exact `[lo, hi]` bounds
+- KB staleness status for the module (FRESH/STALE/MISSING, delta days, match count)
+- Remediation command for re-snapshotting stale bounds
+
+The block is appended to `payload.system` (supports both the string and array-of-content-blocks forms) before upstream dispatch. `Content-Length` is recomputed. An `injected=true` flag is attached to the `inference_call` activity event, and a separate `jurisdiction_inject` event is emitted so the activity digest and pipeline gate can observe how often injection fires.
+
+Set `HME_PROXY_INJECT=0` to disable injection and run the proxy in pure observability mode. Default is on.
+
 ### Hook Scripts (22 hooks across 7 lifecycle events)
 
 All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.

@@ -42,6 +42,7 @@
 
 const http = require('http');
 const https = require('https');
+const fs = require('fs');
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -51,6 +52,8 @@ const PORT = parseInt(process.env.HME_PROXY_PORT || '9099', 10);
 const UPSTREAM_HOST = process.env.HME_PROXY_UPSTREAM_HOST || 'api.anthropic.com';
 const UPSTREAM_PORT = parseInt(process.env.HME_PROXY_UPSTREAM_PORT || '443', 10);
 const UPSTREAM_TLS = (process.env.HME_PROXY_UPSTREAM_TLS ?? '1') !== '0';
+// Injection is on by default; disable with HME_PROXY_INJECT=0 for pure observability.
+const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
 
 const WRITE_INTENT_TOOLS = new Set([
   'Edit',
@@ -62,6 +65,154 @@ const HME_READ_TOOLS = new Set([
   'mcp__HME__read',
   'mcp__HME__before_editing',
 ]);
+
+// ── Jurisdiction context loading ─────────────────────────────────────────────
+// The bias bounds manifest lists 93 locked parameter registrations keyed by
+// `module:axis` with the file path that owns each one. We build a
+// file → [{key, lo, hi}] map so looking up jurisdiction for a given write
+// is O(1). The map is lazily loaded and refreshed at most once per 60s in
+// case the manifest is regenerated mid-flight.
+const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'scripts/pipeline/bias-bounds-manifest.json');
+const STALENESS_PATH = path.join(PROJECT_ROOT, 'metrics/kb-staleness.json');
+const JURISDICTION_ZONES = [
+  'src/conductor/signal/meta/',
+  'src/conductor/signal/profiling/',
+];
+let _biasByFile = null;
+let _biasLoadedAt = 0;
+let _stalenessByModule = null;
+let _stalenessLoadedAt = 0;
+const REFRESH_INTERVAL_MS = 60_000;
+
+function loadBiasManifest() {
+  const now = Date.now();
+  if (_biasByFile && now - _biasLoadedAt < REFRESH_INTERVAL_MS) return _biasByFile;
+  _biasByFile = new Map();
+  try {
+    const raw = fs.readFileSync(BIAS_MANIFEST, 'utf8');
+    const data = JSON.parse(raw);
+    const regs = data && data.registrations;
+    if (regs && typeof regs === 'object') {
+      for (const [key, info] of Object.entries(regs)) {
+        if (!info || typeof info !== 'object' || !info.file) continue;
+        const arr = _biasByFile.get(info.file) || [];
+        arr.push({ key, lo: info.lo, hi: info.hi });
+        _biasByFile.set(info.file, arr);
+      }
+    }
+  } catch (_err) {
+    // manifest absent or malformed — jurisdiction injection degrades to
+    // zone-match only; still usable.
+  }
+  _biasLoadedAt = now;
+  return _biasByFile;
+}
+
+function loadStalenessMap() {
+  const now = Date.now();
+  if (_stalenessByModule && now - _stalenessLoadedAt < REFRESH_INTERVAL_MS) {
+    return _stalenessByModule;
+  }
+  _stalenessByModule = new Map();
+  try {
+    const raw = fs.readFileSync(STALENESS_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    for (const m of data.modules || []) {
+      if (m.module) _stalenessByModule.set(m.module, m);
+    }
+  } catch (_err) {
+    // staleness index absent — inject without it.
+  }
+  _stalenessLoadedAt = now;
+  return _stalenessByModule;
+}
+
+function isJurisdictionFile(filePath) {
+  if (!filePath) return false;
+  if (JURISDICTION_ZONES.some((z) => filePath.includes(z))) return true;
+  const biasMap = loadBiasManifest();
+  // Match by tail — the manifest stores "src/..." paths; the Edit tool may
+  // pass an absolute path. Compare suffixes.
+  for (const manifestPath of biasMap.keys()) {
+    if (filePath.endsWith(manifestPath)) return true;
+  }
+  return false;
+}
+
+function buildJurisdictionContext(filePaths) {
+  if (!filePaths || filePaths.length === 0) return null;
+  const biasMap = loadBiasManifest();
+  const staleMap = loadStalenessMap();
+  const lines = [];
+  let anyMatched = false;
+  for (const fp of filePaths) {
+    // Normalize to the "src/..." form the manifest uses
+    const idx = fp.indexOf('src/');
+    const rel = idx >= 0 ? fp.slice(idx) : fp;
+    const stem = path.basename(rel, path.extname(rel));
+    const bias = biasMap.get(rel) || [];
+    const stale = staleMap.get(stem);
+    const inZone = JURISDICTION_ZONES.some((z) => rel.includes(z));
+    if (!inZone && bias.length === 0 && !stale) continue;
+    anyMatched = true;
+    lines.push(`### ${rel}`);
+    if (inZone) {
+      lines.push(`- Zone: hypermeta jurisdiction — controller authority boundary`);
+    }
+    if (bias.length > 0) {
+      lines.push(`- Bias bounds (${bias.length}) — locked by manifest, validated by check-hypermeta-jurisdiction:`);
+      for (const b of bias.slice(0, 8)) {
+        lines.push(`    ${b.key}: [${b.lo}, ${b.hi}]`);
+      }
+      if (bias.length > 8) lines.push(`    … (+${bias.length - 8} more)`);
+    }
+    if (stale) {
+      const st = stale.status;
+      const days = stale.staleness_days;
+      const hits = stale.kb_entries_matched;
+      const ds = typeof days === 'number' ? `${days.toFixed(1)}d` : '?';
+      lines.push(`- KB status: ${st}  (${hits} entry matches, delta ${ds})`);
+    }
+    lines.push('');
+  }
+  if (!anyMatched) return null;
+  return [
+    '',
+    '## HME Jurisdiction Context (proxy-injected)',
+    '',
+    'Write-bearing tool calls in this turn target files tracked by the hypermeta layer. Before editing, confirm the changes respect the constraints below — check-hypermeta-jurisdiction.js will fail the pipeline otherwise.',
+    '',
+    ...lines,
+    'If any bias bound is stale, re-snapshot with:',
+    '  node scripts/pipeline/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
+    '',
+  ].join('\n');
+}
+
+function injectIntoSystem(payload, jurisdictionBlock) {
+  if (!jurisdictionBlock) return false;
+  // Anthropic system prompt can be a string OR an array of content blocks.
+  if (typeof payload.system === 'string') {
+    // Avoid double-injection within the same request shape
+    if (payload.system.includes('HME Jurisdiction Context (proxy-injected)')) return false;
+    payload.system = payload.system + jurisdictionBlock;
+    return true;
+  }
+  if (Array.isArray(payload.system)) {
+    const already = payload.system.some((b) => {
+      const t = typeof b === 'string' ? b : b && b.text;
+      return typeof t === 'string' && t.includes('HME Jurisdiction Context (proxy-injected)');
+    });
+    if (already) return false;
+    payload.system.push({ type: 'text', text: jurisdictionBlock });
+    return true;
+  }
+  if (payload.system == null) {
+    payload.system = jurisdictionBlock;
+    return true;
+  }
+  return false;
+}
 
 function emit(fields) {
   // Background-fork the Python emitter. If it fails we swallow the error —
@@ -105,11 +256,18 @@ function scanMessages(payload) {
     writeIntentCalled: false,
     toolCalls: [],
     firstWriteBeforeRead: null,
+    writeTargets: [],       // file paths from write-intent tool_use inputs
+    jurisdictionTargets: [], // subset of writeTargets inside tracked zones
   };
   const msgs = (payload && payload.messages) || [];
+  // Only look at the LAST assistant message's tool_use blocks for write
+  // targets — that's the "about to be dispatched" turn. Earlier writes in
+  // the history already happened and are irrelevant to injection.
+  let lastAssistantTools = [];
   for (const m of msgs) {
     const content = m && m.content;
     if (!Array.isArray(content)) continue;
+    const toolsInMsg = [];
     for (const block of content) {
       if (!block || block.type !== 'tool_use') continue;
       const name = block.name || '?';
@@ -122,6 +280,22 @@ function scanMessages(payload) {
         if (!result.hmeReadCalled && result.firstWriteBeforeRead === null) {
           result.firstWriteBeforeRead = name;
         }
+      }
+      toolsInMsg.push(block);
+    }
+    if (m.role === 'assistant' && toolsInMsg.length > 0) {
+      lastAssistantTools = toolsInMsg;
+    }
+  }
+  // Extract write targets from the most recent assistant turn
+  for (const block of lastAssistantTools) {
+    if (!WRITE_INTENT_TOOLS.has(block.name || '?')) continue;
+    const input = block.input || {};
+    const fp = input.file_path || input.path || input.target || null;
+    if (typeof fp === 'string' && fp.length > 0) {
+      result.writeTargets.push(fp);
+      if (isJurisdictionFile(fp)) {
+        result.jurisdictionTargets.push(fp);
       }
     }
   }
@@ -142,9 +316,26 @@ function handleRequest(clientReq, clientRes) {
       }
     }
 
+    let outBody = bodyBuf;
+    let injected = false;
+
     if (payload && Array.isArray(payload.messages)) {
       const session = sessionKey(payload);
       const scan = scanMessages(payload);
+      // Real-time jurisdiction injection (Phase 2.1 / feature #1).
+      if (INJECT && scan.jurisdictionTargets.length > 0) {
+        const block = buildJurisdictionContext(scan.jurisdictionTargets);
+        injected = injectIntoSystem(payload, block);
+        if (injected) {
+          emit({
+            event: 'jurisdiction_inject',
+            session,
+            targets: scan.jurisdictionTargets.length,
+            first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
+          });
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+        }
+      }
       emit({
         event: 'inference_call',
         session,
@@ -154,6 +345,8 @@ function handleRequest(clientReq, clientRes) {
         tool_calls: scan.toolCalls.length,
         hme_read_prior: scan.hmeReadCalled,
         write_intent: scan.writeIntentCalled,
+        jurisdiction_targets: scan.jurisdictionTargets.length,
+        injected: injected,
       });
       if (scan.writeIntentCalled && !scan.hmeReadCalled) {
         emit({
@@ -168,12 +361,15 @@ function handleRequest(clientReq, clientRes) {
     }
 
     // Forward upstream. Headers are copied verbatim except for `host`, which
-    // must be the upstream — we also strip content-length and let Node
-    // recompute it since we might re-serialize later (currently we don't).
+    // must be the upstream — we also strip content-length since we may have
+    // re-serialized the body (jurisdiction injection).
     const upstreamHeaders = { ...clientReq.headers };
     delete upstreamHeaders.host;
     delete upstreamHeaders['content-length'];
     upstreamHeaders.host = UPSTREAM_HOST;
+    if (outBody.length > 0) {
+      upstreamHeaders['content-length'] = String(outBody.length);
+    }
 
     const upstreamOpts = {
       hostname: UPSTREAM_HOST,
@@ -207,7 +403,7 @@ function handleRequest(clientReq, clientRes) {
       }
     });
 
-    if (bodyBuf.length > 0) upstreamReq.write(bodyBuf);
+    if (outBody.length > 0) upstreamReq.write(outBody);
     upstreamReq.end();
   });
 
@@ -235,6 +431,9 @@ function runTestMode() {
     }
     const session = sessionKey(payload);
     const scan = scanMessages(payload);
+    const jurisdictionBlock = scan.jurisdictionTargets.length
+      ? buildJurisdictionContext(scan.jurisdictionTargets)
+      : null;
     const out = {
       session,
       tool_calls: scan.toolCalls,
@@ -242,6 +441,10 @@ function runTestMode() {
       write_intent: scan.writeIntentCalled,
       violation: scan.writeIntentCalled && !scan.hmeReadCalled,
       first_write_before_read: scan.firstWriteBeforeRead,
+      write_targets: scan.writeTargets,
+      jurisdiction_targets: scan.jurisdictionTargets,
+      jurisdiction_block_preview:
+        jurisdictionBlock ? jurisdictionBlock.slice(0, 500) : null,
     };
     process.stdout.write(JSON.stringify(out, null, 2) + '\n');
     process.exit(out.violation ? 1 : 0);
