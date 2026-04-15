@@ -188,19 +188,22 @@ def status(mode: str = "all") -> str:
             used = sum(t["tokens_used"] for t in g["tiers"])
             total = sum(t["daily_limit"] for t in g["tiers"])
             lines.append(f"    gemini:     {used:,}/{total:,} tok today across {len(g['tiers'])} tiers")
-        except Exception: pass
+        except Exception as _qe:
+            lines.append(f"    gemini:     quota unavailable ({type(_qe).__name__})")
         try:
             from .synthesis_groq import get_quota_status as _grs
             gr = _grs()
             used = sum(t["requests_today"] for t in gr["tiers"])
             total = sum(t["rpd_limit"] for t in gr["tiers"])
             lines.append(f"    groq:       {used}/{total} req today across {len(gr['tiers'])} tiers")
-        except Exception: pass
+        except Exception as _qe:
+            lines.append(f"    groq:       quota unavailable ({type(_qe).__name__})")
         try:
             from .synthesis_openrouter import get_quota_status as _ors
             o = _ors()
             lines.append(f"    openrouter: {o['requests_today']}/{o['rpd_limit']} req today (shared)")
-        except Exception: pass
+        except Exception as _qe:
+            lines.append(f"    openrouter: quota unavailable ({type(_qe).__name__})")
 
         if not any_up:
             lines.append("")

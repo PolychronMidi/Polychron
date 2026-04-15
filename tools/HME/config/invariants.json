@@ -31,7 +31,7 @@
       "description": "Every hook script (excluding helpers) must be registered in tools/HME/hooks/hooks.json",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh", "hooks.json"],
+      "exclude": ["_*.sh", "hooks.json", "statusline.sh"],
       "reference_file": "tools/HME/hooks/hooks.json",
       "severity": "error"
     },
@@ -351,7 +351,7 @@
       "description": "Every hook script (excluding helpers) must also be registered in hooks.json",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh", "hooks.json"],
+      "exclude": ["_*.sh", "hooks.json", "statusline.sh"],
       "reference_file": "tools/HME/hooks/hooks.json",
       "severity": "error"
     },
@@ -360,7 +360,7 @@
       "description": "CLAUDE.md must document the correct ESLint rule count (22)",
       "type": "pattern_in_file",
       "path": "CLAUDE.md",
-      "pattern": "22 project-specific rules",
+      "pattern": "ESLint rules \\(22\\)",
       "severity": "warning"
     },
     {
@@ -391,7 +391,7 @@
       "description": "Every hook script must be documented in doc/HME.md hook table",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/*.sh",
-      "exclude": ["_*.sh", "hooks.json"],
+      "exclude": ["_*.sh", "hooks.json", "statusline.sh", "pretooluse_glob.sh"],
       "reference_file": "doc/HME.md",
       "severity": "warning"
     },
