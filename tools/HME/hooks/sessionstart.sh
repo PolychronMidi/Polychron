@@ -43,6 +43,14 @@ _onb_init
 # won't respond. Probe the /health endpoint explicitly; if it doesn't respond
 # or returns non-200, start the HME shim even if the port appears taken
 # (port-collision failure surfaces to hme_http.py which will log it).
+# Pin the RAG stack to GPU0 (co-resident with the arbiter llama-server).
+# Without this override the shim grabs whichever GPU happens to be freest at
+# boot, which has historically been GPU1 — blocking the coder llama-server
+# (qwen3-coder-30b needs ~18.5 GB and won't fit alongside a 7 GB RAG stack).
+# Override with HME_RAG_GPU=-1 (CPU), "auto" (free-memory heuristic), or a
+# different index in .env.
+export HME_RAG_GPU="${HME_RAG_GPU:-0}"
+
 SHIM_PORT=7734
 SHIM_HEALTHY=0
 if curl -sf --max-time 2 "http://127.0.0.1:${SHIM_PORT}/health" > /dev/null 2>&1; then
@@ -59,6 +67,53 @@ if [ "$SHIM_HEALTHY" -eq 0 ]; then
       > "$PROJECT/log/hme_http.out" 2>&1 &
     echo "HME shim started (pid $!)" >&2
   fi
+fi
+
+# Ensure llama-server instances are running (arbiter :8080, coder :8081).
+# Same /health-probe-then-nohup pattern as the shim, applied to the local
+# inference tier. HME's in-process supervisor (server/llamacpp_supervisor.py)
+# handles hot supervision during a session — this block handles cold boot
+# before Python is alive. Topology overrides come from env; defaults match
+# the committed supervisor config.
+LLAMA_BIN="${HME_LLAMA_SERVER_BIN:-/home/jah/tools/llama-cpp-vulkan/llama-b8797/llama-server}"
+if [ -x "$LLAMA_BIN" ]; then
+  _start_llama() {
+    local name="$1" port="$2" model="$3" device="$4" alias="$5" ctx="$6" lora="$7"
+    if curl -sf --max-time 2 "http://127.0.0.1:${port}/health" 2>/dev/null | grep -q '"status":"ok"'; then
+      return 0
+    fi
+    if [ ! -f "$model" ]; then
+      echo "WARN: llama-server ${name} model missing: $model" >&2
+      return 1
+    fi
+    local args=("--model" "$model" "--host" "127.0.0.1" "--port" "$port"
+                "--ctx-size" "$ctx" "--n-gpu-layers" "999" "--device" "$device"
+                "--alias" "$alias" "--timeout" "30" "--jinja")
+    if [ -n "$lora" ] && [ -f "$lora" ]; then
+      args+=("--lora" "$lora")
+    fi
+    local log="$PROJECT/tools/HME/mcp/log/llama-server-${name}.log"
+    mkdir -p "$(dirname "$log")"
+    nohup "$LLAMA_BIN" "${args[@]}" >> "$log" 2>&1 &
+    disown $! 2>/dev/null || true
+    echo "llama-server ${name} started (pid $!) on :${port} ${device}" >&2
+  }
+  _start_llama arbiter \
+    "${HME_ARBITER_PORT:-8080}" \
+    "${HME_ARBITER_GGUF:-/home/jah/models/phi-4-Q4_K_M.gguf}" \
+    "${HME_ARBITER_VULKAN:-Vulkan1}" \
+    "${HME_ARBITER_MODEL:-hme-arbiter-v6}" \
+    "${HME_ARBITER_CTX:-4096}" \
+    "${HME_ARBITER_LORA:-/home/jah/Polychron/metrics/hme-arbiter-v6-lora.gguf}"
+  _start_llama coder \
+    "${HME_CODER_PORT:-8081}" \
+    "${HME_CODER_GGUF:-/home/jah/models/qwen3-coder-30b-Q4_K_M.gguf}" \
+    "${HME_CODER_VULKAN:-Vulkan2}" \
+    "${HME_CODER_ALIAS:-qwen3-coder:30b}" \
+    "${HME_CODER_CTX:-8192}" \
+    ""
+else
+  echo "WARN: llama-server binary missing at $LLAMA_BIN — skipping local inference launch" >&2
 fi
 
 # Persist HME env vars for the session

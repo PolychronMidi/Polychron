@@ -263,6 +263,15 @@ def _proxy_health_monitor(port: int) -> None:
                 except Exception as _pred_err:
                     logger.debug(f"monitor: prediction resolve failed (non-fatal): {type(_pred_err).__name__}: {_pred_err}")
                 _check_ollama_daemon_health()
+                # llama-server supervision — restart dead instances (arbiter/coder)
+                try:
+                    from server import llamacpp_supervisor as _sup
+                    _sup_result = _sup.health_tick()
+                    _sup_unhealthy = [k for k, v in _sup_result.items() if not v.get("healthy")]
+                    if _sup_unhealthy:
+                        logger.info(f"llamacpp_supervisor: restarted {_sup_unhealthy}")
+                except Exception as _sup_err:
+                    logger.debug(f"llamacpp_supervisor health_tick failed: {type(_sup_err).__name__}: {_sup_err}")
                 _intent_propagation_tick()  # Layer 11: pre-warm cache from transcript
                 # Layer 8: coherence snapshot → metrics/hme-coherence.jsonl
                 try:
