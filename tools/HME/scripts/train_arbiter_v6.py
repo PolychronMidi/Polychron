@@ -87,7 +87,7 @@ def main():
     # ── Load model ─────────────────────────────────────────────────────────────
     bnb_cfg = BitsAndBytesConfig(
         load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_compute_dtype=torch.float16,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
     )
@@ -97,7 +97,7 @@ def main():
         quantization_config=bnb_cfg,
         device_map="auto",
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
     )
     model = prepare_model_for_kbit_training(model)
 
@@ -105,6 +105,7 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "right"
+    tokenizer.model_max_length = 2048
 
     # ── LoRA ───────────────────────────────────────────────────────────────────
     lora_cfg = LoraConfig(
@@ -144,8 +145,9 @@ def main():
         lr_scheduler_type="cosine",
         warmup_steps=20 if not args.sanity else 5,
         weight_decay=0.01,
-        bf16=True,
-        tf32=True,
+        bf16=False,
+        fp16=False,
+        tf32=False,
         gradient_checkpointing=True,
         eval_strategy="steps",
         eval_steps=eval_steps,
@@ -157,7 +159,6 @@ def main():
         greater_is_better=False,
         logging_steps=10 if not args.sanity else 5,
         report_to="none",
-        max_seq_length=2048,
         dataset_text_field="text",
         packing=False,
     )
@@ -167,7 +168,7 @@ def main():
         args=train_args,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
     )
 
     # ── Write training lock ────────────────────────────────────────────────────
