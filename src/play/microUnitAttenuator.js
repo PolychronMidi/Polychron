@@ -81,7 +81,7 @@ microUnitAttenuator = (() => {
       const e20Regime = safePreBoot.call(() => {
         const sn = systemDynamicsProfiler.getSnapshot();
         return sn ? sn.regime : '';
-      }, '') || '';
+      }, '');
       const e20Bias = /** @type {number} */ (safePreBoot.call(
         () => hyperMetaManager.getRateMultiplier('e20AttenuatorBias'), 1.0));
       const rawScore = V.optionalFinite(score, 0);

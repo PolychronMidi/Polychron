@@ -205,7 +205,7 @@ crossModulateRhythms = () => {
   const e19Regime = safePreBoot.call(() => {
     const sn = systemDynamicsProfiler.getSnapshot();
     return sn ? sn.regime : '';
-  }, '') || '';
+  }, '');
   const e19Mult = /** @type {number} */ (safePreBoot.call(
     () => hyperMetaManager.getRateMultiplier('e19CrossModScale'), 1.0));
   if (e19Mult < 1.0 && e19Regime !== 'exploring') {
