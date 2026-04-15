@@ -642,6 +642,75 @@
       "path": "scripts/pipeline/main-pipeline.js",
       "pattern": "check-hme-coherence\\.js",
       "severity": "error"
+    },
+    {
+      "id": "kb-staleness-index-exists",
+      "description": "Phase 2.2 \u2014 KB staleness index builder must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/build-kb-staleness-index.py",
+      "severity": "error"
+    },
+    {
+      "id": "coherence-score-exists",
+      "description": "Phase 2.3 \u2014 round coherence score computer must exist",
+      "type": "file_exists",
+      "path": "scripts/pipeline/compute-coherence-score.js",
+      "severity": "error"
+    },
+    {
+      "id": "staleness-score-wired-pipeline",
+      "description": "main-pipeline.js POST_COMPOSITION must wire the staleness index + coherence score so they regenerate every run",
+      "type": "patterns_all_in_file",
+      "path": "scripts/pipeline/main-pipeline.js",
+      "patterns": ["build-kb-staleness-index\\.py", "compute-coherence-score\\.js"],
+      "severity": "error"
+    },
+    {
+      "id": "blindspots-module-exists",
+      "description": "Phase 2.4 \u2014 blind-spot surfacing module must exist under tools_analysis",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/blindspots.py",
+      "severity": "error"
+    },
+    {
+      "id": "cascade-analysis-module-exists",
+      "description": "Phase 2.5 \u2014 causal cascade analysis module must exist",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
+      "severity": "error"
+    },
+    {
+      "id": "cascade-mode-in-trace",
+      "description": "trace_unified must dispatch mode='impact' to cascade_report",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/trace_unified.py",
+      "pattern": "from \\.cascade_analysis import cascade_report",
+      "severity": "error"
+    },
+    {
+      "id": "status-new-modes-dispatched",
+      "description": "status_unified must dispatch the Phase 2.2\u20132.4 modes (staleness, coherence, blindspots)",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "patterns": [
+        "mode == \"staleness\"",
+        "mode == \"coherence\"",
+        "mode == \"blindspots\""
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "proxy-jurisdiction-injection-wired",
+      "description": "hme_proxy.js must implement jurisdiction injection (Phase 2.1) \u2014 looks up write targets against the bias bounds manifest and injects context into the system prompt",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "patterns": [
+        "bias-bounds-manifest",
+        "buildJurisdictionContext",
+        "jurisdictionTargets",
+        "jurisdiction_inject"
+      ],
+      "severity": "error"
     }
   ]
 }

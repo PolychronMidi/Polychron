@@ -24,6 +24,9 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
     mode='auto' (default) detects from target: L0 channel names → cascade,
     beat keys (S3, 2:1:3:0, plain number) → snapshot, otherwise → module trace.
     mode='cascade'|'module'|'causal'|'snapshot' to force.
+    mode='impact': forward-causal chain across dependency graph + feedback
+    loops + firewall ports — predicts 2nd/3rd-order consequences of editing
+    a module (Phase 2.5 of openshell feature mapping).
     mode='delta': compare current vs previous pipeline run — shows feature deltas,
     section regime shifts, and trust score changes for changed modules.
     Pass target='' or target='auto' for delta mode (auto-detects changed modules from git)."""
@@ -49,6 +52,10 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
     if mode == "cascade":
         from .coupling import coupling_intel as _ci
         return _ci(mode=f"cascade:{target}")
+
+    if mode == "impact":
+        from .cascade_analysis import cascade_report as _cr
+        return _cr(target=target, depth=3)
 
     if mode == "interaction":
         from .evolution_trace import interaction_map as _im
