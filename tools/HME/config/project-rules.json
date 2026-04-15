@@ -43,7 +43,18 @@
     "posttooluse_hme_read", "posttooluse_hme_review", "posttooluse_pipeline_kb",
     "userpromptsubmit", "pretooluse_check_pipeline", "pretooluse_lifesaver",
     "_hme_enrich", "_hme_validate", "_hme_kb_count", "_hme_kb_titles",
-    "_streak_tick", "_streak_check", "_streak_reset", "_safe_jq", "_safe_py3", "_safe_int"
+    "_streak_tick", "_streak_check", "_streak_reset", "_safe_jq", "_safe_py3", "_safe_int",
+    "_onb_is_graduated", "_onb_state", "_onb_advance", "_onb_sig",
+    "_nexus_has", "_nexus_mark", "_nexus_clear", "_nexus_clear_type", "_nexus_pending",
+    "cascade_prediction", "clap_tension", "encodec_entropy_avg",
+    "hme_coherence", "hme_prediction_accuracy", "perceptual_complexity_avg",
+    "fingerprint_verdict", "verdict_numeric",
+    "coherence_violation", "edit_pending", "file_written", "inference_call",
+    "jurisdiction_inject", "learn_suggested", "pipeline_run", "round_complete",
+    "tool_use",
+    "exploration_bonus", "productive_incoherence", "project_specificity",
+    "read_coverage", "reflexivity_ratio", "staleness_penalty", "violation_penalty",
+    "human_ground_truth", "ground_truth_override"
   ],
 
   "registration_patterns": [

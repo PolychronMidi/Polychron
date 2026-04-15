@@ -41,6 +41,16 @@ class RAGEngineIndexingMixin:
         if not file_path.exists():
             return self._remove_file_from_index(file_key)
 
+        # Defensive gate — reject extensions that the language registry
+        # does not recognize. This prevents the watcher (or any direct
+        # caller) from feeding binary blobs or unsupported files into the
+        # embedder. A stray .gguf/.safetensors/.bin would otherwise get
+        # chunked as "text" and generate thousands of useless rows.
+        from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES
+        _suffix = file_path.suffix
+        if _suffix not in SUPPORTED_EXTENSIONS and file_path.name not in SUPPORTED_FILENAMES:
+            return {"indexed": 0, "skipped_unsupported": 1}
+
         try:
             content = file_path.read_text(encoding="utf-8", errors="ignore")
         except Exception as e:

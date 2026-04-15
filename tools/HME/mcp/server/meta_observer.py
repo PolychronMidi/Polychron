@@ -1403,25 +1403,41 @@ def _enumerate_unprovable_claims() -> list[dict]:
 # ── Layer ∞∞: Coherence Ceiling Detector ──────────────────────────────────
 
 def _check_coherence_ceiling() -> dict | None:
-    """Detect when the system has modeled too much of its own behavior.
+    """Detect when the self-model's predictions have become too reliable to
+    generate learning signal.
 
-    When all multi-timescale coherence EMAs exceed 0.95 for multiple cycles,
-    the system is at risk of over-modeling — perfect coherence = inability to
-    adapt to novel situations. Recommends controlled incoherence injection.
+    Uses the Brier-score EMA (L29) as the ground-truth calibration signal:
+    predictions that resolve near their predicted probability drive Brier
+    toward 0. When Brier EMA < 0.05 with ≥10 resolved predictions today,
+    the system has effectively memorized its own behavior space and can't
+    learn anything new without a perturbation.
+
+    Previously wired to the shim-health multi-scale EMAs, which saturated
+    at 1.0 trivially and fired false positives ~constantly. See
+    operational_state.is_coherence_ceiling() for the rationale.
     """
     try:
         from server import operational_state
         if not operational_state.is_coherence_ceiling():
             return None
-        ms = operational_state.get_multiscale_coherence()
+        state_snapshot = operational_state.get_state()
+        brier = state_snapshot.get("brier_score") if isinstance(state_snapshot, dict) else None
+        outcomes = None
+        try:
+            with operational_state._state_lock:  # type: ignore[attr-defined]
+                outcomes = operational_state._state.get("prediction_outcomes_today")  # type: ignore[attr-defined]
+        except Exception:
+            pass
         return {
             "ceiling_hit": True,
-            "multiscale": ms,
+            "brier_score_ema": brier,
+            "prediction_outcomes_today": outcomes,
             "recommendation": (
-                "All coherence timescales >0.95 — system may be over-modeled. "
+                f"Brier score EMA {brier} over {outcomes} predictions today — "
+                "predictions are saturating. Self-model may be over-fit. "
                 "Consider: explore under-modeled operational states, "
                 "try synthesis strategies not used recently, "
-                "make predictions with low confidence to gain calibration signal."
+                "make predictions with explicit low confidence to gain calibration signal."
             ),
         }
     except Exception as _err:

@@ -96,9 +96,20 @@ function extractPerceptualSignals(p) {
 }
 
 function pearson(xs, ys) {
-  // Returns Pearson r, or null if undefined (zero-variance or <3 points)
+  // Returns { r, degenerate } or { r: null } when undefined.
+  //
+  // Degenerate cases (r clamps to ±1 as artifact, not signal):
+  //   - fewer than 3 points
+  //   - zero variance in either axis
+  //   - fewer than 3 distinct values in either axis (k-1 points coincide,
+  //     the k-th is an outlier → any line fits perfectly, r=±1)
   const n = Math.min(xs.length, ys.length);
-  if (n < 3) return null;
+  if (n < 3) return { r: null, degenerate: true, reason: 'n<3' };
+  const distinctX = new Set(xs).size;
+  const distinctY = new Set(ys).size;
+  if (distinctX < 3 || distinctY < 3) {
+    return { r: null, degenerate: true, reason: `distinct_x=${distinctX} distinct_y=${distinctY}` };
+  }
   const mx = xs.reduce((a, b) => a + b, 0) / n;
   const my = ys.reduce((a, b) => a + b, 0) / n;
   let num = 0;
@@ -111,8 +122,8 @@ function pearson(xs, ys) {
     dx2 += dx * dx;
     dy2 += dy * dy;
   }
-  if (dx2 === 0 || dy2 === 0) return null;
-  return num / Math.sqrt(dx2 * dy2);
+  if (dx2 === 0 || dy2 === 0) return { r: null, degenerate: true, reason: 'zero_variance' };
+  return { r: num / Math.sqrt(dx2 * dy2), degenerate: false };
 }
 
 function main() {
@@ -187,14 +198,20 @@ function main() {
   ];
   for (const [xk, yk] of targets) {
     const { xs: xv, ys: yv, n } = aligned(xk, yk);
-    const r = pearson(xv, yv);
-    correlations[`${xk}__${yk}`] = { r, n };
+    const pr = pearson(xv, yv);
+    correlations[`${xk}__${yk}`] = {
+      r: pr.r,
+      n,
+      degenerate: !!pr.degenerate,
+      ...(pr.reason ? { reason: pr.reason } : {}),
+    };
   }
 
   // Aggregate: is HME coherence meaningfully tracking something external?
+  // Exclude degenerate correlations — they're artifacts, not signal.
   const validCorrelations = Object.values(correlations)
-    .map((c) => c.r)
-    .filter((r) => typeof r === 'number');
+    .filter((c) => typeof c.r === 'number' && !c.degenerate)
+    .map((c) => c.r);
   const strongestCorrelation = validCorrelations.length
     ? validCorrelations.reduce((a, b) => (Math.abs(a) > Math.abs(b) ? a : b))
     : null;

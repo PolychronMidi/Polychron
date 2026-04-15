@@ -663,13 +663,26 @@ def _budget_report() -> str:
     state = data.get("state", "?")
     prescription = data.get("prescription", "")
     meta = data.get("meta", {}) or {}
+    gt_override = data.get("ground_truth_override")
+    state_label = state
+    if gt_override and gt_override.get("action") == "CONFIRMED":
+        state_label = f"{state} (ground-truth CONFIRMED)"
     lines = [
         "# Coherence Budget",
         "",
-        f"**State:** {state}",
+        f"**State:** {state_label}",
         f"**Band:** [{band[0] * 100:.0f}%, {band[1] * 100:.0f}%]",
         f"**Current coherence:** {cur * 100:.0f}%" if isinstance(cur, (int, float)) else "**Current coherence:** n/a",
         f"**Source:** {meta.get('band_source', '?')}",
+    ]
+    if gt_override:
+        gt_round = gt_override.get("round_tag") or "latest"
+        gt_sent = gt_override.get("sentiment") or "?"
+        gt_moment = gt_override.get("moment_type") or "?"
+        lines.append(
+            f"**Ground truth:** {gt_round} = {gt_sent}/{gt_moment}"
+        )
+    lines += [
         "",
         "## Prescription",
         prescription,
