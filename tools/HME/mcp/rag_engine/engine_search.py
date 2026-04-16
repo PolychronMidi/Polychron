@@ -93,7 +93,11 @@ class RAGEngineSearchMixin:
         results = []
         for i in fused:
             r = sem_rows[i]
-            sem_score = float(1.0 / (1.0 + r.get("_distance", 0)))
+            # lance always includes _distance on vector-search rows; None
+            # indicates a schema bug, not a legitimate missing field. Use
+            # explicit None-check instead of silent `.get(_, default)`.
+            _dist = r.get("_distance")
+            sem_score = float(1.0 / (1.0 + (0.0 if _dist is None else _dist)))
             bm25_score = next((s for j, s in bm25_hits if j == i), 0.0)
             combined = 0.6 * sem_score + 0.4 * min(bm25_score / 10.0, 1.0)
             fname = os.path.basename(r["source"]).lower().replace(".js", "").replace(".ts", "").replace(".py", "")
@@ -177,7 +181,14 @@ class RAGEngineSearchMixin:
                         cached_vec = _encode_text_query(self.text_model, module).tolist()
                         self._module_embed_cache.set(module, cached_vec)
                     kb_hits = self.knowledge_table.search(cached_vec).limit(2).to_list()
-                    kb_tags = [h["title"] for h in kb_hits if h.get("_distance", 999) < 1.2]
+                    # Filter by distance. 999 sentinel (arbitrary large value)
+                    # is only used as "definitely bigger than threshold"; the
+                    # real lance search rows always include _distance. Use
+                    # explicit None check instead of silent .get(_, default).
+                    def _kb_keep(h):
+                        d = h.get("_distance")
+                        return d is not None and d < 1.2
+                    kb_tags = [h["title"] for h in kb_hits if _kb_keep(h)]
                     if kb_tags:
                         r["kb_constraints"] = kb_tags
                 except Exception as e:
@@ -199,8 +210,8 @@ class RAGEngineSearchMixin:
                     api_key = open(key_path).read().strip()
                     if api_key:
                         break
-                except Exception:
-                    pass
+                except Exception as _e:
+                    logger.debug(f"count_tokens: cannot read {key_path} ({type(_e).__name__})")
         if api_key and len(text) > 50:
             try:
                 import httpx
@@ -211,11 +222,12 @@ class RAGEngineSearchMixin:
                     timeout=3.0
                 )
                 if resp.status_code == 200:
-                    count = resp.json().get("input_tokens", len(text) // 4)
+                    _body = resp.json()
+                    count = _body["input_tokens"] if "input_tokens" in _body else (len(text) // 4)
                     self._token_cache[cache_key] = count
                     return count
-            except Exception:
-                pass
+            except Exception as _e:
+                logger.debug(f"count_tokens: Anthropic API call failed ({type(_e).__name__})")
 
         # BERT tokenizer: same model already loaded, much more accurate than len//4
         try:
@@ -224,8 +236,8 @@ class RAGEngineSearchMixin:
                 count = len(tok.encode(text))
                 self._token_cache[cache_key] = count
                 return count
-        except Exception:
-            pass
+        except Exception as _e:
+            logger.debug(f"count_tokens: tokenizer probe failed ({type(_e).__name__})")
 
         count = len(text) // 4
         self._token_cache[cache_key] = count

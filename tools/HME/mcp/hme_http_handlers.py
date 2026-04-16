@@ -47,13 +47,16 @@ def _reindex_files(files: list[str]) -> dict:
 
     indexed = []
     skipped = []
-    # Budget: 25s total across all files (safely under 30s client timeout).
-    # Each file gets up to 15s (bounded by remaining budget). 5s proved too
-    # tight for ~10KB files with many function chunks under CPU ONNX load
-    # during busy edit bursts (multiple rewrites of the same file in one turn).
+    # Budget: generous caps for batched reindex calls using bge-code-v1 fp16,
+    # which is 10x slower per chunk than the previous jina-v2-base-code.
+    # Big conductor files (20-30KB with many chunks) need ~20-40s each;
+    # the old 15s cap was causing timeout spam during v7 migration.
+    # Callers set HTTP timeout >= RAG_REINDEX_BUDGET_S + a few seconds.
     import time as _time
-    deadline = _time.monotonic() + 25
-    _per_file_cap = 15
+    _budget = ENV.optional_int("RAG_REINDEX_BUDGET_S", 180)
+    _per_file = ENV.optional_int("RAG_REINDEX_PER_FILE_CAP_S", 60)
+    deadline = _time.monotonic() + _budget
+    _per_file_cap = _per_file
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         for filepath in files[:20]:
             if _time.monotonic() >= deadline:
@@ -84,8 +87,27 @@ def _reindex_files(files: list[str]) -> dict:
                     _log_error("reindex", f"file not found: {filepath}")
                     skipped.append(filepath)
                     continue
-            # Skip large files (>32KB) — watcher handles bulk reindex; mini-reindex is for small edits
-            if os.path.getsize(abs_path) > 32768:
+            # Size gate: 128 KB default. Bigger than the old 32 KB so
+            # medium conductor files (20-30 KB) get indexed, but small
+            # enough to exclude the lone polyrhythmPairs.js outlier
+            # (371 KB, 5249 lines of table data).
+            _size_gate = ENV.optional_int("RAG_REINDEX_SIZE_GATE_BYTES", 131072)
+            if os.path.getsize(abs_path) > _size_gate:
+                skipped.append(filepath)
+                continue
+            # Content gate: skip files with auto-generated markers at top.
+            # These are lookup tables / bootstrap code that pollute semantic
+            # search — the embedder clusters them because they look similar
+            # to each other. Detect via "AUTO-GENERATED" or "GENERATED FILE
+            # - DO NOT EDIT" in the first 5 lines of the file.
+            try:
+                with open(abs_path, encoding="utf-8", errors="ignore") as _af:
+                    _header = "".join(_af.readline() for _ in range(5))
+                if "AUTO-GENERATED" in _header or "GENERATED FILE" in _header:
+                    skipped.append(filepath)
+                    continue
+            except OSError as _ge:
+                _log_error("reindex", f"auto-gen header probe failed for {filepath}: {_ge}")
                 skipped.append(filepath)
                 continue
             remaining = max(1, deadline - _time.monotonic())

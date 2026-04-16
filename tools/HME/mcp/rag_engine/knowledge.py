@@ -60,7 +60,9 @@ class RAGKnowledgeMixin:
             try:
                 existing = self.knowledge_table.search(check_vec).limit(3).to_list()
                 for ex in existing:
-                    similarity = 1.0 / (1.0 + ex.get("_distance", 999))
+                    # _distance always present on lance vector-search rows
+                    _d = ex.get("_distance")
+                    similarity = 1.0 / (1.0 + (999 if _d is None else _d))
                     if similarity > 0.85:
                         # Very similar -> merge (redundant)
                         prediction_action = "merge"
@@ -74,8 +76,8 @@ class RAGKnowledgeMixin:
                         try:
                             self.knowledge_table.delete(f"id = '{_sanitize(ex['id'])}'")
                             deleted = True
-                        except Exception:
-                            pass
+                        except Exception as _e:
+                            logger.debug(f"knowledge merge: delete {ex['id']} failed ({type(_e).__name__}: {_e})")
                         if not deleted:
                             # Delete failed — don't proceed with merge to avoid duplicates
                             prediction_action = "store"
@@ -101,16 +103,16 @@ class RAGKnowledgeMixin:
                         try:
                             self.knowledge_table.delete(f"id = '{_sanitize(ex['id'])}'")
                             deleted = True
-                        except Exception:
-                            pass
+                        except Exception as _e:
+                            logger.debug(f"knowledge supersede: delete {ex['id']} failed ({type(_e).__name__}: {_e})")
                         if not deleted:
                             # Delete failed — don't supersede to avoid losing the original
                             break
                         prediction_action = "supersede"
                         superseded_id = superseded_candidate
                         break
-            except Exception:
-                pass  # gating failure -> store normally
+            except Exception as _e:
+                logger.debug(f"knowledge gating: search failed ({type(_e).__name__}: {_e}) — storing normally")
 
         entry_id = uuid.uuid4().hex[:12]
         tags_str = ",".join(tags) if tags else ""
@@ -330,8 +332,8 @@ class RAGKnowledgeMixin:
             else:
                 try:
                     self.db.drop_table("knowledge")
-                except Exception:
-                    pass
+                except Exception as _e:
+                    logger.debug(f"knowledge drop_table failed ({type(_e).__name__}: {_e})")
                 self.knowledge_table = None
 
         if remove_ids:
