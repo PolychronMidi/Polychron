@@ -1,22 +1,28 @@
 #!/usr/bin/env node
 /**
- * HME inference proxy — HTTP chokepoint between Claude Code and the Anthropic API.
+ * HME inference proxy + process supervisor.
  *
- * Claude Code is pointed at http://localhost:9099 via ANTHROPIC_BASE_URL.
- * Every request is stripped of boilerplate/redundancy and enriched with HME
- * jurisdiction + session-status context before being forwarded upstream.
- * Streaming SSE responses are piped verbatim; token latency is preserved.
+ * Single entry point for the entire HME runtime:
+ *   - Forwards Claude Code → Anthropic, stripping boilerplate and injecting
+ *     jurisdiction context / session status.
+ *   - Owns the MCP server and shim as supervised child processes. Claude Code
+ *     connects via SSE: ANTHROPIC_BASE_URL=http://127.0.0.1:9099, MCP URL
+ *     http://127.0.0.1:9099/mcp. A single pkill -P <pid> kills the whole tree.
+ *   - Routes /mcp/* to the supervised MCP HTTP server with per-call timeout
+ *     and hang-kill so a stuck tool call never blocks indefinitely.
  *
  * Env:
  *   HME_PROXY_PORT            default 9099
+ *   HME_MCP_PORT              default 9098  (internal MCP HTTP server port)
  *   HME_PROXY_UPSTREAM_HOST   default api.anthropic.com
  *   HME_PROXY_UPSTREAM_PORT   default 443
  *   HME_PROXY_UPSTREAM_TLS    default 1 (set to 0 for plain http upstream)
  *   HME_PROXY_INJECT          default 1 (set to 0 for pure observability)
+ *   HME_PROXY_SUPERVISE       default 1 (set to 0 to skip child supervision)
  *   PROJECT_ROOT              used to resolve HME tools
  *
  * CLI:
- *   node hme_proxy.js         start the proxy
+ *   node hme_proxy.js         start the proxy (+ supervise children)
  *   node hme_proxy.js --test  scan stdin payload, print analysis, no listen
  */
 
@@ -34,11 +40,79 @@ const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSy
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
 const PORT = parseInt(process.env.HME_PROXY_PORT || '9099', 10);
+const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
+const { MCP_PORT } = require('./supervisor/children');
+
+// ── MCP call timeout tracking (hang-kill) ────────────────────────────────────
+// When a POST to /mcp/messages takes longer than the spec's callTimeoutMs,
+// supervisor kills+restarts the MCP child so the hang doesn't block forever.
+const { killChild, status: supervisorStatus } = require('./supervisor/index');
+const { CHILDREN } = require('./supervisor/children');
+const MCP_CALL_TIMEOUT_MS = (CHILDREN.find((c) => c.name === 'mcp') || {}).callTimeoutMs || 90_000;
+
+function _forwardToMcp(clientReq, clientRes) {
+  // Strip /mcp prefix before forwarding to local MCP HTTP server.
+  const upstreamPath = clientReq.url.replace(/^\/mcp/, '') || '/';
+  const isMessages = upstreamPath === '/messages' && clientReq.method === 'POST';
+  const chunks = [];
+  clientReq.on('data', (c) => chunks.push(c));
+  clientReq.on('end', () => {
+    const bodyBuf = Buffer.concat(chunks);
+    const fwdHeaders = { ...clientReq.headers, host: `127.0.0.1:${MCP_PORT}` };
+    delete fwdHeaders['content-length'];
+    if (bodyBuf.length > 0) fwdHeaders['content-length'] = String(bodyBuf.length);
+    const opts = {
+      hostname: '127.0.0.1',
+      port: MCP_PORT,
+      path: upstreamPath,
+      method: clientReq.method,
+      headers: fwdHeaders,
+    };
+    let hangTimer = null;
+    const fwdReq = http.request(opts, (fwdRes) => {
+      if (hangTimer) { clearTimeout(hangTimer); hangTimer = null; }
+      clientRes.writeHead(fwdRes.statusCode || 502, fwdRes.headers);
+      fwdRes.pipe(clientRes);
+    });
+    if (isMessages) {
+      // Hang guard: kill MCP and let it restart if a tool call takes too long.
+      hangTimer = setTimeout(() => {
+        console.error(`[hme-proxy] MCP tool call timeout (${MCP_CALL_TIMEOUT_MS}ms) — killing MCP child to unblock`);
+        emit({ event: 'mcp_hang_kill', reason: 'call_timeout', timeout_ms: MCP_CALL_TIMEOUT_MS });
+        killChild('mcp', 'SIGKILL');
+        fwdReq.destroy(new Error('mcp_hang_timeout'));
+        if (!clientRes.headersSent) {
+          clientRes.writeHead(503, { 'Content-Type': 'application/json' });
+          clientRes.end(JSON.stringify({ error: 'MCP tool call timeout — MCP restarting, retry in a few seconds' }));
+        } else {
+          clientRes.end();
+        }
+      }, MCP_CALL_TIMEOUT_MS);
+    }
+    fwdReq.on('error', (err) => {
+      if (hangTimer) { clearTimeout(hangTimer); hangTimer = null; }
+      if (!clientRes.headersSent) {
+        clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+        clientRes.end(JSON.stringify({ error: `MCP unavailable: ${err.message}` }));
+      } else {
+        clientRes.end();
+      }
+    });
+    if (bodyBuf.length > 0) fwdReq.write(bodyBuf);
+    fwdReq.end();
+  });
+  clientReq.on('error', () => { try { clientRes.end(); } catch (_e) {} });
+}
 
 function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
     clientRes.writeHead(200, { 'Content-Type': 'application/json' });
-    clientRes.end(JSON.stringify({ status: 'ok', port: PORT }));
+    clientRes.end(JSON.stringify({ status: 'ok', port: PORT, supervisor: supervisorStatus() }));
+    return;
+  }
+  // Route MCP requests to the supervised MCP HTTP server.
+  if (clientReq.url && clientReq.url.startsWith('/mcp')) {
+    _forwardToMcp(clientReq, clientRes);
     return;
   }
   const chunks = [];
@@ -211,12 +285,17 @@ function runTestMode() {
 if (process.argv.includes('--test')) {
   runTestMode();
 } else {
+  if (SUPERVISE) {
+    const supervisor = require('./supervisor/index');
+    supervisor.start();
+  }
   const server = http.createServer(handleRequest);
   server.listen(PORT, '127.0.0.1', () => {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
     console.log(`hme-proxy listening on http://127.0.0.1:${PORT}`);
-    console.log(`  default upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT} (Anthropic)`);
-    console.log(`  multi-upstream: X-HME-Upstream header routes to any provider`);
+    console.log(`  Anthropic upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT}`);
+    console.log(`  MCP upstream: http://127.0.0.1:${MCP_PORT} (supervised, /mcp/* routed here)`);
+    if (!SUPERVISE) console.log('  supervision: disabled (HME_PROXY_SUPERVISE=0)');
   });
   server.on('error', (err) => {
     console.error('[hme-proxy] listen error:', err.message);

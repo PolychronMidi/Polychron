@@ -327,4 +327,15 @@ context._post_recovery_hook = lambda: threading.Thread(
 if __name__ == "__main__":
     from server.protocol_logging import install as _install_logging
     _install_logging()
-    mcp.run(transport="stdio")
+    # HTTP mode: supervisor (hme_proxy.js) passes --http --port <N>.
+    # SSE transport binds to 127.0.0.1 only; proxy routes /mcp/* here.
+    _http_mode = "--http" in sys.argv
+    if _http_mode:
+        import argparse as _ap
+        _p = _ap.ArgumentParser(add_help=False)
+        _p.add_argument("--http", action="store_true")
+        _p.add_argument("--port", type=int, default=int(os.environ.get("HME_MCP_PORT", "9098")))
+        _args, _ = _p.parse_known_args()
+        mcp.run(transport="sse", host="127.0.0.1", port=_args.port)
+    else:
+        mcp.run(transport="stdio")
