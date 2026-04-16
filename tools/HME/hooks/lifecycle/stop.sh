@@ -21,21 +21,37 @@ fi
 # Commit any uncommitted changes before lifecycle checks run.
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
 # After commit, the nexus EDIT backlog triggers review(mode='forget') automatically.
-_AC_PROJECT="$PROJECT_ROOT"
-if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
-  git -C "$_AC_PROJECT" add -A 2>/dev/null
-  if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null; then
+#
+# PROJECT_ROOT may be unset in plugin-hook invocations (Claude Code passes
+# cwd via the stdin JSON, not the env). Fall through to stdin.cwd → $PWD
+# so the commit actually happens instead of git -C "" silently failing.
+_HOOK_CWD=$(_safe_jq "$INPUT" '.cwd' '')
+_AC_PROJECT="${PROJECT_ROOT:-${_HOOK_CWD:-$(pwd)}}"
+if [ -z "$_AC_PROJECT" ] || [ ! -d "$_AC_PROJECT/.git" ]; then
+  echo "WARNING: stop.sh auto-commit skipped — could not resolve project root (PROJECT_ROOT='$PROJECT_ROOT', stdin.cwd='$_HOOK_CWD')" >&2
+elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
+  # Capture git errors to a log so failures are visible, not hidden behind 2>/dev/null
+  _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
+  mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
+  if ! git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"; then
+    echo "WARNING: stop.sh auto-commit: git add failed — see $_GIT_ERR" >&2
+  elif ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>"$_GIT_ERR"; then
     # Retry once — transient lock or index contention
     sleep 1
-    if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet 2>/dev/null; then
-      source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-      _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist"
-      echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status." >&2
+    if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet 2>"$_GIT_ERR"; then
+      # Check if the failure is "nothing to commit" (expected when no changes staged)
+      if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
+        source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+        _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist (see $_GIT_ERR)"
+        echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status + $_GIT_ERR." >&2
+      fi
     fi
   else
     # Clear any stale commit-failed flag from a previous failed attempt
     source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
     _nexus_clear_type COMMIT_FAILED
+    # Clean up empty err log on success
+    rm -f "$_GIT_ERR" 2>/dev/null
   fi
 fi
 
@@ -141,82 +157,77 @@ if [[ -f "$LOOP_FILE" ]]; then
   fi
 fi
 
-# ── Background task polling detection ─────────────────────────────────────────
-# Catches both Bash-based polling (task output files) and MCP tool polling
-# (repeated check_pipeline calls). Both are the same antipattern.
+# ── Consolidated detector run ─────────────────────────────────────────────────
+# All 6 stop-side detectors (poll_count / idle_after_bg / psycho_stop /
+# ack_skip / abandon_check / stop_work) run in ONE python3 invocation via
+# run_all.py — parse the transcript once, share the cache, amortize the
+# ~400ms python-interpreter startup that used to fire per detector.
+# Previous p95 was 5.5s (n=78); consolidated is ~170ms on small
+# transcripts, grows sub-linearly with transcript size.
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
+POLL_COUNT=0
+IDLE_AFTER_BG=ok
+PSYCHO_STOP=ok
+ACK_SKIP=ok
+ABANDON_CHECK=ok
+STOP_WORK=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  POLL_COUNT=$(python3 "$_DETECTORS_DIR/poll_count.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo 0)
+  # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
+  # If run_all crashes we fall back to defaults above (equivalent to old
+  # `|| echo ok` per-detector fallbacks).
+  _RUN_ALL_OUT=$(python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>/dev/null || true)
+  while IFS='=' read -r _k _v; do
+    case "$_k" in
+      poll_count)    POLL_COUNT="$_v" ;;
+      idle_after_bg) IDLE_AFTER_BG="$_v" ;;
+      psycho_stop)   PSYCHO_STOP="$_v" ;;
+      ack_skip)      ACK_SKIP="$_v" ;;
+      abandon_check) ABANDON_CHECK="$_v" ;;
+      stop_work)     STOP_WORK="$_v" ;;
+    esac
+  done <<< "$_RUN_ALL_OUT"
+  # Sanity: poll_count must be numeric for the -ge test below.
+  [[ "$POLL_COUNT" =~ ^[0-9]+$ ]] || POLL_COUNT=0
+fi
 
-  if [[ "$POLL_COUNT" -ge 2 ]]; then
-    jq -n '{
-      "decision": "block",
-      "reason": "ANTI-POLLING: You polled pipeline/task status multiple times in one turn. This is the wait-and-poll antipattern. Background tasks fire notifications when done — use pipeline_digest (freshness guard) or do real work instead."
-    }'
-    exit 0
-  fi
+# ── Background task polling detection ─────────────────────────────────────────
+if [[ "$POLL_COUNT" -ge 2 ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "ANTI-POLLING: You polled pipeline/task status multiple times in one turn. This is the wait-and-poll antipattern. Background tasks fire notifications when done — use pipeline_digest (freshness guard) or do real work instead."
+  }'
+  exit 0
 fi
 
 # ── Background-launch-then-idle detection ────────────────────────────────────
-# If a pipeline was launched in background, block stopping until either:
-#   a) The output file signals pipeline completion, OR
-#   b) 20+ tool calls have been made after the launch (enough real work done)
-if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  IDLE_AFTER_BG=$(python3 "$_DETECTORS_DIR/idle_after_bg.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
-
-  if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
-    jq -n '{
-      "decision": "block",
-      "reason": "ANTI-IDLE: Pipeline is running in background — do NOT stop. Continue with real work now:\n1. Run index_codebase (KB stays fresh for next round)\n2. Pick next evolution targets from the suggest_evolution output and implement them\n3. Run what_did_i_forget on any recently changed files\n4. Update docs or KB entries for this round\nDo not end your turn until the pipeline completes or you have done 20+ tool calls of substantive work."
-    }'
-    exit 0
-  fi
+if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "ANTI-IDLE: Pipeline is running in background — do NOT stop. Continue with real work now:\n1. Run index_codebase (KB stays fresh for next round)\n2. Pick next evolution targets from the suggest_evolution output and implement them\n3. Run what_did_i_forget on any recently changed files\n4. Update docs or KB entries for this round\nDo not end your turn until the pipeline completes or you have done 20+ tool calls of substantive work."
+  }'
+  exit 0
 fi
 
 # ── Psychopathic-stop detection ───────────────────────────────────────────────
-# ScheduleWakeup called in the same turn where a long background job was launched
-# (or where polling happened) is the "defer-instead-of-work" antipattern. When a
-# slow process runs in the background, continue with OTHER real work — do not
-# schedule a wakeup and end the turn. Wakeup is reserved for genuinely idle waits
-# with no other productive work possible.
-if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  PSYCHO_STOP=$(python3 "$_DETECTORS_DIR/psycho_stop.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
-
-  if [[ "$PSYCHO_STOP" == "psycho" ]]; then
-    jq -n '{
-      "decision": "block",
-      "reason": "PSYCHOPATHIC-STOP: One of three defer-instead-of-do patterns fired: (A) launched a long background job + ScheduleWakeup; (B) admit-and-stop — final text enumerated pending work with no tool calls following; (C) survey-and-ask — final text identified violations/opportunities a directive already told you to fix, then asked permission instead of fixing (\"want me to run...\", \"didn't modify\", \"before any edits\", \"shall I\"). The directive already granted authority. Resume and EXECUTE the work now. If the scope is genuinely ambiguous, clarify BEFORE surveying, not after."
-    }'
-    exit 0
-  fi
+if [[ "$PSYCHO_STOP" == "psycho" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "PSYCHOPATHIC-STOP: One of three defer-instead-of-do patterns fired: (A) launched a long background job + ScheduleWakeup; (B) admit-and-stop — final text enumerated pending work with no tool calls following; (C) survey-and-ask — final text identified violations/opportunities a directive already told you to fix, then asked permission instead of fixing (\"want me to run...\", \"didn't modify\", \"before any edits\", \"shall I\"). The directive already granted authority. Resume and EXECUTE the work now. If the scope is genuinely ambiguous, clarify BEFORE surveying, not after."
+  }'
+  exit 0
 fi
 
 # ── Acknowledge-and-move-on detection ────────────────────────────────────────
-# Detect: an HME tool in this turn surfaced LIFESAVER CRITICAL/FAIL items, but
-# the turn is about to stop without any Edit/Write calls after those surfaces.
-# The rule is "fix it, don't just note it" — spawning a sweep Agent, writing a
-# doc about it, or saying "I'll park that" instead of editing code is a
-# violation. Minimum proof of fixing: at least one Edit/Write tool_use AFTER
-# the CRITICAL/FAIL surfaced in a tool_result this turn.
-if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  ACK_SKIP=$(python3 "$_DETECTORS_DIR/ack_skip.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
-
-  if [[ "$ACK_SKIP" == "ack_skip" ]]; then
-    jq -n '{
-      "decision": "block",
-      "reason": "ACKNOWLEDGE-AND-MOVE-ON: HME surfaced a CRITICAL/FAIL this turn but you have not made any Edit/Write calls since. \"Noting\" a failure, \"flagging\" it, saving it for a sweep, or spawning an Agent to survey instead of fixing it is the antipattern the fix_antipattern wiring exists to block. Required action now: diagnose root cause, Edit the offending code, re-run the HME tool to verify the CRITICAL cleared. If the CRITICAL is from a long-running background process that will resolve itself, say so EXPLICITLY in text before stopping — but fix it if you can."
-    }'
-    exit 0
-  fi
+if [[ "$ACK_SKIP" == "ack_skip" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "ACKNOWLEDGE-AND-MOVE-ON: HME surfaced a CRITICAL/FAIL this turn but you have not made any Edit/Write calls since. \"Noting\" a failure, \"flagging\" it, saving it for a sweep, or spawning an Agent to survey instead of fixing it is the antipattern the fix_antipattern wiring exists to block. Required action now: diagnose root cause, Edit the offending code, re-run the HME tool to verify the CRITICAL cleared. If the CRITICAL is from a long-running background process that will resolve itself, say so EXPLICITLY in text before stopping — but fix it if you can."
+  }'
+  exit 0
 fi
 
 # ── Plan-abandonment detection ────────────────────────────────────────────────
-# Detect: Agent spawned for KB/HME work (should use HME tools directly),
-# or a sweep was started (edit/grep loop) but fewer than expected completions.
-if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
-  ABANDON_CHECK=$(python3 "$_DETECTORS_DIR/abandon_check.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
-
-  if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
+if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
     jq -n '{
       "decision": "block",
       "reason": "PLAN-ABANDONMENT DETECTED: You spawned an Agent for KB/HME work. Use HME tools directly: search_knowledge, compact_knowledge, remove_knowledge, list_knowledge, memory_dream, kb_health. Subagents for KB work are the abandoning-plans antipattern (KB entry 524061657661). Complete the task using HME tools now."
@@ -265,10 +276,7 @@ _emit_activity round_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
-# Stop-work antipattern: detect when Claude's last turn was text-only with no tool calls,
-# or contained dismissive phrases like "No response requested". Both indicate premature stop.
-STOP_WORK=$(python3 "$_DETECTORS_DIR/stop_work.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo ok)
-
+# STOP_WORK was captured earlier via run_all.py.
 if [[ "$STOP_WORK" == "DISMISSIVE" ]]; then
   jq -n '{
     "decision": "block",

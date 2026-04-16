@@ -25,19 +25,21 @@ from pathlib import Path
 from typing import Iterable, Iterator
 
 
-def load_turn_events(transcript_path: str | Path) -> list[dict]:
-    """Return the list of events in the current turn, oldest first.
+# Per-process cache of parsed transcripts. run_all.py (the consolidated
+# detector runner) reads a multi-MB transcript once; every downstream
+# detector's load_turn_events() call returns the cached parse instead of
+# re-reading + re-JSON-parsing the same file. Matters for stop-hook p95.
+_PARSE_CACHE: dict[str, list[dict]] = {}
 
-    A "turn" starts at the most recent user message (inclusive, as the
-    boundary) and ends at the most recent assistant message. Events outside
-    that window are excluded.
 
-    Returns [] on any read/parse failure — callers then short-circuit to
-    the safe "ok" status.
-    """
+def _parse_all(transcript_path: str | Path) -> list[dict]:
+    key = str(transcript_path)
+    if key in _PARSE_CACHE:
+        return _PARSE_CACHE[key]
     try:
         data = Path(transcript_path).read_text(encoding="utf-8", errors="ignore")
     except OSError:
+        _PARSE_CACHE[key] = []
         return []
     events: list[dict] = []
     for line in data.splitlines():
@@ -48,6 +50,21 @@ def load_turn_events(transcript_path: str | Path) -> list[dict]:
             events.append(json.loads(line))
         except json.JSONDecodeError:
             continue
+    _PARSE_CACHE[key] = events
+    return events
+
+
+def load_turn_events(transcript_path: str | Path) -> list[dict]:
+    """Return the list of events in the current turn, oldest first.
+
+    A "turn" starts at the most recent user message (inclusive, as the
+    boundary) and ends at the most recent assistant message. Events outside
+    that window are excluded.
+
+    Returns [] on any read/parse failure — callers then short-circuit to
+    the safe "ok" status.
+    """
+    events = _parse_all(transcript_path)
     # Find the last user message; turn is everything after it.
     last_user_idx = -1
     for i, obj in enumerate(events):
@@ -65,19 +82,7 @@ def load_full_turn_with_user(transcript_path: str | Path) -> list[dict]:
     same iteration order as they appear to the model (user turn -> assistant
     tool calls -> tool results).
     """
-    try:
-        data = Path(transcript_path).read_text(encoding="utf-8", errors="ignore")
-    except OSError:
-        return []
-    events: list[dict] = []
-    for line in data.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            events.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
+    events = _parse_all(transcript_path)
     last_user_idx = -1
     for i, obj in enumerate(events):
         if obj.get("role") == "user":
