@@ -1,2 +1,11 @@
 """Evolution subpackage — evolution planning, self-test, invariants."""
 from .evolution import *  # noqa: F401,F403
+from . import evolution_admin  # noqa: F401
+from . import evolution_evolve  # noqa: F401
+from . import evolution_introspect  # noqa: F401
+from . import evolution_invariants  # noqa: F401
+from . import evolution_next  # noqa: F401
+from . import evolution_selftest  # noqa: F401
+from . import evolution_suggest  # noqa: F401
+from . import evolution_trace  # noqa: F401
+from . import evolution_strategies  # noqa: F401

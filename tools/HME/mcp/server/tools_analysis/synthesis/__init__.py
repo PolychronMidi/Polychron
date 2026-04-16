@@ -1,16 +1,22 @@
 """Synthesis subpackage — inference providers and session management."""
-# Re-export everything so parent sys.modules aliasing works.
+# Import ALL subpackage modules so parent sys.modules aliasing works.
+# Without these imports, _alias_subpackage has nothing to alias.
 from .synthesis import *  # noqa: F401,F403
 from .synthesis_config import *  # noqa: F401,F403
 from .synthesis_session import *  # noqa: F401,F403
-# Split modules — re-export key functions at package level
-from .synthesis_inference import (  # noqa: F401
-    _local_think, _local_chat, _reasoning_think,
-    _local_think_with_system, _read_module_source,
-    compress_for_claude, _cancellable_urlopen,
-)
-from .synthesis_cascade import (  # noqa: F401
-    synthesize, dual_gpu_consensus,
-    _cascade_synthesis, _assess_complexity, _quality_gate,
-    _inject_context, _fuzzy_find_modules,
-)
+
+# Ensure every module is in sys.modules for parent aliasing
+from . import synthesis_llamacpp  # noqa: F401
+from . import synthesis_inference  # noqa: F401
+from . import synthesis_cascade  # noqa: F401
+from . import synthesis_provider_base  # noqa: F401
+from . import synthesis_proxy_route  # noqa: F401
+from . import synthesis_reasoning  # noqa: F401
+from . import synthesis_pipeline  # noqa: F401
+from . import synthesis_warm  # noqa: F401
+from . import synthesis_groq  # noqa: F401
+from . import synthesis_cerebras  # noqa: F401
+from . import synthesis_mistral  # noqa: F401
+from . import synthesis_nvidia  # noqa: F401
+from . import synthesis_openrouter  # noqa: F401
+from . import synthesis_gemini  # noqa: F401
