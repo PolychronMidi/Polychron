@@ -69,12 +69,12 @@ function sliceToRound(events) {
     const hasWrites = window.some((e) => e && e.event === 'file_written');
     if (hasWrites) return window;
   }
-  // No pair had writes — fall back to everything after the last round_complete
+  // No pair had writes -- fall back to everything after the last round_complete
   // (the current in-progress round, which may have real edits).
   const lastRC = rcIndices[0];
   const tail = events.slice(lastRC + 1);
   if (tail.some((e) => e && e.event === 'file_written')) return tail;
-  // Absolutely nothing — fall back to everything before the oldest round_complete
+  // Absolutely nothing -- fall back to everything before the oldest round_complete
   const oldest = rcIndices[rcIndices.length - 1];
   return events.slice(0, oldest);
 }
@@ -157,7 +157,7 @@ function main() {
     previous_score: prevScore,
     delta,
     components: {
-      read_coverage: Number(readCoverage.toFixed(4)),
+      read_coverage: readCoverage !== null ? Number(readCoverage.toFixed(4)) : null,
       read_coverage_detail: {
         writes_with_prior_read: writesWithPriorRead,
         total_writes: writes.length,
