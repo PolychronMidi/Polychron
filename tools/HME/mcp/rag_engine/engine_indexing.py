@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class RAGEngineIndexingMixin:
-    def _collect_files(self, directory: str) -> list[Path]:
+    def _collect_files(self) -> list[Path]:
         from file_walker import walk_code_files
-        return list(walk_code_files(directory))
+        return list(walk_code_files())
 
     def _batch_encode(self, texts: list[str], kind: str = "code") -> list[list[float]]:
         """Encode texts using the appropriate embedder.
@@ -195,21 +195,21 @@ class RAGEngineIndexingMixin:
             self._search_cache.invalidate()
         return {"indexed": 0, "removed": removed}
 
-    def index_directory(self, directory: str = "") -> dict:
-        """Index all files from ragIndexDirs. The directory argument is ignored —
-        ragIndexDirs in .mcp.json is the ONLY source of indexable paths."""
+    def index_directory(self) -> dict:
+        """Index all files from ragIndexDirs in .mcp.json. No arguments — the
+        allowlist is the only source of indexable paths."""
         self._bulk_indexing.set()
         try:
             with self._index_lock:
-                return self._index_directory_locked(directory)
+                return self._index_directory_locked()
         finally:
             self._bulk_indexing.clear()
 
-    def _index_directory_locked(self, directory: str) -> dict:
+    def _index_directory_locked(self) -> dict:
         if getattr(self, '_clearing', False):
             return {"total_files": 0, "indexed": 0, "skipped_unchanged": 0, "chunks_created": 0}
         self._validate_cache()
-        files = self._collect_files(directory)
+        files = self._collect_files()
         logger.info(f"Collected {len(files)} source files")
 
         # Phase 1: identify changed files (read once, cache content for phase 3)

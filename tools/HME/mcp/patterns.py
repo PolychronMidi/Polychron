@@ -326,7 +326,7 @@ def detect_patterns(directory: str, checks: list[str] | None = None) -> list[dic
     active_checks = checks if checks else list(_CHECK_REGISTRY.keys())
     all_results = []
 
-    for fpath in walk_code_files(directory):
+    for fpath in walk_code_files():
         lang = ext_to_lang(fpath.suffix if fpath.suffix else fpath.name)
         if not lang or lang == "text":
             continue

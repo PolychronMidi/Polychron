@@ -150,7 +150,7 @@ def directory_summary(directory: str) -> dict:
     total_files = 0
     total_lines = 0
 
-    for fpath in walk_code_files(directory):
+    for fpath in walk_code_files():
         total_files += 1
         lang = ext_to_lang(fpath.suffix if fpath.suffix else fpath.name)
         try:

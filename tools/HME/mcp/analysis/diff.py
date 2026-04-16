@@ -90,7 +90,7 @@ def analyze_diff(project_root: str, ref: str = "") -> dict:
     for cf in changed_files:
         changed_paths.add(os.path.normpath(os.path.join(project_root, cf["file"])))
 
-    for f in walk_code_files(project_root):
+    for f in walk_code_files():
         f_norm = os.path.normpath(str(f))
         if f_norm in changed_paths:
             continue
@@ -130,7 +130,7 @@ def trace_cross_language(symbol_name: str, project_root: str) -> dict:
 
     rust_def = None
     fn_re = re.compile(rf'^\s*pub\s+fn\s+{re.escape(symbol_name)}\s*\(', re.MULTILINE)
-    for fpath in walk_code_files(project_root, lang_filter="rust"):
+    for fpath in walk_code_files(lang_filter="rust"):
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -150,7 +150,7 @@ def trace_cross_language(symbol_name: str, project_root: str) -> dict:
     bridge_refs = []
     ts_callers = []
     ts_exts = {".ts", ".tsx", ".js"}
-    for fpath in walk_code_files(project_root, extensions=ts_exts):
+    for fpath in walk_code_files(extensions=ts_exts):
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:

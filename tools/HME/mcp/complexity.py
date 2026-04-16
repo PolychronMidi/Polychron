@@ -354,7 +354,7 @@ def compute_complexity(file_path: str) -> list[dict]:
 def find_hotspots(directory: str, top_n: int = 30) -> list[dict]:
     all_funcs = []
 
-    for fpath in walk_code_files(directory):
+    for fpath in walk_code_files():
         lang = ext_to_lang(fpath.suffix if fpath.suffix else fpath.name)
         if not lang or lang == "text":
             continue
