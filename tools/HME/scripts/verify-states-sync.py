@@ -22,7 +22,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 
 _PY_FILE = os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "onboarding_chain.py")
-_SH_FILE = os.path.join(_PROJECT, "tools", "HME", "hooks", "_onboarding.sh")
+_SH_FILE = os.path.join(_PROJECT, "tools", "HME", "hooks", "helpers", "_onboarding.sh")
 
 
 def _parse_python_states() -> list:
