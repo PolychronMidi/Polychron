@@ -38,29 +38,11 @@ _stderr_verdict() {
   _HME_HOOK_VERDICT="$1"
 }
 
-_hme_emit_exit_verdict() {
-  local code=$?
-  if [ -n "$_HME_HOOK_VERDICT" ]; then
-    echo "${_HME_HOOK_NAME}: $_HME_HOOK_VERDICT" >&2
-  else
-    # Default: terse "<hook>: exit=<code> <elapsed>ms" — short but
-    # non-empty, so the forwarded notification carries real signal.
-    local end_ns dur_ms
-    end_ns="$(date +%s%N)"
-    dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
-    echo "${_HME_HOOK_NAME}: exit=${code} ${dur_ms}ms" >&2
-  fi
-  return $code  # preserve original exit code
-}
-
 _hme_log_hook_latency() {
-  local end_ns dur_ms
-  end_ns="$(date +%s%N)"
-  dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
   local log_file="$PROJECT_ROOT/metrics/hme-hook-latency.jsonl"
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
-    "$_HME_HOOK_NAME" "$dur_ms" "$(date +%s)" >> "$log_file" 2>/dev/null
+    "$_HME_HOOK_NAME" "$1" "$(date +%s)" >> "$log_file" 2>/dev/null
   # Rotate when log exceeds 10000 lines — keeps last 5000
   local size
   size=$(wc -l < "$log_file" 2>/dev/null || echo 0)
@@ -70,12 +52,24 @@ _hme_log_hook_latency() {
   fi
 }
 
-# Compose EXIT trap: latency logger + stderr verdict. Order matters —
-# latency log is best-effort silent, verdict is the user-visible signal
-# that runs last so nothing overwrites it.
+# Composite EXIT trap. Captures the ORIGINAL exit code before any helper
+# runs (latency log or stderr emission), computes elapsed once, then
+# dispatches. Either the explicit verdict set by `_stderr_verdict` wins,
+# or a default "exit=<code> <N>ms" terse summary fires so the agent-side
+# forwarded notification (Stop hook feedback: [cmd]: <stderr>) always
+# carries real signal instead of "No stderr output" filler.
 _hme_exit_combined() {
-  _hme_log_hook_latency
-  _hme_emit_exit_verdict
+  local code=$?
+  local end_ns dur_ms
+  end_ns="$(date +%s%N)"
+  dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
+  _hme_log_hook_latency "$dur_ms"
+  if [ -n "$_HME_HOOK_VERDICT" ]; then
+    echo "${_HME_HOOK_NAME}: $_HME_HOOK_VERDICT" >&2
+  else
+    echo "${_HME_HOOK_NAME}: exit=${code} ${dur_ms}ms" >&2
+  fi
+  return $code
 }
 trap _hme_exit_combined EXIT
 
