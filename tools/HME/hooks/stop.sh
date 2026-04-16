@@ -21,7 +21,7 @@ fi
 # Commit any uncommitted changes before lifecycle checks run.
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
 # After commit, the nexus EDIT backlog triggers review(mode='forget') automatically.
-_AC_PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+_AC_PROJECT="$PROJECT_ROOT"
 if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   git -C "$_AC_PROJECT" add -A 2>/dev/null
   if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null; then
@@ -43,7 +43,7 @@ fi
 # LIFE-OR-DEATH: Catch errors that fired in HME Chat DURING this turn.
 # Block stopping — errors that appeared while you worked MUST be fixed before return.
 # Acknowledging without fixing is the violation this system exists to prevent.
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
 TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
 WATERMARK="$PROJECT/tmp/hme-errors.lastread"

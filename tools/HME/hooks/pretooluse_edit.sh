@@ -7,7 +7,7 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 
 # Activity bridge: emit edit_pending for src/ and tools/HME/ edits.
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts))/'; then

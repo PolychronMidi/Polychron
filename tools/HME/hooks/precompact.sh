@@ -3,7 +3,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # HME PreCompact: surface pending KB anchors and tracked note files before compaction
 cat > /dev/null  # consume stdin
 
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
 printf '%s INFO compact: PRE-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null
 TAB="$PROJECT/tmp/hme-tab.txt"

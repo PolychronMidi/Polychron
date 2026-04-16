@@ -16,7 +16,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # The SubagentPassthroughVerifier enforces this at HCI check time.
 INPUT=$(cat)
 
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
 
 SUBAGENT_TYPE=$(_safe_jq "$INPUT" '.tool_input.subagent_type' 'general-purpose')

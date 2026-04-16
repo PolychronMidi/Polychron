@@ -88,27 +88,7 @@ def _refresh_env() -> None:
     if now - _env_last_refresh < _ENV_REFRESH_INTERVAL:
         return
     _env_last_refresh = now
-    try:
-        from server import context as _ctx
-        env_path = os.path.join(_ctx.PROJECT_ROOT, ".env")
-    except Exception as _err:
-        logger.debug(f"unnamed-except synthesis_reasoning.py:88: {type(_err).__name__}: {_err}")
-        env_path = os.path.join(ENV.optional("PROJECT_ROOT", ""), ".env")
-    if not os.path.exists(env_path):
-        return
-    try:
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, _, val = line.partition("=")
-                key = key.strip()
-                val = val.strip().strip('"').strip("'")
-                if key and val:
-                    os.environ[key] = val  # always refresh (don't gate on existing)
-    except Exception as e:
-        logger.warning(f"reasoning env refresh failed: {e}")
+    ENV.load(force=True)
 
 
 # (provider_key, model_id) in absolute quality order.

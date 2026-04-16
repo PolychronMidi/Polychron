@@ -46,14 +46,130 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const path = require('path');
 
-const PROJECT_ROOT = process.env.CLAUDE_PROJECT_DIR || '/home/jah/Polychron';
+const PROJECT_ROOT = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
 const EMIT_PY = path.join(PROJECT_ROOT, 'tools/HME/activity/emit.py');
 const PORT = parseInt(process.env.HME_PROXY_PORT || '9099', 10);
-const UPSTREAM_HOST = process.env.HME_PROXY_UPSTREAM_HOST || 'api.anthropic.com';
-const UPSTREAM_PORT = parseInt(process.env.HME_PROXY_UPSTREAM_PORT || '443', 10);
-const UPSTREAM_TLS = (process.env.HME_PROXY_UPSTREAM_TLS ?? '1') !== '0';
+// Default upstream for Claude Code (ANTHROPIC_BASE_URL points here).
+const DEFAULT_UPSTREAM_HOST = process.env.HME_PROXY_UPSTREAM_HOST || 'api.anthropic.com';
+const DEFAULT_UPSTREAM_PORT = parseInt(process.env.HME_PROXY_UPSTREAM_PORT || '443', 10);
+const DEFAULT_UPSTREAM_TLS = (process.env.HME_PROXY_UPSTREAM_TLS ?? '1') !== '0';
 // Injection is on by default; disable with HME_PROXY_INJECT=0 for pure observability.
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
+
+// ── Multi-upstream routing ──────────────────────────────────────────────────
+// Callers pass `X-HME-Upstream: https://api.groq.com` (or any full URL) to
+// route through a non-default upstream. The proxy resolves host/port/TLS from
+// the URL. Claude Code calls omit this header and hit the Anthropic default.
+// HME synthesis modules set it to route their provider calls through the proxy.
+function resolveUpstream(req) {
+  const header = req.headers['x-hme-upstream'];
+  if (!header) {
+    return { host: DEFAULT_UPSTREAM_HOST, port: DEFAULT_UPSTREAM_PORT, tls: DEFAULT_UPSTREAM_TLS, provider: 'anthropic' };
+  }
+  try {
+    const u = new URL(header.startsWith('http') ? header : `https://${header}`);
+    const tls = u.protocol === 'https:';
+    const port = u.port ? parseInt(u.port, 10) : (tls ? 443 : 80);
+    // Derive a short provider label for logging
+    const hostParts = u.hostname.split('.');
+    const provider = hostParts.length >= 2 ? hostParts[hostParts.length - 2] : u.hostname;
+    return { host: u.hostname, port, tls, provider, basePath: u.pathname !== '/' ? u.pathname : '' };
+  } catch (_err) {
+    return { host: DEFAULT_UPSTREAM_HOST, port: DEFAULT_UPSTREAM_PORT, tls: DEFAULT_UPSTREAM_TLS, provider: 'anthropic' };
+  }
+}
+
+// ── Emergency valve ─────────────────────────────────────────────────────────
+// If the proxy causes N consecutive upstream failures (connection refused,
+// timeout, DNS failure), it is BLOCKING the user's connection to Claude.
+// The valve fires: writes a CRITICAL alert to hme-errors.log, flips
+// HME_PROXY_ENABLED=0 in .env, and kills itself. Claude Code retries the
+// request and hits Anthropic directly (ANTHROPIC_BASE_URL env survives the
+// proxy death but the next sessionstart won't relaunch it).
+const EMERGENCY_THRESHOLD = 3;
+let _consecutiveFailures = 0;
+let _valveTripped = false;
+
+function tripEmergencyValve(lastErr) {
+  if (_valveTripped) return;
+  _valveTripped = true;
+  const msg = `EMERGENCY VALVE: proxy killed after ${EMERGENCY_THRESHOLD} consecutive upstream failures. Last error: ${lastErr}. HME_PROXY_ENABLED set to 0.`;
+  console.error(`[hme-proxy] ${msg}`);
+
+  // Write to LIFESAVER error log so the agent sees it immediately
+  const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+  try {
+    const ts = new Date().toISOString();
+    fs.appendFileSync(errLog, `[${ts}] PROXY_EMERGENCY: ${msg}\n`);
+  } catch (_e) { /* best effort */ }
+
+  // Flip HME_PROXY_ENABLED=0 in .env so sessionstart won't restart us
+  const envPath = path.join(PROJECT_ROOT, '.env');
+  try {
+    let envContent = fs.readFileSync(envPath, 'utf8');
+    envContent = envContent.replace(
+      /^HME_PROXY_ENABLED=.*/m,
+      'HME_PROXY_ENABLED=0  # EMERGENCY VALVE tripped — proxy self-disabled',
+    );
+    fs.writeFileSync(envPath, envContent);
+  } catch (_e) {
+    console.error('[hme-proxy] WARNING: could not update .env — manually set HME_PROXY_ENABLED=0');
+  }
+
+  // Emit activity event
+  emit({ event: 'proxy_emergency', reason: lastErr, source: 'emergency_valve' });
+
+  // Shut down after a brief delay so the current 502 response can flush
+  setTimeout(() => process.exit(99), 500);
+}
+
+function recordUpstreamSuccess() {
+  _consecutiveFailures = 0;
+}
+
+function recordUpstreamFailure(err) {
+  _consecutiveFailures++;
+  if (_consecutiveFailures >= EMERGENCY_THRESHOLD) {
+    tripEmergencyValve(err);
+  }
+}
+
+// ── Coherence budget gating ─────────────────────────────────────────────────
+// When coherence is ABOVE the budget band, the system is too disciplined —
+// relax injection to allow exploration. When BELOW, tighten. When IN band,
+// inject normally. The budget file is written by compute-coherence-score.js
+// each pipeline run.
+const COHERENCE_BUDGET_PATH = path.join(PROJECT_ROOT, 'metrics', 'hme-coherence-budget.json');
+let _budgetState = null;  // 'below' | 'in_band' | 'above' | null
+let _budgetLoadedAt = 0;
+
+function loadCoherenceBudget() {
+  const now = Date.now();
+  if (_budgetState !== null && now - _budgetLoadedAt < REFRESH_INTERVAL_MS) return _budgetState;
+  try {
+    const raw = fs.readFileSync(COHERENCE_BUDGET_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    const score = data.current_coherence;
+    const band = data.band; // [lo, hi]
+    if (typeof score === 'number' && Array.isArray(band) && band.length === 2) {
+      if (score < band[0]) _budgetState = 'below';
+      else if (score > band[1]) _budgetState = 'above';
+      else _budgetState = 'in_band';
+    }
+  } catch (_err) {
+    _budgetState = 'in_band'; // default: inject normally
+  }
+  _budgetLoadedAt = now;
+  return _budgetState;
+}
+
+function shouldInject() {
+  if (!INJECT) return false;
+  const budget = loadCoherenceBudget();
+  // ABOVE band = too disciplined → suppress injection, allow exploration
+  if (budget === 'above') return false;
+  return true;
+}
 
 const WRITE_INTENT_TOOLS = new Set([
   'Edit',
@@ -387,6 +503,11 @@ function scanMessages(payload) {
 }
 
 function handleRequest(clientReq, clientRes) {
+  if (clientReq.url === '/health') {
+    clientRes.writeHead(200, { 'Content-Type': 'application/json' });
+    clientRes.end(JSON.stringify({ status: 'ok', port: PORT }));
+    return;
+  }
   const chunks = [];
   clientReq.on('data', (c) => chunks.push(c));
   clientReq.on('end', () => {
@@ -403,77 +524,103 @@ function handleRequest(clientReq, clientRes) {
     let outBody = bodyBuf;
     let injected = false;
 
+    // Resolve provider for logging + conditional scanning
+    const upstream = resolveUpstream(clientReq);
+    const isAnthropic = upstream.provider === 'anthropic';
+
     if (payload && Array.isArray(payload.messages)) {
       const session = sessionKey(payload);
-      const scan = scanMessages(payload);
-      // Real-time jurisdiction injection (Phase 2.1 / feature #1).
-      if (INJECT && scan.jurisdictionTargets.length > 0) {
-        const block = buildJurisdictionContext(scan.jurisdictionTargets);
-        injected = injectIntoSystem(payload, block);
-        if (injected) {
+
+      // Coherence scanning + jurisdiction injection: Anthropic only.
+      // These inspect the Evolver's tool_use history, which only exists in
+      // Anthropic message format. Provider calls (Groq, Gemini, etc.) are
+      // HME synthesis — they don't carry Evolver tool history.
+      if (isAnthropic) {
+        const scan = scanMessages(payload);
+        if (shouldInject() && scan.jurisdictionTargets.length > 0) {
+          const block = buildJurisdictionContext(scan.jurisdictionTargets);
+          injected = injectIntoSystem(payload, block);
+          if (injected) {
+            emit({
+              event: 'jurisdiction_inject',
+              session,
+              targets: scan.jurisdictionTargets.length,
+              first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
+            });
+            outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          }
+        }
+        if (scan.writeIntentCalled && !scan.hmeReadCalled) {
           emit({
-            event: 'jurisdiction_inject',
+            event: 'coherence_violation',
             session,
-            targets: scan.jurisdictionTargets.length,
-            first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
+            reason: 'inference_write_without_hme_read',
+            tool: scan.firstWriteBeforeRead || '?',
+            path: clientReq.url || '?',
+            source: 'proxy',
           });
-          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
         }
       }
+
+      // Log every inference call regardless of provider
       emit({
         event: 'inference_call',
         session,
+        provider: upstream.provider,
         path: clientReq.url || '?',
         model: (payload.model || 'unknown').replace(/[,=\s]/g, '_'),
         messages: payload.messages.length,
-        tool_calls: scan.toolCalls.length,
-        hme_read_prior: scan.hmeReadCalled,
-        write_intent: scan.writeIntentCalled,
-        jurisdiction_targets: scan.jurisdictionTargets.length,
         injected: injected,
       });
-      if (scan.writeIntentCalled && !scan.hmeReadCalled) {
-        emit({
-          event: 'coherence_violation',
-          session,
-          reason: 'inference_write_without_hme_read',
-          tool: scan.firstWriteBeforeRead || '?',
-          path: clientReq.url || '?',
-          source: 'proxy',
-        });
-      }
     }
 
-    // Forward upstream. Headers are copied verbatim except for `host`, which
-    // must be the upstream — we also strip content-length since we may have
-    // re-serialized the body (jurisdiction injection).
+    // Forward upstream using the already-resolved target.
     const upstreamHeaders = { ...clientReq.headers };
     delete upstreamHeaders.host;
     delete upstreamHeaders['content-length'];
-    upstreamHeaders.host = UPSTREAM_HOST;
+    delete upstreamHeaders['x-hme-upstream']; // don't leak routing header
+    upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) {
       upstreamHeaders['content-length'] = String(outBody.length);
     }
 
+    // If the upstream header carried a base path (e.g. https://api.groq.com/openai)
+    // prepend it to the request path so /v1/chat/completions → /openai/v1/chat/completions.
+    const upstreamPath = (upstream.basePath || '') + clientReq.url;
+
     const upstreamOpts = {
-      hostname: UPSTREAM_HOST,
-      port: UPSTREAM_PORT,
-      path: clientReq.url,
+      hostname: upstream.host,
+      port: upstream.port,
+      path: upstreamPath,
       method: clientReq.method,
       headers: upstreamHeaders,
     };
 
-    const transport = UPSTREAM_TLS ? https : http;
+    const transport = upstream.tls ? https : http;
     const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
+      // Upstream responded — connection is alive. Reset failure counter.
+      recordUpstreamSuccess();
       // Pass through status + headers, then pipe streaming body verbatim.
       // SSE frames from Anthropic flow through without buffering, preserving
-      // token latency.
+      // token latency. Transfer-Encoding and content-type headers are forwarded
+      // as-is so text/event-stream + chunked encoding work transparently.
       clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
       upstreamRes.pipe(clientRes);
     });
 
+    // Upstream socket timeout: 10 min for streaming, 2 min for non-streaming.
+    // Anthropic's streaming responses can run for minutes on long completions.
+    const isStreaming = payload && payload.stream === true;
+    upstreamReq.setTimeout(isStreaming ? 600_000 : 120_000, () => {
+      console.error(`[hme-proxy] upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);
+      upstreamReq.destroy(new Error('upstream timeout'));
+    });
+
     upstreamReq.on('error', (err) => {
       console.error('[hme-proxy] upstream error:', err.message);
+      // Track consecutive connection-level failures (not HTTP errors — those
+      // are successful connections with error status codes, handled above).
+      recordUpstreamFailure(err.message);
       if (!clientRes.headersSent) {
         clientRes.writeHead(502, { 'Content-Type': 'application/json' });
         clientRes.end(
@@ -540,12 +687,13 @@ if (process.argv.includes('--test')) {
 } else {
   const server = http.createServer(handleRequest);
   server.listen(PORT, '127.0.0.1', () => {
-    const scheme = UPSTREAM_TLS ? 'https' : 'http';
+    const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
     console.log(
-      `hme-proxy listening on http://127.0.0.1:${PORT} -> ${scheme}://${UPSTREAM_HOST}:${UPSTREAM_PORT}`,
+      `hme-proxy listening on http://127.0.0.1:${PORT}`,
     );
+    console.log(`  default upstream: ${scheme}://${DEFAULT_UPSTREAM_HOST}:${DEFAULT_UPSTREAM_PORT} (Anthropic)`);
+    console.log(`  multi-upstream: X-HME-Upstream header routes to any provider`);
     console.log(`  emit → ${EMIT_PY}`);
-    console.log(`  set ANTHROPIC_BASE_URL=http://127.0.0.1:${PORT} in Claude Code env`);
   });
   server.on('error', (err) => {
     console.error('[hme-proxy] listen error:', err.message);

@@ -172,7 +172,7 @@ def hme_selftest() -> str:
             rc = subprocess.run(
                 ["python3", verifier],
                 capture_output=True, text=True, timeout=30,
-                env={**os.environ, "PROJECT_ROOT": _project_root},
+                env={**os.environ, "PROJECT_ROOT": _project_root},  # env-ok: subprocess needs inherited env
             )
             hits = None
             for ln in rc.stdout.splitlines():
@@ -203,7 +203,7 @@ def hme_selftest() -> str:
             rc = subprocess.run(
                 ["python3", verifier],
                 capture_output=True, text=True, timeout=30,
-                env={**os.environ, "PROJECT_ROOT": _project_root},
+                env={**os.environ, "PROJECT_ROOT": _project_root},  # env-ok: subprocess needs inherited env
             )
             if rc.returncode == 0:
                 results.append("PASS: onboarding flow dry-run -- all transitions fire correctly")
@@ -226,7 +226,7 @@ def hme_selftest() -> str:
             rc = subprocess.run(
                 ["python3", verifier],
                 capture_output=True, text=True, timeout=5,
-                env={**os.environ, "PROJECT_ROOT": _project_root},
+                env={**os.environ, "PROJECT_ROOT": _project_root},  # env-ok: subprocess needs inherited env
             )
             if rc.returncode == 0:
                 results.append("PASS: STATES sync -- Python and shell arrays match")
@@ -252,7 +252,7 @@ def hme_selftest() -> str:
             rc = subprocess.run(
                 ["python3", verifier, "--score"],
                 capture_output=True, text=True, timeout=60,
-                env={**os.environ, "PROJECT_ROOT": _project_root},
+                env={**os.environ, "PROJECT_ROOT": _project_root},  # env-ok: subprocess needs inherited env
             )
             try:
                 hci = int(rc.stdout.strip())

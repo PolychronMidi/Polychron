@@ -121,8 +121,8 @@ def ensure_shim_running(port=_DEFAULT_PORT, max_wait=None):
         pass
 
     if not pid_alive:
-        env = os.environ.copy()
-        env["PROJECT_ROOT"] = os.environ.get("PROJECT_ROOT", os.getcwd())
+        env = os.environ.copy()  # env-ok: subprocess needs inherited env
+        env["PROJECT_ROOT"] = ENV.require("PROJECT_ROOT")
         try:
             subprocess.Popen(
                 ["python3", _shim_path(), "--port", str(port), "--daemon"],

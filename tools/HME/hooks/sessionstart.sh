@@ -6,7 +6,7 @@ cat > /dev/null  # consume stdin
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HOOKS_DIR/_nexus.sh"
 
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 
 # Failfast: verify all hook scripts are executable before any run
 ERROR_LOG="${PROJECT}/log/hme-errors.log"
@@ -69,13 +69,28 @@ if [ "$SHIM_HEALTHY" -eq 0 ]; then
   fi
 fi
 
+# ── HME Inference Proxy (:9099) ───────────────────────────────────────────────
+# Intercepts Claude API calls, injects jurisdiction context, logs activity.
+# Requires ANTHROPIC_BASE_URL=http://localhost:9099 in .claude/settings.json env.
+PROXY_PORT="${HME_PROXY_PORT:-9099}"
+if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
+  if ! curl -sf --max-time 1 "http://127.0.0.1:${PROXY_PORT}/health" > /dev/null 2>&1; then
+    PROXY_SCRIPT="$PROJECT_ROOT/tools/HME/proxy/hme_proxy.js"
+    if [ -f "$PROXY_SCRIPT" ]; then
+      HME_PROXY_PORT="$PROXY_PORT" nohup node "$PROXY_SCRIPT" \
+        > "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 &
+      echo "HME inference proxy started on :${PROXY_PORT} (pid $!)" >&2
+    fi
+  fi
+fi
+
 # Ensure llama-server instances are running (arbiter :8080, coder :8081).
 # Same /health-probe-then-nohup pattern as the shim, applied to the local
 # inference tier. HME's in-process supervisor (server/llamacpp_supervisor.py)
 # handles hot supervision during a session — this block handles cold boot
 # before Python is alive. Topology overrides come from env; defaults match
 # the committed supervisor config.
-LLAMA_BIN="${HME_LLAMA_SERVER_BIN:-/home/jah/tools/llama-cpp-vulkan/llama-b8797/llama-server}"
+LLAMA_BIN="$HME_LLAMA_SERVER_BIN"
 # DISABLED — user explicitly cancelled all auto-launch. Set HME_AUTOLAUNCH_LLAMA=1 to re-enable.
 if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "$LLAMA_BIN" ]; then
   _start_llama() {

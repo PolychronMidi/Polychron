@@ -33,8 +33,7 @@ from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME.agent_local")
 
-# PROJECT_ROOT stays env-based because it bootstraps .env discovery itself.
-PROJECT_ROOT = ENV.optional("PROJECT_ROOT", "") or ENV.optional("CLAUDE_PROJECT_DIR", "/home/jah/Polychron")
+PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 _SHIM_PORT = ENV.require_int("HME_SHIM_PORT")
 
 # Model config — llama-server (OpenAI /v1/chat/completions) is the only backend.
