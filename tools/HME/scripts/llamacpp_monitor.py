@@ -23,15 +23,21 @@ import urllib.request
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT = os.path.normpath(os.path.join(_DIR, "..", "..", ".."))
+_mcp_root = os.path.join(_PROJECT, "tools", "HME", "mcp")
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 LOG_PATH = os.path.join(_PROJECT, "log", "llamacpp-monitor.jsonl")
 
 # Topology matches llamacpp_supervisor + systemd units. Each instance owns
 # one GPU via Vulkan device index; CUDA idx is used for nvidia-smi queries.
 INSTANCES = [
-    {"name": "arbiter", "port": 8080, "cuda_idx": 0, "vulkan": "Vulkan1",
-     "max_mb": 23040 - 500, "model": "phi-4-Q4_K_M.gguf + v6 LoRA"},
-    {"name": "coder",   "port": 8081, "cuda_idx": 1, "vulkan": "Vulkan2",
-     "max_mb": 23040 - 500, "model": "qwen3-coder-30b-Q4_K_M.gguf"},
+    {"name": "arbiter", "port": ENV.require_int("HME_ARBITER_PORT"),
+     "cuda_idx": 0, "vulkan": ENV.require("HME_ARBITER_VULKAN"),
+     "max_mb": 23040 - 500, "model": os.path.basename(ENV.require("HME_ARBITER"))},
+    {"name": "coder", "port": ENV.require_int("HME_CODER_PORT"),
+     "cuda_idx": 1, "vulkan": ENV.require("HME_CODER_VULKAN"),
+     "max_mb": 23040 - 500, "model": os.path.basename(ENV.require("HME_CODER"))},
 ]
 
 GPU_TEMP_WARN = 80

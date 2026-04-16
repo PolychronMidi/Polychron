@@ -6,7 +6,6 @@
       "args": ["server/main.py"],
       "env": {
         "PROJECT_ROOT": "",
-        "RAG_DB_PATH": "",
         "HF_HUB_OFFLINE": "1",
         "TRANSFORMERS_OFFLINE": "1",
         "PYTHONPATH": ""

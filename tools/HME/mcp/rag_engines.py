@@ -23,10 +23,10 @@ from hme_env import ENV  # noqa: E402
 logger = logging.getLogger("HME.http")
 
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-PROJECT_DB = ENV.require("RAG_DB_PATH")
+PROJECT_DB = ENV.require("HME_RAG_DB_PATH")
 GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HME", "global_kb")
-MODEL_NAME = ENV.require("RAG_MODEL")
-MODEL_BACKEND = ENV.require("RAG_BACKEND")
+MODEL_NAME = ENV.require("HME_MODEL_TEXT_EMBED")
+MODEL_BACKEND = ENV.require("HME_RAG_BACKEND")
 
 _engine_ready = threading.Event()
 _project_engine = None
@@ -47,6 +47,7 @@ _lib_engines = {}
 _LLAMACPP_DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 _rag_route_cache = {"route": "gpu", "ts": 0.0}
 _rag_route_ttl_s = 0.1
+_rag_route_fail_count = 0
 
 
 def _rag_route() -> str:
@@ -57,6 +58,7 @@ def _rag_route() -> str:
     Cache-gated to ~100ms so a single tool call's batch of encode/rerank calls
     doesn't spam the daemon.
     """
+    global _rag_route_fail_count
     if _shared_code_model_cpu is None and _shared_reranker_cpu is None:
         return "gpu"
     now = time.time()
@@ -72,8 +74,19 @@ def _rag_route() -> str:
         ) as resp:
             data = json.loads(resp.read())
             route = data["route"]
+        if _rag_route_fail_count > 0:
+            logger.info(f"_rag_route: daemon reconnected after {_rag_route_fail_count} failures")
+            _rag_route_fail_count = 0
     except Exception as _e:
-        logger.debug(f"_rag_route: daemon unreachable ({type(_e).__name__}), defaulting to gpu")
+        _rag_route_fail_count += 1
+        # Escalate to WARNING every 10 failures — persistent daemon outage
+        # means no CPU fallback during arbiter generation (GPU contention risk)
+        if _rag_route_fail_count <= 3 or _rag_route_fail_count % 10 == 0:
+            _log = logger.warning if _rag_route_fail_count >= 3 else logger.debug
+            _log(
+                f"_rag_route: daemon unreachable ({type(_e).__name__}), "
+                f"defaulting to gpu (consecutive failures: {_rag_route_fail_count})"
+            )
         route = "gpu"
     _rag_route_cache["route"] = route
     _rag_route_cache["ts"] = now
@@ -116,6 +129,13 @@ class _RagDispatcher:
     None, behavior is the static two-instance dispatcher (old shape).
     """
 
+    # GPU:CPU speed ratio for embedding on this hardware (M40 fp16 storage
+    # vs multi-core CPU). Only overflow to CPU when GPU queue is deeper
+    # than this — sequential GPU is faster than parallel CPU until then.
+    # Measured empirically: M40 ~3x faster than Ryzen 7950X for bge-code
+    # fp16 encode batches. Tune via HME_RAG_GPU_CPU_RATIO in .env.
+    _GPU_CPU_OVERFLOW_THRESHOLD = 3
+
     def __init__(
         self,
         gpu_instance,
@@ -138,6 +158,12 @@ class _RagDispatcher:
         self._gpu_sem = threading.Semaphore(1) if self._current_gpu() is not None else None
         self._cpu_sem = threading.Semaphore(1) if cpu_instance is not None else None
         self._cv = threading.Condition()
+        self._gpu_waiting = 0  # requests queued for GPU (waiting on sem)
+        try:
+            ratio = ENV.optional_int("HME_RAG_GPU_CPU_RATIO", self._GPU_CPU_OVERFLOW_THRESHOLD)
+            self._overflow_threshold = max(1, ratio)
+        except Exception:
+            self._overflow_threshold = self._GPU_CPU_OVERFLOW_THRESHOLD
 
     def _current_gpu(self):
         """Resolve the GPU instance at call time. With a managed model, the
@@ -148,11 +174,25 @@ class _RagDispatcher:
         return self._gpu
 
     def _acquire(self):
-        """Return (instance, release_fn). Blocks until a worker is free."""
-        # Fast paths for degraded modes (one-sided). Re-check on every call
-        # since a managed model can flip between resident / offloaded.
+        """Return (instance, release_fn). Blocks until a worker is free.
+
+        GPU is faster than CPU for embedding, so we prefer queuing on GPU
+        over immediately overflowing to CPU. Only overflow to CPU when the
+        GPU queue depth exceeds the GPU:CPU speed ratio threshold — at
+        that point, waiting for GPU would be slower than using CPU.
+
+        route="cpu" (arbiter generating or low VRAM) gates GPU off entirely
+        and all requests go to CPU regardless of queue depth.
+        """
+        # Degraded modes (single worker). Re-check every call since a
+        # managed model can flip between resident / offloaded.
         cpu = self._cpu
         gpu_at_start = self._current_gpu()
+        if gpu_at_start is None and cpu is None:
+            raise RuntimeError(
+                f"_RagDispatcher({self._label}): both GPU and CPU instances are None — "
+                f"cannot serve any requests. Check model loading in _load_engines."
+            )
         if gpu_at_start is None and cpu is not None:
             self._cpu_sem.acquire()
             return cpu, self._release_cpu
@@ -164,22 +204,50 @@ class _RagDispatcher:
             while True:
                 gpu = self._current_gpu()
                 gpu_ok = gpu is not None and _rag_route() == "gpu"
-                if gpu_ok and self._gpu_sem is not None and self._gpu_sem.acquire(blocking=False):
-                    # Pressure check: ensure headroom before committing to GPU.
-                    if self._vram is not None and self._mm is not None:
-                        ok = self._vram.request_room(self._mm.headroom_gb, caller=self._mm)
-                        if not ok:
-                            # Couldn't free enough; release the GPU slot and try CPU.
-                            self._gpu_sem.release()
-                            self._cv.notify_all()
+
+                if gpu_ok and self._gpu_sem is not None:
+                    if self._gpu_sem.acquire(blocking=False):
+                        # Got GPU immediately — pressure check then use it.
+                        if self._vram is not None and self._mm is not None:
+                            ok = self._vram.request_room(self._mm.headroom_gb, caller=self._mm)
+                            if not ok:
+                                self._gpu_sem.release()
+                                self._cv.notify_all()
+                            else:
+                                return gpu, self._release_gpu
                         else:
                             return gpu, self._release_gpu
-                    else:
-                        return gpu, self._release_gpu
-                # Fall back to CPU if available
+                    elif self._gpu_waiting < self._overflow_threshold:
+                        # GPU sem taken but queue isn't deep enough to
+                        # justify CPU overflow — wait for GPU. Sequential
+                        # GPU is faster than parallel CPU until the queue
+                        # exceeds the speed ratio.
+                        self._gpu_waiting += 1
+                        try:
+                            while True:
+                                self._cv.wait(timeout=1.0)
+                                # Re-check: GPU may have been offloaded or
+                                # route may have flipped to "cpu" while waiting
+                                gpu = self._current_gpu()
+                                if gpu is None or _rag_route() != "gpu":
+                                    break  # bail to overflow path below
+                                if self._gpu_sem.acquire(blocking=False):
+                                    if self._vram is not None and self._mm is not None:
+                                        ok = self._vram.request_room(self._mm.headroom_gb, caller=self._mm)
+                                        if not ok:
+                                            self._gpu_sem.release()
+                                            self._cv.notify_all()
+                                            break  # bail to overflow
+                                    return gpu, self._release_gpu
+                        finally:
+                            self._gpu_waiting -= 1
+                    # else: GPU queue deep enough — fall through to CPU overflow
+
+                # Overflow to CPU — either route="cpu", VRAM pressure,
+                # or GPU queue exceeds threshold
                 if self._cpu_sem is not None and self._cpu_sem.acquire(blocking=False):
                     return cpu, self._release_cpu
-                # Both slots unavailable — wait for a release (re-poll at 1s)
+                # Both paths unavailable — wait for any release
                 self._cv.wait(timeout=1.0)
 
     def _release_gpu(self):
@@ -271,8 +339,8 @@ class _MxbaiRerankerAdapter:
         return getattr(self._inner, name)
 
 
-CODE_MODEL_NAME = ENV.require("RAG_CODE_MODEL")
-RERANKER_NAME = ENV.require("RAG_RERANKER_MODEL")
+CODE_MODEL_NAME = ENV.require("HME_MODEL_CODE_EMBED")
+RERANKER_NAME = ENV.require("HME_MODEL_RERANKER")
 
 # Initialise stores with paths before any request can arrive
 from hme_http_store import init_store
@@ -654,3 +722,135 @@ def _load_engines():
 
 
 threading.Thread(target=_load_engines, daemon=True).start()
+
+
+# ── Indexing-mode device migration ──────────────────────────────────────
+# Called by the daemon (via /reload-engines endpoint) to move embedding
+# models to a freed GPU for fast indexing, then back when done.
+# Stores the original device so restore knows where to put them back.
+_original_rag_device: str | None = None
+_reload_lock = threading.Lock()
+
+
+def reload_on_device(target_device: str) -> dict:
+    """Reload all GPU embedding models on `target_device`.
+
+    Called by the daemon's indexing-mode orchestration to migrate the RAG
+    stack to a freed GPU (e.g. cuda:1 after coder is suspended) for fast
+    bulk indexing, then restore afterwards.
+
+    target_device: "cuda:0", "cuda:1", or "restore" to go back to original.
+    """
+    global _original_rag_device, _project_engine, _global_engine
+    from sentence_transformers import SentenceTransformer
+
+    if not _engine_ready.wait(timeout=30):
+        return {"error": "engines not ready"}
+
+    if _project_engine is None:
+        return {"error": "project engine is None — engines never loaded successfully"}
+
+    with _reload_lock:
+        if target_device == "restore":
+            if _original_rag_device is None:
+                return {"error": "no original device saved — nothing to restore"}
+            target_device = _original_rag_device
+            _original_rag_device = None
+            restoring = True
+        else:
+            # Save current device before migration
+            if _original_rag_device is None:
+                # Detect current device from the code model (always loaded)
+                try:
+                    cur = str(getattr(_project_engine.code_model, "device", "cpu"))
+                except Exception:
+                    cur = "cpu"
+                _original_rag_device = cur
+            restoring = False
+
+        import torch as _torch
+        _fp16_kwargs = {"torch_dtype": _torch.float16}
+        reloaded = []
+        _engines = [e for e in [_project_engine, _global_engine] + list(_lib_engines.values()) if e is not None]
+
+        def _swap_gpu_instance(model_attr: str, new_instance):
+            """Replace the GPU instance in every engine's dispatcher/managed-model.
+            Collects old instances so they can be deleted to free VRAM."""
+            old_instances = []
+            for eng in _engines:
+                target = getattr(eng, model_attr, None)
+                if target is None:
+                    continue
+                if hasattr(target, '_mm') and target._mm is not None:
+                    old = target._mm.gpu_instance
+                    if old is not None and old is not new_instance:
+                        old_instances.append(old)
+                    target._mm.gpu_instance = new_instance
+                elif hasattr(target, '_gpu'):
+                    old = target._gpu
+                    if old is not None and old is not new_instance:
+                        old_instances.append(old)
+                    target._gpu = new_instance
+                else:
+                    old = getattr(eng, model_attr)
+                    if old is not None and old is not new_instance:
+                        old_instances.append(old)
+                    setattr(eng, model_attr, new_instance)
+            # Break references to old GPU tensors so Python GC + CUDA can free them
+            for old in old_instances:
+                del old
+            return len(old_instances)
+
+        def _flush_cuda():
+            """Force-free unreferenced CUDA tensors on all devices."""
+            import gc
+            gc.collect()
+            if _torch.cuda.is_available():
+                _torch.cuda.empty_cache()
+
+        # Reload code embedder
+        try:
+            new_code = SentenceTransformer(
+                CODE_MODEL_NAME, trust_remote_code=True, device=target_device,
+                model_kwargs=_fp16_kwargs,
+            )
+            freed = _swap_gpu_instance("code_model", new_code)
+            _flush_cuda()
+            reloaded.append(f"code:{CODE_MODEL_NAME}")
+            logger.info(f"reload_on_device: code embedder → {target_device} (freed {freed} old refs)")
+        except Exception as e:
+            logger.error(f"reload_on_device: code embedder failed: {e}")
+            return {"error": f"code embedder reload failed: {e}", "reloaded": reloaded}
+
+        # Reload text embedder
+        try:
+            new_text = SentenceTransformer(
+                MODEL_NAME, device=target_device, trust_remote_code=True,
+                model_kwargs=_fp16_kwargs,
+            )
+            freed = _swap_gpu_instance("text_model", new_text)
+            _flush_cuda()
+            reloaded.append(f"text:{MODEL_NAME}")
+            logger.info(f"reload_on_device: text embedder → {target_device} (freed {freed} old refs)")
+        except Exception as e:
+            logger.warning(f"reload_on_device: text embedder failed: {e}")
+            # Non-fatal — code embedder is the primary indexing model
+
+        # Reload reranker
+        try:
+            new_reranker = _MxbaiRerankerAdapter(
+                RERANKER_NAME, device=target_device, dtype=_torch.float16,
+            )
+            freed = _swap_gpu_instance("reranker", new_reranker)
+            _flush_cuda()
+            reloaded.append(f"reranker:{RERANKER_NAME}")
+            logger.info(f"reload_on_device: reranker → {target_device} (freed {freed} old refs)")
+        except Exception as e:
+            logger.warning(f"reload_on_device: reranker failed: {e}")
+            # Non-fatal — indexing doesn't use reranker
+
+        return {
+            "device": target_device,
+            "reloaded": reloaded,
+            "restoring": restoring,
+        }

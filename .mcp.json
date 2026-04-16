@@ -15,13 +15,10 @@
       ],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
-        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",
         "PYTHONPATH": "/home/jah/.local/lib/python3.12/site-packages",
         "PATH": "/home/jah/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "HF_HUB_OFFLINE": "1",
-        "TRANSFORMERS_OFFLINE": "1",
-        "HME_LOCAL_MODEL": "qwen3-coder:30b",
-        "HME_LOCAL_URL": "http://localhost:11434/api/generate"
+        "TRANSFORMERS_OFFLINE": "1"
       }
     }
   }

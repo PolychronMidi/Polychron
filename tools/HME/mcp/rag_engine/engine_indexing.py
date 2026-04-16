@@ -17,8 +17,8 @@ class RAGEngineIndexingMixin:
     def _batch_encode(self, texts: list[str], kind: str = "code") -> list[list[float]]:
         """Encode texts using the appropriate embedder.
 
-        kind='code' → self.code_model (jina-embeddings-v2-base-code) for code_chunks.
-        kind='text' → self.text_model (bge-base-en-v1.5) for knowledge + symbols.
+        kind='code' → self.code_model (RAG_CODE_MODEL from .env) for code_chunks.
+        kind='text' → self.text_model (RAG_MODEL from .env) for knowledge + symbols.
         """
         batch_size = getattr(self, "_embed_batch_size", BATCH_SIZE)
         model = self.code_model if kind == "code" else self.text_model

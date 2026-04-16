@@ -229,6 +229,24 @@ class _Handler(BaseHTTPRequestHandler):
             result = _reindex_files(files)
             self._send_json(200, result)
 
+        elif self.path == "/reload-engines":
+            # Daemon-only: migrate RAG models to a different GPU for indexing mode.
+            device = body.get("device", "")
+            if not device:
+                self._send_json(400, {"error": "device required (e.g. 'cuda:1' or 'restore')"})
+                return
+            if device != "restore" and not device.startswith("cuda:"):
+                self._send_json(400, {"error": f"invalid device '{device}' — must be 'cuda:N' or 'restore'"})
+                return
+            try:
+                result = rag_engines.reload_on_device(device)
+            except Exception as e:
+                logger.error(f"/reload-engines {device}: {type(e).__name__}: {e}")
+                self._send_json(500, {"error": f"{type(e).__name__}: {e}"})
+                return
+            status = 500 if result.get("error") else 200
+            self._send_json(status, result)
+
         elif self.path == "/rag":
             self._handle_rag_dispatch(body)
 

@@ -312,6 +312,22 @@ class _Supervisor:
             logger.exception(f"supervisor: spawn {spec.name} failed: {e}")
             return False
 
+    def _find_pid_on_port(self, port: int) -> int | None:
+        """Find PID listening on `port` via lsof. Used to kill adopted instances
+        that the daemon didn't spawn (spec.process is None)."""
+        try:
+            out = subprocess.check_output(
+                ["lsof", "-ti", f"TCP:{port}", "-sTCP:LISTEN"],
+                stderr=subprocess.DEVNULL, timeout=3,
+            )
+            for line in out.decode().strip().splitlines():
+                pid = int(line.strip())
+                if pid != os.getpid():
+                    return pid
+        except Exception:
+            pass
+        return None
+
     def suspend(self, name: str) -> dict:
         """Suspend an instance: kill its process + prevent auto-restart.
         Used by indexing mode to free a GPU for embedding work."""
@@ -320,17 +336,41 @@ class _Supervisor:
             if not spec:
                 return {"error": f"unknown instance: {name}"}
             spec.suspended = True
+            killed_pid = None
             if spec.process is not None and spec.process.poll() is None:
                 spec.process.terminate()
                 try:
                     spec.process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     spec.process.kill()
-                logger.info(f"supervisor: {name} suspended (PID {spec.process.pid} terminated)")
+                killed_pid = spec.process.pid
                 spec.process = None
             else:
-                logger.info(f"supervisor: {name} suspended (was not running)")
-            return {"name": name, "suspended": True}
+                # Adopted instance: no Popen, but may be running on spec.port.
+                # Find and kill it by port so we actually free the GPU.
+                pid = self._find_pid_on_port(spec.port)
+                if pid is not None:
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                        # Wait for it to die
+                        for _ in range(20):
+                            time.sleep(0.5)
+                            try:
+                                os.kill(pid, 0)
+                            except ProcessLookupError:
+                                break
+                        else:
+                            os.kill(pid, signal.SIGKILL)
+                        killed_pid = pid
+                    except ProcessLookupError:
+                        killed_pid = pid  # already dead
+                    except Exception as e:
+                        logger.warning(f"supervisor: failed to kill adopted {name} pid={pid}: {e}")
+            if killed_pid is not None:
+                logger.info(f"supervisor: {name} suspended (PID {killed_pid} terminated)")
+            else:
+                logger.info(f"supervisor: {name} suspended (no process found)")
+            return {"name": name, "suspended": True, "killed_pid": killed_pid}
 
     def resume(self, name: str) -> dict:
         """Resume a suspended instance: clear flag + spawn immediately."""
@@ -661,8 +701,8 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             "response": text,
             "done": True,
             "done_reason": "stop",
-            "prompt_eval_count": usage["prompt_tokens"],
-            "eval_count": usage["completion_tokens"],
+            "prompt_eval_count": usage.get("prompt_tokens", 0),
+            "eval_count": usage.get("completion_tokens", 0),
             "total_duration": 0,
         }
     finally:
@@ -676,6 +716,151 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
 
 _supervisor_singleton = _Supervisor()
 _supervisor_singleton.configure()
+
+
+_indexing_mode_lock = threading.Lock()
+
+
+def _run_indexing_mode() -> dict:
+    """Orchestrate GPU-dedicated full reindex. Called by /indexing-mode handler.
+
+    Steps:
+      1. Suspend coder → free GPU1 (Vulkan2/cuda:1)
+      2. Tell shim to reload embedding models on cuda:1
+      3. Tell shim to run index_directory
+      4. Tell shim to restore models to original device
+      5. Resume coder
+    ALL GPU allocation goes through this daemon. The shim never decides
+    which GPU to use — the daemon tells it.
+    """
+    if not _indexing_mode_lock.acquire(blocking=False):
+        return {"error": "indexing mode already in progress"}
+
+    try:
+        return _run_indexing_mode_locked()
+    finally:
+        _indexing_mode_lock.release()
+
+
+def _run_indexing_mode_locked() -> dict:
+    _SHIM_PORT = int(ENV.optional("HME_SHIM_PORT", "7734"))
+    _SHIM_URL = f"http://127.0.0.1:{_SHIM_PORT}"
+
+    def _shim_post(endpoint: str, data: dict, timeout: float = 30) -> dict:
+        req = urllib.request.Request(
+            f"{_SHIM_URL}{endpoint}",
+            data=json.dumps(data).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            resp = urllib.request.urlopen(req, timeout=timeout)
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", errors="replace")
+            try:
+                return json.loads(body)
+            except ValueError:
+                raise RuntimeError(f"shim {endpoint} returned HTTP {e.code}: {body[:200]}") from e
+        result = json.loads(resp.read())
+        if isinstance(result, dict) and result.get("error"):
+            logger.warning(f"shim {endpoint} returned error: {result['error']}")
+        return result
+
+    # Determine indexing GPU from coder's device (Vulkan2 → cuda:1)
+    coder_spec = None
+    for spec in _supervisor_singleton.instances():
+        if spec.name == "coder":
+            coder_spec = spec
+            break
+    if coder_spec is None:
+        return {"error": "no coder instance configured"}
+
+    cuda_idx = _supervisor_singleton._vulkan_to_cuda_index(coder_spec.device)
+    if cuda_idx is None:
+        return {"error": f"cannot map {coder_spec.device} to CUDA index"}
+    indexing_device = f"cuda:{cuda_idx}"
+
+    logger.info(f"indexing-mode: starting — will use {indexing_device} (freed by suspending coder)")
+
+    # Step 1: Suspend coder to free GPU1
+    suspended = False
+    try:
+        result = _supervisor_singleton.suspend("coder")
+        if result.get("error"):
+            return {"error": f"suspend coder failed: {result['error']}"}
+        suspended = True
+        logger.info("indexing-mode: coder suspended")
+    except Exception as e:
+        return {"error": f"suspend coder failed: {e}"}
+
+    # Wait for GPU memory to actually free up after coder termination.
+    # CUDA doesn't release VRAM instantly — poll nvidia-smi until the GPU
+    # has significant free space (coder uses ~18 GB of 22 GB).
+    _min_free_mb = 15000  # expect ~18 GB free after coder dies on a 22 GB card
+    for _poll in range(30):
+        time.sleep(2)
+        free = _supervisor_singleton._gpu_free_mb(cuda_idx)
+        if free is not None and free >= _min_free_mb:
+            logger.info(f"indexing-mode: GPU{cuda_idx} has {free} MB free — proceeding")
+            break
+        logger.debug(f"indexing-mode: waiting for GPU{cuda_idx} to free up (poll {_poll}, free={free})")
+    else:
+        free = _supervisor_singleton._gpu_free_mb(cuda_idx)
+        logger.warning(f"indexing-mode: GPU{cuda_idx} only has {free} MB free after 60s — proceeding anyway")
+
+    try:
+        # Step 2: Tell shim to reload embeddings on the freed GPU
+        try:
+            reload_result = _shim_post("/reload-engines", {"device": indexing_device}, timeout=120)
+            if reload_result.get("error"):
+                logger.warning(f"indexing-mode: reload-engines failed: {reload_result['error']}")
+                return {"error": f"reload-engines failed: {reload_result['error']}"}
+            logger.info(f"indexing-mode: models reloaded on {indexing_device}: {reload_result.get('reloaded', [])}")
+        except Exception as e:
+            logger.error(f"indexing-mode: reload-engines request failed: {e}")
+            return {"error": f"reload-engines request failed: {e}"}
+
+        # Step 3: Tell shim to run index_directory
+        try:
+            index_result = _shim_post(
+                "/rag",
+                {"engine": "project", "method": "index_directory"},
+                timeout=500,
+            )
+            result_data = index_result.get("result", index_result)
+            logger.info(f"indexing-mode: index complete: {result_data}")
+        except Exception as e:
+            logger.error(f"indexing-mode: index_directory failed: {e}")
+            result_data = {"error": f"index_directory failed: {e}"}
+
+    finally:
+        # Step 4: Tell shim to restore models to original device
+        try:
+            restore_result = _shim_post("/reload-engines", {"device": "restore"}, timeout=120)
+            if restore_result.get("error"):
+                logger.error(f"indexing-mode: restore returned error: {restore_result['error']}")
+            else:
+                logger.info(f"indexing-mode: models restored: {restore_result}")
+        except Exception as e:
+            logger.error(f"indexing-mode: restore failed: {e} — models may still be on {indexing_device}")
+
+        # Step 5: Resume coder (only if we suspended it)
+        if suspended:
+            try:
+                resume_result = _supervisor_singleton.resume("coder")
+                if resume_result.get("error"):
+                    logger.error(f"indexing-mode: resume returned error: {resume_result['error']}")
+                elif not resume_result.get("spawned"):
+                    logger.error(
+                        f"indexing-mode: coder resume flag cleared but spawn failed — "
+                        f"GPU{cuda_idx} may still have stale tensors from indexing. "
+                        f"Health tick will retry spawn."
+                    )
+                else:
+                    logger.info(f"indexing-mode: coder resumed: {resume_result}")
+            except Exception as e:
+                logger.error(f"indexing-mode: coder resume failed: {e} — MANUAL INTERVENTION NEEDED")
+
+    return result_data
 
 
 def _health_loop():
@@ -750,7 +935,7 @@ class _Handler(BaseHTTPRequestHandler):
             else:
                 length = int(cl)
             body = json.loads(self.rfile.read(length)) if length else {}
-        except Exception:
+        except (ValueError, UnicodeDecodeError, OverflowError):
             self._send_json(400, {"error": "bad request"})
             return
 
@@ -798,15 +983,30 @@ class _Handler(BaseHTTPRequestHandler):
             if not name:
                 self._send_json(400, {"error": "name required (e.g. 'coder')"})
             else:
-                result = _supervisor.suspend(name)
+                result = _supervisor_singleton.suspend(name)
                 self._send_json(200, result)
         elif self.path == "/resume":
             name = body.get("name", "")
             if not name:
                 self._send_json(400, {"error": "name required (e.g. 'coder')"})
             else:
-                result = _supervisor.resume(name)
+                result = _supervisor_singleton.resume(name)
                 self._send_json(200, result)
+        elif self.path == "/indexing-mode":
+            # Full GPU-dedicated reindex. The daemon orchestrates everything:
+            # suspend coder → tell shim to reindex on freed GPU → resume coder.
+            # Blocks until complete. Only the daemon touches GPU allocation.
+            import threading
+            result = {"error": "not started"}
+            def _run():
+                nonlocal result
+                result = _run_indexing_mode()
+            t = threading.Thread(target=_run)
+            t.start()
+            t.join(timeout=580)  # slightly under the client's 600s timeout
+            if t.is_alive():
+                result = {"error": "indexing mode timed out (580s)"}
+            self._send_json(200, result)
         else:
             self._send_json(404, {"error": "not found"})
 

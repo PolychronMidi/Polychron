@@ -87,6 +87,21 @@ class _EnvLoader:
                 if not key:
                     continue
                 parsed[key] = val
+        # Variable expansion: replace ${VAR} references with previously
+        # defined values from this same .env file. Only forward references
+        # work (a key must be defined above its first ${} usage). Unknown
+        # vars are left as-is so they fail loud downstream.
+        import re
+        _var_re = re.compile(r'\$\{([A-Za-z_][A-Za-z0-9_]*)\}')
+        for key in list(parsed):
+            val = parsed[key]
+            if '${' not in val:
+                continue
+            def _repl(m):
+                ref = m.group(1)
+                return parsed.get(ref, m.group(0))  # leave unknown as-is
+            parsed[key] = _var_re.sub(_repl, val)
+
         self._values = parsed
         self._path = str(env_path)
         self._loaded = True
