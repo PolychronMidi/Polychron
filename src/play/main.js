@@ -79,6 +79,17 @@ function mainComputeTrustVelocity(trustSnapshot) {
   return velocity;
 }
 
+// Activate metaprofile (if configured). Set once per run, hot-switchable from lab postBoot().
+// null = no metaprofile (existing behavior). Reads from ACTIVE_META_PROFILE global if set.
+if (typeof ACTIVE_META_PROFILE === 'string' && ACTIVE_META_PROFILE) {
+  metaProfiles.setActive(ACTIVE_META_PROFILE);
+  console.log(`Metaprofile: ${ACTIVE_META_PROFILE}`);
+} else if (typeof ACTIVE_META_PROFILE !== 'undefined' && ACTIVE_META_PROFILE === null) {
+  // explicitly null = no metaprofile
+} else {
+  // ACTIVE_META_PROFILE not defined = no metaprofile (backward compat)
+}
+
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   timeStream.setPosition('section', sectionIndex);
   let sectionL1BeatCount = 0;
@@ -198,6 +209,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         trustScores: mainPTrust,
         trustVelocity: mainPTrustVel,
         activeProfile: conductorConfig.getActiveProfileName(),
+        activeMetaProfile: metaProfiles.getActiveName(),
         couplingMeans: mainPCouplingMeans,
         globalGainMultiplier: mainPHome ? mainPHome.globalGainMultiplier : 0,
         regime: mainPSnap ? mainPSnap.regime : 'unknown',
@@ -284,6 +296,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
       trustScores: mainSecTrust,
       trustVelocity: mainSecTrustVel,
       activeProfile: conductorConfig.getActiveProfileName(),
+      activeMetaProfile: metaProfiles.getActiveName(),
       couplingMeans: mainCouplingMeans,
       globalGainMultiplier: mainHomeSnap ? mainHomeSnap.globalGainMultiplier : 0,
       regime: mainDynSnap ? mainDynSnap.regime : 'unknown',

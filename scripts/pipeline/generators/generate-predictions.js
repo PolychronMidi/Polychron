@@ -1,6 +1,6 @@
 // scripts/pipeline/generate-predictions.js
 //
-// Phase 3.4 — generate cascade predictions for this round's changed files.
+// Phase 3.4 -- generate cascade predictions for this round's changed files.
 // Reads dependency-graph.json, runs BFS from each changed src/ file, and
 // appends prediction records to metrics/hme-predictions.jsonl.
 //
@@ -8,7 +8,7 @@
 // (import context issues). Runs as a POST_COMPOSITION step so it has the
 // fresh dependency graph from the current pipeline run.
 //
-// Non-fatal diagnostic — prediction data feeds reconcile-predictions.js.
+// Non-fatal diagnostic -- prediction data feeds reconcile-predictions.js.
 
 'use strict';
 
@@ -93,7 +93,7 @@ function getChangedFiles() {
 function main() {
   const dg = loadDepGraph();
   if (!dg) {
-    console.log('generate-predictions: no dependency graph — skip');
+    console.log('generate-predictions: no dependency graph -- skip');
     return;
   }
 
@@ -101,7 +101,7 @@ function main() {
   const changed = getChangedFiles();
 
   if (changed.length === 0) {
-    console.log('generate-predictions: no src/ changes in last commit — skip');
+    console.log('generate-predictions: no src/ changes in last commit -- skip');
     return;
   }
 

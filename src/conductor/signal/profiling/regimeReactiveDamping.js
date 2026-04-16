@@ -281,7 +281,18 @@ regimeReactiveDamping = (() => {
     const ftDecoupleBrake = clamp((flickerTrustCoupling - 0.40) / 0.30, 0, 1) * 0.06;
 
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
-    const sectionTensionNudge = m.sin(sectionProgress * m.PI) * 0.045;
+    // Metaprofile tension shape: flat, ascending, arch (default), sawtooth, erratic
+    const _tensionShape = (typeof metaProfiles !== 'undefined' && metaProfiles.isActive())
+      ? metaProfiles.getTensionArc().shape : 'arch';
+    let _shapeCurve;
+    switch (_tensionShape) {
+      case 'flat':      _shapeCurve = 0.5; break;
+      case 'ascending': _shapeCurve = sectionProgress; break;
+      case 'sawtooth':  _shapeCurve = (sectionProgress * 3) % 1.0; break;
+      case 'erratic':   _shapeCurve = 0.5 + m.sin(sectionProgress * 17.3) * 0.4 + m.cos(sectionProgress * 7.1) * 0.3; break;
+      default:          _shapeCurve = m.sin(sectionProgress * m.PI); break; // arch
+    }
+    const sectionTensionNudge = clamp(_shapeCurve, 0, 1) * 0.045;
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
     const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
     if (Number.isFinite(currentDensitySignal)) {

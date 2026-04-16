@@ -1411,6 +1411,7 @@ declare var metaProfileDefinitions: {
   list(): string[];
   all(): Record<string, Record<string, any>>;
 };
+declare var ACTIVE_META_PROFILE: string | null;
 declare var metaProfiles: {
   setActive(name: string | null): void;
   getActive(): Record<string, any> | null;

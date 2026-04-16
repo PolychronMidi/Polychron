@@ -24,6 +24,13 @@ metaProfiles = (() => {
     }
     activeProfile = profile;
     activeProfileName = name;
+    // Persist to metrics/ so HME Python tools can read the active profile
+    try {
+      const _fs = require('fs');
+      const _path = require('path');
+      const _out = _path.join(process.cwd(), 'metrics', 'metaprofile-active.json');
+      _fs.writeFileSync(_out, JSON.stringify(profile, null, 2));
+    } catch (_e) { /* non-fatal */ }
   }
 
   function getActive() {
