@@ -54,7 +54,6 @@ def get_session_intent() -> str:
     return _session_intent
 
 
-import re as _re_budget
 
 # Tool output budgets — per-tool char limits. Compound tools split budget across sub-reports.
 # These are generous enough to never lose actionable data, tight enough to prevent context bloat.
@@ -291,7 +290,6 @@ def _get_compositional_context(module_name: str) -> str:
 _trace_cache: dict = {"path": "", "mtime": 0.0, "records": []}
 
 # Git subprocess result cache — keyed by (cwd, args_tuple), TTL 30s
-import time as _time_git
 _git_cache: dict = {}
 _GIT_CACHE_TTL = 30.0
 
