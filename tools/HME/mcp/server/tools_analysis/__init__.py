@@ -376,7 +376,7 @@ from . import evolution  # noqa: E402, F401
 _alias_subpackage("evolution", [
     "evolution", "evolution_admin", "evolution_evolve", "evolution_introspect",
     "evolution_invariants", "evolution_next", "evolution_selftest",
-    "evolution_suggest", "evolution_trace",
+    "evolution_suggest", "evolution_trace", "evolution_strategies",
 ])
 
 # ── Flat modules (import after subpackages are aliased)
