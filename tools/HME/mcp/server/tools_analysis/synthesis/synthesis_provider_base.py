@@ -261,8 +261,9 @@ class OpenAIProvider:
                 else:
                     self._cb_failure(tier)
                 return None
-            except Exception:
+            except Exception as _e:
                 self._cb_failure(tier)
+                logger.debug(f"{self.name} call_specific failed: {type(_e).__name__}: {_e}")
                 return None
         return None
 
@@ -295,7 +296,7 @@ class OpenAIProvider:
                 else:
                     self._cb_failure(tier)
                     logger.info(f"{self.name} {tier.label} failed ({e.code}), trying next")
-            except Exception:
+            except Exception as _e:
                 self._cb_failure(tier)
-                logger.info(f"{self.name} {tier.label} failed, trying next")
+                logger.info(f"{self.name} {tier.label} failed ({type(_e).__name__}: {_e}), trying next")
         return None

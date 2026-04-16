@@ -5,10 +5,13 @@ called by the meta_loop dispatcher at configured intervals.
 """
 import os
 import json
+import shutil
 import time
 import logging
 import threading
 import re
+
+from hme_env import ENV
 
 logger = logging.getLogger("HME.meta")
 

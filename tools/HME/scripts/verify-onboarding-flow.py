@@ -88,11 +88,28 @@ def main() -> int:
     for rel in [
         "tools/HME/mcp/server/onboarding_chain.py",
         "tools/HME/mcp/server/tools_analysis/todo.py",
+        "tools/HME/mcp/hme_env.py",
+        "CLAUDE.md",
     ]:
         src = os.path.join(real_project, rel)
         dst = os.path.join(tmp_project, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy(src, dst)
+
+    # Rewrite .env so PROJECT_ROOT points at the sandbox, not the real project.
+    # hme_env's loader overwrites os.environ with .env values, so a copied .env
+    # carrying the real PROJECT_ROOT would bleed real-project paths (todo store,
+    # state files) into the dry-run.
+    real_env_path = os.path.join(real_project, ".env")
+    sandbox_env_path = os.path.join(tmp_project, ".env")
+    with open(real_env_path, encoding="utf-8") as _src_env:
+        env_lines = _src_env.readlines()
+    with open(sandbox_env_path, "w", encoding="utf-8") as _dst_env:
+        for _line in env_lines:
+            if _line.startswith("PROJECT_ROOT="):
+                _dst_env.write(f"PROJECT_ROOT={tmp_project}\n")
+            else:
+                _dst_env.write(_line)
 
     os.environ["PROJECT_ROOT"] = tmp_project
 

@@ -223,7 +223,8 @@ def _audio_gpu_ok() -> bool:
             f"{_DAEMON_URL}/rag-route?device={_AUDIO_VULKAN}", timeout=0.4,
         ) as resp:
             return json.loads(resp.read()).get("route") == "gpu"
-    except Exception:
+    except Exception as _e:
+        logger.debug(f"rag-route probe: {type(_e).__name__}: {_e}")
         return True  # daemon unreachable — assume idle, GPU was the fast path
 
 

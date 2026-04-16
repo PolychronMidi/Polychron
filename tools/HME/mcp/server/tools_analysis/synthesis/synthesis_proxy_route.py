@@ -15,9 +15,10 @@ Usage in synthesis_*.py:
     for k, v in extra_headers.items():
         req.add_header(k, v)
 """
-import os
 import urllib.request
 import logging
+
+from hme_env import ENV
 
 logger = logging.getLogger("HME.proxy_route")
 
@@ -29,19 +30,11 @@ _CHECK_INTERVAL = 30  # seconds
 
 def _load_proxy_port():
     global _PROXY_PORT
-    try:
-        from .synthesis_config import ENV
-        _PROXY_PORT = ENV.optional_int("HME_PROXY_PORT", 9099)
-    except Exception:
-        _PROXY_PORT = int(os.environ.get("HME_PROXY_PORT", "9099"))
+    _PROXY_PORT = ENV.optional_int("HME_PROXY_PORT", 9099)
 
 
 def _is_proxy_enabled():
-    try:
-        from .synthesis_config import ENV
-        return ENV.optional("HME_PROXY_ENABLED", "0") == "1"
-    except Exception:
-        return os.environ.get("HME_PROXY_ENABLED", "0") == "1"
+    return ENV.optional("HME_PROXY_ENABLED", "0") == "1"
 
 
 def _check_proxy_health():
@@ -62,7 +55,8 @@ def _check_proxy_health():
         )
         with urllib.request.urlopen(req, timeout=2) as resp:
             _PROXY_HEALTHY = resp.status == 200
-    except Exception:
+    except Exception as _e:
+        logger.debug(f"proxy health probe: {type(_e).__name__}: {_e}")
         _PROXY_HEALTHY = False
 
     _PROXY_CHECKED_AT = now

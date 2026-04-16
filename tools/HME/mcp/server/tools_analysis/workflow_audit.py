@@ -172,7 +172,8 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
             ["git", "diff", "HEAD", "--", rel_path],
             cwd=ctx.PROJECT_ROOT, capture_output=True, text=True, timeout=3,
         ).stdout
-    except Exception:
+    except Exception as _e:
+        logger.debug(f"git diff probe for {rel_path}: {type(_e).__name__}: {_e}")
         _diff = ""
     if _diff:
         _rm_comma = re.findall(
