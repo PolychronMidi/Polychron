@@ -1,22 +1,9 @@
-<think>
-Now I have an incredibly detailed inventory of the system and all its failure modes. Let me synthesize this into a layered vision that goes from the concrete to the cosmic. The user wants me to push until I think there's no more, then push infinitely further.
+# Self-Coherence Architecture
 
-Let me organize this into layers of self-coherence depth:
+> **Canonical reference:** [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) — covers HCI scoring, holograph, full pipeline stack, and the compounding structure.
 
-**Layer 0: Lifecycle State Machine** — The system has no formal lifecycle. Components exist in implicit states with implicit transitions. A proper state machine would make every transition explicit and observable.
+Historical layer-stack brainstorming follows. Most layers below are now implemented — see the canonical doc for current status.
 
-**Layer 1: Identity & Correlation** — No session ID, no event correlation, no way to trace a failure across components. Each component logs independently.
-
-
-**Layer 2: Self-Knowledge** — The system lacks introspection—it doesn't track how many times it's restarted, how often recovery succeeds, or what patterns precede its failures.
-
-**Layer 3: Predictive Health** — Moving beyond reactive monitoring (check → dead → restart) toward anticipatory behavior, where rising response times trigger preemptive restarts before actual crashes occur.
-
-**Layer 4: Self-Narration** — Instead of opaque status codes, the system should articulate its state and struggles in natural language that Claude can understand and reason about.
-
-**Layer 5: Temporal Awareness** — The system should track session age, restart frequency, and usage patterns, adapting its behavior based on where it sits in its own lifecycle.
-
-**Layer 6: Entropy Management** — Addressing how the system accumulates degradation over time and manages its own decay.
 
 **Layer 7: Causal Topology** — Building a full dependency graph that traces failures back through their causal chains, not just identifying that something broke.
 
@@ -40,9 +27,6 @@ The deepest layer is that the system becomes its own knowledge base—HME's KB c
 
 The real breakthrough isn't treating self-coherence as reactive patching when things break, but building it as an intrinsic property of the architecture itself. The system's self-model should be isomorphic to the system—the map and territory are the same. When HME checks its own health, it gets the same answer whether asking the shim, the MCP server, or the daemon. That's distributed consensus, and it's the hardest problem in systems like this.
 
-Now I need to structure the response with concrete implementations for each layer, starting with what we can actually build in the near term. I'll tie each layer to specific files and line numbers from the audit so it's grounded in reality, not abstract. The user will probably want to implement everything, so I should have actionable items ready for the first few layers that build toward the cosmic vision.
-The audit is comprehensive. Here's what it reveals — and where it points.
-</think>
 ---
 
 ## The fundamental gap

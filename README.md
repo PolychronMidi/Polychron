@@ -1,8 +1,8 @@
 # Polychron
 
-Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 45 cross-layer modules, governed by 27 trust-scored systems and 19 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
+Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 64 cross-layer modules, governed by 27 trust-scored systems and 19 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
 
-487 source files | 58K LOC | 11 feedback loops | 19 stutter variants | 12 CIM coordination dials
+487 source files | 66K LOC | 11 feedback loops | 19 stutter variants | 12 CIM coordination dials
 
 ## Quick Start
 
