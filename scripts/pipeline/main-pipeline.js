@@ -68,8 +68,10 @@ const POST_COMPOSITION = [
   { label: 'compute-intention-gap',    cmd: 'node scripts/pipeline/compute-intention-gap.js' },
   { label: 'derive-constitution',      cmd: 'python3 scripts/pipeline/derive-constitution.py' },
   { label: 'detect-doc-drift',         cmd: 'python3 scripts/pipeline/detect-doc-drift.py' },
-  { label: 'extract-generalizations',  cmd: 'python3 scripts/pipeline/extract-generalizations.py' },
-  { label: 'render-generalizations',  cmd: 'python3 scripts/pipeline/render-generalizations.py' },
+  { label: 'extract-generalizations',      cmd: 'python3 scripts/pipeline/extract-generalizations.py' },
+  { label: 'synthesize-generalizations',  cmd: 'python3 scripts/pipeline/synthesize-generalizations.py' },
+  { label: 'render-generalizations',      cmd: 'python3 scripts/pipeline/render-generalizations.py' },
+  { label: 'compute-evolution-priority', cmd: 'node scripts/pipeline/compute-evolution-priority.js' },
 ];
 
 // runner
