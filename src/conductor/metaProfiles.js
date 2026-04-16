@@ -52,12 +52,30 @@ metaProfiles = (() => {
     return section[key];
   }
 
+  // Per-influence-point disable toggles. Set to true to suppress specific axes
+  // while keeping the rest of the metaprofile active. For debugging "which axis
+  // caused this behavioral change?"
+  const _disabled = {};
+
+  function disableAxis(axisId) {
+    _disabled[axisId] = true;
+  }
+
+  function enableAxis(axisId) {
+    delete _disabled[axisId];
+  }
+
+  function isAxisDisabled(axisId) {
+    return !!_disabled[axisId];
+  }
+
   function isActive() {
     return activeProfile !== null;
   }
 
-  // Convenience: regime targets with built-in defaults (equal distribution)
+  // Convenience accessors — each checks isAxisDisabled() and returns defaults when suppressed.
   function getRegimeTargets() {
+    if (isAxisDisabled('regime-budget')) return { coherent: 0.333, evolving: 0.333, exploring: 0.333 };
     const regime = getAxis('regime');
     return {
       coherent:  regime ? regime.coherent  : 0.333,
@@ -66,8 +84,8 @@ metaProfiles = (() => {
     };
   }
 
-  // Convenience: coupling range with defaults
   function getCouplingRange() {
+    if (isAxisDisabled('coupling-ceiling-scale')) return { lo: 0.3, hi: 0.7, density: 0.25, antagonismThreshold: -0.25 };
     return {
       lo: getAxisValue('coupling', 'strength', [0.3, 0.7])[0],
       hi: getAxisValue('coupling', 'strength', [0.3, 0.7])[1],
@@ -76,17 +94,17 @@ metaProfiles = (() => {
     };
   }
 
-  // Convenience: tension arc with defaults
   function getTensionArc() {
+    if (isAxisDisabled('tension-amplitude') && isAxisDisabled('tension-shape')) return { shape: 'arch', floor: 0.20, ceiling: 0.80 };
     return {
-      shape: getAxisValue('tension', 'shape', 'arch'),
+      shape: isAxisDisabled('tension-shape') ? 'arch' : getAxisValue('tension', 'shape', 'arch'),
       floor: getAxisValue('tension', 'floor', 0.20),
-      ceiling: getAxisValue('tension', 'ceiling', 0.80),
+      ceiling: isAxisDisabled('tension-amplitude') ? 0.80 : getAxisValue('tension', 'ceiling', 0.80),
     };
   }
 
-  // Convenience: energy envelope with defaults
   function getEnergyEnvelope() {
+    if (isAxisDisabled('density-amplitude')) return { densityTarget: 0.50, flickerLo: 0.04, flickerHi: 0.15 };
     return {
       densityTarget: getAxisValue('energy', 'densityTarget', 0.50),
       flickerLo: getAxisValue('energy', 'flickerRange', [0.04, 0.15])[0],
@@ -105,6 +123,9 @@ metaProfiles = (() => {
     getCouplingRange,
     getTensionArc,
     getEnergyEnvelope,
+    disableAxis,
+    enableAxis,
+    isAxisDisabled,
     list: metaProfileDefinitions.list,
   };
 })();
