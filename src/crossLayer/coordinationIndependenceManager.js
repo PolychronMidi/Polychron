@@ -41,10 +41,23 @@ coordinationIndependenceManager = (() => {
   };
 
   // Regime targets: coherent = coordinate, exploring = independent
-  const REGIME_TARGETS = {
+  const _BASE_REGIME_TARGETS = {
     coherent: 0.75, exploring: 0.25, evolving: 0.5, oscillating: 0.55,
     drifting: 0.3, fragmented: 0.2, stagnant: 0.4
   };
+  // Metaprofile phase axis: layerIndependence biases all targets.
+  // Independence 0.5 (default) = 1.0x. Atmospheric 0.3 = coordination boost. Chaotic 0.8 = independence boost.
+  function _getRegimeTarget(regime) {
+    const base = _BASE_REGIME_TARGETS[regime];
+    if (base === undefined) return 0.5;
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const independence = metaProfiles.getAxisValue('phase', 'layerIndependence', 0.5);
+      // Scale: independence 0.0 → +0.2 coordination boost, 1.0 → -0.3 (more independent)
+      const bias = (0.5 - independence) * 0.5;
+      return clamp(base + bias, 0.05, 0.95);
+    }
+    return base;
+  }
 
   // Topology targets: crystallized = break coordination, resonant = maintain, fluid = loosen
   const TOPOLOGY_TARGETS = {
@@ -107,9 +120,9 @@ coordinationIndependenceManager = (() => {
     const rp = sigs.regimeProb || { coherent: 0.33, exploring: 0.33, evolving: 0.34 };
     const phaseTarget = PHASE_TARGETS[phase];
     if (phaseTarget === undefined) throw new Error('coordinationIndependenceManager: unknown sectionPhase "' + phase + '"');
-    const regimeTarget = REGIME_TARGETS.coherent * rp.coherent
-      + REGIME_TARGETS.exploring * rp.exploring
-      + REGIME_TARGETS.evolving * rp.evolving;
+    const regimeTarget = _getRegimeTarget('coherent') * rp.coherent
+      + _getRegimeTarget('exploring') * rp.exploring
+      + _getRegimeTarget('evolving') * rp.evolving;
     const topoTarget = TOPOLOGY_TARGETS[sigs.topologyPhase];
     if (topoTarget === undefined) throw new Error('coordinationIndependenceManager: unknown topologyPhase "' + sigs.topologyPhase + '"');
 

@@ -35,13 +35,25 @@ pairGainCeilingController = (() => {
     'density-phase':   { baseCeiling: 0.16, minCeiling: 0.06, maxCeiling: 0.45, p95Sensitivity: 0.76, exceedanceSensitivity: 0.06 },
   };
 
+  // Metaprofile coupling strength scales all ceiling values.
+  // Default strength midpoint is 0.50; atmospheric (0.35) = 0.70x, chaotic (0.85) = 1.70x.
+  function _couplingScale() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const range = metaProfiles.getCouplingRange();
+      const midpoint = (range.lo + range.hi) / 2;
+      return midpoint / 0.50;
+    }
+    return 1.0;
+  }
+
   function getPairState(pair) {
     if (!pairGainCeilingControllerPairState[pair]) {
       const profile = _PAIR_PROFILES[pair];
+      const scale = _couplingScale();
       pairGainCeilingControllerPairState[pair] = {
         p95Ema: 0.5,
         exceedanceEma: 0,
-        ceiling: profile ? profile.baseCeiling : 1.2,
+        ceiling: profile ? profile.baseCeiling * scale : 1.2,
         activeBeats: 0,
         severityEma: 0
       };
@@ -90,11 +102,11 @@ pairGainCeilingController = (() => {
       );
       const topologyTightenScale = topologyCreativity > 0.5 ? 1.0 / topologyCreativity : 1.0;
       const tightenAmount = _CEILING_ADAPT_RATE * tightenPressure * exceedanceAccelerator * s0Multiplier * globalMultiplier * topologyTightenScale;
-      ps.ceiling = m.max(profile.minCeiling, ps.ceiling - tightenAmount);
+      ps.ceiling = m.max(profile.minCeiling * _couplingScale(), ps.ceiling - tightenAmount);
     } else if (p95Excess < -0.05 && ps.exceedanceEma < profile.exceedanceSensitivity * 0.5) {
       const relaxPressure = clamp(m.abs(p95Excess) * 1.5, 0, 1);
       const relaxAmount = _CEILING_RELAX_RATE * relaxPressure * globalMultiplier * topologyCreativity;
-      ps.ceiling = m.min(profile.maxCeiling, ps.ceiling + relaxAmount);
+      ps.ceiling = m.min(profile.maxCeiling * _couplingScale(), ps.ceiling + relaxAmount);
     }
 
     // Dimensionality expander ceiling floor: during locked topology with
