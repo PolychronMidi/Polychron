@@ -25,7 +25,7 @@ Two `llama-server` instances (Vulkan backend, build b8797) run as systemd servic
 
 | Role | Port | Model | LoRA | Systemd unit |
 |------|------|-------|------|--------------|
-| Arbiter | 8080 | `phi-4-Q4_K_M.gguf` | `hme-arbiter-v6-lora.gguf` | `llamacpp-arbiter.service` |
+| Arbiter | 8080 | `phi-4-Q4_K_M.gguf` | `hme-arbiter.gguf` | `llamacpp-arbiter.service` |
 | Coder | 8081 | `qwen3-coder-30b-Q4_K_M.gguf` | (none yet) | `llamacpp-coder.service` |
 
 Model files live in `/home/jah/models/`. LoRA adapters live in `/home/jah/Polychron/metrics/` and are symlinked into the path the unit expects. Logs go to `/var/log/llamacpp-arbiter.log` and `/var/log/llamacpp-coder.log`.
@@ -55,7 +55,7 @@ Env vars the shim reads (authoritative list in `.env`):
 
 ```
 HME_ARBITER_BACKEND=llamacpp
-HME_ARBITER_MODEL=hme-arbiter-v6
+HME_ARBITER_MODEL=hme-arbiter
 HME_LLAMACPP_ARBITER_URL=http://127.0.0.1:8080
 HME_LLAMACPP_CODER_URL=http://127.0.0.1:8081
 HME_LOCAL_MODEL=qwen3-coder:30b
@@ -137,7 +137,7 @@ python3 tools/HME/scripts/train_arbiter_v6.py --sanity --base phi4
 
 # Full run, warm-started from sanity checkpoint to save the first epoch
 python3 tools/HME/scripts/train_arbiter_v6.py --base phi4 \
-  --warm-from metrics/hme-arbiter-adapter-v6-phi4/checkpoint-50 \
+  --warm-from metrics/hme-arbiter-phi4/checkpoint-50 \
   --epochs 1
 ```
 
@@ -158,7 +158,7 @@ python3 /home/jah/tools/llama.cpp/convert_lora_to_gguf.py \
   --outtype f16 \
   --base-model-id microsoft/phi-4 \
   --outfile /home/jah/models/hme-arbiter-v7-lora-f16.gguf \
-  metrics/hme-arbiter-adapter-v7-phi4/checkpoint-N
+  metrics/hme-arbiter-phi4/checkpoint-N
 ```
 
 `--base-model-id` pulls only the base model's `config.json` + `tokenizer.json` from HuggingFace (a few MB). You don't need the full base weights cached for this step.

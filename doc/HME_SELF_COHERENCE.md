@@ -252,7 +252,7 @@ The Maxwell trap (#8) is the most painful because it's silent: loss prints as 0.
 **Trained adapter:** `Qwen/Qwen2.5-0.5B-Instruct` (0.5B params, fp32) with LoRA r=8 α=16, 3 epochs, 262 examples, lr=1e-4, gradient checkpointing. Final train_loss=3.21 (healthy, not NaN). Fits in 24GB with room. Training took 271 seconds (~4.5 min).
 
 **Artifacts produced:**
-- `metrics/hme-arbiter-adapter-v2/` — LoRA adapter (4.35MB)
+- `metrics/hme-arbiter/` — LoRA adapter (4.35MB)
 - `metrics/hme-arbiter-merged/` — merged base+adapter (full model weights)
 - `metrics/hme-arbiter.gguf` — 949MB f16 GGUF, loadable by llama.cpp
 - `llamacpp list` shows `hme-arbiter:latest` (994MB) registered and callable
@@ -306,7 +306,7 @@ This means:
 4. **The only way to make LIFESAVER quieter is to fix the underlying condition.** Either:
    - The system state causing the fire is bad → fix the state, fire stops automatically
    - The detector is broken → fix the detector at full urgency, fire stops automatically
-   
+
    Any path that involves adding a cooldown, a dedup set, a time-based guard, a "we already warned about this" flag, a `_last_fired_at` timestamp, or any other mechanism that suppresses the alert without eliminating its cause is a **subversion** and must be reverted.
 
 ### Enforcement: `LifesaverIntegrityVerifier`

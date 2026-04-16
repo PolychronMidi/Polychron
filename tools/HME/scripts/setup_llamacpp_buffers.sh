@@ -30,7 +30,7 @@ LORA_DIR="${HME_LORA_DIR:-$HOME/Polychron/metrics}"
 #   arbiter on GPU0 → phi-4 + v6 LoRA
 #   coder   on GPU1 → qwen3-coder-30b
 ARBITER_MODEL="${HME_ARBITER_GGUF:-$MODELS_DIR/phi-4-Q4_K_M.gguf}"
-ARBITER_LORA="${HME_ARBITER_LORA:-$LORA_DIR/hme-arbiter-v6-lora.gguf}"
+ARBITER_LORA="${HME_ARBITER_LORA:-$LORA_DIR/hme-arbiter.gguf}"
 CODER_MODEL="${HME_CODER_GGUF:-$MODELS_DIR/qwen3-coder-30b-Q4_K_M.gguf}"
 
 case "${1:-status}" in
