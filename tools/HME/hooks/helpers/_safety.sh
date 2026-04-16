@@ -55,9 +55,12 @@ _hme_log_hook_latency() {
 # Composite EXIT trap. Captures the ORIGINAL exit code before any helper
 # runs (latency log or stderr emission), computes elapsed once, then
 # dispatches. Either the explicit verdict set by `_stderr_verdict` wins,
-# or a default "exit=<code> <N>ms" terse summary fires so the agent-side
-# forwarded notification (Stop hook feedback: [cmd]: <stderr>) always
-# carries real signal instead of "No stderr output" filler.
+# or a MINIMAL default fires so the agent-side forwarded notification
+# (Stop hook feedback: [cmd]: <stderr>) carries a short token instead
+# of "No stderr output" filler — but without adding character overhead
+# beyond the empty placeholder. Claude Code already shows the hook
+# name in the notification header, so we omit it here; "ok" / "fail=<N>"
+# is the smallest signal set that still distinguishes clean from broken.
 _hme_exit_combined() {
   local code=$?
   local end_ns dur_ms
@@ -65,9 +68,11 @@ _hme_exit_combined() {
   dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
   _hme_log_hook_latency "$dur_ms"
   if [ -n "$_HME_HOOK_VERDICT" ]; then
-    echo "${_HME_HOOK_NAME}: $_HME_HOOK_VERDICT" >&2
+    echo "$_HME_HOOK_VERDICT" >&2
+  elif [ "$code" -ne 0 ]; then
+    echo "fail=$code" >&2
   else
-    echo "${_HME_HOOK_NAME}: exit=${code} ${dur_ms}ms" >&2
+    echo "ok" >&2
   fi
   return $code
 }
