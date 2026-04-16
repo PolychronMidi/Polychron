@@ -86,6 +86,7 @@ class InstanceSpec:
     last_start: float = 0.0
     restart_count: int = 0
     last_health_ok: float = 0.0
+    suspended: bool = False  # when True, supervisor won't auto-restart this instance
 
     def base_url(self) -> str:
         return f"http://127.0.0.1:{self.port}"
@@ -311,15 +312,49 @@ class _Supervisor:
             logger.exception(f"supervisor: spawn {spec.name} failed: {e}")
             return False
 
+    def suspend(self, name: str) -> dict:
+        """Suspend an instance: kill its process + prevent auto-restart.
+        Used by indexing mode to free a GPU for embedding work."""
+        with self._lock:
+            spec = self._instances.get(name)
+            if not spec:
+                return {"error": f"unknown instance: {name}"}
+            spec.suspended = True
+            if spec.process is not None and spec.process.poll() is None:
+                spec.process.terminate()
+                try:
+                    spec.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    spec.process.kill()
+                logger.info(f"supervisor: {name} suspended (PID {spec.process.pid} terminated)")
+                spec.process = None
+            else:
+                logger.info(f"supervisor: {name} suspended (was not running)")
+            return {"name": name, "suspended": True}
+
+    def resume(self, name: str) -> dict:
+        """Resume a suspended instance: clear flag + spawn immediately."""
+        with self._lock:
+            spec = self._instances.get(name)
+            if not spec:
+                return {"error": f"unknown instance: {name}"}
+            spec.suspended = False
+            ok = self._spawn(spec)
+            logger.info(f"supervisor: {name} resumed (spawned={ok})")
+            return {"name": name, "suspended": False, "spawned": ok}
+
     def ensure_all_running(self) -> dict[str, str]:
         """Spawn any instance that isn't already serving /health=ok. Adopts
-        externally-launched survivors. Skipped while training lock is held."""
+        externally-launched survivors. Skipped while training lock or suspended."""
         if _training_locked():
             return {"status": "training_locked"}
         self.configure()
         result: dict[str, str] = {}
         with self._lock:
             for spec in self._instances.values():
+                if spec.suspended:
+                    result[spec.name] = "suspended"
+                    continue
                 if self._probe_health(spec):
                     spec.last_health_ok = time.time()
                     result[spec.name] = "healthy"
@@ -338,6 +373,9 @@ class _Supervisor:
         out: dict[str, dict] = {}
         with self._lock:
             for spec in self._instances.values():
+                if spec.suspended:
+                    out[spec.name] = {"healthy": False, "suspended": True}
+                    continue
                 healthy = self._probe_health(spec)
                 if healthy:
                     spec.last_health_ok = time.time()
@@ -755,6 +793,20 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send_json(200, {"device": device, "busy": False})
             else:
                 self._send_json(400, {"error": "state must be 'set' or 'clear'"})
+        elif self.path == "/suspend":
+            name = body.get("name", "")
+            if not name:
+                self._send_json(400, {"error": "name required (e.g. 'coder')"})
+            else:
+                result = _supervisor.suspend(name)
+                self._send_json(200, result)
+        elif self.path == "/resume":
+            name = body.get("name", "")
+            if not name:
+                self._send_json(400, {"error": "name required (e.g. 'coder')"})
+            else:
+                result = _supervisor.resume(name)
+                self._send_json(200, result)
         else:
             self._send_json(404, {"error": "not found"})
 
