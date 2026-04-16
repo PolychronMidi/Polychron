@@ -212,7 +212,7 @@ fi
 if [[ "$PSYCHO_STOP" == "psycho" ]]; then
   jq -n '{
     "decision": "block",
-    "reason": "PSYCHOPATHIC-STOP: One of three defer-instead-of-do patterns fired: (A) launched a long background job + ScheduleWakeup; (B) admit-and-stop — final text enumerated pending work with no tool calls following; (C) survey-and-ask — final text identified violations/opportunities a directive already told you to fix, then asked permission instead of fixing (\"want me to run...\", \"didn't modify\", \"before any edits\", \"shall I\"). The directive already granted authority. Resume and EXECUTE the work now. If the scope is genuinely ambiguous, clarify BEFORE surveying, not after."
+    "reason": "PSYCHOPATHIC-STOP: One of three defer-instead-of-do patterns fired: (A) launched a long background job + ScheduleWakeup; (B) admit-and-stop — final text enumerated pending work with no tool calls following; (C) survey-and-ask — final text identified violations/opportunities a directive already told you to fix, then asked permission instead of fixing (\"want me to run...\", \"did not modify\", \"before any edits\", \"shall I\"). The directive already granted authority. Resume and EXECUTE the work now. If the scope is genuinely ambiguous, clarify BEFORE surveying, not after."
   }'
   exit 0
 fi
@@ -228,12 +228,11 @@ fi
 
 # ── Plan-abandonment detection ────────────────────────────────────────────────
 if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
-    jq -n '{
-      "decision": "block",
-      "reason": "PLAN-ABANDONMENT DETECTED: You spawned an Agent for KB/HME work. Use HME tools directly: search_knowledge, compact_knowledge, remove_knowledge, list_knowledge, memory_dream, kb_health. Subagents for KB work are the abandoning-plans antipattern (KB entry 524061657661). Complete the task using HME tools now."
-    }'
-    exit 0
-  fi
+  jq -n '{
+    "decision": "block",
+    "reason": "PLAN-ABANDONMENT DETECTED: You spawned an Agent for KB/HME work. Use HME tools directly: search_knowledge, compact_knowledge, remove_knowledge, list_knowledge, memory_dream, kb_health. Subagents for KB work are the abandoning-plans antipattern (KB entry 524061657661). Complete the task using HME tools now."
+  }'
+  exit 0
 fi
 
 # ── Nexus lifecycle audit ────────────────────────────────────────────────────

@@ -463,8 +463,8 @@ def hme_selftest() -> str:
                         try:
                             _ts = _dt_log.datetime.strptime(_tsm.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
                             _is_fresh = (_now - _ts) <= _window_s
-                        except Exception:
-                            pass
+                        except Exception as _tse:
+                            logger.debug(f"hme.log ts parse: {type(_tse).__name__}: {_tse}")
                     if _is_fresh:
                         _msg = _em.group(1).strip()[:80]
                         _error_counts[_msg] += 1
