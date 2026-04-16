@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 # PostToolUse: mcp__HME__review — clear edit backlog, point to next step.
 INPUT=$(cat)
 MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'digest')

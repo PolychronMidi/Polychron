@@ -79,7 +79,7 @@ def main() -> int:
         print("  (same entries, different order)")
 
     print()
-    print("Fix: update _ONB_STATES in tools/HME/hooks/_onboarding.sh to match")
+    print("Fix: update _ONB_STATES in tools/HME/hooks/helpers/_onboarding.sh to match")
     print("the STATES list in tools/HME/mcp/server/onboarding_chain.py.")
     return 1
 

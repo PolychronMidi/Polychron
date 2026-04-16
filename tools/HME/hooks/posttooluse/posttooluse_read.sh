@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PostToolUse: Read — silent KB enrichment after file reads.
 # Informative only — never blocks. Resets streak (reading = gathering context).
 INPUT=$(cat)

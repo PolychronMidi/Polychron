@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME UserPromptSubmit: inject context on evolution-related prompts
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')

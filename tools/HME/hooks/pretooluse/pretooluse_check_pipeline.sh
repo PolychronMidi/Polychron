@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreToolUse: status(mode='pipeline') — block repeated calls (polling antipattern).
 # status has a freshness guard that auto-checks pipeline state; agents that
 # call it more than once per turn are polling. One call per turn max.
