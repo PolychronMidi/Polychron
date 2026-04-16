@@ -16,7 +16,7 @@
  * - Recent error rate in transcript (errors → escalate to Claude)
  */
 import * as http from "http";
-import { TranscriptEntry } from "./TranscriptLogger";
+import { TranscriptEntry } from "./session/TranscriptLogger";
 
 export type ArbiterDecision = {
   route: "claude" | "local";

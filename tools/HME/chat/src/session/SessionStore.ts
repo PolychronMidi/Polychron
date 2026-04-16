@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
-import { LlamacppMessage } from "./router";
-import { ChatMessage } from "./types";
+import { LlamacppMessage } from "../router";
+import { ChatMessage } from "../types";
 
 export interface SessionEntry {
   id: string;

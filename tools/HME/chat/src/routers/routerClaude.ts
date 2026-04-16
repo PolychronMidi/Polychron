@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { readFileSync, appendFileSync } from "fs";
-import { ClaudeOptions, ChunkCallback, TokenUsage } from "./router";
+import { ClaudeOptions, ChunkCallback, TokenUsage } from "../router";
 
 // node-pty is loaded lazily — a native module crash must never take down the extension host.
 let _pty: typeof import("node-pty") | null = null;

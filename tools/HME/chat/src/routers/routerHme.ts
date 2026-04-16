@@ -1,7 +1,7 @@
 import * as http from "http";
-import { LlamacppMessage, ChunkCallback } from "./router";
+import { LlamacppMessage, ChunkCallback } from "../router";
 import { streamLlamacppAgentic as streamLlamacppAgentic } from "./routerLlamacpp";
-import { AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
+import { AGENTIC_SYSTEM_PROMPT } from "../streamUtils";
 
 const HME_HTTP_PORT = 7734;
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;

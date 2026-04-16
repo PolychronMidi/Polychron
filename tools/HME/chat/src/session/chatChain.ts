@@ -1,4 +1,4 @@
-import { ChatMessage } from "./types";
+import { ChatMessage } from "../types";
 
 export function buildSummaryPrompt(
   messages: ChatMessage[],

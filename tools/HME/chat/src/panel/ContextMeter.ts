@@ -1,6 +1,6 @@
 import { ContextTracker } from "../streamUtils";
 import { TokenUsage } from "../router";
-import { listChainLinks } from "../SessionStore";
+import { listChainLinks } from "../session/SessionStore";
 import { PanelHost } from "./PanelHost";
 
 /**

@@ -13,7 +13,7 @@ import { execSync } from "child_process";
 import * as http from "http";
 import * as fs from "fs";
 import * as path from "path";
-import { LlamacppOptions, LlamacppMessage, ChunkCallback } from "./router";
+import { LlamacppOptions, LlamacppMessage, ChunkCallback } from "../router";
 
 export const GPU_NUM_CTX = 49152;
 
