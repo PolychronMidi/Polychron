@@ -28,8 +28,9 @@ def _index_lib(lib_key: str, engine) -> tuple[str, dict | str]:
     logger.info(f"Indexing lib: {lib_key} -> {lib_abs}")
     return lib_key, engine.index_directory(lib_abs)
 
-def _index_main(target: str) -> dict:
-    result = ctx.project_engine.index_directory(target)
+def _index_main(target: str = "") -> dict:
+    # Always use PROJECT_ROOT regardless of what's passed
+    result = ctx.project_engine.index_directory(ctx.PROJECT_ROOT)
     symbols = collect_all_symbols(target)
     sym_result = ctx.project_engine.index_symbols(symbols)
     result["symbols_indexed"] = sym_result["indexed"]
@@ -88,7 +89,9 @@ def recent_changes(since: str = "1 hour ago") -> str:
 
 def index_codebase(directory: str = "", lib: str = "") -> str:
     """Reindex all code chunks and symbols for semantic search. Called via hme_admin(action='index').
-    Run after batch code changes when file watcher hasn't caught up."""
+    Run after batch code changes when file watcher hasn't caught up.
+    The directory parameter is ignored — always indexes from PROJECT_ROOT
+    to prevent bypassing the file_walker whitelist."""
     ctx.ensure_ready_sync()
     if lib:
         resolved = _resolve_lib_engine(lib)
@@ -107,7 +110,8 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
             f"  Chunks created: {result['chunks_created']}"
         )
 
-    target = directory if directory else ctx.PROJECT_ROOT
+    # Always use PROJECT_ROOT — never allow directory override
+    target = ctx.PROJECT_ROOT
     if not os.path.isdir(target):
         return f"Error: directory not found: {target}"
 
