@@ -23,7 +23,7 @@ coordinationIndependenceManager = (() => {
     'motif-echoIdentity'
   ];
 
-  const _cimc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('coordinationIndependenceManager') : {};
+  const _cimc = controllerConfig.getSection('coordinationIndependenceManager');
   const TICK_INTERVAL = V.optionalFinite(_cimc.tickInterval, 4);
   const MIN_DWELL_BEATS = V.optionalFinite(_cimc.minDwellBeats, 12);
   // R26 E4: Per-pair stagger breaks simultaneous adjustment/evaluation so
@@ -51,9 +51,9 @@ coordinationIndependenceManager = (() => {
   function _getRegimeTarget(regime) {
     const base = _BASE_REGIME_TARGETS[regime];
     if (base === undefined) return 0.5;
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const independence = metaProfiles.getAxisValue('phase', 'layerIndependence', 0.5);
-      // Scale: independence 0.0 → +0.2 coordination boost, 1.0 → -0.3 (more independent)
+      // Scale: independence 0.0 -> +0.2 coordination boost, 1.0 -> -0.3 (more independent)
       const bias = (0.5 - independence) * 0.5;
       return clamp(base + bias, 0.05, 0.95);
     }

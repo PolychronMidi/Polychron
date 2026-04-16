@@ -47,7 +47,7 @@ regimeReactiveDamping = (() => {
     drifting: 0,
   };
 
-  const _cc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('regimeReactiveDamping') : {};
+  const _cc = controllerConfig.getSection('regimeReactiveDamping');
   const _BASE_MAX_DENSITY = V.optionalFinite(_cc.baseMaxDensity, 0.12);
   const _BASE_MAX_TENSION = V.optionalFinite(_cc.baseMaxTension, 0.12);
   const _BASE_MAX_FLICKER = V.optionalFinite(_cc.baseMaxFlicker, 0.17);
@@ -58,14 +58,14 @@ regimeReactiveDamping = (() => {
   // Metaprofile-scaled maxima. Tension ceiling 0.80 (default) = 1.0x scale.
   // Atmospheric (0.45) = 0.56x, chaotic (0.95) = 1.19x.
   function _getMaxTension() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const arc = metaProfiles.getTensionArc();
       return _BASE_MAX_TENSION * (arc.ceiling / 0.80);
     }
     return _BASE_MAX_TENSION;
   }
   function _getMaxDensity() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const env = metaProfiles.getEnergyEnvelope();
       return _BASE_MAX_DENSITY * (env.densityTarget / 0.50);
     }
@@ -101,9 +101,9 @@ regimeReactiveDamping = (() => {
   };
   // Metaprofile-aware: read targets dynamically so mid-run profile switches
   // take effect on the next tick. Minor regimes (stagnant, fragmented, etc.)
-  // keep their fixed budget — metaprofiles only configure the big three.
+  // keep their fixed budget -- metaprofiles only configure the big three.
   function _getRegimeBudget() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const targets = metaProfiles.getRegimeTargets();
       return {
         exploring:   targets.exploring,
@@ -283,8 +283,7 @@ regimeReactiveDamping = (() => {
 
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
     // Metaprofile tension shape via pure function (testable independently)
-    const _tensionShape = (typeof metaProfiles !== 'undefined' && metaProfiles.isActive())
-      ? metaProfiles.getTensionArc().shape : 'arch';
+    const _tensionShape = metaProfiles.isActive() ? metaProfiles.getTensionArc().shape : 'arch';
     const sectionTensionNudge = clamp(regimeReactiveDampingCore.tensionShapeCurve(_tensionShape, sectionProgress), 0, 1) * 0.045;
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
     const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);

@@ -1,4 +1,4 @@
-// metaProfiles.js — Metaprofile registry, loader, and accessor.
+// metaProfiles.js -- Metaprofile registry, loader, and accessor.
 // Sets coordinated initial conditions for the relationship layer.
 // Meta-controllers read their axis from the active metaprofile at boot.
 
@@ -12,16 +12,15 @@ metaProfiles = (() => {
   let activeProfileName = null;
 
   function setActive(name) {
+    const _fs = require('fs');
+    const _path = require('path');
+    const _out = _path.join(process.cwd(), 'metrics', 'metaprofile-active.json');
     if (name === null || name === undefined) {
       activeProfile = null;
       activeProfileName = null;
-      try {
-        const _fs = require('fs');
-        const _path = require('path');
-        const _out = _path.join(process.cwd(), 'metrics', 'metaprofile-active.json');
-        if (_fs.existsSync(_out)) _fs.unlinkSync(_out);
-      } catch (_e) { /* non-fatal */ }
-      return;
+      if (_fs.existsSync(_out)) _fs.unlinkSync(_out);
+      // Explicit no-op return: null/undefined = clear active profile, no further setup needed.
+      return;  // eslint-disable-line local/no-silent-early-return
     }
     V.assertNonEmptyString(name, 'metaProfiles.setActive.name');
     const profile = metaProfileDefinitions.get(name);
@@ -31,12 +30,7 @@ metaProfiles = (() => {
     activeProfile = profile;
     activeProfileName = name;
     // Persist to metrics/ so HME Python tools can read the active profile
-    try {
-      const _fs = require('fs');
-      const _path = require('path');
-      const _out = _path.join(process.cwd(), 'metrics', 'metaprofile-active.json');
-      _fs.writeFileSync(_out, JSON.stringify(profile, null, 2));
-    } catch (_e) { /* non-fatal */ }
+    _fs.writeFileSync(_out, JSON.stringify(profile, null, 2));
   }
 
   function getActive() {
@@ -72,14 +66,14 @@ metaProfiles = (() => {
   }
 
   function isAxisDisabled(axisId) {
-    return !!_disabled[axisId];
+    return Boolean(_disabled[axisId]);
   }
 
   function isActive() {
     return activeProfile !== null;
   }
 
-  // Convenience accessors — each checks isAxisDisabled() and returns defaults when suppressed.
+  // Convenience accessors -- each checks isAxisDisabled() and returns defaults when suppressed.
   function getRegimeTargets() {
     if (isAxisDisabled('regime-budget')) return { coherent: 0.333, evolving: 0.333, exploring: 0.333 };
     const regime = getAxis('regime');

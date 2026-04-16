@@ -16,10 +16,7 @@ deepwiki.config.json
 *.pyc
 /metrics
 /lab
-/.claude/mcp
-/.claude/hme-evolver.local.md
-/.claude/projects/
-/.claude/settings.local.json
+/.claude
 
 # tools - track source, ignore runtime artifacts
 /tools/*/venv/
