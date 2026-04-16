@@ -139,7 +139,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     def _do_dir_reindex():
         try:
             logger.info(f"Auto-reindex (full) triggered for {project_root}")
-            result = engine.index_directory(project_root)
+            result = engine.index_directory()
             with _lock:
                 _last_reindex[0] = time.time()
             if result["indexed"] > 0:

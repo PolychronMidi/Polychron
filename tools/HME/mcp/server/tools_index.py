@@ -26,11 +26,11 @@ def _index_lib(lib_key: str, engine) -> tuple[str, dict | str]:
     if not os.path.isdir(lib_abs):
         return lib_key, f"directory not found: {lib_abs}"
     logger.info(f"Indexing lib: {lib_key} -> {lib_abs}")
-    return lib_key, engine.index_directory(lib_abs)
+    return lib_key, engine.index_directory()
 
 def _index_main(target: str = "") -> dict:
     # Always use PROJECT_ROOT regardless of what's passed
-    result = ctx.project_engine.index_directory(ctx.PROJECT_ROOT)
+    result = ctx.project_engine.index_directory()
     symbols = collect_all_symbols(target)
     sym_result = ctx.project_engine.index_symbols(symbols)
     result["symbols_indexed"] = sym_result["indexed"]
