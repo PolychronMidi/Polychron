@@ -7,7 +7,7 @@ import subprocess
 from server import context as ctx
 from server.onboarding_chain import chained
 from ..synthesis import _local_think
-from . import _track
+from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
 

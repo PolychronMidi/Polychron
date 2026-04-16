@@ -312,6 +312,8 @@ def _trim_narrative_file() -> None:
 
 
 def _read_last_narrative() -> dict | None:
+    if _ms is None or not _ms.narrative_file:
+        return None
     try:
         with open(_ms.narrative_file) as f:
             last = None

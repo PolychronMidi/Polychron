@@ -11,7 +11,7 @@ from hme_env import ENV  # noqa: E402
 
 from server import context as ctx
 from ..synthesis import _local_think
-from . import _track
+from .. import _track
 
 logger = logging.getLogger("HME")
 

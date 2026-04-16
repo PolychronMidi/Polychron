@@ -10,7 +10,7 @@ from .synthesis import (
     store_think_history, get_think_history_context,
     _read_module_source,
 )
-from .synthesis_llamacpp import _cascade_synthesis, _assess_complexity, _fuzzy_find_modules
+from .synthesis_cascade import _cascade_synthesis, _assess_complexity, _fuzzy_find_modules
 
 logger = logging.getLogger("HME")
 

@@ -19,11 +19,12 @@ from .synthesis_config import (  # noqa: F401
 from .synthesis_llamacpp import (  # noqa: F401
     _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
     _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL, _llamacpp_url_for,
-    _interactive_event,
-    _background_yield, _read_module_source,
-    _local_chat, _local_think_with_system,
-    route_model, synthesize, dual_gpu_consensus,
+    _interactive_event, _background_yield, route_model,
 )
+from .synthesis_inference import (  # noqa: F401
+    _read_module_source, _local_chat, _local_think_with_system,
+)
+from .synthesis_cascade import synthesize, dual_gpu_consensus  # noqa: F401
 # Late-binding proxies: survive hot-reload of synthesis_llamacpp without stale references.
 from . import synthesis_llamacpp as _so
 

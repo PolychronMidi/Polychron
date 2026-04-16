@@ -10,7 +10,7 @@ import re
 from collections import Counter, defaultdict
 
 from server import context as ctx
-from . import _track
+from .. import _track
 
 # Re-export everything that other modules import from coupling.py
 from .coupling_data import (  # noqa: F401

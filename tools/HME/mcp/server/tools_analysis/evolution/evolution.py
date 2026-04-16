@@ -16,7 +16,7 @@ from ..synthesis import (
     _local_think, _THINK_MODEL, _REASONING_MODEL,
     _get_max_tokens, _get_effort, _get_tool_budget,
 )
-from . import _get_compositional_context, _track, _usage_stats
+from .. import _get_compositional_context, _track, _usage_stats
 
 logger = logging.getLogger("HME")
 

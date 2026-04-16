@@ -75,15 +75,15 @@ def start(project_root: str) -> None:
     os.makedirs(os.path.dirname(_ms.heartbeat_file), exist_ok=True)
     os.makedirs(os.path.dirname(_ms.narrative_file), exist_ok=True)
 
+    # Wire shared state into meta_layers BEFORE calling any layer functions
+    meta_layers._ms = _ms
+
     gap = meta_layers._detect_observation_gap()
     if gap:
         logger.warning(f"Meta-observer: observation gap detected — {gap}")
 
     if not os.path.exists(_ms.synthesis_file):
         logger.info("Meta-observer: hme-synthesis.jsonl absent — L22/L25/L∞ layers dormant until first synthesis call")
-
-    # Wire shared state into meta_layers before starting the loop
-    meta_layers._ms = _ms
     _active = True
     _thread = threading.Thread(target=_meta_loop, daemon=True, name="hme-meta-observer")
     _thread.start()
@@ -118,6 +118,14 @@ def get_status() -> dict:
 
 # Layer implementations extracted to meta_layers.py
 from . import meta_layers  # noqa: E402
+
+# Re-export public functions so callers can still use meta_observer.X
+read_startup_narrative = meta_layers.read_startup_narrative
+register_monitor_thread = meta_layers.register_monitor_thread
+read_entanglement_for_compaction = meta_layers.read_entanglement_for_compaction
+record_prediction = meta_layers.record_prediction
+resolve_prediction = meta_layers.resolve_prediction
+get_current_intent = meta_layers.get_current_intent
 
 # Loop state — maintained here since meta_layers functions are stateless callables
 _last_correlations: dict = {}
