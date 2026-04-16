@@ -22,6 +22,7 @@ module.exports = {
     'no-direct-coupling-matrix-read': require('./no-direct-coupling-matrix-read'),
     'no-empty-catch': require('./no-empty-catch'),
     'no-bare-l0-channel': require('./no-bare-l0-channel'),
-    'no-doubled-fallback': require('./no-doubled-fallback')
+    'no-doubled-fallback': require('./no-doubled-fallback'),
+    'no-or-fallback-on-config-read': require('./no-or-fallback-on-config-read')
   }
 };

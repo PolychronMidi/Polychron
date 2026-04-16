@@ -4,7 +4,7 @@
 
 stutterVariants.register('tensionStutter', function tensionStutter(opts) {
   const sigs = conductorSignalBridge.getSignals();
-  const tension = clamp(sigs.tension || 1.0, 0.3, 2.0);
+  const tension = clamp(sigs.tension ?? 1.0, 0.3, 2.0);
   const echoCount = clamp(m.round(tension * ri(2, 4)), 1, 6);
   let lastShared = opts.shared;
   for (let i = 0; i < echoCount; i++) {

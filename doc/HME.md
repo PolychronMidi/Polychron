@@ -130,7 +130,7 @@ Polychron/.claude/mcp/HME/
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
         "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",
-        "HME_LOCAL_MODEL": "qwen3-coder:30b",
+        "HME_CODER_MODEL": "qwen3-coder:30b",
         "HME_LOCAL_URL": "http://localhost:11434/api/generate",
         "HME_ARBITER_MODEL": "qwen3:4b"
       }
@@ -822,7 +822,7 @@ HME runs a three-model local synthesis fleet. No external API. All synthesis is 
 - Specialized persona: "expert code extractor — facts, file paths, module names, no speculation"
 - Runs Stage 1A in parallel two-stage synthesis
 - Default model for `_local_think` (evolve focus=think), `before_editing` edit risks (hook-chained), `evolve(focus='blast')` dependency tracing, `review(mode='health')`, `learn(action='graph')`, `learn(action='dream')`
-- Configured via `HME_LOCAL_MODEL` + `HME_LOCAL_URL`
+- Configured via `HME_CODER_MODEL` + `HME_LOCAL_URL`
 
 **GPU1 — Reasoner** (`qwen3:30b-a3b`, 18.6GB VRAM, `/api/chat` streaming):
 - Specialized persona: full `_THINK_SYSTEM` prompt + synthesis guidance ("synthesizer for a self-evolving music composition system")
@@ -843,7 +843,7 @@ HME runs a three-model local synthesis fleet. No external API. All synthesis is 
 
 **Configuration** (in `.mcp.json` env):
 ```
-HME_LOCAL_MODEL=qwen3-coder:30b               # GPU0 extractor
+HME_CODER_MODEL=qwen3-coder:30b               # GPU0 extractor
 HME_LOCAL_URL=http://localhost:11434/api/generate
 HME_DEEP_MODEL=qwen3:30b-a3b                  # GPU1 reasoner
 HME_DEEP_CHAT_URL=http://localhost:11434/api/chat

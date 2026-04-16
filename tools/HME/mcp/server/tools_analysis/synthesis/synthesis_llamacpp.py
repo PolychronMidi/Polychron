@@ -126,7 +126,7 @@ if _mcp_root not in _sys.path:
     _sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
 
-_LOCAL_MODEL = ENV.require("HME_LOCAL_MODEL")
+_LOCAL_MODEL = ENV.require("HME_CODER_MODEL")
 # Reasoning model: kept as local fallback only. Cloud cascade in synthesis_reasoning.py
 # handles all live reasoning calls.
 _REASONING_MODEL = ENV.require("HME_REASONING_MODEL")
@@ -145,7 +145,7 @@ def _refresh_arbiter() -> None:
     _ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
     _LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
     _LLAMACPP_CODER_URL = ENV.require("HME_LLAMACPP_CODER_URL")
-    _LOCAL_MODEL = ENV.require("HME_LOCAL_MODEL")
+    _LOCAL_MODEL = ENV.require("HME_CODER_MODEL")
     _REASONING_MODEL = ENV.require("HME_REASONING_MODEL")
 
 # keep_alive=-1: pin models permanently. num_ctx sized to fit KV cache in VRAM.
@@ -315,5 +315,3 @@ def _background_yield():
     while _interactive_event.is_set():
         import time as _t
         _t.sleep(0.5)
-
-

@@ -3,7 +3,7 @@
 
 stutterVariants.register('flickerStutter', function flickerStutter(opts) {
   const sigs = conductorSignalBridge.getSignals();
-  const flicker = clamp(sigs.flicker || 1.0, 0.1, 2.0);
+  const flicker = clamp(sigs.flicker ?? 1.0, 0.1, 2.0);
   const echoCount = clamp(m.round(flicker * ri(2, 5)), 1, 7);
   const spacing = opts.sustain / (echoCount + 1) / m.max(0.5, flicker);
   let lastShared = opts.shared;

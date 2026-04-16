@@ -3,7 +3,7 @@
 
 stutterVariants.register('densityReactive', function densityReactive(opts) {
   const sigs = conductorSignalBridge.getSignals();
-  const density = clamp(sigs.density || 1.0, 0.1, 2.0);
+  const density = clamp(sigs.density ?? 1.0, 0.1, 2.0);
   // Inverse: low density = more echoes, high = fewer
   const echoCount = clamp(m.round(7 * (1 / density) * rf(0.7, 1.1)), 1, 6);
   let lastShared = opts.shared;

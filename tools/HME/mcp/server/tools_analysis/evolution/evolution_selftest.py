@@ -17,7 +17,15 @@ logger = logging.getLogger("HME")
 
 # All reloadable tool modules (kept here so hme_selftest can inspect coverage via getsource).
 RELOADABLE = [
-    "synthesis", "synthesis_config", "synthesis_llamacpp", "synthesis_gemini",
+    # NOTE: the three subpackage names (synthesis / evolution / coupling)
+    # are deliberately absent — these subpackages ARE their hub (hub code
+    # lives in __init__.py, not a sibling .py file), so reloading them
+    # happens via reload of the subpackage itself which is not a typical
+    # hot-reload target. Reloading individual submodules inside the
+    # subpackage works because the _alias_subpackage function now skips
+    # self-name collisions (see tools_analysis/__init__.py), preserving
+    # __path__ on the subpackage.
+    "synthesis_config", "synthesis_llamacpp", "synthesis_gemini",
     "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
     "synthesis_mistral", "synthesis_nvidia", "synthesis_reasoning",
     "synthesis_session", "synthesis_warm", "synthesis_pipeline", "synthesis_proxy_route",
@@ -28,13 +36,13 @@ RELOADABLE = [
     "symbols", "workflow", "workflow_audit",
     "reasoning", "reasoning_think",
     "health",
-    "evolution", "evolution_next", "evolution_suggest",
+    "evolution_next", "evolution_suggest",
     "evolution_trace", "evolution_strategies",
     "evolution_admin", "evolution_introspect", "evolution_selftest",
     "runtime", "composition", "trust_analysis",
     "digest", "digest_analysis",
     "section_compare", "perceptual", "perceptual_engines",
-    "coupling_channels", "coupling_data", "coupling_clusters", "coupling_bridges", "coupling",
+    "coupling_channels", "coupling_data", "coupling_clusters", "coupling_bridges",
     "drama_map", "health_analysis", "section_labels",
     "evolution_evolve", "evolution_invariants", "search_unified", "review_unified",
     "read_unified", "learn_unified", "status_unified", "trace_unified",
@@ -44,7 +52,8 @@ RELOADABLE = [
     "epistemic_reports", "negative_space", "cognitive_load", "ground_truth",
     "phase6_reports", "multi_agent",
 ]
-TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor"]
+TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor",
+                        "meta_layers", "meta_observer"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]
 
 
@@ -122,6 +131,25 @@ def hme_hot_reload(modules: str = "") -> str:
                         remove_errs.append(f"{tname}:{_re}")
                 if remove_errs:
                     results.append(f"  WARN remove errors for {name}: {remove_errs[:3]}")
+                # Nuke the compiled bytecode BEFORE reloading. If the .pyc
+                # is newer than the .py source (common after a prior
+                # successful reload), Python will happily use the stale
+                # bytecode on reload and the "OK reload" verdict will
+                # silently hide the fact that the new source never ran.
+                # Observed this session: meta_layers.py edits appeared
+                # to reload successfully but the daemon kept throwing
+                # NameError because the .pyc was cached.
+                _mod_file = getattr(mod, "__file__", None)
+                if _mod_file:
+                    _pycache_dir = os.path.join(os.path.dirname(_mod_file), "__pycache__")
+                    _stem = os.path.splitext(os.path.basename(_mod_file))[0]
+                    if os.path.isdir(_pycache_dir):
+                        for _pyc_entry in os.listdir(_pycache_dir):
+                            if _pyc_entry.startswith(_stem + ".") and _pyc_entry.endswith(".pyc"):
+                                try:
+                                    os.remove(os.path.join(_pycache_dir, _pyc_entry))
+                                except OSError as _unlink_err:
+                                    logger.debug(f"pycache nuke {_pyc_entry}: {type(_unlink_err).__name__}: {_unlink_err}")
                 try:
                     importlib.reload(mod)
                 except Exception as _reload_err:
@@ -406,21 +434,66 @@ def hme_selftest() -> str:
         _log_path = os.path.join(ctx.PROJECT_ROOT, "log", "hme.log")
         if os.path.isfile(_log_path):
             import collections as _col
+            import re as _re_log
+            import datetime as _dt_log
+            import time as _ts_mod
             _error_counts = _col.Counter()
+            _warn_counts = _col.Counter()
             with open(_log_path, encoding="utf-8", errors="ignore") as _lf:
-                _lines = _lf.readlines()[-200:]
+                _lines = _lf.readlines()[-500:]
+            # Log format: `YYYY-MM-DD HH:MM:SS,mmm LEVEL message`. The `,\d{3} ERROR `
+            # anchor ensures we match LOG-LEVEL ERROR, not the word "ERROR"
+            # inside an INFO line's payload (e.g. INFO tool: {"description": "ERROR storm..."}).
+            _err_re = _re_log.compile(r',\d{3}\s+ERROR\s+(.*)$')
+            _warn_re = _re_log.compile(r',\d{3}\s+WARNING\s+(.*)$')
+            _ts_re = _re_log.compile(r'^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})')
+            # Freshness window: only fail on ERRORs within the last 10 minutes.
+            # Older ERRORs are historical residue (already resolved or
+            # pre-restart); only active failures should block.
+            _now = _ts_mod.time()
+            _window_s = 600  # 10 minutes
+            _stale_err_count = 0
             for _line in _lines:
-                if " WARNING " in _line or " ERROR " in _line:
-                    _msg = _line.split(" WARNING ", 1)[-1].split(" ERROR ", 1)[-1].strip()[:80]
-                    _error_counts[_msg] += 1
+                _em = _err_re.search(_line)
+                _wm = _warn_re.search(_line)
+                if _em:
+                    _tsm = _ts_re.match(_line)
+                    _is_fresh = True
+                    if _tsm:
+                        try:
+                            _ts = _dt_log.datetime.strptime(_tsm.group(1), "%Y-%m-%d %H:%M:%S").timestamp()
+                            _is_fresh = (_now - _ts) <= _window_s
+                        except Exception:
+                            pass
+                    if _is_fresh:
+                        _msg = _em.group(1).strip()[:80]
+                        _error_counts[_msg] += 1
+                    else:
+                        _stale_err_count += 1
+                elif _wm:
+                    _msg = _wm.group(1).strip()[:80]
+                    _warn_counts[_msg] += 1
+            # Fresh ERROR entries in hme.log = active daemon failure, FAIL.
+            # Stale ERRORs (> 10min old) are historical residue, INFO only.
             if _error_counts:
-                _top = _error_counts.most_common(3)
-                _total_errs = sum(_error_counts.values())
-                results.append(f"WARN: hme.log -- {_total_errs} warnings/errors in last 200 lines:")
-                for _msg, _count in _top:
+                _top_err = _error_counts.most_common(3)
+                _total_err = sum(_error_counts.values())
+                results.append(f"FAIL: hme.log -- {_total_err} FRESH ERROR line(s) (<10min, daemon-thread failures):")
+                for _msg, _count in _top_err:
                     results.append(f"  > ({_count}x) {_msg}")
-            else:
-                results.append("PASS: hme.log -- no warnings/errors in last 200 lines")
+            if _warn_counts and not _error_counts:
+                _top_w = _warn_counts.most_common(3)
+                _total_w = sum(_warn_counts.values())
+                results.append(f"WARN: hme.log -- {_total_w} WARNING line(s) in last 500 lines:")
+                for _msg, _count in _top_w:
+                    results.append(f"  > ({_count}x) {_msg}")
+            elif _warn_counts:
+                _total_w = sum(_warn_counts.values())
+                results.append(f"INFO: hme.log -- {_total_w} additional WARNING line(s)")
+            if _stale_err_count and not _error_counts:
+                results.append(f"INFO: hme.log -- {_stale_err_count} historical ERROR line(s) (>10min old, already resolved)")
+            if not _error_counts and not _warn_counts and not _stale_err_count:
+                results.append("PASS: hme.log -- no warnings/errors in last 500 lines")
     except Exception as _err3:
         logger.debug(f"results.append: {type(_err3).__name__}: {_err3}")
 

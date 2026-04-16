@@ -535,8 +535,12 @@ function handleRequest(clientReq, clientRes) {
       // These inspect the Evolver's tool_use history, which only exists in
       // Anthropic message format. Provider calls (Groq, Gemini, etc.) are
       // HME synthesis — they don't carry Evolver tool history.
+      // `scan` hoisted to function scope so the reflexivity emit below can
+      // reference it outside the isAnthropic block. scanMessages only runs
+      // for Anthropic payloads (provider calls have no Evolver history).
+      let scan = null;
       if (isAnthropic) {
-        const scan = scanMessages(payload);
+        scan = scanMessages(payload);
         if (shouldInject() && scan.jurisdictionTargets.length > 0) {
           const block = buildJurisdictionContext(scan.jurisdictionTargets);
           injected = injectIntoSystem(payload, block);
@@ -577,7 +581,7 @@ function handleRequest(clientReq, clientRes) {
       // shows a tool call, track whether it was consistent with the injection.
       // This is the behavioral influence signal — did HME's context actually
       // change what the Evolver did?
-      if (isAnthropic && injected) {
+      if (isAnthropic && injected && scan) {
         emit({
           event: 'injection_influence',
           session,

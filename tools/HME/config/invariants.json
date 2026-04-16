@@ -424,7 +424,7 @@
       "description": "CLAUDE.md must document the correct ESLint rule count (23)",
       "type": "pattern_in_file",
       "path": "CLAUDE.md",
-      "pattern": "ESLint rules \\(23\\)",
+      "pattern": "ESLint rules \\(25\\)",
       "severity": "warning"
     },
     {
@@ -604,6 +604,21 @@
       "description": "Phase 1 activity bridge (openshell_features_to_mimic.md) \u2014 shared event emitter CLI must exist so hooks can append to hme-activity.jsonl",
       "type": "file_exists",
       "path": "tools/HME/activity/emit.py",
+      "severity": "error"
+    },
+    {
+      "id": "meta-coherence-audit-exists",
+      "description": "Meta-coherence audit script (the detector-of-detectors) must exist so the HME diagnostic layer is continuously self-validated",
+      "type": "file_exists",
+      "path": "tools/HME/scripts/meta_coherence_audit.py",
+      "severity": "error"
+    },
+    {
+      "id": "no-subpackage-alias-collision",
+      "description": "_alias_subpackage must skip name==subpkg_name — aliasing a subpackage's own name to a .py module strips __path__, which breaks importlib.reload() for every submodule parent-lookup",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/tools_analysis/__init__.py",
+      "pattern": "if name == subpkg_name",
       "severity": "error"
     },
     {

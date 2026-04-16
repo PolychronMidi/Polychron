@@ -24,13 +24,11 @@ BUFFER_SIZE="${LLAMACPP_BUFFER_SIZE:-20G}"
 GPU0_MOUNT="/mnt/llamacpp-buffer-gpu0"
 GPU1_MOUNT="/mnt/llamacpp-buffer-gpu1"
 MODELS_DIR="${HME_MODELS_DIR:-$HOME/models}"
-LORA_DIR="${HME_LORA_DIR:-$HOME/Polychron/metrics}"
 
 # Instance topology: which GGUF(s) each buffer mirrors.
 #   arbiter on GPU0 → phi-4 + v6 LoRA
 #   coder   on GPU1 → qwen3-coder-30b
 ARBITER_MODEL="${HME_ARBITER_GGUF:-$MODELS_DIR/phi-4-Q4_K_M.gguf}"
-ARBITER_LORA="${HME_ARBITER_LORA:-$LORA_DIR/hme-arbiter.gguf}"
 CODER_MODEL="${HME_CODER_GGUF:-$MODELS_DIR/qwen3-coder-30b-Q4_K_M.gguf}"
 
 case "${1:-status}" in
@@ -52,7 +50,7 @@ case "${1:-status}" in
     echo "Warming buffers with GGUF files..."
     # GPU0 (arbiter) → phi-4 + v6 LoRA
     if mountpoint -q "$GPU0_MOUNT" 2>/dev/null; then
-      for src in "$ARBITER_MODEL" "$ARBITER_LORA"; do
+      for src in "$ARBITER_MODEL"; do
         if [ ! -f "$src" ]; then
           echo "  SKIP: source missing: $src"
           continue

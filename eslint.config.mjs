@@ -98,7 +98,11 @@ export default [
       'local/no-direct-coupling-matrix-read': 'error',
       'local/no-empty-catch': 'error',
       'local/no-bare-l0-channel': 'error',
-      'local/no-doubled-fallback': 'error'
+      'local/no-doubled-fallback': 'error',
+      // Warn (not error) while the corpus is still being hardened — flip
+      // to 'error' once config-read sites across conductor/ and crossLayer/
+      // are fully validator-gated and the rule reports 0 hits.
+      'local/no-or-fallback-on-config-read': 'warn'
     },
 
   },

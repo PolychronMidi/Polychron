@@ -108,7 +108,7 @@ emergentMelodicEngine = (() => {
     // Contrary counterpoint -> independence-affirming variants
     if (ctx.counterpoint === 'contrary') {
       w.directionalOscillation = 1.4; w.stereoScatter = 1.2;
-      w.alienArpeggio = (w.alienArpeggio || 1.0) * 1.2;
+      w.alienArpeggio = (w.alienArpeggio ?? 1.0) * 1.2;
     }
     // Parallel lockstep -> break with rhythmic disruption
     if (ctx.counterpoint === 'parallel') {
@@ -116,18 +116,18 @@ emergentMelodicEngine = (() => {
     }
     // High tessiture load -> suppress crowded register density
     if (ctx.tessituraLoad > 0.55) {
-      w.machineGun  = (w.machineGun  || 1.0) * 0.7;
-      w.stutterSwarm = (w.stutterSwarm || 1.0) * 0.65;
-      w.ghostStutter = (w.ghostStutter || 1.0) * 1.25;
+      w.machineGun  = (w.machineGun ?? 1.0) * 0.7;
+      w.stutterSwarm = (w.stutterSwarm ?? 1.0) * 0.65;
+      w.ghostStutter = (w.ghostStutter ?? 1.0) * 1.25;
     }
     // Strong thematic recall -> reinforce imitative character
     if (ctx.thematicDensity > 0.5) {
-      w.machineGun = (w.machineGun || 1.0) * 0.8;
-      w.alienArpeggio = (w.alienArpeggio || 1.0) * 1.2;
+      w.machineGun = (w.machineGun ?? 1.0) * 0.8;
+      w.alienArpeggio = (w.alienArpeggio ?? 1.0) * 1.2;
     }
     // Expanding register -> range-exploring variants
     if (ctx.registerMigrationDir === 'expanding') {
-      w.octaveCascade = (w.octaveCascade || 1.0) * 1.2;
+      w.octaveCascade = (w.octaveCascade ?? 1.0) * 1.2;
     }
     return w;
   }
