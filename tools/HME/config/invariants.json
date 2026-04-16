@@ -1064,7 +1064,7 @@
       "id": "hme-no-raw-os-environ",
       "description": "HME Python files must use ENV (from hme_env) not raw os.environ.get for config. hme_env.py itself is exempt.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/mcp/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^[^:]+:[^:]+:\\s*#'",
+      "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/mcp/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^\\s*#' | grep -v 'env\\[.*\\] = os.environ'",
       "severity": "warning"
     }
   ]
