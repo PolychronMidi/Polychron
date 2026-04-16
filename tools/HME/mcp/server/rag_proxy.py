@@ -467,8 +467,28 @@ class RAGProxy:
         self._consecutive_404s = 0
         self._degraded_notified = False
         self._connection_failed = False  # True after first connection error; reset on success
+        self._last_failure_at = 0.0      # monotonic ts of last TimeoutError/URLError
+        # Short-circuit window: after failure, skip the full-timeout wait so
+        # batched callers (review with N files → N × search_knowledge) don't
+        # pay N × _DISPATCH_TIMEOUT seconds of dead-shim timeouts in series.
+        # The background revival thread handles recovery; periodic probes
+        # pick up a revived shim promptly.
+        self._probe_interval = 5.0       # skip calls for this long after a failure
+        self._probe_timeout = 3.0        # fast-timeout for the periodic probe
 
     def _call(self, method: str, timeout=_DISPATCH_TIMEOUT, **kwargs):
+        # ── Fast-fail short-circuit ────────────────────────────────────────
+        # If we already know the shim is dead, skip the slow retry. Every
+        # `_probe_interval` seconds let one call through with a reduced
+        # timeout (`_probe_timeout`) so a revived shim is detected without
+        # another N × 30s hang. Successful urlopen below clears the flag.
+        if self._connection_failed:
+            import time as _t
+            now = _t.monotonic()
+            if now - self._last_failure_at < self._probe_interval:
+                return None
+            # Allow this call as a probe, but cap its timeout.
+            timeout = min(timeout, self._probe_timeout)
         body = json.dumps({
             "engine": self._engine,
             "method": method,
@@ -529,6 +549,8 @@ class RAGProxy:
             # Connection refused / timeout — shim is dead. Trigger immediate restart.
             # (ValueError/TypeError added so numeric parses in the response body
             # don't escape past the handler into the outer proxy invariant.)
+            import time as _t
+            self._last_failure_at = _t.monotonic()
             if not self._connection_failed:
                 self._connection_failed = True
                 # Layer 0: mark DEGRADED
