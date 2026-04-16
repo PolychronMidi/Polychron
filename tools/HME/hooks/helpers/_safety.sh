@@ -24,6 +24,34 @@ fi
 # Sampled at 10% to avoid inflating the log on high-frequency hooks.
 _HME_HOOK_START_NS="$(date +%s%N)"
 _HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"
+# Hook-level verdict flag. Any hook can call `_stderr_verdict "..."`
+# at any point to set a terse summary that _hme_emit_exit_verdict will
+# forward to stderr at EXIT. If no verdict is set, the trap emits a
+# default so Claude Code's "Stop hook feedback: No stderr output"
+# placeholder never fires (that placeholder floods the agent's
+# context with zero-value tokens every turn — observed 87×/session
+# costing ~2k tokens of pure noise).
+_HME_HOOK_VERDICT=""
+
+_stderr_verdict() {
+  # Set the one-line exit summary. Last call wins. Any hook can use this.
+  _HME_HOOK_VERDICT="$1"
+}
+
+_hme_emit_exit_verdict() {
+  local code=$?
+  if [ -n "$_HME_HOOK_VERDICT" ]; then
+    echo "${_HME_HOOK_NAME}: $_HME_HOOK_VERDICT" >&2
+  else
+    # Default: terse "<hook>: exit=<code> <elapsed>ms" — short but
+    # non-empty, so the forwarded notification carries real signal.
+    local end_ns dur_ms
+    end_ns="$(date +%s%N)"
+    dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
+    echo "${_HME_HOOK_NAME}: exit=${code} ${dur_ms}ms" >&2
+  fi
+  return $code  # preserve original exit code
+}
 
 _hme_log_hook_latency() {
   local end_ns dur_ms
@@ -41,7 +69,15 @@ _hme_log_hook_latency() {
       && mv "${log_file}.tmp" "$log_file" 2>/dev/null
   fi
 }
-trap _hme_log_hook_latency EXIT
+
+# Compose EXIT trap: latency logger + stderr verdict. Order matters —
+# latency log is best-effort silent, verdict is the user-visible signal
+# that runs last so nothing overwrites it.
+_hme_exit_combined() {
+  _hme_log_hook_latency
+  _hme_emit_exit_verdict
+}
+trap _hme_exit_combined EXIT
 
 # ── Tunable constants (adjust here — not in individual hooks) ─────────────────
 _HME_HTTP_PORT=7734
