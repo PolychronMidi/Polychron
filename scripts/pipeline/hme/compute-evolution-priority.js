@@ -32,15 +32,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const OUT = path.join(ROOT, 'metrics', 'hme-evolution-priority.json');
 
-function loadJson(rel) {
-  const p = path.join(ROOT, rel);
-  if (!fs.existsSync(p)) return null;
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_e) { return null; }
-}
 
 function main() {
   const priorities = [];

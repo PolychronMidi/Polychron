@@ -29,8 +29,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const TODOS = path.join(ROOT, '.claude', 'mcp', 'HME', 'todos.json');
 const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
 const OUT = path.join(ROOT, 'metrics', 'hme-intention-gap.json');
@@ -38,14 +38,9 @@ const OUT = path.join(ROOT, 'metrics', 'hme-intention-gap.json');
 const ROLLING_WINDOW = 30;
 const EMA_ALPHA = 0.2;
 
-function loadJsonMaybe(p) {
-  if (!fs.existsSync(p)) return null;
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
-  catch (_e) { return null; }
-}
 
 function loadTodos() {
-  const raw = loadJsonMaybe(TODOS);
+  const raw = loadJson(TODOS);
   if (!Array.isArray(raw)) return [];
   // Skip the meta entry at position 0
   return raw.filter((t) => t && typeof t === 'object' && typeof t.id === 'number' && t.text);
@@ -157,7 +152,7 @@ function main() {
     : null;
 
   // EMA update
-  const prev = loadJsonMaybe(OUT);
+  const prev = loadJson(OUT);
   const prevEma = prev && typeof prev.ema === 'number' ? prev.ema : null;
   let newEma;
   if (gap === null) newEma = prevEma;

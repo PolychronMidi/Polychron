@@ -30,8 +30,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
 const STALENESS = path.join(ROOT, 'metrics', 'kb-staleness.json');
 const VIOLATIONS = path.join(ROOT, 'metrics', 'hme-violations.json');
@@ -79,16 +79,7 @@ function sliceToRound(events) {
   return events.slice(0, oldest);
 }
 
-function loadJsonMaybe(p) {
-  if (!fs.existsSync(p)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(p, 'utf8'));
-  } catch (_e) {
-    return null;
-  }
-}
 
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function main() {
   const events = readEvents();
@@ -105,7 +96,7 @@ function main() {
   // productive_incoherence events do NOT count here -- they feed the
   // exploration bonus below.
   const hookViolations = windowEvents.filter((e) => e && e.event === 'coherence_violation');
-  const violationsFromFile = loadJsonMaybe(VIOLATIONS);
+  const violationsFromFile = loadJson(VIOLATIONS);
   const lazyViolationCount = hookViolations.length +
     (violationsFromFile && Array.isArray(violationsFromFile.violations)
       ? violationsFromFile.violations.length
@@ -121,7 +112,7 @@ function main() {
 
   // Component 3: staleness penalty -- ratio of write events that touched a
   // STALE or MISSING module. Uses the index built in the previous step.
-  const stalenessIdx = loadJsonMaybe(STALENESS);
+  const stalenessIdx = loadJson(STALENESS);
   let stalenessPenalty = 1;
   let touchesOnStale = 0;
   let touchesWithIndexInfo = 0;
@@ -152,7 +143,7 @@ function main() {
   // Trend: diff against previous hme-coherence.json (if there's a backup)
   // We don't have a snapshot system for this file yet -- use the existing
   // report as "previous" by loading it before we overwrite.
-  const prev = loadJsonMaybe(OUT);
+  const prev = loadJson(OUT);
   const prevScore = prev && typeof prev.score === 'number' ? prev.score : null;
   const delta = prevScore === null ? null : Number((score - prevScore).toFixed(4));
 
