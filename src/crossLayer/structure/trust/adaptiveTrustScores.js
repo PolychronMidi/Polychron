@@ -4,16 +4,16 @@ adaptiveTrustScores = (() => {
   const scoreBySystem = new Map();
   const _atsc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('adaptiveTrustScores') : {};
 
-  const EXPLORATION_THRESHOLD = _atsc.explorationThreshold || 0.10;
-  const EXPLORATION_NUDGE     = _atsc.explorationNudge || 0.03;
+  const EXPLORATION_THRESHOLD = V.optionalFinite(_atsc.explorationThreshold, 0.10);
+  const EXPLORATION_NUDGE     = V.optionalFinite(_atsc.explorationNudge, 0.03);
 
-  const _BASE_DECAY_FLOOR = _atsc.baseDecayFloor || 0.05;
+  const _BASE_DECAY_FLOOR = V.optionalFinite(_atsc.baseDecayFloor, 0.05);
   let cimScale = 0.5;
 
   // Trust ceiling: prevents runaway dominance where high-trust systems
   // accumulate ever-more influence via positive feedback (high trust -
   // more influence - more positive outcomes - higher trust).
-  const _BASE_TRUST_CEILING = _atsc.baseTrustCeiling || 0.75;
+  const _BASE_TRUST_CEILING = V.optionalFinite(_atsc.baseTrustCeiling, 0.75);
 
   // Metaprofile trust axis: dominantCap scales the ceiling, starvationFloor scales the floor.
   // Default cap 1.8 → ceiling 0.75. Meditative cap 1.9 → ceiling ~0.79. Chaotic cap 1.4 → ceiling ~0.58.
@@ -32,9 +32,9 @@ adaptiveTrustScores = (() => {
     return _BASE_DECAY_FLOOR;
   }
 
-  const _BASE_EMA_DECAY = _atsc.baseEmaDecay || 0.85;
-  const _BASE_EMA_NEW = _atsc.baseEmaNew || 0.15;
-  const _BASE_EMA_NEW_REGIME = _atsc.emaNewRegime || { exploring: 0.20, evolving: 0.15, coherent: 0.12 };
+  const _BASE_EMA_DECAY = V.optionalFinite(_atsc.baseEmaDecay, 0.85);
+  const _BASE_EMA_NEW = V.optionalFinite(_atsc.baseEmaNew, 0.15);
+  const _BASE_EMA_NEW_REGIME = V.optionalType(_atsc.emaNewRegime, 'object', { exploring: 0.20, evolving: 0.15, coherent: 0.12 });
 
   // Metaprofile trust concentration: scales learning rate.
   // High concentration (0.7+) = slower learning → incumbents dominate.

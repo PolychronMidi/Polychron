@@ -228,9 +228,34 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         )
 
     hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
-    hook_path = os.path.join(hooks_dir, f"{hook_target}.sh")
+    # Hook files are organized into subdirectories by lifecycle phase after
+    # the hooks/ reorg. Search the likely locations instead of hardcoding flat.
+    _sub_dirs_by_hook = {
+        "stop": "lifecycle", "sessionstart": "lifecycle", "userpromptsubmit": "lifecycle",
+        "postcompact": "lifecycle", "precompact": "lifecycle",
+        "pretooluse_bash": "pretooluse", "pretooluse_edit": "pretooluse",
+        "pretooluse_read": "pretooluse", "pretooluse_grep": "pretooluse",
+        "pretooluse_write": "pretooluse", "pretooluse_glob": "pretooluse",
+        "pretooluse_agent": "pretooluse", "pretooluse_lifesaver": "pretooluse",
+        "pretooluse_todowrite": "pretooluse", "pretooluse_hme_primer": "pretooluse",
+        "pretooluse_check_pipeline": "pretooluse",
+        "posttooluse_bash": "posttooluse", "posttooluse_edit": "posttooluse",
+        "posttooluse_read": "posttooluse", "posttooluse_write": "posttooluse",
+        "posttooluse_agent": "posttooluse", "posttooluse_addknowledge": "posttooluse",
+        "posttooluse_hme_read": "posttooluse", "posttooluse_hme_review": "posttooluse",
+        "posttooluse_pipeline_kb": "posttooluse",
+    }
+    _sub = _sub_dirs_by_hook.get(hook_target, "")
+    hook_path = os.path.join(hooks_dir, _sub, f"{hook_target}.sh") if _sub else os.path.join(hooks_dir, f"{hook_target}.sh")
     if not os.path.isfile(hook_path):
-        return f"Hook file not found: {hook_path}"
+        # Fallback: search all subdirs before giving up.
+        for _cand_sub in ("", "lifecycle", "pretooluse", "posttooluse", "helpers"):
+            _cand = os.path.join(hooks_dir, _cand_sub, f"{hook_target}.sh") if _cand_sub else os.path.join(hooks_dir, f"{hook_target}.sh")
+            if os.path.isfile(_cand):
+                hook_path = _cand
+                break
+        else:
+            return f"Hook file not found: {hook_path}"
     with open(hook_path, encoding="utf-8") as _f:
         current = _f.read()
 

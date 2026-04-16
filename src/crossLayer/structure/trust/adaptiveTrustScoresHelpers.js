@@ -81,9 +81,9 @@ adaptiveTrustScoresHelpers = (() => {
     if (adaptiveTrustScoresHelpersHotspotCache.has(systemName)) {
       return adaptiveTrustScoresHelpersHotspotCache.get(systemName);
     }
-    const pairList = pairAwareHotspotPairs[systemName] || ['density-trust', 'flicker-trust', 'tension-trust'];
+    const pairList = pairAwareHotspotPairs[systemName] ?? ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
-    const couplingPressures = (pipelineCouplingManager.getCouplingPressures()) || {};
+    const couplingPressures = (pipelineCouplingManager.getCouplingPressures()) ?? {};
     const signals = safePreBoot.call(() => conductorSignalBridge.getSignals(), /** @type {any} */ ({}));
     const adaptiveSnapshot = signals.adaptiveTargetSnapshot || null;
     // Attenuate density-pair pressure when conductor intentionally suppresses density.

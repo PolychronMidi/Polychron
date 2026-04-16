@@ -11,8 +11,8 @@ sectionIntentCurvesHelpers = (() => {
       const fs = require('fs');
       const statePath = require('path').join(process.cwd(), 'metrics', 'perceptual-report.json');
       const rep = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-      const secs = (rep.encodec && rep.encodec.sections) || {};
-      const confidence = rep.confidence || 0;
+      const secs = (rep.encodec && rep.encodec.sections) ?? {};
+      const confidence = rep.confidence ?? 0;
       const guide = {};
       for (const [k, v] of Object.entries(secs)) {
         if (v && v.clap) guide[k] = v.clap;

@@ -30,8 +30,8 @@ regimeReactiveDampingCore = (() => {
   function equilibratorCorrection(ringShares, budget, strength) {
     let corrD = 0, corrT = 0, corrF = 0;
     for (const regime of Object.keys(budget)) {
-      const actual = ringShares[regime] || 0;
-      const target = budget[regime] || 0;
+      const actual = ringShares[regime] ?? 0;
+      const target = budget[regime] ?? 0;
       const excess = actual - target;
       if (Math.abs(excess) < 0.02) continue;
       // Exploring excess → suppress density+flicker, boost tension (dampen chaos)

@@ -24,16 +24,16 @@ coordinationIndependenceManager = (() => {
   ];
 
   const _cimc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('coordinationIndependenceManager') : {};
-  const TICK_INTERVAL = _cimc.tickInterval || 4;
-  const MIN_DWELL_BEATS = _cimc.minDwellBeats || 12;
+  const TICK_INTERVAL = V.optionalFinite(_cimc.tickInterval, 4);
+  const MIN_DWELL_BEATS = V.optionalFinite(_cimc.minDwellBeats, 12);
   // R26 E4: Per-pair stagger breaks simultaneous adjustment/evaluation so
   // effectiveness tracks per-pair health attribution, not shared global delta.
   // R26 listen: stagger=2 over-delayed high-index pairs (32 beat dwell for pair 10),
   // blocking coherent formation. Reduced to 1 (max dwell 22, 10 beat spread).
   const PAIR_DWELL_STAGGER = 1;
   const SELF_INTERFERENCE_WINDOW = 3;
-  const EFFECTIVENESS_ALPHA = _cimc.effectivenessAlpha || 0.06;
-  const DIAL_STEP = _cimc.dialStep || 0.08;
+  const EFFECTIVENESS_ALPHA = V.optionalFinite(_cimc.effectivenessAlpha, 0.06);
+  const DIAL_STEP = V.optionalFinite(_cimc.dialStep, 0.08);
 
   // Phase targets: what coordination level each section phase wants
   const PHASE_TARGETS = {
@@ -118,7 +118,7 @@ coordinationIndependenceManager = (() => {
   function computeTarget(pair, sigs) {
     const phase = sigs.sectionPhase || 'development';
     // Xenolinguistic L2: regime superposition -- blend targets by probability instead of hard switch
-    const rp = sigs.regimeProb || { coherent: 0.33, exploring: 0.33, evolving: 0.34 };
+    const rp = V.optionalType(sigs.regimeProb, 'object', { coherent: 0.33, exploring: 0.33, evolving: 0.34 });
     const phaseTarget = PHASE_TARGETS[phase];
     if (phaseTarget === undefined) throw new Error('coordinationIndependenceManager: unknown sectionPhase "' + phase + '"');
     const regimeTarget = _getRegimeTarget('coherent') * rp.coherent

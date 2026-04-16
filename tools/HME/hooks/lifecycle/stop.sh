@@ -185,7 +185,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   if [[ "$PSYCHO_STOP" == "psycho" ]]; then
     jq -n '{
       "decision": "block",
-      "reason": "PSYCHOPATHIC-STOP: You launched a long background process, then called ScheduleWakeup to defer work. This is the stop-during-long-process antipattern. Continue with OTHER real work now — unrelated tasks, KB maintenance, doc updates, code reviews, fixing surfaced warnings. Wakeup is only valid when there is genuinely nothing productive you can do. Resume immediately."
+      "reason": "PSYCHOPATHIC-STOP: One of three defer-instead-of-do patterns fired: (A) launched a long background job + ScheduleWakeup; (B) admit-and-stop — final text enumerated pending work with no tool calls following; (C) survey-and-ask — final text identified violations/opportunities a directive already told you to fix, then asked permission instead of fixing (\"want me to run...\", \"didn't modify\", \"before any edits\", \"shall I\"). The directive already granted authority. Resume and EXECUTE the work now. If the scope is genuinely ambiguous, clarify BEFORE surveying, not after."
     }'
     exit 0
   fi

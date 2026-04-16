@@ -9,8 +9,9 @@ pairGainCeilingController = (() => {
   const _P95_EMA_ALPHA = 0.08;
   const _EXCEEDANCE_EMA_ALPHA = 0.04;
   const _pgcc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('pairGainCeilingController') : {};
-  const _CEILING_ADAPT_RATE = _pgcc.ceilingAdaptRate || 0.008;
-  const _CEILING_RELAX_RATE = _pgcc.ceilingRelaxRate || 0.003;
+  const V = validator.create('pairGainCeilingController');
+  const _CEILING_ADAPT_RATE = V.optionalFinite(_pgcc.ceilingAdaptRate, 0.008);
+  const _CEILING_RELAX_RATE = V.optionalFinite(_pgcc.ceilingRelaxRate, 0.003);
 
   // Per-pair adaptive state
   /** @type {Record<string, { p95Ema: number, exceedanceEma: number, ceiling: number, activeBeats: number, severityEma: number }>} */

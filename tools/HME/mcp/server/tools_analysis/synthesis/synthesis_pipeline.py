@@ -202,8 +202,9 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     Falls back to _two_stage_think if both Stage 1 branches fail.
     """
     from .synthesis_llamacpp import (
-        _local_think, _local_chat, _LOCAL_MODEL, _REASONING_MODEL, _interactive_event
+        _LOCAL_MODEL, _REASONING_MODEL, _interactive_event,
     )
+    from .synthesis_inference import _local_think, _local_chat
     from .synthesis_session import get_session_narrative
 
     _q_lower = question.lower()

@@ -452,7 +452,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
                                  system=_THINK_SYSTEM)
         if synthesis:
-            from .synthesis_llamacpp import compress_for_claude
+            from .synthesis.synthesis_inference import compress_for_claude
             synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"blast radius risk for {symbol_name}")
             parts.append(f"\n## Change Risk *(adaptive)*")
             parts.append(synthesis)
