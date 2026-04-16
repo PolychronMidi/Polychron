@@ -396,26 +396,163 @@ function buildJurisdictionContext(filePaths) {
   ].join('\n');
 }
 
-function injectIntoSystem(payload, jurisdictionBlock) {
-  if (!jurisdictionBlock) return false;
+// ── Session status context (S1+S2+S3+S4) ───────────────────────────────────
+// Turn up signal: inject a compact session-status block into payload.system
+// so the Evolver has live awareness of:
+//   S1. Recent LIFESAVER errors (log/hme-errors.log) — hard-failure signal
+//   S2. Coherence band state (metrics/hme-coherence-budget.json) — calibrates
+//       exploration vs discipline
+//   S3. High-signal activity tail (metrics/hme-activity.jsonl) — round
+//       verdicts, violations, pipeline events
+//   S4. Recent listening-verdict ground truth (metrics/hme-ground-truth.jsonl)
+//       — most-recent audio-perception feedback
+//
+// The block is ~500-1500 bytes, Anthropic-only, gated by shouldInject() so
+// above-budget turns get no injection (exploration-preserving).
+const ERRORS_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+const ACTIVITY_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-activity.jsonl');
+const GROUND_TRUTH_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-ground-truth.jsonl');
+
+function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
+  try {
+    const stats = fs.statSync(filepath);
+    if (stats.size === 0) return [];
+    let content;
+    if (stats.size > maxBytes) {
+      const fd = fs.openSync(filepath, 'r');
+      const buf = Buffer.alloc(maxBytes);
+      fs.readSync(fd, buf, 0, maxBytes, stats.size - maxBytes);
+      fs.closeSync(fd);
+      content = buf.toString('utf8');
+      const nl = content.indexOf('\n');
+      if (nl > 0) content = content.slice(nl + 1);
+    } else {
+      content = fs.readFileSync(filepath, 'utf8');
+    }
+    const lines = content.split('\n').filter((l) => l.length > 0);
+    return lines.slice(-maxLines);
+  } catch (_err) {
+    return [];
+  }
+}
+
+function recentLifesaverErrors() {
+  const lines = tailFileLines(ERRORS_LOG, 20);
+  const now = Date.now();
+  const CUTOFF_MS = 30 * 60 * 1000;
+  const fresh = [];
+  for (const line of lines) {
+    const m = line.match(/^\[([^\]]+)\]/);
+    if (!m) continue;
+    const t = Date.parse(m[1]);
+    if (Number.isNaN(t)) continue;
+    if (now - t < CUTOFF_MS) fresh.push(line);
+  }
+  return fresh.slice(-5);
+}
+
+function coherenceStatusLine() {
+  try {
+    const raw = fs.readFileSync(COHERENCE_BUDGET_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    const score = data.current_coherence;
+    const band = data.band;
+    if (typeof score !== 'number' || !Array.isArray(band) || band.length !== 2) return null;
+    let state;
+    if (score < band[0]) state = 'BELOW (tighten)';
+    else if (score > band[1]) state = 'ABOVE (explore)';
+    else state = 'IN_BAND';
+    return `coherence=${score.toFixed(3)} band=[${band[0]}, ${band[1]}] state=${state}`;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function recentActivity(n = 8) {
+  const lines = tailFileLines(ACTIVITY_LOG, 80);
+  const HIGH_SIGNAL = new Set([
+    'round_complete', 'coherence_violation', 'pipeline_complete',
+    'jurisdiction_inject', 'ground_truth_recorded', 'proxy_emergency',
+    'hypothesis_registered', 'hypothesis_falsified', 'injection_influence',
+  ]);
+  const events = [];
+  for (const line of lines) {
+    try {
+      const e = JSON.parse(line);
+      if (!HIGH_SIGNAL.has(e.event)) continue;
+      const ts = (e.timestamp || e.ts || '?').slice(0, 19);
+      const parts = [e.event];
+      for (const k of ['session', 'verdict', 'reason', 'targets', 'tool']) {
+        if (e[k] != null) parts.push(`${k}=${e[k]}`);
+      }
+      events.push(`  ${ts}  ${parts.join(' ')}`);
+    } catch (_e) { /* skip malformed */ }
+  }
+  return events.slice(-n);
+}
+
+function recentGroundTruth(n = 3) {
+  const lines = tailFileLines(GROUND_TRUTH_LOG, 10);
+  const items = [];
+  for (const line of lines) {
+    try {
+      const e = JSON.parse(line);
+      const round = e.round_tag || e.session || '?';
+      const section = String(e.section || '?').slice(0, 60);
+      const mt = e.moment_type || '?';
+      const sent = e.sentiment || '?';
+      const comment = String(e.comment || e.content || '').replace(/\s+/g, ' ').slice(0, 160);
+      items.push(`  ${round} / ${section} — ${sent} ${mt}: ${comment}`);
+    } catch (_e) { /* skip */ }
+  }
+  return items.slice(-n);
+}
+
+function buildStatusContext() {
+  const coh = coherenceStatusLine();
+  const errors = recentLifesaverErrors();
+  const activity = recentActivity();
+  const ground = recentGroundTruth();
+  if (!coh && errors.length === 0 && activity.length === 0 && ground.length === 0) return null;
+  const lines = ['', '## HME Session Status (proxy-injected)', ''];
+  if (coh) lines.push(`**Coherence:** ${coh}`, '');
+  if (errors.length > 0) {
+    lines.push('**⚠ Recent LIFESAVER errors (last 30min):**');
+    for (const e of errors) lines.push(`  ${e}`);
+    lines.push('');
+  }
+  if (activity.length > 0) {
+    lines.push('**Recent high-signal activity:**');
+    lines.push(...activity);
+    lines.push('');
+  }
+  if (ground.length > 0) {
+    lines.push('**Recent listening verdicts (ground truth):**');
+    lines.push(...ground);
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (proxy-injected)') {
+  if (!block) return false;
   // Anthropic system prompt can be a string OR an array of content blocks.
   if (typeof payload.system === 'string') {
-    // Avoid double-injection within the same request shape
-    if (payload.system.includes('HME Jurisdiction Context (proxy-injected)')) return false;
-    payload.system = payload.system + jurisdictionBlock;
+    if (payload.system.includes(marker)) return false;
+    payload.system = payload.system + block;
     return true;
   }
   if (Array.isArray(payload.system)) {
     const already = payload.system.some((b) => {
       const t = typeof b === 'string' ? b : b && b.text;
-      return typeof t === 'string' && t.includes('HME Jurisdiction Context (proxy-injected)');
+      return typeof t === 'string' && t.includes(marker);
     });
     if (already) return false;
-    payload.system.push({ type: 'text', text: jurisdictionBlock });
+    payload.system.push({ type: 'text', text: block });
     return true;
   }
   if (payload.system == null) {
-    payload.system = jurisdictionBlock;
+    payload.system = block;
     return true;
   }
   return false;
@@ -489,9 +626,9 @@ const BOILERPLATE_PATTERNS = [
   },
   {
     name: 'stop_hook_ok',
-    // `Stop hook feedback:\n[bash ...lifecycle/stop.sh]: ok`
-    // Only strip the "ok" variant — fail=N carries real signal.
-    re: /^Stop hook feedback:\s*\n\[bash [^\]]*stop\.sh\]:\s*ok\s*$/,
+    // `Stop hook feedback:\n[bash ...lifecycle/stop.sh]: ok` OR `: No stderr output`
+    // Both are nothingburgers. `fail=N` or any other text carries real signal and survives.
+    re: /^Stop hook feedback:\s*\n\[bash [^\]]*stop\.sh\]:\s*(ok|No stderr output)\s*$/,
     strip_whole_block: true,
   },
   {
@@ -696,14 +833,49 @@ function stripSemanticRedundancy(payload) {
     }
   }
 
-  // E + F pass: dedup ide_selection (cross-message) + system-reminder (within-message).
+  // E + F + G-cluster pass: dedup ide_selection (cross-message),
+  // system-reminder (within-message), compaction-notes (preserve first),
+  // Monitor-timeout reminders (preserve first), deferred-tools schema
+  // block (preserve first per session / post-compaction).
+  //
+  // The preserve-first patterns use payload-scoped flags: the FIRST occurrence
+  // in the messages array is kept as a landmark; every subsequent occurrence
+  // is dropped. After a compaction, payload.messages is reset, so "first in
+  // payload" also satisfies "first post-compaction".
   const seenIdeSelection = new Set();
+  const COMPACTION_NOTE_RE = /<system-reminder>\s*Note: \/\S+ was read before the last conversation was summarized[\s\S]*?<\/system-reminder>/g;
+  const MONITOR_TIMEOUT_RE = /<system-reminder>\s*\[SYSTEM NOTIFICATION[\s\S]*?Monitor timed out[\s\S]*?<\/system-reminder>/g;
+  const DEFERRED_TOOLS_RE = /<system-reminder>\s*The following deferred tools are now available[\s\S]*?<\/system-reminder>/g;
+  let compactionNoteSeen = false;
+  let monitorTimeoutSeen = false;
+  let deferredToolsSeen = false;
   for (const msg of payload.messages) {
     if (!msg || !Array.isArray(msg.content)) continue;
     const seenSysRemInMsg = new Set();
     for (const block of msg.content) {
       if (!block || block.type !== 'text' || typeof block.text !== 'string') continue;
       let txt = block.text;
+
+      // H: compaction-note preserve-first
+      txt = txt.replace(COMPACTION_NOTE_RE, (m) => {
+        if (compactionNoteSeen) { bump('dup_compaction_note'); return ''; }
+        compactionNoteSeen = true;
+        return m;
+      });
+
+      // I: Monitor-timeout preserve-first (task-id differs, content equivalent)
+      txt = txt.replace(MONITOR_TIMEOUT_RE, (m) => {
+        if (monitorTimeoutSeen) { bump('dup_monitor_timeout'); return ''; }
+        monitorTimeoutSeen = true;
+        return m;
+      });
+
+      // J: deferred-tools schema block preserve-first
+      txt = txt.replace(DEFERRED_TOOLS_RE, (m) => {
+        if (deferredToolsSeen) { bump('dup_deferred_tools'); return ''; }
+        deferredToolsSeen = true;
+        return m;
+      });
 
       txt = txt.replace(IDE_SEL_RE, (m) => {
         const key = _hashText(m);
@@ -854,17 +1026,32 @@ function handleRequest(clientReq, clientRes) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
-        if (shouldInject() && scan.jurisdictionTargets.length > 0) {
-          const block = buildJurisdictionContext(scan.jurisdictionTargets);
-          injected = injectIntoSystem(payload, block);
-          if (injected) {
-            emit({
-              event: 'jurisdiction_inject',
-              session,
-              targets: scan.jurisdictionTargets.length,
-              first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
-            });
-            bodyDirtiedByStrip = true; // share re-serialize path
+        if (shouldInject()) {
+          // Session status block (S1+S2+S3+S4) — injected every Anthropic
+          // request so the Evolver has live situational awareness.
+          const statusBlock = buildStatusContext();
+          if (statusBlock) {
+            const injectedStatus = injectIntoSystem(
+              payload, statusBlock, 'HME Session Status (proxy-injected)',
+            );
+            if (injectedStatus) {
+              emit({ event: 'status_inject', session });
+              bodyDirtiedByStrip = true;
+            }
+          }
+          // Jurisdiction context — only when write targets touch tracked files.
+          if (scan.jurisdictionTargets.length > 0) {
+            const block = buildJurisdictionContext(scan.jurisdictionTargets);
+            injected = injectIntoSystem(payload, block);
+            if (injected) {
+              emit({
+                event: 'jurisdiction_inject',
+                session,
+                targets: scan.jurisdictionTargets.length,
+                first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
+              });
+              bodyDirtiedByStrip = true;
+            }
           }
         }
         if (bodyDirtiedByStrip) {
