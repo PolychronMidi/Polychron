@@ -205,7 +205,8 @@ def _model_available(mod, provider_key: str, model: str) -> bool:
     # Legacy fallback for modules without _provider
     try:
         return mod.available()
-    except Exception:
+    except Exception as _e:
+        logger.debug(f"legacy mod.available() {provider_key}:{model}: {type(_e).__name__}: {_e}")
         return False
 
 

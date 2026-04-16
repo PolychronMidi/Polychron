@@ -109,10 +109,11 @@ def hme_hot_reload(modules: str = "") -> str:
             actual_full = getattr(mod, "__name__", full)
             try:
                 tools_before = {
-                    tname for tname, t in inner._tool_manager._tools.items()
+                    tname: t for tname, t in inner._tool_manager._tools.items()
                     if getattr(t.fn, "__module__", "") == actual_full
                        or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
                 }
+                # Snapshot tool objects BEFORE removing so we can roll back if reload fails.
                 remove_errs = []
                 for tname in tools_before:
                     try:
@@ -121,14 +122,24 @@ def hme_hot_reload(modules: str = "") -> str:
                         remove_errs.append(f"{tname}:{_re}")
                 if remove_errs:
                     results.append(f"  WARN remove errors for {name}: {remove_errs[:3]}")
-                importlib.reload(mod)
+                try:
+                    importlib.reload(mod)
+                except Exception as _reload_err:
+                    # Roll back: re-register the tools we just removed so a failed
+                    # reload doesn't leave the tool surface amputated.
+                    for tname, t in tools_before.items():
+                        try:
+                            inner._tool_manager._tools[tname] = t
+                        except Exception as _rb_err:
+                            logger.debug(f"rollback {tname}: {type(_rb_err).__name__}: {_rb_err}")
+                    raise
                 tools_after = {
                     tname for tname, t in inner._tool_manager._tools.items()
                     if getattr(t.fn, "__module__", "") == actual_full
                        or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
                 }
-                removed = tools_before - tools_after
-                added = tools_after - tools_before
+                removed = set(tools_before) - tools_after
+                added = tools_after - set(tools_before)
                 status_str = f"{len(tools_after)} tools"
                 if removed:
                     status_str += f" (-{len(removed)}: {', '.join(sorted(removed))})"
@@ -161,7 +172,8 @@ def hme_selftest() -> str:
                 try:
                     with open(os.path.join(root, f), encoding="utf-8") as _pyf:
                         for line in _pyf:
-                            if line.strip() == "@ctx.mcp.tool()":
+                            s = line.strip()
+                            if s.startswith("@ctx.mcp.tool(") and s.endswith(")"):
                                 tool_count += 1
                 except Exception as _err1:
                     logger.debug(f"1: {type(_err1).__name__}: {_err1}")

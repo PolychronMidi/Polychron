@@ -203,19 +203,32 @@ def doc_sync_check(doc_path: str = "") -> str:
     # Check tool count claim
     count_match = re.search(r'(\d+)\s+(?:MCP\s+)?tools', doc_content)
     # Recursively scan all .py files under server/ for @ctx.mcp.tool decorators.
-    # Passthru tools (tools_passthru.py) are invisible by design — excluded from count.
+    # Two separate exclusion lists:
+    #   - _COUNT_EXCLUDED: skip these when counting agent-facing tools. The
+    #     documented "6 tools" surface doesn't include passthrus, status
+    #     dispatcher, hme_todo, or a docstring false-positive in onboarding_chain.
+    #   - None for name-check: we still need every file's def names so the
+    #     identifier scan at the bottom can resolve `hme_todo` etc. that the
+    #     doc legitimately references.
+    _COUNT_EXCLUDED = {
+        "tools_passthru.py", "status_unified.py", "todo.py", "onboarding_chain.py",
+    }
     _server_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # health.py -> tools_analysis/ -> server/
     actual_tools = 0
     server_content_parts = []
     for _root, _dirs, _files in os.walk(_server_root):
         for _tf in _files:
-            if not _tf.endswith(".py") or _tf in ("tools_passthru.py", "status_unified.py"):
+            if not _tf.endswith(".py"):
                 continue
             _tf_path = os.path.join(_root, _tf)
             try:
                 with open(_tf_path, encoding="utf-8") as _f:
                     _lines = _f.readlines()
-                actual_tools += sum(1 for l in _lines if l.strip() == "@ctx.mcp.tool()")
+                if _tf not in _COUNT_EXCLUDED:
+                    actual_tools += sum(
+                        1 for l in _lines
+                        if (s := l.strip()).startswith("@ctx.mcp.tool(") and s.endswith(")")
+                    )
                 server_content_parts.append("".join(_lines))
             except Exception as _err5:
                 logger.debug(f"server_content_parts.append: {type(_err5).__name__}: {_err5}")

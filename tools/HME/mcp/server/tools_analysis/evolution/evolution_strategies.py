@@ -421,6 +421,17 @@ def _adversarial_stress() -> str:
 
     hooks_dir = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks")
     hooks_json_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "hooks", "hooks.json")
+    # Hooks are organized into subdirectories by lifecycle phase. The flat
+    # hooks_dir path still resolves top-level scripts like log-tool-call.sh;
+    # sub-scripts live under these dirs.
+    hook_subdirs = ["", "lifecycle", "pretooluse", "posttooluse", "helpers"]
+
+    def _find_hook(name):
+        for sub in hook_subdirs:
+            cand = os.path.join(hooks_dir, sub, name) if sub else os.path.join(hooks_dir, name)
+            if os.path.isfile(cand):
+                return cand
+        return os.path.join(hooks_dir, name)  # fallback (reports missing at its canonical flat location)
 
     # Probe 1: LIFESAVER grep pattern catches FAIL in tool output
     test_output = "FAIL: synthetic probe -- adversarial stress test"
@@ -433,7 +444,7 @@ def _adversarial_stress() -> str:
 
     # Probe 3: Stop hook has all enforcement sections
     try:
-        with open(os.path.join(hooks_dir, "stop.sh"), encoding="utf-8") as f:
+        with open(_find_hook("stop.sh"), encoding="utf-8") as f:
             stop_content = f.read()
         checks = {
             "error detection": "hme-errors.log",
@@ -451,7 +462,7 @@ def _adversarial_stress() -> str:
 
     # Probe 4: log-tool-call.sh catches FAIL in ALL HME tool output
     try:
-        with open(os.path.join(hooks_dir, "log-tool-call.sh"), encoding="utf-8") as f:
+        with open(_find_hook("log-tool-call.sh"), encoding="utf-8") as f:
             ltc_content = f.read()
         has_fail_scan = "FAIL" in ltc_content and "hme-errors.log" in ltc_content
         results.append(("log-tool-call: FAIL→hme-errors.log pipeline", has_fail_scan,
@@ -486,7 +497,7 @@ def _adversarial_stress() -> str:
         "posttooluse_read.sh", "postcompact.sh",
     ]
     for hook in critical_hooks:
-        path = os.path.join(hooks_dir, hook)
+        path = _find_hook(hook)
         exists = os.path.isfile(path)
         executable = os.access(path, os.X_OK) if exists else False
         ok = exists and executable
@@ -565,14 +576,23 @@ def _adversarial_stress() -> str:
     results.append(("Self-coherence: contradict focus available", True, "this probe proves it"))
 
     # Probe 13: All RELOADABLE modules exist as actual files
+    # Modules moved into subpackages (synthesis/, evolution/, coupling/);
+    # evolution_strategies.py itself lives in evolution/, so ta_dir = evolution/
+    # then ../.. is server/. Search tools_analysis/ + all its subpackages.
     try:
         from .evolution_selftest import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE
-        ta_dir = os.path.dirname(os.path.abspath(__file__))
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        ta_dir = os.path.dirname(this_dir)
         server_dir = os.path.dirname(ta_dir)
         root_dir = os.path.dirname(server_dir)
+        ta_search_dirs = [ta_dir] + [
+            os.path.join(ta_dir, sp) for sp in ("synthesis", "evolution", "coupling")
+        ]
+        def _ta_has(name):
+            return any(os.path.isfile(os.path.join(d, f"{name}.py")) for d in ta_search_dirs)
         missing_modules = []
         for name in RELOADABLE:
-            if not os.path.isfile(os.path.join(ta_dir, f"{name}.py")):
+            if not _ta_has(name):
                 missing_modules.append(name)
         for name in TOP_LEVEL_RELOADABLE:
             if not os.path.isfile(os.path.join(server_dir, f"{name}.py")):
@@ -655,7 +675,7 @@ def _adversarial_stress() -> str:
                     os.path.isfile(bb_path), "" if os.path.isfile(bb_path) else "missing"))
 
     # Probe 20: _safety.sh helper functions are defined
-    safety_path = os.path.join(hooks_dir, "_safety.sh")
+    safety_path = _find_hook("_safety.sh")
     try:
         with open(safety_path, encoding="utf-8") as f:
             safety_content = f.read()

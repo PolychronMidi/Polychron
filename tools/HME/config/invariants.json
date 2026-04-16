@@ -610,7 +610,7 @@
       "id": "activity-digest-in-reloadable",
       "description": "activity_digest module must be in RELOADABLE so hot-reload picks up changes",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/evolution_selftest.py",
+      "path": "tools/HME/mcp/server/tools_analysis/evolution/evolution_selftest.py",
       "pattern": "\"activity_digest\"",
       "severity": "error"
     },

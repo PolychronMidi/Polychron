@@ -152,8 +152,8 @@ def _read_entanglement() -> dict:
         if _ms.entanglement_file and os.path.isfile(_ms.entanglement_file):
             import json as _j
             return _j.load(open(_ms.entanglement_file))
-    except Exception:
-        pass
+    except Exception as _e:
+        logger.debug(f"_read_entanglement: {type(_e).__name__}: {_e}")
     return {}
 
 

@@ -331,8 +331,8 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
             _mp = load_json("metrics/metaprofile-active.json")
             if _mp and "coupling" in _mp:
                 _antag_thresh = _mp["coupling"].get("antagonismThreshold", -0.30)
-        except Exception:
-            pass
+        except Exception as _mp_err:
+            logger.debug(f"metaprofile antag threshold load: {type(_mp_err).__name__}: {_mp_err}")
         if key not in seen and r < _antag_thresh:
             seen.add(key)
             antagonists.append((a, b, r))

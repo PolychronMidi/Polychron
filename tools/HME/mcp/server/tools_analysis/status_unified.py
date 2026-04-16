@@ -124,8 +124,8 @@ def _mode_perceptual():
                 if "IN PROGRESS" in pipeline_status or "BLOCKED" in pipeline_status:
                     return ("Perceptual analysis unavailable: GPU busy (pipeline running).\n"
                             "Re-run after pipeline completes.")
-            except Exception:
-                pass
+            except Exception as _cp_err:
+                logger.debug(f"_mode_perceptual pipeline-check: {type(_cp_err).__name__}: {_cp_err}")
             return "Perceptual analysis unavailable: GPU out of memory.\nCheck with `nvidia-smi`."
         return f"Perceptual analysis unavailable: {e}"
 
