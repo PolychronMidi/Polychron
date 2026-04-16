@@ -424,7 +424,7 @@
       "description": "CLAUDE.md must document the correct ESLint rule count (23)",
       "type": "pattern_in_file",
       "path": "CLAUDE.md",
-      "pattern": "ESLint rules \\(25\\)",
+      "pattern": "ESLint rules \\(24\\)",
       "severity": "warning"
     },
     {

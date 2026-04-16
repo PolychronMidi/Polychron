@@ -96,7 +96,7 @@ All file/search operations route through HME mega-tools for KB enrichment. Full 
 ## Reference Pointers
 
 - Lab calibration anchors → [metrics/journal.md](../metrics/journal.md)
-- ESLint rules (25) → `scripts/eslint-rules/` (enforced at lint time; no need to memorize)
+- ESLint rules (24) → `scripts/eslint-rules/` (enforced at lint time; no need to memorize)
 - Per-run diagnostics → `metrics/conductor-map.md`, `metrics/crosslayer-map.md`, `metrics/narrative-digest.md`, `metrics/trace-replay.json`, `metrics/runtime-snapshots.json`, `metrics/feedback-graph.html`
 - Cross-run state → `metrics/adaptive-state.json`
 - Feedback loop topology → [metrics/feedback_graph.json](../metrics/feedback_graph.json)
