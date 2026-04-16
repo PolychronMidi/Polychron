@@ -15,6 +15,12 @@ metaProfiles = (() => {
     if (name === null || name === undefined) {
       activeProfile = null;
       activeProfileName = null;
+      try {
+        const _fs = require('fs');
+        const _path = require('path');
+        const _out = _path.join(process.cwd(), 'metrics', 'metaprofile-active.json');
+        if (_fs.existsSync(_out)) _fs.unlinkSync(_out);
+      } catch (_e) { /* non-fatal */ }
       return;
     }
     V.assertNonEmptyString(name, 'metaProfiles.setActive.name');

@@ -29,6 +29,7 @@
     "lint:raw": "eslint . --ext .js --fix",
     "lint": "node scripts/utils/run-with-log.js lint.log npm run lint:raw",
     "tc": "node scripts/utils/run-with-log.js tc.log tsc -p . --noEmit",
+    "test": "node test/regimeReactiveDampingCore.test.js",
     "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",
