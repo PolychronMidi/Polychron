@@ -200,11 +200,16 @@ def get_index_status() -> str:
 def clear_index() -> str:
     """Delete all indexed code chunks AND immediately rebuild from scratch. Atomic: no gap for
     file watcher to repopulate stale hashes. Use when embedding model changed, chunker logic
-    changed, or index is corrupted. Does not affect the knowledge base."""
+    changed, or index is corrupted. Does not affect the knowledge base.
+    Triggers indexing mode: unloads coder from GPU1 to dedicate it to embeddings."""
     ctx.ensure_ready_sync()
     ctx.project_engine.clear()
-    # Immediately rebuild — atomic, no gap for watcher to repopulate stale cache
-    result = _index_main(ctx.PROJECT_ROOT)
+    # Full rebuild with dedicated GPU — unloads coder temporarily
+    try:
+        from indexing_mode import with_indexing_mode
+        result = with_indexing_mode(lambda: _index_main(ctx.PROJECT_ROOT))
+    except ImportError:
+        result = _index_main(ctx.PROJECT_ROOT)
     return (
         f"Index cleared and rebuilt: {result['total_files']} files, "
         f"{result['indexed']} indexed, {result['chunks_created']} chunks, "
