@@ -142,6 +142,11 @@ function recordUpstreamFailure(err) {
 const COHERENCE_BUDGET_PATH = path.join(PROJECT_ROOT, 'metrics', 'hme-coherence-budget.json');
 let _budgetState = null;  // 'below' | 'in_band' | 'above' | null
 let _budgetLoadedAt = 0;
+// Shared refresh cadence for all file-backed caches below (budget, bias
+// bounds, staleness, hypotheses). Declared here so every consumer sees
+// the binding at parse time (no TDZ risk if a consumer fires during
+// module-init before the former declaration site was reached).
+const REFRESH_INTERVAL_MS = 60_000;
 
 function loadCoherenceBudget() {
   const now = Date.now();
@@ -204,7 +209,9 @@ let _openHypothesesByModule = null;
 let _hypothesesLoadedAt = 0;
 let _driftByModule = null;
 let _driftLoadedAt = 0;
-const REFRESH_INTERVAL_MS = 60_000;
+// REFRESH_INTERVAL_MS is declared near the top of the file (above
+// loadCoherenceBudget) so all file-backed cache consumers share one
+// binding without TDZ risk.
 
 function loadBiasManifest() {
   const now = Date.now();
@@ -463,13 +470,30 @@ function scanMessages(payload) {
   // Only look at the LAST assistant message's tool_use blocks for write
   // targets — that's the "about to be dispatched" turn. Earlier writes in
   // the history already happened and are irrelevant to injection.
+  // KB-briefing evidence: the pretooluse_edit hook injects a
+  // `KB CONSTRAINTS for <module>` / `KB CONTEXT for <module>` string via
+  // hookSpecificOutput.additionalContext, which Claude Code surfaces in
+  // a subsequent user-role text block. If that text appears in ANY prior
+  // message, the auto-briefing chain has satisfied the pre-edit
+  // precondition just as explicitly as mcp__HME__read would have.
+  const KB_BRIEFING_RE = /KB (CONSTRAINTS|CONTEXT) for \w/;
   let lastAssistantTools = [];
   for (const m of msgs) {
     const content = m && m.content;
     if (!Array.isArray(content)) continue;
     const toolsInMsg = [];
     for (const block of content) {
-      if (!block || block.type !== 'tool_use') continue;
+      if (!block) continue;
+      // Scan text/tool_result content for hook-injected briefing markers.
+      if (block.type === 'text' || block.type === 'tool_result') {
+        const txt = typeof block.text === 'string' ? block.text
+                   : typeof block.content === 'string' ? block.content
+                   : '';
+        if (txt && KB_BRIEFING_RE.test(txt)) {
+          result.hmeReadCalled = true;
+        }
+      }
+      if (block.type !== 'tool_use') continue;
       const name = block.name || '?';
       result.toolCalls.push(name);
       if (HME_READ_TOOLS.has(name)) {

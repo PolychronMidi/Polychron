@@ -97,8 +97,12 @@ carrier wave; self-monitoring rides along in the same loop.
 [agent tier: ${AGENT_TIER}, fingerprint: ${AGENT_FINGERPRINT}]"
         ;;
     esac
+    # additionalContext reaches Claude's next-turn context (the whole
+    # point of this primer); systemMessage also included so the user
+    # sees the transition in the terminal. systemMessage alone does NOT
+    # reach Claude — that bug silently gutted the primer for ages.
     jq -n --arg content "$CONTENT" --arg walk "$WALKTHROUGH" --arg coupling "$COUPLING_HINT" \
-      '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━\n\n" + $walk + $coupling)}'
+      '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━\n\n" + $walk + $coupling)},"systemMessage":("━━━ AGENT PRIMER (once per session) ━━━\n" + $content + "\n━━━ END PRIMER ━━━\n\n" + $walk + $coupling)}'
     exit 0
   fi
 fi

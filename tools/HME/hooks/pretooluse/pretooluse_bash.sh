@@ -46,7 +46,8 @@ fi
 
 # Redirect: metric file timestamp polling → status tool
 if echo "$CMD" | grep -qE '(stat|ls -l).*(pipeline-summary|trace-summary|run-history|perceptual-report)'; then
-  jq -n '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":"Checking metric timestamps is indirect pipeline polling. Use mcp__HME__status(mode=\"pipeline\") for current status, then continue with other work."}'
+  REASON='Checking metric timestamps is indirect pipeline polling. Use mcp__HME__status(mode="pipeline") for current status, then continue with other work.'
+  jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
 
@@ -73,13 +74,15 @@ fi
 
 # Redirect: pipeline log file polling → status tool
 if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(r4[0-9]+_run|run\.log|pipeline\.log)'; then
-  jq -n '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":"Polling pipeline logs is the antipattern. Use mcp__HME__status(mode=\"pipeline\") for current status, then continue with other work."}'
+  REASON='Polling pipeline logs is the antipattern. Use mcp__HME__status(mode="pipeline") for current status, then continue with other work.'
+  jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
 
 # Enrich: sleep+check pattern — allow but inject guidance
 if echo "$CMD" | grep -qE 'sleep.*(tail|cat|head|grep|\.output)'; then
-  jq -n '{"hookSpecificOutput":{"permissionDecision":"allow"},"systemMessage":"sleep+check detected. Background tasks fire a completion notification — no need to poll. If you must wait, use run_in_background=true instead of sleep loops."}'
+  REASON='sleep+check detected. Background tasks fire a completion notification — no need to poll. If you must wait, use run_in_background=true instead of sleep loops.'
+  jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"allow","additionalContext":$reason},"systemMessage":$reason}'
   exit 0
 fi
 
@@ -138,7 +141,7 @@ if [ "$_POLLING" -eq 1 ]; then
   echo "$COUNT" > "$TASK_POLL_COUNTER"
   if [ "$COUNT" -gt 2 ]; then
     jq -n --arg count "$COUNT" \
-      '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":("PSYCHOPATHIC POLLING #" + $count + ": you are repeatedly checking background task status. Background processes fire a completion notification when done — WAIT for it. Working on independent parallel tasks is fine; re-checking the same file or nvidia-smi or ps is not. Do real work until the notification arrives.")}'
+      '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":("PSYCHOPATHIC POLLING #" + $count + ": you are repeatedly checking background task status. Background processes fire a completion notification when done — WAIT for it. Working on independent parallel tasks is fine; re-checking the same file or nvidia-smi or ps is not. Do real work until the notification arrives.")},"systemMessage":("PSYCHOPATHIC POLLING #" + $count + ": repeated background-status polling. Do real work.")}'
     exit 0
   fi
 fi

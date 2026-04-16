@@ -50,7 +50,11 @@ print(count)
 " 2>/dev/null || echo 0)
 
 if [[ "$CALL_COUNT" -ge 1 ]]; then
-  jq -n '{"hookSpecificOutput":{"permissionDecision":"deny"},"systemMessage":"ANTI-POLLING: status(mode=\"pipeline\") already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run mcp__HME__review, update KB/docs\n- If you must check freshness, use mcp__HME__review(mode=\"digest\") which has freshness guard"}'
+  # permissionDecisionReason surfaces to Claude on deny; systemMessage is
+  # user-terminal mirror only. Both emitted so Claude sees WHY the tool
+  # was blocked AND the user sees the same note in the terminal.
+  REASON='ANTI-POLLING: status(mode="pipeline") already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run mcp__HME__review, update KB/docs\n- If you must check freshness, use mcp__HME__review(mode="digest") which has freshness guard'
+  jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
 

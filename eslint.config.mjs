@@ -37,8 +37,32 @@ const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked
 
 export default [
   {
-    // Do not lint ESLint helpers and config shims
-    ignores: ['scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**', 'lab/**', 'tools/**']
+    // Global ignores — files completely invisible to any config block.
+    // tools/** is DELIBERATELY NOT globally ignored here; the src/** config
+    // below locally ignores it, and the per-file `files: ['tools/HME/proxy/hme_proxy.js']`
+    // block below re-enables linting specifically for the load-bearing
+    // proxy script. (A `scan is not defined` block-scope leak went
+    // undetected before because tools/** was globally ignored and
+    // no flat-config negation worked around that.)
+    ignores: ['scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**', 'lab/**']
+  },
+  {
+    // hme_proxy.js is intentionally unlinted by the global `tools/**`
+    // ignore above, but it's too load-bearing to leave un-checked — a
+    // `scan is not defined` (block-scoped const referenced in outer
+    // scope) went undetected and would have crashed the proxy on every
+    // jurisdiction-injection call. Enable the minimum rule set that
+    // would have caught that: no-undef + no-unused-vars.
+    files: ['tools/HME/proxy/hme_proxy.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      ecmaVersion: 'latest',
+      globals: { ...globalsPkg.node }
+    },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
+    }
   },
   {
     files: ['eslint.config.mjs'],
@@ -167,6 +191,24 @@ export default [
       'no-trailing-spaces': 'error',
       'eol-last': ['error', 'always'],
       'no-unused-vars': 'error'
+    }
+  },
+  {
+    // Proxy-specific override — relaxes the catch-all's strict rules for
+    // this one file so we can still get meaningful lint coverage
+    // (no-undef catches block-scope leaks) without drowning in
+    // underscore-prefixed catch-handler false-positives.
+    files: ['tools/HME/proxy/hme_proxy.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      ecmaVersion: 'latest',
+      globals: { ...globalsPkg.nodeBuiltin }
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-redeclare': 'off',
+      'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
+      'no-restricted-syntax': 'off'
     }
   }
 ];

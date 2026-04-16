@@ -162,10 +162,18 @@ def _compute_effectiveness() -> dict:
 
 
 def _meta_loop() -> None:
+    global _active
     global _last_correlations, _last_narration_ts, _last_env_ts, _last_entangle_ts
     global _last_env_snapshot, _last_synthesis_pattern_ts
     global _last_intent_ts, _last_archaeology_ts, _last_kb_confidence_ts
     _alert_last_logged: dict[str, float] = {}
+    # Crashloop detection: track a rolling window of exception fingerprints.
+    # If the SAME error repeats _CRASHLOOP_THRESHOLD times in a row, the
+    # loop is stuck — escalate to CRITICAL LIFESAVER and kill the thread
+    # so it stops spamming hme.log and so an operator knows to look.
+    _CRASHLOOP_WINDOW = 5
+    _CRASHLOOP_THRESHOLD = 3
+    _exc_history: list[str] = []
     cycle = 0
     while _active:
         try:
@@ -265,4 +273,29 @@ def _meta_loop() -> None:
 
         except Exception as e:
             logger.error(f"Meta-observer loop error: {e}")
+            # Crashloop detection: same message repeats → escalate + kill.
+            _fingerprint = f"{type(e).__name__}: {str(e)[:80]}"
+            _exc_history.append(_fingerprint)
+            if len(_exc_history) > _CRASHLOOP_WINDOW:
+                _exc_history.pop(0)
+            _recent_same = sum(1 for f in _exc_history[-_CRASHLOOP_THRESHOLD:]
+                               if f == _fingerprint)
+            if (len(_exc_history) >= _CRASHLOOP_THRESHOLD
+                    and _recent_same >= _CRASHLOOP_THRESHOLD):
+                logger.critical(
+                    f"Meta-observer CRASHLOOP DETECTED — `{_fingerprint}` "
+                    f"repeated {_recent_same}x consecutively. Killing daemon "
+                    f"thread to stop log spam. Operator intervention required."
+                )
+                try:
+                    from server import context as _ctx
+                    _ctx.register_critical_failure(
+                        "meta_observer",
+                        f"daemon crashloop: `{_fingerprint}` × {_recent_same} — thread killed, fix the underlying bug and restart server",
+                        severity="CRITICAL",
+                    )
+                except Exception as _life_err:
+                    logger.debug(f"meta_observer: LIFESAVER register failed: {_life_err}")
+                _active = False  # exits the while loop cleanly
+                break
             time.sleep(10)

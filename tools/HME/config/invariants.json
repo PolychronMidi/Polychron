@@ -504,6 +504,20 @@
       "severity": "error"
     },
     {
+      "id": "hme-py-no-fallback-infra-imports",
+      "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback. Silent ImportError swallowed behind `os.environ.get(...)` fallback hid the synthesis_proxy_route ENV bug for weeks. Infrastructure imports must fail loud at module load time.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/mcp",
+      "severity": "error"
+    },
+    {
+      "id": "hme-hooks-briefing-reaches-claude",
+      "description": "Hook scripts that emit Claude-facing briefings (KB CONSTRAINTS, AGENT PRIMER, ANTI-POLLING, etc.) must use `hookSpecificOutput.additionalContext` (on allow) or `permissionDecisionReason` (on deny), not `systemMessage` alone. systemMessage is user-terminal-only; a briefing hook that emits only systemMessage never reaches Claude — this silently gutted the entire pretooluse_edit briefing chain for months.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-hook-context-injection.py tools/HME/hooks",
+      "severity": "error"
+    },
+    {
       "id": "hme-py-meta-has-trim",
       "description": "meta_observer.py must define a trim helper (_trim_) alongside its append-only file writes",
       "type": "patterns_all_in_file",
