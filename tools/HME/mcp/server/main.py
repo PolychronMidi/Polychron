@@ -117,7 +117,17 @@ _sp.set_phase(_sp.SystemPhase.WARMING, "main.py starting")
 # No instructions= field: the HME plugin's SKILL.md is the single source of truth
 # for the tool surface. An instructions block here would either duplicate SKILL.md
 # or drift out of sync with it (as it did until 2026-04-14).
-mcp = FastMCP("HME")
+# HTTP mode: supervisor (hme_proxy.js) passes --http --port <N>. FastMCP binds
+# host/port at construction, so we resolve them here before instantiating.
+if "--http" in sys.argv:
+    import argparse as _ap
+    _p = _ap.ArgumentParser(add_help=False)
+    _p.add_argument("--http", action="store_true")
+    _p.add_argument("--port", type=int, default=int(os.environ.get("HME_MCP_PORT", "9098")))
+    _args, _ = _p.parse_known_args()
+    mcp = FastMCP("HME", host="127.0.0.1", port=_args.port)
+else:
+    mcp = FastMCP("HME")
 
 # --- Populate shared context for tool modules (mcp set; engines will be set by background thread) ---
 from server import context
@@ -327,15 +337,8 @@ context._post_recovery_hook = lambda: threading.Thread(
 if __name__ == "__main__":
     from server.protocol_logging import install as _install_logging
     _install_logging()
-    # HTTP mode: supervisor (hme_proxy.js) passes --http --port <N>.
-    # SSE transport binds to 127.0.0.1 only; proxy routes /mcp/* here.
-    _http_mode = "--http" in sys.argv
-    if _http_mode:
-        import argparse as _ap
-        _p = _ap.ArgumentParser(add_help=False)
-        _p.add_argument("--http", action="store_true")
-        _p.add_argument("--port", type=int, default=int(os.environ.get("HME_MCP_PORT", "9098")))
-        _args, _ = _p.parse_known_args()
-        mcp.run(transport="sse", host="127.0.0.1", port=_args.port)
+    # Host/port were set at FastMCP construction above when --http is present.
+    if "--http" in sys.argv:
+        mcp.run(transport="sse")
     else:
         mcp.run(transport="stdio")
