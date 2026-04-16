@@ -12,12 +12,13 @@ logger = logging.getLogger("HME")
 
 # Shared helpers — re-exported so `from . import _track, _budget_gate` works
 from ._helpers import (  # noqa: F401
-    _track, get_session_intent,
+    _track, _usage_stats, get_session_intent,
     BUDGET_TOOL, BUDGET_COMPOUND, BUDGET_SECTION, BUDGET_LOCAL_THINK,
     _budget_gate, _budget_section, _budget_local_think,
     _cap_code_blocks, _cap_list_items,
     _filter_kb_relevance, _get_compositional_context,
-    _git_run, _load_trace,
+    _compositional_context_cache,
+    _git_run, _load_trace, _trace_cache, _git_cache,
 )
 
 # ---------------------------------------------------------------------------

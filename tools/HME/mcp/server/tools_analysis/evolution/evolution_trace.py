@@ -10,7 +10,7 @@ from symbols import find_callers as _find_callers
 from ..synthesis import (
     _two_stage_think, _read_module_source,
 )
-from . import _get_compositional_context, _track
+from .. import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
 
@@ -295,7 +295,7 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
         return "No trace.jsonl found."
 
     from ..coupling_data import _pearson
-    from . import _load_trace
+    from .. import _load_trace
 
     try:
         records = _load_trace(trace_path)

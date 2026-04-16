@@ -3,7 +3,7 @@ import os
 from collections import defaultdict
 
 from server import context as ctx
-from . import _track, _load_trace
+from .. import _track, _load_trace
 from .coupling_data import (
     _pearson, _TRUST_FILE_ALIASES,
     _scan_coupling_state, _load_trust_scores,

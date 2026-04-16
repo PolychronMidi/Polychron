@@ -233,9 +233,9 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         _cb.record_success()
         # Trim verbose output before returning — callers shouldn't receive
         # unbounded text that inflates Claude's context window.
-        from . import BUDGET_LOCAL_THINK
+        from .. import BUDGET_LOCAL_THINK
         if len(text) > BUDGET_LOCAL_THINK:
-            from . import _budget_local_think
+            from .. import _budget_local_think
             text = _budget_local_think(text)
         if return_context:
             return (text, result.get("context", []))

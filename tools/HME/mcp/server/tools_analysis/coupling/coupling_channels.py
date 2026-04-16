@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 
 from server import context as ctx
-from . import _track
+from .. import _track
 
 # Musical semantics for L0 channel names
 _CHANNEL_SEMANTICS: dict[str, str] = {
