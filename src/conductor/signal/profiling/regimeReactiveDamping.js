@@ -71,7 +71,7 @@ regimeReactiveDamping = (() => {
   const _REGIME_RING_SIZE = 64;
   /** @type {string[]} */
   const regimeReactiveDampingRegimeRing = [];
-  const _REGIME_BUDGET = {
+  const _DEFAULT_REGIME_BUDGET = {
     exploring: 0.35,
     coherent: 0.35,
     evolving: 0.20,
@@ -80,6 +80,24 @@ regimeReactiveDamping = (() => {
     oscillating: 0.02,
     drifting: 0.02,
   };
+  // Metaprofile-aware: read targets dynamically so mid-run profile switches
+  // take effect on the next tick. Minor regimes (stagnant, fragmented, etc.)
+  // keep their fixed budget — metaprofiles only configure the big three.
+  function _getRegimeBudget() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const targets = metaProfiles.getRegimeTargets();
+      return {
+        exploring:   targets.exploring,
+        coherent:    targets.coherent,
+        evolving:    targets.evolving,
+        stagnant:    _DEFAULT_REGIME_BUDGET.stagnant,
+        fragmented:  _DEFAULT_REGIME_BUDGET.fragmented,
+        oscillating: _DEFAULT_REGIME_BUDGET.oscillating,
+        drifting:    _DEFAULT_REGIME_BUDGET.drifting,
+      };
+    }
+    return _DEFAULT_REGIME_BUDGET;
+  }
   const _EQUILIB_STRENGTH = 0.28;
   let regimeReactiveDampingEqCorrD = 0;
   let regimeReactiveDampingEqCorrT = 0;
@@ -123,7 +141,7 @@ regimeReactiveDamping = (() => {
       currentRegime,
       regimeRing: regimeReactiveDampingRegimeRing,
       regimeRingSize: _REGIME_RING_SIZE,
-      regimeBudget: _REGIME_BUDGET,
+      regimeBudget: _getRegimeBudget(),
       equilibStrength: regimeReactiveDampingDynamicEquilibStrength,
       eqCorrD: regimeReactiveDampingEqCorrD,
       eqCorrT: regimeReactiveDampingEqCorrT,
@@ -142,7 +160,7 @@ regimeReactiveDamping = (() => {
     const ringExpShare = ringLen > 0
       ? regimeReactiveDampingRegimeRing.filter(/** @param {string} r */ (r) => r === 'exploring').length / ringLen
       : 0;
-    const expExcessNow = m.max(0, ringExpShare - _REGIME_BUDGET.exploring);
+    const expExcessNow = m.max(0, ringExpShare - _getRegimeBudget().exploring);
     regimeReactiveDampingEqExcessEma = regimeReactiveDampingEqExcessEma * 0.95 + expExcessNow * 0.05;
     regimeReactiveDampingDynamicEquilibStrength = _EQUILIB_STRENGTH * (1 + clamp(regimeReactiveDampingEqExcessEma / 0.10, 0, 0.5));
 

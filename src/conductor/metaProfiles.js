@@ -49,6 +49,44 @@ metaProfiles = (() => {
     return activeProfile !== null;
   }
 
+  // Convenience: regime targets with built-in defaults (equal distribution)
+  function getRegimeTargets() {
+    const regime = getAxis('regime');
+    return {
+      coherent:  regime ? regime.coherent  : 0.333,
+      evolving:  regime ? regime.evolving  : 0.333,
+      exploring: regime ? regime.exploring : 0.333,
+    };
+  }
+
+  // Convenience: coupling range with defaults
+  function getCouplingRange() {
+    return {
+      lo: getAxisValue('coupling', 'strength', [0.3, 0.7])[0],
+      hi: getAxisValue('coupling', 'strength', [0.3, 0.7])[1],
+      density: getAxisValue('coupling', 'density', 0.25),
+      antagonismThreshold: getAxisValue('coupling', 'antagonismThreshold', -0.25),
+    };
+  }
+
+  // Convenience: tension arc with defaults
+  function getTensionArc() {
+    return {
+      shape: getAxisValue('tension', 'shape', 'arch'),
+      floor: getAxisValue('tension', 'floor', 0.20),
+      ceiling: getAxisValue('tension', 'ceiling', 0.80),
+    };
+  }
+
+  // Convenience: energy envelope with defaults
+  function getEnergyEnvelope() {
+    return {
+      densityTarget: getAxisValue('energy', 'densityTarget', 0.50),
+      flickerLo: getAxisValue('energy', 'flickerRange', [0.04, 0.15])[0],
+      flickerHi: getAxisValue('energy', 'flickerRange', [0.04, 0.15])[1],
+    };
+  }
+
   return {
     setActive,
     getActive,
@@ -56,6 +94,10 @@ metaProfiles = (() => {
     getAxis,
     getAxisValue,
     isActive,
+    getRegimeTargets,
+    getCouplingRange,
+    getTensionArc,
+    getEnergyEnvelope,
     list: metaProfileDefinitions.list,
   };
 })();
