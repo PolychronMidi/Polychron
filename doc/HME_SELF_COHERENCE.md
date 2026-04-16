@@ -355,3 +355,68 @@ The line between "fixing the detector" (allowed) and "dampening the alert" (forb
 **The rule of thumb:** if your fix makes LIFESAVER quieter without changing whether the condition is actually present, it's dampening. If your fix makes LIFESAVER more accurate about when the condition is present (and quieter as a SIDE EFFECT), it's calibration.
 
 The `LifesaverIntegrityVerifier` catches cooldowns and time-based guards near `register_critical_failure` calls. It does NOT catch sample-count-based maturity gates because those fix the detector, not the alert. The semantic distinction is encoded in what patterns the verifier looks for.
+
+---
+
+## The Full Stack (as of 2026-04-16)
+
+Everything below is implemented, tested, and wired into the pipeline. Not aspirational.
+
+### Infrastructure layer
+
+**Inference proxy** (`tools/HME/proxy/hme_proxy.js`). Authoritative filter for all inference — Anthropic (default upstream), Groq, OpenRouter, Cerebras, Mistral, NVIDIA, Gemini, local llama.cpp. Multi-upstream routing via `X-HME-Upstream` header. Emergency valve self-disables after 3 consecutive upstream failures: writes `PROXY_EMERGENCY` to `hme-errors.log`, flips `HME_PROXY_ENABLED=0` in `.env`, kills itself. Coherence budget gates injection behavior — when coherence is ABOVE band, injection is suppressed to allow exploration. Two test suites: `test-proxy.sh` (9 mock tests) and `test-proxy-live.sh` (7 live API smoke tests).
+
+**Activity bridge** (`metrics/hme-activity.jsonl`). 9 event types: `edit_pending`, `file_written`, `mcp_tool_call`, `pipeline_start`, `pipeline_run`, `round_complete`, `coherence_violation`, `inference_call`, `injection_influence`. Emitters: hooks (file edits, pipeline lifecycle), proxy (inference calls, violations, injections), `tools/HME/activity/emit.py` (CLI interface for any component).
+
+**Policy engine** (`scripts/pipeline/check-hme-coherence.js`). Pre-composition pipeline step. Reads activity log, enforces coherence invariants, writes `metrics/hme-violations.json`.
+
+### Self-awareness layer (pipeline steps)
+
+| Step | Output | What it knows |
+|---|---|---|
+| `build-kb-staleness-index` | `kb-staleness.json` | Which modules' KB entries are stale/missing |
+| `check-kb-semantic-drift` | `hme-semantic-drift.json` | Where KB descriptions diverge from code reality |
+| `compute-coherence-score` | `hme-coherence.json` | How grounded this round's evolution was in the KB |
+
+### Self-assessment layer
+
+| Step | Output | What it measures |
+|---|---|---|
+| `generate-predictions` | `hme-predictions.jsonl` | Cascade impact predictions from dependency BFS |
+| `reconcile-predictions` | `hme-prediction-accuracy.json` | Whether predictions matched actual fingerprint shifts |
+| `compute-musical-correlation` | `hme-musical-correlation.json` | Whether HME coherence predicts musical quality |
+| `compute-compositional-trajectory` | `hme-trajectory.json` | Whether musical complexity is growing, plateauing, or declining |
+
+### Self-governance layer
+
+| Step | Output | What it governs |
+|---|---|---|
+| `compute-coherence-budget` | `hme-coherence-budget.json` | Optimal coherence band — too high = over-disciplined, too low = chaotic |
+| `compute-kb-trust-weights` | `kb-trust-weights.json` | Epistemic reliability of each KB entry |
+| `compute-intention-gap` | `hme-intention-gap.json` | What keeps getting proposed but not finished |
+| `derive-constitution` | `hme-constitution.json` | 39 constitutional claims about what Polychron essentially is |
+
+### Meta-meta layer
+
+| Step | Output | What it produces |
+|---|---|---|
+| `detect-doc-drift` | `hme-doc-drift.json` | Where documentation has diverged from KB knowledge |
+| `extract-generalizations` | `hme-generalizations.json` | Project-agnostic patterns from crystallized KB |
+| `synthesize-generalizations` | (updates generalizations) | Universal structural claims via reasoning cascade |
+| `render-generalizations` | `doc/hme-discoveries.md` | Human-readable intellectual output |
+| `compute-evolution-priority` | `hme-evolution-priority.json` | Ranked list of what should change next, from 9 signal sources |
+
+### The compounding structure
+
+These aren't independent features. Each feeds the next:
+
+- Staleness feeds coherence score (stale-module writes are penalized)
+- Coherence score feeds the budget (determines the optimal band)
+- Budget feeds the proxy (gates injection behavior)
+- Predictions feed accuracy (scored against pipeline fingerprints)
+- Accuracy feeds trust weights (low accuracy = lower trust for that KB region)
+- Trust weights feed the proxy (high-trust entries injected as principles, low-trust as hypotheses)
+- Constitution feeds doc drift (constitutional claims checked against documentation)
+- All 9 signals feed evolution priority (ranked self-direction)
+
+The system's output at full expression: a ranked list of what it thinks should change, derived from its own assessment of where its knowledge is wrong, where its predictions fail, where the music is stalling, and where the architecture has structural gaps nobody designed into it.
