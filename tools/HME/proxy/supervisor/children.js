@@ -43,15 +43,15 @@ const CHILDREN = [
     callTimeoutMs: null, // no per-call timeout; shim calls are short or streaming
   },
   {
-    name: 'mcp',
+    name: 'worker',
     cmd: 'python3',
-    args: [path.join(MCP_DIR, 'server/main.py'), '--http', '--port', String(MCP_PORT)],
+    args: [path.join(MCP_DIR, 'worker.py'), '--port', String(MCP_PORT)],
     env: mcpEnv,
     healthUrl: `http://127.0.0.1:${MCP_PORT}/health`,
-    startupMs: 15_000,   // MCP waits on shim before marking ready
+    startupMs: 15_000,   // worker waits on shim before marking ready
     restartDelayMs: 2_000,
     maxRestarts: 20,
-    callTimeoutMs: 90_000, // kill MCP if a /messages call takes > 90s (hang guard)
+    callTimeoutMs: 90_000, // proxy-side hang guard on /tool/<name>
   },
 ];
 
