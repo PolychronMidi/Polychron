@@ -47,12 +47,30 @@ regimeReactiveDamping = (() => {
     drifting: 0,
   };
 
-  const MAX_DENSITY = 0.12;
-  const MAX_TENSION = 0.12;
-  const MAX_FLICKER = 0.17;
+  const _BASE_MAX_DENSITY = 0.12;
+  const _BASE_MAX_TENSION = 0.12;
+  const _BASE_MAX_FLICKER = 0.17;
   const _DENSITY_RANGE = [0.88, 1.12];
   const _TENSION_RANGE = [0.88, 1.22];
   const _FLICKER_RANGE = [0.83, 1.19];
+
+  // Metaprofile-scaled maxima. Tension ceiling 0.80 (default) = 1.0x scale.
+  // Atmospheric (0.45) = 0.56x, chaotic (0.95) = 1.19x.
+  function _getMaxTension() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const arc = metaProfiles.getTensionArc();
+      return _BASE_MAX_TENSION * (arc.ceiling / 0.80);
+    }
+    return _BASE_MAX_TENSION;
+  }
+  function _getMaxDensity() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const env = metaProfiles.getEnergyEnvelope();
+      return _BASE_MAX_DENSITY * (env.densityTarget / 0.50);
+    }
+    return _BASE_MAX_DENSITY;
+  }
+  const MAX_FLICKER = _BASE_MAX_FLICKER;
 
   const CURVATURE_CEILING = 1.0;
 
@@ -304,8 +322,8 @@ regimeReactiveDamping = (() => {
     const dtShareBridgeLift = dtAbs > 0.45
       ? clamp((dtAbs - 0.45) / 0.35, 0, 1) * dtShareGap * 0.015
       : 0;
-    const rawD = 1.0 + (V.optionalFinite(REGIME_DENSITY_DIR[currentRegime], 0)) * MAX_DENSITY * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge + midSectionDensityPush - densityShareBrake + densityRecoveryLift - coherentDFBrake - dtDensityBrake + dtCoMovementPush + dtShareBridgeLift;
-    const effectiveMaxTension = MAX_TENSION + regimeReactiveDampingTensionCeilingRelax;
+    const rawD = 1.0 + (V.optionalFinite(REGIME_DENSITY_DIR[currentRegime], 0)) * _getMaxDensity() * curvatureGain + regimeReactiveDampingDriftD + regimeReactiveDampingEqCorrD - densityHotspotBrake + evolvingLift * 0.5 + densityRebalanceLift + sectionDensityNudge + midSectionDensityPush - densityShareBrake + densityRecoveryLift - coherentDFBrake - dtDensityBrake + dtCoMovementPush + dtShareBridgeLift;
+    const effectiveMaxTension = _getMaxTension() + regimeReactiveDampingTensionCeilingRelax;
     const tensionShareBrake = clamp((tensionShare - 0.18) / 0.08, 0, 1) * 0.06;
     const tensionRecoveryLift2 = tensionShare < 0.17
       ? clamp((0.17 - tensionShare) / 0.06, 0, 1) * 0.018
@@ -335,11 +353,11 @@ regimeReactiveDamping = (() => {
       regimeReactiveDampingTensionPinStreak++;
       regimeReactiveDampingTensionUnpinStreak = 0;
       if (regimeReactiveDampingTensionPinStreak > _PIN_STREAK_TRIGGER) {
-        regimeReactiveDampingTensionCeilingRelax = clamp(regimeReactiveDampingTensionCeilingRelax + MAX_TENSION * _PIN_RELAX_STEP, 0, MAX_TENSION * 0.30);
+        regimeReactiveDampingTensionCeilingRelax = clamp(regimeReactiveDampingTensionCeilingRelax + _getMaxTension() * _PIN_RELAX_STEP, 0, _getMaxTension() * 0.30);
         regimeReactiveDampingTensionPinStreak = 0;
         safePreBoot.call(() => explainabilityBus.emit('tension-pin-relief', 'both', {
-          newCeiling: MAX_TENSION + regimeReactiveDampingTensionCeilingRelax,
-          baseCeiling: MAX_TENSION
+          newCeiling: _getMaxTension() + regimeReactiveDampingTensionCeilingRelax,
+          baseCeiling: _getMaxTension()
         }));
       }
     } else {
@@ -398,7 +416,7 @@ regimeReactiveDamping = (() => {
     'regimeReactiveDamping',
     'regime',
     'density',
-    () => m.abs(regimeReactiveDampingSmoothedDensity - 1.0) / MAX_DENSITY,
+    () => m.abs(regimeReactiveDampingSmoothedDensity - 1.0) / _getMaxDensity(),
     () => m.sign(regimeReactiveDampingSmoothedDensity - 1.0)
   );
 
