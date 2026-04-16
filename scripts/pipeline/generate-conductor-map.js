@@ -77,7 +77,7 @@ function extractSignalReads(src) {
     [/timeStream\.\w+/g, 'timeStream'],
     [/sectionIntentCurves\.\w+/g, 'sectionIntent'],
     [/interactionHeatMap\.\w+/g, 'heatMap'],
-    [/absoluteTimeGrid\.\w+/g, 'absoluteTimeGrid'],
+    [/L0\.\w+/g, 'L0'],
     [/explainabilityBus\.\w+/g, 'explainabilityBus'],
   ];
 

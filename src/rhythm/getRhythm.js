@@ -111,7 +111,7 @@ getRhythm = function getRhythm(level,length,pattern,method,...args){
     // Record selection for novelty tracking
     rhythmHistoryTracker.record(rhythmMethodKey, length, activeLayerName);
 
-    // Also feed into absoluteTimeWindow for cross-layer rhythm analysis
+    // Also feed into L0 for cross-layer rhythm analysis
     const absTime = beatStartTime;
     L0.post(L0_CHANNELS.rhythm, activeLayerName, absTime, { method: rhythmMethodKey, length });
 

@@ -62,7 +62,7 @@ emitPickCrossLayerRecord = function(ctx) {
 
   // Record cross-layer interval for harmonic guard tracking.
   // Use pre-computed otherMidi from harmonicIntervalGuard.nudgePitch() when available,
-  // avoiding a redundant absoluteTimeWindow.getLastNote() query.
+  // avoiding a redundant L0.getLastNote() query.
   if (Number.isFinite(harmonicOtherMidi) && harmonicOtherMidi > 0) {
     harmonicIntervalGuard.recordCrossInterval(noteToEmit, harmonicOtherMidi, timeInSeconds);
   } else if (harmonicOtherMidi === -1) {

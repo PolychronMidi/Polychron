@@ -86,7 +86,7 @@ entropyRegulator = (() => {
       if (vh && vh.length > 2) {
         totalVel += entropyMetrics.velocityVariance(vh);
       }
-      // rhythmicIrregularity queries absoluteTimeWindow which may throw
+      // rhythmicIrregularity queries L0 which may throw
       // during early beats or section transitions. Isolate per-layer so
       // a failure in one layer doesn't abort the entire entropy measurement.
       try {

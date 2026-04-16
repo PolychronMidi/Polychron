@@ -37,7 +37,7 @@ Each subsystem `index.js`: helpers first, manager/orchestrator last.
 - **New feedback loops:** must register with `feedbackRegistry` and declare in `metrics/feedback_graph.json`.
 - **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*`. Never hardcode strings.
 - **Cross-layer emission:** route all buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
-- **Inter-module communication:** via `absoluteTimeGrid` (L0) channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants; bare strings in L0 method calls are a hard error (`local/no-bare-l0-channel`). New channel: add to `l0Channels.js`, declare in `globals.d.ts`.
+- **Inter-module communication:** via `L0` (L0) channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants; bare strings in L0 method calls are a hard error (`local/no-bare-l0-channel`). New channel: add to `l0Channels.js`, declare in `globals.d.ts`.
 - **Firewall ports:** the 9 controlled cross-boundary openings are declared in `metrics/feedback_graph.json` under `firewallPorts`. New cross-boundary data flow → declare a port.
 
 ### Hypermeta-First (no whack-a-mole overrides)

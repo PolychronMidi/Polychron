@@ -1,5 +1,5 @@
 // src/crossLayer/crossLayerLifecycleManager.js - Delegates to crossLayerRegistry.
-// absoluteTimeGrid and timeStream (from src/time/) register into the lifecycle
+// L0 and timeStream (from src/time/) register into the lifecycle
 // here so they participate in scoped resets automatically.
 
 // Register time-subsystem modules into crossLayerRegistry for lifecycle management.

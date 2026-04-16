@@ -1,6 +1,6 @@
 // beatCache.js - Per-beat memoization for expensive conductor queries.
 // Many conductor modules register both a bias getter AND a stateProvider,
-// both calling the same costly function (typically querying absoluteTimeWindow).
+// both calling the same costly function (typically querying L0).
 // This factory wraps such functions so the computation runs at most once per beat.
 // Cache auto-invalidates because beatCount increments each beat.
 // Layer-aware: includes active layer in cache key to prevent cross-layer stale hits.

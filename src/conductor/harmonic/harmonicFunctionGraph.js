@@ -7,7 +7,7 @@
  * Dominant / Ambiguous) within the current key context. Registers a
  * tension bias that rises on dominant-function chords and relaxes on tonics.
  *
- * Also posts function labels to absoluteTimeGrid channel 'harmonicFunction'
+ * Also posts function labels to L0 channel 'harmonicFunction'
  * so cross-layer modules can reason about harmonic trajectory.
  */
 

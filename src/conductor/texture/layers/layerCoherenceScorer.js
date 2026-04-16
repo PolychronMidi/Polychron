@@ -1,5 +1,5 @@
 // src/conductor/layerCoherenceScorer.js - Measures harmonic consonance between layers.
-// Queries absoluteTimeWindow for concurrent L1/L2 pitch content and scores
+// Queries L0 for concurrent L1/L2 pitch content and scores
 // their intervallic compatibility. Pure query API for conductor decisions.
 
 layerCoherenceScorer = (() => {

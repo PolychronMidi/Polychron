@@ -235,7 +235,7 @@ def section_c_extraction(module_map: dict) -> list[dict]:
         answer = (
             f"FILE: {path}\n"
             f"FUNCTION: (see source — IIFE module pattern)\n"
-            f"SIGNALS: (check for absoluteTimeGrid subscriptions in source above)\n"
+            f"SIGNALS: (check for L0 subscriptions in source above)\n"
             f"CONNECTS: (check require() calls and crossLayerRegistry/conductorIntelligence registrations)"
         )
 
@@ -321,7 +321,7 @@ _ARCH_QA = [
      "then require from the subsystem index.js. Never use global. or globalThis."),
 
     ("What is the L0 channel system?",
-     "absoluteTimeGrid (L0) channels — inter-module communication. Channel names must use "
+     "L0 (L0) channels — inter-module communication. Channel names must use "
      "L0_CHANNELS.xxx constants. Bare strings in L0 method calls are a hard error (local/no-bare-l0-channel). "
      "New channels: add to l0Channels.js, declare in globals.d.ts."),
 

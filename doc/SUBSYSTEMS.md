@@ -37,7 +37,7 @@ Module-level reference for each Polychron subsystem. 487 source files, 58K LOC.
 
 ## `src/time/` -- Temporal Infrastructure (13 files)
 
-- **`absoluteTimeGrid`** (L0) -- shared temporal memory: `post()`, `query()`, `findClosest()`, `count()`
+- **`L0`** (L0) -- shared temporal memory: `post()`, `query()`, `findClosest()`, `count()`
 - **`l0Channels`** -- canonical L0 channel name registry (`L0_CHANNELS` global, 41 channels). All L0 calls must use `L0_CHANNELS.xxx` — ESLint `no-bare-l0-channel` enforces this
 - **`LayerManager`** -- L1/L2 registration, timing, buffer management, per-layer state (`perLayerState` with flipBin), save/restore on `activate()`, PRNG decorrelation
 - **`midiTiming`** -- tick/time conversion with sync factor
