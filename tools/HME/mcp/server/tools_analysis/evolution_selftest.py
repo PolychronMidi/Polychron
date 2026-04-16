@@ -20,7 +20,7 @@ RELOADABLE = [
     "synthesis", "synthesis_config", "synthesis_llamacpp", "synthesis_gemini",
     "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
     "synthesis_mistral", "synthesis_nvidia", "synthesis_reasoning",
-    "synthesis_session", "synthesis_warm", "synthesis_pipeline",
+    "synthesis_session", "synthesis_warm", "synthesis_pipeline", "synthesis_proxy_route",
     "request_coordinator",
     "warm_disk", "warm_persona",
     "tool_cache",

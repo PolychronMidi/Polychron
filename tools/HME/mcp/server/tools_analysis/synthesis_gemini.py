@@ -21,6 +21,7 @@ import threading
 import time
 import urllib.request
 import urllib.error
+from .synthesis_proxy_route import proxy_route as _proxy_route
 from collections import deque
 
 from hme_env import ENV
@@ -181,10 +182,13 @@ def _call_model(model: str, prompt: str, system: str,
         },
     }
     url = f"{_BASE_URL}/{model}:generateContent?key={_api_key()}"
+    _proxy_url, _proxy_hdrs = _proxy_route(url)
     req = urllib.request.Request(
-        url, data=json.dumps(body).encode(),
+        _proxy_url, data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"}, method="POST",
     )
+    for _pk, _pv in _proxy_hdrs.items():
+        req.add_header(_pk, _pv)
     try:
         with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
             data = json.loads(resp.read())

@@ -32,6 +32,7 @@ import os
 import threading
 import time
 import urllib.request
+from .synthesis_proxy_route import proxy_route as _proxy_route
 import urllib.error
 from collections import deque
 
@@ -212,14 +213,17 @@ def _call_model(model: str, prompt: str, system: str,
         "max_tokens": _effective_max,
         "temperature": temperature,
     }
+    _proxy_url, _proxy_hdrs = _proxy_route(_BASE_URL)
     req = urllib.request.Request(
-        _BASE_URL, data=json.dumps(body).encode(),
+        _proxy_url, data=json.dumps(body).encode(),
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {_api_key()}",
             "User-Agent": "HME-Polychron/1.0",
         }, method="POST",
     )
+    for _pk, _pv in _proxy_hdrs.items():
+        req.add_header(_pk, _pv)
     try:
         with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
             data = json.loads(resp.read())
