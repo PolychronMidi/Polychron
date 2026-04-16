@@ -249,6 +249,52 @@ class _RagDispatcher:
         return getattr(inst, name)
 _lib_engines: dict = {}  # key = lib_rel path
 
+
+class _MxbaiRerankerAdapter:
+    """Adapter exposing CrossEncoder.predict(pairs) on top of MxbaiRerankV2.
+
+    mxbai-rerank-v2 is a Qwen2-based listwise reranker, NOT a standard
+    CrossEncoder. Loading it via sentence_transformers.CrossEncoder leaves
+    the score head randomly initialized (silent corruption — outputs look
+    plausible but are noise). The official mxbai_rerank library loads the
+    real score head and exposes .rank(query, docs).
+
+    Engine search code feeds pairs as [(query, doc1), (query, doc2), ...]
+    where the query is constant across the batch. We split, call .rank(),
+    then map results back to input order. Returns raw logits (~[-10, +10])
+    so downstream batch min-max normalization works the same as bge-reranker.
+    """
+
+    def __init__(self, model_name: str, device: str, dtype=None):
+        from mxbai_rerank import MxbaiRerankV2
+        kwargs = {"device": device}
+        if dtype is not None:
+            kwargs["torch_dtype"] = dtype
+        self._inner = MxbaiRerankV2(model_name, **kwargs)
+        self._device = device
+
+    @property
+    def device(self):
+        return self._device
+
+    def predict(self, pairs, show_progress_bar=False, **kwargs):
+        if not pairs:
+            return []
+        query = pairs[0][0]
+        for q, _ in pairs:
+            if q != query:
+                raise ValueError("_MxbaiRerankerAdapter.predict requires constant query across pairs")
+        docs = [d for _, d in pairs]
+        results = self._inner.rank(query, docs, return_documents=False, top_k=len(docs))
+        scores = [0.0] * len(docs)
+        for r in results:
+            scores[r.index] = float(r.score)
+        return scores
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+
 CODE_MODEL_NAME = ENV.require("RAG_CODE_MODEL")
 RERANKER_NAME = ENV.require("RAG_RERANKER_MODEL")
 
@@ -423,12 +469,14 @@ def _load_engines():
             logger.warning(f"Code embedder load failed ({e}), falling back to text embedder for code_chunks")
             _shared_code_model = _shared_model
 
-        # Cross-encoder reranker (mxbai-rerank-base-v2) — rerank top candidates.
+        # Listwise reranker (mxbai-rerank-base-v2) — rerank top candidates.
         # 500M params, Apache 2.0, Qwen2.5-based. fp16 to fit in VRAM.
+        # MUST load via mxbai_rerank lib — CrossEncoder leaves score head
+        # randomly initialized (silent corruption).
         try:
-            _shared_reranker = CrossEncoder(
-                RERANKER_NAME, max_length=512, device=_rag_device,
-                model_kwargs=_fp16_kwargs,
+            import torch as _torch
+            _shared_reranker = _MxbaiRerankerAdapter(
+                RERANKER_NAME, device=_rag_device, dtype=_torch.float16,
             )
             logger.info(f"Reranker: {RERANKER_NAME} on {_rag_device}")
         except Exception as e:
@@ -457,7 +505,7 @@ def _load_engines():
             except Exception as e:
                 logger.warning(f"CPU-mirror code embedder load failed ({e}) — GPU-only fallback")
             try:
-                _shared_reranker_cpu = CrossEncoder(RERANKER_NAME, max_length=512, device="cpu")
+                _shared_reranker_cpu = _MxbaiRerankerAdapter(RERANKER_NAME, device="cpu")
                 logger.info(f"Reranker (CPU mirror): {RERANKER_NAME}")
             except Exception as e:
                 logger.warning(f"CPU-mirror reranker load failed ({e}) — GPU-only fallback")
@@ -505,8 +553,9 @@ def _load_engines():
                 )
 
             def _make_rerank_gpu():
-                return CrossEncoder(
-                    RERANKER_NAME, max_length=512, device=f"cuda:{_gpu_idx}",
+                import torch as _torch
+                return _MxbaiRerankerAdapter(
+                    RERANKER_NAME, device=f"cuda:{_gpu_idx}", dtype=_torch.float16,
                 )
 
             # Register in smallest-first priority order (priority=1 offloads
