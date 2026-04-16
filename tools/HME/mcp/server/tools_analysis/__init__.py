@@ -39,8 +39,24 @@ def _alias_subpackage(subpkg_name, module_names):
 # ── Import order: subpackages first (with immediate aliasing), then flat modules
 from . import tool_cache  # noqa: E402, F401
 
-# synthesis/ — 14 modules, aliased immediately so downstream imports resolve
-from . import synthesis  # noqa: E402, F401
+# synthesis/ — import each module explicitly, then alias at parent level
+from .synthesis import synthesis  # noqa: E402, F401
+from .synthesis import synthesis_config  # noqa: E402, F401
+from .synthesis import synthesis_llamacpp  # noqa: E402, F401
+from .synthesis import synthesis_inference  # noqa: E402, F401
+from .synthesis import synthesis_cascade  # noqa: E402, F401
+from .synthesis import synthesis_provider_base  # noqa: E402, F401
+from .synthesis import synthesis_proxy_route  # noqa: E402, F401
+from .synthesis import synthesis_session  # noqa: E402, F401
+from .synthesis import synthesis_warm  # noqa: E402, F401
+from .synthesis import synthesis_pipeline  # noqa: E402, F401
+from .synthesis import synthesis_reasoning  # noqa: E402, F401
+from .synthesis import synthesis_groq  # noqa: E402, F401
+from .synthesis import synthesis_cerebras  # noqa: E402, F401
+from .synthesis import synthesis_mistral  # noqa: E402, F401
+from .synthesis import synthesis_nvidia  # noqa: E402, F401
+from .synthesis import synthesis_openrouter  # noqa: E402, F401
+from .synthesis import synthesis_gemini  # noqa: E402, F401
 _alias_subpackage("synthesis", [
     "synthesis", "synthesis_cerebras", "synthesis_config", "synthesis_gemini",
     "synthesis_groq", "synthesis_llamacpp", "synthesis_mistral", "synthesis_nvidia",
@@ -49,15 +65,28 @@ _alias_subpackage("synthesis", [
     "synthesis_inference", "synthesis_cascade", "synthesis_provider_base",
 ])
 
-# coupling/ — 5 modules
-from . import coupling  # noqa: E402, F401
+# coupling/ — import each module explicitly
+from .coupling import coupling  # noqa: E402, F401
+from .coupling import coupling_bridges  # noqa: E402, F401
+from .coupling import coupling_channels  # noqa: E402, F401
+from .coupling import coupling_clusters  # noqa: E402, F401
+from .coupling import coupling_data  # noqa: E402, F401
 _alias_subpackage("coupling", [
     "coupling", "coupling_bridges", "coupling_channels",
     "coupling_clusters", "coupling_data",
 ])
 
-# evolution/ — 9 modules
-from . import evolution  # noqa: E402, F401
+# evolution/ — import each module explicitly
+from .evolution import evolution  # noqa: E402, F401
+from .evolution import evolution_admin  # noqa: E402, F401
+from .evolution import evolution_evolve  # noqa: E402, F401
+from .evolution import evolution_introspect  # noqa: E402, F401
+from .evolution import evolution_invariants  # noqa: E402, F401
+from .evolution import evolution_next  # noqa: E402, F401
+from .evolution import evolution_selftest  # noqa: E402, F401
+from .evolution import evolution_suggest  # noqa: E402, F401
+from .evolution import evolution_trace  # noqa: E402, F401
+from .evolution import evolution_strategies  # noqa: E402, F401
 _alias_subpackage("evolution", [
     "evolution", "evolution_admin", "evolution_evolve", "evolution_introspect",
     "evolution_invariants", "evolution_next", "evolution_selftest",
