@@ -33,6 +33,8 @@ _config: dict = {
     "rag_ignore": None,
     "rag_libs": [],
     "rag_lib_abs": [],
+    "rag_index_dirs": [],      # explicit allowlist — ONLY these dirs get indexed
+    "rag_index_dirs_abs": [],  # resolved absolute paths
     "max_file_size": DEFAULT_MAX_FILE_SIZE,
     "project_root": "",
 }
@@ -85,6 +87,16 @@ def init_config(project_root: str):
         _config["max_file_size"] = int(max_kb) * 1024
         logger.info(f"ragMaxFileSize: {max_kb} KB")
 
+    # ragIndexDirs: explicit allowlist of directories to index (relative to project root).
+    # When set, ONLY these directories are indexed — no directory argument can override this.
+    index_dirs = rag_cfg.get("ragIndexDirs")
+    if index_dirs and isinstance(index_dirs, list):
+        _config["rag_index_dirs"] = index_dirs
+        _config["rag_index_dirs_abs"] = [
+            os.path.normpath(os.path.join(project_root, d)) for d in index_dirs
+        ]
+        logger.info(f"ragIndexDirs loaded: {index_dirs} — ONLY these directories will be indexed")
+
 
 def get_ignore_dirs() -> set[str]:
     return _config["ignore_dirs"]
@@ -100,6 +112,16 @@ def get_lib_dirs() -> list[str]:
 
 def get_lib_abs_paths() -> list[str]:
     return list(_config["rag_lib_abs"])
+
+
+def get_index_dirs() -> list[str]:
+    """Return the explicit index allowlist. Empty = index everything (legacy)."""
+    return list(_config["rag_index_dirs"])
+
+
+def get_index_dirs_abs() -> list[str]:
+    """Resolved absolute paths of ragIndexDirs."""
+    return list(_config["rag_index_dirs_abs"])
 
 
 def get_project_root() -> str:
@@ -118,9 +140,24 @@ def walk_code_files(
     size_limit = max_size if max_size is not None else _config["max_file_size"]
     ignore_dirs = _config["ignore_dirs"]
     rag_ignore = _config["rag_ignore"]
-    root = Path(directory)
 
-    for dirpath, dirnames, filenames in os.walk(root):
+    # LOCKED: when ragIndexDirs is configured, ONLY walk those directories.
+    # The `directory` argument is ignored — prevents any caller from indexing
+    # arbitrary paths (e.g. src/ root with huge data files).
+    roots: list[Path] = []
+    if _config["rag_index_dirs_abs"]:
+        for d in _config["rag_index_dirs_abs"]:
+            p = Path(d)
+            if p.is_dir():
+                roots.append(p)
+        if not roots:
+            logger.warning("ragIndexDirs configured but no valid directories found — indexing nothing")
+            return
+    else:
+        roots = [Path(directory)]
+
+    for root in roots:
+      for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in ignore_dirs]
 
         if exclude_libs and _config["rag_lib_abs"]:
