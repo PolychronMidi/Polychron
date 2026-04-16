@@ -16,7 +16,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT   = path.join(__dirname, '../..');
+const ROOT   = path.join(__dirname, '..', '..', '..');
 const SRC    = path.join(ROOT, 'src');
 const OUTPUT = path.join(ROOT, 'metrics', 'dependency-graph.json');
 const BOOT_ORDER_PATH = path.join(ROOT, 'metrics', 'boot-order.json');

@@ -30,7 +30,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const TODOS = path.join(ROOT, '.claude', 'mcp', 'HME', 'todos.json');
 const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
 const OUT = path.join(ROOT, 'metrics', 'hme-intention-gap.json');

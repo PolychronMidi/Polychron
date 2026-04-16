@@ -31,7 +31,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
 const STALENESS = path.join(ROOT, 'metrics', 'kb-staleness.json');
 const VIOLATIONS = path.join(ROOT, 'metrics', 'hme-violations.json');

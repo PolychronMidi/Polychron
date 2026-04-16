@@ -11,7 +11,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT             = path.join(__dirname, '../..');
+const ROOT             = path.join(__dirname, '..', '..', '..');
 const GLOBALS_DTS_PATH = path.join(ROOT, 'src/types/globals.d.ts');
 const BOOTSTRAP_PATH   = path.join(ROOT, 'src/play/fullBootstrap.js');
 

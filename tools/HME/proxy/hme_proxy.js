@@ -381,10 +381,10 @@ function buildJurisdictionContext(filePaths) {
     '',
     ...lines,
     'If any bias bound is stale, re-snapshot with:',
-    '  node scripts/pipeline/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
+    '  node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
     '',
     'If a drifted KB entry is shown, re-capture its signature after updating the description:',
-    '  python3 scripts/pipeline/capture-kb-signatures.py',
+    '  python3 scripts/pipeline/hme/capture-kb-signatures.py',
     '',
   ].join('\n');
 }
