@@ -1,7 +1,7 @@
 import { LlamacppMessage, GPU_NUM_CTX, TokenUsage } from "./router";
 import { ContentBlock, ChatMessage } from "./types";
-import { TranscriptLogger } from "./TranscriptLogger";
-import { SessionEntry } from "./SessionStore";
+import { TranscriptLogger } from "./session/TranscriptLogger";
+import { SessionEntry } from "./session/SessionStore";
 
 export const CHARS_PER_TOKEN = 3.5;
 

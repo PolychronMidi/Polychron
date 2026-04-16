@@ -37,8 +37,8 @@ export interface TokenUsage {
 }
 
 // Re-export all functions from split modules so existing imports from "./router" keep working.
-export { streamClaude, streamClaudePty } from "./routerClaude";
-export { streamLlamacpp, streamLlamacppAgentic, GPU_NUM_CTX } from "./routerLlamacpp";
+export { streamClaude, streamClaudePty } from "./routers/routerClaude";
+export { streamLlamacpp, streamLlamacppAgentic, GPU_NUM_CTX } from "./routers/routerLlamacpp";
 export {
   fetchHmeContext,
   enrichPrompt,
@@ -50,5 +50,5 @@ export {
   isHmeShimReady,
   logShimError,
   streamHybrid,
-} from "./routerHme";
-export type { EnrichResult, EnrichPromptResult } from "./routerHme";
+} from "./routers/routerHme";
+export type { EnrichResult, EnrichPromptResult } from "./routers/routerHme";

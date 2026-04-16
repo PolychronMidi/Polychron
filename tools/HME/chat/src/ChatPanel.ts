@@ -14,8 +14,8 @@ import {
   renameSession,
   deriveTitle,
   listChainLinks,
-} from "./SessionStore";
-import { TranscriptLogger, nullTranscript } from "./TranscriptLogger";
+} from "./session/SessionStore";
+import { TranscriptLogger, nullTranscript } from "./session/TranscriptLogger";
 import { synthesizeNarrative } from "./Arbiter";
 import {
   uid,
@@ -25,7 +25,7 @@ import {
   streamClaudeMsg, streamLlamacppMsg, streamHybridMsg,
   streamAgentMsg, streamAgentHybridMsg,
 } from "./chatStreaming";
-import { buildCrossRouteContext, applyCrossRouteContext } from "./crossRouteHistory";
+import { buildCrossRouteContext, applyCrossRouteContext } from "./session/crossRouteHistory";
 import { PanelHost } from "./panel/PanelHost";
 import { ErrorSink } from "./panel/ErrorSink";
 import { ShimSupervisor } from "./panel/ShimSupervisor";

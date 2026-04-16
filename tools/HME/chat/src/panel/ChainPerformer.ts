@@ -1,9 +1,9 @@
 import * as path from "path";
 import * as fs from "fs";
 import { ChatMessage } from "../types";
-import { ChainLink, saveChainLink, loadChainSummaries } from "../SessionStore";
+import { ChainLink, saveChainLink, loadChainSummaries } from "../session/SessionStore";
 import { synthesizeChainSummary } from "../Arbiter";
-import { buildSummaryPrompt, buildFallbackSummary } from "../chatChain";
+import { buildSummaryPrompt, buildFallbackSummary } from "../session/chatChain";
 import { uid } from "../streamUtils";
 import { PanelHost } from "./PanelHost";
 
