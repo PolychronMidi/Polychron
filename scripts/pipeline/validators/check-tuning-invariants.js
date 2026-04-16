@@ -14,8 +14,8 @@
 
 const fs   = require('fs');
 const path = require('path');
+const { ROOT, loadJson } = require('../hme/utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const SRC  = path.join(ROOT, 'src');
 
 // -Constant extraction utilities -

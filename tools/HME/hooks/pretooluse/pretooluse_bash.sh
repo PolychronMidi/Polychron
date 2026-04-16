@@ -61,9 +61,7 @@ if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; the
     exit 2
   fi
   # Emit pipeline_start to activity bridge
-  python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
-    --event=pipeline_start \
-    --session="$SESSION_ID" >/dev/null 2>&1 &
+  _emit_activity pipeline_start --session="$SESSION_ID"
   # Block double-backgrounding: run_in_background=true AND & in command = premature exit code 0.
   # The & makes the shell return immediately, firing a false "completed" notification while npm still runs.
   # This is the root cause of check_pipeline polling loops.

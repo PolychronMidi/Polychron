@@ -16,12 +16,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts))/'
   if _nexus_has BRIEF "$_EDIT_MODULE" || _nexus_has BRIEF "$FILE"; then
     _EDIT_READ_PRIOR=true
   fi
-  python3 "$PROJECT/tools/HME/activity/emit.py" \
-    --event=edit_pending \
-    --session="$SESSION_ID" \
-    --file="$FILE" \
-    --module="$_EDIT_MODULE" \
-    --hme_read_prior="$_EDIT_READ_PRIOR" >/dev/null 2>&1 &
+  _emit_activity edit_pending --session="$SESSION_ID" --file="$FILE" --module="$_EDIT_MODULE" --hme_read_prior="$_EDIT_READ_PRIOR"
 fi
 
 if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
