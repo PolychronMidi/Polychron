@@ -51,7 +51,7 @@ factoryFamilies = {
       };
       const prevSection = safePreBoot.call(() => sectionMemory.getPrevious(), null);
       const trendBias = (prevSection && prevSection.trend && TREND_FAMILY_BIAS[prevSection.trend])
-        ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] || 1.0) : 1.0;
+        ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] ?? 1.0) : 1.0;
       const profileMultiplier = (Number(biasedWeights[familyName]) || 1) * trendBias;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,

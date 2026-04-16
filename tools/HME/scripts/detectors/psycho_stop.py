@@ -181,6 +181,46 @@ def _has_tool_call_after_last_text(events: list) -> bool:
     return False
 
 
+def _emit_stats(pattern: str, detail: str) -> None:
+    """Append a detector-run line to metrics/detector-stats.jsonl so dead
+    phrase lists + dead patterns become quantitatively visible over time.
+    Silent on write failures — this is observability, not correctness."""
+    try:
+        import json
+        import time
+        root = os.environ.get("PROJECT_ROOT")
+        if not root:
+            # Walk up from this script.
+            from pathlib import Path
+            here = Path(__file__).resolve()
+            for parent in [here.parent, *here.parents]:
+                if (parent / "CLAUDE.md").exists() and (parent / ".env").exists():
+                    root = str(parent)
+                    break
+        if not root:
+            return
+        out_path = os.path.join(root, "metrics", "detector-stats.jsonl")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "ts": time.time(),
+                "detector": "psycho_stop",
+                "verdict": pattern,
+                "detail": detail,
+            }) + "\n")
+        # Trim to last 5000 lines (no-op if smaller).
+        try:
+            with open(out_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            if len(lines) > 5000:
+                with open(out_path, "w", encoding="utf-8") as f:
+                    f.writelines(lines[-5000:])
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
@@ -190,23 +230,31 @@ def main() -> int:
     # Pattern A: schedule-and-run
     saw_bg = False
     saw_wakeup = False
+    matched_bg_kw = None
     for event in events:
         for tu in iter_tool_uses(event):
             if tu["name"] == "ScheduleWakeup":
                 saw_wakeup = True
             if tu["name"] == "Bash" and tu["input"].get("run_in_background"):
                 cmd = tu["input"].get("command", "")
-                if any(kw in cmd for kw in BG_KEYWORDS):
-                    saw_bg = True
+                for kw in BG_KEYWORDS:
+                    if kw in cmd:
+                        saw_bg = True
+                        matched_bg_kw = kw
+                        break
             # Heredoc-in-foreground-then-disown pattern:
             # `python3 <<'EOF' ... EOF &` with disown. Not flagged by the
             # harness as run_in_background but IS a background job.
             if tu["name"] == "Bash" and not tu["input"].get("run_in_background"):
                 cmd = tu["input"].get("command", "")
                 if " &" in cmd and "disown" in cmd:
-                    if any(kw in cmd for kw in BG_KEYWORDS):
-                        saw_bg = True
+                    for kw in BG_KEYWORDS:
+                        if kw in cmd:
+                            saw_bg = True
+                            matched_bg_kw = kw
+                            break
     if saw_bg and saw_wakeup:
+        _emit_stats("psycho", f"pattern_A: bg+wakeup (kw={matched_bg_kw!r})")
         print("psycho")
         return 0
 
@@ -216,6 +264,7 @@ def main() -> int:
         for phrase in ADMIT_PHRASES:
             if phrase in final_text:
                 if not _has_tool_call_after_last_text(events):
+                    _emit_stats("psycho", f"pattern_B: admit_phrase={phrase!r}")
                     print("psycho")
                     return 0
 
@@ -224,9 +273,11 @@ def main() -> int:
         for phrase in PERMISSION_ASK_PHRASES:
             if phrase in final_text:
                 if not _has_tool_call_after_last_text(events):
+                    _emit_stats("psycho", f"pattern_C: ask_phrase={phrase!r}")
                     print("psycho")
                     return 0
 
+    _emit_stats("ok", "")
     print("ok")
     return 0
 

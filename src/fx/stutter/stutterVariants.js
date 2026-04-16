@@ -168,12 +168,12 @@ stutterVariants = (() => {
     /** @type {Record<string, number>} */
     const regimeMap = {};
     for (const key of Object.keys(currentMap)) {
-      const cur = currentMap[key] || 1.0;
-      const from = fromMap[key] || 1.0;
+      const cur = currentMap[key] ?? 1.0;
+      const from = fromMap[key] ?? 1.0;
       regimeMap[key] = from + (cur - from) * blendT;
     }
     const phase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
-    const phaseDenseMult = PHASE_DENSE_MULT[phase] || 1.0;
+    const phaseDenseMult = PHASE_DENSE_MULT[phase] ?? 1.0;
 
     // R16: hocket mode favors rhythmic/subtle variants that complement interleaving
     const HOCKET_WEIGHTS = { ghostStutter: 1.5, rhythmicGrid: 1.4, rhythmicDotted: 1.4, harmonicShadow: 1.2, machineGun: 0.5, stutterTremolo: 0.5, stutterSwarm: 0.6 };
@@ -233,7 +233,7 @@ stutterVariants = (() => {
     if (profSnap && profSnap.couplingLabels) {
       for (const label of Object.values(profSnap.couplingLabels)) {
         const w = COUPLING_LABEL_WEIGHTS[/** @type {string} */ (label)];
-        if (w) { for (const [vn, vm] of Object.entries(w)) { labelMults[vn] = (labelMults[vn] || 1.0) * vm; } }
+        if (w) { for (const [vn, vm] of Object.entries(w)) { labelMults[vn] = (labelMults[vn] ?? 1.0) * vm; } }
       }
     }
 
@@ -256,21 +256,21 @@ stutterVariants = (() => {
 
     const pool = [{ name: null, fn: null, weight: 1.2 }];
     for (const [name, entry] of registered) {
-      const regimeMult = regimeMap[name] || 1.0;
+      const regimeMult = regimeMap[name] ?? 1.0;
       const phaseMult = DENSE_VARIANTS.has(name) ? phaseDenseMult : 1.0;
-      const hocketMult = inHocket ? (HOCKET_WEIGHTS[name] || 1.0) : 1.0;
+      const hocketMult = inHocket ? (HOCKET_WEIGHTS[name] ?? 1.0) : 1.0;
       const artMult = artProfile
-        ? (artProfile.isStaccato ? (STACCATO_WEIGHTS[name] || 1.0)
-          : artProfile.isLegato ? (LEGATO_WEIGHTS[name] || 1.0) : 1.0)
+        ? (artProfile.isStaccato ? (STACCATO_WEIGHTS[name] ?? 1.0)
+          : artProfile.isLegato ? (LEGATO_WEIGHTS[name] ?? 1.0) : 1.0)
         : 1.0;
       // R30 lab: continuous exoticness gradient (0-1) blends subtle-to-dramatic
       const journeyMult = exoticness > 0.5
-        ? 1.0 + ((JOURNEY_DRAMATIC[name] || 1.0) - 1.0) * exoticness
-        : 1.0 + ((JOURNEY_SUBTLE[name] || 1.0) - 1.0) * (1 - exoticness);
-      const boundaryMult = atPhraseBoundary ? (PHRASE_BOUNDARY_WEIGHTS[name] || 1.0) : 1.0;
-      const labelMult = labelMults[name] || 1.0;
-      const entropyMult = entropyReversal ? (ENTROPY_REVERSAL_WEIGHTS[name] || 1.0) : 1.0;
-      const responseMult = responseWeights[name] || 1.0;
+        ? 1.0 + ((JOURNEY_DRAMATIC[name] ?? 1.0) - 1.0) * exoticness
+        : 1.0 + ((JOURNEY_SUBTLE[name] ?? 1.0) - 1.0) * (1 - exoticness);
+      const boundaryMult = atPhraseBoundary ? (PHRASE_BOUNDARY_WEIGHTS[name] ?? 1.0) : 1.0;
+      const labelMult = labelMults[name] ?? 1.0;
+      const entropyMult = entropyReversal ? (ENTROPY_REVERSAL_WEIGHTS[name] ?? 1.0) : 1.0;
+      const responseMult = responseWeights[name] ?? 1.0;
       // Self-balancing: boost underrepresented variants, dampen overrepresented
       let balanceMult = 1.0;
       if (variantAvgShare > 0 && totalVariantCount > 50) {
@@ -278,10 +278,10 @@ stutterVariants = (() => {
         balanceMult = thisShare > variantAvgShare * 1.5 ? 0.7 : thisShare < variantAvgShare * 0.5 ? 1.4 : 1.0;
       }
       const emergentMult = emergentActive
-        ? (emergentComplexity > 0.5 ? (EMERGENT_COMPLEX_WEIGHTS[name] || 1.0) : (EMERGENT_DENSE_WEIGHTS[name] || 1.0))
+        ? (emergentComplexity > 0.5 ? (EMERGENT_COMPLEX_WEIGHTS[name] ?? 1.0) : (EMERGENT_DENSE_WEIGHTS[name] ?? 1.0))
         * (1.0 + emergentDensity * 0.3)
         : 1.0;
-      const melodicMult = melodicWeights[name] || 1.0;
+      const melodicMult = melodicWeights[name] ?? 1.0;
       pool.push({ name, fn: entry.fn, weight: entry.weight * regimeMult * phaseMult * hocketMult * artMult * journeyMult * boundaryMult * labelMult * entropyMult * responseMult * balanceMult * emergentMult * melodicMult });
     }
     let totalWeight = 0;

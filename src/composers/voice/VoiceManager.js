@@ -105,10 +105,10 @@ VoiceManager = class VoiceManager {
     this.V.requireFinite(voiceCount, 'pickNotesForBeat.voiceCount');
     if (voiceCount <= 0) throw new Error('VoiceManager.pickNotesForBeat: voiceCount must be positive');
 
-    const layerId = this.V.optionalType(layer.id, 'string') || 'default';
+    const layerId = this.V.optionalType(layer.id, 'string', 'default');
 
     // Extract phrase context for arc-driven biases
-    const phraseContext = /** @type {any} */ (this.V.optionalType(opts && opts.phraseContext, 'object')) || {};
+    const phraseContext = /** @type {any} */ (this.V.optionalType(opts && opts.phraseContext, 'object', {}));
     const arcDensityMultiplier = this.V.optionalFinite(Number(phraseContext.densityMultiplier), 1.0);
     // R21: coherence-counterpoint: phase-locked = high independence (counterpoint),
     // divergent = low independence (harmony). Reads phase lock state directly.

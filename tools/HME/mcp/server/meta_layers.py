@@ -4,14 +4,23 @@ Extracted from meta_observer.py. Each layer is a self-contained function
 called by the meta_loop dispatcher at configured intervals.
 """
 import os
+import sys
 import json
 import shutil
+import subprocess
 import time
 import logging
 import threading
 import re
 
-from hme_env import ENV
+# Ensure tools/HME/mcp/ is on sys.path so `from hme_env import ENV` works
+# regardless of import order (meta_layers can be loaded before meta_observer
+# when the module graph is warm-primed on a fresh interpreter).
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+
+from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME.meta")
 

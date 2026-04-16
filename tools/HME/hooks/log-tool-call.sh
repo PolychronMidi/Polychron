@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+# _safety.sh lives under helpers/ after the hooks reorg. A missing
+# source here silently kills every _safe_jq / _safe_curl downstream,
+# which means LIFESAVER's FAIL-scan, elapsed-time threshold, and the
+# newer hme.log ERROR watermark ALL go dark. Fail fast with exit 1
+# instead if the helper can't be sourced.
+set -e
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/helpers/_safety.sh"
+set +e
 # PostToolUse hook — logs every tool call from the main Claude Code session
 # to the HME session transcript JSONL and the HTTP shim.
 #
@@ -61,6 +68,42 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
       echo "[$FAIL_TS] $TOOL_NAME: $line" >> "$ERROR_LOG"
     done <<< "$FAILS"
     echo "🚨 LIFESAVER: FAIL in ${TOOL_NAME} output logged to hme-errors.log — stop.sh will block until fixed." >&2
+  fi
+
+  # LIFESAVER gap fix: the above only scans tool OUTPUT. Daemon threads
+  # (meta-observer, llamacpp supervisor, etc.) write ERROR-level lines
+  # directly to log/hme.log via the Python logger — completely invisible
+  # to the tool-call scanner. Tail the hme.log slice produced SINCE the
+  # last tool call and escalate any new ERROR lines to hme-errors.log so
+  # stop.sh picks them up on the next stop.
+  # PROJECT_ROOT may be empty at this stage (it's resolved further down
+  # from CWD). Resolve root independently here from hook cwd / env / $CWD.
+  LIFESAVER_ROOT="${PROJECT_ROOT:-${CWD:-$(pwd)}}"
+  HME_LOG_PATH="$LIFESAVER_ROOT/log/hme.log"
+  WATERMARK="$LIFESAVER_ROOT/tmp/hme-log-errors.watermark"
+  if [ -f "$HME_LOG_PATH" ]; then
+    mkdir -p "$(dirname "$WATERMARK")" 2>/dev/null
+    LAST_SIZE=0
+    [ -f "$WATERMARK" ] && LAST_SIZE=$(cat "$WATERMARK" 2>/dev/null || echo 0)
+    [[ ! "$LAST_SIZE" =~ ^[0-9]+$ ]] && LAST_SIZE=0
+    CUR_SIZE=$(stat -c%s "$HME_LOG_PATH" 2>/dev/null || echo 0)
+    # On log rotation CUR_SIZE may be smaller; reset watermark in that case.
+    [ "$CUR_SIZE" -lt "$LAST_SIZE" ] && LAST_SIZE=0
+    if [ "$CUR_SIZE" -gt "$LAST_SIZE" ]; then
+      # Use ,NNN ERROR anchor (milliseconds + LEVEL) so INFO lines that
+      # contain the word "ERROR" in their tool-input payload don't trigger.
+      NEW_ERRORS=$(tail -c +$((LAST_SIZE + 1)) "$HME_LOG_PATH" 2>/dev/null | grep -E ',[0-9]{3}[[:space:]]+ERROR[[:space:]]' | head -20)
+      if [ -n "$NEW_ERRORS" ]; then
+        ERROR_LOG="$LIFESAVER_ROOT/log/hme-errors.log"
+        FAIL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        ERR_COUNT=$(echo "$NEW_ERRORS" | wc -l)
+        while IFS= read -r line; do
+          [ -n "$line" ] && echo "[$FAIL_TS] hme.log: $line" >> "$ERROR_LOG"
+        done <<< "$NEW_ERRORS"
+        echo "🚨 LIFESAVER: $ERR_COUNT ERROR line(s) in log/hme.log since last tool call — daemon-thread failure. stop.sh will block until investigated." >&2
+      fi
+      echo "$CUR_SIZE" > "$WATERMARK"
+    fi
   fi
 fi
 

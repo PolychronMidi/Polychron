@@ -120,7 +120,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           : { phaseCollapseBoost: 4.0, phaseFloorBoost: 1.0, phaseRetractionMult: 1.0 };
         const emergencyBoost = isPhaseCollapse ? phaseBoosts.phaseCollapseBoost
           : (isEmergencyStarved ? 3.0
-          : m.max(1.0, phaseBoosts.phaseFloorBoost * (phaseBoosts.phaseRetractionMult || 1.0)));
+          : m.max(1.0, phaseBoosts.phaseFloorBoost * (phaseBoosts.phaseRetractionMult ?? 1.0)));
         if (axis === 'phase') phaseFloorController.recordBoostApplied(emergencyBoost);
         // R5 E2: Symmetric giniMult in undershoot handler. Previously only
         // the overshoot handler used giniMult -- suppressed axes didn't recover

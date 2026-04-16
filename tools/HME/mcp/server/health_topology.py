@@ -219,7 +219,7 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
                 arbiter_alias = ENV.require("HME_ARBITER_MODEL")
                 healthy_signals.append((f"model_init({arbiter_alias})", True))
             if key == "coder":
-                local_model = ENV.require("HME_LOCAL_MODEL")
+                local_model = ENV.require("HME_CODER_MODEL")
                 healthy_signals.append((f"model_init({local_model})", True))
 
     resolved_count = 0

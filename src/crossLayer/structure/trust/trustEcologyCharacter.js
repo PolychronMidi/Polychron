@@ -42,7 +42,7 @@ trustEcologyCharacter = (() => {
     const melodicCtxTEC = emergentMelodicEngine.getContext();
     const thematicDensity = melodicCtxTEC ? V.optionalFinite(melodicCtxTEC.thematicDensity, 0) : 0;
     const dynamicBoost = DOMINANCE_BOOST + thematicDensity * 0.3; // 1.5 neutral ... 1.8 strong recall
-    result[dominantFamily] = (result[dominantFamily] || 1.0) * dynamicBoost;
+    result[dominantFamily] = (result[dominantFamily] ?? 1.0) * dynamicBoost;
     return result;
   }
 

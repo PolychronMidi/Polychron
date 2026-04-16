@@ -38,7 +38,7 @@ _SHIM_PORT = ENV.require_int("HME_SHIM_PORT")
 
 # Model config — llama-server (OpenAI /v1/chat/completions) is the only backend.
 _ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
-_CODER_MODEL = ENV.require("HME_LOCAL_MODEL")
+_CODER_MODEL = ENV.require("HME_CODER_MODEL")
 _REASONER_MODEL = ENV.require("HME_REASONING_MODEL")
 _LLAMACPP_ARBITER_URL = ENV.require("HME_LLAMACPP_ARBITER_URL")
 _LLAMACPP_CODER_URL   = ENV.require("HME_LLAMACPP_CODER_URL")

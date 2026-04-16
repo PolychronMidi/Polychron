@@ -766,6 +766,35 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("Infrastructure trends: readable", False, str(e)))
 
+    # Probe 24: Meta-coherence audit — detector-of-detectors. Every regex,
+    # path reference, phrase list in the HME diagnostic layer is exercised
+    # against its target corpus. Stale/missing patterns = silent drift.
+    # Run as subprocess so a crashed audit doesn't take out the stress test.
+    try:
+        audit = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "scripts", "meta_coherence_audit.py")
+        if os.path.isfile(audit):
+            rc = subprocess.run(
+                ["python3", audit], capture_output=True, text=True, timeout=60,
+                cwd=ctx.PROJECT_ROOT,
+                env={**os.environ, "PROJECT_ROOT": ctx.PROJECT_ROOT},  # env-ok
+            )
+            stale_n = 0
+            err_n = 0
+            for ln in (rc.stdout or "").splitlines():
+                m = re.match(r"\s*Stale/missing:\s*(\d+)", ln)
+                if m: stale_n = int(m.group(1))
+                m = re.match(r"\s*Errors:\s*(\d+)", ln)
+                if m: err_n = int(m.group(1))
+            label = f"Meta-coherence audit ({stale_n} stale, {err_n} err)"
+            # Non-blocking: we REPORT but don't fail the probe on stale findings.
+            # The audit is itself a fresh layer; once its own baselines
+            # are established we can promote stale>0 to a hard failure.
+            results.append((label, True, f"{stale_n} stale patterns in diagnostic layer (run `python3 {audit}` for details)" if stale_n else "all detectors live"))
+        else:
+            results.append(("Meta-coherence audit: script exists", False, f"missing: {audit}"))
+    except Exception as e:
+        results.append(("Meta-coherence audit: runnable", False, f"{type(e).__name__}: {e}"))
+
     # Format output
     passed = sum(1 for _, ok, _ in results if ok)
     total = len(results)
