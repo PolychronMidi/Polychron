@@ -23,16 +23,17 @@ coordinationIndependenceManager = (() => {
     'motif-echoIdentity'
   ];
 
-  const TICK_INTERVAL = 4;
-  const MIN_DWELL_BEATS = 12;
+  const _cimc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('coordinationIndependenceManager') : {};
+  const TICK_INTERVAL = _cimc.tickInterval || 4;
+  const MIN_DWELL_BEATS = _cimc.minDwellBeats || 12;
   // R26 E4: Per-pair stagger breaks simultaneous adjustment/evaluation so
   // effectiveness tracks per-pair health attribution, not shared global delta.
   // R26 listen: stagger=2 over-delayed high-index pairs (32 beat dwell for pair 10),
   // blocking coherent formation. Reduced to 1 (max dwell 22, 10 beat spread).
   const PAIR_DWELL_STAGGER = 1;
   const SELF_INTERFERENCE_WINDOW = 3;
-  const EFFECTIVENESS_ALPHA = 0.06;
-  const DIAL_STEP = 0.08;
+  const EFFECTIVENESS_ALPHA = _cimc.effectivenessAlpha || 0.06;
+  const DIAL_STEP = _cimc.dialStep || 0.08;
 
   // Phase targets: what coordination level each section phase wants
   const PHASE_TARGETS = {

@@ -2,22 +2,18 @@ adaptiveTrustScores = (() => {
   const V = validator.create('adaptiveTrustScores');
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
+  const _atsc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('adaptiveTrustScores') : {};
 
-  // Exploration bonus: starving systems get periodic positive nudges
-  // to ensure they occasionally act and have a chance to prove their worth.
-  const EXPLORATION_THRESHOLD = 0.10; // score below this triggers exploration
-  const EXPLORATION_NUDGE     = 0.03; // small positive injection per decay cycle
+  const EXPLORATION_THRESHOLD = _atsc.explorationThreshold || 0.10;
+  const EXPLORATION_NUDGE     = _atsc.explorationNudge || 0.03;
 
-  // Decay floor: scores cannot decay below this minimum. Prevents trust
-  // from collapsing to near-zero for infrequently-active systems where
-  // cumulative decay overwhelms sparse positive payoffs.
-  const _BASE_DECAY_FLOOR = 0.05;
+  const _BASE_DECAY_FLOOR = _atsc.baseDecayFloor || 0.05;
   let cimScale = 0.5;
 
   // Trust ceiling: prevents runaway dominance where high-trust systems
   // accumulate ever-more influence via positive feedback (high trust -
   // more influence - more positive outcomes - higher trust).
-  const _BASE_TRUST_CEILING = 0.75; // max score (→ max weight ~1.56)
+  const _BASE_TRUST_CEILING = _atsc.baseTrustCeiling || 0.75;
 
   // Metaprofile trust axis: dominantCap scales the ceiling, starvationFloor scales the floor.
   // Default cap 1.8 → ceiling 0.75. Meditative cap 1.9 → ceiling ~0.79. Chaotic cap 1.4 → ceiling ~0.58.
@@ -36,10 +32,9 @@ adaptiveTrustScores = (() => {
     return _BASE_DECAY_FLOOR;
   }
 
-  const _BASE_EMA_DECAY = 0.85; // R33 E2: 0.9->0.85 faster trust adaptation
-  const _BASE_EMA_NEW = 0.15;  // R33 E2: 0.1->0.15 faster learning rate
-  // R95 E2: Regime-responsive EMA learning rate
-  const _BASE_EMA_NEW_REGIME = { exploring: 0.20, evolving: 0.15, coherent: 0.12 };
+  const _BASE_EMA_DECAY = _atsc.baseEmaDecay || 0.85;
+  const _BASE_EMA_NEW = _atsc.baseEmaNew || 0.15;
+  const _BASE_EMA_NEW_REGIME = _atsc.emaNewRegime || { exploring: 0.20, evolving: 0.15, coherent: 0.12 };
 
   // Metaprofile trust concentration: scales learning rate.
   // High concentration (0.7+) = slower learning → incumbents dominate.

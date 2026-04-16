@@ -86,5 +86,28 @@ assertClose(eq3.corrT, 0, 0.01, 'on-target → no correction');
 
 // ── Summary ─────────────────────────────────────────────────────────────────
 
+// ── metaProfiles.disableAxis ────────────────────────────────────────────────
+// Requires full conductor load for this section
+require('../src/conductor');
+
+console.log('metaProfiles.disableAxis:');
+
+metaProfiles.setActive('chaotic');
+const before = metaProfiles.getRegimeTargets();
+assert(before.exploring === 0.50, 'chaotic exploring = 0.50');
+
+metaProfiles.disableAxis('regime-budget');
+const disabled = metaProfiles.getRegimeTargets();
+assertClose(disabled.exploring, 0.333, 0.001, 'disabled → fallback 0.333');
+assertClose(disabled.coherent, 0.333, 0.001, 'disabled → fallback 0.333');
+
+metaProfiles.enableAxis('regime-budget');
+const restored = metaProfiles.getRegimeTargets();
+assert(restored.exploring === 0.50, 'enabled → chaotic exploring restored');
+
+metaProfiles.setActive(null);
+
+// ── Summary ─────────────────────────────────────────────────────────────────
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

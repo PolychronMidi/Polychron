@@ -1412,6 +1412,16 @@ declare var metaProfileDefinitions: {
   all(): Record<string, Record<string, any>>;
 };
 declare var ACTIVE_META_PROFILE: string | null;
+declare var controllerConfig: {
+  get(controller: string, key: string, fallback: any): any;
+  getSection(controller: string): Record<string, any>;
+  reload(): void;
+};
+declare var regimeReactiveDampingCore: {
+  tensionShapeCurve(shape: string, progress: number): number;
+  equilibratorCorrection(ringShares: Record<string, number>, budget: Record<string, number>, strength: number): { corrD: number; corrT: number; corrF: number };
+  scaleByTarget(base: number, target: number, referenceTarget: number): number;
+};
 declare var metaProfiles: {
   setActive(name: string | null): void;
   getActive(): Record<string, any> | null;
