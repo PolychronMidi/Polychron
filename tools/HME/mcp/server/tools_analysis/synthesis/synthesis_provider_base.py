@@ -227,6 +227,45 @@ class OpenAIProvider:
             return None
         return choices[0].get("message", {}).get("content", "")
 
+    def model_available(self, model: str) -> bool:
+        """Check if a specific model slot has quota and open circuit."""
+        if not self._api_key():
+            return False
+        for tier in self.tiers:
+            if tier.model == model:
+                return self._quota_ok(tier) and self._cb_allow(tier)
+        return False
+
+    def call_specific(self, model: str, prompt: str, system: str = "",
+                      max_tokens: int = 4096, temperature: float = 0.2) -> str | None:
+        """Call a specific model tier directly, bypassing the cascade."""
+        for tier in self.tiers:
+            if tier.model != model:
+                continue
+            if not self._quota_ok(tier) or not self._cb_allow(tier):
+                return None
+            try:
+                self._rpm_wait(tier)
+                result = self._call_model(tier.model, prompt, system, max_tokens, temperature)
+                if result:
+                    self._record_usage(tier, 500 + max_tokens)
+                    self._cb_success(tier)
+                    return result
+                self._cb_failure(tier)
+                return None
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    with self._lock:
+                        tier.tokens_used = tier.daily_limit
+                    logger.info(f"{self.name} {model} 429 — marking exhausted")
+                else:
+                    self._cb_failure(tier)
+                return None
+            except Exception:
+                self._cb_failure(tier)
+                return None
+        return None
+
     def cascade(self, prompt: str, system: str = "",
                 max_tokens: int = 4096, temperature: float = 0.2) -> str | None:
         """Try tiers in order until one succeeds or all exhaust."""
