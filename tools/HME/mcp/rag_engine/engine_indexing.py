@@ -236,85 +236,85 @@ class RAGEngineIndexingMixin:
         for fk in changed:
             self._chunk_hashes -= self._per_file_chunks.get(fk, set())
 
-        # Phase 3: chunk and collect embeddings needed
-        pending_chunks: list[dict] = []
-        pending_texts: list[str] = []
+        # Phases 3+4: chunk, encode, and write in checkpoints of CHECKPOINT
+        # files. Each checkpoint embeds its batch, writes to the table, and
+        # saves hashes — so a crash mid-run loses at most one checkpoint.
+        CHECKPOINT = 50
         indexed_files = 0
-        new_file_hashes: dict[str, str] = {}
-        new_per_file_chunks: dict[str, set] = {}
+        total_chunks_created = 0
+        changed_items = list(changed.items())
 
-        for file_key, (content, file_path, content_hash, lang) in changed.items():
-            from chunker import chunk_by_functions
-            chunks = chunk_by_functions(content, lang)
-            file_chunk_hashes = set()
+        for batch_start in range(0, len(changed_items), CHECKPOINT):
+            batch_items = changed_items[batch_start:batch_start + CHECKPOINT]
+            batch_chunks: list[dict] = []
+            batch_texts: list[str] = []
+            batch_file_hashes: dict[str, str] = {}
+            batch_per_file_chunks: dict[str, set] = {}
 
-            for chunk in chunks:
-                if len(chunk["content"].strip()) < 10:
-                    continue
-                ch = _chunk_hash(chunk["content"])
-                if ch in self._chunk_hashes:
-                    continue  # genuine cross-file dedup
-                self._chunk_hashes.add(ch)
-                file_chunk_hashes.add(ch)
-                chunk_id = f"{file_key}:{chunk['start_line']}-{chunk['end_line']}"
-                pending_chunks.append({
-                    "id": chunk_id,
-                    "content": chunk["content"],
-                    "source": file_key,
-                    "start_line": chunk["start_line"],
-                    "end_line": chunk["end_line"],
-                    "language": lang,
-                    "token_count": len(chunk["content"]) // 4,
-                })
-                pending_texts.append(chunk["content"])
+            for file_key, (content, file_path, content_hash, lang) in batch_items:
+                from chunker import chunk_by_functions
+                chunks = chunk_by_functions(content, lang)
+                file_chunk_hashes = set()
 
-            if file_chunk_hashes:
-                new_file_hashes[file_key] = content_hash
-                new_per_file_chunks[file_key] = file_chunk_hashes
-            indexed_files += 1
+                for chunk in chunks:
+                    if len(chunk["content"].strip()) < 10:
+                        continue
+                    ch = _chunk_hash(chunk["content"])
+                    if ch in self._chunk_hashes:
+                        continue  # genuine cross-file dedup
+                    self._chunk_hashes.add(ch)
+                    file_chunk_hashes.add(ch)
+                    chunk_id = f"{file_key}:{chunk['start_line']}-{chunk['end_line']}"
+                    batch_chunks.append({
+                        "id": chunk_id,
+                        "content": chunk["content"],
+                        "source": file_key,
+                        "start_line": chunk["start_line"],
+                        "end_line": chunk["end_line"],
+                        "language": lang,
+                        "token_count": len(chunk["content"]) // 4,
+                    })
+                    batch_texts.append(chunk["content"])
 
-        # Phase 4: embed and update table
-        if pending_texts:
-            logger.info(f"Encoding {len(pending_texts)} chunks...")
-            vectors = self._batch_encode(pending_texts)
-            for chunk, vec in zip(pending_chunks, vectors):
+                if file_chunk_hashes:
+                    batch_file_hashes[file_key] = content_hash
+                    batch_per_file_chunks[file_key] = file_chunk_hashes
+                indexed_files += 1
+
+            if not batch_texts:
+                continue
+
+            logger.info(f"Checkpoint {batch_start//CHECKPOINT + 1}: encoding {len(batch_texts)} chunks from {len(batch_items)} files...")
+            vectors = self._batch_encode(batch_texts)
+            for chunk, vec in zip(batch_chunks, vectors):
                 chunk["vector"] = vec
 
-        if pending_chunks:
-            stale_sources = {c["source"] for c in pending_chunks}
+            stale_sources = {c["source"] for c in batch_chunks}
             if self.table is not None:
                 try:
                     for src in stale_sources:
                         self.table.delete(f"source = '{_sanitize(src)}'")
-                    self.table.add(pending_chunks)
+                    self.table.add(batch_chunks)
                 except Exception as e:
-                    logger.error(f"Table delete+add failed, falling back to full overwrite: {e}")
-                    try:
-                        existing = self.table.to_arrow()
-                        source_col = existing.column("source").to_pylist()
-                        keep_mask = [s not in stale_sources for s in source_col]
-                        keep_table = existing.filter(keep_mask)
-                        merged = keep_table.to_pylist()
-                        for row in merged:
-                            if "token_count" not in row or row["token_count"] is None:
-                                row["token_count"] = len(row.get("content", "")) // 4
-                        merged.extend(pending_chunks)
-                        self.table = self.db.create_table(
-                            "code_chunks", data=merged, schema=self._code_schema, mode="overwrite"
-                        )
-                    except Exception as e2:
-                        logger.error(f"Fallback overwrite also failed: {e2}")
-                        self.table = self.db.create_table(
-                            "code_chunks", data=pending_chunks, schema=self._code_schema, mode="overwrite"
-                        )
+                    logger.error(f"Checkpoint table write failed, creating fresh: {e}")
+                    self.table = self.db.create_table(
+                        "code_chunks", data=batch_chunks, schema=self._code_schema, mode="overwrite"
+                    )
             else:
                 self.table = self.db.create_table(
-                    "code_chunks", data=pending_chunks, schema=self._code_schema, mode="overwrite"
+                    "code_chunks", data=batch_chunks, schema=self._code_schema, mode="overwrite"
                 )
 
-        # Phase 5: update caches
-        self._file_hashes.update(new_file_hashes)
-        self._per_file_chunks.update(new_per_file_chunks)
+            self._file_hashes.update(batch_file_hashes)
+            self._per_file_chunks.update(batch_per_file_chunks)
+            self._save_hashes()
+            self._save_per_file_chunks()
+            total_chunks_created += len(batch_chunks)
+            logger.info(f"Checkpoint {batch_start//CHECKPOINT + 1} complete: {total_chunks_created} chunks total, {indexed_files}/{len(changed_items)} files")
+
+        # Phase 5: final cache cleanup
+        self._file_hashes.update({})  # no-op, batches already saved
+        self._per_file_chunks.update({})  # no-op
         # Prune orphaned hashes (files deleted/moved since last index run)
         indexed_keys = {str(f) for f in files}
         for k in list(self._file_hashes.keys()):
@@ -325,7 +325,7 @@ class RAGEngineIndexingMixin:
                 self._per_file_chunks.pop(k, None)
         self._save_hashes()
         self._save_per_file_chunks()
-        if pending_chunks:
+        if total_chunks_created:
             self._search_cache.invalidate()
             self._rebuild_chunk_hashes()
 
@@ -333,5 +333,5 @@ class RAGEngineIndexingMixin:
             "total_files": len(files),
             "indexed": indexed_files,
             "skipped_unchanged": skipped_files,
-            "chunks_created": len(pending_chunks),
+            "chunks_created": total_chunks_created,
         }
