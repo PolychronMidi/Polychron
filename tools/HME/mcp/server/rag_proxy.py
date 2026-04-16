@@ -609,13 +609,9 @@ class RAGProxy:
 
     # ── Index methods ────────────────────────────────────────────────────────
 
-    def index_directory(self, directory):
-        # Fail-loud on shim unavailability. `or {}` used to silently
-        # return an empty dict, which downstream code (tools_index.
-        # index_codebase) then hit with KeyError on expected keys like
-        # 'total_files' and 'indexed'. Better to raise than to pretend
-        # the index succeeded with zero files.
-        result = self._call("index_directory", directory=directory, timeout=120)
+    def index_directory(self):
+        # No arguments — ragIndexDirs in .mcp.json is the only source.
+        result = self._call("index_directory", timeout=120)
         if not isinstance(result, dict) or "total_files" not in result:
             raise RuntimeError(
                 f"rag_proxy.index_directory: shim returned malformed response "

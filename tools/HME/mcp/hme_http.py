@@ -100,8 +100,8 @@ class _Handler(BaseHTTPRequestHandler):
             elif method == "_get_file_hashes":
                 result = dict(getattr(engine, "_file_hashes", {}))
             elif method == "index_directory":
-                # Lock index_directory to rag_engines.PROJECT_ROOT — never allow directory override
-                result = getattr(engine, method)(directory=rag_engines.PROJECT_ROOT)
+                # No arguments — ragIndexDirs in .mcp.json is the only source
+                result = getattr(engine, method)()
             elif hasattr(engine, method) and callable(getattr(engine, method)):
                 result = getattr(engine, method)(**kwargs)
             else:
