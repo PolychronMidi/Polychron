@@ -141,20 +141,19 @@ def walk_code_files(
     ignore_dirs = _config["ignore_dirs"]
     rag_ignore = _config["rag_ignore"]
 
-    # LOCKED: when ragIndexDirs is configured, ONLY walk those directories.
-    # The `directory` argument is ignored — prevents any caller from indexing
-    # arbitrary paths (e.g. src/ root with huge data files).
+    # LOCKED: ragIndexDirs is the ONLY source of truth for what gets indexed.
+    # The `directory` argument is BANNED — it exists only for signature compat.
+    if not _config["rag_index_dirs_abs"]:
+        logger.error("ragIndexDirs not configured in .mcp.json — refusing to index. Configure ragIndexDirs.")
+        return
     roots: list[Path] = []
-    if _config["rag_index_dirs_abs"]:
-        for d in _config["rag_index_dirs_abs"]:
-            p = Path(d)
-            if p.is_dir():
-                roots.append(p)
-        if not roots:
-            logger.warning("ragIndexDirs configured but no valid directories found — indexing nothing")
-            return
-    else:
-        roots = [Path(directory)]
+    for d in _config["rag_index_dirs_abs"]:
+        p = Path(d)
+        if p.is_dir():
+            roots.append(p)
+    if not roots:
+        logger.warning("ragIndexDirs configured but no valid directories found — indexing nothing")
+        return
 
     for root in roots:
       for dirpath, dirnames, filenames in os.walk(root):

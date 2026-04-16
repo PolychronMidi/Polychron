@@ -196,8 +196,8 @@ class RAGEngineIndexingMixin:
         return {"indexed": 0, "removed": removed}
 
     def index_directory(self, directory: str = "") -> dict:
-        """Index all files from ragIndexDirs (if configured) or the given directory.
-        The directory argument is a fallback only — ragIndexDirs takes absolute precedence."""
+        """Index all files from ragIndexDirs. The directory argument is ignored —
+        ragIndexDirs in .mcp.json is the ONLY source of indexable paths."""
         self._bulk_indexing.set()
         try:
             with self._index_lock:
