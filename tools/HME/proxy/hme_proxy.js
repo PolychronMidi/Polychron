@@ -573,6 +573,168 @@ function stripBoilerplate(payload) {
   return strippedCount;
 }
 
+// ── Semantic-redundancy strip (multi-block stateful) ───────────────────────
+// Complements the exact-match BOILERPLATE_PATTERNS with:
+//   C. Duplicate Read tool_results for same file, no intervening Edit/Write,
+//      byte-identical content → stub the EARLIER one (latest is freshest).
+//   D. Oversize Bash tool_result bodies > D_MAX_BYTES → head+tail with
+//      elision marker. Bash only (Read kept intact — user asked for it).
+//   E. Identical <ide_selection> blocks repeated across messages → keep
+//      first, strip duplicates.
+//   F. Identical <system-reminder> blocks repeated within a single message
+//      → keep first, strip duplicates. (Cross-message dedup not done — each
+//      turn may legitimately re-raise a reminder Claude needs.)
+//
+// PRECISION GUARDRAILS:
+//   - C uses pre-trim hash so D's trimming doesn't break dedup equality.
+//   - C stubs with explicit "superseded" marker so the strip is visible.
+//   - D keeps first + last windows; errors at end of output are preserved.
+//   - Every pattern name in the emitted activity event so audits can
+//     reconstruct what was stripped.
+const D_MAX_BYTES = 50_000;
+const D_HEAD_BYTES = 20_000;
+const D_TAIL_BYTES = 20_000;
+const IDE_SEL_RE = /<ide_selection>[\s\S]*?<\/ide_selection>/g;
+const SYSREM_RE = /<system-reminder>[\s\S]*?<\/system-reminder>/g;
+
+function _textOf(block) {
+  if (!block || typeof block !== 'object') return '';
+  if (block.type === 'text') return typeof block.text === 'string' ? block.text : '';
+  if (block.type === 'tool_result') {
+    const c = block.content;
+    if (typeof c === 'string') return c;
+    if (Array.isArray(c)) {
+      return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
+    }
+  }
+  return '';
+}
+
+function _setText(block, newText) {
+  if (block.type === 'text') { block.text = newText; return; }
+  if (block.type === 'tool_result') {
+    if (typeof block.content === 'string') { block.content = newText; return; }
+    if (Array.isArray(block.content)) {
+      let replaced = false;
+      block.content = block.content
+        .map((x) => {
+          if (!x || x.type !== 'text') return x;
+          if (!replaced) { replaced = true; return { ...x, text: newText }; }
+          return null;
+        })
+        .filter(Boolean);
+      if (!replaced) block.content.unshift({ type: 'text', text: newText });
+    }
+  }
+}
+
+function _hashText(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(16) + ':' + s.length;
+}
+
+function stripSemanticRedundancy(payload) {
+  if (!payload || !Array.isArray(payload.messages)) return 0;
+  let strippedCount = 0;
+  const patterns = {};
+  const bump = (k) => { patterns[k] = (patterns[k] || 0) + 1; strippedCount++; };
+
+  // Build tool_use id → block map so tool_result can resolve its source name/input.
+  const toolUseById = new Map();
+  for (const msg of payload.messages) {
+    if (!msg || msg.role !== 'assistant' || !Array.isArray(msg.content)) continue;
+    for (const b of msg.content) {
+      if (b && b.type === 'tool_use' && b.id) toolUseById.set(b.id, b);
+    }
+  }
+
+  // C + D pass: walk in order, track last Read per file, invalidate on Write.
+  const lastReadByFile = new Map(); // fp → { hash, block }
+  for (const msg of payload.messages) {
+    if (!msg || !Array.isArray(msg.content)) continue;
+    for (const block of msg.content) {
+      if (!block || typeof block !== 'object') continue;
+
+      // Any write-intent tool_use invalidates the file's dedup cache.
+      if (msg.role === 'assistant' && block.type === 'tool_use' && WRITE_INTENT_TOOLS.has(block.name)) {
+        const fp = (block.input && (block.input.file_path || block.input.path)) || null;
+        if (fp) lastReadByFile.delete(fp);
+        continue;
+      }
+
+      if (block.type !== 'tool_result') continue;
+      const srcUse = toolUseById.get(block.tool_use_id);
+      if (!srcUse) continue;
+
+      // C: duplicate Read dedup (hash PRE-trim so D can't desync equality).
+      if (srcUse.name === 'Read') {
+        const fp = (srcUse.input && (srcUse.input.file_path || srcUse.input.path)) || null;
+        if (fp) {
+          const rawText = _textOf(block);
+          const hash = _hashText(rawText);
+          const prev = lastReadByFile.get(fp);
+          if (prev && prev.hash === hash) {
+            _setText(prev.block, '(superseded: same file re-read later with identical content, stripped by hme-proxy)');
+            bump('dup_read_collapsed');
+          }
+          lastReadByFile.set(fp, { hash, block });
+        }
+      }
+
+      // D: oversize Bash body trim — head + elision + tail.
+      if (srcUse.name === 'Bash') {
+        const rawText = _textOf(block);
+        if (rawText.length > D_MAX_BYTES) {
+          const head = rawText.slice(0, D_HEAD_BYTES);
+          const tail = rawText.slice(-D_TAIL_BYTES);
+          const elided = rawText.length - head.length - tail.length;
+          _setText(block, head + `\n…<${elided} bytes elided by hme-proxy>…\n` + tail);
+          bump('oversize_bash_trim');
+        }
+      }
+    }
+  }
+
+  // E + F pass: dedup ide_selection (cross-message) + system-reminder (within-message).
+  const seenIdeSelection = new Set();
+  for (const msg of payload.messages) {
+    if (!msg || !Array.isArray(msg.content)) continue;
+    const seenSysRemInMsg = new Set();
+    for (const block of msg.content) {
+      if (!block || block.type !== 'text' || typeof block.text !== 'string') continue;
+      let txt = block.text;
+
+      txt = txt.replace(IDE_SEL_RE, (m) => {
+        const key = _hashText(m);
+        if (seenIdeSelection.has(key)) { bump('stale_ide_selection'); return ''; }
+        seenIdeSelection.add(key);
+        return m;
+      });
+
+      txt = txt.replace(SYSREM_RE, (m) => {
+        const key = _hashText(m);
+        if (seenSysRemInMsg.has(key)) { bump('dup_system_reminder'); return ''; }
+        seenSysRemInMsg.add(key);
+        return m;
+      });
+
+      block.text = txt;
+    }
+  }
+
+  if (strippedCount > 0) {
+    const samples_str = Object.entries(patterns).map(([k, v]) => `${k}=${v}`).join(',');
+    emit({
+      event: 'semantic_redundancy_stripped',
+      session: 'proxy',
+      count: strippedCount,
+      patterns: samples_str,
+    });
+  }
+  return strippedCount;
+}
+
 function scanMessages(payload) {
   const result = {
     hmeReadCalled: false,
@@ -671,14 +833,15 @@ function handleRequest(clientReq, clientRes) {
     if (payload && Array.isArray(payload.messages)) {
       const session = sessionKey(payload);
 
-      // Boilerplate stub strip (Anthropic only — our message format). Runs
-      // BEFORE scanMessages so the scanner sees the cleaned payload, and
-      // mutates the payload in place so the upstream request carries the
-      // reduced history. If any blocks were stripped we re-serialize below.
+      // Boilerplate stub strip + semantic redundancy strip (Anthropic only).
+      // Both run BEFORE scanMessages so the scanner sees the cleaned payload,
+      // and mutate the payload in place so the upstream request carries the
+      // reduced history. If either stripped anything, we re-serialize below.
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
-        const strippedN = stripBoilerplate(payload);
-        if (strippedN > 0) bodyDirtiedByStrip = true;
+        const b = stripBoilerplate(payload);
+        const s = stripSemanticRedundancy(payload);
+        if (b > 0 || s > 0) bodyDirtiedByStrip = true;
       }
 
       // Coherence scanning + jurisdiction injection: Anthropic only.
