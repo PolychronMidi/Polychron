@@ -30,9 +30,15 @@ Completing the last open sub auto-completes the parent.
 """
 import json
 import os
+import sys
 import time
 import logging
 import threading
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
 from server import context as ctx
 from server.onboarding_chain import chained
@@ -42,10 +48,10 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 _TODO_FILE = os.path.join(
-    os.environ.get("PROJECT_ROOT", os.getcwd()), ".claude", "mcp", "HME", "todos.json"
+    ENV.optional("PROJECT_ROOT", os.getcwd()), ".claude", "mcp", "HME", "todos.json"
 )
 _GRAPH_FILE = os.path.join(
-    os.environ.get("PROJECT_ROOT", os.getcwd()), "metrics", "todo-graph.md"
+    ENV.optional("PROJECT_ROOT", os.getcwd()), "metrics", "todo-graph.md"
 )
 _todo_lock = threading.RLock()
 
@@ -646,7 +652,7 @@ def _trigger_learn_prompt(entry: dict) -> str:
     """Write a prompt file that gets surfaced at the next UserPromptSubmit."""
     try:
         prompt_file = os.path.join(
-            os.environ.get("PROJECT_ROOT", os.getcwd()),
+            ENV.optional("PROJECT_ROOT", os.getcwd()),
             "tmp", "hme-todo-learn-prompts.log",
         )
         os.makedirs(os.path.dirname(prompt_file), exist_ok=True)
@@ -661,7 +667,7 @@ def _trigger_commit_nudge(entry: dict) -> str:
     """Flag the nexus that a commit is pending for this completed todo."""
     try:
         nexus_file = os.path.join(
-            os.environ.get("PROJECT_ROOT", os.getcwd()),
+            ENV.optional("PROJECT_ROOT", os.getcwd()),
             "tmp", "hme-nexus.state",
         )
         if os.path.isfile(nexus_file):

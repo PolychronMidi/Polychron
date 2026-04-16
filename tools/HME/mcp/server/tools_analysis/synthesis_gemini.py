@@ -23,6 +23,8 @@ import urllib.request
 import urllib.error
 from collections import deque
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.gemini")
 
 # Grounding header prepended to every system prompt.
@@ -44,7 +46,7 @@ If a name does not appear in VERIFIED FACTS, do not use it.\
 """
 
 def _api_key() -> str:
-    return os.environ.get("GEMINI_API_KEY", "")
+    return ENV.optional("GEMINI_API_KEY", "")
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 _TIMEOUT = 60  # seconds
 
@@ -55,11 +57,11 @@ _DEFAULT_DAILY = 900_000
 _DEFAULT_RPM = 14
 
 _TIER_DEFS = [
-    ("T1", os.environ.get("GEMINI_MODEL_T1", "gemini-3-flash-preview")),
-    ("T2", os.environ.get("GEMINI_MODEL_T2", "gemini-flash-latest")),
-    ("T3", os.environ.get("GEMINI_MODEL_T3", "gemini-2.5-flash")),
-    ("T4", os.environ.get("GEMINI_MODEL_T4", "gemini-2.0-flash")),
-    ("T5", os.environ.get("GEMINI_MODEL_T5", "gemini-2.5-flash-lite")),
+    ("T1", ENV.optional("GEMINI_MODEL_T1", "gemini-3-flash-preview")),
+    ("T2", ENV.optional("GEMINI_MODEL_T2", "gemini-flash-latest")),
+    ("T3", ENV.optional("GEMINI_MODEL_T3", "gemini-2.5-flash")),
+    ("T4", ENV.optional("GEMINI_MODEL_T4", "gemini-2.0-flash")),
+    ("T5", ENV.optional("GEMINI_MODEL_T5", "gemini-2.5-flash-lite")),
 ]
 
 
@@ -71,8 +73,8 @@ class _Tier:
     def __init__(self, label: str, model: str):
         self.label = label
         self.model = model
-        self.daily_limit = int(os.environ.get(f"GEMINI_DAILY_LIMIT_{label}", _DEFAULT_DAILY))
-        self.rpm_limit = int(os.environ.get(f"GEMINI_RPM_LIMIT_{label}", _DEFAULT_RPM))
+        self.daily_limit = ENV.optional_int(f"GEMINI_DAILY_LIMIT_{label}", _DEFAULT_DAILY)
+        self.rpm_limit = ENV.optional_int(f"GEMINI_RPM_LIMIT_{label}", _DEFAULT_RPM)
         self.tokens_used = 0
         self.reset_ts = 0.0
         self.timestamps: deque = deque(maxlen=self.rpm_limit + 5)

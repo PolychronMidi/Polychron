@@ -27,7 +27,7 @@ from hme_env import ENV  # noqa: E402
 PID_FILE = "/tmp/hme-vram-monitor.pid"
 POLL_INTERVAL = ENV.require_int("HME_VRAM_POLL_S")
 MAX_SAMPLES = ENV.require_int("HME_VRAM_MAX_SAMPLES")
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
+PROJECT_ROOT = ENV.optional("PROJECT_ROOT", "/home/jah/Polychron")
 HISTORY_FILE = os.path.join(PROJECT_ROOT, "metrics", "vram-history.jsonl")
 
 

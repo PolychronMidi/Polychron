@@ -33,6 +33,8 @@ import urllib.request
 import urllib.error
 from collections import deque
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.mistral")
 
 _GROUNDING_HEADER = """\
@@ -49,18 +51,18 @@ If a name does not appear in VERIFIED FACTS, do not use it.\
 
 
 def _api_key() -> str:
-    return os.environ.get("MISTRAL_API_KEY", "")
+    return ENV.optional("MISTRAL_API_KEY", "")
 
 _BASE_URL = "https://api.mistral.ai/v1/chat/completions"
 _TIMEOUT = 60
 
 _TIER_DEFS = [
-    ("T1", os.environ.get("MISTRAL_MODEL_T1", "magistral-medium-latest")),
-    ("T2", os.environ.get("MISTRAL_MODEL_T2", "mistral-large-latest")),
-    ("T3", os.environ.get("MISTRAL_MODEL_T3", "devstral-medium-latest")),
-    ("T4", os.environ.get("MISTRAL_MODEL_T4", "codestral-latest")),
-    ("T5", os.environ.get("MISTRAL_MODEL_T5", "mistral-medium-latest")),
-    ("T6", os.environ.get("MISTRAL_MODEL_T6", "magistral-small-latest")),
+    ("T1", ENV.optional("MISTRAL_MODEL_T1", "magistral-medium-latest")),
+    ("T2", ENV.optional("MISTRAL_MODEL_T2", "mistral-large-latest")),
+    ("T3", ENV.optional("MISTRAL_MODEL_T3", "devstral-medium-latest")),
+    ("T4", ENV.optional("MISTRAL_MODEL_T4", "codestral-latest")),
+    ("T5", ENV.optional("MISTRAL_MODEL_T5", "mistral-medium-latest")),
+    ("T6", ENV.optional("MISTRAL_MODEL_T6", "magistral-small-latest")),
 ]
 
 
@@ -72,8 +74,8 @@ class _Tier:
     def __init__(self, label: str, model: str):
         self.label = label
         self.model = model
-        self.rpd_limit = int(os.environ.get(f"MISTRAL_RPD_LIMIT_{label}", "500"))
-        self.rpm_limit = int(os.environ.get(f"MISTRAL_RPM_LIMIT_{label}", "2"))
+        self.rpd_limit = ENV.optional_int(f"MISTRAL_RPD_LIMIT_{label}", 500)
+        self.rpm_limit = ENV.optional_int(f"MISTRAL_RPM_LIMIT_{label}", 2)
         self.requests_today = 0
         self.reset_ts = 0.0
         self.timestamps: deque = deque(maxlen=self.rpm_limit + 5)

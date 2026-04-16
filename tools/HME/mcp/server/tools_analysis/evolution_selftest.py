@@ -4,6 +4,11 @@ import logging
 import sys
 import importlib
 
+_mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
+
 from server import context as ctx
 from .synthesis import _local_think
 from . import _track
@@ -157,7 +162,7 @@ def hme_selftest() -> str:
     # Doc-code stale-reference verifier (catches legacy tool name drift across
     # all doc/*.md files, not just HME.md). Runs as a subprocess so a broken
     # verifier can't crash the selftest.
-    _project_root = os.environ.get("PROJECT_ROOT") or os.path.dirname(
+    _project_root = ENV.optional("PROJECT_ROOT", "") or os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
     try:

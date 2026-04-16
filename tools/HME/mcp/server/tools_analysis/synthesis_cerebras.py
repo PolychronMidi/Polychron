@@ -28,6 +28,8 @@ import urllib.request
 import urllib.error
 from collections import deque
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.cerebras")
 
 _GROUNDING_HEADER = """\
@@ -44,14 +46,14 @@ If a name does not appear in VERIFIED FACTS, do not use it.\
 
 
 def _api_key() -> str:
-    return os.environ.get("CEREBRAS_API_KEY", "")
+    return ENV.optional("CEREBRAS_API_KEY", "")
 
 _BASE_URL = "https://api.cerebras.ai/v1/chat/completions"
 _TIMEOUT = 60
 
 _TIER_DEFS = [
-    ("T1", os.environ.get("CEREBRAS_MODEL_T1", "qwen-3-235b-a22b-instruct-2507")),
-    ("T2", os.environ.get("CEREBRAS_MODEL_T2", "llama3.1-8b")),
+    ("T1", ENV.optional("CEREBRAS_MODEL_T1", "qwen-3-235b-a22b-instruct-2507")),
+    ("T2", ENV.optional("CEREBRAS_MODEL_T2", "llama3.1-8b")),
 ]
 
 
@@ -63,8 +65,8 @@ class _Tier:
     def __init__(self, label: str, model: str):
         self.label = label
         self.model = model
-        self.rpd_limit = int(os.environ.get(f"CEREBRAS_RPD_LIMIT_{label}", "3000"))
-        self.rpm_limit = int(os.environ.get(f"CEREBRAS_RPM_LIMIT_{label}", "28"))
+        self.rpd_limit = ENV.optional_int(f"CEREBRAS_RPD_LIMIT_{label}", 3000)
+        self.rpm_limit = ENV.optional_int(f"CEREBRAS_RPM_LIMIT_{label}", 28)
         self.requests_today = 0
         self.reset_ts = 0.0
         self.timestamps: deque = deque(maxlen=self.rpm_limit + 5)

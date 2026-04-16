@@ -27,6 +27,8 @@ import urllib.request
 import urllib.error
 from collections import deque
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.groq")
 
 _GROUNDING_HEADER = """\
@@ -44,15 +46,15 @@ If a name does not appear in VERIFIED FACTS, do not use it.\
 def _api_key() -> str:
     """Read env on every call so keys added mid-session take effect as soon as
     .env is re-parsed by synthesis_reasoning._refresh_env."""
-    return os.environ.get("GROQ_API_KEY", "")
+    return ENV.optional("GROQ_API_KEY", "")
 
 _BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
 _TIMEOUT = 60
 
 _TIER_DEFS = [
-    ("T1", os.environ.get("GROQ_MODEL_T1", "openai/gpt-oss-120b")),
-    ("T2", os.environ.get("GROQ_MODEL_T2", "moonshotai/kimi-k2-instruct-0905")),
-    ("T3", os.environ.get("GROQ_MODEL_T3", "llama-3.3-70b-versatile")),
+    ("T1", ENV.optional("GROQ_MODEL_T1", "openai/gpt-oss-120b")),
+    ("T2", ENV.optional("GROQ_MODEL_T2", "moonshotai/kimi-k2-instruct-0905")),
+    ("T3", ENV.optional("GROQ_MODEL_T3", "llama-3.3-70b-versatile")),
 ]
 
 
@@ -64,8 +66,8 @@ class _Tier:
     def __init__(self, label: str, model: str):
         self.label = label
         self.model = model
-        self.rpd_limit = int(os.environ.get(f"GROQ_RPD_LIMIT_{label}", "1000"))
-        self.rpm_limit = int(os.environ.get(f"GROQ_RPM_LIMIT_{label}", "28"))
+        self.rpd_limit = ENV.optional_int(f"GROQ_RPD_LIMIT_{label}", 1000)
+        self.rpm_limit = ENV.optional_int(f"GROQ_RPM_LIMIT_{label}", 28)
         self.requests_today = 0
         self.reset_ts = 0.0
         self.timestamps: deque = deque(maxlen=self.rpm_limit + 5)

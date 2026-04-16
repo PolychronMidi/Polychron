@@ -27,24 +27,9 @@ if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
 
-def _load_dotenv() -> None:
-    """Load .env from project root into os.environ (no dependencies required)."""
-    project_root = os.environ.get("PROJECT_ROOT", os.path.dirname(_tool_root))
-    env_path = os.path.join(project_root, ".env")
-    if not os.path.exists(env_path):
-        return
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, val = line.partition("=")
-            key = key.strip()
-            val = val.strip().strip('"').strip("'")
-            if key and key not in os.environ:  # don't override existing env
-                os.environ[key] = val
+from hme_env import ENV  # noqa: E402 — central .env loader, fail-fast semantics
 
-_load_dotenv()
+# ENV.load() already ran at import time — os.environ is populated.
 
 
 def _purge_stale_server_pyc() -> None:
@@ -90,7 +75,7 @@ logger.setLevel(logging.INFO)
 
 
 # File logger: timestamped request/response log at log/hme.log
-_log_dir = os.path.join(os.environ.get("PROJECT_ROOT", os.getcwd()), "log")
+_log_dir = os.path.join(ENV.optional("PROJECT_ROOT", os.getcwd()), "log")
 os.makedirs(_log_dir, exist_ok=True)
 from server.log_config import FlushFileHandler
 _file_handler = FlushFileHandler(os.path.join(_log_dir, "hme.log"), encoding="utf-8")
@@ -103,11 +88,11 @@ from mcp.server.fastmcp import FastMCP
 from file_walker import init_config, get_lib_dirs
 
 # --- Config (no model needed) ---
-PROJECT_ROOT = os.environ.get("PROJECT_ROOT") or os.getcwd()
-PROJECT_DB = os.environ.get("RAG_DB_PATH") or os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME")
+PROJECT_ROOT = ENV.optional("PROJECT_ROOT", os.getcwd())
+PROJECT_DB = ENV.optional("RAG_DB_PATH", os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME"))
 GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HME", "global_kb")
-MODEL_NAME = os.environ.get("RAG_MODEL", "BAAI/bge-base-en-v1.5")
-MODEL_BACKEND = os.environ.get("RAG_BACKEND", "onnx")
+MODEL_NAME = ENV.optional("RAG_MODEL", "BAAI/bge-base-en-v1.5")
+MODEL_BACKEND = ENV.optional("RAG_BACKEND", "onnx")
 
 os.makedirs(PROJECT_DB, exist_ok=True)
 os.makedirs(GLOBAL_DB, exist_ok=True)
