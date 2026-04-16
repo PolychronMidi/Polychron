@@ -55,18 +55,19 @@ class RAGEngine(
     RAGEngineSymbolsMixin,
     RAGKnowledgeMixin,
 ):
-    def __init__(self, db_path: str, model_name: str = "all-mpnet-base-v2",
+    def __init__(self, db_path: str, model_name: str = "",
                  model: "Optional[SentenceTransformer]" = None,
                  code_model: "Optional[SentenceTransformer]" = None,
                  reranker=None):
         """
-        model / text_model     — general-text embedder (bge-base-en) for knowledge + symbols.
-        code_model             — code-specialized embedder (jina v2 base-code) for code_chunks.
-        reranker               — CrossEncoder (bge-reranker-v2-m3) for search rerank.
+        model / text_model     — general-text embedder (RAG_MODEL from .env) for knowledge + symbols.
+        code_model             — code-specialized embedder (RAG_CODE_MODEL) for code_chunks.
+        reranker               — listwise reranker (RAG_RERANKER_MODEL) for search rerank.
 
         `model` is the legacy kwarg; it maps to text_model. If code_model is None
-        it falls back to text_model (bge) — guarantees correctness while still
+        it falls back to text_model — guarantees correctness while still
         letting callers opt into the dual-index by passing code_model explicitly.
+        All model paths come from .env via hme_env.ENV — no hardcoded names.
         """
         import lancedb as _lancedb
         self.db_path = db_path

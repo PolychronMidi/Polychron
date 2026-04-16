@@ -204,8 +204,8 @@ def clear_index() -> str:
     ctx.ensure_ready_sync()
     ctx.project_engine.clear()
     try:
-        from indexing_mode import full_reindex
-        result = full_reindex()
+        from indexing_mode import request_full_reindex
+        result = request_full_reindex()
     except Exception as e:
         logger.warning(f"Indexing mode failed ({e}), falling back to default device")
         result = _index_main(ctx.PROJECT_ROOT)

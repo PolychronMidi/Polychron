@@ -89,10 +89,10 @@ from file_walker import init_config, get_lib_dirs
 
 # --- Config (no model needed) ---
 PROJECT_ROOT = ENV.optional("PROJECT_ROOT", os.getcwd())
-PROJECT_DB = ENV.optional("RAG_DB_PATH", os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME"))
+PROJECT_DB = ENV.require("HME_RAG_DB_PATH")
 GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HME", "global_kb")
-MODEL_NAME = ENV.optional("RAG_MODEL", "BAAI/bge-base-en-v1.5")
-MODEL_BACKEND = ENV.optional("RAG_BACKEND", "onnx")
+MODEL_NAME = ENV.require("HME_MODEL_TEXT_EMBED")
+MODEL_BACKEND = ENV.require("HME_RAG_BACKEND")
 
 os.makedirs(PROJECT_DB, exist_ok=True)
 os.makedirs(GLOBAL_DB, exist_ok=True)

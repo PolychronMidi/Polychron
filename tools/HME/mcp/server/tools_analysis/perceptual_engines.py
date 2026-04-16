@@ -54,6 +54,8 @@ from hme_env import ENV  # noqa: E402
 _AUDIO_GPU_IDX = ENV.require_int("HME_AUDIO_GPU")
 _AUDIO_VULKAN = ENV.require("HME_AUDIO_VULKAN")
 _DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
+_ENCODEC_PATH = ENV.require("HME_MODEL_ENCODEC")
+_CLAP_PATH = ENV.require("HME_MODEL_CLAP")
 
 
 def pick_gpu_or_cpu(min_free_gb: float, label: str = "") -> str:
@@ -81,40 +83,47 @@ def pick_gpu_or_cpu(min_free_gb: float, label: str = "") -> str:
     return "cpu"
 
 
+def _build_encodec(device: str):
+    """Load EnCodec 24kHz from the local checkpoint in HME_MODEL_ENCODEC."""
+    from encodec import EncodecModel
+    import torch
+    m = EncodecModel.encodec_model_24khz()
+    # Override with local checkpoint so we don't hit torch hub at runtime
+    state = torch.load(_ENCODEC_PATH, map_location=device, weights_only=True)
+    m.load_state_dict(state)
+    m.set_target_bandwidth(6.0)
+    m.to(device).eval()
+    return m
+
+
 def _build_encodec_gpu():
     """Factory: create a fresh EnCodec instance pinned to the audio GPU.
     Called both during eager startup and when VramManager.try_reload decides
     to bring EnCodec back after being offloaded."""
-    from encodec import EncodecModel
-    m = EncodecModel.encodec_model_24khz()
-    m.set_target_bandwidth(6.0)
-    m.to(f"cuda:{_AUDIO_GPU_IDX}").eval()
-    return m
+    return _build_encodec(f"cuda:{_AUDIO_GPU_IDX}")
 
 
 def _build_encodec_cpu():
-    from encodec import EncodecModel
-    m = EncodecModel.encodec_model_24khz()
-    m.set_target_bandwidth(6.0)
-    m.to("cpu").eval()
+    return _build_encodec("cpu")
+
+
+def _build_clap(device: str):
+    """Load CLAP from the local checkpoint in HME_MODEL_CLAP."""
+    import laion_clap
+    m = laion_clap.CLAP_Module(
+        enable_fusion=False, amodel='HTSAT-tiny',
+        device=device,
+    )
+    m.load_ckpt(_CLAP_PATH)
     return m
 
 
 def _build_clap_gpu():
-    import laion_clap
-    m = laion_clap.CLAP_Module(
-        enable_fusion=False, amodel='HTSAT-tiny',
-        device=f"cuda:{_AUDIO_GPU_IDX}",
-    )
-    m.load_ckpt()
-    return m
+    return _build_clap(f"cuda:{_AUDIO_GPU_IDX}")
 
 
 def _build_clap_cpu():
-    import laion_clap
-    m = laion_clap.CLAP_Module(enable_fusion=False, amodel='HTSAT-tiny', device="cpu")
-    m.load_ckpt()
-    return m
+    return _build_clap("cpu")
 
 
 def _ensure_audio_initialized() -> None:

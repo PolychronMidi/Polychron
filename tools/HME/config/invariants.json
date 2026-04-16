@@ -1080,6 +1080,27 @@
       "type": "shell_output_empty",
       "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/mcp/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^\\s*#' | grep -v 'env\\[.*\\] = os.environ'",
       "severity": "warning"
+    },
+    {
+      "id": "index-directory-zero-args",
+      "description": "index_directory must take zero arguments everywhere — ragIndexDirs in .mcp.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
+      "type": "shell_output_empty",
+      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/mcp/rag_engine/engine_indexing.py tools/HME/mcp/server/rag_proxy.py 2>/dev/null",
+      "severity": "error"
+    },
+    {
+      "id": "no-direct-gpu-model-load-in-indexing",
+      "description": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch — they talk to the daemon via HTTP, which tells the shim what device to use. Direct model loading in these files bypasses the daemon's GPU allocation authority. See the 'catastrophic failure' fix where indexing_mode was loading models directly.",
+      "type": "shell_output_empty",
+      "shell": "grep -nE 'from sentence_transformers|import torch|SentenceTransformer' tools/HME/mcp/indexing_mode.py tools/HME/mcp/server/tools_index.py 2>/dev/null",
+      "severity": "error"
+    },
+    {
+      "id": "daemon-is-gpu-authority",
+      "description": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement. Other HME files must not contain 'cuda:0' or 'cuda:1' device assignments — they route through the daemon which owns GPU topology. rag_engine/engine.py is exempt (fallback device picker for non-shim mode). # device-ok comments exempt specific lines.",
+      "type": "shell_output_empty",
+      "shell": "grep -rnE '\"cuda:[0-9]\"' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -v llamacpp_daemon.py | grep -v rag_engines.py | grep -v 'rag_engine/engine.py' | grep -v vram_manager.py | grep -v '# device-ok'",
+      "severity": "error"
     }
   ]
 }

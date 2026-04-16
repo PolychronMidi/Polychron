@@ -285,7 +285,7 @@ def _detect_contradictions() -> str:
         return "# Contradiction Scan\n\nNo related-but-distinct entry pairs found. KB is internally consistent at the semantic level."
 
     from ..synthesis_inference import _local_think
-from ..synthesis_llamacpp import _LOCAL_MODEL
+    from ..synthesis_llamacpp import _LOCAL_MODEL
 
     # Batch into groups of 5 for LLM checking (keeps prompt focused)
     all_contradictions = []
