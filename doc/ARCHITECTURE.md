@@ -430,4 +430,4 @@ Three architectural membranes:
 
 1. **Conductor -> CrossLayer**: read-only via `conductorSignalBridge`. No conductor module may mutate cross-layer state. ESLint enforced.
 2. **CrossLayer -> Conductor**: no direct writes. Only `playProb`/`stutterProb` local modifications and `explainabilityBus` diagnostics.
-3. **Inter-module communication**: via `absoluteTimeGrid` (L0) channels, not direct calls. L0 queries should include layer filter when per-layer data is needed.
+3. **Inter-module communication**: via `L0` (L0) channels, not direct calls. L0 queries should include layer filter when per-layer data is needed.

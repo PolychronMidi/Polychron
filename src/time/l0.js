@@ -1,6 +1,5 @@
 // src/time/L0.js - Unified in-memory temporal layer (L0).
-// Replaces absoluteTimeGrid and absoluteTimeWindow with a single flat-array
-// buffer per channel. Never pruned - the composition run is finite and bounded.
+// Single flat-array buffer per channel. Never pruned - the composition run is finite and bounded.
 
 L0 = (() => {
   const V = validator.create('l0');

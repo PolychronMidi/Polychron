@@ -71,9 +71,9 @@ function analyzeModule(filePath) {
     ? scopeMatch[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean)
     : [];
 
-  // Extract ATG channel references
+  // Extract L0 channel references
   const atgChannels = new Set();
-  const atgRe = /absoluteTimeGrid\.(post|query|subscribe|peek)\w*\(\s*['"]([^'"]+)['"]/g;
+  const atgRe = /L0\.(post|query|subscribe|peek)\w*\(\s*['"]([^'"]+)['"]/g;
   let atgMatch;
   while ((atgMatch = atgRe.exec(src)) !== null) {
     atgChannels.add(atgMatch[2]);

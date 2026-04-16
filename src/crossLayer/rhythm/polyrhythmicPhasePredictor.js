@@ -5,8 +5,8 @@
  *
  * Uses POLYRHYTHM_PAIRS to forecast when the two metric layers will
  * next converge (LCM-based downbeat alignment). Posts predictions to
- * absoluteTimeGrid and registers a cross-layer module that nudges
- * playProb upward near predicted convergence points.
+ * L0 and registers a cross-layer module that nudges playProb upward
+ * near predicted convergence points.
  */
 
 polyrhythmicPhasePredictor = (() => {

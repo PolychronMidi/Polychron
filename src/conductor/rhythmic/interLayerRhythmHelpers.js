@@ -1,6 +1,6 @@
 // src/conductor/rhythmic/interLayerRhythmHelpers.js
 // Pure computation helpers extracted from interLayerRhythmAnalyzer.
-// Five analysis functions operating on absoluteTimeWindow data.
+// Five analysis functions operating on L0 data.
 
 interLayerRhythmHelpers = (() => {
   const V = validator.create('interLayerRhythmHelpers');
@@ -11,7 +11,7 @@ interLayerRhythmHelpers = (() => {
   const LOOSE_THRESHOLD       = 0.08; // seconds
 
   /**
-   * Group absoluteTimeWindow entries by layer, sort onsets.
+   * Group L0 entries by layer, sort onsets.
    * @param {number} ws
    * @returns {{ layerOnsets: Object.<string, number[]>, layerKeys: string[] }}
    */
