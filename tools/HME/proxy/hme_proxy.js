@@ -457,6 +457,122 @@ function sessionKey(payload) {
   return 'unknown';
 }
 
+// ── Boilerplate stub stripper ───────────────────────────────────────────────
+// Claude Code injects fixed strings into tool_result content for native
+// tools: `(Bash completed with no output)`, `The file X has been updated
+// successfully. ...`, `Stop hook feedback: ... : ok`, and repeating
+// TodoWrite nags. These strings are signalless to Claude — they're
+// acknowledgement tokens from the harness, not information. Strip them
+// from the in-flight payload.messages array so Claude's context isn't
+// polluted with hundreds of them per session.
+//
+// PRECISION GUARDRAILS:
+//   - Each pattern is a NAMED exact/tight regex (no fuzzy match).
+//   - We only strip text-type content blocks or the whole tool_result
+//     block if its content is entirely boilerplate.
+//   - Every strip emits an activity event `boilerplate_stripped` with
+//     the pattern name, byte count, and sample prefix so anything
+//     accidentally matched is auditable after the fact.
+//   - Runs BEFORE scanMessages so the scanner sees the cleaned payload.
+const BOILERPLATE_PATTERNS = [
+  {
+    name: 'bash_no_output',
+    // Literal harness stub — exact match only.
+    re: /^\(Bash completed with no output\)\s*$/,
+    strip_whole_block: true,
+  },
+  {
+    name: 'edit_success_stub',
+    // `The file <path> has been updated successfully. (file state is current in your context — no need to Read it back)`
+    re: /^The file \/\S+ has been updated successfully\. \(file state is current in your context[^)]*\)\s*$/,
+    strip_whole_block: true,
+  },
+  {
+    name: 'stop_hook_ok',
+    // `Stop hook feedback:\n[bash ...lifecycle/stop.sh]: ok`
+    // Only strip the "ok" variant — fail=N carries real signal.
+    re: /^Stop hook feedback:\s*\n\[bash [^\]]*stop\.sh\]:\s*ok\s*$/,
+    strip_whole_block: true,
+  },
+  {
+    name: 'todowrite_nag',
+    // `<system-reminder>\nThe TodoWrite tool hasn't been used recently. ... </system-reminder>`
+    re: /<system-reminder>\s*The TodoWrite tool hasn't been used recently[\s\S]*?<\/system-reminder>/,
+    strip_whole_block: false, // strip only the reminder span, keep surrounding text
+  },
+];
+
+function _isBoilerplateText(text) {
+  for (const p of BOILERPLATE_PATTERNS) {
+    if (p.strip_whole_block && p.re.test(text || '')) {
+      return { match: true, pattern: p };
+    }
+  }
+  return { match: false };
+}
+
+function stripBoilerplate(payload) {
+  if (!payload || !Array.isArray(payload.messages)) return 0;
+  let strippedCount = 0;
+  const stripped_samples = {};
+  for (const msg of payload.messages) {
+    if (!msg || !Array.isArray(msg.content)) continue;
+    const keepBlocks = [];
+    for (const block of msg.content) {
+      if (!block || typeof block !== 'object') {
+        keepBlocks.push(block);
+        continue;
+      }
+      // Whole-block strip: tool_result / text blocks whose entire content
+      // matches an exact boilerplate pattern.
+      let blockText = '';
+      if (block.type === 'text') {
+        blockText = typeof block.text === 'string' ? block.text : '';
+      } else if (block.type === 'tool_result') {
+        const c = block.content;
+        if (typeof c === 'string') blockText = c;
+        else if (Array.isArray(c)) {
+          // content can be array of {type:text,text:...} — join text parts
+          blockText = c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
+        }
+      }
+      const hit = _isBoilerplateText(blockText);
+      if (hit.match) {
+        strippedCount++;
+        stripped_samples[hit.pattern.name] = (stripped_samples[hit.pattern.name] || 0) + 1;
+        continue; // drop the block
+      }
+      // In-block regex strip (for patterns that should only remove a
+      // sub-span, e.g. repeating todowrite_nag inside a mixed message).
+      if (block.type === 'text' && typeof block.text === 'string') {
+        let modified = block.text;
+        for (const p of BOILERPLATE_PATTERNS) {
+          if (p.strip_whole_block) continue;
+          const before = modified.length;
+          modified = modified.replace(p.re, '');
+          if (modified.length !== before) {
+            strippedCount++;
+            stripped_samples[p.name] = (stripped_samples[p.name] || 0) + 1;
+          }
+        }
+        block.text = modified;
+      }
+      keepBlocks.push(block);
+    }
+    msg.content = keepBlocks;
+  }
+  if (strippedCount > 0) {
+    const samples_str = Object.entries(stripped_samples).map(([k, v]) => `${k}=${v}`).join(',');
+    emit({
+      event: 'boilerplate_stripped',
+      session: 'proxy',
+      count: strippedCount,
+      patterns: samples_str,
+    });
+  }
+  return strippedCount;
+}
+
 function scanMessages(payload) {
   const result = {
     hmeReadCalled: false,
@@ -555,6 +671,16 @@ function handleRequest(clientReq, clientRes) {
     if (payload && Array.isArray(payload.messages)) {
       const session = sessionKey(payload);
 
+      // Boilerplate stub strip (Anthropic only — our message format). Runs
+      // BEFORE scanMessages so the scanner sees the cleaned payload, and
+      // mutates the payload in place so the upstream request carries the
+      // reduced history. If any blocks were stripped we re-serialize below.
+      let bodyDirtiedByStrip = false;
+      if (isAnthropic) {
+        const strippedN = stripBoilerplate(payload);
+        if (strippedN > 0) bodyDirtiedByStrip = true;
+      }
+
       // Coherence scanning + jurisdiction injection: Anthropic only.
       // These inspect the Evolver's tool_use history, which only exists in
       // Anthropic message format. Provider calls (Groq, Gemini, etc.) are
@@ -575,8 +701,11 @@ function handleRequest(clientReq, clientRes) {
               targets: scan.jurisdictionTargets.length,
               first_target: (scan.jurisdictionTargets[0] || '').replace(/[,=\s]/g, '_'),
             });
-            outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+            bodyDirtiedByStrip = true; // share re-serialize path
           }
+        }
+        if (bodyDirtiedByStrip) {
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
         }
         if (scan.writeIntentCalled && !scan.hmeReadCalled) {
           emit({
