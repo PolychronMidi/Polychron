@@ -61,6 +61,8 @@ conductorState = (() => {
 
     const activeProfile = conductorConfig.getActiveProfileName();
     if (typeof activeProfile === 'string' && activeProfile.length > 0) snapshot.activeProfile = activeProfile;
+    const activeMetaProfile = metaProfiles.getActiveName();
+    if (activeMetaProfile) snapshot.activeMetaProfile = activeMetaProfile;
   }
 
   // Core pipeline fields consumed from data: compositeIntensity, harmonicRhythm,

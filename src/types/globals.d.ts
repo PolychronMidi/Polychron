@@ -1406,6 +1406,20 @@ declare var conductorConfigDynamics: any;
 declare var conductorConfigResolvers: any;
 declare var conductorConfigAccessors: any;
 declare var conductorConfig: ConductorConfigAPI;
+declare var metaProfileDefinitions: {
+  get(name: string): Record<string, any> | null;
+  list(): string[];
+  all(): Record<string, Record<string, any>>;
+};
+declare var metaProfiles: {
+  setActive(name: string | null): void;
+  getActive(): Record<string, any> | null;
+  getActiveName(): string | null;
+  getAxis(axis: string): Record<string, any> | null;
+  getAxisValue(axis: string, key: string, fallback: any): any;
+  isActive(): boolean;
+  list(): string[];
+};
 declare var globalConductor: GlobalConductorAPI;
 declare var melodicContourTracker: MelodicContourTrackerAPI;
 declare var registerPressureMonitor: RegisterPressureMonitorAPI;
