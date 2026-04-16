@@ -15,7 +15,11 @@ _DETECTORS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../scripts/detecto
 _CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
-  python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null
+  # `|| true` is load-bearing: under set -e, a python crash here (e.g.
+  # context_meter.py ImportError under a stale module graph) would kill
+  # stop.sh with exit 2, bypassing all the actual lifecycle checks below.
+  # Surfaced via the new terse-verdict trap — user saw `fail=2` at 20ms.
+  python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null || true
 fi
 
 # ── Auto-commit snapshot ──────────────────────────────────────────────────────
