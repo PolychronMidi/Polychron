@@ -71,6 +71,12 @@ def hme_hot_reload(modules: str = "") -> str:
             else:
                 full = f"server.tools_analysis.{name}"
             mod = sys.modules.get(full)
+            # Subpackage fallback: modules moved to synthesis/, evolution/, coupling/
+            if mod is None:
+                for subpkg in ("synthesis", "evolution", "coupling"):
+                    mod = sys.modules.get(f"server.tools_analysis.{subpkg}.{name}")
+                    if mod:
+                        break
             if mod is None:
                 try:
                     if name in ROOT_RELOADABLE:
@@ -78,21 +84,34 @@ def hme_hot_reload(modules: str = "") -> str:
                     elif name in TOP_LEVEL_RELOADABLE:
                         mod = importlib.import_module(f".{name}", "server")
                     else:
-                        mod = importlib.import_module(f".{name}", "server.tools_analysis")
+                        # Try flat first, then subpackages
+                        try:
+                            mod = importlib.import_module(f".{name}", "server.tools_analysis")
+                        except (ImportError, ModuleNotFoundError):
+                            for subpkg in ("synthesis", "evolution", "coupling"):
+                                try:
+                                    mod = importlib.import_module(f".{name}", f"server.tools_analysis.{subpkg}")
+                                    break
+                                except (ImportError, ModuleNotFoundError):
+                                    continue
+                            else:
+                                raise
+                    actual_full = getattr(mod, "__name__", full)
                     tools_new = {
                         tname for tname, t in inner._tool_manager._tools.items()
-                        if getattr(t.fn, "__module__", "") == full
-                           or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
+                        if getattr(t.fn, "__module__", "") == actual_full
+                           or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
                     }
                     results.append(f"  NEW {name}: {len(tools_new)} tools loaded")
                 except Exception as e:
                     results.append(f"  ERR {name} (import): {e}")
                 continue
+            actual_full = getattr(mod, "__name__", full)
             try:
                 tools_before = {
                     tname for tname, t in inner._tool_manager._tools.items()
-                    if getattr(t.fn, "__module__", "") == full
-                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
+                    if getattr(t.fn, "__module__", "") == actual_full
+                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
                 }
                 remove_errs = []
                 for tname in tools_before:
@@ -105,8 +124,8 @@ def hme_hot_reload(modules: str = "") -> str:
                 importlib.reload(mod)
                 tools_after = {
                     tname for tname, t in inner._tool_manager._tools.items()
-                    if getattr(t.fn, "__module__", "") == full
-                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == full
+                    if getattr(t.fn, "__module__", "") == actual_full
+                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
                 }
                 removed = tools_before - tools_after
                 added = tools_after - tools_before
