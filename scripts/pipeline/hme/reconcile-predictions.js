@@ -24,7 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const PREDICTIONS = path.join(ROOT, 'metrics', 'hme-predictions.jsonl');
 const FINGERPRINT = path.join(ROOT, 'metrics', 'fingerprint-comparison.json');
 const ACCURACY_OUT = path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json');

@@ -646,7 +646,7 @@
       "id": "check-hme-coherence-exists",
       "description": "Phase 3 (policy engine) \u2014 check-hme-coherence.js must exist as the pipeline gate reading hme-activity.jsonl",
       "type": "file_exists",
-      "path": "scripts/pipeline/check-hme-coherence.js",
+      "path": "scripts/pipeline/validators/check-hme-coherence.js",
       "severity": "error"
     },
     {
@@ -661,14 +661,14 @@
       "id": "kb-staleness-index-exists",
       "description": "Phase 2.2 \u2014 KB staleness index builder must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/build-kb-staleness-index.py",
+      "path": "scripts/pipeline/hme/build-kb-staleness-index.py",
       "severity": "error"
     },
     {
       "id": "coherence-score-exists",
       "description": "Phase 2.3 \u2014 round coherence score computer must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/compute-coherence-score.js",
+      "path": "scripts/pipeline/hme/compute-coherence-score.js",
       "severity": "error"
     },
     {
@@ -763,7 +763,7 @@
       "id": "exploration-bonus-in-coherence-score",
       "description": "compute-coherence-score.js must include an exploration_bonus term from productive_incoherence events",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/compute-coherence-score.js",
+      "path": "scripts/pipeline/hme/compute-coherence-score.js",
       "patterns": [
         "productive_incoherence",
         "explorationBonus"
@@ -785,7 +785,7 @@
       "id": "drift-checker-file-exists",
       "description": "check-kb-semantic-drift.py must be present for the pipeline step to run",
       "type": "file_exists",
-      "path": "scripts/pipeline/check-kb-semantic-drift.py",
+      "path": "scripts/pipeline/hme/check-kb-semantic-drift.py",
       "severity": "error"
     },
     {

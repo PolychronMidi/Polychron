@@ -39,7 +39,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const MUSICAL = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
 const COHERENCE = path.join(ROOT, 'metrics', 'hme-coherence.json');
 const GROUND_TRUTH = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');

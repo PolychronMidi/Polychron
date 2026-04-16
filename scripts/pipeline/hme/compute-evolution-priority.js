@@ -33,7 +33,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const OUT = path.join(ROOT, 'metrics', 'hme-evolution-priority.json');
 
 function loadJson(rel) {

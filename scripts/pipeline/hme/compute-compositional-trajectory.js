@@ -31,7 +31,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const MUSICAL = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
 const OUT = path.join(ROOT, 'metrics', 'hme-trajectory.json');
 

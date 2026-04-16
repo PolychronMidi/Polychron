@@ -56,4 +56,4 @@ Exit code `0` = clean, `1` = violation detected.
 
 - `tools/HME/activity/emit.py` — shared event emitter CLI
 - `tools/HME/mcp/server/tools_analysis/activity_digest.py` — reader (`status mode='activity'`)
-- `scripts/pipeline/check-hme-coherence.js` — Phase 3 pipeline gate that reads the same JSONL
+- `scripts/pipeline/validators/check-hme-coherence.js` — Phase 3 pipeline gate that reads the same JSONL

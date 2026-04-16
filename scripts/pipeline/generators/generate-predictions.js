@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const ROOT = path.join(__dirname, '../..');
+const ROOT = path.join(__dirname, '..', '..', '..');
 const DEPGRAPH = path.join(ROOT, 'metrics', 'dependency-graph.json');
 const OUT = path.join(ROOT, 'metrics', 'hme-predictions.jsonl');
 const MAX_DEPTH = 2;
