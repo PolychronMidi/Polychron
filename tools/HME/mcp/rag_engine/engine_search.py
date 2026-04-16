@@ -122,13 +122,16 @@ class RAGEngineSearchMixin:
         if _rerank_on and len(results) > 1:
             try:
                 pairs = [(query, r["content"][:2000]) for r in results]
-                rerank_scores = self.reranker.predict(pairs, show_progress_bar=False)
-                # Normalize reranker logits to [0,1] via sigmoid so they combine
-                # cleanly with the sem+bm25 score. bge-reranker outputs are logits
-                # roughly in [-10,+10].
-                import math
+                rerank_scores = [float(s) for s in self.reranker.predict(pairs, show_progress_bar=False)]
+                # Batch min-max normalization preserves relative ranking regardless
+                # of whether the reranker emits signed logits (bge-reranker, ~[-10,+10])
+                # or all-positive scores (mxbai-rerank-v2, ~[0,10]). Sigmoid would
+                # compress the latter into [0.5, 1.0] and flatten differentiation.
+                _smin = min(rerank_scores)
+                _smax = max(rerank_scores)
+                _span = (_smax - _smin) or 1.0
                 for r, s in zip(results, rerank_scores):
-                    norm = 1.0 / (1.0 + math.exp(-float(s)))
+                    norm = (s - _smin) / _span
                     # Blend: 70% reranker, 30% retrieval signal (keeps filename boost felt)
                     if r["score"] < 1.4:  # not a filename-boosted exact match
                         r["score"] = 0.7 * norm + 0.3 * r["score"]
