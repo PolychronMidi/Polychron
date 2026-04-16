@@ -33,8 +33,41 @@ def init_handlers(engine_ready: threading.Event, project_engine, global_engine, 
     PROJECT_ROOT = project_root
 
 
+def _is_indexable(abs_path: str) -> str | None:
+    """Check if a file would be found by walk_code_files.  Returns None if OK,
+    or a reason string if the file should be rejected."""
+    from file_walker import get_ignore_dirs, get_max_file_size
+    from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES
+
+    fname = os.path.basename(abs_path)
+    suffix = os.path.splitext(fname)[1]
+
+    # Extension/filename check
+    if suffix not in SUPPORTED_EXTENSIONS and fname not in SUPPORTED_FILENAMES:
+        return f"unsupported extension '{suffix}'"
+
+    # Ignore-dir check: any path component in the ignore set
+    ignore_dirs = get_ignore_dirs()
+    parts = abs_path.split(os.sep)
+    for part in parts:
+        if part in ignore_dirs:
+            return f"path contains ignored dir '{part}'"
+
+    # Size check
+    try:
+        if os.path.getsize(abs_path) > get_max_file_size():
+            return f"exceeds max file size ({get_max_file_size()} bytes)"
+    except OSError:
+        pass
+
+    return None
+
+
 def _reindex_files(files: list[str]) -> dict:
-    """Trigger immediate mini-reindex of specific files via RAG engine."""
+    """Trigger immediate mini-reindex of specific files via RAG engine.
+    All files are validated against the file_walker indexing rules (supported
+    extensions, ignore dirs, max size) so this endpoint cannot bypass the
+    project's index whitelist."""
     from hme_http_store import _log_error
     if not _engine_ready.is_set():
         return {"indexed": [], "count": 0, "deferred": "engines starting"}
@@ -68,6 +101,12 @@ def _reindex_files(files: list[str]) -> dict:
             if not abs_path.startswith(os.path.realpath(PROJECT_ROOT) + os.sep):
                 skipped.append(filepath)
                 continue
+            # Enforce file_walker indexing rules — reject anything walk_code_files wouldn't find
+            reject = _is_indexable(abs_path)
+            if reject:
+                logger.info(f"reindex: rejected {filepath} ({reject})")
+                skipped.append(filepath)
+                continue
             if not os.path.exists(abs_path):
                 # Try finding file by basename under PROJECT_ROOT (handles wrong intermediate dirs)
                 basename = os.path.basename(abs_path)
@@ -83,6 +122,12 @@ def _reindex_files(files: list[str]) -> dict:
                 if found:
                     abs_path = os.path.realpath(found)
                     logger.info(f"reindex: resolved {filepath} → {found}")
+                    # Re-check resolved path against indexing rules
+                    reject = _is_indexable(abs_path)
+                    if reject:
+                        logger.info(f"reindex: rejected resolved {abs_path} ({reject})")
+                        skipped.append(filepath)
+                        continue
                 else:
                     _log_error("reindex", f"file not found: {filepath}")
                     skipped.append(filepath)
