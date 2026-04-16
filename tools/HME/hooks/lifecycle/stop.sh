@@ -4,6 +4,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # Antipattern detection logic lives in tools/HME/scripts/detectors/*.py — each
 # detector is a standalone script that reads a transcript path from argv and
 # prints a status token. This hook captures tokens and dispatches.
+# (`_stderr_verdict` / auto-summary-on-EXIT provided by _safety.sh.)
 INPUT=$(cat)
 _DETECTORS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../scripts/detectors"
 
@@ -77,6 +78,7 @@ if [ -f "$ERROR_LOG" ]; then
     jq -n \
       --arg errors "$NEW_ERRORS" \
       '{"decision":"block","reason":("🚨 LIFESAVER — ERRORS FIRED DURING THIS TURN:\n" + $errors + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+    _stderr_verdict "BLOCK: LIFESAVER mid-turn errors ($((TOTAL - TURN_START_LINE)) new)"
     exit 0
   fi
 
@@ -88,6 +90,7 @@ if [ -f "$ERROR_LOG" ]; then
     jq -n \
       --arg errors "$UNFIXED_ERRORS" \
       '{"decision":"block","reason":("🚨 LIFESAVER — UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+    _stderr_verdict "BLOCK: LIFESAVER unaddressed prior-turn errors"
     exit 0
   fi
 fi
