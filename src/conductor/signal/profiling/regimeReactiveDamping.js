@@ -48,12 +48,12 @@ regimeReactiveDamping = (() => {
   };
 
   const _cc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('regimeReactiveDamping') : {};
-  const _BASE_MAX_DENSITY = _cc.baseMaxDensity || 0.12;
-  const _BASE_MAX_TENSION = _cc.baseMaxTension || 0.12;
-  const _BASE_MAX_FLICKER = _cc.baseMaxFlicker || 0.17;
-  const _DENSITY_RANGE = _cc.densityRange || [0.88, 1.12];
-  const _TENSION_RANGE = _cc.tensionRange || [0.88, 1.22];
-  const _FLICKER_RANGE = _cc.flickerRange || [0.83, 1.19];
+  const _BASE_MAX_DENSITY = V.optionalFinite(_cc.baseMaxDensity, 0.12);
+  const _BASE_MAX_TENSION = V.optionalFinite(_cc.baseMaxTension, 0.12);
+  const _BASE_MAX_FLICKER = V.optionalFinite(_cc.baseMaxFlicker, 0.17);
+  const _DENSITY_RANGE = V.optionalType(_cc.densityRange, 'array', [0.88, 1.12]);
+  const _TENSION_RANGE = V.optionalType(_cc.tensionRange, 'array', [0.88, 1.22]);
+  const _FLICKER_RANGE = V.optionalType(_cc.flickerRange, 'array', [0.83, 1.19]);
 
   // Metaprofile-scaled maxima. Tension ceiling 0.80 (default) = 1.0x scale.
   // Atmospheric (0.45) = 0.56x, chaotic (0.95) = 1.19x.
@@ -75,19 +75,19 @@ regimeReactiveDamping = (() => {
 
   const CURVATURE_CEILING = 1.0;
 
-  const BIAS_SMOOTHING = _cc.biasSmoothing || 0.20;
+  const BIAS_SMOOTHING = V.optionalFinite(_cc.biasSmoothing, 0.20);
 
-  const LOW_VEL_THRESHOLD = _cc.lowVelocityThreshold || 0.015;
-  const LOW_VEL_BEATS     = _cc.lowVelocityBeats || 8;
-  const DRIFT_MAGNITUDE   = _cc.driftMagnitude || 0.22;
-  const DRIFT_DECAY       = _cc.driftDecay || 0.93;
+  const LOW_VEL_THRESHOLD = V.optionalFinite(_cc.lowVelocityThreshold, 0.015);
+  const LOW_VEL_BEATS     = V.optionalFinite(_cc.lowVelocityBeats, 8);
+  const DRIFT_MAGNITUDE   = V.optionalFinite(_cc.driftMagnitude, 0.22);
+  const DRIFT_DECAY       = V.optionalFinite(_cc.driftDecay, 0.93);
   let lowVelStreak = 0;
   let regimeReactiveDampingDriftD = 0;
   let regimeReactiveDampingDriftT = 0;
   let regimeReactiveDampingDriftF = 0;
   let regimeReactiveDampingInjectionCount = 0;
 
-  const _REGIME_RING_SIZE = _cc.regimeRingSize || 64;
+  const _REGIME_RING_SIZE = V.optionalFinite(_cc.regimeRingSize, 64);
   /** @type {string[]} */
   const regimeReactiveDampingRegimeRing = [];
   const _DEFAULT_REGIME_BUDGET = {
@@ -117,7 +117,7 @@ regimeReactiveDamping = (() => {
     }
     return _DEFAULT_REGIME_BUDGET;
   }
-  const _EQUILIB_STRENGTH = _cc.equilibStrength || 0.28;
+  const _EQUILIB_STRENGTH = V.optionalFinite(_cc.equilibStrength, 0.28);
   let regimeReactiveDampingEqCorrD = 0;
   let regimeReactiveDampingEqCorrT = 0;
   let regimeReactiveDampingEqCorrF = 0;
@@ -130,9 +130,9 @@ regimeReactiveDamping = (() => {
   let regimeReactiveDampingTensionPinStreak = 0;
   let regimeReactiveDampingTensionUnpinStreak = 0;
   let regimeReactiveDampingTensionCeilingRelax = 0;
-  const _PIN_STREAK_TRIGGER = _cc.pinStreakTrigger || 10;
+  const _PIN_STREAK_TRIGGER = V.optionalFinite(_cc.pinStreakTrigger, 10);
   const _UNPIN_RESET_BEATS = 5;
-  const _PIN_RELAX_STEP = _cc.pinRelaxStep || 0.05;
+  const _PIN_RELAX_STEP = V.optionalFinite(_cc.pinRelaxStep, 0.05);
 
   let currentRegime = 'evolving';
   let curvatureGain = 0;

@@ -61,8 +61,8 @@ motifIdentityMemory = (() => {
     // R34: track pattern frequency for saturation detection
     if (!patternHistByLayer.has(layer)) patternHistByLayer.set(layer, new Map());
     const hist = /** @type {Map<string, number>} */ (patternHistByLayer.get(layer));
-    hist.set(intervalDna, (hist.get(intervalDna) || 0) + 1);
-    const patternCount = hist.get(intervalDna) || 0;
+    hist.set(intervalDna, (hist.get(intervalDna) ?? 0) + 1);
+    const patternCount = hist.get(intervalDna) ?? 0;
     const isSaturated = patternCount > 4;
     L0.post(L0_CHANNELS.motifIdentity, layer, absoluteSeconds, { intervalDna, contour, confidence, saturated: isSaturated });
     if (identities.length > MAX_IDENTITIES) identities.shift();
@@ -91,7 +91,7 @@ motifIdentityMemory = (() => {
     else if (identity.confidence > 0.55) transform = 'augmentation';
     // R34: if pattern is saturated, force a different transform to break repetition
     const hist = patternHistByLayer.get(layer);
-    const isSaturated = hist && (hist.get(identity.intervalDna) || 0) > 4;
+    const isSaturated = hist && (hist.get(identity.intervalDna) ?? 0) > 4;
     if (isSaturated) {
       const transforms = /** @type {Array<'retrograde'|'inversion'|'augmentation'|'retrograde-inversion'>} */ (['retrograde', 'inversion', 'augmentation', 'retrograde-inversion']);
       transform = transforms[ri(0, 3)];

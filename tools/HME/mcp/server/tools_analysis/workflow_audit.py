@@ -443,7 +443,7 @@ def what_did_i_forget(changed_files: str) -> str:
         result = _local_think("/no_think\n" + user_text, max_tokens=400,
                               model=_REASONING_MODEL, system=_THINK_SYSTEM)
         if result:
-            from .synthesis_llamacpp import compress_for_claude
+            from .synthesis.synthesis_inference import compress_for_claude
             synthesis = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")
         elif result is None:
             _synthesis_timed_out = True
@@ -591,7 +591,7 @@ def diagnose_error(error_text: str) -> str:
                 max_tokens=800, model=_REASONING_MODEL, system=_THINK_SYSTEM
             )
         if synthesis:
-            from .synthesis_llamacpp import compress_for_claude
+            from .synthesis.synthesis_inference import compress_for_claude
             synthesis = compress_for_claude(synthesis, max_chars=800, hint="error fix steps")
     except Exception as _e:
         logger.warning(f"diagnose_error: synthesis error: {_e}")

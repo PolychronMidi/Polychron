@@ -73,6 +73,51 @@ ADMIT_PHRASES = (
 )
 
 
+# Pattern C: "survey-and-ask" — agent executes a hardening / audit / refactor
+# directive, identifies violations, then asks the user for permission to
+# fix them instead of fixing. The user's directive already granted authority;
+# stopping to ask is a covert defer. Triggers when the final assistant text
+# contains any of these permission-solicitation phrases AND no tool calls
+# follow. Distinct from ADMIT_PHRASES: those announce the agent won't do the
+# work; these pretend the agent is helpfully checking in.
+PERMISSION_ASK_PHRASES = (
+    "want me to",
+    "would you like me to",
+    "do you want me to",
+    "should i fix",
+    "should i proceed",
+    "should i run",
+    "should i start",
+    "shall i",
+    "before any edits",
+    "before i make any edits",
+    "before i start editing",
+    "before i begin",
+    "before i touch",
+    "survey more files before",
+    "survey first",
+    "surveyed, not modified",
+    "surveyed but not modified",
+    "surveyed, not fixed",
+    "didn't modify",
+    "did not modify",
+    "i didn't touch",
+    "i didn't edit",
+    "haven't modified",
+    "not yet modified",
+    "not yet fixed",
+    "not yet applied",
+    "flagging for later",
+    "flag for later",
+    "out of scope for this session",
+    "not in scope for this session",
+    "want me to continue",
+    "want me to keep going",
+    "confirm before",
+    "confirm first",
+)
+
+
 def _is_assistant_event(event: dict) -> bool:
     if event.get("role") != "assistant":
         return False
@@ -169,6 +214,14 @@ def main() -> int:
     final_text = _last_assistant_text(events).lower()
     if final_text:
         for phrase in ADMIT_PHRASES:
+            if phrase in final_text:
+                if not _has_tool_call_after_last_text(events):
+                    print("psycho")
+                    return 0
+
+        # Pattern C: survey-and-ask — soliciting permission after surveying
+        # rather than executing. Same "no tool calls after final text" guard.
+        for phrase in PERMISSION_ASK_PHRASES:
             if phrase in final_text:
                 if not _has_tool_call_after_last_text(events):
                     print("psycho")
