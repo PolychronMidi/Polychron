@@ -572,6 +572,19 @@ function handleRequest(clientReq, clientRes) {
         messages: payload.messages.length,
         injected: injected,
       });
+
+      // Reflexivity: if we injected last time and the Evolver's next turn
+      // shows a tool call, track whether it was consistent with the injection.
+      // This is the behavioral influence signal — did HME's context actually
+      // change what the Evolver did?
+      if (isAnthropic && injected) {
+        emit({
+          event: 'injection_influence',
+          session,
+          injection_type: 'jurisdiction',
+          targets_count: scan.jurisdictionTargets.length,
+        });
+      }
     }
 
     // Forward upstream using the already-resolved target.
