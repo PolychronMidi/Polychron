@@ -78,7 +78,7 @@ if [ -f "$ERROR_LOG" ]; then
     jq -n \
       --arg errors "$NEW_ERRORS" \
       '{"decision":"block","reason":("🚨 LIFESAVER — ERRORS FIRED DURING THIS TURN:\n" + $errors + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
-    _stderr_verdict "BLOCK: LIFESAVER mid-turn errors ($((TOTAL - TURN_START_LINE)) new)"
+    _stderr_verdict "BLOCK: lifesaver $((TOTAL - TURN_START_LINE))err"
     exit 0
   fi
 
@@ -90,7 +90,7 @@ if [ -f "$ERROR_LOG" ]; then
     jq -n \
       --arg errors "$UNFIXED_ERRORS" \
       '{"decision":"block","reason":("🚨 LIFESAVER — UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
-    _stderr_verdict "BLOCK: LIFESAVER unaddressed prior-turn errors"
+    _stderr_verdict "BLOCK: lifesaver prior-turn"
     exit 0
   fi
 fi
