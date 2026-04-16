@@ -11,13 +11,30 @@ adaptiveTrustScores = (() => {
   // Decay floor: scores cannot decay below this minimum. Prevents trust
   // from collapsing to near-zero for infrequently-active systems where
   // cumulative decay overwhelms sparse positive payoffs.
-  const DECAY_FLOOR = 0.05;
+  const _BASE_DECAY_FLOOR = 0.05;
   let cimScale = 0.5;
 
   // Trust ceiling: prevents runaway dominance where high-trust systems
   // accumulate ever-more influence via positive feedback (high trust -
   // more influence - more positive outcomes - higher trust).
-  const TRUST_CEILING = 0.75; // max score (- max weight - 1.56)
+  const _BASE_TRUST_CEILING = 0.75; // max score (→ max weight ~1.56)
+
+  // Metaprofile trust axis: dominantCap scales the ceiling, starvationFloor scales the floor.
+  // Default cap 1.8 → ceiling 0.75. Meditative cap 1.9 → ceiling ~0.79. Chaotic cap 1.4 → ceiling ~0.58.
+  function _getTrustCeiling() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const cap = metaProfiles.getAxisValue('trust', 'dominantCap', 1.8);
+      return _BASE_TRUST_CEILING * (cap / 1.8);
+    }
+    return _BASE_TRUST_CEILING;
+  }
+  function _getDecayFloor() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const floor = metaProfiles.getAxisValue('trust', 'starvationFloor', 0.8);
+      return _BASE_DECAY_FLOOR * (floor / 0.8);
+    }
+    return _BASE_DECAY_FLOOR;
+  }
 
   const BASE_EMA_DECAY = 0.85; // R33 E2: 0.9->0.85 faster trust adaptation
   const BASE_EMA_NEW = 0.15;  // R33 E2: 0.1->0.15 faster learning rate
@@ -105,7 +122,7 @@ adaptiveTrustScores = (() => {
     // The hypermeta controller chain handles coupling-related pressure.
     // Trust Exceedance Limits (Starvation guard)
     // Clamp bottom to 0.10 instead of -1 so aggressive exponential drops don't permanently decouple modules.
-    state.score = clamp(state.score * decayWeight + p * newWeight, 0.10, TRUST_CEILING);
+    state.score = clamp(state.score * decayWeight + p * newWeight, 0.10, _getTrustCeiling());
     if (p > 0 && trustSurfaceSystem) {
       const trustSurfaceGainBrake = clamp(
         hotspotProfile.pressure * 0.12 +
@@ -182,7 +199,7 @@ adaptiveTrustScores = (() => {
   const TRUST_WEIGHT_MIN = 0.4;
   const TRUST_WEIGHT_MAX = 1.8;
   function getAdaptiveDominanceCaps(systemName, effectiveScore) {
-    return adaptiveTrustScoresHelpers.getAdaptiveDominanceCaps(scoreBySystem, systemName, effectiveScore, TRUST_CEILING, TRUST_WEIGHT_MAX);
+    return adaptiveTrustScoresHelpers.getAdaptiveDominanceCaps(scoreBySystem, systemName, effectiveScore, _getTrustCeiling(), TRUST_WEIGHT_MAX);
   }
 
   /** @param {string} systemName */
@@ -295,8 +312,8 @@ adaptiveTrustScores = (() => {
       state.score *= (1 - decayRate);
 
       // Decay floor: prevent trust collapse for established systems
-      if (state.samples > 16 && state.score < DECAY_FLOOR) {
-        state.score = DECAY_FLOOR;
+      if (state.samples > 16 && state.score < _getDecayFloor()) {
+        state.score = _getDecayFloor();
       }
 
       // Structural fix: Universal population-derived trust floor (decay phase).
@@ -342,7 +359,7 @@ adaptiveTrustScores = (() => {
         const bottomThreshold = allScores[m.floor(n * 0.2)];
         for (const [, state] of scoreBySystem.entries()) {
           if (state.score <= bottomThreshold && state.samples > 16) {
-            state.score = clamp(state.score + biodiversityBoost, -1, TRUST_CEILING);
+            state.score = clamp(state.score + biodiversityBoost, -1, _getTrustCeiling());
           }
         }
       }
