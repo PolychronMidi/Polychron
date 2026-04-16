@@ -16,13 +16,13 @@
 //   right === Literal (number, string) OR array/object expression
 //
 // Allowed replacements:
-//   V.optionalFinite(_cc.foo, 0.5)     — numeric, catches NaN/string
-//   V.optionalType(_cc.foo, 'array', [...])   — array
-//   V.optionalType(_cc.foo, 'object', {...})  — object
-//   V.optionalString(_cc.foo, 'default')      — string
+//   V.optionalFinite(_cc.foo, 0.5)     -- numeric, catches NaN/string
+//   V.optionalType(_cc.foo, 'array', [...])   -- array
+//   V.optionalType(_cc.foo, 'object', {...})  -- object
+//   V.optionalString(_cc.foo, 'default')      -- string
 //
 // `??` is tolerated for histogram-style counter reads (Map.get(k) ?? 0)
-// via the `conductor-histogram-uses-nullish` invariant — this rule
+// via the `conductor-histogram-uses-nullish` invariant -- this rule
 // targets config-shape reads specifically, not arbitrary map lookups.
 //
 // Exempt when the file imports no `validator` module (validator unavailable).
@@ -53,7 +53,7 @@ module.exports = {
       const obj = node.object;
       if (!obj) return false;
       if (obj.type === 'Identifier' && CONFIG_VAR_PATTERN.test(obj.name)) return true;
-      // `controllerConfig.getSection('...').foo || X` style — treat
+      // `controllerConfig.getSection('...').foo || X` style -- treat
       // CallExpression to .getSection( as a config read site.
       if (obj.type === 'CallExpression'
           && obj.callee && obj.callee.type === 'MemberExpression'
@@ -74,12 +74,12 @@ module.exports = {
           || right.type === 'ObjectExpression';
         if (!isLiteral) return;
         // Skip if the right-hand side is `0` or `[]` or `{}` used as
-        // histogram-identity defaults in a counter-increment expression —
+        // histogram-identity defaults in a counter-increment expression --
         // let the conductor-histogram-uses-nullish rule handle those.
         // Config reads with explicit literal defaults are the target.
         context.report({
           node,
-          message: 'Config read with `||`/`??` fallback — use `V.optionalFinite(val, default)` / `V.optionalType(val, kind, default)` so wrong types fail fast instead of silently coercing.',
+          message: 'Config read with `||`/`??` fallback -- use `V.optionalFinite(val, default)` / `V.optionalType(val, kind, default)` so wrong types fail fast instead of silently coercing.',
         });
       },
     };

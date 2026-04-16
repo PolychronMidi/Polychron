@@ -3,7 +3,20 @@
 # Source this at the top of every hook script.
 set -euo pipefail
 # Load .env so hooks get PROJECT_ROOT and all HME_* vars without hardcoding paths.
-set -a; source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.env" 2>/dev/null || true; set +a
+# Path math: _safety.sh lives at tools/HME/hooks/helpers/_safety.sh;
+# project root is three dirs up: helpers/ -> hooks/ -> HME/ -> tools/ is WRONG,
+# correct ascent is helpers/ -> hooks/ -> HME/ -> tools/ -> Polychron/, i.e.
+# helpers/../../../../ = project root. The previous path (../../.env) pointed
+# at tools/HME/.env which doesn't exist — silent `|| true` hid the miss for
+# months, so every hook was running without PROJECT_ROOT set, which silently
+# broke the auto-commit path in stop.sh / userpromptsubmit.sh (git -C ""
+# swallowed by 2>/dev/null).
+_HME_ENV_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/.env"
+if [ -f "$_HME_ENV_FILE" ]; then
+  set -a; source "$_HME_ENV_FILE"; set +a
+else
+  echo "WARNING: _safety.sh cannot find .env at $_HME_ENV_FILE — hooks will run without PROJECT_ROOT/HME_* env vars" >&2
+fi
 
 # H3: Hook latency telemetry — each hook self-logs its wall time to
 # metrics/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier

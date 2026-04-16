@@ -38,13 +38,26 @@ const restrictedGlobalsMessage = 'Global keywords banned project-wide, use naked
 export default [
   {
     // Global ignores — files completely invisible to any config block.
-    // tools/** is DELIBERATELY NOT globally ignored here; the src/** config
-    // below locally ignores it, and the per-file `files: ['tools/HME/proxy/hme_proxy.js']`
-    // block below re-enables linting specifically for the load-bearing
-    // proxy script. (A `scan is not defined` block-scope leak went
-    // undetected before because tools/** was globally ignored and
-    // no flat-config negation worked around that.)
-    ignores: ['scripts/**', 'eslint.config.mjs', 'vitest.config.mjs', 'tmp/**', 'eslint-rules/**', 'lab/**']
+    // tools/HME/chat/** is VS Code extension bootstrap code (uses
+    // module.exports / CommonJS patterns that the project-wide src/ naked-
+    // global rules would reject). Its own tsconfig handles checking.
+    // tools/HME/proxy/hme_proxy.js is deliberately LINTED via the per-file
+    // config below (load-bearing proxy; a `scan is not defined` block-scope
+    // leak went undetected because tools/** used to be globally ignored).
+    // Other tools/ JS (activity/emit.py has no .js etc.) falls through.
+    ignores: [
+      'scripts/**',
+      'eslint.config.mjs',
+      'vitest.config.mjs',
+      'tmp/**',
+      'eslint-rules/**',
+      'lab/**',
+      'tools/HME/chat/**',
+      'tools/HME/mcp/**',
+      'tools/HME/activity/**',
+      'tools/HME/warm-context-cache/**',
+      'tools/**/node_modules/**'
+    ]
   },
   {
     // hme_proxy.js is intentionally unlinted by the global `tools/**`

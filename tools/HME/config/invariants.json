@@ -518,6 +518,13 @@
       "severity": "error"
     },
     {
+      "id": "hme-hooks-no-silent-source",
+      "description": "Shell hooks must not wrap `source <infrastructure-file>` in silent-swallow suffixes (`2>/dev/null || true`, `|| true`). The _safety.sh .env-path bug hid for months behind `source X 2>/dev/null || true` because the missing file failed invisibly, leaving PROJECT_ROOT unset in every hook. Infrastructure sources must fail loud or use explicit `[ -f X ] && source X` guard.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-shell-silent-source.py tools/HME/hooks",
+      "severity": "error"
+    },
+    {
       "id": "hme-py-meta-has-trim",
       "description": "meta_observer.py must define a trim helper (_trim_) alongside its append-only file writes",
       "type": "patterns_all_in_file",
