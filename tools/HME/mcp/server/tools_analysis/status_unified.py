@@ -160,6 +160,9 @@ def status(mode: str = "all") -> str:
         from .phase6_reports import generalizations_report as _gr
         return _gr()
 
+    if mode == "priorities" or mode == "next":
+        return _evolution_priority_report()
+
     if mode == "reflexivity":
         from .phase6_reports import reflexivity_report as _rr
         return _rr()
@@ -601,6 +604,37 @@ def _resume_briefing() -> str:
             parts.append(f"  {line}")
 
     return "\n".join(parts)
+
+
+def _evolution_priority_report() -> str:
+    """Render metrics/hme-evolution-priority.json — HME's self-directed roadmap."""
+    _track("evolution_priority_report")
+    ppath = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-evolution-priority.json")
+    if not os.path.exists(ppath):
+        return "# Evolution Priorities\n\nNo priority data — run pipeline first.\n"
+    try:
+        data = json.load(open(ppath))
+        priorities = data.get("priorities", [])
+        if not priorities:
+            return "# Evolution Priorities\n\nNo priorities generated.\n"
+        lines = [
+            "# HME Evolution Priorities",
+            "",
+            f"*{data['meta']['priorities_generated']} priorities from {data['meta']['signals_aggregated']} signal sources*",
+            f"*Generated: {data['meta']['timestamp']}*",
+            "",
+        ]
+        for p in priorities[:10]:
+            r = p.get("rationale", "")
+            ev = p.get("evidence", [{}])[0]
+            lines.append(f"**#{p['rank']}** [{p['category']}] **{p['target']}** (w={p.get('weight', 0):.2f})")
+            if r:
+                lines.append(f"  {r}")
+            lines.append(f"  evidence: {ev.get('source', '?')} → {ev.get('signal', '?')}")
+            lines.append("")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"# Evolution Priorities\n\nError loading: {e}\n"
 
 
 def _trajectory_report() -> str:
