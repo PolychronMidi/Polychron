@@ -172,34 +172,22 @@ class OpenAIProvider:
         from .synthesis_config import strip_thinking_tags as _strip_think
         from .synthesis_proxy_route import proxy_route as _proxy_route
 
-        full_system = GROUNDING_HEADER + ("\n\n" + system if system else "")
-        body = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": full_system},
-                {"role": "user", "content": prompt},
-            ],
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-        }
-        _proxy_url, _proxy_hdrs = _proxy_route(self.base_url)
+        body = self._build_request_body(model, prompt, system, max_tokens, temperature)
+        url = self._build_url(model)
+        _proxy_url, _proxy_hdrs = _proxy_route(url)
+        headers = {"Content-Type": "application/json"}
+        headers.update(self._build_auth_header())
         req = urllib.request.Request(
             _proxy_url, data=json.dumps(body).encode(),
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self._api_key()}",
-            }, method="POST",
+            headers=headers, method="POST",
         )
         for _pk, _pv in _proxy_hdrs.items():
             req.add_header(_pk, _pv)
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read())
-            choices = data.get("choices", [])
-            if not choices:
-                return None
-            text = choices[0].get("message", {}).get("content", "")
-            return _strip_think(text) or None
+            text = self._parse_response(data)
+            return _strip_think(text) if text else None
         except urllib.error.HTTPError as e:
             err = e.read().decode(errors="ignore")[:200]
             logger.warning(f"{self.name} {model} HTTP {e.code}: {err}")
@@ -209,6 +197,35 @@ class OpenAIProvider:
             raise
 
     # ── Cascade ───────────────────────────────────────────────────────────
+
+    def _build_request_body(self, model: str, prompt: str, system: str,
+                            max_tokens: int, temperature: float) -> dict:
+        """Build the request payload. Override for non-OpenAI formats."""
+        full_system = GROUNDING_HEADER + ("\n\n" + system if system else "")
+        return {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": full_system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+
+    def _build_url(self, model: str) -> str:
+        """Build the request URL. Override for per-model URL patterns (e.g. Gemini)."""
+        return self.base_url
+
+    def _build_auth_header(self) -> dict:
+        """Build auth headers. Override for query-param auth (e.g. Gemini)."""
+        return {"Authorization": f"Bearer {self._api_key()}"}
+
+    def _parse_response(self, data: dict) -> str | None:
+        """Extract text from response. Override for non-OpenAI formats."""
+        choices = data.get("choices", [])
+        if not choices:
+            return None
+        return choices[0].get("message", {}).get("content", "")
 
     def cascade(self, prompt: str, system: str = "",
                 max_tokens: int = 4096, temperature: float = 0.2) -> str | None:
