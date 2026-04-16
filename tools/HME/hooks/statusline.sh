@@ -37,7 +37,7 @@ try:
     # in. Single-shot per turn via a sentinel file (reset at userpromptsubmit).
     sentinel = '/tmp/hme-chain-snapshot-fired'
     if u >= 70 and not os.path.exists(sentinel):
-        project = os.environ.get('CLAUDE_PROJECT_DIR', '/home/jah/Polychron')
+        project = os.environ['PROJECT_ROOT']
         script = os.path.join(project, 'tools', 'HME', 'scripts', 'chain-snapshot.py')
         if os.path.isfile(script):
             open(sentinel, 'w').write(str(int(time.time())))

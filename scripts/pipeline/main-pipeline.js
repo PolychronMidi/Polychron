@@ -68,6 +68,7 @@ const POST_COMPOSITION = [
   { label: 'derive-constitution',      cmd: 'python3 scripts/pipeline/derive-constitution.py' },
   { label: 'detect-doc-drift',         cmd: 'python3 scripts/pipeline/detect-doc-drift.py' },
   { label: 'extract-generalizations',  cmd: 'python3 scripts/pipeline/extract-generalizations.py' },
+  { label: 'render-generalizations',  cmd: 'python3 scripts/pipeline/render-generalizations.py' },
 ];
 
 // runner

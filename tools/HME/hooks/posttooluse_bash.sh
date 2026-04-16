@@ -21,7 +21,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
   # LIFESAVER: Scan pipeline summary for errors in non-fatal steps.
   # These are real failures (Traceback, CUDA OOM, RuntimeError) that the
   # pipeline continued past. They MUST be addressed — not ignored.
-  PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+  PROJECT="$PROJECT_ROOT"
   SUMMARY_FILE="$PROJECT/metrics/pipeline-summary.json"
   if [ -f "$SUMMARY_FILE" ]; then
     ERROR_STEPS=$(_safe_py3 "
@@ -126,7 +126,7 @@ fi
 if echo "$CMD" | grep -q 'npm run main'; then
   RESULT=$(_safe_jq "$INPUT" '.tool_response' '' | tail -c 500)
   if echo "$RESULT" | grep -q 'Pipeline finished'; then
-    PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+    PROJECT="$PROJECT_ROOT"
     SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
     PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
     FP="$PROJECT/metrics/fingerprint-comparison.json"

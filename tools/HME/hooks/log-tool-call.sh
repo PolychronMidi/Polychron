@@ -53,7 +53,7 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   # "could fail") from Edit Risks narrative text.
   FAILS=$(echo "$TOOL_RESULT" | grep -E '\bFAIL(ED)?\b' | grep -v 'PASS' | grep -vi 'fail-fast\|fail to\|may fail\|might fail\|could fail' 2>/dev/null || true)
   if [[ -n "$FAILS" ]]; then
-    PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+    PROJECT="$PROJECT_ROOT"
     ERROR_LOG="$PROJECT/log/hme-errors.log"
     mkdir -p "$(dirname "$ERROR_LOG")"
     FAIL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

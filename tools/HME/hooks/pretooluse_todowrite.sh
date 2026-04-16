@@ -11,7 +11,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
 # The merge logic lives in _todo_merge.py — a standalone Python script that
 # bypasses server/tools_analysis/__init__.py (which requires a live FastMCP).
 INPUT=$(cat)
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HME_LOG="${PROJECT}/log/hme.log"
 

@@ -29,7 +29,7 @@ if _tool_root not in sys.path:
 
 from hme_env import ENV  # noqa: E402 — central .env loader, fail-fast semantics
 
-# ENV.load() already ran at import time — os.environ is populated.
+# ENV.load() already ran at import time — os.environ is populated.  # env-ok: comment only
 
 
 def _purge_stale_server_pyc() -> None:

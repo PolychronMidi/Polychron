@@ -97,6 +97,19 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                         _cf = ",".join(_nexus_files)
                 except Exception as _err2:
                     logger.debug(f'silent-except review_unified.py:98: {type(_err2).__name__}: {_err2}')
+            # Log cascade predictions for each changed file so reconcile-predictions.js
+            # has data to score. These are non-injected (post-hoc) predictions.
+            if _cf:
+                try:
+                    from .cascade_analysis import _log_prediction, _forward_bfs
+                    for _fpath in _cf.split(","):
+                        _mod = _fpath.strip().rsplit("/", 1)[-1].rsplit(".", 1)[0]
+                        if _mod:
+                            _chain = _forward_bfs(_mod, depth=2)
+                            if _chain:
+                                _log_prediction(_mod, [n for _, n, _ in _chain], injected=False)
+                except Exception as _cp_err:
+                    logger.debug(f"cascade prediction in review: {_cp_err}")
             try:
                 from .workflow_audit import what_did_i_forget as _wdif
                 _wdif_out = _wdif(_cf or "")

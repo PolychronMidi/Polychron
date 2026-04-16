@@ -321,7 +321,7 @@ def _ensure_llamacpp_daemon():
     except Exception as _e:
         logger.debug(f"_ensure_llamacpp_daemon: daemon probe failed ({type(_e).__name__}), will spawn")
     import subprocess
-    env = os.environ.copy()
+    env = os.environ.copy()  # env-ok: subprocess needs inherited env
     env["PROJECT_ROOT"] = PROJECT_ROOT
     try:
         subprocess.Popen(
@@ -349,7 +349,7 @@ def _ensure_vram_monitor():
     except (FileNotFoundError, ValueError, ProcessLookupError):
         pass
     import subprocess
-    env = os.environ.copy()
+    env = os.environ.copy()  # env-ok: subprocess needs inherited env
     env["PROJECT_ROOT"] = PROJECT_ROOT
     try:
         subprocess.Popen(
@@ -514,7 +514,7 @@ def _load_engines():
         # arbiter f16 co-resides on the shared GPU. BGE/ONNX (CPU) stays at BATCH_SIZE=64.
         _CODE_EMBED_BATCH = ENV.require_int("HME_CODE_EMBED_BATCH")
         if _rag_device.startswith("cuda"):
-            os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+            os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")  # env-ok: torch runtime config
 
         # Wrap text / code / reranker in _RagDispatcher so concurrent requests
         # stack across GPU + CPU-mirror worker pairs and the next free worker

@@ -8,7 +8,7 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 # Only trigger on pipeline completion
 echo "$CMD" | grep -q 'npm run main' || exit 0
 
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 SUMMARY="$PROJECT/metrics/trace-summary.json"
 [ -f "$SUMMARY" ] || exit 0
 

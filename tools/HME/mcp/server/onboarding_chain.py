@@ -74,11 +74,7 @@ STEP_SHORT = [
     "persist learning (learn title=, content=)",
 ]
 
-_PROJECT_ROOT = (
-    ENV.optional("PROJECT_ROOT", "")
-    or ENV.optional("CLAUDE_PROJECT_DIR", "")
-    or "/home/jah/Polychron"
-)
+_PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 # Flat per-field state files — kept separate (not merged into JSON) so shell
 # helpers can read them via `cat` without pulling in `jq` or Python. The
 # tradeoff: two files instead of one, but much simpler hook code.

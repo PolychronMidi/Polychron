@@ -50,14 +50,19 @@ function readEvents() {
 }
 
 function sliceToRound(events) {
-  let lastRound = -1;
-  for (let i = events.length - 1; i >= 0; i--) {
+  // Find the two most recent round_complete events. The window is everything
+  // between them — that's the round that just finished. If only one exists,
+  // take everything before it (the entire first round). If none, take all.
+  const boundaries = [];
+  for (let i = events.length - 1; i >= 0 && boundaries.length < 2; i--) {
     if (events[i] && events[i].event === 'round_complete') {
-      lastRound = i;
-      break;
+      boundaries.push(i);
     }
   }
-  return lastRound >= 0 ? events.slice(lastRound + 1) : events;
+  if (boundaries.length === 0) return events;
+  if (boundaries.length === 1) return events.slice(0, boundaries[0]);
+  // boundaries[0] = latest, boundaries[1] = second-to-last
+  return events.slice(boundaries[1] + 1, boundaries[0]);
 }
 
 function loadJsonMaybe(p) {

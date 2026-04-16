@@ -558,6 +558,20 @@
       "severity": "error"
     },
     {
+      "id": "hme-py-no-os-environ",
+      "description": "HME Python files must not read os.environ directly — use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth. Subprocess env construction (os.environ.copy()) is exempt when marked with # env-ok. hme_env.py itself is exempt.",
+      "type": "shell_output_empty",
+      "shell": "grep -rn 'os\\.environ' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -vE 'hme_env\\.py|# env-ok'",
+      "severity": "error"
+    },
+    {
+      "id": "hme-py-no-hardcoded-home",
+      "description": "HME Python and shell files must not hardcode /home/jah — use PROJECT_ROOT from .env via hme_env.ENV or $PROJECT_ROOT in shell. Docs and logs are exempt.",
+      "type": "shell_output_empty",
+      "shell": "grep -rn '/home/jah' tools/HME/mcp/ tools/HME/hooks/ tools/HME/scripts/ tools/HME/activity/ tools/HME/proxy/ --include='*.py' --include='*.sh' --include='*.js' | grep -v '__pycache__' | grep -vE '\\.log:|# path-ok'",
+      "severity": "error"
+    },
+    {
       "id": "no-hardcoded-llamacpp-ports",
       "description": "HME server files must not hardcode llamacpp ports 11434/11435/11436 \u2014 they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy llamacpp branch guarded by HME_ARBITER_BACKEND.",
       "type": "shell_output_empty",

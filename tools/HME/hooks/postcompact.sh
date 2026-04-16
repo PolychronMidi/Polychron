@@ -7,7 +7,7 @@ HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$HOOKS_DIR/_nexus.sh"
 source "$HOOKS_DIR/_onboarding.sh"
 
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
 printf '%s INFO compact: POST-COMPACT event triggered\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" >> "$HME_LOG" 2>/dev/null
 TAB="$PROJECT/tmp/hme-tab.txt"
@@ -91,7 +91,7 @@ if [ -f "$LATEST_LINK" ]; then
 import json, os
 link_path = "$LATEST_LINK"
 import os
-project = os.environ.get("CLAUDE_PROJECT_DIR", "/home/jah/Polychron")
+project = os.environ["PROJECT_ROOT"]
 latest = os.path.join(project, "metrics", "chain-history", "latest.yaml")
 try:
     with open(latest) as f:

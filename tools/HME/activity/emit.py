@@ -59,9 +59,7 @@ def main(argv: list[str]) -> int:
         sys.stderr.write("emit.py: missing --event=NAME\n")
         return 2
 
-    project_root = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
-        "PROJECT_ROOT", "/home/jah/Polychron"
-    )
+    project_root = os.environ["PROJECT_ROOT"]  # env-ok: set by caller from .env
     out_path = os.path.join(project_root, "metrics", "hme-activity.jsonl")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 

@@ -8,7 +8,7 @@
 # The Python CLI is the source of truth — shell helpers are just ergonomic.
 # Falls back gracefully to "graduated" if Python is unavailable.
 
-_ONB_PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+_ONB_PROJECT="$PROJECT_ROOT"
 _ONB_STATE_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.state"
 _ONB_TARGET_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.target"
 _ONB_PY="${_ONB_PROJECT}/tools/HME/mcp/server/onboarding_chain.py"

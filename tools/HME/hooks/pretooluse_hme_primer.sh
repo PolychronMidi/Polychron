@@ -4,7 +4,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_onboarding.sh"
 # HME PreToolUse: first HME tool of session — inject walkthrough-shaped primer once.
 cat > /dev/null  # consume stdin
 
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 FLAG="${PROJECT}/tmp/hme-primer-needed.flag"
 
 if [ -f "$FLAG" ]; then

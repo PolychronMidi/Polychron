@@ -7,7 +7,7 @@ PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 # ── Auto-commit snapshot ──────────────────────────────────────────────────────
 # Commit any uncommitted changes before Claude processes the message.
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
-_AC_PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+_AC_PROJECT="$PROJECT_ROOT"
 if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   git -C "$_AC_PROJECT" add -A 2>/dev/null
   git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>/dev/null || true
@@ -50,7 +50,7 @@ fi
 # THIS is the ONLY mechanism that makes those errors visible to this agent.
 # Every error, everywhere, MUST be diagnosed and FIXED. Not acknowledged — FIXED.
 # An error that is seen and not fixed is WORSE than an unseen error.
-PROJECT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
 WATERMARK="$PROJECT/tmp/hme-errors.lastread"
 TURNSTART="$PROJECT/tmp/hme-errors.turnstart"

@@ -57,8 +57,10 @@ class _EnvLoader:
         for parent in [here] + list(here.parents):
             if (parent / ".env").exists() and (parent / "CLAUDE.md").exists():
                 return parent
-        # Last-resort default — Polychron layout
-        return Path("/home/jah/Polychron")
+        raise RuntimeError(
+            "hme_env: cannot resolve project root. Set PROJECT_ROOT in .env "
+            "or HME_PROJECT_ROOT in the environment."
+        )
 
     def load(self, force: bool = False) -> None:
         if self._loaded and not force:

@@ -2,6 +2,8 @@
 # Shared safety preamble for all HME hooks.
 # Source this at the top of every hook script.
 set -euo pipefail
+# Load .env so hooks get PROJECT_ROOT and all HME_* vars without hardcoding paths.
+set -a; source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.env" 2>/dev/null || true; set +a
 
 # H3: Hook latency telemetry — each hook self-logs its wall time to
 # metrics/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier
@@ -14,7 +16,7 @@ _hme_log_hook_latency() {
   local end_ns dur_ms
   end_ns="$(date +%s%N)"
   dur_ms=$(( (end_ns - _HME_HOOK_START_NS) / 1000000 ))
-  local log_file="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}/metrics/hme-hook-latency.jsonl"
+  local log_file="$PROJECT_ROOT/metrics/hme-hook-latency.jsonl"
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
     "$_HME_HOOK_NAME" "$dur_ms" "$(date +%s)" >> "$log_file" 2>/dev/null
