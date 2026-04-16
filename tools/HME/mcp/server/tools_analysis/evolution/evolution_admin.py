@@ -39,7 +39,11 @@ def hme_admin(action: str = "selftest", modules: str = "",
     if action in ("reload", "both"):
         parts.append(hme_hot_reload(modules))
     if action in ("selftest", "both"):
-        parts.append(hme_selftest())
+        # `modules` is overloaded as the verbose-flag carrier for selftest
+        # since the action takes no other params — keeps the tool surface
+        # small. Pass modules='verbose' to see all PASS lines; default
+        # trims them when any failure/warning is present.
+        parts.append(hme_selftest(verbose=("verbose" in (modules or "").lower())))
     if action == "index":
         try:
             from tools_index import index_codebase as _index_codebase
