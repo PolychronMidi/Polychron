@@ -1,7 +1,13 @@
 """RAGEngine search mixin — semantic, budgeted, and token-counting search."""
 import logging
 import os
+import sys
 from typing import Optional
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
 from .utils import _bm25_search, _rrf_fuse, _sanitize
 
@@ -14,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Swap both strings if you change model. Qwen3-Embedding-0.6B has a
 # built-in "query" prompt in its config — we call encode(prompt_name=
 # "query") for the text model to trigger it automatically.
-_CODE_QUERY_PREFIX = os.environ.get(
+_CODE_QUERY_PREFIX = ENV.optional(
     "RAG_CODE_QUERY_PREFIX",
     "Given Code or Text, retrieval relevant content\n",
 )
@@ -56,7 +62,7 @@ class RAGEngineSearchMixin:
         # With a reranker we can afford a wider candidate pool because the cross-encoder
         # will refine the ordering. Without one, 2x is the safe default.
         _rerank_on = (getattr(self, "reranker", None) is not None
-                      and os.environ.get("RAG_RERANK", "1") == "1")
+                      and ENV.optional("RAG_RERANK", "1") == "1")
         _multiplier = 4 if _rerank_on else 2
         fetch_k = min(top_k * _multiplier, 120 if _rerank_on else 60)
         query_vec = _encode_code_query(self.code_model, query).tolist()
@@ -206,7 +212,7 @@ class RAGEngineSearchMixin:
         if cache_key in self._token_cache:
             return self._token_cache[cache_key]
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        api_key = ENV.optional("ANTHROPIC_API_KEY", "")
         if not api_key:
             for key_path in [os.path.expanduser("~/.anthropic/api_key"), os.path.expanduser("~/.config/anthropic/key")]:
                 try:

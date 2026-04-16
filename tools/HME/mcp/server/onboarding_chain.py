@@ -34,6 +34,11 @@ import re
 import sys
 from typing import Callable, Optional
 
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
+
 logger = logging.getLogger("HME.onboarding")
 
 STATES = [
@@ -70,8 +75,8 @@ STEP_SHORT = [
 ]
 
 _PROJECT_ROOT = (
-    os.environ.get("PROJECT_ROOT")
-    or os.environ.get("CLAUDE_PROJECT_DIR")
+    ENV.optional("PROJECT_ROOT", "")
+    or ENV.optional("CLAUDE_PROJECT_DIR", "")
     or "/home/jah/Polychron"
 )
 # Flat per-field state files — kept separate (not merged into JSON) so shell

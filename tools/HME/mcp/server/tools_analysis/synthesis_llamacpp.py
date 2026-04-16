@@ -881,7 +881,7 @@ def _fuzzy_find_modules(prompt: str, max_results: int = 3) -> list[str]:
     if not significant:
         return []
     scored: list[tuple[int, str]] = []
-    root = getattr(ctx, "PROJECT_ROOT", os.environ.get("POLYCHRON_ROOT", ""))
+    root = getattr(ctx, "PROJECT_ROOT", ENV.optional("POLYCHRON_ROOT", ""))
     for f in _g.glob(os.path.join(root, "src", "**", "*.js"), recursive=True):
         m = os.path.basename(f).replace('.js', '')
         m_lower = m.lower()

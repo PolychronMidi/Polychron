@@ -66,7 +66,13 @@ Local qwen3-coder:30b-a3b is the final fallback handled by the caller.
 """
 import logging
 import os
+import sys
 import time
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME.reasoning")
 
@@ -87,7 +93,7 @@ def _refresh_env() -> None:
         env_path = os.path.join(_ctx.PROJECT_ROOT, ".env")
     except Exception as _err:
         logger.debug(f"unnamed-except synthesis_reasoning.py:88: {type(_err).__name__}: {_err}")
-        env_path = os.path.join(os.environ.get("PROJECT_ROOT", ""), ".env")
+        env_path = os.path.join(ENV.optional("PROJECT_ROOT", ""), ".env")
     if not os.path.exists(env_path):
         return
     try:

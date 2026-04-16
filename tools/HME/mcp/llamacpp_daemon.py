@@ -125,6 +125,7 @@ def _default_instances() -> list[InstanceSpec]:
             device=ENV.require("HME_ARBITER_VULKAN"),
             alias=ENV.require("HME_ARBITER_MODEL"),
             ctx_size=ENV.require_int("HME_ARBITER_CTX"),
+            timeout_s=ENV.optional_int("HME_ARBITER_TIMEOUT", 120),
             n_gpu_layers=999,  # invariant
         ),
         InstanceSpec(

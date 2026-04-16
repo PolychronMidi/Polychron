@@ -35,6 +35,8 @@ import urllib.request
 import urllib.error
 from collections import deque
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.nvidia")
 
 _GROUNDING_HEADER = """\
@@ -51,7 +53,7 @@ If a name does not appear in VERIFIED FACTS, do not use it.\
 
 
 def _api_key() -> str:
-    return os.environ.get("NVIDIA_API_KEY", "")
+    return ENV.optional("NVIDIA_API_KEY", "")
 
 _BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 _TIMEOUT = 90  # NVIDIA NIM can be slow on cold starts; bigger budget needed
@@ -62,14 +64,14 @@ _TIMEOUT = 90  # NVIDIA NIM can be slow on cold starts; bigger budget needed
 # omitted. Reasoning-heavy models list the `needs_budget` flag so that if
 # they're called with a tiny max_tokens the response would be empty.
 _TIER_DEFS = [
-    ("T1", os.environ.get("NVIDIA_MODEL_T1", "deepseek-ai/deepseek-v3.2")),
-    ("T2", os.environ.get("NVIDIA_MODEL_T2", "mistralai/mistral-large-3-675b-instruct-2512")),
-    ("T3", os.environ.get("NVIDIA_MODEL_T3", "qwen/qwen3-coder-480b-a35b-instruct")),
-    ("T4", os.environ.get("NVIDIA_MODEL_T4", "z-ai/glm5")),
-    ("T5", os.environ.get("NVIDIA_MODEL_T5", "nvidia/llama-3.1-nemotron-ultra-253b-v1")),
-    ("T6", os.environ.get("NVIDIA_MODEL_T6", "mistralai/devstral-2-123b-instruct-2512")),
-    ("T7", os.environ.get("NVIDIA_MODEL_T7", "qwen/qwen3.5-397b-a17b")),
-    ("T8", os.environ.get("NVIDIA_MODEL_T8", "meta/llama-3.3-70b-instruct")),
+    ("T1", ENV.optional("NVIDIA_MODEL_T1", "deepseek-ai/deepseek-v3.2")),
+    ("T2", ENV.optional("NVIDIA_MODEL_T2", "mistralai/mistral-large-3-675b-instruct-2512")),
+    ("T3", ENV.optional("NVIDIA_MODEL_T3", "qwen/qwen3-coder-480b-a35b-instruct")),
+    ("T4", ENV.optional("NVIDIA_MODEL_T4", "z-ai/glm5")),
+    ("T5", ENV.optional("NVIDIA_MODEL_T5", "nvidia/llama-3.1-nemotron-ultra-253b-v1")),
+    ("T6", ENV.optional("NVIDIA_MODEL_T6", "mistralai/devstral-2-123b-instruct-2512")),
+    ("T7", ENV.optional("NVIDIA_MODEL_T7", "qwen/qwen3.5-397b-a17b")),
+    ("T8", ENV.optional("NVIDIA_MODEL_T8", "meta/llama-3.3-70b-instruct")),
 ]
 
 
@@ -81,8 +83,8 @@ class _Tier:
     def __init__(self, label: str, model: str):
         self.label = label
         self.model = model
-        self.rpd_limit = int(os.environ.get(f"NVIDIA_RPD_LIMIT_{label}", "2000"))
-        self.rpm_limit = int(os.environ.get(f"NVIDIA_RPM_LIMIT_{label}", "35"))
+        self.rpd_limit = ENV.optional_int(f"NVIDIA_RPD_LIMIT_{label}", 2000)
+        self.rpm_limit = ENV.optional_int(f"NVIDIA_RPM_LIMIT_{label}", 35)
         self.requests_today = 0
         self.reset_ts = 0.0
         self.timestamps: deque = deque(maxlen=self.rpm_limit + 5)

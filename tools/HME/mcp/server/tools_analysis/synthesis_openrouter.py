@@ -26,6 +26,8 @@ import urllib.request
 import urllib.error
 from collections import deque
 
+from hme_env import ENV
+
 logger = logging.getLogger("HME.openrouter")
 
 _GROUNDING_HEADER = """\
@@ -41,17 +43,17 @@ If a name does not appear in VERIFIED FACTS, do not use it.\
 """
 
 def _api_key() -> str:
-    return os.environ.get("OPENROUTER_API_KEY", "")
+    return ENV.optional("OPENROUTER_API_KEY", "")
 _BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 _TIMEOUT = 90  # OpenRouter can be slower via upstream hops
 
-_MODEL_T1 = os.environ.get("OPENROUTER_MODEL_T1", "deepseek/deepseek-r1:free")
-_MODEL_T2 = os.environ.get("OPENROUTER_MODEL_T2", "meta-llama/llama-3.3-70b-instruct:free")
+_MODEL_T1 = ENV.optional("OPENROUTER_MODEL_T1", "deepseek/deepseek-r1:free")
+_MODEL_T2 = ENV.optional("OPENROUTER_MODEL_T2", "meta-llama/llama-3.3-70b-instruct:free")
 
 # OpenRouter rate-limits at the ACCOUNT level across :free models, so a single
 # shared counter is more accurate than per-tier counters.
-_RPD_LIMIT = int(os.environ.get("OPENROUTER_RPD_LIMIT", "200"))
-_RPM_LIMIT = int(os.environ.get("OPENROUTER_RPM_LIMIT", "18"))
+_RPD_LIMIT = ENV.optional_int("OPENROUTER_RPD_LIMIT", 200)
+_RPM_LIMIT = ENV.optional_int("OPENROUTER_RPM_LIMIT", 18)
 
 _quota_lock = threading.Lock()
 _cb_lock = threading.Lock()

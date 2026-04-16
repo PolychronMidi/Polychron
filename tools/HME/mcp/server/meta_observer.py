@@ -439,7 +439,7 @@ def _scan_environment() -> dict:
 
     # Disk space for project root
     try:
-        usage = shutil.disk_usage(os.environ.get("PROJECT_ROOT", "/"))
+        usage = shutil.disk_usage(ENV.optional("PROJECT_ROOT", "/"))
         env["disk_free_gb"] = round(usage.free / (1024 ** 3), 1)
         env["disk_pct_used"] = round((usage.used / usage.total) * 100, 1)
     except OSError:
@@ -585,7 +585,7 @@ def _checkpoint_entanglement() -> None:
         try:
             import re as _re
             transcript_path = os.path.join(
-                os.environ.get("PROJECT_ROOT", ""),
+                ENV.optional("PROJECT_ROOT", ""),
                 "log", "session-transcript.jsonl"
             )
             if os.path.exists(transcript_path):
@@ -1057,7 +1057,7 @@ def _load_run_history() -> list[dict]:
     """Load run history from metrics/run-history/ directory (individual JSON files per run)."""
     global _run_history_dir
     if not _run_history_dir:
-        root = os.environ.get("PROJECT_ROOT", "")
+        root = ENV.optional("PROJECT_ROOT", "")
         if not root:
             return []
         _run_history_dir = os.path.join(root, "metrics", "run-history")
@@ -1237,7 +1237,7 @@ def _classify_intent() -> dict:
     global _current_intent
     try:
         transcript_path = os.path.join(
-            os.environ.get("PROJECT_ROOT", ""),
+            ENV.optional("PROJECT_ROOT", ""),
             "log", "session-transcript.jsonl"
         )
         if not os.path.exists(transcript_path):
