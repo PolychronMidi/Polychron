@@ -105,11 +105,7 @@ printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "
 
 # 2. Emit to activity bridge (MCP tool call logging)
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
-  python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
-    --event=mcp_tool_call \
-    --session="$SESSION_ID" \
-    --tool="$TOOL_NAME" \
-    --elapsed_s="$ELAPSED_S" >/dev/null 2>&1 &
+  _emit_activity mcp_tool_call --session="$SESSION_ID" --tool="$TOOL_NAME" --elapsed_s="$ELAPSED_S"
 fi
 
 # 3. POST to HTTP shim (background, non-blocking)

@@ -133,13 +133,7 @@ if echo "$CMD" | grep -q 'npm run main'; then
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
     WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
     HCI_VAL=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('hci','?'))" "?")
-    python3 "$PROJECT/tools/HME/activity/emit.py" \
-      --event=pipeline_run \
-      --session="$SESSION_ID" \
-      --verdict="$VERDICT" \
-      --passed="$PASSED" \
-      --wall_s="$WALL_S" \
-      --hci="$HCI_VAL" >/dev/null 2>&1 &
+    _emit_activity pipeline_run --session="$SESSION_ID" --verdict="$VERDICT" --passed="$PASSED" --wall_s="$WALL_S" --hci="$HCI_VAL"
     if [ "$PASSED" = "0" ]; then
       _nexus_mark PIPELINE "$VERDICT"
       _nexus_clear_type COMMIT

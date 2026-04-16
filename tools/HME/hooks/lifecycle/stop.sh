@@ -261,9 +261,7 @@ fi
 # Snapshots the turn boundary for metrics/hme-activity.jsonl so activity_digest
 # can distinguish "this round" from history.
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
-python3 "$_AC_PROJECT/tools/HME/activity/emit.py" \
-  --event=round_complete \
-  --session="$_SESSION_ID_FOR_ACTIVITY" >/dev/null 2>&1 &
+_emit_activity round_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2

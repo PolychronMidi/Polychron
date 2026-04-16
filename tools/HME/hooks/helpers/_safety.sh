@@ -152,3 +152,12 @@ _hme_kb_titles() {
   local json="$1" max="${2:-3}"
   _safe_jq "$json" '.kb[]?.title // empty' '' | head -"$max" | sed 's/^/    /'
 }
+
+# ── Activity bridge emit helper ──────────────────────────────────────────────
+# Shorthand for emitting to hme-activity.jsonl. Args are --key=value pairs.
+# Usage: _emit_activity file_written --session="$SID" --file="$F" --module="$M"
+_emit_activity() {
+  local event="$1"; shift
+  python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
+    --event="$event" "$@" >/dev/null 2>&1 &
+}
