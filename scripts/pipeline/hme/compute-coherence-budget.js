@@ -49,7 +49,7 @@ const MIN_HISTORY = 8;
 const PRIOR_BAND = [0.55, 0.85];
 const HISTORY_CAP = 60;
 
-// Sentiment → scalar in [0, 1]. Ground truth dominates the outcome score
+// Sentiment -> scalar in [0, 1]. Ground truth dominates the outcome score
 // when present so that the proxy's "emergence suppressed" reflex can't
 // fire on a round the listener actually reports as transcendent.
 const SENTIMENT_WEIGHT = {

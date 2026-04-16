@@ -324,7 +324,16 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
     antagonists: list = []
     for (a, b), r in corr.items():
         key = tuple(sorted([a, b]))
-        if key not in seen and r < -0.30:
+        # Metaprofile antagonism threshold: atmospheric=-0.35 (stricter), chaotic=-0.15 (looser)
+        _antag_thresh = -0.30
+        try:
+            from ...synthesis.synthesis_config import load_json
+            _mp = load_json("metrics/metaprofile-active.json")
+            if _mp and "coupling" in _mp:
+                _antag_thresh = _mp["coupling"].get("antagonismThreshold", -0.30)
+        except Exception:
+            pass
+        if key not in seen and r < _antag_thresh:
             seen.add(key)
             antagonists.append((a, b, r))
     antagonists.sort(key=lambda x: x[2])

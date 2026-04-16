@@ -143,29 +143,40 @@ metrics/metaprofile-active.json         — current active profile (set by condu
 }
 ```
 
-### Controller integration
+### Controller integration (all 6 axes wired)
 
-Each meta-controller reads its relevant axis from the active metaprofile:
+Every axis is connected to a real controller. All read dynamically per-tick so mid-run profile switches take effect immediately.
 
-```js
-// In regimeSelfBalancer.js
-const profile = metaProfiles.getActive();
-if (profile && profile.regime) {
-  targetDistribution = profile.regime;
-}
-```
+| Axis | Controller | Method | What changes |
+|---|---|---|---|
+| Regime | `regimeReactiveDamping` | `_getRegimeBudget()` | Target coherent/evolving/exploring share |
+| Tension | `regimeReactiveDamping` | `_getMaxTension()` + shape curve | Swing amplitude + curve shape (flat/ascending/arch/sawtooth/erratic) |
+| Density | `regimeReactiveDamping` | `_getMaxDensity()` | Swing amplitude scaled by densityTarget |
+| Coupling | `pairGainCeilingController` | `_couplingScale()` | Scales all pair gain ceilings (base, min, max) |
+| Trust cap/floor | `adaptiveTrustScores` | `_getTrustCeiling()`/`_getDecayFloor()` | Dominance cap + starvation floor |
+| Trust concentration | `adaptiveTrustScores` | `_getConcentrationScale()` | EMA learning rate → narrows or widens competition |
+| Phase/CIM | `coordinationIndependenceManager` | `_getRegimeTarget()` | Biases coordination dial toward independence or lock |
+| Antagonism threshold | `coupling_bridges.py` | reads `metaprofile-active.json` | Qualification cutoff for antagonism bridge candidates |
 
-Controllers that don't find their axis in the profile use their existing defaults. This is the backward-compatibility guarantee — an empty metaprofile changes nothing.
+### Tension shape curves
+
+The `tension.shape` field drives a per-section tension modulation curve:
+
+- **flat** — constant 0.5 across all sections (ambient, no arc)
+- **ascending** — linear 0→1 across sections (building to climax)
+- **arch** — sine curve peaking at mid-piece (default, classic arc)
+- **sawtooth** — repeating 0→1 ramp with resets (pulsing tension)
+- **erratic** — quasi-random multi-frequency oscillation (chaotic texture)
 
 ### Selection
 
-The active metaprofile is set in `src/conductor/config.js` alongside the conductor profile:
+Set `ACTIVE_META_PROFILE` in `src/conductor/config.js`:
 
 ```js
-const ACTIVE_META_PROFILE = 'atmospheric';  // or null for no metaprofile
+ACTIVE_META_PROFILE = 'atmospheric';  // or null for no metaprofile
 ```
 
-It can also be overridden per-lab-sketch via `postBoot()`:
+Override per-lab-sketch via `postBoot()`:
 
 ```js
 postBoot() {
@@ -173,9 +184,30 @@ postBoot() {
 }
 ```
 
+Hot-switch mid-composition (controllers smooth the transition via their own EMAs):
+
+```js
+// At section 3 of 6, pivot from atmospheric to chaotic
+if (sectionIndex === 3) metaProfiles.setActive('chaotic');
+```
+
+When activated, the profile is persisted to `metrics/metaprofile-active.json` so HME Python tools (coupling_bridges, evolution suggestions) can read it.
+
 ### Interaction with conductor profiles
 
-Conductor profiles and metaprofiles are orthogonal. A conductor profile sets what happens *within each beat* (which composers fire, volume curves, articulation). A metaprofile sets the *relationships between beats across the whole piece* (regime flow, coupling strength, trust competition).
+Orthogonal. Conductor profiles set what happens *within each beat* (composers, volume, articulation). Metaprofiles set *relationships between systems across the piece* (regime targets, coupling topology, trust ecology). You can freely combine any conductor profile with any metaprofile:
+
+- `atmospheric` conductor + `atmospheric` meta = maximally ambient
+- `atmospheric` conductor + `chaotic` meta = ambient timbres with volatile structure
+- `varied` conductor + `tense` meta = diverse textures building toward climax
+
+### Lab sketches
+
+Three test sketches in `lab/sketches.js`:
+
+- **metaprofile-atmospheric-to-chaotic** — A/B test: atmospheric for sections 0-2, hot-switch to chaotic at section 3. Validates pivot behavior.
+- **metaprofile-meditative** — full run with meditative profile. Validates high coherence, low density, tight flicker.
+- **metaprofile-volatile** — full run with volatile. Validates maximum exploring, independent layers.
 
 You can combine any conductor profile with any metaprofile:
 - `atmospheric` conductor + `atmospheric` meta = maximally ambient

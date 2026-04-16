@@ -36,10 +36,24 @@ adaptiveTrustScores = (() => {
     return _BASE_DECAY_FLOOR;
   }
 
-  const BASE_EMA_DECAY = 0.85; // R33 E2: 0.9->0.85 faster trust adaptation
-  const BASE_EMA_NEW = 0.15;  // R33 E2: 0.1->0.15 faster learning rate
+  const _BASE_EMA_DECAY = 0.85; // R33 E2: 0.9->0.85 faster trust adaptation
+  const _BASE_EMA_NEW = 0.15;  // R33 E2: 0.1->0.15 faster learning rate
   // R95 E2: Regime-responsive EMA learning rate
-  const EMA_NEW_REGIME = { exploring: 0.20, evolving: 0.15, coherent: 0.12 };
+  const _BASE_EMA_NEW_REGIME = { exploring: 0.20, evolving: 0.15, coherent: 0.12 };
+
+  // Metaprofile trust concentration: scales learning rate.
+  // High concentration (0.7+) = slower learning → incumbents dominate.
+  // Low concentration (0.3-) = faster learning → more competition.
+  function _getConcentrationScale() {
+    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+      const conc = metaProfiles.getAxisValue('trust', 'concentration', 0.5);
+      return 1.0 + (0.5 - conc) * 0.6; // conc 0.3→1.12x faster, conc 0.7→0.88x slower
+    }
+    return 1.0;
+  }
+  const BASE_EMA_DECAY = _BASE_EMA_DECAY;
+  const BASE_EMA_NEW = _BASE_EMA_NEW;
+  const EMA_NEW_REGIME = _BASE_EMA_NEW_REGIME;
 
   let decayCycleCount = 0;
 
@@ -107,12 +121,13 @@ adaptiveTrustScores = (() => {
     const trustSurfaceSystem = hotspotProfile.hotspotPairs.some(function(entry) { return entry && entry.pair && entry.pair.indexOf('trust') >= 0; }) || hotspotProfile.dominantPair.indexOf('trust') >= 0;
     const context = adaptiveTrustScoresCaching.resolveContext();
 
-    let newWeight = BASE_EMA_NEW;
-    let decayWeight = BASE_EMA_DECAY;
+    const _concScale = _getConcentrationScale();
+    let newWeight = BASE_EMA_NEW * _concScale;
+    let decayWeight = 1 - newWeight;
     // R95 E2: Regime-responsive EMA learning rate -- faster adaptation during exploring, slower during coherent
     const regimeForEma = conductorSignalBridge.getSignals().regime || null;
     if (regimeForEma && EMA_NEW_REGIME[regimeForEma] !== undefined) {
-      newWeight = EMA_NEW_REGIME[regimeForEma];
+      newWeight = EMA_NEW_REGIME[regimeForEma] * _concScale;
       decayWeight = 1 - newWeight;
     }
     // R71 E1: Removed coupling matrix brake (was reading coupling data

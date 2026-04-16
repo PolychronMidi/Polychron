@@ -576,3 +576,9 @@ PHRASES_ARC_CURVES = {
   // SECTION_TYPES is an array of objects
   deepFreeze(SECTION_TYPES);
 })();
+
+// Metaprofile: coordinated relationship-layer initial conditions.
+// Set to a profile name ('atmospheric', 'tense', 'chaotic', 'meditative', 'volatile')
+// or null for no metaprofile (existing behavior). Read by main.js at run start.
+// Override per-lab-sketch via postBoot(): metaProfiles.setActive('chaotic');
+ACTIVE_META_PROFILE = null;
