@@ -126,13 +126,9 @@ def _infer_directories(prompt: str) -> list[str]:
 
 
 def _strip_think(text: str) -> str:
-    """Strip Qwen3 think tags."""
-    if "</think>" in text:
-        text = text[text.rfind("</think>") + len("</think>"):].strip()
-    elif "<think>" in text:
-        before = text[:text.find("<think>")].strip()
-        text = before if before else ""
-    return _dedup_output(text)
+    """Strip thinking tags + dedup."""
+    from server.tools_analysis.synthesis.synthesis_config import strip_thinking_tags
+    return _dedup_output(strip_thinking_tags(text))
 
 
 def _dedup_output(text: str, max_repeats: int = 2) -> str:
