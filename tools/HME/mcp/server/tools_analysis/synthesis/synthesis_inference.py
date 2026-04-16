@@ -183,32 +183,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         _interactive_event.clear()
 
     try:
-        text = result.get("response", "").strip()
-        # Strip markdown fenced thinking blocks (```thinking ... ``` or ```reasoning ... ```)
-        text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
-        # Strip ChatML system/turn tags used by Qwen and similar models
-        if "<|im_start|>" in text:
-            # Keep only content inside the last assistant turn, or strip all tags
-            import re as _re2
-            # Extract last assistant block if present
-            _asst = _re2.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2.IGNORECASE)
-            if _asst:
-                text = _asst[-1].strip()
-            else:
-                text = _re2.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
-                text = _re2.sub(r'<\|im_start\|>|<\|im_end\|>', '', text).strip()
-        # Strip XML-style thinking tags (<think>, <|thinking|>, <|answer|> delimiters)
-        if "<|answer|>" in text:
-            text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
-        elif "<|thinking|>" in text:
-            after = text[text.rfind("<|/thinking|>") + len("<|/thinking|>"):].strip() if "<|/thinking|>" in text else ""
-            before = text[:text.find("<|thinking|>")].strip()
-            text = after or before or ""
-        if "</think>" in text:
-            text = text[text.rfind("</think>") + len("</think>"):].strip()
-        elif "<think>" in text:
-            before_think = text[:text.find("<think>")].strip()
-            text = before_think if before_think else ""
+        from .synthesis_config import clean_model_output
+        text = clean_model_output(result.get("response", ""))
         if not text:
             thinking = result.get("thinking", "").strip()
             if thinking:
@@ -244,7 +220,8 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
                     break
             else:
                 text = text[len(text) * 3 // 4:].strip()
-        text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+        from .synthesis_config import strip_non_ascii
+        text = strip_non_ascii(text)
         _filler_phrases = [
             "enhancing the alien", "creating a rich tapestry",
             "a fascinating interplay", "this creates a dynamic",
@@ -334,18 +311,8 @@ def _local_chat(messages: list[dict], model: str | None = None,
         _cb.record_failure(is_timeout=True)
         logger.warning(f"_local_chat wall timeout or unavailable ({_m})")
         return None
-    text = (result.get("response", "") or "").strip()
-    text = re.sub(r'```(?:thinking|reasoning)\b[\s\S]*?```', '', text, flags=re.IGNORECASE).strip()
-    if "<|im_start|>" in text:
-        import re as _re2c
-        _asst = _re2c.findall(r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)', text, _re2c.IGNORECASE)
-        if _asst:
-            text = _asst[-1].strip()
-        else:
-            text = _re2c.sub(r'<\|im_start\|>[\s\S]*?<\|im_end\|>', '', text).strip()
-    if "</think>" in text:
-        text = text[text.rfind("</think>") + len("</think>"):].strip()
-    text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+    from .synthesis_config import clean_model_output
+    text = clean_model_output(result.get("response", ""))
     _cb.record_success()
     return text if text else None
 
@@ -402,10 +369,8 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
         _cb.record_failure(is_timeout=True)
         logger.warning(f"_local_think_with_system unavailable ({_m}): llamacpp generate returned None")
         return None
-    text = (result.get("response", "") or "").strip()
-    if "</think>" in text:
-        text = text[text.rfind("</think>") + len("</think>"):].strip()
-    text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+    from .synthesis_config import clean_model_output
+    text = clean_model_output(result.get("response", ""))
     _cb.record_success()
     return text if text else None
 
@@ -445,10 +410,8 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     # Daemon-only: wall-clock enforced, no direct llama.cpp fallback.
     daemon_result = _daemon_generate(payload, wall_timeout=10)
     if daemon_result:
-        compressed = daemon_result.get("response", "").strip()
-        if "</think>" in compressed:
-            compressed = compressed[compressed.rfind("</think>") + len("</think>"):].strip()
-        compressed = re.sub(r'[^\x00-\x7F]+', '', compressed).strip()
+        from .synthesis_config import clean_model_output
+        compressed = clean_model_output(daemon_result.get("response", ""))
         if compressed and len(compressed) < len(text):
             _cb.record_success()
             if len(compressed) > max_chars:

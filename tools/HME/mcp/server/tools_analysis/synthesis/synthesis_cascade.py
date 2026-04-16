@@ -288,8 +288,8 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         "If a module is not in the list, refuse — say 'not in registry'. Never invent paths or locations.",
         500, _ARBITER_MODEL,
     )
-    if plan and "</think>" in plan:
-        plan = plan[plan.rfind("</think>") + len("</think>"):].strip()
+    from .synthesis_config import strip_thinking_tags
+    plan = strip_thinking_tags(plan or "")
     if not plan or len(plan) < 30:
         logger.info("cascade: arbiter plan failed, enriched fallback")
         return _reasoning_think(enriched_prompt, max_tokens=max_tokens, system=_THINK_SYSTEM)
@@ -395,8 +395,7 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
     )
     picked_a = False
     if pick:
-        if "</think>" in pick:
-            pick = pick[pick.rfind("</think>") + len("</think>"):].strip()
+        pick = strip_thinking_tags(pick)
         tokens = pick.strip().split()
         if tokens and tokens[0].upper().startswith("A"):
             picked_a = True
