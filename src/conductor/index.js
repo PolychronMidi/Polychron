@@ -16,6 +16,8 @@ require('./profiles/conductorConfigDynamics');
 require('./profiles/conductorConfigResolvers');
 require('./profiles/conductorConfigAccessors');
 require('./profiles/conductorConfig');
+require('./metaProfileDefinitions');
+require('./metaProfiles');
 require('./dynamismPulse');
 require('./conductorState');
 require('./conductorDampening');
