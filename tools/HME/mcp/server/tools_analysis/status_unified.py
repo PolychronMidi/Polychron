@@ -15,171 +15,179 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool(meta={"hidden": True})
+def _mode_pipeline():
+    from .digest import check_pipeline as _cp
+    return _cp()
+
+def _mode_health():
+    from .health import codebase_health as _ch
+    return _ch()
+
+def _mode_coupling():
+    from .coupling import coupling_intel as _ci
+    return _budget_gate(_ci(mode="full"))
+
+def _mode_trust():
+    from .trust_analysis import trust_report as _tr
+    return _tr("", "")
+
+def _mode_hme():
+    from ..evolution_admin import hme_selftest as _st
+    return _st()
+
+def _mode_activity():
+    from .activity_digest import activity_digest as _ad
+    return _ad(window="round")
+
+def _mode_blindspots():
+    from .blindspots import blindspots as _bs
+    return _bs()
+
+def _mode_hypotheses():
+    from .hypothesis_registry import hypotheses_report as _hr
+    return _hr()
+
+def _mode_drift():
+    from .semantic_drift_report import semantic_drift_report as _sd
+    return _sd()
+
+def _mode_accuracy():
+    from .prediction_accuracy import prediction_accuracy_report as _pa
+    return _pa()
+
+def _mode_crystallized():
+    from .crystallizer import crystallized_report as _cr
+    return _cr()
+
+def _mode_music_truth():
+    from .epistemic_reports import music_truth_report as _mt
+    return _mt()
+
+def _mode_kb_trust():
+    from .epistemic_reports import kb_trust_report as _kt
+    return _kt()
+
+def _mode_intention_gap():
+    from .epistemic_reports import intention_gap_report as _ig
+    return _ig()
+
+def _mode_self_audit():
+    from .self_audit import self_audit_report as _sa
+    return _sa()
+
+def _mode_probes():
+    from .probe import probes_report as _pr
+    return _pr()
+
+def _mode_negative_space():
+    from .negative_space import negative_space_report as _ns
+    return _ns()
+
+def _mode_cognitive_load():
+    from .cognitive_load import cognitive_load_report as _cl
+    return _cl()
+
+def _mode_ground_truth():
+    from .ground_truth import ground_truth_report as _gt
+    return _gt()
+
+def _mode_constitution():
+    from .phase6_reports import constitution_report as _c
+    return _c()
+
+def _mode_doc_drift():
+    from .phase6_reports import doc_drift_report as _dd
+    return _dd()
+
+def _mode_generalizations():
+    from .phase6_reports import generalizations_report as _gr
+    return _gr()
+
+def _mode_reflexivity():
+    from .phase6_reports import reflexivity_report as _rr
+    return _rr()
+
+def _mode_multi_agent():
+    from .multi_agent import multi_agent_report as _ma
+    return _ma()
+
+def _mode_perceptual():
+    from .perceptual import audio_analyze as _aa
+    try:
+        return _aa(analysis="both")
+    except Exception as e:
+        err = str(e).lower()
+        if "cuda" in err or "out of memory" in err or "oom" in err or "gpu" in err:
+            try:
+                from .digest import check_pipeline as _cp_check
+                pipeline_status = _cp_check()
+                if "IN PROGRESS" in pipeline_status or "BLOCKED" in pipeline_status:
+                    return ("Perceptual analysis unavailable: GPU busy (pipeline running).\n"
+                            "Re-run after pipeline completes.")
+            except Exception:
+                pass
+            return "Perceptual analysis unavailable: GPU out of memory.\nCheck with `nvidia-smi`."
+        return f"Perceptual analysis unavailable: {e}"
+
+def _mode_introspect():
+    from ..evolution_admin import hme_introspect as _hi
+    return _hi()
+
+
+# ── Mode registry ────────────────────────────────────────────────────────────
+_STATUS_MODES: dict[str, callable] = {
+    "resume": lambda: _resume_briefing(),
+    "pipeline": _mode_pipeline,
+    "health": _mode_health,
+    "coupling": _mode_coupling,
+    "trust": _mode_trust,
+    "perceptual": _mode_perceptual,
+    "hme": _mode_hme,
+    "activity": _mode_activity,
+    "staleness": lambda: _staleness_report(),
+    "coherence": lambda: _coherence_report(),
+    "blindspots": _mode_blindspots,
+    "hypotheses": _mode_hypotheses,
+    "drift": _mode_drift,
+    "accuracy": _mode_accuracy,
+    "crystallized": _mode_crystallized,
+    "music_truth": _mode_music_truth,
+    "kb_trust": _mode_kb_trust,
+    "intention_gap": _mode_intention_gap,
+    "self_audit": _mode_self_audit,
+    "probes": _mode_probes,
+    "trajectory": lambda: _trajectory_report(),
+    "budget": lambda: _budget_report(),
+    "negative_space": _mode_negative_space,
+    "cognitive_load": _mode_cognitive_load,
+    "ground_truth": _mode_ground_truth,
+    "constitution": _mode_constitution,
+    "doc_drift": _mode_doc_drift,
+    "generalizations": _mode_generalizations,
+    "priorities": lambda: _evolution_priority_report(),
+    "next": lambda: _evolution_priority_report(),
+    "reflexivity": _mode_reflexivity,
+    "multi_agent": _mode_multi_agent,
+    "freshness": lambda: _freshness_report(),
+    "vram": lambda: _vram_report(),
+    "introspect": _mode_introspect,
+}
+
+
 def status(mode: str = "all") -> str:
-    """System health hub. mode='all' (default): pipeline + selftest + auto-warm.
-    mode='pipeline': pipeline status only. mode='health': codebase health sweep.
-    mode='coupling': coupling topology + antagonist tensions + dimension gaps.
-    mode='trust': trust ecology leaderboard (all 27 systems, 200-beat sample).
-    mode='perceptual': perceptual stack status (EnCodec/CLAP/verdict model).
-    mode='hme': HME selftest + introspection.
-    mode='activity': HME activity-bridge digest — reads metrics/hme-activity.jsonl,
-    summarizes event counts, coherence-violation ratio, pipeline runs, recent writes.
-    mode='staleness': KB staleness index — which modules have KB entries older than
-    their source code (reads metrics/kb-staleness.json).
-    mode='coherence': round coherence score (0..100) — reads metrics/hme-coherence.json,
-    components: read_coverage * violation_penalty * staleness_penalty.
-    mode='blindspots': subsystems/modules the Evolver has structurally avoided
-    in the last N closed rounds (HME_BLINDSPOT_WINDOW, default 10).
-    mode='freshness': age of every data source — flags stale or out-of-sync data.
-    mode='resume': cold-start session briefing — synthesizes git state, nexus lifecycle,
-    pipeline verdict, session narrative, and think history for context recovery."""
+    """System health hub. 35+ modes — see _STATUS_MODES registry.
+    mode='all' (default): pipeline + selftest + auto-warm + cascade status."""
     _track("status")
     append_session_narrative("status", f"status({mode})")
     ctx.ensure_ready_sync()
 
-    if mode == "resume":
-        return _resume_briefing()
+    handler = _STATUS_MODES.get(mode)
+    if handler:
+        return handler()
 
-    if mode == "pipeline":
-        from .digest import check_pipeline as _cp
-        return _cp()
-
-    if mode == "health":
-        from .health import codebase_health as _ch
-        return _ch()
-
-    if mode == "coupling":
-        from .coupling import coupling_intel as _ci
-        return _budget_gate(_ci(mode="full"))
-
-    if mode == "trust":
-        from .trust_analysis import trust_report as _tr
-        return _tr("", "")
-
-    if mode == "perceptual":
-        from .perceptual import audio_analyze as _aa
-        try:
-            return _aa(analysis="both")
-        except Exception as e:
-            err = str(e).lower()
-            if "cuda" in err or "out of memory" in err or "oom" in err or "gpu" in err:
-                # Check if pipeline is running (likely cause of GPU contention)
-                try:
-                    from .digest import check_pipeline as _cp_check
-                    pipeline_status = _cp_check()
-                    if "IN PROGRESS" in pipeline_status or "BLOCKED" in pipeline_status:
-                        return ("Perceptual analysis unavailable: GPU busy (composition pipeline is running).\n"
-                                "Re-run after pipeline completes.")
-                except Exception as _err1:
-                    logger.debug(f'silent-except status_unified.py:65: {type(_err1).__name__}: {_err1}')
-                return ("Perceptual analysis unavailable: GPU out of memory.\n"
-                        "Another process may be using the GPU. Check with `nvidia-smi`.")
-            return f"Perceptual analysis unavailable: {e}"
-
-    if mode == "hme":
-        from .evolution_admin import hme_selftest as _st
-        return _st()
-
-    if mode == "activity":
-        from .activity_digest import activity_digest as _ad
-        return _ad(window="round")
-
-    if mode == "staleness":
-        return _staleness_report()
-
-    if mode == "coherence":
-        return _coherence_report()
-
-    if mode == "blindspots":
-        from .blindspots import blindspots as _bs
-        return _bs()
-
-    if mode == "hypotheses":
-        from .hypothesis_registry import hypotheses_report as _hr
-        return _hr()
-
-    if mode == "drift":
-        from .semantic_drift_report import semantic_drift_report as _sd
-        return _sd()
-
-    if mode == "accuracy":
-        from .prediction_accuracy import prediction_accuracy_report as _pa
-        return _pa()
-
-    if mode == "crystallized":
-        from .crystallizer import crystallized_report as _cr
-        return _cr()
-
-    if mode == "music_truth":
-        from .epistemic_reports import music_truth_report as _mt
-        return _mt()
-
-    if mode == "kb_trust":
-        from .epistemic_reports import kb_trust_report as _kt
-        return _kt()
-
-    if mode == "intention_gap":
-        from .epistemic_reports import intention_gap_report as _ig
-        return _ig()
-
-    if mode == "self_audit":
-        from .self_audit import self_audit_report as _sa
-        return _sa()
-
-    if mode == "probes":
-        from .probe import probes_report as _pr
-        return _pr()
-
-    if mode == "trajectory":
-        return _trajectory_report()
-
-    if mode == "budget":
-        return _budget_report()
-
-    if mode == "negative_space":
-        from .negative_space import negative_space_report as _ns
-        return _ns()
-
-    if mode == "cognitive_load":
-        from .cognitive_load import cognitive_load_report as _cl
-        return _cl()
-
-    if mode == "ground_truth":
-        from .ground_truth import ground_truth_report as _gt
-        return _gt()
-
-    if mode == "constitution":
-        from .phase6_reports import constitution_report as _c
-        return _c()
-
-    if mode == "doc_drift":
-        from .phase6_reports import doc_drift_report as _dd
-        return _dd()
-
-    if mode == "generalizations":
-        from .phase6_reports import generalizations_report as _gr
-        return _gr()
-
-    if mode == "priorities" or mode == "next":
-        return _evolution_priority_report()
-
-    if mode == "reflexivity":
-        from .phase6_reports import reflexivity_report as _rr
-        return _rr()
-
-    if mode == "multi_agent":
-        from .multi_agent import multi_agent_report as _ma
-        return _ma()
-
-    if mode == "freshness":
-        return _freshness_report()
-
-    if mode == "vram":
-        return _vram_report()
-
-    if mode == "introspect":
-        from .evolution_admin import hme_introspect as _hi
-        return _hi()
+    # mode == "all" — unified overview below
+    if mode != "all":
+        return f"Unknown mode '{mode}'. Available: {', '.join(sorted(_STATUS_MODES.keys()))}"
 
     # mode == "all" — unified overview
     parts = []
