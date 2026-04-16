@@ -195,7 +195,9 @@ class RAGEngineIndexingMixin:
             self._search_cache.invalidate()
         return {"indexed": 0, "removed": removed}
 
-    def index_directory(self, directory: str) -> dict:
+    def index_directory(self, directory: str = "") -> dict:
+        """Index all files from ragIndexDirs (if configured) or the given directory.
+        The directory argument is a fallback only — ragIndexDirs takes absolute precedence."""
         self._bulk_indexing.set()
         try:
             with self._index_lock:

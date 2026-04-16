@@ -5,6 +5,14 @@
       "command": "python3",
       "args": ["/home/jah/Polychron/tools/HME/mcp/server/main.py"],
       "ragIgnoreDirs": [""],
+      "ragIndexDirs": [
+        "src/utils", "src/conductor", "src/rhythm", "src/time",
+        "src/composers", "src/fx", "src/crossLayer", "src/writer", "src/play",
+        "src/types",
+        "tools/HME/hooks", "tools/HME/mcp", "tools/HME/proxy",
+        "tools/HME/scripts", "tools/HME/activity",
+        "doc", "scripts/eslint-rules"
+      ],
       "env": {
         "PROJECT_ROOT": "/home/jah/Polychron",
         "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",
