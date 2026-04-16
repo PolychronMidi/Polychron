@@ -214,6 +214,14 @@ class RAGEngineIndexingMixin:
             except Exception as e:
                 logger.warning(f"Failed to read {file_path}: {e}")
                 continue
+            # Auto-generated file skip: lookup tables and bootstrap code
+            # (*priorsData.js, fullBootstrap.js, polyrhythmPairs.js, etc.)
+            # pollute semantic search because all chunks cluster together
+            # in embedding space. Detect via header marker in first 5 lines.
+            _header = "\n".join(content.split("\n", 5)[:5])
+            if "AUTO-GENERATED" in _header or "GENERATED FILE" in _header:
+                skipped_files += 1
+                continue
             file_key = str(file_path)
             content_hash = _file_hash(content)
             if self._file_hashes.get(file_key) == content_hash:
