@@ -1,4 +1,4 @@
-// controllerConfig.js — Loads externalized meta-controller constants from
+// controllerConfig.js -- Loads externalized meta-controller constants from
 // metrics/controller-config.json. Controllers read their section at boot.
 // Falls back to hardcoded defaults if file is missing or malformed.
 
@@ -9,12 +9,12 @@ controllerConfig = (() => {
 
   function _load() {
     if (_config) return _config;
-    try {
-      const configPath = _path.join(process.cwd(), 'metrics', 'controller-config.json');
-      _config = JSON.parse(_fs.readFileSync(configPath, 'utf8'));
-    } catch (_e) {
+    const configPath = _path.join(process.cwd(), 'metrics', 'controller-config.json');
+    if (!_fs.existsSync(configPath)) {
       _config = {};
+      return _config;
     }
+    _config = JSON.parse(_fs.readFileSync(configPath, 'utf8'));
     return _config;
   }
 

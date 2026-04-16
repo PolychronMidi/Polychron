@@ -2,7 +2,7 @@ adaptiveTrustScores = (() => {
   const V = validator.create('adaptiveTrustScores');
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
-  const _atsc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('adaptiveTrustScores') : {};
+  const _atsc = controllerConfig.getSection('adaptiveTrustScores');
 
   const EXPLORATION_THRESHOLD = V.optionalFinite(_atsc.explorationThreshold, 0.10);
   const EXPLORATION_NUDGE     = V.optionalFinite(_atsc.explorationNudge, 0.03);
@@ -16,16 +16,16 @@ adaptiveTrustScores = (() => {
   const _BASE_TRUST_CEILING = V.optionalFinite(_atsc.baseTrustCeiling, 0.75);
 
   // Metaprofile trust axis: dominantCap scales the ceiling, starvationFloor scales the floor.
-  // Default cap 1.8 → ceiling 0.75. Meditative cap 1.9 → ceiling ~0.79. Chaotic cap 1.4 → ceiling ~0.58.
+  // Default cap 1.8 -> ceiling 0.75. Meditative cap 1.9 -> ceiling ~0.79. Chaotic cap 1.4 -> ceiling ~0.58.
   function _getTrustCeiling() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const cap = metaProfiles.getAxisValue('trust', 'dominantCap', 1.8);
       return _BASE_TRUST_CEILING * (cap / 1.8);
     }
     return _BASE_TRUST_CEILING;
   }
   function _getDecayFloor() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const floor = metaProfiles.getAxisValue('trust', 'starvationFloor', 0.8);
       return _BASE_DECAY_FLOOR * (floor / 0.8);
     }
@@ -35,18 +35,23 @@ adaptiveTrustScores = (() => {
   const _BASE_EMA_DECAY = V.optionalFinite(_atsc.baseEmaDecay, 0.85);
   const _BASE_EMA_NEW = V.optionalFinite(_atsc.baseEmaNew, 0.15);
   const _BASE_EMA_NEW_REGIME = V.optionalType(_atsc.emaNewRegime, 'object', { exploring: 0.20, evolving: 0.15, coherent: 0.12 });
+  // Runtime mirror of the pipeline ema-rate-consistency invariant: decay + new must sum to 1.0.
+  // Runtime decayWeight is derived as (1 - newWeight); this assertion catches config drift
+  // before trust scoring begins so the declared constants stay coherent with the derivation.
+  if (m.abs(_BASE_EMA_DECAY + _BASE_EMA_NEW - 1.0) > 1e-6) {
+    throw new Error(`adaptiveTrustScores: _BASE_EMA_DECAY (${_BASE_EMA_DECAY}) + _BASE_EMA_NEW (${_BASE_EMA_NEW}) must sum to 1.0`);
+  }
 
   // Metaprofile trust concentration: scales learning rate.
-  // High concentration (0.7+) = slower learning → incumbents dominate.
-  // Low concentration (0.3-) = faster learning → more competition.
+  // High concentration (0.7+) = slower learning -> incumbents dominate.
+  // Low concentration (0.3-) = faster learning -> more competition.
   function _getConcentrationScale() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const conc = metaProfiles.getAxisValue('trust', 'concentration', 0.5);
-      return 1.0 + (0.5 - conc) * 0.6; // conc 0.3→1.12x faster, conc 0.7→0.88x slower
+      return 1.0 + (0.5 - conc) * 0.6; // conc 0.3->1.12x faster, conc 0.7->0.88x slower
     }
     return 1.0;
   }
-  const BASE_EMA_DECAY = _BASE_EMA_DECAY;
   const BASE_EMA_NEW = _BASE_EMA_NEW;
   const EMA_NEW_REGIME = _BASE_EMA_NEW_REGIME;
 

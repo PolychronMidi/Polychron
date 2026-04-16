@@ -1430,6 +1430,10 @@ declare var metaProfiles: {
   getAxisValue(axis: string, key: string, fallback: any): any;
   isActive(): boolean;
   list(): string[];
+  getRegimeTargets(): { coherent: number; evolving: number; exploring: number };
+  getCouplingRange(): { lo: number; hi: number; density: number; antagonismThreshold: number };
+  getTensionArc(): { shape: string; floor: number; ceiling: number };
+  getEnergyEnvelope(): { densityTarget: number; flickerLo: number; flickerHi: number };
 };
 declare var globalConductor: GlobalConductorAPI;
 declare var melodicContourTracker: MelodicContourTrackerAPI;
@@ -1995,7 +1999,7 @@ declare var traceDrain: {
   isEnabled(): boolean;
   record(layer: string, data: { beatKey: string; timeMs: number; conductorSnap: any; negotiation: any; trustScores: any; regime: any; couplingMatrix: any; couplingLabels?: any; [key: string]: any }): void;
   recordNote(pitch: number, velocity: number, channel: number): void;
-  recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
+  recordSnapshot(data: { beatKey: string; timeMs: number; trigger?: string; effectiveDim: number; trustScores?: any; trustVelocity?: Record<string,number>; activeProfile?: string; activeMetaProfile?: string | null; couplingMeans?: Record<string,number>; globalGainMultiplier?: number; regime: string; couplingStrength: number; phaseIntegrity: string; axisEnergyShare?: any; sectionKey?: string; sectionMode?: string }): void;
   recordRuntimeMetric(name: string, durationMs: number): void;
   recordFamilyVelocity(family: string, velocity: number): void;
   recordBinauralShift(data: { layer: string; absTimeMs: number; syncMs: number; usedCrossLayerShift: boolean; syncDeltaMs: number; freqOffset: number; toleranceMs: number; flip: boolean }): void;

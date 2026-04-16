@@ -1,5 +1,5 @@
-// regimeReactiveDampingCore.js — Pure computation functions extracted for testability.
-// No globals, no side effects. Input → output only.
+// regimeReactiveDampingCore.js -- Pure computation functions extracted for testability.
+// No globals, no side effects. Input -> output only.
 // Tests can call these directly without loading the entire conductor subsystem.
 
 regimeReactiveDampingCore = (() => {
@@ -15,8 +15,8 @@ regimeReactiveDampingCore = (() => {
       case 'flat':      return 0.5;
       case 'ascending': return progress;
       case 'sawtooth':  return (progress * 3) % 1.0;
-      case 'erratic':   return 0.5 + Math.sin(progress * 17.3) * 0.4 + Math.cos(progress * 7.1) * 0.3;
-      default:          return Math.sin(progress * Math.PI); // arch
+      case 'erratic':   return 0.5 + m.sin(progress * 17.3) * 0.4 + m.cos(progress * 7.1) * 0.3;
+      default:          return m.sin(progress * m.PI); // arch
     }
   }
 
@@ -33,9 +33,9 @@ regimeReactiveDampingCore = (() => {
       const actual = ringShares[regime] ?? 0;
       const target = budget[regime] ?? 0;
       const excess = actual - target;
-      if (Math.abs(excess) < 0.02) continue;
-      // Exploring excess → suppress density+flicker, boost tension (dampen chaos)
-      // Coherent excess → boost density+flicker, suppress tension (inject variety)
+      if (m.abs(excess) < 0.02) continue;
+      // Exploring excess -> suppress density+flicker, boost tension (dampen chaos)
+      // Coherent excess -> boost density+flicker, suppress tension (inject variety)
       const sign = regime === 'exploring' ? 1 : regime === 'coherent' ? -1 : 0;
       const correction = excess * strength * sign;
       corrD -= correction;

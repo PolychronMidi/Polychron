@@ -80,14 +80,10 @@ function mainComputeTrustVelocity(trustSnapshot) {
 }
 
 // Activate metaprofile (if configured). Set once per run, hot-switchable from lab postBoot().
-// null = no metaprofile (existing behavior). Reads from ACTIVE_META_PROFILE global if set.
-if (typeof ACTIVE_META_PROFILE === 'string' && ACTIVE_META_PROFILE) {
+// null = no metaprofile. ACTIVE_META_PROFILE is a boot-validated global so no typeof guard needed.
+// The setActive() call persists to metrics/metaprofile-active.json -- authoritative record.
+if (ACTIVE_META_PROFILE) {
   metaProfiles.setActive(ACTIVE_META_PROFILE);
-  console.log(`Metaprofile: ${ACTIVE_META_PROFILE}`);
-} else if (typeof ACTIVE_META_PROFILE !== 'undefined' && ACTIVE_META_PROFILE === null) {
-  // explicitly null = no metaprofile
-} else {
-  // ACTIVE_META_PROFILE not defined = no metaprofile (backward compat)
 }
 
 for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {

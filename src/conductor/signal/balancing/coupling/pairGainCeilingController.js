@@ -8,8 +8,8 @@ pairGainCeilingController = (() => {
 
   const _P95_EMA_ALPHA = 0.08;
   const _EXCEEDANCE_EMA_ALPHA = 0.04;
-  const _pgcc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('pairGainCeilingController') : {};
   const V = validator.create('pairGainCeilingController');
+  const _pgcc = controllerConfig.getSection('pairGainCeilingController');
   const _CEILING_ADAPT_RATE = V.optionalFinite(_pgcc.ceilingAdaptRate, 0.008);
   const _CEILING_RELAX_RATE = V.optionalFinite(_pgcc.ceilingRelaxRate, 0.003);
 
@@ -40,7 +40,7 @@ pairGainCeilingController = (() => {
   // Metaprofile coupling strength scales all ceiling values.
   // Default strength midpoint is 0.50; atmospheric (0.35) = 0.70x, chaotic (0.85) = 1.70x.
   function _couplingScale() {
-    if (typeof metaProfiles !== 'undefined' && metaProfiles.isActive()) {
+    if (metaProfiles.isActive()) {
       const range = metaProfiles.getCouplingRange();
       const midpoint = (range.lo + range.hi) / 2;
       return midpoint / 0.50;

@@ -34,6 +34,31 @@ function extractConst(src, pattern) {
   return val;
 }
 
+// Extract a numeric default from idiomatic config-read patterns. Given
+// `varName`, try (in order): literal `= 0.85`, validator pattern
+// `V.optionalFinite(..., 0.85)`, legacy fallback `... || 0.85`. Returns
+// null if none match.
+function extractConfigDefault(src, varName) {
+  const v = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // [^,\n] stops greedy matches at line end so we don't accidentally
+  // cross into the NEXT V.optionalFinite(...) call on a subsequent line
+  // and capture its fallback instead of ours.
+  const patterns = [
+    new RegExp(v + '\\s*=\\s*([\\d.]+)'),
+    new RegExp(v + '\\s*=\\s*V\\.optional(?:Finite|Type)\\s*\\([^,\\n]+,\\s*(?:[^,\\n]+,\\s*)?([\\d.]+)'),
+    new RegExp(v + '\\s*=\\s*[^|;\\n]+\\|\\|\\s*([\\d.]+)'),
+    new RegExp(v + '\\s*=\\s*[^?;\\n]+\\?\\?\\s*([\\d.]+)'),
+  ];
+  for (const re of patterns) {
+    const m = src.match(re);
+    if (m) {
+      const val = parseFloat(m[1]);
+      if (Number.isFinite(val)) return val;
+    }
+  }
+  return null;
+}
+
 function extractClampRange(src, varName) {
   // Match patterns like: clamp(..., lo, hi) where varName is assigned
   const re = new RegExp(varName + '\\s*=\\s*clamp\\([^,]+,\\s*([\\d.]+)\\s*,\\s*([\\d.]+)\\s*\\)');
@@ -81,8 +106,8 @@ const coupling = readFile('conductor/signal/balancing/coupling/couplingConstants
       extractConst(negotiation, /trustCadence\s*>=\s*([\d.]+)/),
 
     // adaptiveTrustScores
-    trust_EMA_decay: extractConst(trust, /BASE_EMA_DECAY\s*=\s*([\d.]+)/) || extractConst(trust, /score\s*\*\s*([\d.]+)\s*\+/),
-    trust_EMA_new: extractConst(trust, /BASE_EMA_NEW\s*=\s*([\d.]+)/) || extractConst(trust, /\+\s*p\s*\*\s*([\d.]+)/),
+    trust_EMA_decay: extractConfigDefault(trust, 'BASE_EMA_DECAY') || extractConst(trust, /score\s*\*\s*([\d.]+)\s*\+/),
+    trust_EMA_new: extractConfigDefault(trust, 'BASE_EMA_NEW') || extractConst(trust, /\+\s*p\s*\*\s*([\d.]+)/),
     trust_weight_multiplier: extractConst(trust, /TRUST_WEIGHT_MULTIPLIER\s*=\s*([\d.]+)/) || extractConst(trust, /1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*([\d.]+)/),
     trust_weight_min: extractConst(trust, /TRUST_WEIGHT_MIN\s*=\s*([\d.]+)/) || (() => {
       const m = trust.match(/clamp\(\s*1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
@@ -92,7 +117,7 @@ const coupling = readFile('conductor/signal/balancing/coupling/couplingConstants
       const m = trust.match(/clamp\(\s*1\s*\+\s*(?:state\.score|effectiveScore)\s*\*\s*[\d.]+\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
       return m ? parseFloat(m[2]) : null;
     })(),
-    trust_CEILING: extractConst(trust, /TRUST_CEILING\s*=\s*([\d.]+)/),
+    trust_CEILING: extractConfigDefault(trust, 'TRUST_CEILING'),
 
     // entropyRegulator - extract named constants (post-refactor) or inline clampRange (legacy)
     entropy_clampRange_min: extractConst(entropy, /REGULATION_CLAMP_MIN\s*=\s*([\d.]+)/) ||
