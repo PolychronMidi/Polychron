@@ -154,7 +154,10 @@ class RAGKnowledgeMixin:
         fetch_k = min(top_k * 3, 30)
         cached_qvec = self._module_embed_cache.get(f"kbq:{query}")
         if cached_qvec is None:
-            cached_qvec = self.text_model.encode(query).tolist()
+            # Use text-query encoding (applies prompt_name='query' for
+            # instruction-tuned embedders like Qwen3-Embedding-0.6B).
+            from .engine_search import _encode_text_query
+            cached_qvec = _encode_text_query(self.text_model, query).tolist()
             self._module_embed_cache.set(f"kbq:{query}", cached_qvec)
         query_vec = cached_qvec
         builder = self.knowledge_table.search(query_vec).limit(fetch_k)

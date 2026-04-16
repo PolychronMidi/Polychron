@@ -7,6 +7,37 @@ from .utils import _bm25_search, _rrf_fuse, _sanitize
 
 logger = logging.getLogger(__name__)
 
+# Instruction prefixes for asymmetric (instruction-tuned) embedders.
+# bge-code-v1 requires a manual prefix per its model card — its
+# config_sentence_transformers.json has empty prompts, so prompt_name=
+# kwarg is a no-op. Prefix the QUERY only; documents are indexed raw.
+# Swap both strings if you change model. Qwen3-Embedding-0.6B has a
+# built-in "query" prompt in its config — we call encode(prompt_name=
+# "query") for the text model to trigger it automatically.
+_CODE_QUERY_PREFIX = os.environ.get(
+    "RAG_CODE_QUERY_PREFIX",
+    "Given Code or Text, retrieval relevant content\n",
+)
+
+
+def _encode_code_query(code_model, query: str):
+    """Encode a user query for code retrieval, applying the required
+    bge-code-v1 instruction prefix. Dispatcher transparent — the prefix
+    is added on the text BEFORE encode() so it doesn't need special
+    support from the _RagDispatcher."""
+    return code_model.encode(_CODE_QUERY_PREFIX + query)
+
+
+def _encode_text_query(text_model, query: str):
+    """Encode a query for text/knowledge retrieval. Tries prompt_name=
+    'query' first (Qwen3-Embedding-0.6B has a built-in query prompt in
+    config_sentence_transformers.json); falls back to raw encode on
+    TypeError for models that don't accept the kwarg."""
+    try:
+        return text_model.encode(query, prompt_name="query")
+    except TypeError:
+        return text_model.encode(query)
+
 
 class RAGEngineSearchMixin:
     @staticmethod
@@ -28,7 +59,7 @@ class RAGEngineSearchMixin:
                       and os.environ.get("RAG_RERANK", "1") == "1")
         _multiplier = 4 if _rerank_on else 2
         fetch_k = min(top_k * _multiplier, 120 if _rerank_on else 60)
-        query_vec = self.code_model.encode(query).tolist()
+        query_vec = _encode_code_query(self.code_model, query).tolist()
         builder = self.table.search(query_vec).limit(fetch_k)
         if language:
             builder = builder.where(f"language = '{_sanitize(language)}'")
@@ -143,7 +174,7 @@ class RAGEngineSearchMixin:
                 try:
                     cached_vec = self._module_embed_cache.get(module)
                     if cached_vec is None:
-                        cached_vec = self.text_model.encode(module).tolist()
+                        cached_vec = _encode_text_query(self.text_model, module).tolist()
                         self._module_embed_cache.set(module, cached_vec)
                     kb_hits = self.knowledge_table.search(cached_vec).limit(2).to_list()
                     kb_tags = [h["title"] for h in kb_hits if h.get("_distance", 999) < 1.2]

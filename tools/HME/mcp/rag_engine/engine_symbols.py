@@ -80,7 +80,10 @@ class RAGEngineSymbolsMixin:
     def search_symbols(self, query: str, top_k: int = 20, kind: str = "") -> list[dict]:
         if self.symbol_table is None:
             return []
-        query_vec = self.text_model.encode(query).tolist()
+        # Apply prompt_name='query' for instruction-tuned text embedders
+        # (Qwen3 has it, older models pass through via the TypeError fallback).
+        from .engine_search import _encode_text_query
+        query_vec = _encode_text_query(self.text_model, query).tolist()
         builder = self.symbol_table.search(query_vec).limit(top_k)
         if kind:
             builder = builder.where(f"kind = '{_sanitize(kind)}'")
