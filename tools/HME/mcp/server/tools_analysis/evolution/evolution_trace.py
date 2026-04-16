@@ -7,7 +7,7 @@ import logging
 from server import context as ctx
 from server.helpers import SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
-from .synthesis import (
+from ..synthesis import (
     _two_stage_think, _read_module_source,
 )
 from . import _get_compositional_context, _track
@@ -242,7 +242,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
             avg = r["sum"] / r["count"]
             parts.append(f"  {k}: {r['min']:.3f} - {r['max']:.3f} (avg {avg:.3f}, n={r['count']})")
 
-    from .trust_analysis import TRUST_MUSICAL_MEANING as _TM_TQ
+    from ..trust_analysis import TRUST_MUSICAL_MEANING as _TM_TQ
     musical_role = _TM_TQ.get(module, "")
     avg_score_tq = (numeric_ranges["score"]["sum"] / numeric_ranges["score"]["count"]) if "score" in numeric_ranges else None
     avg_weight_tq = (numeric_ranges["weight"]["sum"] / numeric_ranges["weight"]["count"]) if "weight" in numeric_ranges else None
@@ -294,7 +294,7 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
-    from .coupling_data import _pearson
+    from ..coupling_data import _pearson
     from . import _load_trace
 
     try:

@@ -507,7 +507,7 @@ def design_bridges(top_n: int = 3) -> str:
     and uses local code model to propose the specific dimension, direction,
     code insertion point, and musical rationale.
     """
-    from .synthesis import _local_think, _LOCAL_MODEL, compress_for_claude
+    from ..synthesis import _local_think, _LOCAL_MODEL, compress_for_claude
 
     bridges = get_top_bridges(n=top_n * 2, threshold=-0.30)
     unsaturated = [b for b in bridges if len(b.get("already_bridged", [])) < 3][:top_n]
@@ -601,7 +601,7 @@ def forge_bridges(top_n: int = 2) -> str:
     For each unsaturated antagonist pair: reads both module sources, generates a complete
     lab sketch via code model, and returns it ready to paste into lab/sketches.js.
     """
-    from .synthesis import _local_think, _LOCAL_MODEL
+    from ..synthesis import _local_think, _LOCAL_MODEL
 
     bridges = get_top_bridges(n=top_n * 2, threshold=-0.30)
     unsaturated = [b for b in bridges if len(b.get("already_bridged", [])) < 3][:top_n]

@@ -11,7 +11,7 @@ import logging
 from server import context as ctx
 from server.onboarding_chain import chained
 from . import _track, _budget_gate, BUDGET_COMPOUND, BUDGET_TOOL
-from .synthesis_session import append_session_narrative
+from ..synthesis_session import append_session_narrative
 
 logger = logging.getLogger("HME")
 
@@ -69,7 +69,7 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
         return kb_seed()
 
     if focus == "design":
-        from .coupling_bridges import design_bridges
+        from ..coupling_bridges import design_bridges
         _design_out = design_bridges()
         # D1: append structured target marker so onboarding_chain can extract
         # the picked target deterministically even if design output format changes.
@@ -88,7 +88,7 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
         return _auto_curate()
 
     if focus == "forge":
-        from .coupling_bridges import forge_bridges
+        from ..coupling_bridges import forge_bridges
         return forge_bridges()
 
     if focus == "contradict":
@@ -104,17 +104,17 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
     if focus == "think":
         if not query:
             return "Error: focus='think' requires query param with the question."
-        from .reasoning_think import think as _th
+        from ..reasoning_think import think as _th
         return _th(about=query)
 
     if focus == "blast":
         if not query:
             return "Error: focus='blast' requires query param with the symbol name."
-        from .reasoning_think import blast_radius as _br
+        from ..reasoning_think import blast_radius as _br
         return _br(query)
 
     if focus == "coupling":
-        from .coupling import coupling_intel as _ci
+        from ..coupling import coupling_intel as _ci
         return _budget_gate(_ci(mode=query or "full"))
 
     if focus not in ("all", "loc", "pipeline"):
@@ -169,7 +169,7 @@ def _coupling_opportunities() -> str:
     """Dimension gaps + top unsaturated leverage pairs."""
     parts = []
     try:
-        from .coupling import dimension_gap_finder, antagonism_leverage
+        from ..coupling import dimension_gap_finder, antagonism_leverage
         gaps = dimension_gap_finder()
         # Extract just the gap lines (compact)
         gap_lines = [l for l in gaps.split("\n") if l.strip().startswith("x") or "x " in l]
@@ -215,7 +215,7 @@ def _pipeline_suggestions() -> str:
 
 def _synthesis() -> str:
     """Dynamic priority synthesis from session context + data signals."""
-    from .synthesis_session import get_session_narrative
+    from ..synthesis_session import get_session_narrative
     narrative = get_session_narrative(max_entries=5, categories=["pipeline", "kb", "evolve", "edit"])
     lines = ["\n## Priority Synthesis\n"]
     if narrative:
@@ -394,7 +394,7 @@ def _auto_curate() -> str:
         parts.append(f"  -> learn(title='{c['title'][:60]}...', content='...', category='{c['category']}')")
         parts.append("")
 
-    from .synthesis import _local_think, _REASONING_MODEL
+    from ..synthesis import _local_think, _REASONING_MODEL
     summary = "\n".join(f"- [{c['type']}] {c['title']}: {c['detail']}" for c in candidates[:6])
     synthesis = _local_think(
         f"These patterns were detected in recent runs but aren't in the knowledge base:\n{summary}\n\n"
@@ -498,7 +498,7 @@ def _detect_contradictions() -> str:
     if not candidates:
         return "# Contradiction Scan\n\nNo related-but-distinct entry pairs found. KB is internally consistent at the semantic level."
 
-    from .synthesis_llamacpp import _local_think, _LOCAL_MODEL
+    from ..synthesis_llamacpp import _local_think, _LOCAL_MODEL
 
     # Batch into groups of 5 for LLM checking (keeps prompt focused)
     all_contradictions = []
@@ -674,7 +674,7 @@ def _adversarial_stress() -> str:
 
     # Probe 5: Doc sync runs and produces actionable output
     try:
-        from .health import doc_sync_check
+        from ..health import doc_sync_check
         sync = doc_sync_check("doc/HME.md")
         actionable = "SYNC" in sync
         results.append(("Doc sync: produces verdict", actionable,

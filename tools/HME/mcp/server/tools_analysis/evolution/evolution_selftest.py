@@ -10,7 +10,7 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 from server import context as ctx
-from .synthesis import _local_think
+from ..synthesis import _local_think
 from . import _track
 
 logger = logging.getLogger("HME")
@@ -147,7 +147,7 @@ def hme_selftest() -> str:
     results.append(f"{'PASS' if tool_count >= 6 else 'FAIL'}: {tool_count} tools registered")
 
     try:
-        from .health import doc_sync_check
+        from ..health import doc_sync_check
         sync = doc_sync_check("doc/HME.md")
         is_sync = "IN SYNC" in sync
         # Don't truncate the sync report — identifier names can be long and
@@ -303,7 +303,7 @@ def hme_selftest() -> str:
         results.append(f"FAIL: local inference -- {e}")
 
     try:
-        from .synthesis import warm_context_status
+        from ..synthesis import warm_context_status
         from . import synthesis_llamacpp as _so
         _so._refresh_arbiter()
         _ARBITER_MODEL = _so._ARBITER_MODEL

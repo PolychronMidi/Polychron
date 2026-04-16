@@ -14,13 +14,13 @@ import threading as _threading
 
 from server import context as ctx
 from hme_env import ENV
-from .warm_disk import (
+from ..warm_disk import (
     _warm_ctx, _warm_ctx_kb_ver, _warm_ctx_ts,
     _warm_ctx_append_count, _warm_ctx_baseline_tokens, _warm_ctx_incr_latency,
     _cache_dir, _model_cache_stem, _save_warm_cache, _load_warm_cache,
     _save_checkpoint, _try_checkpoint_recovery, _load_all_warm_caches,
 )
-from .warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
+from ..warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
 
 logger = logging.getLogger("HME")
 
@@ -155,7 +155,7 @@ def _flush_pending_entries():
 
         if updated > 0:
             try:
-                from .tool_cache import cache_invalidate_kb
+                from ..tool_cache import cache_invalidate_kb
                 cache_invalidate_kb()
             except Exception as _err2:
                 logger.debug(f"cache_invalidate_kb: {type(_err2).__name__}: {_err2}")
@@ -424,7 +424,7 @@ def warm_context_status() -> dict:
     _refresh_arbiter()
     from .synthesis_llamacpp import _ARBITER_MODEL
     from .synthesis_session import session_state_counts
-    from .warm_disk import _TMPFS_PATHS
+    from ..warm_disk import _TMPFS_PATHS
     _reasoner_warm = ENV.require_bool("HME_REASONER_WARM")
     _active = [_LOCAL_MODEL, _ARBITER_MODEL]
     if _reasoner_warm:
