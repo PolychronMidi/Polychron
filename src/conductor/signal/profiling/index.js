@@ -6,5 +6,6 @@ require('./regimeClassifier');
 require('./systemDynamicsProfilerHelpers');
 require('./systemDynamicsProfilerAnalysis');
 require('./systemDynamicsProfiler');
+require('./regimeReactiveDampingCore');
 require('./regimeReactiveDampingEquilibrator');
 require('./regimeReactiveDamping');

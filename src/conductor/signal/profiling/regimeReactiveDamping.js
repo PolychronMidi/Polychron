@@ -47,12 +47,13 @@ regimeReactiveDamping = (() => {
     drifting: 0,
   };
 
-  const _BASE_MAX_DENSITY = 0.12;
-  const _BASE_MAX_TENSION = 0.12;
-  const _BASE_MAX_FLICKER = 0.17;
-  const _DENSITY_RANGE = [0.88, 1.12];
-  const _TENSION_RANGE = [0.88, 1.22];
-  const _FLICKER_RANGE = [0.83, 1.19];
+  const _cc = typeof controllerConfig !== 'undefined' ? controllerConfig.getSection('regimeReactiveDamping') : {};
+  const _BASE_MAX_DENSITY = _cc.baseMaxDensity || 0.12;
+  const _BASE_MAX_TENSION = _cc.baseMaxTension || 0.12;
+  const _BASE_MAX_FLICKER = _cc.baseMaxFlicker || 0.17;
+  const _DENSITY_RANGE = _cc.densityRange || [0.88, 1.12];
+  const _TENSION_RANGE = _cc.tensionRange || [0.88, 1.22];
+  const _FLICKER_RANGE = _cc.flickerRange || [0.83, 1.19];
 
   // Metaprofile-scaled maxima. Tension ceiling 0.80 (default) = 1.0x scale.
   // Atmospheric (0.45) = 0.56x, chaotic (0.95) = 1.19x.
@@ -74,19 +75,19 @@ regimeReactiveDamping = (() => {
 
   const CURVATURE_CEILING = 1.0;
 
-  const BIAS_SMOOTHING = 0.20;
+  const BIAS_SMOOTHING = _cc.biasSmoothing || 0.20;
 
-  const LOW_VEL_THRESHOLD = 0.015;
-  const LOW_VEL_BEATS     = 8;
-  const DRIFT_MAGNITUDE   = 0.22;
-  const DRIFT_DECAY       = 0.93;
+  const LOW_VEL_THRESHOLD = _cc.lowVelocityThreshold || 0.015;
+  const LOW_VEL_BEATS     = _cc.lowVelocityBeats || 8;
+  const DRIFT_MAGNITUDE   = _cc.driftMagnitude || 0.22;
+  const DRIFT_DECAY       = _cc.driftDecay || 0.93;
   let lowVelStreak = 0;
   let regimeReactiveDampingDriftD = 0;
   let regimeReactiveDampingDriftT = 0;
   let regimeReactiveDampingDriftF = 0;
   let regimeReactiveDampingInjectionCount = 0;
 
-  const _REGIME_RING_SIZE = 64;
+  const _REGIME_RING_SIZE = _cc.regimeRingSize || 64;
   /** @type {string[]} */
   const regimeReactiveDampingRegimeRing = [];
   const _DEFAULT_REGIME_BUDGET = {
@@ -116,7 +117,7 @@ regimeReactiveDamping = (() => {
     }
     return _DEFAULT_REGIME_BUDGET;
   }
-  const _EQUILIB_STRENGTH = 0.28;
+  const _EQUILIB_STRENGTH = _cc.equilibStrength || 0.28;
   let regimeReactiveDampingEqCorrD = 0;
   let regimeReactiveDampingEqCorrT = 0;
   let regimeReactiveDampingEqCorrF = 0;
@@ -129,9 +130,9 @@ regimeReactiveDamping = (() => {
   let regimeReactiveDampingTensionPinStreak = 0;
   let regimeReactiveDampingTensionUnpinStreak = 0;
   let regimeReactiveDampingTensionCeilingRelax = 0;
-  const _PIN_STREAK_TRIGGER = 10;
+  const _PIN_STREAK_TRIGGER = _cc.pinStreakTrigger || 10;
   const _UNPIN_RESET_BEATS = 5;
-  const _PIN_RELAX_STEP = 0.05;
+  const _PIN_RELAX_STEP = _cc.pinRelaxStep || 0.05;
 
   let currentRegime = 'evolving';
   let curvatureGain = 0;
@@ -281,18 +282,10 @@ regimeReactiveDamping = (() => {
     const ftDecoupleBrake = clamp((flickerTrustCoupling - 0.40) / 0.30, 0, 1) * 0.06;
 
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
-    // Metaprofile tension shape: flat, ascending, arch (default), sawtooth, erratic
+    // Metaprofile tension shape via pure function (testable independently)
     const _tensionShape = (typeof metaProfiles !== 'undefined' && metaProfiles.isActive())
       ? metaProfiles.getTensionArc().shape : 'arch';
-    let _shapeCurve;
-    switch (_tensionShape) {
-      case 'flat':      _shapeCurve = 0.5; break;
-      case 'ascending': _shapeCurve = sectionProgress; break;
-      case 'sawtooth':  _shapeCurve = (sectionProgress * 3) % 1.0; break;
-      case 'erratic':   _shapeCurve = 0.5 + m.sin(sectionProgress * 17.3) * 0.4 + m.cos(sectionProgress * 7.1) * 0.3; break;
-      default:          _shapeCurve = m.sin(sectionProgress * m.PI); break; // arch
-    }
-    const sectionTensionNudge = clamp(_shapeCurve, 0, 1) * 0.045;
+    const sectionTensionNudge = clamp(regimeReactiveDampingCore.tensionShapeCurve(_tensionShape, sectionProgress), 0, 1) * 0.045;
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
     const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
     if (Number.isFinite(currentDensitySignal)) {
