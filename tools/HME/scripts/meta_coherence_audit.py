@@ -456,12 +456,21 @@ def audit_hook_sources(root: Path) -> list[dict]:
                 r'\$\(\s*cd\s+"\$\(\s*dirname\s+"\$\{BASH_SOURCE\[0\]\}"\s*\)"\s*&&\s*pwd\s*\)/(.+)',
                 raw,
             )
+            m_script_dir = re.match(r'\$SCRIPT_DIR/(.+)', raw)
             if m_dyn:
                 sub_path = m_dyn.group(1)
                 resolved = (hook.parent / sub_path).resolve(strict=False)
+            elif m_script_dir:
+                # `$SCRIPT_DIR/...` — SCRIPT_DIR is almost always set to the
+                # dir of BASH_SOURCE[0] via `$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)`.
+                # Treat the hook's own dir as the anchor. Catches the exact
+                # class of bug where `$SCRIPT_DIR/_nexus.sh` resolves into
+                # `posttooluse/_nexus.sh` but the file lives in `helpers/`.
+                sub_path = m_script_dir.group(1)
+                resolved = (hook.parent / sub_path).resolve(strict=False)
             elif raw.startswith("/"):
                 resolved = Path(raw)
-            # else: contains $VAR — skip (can't verify without shell eval)
+            # else: contains other $VAR — skip (can't verify without shell eval)
             if resolved is None:
                 continue
             if not resolved.exists():

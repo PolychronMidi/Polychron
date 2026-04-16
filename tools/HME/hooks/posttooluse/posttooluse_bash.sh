@@ -2,9 +2,9 @@
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PostToolUse: Bash — background file tracking + Evolver phase triggers + nexus state
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/_tab_helpers.sh"
-source "$SCRIPT_DIR/_nexus.sh"
-source "$SCRIPT_DIR/_onboarding.sh"
+source "$SCRIPT_DIR/../helpers/_tab_helpers.sh"
+source "$SCRIPT_DIR/../helpers/_nexus.sh"
+source "$SCRIPT_DIR/../helpers/_onboarding.sh"
 
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
