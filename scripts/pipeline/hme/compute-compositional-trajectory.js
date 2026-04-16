@@ -30,8 +30,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const MUSICAL = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
 const OUT = path.join(ROOT, 'metrics', 'hme-trajectory.json');
 
@@ -47,11 +47,6 @@ const THRESHOLDS = {
   encodec_entropy_avg: 0.02,        // ~0.3% of a 6-point range per round
 };
 
-function loadJsonMaybe(p) {
-  if (!fs.existsSync(p)) return null;
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
-  catch (_e) { return null; }
-}
 
 function linregress(ys) {
   // Simple OLS: x = [0, 1, 2, ...]
@@ -99,7 +94,7 @@ function rollupVerdict(perSignal) {
 }
 
 function main() {
-  const musical = loadJsonMaybe(MUSICAL);
+  const musical = loadJson(MUSICAL);
   const history = (musical && Array.isArray(musical.history)) ? musical.history : [];
   const window = history.slice(-WINDOW);
 
@@ -157,7 +152,7 @@ function main() {
   const verdict = rollupVerdict(signals);
 
   // Append the per-round verdict to the history (capped at 60)
-  const prev = loadJsonMaybe(OUT);
+  const prev = loadJson(OUT);
   const prevHistory = Array.isArray(prev && prev.history) ? prev.history : [];
   const newHistory = prevHistory.concat([{
     timestamp: meta.timestamp,

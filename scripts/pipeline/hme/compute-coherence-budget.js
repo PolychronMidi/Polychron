@@ -38,8 +38,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const MUSICAL = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
 const COHERENCE = path.join(ROOT, 'metrics', 'hme-coherence.json');
 const GROUND_TRUTH = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');
@@ -64,11 +64,6 @@ const SENTIMENT_WEIGHT = {
 };
 const POSITIVE_SENTIMENTS = new Set(['transcendent', 'compelling', 'moving', 'surprising', 'earned']);
 
-function loadJsonMaybe(p) {
-  if (!fs.existsSync(p)) return null;
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
-  catch (_e) { return null; }
-}
 
 function loadGroundTruth() {
   // Returns { byRound: { R92: {sentiment, moment_type, ts}, ... }, latest: {...}|null }
@@ -170,8 +165,8 @@ function matchGroundTruthForSnapshot(snapshotTsIso, groundTruthLatestByTs) {
 }
 
 function main() {
-  const musical = loadJsonMaybe(MUSICAL);
-  const coherence = loadJsonMaybe(COHERENCE);
+  const musical = loadJson(MUSICAL);
+  const coherence = loadJson(COHERENCE);
   const currentCoherence =
     coherence && typeof coherence.score === 'number' ? coherence.score : null;
 
@@ -271,7 +266,7 @@ function main() {
   }
 
   // Append to history
-  const prev = loadJsonMaybe(OUT);
+  const prev = loadJson(OUT);
   const prevHistory = Array.isArray(prev && prev.history) ? prev.history : [];
   const newHistory = prevHistory.concat([{
     timestamp: new Date().toISOString(),

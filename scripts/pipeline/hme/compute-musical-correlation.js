@@ -30,8 +30,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const COHERENCE    = path.join(ROOT, 'metrics', 'hme-coherence.json');
 const ACCURACY     = path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json');
 const FINGERPRINT  = path.join(ROOT, 'metrics', 'fingerprint-comparison.json');
@@ -42,11 +42,6 @@ const ROLLING_WINDOW = 20;
 const HISTORY_CAP = 60;
 const WARN_THRESHOLD = parseFloat(process.env.HME_MUSICAL_WARN_THRESHOLD || '0.2');
 
-function loadJsonMaybe(p) {
-  if (!fs.existsSync(p)) return null;
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
-  catch (_e) { return null; }
-}
 
 function extractPerceptualSignals(p) {
   // Returns { complexity_avg, clap_tension, encodec_entropy_avg } -- all 0..1ish
@@ -127,11 +122,11 @@ function pearson(xs, ys) {
 }
 
 function main() {
-  const coherence   = loadJsonMaybe(COHERENCE);
-  const accuracy    = loadJsonMaybe(ACCURACY);
-  const fingerprint = loadJsonMaybe(FINGERPRINT);
-  const perceptual  = loadJsonMaybe(PERCEPTUAL);
-  const prev        = loadJsonMaybe(OUT);
+  const coherence   = loadJson(COHERENCE);
+  const accuracy    = loadJson(ACCURACY);
+  const fingerprint = loadJson(FINGERPRINT);
+  const perceptual  = loadJson(PERCEPTUAL);
+  const prev        = loadJson(OUT);
 
   const hmeCoherence = coherence && typeof coherence.score === 'number' ? coherence.score : null;
   const hmeAccuracy  = accuracy && typeof accuracy.ema === 'number' ? accuracy.ema : null;

@@ -23,22 +23,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ROOT = path.join(__dirname, '..', '..', '..');
 const PREDICTIONS = path.join(ROOT, 'metrics', 'hme-predictions.jsonl');
 const FINGERPRINT = path.join(ROOT, 'metrics', 'fingerprint-comparison.json');
 const ACCURACY_OUT = path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json');
 const EMA_ALPHA = 0.2; // 20% weight on newest round, 80% on history
 const HISTORY_CAP = 50;
 
-function loadJsonMaybe(p) {
-  if (!fs.existsSync(p)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(p, 'utf8'));
-  } catch (_e) {
-    return null;
-  }
-}
 
 function loadPredictions() {
   if (!fs.existsSync(PREDICTIONS)) return [];
@@ -88,8 +80,8 @@ function extractShiftedModules(fingerprint) {
 
 function main() {
   const predictions = loadPredictions();
-  const fingerprint = loadJsonMaybe(FINGERPRINT);
-  const history = loadJsonMaybe(ACCURACY_OUT) || { meta: {}, rounds: [], ema: null };
+  const fingerprint = loadJson(FINGERPRINT);
+  const history = loadJson(ACCURACY_OUT) || { meta: {}, rounds: [], ema: null };
 
   if (predictions.length === 0) {
     console.log('reconcile-predictions: no predictions logged this round -- skipping');
