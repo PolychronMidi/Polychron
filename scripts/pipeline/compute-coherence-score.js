@@ -50,19 +50,33 @@ function readEvents() {
 }
 
 function sliceToRound(events) {
-  // Find the two most recent round_complete events. The window is everything
-  // between them — that's the round that just finished. If only one exists,
-  // take everything before it (the entire first round). If none, take all.
-  const boundaries = [];
-  for (let i = events.length - 1; i >= 0 && boundaries.length < 2; i--) {
+  // Find the two most recent round_complete events that have actual activity
+  // between them. Skip consecutive round_complete events (which produce empty
+  // windows and false 1.0 scores). If no non-empty window exists, return all
+  // events after the last round_complete (the current in-progress round).
+  const rcIndices = [];
+  for (let i = events.length - 1; i >= 0; i--) {
     if (events[i] && events[i].event === 'round_complete') {
-      boundaries.push(i);
+      rcIndices.push(i);
     }
   }
-  if (boundaries.length === 0) return events;
-  if (boundaries.length === 1) return events.slice(0, boundaries[0]);
-  // boundaries[0] = latest, boundaries[1] = second-to-last
-  return events.slice(boundaries[1] + 1, boundaries[0]);
+  if (rcIndices.length === 0) return events;
+  // Try successive pairs until we find one with activity between them
+  for (let p = 0; p < rcIndices.length - 1; p++) {
+    const latest = rcIndices[p];
+    const prev = rcIndices[p + 1];
+    const window = events.slice(prev + 1, latest);
+    const hasWrites = window.some((e) => e && e.event === 'file_written');
+    if (hasWrites) return window;
+  }
+  // No pair had writes — fall back to everything after the last round_complete
+  // (the current in-progress round, which may have real edits).
+  const lastRC = rcIndices[0];
+  const tail = events.slice(lastRC + 1);
+  if (tail.some((e) => e && e.event === 'file_written')) return tail;
+  // Absolutely nothing — fall back to everything before the oldest round_complete
+  const oldest = rcIndices[rcIndices.length - 1];
+  return events.slice(0, oldest);
 }
 
 function loadJsonMaybe(p) {
@@ -83,7 +97,9 @@ function main() {
   // Component 1: read coverage
   const writes = windowEvents.filter((e) => e && e.event === 'file_written');
   const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true).length;
-  const readCoverage = writes.length > 0 ? writesWithPriorRead / writes.length : 1;
+  // 0 writes = no data, NOT perfect coherence. Use null to signal "unmeasured"
+  // and fall back to the previous score if available.
+  const readCoverage = writes.length > 0 ? writesWithPriorRead / writes.length : null;
 
   // Component 2: violation penalty (lazy violations only).
   // productive_incoherence events do NOT count here -- they feed the
@@ -129,7 +145,8 @@ function main() {
     }
   }
 
-  const baseScore = readCoverage * violationPenalty * stalenessPenalty;
+  const effectiveReadCoverage = readCoverage !== null ? readCoverage : 0.5; // unmeasured = 0.5 (neither good nor bad)
+  const baseScore = effectiveReadCoverage * violationPenalty * stalenessPenalty;
   const score = clamp(baseScore * explorationBonus, 0, 1);
 
   // Trend: diff against previous hme-coherence.json (if there's a backup)

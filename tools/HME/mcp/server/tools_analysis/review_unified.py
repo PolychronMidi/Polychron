@@ -109,7 +109,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             if _chain:
                                 _log_prediction(_mod, [n for _, n, _ in _chain], injected=False)
                 except Exception as _cp_err:
-                    logger.debug(f"cascade prediction in review: {_cp_err}")
+                    logger.info(f"cascade prediction in review FAILED: {type(_cp_err).__name__}: {_cp_err} (files: {_cf[:200]})")
             try:
                 from .workflow_audit import what_did_i_forget as _wdif
                 _wdif_out = _wdif(_cf or "")
