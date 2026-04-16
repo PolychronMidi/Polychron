@@ -99,7 +99,7 @@ focus='curate': living memory curation — detects KB-worthy patterns from recen
 
     if focus == "invariants":
         from .evolution_invariants import check_invariants
-        return check_invariants()
+        return check_invariants(verbose=(query or "").lower() == "verbose")
 
     if focus == "think":
         if not query:

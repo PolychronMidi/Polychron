@@ -338,7 +338,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         return False, f"check error: {e}"
 
 
-def check_invariants() -> str:
+def check_invariants(verbose: bool = False) -> str:
     """Run the declarative invariant battery from config/invariants.json."""
     try:
         invariants = _load_invariants()
@@ -386,12 +386,21 @@ def check_invariants() -> str:
                 parts.append(f"        {detail}")
         parts.append("")
 
-    parts.append(f"## Verified ({len(passes)})\n")
-    for inv, detail in passes:
-        line = f"  PASS [{inv['id']}]: {inv['description']}"
-        if detail:
-            line += f" ({detail})"
-        parts.append(line)
+    # Enumerate PASSes only when verbose=True OR there are no failures.
+    # When there ARE failures, the agent only needs the failing items to
+    # act on; the 100+ PASS lines are ~8k chars of pure filler per call.
+    # An "all <N> pass" summary conveys the same positive signal in ~60
+    # chars. The `evolve(focus='invariants', query='verbose')` escape
+    # hatch surfaces the full listing when needed.
+    if passes and (verbose or not (errors or warnings or infos)):
+        parts.append(f"## Verified ({len(passes)})\n")
+        for inv, detail in passes:
+            line = f"  PASS [{inv['id']}]: {inv['description']}"
+            if detail:
+                line += f" ({detail})"
+            parts.append(line)
+    elif passes:
+        parts.append(f"## Verified ({len(passes)} — detail suppressed; use `evolve(focus='invariants', query='verbose')` for full listing)")
 
     parts.append(f"\n## Extending")
     parts.append(f"Add to `tools/HME/config/invariants.json` — no Python changes needed.")

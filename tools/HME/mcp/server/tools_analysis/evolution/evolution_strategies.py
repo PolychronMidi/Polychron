@@ -811,14 +811,19 @@ def _adversarial_stress() -> str:
                 parts.append(f"        {detail}")
         parts.append("")
 
-    parts.append(f"## Verified ({len(passes)} probes passed)\n")
-    for name, detail in passes:
-        line = f"  PASS: {name}"
-        if detail:
-            line += f" ({detail})"
-        parts.append(line)
-
-    if failures:
+    # Enumerate PASSes only when there are no failures — the full listing
+    # is reassurance signal on clean runs. When failures exist, the
+    # 30+ PASS lines are ~2k chars of filler; the failures are what the
+    # agent needs to act on.
+    if passes and not failures:
+        parts.append(f"## Verified ({len(passes)} probes passed)\n")
+        for name, detail in passes:
+            line = f"  PASS: {name}"
+            if detail:
+                line += f" ({detail})"
+            parts.append(line)
+    elif passes:
+        parts.append(f"## Verified ({len(passes)} probes passed — detail suppressed when failures exist)")
         parts.append(f"\n## Action Required")
         parts.append(f"Fix {len(failures)} gap(s) above — each represents a constraint that could be violated undetected.")
 
