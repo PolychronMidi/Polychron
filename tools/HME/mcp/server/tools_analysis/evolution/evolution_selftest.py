@@ -187,7 +187,7 @@ def hme_hot_reload(modules: str = "") -> str:
     )
 
 
-def hme_selftest() -> str:
+def hme_selftest(verbose: bool = False) -> str:
     """Verify HME's own health: tool registration, doc sync, index integrity, llama.cpp, KB."""
     _track("hme_selftest")
     results = []
@@ -509,4 +509,19 @@ def hme_selftest() -> str:
     total = len(results)
     verdict = "READY" if failed == 0 else f"{failed} FAIL"
     header = f"## HME Self-Test: {passed}/{total} passed ({verdict})\n"
+    # Enumerate PASSes only when there are failures worth triaging OR the
+    # run is all-clean (full listing = reassurance signal). When failures
+    # exist, PASS lines are ~700 chars of filler; agent only needs the
+    # failing/warning items to act on. Use the `verbose` keyword arg via
+    # hme_admin(action='selftest', modules='verbose') when full output
+    # is required (mirrors invariants/stress trimming).
+    has_issues = any(
+        r.startswith(("FAIL", "WARN", "ERR", "INFO", "NEW"))
+        for r in results
+    )
+    non_pass = [r for r in results if not r.startswith("PASS")]
+    if has_issues and non_pass and not verbose:
+        # Show only non-PASS lines + a summary count of PASSes.
+        body = "\n".join(f"  {r}" for r in non_pass)
+        return header + body + f"\n  ({passed} PASS suppressed — use hme_admin selftest verbose for full listing)"
     return header + "\n".join(f"  {r}" for r in results)
