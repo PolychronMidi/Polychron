@@ -1006,8 +1006,11 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     plan = _local_think_with_system(
         f"Break into 3-5 investigation steps:\n\n{prompt[:400]}"
         f"{_registry_hint}\n\n"
-        "Each step: WHAT (exact module name from list above), WHERE (subsystem), WHY (relevance).",
-        "Code investigation planner. Use exact module names from the list. Concrete steps only.",
+        "Each step: WHAT (exact module name from list above), WHERE (subsystem), WHY (relevance).\n"
+        "CRITICAL: ONLY use module names from the Known list above. If the question mentions "
+        "a module not in the list, say 'not in registry' — do NOT guess or assume it exists.",
+        "Code investigation planner. ONLY reference modules from the Known list. "
+        "If a module is not in the list, refuse — say 'not in registry'. Never invent paths or locations.",
         500, _ARBITER_MODEL,
     )
     if plan and "</think>" in plan:
@@ -1016,8 +1019,15 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         logger.info("cascade: arbiter plan failed, enriched fallback")
         return _reasoning_think(enriched_prompt, max_tokens=max_tokens, system=_THINK_SYSTEM)
 
-    # Source injection from arbiter plan: any new camelCase names the plan introduced
-    _plan_modules = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', plan)
+    # Source injection from arbiter plan: camelCase names validated against registry.
+    # Any name the arbiter hallucinated (not in _registry_mods) is silently dropped
+    # so hallucinated modules never propagate to the coder stage.
+    _plan_modules_raw = re.findall(r'\b[a-z]+(?:[A-Z][a-z]+)+\b', plan)
+    _registry_set = set(_registry_mods)
+    _plan_modules = [m for m in _plan_modules_raw if m in _registry_set]
+    if len(_plan_modules) < len(_plan_modules_raw):
+        _dropped = set(_plan_modules_raw) - _registry_set
+        logger.info(f"cascade: dropped {len(_dropped)} hallucinated modules from plan: {_dropped}")
     _plan_source_block = ""
     for _pm in list(dict.fromkeys(_plan_modules))[:3]:
         _src = _read_module_source(_pm, max_chars=1200)
