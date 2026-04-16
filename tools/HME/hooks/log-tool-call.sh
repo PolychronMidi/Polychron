@@ -103,7 +103,16 @@ echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null
 TOOL_LOG_LINE=$(echo "$TOOL_INPUT" | head -c 120 | tr '\n' ' ')
 printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "$TOOL_LOG_LINE" >> "$HME_LOG" 2>/dev/null
 
-# 2. POST to HTTP shim (background, non-blocking)
+# 2. Emit to activity bridge (MCP tool call logging)
+if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
+  python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
+    --event=mcp_tool_call \
+    --session="$SESSION_ID" \
+    --tool="$TOOL_NAME" \
+    --elapsed_s="$ELAPSED_S" >/dev/null 2>&1 &
+fi
+
+# 3. POST to HTTP shim (background, non-blocking)
 (_safe_curl "http://127.0.0.1:7734/transcript" "{\"entries\":[$ENTRY]}") &
 
 # 3. If tool modified a file, trigger mini-reindex
