@@ -21,6 +21,7 @@ RELOADABLE = [
     "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
     "synthesis_mistral", "synthesis_nvidia", "synthesis_reasoning",
     "synthesis_session", "synthesis_warm", "synthesis_pipeline", "synthesis_proxy_route",
+    "synthesis_inference", "synthesis_cascade",
     "request_coordinator",
     "warm_disk", "warm_persona",
     "tool_cache",

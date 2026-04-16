@@ -361,6 +361,7 @@ _alias_subpackage("synthesis", [
     "synthesis_groq", "synthesis_llamacpp", "synthesis_mistral", "synthesis_nvidia",
     "synthesis_openrouter", "synthesis_pipeline", "synthesis_proxy_route",
     "synthesis_reasoning", "synthesis_session", "synthesis_warm",
+    "synthesis_inference", "synthesis_cascade",
 ])
 
 # coupling/ — 5 modules
