@@ -46,7 +46,37 @@ class RAGKnowledgeMixin:
 
     def _try_open_knowledge_table(self):
         try:
-            self.knowledge_table = self.db.open_table("knowledge")
+            tbl = self.db.open_table("knowledge")
+            # Dimension safety: verify the table's vector dimension matches current model.
+            # If mismatched (model change), export text data to JSONL backup before proceeding.
+            # This prevents silent data loss from mode="overwrite" on next add_knowledge().
+            try:
+                sample = tbl.head(1).to_pydict()
+                if sample and 'vector' in sample and sample['vector']:
+                    existing_dim = len(sample['vector'][0])
+                    if existing_dim != self._text_dim:
+                        import logging, json, os, time
+                        _log = logging.getLogger("HME")
+                        _log.warning(
+                            f"KB dimension mismatch: table has {existing_dim}, model needs {self._text_dim}. "
+                            f"Exporting {len(tbl.to_pandas())} entries to backup before migration."
+                        )
+                        # Backup ALL entries to JSONL (text only, vectors discarded)
+                        backup_path = os.path.join(
+                            os.path.dirname(self.db_path) if hasattr(self, 'db_path') else '.',
+                            f"knowledge-backup-{int(time.time())}.jsonl"
+                        )
+                        df = tbl.to_pandas()
+                        with open(backup_path, 'w') as bf:
+                            for _, row in df.iterrows():
+                                entry = {k: v for k, v in row.items() if k != 'vector'}
+                                bf.write(json.dumps(entry, default=str) + '\n')
+                        _log.warning(f"KB backup written to {backup_path} ({len(df)} entries)")
+                        self.knowledge_table = None  # force rebuild with new dimension
+                        return
+            except Exception:
+                pass  # empty table or read error — proceed normally
+            self.knowledge_table = tbl
         except Exception:
             self.knowledge_table = None
 
