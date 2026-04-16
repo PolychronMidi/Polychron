@@ -129,7 +129,6 @@ def get_project_root() -> str:
 
 
 def walk_code_files(
-    directory: str,
     extensions: Optional[set[str]] = None,
     lang_filter: str = "",
     max_size: Optional[int] = None,

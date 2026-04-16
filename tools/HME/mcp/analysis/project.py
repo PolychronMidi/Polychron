@@ -18,7 +18,7 @@ def scan_annotations(project_root: str, annotation_type: str = "") -> list[dict]
     results = []
     type_filter = annotation_type.upper() if annotation_type else None
 
-    for f in walk_code_files(project_root):
+    for f in walk_code_files():
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
         except Exception:

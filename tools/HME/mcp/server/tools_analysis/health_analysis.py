@@ -44,7 +44,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
     sym_files: dict[str, str] = {}
     sym_registrations: dict[str, bool] = {}
     _reg_pats = REGISTRATION_PATTERNS
-    for fpath in walk_code_files(src_root):
+    for fpath in walk_code_files():
         if not str(fpath).endswith(".js"):
             continue
         try:
@@ -73,7 +73,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
     combined = _re.compile(r'\b(' + '|'.join(_re.escape(n) for n in name_list) + r')\b')
     caller_counts: dict[str, int] = {n: 0 for n in name_list}
 
-    for fpath in walk_code_files(project_root):
+    for fpath in walk_code_files():
         if not (str(fpath).endswith(".js") or str(fpath).endswith(".ts")):
             continue
         try:
@@ -235,7 +235,7 @@ def convention_check(file_path: str) -> str:
     if rel_path.startswith("src/") and rel_path.endswith(".js"):
         from file_walker import walk_code_files
         sample_lines = []
-        for sfp in walk_code_files(ctx.PROJECT_ROOT):
+        for sfp in walk_code_files():
             srel = str(sfp).replace(ctx.PROJECT_ROOT + "/", "")
             if not srel.startswith("src/") or not srel.endswith(".js"):
                 continue

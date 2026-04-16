@@ -64,7 +64,7 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
     ]
 
     callers = []
-    for fpath in walk_code_files(project_root, lang_filter=lang_filter):
+    for fpath in walk_code_files(lang_filter=lang_filter):
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -104,7 +104,7 @@ def get_type_hierarchy(project_root: str) -> dict:
     def _line_at(content, pos):
         return content[:pos].count("\n") + 1
 
-    for fpath in walk_code_files(project_root):
+    for fpath in walk_code_files():
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -231,7 +231,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
     all_symbols = collect_all_symbols(project_root)
 
     trait_methods: set[str] = set()
-    for fpath in walk_code_files(project_root, lang_filter="rust"):
+    for fpath in walk_code_files(lang_filter="rust"):
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -252,7 +252,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
                     in_trait = False
 
     file_contents: dict[str, str] = {}
-    for fpath in walk_code_files(project_root, lang_filter=language):
+    for fpath in walk_code_files(lang_filter=language):
         try:
             file_contents[str(fpath)] = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -325,7 +325,7 @@ def preview_rename(old_name: str, new_name: str, project_root: str, language: st
     word_re = re.compile(rf'\b{re.escape(old_name)}\b')
     results: list[dict] = []
 
-    for fpath in walk_code_files(project_root, lang_filter=language):
+    for fpath in walk_code_files(lang_filter=language):
         try:
             content = fpath.read_text(encoding="utf-8", errors="ignore")
         except Exception:

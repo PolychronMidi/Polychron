@@ -139,7 +139,7 @@ def _loc_offenders(top_n: int = 8) -> str:
     from server.helpers import LINE_COUNT_TARGET, LINE_COUNT_CRITICAL
 
     oversize = []
-    for fpath in walk_code_files(ctx.PROJECT_ROOT):
+    for fpath in walk_code_files():
         rel = str(fpath).replace(ctx.PROJECT_ROOT + "/", "")
         if not rel.startswith("src/"):
             continue

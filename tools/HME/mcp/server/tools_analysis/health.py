@@ -24,7 +24,7 @@ def codebase_health() -> str:
     from file_walker import walk_code_files
     issues_by_severity = {"CRITICAL": [], "WARN": [], "NOTE": []}
     file_count = 0
-    for fpath in walk_code_files(ctx.PROJECT_ROOT):
+    for fpath in walk_code_files():
         rel = str(fpath).replace(ctx.PROJECT_ROOT + "/", "")
         if not rel.startswith("src/"):
             continue
@@ -229,7 +229,7 @@ def doc_sync_check(doc_path: str = "") -> str:
     if stats_match:
         claimed_files = int(stats_match.group(1))
         from file_walker import walk_code_files
-        actual_files = sum(1 for _ in walk_code_files(ctx.PROJECT_ROOT))
+        actual_files = sum(1 for _ in walk_code_files())
         if abs(claimed_files - actual_files) > 10:
             issues.append(f"STALE: doc claims {claimed_files} files, actual {actual_files}")
     # Check for tool names in doc that don't exist in server

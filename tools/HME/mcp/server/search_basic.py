@@ -122,7 +122,7 @@ def count_lines(path: str = "src", file_type: str = "js") -> str:
             return f"  {n:5d}  {rel}{flag}\n\nTotal: {n} lines"
         except Exception as e:
             return f"Error reading file: {e}"
-    for fpath in walk_code_files(target):
+    for fpath in walk_code_files():
         if not str(fpath).endswith(f".{file_type}"):
             continue
         try:

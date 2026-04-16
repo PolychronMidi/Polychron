@@ -322,7 +322,7 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
 
 def collect_all_symbols(project_root: str) -> list[dict]:
     all_symbols = []
-    for fpath in walk_code_files(project_root):
+    for fpath in walk_code_files():
         syms = extract_symbols(str(fpath))
         all_symbols.extend(syms)
     return all_symbols

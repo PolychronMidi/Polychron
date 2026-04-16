@@ -197,7 +197,7 @@ def get_dependency_graph(file_path: str, project_root: str) -> dict:
 
     imported_by = []
     target_str = str(target)
-    for f in walk_code_files(project_root):
+    for f in walk_code_files():
         if f == target:
             continue
         f_lang = ext_to_lang(f.suffix if f.suffix else f.name)
@@ -224,7 +224,7 @@ def get_dependency_graph(file_path: str, project_root: str) -> dict:
 
 
 def find_orphan_files(project_root: str) -> dict:
-    files = list(walk_code_files(project_root))
+    files = list(walk_code_files())
     all_resolved = set()
 
     for f in files:
