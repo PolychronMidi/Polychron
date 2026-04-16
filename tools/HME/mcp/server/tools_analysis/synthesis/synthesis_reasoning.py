@@ -150,7 +150,7 @@ _RANKINGS = {
 
 
 def _load_providers():
-    """Lazy-load provider modules so this file has no import-time deps."""
+    """Lazy-load provider modules. Each exposes a _provider (OpenAIProvider instance)."""
     from . import (
         synthesis_gemini, synthesis_groq, synthesis_openrouter,
         synthesis_cerebras, synthesis_mistral, synthesis_nvidia,
@@ -163,6 +163,11 @@ def _load_providers():
         "mistral":    synthesis_mistral,
         "nvidia":     synthesis_nvidia,
     }
+
+
+def _get_provider_obj(mod):
+    """Get the OpenAIProvider instance from a provider module."""
+    return getattr(mod, '_provider', None)
 
 
 def get_ranking(profile: str = "reasoning") -> list[tuple[str, str]]:
@@ -193,109 +198,26 @@ def available(profile: str = "reasoning") -> bool:
 
 
 def _model_available(mod, provider_key: str, model: str) -> bool:
-    """Check whether a specific ranked (provider, model) pair is reachable.
-
-    Each provider module exposes `available()` (any tier up) plus internal tier
-    state; we inspect that state to check this specific model slot.
-    """
-    # First the cheap check: is the provider even keyed and any tier up?
+    """Check whether a specific ranked (provider, model) pair is reachable."""
+    prov = _get_provider_obj(mod)
+    if prov:
+        return prov.model_available(model)
+    # Legacy fallback for modules without _provider
     try:
-        if not mod.available():
-            return False
-    except Exception as _err:
-        logger.debug(f"unnamed-except synthesis_reasoning.py:216: {type(_err).__name__}: {_err}")
+        return mod.available()
+    except Exception:
         return False
-
-    if provider_key == "openrouter":
-        # OR has a single shared RPD counter; any model is "available" if quota OK
-        # and that model's tier circuit breaker is open.
-        try:
-            if not mod._quota_ok():
-                return False
-            if model == mod._MODEL_T1:
-                return mod._cb_allow("T1")
-            if model == mod._MODEL_T2:
-                return mod._cb_allow("T2")
-            return False
-        except Exception as _err:
-            logger.debug(f"unnamed-except synthesis_reasoning.py:230: {type(_err).__name__}: {_err}")
-            return False
-
-    # gemini / groq: find the tier matching `model` and check it directly.
-    try:
-        for tier in mod._TIERS:
-            if tier.model == model:
-                return mod._quota_ok(tier) and mod._cb_allow(tier)
-    except Exception as _err:
-        logger.debug(f"unnamed-except synthesis_reasoning.py:238: {type(_err).__name__}: {_err}")
-        return False
-    return False
 
 
 def _call_specific(mod, provider_key: str, model: str, prompt: str,
                    system: str, max_tokens: int, temperature: float) -> str | None:
-    """Invoke one specific (provider, model) slot directly, bypassing the
-    provider's own internal cascade. Returns None on any failure — caller
-    continues down the global ranking.
-    """
-    if provider_key == "openrouter":
-        # OpenRouter's `call()` walks its internal T1→T2. To target a specific
-        # model we temporarily patch _MODEL_T1 so that the loop hits our model
-        # first. This is safe under the provider's _quota_lock.
-        try:
-            with mod._quota_lock:
-                saved_t1, saved_t2 = mod._MODEL_T1, mod._MODEL_T2
-                mod._MODEL_T1 = model
-                mod._MODEL_T2 = model  # second try same model to exhaust the slot
-            try:
-                return mod.call(prompt, system=system, max_tokens=max_tokens, temperature=temperature)
-            finally:
-                with mod._quota_lock:
-                    mod._MODEL_T1, mod._MODEL_T2 = saved_t1, saved_t2
-        except Exception as e:
-            logger.warning(f"openrouter {model} dispatch error: {type(e).__name__}: {e}")
-            return None
-
-    # gemini / groq: call the specific tier directly by invoking the low-level
-    # _call_model() with that provider's quota/RPM/CB wrappers.
+    """Invoke one specific (provider, model) slot directly via the unified interface."""
+    prov = _get_provider_obj(mod)
+    if prov:
+        return prov.call_specific(model, prompt, system, max_tokens, temperature)
+    # Legacy fallback: use module-level cascade (less targeted but functional)
     try:
-        tier = None
-        for t in mod._TIERS:
-            if t.model == model:
-                tier = t
-                break
-        if tier is None:
-            return None
-        if not mod._quota_ok(tier) or not mod._cb_allow(tier):
-            return None
-        mod._rpm_wait(tier)
-        try:
-            text = mod._call_model(tier.model, prompt, system, max_tokens, temperature)
-            if text:
-                # Both providers track usage slightly differently; prefer the
-                # module's own recorder if present.
-                if hasattr(mod, "_record_usage"):
-                    mod._record_usage(tier, 500 + max_tokens)
-                elif hasattr(mod, "_record_request"):
-                    mod._record_request(tier)
-                mod._cb_success(tier)
-                return text
-            mod._cb_failure(tier)
-            return None
-        except Exception as e:
-            # HTTP 429 → burn the tier for today
-            import urllib.error
-            if isinstance(e, urllib.error.HTTPError) and e.code == 429:
-                with mod._quota_lock:
-                    if hasattr(tier, "daily_limit"):
-                        tier.tokens_used = tier.daily_limit
-                    elif hasattr(tier, "rpd_limit"):
-                        tier.requests_today = tier.rpd_limit
-                logger.info(f"{provider_key} {model} 429 — marking exhausted")
-                return None
-            mod._cb_failure(tier)
-            logger.info(f"{provider_key} {model} failed: {type(e).__name__}")
-            return None
+        return mod.cascade(prompt, system=system, max_tokens=max_tokens, temperature=temperature)
     except Exception as e:
         logger.warning(f"{provider_key} {model} dispatch error: {type(e).__name__}: {e}")
         return None
