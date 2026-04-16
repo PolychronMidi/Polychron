@@ -239,7 +239,7 @@ class RAGEngineIndexingMixin:
         # Phases 3+4: chunk, encode, and write in checkpoints of CHECKPOINT
         # files. Each checkpoint embeds its batch, writes to the table, and
         # saves hashes — so a crash mid-run loses at most one checkpoint.
-        CHECKPOINT = 50
+        CHECKPOINT = 5
         indexed_files = 0
         total_chunks_created = 0
         changed_items = list(changed.items())
