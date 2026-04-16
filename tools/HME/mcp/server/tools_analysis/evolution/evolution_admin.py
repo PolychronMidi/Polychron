@@ -6,7 +6,7 @@ import subprocess
 
 from server import context as ctx
 from server.onboarding_chain import chained
-from .synthesis import _local_think
+from ..synthesis import _local_think
 from . import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
@@ -33,7 +33,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
     action='both': reload then selftest.
     Use after structural changes to HME tool files."""
     _track("hme_admin")
-    from .synthesis_session import append_session_narrative
+    from ..synthesis_session import append_session_narrative
     append_session_narrative("admin", f"hme_admin({action}): {modules or 'default'}")
     parts = []
     if action in ("reload", "both"):
@@ -57,7 +57,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         def _bg_gpu_warm():
             logger.info("warm: GPU KV context priming starting (3 models)")
             try:
-                from .synthesis import _prime_all_gpus
+                from ..synthesis import _prime_all_gpus
                 _prime_all_gpus()
                 logger.info("warm: GPU KV context priming complete")
             except Exception as e:
@@ -65,7 +65,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         def _bg_pre_edit():
             logger.info("warm: pre-edit cache priming starting (all src/ files)")
             try:
-                from .workflow import _warm_pre_edit_cache_sync as _warm_cache
+                from ..workflow import _warm_pre_edit_cache_sync as _warm_cache
                 _warm_cache()
                 logger.info("warm: pre-edit cache priming complete")
             except Exception as e:
@@ -96,10 +96,10 @@ def _hme_validate_golden() -> str:
         except Exception as e:
             return f"Error: {type(e).__name__}: {e}"
 
-    from .read_unified import read as _read
+    from ..read_unified import read as _read
     from .evolution_evolve import evolve as _evolve
-    from .status_unified import status as _status
-    from .trace_unified import trace as _trace
+    from ..status_unified import status as _status
+    from ..trace_unified import trace as _trace
 
     golden = [
         {

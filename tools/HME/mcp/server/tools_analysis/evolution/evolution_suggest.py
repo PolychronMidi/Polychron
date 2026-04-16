@@ -35,7 +35,7 @@ def suggest_evolution() -> str:
     from .evolution_next import (
         _rank_by_cluster_pull, _describe_musical_role, _describe_rhythm_effect, evolution_momentum
     )
-    from .coupling import _scan_coupling_state
+    from ..coupling import _scan_coupling_state
 
     signals = {}
 
@@ -260,7 +260,7 @@ def suggest_evolution() -> str:
 
     # Dead-end L0 channels
     try:
-        from .coupling import _scan_l0_topology as _topo
+        from ..coupling import _scan_l0_topology as _topo
         topo = _topo(os.path.join(ctx.PROJECT_ROOT, "src"))
         _SYSTEM_LOOPS = {"rest-sync", "section-quality", "binaural", "instrument", "note"}
         _KNOWN_CONNECTED = {"feedbackLoop", "cadenceAlignment", "explainability", "channel-coherence",
@@ -278,7 +278,7 @@ def suggest_evolution() -> str:
 
     # Antagonism bridge opportunities
     try:
-        from .coupling import get_top_bridges as _get_bridges
+        from ..coupling import get_top_bridges as _get_bridges
         bridges = _get_bridges(n=2)
         if bridges:
             parts.append("\n## Antagonism Bridge Opportunities\n")
@@ -295,11 +295,11 @@ def suggest_evolution() -> str:
 
     # Adaptive synthesis prescription
     try:
-        from .synthesis import _two_stage_think
+        from ..synthesis import _two_stage_think
         _cluster_top = signals.get("cluster_priority_targets", ["?"])[:2]
         _bridge_top = ""
         try:
-            from .coupling import get_top_bridges as _gb2, _TRUST_FILE_ALIASES
+            from ..coupling import get_top_bridges as _gb2, _TRUST_FILE_ALIASES
             _bt = _gb2(n=1)
             if _bt:
                 _a = _TRUST_FILE_ALIASES.get(_bt[0]["pair_a"], _bt[0]["pair_a"])
@@ -321,7 +321,7 @@ def suggest_evolution() -> str:
             _recent_kb_titles = "\n".join(f"  R{r}: {t} — {c}" for r, t, c in _num_kb2[:6])
         except Exception as _err12:
             logger.debug(f'silent-except evolution_suggest.py:322: {type(_err12).__name__}: {_err12}')
-        from .synthesis_session import get_session_narrative
+        from ..synthesis_session import get_session_narrative
         _session_ctx = get_session_narrative(max_entries=5, categories=["pipeline", "kb", "commit", "review"])
         _synthesis_ctx = (
             (_session_ctx if _session_ctx else "")

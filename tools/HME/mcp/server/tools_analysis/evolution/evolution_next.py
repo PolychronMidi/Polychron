@@ -18,7 +18,7 @@ def _rank_by_cluster_pull(coupling_state: dict, trace_records: list, top_n: int 
     how strongly the coupled network is 'pulling' this module into shared musical logic.
     uncoupled_override: if provided, rank these specific module names instead of auto-detecting.
     """
-    from .coupling import _pearson
+    from ..coupling import _pearson
 
     coupled = {name for name, info in coupling_state.items() if info.get("melodic")}
     uncoupled = uncoupled_override if uncoupled_override is not None else \
@@ -195,19 +195,19 @@ def evolution_momentum() -> str:
 
         # --- 3c. Bridge saturation narrative ---
         try:
-            from .coupling import get_top_bridges
+            from ..coupling import get_top_bridges
             bridges = get_top_bridges(n=6)
             saturated = [b for b in bridges if len(b.get("already_bridged", [])) >= 3]
             virgin = [b for b in bridges if not b.get("already_bridged")]
             if saturated or virgin:
                 out.append("## Bridge Narrative")
                 for b in saturated[:2]:
-                    from .coupling import _TRUST_FILE_ALIASES
+                    from ..coupling import _TRUST_FILE_ALIASES
                     a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
                     bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
                     out.append(f"  SATURATED: {a}↔{bn} ({len(b['already_bridged'])} fields: {', '.join(b['already_bridged'])})")
                 for b in virgin[:3]:
-                    from .coupling import _TRUST_FILE_ALIASES
+                    from ..coupling import _TRUST_FILE_ALIASES
                     a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
                     bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
                     out.append(f"  VIRGIN: {a}↔{bn} r={b['r']:+.3f} → bridge on `{b['field']}`")

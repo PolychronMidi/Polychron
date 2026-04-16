@@ -12,7 +12,7 @@ import logging
 from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, BUDGET_LIMITS, SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
-from .synthesis import (
+from ..synthesis import (
     _local_think, _THINK_MODEL, _REASONING_MODEL,
     _get_max_tokens, _get_effort, _get_tool_budget,
 )
@@ -133,7 +133,7 @@ def kb_seed(top_n: int = 15) -> str:
     zero KB entries."""
     ctx.ensure_ready_sync()
     _track("kb_seed")
-    from .health import _compute_iife_caller_counts
+    from ..health import _compute_iife_caller_counts
 
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     sym_files, caller_counts, _ = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
@@ -187,7 +187,7 @@ def kb_seed(top_n: int = 15) -> str:
             )
             result = _local_think(prompt, max_tokens=384)
             if result:
-                from .synthesis_llamacpp import compress_for_claude
+                from ..synthesis_llamacpp import compress_for_claude
                 result = compress_for_claude(result, max_chars=800, hint="KB entry generation per module")
                 out.append(f"\n## Generated Entries\n")
                 out.append(result)
