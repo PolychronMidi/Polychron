@@ -218,7 +218,7 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
     persona response is the priming signal; we store a sentinel token list
     (sized to the persona) so downstream warm_context_status reports primed.
     """
-    from .synthesis_llamacpp import _local_think
+    from .synthesis_inference import _local_think
     kb_ver = getattr(ctx, "_kb_version", 0)
     if not force:
         if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:

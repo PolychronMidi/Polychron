@@ -113,7 +113,8 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
 def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
                                arbiter_report: str, question: str) -> str | None:
     """Stage 1.75: resolve COMPLEX arbiter conflict via the reasoning model."""
-    from .synthesis_llamacpp import _local_think, _REASONING_MODEL
+    from .synthesis_inference import _local_think
+    from .synthesis_llamacpp import _REASONING_MODEL
     from .synthesis_session import append_session_narrative
 
     resolve_prompt = (
@@ -139,7 +140,8 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
                      answer_format: str | None = None) -> str | None:
     """Sequential two-stage synthesis: extract → gap-fill → reason. Fallback for _parallel_two_stage_think."""
-    from .synthesis_llamacpp import _local_think, _LOCAL_MODEL, _REASONING_MODEL
+    from .synthesis_inference import _local_think
+    from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL
 
     _STAGE1_SYSTEM = (
         "You are a code extraction assistant for the Polychron music synthesis project. "
