@@ -3,53 +3,53 @@
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/sessionstart.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/sessionstart.sh", "timeout": 10}]
       }
     ],
     "PreToolUse": [
       {
         "matcher": "mcp__HME__status",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_check_pipeline.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_check_pipeline.sh", "timeout": 10}]
       },
       {
         "matcher": "mcp__HME__",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_hme_primer.sh", "timeout": 5}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_hme_primer.sh", "timeout": 5}]
       },
       {
         "matcher": "",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_lifesaver.sh", "timeout": 5}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_lifesaver.sh", "timeout": 5}]
       },
       {
         "matcher": "Edit",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_edit.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_edit.sh", "timeout": 10}]
       },
       {
         "matcher": "Read",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_read.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_read.sh", "timeout": 10}]
       },
       {
         "matcher": "Grep",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_grep.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_grep.sh", "timeout": 10}]
       },
       {
         "matcher": "Glob",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_glob.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_glob.sh", "timeout": 10}]
       },
       {
         "matcher": "Write",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_write.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_write.sh", "timeout": 10}]
       },
       {
         "matcher": "Bash",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_bash.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_bash.sh", "timeout": 10}]
       },
       {
         "matcher": "TodoWrite",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_todowrite.sh", "timeout": 5}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_todowrite.sh", "timeout": 5}]
       },
       {
         "matcher": "Agent",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse_agent.sh", "timeout": 300}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_agent.sh", "timeout": 300}]
       }
     ],
     "PostToolUse": [
@@ -60,69 +60,69 @@
       {
         "matcher": "Bash",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_bash.sh", "timeout": 10},
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_pipeline_kb.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_bash.sh", "timeout": 10},
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_pipeline_kb.sh", "timeout": 10}
         ]
       },
       {
         "matcher": "Read",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_read.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_read.sh", "timeout": 10}]
       },
       {
         "matcher": "Edit",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_edit.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_edit.sh", "timeout": 10}
         ]
       },
       {
         "matcher": "Write",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_write.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_write.sh", "timeout": 10}
         ]
       },
       {
         "matcher": "Agent",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_agent.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_agent.sh", "timeout": 10}
         ]
       },
       {
         "matcher": "mcp__HME__learn",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_addknowledge.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_addknowledge.sh", "timeout": 10}
         ]
       },
       {
         "matcher": "mcp__HME__read",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_hme_read.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_hme_read.sh", "timeout": 10}
         ]
       },
       {
         "matcher": "mcp__HME__review",
         "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse_hme_review.sh", "timeout": 10}
+          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_hme_review.sh", "timeout": 10}
         ]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/userpromptsubmit.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/userpromptsubmit.sh", "timeout": 10}]
       }
     ],
     "PreCompact": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/precompact.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/precompact.sh", "timeout": 10}]
       }
     ],
     "PostCompact": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/postcompact.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/postcompact.sh", "timeout": 10}]
       }
     ],
     "Stop": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/stop.sh", "timeout": 30}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/stop.sh", "timeout": 30}]
       }
     ]
   }

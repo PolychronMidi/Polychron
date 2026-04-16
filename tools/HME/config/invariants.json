@@ -22,7 +22,7 @@
       "id": "hooks-executable",
       "description": "Every hook script must be executable",
       "type": "files_executable",
-      "glob": "tools/HME/hooks/*.sh",
+      "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
         "_*.sh"
       ],
@@ -32,7 +32,7 @@
       "id": "hooks-registered",
       "description": "Every hook script (excluding helpers) must be registered in tools/HME/hooks/hooks.json",
       "type": "files_referenced",
-      "glob": "tools/HME/hooks/*.sh",
+      "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
         "_*.sh",
         "hooks.json",
@@ -158,7 +158,7 @@
       "id": "stop-hook-enforcement",
       "description": "Stop hook must have all 8 critical enforcement sections",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/stop.sh",
+      "path": "tools/HME/hooks/lifecycle/stop.sh",
       "patterns": [
         "hme-errors\\.log",
         "hme-evolver\\.local\\.md",
@@ -187,7 +187,7 @@
       "id": "safety-helpers-complete",
       "description": "_safety.sh must define all required helper functions",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/_safety.sh",
+      "path": "tools/HME/hooks/helpers/_safety.sh",
       "patterns": [
         "_safe_jq",
         "_safe_py3",
@@ -244,7 +244,7 @@
       "id": "nexus-helper-exists",
       "description": "NEXUS state helper must exist for edit tracking hooks",
       "type": "file_exists",
-      "path": "tools/HME/hooks/_nexus.sh",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
       "severity": "error"
     },
     {
@@ -410,7 +410,7 @@
       "id": "hooks-registered-hooks-json",
       "description": "Every hook script (excluding helpers) must also be registered in hooks.json",
       "type": "files_referenced",
-      "glob": "tools/HME/hooks/*.sh",
+      "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
         "_*.sh",
         "hooks.json",
@@ -447,14 +447,14 @@
       "id": "tab-helpers-exists",
       "description": "_tab_helpers.sh must exist \u2014 sourced by posttooluse_addknowledge, posttooluse_agent, posttooluse_write",
       "type": "file_exists",
-      "path": "tools/HME/hooks/_tab_helpers.sh",
+      "path": "tools/HME/hooks/helpers/_tab_helpers.sh",
       "severity": "error"
     },
     {
       "id": "hooks-documented-hme-md",
       "description": "Every hook script must be documented in doc/HME.md hook table",
       "type": "files_referenced",
-      "glob": "tools/HME/hooks/*.sh",
+      "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
         "_*.sh",
         "hooks.json",
@@ -468,7 +468,7 @@
       "id": "nexus-functions-complete",
       "description": "_nexus.sh must define all 10 lifecycle state functions",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/_nexus.sh",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
       "patterns": [
         "_nexus_ensure",
         "_nexus_reset",
@@ -487,7 +487,7 @@
       "id": "tab-helpers-functions-complete",
       "description": "_tab_helpers.sh must define all 4 compact tab functions",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/_tab_helpers.sh",
+      "path": "tools/HME/hooks/helpers/_tab_helpers.sh",
       "patterns": [
         "_tab_path",
         "_ensure_tab",
@@ -524,7 +524,7 @@
       "id": "nexus-review-issues-tracked",
       "description": "posttooluse_hme_review.sh must extract depth meter count and write REVIEW_ISSUES to nexus",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/posttooluse_hme_review.sh",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
       "patterns": [
         "REVIEW_ISSUES",
         "issues total"
@@ -535,7 +535,7 @@
       "id": "nexus-pending-review-gate",
       "description": "_nexus_pending() must check REVIEW_ISSUES count and block stop when count > 3",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/_nexus.sh",
+      "path": "tools/HME/hooks/helpers/_nexus.sh",
       "patterns": [
         "REVIEW_ISSUES",
         "ri_count"
@@ -626,7 +626,7 @@
       "id": "activity-hook-wiring",
       "description": "Hooks that touch src/ or tools/HME/ edits must call tools/HME/activity/emit.py so the activity stream captures structural changes",
       "type": "shell_output_empty",
-      "shell": "for f in tools/HME/hooks/posttooluse_edit.sh tools/HME/hooks/posttooluse_bash.sh tools/HME/hooks/stop.sh tools/HME/hooks/pretooluse_edit.sh; do grep -q 'activity/emit.py' \"$f\" || echo \"$f missing activity emit\"; done"
+      "shell": "for f in tools/HME/hooks/posttooluse/posttooluse_edit.sh tools/HME/hooks/posttooluse/posttooluse_bash.sh tools/HME/hooks/lifecycle/stop.sh tools/HME/hooks/pretooluse/pretooluse_edit.sh; do grep -q 'activity/emit.py' \"$f\" || echo \"$f missing activity emit\"; done"
     },
     {
       "id": "hme-proxy-exists",
@@ -751,7 +751,7 @@
       "id": "productive-incoherence-hook-wired",
       "description": "posttooluse_edit.sh must split lazy vs productive violations using the staleness index",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/posttooluse_edit.sh",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_edit.sh",
       "patterns": [
         "productive_incoherence",
         "kb-staleness.json",

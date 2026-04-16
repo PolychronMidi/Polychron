@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreToolUse: Grep — surface KB relevance for search queries.
 INPUT=$(cat)
 PATTERN=$(_safe_jq "$INPUT" '.tool_input.pattern' '')

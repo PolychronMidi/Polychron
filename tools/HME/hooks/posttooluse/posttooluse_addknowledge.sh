@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PostToolUse: learn — clear pending KB entries from tab after an ADD call.
 # Only fires when the learn call is an add (title + content provided) — search,
 # remove, list, etc. should not clear the KB tab.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreToolUse: Agent — intercept read-only research subagents → local llama.cpp + RAG.
 # Async pattern: creates placeholder file, launches agent in background, returns
 # immediately with file reference — mirrors Claude subagent behavior.

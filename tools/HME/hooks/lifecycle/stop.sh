@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME Stop: enforce implementation completeness + drive autonomous Evolver loop.
 # Antipattern detection logic lives in tools/HME/scripts/detectors/*.py — each
 # detector is a standalone script that reads a transcript path from argv and
@@ -28,13 +28,13 @@ if [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
     # Retry once — transient lock or index contention
     sleep 1
     if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet 2>/dev/null; then
-      source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+      source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
       _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist"
       echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status." >&2
     fi
   else
     # Clear any stale commit-failed flag from a previous failed attempt
-    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
     _nexus_clear_type COMMIT_FAILED
   fi
 fi
@@ -226,7 +226,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
 fi
 
 # ── Nexus lifecycle audit ────────────────────────────────────────────────────
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_nexus.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 NEXUS_ISSUES=$(_nexus_pending)
 if [ -n "$NEXUS_ISSUES" ]; then
   jq -n \

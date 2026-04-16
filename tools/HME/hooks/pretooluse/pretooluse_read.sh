@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreToolUse: Read — anti-polling + live KB enrichment for project files.
 # Uses updatedInput/systemMessage to inject KB context alongside the raw Read.
 INPUT=$(cat)

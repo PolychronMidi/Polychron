@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # HME PreToolUse: TodoWrite — merge native payload with HME store (lifesaver,
 # onboarding, hme_todo items) and emit the merged list as updatedInput so the
 # agent's session-visible todo list includes all HME-managed items.
