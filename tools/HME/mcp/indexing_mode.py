@@ -23,33 +23,41 @@ PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 PROJECT_DB = ENV.require("RAG_DB_PATH")
 
 
-def _unload_coder():
+_CODER_NAME = "coder"  # matches InstanceSpec name in llamacpp_daemon
+
+
+def _suspend_coder():
+    """Ask llamacpp_daemon to suspend the coder (kill + prevent auto-restart)."""
     try:
         req = urllib.request.Request(
-            f"{_DAEMON_URL}/unload",
-            data=json.dumps({"port": _CODER_PORT}).encode(),
+            f"{_DAEMON_URL}/suspend",
+            data=json.dumps({"name": _CODER_NAME}).encode(),
             headers={"Content-Type": "application/json"},
         )
-        urllib.request.urlopen(req, timeout=10).read()
-        logger.info("Indexing mode: coder unloaded from GPU1")
-        return True
+        resp = json.loads(urllib.request.urlopen(req, timeout=15).read())
+        if resp.get("suspended"):
+            logger.info(f"Indexing mode: {_CODER_NAME} suspended via daemon")
+            return True
+        logger.warning(f"Indexing mode: daemon returned {resp}")
+        return False
     except Exception as e:
-        logger.warning(f"Indexing mode: failed to unload coder: {e}")
+        logger.warning(f"Indexing mode: failed to suspend coder: {e}")
         return False
 
 
-def _reload_coder():
+def _resume_coder():
+    """Ask llamacpp_daemon to resume the coder (clear flag + respawn)."""
     try:
         req = urllib.request.Request(
-            f"{_DAEMON_URL}/reload",
-            data=json.dumps({"port": _CODER_PORT}).encode(),
+            f"{_DAEMON_URL}/resume",
+            data=json.dumps({"name": _CODER_NAME}).encode(),
             headers={"Content-Type": "application/json"},
         )
-        urllib.request.urlopen(req, timeout=60).read()
-        logger.info("Indexing mode: coder reloaded on GPU1")
+        resp = json.loads(urllib.request.urlopen(req, timeout=60).read())
+        logger.info(f"Indexing mode: {_CODER_NAME} resumed — spawned={resp.get('spawned')}")
         return True
     except Exception as e:
-        logger.warning(f"Indexing mode: failed to reload coder: {e}")
+        logger.warning(f"Indexing mode: failed to resume coder: {e}")
         return False
 
 
@@ -57,8 +65,8 @@ def full_reindex():
     """Dedicated-GPU full reindex. Returns the index result dict."""
     import torch
 
-    # 1. Unload coder from GPU1
-    unloaded = _unload_coder()
+    # 1. Suspend coder via daemon (kill + prevent auto-restart)
+    unloaded = _suspend_coder()
     if not unloaded:
         logger.warning("Indexing mode: coder unload failed — falling back to current device")
 
@@ -106,6 +114,6 @@ def full_reindex():
         return result
 
     finally:
-        # 7. Always reload coder
+        # 7. Always resume coder via daemon
         if unloaded:
-            _reload_coder()
+            _resume_coder()
