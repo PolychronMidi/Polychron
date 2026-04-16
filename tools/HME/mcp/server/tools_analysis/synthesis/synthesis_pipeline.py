@@ -89,10 +89,8 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     if result is None:
         logger.warning("arbiter unavailable: llamacpp generate returned None")
         return None
-    text = (result.get("response", "") or "").strip()
-    if "</think>" in text:
-        text = text[text.rfind("</think>") + len("</think>"):].strip()
-    text = re.sub(r'[^\x00-\x7F]+', '', text).strip()
+    from .synthesis_config import clean_model_output
+    text = clean_model_output(result.get("response", ""))
     if not text:
         return None
     text_upper = text.upper()

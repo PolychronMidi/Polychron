@@ -26,6 +26,7 @@ import threading
 import time
 import urllib.request
 from .synthesis_proxy_route import proxy_route as _proxy_route
+from .synthesis_config import strip_thinking_tags as _strip_think
 import urllib.error
 from collections import deque
 
@@ -158,10 +159,6 @@ def get_quota_status() -> dict:
     return out
 
 
-def _strip_think(text: str) -> str:
-    if "</think>" in text:
-        return text[text.rfind("</think>") + len("</think>"):].strip()
-    return text.strip()
 
 
 def _call_model(model: str, prompt: str, system: str,

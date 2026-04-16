@@ -1,5 +1,7 @@
-"""HME synthesis configuration — model names, system prompt, budget tables."""
+"""HME synthesis configuration — model names, system prompt, budget tables, shared text helpers."""
+import json
 import os
+import re
 import logging
 
 from server import context as ctx
@@ -61,3 +63,96 @@ def _get_effort() -> str:
 def _get_tool_budget() -> int:
     """Map context budget to synthesis tool-call ceiling."""
     return _BUDGET_TOOL_CALLS.get(get_context_budget(), 6)
+
+
+# ── Shared text processing helpers ───────────────────────────────────────────
+# Used by all synthesis modules. Single source of truth for response cleanup.
+
+_THINK_RE = re.compile(
+    r'```(?:thinking|reasoning)\b[\s\S]*?```'  # fenced thinking blocks
+    r'|<\|thinking\|>[\s\S]*?<\|/thinking\|>'  # pipe-delimited thinking
+    r'|<think>[\s\S]*?</think>',                # XML thinking
+    re.IGNORECASE,
+)
+_CHATML_ASST_RE = re.compile(
+    r'<\|im_start\|>assistant\s*([\s\S]*?)(?:<\|im_end\|>|$)',
+    re.IGNORECASE,
+)
+_CHATML_TAG_RE = re.compile(r'<\|im_start\|>[\s\S]*?<\|im_end\|>')
+_NON_ASCII_RE = re.compile(r'[^\x00-\x7F]+')
+
+
+def strip_thinking_tags(text: str) -> str:
+    """Remove all thinking/reasoning markup from model output.
+
+    Handles: ```thinking...```, <think>...</think>, <|thinking|>...<|/thinking|>,
+    <|answer|> delimiters, and ChatML <|im_start|>/<|im_end|> wrappers.
+    """
+    if not text:
+        return ""
+    # Fenced + XML thinking blocks
+    text = _THINK_RE.sub('', text).strip()
+    # <|answer|> delimiter — keep only content after it
+    if "<|answer|>" in text:
+        text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
+    # Bare </think> without opening tag (streaming artifact)
+    if "</think>" in text:
+        text = text[text.rfind("</think>") + len("</think>"):].strip()
+    elif "<think>" in text:
+        before = text[:text.find("<think>")].strip()
+        text = before if before else ""
+    # ChatML tags
+    if "<|im_start|>" in text:
+        m = _CHATML_ASST_RE.findall(text)
+        if m:
+            text = m[-1].strip()
+        else:
+            text = _CHATML_TAG_RE.sub('', text).strip()
+            text = text.replace("<|im_start|>", "").replace("<|im_end|>", "").strip()
+    return text
+
+
+def strip_non_ascii(text: str) -> str:
+    """Remove non-ASCII characters (emoji, CJK, etc.)."""
+    return _NON_ASCII_RE.sub('', text).strip() if text else ""
+
+
+def clean_model_output(text: str) -> str:
+    """Full cleanup pipeline: thinking tags → non-ASCII → whitespace."""
+    text = strip_thinking_tags(text)
+    text = strip_non_ascii(text)
+    return text
+
+
+def load_json(rel_path: str, default=None):
+    """Load JSON from a project-relative path with standard error handling."""
+    path = os.path.join(ctx.PROJECT_ROOT, rel_path) if not os.path.isabs(rel_path) else rel_path
+    if not os.path.isfile(path):
+        return default
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError, ValueError):
+        return default
+
+
+def load_jsonl(rel_path: str, lookback: int | None = 500) -> list[dict]:
+    """Load JSONL events from a project-relative path. Returns last N entries."""
+    path = os.path.join(ctx.PROJECT_ROOT, rel_path) if not os.path.isabs(rel_path) else rel_path
+    if not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()[-lookback:] if lookback else f.readlines()
+    except OSError:
+        return []
+    out = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
