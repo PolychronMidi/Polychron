@@ -8,7 +8,6 @@ const WRITE_INTENT_TOOLS = new Set([
   'Edit',
   'Write',
   'NotebookEdit',
-  'HME_edit',
 ]);
 
 const HME_READ_TOOLS = new Set([

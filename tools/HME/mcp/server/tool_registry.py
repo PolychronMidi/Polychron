@@ -106,7 +106,9 @@ class Registry:
     """Drop-in replacement for FastMCP _LoggingMCP. `@registry.tool()` registers
     into the module-level `_TOOLS` dict instead of into FastMCP."""
 
-    def tool(self, **_kwargs):
+    def tool(self, **kwargs):
+        meta = kwargs.get("meta") or {}
+        hidden = bool(meta.get("hidden"))
         def wrapper(fn):
             @functools.wraps(fn)
             def logged(*args, **kwargs):
@@ -153,7 +155,7 @@ class Registry:
                     logger.error(f"ERR  {name} [{elapsed:.1f}s] {e}\n{_tb.format_exc()}")
                     raise
 
-            _TOOLS[fn.__name__] = {"fn": logged, "schema": _schema_for(fn)}
+            _TOOLS[fn.__name__] = {"fn": logged, "schema": _schema_for(fn), "hidden": hidden}
             return logged
         return wrapper
 
@@ -172,8 +174,10 @@ def call(name: str, args: dict):
 
 
 def list_schemas() -> list:
-    """Return the MCP tools/list payload (list of tool schema dicts)."""
-    return [entry["schema"] for entry in _TOOLS.values()]
+    """Return the MCP tools/list payload. Hidden tools are still registered
+    (callable via `call()`) but omitted from the list so their schemas and
+    descriptions don't bloat every Anthropic request."""
+    return [entry["schema"] for entry in _TOOLS.values() if not entry.get("hidden")]
 
 
 def names() -> list:
