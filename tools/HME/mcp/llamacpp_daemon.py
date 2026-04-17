@@ -691,6 +691,8 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
         openai_payload["top_p"] = float(options["top_p"])
     if "stop" in options:
         openai_payload["stop"] = options["stop"]
+    if "response_format" in payload:
+        openai_payload["response_format"] = payload["response_format"]
 
     body = json.dumps(openai_payload).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
