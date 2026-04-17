@@ -188,4 +188,65 @@ function start() {
   process.on('SIGINT', () => { killAll('SIGTERM'); process.exit(0); });
 }
 
-module.exports = { start, killChild, killAll, isHealthy, status };
+// ── Ad-hoc process spawn (TTL-bounded, no restart) ──────────────────────────
+// Exposed via /hme/spawn so Claude (or any other caller) can launch short-lived
+// helpers without the Bash tool's run_in_background — no task-notification on
+// exit, auto-reaped after ttl_sec, tracked by id.
+const _adhoc = new Map();  // id → { spec, proc, startedAt, ttlSec }
+
+function adhocSpawn({ name, cmd, args, env, cwd, ttl_sec }) {
+  const id = (name || 'adhoc') + '_' + Math.random().toString(36).slice(2, 10);
+  try { fs.mkdirSync(LOG_DIR, { recursive: true }); } catch (_e) { /* ignore */ }
+  const logPath = path.join(LOG_DIR, `hme-adhoc-${id}.out`);
+  const logFd = fs.openSync(logPath, 'a');
+  const proc = spawn(cmd, args || [], {
+    detached: false,
+    stdio: ['ignore', logFd, logFd],
+    env: { ...process.env, ...(env || {}) },
+    cwd: cwd || PROJECT_ROOT,
+  });
+  const ttlSec = Math.max(5, Math.min(3600, ttl_sec || 120));
+  const state = { spec: { name, cmd, args }, proc, startedAt: Date.now(), ttlSec, logPath };
+  _adhoc.set(id, state);
+  proc.on('exit', () => { fs.closeSync(logFd); });
+  // Auto-reap on TTL expiry — SIGTERM, then SIGKILL after 2s grace.
+  setTimeout(() => {
+    if (proc.exitCode !== null) return; // already exited
+    try { process.kill(proc.pid, 'SIGTERM'); } catch (_e) {}
+    setTimeout(() => {
+      if (proc.exitCode === null) {
+        try { process.kill(proc.pid, 'SIGKILL'); } catch (_e) {}
+      }
+    }, 2000);
+  }, ttlSec * 1000);
+  emit({ event: 'adhoc_spawn', id, cmd: (cmd || '').split('/').pop(), ttl_sec: ttlSec });
+  return { id, pid: proc.pid, ttl_sec: ttlSec, logPath };
+}
+
+function adhocStatus(id) {
+  const s = _adhoc.get(id);
+  if (!s) return null;
+  return {
+    id,
+    pid: s.proc.pid,
+    alive: s.proc.exitCode === null,
+    exit_code: s.proc.exitCode,
+    uptime_sec: Math.floor((Date.now() - s.startedAt) / 1000),
+    ttl_sec: s.ttlSec,
+    log: s.logPath,
+  };
+}
+
+function adhocKill(id, signal = 'SIGTERM') {
+  const s = _adhoc.get(id);
+  if (!s) return false;
+  try { process.kill(s.proc.pid, signal); return true; } catch (_e) { return false; }
+}
+
+function adhocList() {
+  const out = [];
+  for (const id of _adhoc.keys()) out.push(adhocStatus(id));
+  return out;
+}
+
+module.exports = { start, killChild, killAll, isHealthy, status, adhocSpawn, adhocStatus, adhocKill, adhocList };
