@@ -24,7 +24,7 @@ KB_PATH = os.path.join(PROJECT, ".claude", "mcp", "HME")
 
 # Try local arbiter first, fall back to shim synthesis endpoint
 ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")
-SHIM_URL = f"http://127.0.0.1:{os.environ.get('HME_SHIM_PORT', '7734')}"
+SHIM_URL = f"http://127.0.0.1:{os.environ.get('HME_SHIM_PORT', '9098')}"
 
 
 def load_kb_entries_for_pattern(pattern):

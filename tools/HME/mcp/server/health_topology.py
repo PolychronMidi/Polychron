@@ -7,7 +7,7 @@ than assumed healthy — preventing false confidence from stale checks.
 Topology:
   MCP Server
     └── RAG Proxy
-          └── HTTP Shim (7734)
+          └── HTTP worker (9098) — absorbs former shim role
                 ├── ProjectEngine
                 ├── GlobalEngine
                 └── File Watcher
@@ -148,7 +148,7 @@ def _build_topology() -> dict:
     }
 
 
-def _check_shim(port: int = 7734) -> dict:
+def _check_shim(port: int = 9098) -> dict:
     t0 = time.time()
     try:
         req = urllib.request.Request(f"http://127.0.0.1:{port}/health")

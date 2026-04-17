@@ -15,7 +15,7 @@ set +e
 #
 # This hook:
 #   1. Appends a JSONL entry to log/session-transcript.jsonl
-#   2. POSTs to the HTTP shim at localhost:7734/transcript (async, non-blocking)
+#   2. POSTs to the HTTP shim at localhost:9098/transcript (async, non-blocking)
 #   3. If file was modified (Edit/Write), triggers mini-reindex via /reindex
 
 # Read hook JSON from stdin
@@ -92,13 +92,13 @@ printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "
 # 2. mcp_tool_call activity emission moved to proxy middleware (activity_log.js).
 
 # 3. POST to HTTP shim (background, non-blocking)
-(_safe_curl "http://127.0.0.1:7734/transcript" "{\"entries\":[$ENTRY]}") &
+(_safe_curl "http://127.0.0.1:9098/transcript" "{\"entries\":[$ENTRY]}") &
 
 # 3. If tool modified a file, trigger mini-reindex
 if [ -n "$FILE_PATH" ]; then
   case "$TOOL_NAME" in
     Edit|Write)
-      (_safe_curl "http://127.0.0.1:7734/reindex" "{\"files\":[\"$FILE_PATH\"]}") &
+      (_safe_curl "http://127.0.0.1:9098/reindex" "{\"files\":[\"$FILE_PATH\"]}") &
       ;;
   esac
 fi
