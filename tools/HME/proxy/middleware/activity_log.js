@@ -38,7 +38,7 @@ module.exports = {
         file: filePath,
         module,
       });
-    } else if (name && name.startsWith('mcp__HME__')) {
+    } else if (name && name.startsWith('HME_')) {
       // Rough elapsed proxy: tool_result is emitted immediately after run, we
       // don't have ms-precision timing here. Emit 0 so consumers that check
       // for the presence of the event still work.

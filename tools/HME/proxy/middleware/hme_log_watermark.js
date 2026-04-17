@@ -4,7 +4,7 @@
 // log/hme-errors.log so stop.sh's lifesaver check picks them up.
 // Replaces log-tool-call.sh's hme.log watermark block.
 //
-// Runs on every completed mcp__HME__ tool call (matching the original hook).
+// Runs on every completed HME_ tool call (proxy normalizes mcp__HME__* → HME_*).
 
 const fs = require('fs');
 const path = require('path');
@@ -20,7 +20,7 @@ module.exports = {
 
   onToolResult({ toolUse, ctx }) {
     const name = toolUse.name || '';
-    if (!name.startsWith('mcp__HME__')) return;
+    if (!name.startsWith('HME_')) return;
 
     const hmeLogPath = path.join(ctx.PROJECT_ROOT, HME_LOG);
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);

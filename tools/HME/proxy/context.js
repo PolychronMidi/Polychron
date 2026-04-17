@@ -329,7 +329,7 @@ function buildStatusContext() {
   if (coh) lines.push(`**Coherence:** ${coh}`, '');
   if (editCount >= 3) {
     const severity = editCount >= 5 ? 'run' : 'consider';
-    lines.push(`**NEXUS:** ${editCount} file(s) edited since last review — ${severity} \`mcp__HME__review(mode='forget')\` to clear the backlog.`, '');
+    lines.push(`**NEXUS:** ${editCount} file(s) edited since last review — ${severity} \`review(mode='forget')\` to clear the backlog.`, '');
   }
   if (errors.length > 0) {
     lines.push('**⚠ Recent LIFESAVER errors (last 30min):**');
