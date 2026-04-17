@@ -8,7 +8,7 @@ import time
 
 logger = logging.getLogger("HME.http")
 
-# Populated by hme_http.py at startup
+# Populated by worker.py via init_store()
 PROJECT_ROOT: str = ""
 _ERRORS_PATH: str = ""
 _TRANSCRIPT_PATH: str = ""

@@ -153,6 +153,11 @@ def _background_load():
         context.global_engine = rag_engines._global_engine
         context.shared_model = getattr(rag_engines._project_engine, "text_model", None)
         context.lib_engines = dict(rag_engines._lib_engines)
+        from hme_http_handlers import init_handlers
+        from hme_http_store import init_store
+        init_handlers(rag_engines._engine_ready, rag_engines._project_engine,
+                      rag_engines._global_engine, PROJECT_ROOT)
+        init_store(PROJECT_ROOT)
         logger.info(f"HME ready | project={PROJECT_ROOT} | libs={list(context.lib_engines.keys())}")
         try:
             from server import llamacpp_supervisor as _sup

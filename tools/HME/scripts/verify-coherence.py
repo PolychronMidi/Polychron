@@ -1446,7 +1446,6 @@ class LifesaverIntegrityVerifier(Verifier):
     def run(self) -> VerdictResult:
         # Files that contain LIFESAVER firing sites
         fire_sites = [
-            os.path.join(_SERVER_DIR, "rag_proxy.py"),
             os.path.join(_SERVER_DIR, "context.py"),
             os.path.join(_SERVER_DIR, "meta_observer.py"),
         ]

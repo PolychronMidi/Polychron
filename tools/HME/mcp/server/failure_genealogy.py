@@ -4,9 +4,9 @@ Every failure gets a unique failure_id (8-char UUID fragment). Downstream failur
 caused by an upstream failure carry a caused_by reference, forming a causal tree.
 
 The LIFESAVER drain groups failures by causal chain — showing:
-  [CRITICAL] shim: OOM during index_directory (#7a3b)
-    → [CRITICAL] rag_proxy.project: ConnectionRefusedError (#8c4d)
-    → [WARNING]  proxy_monitor: shim unhealthy (#9e5f)
+  [CRITICAL] worker: OOM during index_directory (#7a3b)
+    → [CRITICAL] rag.project: ConnectionRefusedError (#8c4d)
+    → [WARNING]  supervisor: worker unhealthy (#9e5f)
 
 Instead of three orphaned error entries (audit finding 8.7 deduplication gap).
 

@@ -145,6 +145,12 @@ def _background_load():
         ctx.global_engine = rag_engines._global_engine
         ctx.shared_model = getattr(rag_engines._project_engine, "text_model", None)
         ctx.lib_engines = dict(rag_engines._lib_engines)
+        # Initialize the former-shim backend modules so their handlers work.
+        from hme_http_handlers import init_handlers
+        from hme_http_store import init_store
+        init_handlers(rag_engines._engine_ready, rag_engines._project_engine,
+                      rag_engines._global_engine, PROJECT_ROOT)
+        init_store(PROJECT_ROOT)
         logger.info(
             f"HME worker ready (direct RAG, shim deprecated) | "
             f"project={PROJECT_ROOT} | libs={list(ctx.lib_engines.keys())}"
