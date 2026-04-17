@@ -163,6 +163,38 @@ function _handleSpawnRoute(clientReq, clientRes) {
   json(405, { error: 'method not allowed' });
 }
 
+function _handleChatRoute(clientReq, clientRes) {
+  const workerPath = (clientReq.url || '').replace(/^\/chat/, '') || '/';
+  const chunks = [];
+  clientReq.on('data', (c) => chunks.push(c));
+  clientReq.on('end', () => {
+    const body = Buffer.concat(chunks);
+    const headers = { ...clientReq.headers };
+    delete headers.host;
+    if (body.length > 0) headers['content-length'] = String(body.length);
+    const opts = {
+      hostname: '127.0.0.1', port: MCP_PORT,
+      path: workerPath, method: clientReq.method, headers,
+    };
+    const proxyReq = http.request(opts, (proxyRes) => {
+      clientRes.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
+      proxyRes.pipe(clientRes);
+    });
+    proxyReq.on('error', (err) => {
+      if (!clientRes.headersSent) {
+        clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+        clientRes.end(JSON.stringify({ error: err.message }));
+      } else {
+        clientRes.end();
+      }
+    });
+    proxyReq.setTimeout(60_000, () => proxyReq.destroy(new Error('chat proxy timeout')));
+    if (body.length > 0) proxyReq.write(body);
+    proxyReq.end();
+  });
+  clientReq.on('error', () => { try { clientRes.end(); } catch (_e) { /* ignore */ } });
+}
+
 function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
     clientRes.writeHead(200, { 'Content-Type': 'application/json' });
@@ -177,6 +209,11 @@ function handleRequest(clientReq, clientRes) {
   // Route MCP requests to the proxy-native MCP server.
   if (clientReq.url && clientReq.url.startsWith('/mcp')) {
     handleMcpRequest(clientReq, clientRes);
+    return;
+  }
+  // Route /chat/* to the worker shim (strips /chat prefix).
+  if (clientReq.url && clientReq.url.startsWith('/chat')) {
+    _handleChatRoute(clientReq, clientRes);
     return;
   }
   const chunks = [];
