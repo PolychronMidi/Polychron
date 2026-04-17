@@ -26,15 +26,26 @@ module.exports = {
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);
     const wmPath = path.join(ctx.PROJECT_ROOT, WATERMARK);
 
-    let lastSize = 0;
-    try {
-      lastSize = parseInt(fs.readFileSync(wmPath, 'utf8').trim(), 10) || 0;
-    } catch (_e) { /* first run */ }
-
     let curSize = 0;
     try {
       curSize = fs.statSync(hmeLogPath).size;
     } catch (_e) { return; /* no log yet */ }
+
+    let lastSize = -1;
+    try {
+      lastSize = parseInt(fs.readFileSync(wmPath, 'utf8').trim(), 10);
+      if (!Number.isFinite(lastSize)) lastSize = -1;
+    } catch (_e) { /* first run */ }
+
+    // First run: seed the watermark at the current file end so we only
+    // escalate errors that appear AFTER the middleware starts observing.
+    // Without this, every fresh proxy boot re-escalates every historical
+    // ERROR line in hme.log to hme-errors.log.
+    if (lastSize < 0) {
+      try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) {}
+      fs.writeFileSync(wmPath, String(curSize));
+      return;
+    }
 
     // Log rotation → reset watermark.
     if (curSize < lastSize) lastSize = 0;
