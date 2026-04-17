@@ -45,16 +45,11 @@ else:
     esac
   fi
 
-  EDIT_COUNT=$(_nexus_count EDIT)
-  if [ "$EDIT_COUNT" -ge 5 ]; then
-    echo "NEXUS: ${EDIT_COUNT} files edited since last review. Run review(mode='forget') now — backlog is growing." >&2
-  elif [ "$EDIT_COUNT" -ge 3 ]; then
-    echo "NEXUS: ${EDIT_COUNT} files edited since last review. Consider review(mode='forget') soon." >&2
-  fi
+  # Edit count reminders are owned by the proxy status block — no STDERR here.
 
   if ! _onb_is_graduated && [ "$(_onb_state)" = "targeted" ]; then
     _onb_advance_to edited
-    echo "NEXUS: onboarding advanced to 'edited'. Next: run review(mode='forget') to audit changes." >&2
+    # Onboarding advance is surfaced by the proxy status block — silent here.
   fi
 fi
 

@@ -43,7 +43,9 @@ for line in reversed(lines):
     if in_turn:
         for block in obj.get('content', []):
             if isinstance(block, dict) and block.get('type') == 'tool_use':
-                if block.get('name') == 'mcp__HME__status':
+                # Proxy normalizes mcp__HME__* → HME_* before dispatch; both forms appear in transcripts.
+                name = block.get('name', '')
+                if name in ('HME_status', 'mcp__HME__status'):
                     if block.get('input', {}).get('mode') == 'pipeline':
                         count += 1
 print(count)

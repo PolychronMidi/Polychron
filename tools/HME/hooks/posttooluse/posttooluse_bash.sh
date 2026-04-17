@@ -106,16 +106,7 @@ print('wrote hci=' + str(d['hci']))
   MEMETIC_SCRIPT="$PROJECT/tools/HME/scripts/memetic-drift.py"
   [ -f "$MEMETIC_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$MEMETIC_SCRIPT" > /dev/null 2>&1 &
 
-  cat >&2 <<MSG
-EVOLVER: Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100} complete. You MUST now:
-(1) Read fingerprint-comparison.json
-(2) Read trace-summary metrics
-(3) Journal the round in metrics/journal.md
-(4) hme_admin(action='index') + learn() for confirmed rounds
-(5) Auto-commit if STABLE/EVOLVED (descriptive message, all changed files)
-(6) evolve(focus='curate') to prune stale KB entries
-(7) Pivot to next evolution target — use HCI delta to ensure HME coherence stayed healthy
-MSG
+  echo "Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100}" >&2
 elif echo "$CMD" | grep -q 'npm run snapshot'; then
   echo 'Baseline captured. Persist any new calibration anchors or decisions to HME add_knowledge.' >&2
 elif echo "$CMD" | grep -q 'node lab/run'; then
@@ -138,18 +129,12 @@ if echo "$CMD" | grep -q 'npm run main'; then
       _nexus_mark PIPELINE "$VERDICT"
       _nexus_clear_type COMMIT
       if [ "$VERDICT" = "STABLE" ] || [ "$VERDICT" = "EVOLVED" ]; then
-        echo "NEXUS: Pipeline $VERDICT — commit all changed files now." >&2
-        # Onboarding: piped/reviewed -> verified on clean STABLE/EVOLVED
         if ! _onb_is_graduated; then
           _onb_advance_to verified
-          echo "NEXUS: onboarding advanced to 'verified'. Next: run learn(title=, content=) to persist the round." >&2
         fi
-      elif [ "$VERDICT" = "DRIFTED" ]; then
-        echo "NEXUS: Pipeline DRIFTED — do NOT commit. Diagnose regression." >&2
       fi
     else
       _nexus_mark PIPELINE "FAILED"
-      echo "NEXUS: Pipeline FAILED — read pipeline output, fix root cause." >&2
     fi
   fi
 fi
@@ -159,7 +144,6 @@ if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
-    echo "NEXUS: Committed. Next: hme_admin(action='index') then review(mode='health') for doc sync." >&2
   fi
 fi
 
