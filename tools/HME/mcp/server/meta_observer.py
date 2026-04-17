@@ -254,7 +254,7 @@ def _meta_loop() -> None:
 
             # L33: cross-session archaeology (every 6 hours)
             if now - _last_archaeology_ts >= _ARCHAEOLOGY_INTERVAL:
-                arch = _session_archaeology()
+                arch = meta_layers._session_archaeology()
                 if arch and arch.get("finding"):
                     logger.info(f"Meta-observer L33: {arch['finding']}")
                 _last_archaeology_ts = now
