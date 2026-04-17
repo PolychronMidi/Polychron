@@ -1,21 +1,11 @@
 'use strict';
-// Child process specs. Edit here to change what the supervisor owns.
-// Each spec: { name, cmd, args, env, healthUrl, startupMs, restartDelayMs, maxRestarts, callTimeoutMs }
-//
-// History: the HTTP shim (hme_http.py on :7734) used to be a separate child
-// that held the RAG engine across stdio-MCP restarts. With the worker now
-// proxy-supervised and long-lived, the shim's persistence role is moot —
-// worker.py loads RAG engines directly and absorbs every shim endpoint on
-// its own port (:9098). SHIM_PORT stays exported for back-compat; it now
-// aliases MCP_PORT so any legacy code reading `SHIM_PORT` transparently
-// reaches the worker.
+// Supervised child specs: { name, cmd, args, env, healthUrl, startupMs, restartDelayMs, maxRestarts, callTimeoutMs }
 
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 
 const MCP_PORT = parseInt(process.env.HME_MCP_PORT || '9098', 10);
-// Deprecated: the shim is gone. SHIM_PORT now aliases MCP_PORT.
-const SHIM_PORT = MCP_PORT;
+const SHIM_PORT = MCP_PORT;  // legacy alias
 
 const PYTHONPATH = process.env.PYTHONPATH || '';
 const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/mcp');

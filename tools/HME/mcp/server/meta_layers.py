@@ -62,30 +62,9 @@ def _check_monitor_alive() -> dict:
         status["state"] = "dead"
         status["restart_attempt"] = _monitor_restart_count
         logger.warning(
-            f"Meta-observer L13: monitor thread DEAD (restart #{_monitor_restart_count}) — "
-            "the watcher itself needs watching"
+            f"Meta-observer L13: monitor thread DEAD (restart #{_monitor_restart_count})"
         )
-        _try_restart_monitor()
     return status
-
-
-def _try_restart_monitor():
-    try:
-        from server import rag_proxy
-        port = ENV.require_int("HME_SHIM_PORT")
-        if hasattr(rag_proxy, '_proxy_monitor_active'):
-            rag_proxy._proxy_monitor_active = True
-            t = threading.Thread(
-                target=rag_proxy._proxy_health_monitor,
-                args=(port,),
-                daemon=True,
-                name="hme-proxy-monitor-revived",
-            )
-            t.start()
-            register_monitor_thread(t)
-            logger.info("Meta-observer L13: monitor thread restarted")
-    except Exception as e:
-        logger.error(f"Meta-observer L13: failed to restart monitor: {e}")
 
 
 def _write_heartbeat() -> None:
