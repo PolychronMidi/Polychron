@@ -38,6 +38,96 @@ if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
   exit 2
 fi
 
+# Block cat/head/tail/less/more against context-guarded paths — otherwise Bash
+# becomes the loophole that bypasses pretooluse_read.sh's blocklist.
+# Uses shlex tokenization so we only match ACTUAL invocations (not path tokens
+# buried in string literals, heredocs, or unrelated arguments).
+GUARD_CFG="${PROJECT_ROOT}/tools/HME/config/context-guards.json"
+if [ -f "$GUARD_CFG" ] && echo "$CMD" | grep -qE '\b(cat|head|tail|less|more|batcat|bat)\b'; then
+  BASH_HIT=$(python3 - "$CMD" "$GUARD_CFG" <<'PYEOF' 2>/dev/null
+import json, os, shlex, sys
+cmd, cfg = sys.argv[1], sys.argv[2]
+try:
+    d = json.load(open(cfg))
+except Exception:
+    sys.exit(0)
+try:
+    tokens = shlex.split(cmd, posix=True)
+except ValueError:
+    tokens = cmd.split()
+proj = os.environ.get("PROJECT_ROOT", "")
+blocked = d.get("blocked_paths", [])
+blocked_exts = d.get("blocked_extensions", [])
+paginated = d.get("paginated_paths", [])
+READERS = {"cat", "less", "more", "bat", "batcat", "head", "tail"}
+# Flags that take a numeric arg — skip both token and the next one.
+FLAGS_WITH_VAL = {"-n", "-c", "-N"}
+REDIRECTS = {"<", "<<", "<<<", ">", ">>", "|", "||", "&&", ";", "&"}
+def check(arg):
+    rel = arg
+    if proj and arg.startswith(proj + "/"):
+        rel = arg[len(proj) + 1:]
+    for p in blocked:
+        if p.endswith("/") and rel.startswith(p):
+            return p
+        if rel == p:
+            return p
+    for ext in blocked_exts:
+        if rel.endswith(ext):
+            return f"*{ext}"
+    # Paginated: blocked unless the invocation used -n (head/tail pagination)
+    return None  # paginated handled below with context
+i = 0
+while i < len(tokens):
+    tok = tokens[i]
+    # Peel off command-prefixing shell wrappers
+    if tok in ("sudo", "env", "time", "nice"):
+        i += 1
+        continue
+    # Take just the command name, ignoring path parts
+    cmd_name = tok.split("/")[-1]
+    if cmd_name in READERS:
+        used_pagination = False
+        # Walk subsequent tokens until we find the first real arg
+        j = i + 1
+        while j < len(tokens):
+            t = tokens[j]
+            if t in REDIRECTS:
+                break
+            if t.startswith("-"):
+                if t in FLAGS_WITH_VAL:
+                    used_pagination = True
+                    j += 2
+                    continue
+                # -nN style
+                if t[1:].isdigit():
+                    used_pagination = True
+                j += 1
+                continue
+            # First real path argument
+            hit = check(t)
+            if hit:
+                print(hit); sys.exit(0)
+            # Paginated path guard
+            rel = t
+            if proj and t.startswith(proj + "/"):
+                rel = t[len(proj) + 1:]
+            for entry in paginated:
+                prefix = entry.get("prefix", "")
+                if prefix and rel.startswith(prefix) and not used_pagination:
+                    print(f"{prefix} (paginated-only; pass -n N)"); sys.exit(0)
+            break
+        i = j + 1
+        continue
+    i += 1
+PYEOF
+)
+  if [ -n "$BASH_HIT" ]; then
+    _emit_block "BLOCKED: Bash reader (cat/head/tail/less/more) targets context-guarded path '$BASH_HIT' (see tools/HME/config/context-guards.json). Use Grep with a targeted pattern, or head/tail -n N for paginated files."
+    exit 2
+  fi
+fi
+
 # Block ALL other run.lock access — reading lock status IS polling
 if echo "$CMD" | grep -q 'run\.lock'; then
   _emit_block "BLOCKED: Checking run.lock is pipeline status polling. Call the check_pipeline MCP tool NOW for current status, then continue with other work."
