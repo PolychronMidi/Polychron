@@ -17,7 +17,7 @@ from . import _track, _budget_gate, BUDGET_COMPOUND
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 def agent(prompt: str, mode: str = "explore") -> str:
     """Run a local research subagent with best-available model routing.
 
