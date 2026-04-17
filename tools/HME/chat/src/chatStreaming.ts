@@ -334,7 +334,8 @@ export function streamLlamacppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: s
 
 export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
   const contextMessages = contextPrefixMessages(msg._contextPrefix);
-  const history = [...contextMessages, ...ctx.state.llamacppHistory];
+  const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
+  const history = [...contextMessages, ...trimmed];
 
   runStream({
     ctx, assistantId, route: "hybrid",
@@ -409,7 +410,7 @@ export function streamAgentHybridMsg(
   onForceDrain: () => void,
   cancelFns: Array<() => void>,
 ) {
-  const history = trimHistoryToFit(ctx.state.llamacppHistory, msg.text);
+  const history = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM]);
 
   const { cancel } = runStream({
     ctx, assistantId, route: "hybrid",

@@ -285,7 +285,8 @@ function streamLlamacppMsg(ctx, msg, assistantId) {
 }
 function streamHybridMsg(ctx, msg, assistantId) {
     const contextMessages = contextPrefixMessages(msg._contextPrefix);
-    const history = [...contextMessages, ...ctx.state.llamacppHistory];
+    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
+    const history = [...contextMessages, ...trimmed];
     runStream({
         ctx, assistantId, route: "hybrid",
         preludeChunk: "[HME] Enriching with KB context…",
@@ -338,7 +339,7 @@ function streamAgentMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, 
     cancelFns.push(cancel);
 }
 function streamAgentHybridMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {
-    const history = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text);
+    const history = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM]);
     const { cancel } = runStream({
         ctx, assistantId, route: "hybrid",
         preludeChunk: "[HME] Enriching with KB context…",

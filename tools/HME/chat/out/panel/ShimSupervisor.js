@@ -38,7 +38,7 @@ const path = __importStar(require("path"));
 const router_1 = require("../router");
 const MAX_POLL_ATTEMPTS = 5;
 const POLL_INTERVAL_MS = 2000;
-const RESTART_DELAY_MS = 3000;
+const MAX_RESTARTS = 4;
 /**
  * Spawns and supervises the HME HTTP shim (mcp/hme_http.py).
  *
@@ -58,6 +58,7 @@ class ShimSupervisor {
         this._failed = false;
         this._pollTimer = null;
         this._disposed = false;
+        this._restartCount = 0;
     }
     get failed() {
         return this._failed;
@@ -70,6 +71,11 @@ class ShimSupervisor {
             return;
         if (this._disposed)
             return;
+        if (this._restartCount >= MAX_RESTARTS) {
+            this.host.post({ type: "hmeShimStatus", ready: false, failed: true });
+            this.host.postError("shim", `HME shim restart limit (${MAX_RESTARTS}) reached — restart VS Code to retry`);
+            return;
+        }
         this._failed = false;
         const shimPath = path.join(__dirname, "..", "..", "..", "mcp", "hme_http.py");
         const env = { ...process.env };
@@ -94,8 +100,10 @@ class ShimSupervisor {
                     this.host.postError("shim", `HME shim exited before becoming ready (code ${code ?? "?"})`);
                 }
                 else if (!this._disposed) {
+                    this._restartCount++;
+                    const delay = Math.min(3000 * Math.pow(2, this._restartCount - 1), 30000);
                     setTimeout(() => { if (!this._disposed)
-                        this.start(); }, RESTART_DELAY_MS);
+                        this.start(); }, delay);
                 }
             });
             let attempts = 0;
@@ -104,6 +112,7 @@ class ShimSupervisor {
                 (0, router_1.isHmeShimReady)().then(({ ready }) => {
                     if (ready) {
                         started = true;
+                        this._restartCount = 0;
                         this._pollTimer = null;
                         this.host.post({ type: "hmeShimStatus", ready: true });
                         return;

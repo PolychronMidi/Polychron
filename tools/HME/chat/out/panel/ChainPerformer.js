@@ -36,9 +36,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChainPerformer = exports.CHAIN_THRESHOLD_PCT = void 0;
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
-const SessionStore_1 = require("../SessionStore");
+const SessionStore_1 = require("../session/SessionStore");
 const Arbiter_1 = require("../Arbiter");
-const chatChain_1 = require("../chatChain");
+const chatChain_1 = require("../session/chatChain");
 const streamUtils_1 = require("../streamUtils");
 // Fire chain at 99% — meter reaches this before autocompact kicks in.
 exports.CHAIN_THRESHOLD_PCT = 99;

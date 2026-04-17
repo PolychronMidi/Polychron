@@ -30,6 +30,13 @@ export type ArbiterDecision = {
 const ARBITER_MODEL = "qwen3:4b";  // small, CPU-only — dedicated instance on port 11436
 const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
 
+// 30s TTL prevents redundant arbiter calls for repeated/similar messages
+const _decisionCache = new Map<string, { decision: ArbiterDecision; ts: number }>();
+const CACHE_TTL_MS = 30_000;
+function _cacheKey(msg: string, cc: number, ec: number): string {
+  return `${cc}:${ec}:${msg.slice(0, 200)}`;
+}
+
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
 
@@ -139,6 +146,10 @@ export async function classifyMessage(
   constraintCount: number,
   errorCount: number = 0
 ): Promise<ArbiterDecision> {
+  const key = _cacheKey(message, constraintCount, errorCount);
+  const cached = _decisionCache.get(key);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.decision;
+
   const prompt = CLASSIFY_PROMPT
     .replace("{message}", message.slice(0, 1000))
     .replace("{transcript}", transcriptContext.slice(0, 1500))
@@ -167,7 +178,14 @@ export async function classifyMessage(
     const route = inner.route === "local" ? "local" : "claude" as "claude" | "local";
     const confidence = Math.min(1, Math.max(0, Number(inner.confidence) || 0.5));
     const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
-    return { route, confidence, reason, escalated: false, isError: false };
+    // Low-confidence local decisions escalate to claude for safety
+    const escalated = route === "local" && confidence < 0.65;
+    const decision: ArbiterDecision = {
+      route: escalated ? "claude" : route,
+      confidence, reason, escalated, isError: false,
+    };
+    _decisionCache.set(key, { decision, ts: Date.now() });
+    return decision;
   } catch {
     return { route: "claude", confidence: 0.5, reason: `arbiter parse failed: ${contentAccum.slice(0, 80)}`, escalated: false, isError: true };
   }

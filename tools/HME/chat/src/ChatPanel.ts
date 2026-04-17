@@ -16,7 +16,7 @@ import {
   listChainLinks,
 } from "./session/SessionStore";
 import { TranscriptLogger, nullTranscript } from "./session/TranscriptLogger";
-import { synthesizeNarrative } from "./Arbiter";
+import { synthesizeNarrative, classifyMessage } from "./Arbiter";
 import {
   uid,
   SessionState, StreamTracker, ChatCtx,
@@ -370,7 +370,23 @@ export class ChatPanel implements PanelHost {
       return this._onSendAgent(msg);
     }
 
-    const resolvedRoute = (msg.route === "auto" ? "claude" : msg.route) as "claude" | "local" | "hybrid";
+    let resolvedRoute: "claude" | "local" | "hybrid";
+    if (msg.route === "auto") {
+      this.post({ type: "notice", level: "info", text: "🔀 Auto-routing…" });
+      const transcriptContext = this._state.messages.slice(-6)
+        .map((m) => `${m.role}: ${m.text.slice(0, 100)}`).join("\n");
+      const decision = await classifyMessage(msg.text, transcriptContext, 0);
+      resolvedRoute = decision.route;
+      if (!decision.isError) {
+        const label = decision.escalated ? `⬆ escalated to ${decision.route}` : decision.route;
+        this.post({
+          type: "notice", level: "info",
+          text: `🔀 → ${label} (${Math.round(decision.confidence * 100)}% — ${decision.reason})`,
+        });
+      }
+    } else {
+      resolvedRoute = msg.route as "claude" | "local" | "hybrid";
+    }
 
     if (!this._state.sessionEntry) {
       let entry;
