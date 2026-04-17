@@ -152,6 +152,9 @@ class _Supervisor:
         return False
 
     def _probe_health(self, spec: InstanceSpec) -> bool:
+        """True iff /health responds with status=ok. 'loading' is not ok (not ready
+        for traffic), but it IS a live process — callers must use _is_listening()
+        to distinguish 'loading' from 'truly dead' before deciding to respawn."""
         try:
             req = urllib.request.Request(f"{spec.base_url()}/health")
             with urllib.request.urlopen(req, timeout=self._health_timeout_s) as resp:
@@ -164,6 +167,21 @@ class _Supervisor:
                 return resp.status == 200 and data.get("status") == "ok"
         except Exception as _probe_err:
             logger.debug(f"llamacpp_supervisor: /health probe failed for {spec.base_url()}: {type(_probe_err).__name__}: {_probe_err}")
+            return False
+
+    def _is_listening(self, spec: InstanceSpec) -> bool:
+        """True iff something is bound to spec.port (even if /health is loading
+        or erroring). Distinguishes 'live but warming up' from 'truly dead'.
+        Any HTTP response — 200, 503 with status=loading, etc. — counts as
+        listening. Only ConnectionRefused / timeout counts as dead."""
+        try:
+            req = urllib.request.Request(f"{spec.base_url()}/health")
+            urllib.request.urlopen(req, timeout=self._health_timeout_s).read()
+            return True
+        except urllib.error.HTTPError:
+            # Non-2xx response means the server IS listening — it just isn't ready.
+            return True
+        except Exception:
             return False
 
     # ── GPU residence invariant ──────────────────────────────────────────
@@ -208,11 +226,6 @@ class _Supervisor:
         if free_mb is None:
             return False, f"could not probe free VRAM on cuda:{cuda_idx} ({spec.device})"
 
-        # If our own previous instance is alive on this GPU, its memory is
-        # already counted as "used" — adopting it should still be allowed even
-        # though free_mb looks low. The adoption path runs before spawn, so
-        # reaching _check_gpu_fits means we're spawning fresh and the prior
-        # process (if any) needs to be considered killed.
         try:
             model_mb = os.path.getsize(spec.model_path) // (1024 * 1024)
         except OSError as _stat_err:
@@ -225,6 +238,15 @@ class _Supervisor:
         kv_mb = (spec.ctx_size * 512) // 1024
         headroom_mb = 1024
         needed_mb = model_mb + kv_mb + headroom_mb
+
+        # If the existing process for this spec is already on the GPU, its
+        # model_mb is already counted as "used" — we must credit it back before
+        # deciding whether we'd fit. Without this, a respawn during model load
+        # incorrectly fires the offload-invariant CRITICAL (the check sees
+        # free=5GB because coder is already using 19GB of 24GB, then says
+        # coder doesn't fit — but coder already fit; it's the same coder).
+        if self._is_listening(spec):
+            free_mb += model_mb  # model is already there, so that VRAM is "ours"
 
         if needed_mb > free_mb:
             return False, (
@@ -340,6 +362,13 @@ class _Supervisor:
                 if spec.process is not None and spec.process.poll() is None:
                     result[spec.name] = "starting"
                     continue
+                # Port is bound but /health not ok → model is loading. Do not
+                # respawn; the existing process (ours or externally-launched)
+                # is already taking its GPU. Trying to spawn a duplicate is
+                # what fires the "offload invariant violated" false alarm.
+                if self._is_listening(spec):
+                    result[spec.name] = "loading"
+                    continue
                 # Spawn fresh
                 ok = self._spawn(spec)
                 result[spec.name] = "spawned" if ok else "spawn_failed"
@@ -360,6 +389,15 @@ class _Supervisor:
                         "url": spec.base_url(),
                         "restart_count": spec.restart_count,
                         "age_s": round(time.time() - spec.last_start, 1) if spec.last_start else None,
+                    }
+                    continue
+                # Unhealthy but still listening → loading, not dead. Skip respawn.
+                if self._is_listening(spec):
+                    out[spec.name] = {
+                        "healthy": False,
+                        "loading": True,
+                        "url": spec.base_url(),
+                        "restart_count": spec.restart_count,
                     }
                     continue
                 # Unhealthy — restart if not in cooldown
