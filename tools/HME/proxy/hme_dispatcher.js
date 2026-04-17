@@ -80,6 +80,7 @@ async function getSchemasCached() {
 async function executeHmeTool(name, input, timeoutMs = 120_000) {
   const toolName = name.replace(/^HME_/, '');
   const body = Buffer.from(JSON.stringify(input || {}), 'utf8');
+  const startedAt = Date.now();
   try {
     const { status, body: resBody } = await _request({
       hostname: '127.0.0.1', port: MCP_PORT, path: `/tool/${encodeURIComponent(toolName)}`,
@@ -88,7 +89,20 @@ async function executeHmeTool(name, input, timeoutMs = 120_000) {
       timeout: timeoutMs,
     }, body);
     const json = JSON.parse(resBody.toString('utf8'));
-    if (json && json.ok === true) return String(json.result ?? '');
+    if (json && json.ok === true) {
+      const result = String(json.result ?? '');
+      // Record output size for context-efficiency audits. Mode is the most
+      // useful dimension for aggregation when present (status/review/trace).
+      const mode = (input && typeof input.mode === 'string') ? input.mode : '';
+      emit({
+        event: 'hme_tool_result',
+        tool: toolName,
+        mode,
+        bytes: result.length,
+        elapsed_ms: Date.now() - startedAt,
+      });
+      return result;
+    }
     const err = (json && json.error) || `worker returned status ${status}`;
     return `[HME tool error: ${err}]`;
   } catch (err) {
