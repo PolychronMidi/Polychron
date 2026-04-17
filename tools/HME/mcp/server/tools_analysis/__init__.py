@@ -133,6 +133,7 @@ from . import read_unified     # noqa: E402, F401
 from . import learn_unified    # noqa: E402, F401
 from . import status_unified   # noqa: E402, F401
 from . import trace_unified    # noqa: E402, F401
+from . import agent_unified    # noqa: E402, F401
 from . import todo             # noqa: E402, F401
 from . import enrich_prompt    # noqa: E402, F401
 from . import tools_passthru   # noqa: E402, F401
