@@ -21,6 +21,7 @@ const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;
 
 let _index = null;
+let _indexEmpty = true;
 let _loadedAt = 0;
 let _trackedPaths = []; // sorted by depth desc so longest match wins
 
@@ -30,12 +31,17 @@ function _loadIndex(projectRoot) {
   try {
     const raw = fs.readFileSync(path.join(projectRoot, INTENT_PATH), 'utf8');
     const data = JSON.parse(raw);
-    _index = (data && typeof data.dirs === 'object') ? data.dirs : {};
+    const dirs = (data && typeof data.dirs === 'object') ? data.dirs : {};
+    // Project out intro — never used at injection time, saves memory on 4000-char fields.
+    _index = {};
+    for (const [k, v] of Object.entries(dirs)) {
+      _index[k] = { rules: v.rules, drifted: v.drifted };
+    }
   } catch (_e) {
     _index = {}; // no index yet — aggregator hasn't run
   }
-  // Pre-sort paths longest-first for nearest-ancestor lookup
   _trackedPaths = Object.keys(_index).sort((a, b) => b.length - a.length);
+  _indexEmpty = _trackedPaths.length === 0;
   _loadedAt = now;
   return _index;
 }
@@ -79,14 +85,14 @@ module.exports = {
     if (!ENRICHED_TOOLS.has(toolUse.name || '')) return;
     const target = _extractTargetPath(toolUse);
     if (!target) return;
-    const index = _loadIndex(ctx.PROJECT_ROOT);
-    if (Object.keys(index).length === 0) return;
+    _loadIndex(ctx.PROJECT_ROOT);
+    if (_indexEmpty) return;
 
     const rel = _relToProject(target, ctx.PROJECT_ROOT);
     const tracked = _closestTrackedDir(rel);
     if (!tracked) return;
 
-    const entry = index[tracked];
+    const entry = _index[tracked];
     if (!entry || !Array.isArray(entry.rules) || entry.rules.length === 0) return;
     if (ctx.hasHmeFooter(toolResult, '[HME dir:')) return;
 
