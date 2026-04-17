@@ -247,7 +247,40 @@ if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
 fi
 
 # ── Nexus lifecycle audit ────────────────────────────────────────────────────
+# The agent cannot call review(mode='forget') directly (HME_* names are only
+# visible inside the proxy dispatcher loop, not as Claude Code tool calls).
+# So we run the audit ourselves against the worker's /audit endpoint — it's
+# the same check review(mode='forget') performs. Clean audit → auto-clear
+# the EDIT backlog and proceed. Violations → block with the real findings
+# instead of a blind "run review" directive the agent cannot satisfy.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+
+_MCP_PORT="${HME_MCP_PORT:-9098}"
+_EDIT_COUNT=$(_nexus_count EDIT)
+if [ "$_EDIT_COUNT" -gt 0 ]; then
+  _AUDIT=$(curl -s -m 10 -X POST "http://127.0.0.1:${_MCP_PORT}/audit" \
+    -H 'Content-Type: application/json' \
+    -d '{"changed_files":""}' 2>/dev/null || true)
+  _VIOL=$(echo "$_AUDIT" | python3 -c \
+    'import sys,json;d=json.loads(sys.stdin.read() or "{}");print(len(d.get("violations",[])))' \
+    2>/dev/null || echo "-1")
+  if [ "$_VIOL" = "0" ]; then
+    _nexus_clear_type EDIT
+  elif [ "$_VIOL" -gt 0 ] 2>/dev/null; then
+    _VIOL_TEXT=$(echo "$_AUDIT" | python3 -c '
+import sys, json
+d = json.loads(sys.stdin.read() or "{}")
+for v in d.get("violations", [])[:5]:
+    print("  - {}: {}".format(v.get("file", "?"), v.get("message", v)))
+' 2>/dev/null || echo "")
+    jq -n --arg v "$_VIOL_TEXT" \
+      '{"decision":"block","reason":("NEXUS — review audit found violations:\n" + $v + "\n\nFix these before stopping.")}'
+    exit 0
+  fi
+  # _VIOL == -1 (worker unreachable / parse failure) → fall through to the
+  # standard NEXUS block below so the backlog isn't silently dropped.
+fi
+
 NEXUS_ISSUES=$(_nexus_pending)
 if [ -n "$NEXUS_ISSUES" ]; then
   jq -n \
