@@ -105,8 +105,8 @@ module.exports = {
     }
     for (const line of semanticLines) footerLines.push(line);
 
-    if (ctx.hasHmeFooter(toolResult)) return;
-    const footer = '\n[HME] ' + footerLines.join(' | ');
+    if (ctx.hasHmeFooter(toolResult, '[HME:edit]')) return;
+    const footer = '\n[HME:edit] ' + footerLines.join(' | ');
     _appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({

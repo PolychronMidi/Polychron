@@ -17,7 +17,6 @@ See [metrics/feedback_graph.json](../../metrics/feedback_graph.json) for the por
 rules:
   - Cannot write to conductor — only local playProb/stutterProb + explainabilityBus diagnostics are permitted
   - Route all buffer emissions through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)` — never push() directly
-  - New feedback loops must register with `feedbackRegistry` and be declared in `metrics/feedback_graph.json`
-  - Use `trustSystems.names.*` / `trustSystems.heatMapSystems.*` — never hardcode trust system strings
-  - Inter-module communication uses `L0` channels with `L0_CHANNELS.xxx` constants; bare strings are a hard error (local/no-bare-l0-channel)
+  - `structure/` holds mutable trust/entropy state; treat it as the only write surface for per-beat adaptation in this subtree
+  - `emission/` is the SOLE legitimate path to append to any cross-layer buffer — no inline pushes anywhere else
 -->

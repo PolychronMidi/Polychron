@@ -106,7 +106,7 @@ module.exports = {
 
     const entry = index[tracked];
     if (!entry || !Array.isArray(entry.rules) || entry.rules.length === 0) return;
-    if (ctx.hasHmeFooter(toolResult)) return;
+    if (ctx.hasHmeFooter(toolResult, '[HME dir:')) return;
 
     // Pick the first N rules, cap total char budget.
     const parts = [];

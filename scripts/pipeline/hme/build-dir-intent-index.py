@@ -36,6 +36,10 @@ SIGNATURES = os.path.join(PROJECT, "metrics", "hme-dir-signatures.json")
 SKIP_DIRS = {
     ".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build",
     "out", ".claude", "tmp", "log", ".pytest_cache", "output",
+    # Vendored libs / third-party code — we don't author READMEs here
+    "py_midicsv", "site-packages", "vendor", "third_party",
+    # Data dirs — not code boundaries
+    "training", "metrics", "holograph",
 }
 
 # Files that signal a dir is a cohesion boundary (candidate for README)
@@ -66,8 +70,19 @@ def _parse_readme(path: str) -> Optional[dict]:
     if not m:
         return None
     intro = m.group(1).strip()
+    raw_yaml = m.group(2)
+    # YAML treats a leading backtick as a tag. Authors naturally write rules
+    # with inline code `like this` at the start. Auto-quote list items whose
+    # first non-whitespace char after `- ` is a backtick — transparent to the
+    # author, avoids a pitfall that trips every review.
+    raw_yaml = re.sub(
+        r"^(\s*-\s+)(`[^'\"]*?)$",
+        lambda mm: mm.group(1) + '"' + mm.group(2).replace('"', '\\"') + '"',
+        raw_yaml,
+        flags=re.MULTILINE,
+    )
     try:
-        data = yaml.safe_load(m.group(2))
+        data = yaml.safe_load(raw_yaml)
     except yaml.YAMLError as e:
         return {"intro": intro, "rules": [], "_parse_error": str(e)}
     if not isinstance(data, dict):
@@ -135,12 +150,67 @@ def _is_boundary(dir_abs: str) -> bool:
     return any(os.path.isfile(os.path.join(dir_abs, m)) for m in alt_managers)
 
 
-def _validate(rel_dir: str, data: dict) -> list[str]:
-    """Return a list of validation errors. Empty list = valid."""
+RULE_MAX_CHARS = 160        # middleware footer budget is ~180; leave room for delimiter
+RULE_COUNT_MAX = 6          # only first 2 are injected; more than 6 is bloat
+INTRO_MAX_CHARS = 4000      # intros are for on-demand read, not injection, but keep bounded
+TRIGRAM_OVERLAP_THRESHOLD = 0.50  # word-trigram Jaccard — catches actual duplication, not shared vocab
+
+
+def _trigrams(text: str) -> set:
+    """Word-trigram shingles — insensitive to filler words, catches near-identical phrasing."""
+    words = re.findall(r"[a-z0-9]+", text.lower())
+    return {tuple(words[i:i+3]) for i in range(len(words) - 2)} if len(words) >= 3 else set()
+
+
+def _load_claude_md_rules() -> list:
+    """Extract imperative bullet points from CLAUDE.md as individual rules.
+    We match against each rule separately so shared vocabulary in CLAUDE.md
+    doesn't cause false positives — only actual near-duplication trips the check.
+    """
+    path = os.path.join(PROJECT, "CLAUDE.md")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return []
+    rules = []
+    for line in text.splitlines():
+        # Bullet points at any indent level
+        m = re.match(r"^\s*-\s+(.+)$", line)
+        if not m:
+            continue
+        body = m.group(1).strip()
+        # Strip leading markdown emphasis / bold marker
+        body = re.sub(r"^\*\*([^*]+)\*\*:?\s*", r"\1 ", body)
+        if len(body) < 20:
+            continue
+        rules.append(body)
+    return rules
+
+
+def _claude_overlap(rule: str, claude_rules: list) -> float:
+    """Max trigram Jaccard between this rule and any CLAUDE.md bullet."""
+    rt = _trigrams(rule)
+    if not rt:
+        return 0.0
+    best = 0.0
+    for cr in claude_rules:
+        ct = _trigrams(cr)
+        if not ct:
+            continue
+        jaccard = len(rt & ct) / max(1, len(rt | ct))
+        if jaccard > best:
+            best = jaccard
+    return best
+
+
+def _validate(rel_dir: str, data: dict, claude_rules: list) -> tuple[list, list]:
+    """Return (errors, warnings). Errors block validity; warnings are advisory."""
     errors = []
+    warnings = []
     if "_parse_error" in data:
         errors.append(f"yaml parse error in HME-DIR-INTENT block: {data['_parse_error']}")
-        return errors
+        return errors, warnings
     rules = data.get("rules")
     if rules is None:
         errors.append("missing required field: rules")
@@ -148,9 +218,24 @@ def _validate(rel_dir: str, data: dict) -> list[str]:
         errors.append("rules must be a list of strings")
     elif not rules:
         errors.append("rules list is empty — if there are no local rules, this dir shouldn't have an HME-DIR-INTENT block")
-    if not data.get("intro"):
+    else:
+        if len(rules) > RULE_COUNT_MAX:
+            warnings.append(f"{len(rules)} rules — middleware only injects first 2; keep ≤ {RULE_COUNT_MAX} with most important first")
+        for i, r in enumerate(rules):
+            if len(r) > RULE_MAX_CHARS:
+                errors.append(f"rule[{i}] is {len(r)} chars — max {RULE_MAX_CHARS}; won't fit footer budget")
+            elif len(r) > RULE_MAX_CHARS - 20:
+                warnings.append(f"rule[{i}] is {len(r)} chars — tight against the {RULE_MAX_CHARS}-char budget")
+            overlap = _claude_overlap(r, claude_rules)
+            if overlap >= TRIGRAM_OVERLAP_THRESHOLD:
+                preview = r[:70] + ("…" if len(r) > 70 else "")
+                warnings.append(f"rule[{i}] {overlap:.0%} trigram overlap with a CLAUDE.md rule — may be redundant: {preview!r}")
+    intro = data.get("intro", "")
+    if not intro:
         errors.append("intro is empty — put a normal README description above the HME-DIR-INTENT block")
-    return errors
+    elif len(intro) > INTRO_MAX_CHARS:
+        warnings.append(f"intro is {len(intro)} chars — consider tightening (max {INTRO_MAX_CHARS})")
+    return errors, warnings
 
 
 def _load_signatures_cache() -> dict:
@@ -168,9 +253,10 @@ def _save_signatures_cache(cache: dict) -> None:
 
 
 def build() -> dict:
-    readmes = {}  # rel_dir -> frontmatter dict
+    readmes = {}  # rel_dir -> parsed dict
     candidates = []  # dirs that look like boundaries but have no README
     sig_cache = _load_signatures_cache()
+    claude_rules = _load_claude_md_rules()
 
     for root, dirs, files in os.walk(PROJECT, followlinks=False):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
@@ -187,10 +273,11 @@ def build() -> dict:
     dirs_out = {}
     drifted = 0
     invalid = 0
+    warned = 0
     new_sig_cache = {}
     for rel, parsed in readmes.items():
         abs_dir = os.path.join(PROJECT, rel)
-        errors = _validate(rel, parsed)
+        errors, warnings = _validate(rel, parsed, claude_rules)
         sig = _dir_signature(abs_dir)
         stored = sig_cache.get(rel, {})
         is_drifted = bool(stored) and (
@@ -201,6 +288,8 @@ def build() -> dict:
             drifted += 1
         if errors:
             invalid += 1
+        if warnings:
+            warned += 1
         dirs_out[rel] = {
             "rules": parsed.get("rules", []),
             "intro": parsed.get("intro", ""),
@@ -208,6 +297,7 @@ def build() -> dict:
             "signature_stored": stored or None,
             "drifted": is_drifted,
             "errors": errors,
+            "warnings": warnings,
         }
         new_sig_cache[rel] = sig
 
@@ -221,6 +311,7 @@ def build() -> dict:
             "tracked": len(readmes),
             "drifted": drifted,
             "invalid": invalid,
+            "warned": warned,
             "missing_candidates": len(candidates),
         },
     }
@@ -235,13 +326,19 @@ def build() -> dict:
 def main() -> int:
     index = build()
     c = index["counts"]
-    print(f"tracked={c['tracked']} drifted={c['drifted']} invalid={c['invalid']} candidates={c['missing_candidates']}")
+    print(f"tracked={c['tracked']} drifted={c['drifted']} invalid={c['invalid']} warned={c['warned']} candidates={c['missing_candidates']}")
     if c["invalid"]:
         for rel, d in index["dirs"].items():
             if d["errors"]:
                 print(f"  INVALID {rel}:")
                 for e in d["errors"]:
                     print(f"    - {e}")
+    if c["warned"]:
+        for rel, d in index["dirs"].items():
+            if d["warnings"]:
+                print(f"  WARN {rel}:")
+                for w in d["warnings"]:
+                    print(f"    - {w}")
     if c["drifted"]:
         print("  drifted dirs:")
         for rel, d in index["dirs"].items():

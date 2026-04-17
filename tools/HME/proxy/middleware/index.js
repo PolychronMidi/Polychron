@@ -75,8 +75,9 @@ let _pipelineDirty = false;
 
 // Idempotency guard for footer injection. Because _processed is in-memory,
 // a proxy restart causes all historical tool_results to look "new" and get
-// re-enriched. Guard against stacking by checking for the shared HME marker.
-const HME_FOOTER_MARKER = '[HME';
+// re-enriched. Each middleware passes its OWN marker to the guard — not a
+// shared HME prefix — so multiple middleware can enrich the same result
+// without blocking each other, while still preventing self-restacking.
 
 function _toolResultText(toolResult) {
   const c = toolResult && toolResult.content;
@@ -94,9 +95,14 @@ const ctx = {
   markDirty: () => { _pipelineDirty = true; },
   warn: (...a) => console.warn('Acceptable warning: [middleware]', ...a),
   PROJECT_ROOT,
-  // Returns true when the tool_result already has an HME footer — prevents
-  // stacking when the proxy restarts and re-processes historical results.
-  hasHmeFooter: (toolResult) => _toolResultText(toolResult).includes(HME_FOOTER_MARKER),
+  // Returns true when the tool_result already contains `marker`. Each
+  // middleware passes its unique marker (e.g. '[HME dir:', '[HME] KB',
+  // '[HME] bias'). This prevents restart-stacking without blocking other
+  // middleware from enriching in the same request.
+  hasHmeFooter: (toolResult, marker) => {
+    if (!marker) return false;
+    return _toolResultText(toolResult).includes(marker);
+  },
 };
 
 // ── Registration ─────────────────────────────────────────────────────────────
