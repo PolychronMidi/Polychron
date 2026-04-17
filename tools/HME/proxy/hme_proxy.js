@@ -489,11 +489,17 @@ function runTestMode() {
 if (process.argv.includes('--test')) {
   runTestMode();
 } else {
+  // Always require supervisor — its signal handlers (SIGHUP, uncaughtException,
+  // etc.) are load-bearing even when SUPERVISE=0. Only the child-start sequence
+  // is gated behind SUPERVISE.
+  const supervisor = require('./supervisor/index');
   if (SUPERVISE) {
-    const supervisor = require('./supervisor/index');
     supervisor.start();
+  } else {
+    supervisor.installShutdownHandlers();
   }
   const server = http.createServer(handleRequest);
+  supervisor.registerServer(server);  // enables graceful drain on shutdown
   server.listen(PORT, '127.0.0.1', () => {
     const scheme = DEFAULT_UPSTREAM_TLS ? 'https' : 'http';
     console.log(`hme-proxy listening on http://127.0.0.1:${PORT}`);
