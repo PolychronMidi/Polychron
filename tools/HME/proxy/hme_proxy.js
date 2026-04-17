@@ -111,12 +111,24 @@ async function _injectHmeTools(payload) {
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();
+    // Strip cache_control from any existing non-HME tool (stale markers from prior turns).
+    for (const t of payload.tools) {
+      if (t && t.cache_control) delete t.cache_control;
+    }
     // Skip any HME_ tool that's already present (idempotent on retries).
     const existing = new Set(payload.tools.map((t) => t && t.name).filter(Boolean));
+    let injected = 0;
     for (const s of schemas) {
-      if (!existing.has(s.name)) payload.tools.push(s);
+      if (!existing.has(s.name)) { payload.tools.push({ ...s }); injected++; }
     }
-    return schemas.length;
+    // Mark the last tool as a cache breakpoint so Anthropic can cache everything
+    // up to and including the tool list. Must be the LAST tool — Anthropic's API
+    // requires cache_control on the final element of the array.
+    if (payload.tools.length > 0) {
+      const last = payload.tools[payload.tools.length - 1];
+      last.cache_control = { type: 'ephemeral' };
+    }
+    return injected;
   } catch (err) {
     console.error(`[hme-proxy] HME tool injection failed: ${err.message}`);
     return 0;

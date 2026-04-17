@@ -49,11 +49,18 @@ function _isBoilerplateText(text) {
   return { match: false };
 }
 
+// Only scan the last RECENT_MSG_WINDOW messages for mutable strip operations.
+// Older messages are already cached by Anthropic — mutating them busts the
+// cache prefix and inflates token costs by 12x.
+const RECENT_MSG_WINDOW = 8;
+
 function stripBoilerplate(payload) {
   if (!payload || !Array.isArray(payload.messages)) return 0;
   let strippedCount = 0;
   const stripped_samples = {};
-  for (const msg of payload.messages) {
+  // Only strip recent messages — mutating older ones busts the Anthropic cache.
+  const recentStart = Math.max(0, payload.messages.length - RECENT_MSG_WINDOW);
+  for (const msg of payload.messages.slice(recentStart)) {
     if (!msg || !Array.isArray(msg.content)) continue;
     const keepBlocks = [];
     for (const block of msg.content) {
@@ -179,9 +186,11 @@ function stripSemanticRedundancy(payload) {
     }
   }
 
-  // C + D pass
+  // C + D pass — only on recent messages to avoid busting the Anthropic cache
+  // prefix. Older dup-reads and oversize bashes are already cached upstream.
+  const cdStart = Math.max(0, payload.messages.length - RECENT_MSG_WINDOW);
   const lastReadByFile = new Map();
-  for (const msg of payload.messages) {
+  for (const msg of payload.messages.slice(cdStart)) {
     if (!msg || !Array.isArray(msg.content)) continue;
     for (const block of msg.content) {
       if (!block || typeof block !== 'object') continue;

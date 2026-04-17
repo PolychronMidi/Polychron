@@ -73,6 +73,18 @@ function nexusCount(type) {
 // re-serialize the body before forwarding upstream.
 let _pipelineDirty = false;
 
+// Idempotency guard for footer injection. Because _processed is in-memory,
+// a proxy restart causes all historical tool_results to look "new" and get
+// re-enriched. Guard against stacking by checking for the shared HME marker.
+const HME_FOOTER_MARKER = '[HME';
+
+function _toolResultText(toolResult) {
+  const c = toolResult && toolResult.content;
+  if (typeof c === 'string') return c;
+  if (Array.isArray(c)) return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
+  return '';
+}
+
 const ctx = {
   emit,
   nexusAdd,
@@ -80,8 +92,11 @@ const ctx = {
   nexusMark,
   nexusCount,
   markDirty: () => { _pipelineDirty = true; },
-  warn: (...a) => console.warn('[middleware]', ...a),
+  warn: (...a) => console.warn('Acceptable warning: [middleware]', ...a),
   PROJECT_ROOT,
+  // Returns true when the tool_result already has an HME footer — prevents
+  // stacking when the proxy restarts and re-processes historical results.
+  hasHmeFooter: (toolResult) => _toolResultText(toolResult).includes(HME_FOOTER_MARKER),
 };
 
 // ── Registration ─────────────────────────────────────────────────────────────

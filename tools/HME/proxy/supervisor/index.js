@@ -52,10 +52,31 @@ function _spawnChild(spec) {
   return proc;
 }
 
-function _startChild(spec) {
+async function _startChild(spec) {
   const existing = _children.get(spec.name);
   if (existing && existing.proc && existing.proc.exitCode === null) {
     return; // already running
+  }
+  // Pre-flight: if something is already serving on the health URL (surviving
+  // process from a prior proxy run), adopt it rather than spawning a new one.
+  // Without this, the new spawn immediately fails with EADDRINUSE and the
+  // health loop never gets a chance to adopt — triggering the restart loop.
+  if (spec.healthUrl) {
+    const alreadyServing = await _probe(spec.healthUrl);
+    if (alreadyServing) {
+      console.log(`[supervisor] ${spec.name} — already serving at ${spec.healthUrl}, adopting (no spawn)`);
+      _children.set(spec.name, {
+        spec,
+        proc: null,
+        restarts: 0,
+        lastStart: Date.now(),
+        lastHealthy: Date.now(),
+        healthy: true,
+        gaveUp: false,
+      });
+      emit({ event: 'child_adopted', child: spec.name });
+      return;
+    }
   }
   console.log(`[supervisor] starting ${spec.name} (${spec.cmd} ${spec.args.join(' ')})`);
   const proc = _spawnChild(spec);
@@ -199,10 +220,12 @@ let _started = false;
 function start() {
   if (_started) return;
   _started = true;
-  // Start shim first
-  for (const spec of CHILDREN) {
-    _startChild(spec);
-  }
+  // Start children sequentially (each awaits its own pre-flight health probe).
+  (async () => {
+    for (const spec of CHILDREN) {
+      await _startChild(spec);
+    }
+  })().catch((err) => console.error('[supervisor] start sequence error:', err.message));
   // Health loop — starts after longest startup window
   const maxStartup = Math.max(...CHILDREN.map((c) => c.startupMs));
   setTimeout(() => {

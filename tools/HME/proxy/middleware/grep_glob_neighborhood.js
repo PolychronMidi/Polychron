@@ -248,6 +248,7 @@ module.exports = {
     }
 
     if (blocks.length === 0 && firewallLines.length === 0) return;
+    if (ctx.hasHmeFooter(toolResult)) return;
 
     let appended = blocks.join('');
     if (firewallLines.length > 0) {
