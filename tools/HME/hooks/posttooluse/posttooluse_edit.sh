@@ -10,6 +10,12 @@ FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 PROJECT="$PROJECT_ROOT"
 
+# Rebuild dir-intent index on README.md edits — same as posttooluse_write.sh.
+if [[ "$FILE" == */README.md ]]; then
+  python3 "$PROJECT_ROOT/scripts/pipeline/hme/build-dir-intent-index.py" \
+    >/dev/null 2>&1 &
+fi
+
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy))/'; then
   MODULE=$(_extract_module "$FILE")
   HME_READ_PRIOR=false
