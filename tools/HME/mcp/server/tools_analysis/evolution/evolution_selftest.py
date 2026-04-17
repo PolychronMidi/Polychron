@@ -499,7 +499,6 @@ def hme_selftest(verbose: bool = False) -> str:
 
     for name, target in [
         ("~/.claude/mcp/HME", "mcp symlink"),
-        ("~/.claude/skills/HME", "skills symlink"),
     ]:
         path = os.path.expanduser(name)
         results.append(f"{'PASS' if os.path.islink(path) else 'FAIL'}: {target} -- {path}")

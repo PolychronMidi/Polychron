@@ -61,13 +61,6 @@
       "severity": "error"
     },
     {
-      "id": "symlink-skills",
-      "description": "Skills symlink must resolve to tools/HME/skills",
-      "type": "symlink_valid",
-      "path": "~/.claude/skills/HME",
-      "severity": "error"
-    },
-    {
       "id": "project-rules-valid",
       "description": "project-rules.json must be valid JSON",
       "type": "json_valid",

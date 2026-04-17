@@ -1707,37 +1707,6 @@ class ReloadableModuleSyncVerifier(Verifier):
                        missing)
 
 
-class MCPInstructionsEmptyVerifier(Verifier):
-    """FastMCP instructions field in main.py should be empty per the A1 fix —
-    SKILL.md is the single source of truth. A populated instructions field
-    risks drifting out of sync with the actual tool surface."""
-    name = "mcp-instructions-empty"
-    category = "coverage"
-    weight = 1.0
-
-    def run(self) -> VerdictResult:
-        main_py = os.path.join(_SERVER_DIR, "main.py")
-        if not os.path.isfile(main_py):
-            return _result(SKIP, 1.0, "main.py not found")
-        try:
-            with open(main_py) as f:
-                src = f.read()
-        except Exception as e:
-            return _result(ERROR, 0.0, f"read error: {e}")
-        # Find FastMCP(...) call and check if it has an instructions kwarg
-        m = re.search(r'FastMCP\s*\(\s*"HME"\s*(,\s*[^)]*)?\)', src, re.DOTALL)
-        if not m:
-            return _result(ERROR, 0.0, "FastMCP call not found")
-        args = m.group(1) or ""
-        if "instructions" in args:
-            return _result(
-                WARN, 0.5,
-                "FastMCP has instructions= field — risks drift from SKILL.md",
-                ["consider removing to keep SKILL.md as single source of truth"],
-            )
-        return _result(PASS, 1.0, "FastMCP instructions field not set (SKILL.md is source of truth)")
-
-
 class TodoMergeHookConsistencyVerifier(Verifier):
     """The TodoWrite hook should NOT block — it should exit 0 so native
     TodoWrite proceeds. If it ever goes back to exit 2 / decision:block the
@@ -1820,7 +1789,6 @@ REGISTRY = [
     ReloadableModuleSyncVerifier(),
     HookRegistrationVerifier(),
     HookMatcherValidityVerifier(),
-    MCPInstructionsEmptyVerifier(),
     ToolSurfaceCoverageVerifier(),
     ShimHealthVerifier(),
     ErrorLogVerifier(),
