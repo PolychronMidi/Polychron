@@ -68,12 +68,18 @@ function nexusCount(type) {
   }
 }
 
+// Per-pipeline-run dirty flag — set via ctx.markDirty() when a middleware
+// mutates the payload. hme_proxy.js uses this to decide whether to
+// re-serialize the body before forwarding upstream.
+let _pipelineDirty = false;
+
 const ctx = {
   emit,
   nexusAdd,
   nexusClearType,
   nexusMark,
   nexusCount,
+  markDirty: () => { _pipelineDirty = true; },
   warn: (...a) => console.warn('[middleware]', ...a),
   PROJECT_ROOT,
 };
@@ -135,6 +141,7 @@ function _pairToolResults(payload) {
 
 // ── Main pipeline entry ──────────────────────────────────────────────────────
 function runPipeline(payload, scan, session) {
+  _pipelineDirty = false;
   // Pair tool_use + tool_result events, fire onToolResult for each.
   const events = _pairToolResults(payload);
   for (const { toolUse, toolResult } of events) {
@@ -156,6 +163,7 @@ function runPipeline(payload, scan, session) {
       console.error(`[middleware] ${mod.name}.onRequest threw: ${err.message}`);
     }
   }
+  return _pipelineDirty;
 }
 
 // ── Auto-load modules ────────────────────────────────────────────────────────

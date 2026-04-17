@@ -217,11 +217,13 @@ function handleRequest(clientReq, clientRes) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
-        // Run middleware pipeline (activity emission, nexus tracking, log
-        // watermark, FAIL scan). Must run AFTER scan so middleware sees the
-        // reconciled tool_use/tool_result pairs.
+        // Run middleware pipeline. Must run AFTER scan so middleware sees the
+        // reconciled tool_use/tool_result pairs. Returns true if any
+        // middleware mutated the payload (via ctx.markDirty()) — we need to
+        // re-serialize before forwarding.
         try {
-          middleware.runPipeline(payload, scan, session);
+          const mwDirtied = middleware.runPipeline(payload, scan, session);
+          if (mwDirtied) bodyDirtiedByStrip = true;
         } catch (err) {
           console.error('[hme-proxy] middleware pipeline error:', err.message);
         }
