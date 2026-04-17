@@ -29,22 +29,21 @@ function _buildKbCoverageSummary(paths) {
   const seen = new Set();
   const hits = [];
   for (const p of paths) {
-    const abs = path.isAbsolute(p) ? p : p;
-    if (seen.has(abs)) continue;
-    seen.add(abs);
-    if (!isFileIndexed(abs)) continue;
-    const footer = buildFileEnrichment(abs);
+    if (seen.has(p)) continue;
+    seen.add(p);
+    if (!isFileIndexed(p)) continue;
+    const footer = buildFileEnrichment(p);
     if (!footer) continue;
-    const lines = footer.split('\n').filter((l) => l && !l.startsWith('──'));
-    if (lines.length === 0) continue;
-    const base = abs.split('/').pop() || abs;
-    hits.push(`${base}: ${lines[0]}`);
+    const content = footer.trim().replace(/^\[HME\]\s*/, '');
+    if (!content) continue;
+    const base = p.split('/').pop() || p;
+    hits.push(`${base} ${content}`);
     if (hits.length >= MAX_KB_FILES_SHOWN) break;
   }
   if (hits.length === 0) return null;
   const body = hits.join(' | ');
   if (body.length > MAX_KB_SUMMARY_BYTES) return null;
-  return `\n[HME KB: ${hits.length} file(s) with constraints — ${body}]`;
+  return `\n[HME KB] ${body}`;
 }
 
 const MIN_HITS_PER_DIR = 3;

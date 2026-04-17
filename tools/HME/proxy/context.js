@@ -394,34 +394,28 @@ function buildFileEnrichment(filePath) {
     return null;
   }
 
-  const lines = [];
+  const parts = [];
   if (stale) {
     const ds = typeof stale.staleness_days === 'number' ? `${stale.staleness_days.toFixed(1)}d` : '?';
-    lines.push(`KB: ${stale.status} (${stale.kb_entries_matched} entries, ${ds} old)`);
+    parts.push(`KB ${String(stale.status).toLowerCase()} (${stale.kb_entries_matched}e/${ds})`);
   }
-  if (inZone) {
-    lines.push(`Zone: hypermeta jurisdiction — edits constrained by controller authority`);
-  }
+  if (inZone) parts.push('jurisdiction zone');
   if (bias.length > 0) {
-    const keys = bias.slice(0, 3).map((b) => b.key).join(', ');
-    const tail = bias.length > 3 ? `, +${bias.length - 3}` : '';
-    lines.push(`Bias bounds (${bias.length}): ${keys}${tail}`);
+    const keys = bias.slice(0, 3).map((b) => b.key).join(',');
+    const tail = bias.length > 3 ? `+${bias.length - 3}` : '';
+    parts.push(`bias:${keys}${tail}`);
   }
-  if (hypotheses.length > 0) {
-    const first = hypotheses[0];
-    const claim = String(first.claim || '').slice(0, 100);
-    lines.push(`Open hypotheses (${hypotheses.length}): \`${first.id}\` ${claim}`);
-  }
+  if (hypotheses.length > 0) parts.push(`hyp:${hypotheses[0].id}`);
   if (drifted) {
     const fields = (drifted.diffs || [])
       .filter((d) => d.field !== 'content_hash_prefix')
       .map((d) => d.field)
-      .slice(0, 3);
-    lines.push(`⚠ KB drift: signature diverged (${fields.join(', ')}) — description may be wrong`);
+      .slice(0, 2);
+    parts.push(`⚠drift:${fields.join(',')}`);
   }
 
-  if (lines.length === 0) return null;
-  return ['', '── HME enrichment ──', ...lines, '────────────────────'].join('\n');
+  if (parts.length === 0) return null;
+  return `\n[HME] ${parts.join(' · ')}`;
 }
 
 // Checks whether a file falls within the RAG-indexed directories declared in
