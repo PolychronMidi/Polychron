@@ -362,12 +362,20 @@ function buildStatusContext() {
   return _statusSnapshot;
 }
 
+function stripSystemCacheControl(payload) {
+  // Strip ALL cache_control from system blocks. Old proxy versions added them;
+  // stale markers in conversation history cause Anthropic 400 TTL ordering
+  // errors. Claude Code re-establishes its own markers on every request.
+  if (!Array.isArray(payload.system)) return false;
+  let stripped = false;
+  for (const b of payload.system) {
+    if (b && b.cache_control) { delete b.cache_control; stripped = true; }
+  }
+  return stripped;
+}
+
 function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (proxy-injected)') {
   if (!block) return false;
-  // Do NOT add cache_control to system blocks — the tools array already has the
-  // cache breakpoint on the last injected tool. Mixing cache_control on system
-  // blocks that appear after ttl='1h' message-level markers from Claude Code
-  // triggers Anthropic 400: "ttl='5m' block must not come after ttl='1h' block."
   if (typeof payload.system === 'string') {
     if (payload.system.includes(marker)) return false;
     payload.system = payload.system + block;
@@ -400,6 +408,7 @@ module.exports = {
   buildStatusContext,
   buildJurisdictionContext,
   injectIntoSystem,
+  stripSystemCacheControl,
   isJurisdictionFile,
   openHypothesesFor,
   biasBoundsFor,
