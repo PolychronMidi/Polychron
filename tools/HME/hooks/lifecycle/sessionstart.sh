@@ -4,7 +4,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$HOOKS_DIR/_nexus.sh"
+source "$HOOKS_DIR/../helpers/_nexus.sh"
 
 PROJECT="$PROJECT_ROOT"
 
@@ -35,7 +35,7 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
 # Initialize onboarding state machine — every new session re-arms the walkthrough
-source "$HOOKS_DIR/_onboarding.sh"
+source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
 # ── HME Proxy + Supervisor (:9099) ───────────────────────────────────────────
