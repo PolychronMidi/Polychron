@@ -217,6 +217,77 @@ function status() {
 // healthLoop polls every 10s after initial startup delay.
 let _started = false;
 
+// Graceful shutdown — unified entry point for every signal/crash path.
+// Idempotent: repeated calls (e.g. SIGTERM arriving while already draining)
+// are no-ops. Drains the HTTP server if registered, kills children, exits.
+let _shuttingDown = false;
+let _httpServer = null;
+const DRAIN_TIMEOUT_MS = 3000;
+
+function registerServer(server) {
+  _httpServer = server;
+}
+
+function _gracefulShutdown(reason, exitCode = 0) {
+  if (_shuttingDown) return;
+  _shuttingDown = true;
+  console.error(`[supervisor] shutdown: ${reason}`);
+
+  const finish = () => {
+    killAll('SIGTERM');
+    // Give children ~500ms to exit cleanly before we disappear.
+    setTimeout(() => process.exit(exitCode), 500).unref();
+  };
+
+  if (_httpServer) {
+    // Stop accepting new connections; let in-flight requests finish.
+    let drained = false;
+    _httpServer.close(() => {
+      if (drained) return;
+      drained = true;
+      finish();
+    });
+    // Drain deadline — if connections hang (e.g. long SSE), force-exit anyway.
+    setTimeout(() => {
+      if (drained) return;
+      drained = true;
+      console.error(`[supervisor] drain deadline (${DRAIN_TIMEOUT_MS}ms) — force-closing`);
+      finish();
+    }, DRAIN_TIMEOUT_MS).unref();
+  } else {
+    finish();
+  }
+}
+
+// Install process-wide shutdown handlers. Safe to call without start() — the
+// drain logic doesn't depend on children existing. Should run in every mode
+// (even SUPERVISE=0) so the proxy cleans up HTTP connections on signal/crash.
+let _handlersInstalled = false;
+function installShutdownHandlers() {
+  if (_handlersInstalled) return;
+  _handlersInstalled = true;
+
+  // Fallback: if the process exits by any path we didn't catch below, still
+  // try to take children down. Synchronous — event loop is closing here.
+  process.on('exit', () => killAll('SIGTERM'));
+
+  // Signal-driven shutdowns — all route through the unified drain path.
+  process.on('SIGTERM', () => _gracefulShutdown('SIGTERM', 0));
+  process.on('SIGINT',  () => _gracefulShutdown('SIGINT',  0));
+  process.on('SIGHUP',  () => _gracefulShutdown('SIGHUP',  0));
+
+  // Crash-driven shutdowns — log diagnostics, then drain cleanly. Without
+  // these, a middleware crash leaves children orphaned and ports bound.
+  process.on('uncaughtException', (err) => {
+    console.error('[supervisor] uncaughtException:', err && err.stack || err);
+    _gracefulShutdown('uncaughtException', 1);
+  });
+  process.on('unhandledRejection', (err) => {
+    console.error('[supervisor] unhandledRejection:', err && err.stack || err);
+    _gracefulShutdown('unhandledRejection', 1);
+  });
+}
+
 function start() {
   if (_started) return;
   _started = true;
@@ -232,11 +303,7 @@ function start() {
     _healthLoop();
     setInterval(() => _healthLoop(), 10_000);
   }, maxStartup);
-
-  // Ensure children die with the proxy
-  process.on('exit', () => killAll('SIGTERM'));
-  process.on('SIGTERM', () => { killAll('SIGTERM'); process.exit(0); });
-  process.on('SIGINT', () => { killAll('SIGTERM'); process.exit(0); });
+  installShutdownHandlers();
 }
 
 // ── Ad-hoc process spawn (TTL-bounded, no restart) ──────────────────────────
@@ -300,4 +367,4 @@ function adhocList() {
   return out;
 }
 
-module.exports = { start, killChild, killAll, isHealthy, status, adhocSpawn, adhocStatus, adhocKill, adhocList };
+module.exports = { start, installShutdownHandlers, registerServer, killChild, killAll, isHealthy, status, adhocSpawn, adhocStatus, adhocKill, adhocList };
