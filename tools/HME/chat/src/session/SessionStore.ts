@@ -65,8 +65,11 @@ function readJson<T>(filePath: string, fallback: T): T {
 }
 
 function writeJson(filePath: string, data: unknown): void {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${filePath}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+  fs.renameSync(tmp, filePath);
 }
 
 /** Typed handle for a single JSON file. Eliminates repeated path threading. */

@@ -56,6 +56,12 @@ exports.synthesizeChainSummary = synthesizeChainSummary;
 const http = __importStar(require("http"));
 const ARBITER_MODEL = "qwen3:4b"; // small, CPU-only — dedicated instance on port 11436
 const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
+// 30s TTL prevents redundant arbiter calls for repeated/similar messages
+const _decisionCache = new Map();
+const CACHE_TTL_MS = 30000;
+function _cacheKey(msg, cc, ec) {
+    return `${cc}:${ec}:${msg.slice(0, 200)}`;
+}
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
 
@@ -163,6 +169,10 @@ function llamacppStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
  * Falls back to "claude" on any error; isError=true flags the failure downstream.
  */
 async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
+    const key = _cacheKey(message, constraintCount, errorCount);
+    const cached = _decisionCache.get(key);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS)
+        return cached.decision;
     const prompt = CLASSIFY_PROMPT
         .replace("{message}", message.slice(0, 1000))
         .replace("{transcript}", transcriptContext.slice(0, 1500))
@@ -189,7 +199,14 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
         const route = inner.route === "local" ? "local" : "claude";
         const confidence = Math.min(1, Math.max(0, Number(inner.confidence) || 0.5));
         const reason = String(inner.reason ?? "").slice(0, 200) || "arbiter parse failed";
-        return { route, confidence, reason, escalated: false, isError: false };
+        // Low-confidence local decisions escalate to claude for safety
+        const escalated = route === "local" && confidence < 0.65;
+        const decision = {
+            route: escalated ? "claude" : route,
+            confidence, reason, escalated, isError: false,
+        };
+        _decisionCache.set(key, { decision, ts: Date.now() });
+        return decision;
     }
     catch {
         return { route: "claude", confidence: 0.5, reason: `arbiter parse failed: ${contentAccum.slice(0, 80)}`, escalated: false, isError: true };

@@ -139,6 +139,60 @@ Polychron/.claude/mcp/HME/
 }
 ```
 
+## HME Chat (VS Code Extension)
+
+A custom VS Code webview panel at `tools/HME/chat/` that routes every message through the HME intelligence layer. Open via `Ctrl+Shift+H` or the `HME: Open Chat` command.
+
+### Routes
+
+| Route | Backend | When to use |
+|-------|---------|-------------|
+| `claude` | Claude CLI (PTY + pipe fallback) | Architectural work, multi-file changes, security, KB-dense work |
+| `local` | llama-server (`/v1/chat/completions`, agentic tool loop) | Fast single-file edits, explanations, quick lookups |
+| `hybrid` | local model + KB context enrichment from HME shim | Codebase-aware local responses without Claude API cost |
+| `auto` | Arbiter (qwen3:4b at port 11436) classifies then routes | Let the system decide — routes to claude or local based on complexity |
+| `agent` | local + hybrid in parallel | Side-by-side comparison mode |
+
+### Key Components
+
+```
+src/
+  ChatPanel.ts          Panel orchestrator + send pipeline + session management
+  chatStreaming.ts       runStream harness + route-specific stream functions
+  Arbiter.ts            Message classifier (qwen3:4b) + narrative synthesis
+  router.ts             Type barrel + re-exports
+  routers/
+    routerClaude.ts     Claude CLI PTY mode (hook-aware) + pipe mode fallback
+    routerLlamacpp.ts   llama-server SSE streaming + agentic tool loop
+    routerHme.ts        HME HTTP shim client + hybrid stream
+  session/
+    SessionStore.ts     Workspace-hashed JSON persistence (~/.config/hme-chat/)
+    TranscriptLogger.ts JSONL session transcript + narrative synthesis trigger
+    chatChain.ts        Context-chain threshold + chain link creation
+    crossRouteHistory.ts History portability when switching routes
+  panel/
+    ShimSupervisor.ts   Spawns + restarts hme_http.py with backoff (cap: 4 restarts)
+    ContextMeter.ts     Token % tracking + chain threshold detection
+    ChainPerformer.ts   Executes chain rotation (saves link, clears session)
+    StreamPersister.ts  Crash-safe partial message recovery
+    ErrorSink.ts        Structured error accumulator + disk fallback
+    MirrorTerminal.ts   PTY mirror terminal for raw Claude CLI output
+```
+
+### HME Shim (`mcp/hme_http.py`)
+
+HTTP bridge between the chat extension and the Python MCP server. Endpoints used by the chat:
+- `POST /enrich` — KB top-k retrieval for hybrid context injection
+- `POST /enrich_prompt` — Full reasoning-model prompt enrichment (200s timeout)
+- `POST /validate` — Rule validation + constraint warnings
+- `POST /audit` — Post-change boundary audit
+- `POST /transcript` — Session narrative mirroring into KB
+- `GET /health` — Readiness check (polled by ShimSupervisor on startup)
+
+### Auto-routing Arbiter
+
+When route is `auto`, `classifyMessage()` in `Arbiter.ts` calls qwen3:4b (port 11436, CPU-only) with the message + recent transcript context. Decisions are cached 30s to avoid redundant calls. Low-confidence local decisions (< 65%) are automatically escalated to Claude. Falls back to Claude on any arbiter error.
+
 ## Setup
 
 Source tracked in `tools/HME/`. MCP server at `mcp/`, symlinked from `~/.claude/mcp/`. Skills at `skills/`, symlinked from `~/.claude/skills/`. Run `scripts/setup-mcp.sh` after cloning to create symlinks. Load the skill before first use: `/HME`

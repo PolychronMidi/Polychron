@@ -4,7 +4,7 @@ import { PanelHost } from "./PanelHost";
 
 const MAX_POLL_ATTEMPTS = 5;
 const POLL_INTERVAL_MS = 2000;
-const RESTART_DELAY_MS = 3000;
+const MAX_RESTARTS = 4;
 
 /**
  * Spawns and supervises the HME HTTP shim (mcp/hme_http.py).
@@ -22,6 +22,7 @@ export class ShimSupervisor {
   private _failed = false;
   private _pollTimer: ReturnType<typeof setTimeout> | null = null;
   private _disposed = false;
+  private _restartCount = 0;
 
   constructor(
     private readonly projectRoot: string,
@@ -39,6 +40,11 @@ export class ShimSupervisor {
   start(): void {
     if (this.isRunning) return;
     if (this._disposed) return;
+    if (this._restartCount >= MAX_RESTARTS) {
+      this.host.post({ type: "hmeShimStatus", ready: false, failed: true });
+      this.host.postError("shim", `HME shim restart limit (${MAX_RESTARTS}) reached — restart VS Code to retry`);
+      return;
+    }
     this._failed = false;
     const shimPath = path.join(__dirname, "..", "..", "..", "mcp", "hme_http.py");
     const env = { ...process.env };
@@ -62,7 +68,9 @@ export class ShimSupervisor {
         if (!wasStarted) {
           this.host.postError("shim", `HME shim exited before becoming ready (code ${code ?? "?"})`);
         } else if (!this._disposed) {
-          setTimeout(() => { if (!this._disposed) this.start(); }, RESTART_DELAY_MS);
+          this._restartCount++;
+          const delay = Math.min(3000 * Math.pow(2, this._restartCount - 1), 30000);
+          setTimeout(() => { if (!this._disposed) this.start(); }, delay);
         }
       });
       let attempts = 0;
@@ -71,6 +79,7 @@ export class ShimSupervisor {
         isHmeShimReady().then(({ ready }) => {
           if (ready) {
             started = true;
+            this._restartCount = 0;
             this._pollTimer = null;
             this.host.post({ type: "hmeShimStatus", ready: true });
             return;

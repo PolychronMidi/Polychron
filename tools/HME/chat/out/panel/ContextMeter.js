@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContextMeter = void 0;
-const SessionStore_1 = require("../SessionStore");
+const SessionStore_1 = require("../session/SessionStore");
 class ContextMeter {
     constructor(projectRoot, host) {
         this.projectRoot = projectRoot;

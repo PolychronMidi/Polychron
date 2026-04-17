@@ -38,12 +38,12 @@ const vscode = __importStar(require("vscode"));
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const router_1 = require("./router");
-const SessionStore_1 = require("./SessionStore");
-const TranscriptLogger_1 = require("./TranscriptLogger");
+const SessionStore_1 = require("./session/SessionStore");
+const TranscriptLogger_1 = require("./session/TranscriptLogger");
 const Arbiter_1 = require("./Arbiter");
 const streamUtils_1 = require("./streamUtils");
 const chatStreaming_1 = require("./chatStreaming");
-const crossRouteHistory_1 = require("./crossRouteHistory");
+const crossRouteHistory_1 = require("./session/crossRouteHistory");
 const ErrorSink_1 = require("./panel/ErrorSink");
 const ShimSupervisor_1 = require("./panel/ShimSupervisor");
 const MirrorTerminal_1 = require("./panel/MirrorTerminal");
@@ -332,7 +332,24 @@ class ChatPanel {
         if (msg.route === "agent") {
             return this._onSendAgent(msg);
         }
-        const resolvedRoute = (msg.route === "auto" ? "claude" : msg.route);
+        let resolvedRoute;
+        if (msg.route === "auto") {
+            this.post({ type: "notice", level: "info", text: "🔀 Auto-routing…" });
+            const transcriptContext = this._state.messages.slice(-6)
+                .map((m) => `${m.role}: ${m.text.slice(0, 100)}`).join("\n");
+            const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptContext, 0);
+            resolvedRoute = decision.route;
+            if (!decision.isError) {
+                const label = decision.escalated ? `⬆ escalated to ${decision.route}` : decision.route;
+                this.post({
+                    type: "notice", level: "info",
+                    text: `🔀 → ${label} (${Math.round(decision.confidence * 100)}% — ${decision.reason})`,
+                });
+            }
+        }
+        else {
+            resolvedRoute = msg.route;
+        }
         if (!this._state.sessionEntry) {
             let entry;
             try {

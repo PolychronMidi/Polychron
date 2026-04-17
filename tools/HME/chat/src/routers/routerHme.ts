@@ -147,7 +147,8 @@ export async function streamHybrid(
     const enriched = await fetchHmeContext(message);
     hmeWarm = enriched.warm;
   } catch (e: any) {
-    onChunk(`FAILFAST: HME context enrichment failed: ${e?.message ?? e}`, "error");
+    // KB enrichment failure is non-fatal — continue with empty context
+    onChunk(`[HME] KB context unavailable: ${e?.message ?? e}`, "tool");
   }
 
   const messages: LlamacppMessage[] = [];
