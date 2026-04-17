@@ -372,12 +372,21 @@ function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (pr
   return false;
 }
 
+// Targeted lookups exposed for enrichment middleware that needs data but not
+// prose — each returns raw data so the caller chooses how to surface it.
+function openHypothesesFor(stem) { return loadOpenHypothesesMap().get(stem) || []; }
+function biasBoundsFor(relPath) { return loadBiasManifest().get(relPath) || []; }
+function driftFor(stem) { return loadDriftMap().get(stem) || null; }
+
 module.exports = {
   shouldInject,
   buildStatusContext,
   buildJurisdictionContext,
   injectIntoSystem,
   isJurisdictionFile,
+  openHypothesesFor,
+  biasBoundsFor,
+  driftFor,
   // exported for test-proxy compatibility
   coherenceStatusLine,
   recentLifesaverErrors,
