@@ -43,8 +43,8 @@ import urllib.request
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_CORPUS = os.path.join(_PROJECT, "metrics", "hme-arbiter-corpus.jsonl")
-_CONFIG = os.path.join(_PROJECT, "metrics", "hme-arbiter-finetune.yaml")
+_CORPUS = os.path.join(_PROJECT, "tools", "models", "training", "hme-arbiter-corpus.jsonl")
+_CONFIG = os.path.join(_PROJECT, "tools", "models", "training", "hme-arbiter-finetune.yaml")
 _SHIM_URL = "http://127.0.0.1:9098/rag"
 
 
@@ -125,7 +125,7 @@ load_in_4bit: true
 strict: false
 
 datasets:
-  - path: metrics/hme-arbiter-corpus.jsonl
+  - path: tools/models/training/hme-arbiter-corpus.jsonl
     type: alpaca
     field_instruction: instruction
     field_input: input

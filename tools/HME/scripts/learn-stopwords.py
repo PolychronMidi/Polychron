@@ -4,7 +4,7 @@
 Mines prompt history from log/hme.log and from stress-test-subagent.py's
 test cases to learn which words are pure noise (appear frequently but are
 never useful as search targets). Produces a delta stopword list merged
-into _extract_search_terms at runtime via metrics/hme-learned-stopwords.json.
+into _extract_search_terms at runtime via tools/models/training/hme-learned-stopwords.json.
 
 Heuristic: a word is a stopword candidate if:
   1. It appears in >= 3 distinct prompts across the history, AND
@@ -12,7 +12,7 @@ Heuristic: a word is a stopword candidate if:
   3. It's not an identifier (no underscore, not camelCase), AND
   4. It's not already in the hardcoded stopword list.
 
-Output: metrics/hme-learned-stopwords.json with schema:
+Output: tools/models/training/hme-learned-stopwords.json with schema:
     {
       "version": 1,
       "generated_at": epoch,
@@ -36,7 +36,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 _LOG = os.path.join(_PROJECT, "log", "hme.log")
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-learned-stopwords.json")
+_OUTPUT = os.path.join(_PROJECT, "tools", "models", "training", "hme-learned-stopwords.json")
 
 
 def _extract_prompts_from_log() -> list:
