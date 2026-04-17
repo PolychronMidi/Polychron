@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Polychron
+GenericName=HME Development Environment
+Comment=VS Code + HME proxy stack (launches proxy first, then VS Code)
+Exec=/home/jah/Polychron/tools/HME/launcher/polychron-launch.sh %F
+Icon=code
+Terminal=false
+Categories=Development;IDE;
+Keywords=vscode;hme;polychron;ai;
+StartupWMClass=Code
+StartupNotify=true
