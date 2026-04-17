@@ -6,6 +6,7 @@ const { PROJECT_ROOT } = require('../shared');
 
 const MCP_PORT = parseInt(process.env.HME_MCP_PORT || '9098', 10);
 const SHIM_PORT = MCP_PORT;  // legacy alias
+const LLAMACPP_DAEMON_PORT = parseInt(process.env.HME_LLAMACPP_DAEMON_PORT || '7735', 10);
 
 const PYTHONPATH = process.env.PYTHONPATH || '';
 const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/mcp');
@@ -28,10 +29,21 @@ const CHILDREN = [
     args: [path.join(MCP_DIR, 'worker.py'), '--port', String(MCP_PORT)],
     env: mcpEnv,
     healthUrl: `http://127.0.0.1:${MCP_PORT}/health`,
-    startupMs: 25_000,   // worker loads RAG engines directly now — slower cold boot
+    startupMs: 25_000,   // worker loads RAG engines directly — slower cold boot
     restartDelayMs: 2_000,
     maxRestarts: 20,
     callTimeoutMs: 90_000,
+  },
+  {
+    name: 'llamacpp_daemon',
+    cmd: 'python3',
+    args: [path.join(MCP_DIR, 'llamacpp_daemon.py'), '--port', String(LLAMACPP_DAEMON_PORT)],
+    env: mcpEnv,
+    healthUrl: `http://127.0.0.1:${LLAMACPP_DAEMON_PORT}/health`,
+    startupMs: 5_000,
+    restartDelayMs: 3_000,
+    maxRestarts: 10,
+    callTimeoutMs: null,
   },
 ];
 

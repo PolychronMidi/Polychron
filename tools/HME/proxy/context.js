@@ -309,14 +309,28 @@ function recentGroundTruth(n = 3) {
   return items.slice(-n);
 }
 
+function _nexusEditCount() {
+  try {
+    const nexusPath = path.join(PROJECT_ROOT, 'tmp', 'hme-nexus.state');
+    if (!fs.existsSync(nexusPath)) return 0;
+    const lines = fs.readFileSync(nexusPath, 'utf8').split('\n');
+    return lines.filter((l) => l.startsWith('EDIT:')).length;
+  } catch (_e) { return 0; }
+}
+
 function buildStatusContext() {
   const coh = coherenceStatusLine();
   const errors = recentLifesaverErrors();
   const activity = recentActivity();
   const ground = recentGroundTruth();
-  if (!coh && errors.length === 0 && activity.length === 0 && ground.length === 0) return null;
+  const editCount = _nexusEditCount();
+  if (!coh && errors.length === 0 && activity.length === 0 && ground.length === 0 && editCount === 0) return null;
   const lines = ['', '## HME Session Status (proxy-injected)', ''];
   if (coh) lines.push(`**Coherence:** ${coh}`, '');
+  if (editCount >= 3) {
+    const severity = editCount >= 5 ? 'run' : 'consider';
+    lines.push(`**NEXUS:** ${editCount} file(s) edited since last review — ${severity} \`mcp__HME__review(mode='forget')\` to clear the backlog.`, '');
+  }
   if (errors.length > 0) {
     lines.push('**⚠ Recent LIFESAVER errors (last 30min):**');
     for (const e of errors) lines.push(`  ${e}`);
