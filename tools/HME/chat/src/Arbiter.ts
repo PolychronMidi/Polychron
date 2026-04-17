@@ -106,8 +106,7 @@ export async function classifyMessage(
   try {
     contentAccum = await daemonPost({
       model: ARBITER_MODEL, messages: [{ role: "user", content: prompt }],
-      max_tokens: 256, temperature: 0,
-      response_format: { type: "json_object" }, wall_timeout: 60,
+      max_tokens: 256, temperature: 0, response_format: { type: "json_object" },
     });
   } catch (e: any) {
     const reason = e?.message?.includes("not running")
@@ -149,10 +148,9 @@ ${summaries.slice(0, 2000)}
 
 Digest:`;
 
-  // 180s — CPU-only qwen3:4b for 512 tokens can exceed 60s when busy. Non-fatal.
   const content = await daemonPost({
     model: ARBITER_MODEL, messages: [{ role: "user", content: prompt }],
-    max_tokens: 512, temperature: 0.2, wall_timeout: 180,
+    max_tokens: 512, temperature: 0.2,
   });
   return content.trim().slice(0, 500);
 }
@@ -165,7 +163,7 @@ Digest:`;
 export async function synthesizeChainSummary(prompt: string): Promise<string> {
   const content = await daemonPost({
     model: CHAIN_SUMMARY_MODEL, messages: [{ role: "user", content: prompt }],
-    max_tokens: 2048, temperature: 0.3, wall_timeout: 180,
+    max_tokens: 2048, temperature: 0.3,
   });
   return content.trim();
 }
