@@ -111,7 +111,11 @@ async function _injectHmeTools(payload) {
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();
-    // Strip cache_control from any existing non-HME tool (stale markers from prior turns).
+    // Strip any cache_control markers from the tools array — Claude Code may
+    // put ttl='1h' markers on messages, and adding ttl='5m' (ephemeral) to
+    // tools triggers a 400: "ttl='1h' block must not come after ttl='5m' block"
+    // since tools are processed before messages. Leave cache_control entirely
+    // to Claude Code; don't add our own markers.
     for (const t of payload.tools) {
       if (t && t.cache_control) delete t.cache_control;
     }
@@ -120,13 +124,6 @@ async function _injectHmeTools(payload) {
     let injected = 0;
     for (const s of schemas) {
       if (!existing.has(s.name)) { payload.tools.push({ ...s }); injected++; }
-    }
-    // Mark the last tool as a cache breakpoint so Anthropic can cache everything
-    // up to and including the tool list. Must be the LAST tool — Anthropic's API
-    // requires cache_control on the final element of the array.
-    if (payload.tools.length > 0) {
-      const last = payload.tools[payload.tools.length - 1];
-      last.cache_control = { type: 'ephemeral' };
     }
     return injected;
   } catch (err) {
