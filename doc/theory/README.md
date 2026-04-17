@@ -16,7 +16,7 @@ This is also the directory where Polychron's externalized intellectual contribut
 
 ## The collection
 
-Eight essays, written as a sequence, each standalone but cross-referenced by subject matter. Together they make an integrated argument about how complex systems can be built to maintain themselves honestly across time — from the mechanisms of self-observation, through the temporal and governance substrates that make coexistence possible, to the downstream signal all of it serves.
+Nine essays, written as a sequence, each standalone but cross-referenced by subject matter. Together they make an integrated argument about how complex systems can be built to maintain themselves honestly across time — from the mechanisms of self-observation, through the temporal and governance substrates that make coexistence possible, to the downstream signal all of it serves, and finally to the unified structural principle that holds the entire architecture together.
 
 Reading order below is recommended but not required. Each essay stands on its own.
 
@@ -52,7 +52,11 @@ On plural governance without central authority. Specifies the mechanism Dennett'
 
 ### 8. [The Ecstatic Principle](./the-ecstatic-principle.md)
 
-The closing essay. Takes HME's name — *Hypermeta Ecstasy* — seriously as a eudaimonic design target, distinguishing ecstasy from euphoria, hedonic pleasure, UX "delight," and engagement metrics. Engages Aristotle on eudaimonia, Frankl on meaning, Csikszentmihalyi on flow, Ryff on eudaimonic well-being, Sennett on craft, Pirsig's Quality, Alexander's "quality without a name," and the Shaker tradition. Argues that tool design has moral weight most practitioners don't acknowledge, that hostile software is moral harm at civilizational scale, and that every mechanism described across the theory directory exists in service of the downstream signal the word *ecstasy* names. Gathers the collection.
+Takes HME's name — *Hypermeta Ecstasy* — seriously as a eudaimonic design target, distinguishing ecstasy from euphoria, hedonic pleasure, UX "delight," and engagement metrics. Engages Aristotle on eudaimonia, Frankl on meaning, Csikszentmihalyi on flow, Ryff on eudaimonic well-being, Sennett on craft, Pirsig's Quality, Alexander's "quality without a name," and the Shaker tradition. Argues that tool design has moral weight most practitioners don't acknowledge, that hostile software is moral harm at civilizational scale, and that every mechanism described across the theory directory exists in service of the downstream signal the word *ecstasy* names. Gathers the collection's eight arguments into a single claim about what the architecture is for.
+
+### 9. [Emergent Self-Coherence via Chaordic Tensegrity](./emergent-self-coherence-via-chaordic-tensegrity.md)
+
+**The capstone.** Argues that there is a single structural principle underlying every commitment the architecture makes. *Tensegrity* (Fuller/Snelson) names the structure: continuous tension (the grid, the trust ecology, the hooks, the coherence budget) holding discontinuous compression members (the individual modules) in productive relationship without direct contact. *Chaordic* (Dee Hock) names the dynamics: self-organizing, at the edge of chaos and order, powered from the periphery, unified from the core. *Individuation* (Jung) names the developmental arc: the lifelong spiral of integrating opposites, surfacing shadow material, circumambulating a center that cannot be reached. *Entrainment* (neural resonance theory) names the coupling mechanism that completes the circuit between the composition and the listener, producing shared frequencies present in neither alone. The compound term — *emergent self-coherence via chaordic tensegrity* — says it in five words. Every prior essay in the collection is re-read as a partial description of this unified principle.
 
 ---
 
@@ -72,6 +76,8 @@ A reader working through the essays in order will encounter a handful of princip
 
 **The regress as feature.** That self-observing systems generate infinite regress, and this is not a problem to be solved but an architecture to be built with. Central thesis of *On Meta Without Terminus*; foreshadowed at the end of *Self-Coherence*; implicit in every essay that refuses to posit a central authority or terminal observer.
 
+**Chaordic tensegrity as unified principle.** That the architecture as a whole is a single structural phenomenon: continuous tension holding discontinuous compression members in productive relationship, at the edge of chaos and order, individuating through ever-widening spirals of integration, completing itself through entrainment with the listener. The capstone essay's thesis; implicit across every prior essay, explicit in none of them until the final synthesis.
+
 These themes are not organized doctrinally. They accumulate from reading the collection as a sequence, and they are what makes the collection an integrated argument rather than a stack of adjacent essays.
 
 ## House style
@@ -82,7 +88,7 @@ Cites specific files, verifiers, subsystems, and design decisions by name. If an
 
 Does not defer. The operational docs describe; these essays argue. If the essay's thesis is wrong, it should be wrong in a way that the architecture can falsify. If the architecture changes and invalidates an essay, the essay gets updated or retired, not hedged in advance.
 
-Earns its length. The essays run from about 3,000 words (*Antagonism Bridges*, *The Regime Typology*) to about 5,500 (*On Meta Without Terminus*). Length is set by what the argument requires, not by house norm. The `memetic-drift.py` verifier does not yet scan this directory, but it should — essays that accumulate filler while the code moves on will drift faster than the KB.
+Earns its length. The essays run from about 3,000 words (*Antagonism Bridges*, *The Regime Typology*) to about 5,500 (*On Meta Without Terminus*, *Emergent Self-Coherence via Chaordic Tensegrity*). Length is set by what the argument requires, not by house norm. The `memetic-drift.py` verifier does not yet scan this directory, but it should — essays that accumulate filler while the code moves on will drift faster than the KB.
 
 Ends somewhere. Theory essays close with a specific claim, not a balanced survey. If the argument lands, it lands; if it doesn't, the essay goes back to the lab.
 
