@@ -46,10 +46,6 @@
       {
         "matcher": "TodoWrite",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_todowrite.sh", "timeout": 5}]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_agent.sh", "timeout": 300}]
       }
     ],
     "PostToolUse": [

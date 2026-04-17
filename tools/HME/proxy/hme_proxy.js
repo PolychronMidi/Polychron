@@ -52,6 +52,35 @@ const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
+// ── HME prefix rewrite (outgoing path) ───────────────────────────────────────
+// Strips `mcp__HME__` → `HME_` in the outgoing Anthropic payload so the model
+// sees clean names. Paired with hmePrefixRestore() on the incoming SSE path
+// which renames back for Claude Code's MCP dispatcher.
+const HME_PREFIX = /^mcp__HME__/;
+function _stripHmePrefixOutgoing(payload) {
+  let changed = false;
+  const rename = (name) => {
+    if (typeof name !== 'string') return name;
+    if (!HME_PREFIX.test(name)) return name;
+    changed = true;
+    return name.replace(HME_PREFIX, 'HME_');
+  };
+  if (Array.isArray(payload.tools)) {
+    for (const t of payload.tools) {
+      if (t && typeof t === 'object') t.name = rename(t.name);
+    }
+  }
+  if (Array.isArray(payload.messages)) {
+    for (const msg of payload.messages) {
+      if (!msg || !Array.isArray(msg.content)) continue;
+      for (const block of msg.content) {
+        if (block && block.type === 'tool_use') block.name = rename(block.name);
+      }
+    }
+  }
+  return changed;
+}
+
 function _handleSpawnRoute(clientReq, clientRes) {
   const supervisor = require('./supervisor/index');
   const [rawPath, query = ''] = (clientReq.url || '').split('?');
@@ -130,7 +159,8 @@ function handleRequest(clientReq, clientRes) {
       if (isAnthropic) {
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
-        if (b > 0 || s > 0) bodyDirtiedByStrip = true;
+        const r = _stripHmePrefixOutgoing(payload);
+        if (b > 0 || s > 0 || r) bodyDirtiedByStrip = true;
       }
 
       let scan = null;
@@ -220,7 +250,18 @@ function handleRequest(clientReq, clientRes) {
     const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
       recordUpstreamSuccess();
       clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
-      upstreamRes.pipe(clientRes);
+      // Only transform SSE streams from Anthropic — other providers / non-SSE
+      // content types pass through verbatim. Identify SSE by Content-Type.
+      const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
+      const isSse = isAnthropic && ct.includes('text/event-stream');
+      if (isSse) {
+        const { SseTransform } = require('./sse_transform');
+        const { hmePrefixRestore, runInBackgroundRewrite } = require('./sse_rewriters');
+        const xform = new SseTransform({ rewriters: [hmePrefixRestore, runInBackgroundRewrite] });
+        upstreamRes.pipe(xform).pipe(clientRes);
+      } else {
+        upstreamRes.pipe(clientRes);
+      }
     });
 
     const isStreaming = payload && payload.stream === true;
