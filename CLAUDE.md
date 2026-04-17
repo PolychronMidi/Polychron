@@ -87,7 +87,6 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 
 All file/search operations route through HME mega-tools for KB enrichment. Full reference: [doc/HME.md](../doc/HME.md).
 
-- **Before modifying a file:** `read("moduleName", mode="before")` — assembles KB constraints, callers, boundary warnings, file structure. Auto-resolves module names → paths.
 - **After implementing changes:** `review(mode='forget')` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
 - **After each listen-confirmed round:** `learn(title='...', content='...', category='pattern')` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `learn(action='ground_truth', title=SECTION, tags=[moment_type, sentiment], content=COMMENT, query=ROUND)` — lands in `metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
 - **Close the round window:** between the user's pipeline run and querying `status(mode='budget'|'coherence'|'trajectory')`, emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The `stop.sh` hook does this at turn end automatically; do it manually mid-turn.
