@@ -12,7 +12,7 @@ from hme_env import ENV  # noqa: E402
 
 logger = logging.getLogger("HME.http")
 
-# Injected by worker.py (and server/main.py) via init_handlers().
+# Injected by worker.py via init_handlers().
 _engine_ready: threading.Event = threading.Event()
 _project_engine = None
 _global_engine = None

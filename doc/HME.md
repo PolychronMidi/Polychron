@@ -124,20 +124,14 @@ Polychron/.claude/mcp/HME/
 {
   "mcpServers": {
     "HME": {
-      "type": "stdio",
-      "command": "python3",
-      "args": ["/home/jah/Polychron/tools/HME/mcp/server/main.py"],
-      "env": {
-        "PROJECT_ROOT": "/home/jah/Polychron",
-        "RAG_DB_PATH": "/home/jah/Polychron/.claude/mcp/HME",
-        "HME_CODER_MODEL": "qwen3-coder:30b",
-        "HME_LOCAL_URL": "http://localhost:11434/api/generate",
-        "HME_ARBITER_MODEL": "qwen3:4b"
-      }
+      "type": "sse",
+      "url": "http://127.0.0.1:9099/mcp"
     }
   }
 }
 ```
+
+Claude Code connects to the proxy's MCP SSE endpoint at port 9099. The proxy (`tools/HME/proxy/mcp_server/`) speaks MCP to Claude Code and dispatches `tools/list` + `tools/call` over plain HTTP to the worker at port 9098 (`tools/HME/mcp/worker.py`). Worker.py owns tool registration via the dict-backed `server/tool_registry.py` — no FastMCP, no stdio.
 
 ## HME Chat (VS Code Extension)
 
