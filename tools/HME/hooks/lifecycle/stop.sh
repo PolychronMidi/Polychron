@@ -76,7 +76,10 @@ if [ -f "$ERROR_LOG" ]; then
 
   # Block on NEW errors fired this turn (mid-turn)
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
-    NEW_ERRORS=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sort -u)
+    # Strip ISO timestamps before dedup so identical messages with different
+    # timestamps collapse to one line instead of spamming N copies.
+    NEW_ERRORS=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" \
+      | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
     echo "$TOTAL" > "$WATERMARK"
     echo "$TOTAL" > "$TURNSTART"
     jq -n \
@@ -89,7 +92,8 @@ if [ -f "$ERROR_LOG" ]; then
   # Block on UNADDRESSED errors from before this turn (watermark not caught up)
   # This fires when userpromptsubmit showed errors but they were not fixed last turn.
   if [ "$WATERMARK_LINE" -lt "$TURN_START_LINE" ]; then
-    UNFIXED_ERRORS=$(awk "NR > $WATERMARK_LINE && NR <= $TURN_START_LINE" "$ERROR_LOG" | sort -u)
+    UNFIXED_ERRORS=$(awk "NR > $WATERMARK_LINE && NR <= $TURN_START_LINE" "$ERROR_LOG" \
+      | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
     echo "$TURN_START_LINE" > "$WATERMARK"
     jq -n \
       --arg errors "$UNFIXED_ERRORS" \
