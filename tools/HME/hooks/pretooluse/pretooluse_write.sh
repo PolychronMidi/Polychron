@@ -40,15 +40,50 @@ if echo "$FILE" | grep -q 'tools/HME/mcp/server'; then
     exit 2
   fi
 fi
-# Enrich: inject KB context for src/ files before write proceeds
+# Enrich: semantic-validate src/ writes via /validate. Blocks on high-confidence
+# bugfix match (score ≥ 0.6); emits category-aware enrichment notice on warnings.
 if echo "$FILE" | grep -qE '/Polychron/src/'; then
   MODULE=$(_extract_module "$FILE")
-  KB_JSON=$(_hme_enrich "$MODULE")
-  KB_COUNT=$(_hme_kb_count "$KB_JSON")
-  if [[ "$KB_COUNT" -gt 0 ]]; then
-    TITLES=$(_hme_kb_titles "$KB_JSON" 3)
-    _emit_enrich_allow "Writing to $MODULE — $KB_COUNT KB constraints exist. Verify compliance: mcp__HME__read(target=\"$MODULE\", mode=\"before\")
-$TITLES"
+  VAL_CACHE="/tmp/hme-write-validate-$(printf '%s' "$MODULE" | sha1sum | cut -c1-16).json"
+  if [ ! -f "$VAL_CACHE" ]; then
+    curl -s -m 2 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
+      -H 'Content-Type: application/json' \
+      -d "{\"query\":\"$MODULE\"}" > "$VAL_CACHE" 2>/dev/null || echo '{}' > "$VAL_CACHE"
+  fi
+  BLOCK_HIT=$(python3 -c "
+import json
+try:
+  d = json.load(open('$VAL_CACHE'))
+  for b in (d.get('blocks') if isinstance(d.get('blocks'), list) else []):
+    if isinstance(b.get('score'), (int, float)) and b['score'] >= 0.6:
+      print(b.get('title', '')[:120])
+      break
+except Exception:
+  pass
+" 2>/dev/null)
+  if [ -n "$BLOCK_HIT" ]; then
+    _emit_block "BLOCKED: KB has a bugfix entry \"$BLOCK_HIT\" strongly matching this module. Review with learn(query='$MODULE') before writing."
+    exit 2
+  fi
+  WARN_TITLES=$(python3 -c "
+import json
+try:
+  d = json.load(open('$VAL_CACHE'))
+  ws = d.get('warnings') if isinstance(d.get('warnings'), list) else []
+  bs = d.get('blocks') if isinstance(d.get('blocks'), list) else []
+  titles = []
+  for h in (bs + ws):
+    if isinstance(h.get('score'), (int, float)) and h['score'] >= 0.45:
+      t = str(h.get('title', ''))[:100]
+      if t: titles.append(t)
+    if len(titles) >= 3: break
+  print('\n'.join(titles))
+except Exception:
+  pass
+" 2>/dev/null)
+  if [ -n "$WARN_TITLES" ]; then
+    _emit_enrich_allow "Writing to $MODULE — KB rules/antipatterns may apply:
+$WARN_TITLES"
     _streak_tick 10
     exit 0
   fi

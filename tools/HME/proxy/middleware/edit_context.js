@@ -14,8 +14,13 @@
 
 const path = require('path');
 const { biasBoundsFor } = require('../context');
+const { validate } = require('../worker_client');
 
 const SNAPSHOT_CMD = 'node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds';
+
+// Thresholds tuned so only high-signal KB matches surface.
+const BUGFIX_MIN_SCORE = 0.45;
+const ANTIPATTERN_MIN_SCORE = 0.45;
 
 function _relPath(fp, projectRoot) {
   if (!fp) return '';
@@ -44,7 +49,7 @@ function _appendToResult(toolResult, text) {
 module.exports = {
   name: 'edit_context',
 
-  onToolResult({ toolUse, toolResult, ctx }) {
+  async onToolResult({ toolUse, toolResult, ctx }) {
     const tool = toolUse.name || '';
     if (tool !== 'Edit' && tool !== 'Write' && tool !== 'NotebookEdit') return;
 
@@ -52,8 +57,33 @@ module.exports = {
     if (!fp) return;
     const rel = _relPath(fp, ctx.PROJECT_ROOT);
 
+    // Semantic validate — module stem is the query; /validate returns
+    // bugfix/antipattern hits if the KB has relevant entries. Surface as
+    // warning, title-only. Fires for every Edit/Write/NotebookEdit.
+    const stem = path.basename(fp, path.extname(fp));
+    const semanticLines = [];
+    const semantic = await validate(stem);
+    if (semantic && typeof semantic === 'object') {
+      const blocks = Array.isArray(semantic.blocks) ? semantic.blocks : [];
+      const warnings = Array.isArray(semantic.warnings) ? semantic.warnings : [];
+      for (const b of blocks) {
+        if (typeof b.score === 'number' && b.score >= BUGFIX_MIN_SCORE) {
+          const t = String(b.title ? b.title : '').slice(0, 120);
+          if (t) semanticLines.push(`⚠ KB bugfix "${t}" matches this module — verify edit doesn't re-introduce it`);
+          if (semanticLines.length >= 2) break;
+        }
+      }
+      for (const w of warnings) {
+        if (semanticLines.length >= 2) break;
+        if (typeof w.score === 'number' && w.score >= ANTIPATTERN_MIN_SCORE) {
+          const t = String(w.title ? w.title : '').slice(0, 120);
+          if (t) semanticLines.push(`⚠ KB antipattern/rule "${t}" relevant — cross-check`);
+        }
+      }
+    }
+
     const locks = biasBoundsFor(rel);
-    if (locks.length === 0) return;
+    if (locks.length === 0 && semanticLines.length === 0) return;
 
     // Detect whether the edit directly touches any of the locked keys.
     const oldStr = (toolUse.input && toolUse.input.old_string) || '';
@@ -65,20 +95,26 @@ module.exports = {
       return oldStr.includes(short) || newStr.includes(short);
     });
 
-    const prefix = touched.length > 0 ? '⚠ ' : '';
-    const shown = (touched.length > 0 ? touched : locks).slice(0, 4)
-      .map((l) => `${l.key}=[${l.lo},${l.hi}]`)
-      .join(', ');
-    const tail = (touched.length > 0 ? touched : locks).length > 4
-      ? ` (+${(touched.length > 0 ? touched : locks).length - 4} more)`
-      : '';
-    const verb = touched.length > 0
-      ? 'edit mentions locked bias key(s)'
-      : 'file has locked bias bounds';
+    const footerLines = [];
+    if (locks.length > 0) {
+      const prefix = touched.length > 0 ? '⚠ ' : '';
+      const src = touched.length > 0 ? touched : locks;
+      const shown = src.slice(0, 4).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(', ');
+      const tail = src.length > 4 ? ` (+${src.length - 4} more)` : '';
+      const verb = touched.length > 0 ? 'edit mentions locked bias key(s)' : 'file has locked bias bounds';
+      footerLines.push(`${prefix}${verb}: ${shown}${tail} — if intentional, snapshot with: ${SNAPSHOT_CMD}`);
+    }
+    for (const line of semanticLines) footerLines.push(line);
 
-    const footer = `\n[HME] ${prefix}${verb}: ${shown}${tail} — if intentional, snapshot with: ${SNAPSHOT_CMD}`;
+    const footer = '\n[HME] ' + footerLines.join('\n[HME] ');
     _appendToResult(toolResult, footer);
     ctx.markDirty();
-    ctx.emit({ event: 'edit_context_bias', file: rel, touched: touched.length, locks: locks.length });
+    ctx.emit({
+      event: 'edit_context',
+      file: rel,
+      touched: touched.length,
+      locks: locks.length,
+      semantic: semanticLines.length,
+    });
   },
 };
