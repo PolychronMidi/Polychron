@@ -73,7 +73,21 @@ function stripBoilerplate(payload) {
       if (hit.match) {
         strippedCount++;
         stripped_samples[hit.pattern.name] = (stripped_samples[hit.pattern.name] || 0) + 1;
-        continue;
+        // For tool_result blocks, dropping would orphan the paired tool_use
+        // and trip Anthropic's "tool use concurrency" validation. Keep the
+        // block but minimize its content to a non-empty placeholder.
+        if (block.type === 'tool_result') {
+          if (typeof block.content === 'string') {
+            block.content = '(empty)';
+          } else if (Array.isArray(block.content)) {
+            block.content = [{ type: 'text', text: '(empty)' }];
+          } else {
+            block.content = '(empty)';
+          }
+          keepBlocks.push(block);
+          continue;
+        }
+        continue; // safe to drop standalone text blocks
       }
       if (block.type === 'text' && typeof block.text === 'string') {
         let modified = block.text;
