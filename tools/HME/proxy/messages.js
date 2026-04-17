@@ -206,11 +206,17 @@ function stripSemanticRedundancy(payload) {
     }
   }
 
-  // E + F + H/I/J pass
+  // E + F + H/I/J/K pass
   const seenIdeSelection = new Set();
   const COMPACTION_NOTE_RE = /<system-reminder>\s*Note: \/\S+ was read before the last conversation was summarized[\s\S]*?<\/system-reminder>/g;
   const MONITOR_TIMEOUT_RE = /<system-reminder>\s*\[SYSTEM NOTIFICATION[\s\S]*?Monitor timed out[\s\S]*?<\/system-reminder>/g;
   const DEFERRED_TOOLS_RE = /<system-reminder>\s*The following deferred tools are now available[\s\S]*?<\/system-reminder>/g;
+  // K: background-task exit notifications. Strip ALL occurrences (not
+  // preserve-first) — they're exit telemetry for processes we've already
+  // moved past. Matches both the bare <task-notification> form and the
+  // common wrapping <system-reminder>...[SYSTEM NOTIFICATION...<task-notification>...</task-notification></system-reminder>.
+  const TASK_NOTIFICATION_RE = /<task-notification>[\s\S]*?<\/task-notification>/g;
+  const TASK_NOTIFICATION_WRAPPED_RE = /<system-reminder>\s*\[SYSTEM NOTIFICATION[\s\S]*?<task-notification>[\s\S]*?<\/task-notification>[\s\S]*?<\/system-reminder>/g;
   let compactionNoteSeen = false;
   let monitorTimeoutSeen = false;
   let deferredToolsSeen = false;
@@ -220,6 +226,12 @@ function stripSemanticRedundancy(payload) {
     for (const block of msg.content) {
       if (!block || block.type !== 'text' || typeof block.text !== 'string') continue;
       let txt = block.text;
+
+      // K runs first: strip task-notifications entirely (wrapped form, then bare).
+      // The wrapped form has an outer <system-reminder> that would otherwise
+      // match the later dup_system_reminder dedup and survive.
+      txt = txt.replace(TASK_NOTIFICATION_WRAPPED_RE, () => { bump('task_notification_stripped'); return ''; });
+      txt = txt.replace(TASK_NOTIFICATION_RE, () => { bump('task_notification_stripped'); return ''; });
 
       txt = txt.replace(COMPACTION_NOTE_RE, (m) => {
         if (compactionNoteSeen) { bump('dup_compaction_note'); return ''; }
