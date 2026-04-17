@@ -15,7 +15,7 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 
-@ctx.mcp.tool()
+@ctx.mcp.tool(meta={"hidden": True})
 @chained("read")
 def read(target: str, mode: str = "auto") -> str:
     """Smart code reader — auto-routes by target format.
