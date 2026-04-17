@@ -204,13 +204,65 @@ def _call_arbiter(prompt: str, system: str = "", max_tokens: int = 1024) -> str:
                        timeout=_ARBITER_TIMEOUT)
 
 
+def _load_cascade_module():
+    """Import synthesis_reasoning + sibling provider modules. In standalone
+    agent_local invocation (pretooluse_agent.sh), ctx.mcp is None and the
+    tools_analysis __init__'s @ctx.mcp.tool() decorators would crash; stub
+    it with a no-op registry before the import so the package init can
+    complete. Returns the cascade module or None on failure."""
+    try:
+        from server import context as _ctx
+    except Exception as _e:
+        logger.warning(f"cascade: cannot import server.context ({_e})")
+        return None
+
+    if _ctx.mcp is None:
+        class _StubRegistry:
+            def tool(self, **_kwargs):
+                def deco(fn):
+                    return fn
+                return deco
+            def __getattr__(self, _name):
+                return self.tool
+        _ctx.mcp = _StubRegistry()
+
+    try:
+        from server.tools_analysis.synthesis import synthesis_reasoning
+        return synthesis_reasoning
+    except Exception as _e:
+        logger.warning(f"cascade module load failed: {type(_e).__name__}: {_e}")
+        return None
+
+
+_cascade_mod = None
+_cascade_load_attempted = False
+
+
 def _call_synthesizer(prompt: str, system: str = "", max_tokens: int = 4096,
                       query_prompt: str = "") -> tuple[str, str]:
-    """Call the best model for this query. Returns (response, model_label)."""
-    model, port, label = _route_model(query_prompt or prompt)
+    """Call the best-available model. Tries the free-API cascade first
+    (synthesis_reasoning.call() — 22-slot ranked list with per-model circuit
+    breakers across cerebras/groq/gemini/openrouter/mistral/nvidia), falling
+    through to local llama-server only when every ranked slot is exhausted."""
+    global _cascade_mod, _cascade_load_attempted
+    model, port, local_label = _route_model(query_prompt or prompt)
+    profile = "coder" if local_label == "coder" else "reasoning"
+    if not _cascade_load_attempted:
+        _cascade_mod = _load_cascade_module()
+        _cascade_load_attempted = True
+    if _cascade_mod is not None:
+        try:
+            cascade_out = _cascade_mod.call(
+                prompt, system=system, max_tokens=max_tokens,
+                temperature=0.3, profile=profile,
+            )
+            if cascade_out:
+                return _strip_think(cascade_out), f"cascade/{profile}"
+        except Exception as _e:
+            logger.warning(f"cascade dispatcher failed ({type(_e).__name__}: {_e}) — falling back to local")
     response = _call_model(prompt, model, port, system=system,
                            max_tokens=max_tokens, timeout=_REASONER_TIMEOUT)
-    return response, label
+    return response, local_label
 
 
 def _get_rag_context(query: str) -> str:
