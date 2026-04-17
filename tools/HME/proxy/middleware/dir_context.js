@@ -120,13 +120,14 @@ module.exports = {
     }
     if (parts.length === 0) return;
 
+    const dirName = path.basename(tracked);
     const driftTag = entry.drifted ? ' (drifted)' : '';
-    const footer = `\n[HME dir:${entry.name}${driftTag}] ${parts.join(' | ')}`;
+    const footer = `\n[HME dir:${dirName}${driftTag}] ${parts.join(' | ')}`;
     _appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({
       event: 'dir_context',
-      dir: entry.name,
+      dir: dirName,
       rules_injected: parts.length,
       drifted: !!entry.drifted,
     });

@@ -44,35 +44,38 @@ BOUNDARY_MARKERS = ("index.js", "index.ts", "__init__.py", "Manager.js")
 # Extensions counted as "source files" for cohesion scoring
 SOURCE_EXTS = {".js", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".sh"}
 
-FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+# Metadata block is hidden in an HTML comment at the bottom of README.md. The
+# content above the block is captured verbatim as `intro` — the file doubles as
+# a normal README for GitHub/human viewing. Anything outside this block is not
+# parsed (YAML frontmatter at the top is ignored — HF model cards use that).
+INTENT_BLOCK_RE = re.compile(
+    r"(.*?)\n?<!--\s*HME-DIR-INTENT\s*\n(.*?)\n\s*-->\s*$",
+    re.DOTALL,
+)
 
 
-# Fields that identify a README as using OUR schema (vs e.g. HuggingFace model cards).
-# If none of these fields are present, the README is using some other frontmatter
-# convention and we ignore it entirely (not flag as invalid).
-_SCHEMA_FINGERPRINT = {"rules", "info"}
-
-
-def _parse_frontmatter(path: str) -> Optional[dict]:
+def _parse_readme(path: str) -> Optional[dict]:
+    """Return {intro, rules, _parse_error?} if the README contains our block,
+    else None (the README uses some other convention and we ignore it)."""
     try:
         with open(path, encoding="utf-8") as f:
-            text = f.read(8192)  # cap read — frontmatter is always at the top
+            text = f.read()
     except OSError:
         return None
-    m = FRONTMATTER_RE.match(text)
+    m = INTENT_BLOCK_RE.match(text)
     if not m:
         return None
+    intro = m.group(1).strip()
     try:
-        data = yaml.safe_load(m.group(1))
+        data = yaml.safe_load(m.group(2))
     except yaml.YAMLError as e:
-        return {"_parse_error": str(e), "_uses_our_schema": True}
+        return {"intro": intro, "rules": [], "_parse_error": str(e)}
     if not isinstance(data, dict):
-        return None
-    # Only track READMEs using our schema — skip HF model cards and other conventions.
-    if not (_SCHEMA_FINGERPRINT & set(data.keys())):
-        return None
-    data["_uses_our_schema"] = True
-    return data
+        data = {}
+    return {
+        "intro": intro,
+        "rules": data.get("rules", []),
+    }
 
 
 def _dir_signature(dir_abs: str) -> dict:
@@ -136,26 +139,17 @@ def _validate(rel_dir: str, data: dict) -> list[str]:
     """Return a list of validation errors. Empty list = valid."""
     errors = []
     if "_parse_error" in data:
-        errors.append(f"yaml parse error: {data['_parse_error']}")
+        errors.append(f"yaml parse error in HME-DIR-INTENT block: {data['_parse_error']}")
         return errors
-    name = data.get("name", "")
-    expected_name = os.path.basename(rel_dir)
-    if name != expected_name:
-        errors.append(f"name={name!r} does not match dirname={expected_name!r}")
     rules = data.get("rules")
     if rules is None:
         errors.append("missing required field: rules")
     elif not isinstance(rules, list) or not all(isinstance(r, str) for r in rules):
         errors.append("rules must be a list of strings")
     elif not rules:
-        errors.append("rules list is empty — if there are no local rules, this dir shouldn't have a README")
-    if "info" not in data:
-        errors.append("missing required field: info")
-    elif not isinstance(data["info"], str):
-        errors.append("info must be a string")
-    children = data.get("children")
-    if children is not None and not isinstance(children, dict):
-        errors.append("children must be a mapping (dict)")
+        errors.append("rules list is empty — if there are no local rules, this dir shouldn't have an HME-DIR-INTENT block")
+    if not data.get("intro"):
+        errors.append("intro is empty — put a normal README description above the HME-DIR-INTENT block")
     return errors
 
 
@@ -181,20 +175,22 @@ def build() -> dict:
     for root, dirs, files in os.walk(PROJECT, followlinks=False):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
         rel = os.path.relpath(root, PROJECT)
+        has_our_block = False
         if "README.md" in files:
-            fm = _parse_frontmatter(os.path.join(root, "README.md"))
-            if fm is not None:
-                readmes[rel] = fm
-        elif _is_boundary(root) and rel != ".":
+            parsed = _parse_readme(os.path.join(root, "README.md"))
+            if parsed is not None:
+                readmes[rel] = parsed
+                has_our_block = True
+        if not has_our_block and _is_boundary(root) and rel != ".":
             candidates.append(rel)
 
     dirs_out = {}
     drifted = 0
     invalid = 0
     new_sig_cache = {}
-    for rel, fm in readmes.items():
+    for rel, parsed in readmes.items():
         abs_dir = os.path.join(PROJECT, rel)
-        errors = _validate(rel, fm)
+        errors = _validate(rel, parsed)
         sig = _dir_signature(abs_dir)
         stored = sig_cache.get(rel, {})
         is_drifted = bool(stored) and (
@@ -206,10 +202,8 @@ def build() -> dict:
         if errors:
             invalid += 1
         dirs_out[rel] = {
-            "name": fm.get("name") if isinstance(fm, dict) else None,
-            "rules": fm.get("rules", []) if isinstance(fm, dict) else [],
-            "info": fm.get("info", "") if isinstance(fm, dict) else "",
-            "children": fm.get("children", {}) if isinstance(fm, dict) else {},
+            "rules": parsed.get("rules", []),
+            "intro": parsed.get("intro", ""),
             "signature": sig,
             "signature_stored": stored or None,
             "drifted": is_drifted,
