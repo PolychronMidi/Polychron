@@ -224,6 +224,7 @@ module.exports = {
     if (blocks.length === 0) return;
 
     _appendToResult(toolResult, blocks.join(''));
+    ctx.markDirty();
     ctx.emit({
       event: 'neighborhood_enrichment',
       dirs: hot.slice(0, blocks.length).map(([d]) => path.basename(d)).join('|'),

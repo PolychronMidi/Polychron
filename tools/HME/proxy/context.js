@@ -358,12 +358,102 @@ function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (pr
   return false;
 }
 
+// ── File enrichment (for Read-augmentation middleware) ──────────────────────
+// Given an absolute or project-relative file path, return a compact footer
+// summarizing everything HME knows about the file from its loaded maps:
+// staleness, bias bounds, open hypotheses, drift warnings, jurisdiction zone.
+// Returns null when the file has no HME coverage — caller should skip the
+// enrichment.
+function buildFileEnrichment(filePath) {
+  if (!filePath) return null;
+  const idx = filePath.indexOf('src/');
+  const rel = idx >= 0 ? filePath.slice(idx) : filePath;
+  const stem = path.basename(rel, path.extname(rel));
+
+  const bias = (loadBiasManifest().get(rel) || []);
+  const stale = loadStalenessMap().get(stem);
+  const hypotheses = loadOpenHypothesesMap().get(stem) || [];
+  const drifted = loadDriftMap().get(stem);
+  const inZone = JURISDICTION_ZONES.some((z) => rel.includes(z));
+
+  if (!inZone && bias.length === 0 && !stale && hypotheses.length === 0 && !drifted) {
+    return null;
+  }
+
+  const lines = [];
+  if (stale) {
+    const ds = typeof stale.staleness_days === 'number' ? `${stale.staleness_days.toFixed(1)}d` : '?';
+    lines.push(`KB: ${stale.status} (${stale.kb_entries_matched} entries, ${ds} old)`);
+  }
+  if (inZone) {
+    lines.push(`Zone: hypermeta jurisdiction — edits constrained by controller authority`);
+  }
+  if (bias.length > 0) {
+    const keys = bias.slice(0, 3).map((b) => b.key).join(', ');
+    const tail = bias.length > 3 ? `, +${bias.length - 3}` : '';
+    lines.push(`Bias bounds (${bias.length}): ${keys}${tail}`);
+  }
+  if (hypotheses.length > 0) {
+    const first = hypotheses[0];
+    const claim = String(first.claim || '').slice(0, 100);
+    lines.push(`Open hypotheses (${hypotheses.length}): \`${first.id}\` ${claim}`);
+  }
+  if (drifted) {
+    const fields = (drifted.diffs || [])
+      .filter((d) => d.field !== 'content_hash_prefix')
+      .map((d) => d.field)
+      .slice(0, 3);
+    lines.push(`⚠ KB drift: signature diverged (${fields.join(', ')}) — description may be wrong`);
+  }
+
+  if (lines.length === 0) return null;
+  return ['', '── HME enrichment ──', ...lines, '────────────────────'].join('\n');
+}
+
+// Checks whether a file falls within the RAG-indexed directories declared in
+// .mcp.json's ragIndexDirs. Used by the read-augmentation middleware to
+// decide whether to attempt enrichment. Cached at module scope, refreshed
+// on the same interval as other loaders.
+const MCP_JSON_PATH = path.join(PROJECT_ROOT, '.mcp.json');
+let _indexedDirs = null;
+let _indexedDirsLoadedAt = 0;
+
+function loadIndexedDirs() {
+  const now = Date.now();
+  if (_indexedDirs && now - _indexedDirsLoadedAt < REFRESH_INTERVAL_MS) return _indexedDirs;
+  _indexedDirs = [];
+  try {
+    const raw = fs.readFileSync(MCP_JSON_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    const hme = data && data.mcpServers && data.mcpServers.HME;
+    if (hme && Array.isArray(hme.ragIndexDirs)) {
+      _indexedDirs = hme.ragIndexDirs.map((d) => d.replace(/\/+$/, ''));
+    }
+  } catch (_err) { /* no config — empty list means no enrichment */ }
+  _indexedDirsLoadedAt = now;
+  return _indexedDirs;
+}
+
+function isFileIndexed(filePath) {
+  if (!filePath) return false;
+  // Normalize to project-relative.
+  const abs = path.isAbsolute(filePath) ? filePath : path.join(PROJECT_ROOT, filePath);
+  const rel = abs.startsWith(PROJECT_ROOT + '/') ? abs.slice(PROJECT_ROOT.length + 1) : abs;
+  for (const dir of loadIndexedDirs()) {
+    if (!dir) continue;
+    if (rel === dir || rel.startsWith(dir + '/')) return true;
+  }
+  return false;
+}
+
 module.exports = {
   shouldInject,
   buildStatusContext,
   buildJurisdictionContext,
   injectIntoSystem,
   isJurisdictionFile,
+  buildFileEnrichment,
+  isFileIndexed,
   // exported for test-proxy compatibility
   coherenceStatusLine,
   recentLifesaverErrors,
