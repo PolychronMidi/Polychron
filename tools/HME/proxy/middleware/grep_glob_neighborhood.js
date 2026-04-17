@@ -19,32 +19,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { isFileIndexed, buildFileEnrichment } = require('../context');
-
-// Max bytes for the KB coverage summary appended after neighborhood blocks.
-const MAX_KB_SUMMARY_BYTES = 350;
-const MAX_KB_FILES_SHOWN = 5;
-
-function _buildKbCoverageSummary(paths) {
-  const seen = new Set();
-  const hits = [];
-  for (const p of paths) {
-    if (seen.has(p)) continue;
-    seen.add(p);
-    if (!isFileIndexed(p)) continue;
-    const footer = buildFileEnrichment(p);
-    if (!footer) continue;
-    const content = footer.trim().replace(/^\[HME\]\s*/, '');
-    if (!content) continue;
-    const base = p.split('/').pop() || p;
-    hits.push(`${base} ${content}`);
-    if (hits.length >= MAX_KB_FILES_SHOWN) break;
-  }
-  if (hits.length === 0) return null;
-  const body = hits.join(' | ');
-  if (body.length > MAX_KB_SUMMARY_BYTES) return null;
-  return `\n[HME KB] ${body}`;
-}
 
 const MIN_HITS_PER_DIR = 3;
 const MAX_TOTAL_ENRICHMENT_BYTES = 800;
@@ -247,15 +221,14 @@ module.exports = {
       _markExplored(dir);
     }
 
-    const kbSummary = _buildKbCoverageSummary(paths);
-    if (blocks.length === 0 && !kbSummary) return;
+    if (blocks.length === 0) return;
 
-    _appendToResult(toolResult, blocks.join('') + (kbSummary || ''));
+    _appendToResult(toolResult, blocks.join(''));
     ctx.markDirty();
     ctx.emit({
       event: 'neighborhood_enrichment',
       dirs: hot.slice(0, blocks.length).map(([d]) => path.basename(d)).join('|'),
-      bytes: totalBytes + (kbSummary ? kbSummary.length : 0),
+      bytes: totalBytes,
     });
   },
 };
