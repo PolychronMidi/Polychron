@@ -11,7 +11,7 @@ Data sources:
   - metrics/hme-hook-latency.jsonl → per-hook wall time distribution
   - metrics/hme-trajectory.json   → trend analysis
   - metrics/hme-coupling.json     → tool pair effectiveness matrix
-  - metrics/hme-coherence.jsonl   → rag_proxy coherence history
+  - metrics/hme-coherence.jsonl   → coherence history from old rag_proxy monitor (may be stale after shim deprecation)
   - metrics/hme-hci-forecast.json → predicted HCI
   - metrics/hme-memetic-drift.json → rule violation counts
   - metrics/hme-verifier-coverage.json → fix commit coverage gaps
@@ -391,7 +391,7 @@ if (Object.keys(mv).length) {
   }, {displaylogo: false});
 }
 
-// ── Coherence log scatter over time (from rag_proxy monitor)
+// ── Coherence log scatter over time (historical data, from pre-deprecation)
 const ch = D.coherence_log || [];
 if (ch.length) {
   const xs = ch.map(e => new Date((e.ts || 0) * 1000));
@@ -401,7 +401,7 @@ if (ch.length) {
     { x: xs, y: ch.map(e => e.shim_ms || null), name: 'shim ms', mode: 'lines',
       line: { color: '#fab387', width: 1 }, yaxis: 'y2' },
   ], {
-    ...DARK, title: 'Coherence + shim latency (rag_proxy monitor)',
+    ...DARK, title: 'Coherence + latency (historical)',
     xaxis: { gridcolor: '#313244' },
     yaxis: { title: 'coherence', range: [0, 1.1], gridcolor: '#313244' },
     yaxis2: { title: 'shim ms', overlaying: 'y', side: 'right', gridcolor: '#313244' },

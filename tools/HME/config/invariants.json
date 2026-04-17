@@ -1121,7 +1121,7 @@
       "id": "index-directory-zero-args",
       "description": "index_directory must take zero arguments everywhere — ragIndexDirs in .mcp.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
       "type": "shell_output_empty",
-      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/mcp/rag_engine/engine_indexing.py tools/HME/mcp/server/rag_proxy.py 2>/dev/null",
+      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/mcp/rag_engine/engine_indexing.py 2>/dev/null",
       "severity": "error"
     },
     {

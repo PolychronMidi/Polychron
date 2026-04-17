@@ -132,7 +132,7 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
             if key == "__main__":
                 # Use explicit key presence checks with named error messages
                 # instead of `r['key']` (which raises KeyError on shim
-                # failure returning malformed dicts). rag_proxy now raises
+                # failure returning malformed dicts).
                 # on empty responses, but defend here too for any
                 # legitimate partial-success dict.
                 if not isinstance(r, dict):

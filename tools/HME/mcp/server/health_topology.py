@@ -208,8 +208,7 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
 
     healthy_signals: list[tuple[str, bool]] = []
     if shim.get("healthy"):
-        healthy_signals.append(("shim", True))
-        healthy_signals.append(("rag_proxy", True))
+        healthy_signals.append(("worker", True))
     for key, info in llamacpp.items():
         if info.get("healthy"):
             healthy_signals.append((key, True))
