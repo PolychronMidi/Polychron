@@ -222,7 +222,7 @@ function handleRequest(clientReq, clientRes) {
         // middleware mutated the payload (via ctx.markDirty()) — we need to
         // re-serialize before forwarding.
         try {
-          const mwDirtied = middleware.runPipeline(payload, scan, session);
+          const mwDirtied = await middleware.runPipeline(payload, scan, session);
           if (mwDirtied) bodyDirtiedByStrip = true;
         } catch (err) {
           console.error('[hme-proxy] middleware pipeline error:', err.message);

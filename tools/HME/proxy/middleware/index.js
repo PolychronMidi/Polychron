@@ -140,25 +140,25 @@ function _pairToolResults(payload) {
 }
 
 // ── Main pipeline entry ──────────────────────────────────────────────────────
-function runPipeline(payload, scan, session) {
+// Async so middleware can do HTTP calls (e.g., KB lookups) in their handlers.
+// Synchronous handlers still work — `await` on a non-promise is a no-op.
+async function runPipeline(payload, scan, session) {
   _pipelineDirty = false;
-  // Pair tool_use + tool_result events, fire onToolResult for each.
   const events = _pairToolResults(payload);
   for (const { toolUse, toolResult } of events) {
     for (const mod of _modules) {
       if (typeof mod.onToolResult !== 'function') continue;
       try {
-        mod.onToolResult({ toolUse, toolResult, session, ctx });
+        await mod.onToolResult({ toolUse, toolResult, session, ctx });
       } catch (err) {
         console.error(`[middleware] ${mod.name}.onToolResult threw: ${err.message}`);
       }
     }
   }
-  // Per-request middleware (runs once per Anthropic request).
   for (const mod of _modules) {
     if (typeof mod.onRequest !== 'function') continue;
     try {
-      mod.onRequest({ payload, scan, session, ctx });
+      await mod.onRequest({ payload, scan, session, ctx });
     } catch (err) {
       console.error(`[middleware] ${mod.name}.onRequest threw: ${err.message}`);
     }
