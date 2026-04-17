@@ -114,9 +114,10 @@ from server import system_phase as _sp
 _sp.set_phase(_sp.SystemPhase.WARMING, "main.py starting")
 
 # --- MCP App (created BEFORE model load so handshake is instant) ---
-# No instructions= field: the HME plugin's SKILL.md is the single source of truth
-# for the tool surface. An instructions block here would either duplicate SKILL.md
-# or drift out of sync with it (as it did until 2026-04-14).
+# No instructions= field: tool descriptions on the @mcp.tool decorators are
+# the source of truth. The proxy injects those schemas into outgoing
+# Anthropic requests, so the agent always sees the current surface without
+# any drift-prone skill/instructions markdown.
 mcp = FastMCP("HME")
 
 # --- Populate shared context for tool modules (mcp set; engines will be set by background thread) ---
