@@ -1,14 +1,13 @@
 ---
 name: HME
-description: Hypermeta evolutionary intelligence. 6 MCP tools — evolutionary nervous system for self-evolving composition: KB, architectural analysis, enforcement, evolution planning.
+description: Hypermeta evolutionary intelligence. 5 MCP tools — evolutionary nervous system for self-evolving composition: KB, architectural analysis, enforcement, evolution planning.
 allowed-tools: mcp__HME__*
 ---
 
-# 6 Tools
+# 5 Tools
 
 | Tool | When to Use |
 |------|-------------|
-| `read(target)` | Before editing a file. Pre-edit briefing (mode='before'), file structure, module story/impact |
 | `review(mode)` | mode='forget': post-edit audit. mode='full': digest+regime+trust. mode='composition': arc/drama/hotspot |
 | `learn(action)` | action='search': KB query. action='add': new entry. action='health': coverage/staleness |
 | `evolve(focus)` | focus: design / forge / curate / invariants / stress / contradict |
@@ -18,8 +17,6 @@ allowed-tools: mcp__HME__*
 ## Mandatory Pattern
 
 ```
-read("moduleName", mode="before")       # BEFORE any edit
-  -> edit
 review(mode='forget')                   # AFTER changes (auto-detects from git)
   STABLE/EVOLVED -> auto-commit
   FAILED -> diagnose
@@ -30,12 +27,6 @@ node lab/run.js sketches/<name>         # test (180s, isolated)
 ```
 
 ## Auto-Routing
-
-`read()` detects from target format:
-- `src/path/file.js` → file structure + KB
-- `src/path/file.js:10-50` → line range
-- `functionName` → function body lookup
-- `moduleName` with mode → module intel
 
 `evolve(focus)` values:
 - `'design'` — antagonist bridge: dimension + code location + rationale
