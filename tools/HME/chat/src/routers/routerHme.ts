@@ -3,7 +3,7 @@ import { LlamacppMessage, ChunkCallback } from "../router";
 import { streamLlamacppAgentic as streamLlamacppAgentic } from "./routerLlamacpp";
 import { AGENTIC_SYSTEM_PROMPT } from "../streamUtils";
 
-const HME_HTTP_PORT = 9098;
+const HME_HTTP_PORT = parseInt(process.env.HME_PROXY_PORT || "9099", 10);
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
 
 // ── HME context enrichment ────────────────────────────────────────────────
@@ -28,7 +28,7 @@ export async function fetchHmeContext(query: string, topK: number = 5): Promise<
 
 function shimGet<T>(path: string, parse: (raw: string) => T, fallback: T, timeoutMs: number = 1000): Promise<T> {
   return new Promise((resolve) => {
-    const req = http.get(`${HME_HTTP_URL}${path}`, (res) => {
+    const req = http.get(`${HME_HTTP_URL}/chat${path}`, (res) => {
       let raw = "";
       res.on("data", (c: Buffer) => { raw += c.toString("utf8"); });
       res.on("end", () => {
@@ -54,7 +54,7 @@ function shimPost<T>(path: string, body: string, parse: (raw: string) => T, time
     const timer = setTimeout(() => fail(`HME shim ${path} timeout (${timeoutMs / 1000}s)`), timeoutMs);
     const req = http.request(
       {
-        hostname: "127.0.0.1", port: HME_HTTP_PORT, path, method: "POST",
+        hostname: "127.0.0.1", port: HME_HTTP_PORT, path: `/chat${path}`, method: "POST",
         headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
       },
       (res) => {
