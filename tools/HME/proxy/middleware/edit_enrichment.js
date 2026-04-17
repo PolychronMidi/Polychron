@@ -5,16 +5,13 @@
  * jurisdiction constraints, bias bounds, and drift warnings immediately
  * after an edit lands — no separate read required.
  *
- * Also fires a background /reindex on the edited file so KB coverage stays
- * current for subsequent searches. The reindex is fully fire-and-forget:
- * it never blocks the edit result or adds latency.
+ * Reindexing is NOT triggered here. A file watcher handles that
+ * automatically — firing /reindex per edit would double-schedule work.
  *
  * Scope gate: indexed files only (same as read_enrichment).
  */
 
-const http = require('http');
 const { isFileIndexed, buildFileEnrichment } = require('../context');
-const { MCP_PORT } = require('../supervisor/children');
 
 function _appendToResult(toolResult, text) {
   if (typeof toolResult.content === 'string') {
@@ -34,18 +31,6 @@ function _appendToResult(toolResult, text) {
   toolResult.content = text;
 }
 
-function _reindexAsync(filePath) {
-  const body = Buffer.from(JSON.stringify({ files: [filePath] }), 'utf8');
-  const req = http.request({
-    hostname: '127.0.0.1', port: MCP_PORT, path: '/reindex', method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': body.length },
-  });
-  req.on('error', () => { /* fire-and-forget; worker may not be up yet */ });
-  req.setTimeout(30_000, () => req.destroy());
-  req.write(body);
-  req.end();
-}
-
 module.exports = {
   name: 'edit_enrichment',
 
@@ -56,9 +41,6 @@ module.exports = {
     const filePath = (toolUse.input && toolUse.input.file_path) || '';
     if (!filePath) return;
     if (!isFileIndexed(filePath)) return;
-
-    // Background reindex — never awaited, never blocks.
-    _reindexAsync(filePath);
 
     const footer = buildFileEnrichment(filePath);
     if (!footer) return;
