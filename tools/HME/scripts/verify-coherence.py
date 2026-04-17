@@ -616,7 +616,7 @@ class ShimHealthVerifier(Verifier):
     def run(self) -> VerdictResult:
         try:
             import urllib.request
-            req = urllib.request.Request("http://127.0.0.1:7734/health")
+            req = urllib.request.Request("http://127.0.0.1:9098/health")
             with urllib.request.urlopen(req, timeout=2) as r:
                 if r.status == 200:
                     return _result(PASS, 1.0, "shim /health responds 200")
@@ -1392,12 +1392,12 @@ class SubagentBackendsVerifier(Verifier):
         except Exception:
             backends["llamacpp_arbiter"] = None
 
-        # 4. HME shim (port 7734 for RAG)
+        # 4. HME worker (port 9098 — absorbs former shim role)
         try:
             import urllib.request
-            req = urllib.request.Request("http://127.0.0.1:7734/health")
+            req = urllib.request.Request("http://127.0.0.1:9098/health")
             with urllib.request.urlopen(req, timeout=2) as r:
-                backends["hme_shim"] = "7734" if r.status == 200 else None
+                backends["hme_worker"] = "9098" if r.status == 200 else None
         except Exception:
             backends["hme_shim"] = None
 

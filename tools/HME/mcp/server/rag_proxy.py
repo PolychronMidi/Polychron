@@ -1,4 +1,4 @@
-"""RAG proxy — delegates engine calls to the persistent HTTP shim on localhost:7734.
+"""RAG proxy — delegates engine calls to the worker on localhost:9098 (absorbed the shim).
 
 Drop-in replacement for RAGEngine. The MCP server uses this instead of loading
 its own SentenceTransformer + RAGEngine, eliminating the duplicate model loading

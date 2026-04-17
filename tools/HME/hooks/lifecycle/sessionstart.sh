@@ -40,7 +40,7 @@ _onb_init
 
 # ── HME Proxy + Supervisor (:9099) ───────────────────────────────────────────
 # Proxy owns shim + MCP as supervised children. Starting the proxy is all
-# that's needed — it spawns the shim (7734) and MCP (9098) automatically.
+# that.s needed — the worker (9098) absorbs every former shim endpoint.
 # Claude Code connects via SSE: url = http://127.0.0.1:9099/mcp
 PROXY_PORT="${HME_PROXY_PORT:-9099}"
 if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
@@ -49,7 +49,7 @@ if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
     if [ -f "$PROXY_SCRIPT" ]; then
       HME_PROXY_PORT="$PROXY_PORT" nohup node "$PROXY_SCRIPT" \
         > "$PROJECT_ROOT/log/hme-proxy.out" 2>&1 &
-      echo "HME proxy+supervisor started on :${PROXY_PORT} (pid $!) — shim and MCP will spawn as children" >&2
+      echo "HME proxy+supervisor started on :${PROXY_PORT} (pid $!) — worker will spawn as a child" >&2
     fi
   else
     echo "HME proxy already running on :${PROXY_PORT}" >&2

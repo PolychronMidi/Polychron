@@ -79,7 +79,7 @@ _hme_exit_combined() {
 trap _hme_exit_combined EXIT
 
 # ── Tunable constants (adjust here — not in individual hooks) ─────────────────
-_HME_HTTP_PORT=7734
+_HME_HTTP_PORT=9098
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 
@@ -186,7 +186,7 @@ _streak_reset() {
 }
 
 # ── HME HTTP shim helpers ─────────────────────────────────────────────────
-# Consolidated KB enrichment and validation via the localhost:7734 shim.
+# Consolidated KB enrichment and validation via the worker at localhost:9098 (absorbed the shim).
 
 _hme_enrich() {
   local module="$1" top_k="${2:-3}"

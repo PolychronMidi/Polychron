@@ -33,7 +33,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 _OUTPUT = os.path.join(_PROJECT, "metrics", "hme-global-kb-promotions.json")
-_SHIM_URL = "http://127.0.0.1:7734/rag"
+_SHIM_URL = "http://127.0.0.1:9098/rag"
 
 # Project-specific terms — presence indicates domain-bound entry
 _DOMAIN_TERMS = {

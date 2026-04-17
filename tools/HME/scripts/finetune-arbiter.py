@@ -45,7 +45,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 _CORPUS = os.path.join(_PROJECT, "metrics", "hme-arbiter-corpus.jsonl")
 _CONFIG = os.path.join(_PROJECT, "metrics", "hme-arbiter-finetune.yaml")
-_SHIM_URL = "http://127.0.0.1:7734/rag"
+_SHIM_URL = "http://127.0.0.1:9098/rag"
 
 
 def _query(method: str, **kwargs) -> list:

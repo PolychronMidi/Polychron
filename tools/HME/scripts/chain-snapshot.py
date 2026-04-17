@@ -158,7 +158,7 @@ def _kb_section() -> dict:
             "engine": "project", "method": "list_knowledge", "kwargs": {},
         }).encode()
         req = urllib.request.Request(
-            "http://127.0.0.1:7734/rag", data=payload,
+            "http://127.0.0.1:9098/rag", data=payload,
             headers={"Content-Type": "application/json"},
         )
         with urllib.request.urlopen(req, timeout=5) as r:

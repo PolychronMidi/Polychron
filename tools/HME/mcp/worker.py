@@ -133,32 +133,28 @@ _startup_t0 = time.time()
 
 
 def _background_load():
-    from server.rag_proxy import (
-        RAGProxy, ensure_shim_running, check_shim_rag_capable,
-        kill_shim_by_pid, get_lib_engines, start_proxy_monitor,
-    )
+    """Direct RAG engine load — no shim, no HTTP hop. `rag_engines` module
+    starts its `_load_engines` thread on import; we wait for ready, then wire
+    the globals into ctx so tool code sees real engine instances (not an
+    HTTP-delegating proxy)."""
     try:
-        shim_ok = ensure_shim_running()
-        if shim_ok and not check_shim_rag_capable():
-            logger.warning("Shim healthy but lacks /rag — killing stale version and restarting")
-            kill_shim_by_pid()
-            time.sleep(1)
-            shim_ok = ensure_shim_running()
-        if shim_ok:
-            ctx.project_engine = RAGProxy("project")
-            ctx.global_engine = RAGProxy("global")
-            ctx.shared_model = ctx.project_engine.model
-            ctx.lib_engines = get_lib_engines()
-            start_proxy_monitor()
-            try:
-                from server import llamacpp_supervisor as _sup
-                _sup_status = _sup.ensure_all_running()
-                logger.info(f"llamacpp_supervisor: {_sup_status}")
-            except Exception as _sup_err:
-                logger.warning(f"llamacpp_supervisor startup failed: {type(_sup_err).__name__}: {_sup_err}")
-            logger.info(f"HME worker ready (proxy mode) | libs={list(ctx.lib_engines.keys())}")
-        else:
-            logger.warning("HTTP shim unavailable — worker running in degraded mode")
+        import rag_engines
+        if not rag_engines._engine_ready.wait(timeout=120):
+            raise RuntimeError("RAG engines did not load within 120s")
+        ctx.project_engine = rag_engines._project_engine
+        ctx.global_engine = rag_engines._global_engine
+        ctx.shared_model = getattr(rag_engines._project_engine, "text_model", None)
+        ctx.lib_engines = dict(rag_engines._lib_engines)
+        logger.info(
+            f"HME worker ready (direct RAG, shim deprecated) | "
+            f"project={PROJECT_ROOT} | libs={list(ctx.lib_engines.keys())}"
+        )
+        try:
+            from server import llamacpp_supervisor as _sup
+            _sup_status = _sup.ensure_all_running()
+            logger.info(f"llamacpp_supervisor: {_sup_status}")
+        except Exception as _sup_err:
+            logger.warning(f"llamacpp_supervisor startup failed: {type(_sup_err).__name__}: {_sup_err}")
         from server.startup_validator import validate_startup
         validate_startup(ctx, PROJECT_ROOT)
         _sp.set_phase(_sp.SystemPhase.READY, "startup validation passed")
@@ -183,7 +179,6 @@ class _ThreadingServer(ThreadingHTTPServer):
 
 class _Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
-        # Send access logs to hme.log instead of stderr.
         logger.debug("access " + (fmt % args))
 
     def _json(self, status: int, body: dict):
@@ -194,44 +189,238 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    # ── Shim-absorbed GET routes ─────────────────────────────────────────────
+    def _get_transcript(self):
+        import urllib.parse
+        from hme_http_store import _get_transcript, _transcript_entries
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        minutes = int(params.get("minutes", [30])[0])
+        max_entries = int(params.get("max", [50])[0])
+        entries = _get_transcript(minutes, max_entries)
+        self._json(200, {"entries": entries, "count": len(entries),
+                         "total_ingested": len(_transcript_entries)})
+
+    def _get_narrative(self):
+        from hme_http_store import _latest_narrative
+        self._json(200, {"narrative": _latest_narrative})
+
+    def _get_rag_lib_list(self):
+        import rag_engines
+        self._json(200, {"keys": list(rag_engines._lib_engines.keys())})
+
+    def _get_capabilities(self):
+        import rag_engines
+        self._json(200, {
+            "endpoints": [
+                "/rag", "/enrich", "/enrich_prompt", "/validate", "/audit",
+                "/reindex", "/transcript", "/health", "/narrative",
+                "/rag/lib-list", "/capabilities", "/tools/list", "/tool/<name>",
+            ],
+            "rag_ready": rag_engines._engine_ready.is_set() and rag_engines._project_engine is not None,
+        })
+
+    def _get_health(self):
+        # Unified health: worker tool-registry status + shim-absorbed RAG status.
+        import rag_engines
+        from hme_http_store import _get_recent_errors, _transcript_entries
+        _training_lock = os.environ.get("HME_TRAINING_LOCK", "")
+        _training_locked = bool(_training_lock) and os.path.exists(_training_lock)
+        rag_ready = rag_engines._engine_ready.is_set() and rag_engines._project_engine is not None
+        self._json(200, {
+            "status": "ready" if (rag_ready or _training_locked) else ("ok" if _startup_done.is_set() else "loading"),
+            "phase": _sp.get_phase().value if hasattr(_sp, "get_phase") else "?",
+            "ready": _startup_done.is_set(),
+            "rag_ready": rag_ready,
+            "training_locked": _training_locked,
+            "tools": len(names()),
+            "transcript_entries": len(_transcript_entries),
+            "recent_errors": _get_recent_errors(minutes=120)[-10:],
+            "pid": os.getpid(),
+        })
+
     def do_GET(self):
-        if self.path == "/health":
-            self._json(200, {
-                "status": "ok",
-                "phase": _sp.get_phase().value if hasattr(_sp, "get_phase") else "?",
-                "ready": _startup_done.is_set(),
-                "tools": len(names()),
-            })
-            return
-        if self.path == "/tools/list":
-            self._json(200, {"tools": list_schemas()})
-            return
+        if self.path == "/health":            return self._get_health()
+        if self.path == "/tools/list":        return self._json(200, {"tools": list_schemas()})
+        if self.path == "/capabilities":      return self._get_capabilities()
+        if self.path == "/rag/lib-list":      return self._get_rag_lib_list()
+        if self.path == "/narrative":         return self._get_narrative()
+        if self.path.startswith("/transcript"): return self._get_transcript()
         self._json(404, {"error": f"no GET route: {self.path}"})
 
-    def do_POST(self):
-        if self.path.startswith("/tool/"):
-            name = self.path[len("/tool/"):]
-            length = int(self.headers.get("Content-Length", 0) or 0)
-            raw = self.rfile.read(length).decode("utf-8") if length else ""
-            try:
-                args = json.loads(raw) if raw else {}
-            except json.JSONDecodeError as je:
-                self._json(400, {"ok": False, "error": f"bad JSON: {je}"})
-                return
-            try:
-                result = tool_call(name, args)
-                self._json(200, {"ok": True, "result": result})
-            except KeyError as ke:
-                self._json(404, {"ok": False, "error": str(ke)})
-            except Exception as ex:
-                import traceback
-                self._json(500, {
-                    "ok": False,
-                    "error": f"{type(ex).__name__}: {ex}",
-                    "trace": traceback.format_exc()[-2000:],
-                })
+    # ── POST dispatch ────────────────────────────────────────────────────────
+    def _read_body(self):
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        raw = self.rfile.read(length).decode("utf-8") if length else ""
+        if not raw:
+            return {}
+        return json.loads(raw)
+
+    def _post_tool(self, name: str, args: dict):
+        try:
+            result = tool_call(name, args)
+            self._json(200, {"ok": True, "result": result})
+        except KeyError as ke:
+            self._json(404, {"ok": False, "error": str(ke)})
+        except Exception as ex:
+            import traceback
+            self._json(500, {"ok": False, "error": f"{type(ex).__name__}: {ex}",
+                             "trace": traceback.format_exc()[-2000:]})
+
+    def _post_rag_dispatch(self, body: dict):
+        """Generic engine method dispatch. Mirrors hme_http.py's _handle_rag_dispatch."""
+        import rag_engines
+        engine_name = body.get("engine", "project")
+        method = body.get("method", "")
+        kwargs = body.get("kwargs", {})
+        if not rag_engines._engine_ready.wait(timeout=10):
+            self._json(503, {"error": "engines loading"})
             return
+        if engine_name == "project":
+            engine = rag_engines._project_engine
+        elif engine_name == "global":
+            engine = rag_engines._global_engine
+        elif engine_name.startswith("lib/"):
+            engine = rag_engines._lib_engines.get(engine_name[4:])
+        else:
+            engine = None
+        if engine is None:
+            self._json(503, {"error": f"{engine_name} engine not ready"})
+            return
+        try:
+            if method == "_symbol_table_list":
+                result = engine.symbol_table.to_arrow().to_pylist() if engine.symbol_table is not None else []
+            elif method == "_encode":
+                texts = kwargs.get("texts", [])
+                result = engine.text_model.encode(texts).tolist() if engine.text_model is not None else []
+            elif method == "_get_file_hashes":
+                result = dict(getattr(engine, "_file_hashes", {}))
+            elif method == "index_directory":
+                result = getattr(engine, method)()
+            elif hasattr(engine, method) and callable(getattr(engine, method)):
+                result = getattr(engine, method)(**kwargs)
+            else:
+                self._json(400, {"error": f"unknown method: {method}"})
+                return
+            self._json(200, {"result": result})
+        except Exception as e:
+            logger.error(f"/rag dispatch {engine_name}.{method}: {type(e).__name__}: {e}")
+            self._json(500, {"error": str(e)})
+
+    def _post_enrich(self, body: dict):
+        from hme_http_handlers import _enrich
+        query = body.get("query", "")
+        if not query:
+            self._json(400, {"error": "query required"})
+            return
+        self._json(200, _enrich(query, top_k=int(body.get("top_k", 5))))
+
+    def _post_enrich_prompt(self, body: dict):
+        from hme_http_handlers import _enrich_prompt
+        prompt = body.get("prompt", "")
+        if not prompt:
+            self._json(400, {"error": "prompt required"})
+            return
+        try:
+            self._json(200, _enrich_prompt(prompt, body.get("frame", "")))
+        except Exception as e:
+            logger.error(f"/enrich_prompt unhandled: {e}")
+            self._json(200, {"enriched": prompt, "original": prompt, "error": str(e)})
+
+    def _post_validate(self, body: dict):
+        from hme_http_handlers import _validate
+        query = body.get("query", "")
+        if not query:
+            self._json(400, {"error": "query required"})
+            return
+        self._json(200, _validate(query))
+
+    def _post_audit(self, body: dict):
+        from hme_http_handlers import _post_audit
+        self._json(200, _post_audit(body.get("changed_files", "")))
+
+    def _post_reindex(self, body: dict):
+        from hme_http_handlers import _reindex_files
+        files = body.get("files", [])
+        if not isinstance(files, list) or not files:
+            self._json(400, {"error": "files must be a non-empty list"})
+            return
+        self._json(200, _reindex_files(files))
+
+    def _post_reload_engines(self, body: dict):
+        import rag_engines
+        device = body.get("device", "")
+        if not device:
+            self._json(400, {"error": "device required (e.g. 'cuda:1' or 'restore')"})
+            return
+        if device != "restore" and not device.startswith("cuda:"):
+            self._json(400, {"error": f"invalid device '{device}' — must be 'cuda:N' or 'restore'"})
+            return
+        try:
+            result = rag_engines.reload_on_device(device)
+        except Exception as e:
+            logger.error(f"/reload-engines {device}: {type(e).__name__}: {e}")
+            self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            return
+        self._json(500 if result.get("error") else 200, result)
+
+    def _post_transcript(self, body: dict):
+        from hme_http_store import _append_transcript
+        entries = body.get("entries", [])
+        if not isinstance(entries, list):
+            self._json(400, {"error": "entries must be a list"})
+            return
+        self._json(200, {"appended": _append_transcript(entries)})
+
+    def _post_narrative(self, body: dict):
+        from hme_http_store import _append_transcript
+        import hme_http_store as _store
+        _store._latest_narrative = body.get("narrative", "")
+        _append_transcript([{
+            "type": "narrative", "content": _store._latest_narrative,
+            "summary": f"[Digest] {_store._latest_narrative[:100]}",
+        }])
+        self._json(200, {"ok": True})
+
+    def _post_error(self, body: dict):
+        from hme_http_store import _log_error
+        source = body.get("source", "unknown")
+        message = body.get("message", "")
+        if not message:
+            self._json(400, {"error": "message required"})
+            return
+        _log_error(source, message, body.get("detail", ""))
+        self._json(200, {"logged": True})
+
+    def do_POST(self):
+        try:
+            body = self._read_body()
+        except json.JSONDecodeError as je:
+            self._json(400, {"ok": False, "error": f"bad JSON: {je}"})
+            return
+
+        if self.path.startswith("/tool/"):
+            return self._post_tool(self.path[len("/tool/"):], body)
+
+        # Shim-absorbed routes
+        if self.path == "/rag":            return self._post_rag_dispatch(body)
+        if self.path == "/enrich":         return self._post_enrich(body)
+        if self.path == "/enrich_prompt":  return self._post_enrich_prompt(body)
+        if self.path == "/validate":       return self._post_validate(body)
+        if self.path == "/audit":          return self._post_audit(body)
+        if self.path == "/reindex":        return self._post_reindex(body)
+        if self.path == "/reload-engines": return self._post_reload_engines(body)
+        if self.path == "/transcript":     return self._post_transcript(body)
+        if self.path == "/narrative":      return self._post_narrative(body)
+        if self.path == "/error":          return self._post_error(body)
         self._json(404, {"error": f"no POST route: {self.path}"})
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
 
 
 def main():
