@@ -19,7 +19,7 @@ else
 fi
 
 # H3: Hook latency telemetry — each hook self-logs its wall time to
-# metrics/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier
+# log/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier
 # reads this log and flags hooks that exceed 500ms p95.
 # Sampled at 10% to avoid inflating the log on high-frequency hooks.
 _HME_HOOK_START_NS="$(date +%s%N)"
@@ -39,7 +39,7 @@ _stderr_verdict() {
 }
 
 _hme_log_hook_latency() {
-  local log_file="$PROJECT_ROOT/metrics/hme-hook-latency.jsonl"
+  local log_file="$PROJECT_ROOT/log/hme-hook-latency.jsonl"
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
     "$_HME_HOOK_NAME" "$1" "$(date +%s)" >> "$log_file" 2>/dev/null

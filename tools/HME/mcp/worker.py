@@ -67,7 +67,15 @@ for _noisy in ("httpx", "httpcore", "sentence_transformers", "huggingface_hub"):
 logger = logging.getLogger("HME")
 logger.setLevel(logging.INFO)
 
-PROJECT_ROOT = ENV.optional("PROJECT_ROOT", os.getcwd())
+# PROJECT_ROOT MUST be set by the proxy supervisor. Falling back to os.getcwd()
+# silently creates duplicate log/ directories wherever the worker was spawned
+# from (e.g. tools/HME/log/, tools/HME/mcp/log/) — fragmenting telemetry.
+PROJECT_ROOT = ENV.require("PROJECT_ROOT")
+if not os.path.isdir(os.path.join(PROJECT_ROOT, "src")):
+    raise RuntimeError(
+        f"PROJECT_ROOT={PROJECT_ROOT!r} does not look like the Polychron root "
+        "(no src/ directory). Refusing to start to avoid orphan log dirs."
+    )
 _log_dir = os.path.join(PROJECT_ROOT, "log")
 os.makedirs(_log_dir, exist_ok=True)
 from server.log_config import FlushFileHandler  # noqa: E402

@@ -104,8 +104,8 @@ The arbiter's domain knowledge lives in its LoRA adapter, not the base model. To
 
 `tools/HME/scripts/finetune-arbiter-v6.py` generates two corpora from the same factual base:
 
-- `metrics/hme-corpus-v6.jsonl` — **1962 arbiter planning examples** (system → user → assistant ChatML)
-- `metrics/hme-coder-corpus-v6.jsonl` — **1622 coder extraction examples** (same factual base, different output format)
+- `tools/models/training/hme-corpus-v6.jsonl` — **1962 arbiter planning examples** (system → user → assistant ChatML)
+- `tools/models/training/hme-coder-corpus-v6.jsonl` — **1622 coder extraction examples** (same factual base, different output format)
 
 Sections inside each:
 
@@ -216,7 +216,7 @@ Ordered roughly by impact vs effort.
 
 1. **Validate v6 arbiter in real use (1–2 days, zero effort).** It passed one test query cleanly, but the real test is a round of evolution work. Watch for path hallucination, poor step decomposition, or ignoring the registry. If issues surface, the fix is to the corpus, not the training loop.
 
-2. **Train a coder LoRA on the v6 coder corpus (~6 hours, ~60 GB temporary disk).** Same pipeline as the arbiter. The corpus already exists (`metrics/hme-coder-corpus-v6.jsonl`, 1622 examples). Needs:
+2. **Train a coder LoRA on the v6 coder corpus (~6 hours, ~60 GB temporary disk).** Same pipeline as the arbiter. The corpus already exists (`tools/models/training/hme-coder-corpus-v6.jsonl`, 1622 examples). Needs:
    - Download `Qwen/Qwen3-Coder-30B-A3B-Instruct` HF safetensors (~60 GB, temporary — delete after LoRA GGUF export)
    - Sanity run on 50 steps (~45 min on 30B)
    - Full 1 epoch warm-started (~5 hours)

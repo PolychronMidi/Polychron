@@ -8,7 +8,7 @@ sortable, overlayable — opens in any browser without dependencies.
 Data sources:
   - metrics/holograph/*.json      → HCI over time, per-category scores
   - metrics/hme-tool-effectiveness.json → session / lifesaver / tool invocation stats
-  - metrics/hme-hook-latency.jsonl → per-hook wall time distribution
+  - log/hme-hook-latency.jsonl → per-hook wall time distribution
   - metrics/hme-trajectory.json   → trend analysis
   - metrics/hme-coupling.json     → tool pair effectiveness matrix
   - metrics/hme-coherence.jsonl   → coherence history from old rag_proxy monitor (may be stale after shim deprecation)
@@ -52,6 +52,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 _METRICS = os.path.join(_PROJECT, "metrics")
+_LOG = os.path.join(_PROJECT, "log")
 _OUTPUT = os.path.join(_METRICS, "hme-dashboard.html")
 
 
@@ -121,8 +122,8 @@ def _load_current_verifiers() -> dict:
 
 
 def _aggregate_hook_latency() -> dict:
-    """Aggregate metrics/hme-hook-latency.jsonl into per-hook stats."""
-    events = _safe_jsonl(os.path.join(_METRICS, "hme-hook-latency.jsonl"))
+    """Aggregate log/hme-hook-latency.jsonl into per-hook stats."""
+    events = _safe_jsonl(os.path.join(_LOG, "hme-hook-latency.jsonl"))
     by_hook = {}
     for e in events:
         hook = e.get("hook", "?")

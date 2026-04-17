@@ -510,7 +510,7 @@ def _load_learned_stopwords() -> None:
     """H7: load stopwords mined from prompt history.
     Augments the hardcoded list without replacing it."""
     global _LEARNED_STOPWORDS
-    path = os.path.join(PROJECT_ROOT, "metrics", "hme-learned-stopwords.json")
+    path = os.path.join(PROJECT_ROOT, "tools", "models", "training", "hme-learned-stopwords.json")
     if not os.path.isfile(path):
         return
     try:
@@ -533,7 +533,7 @@ def _extract_search_terms(prompt: str) -> list[str]:
     > plain words. Identifiers are strong signals; words are noise.
 
     The hardcoded stopword set is augmented at load time by learned
-    stopwords from metrics/hme-learned-stopwords.json (H7 — prompt-history-
+    stopwords from tools/models/training/hme-learned-stopwords.json (H7 — prompt-history-
     driven stopword tuning). To refresh: run learn-stopwords.py.
     """
     stop = {

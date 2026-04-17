@@ -1156,7 +1156,7 @@ class HookLatencyVerifier(Verifier):
 
     Hook latency is silent tax — every tool call pays it. A hook that
     regresses from 50ms to 500ms adds half a second to every Edit, which
-    compounds across a session. This verifier reads metrics/hme-hook-latency.jsonl
+    compounds across a session. This verifier reads log/hme-hook-latency.jsonl
     (populated by hooks themselves via the _timestamp_hook helper) and
     flags hooks exceeding 500ms p95.
     """
@@ -1165,7 +1165,7 @@ class HookLatencyVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        log_path = os.path.join(_PROJECT, "metrics", "hme-hook-latency.jsonl")
+        log_path = os.path.join(_PROJECT, "log", "hme-hook-latency.jsonl")
         if not os.path.isfile(log_path):
             return _result(SKIP, 1.0, "no hook latency log yet (first run)")
         try:
