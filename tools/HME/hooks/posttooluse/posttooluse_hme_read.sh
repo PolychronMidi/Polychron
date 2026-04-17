@@ -6,10 +6,8 @@ INPUT=$(cat)
 TARGET=$(_safe_jq "$INPUT" '.tool_input.target' '')
 MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'auto')
 
-# Track briefings (before mode or any read of a src file)
-if [ -n "$TARGET" ]; then
-  _nexus_add BRIEF "$TARGET"
-fi
+# BRIEF nexus marker moved to proxy middleware (nexus_tracking.js).
+# Shell hook retained only for streak reset (Claude-Code-internal state).
 
 _streak_reset
 

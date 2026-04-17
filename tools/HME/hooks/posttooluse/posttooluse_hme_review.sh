@@ -6,17 +6,9 @@ INPUT=$(cat)
 MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'digest')
 
 if [ "$MODE" = "forget" ]; then
-  EDIT_COUNT=$(_nexus_count EDIT)
-  _nexus_clear_type EDIT
-  _nexus_mark REVIEW
-  if [ "$EDIT_COUNT" -gt 0 ]; then
-    echo "NEXUS: Review complete (${EDIT_COUNT} files audited). Edit backlog cleared." >&2
-  fi
-  # Extract depth meter issue count from tool response — block stop if ≥4 issues remain.
-  # `|| true` masks grep-returns-1 when no matches so `set -euo pipefail` doesn't
-  # kill the script before reaching the clear branch (regression fixed 2026-04-15:
-  # silent death here meant the stale REVIEW_ISSUES count from a prior dirty
-  # review would never get cleared, permanently blocking stop).
+  # EDIT clear + REVIEW mark moved to proxy middleware (nexus_tracking.js).
+  # Shell hook keeps user-facing stderr + REVIEW_ISSUES parsing (requires
+  # the tool_response text which middleware doesn't reliably receive).
   TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
   ISSUES_COUNT=$(echo "$TOOL_RESULT" | grep -oE 'Found [0-9]+ issues total' | grep -oE '[0-9]+' | head -1 || true)
   if [ -n "$ISSUES_COUNT" ]; then

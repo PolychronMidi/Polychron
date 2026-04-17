@@ -44,11 +44,13 @@ const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
 const { MCP_PORT } = require('./supervisor/children');
 
 // ── MCP protocol + supervisor status ─────────────────────────────────────────
-// Proxy speaks MCP SSE natively and dispatches tools/call to the Python
-// worker over plain HTTP (see mcp_server/). Hang-kill runs inside dispatcher
-// via per-request timeouts — no need to kill the worker process.
 const { status: supervisorStatus } = require('./supervisor/index');
 const { handleMcpRequest } = require('./mcp_server/index');
+
+// ── Middleware (replaces shell hooks on Claude-native tools) ────────────────
+const middleware = require('./middleware/index');
+const _loadedMiddleware = middleware.loadAll();
+console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
 function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
@@ -89,6 +91,14 @@ function handleRequest(clientReq, clientRes) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
+        // Run middleware pipeline (activity emission, nexus tracking, log
+        // watermark, FAIL scan). Must run AFTER scan so middleware sees the
+        // reconciled tool_use/tool_result pairs.
+        try {
+          middleware.runPipeline(payload, scan, session);
+        } catch (err) {
+          console.error('[hme-proxy] middleware pipeline error:', err.message);
+        }
         if (shouldInject()) {
           const statusBlock = buildStatusContext();
           if (statusBlock) {
