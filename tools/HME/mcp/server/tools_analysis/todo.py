@@ -484,7 +484,7 @@ def merge_native_todowrite(incoming: list) -> list:
 # MCP tool — agents call this for hierarchical features TodoWrite lacks
 # --------------------------------------------------------------------------
 
-@ctx.mcp.tool(meta={"hidden": True})
+@ctx.mcp.tool()
 @chained("hme_todo")
 def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
              parent_id: int = 0, critical: bool = False, on_done: str = "",
