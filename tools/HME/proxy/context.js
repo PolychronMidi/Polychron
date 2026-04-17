@@ -223,6 +223,22 @@ let _statusSnapshotAt = 0;
 const ERRORS_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
 const ACTIVITY_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-activity.jsonl');
 const GROUND_TRUTH_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-ground-truth.jsonl');
+const DIR_INTENT_PATH = path.join(PROJECT_ROOT, 'metrics', 'hme-dir-intent.json');
+
+function _dirIntentHealthLine() {
+  try {
+    const raw = fs.readFileSync(DIR_INTENT_PATH, 'utf8');
+    const d = JSON.parse(raw);
+    const c = (d && d.counts) || {};
+    const parts = [];
+    if (c.drifted) parts.push(`${c.drifted} drifted`);
+    if (c.invalid) parts.push(`${c.invalid} invalid`);
+    if (parts.length === 0) return null;
+    return `dir-intent: ${parts.join(', ')} — run build-dir-intent-index.py to investigate`;
+  } catch (_err) {
+    return null; // no index yet or parse error — silent
+  }
+}
 
 function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
   try {
@@ -334,18 +350,20 @@ function _buildStatusContextRaw() {
   const activity = recentActivity();
   const ground = recentGroundTruth();
   const editCount = _nexusEditCount();
+  const dirHealth = _dirIntentHealthLine();
 
   // Suppress coherence when nominal — only signal deviations worth acting on.
   const cohLine = (coh && !coh.includes('IN_BAND')) ? `coherence: ${coh}` : null;
 
   const hasContent = cohLine || errors.length > 0 || activity.length > 0
-    || ground.length > 0 || editCount >= 5;
+    || ground.length > 0 || editCount >= 5 || dirHealth;
   if (!hasContent) return null;
 
   // Compact key=value format — no markdown headers, no blank lines between items.
   const lines = ['[HME status]'];
   if (cohLine) lines.push(cohLine);
   if (editCount >= 5) lines.push(`nexus: ${editCount} unreviewed edits — run review(mode='forget')`);
+  if (dirHealth) lines.push(dirHealth);
   for (const e of errors) lines.push(`error: ${e}`);
   for (const a of activity) lines.push(a.trim());
   if (ground.length > 0) lines.push(`last verdict:${ground[0].trim()}`);

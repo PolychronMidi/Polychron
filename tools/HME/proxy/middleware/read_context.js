@@ -134,8 +134,8 @@ module.exports = {
     }
 
     if (lines.length === 0) return;
-    if (ctx.hasHmeFooter(toolResult)) return;
-    const footer = '\n[HME] ' + lines.join(' | ');
+    if (ctx.hasHmeFooter(toolResult, '[HME:read]')) return;
+    const footer = '\n[HME:read] ' + lines.join(' | ');
     _appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({ event: 'read_context', file: fp, lines: lines.length });

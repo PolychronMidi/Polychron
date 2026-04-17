@@ -239,7 +239,7 @@ module.exports = {
       const summary = _buildDirSummary(dir, summaryBudget);
       if (!summary) continue;
       const relDir = path.relative(ctx.PROJECT_ROOT, dir) || dir;
-      const header = `\n\n[HME:neighborhood ${relDir}/ (${count} hits)]\n`;
+      const header = `\n\n[HME:neighborhood:${relDir}/ (${count} hits)]\n`;
       const block = header + summary;
       if (totalBytes + block.length > MAX_TOTAL_ENRICHMENT_BYTES) continue;
       blocks.push(block);
@@ -248,7 +248,7 @@ module.exports = {
     }
 
     if (blocks.length === 0 && firewallLines.length === 0) return;
-    if (ctx.hasHmeFooter(toolResult)) return;
+    if (ctx.hasHmeFooter(toolResult, '[HME:neighborhood')) return;
 
     let appended = blocks.join('');
     if (firewallLines.length > 0) {

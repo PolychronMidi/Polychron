@@ -18,9 +18,7 @@ See [doc/SUBSYSTEMS.md](../../doc/SUBSYSTEMS.md) and [doc/TUNING_MAP.md](../../d
 
 <!-- HME-DIR-INTENT
 rules:
-  - Never hand-tune meta-controller constants — modify controller logic instead (Hypermeta-First principle)
-  - Never set coherentThresholdScale per-profile — the regime self-balancer owns it
-  - Never add manual axis floors/caps/thresholds; diagnose why the responsible controller isn't working instead
-  - Bias bounds are locked — snapshot after legitimate structural changes with `node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
+  - Bias bounds are locked — snapshot after structural changes via `check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
   - Controllers self-register via `metaControllerRegistry.register()` at load time; query topology via `getAll()` / `getById()` / `getByAxis()`
+  - When an axis is suppressed/dominant, diagnose WHY the responsible controller isn't working — don't add manual floors/caps
 -->
