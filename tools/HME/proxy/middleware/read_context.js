@@ -138,6 +138,7 @@ module.exports = {
     }
 
     if (lines.length === 0) return;
+    if (ctx.hasHmeFooter(toolResult)) return;
     const footer = '\n[HME]\n' + lines.map((l) => `  ${l}`).join('\n');
     _appendToResult(toolResult, footer);
     ctx.markDirty();

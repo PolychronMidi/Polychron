@@ -210,6 +210,16 @@ function buildJurisdictionContext(filePaths) {
 }
 
 // ── Session status context (S1+S2+S3+S4) ────────────────────────────────────
+// Status is injected once per turn as the last system block with cache_control.
+// To maximise Anthropic cache hits, the text must be byte-identical within each
+// 5-minute cache window. We achieve this by:
+//   1. Snapshotting the status block at most once per CACHE_STABLE_MS interval.
+//   2. Stripping wall-clock timestamps from activity lines (date is enough).
+//   3. Capping volatile log tails so minor log growth doesn't bust the cache.
+const CACHE_STABLE_MS = 4 * 60 * 1000; // 4 min < 5-min Anthropic TTL
+let _statusSnapshot = null;
+let _statusSnapshotAt = 0;
+
 const ERRORS_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
 const ACTIVITY_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-activity.jsonl');
 const GROUND_TRUTH_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-ground-truth.jsonl');
@@ -318,7 +328,7 @@ function _nexusEditCount() {
   } catch (_e) { return 0; }
 }
 
-function buildStatusContext() {
+function _buildStatusContextRaw() {
   const coh = coherenceStatusLine();
   const errors = recentLifesaverErrors();
   const activity = recentActivity();
@@ -349,11 +359,25 @@ function buildStatusContext() {
   return lines.join('\n');
 }
 
+function buildStatusContext() {
+  const now = Date.now();
+  if (_statusSnapshot !== null && now - _statusSnapshotAt < CACHE_STABLE_MS) {
+    return _statusSnapshot;
+  }
+  _statusSnapshot = _buildStatusContextRaw();
+  _statusSnapshotAt = now;
+  return _statusSnapshot;
+}
+
 function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (proxy-injected)') {
   if (!block) return false;
   if (typeof payload.system === 'string') {
+    // Promote to array so we can attach cache_control to just the injected block.
     if (payload.system.includes(marker)) return false;
-    payload.system = payload.system + block;
+    payload.system = [
+      { type: 'text', text: payload.system },
+      { type: 'text', text: block, cache_control: { type: 'ephemeral' } },
+    ];
     return true;
   }
   if (Array.isArray(payload.system)) {
@@ -362,11 +386,16 @@ function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (pr
       return typeof t === 'string' && t.includes(marker);
     });
     if (already) return false;
-    payload.system.push({ type: 'text', text: block });
+    // Move cache_control to the new last block — Anthropic only caches up to the
+    // last marked block. Remove stale markers from existing blocks first.
+    for (const b of payload.system) {
+      if (b && b.cache_control) delete b.cache_control;
+    }
+    payload.system.push({ type: 'text', text: block, cache_control: { type: 'ephemeral' } });
     return true;
   }
   if (payload.system == null) {
-    payload.system = block;
+    payload.system = [{ type: 'text', text: block, cache_control: { type: 'ephemeral' } }];
     return true;
   }
   return false;

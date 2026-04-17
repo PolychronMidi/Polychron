@@ -106,6 +106,7 @@ module.exports = {
     }
     for (const line of semanticLines) footerLines.push(line);
 
+    if (ctx.hasHmeFooter(toolResult)) return;
     const footer = '\n[HME] ' + footerLines.join('\n[HME] ');
     _appendToResult(toolResult, footer);
     ctx.markDirty();
