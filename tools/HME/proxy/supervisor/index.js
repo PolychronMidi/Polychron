@@ -66,6 +66,7 @@ function _startChild(spec) {
     lastStart: Date.now(),
     lastHealthy: 0,
     healthy: false,
+    gaveUp: false,
   });
   emit({ event: 'child_started', child: spec.name, pid: proc.pid });
 }
@@ -89,13 +90,35 @@ async function _healthLoop() {
 
     const alive = state.proc && state.proc.exitCode === null;
     if (!alive) {
-      // Process is dead — restart with backoff
+      // Before giving up or spawning a new one, check if something is already
+      // serving on the health URL (e.g. a previous process that survived a proxy
+      // restart). If healthy, adopt it — no spawn needed, reset restart counter.
+      if (spec.healthUrl) {
+        const alreadyServing = await _probe(spec.healthUrl);
+        if (alreadyServing) {
+          if (state.restarts > 0 || state.gaveUp) {
+            console.log(`[supervisor] ${spec.name} — surviving process adopted at ${spec.healthUrl}, resetting restarts`);
+            emit({ event: 'child_adopted', child: spec.name });
+          }
+          state.proc = null;
+          state.restarts = 0;
+          state.gaveUp = false;
+          state.healthy = true;
+          state.lastHealthy = Date.now();
+          continue;
+        }
+      }
+
+      // Nothing serving — apply restart limit and backoff
       if (state.restarts >= spec.maxRestarts) {
-        const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-        const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) — giving up`;
-        console.error(msg);
-        try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}\n`); } catch (_e) {}
-        emit({ event: 'child_restart_limit', child: spec.name });
+        if (!state.gaveUp) {
+          const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+          const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) — giving up`;
+          console.error(msg);
+          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}\n`); } catch (_e) {}
+          emit({ event: 'child_restart_limit', child: spec.name });
+          state.gaveUp = true;
+        }
         continue;
       }
       const backoffMs = Math.min(spec.restartDelayMs * (1 + state.restarts * 0.5), 30_000);
@@ -107,6 +130,7 @@ async function _healthLoop() {
       const proc = _spawnChild(spec);
       state.proc = proc;
       state.healthy = false;
+      state.gaveUp = false;
       emit({ event: 'child_restarted', child: spec.name, attempt: state.restarts });
       continue;
     }
@@ -116,6 +140,10 @@ async function _healthLoop() {
     if (sinceStart < spec.startupMs) continue; // still warming up
 
     const healthy = await _probe(spec.healthUrl);
+    if (healthy) {
+      state.restarts = 0;  // reset on confirmed health — stale count cleared
+      state.gaveUp = false;
+    }
     state.lastHealthy = healthy ? Date.now() : state.lastHealthy;
 
     if (!healthy && state.healthy) {
