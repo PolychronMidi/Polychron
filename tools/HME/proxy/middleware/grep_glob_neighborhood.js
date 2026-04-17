@@ -60,24 +60,6 @@ function _textOf(toolResult) {
   return '';
 }
 
-function _appendToResult(toolResult, appendText) {
-  if (typeof toolResult.content === 'string') {
-    toolResult.content = toolResult.content + appendText;
-    return;
-  }
-  if (Array.isArray(toolResult.content)) {
-    for (const block of toolResult.content) {
-      if (block && block.type === 'text') {
-        block.text = (block.text || '') + appendText;
-        return;
-      }
-    }
-    toolResult.content.push({ type: 'text', text: appendText });
-    return;
-  }
-  toolResult.content = appendText;
-}
-
 // Extract file paths from a tool_result text. Handles:
 //   - Glob output: one path per line
 //   - Grep files_with_matches: one path per line
@@ -254,7 +236,7 @@ module.exports = {
     if (firewallLines.length > 0) {
       appended += '\n[HME KB firewall] ' + firewallLines.join(' | ');
     }
-    _appendToResult(toolResult, appended);
+    ctx.appendToResult(toolResult, appended);
     ctx.markDirty();
     ctx.emit({
       event: 'neighborhood_enrichment',

@@ -70,24 +70,6 @@ function _extractTargetPath(toolUse) {
   return input.file_path || input.path || '';
 }
 
-function _appendToResult(toolResult, text) {
-  if (typeof toolResult.content === 'string') {
-    toolResult.content = toolResult.content + text;
-    return;
-  }
-  if (Array.isArray(toolResult.content)) {
-    for (const block of toolResult.content) {
-      if (block && block.type === 'text') {
-        block.text = (block.text || '') + text;
-        return;
-      }
-    }
-    toolResult.content.push({ type: 'text', text });
-    return;
-  }
-  toolResult.content = text;
-}
-
 const ENRICHED_TOOLS = new Set(['Read', 'Edit', 'Write', 'NotebookEdit', 'Grep', 'Glob']);
 
 module.exports = {
@@ -123,7 +105,7 @@ module.exports = {
     const dirName = path.basename(tracked);
     const driftTag = entry.drifted ? ' (drifted)' : '';
     const footer = `\n[HME dir:${dirName}${driftTag}] ${parts.join(' | ')}`;
-    _appendToResult(toolResult, footer);
+    ctx.appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({
       event: 'dir_context',

@@ -28,24 +28,6 @@ function _relPath(fp, projectRoot) {
   return fp;
 }
 
-function _appendToResult(toolResult, text) {
-  if (typeof toolResult.content === 'string') {
-    toolResult.content = toolResult.content + text;
-    return;
-  }
-  if (Array.isArray(toolResult.content)) {
-    for (const block of toolResult.content) {
-      if (block && block.type === 'text') {
-        block.text = (block.text || '') + text;
-        return;
-      }
-    }
-    toolResult.content.push({ type: 'text', text });
-    return;
-  }
-  toolResult.content = text;
-}
-
 module.exports = {
   name: 'edit_context',
 
@@ -107,7 +89,7 @@ module.exports = {
 
     if (ctx.hasHmeFooter(toolResult, '[HME:edit]')) return;
     const footer = '\n[HME:edit] ' + footerLines.join(' | ');
-    _appendToResult(toolResult, footer);
+    ctx.appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({
       event: 'edit_context',

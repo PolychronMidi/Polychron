@@ -70,24 +70,6 @@ function _findCallers(projectRoot, filePath) {
   return callers;
 }
 
-function _appendToResult(toolResult, text) {
-  if (typeof toolResult.content === 'string') {
-    toolResult.content = toolResult.content + text;
-    return;
-  }
-  if (Array.isArray(toolResult.content)) {
-    for (const block of toolResult.content) {
-      if (block && block.type === 'text') {
-        block.text = (block.text || '') + text;
-        return;
-      }
-    }
-    toolResult.content.push({ type: 'text', text });
-    return;
-  }
-  toolResult.content = text;
-}
-
 module.exports = {
   name: 'read_context',
 
@@ -136,7 +118,7 @@ module.exports = {
     if (lines.length === 0) return;
     if (ctx.hasHmeFooter(toolResult, '[HME:read]')) return;
     const footer = '\n[HME:read] ' + lines.join(' | ');
-    _appendToResult(toolResult, footer);
+    ctx.appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({ event: 'read_context', file: fp, lines: lines.length });
   },
