@@ -279,41 +279,41 @@ function coherenceStatusLine() {
   }
 }
 
-function recentActivity(n = 8) {
+function recentActivity(n = 4) {
   const lines = tailFileLines(ACTIVITY_LOG, 80);
-  const HIGH_SIGNAL = new Set([
-    'round_complete', 'coherence_violation', 'pipeline_complete',
-    'jurisdiction_inject', 'ground_truth_recorded', 'proxy_emergency',
-    'hypothesis_registered', 'hypothesis_falsified', 'injection_influence',
+  // Only events the agent must act on — passive telemetry excluded.
+  const ACTIONABLE = new Set([
+    'coherence_violation', 'proxy_emergency',
+    'hypothesis_registered', 'hypothesis_falsified',
   ]);
   const events = [];
   for (const line of lines) {
     try {
       const e = JSON.parse(line);
-      if (!HIGH_SIGNAL.has(e.event)) continue;
-      const ts = (e.timestamp || e.ts || '?').slice(0, 19);
+      if (!ACTIONABLE.has(e.event)) continue;
       const parts = [e.event];
-      for (const k of ['session', 'verdict', 'reason', 'targets', 'tool']) {
+      for (const k of ['verdict', 'reason', 'tool']) {
         if (e[k] != null) parts.push(`${k}=${e[k]}`);
       }
-      events.push(`  ${ts}  ${parts.join(' ')}`);
+      events.push(`  ${parts.join(' ')}`);
     } catch (_e) { /* skip malformed */ }
   }
   return events.slice(-n);
 }
 
-function recentGroundTruth(n = 3) {
-  const lines = tailFileLines(GROUND_TRUTH_LOG, 10);
+function recentGroundTruth(n = 1) {
+  // Only the most recent verdict — the agent has session memory; older ones
+  // are already in context. Injecting 3 per turn is chronic token waste.
+  const lines = tailFileLines(GROUND_TRUTH_LOG, 5);
   const items = [];
   for (const line of lines) {
     try {
       const e = JSON.parse(line);
       const round = e.round_tag || e.session || '?';
-      const section = String(e.section || '?').slice(0, 60);
-      const mt = e.moment_type || '?';
+      const section = String(e.section || '?').slice(0, 40);
       const sent = e.sentiment || '?';
-      const comment = String(e.comment || e.content || '').replace(/\s+/g, ' ').slice(0, 160);
-      items.push(`  ${round} / ${section} — ${sent} ${mt}: ${comment}`);
+      const comment = String(e.comment || e.content || '').replace(/\s+/g, ' ').slice(0, 80);
+      items.push(`  ${round}/${section} ${sent}: ${comment}`);
     } catch (_e) { /* skip */ }
   }
   return items.slice(-n);
@@ -334,29 +334,22 @@ function _buildStatusContextRaw() {
   const activity = recentActivity();
   const ground = recentGroundTruth();
   const editCount = _nexusEditCount();
-  if (!coh && errors.length === 0 && activity.length === 0 && ground.length === 0 && editCount === 0) return null;
-  const lines = ['', '## HME Session Status (proxy-injected)', ''];
-  if (coh) lines.push(`**Coherence:** ${coh}`, '');
-  if (editCount >= 3) {
-    const severity = editCount >= 5 ? 'run' : 'consider';
-    lines.push(`**NEXUS:** ${editCount} file(s) edited since last review — ${severity} \`review(mode='forget')\` to clear the backlog.`, '');
-  }
-  if (errors.length > 0) {
-    lines.push('**⚠ Recent LIFESAVER errors (last 30min):**');
-    for (const e of errors) lines.push(`  ${e}`);
-    lines.push('');
-  }
-  if (activity.length > 0) {
-    lines.push('**Recent high-signal activity:**');
-    lines.push(...activity);
-    lines.push('');
-  }
-  if (ground.length > 0) {
-    lines.push('**Recent listening verdicts (ground truth):**');
-    lines.push(...ground);
-    lines.push('');
-  }
-  return lines.join('\n');
+
+  // Suppress coherence when nominal — only signal deviations worth acting on.
+  const cohLine = (coh && !coh.includes('IN_BAND')) ? `coherence: ${coh}` : null;
+
+  const hasContent = cohLine || errors.length > 0 || activity.length > 0
+    || ground.length > 0 || editCount >= 5;
+  if (!hasContent) return null;
+
+  // Compact key=value format — no markdown headers, no blank lines between items.
+  const lines = ['[HME status]'];
+  if (cohLine) lines.push(cohLine);
+  if (editCount >= 5) lines.push(`nexus: ${editCount} unreviewed edits — run review(mode='forget')`);
+  for (const e of errors) lines.push(`error: ${e}`);
+  for (const a of activity) lines.push(a.trim());
+  if (ground.length > 0) lines.push(`last verdict:${ground[0].trim()}`);
+  return '\n' + lines.join('\n') + '\n';
 }
 
 function buildStatusContext() {
