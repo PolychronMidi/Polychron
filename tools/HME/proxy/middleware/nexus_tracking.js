@@ -1,8 +1,8 @@
 'use strict';
 // NEXUS backlog tracking — adds EDIT entries on Edit/Write for src/ or
-// tools/HME/ paths, clears BRIEF on new edits, sets BRIEF on mcp__HME__read.
-// Replaces posttooluse_edit.sh, posttooluse_write.sh, posttooluse_hme_read.sh,
-// posttooluse_hme_review.sh EDIT tracking.
+// tools/HME/ paths, clears BRIEF on new edits, sets BRIEF on HME_read.
+// _stripHmePrefixOutgoing normalizes mcp__HME__* → HME_* before middleware
+// runs, so all name checks here use the canonical HME_ prefix.
 
 function _extractModule(fp) {
   if (!fp) return '';
@@ -26,13 +26,13 @@ module.exports = {
       ctx.nexusAdd('EDIT', fp);
     }
 
-    if (name === 'mcp__HME__read') {
+    if (name === 'HME_read') {
       // Track the BRIEF marker so downstream pretooluse checks see read-prior.
       const target = input.target || input.module || input.file_path || '';
       if (target) ctx.nexusAdd('BRIEF', String(target));
     }
 
-    if (name === 'mcp__HME__review') {
+    if (name === 'HME_review') {
       const count = ctx.nexusCount('EDIT');
       ctx.nexusClearType('EDIT');
       ctx.nexusMark('REVIEW', String(count));

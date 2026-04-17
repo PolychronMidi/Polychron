@@ -8,12 +8,12 @@ const WRITE_INTENT_TOOLS = new Set([
   'Edit',
   'Write',
   'NotebookEdit',
-  'mcp__HME__edit',
+  'HME_edit',
 ]);
 
 const HME_READ_TOOLS = new Set([
-  'mcp__HME__read',
-  'mcp__HME__before_editing',
+  'HME_read',
+  'HME_before_editing',
 ]);
 
 // ── Boilerplate stub stripper ────────────────────────────────────────────────

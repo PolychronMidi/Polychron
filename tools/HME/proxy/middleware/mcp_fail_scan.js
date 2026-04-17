@@ -1,5 +1,5 @@
 'use strict';
-// Scan mcp__HME__ tool outputs for FAIL/FAILED markers and escalate to
+// Scan HME_ tool outputs for FAIL/FAILED markers and escalate to
 // log/hme-errors.log so stop.sh's NEXUS lifesaver check blocks until fixed.
 // Replaces the FAIL-scan block in log-tool-call.sh.
 
@@ -22,7 +22,7 @@ module.exports = {
 
   onToolResult({ toolUse, toolResult, ctx }) {
     const name = toolUse.name || '';
-    if (!name.startsWith('mcp__HME__')) return;
+    if (!name.startsWith('HME_')) return;
     const text = _resultText(toolResult);
     if (!text) return;
     const fails = text
