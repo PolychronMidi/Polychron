@@ -19,12 +19,19 @@
 
 const fs = require('fs');
 const path = require('path');
+const { enrich } = require('../worker_client');
 
 const MIN_HITS_PER_DIR = 3;
 const MAX_TOTAL_ENRICHMENT_BYTES = 800;
 const MAX_FILES_SHOWN = 10;
 const MAX_DIRS_ENRICHED = 2;
 const EXPLORED_TTL_MS = 20 * 60 * 1000;
+
+// Only semantically enrich grep patterns that look like a symbol or
+// architectural concept — skip regex-heavy / path-heavy patterns.
+const SYMBOL_LIKE_RE = /^[A-Za-z_][A-Za-z0-9_]{2,}$/;
+const FIREWALL_CATEGORIES = new Set(['architecture', 'decision', 'bugfix', 'antipattern', 'constitution']);
+const FIREWALL_MIN_SCORE = 0.5;
 
 // dirPath (absolute) → timestamp ms
 const _explored = new Map();
@@ -168,7 +175,7 @@ function _buildDirSummary(absDir, budgetBytes) {
 module.exports = {
   name: 'grep_glob_neighborhood',
 
-  onToolResult({ toolUse, toolResult, ctx }) {
+  async onToolResult({ toolUse, toolResult, ctx }) {
     const name = toolUse.name || '';
 
     // Read → track its directory as explored; don't enrich.
@@ -186,8 +193,27 @@ module.exports = {
     const text = _textOf(toolResult);
     if (!text) return;
 
+    // Semantic firewall — when the grep pattern is a bare symbol, check if KB
+    // has a high-signal architecture/bugfix/antipattern entry for it. This
+    // catches queries like `couplingMatrix` or `VALIDATED_GLOBALS` before
+    // the agent duplicates effort.
+    const pattern = (toolUse.input && toolUse.input.pattern) || '';
+    const firewallLines = [];
+    if (name === 'Grep' && SYMBOL_LIKE_RE.test(pattern)) {
+      const result = await enrich(pattern, 3);
+      const kb = (result && Array.isArray(result.kb)) ? result.kb : [];
+      for (const e of kb) {
+        if (firewallLines.length >= 2) break;
+        const score = typeof e.score === 'number' ? e.score : 0;
+        const cat = String(e.category ? e.category : '');
+        if (score < FIREWALL_MIN_SCORE || !FIREWALL_CATEGORIES.has(cat)) continue;
+        const title = String(e.title ? e.title : '').slice(0, 120);
+        if (title) firewallLines.push(`[${cat}] "${title}" — relevant; learn(query='${pattern}') for detail`);
+      }
+    }
+
     const paths = _extractPaths(text);
-    if (paths.length < MIN_HITS_PER_DIR) return;
+    if (paths.length < MIN_HITS_PER_DIR && firewallLines.length === 0) return;
 
     // Count hits per directory (normalized to absolute)
     const dirCounts = new Map();
@@ -202,7 +228,7 @@ module.exports = {
       .filter(([d, n]) => n >= MIN_HITS_PER_DIR && !_isExplored(d))
       .sort((a, b) => b[1] - a[1])
       .slice(0, MAX_DIRS_ENRICHED);
-    if (hot.length === 0) return;
+    if (hot.length === 0 && firewallLines.length === 0) return;
 
     const blocks = [];
     let totalBytes = 0;
@@ -221,14 +247,19 @@ module.exports = {
       _markExplored(dir);
     }
 
-    if (blocks.length === 0) return;
+    if (blocks.length === 0 && firewallLines.length === 0) return;
 
-    _appendToResult(toolResult, blocks.join(''));
+    let appended = blocks.join('');
+    if (firewallLines.length > 0) {
+      appended += '\n[HME KB firewall] ' + firewallLines.join(' | ');
+    }
+    _appendToResult(toolResult, appended);
     ctx.markDirty();
     ctx.emit({
       event: 'neighborhood_enrichment',
       dirs: hot.slice(0, blocks.length).map(([d]) => path.basename(d)).join('|'),
-      bytes: totalBytes,
+      bytes: totalBytes + (firewallLines.length > 0 ? 32 + firewallLines.join(' | ').length : 0),
+      firewall: firewallLines.length,
     });
   },
 };

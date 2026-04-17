@@ -36,6 +36,36 @@ if echo "$FILE" | grep -qE '\.(js|ts|tsx|mjs|cjs)$'; then
     _emit_block "BLOCKED: setBinaural called outside alpha range 8–12Hz — Hard Rule (binaural is imperceptible neurostimulation only). Clamp to [8, 12]."
     exit 2
   fi
+
+  # Semantic bugfix lookup — ask the worker if this module has a known bugfix
+  # in KB that scores high against the current edit intent. High-confidence
+  # hits (score ≥ 0.6) block: the edit is likely re-introducing a past bug.
+  # Cache in /tmp by content hash so repeat attempts don't re-query.
+  MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
+  if [ -n "$MODULE" ] && [ ${#NEW_STRING} -gt 20 ]; then
+    HASH=$(printf '%s' "$NEW_STRING" | sha1sum | cut -c1-16)
+    CACHE="/tmp/hme-edit-validate-$HASH.json"
+    if [ ! -f "$CACHE" ]; then
+      curl -s -m 2 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
+        -H 'Content-Type: application/json' \
+        -d "{\"query\":\"$MODULE\"}" > "$CACHE" 2>/dev/null || echo '{}' > "$CACHE"
+    fi
+    BLOCK_HIT=$(python3 -c "
+import json, sys
+try:
+  d = json.load(open('$CACHE'))
+  for b in (d.get('blocks') if isinstance(d.get('blocks'), list) else []):
+    if isinstance(b.get('score'), (int, float)) and b['score'] >= 0.6:
+      print(b.get('title', '')[:120])
+      break
+except Exception:
+  pass
+" 2>/dev/null)
+    if [ -n "$BLOCK_HIT" ]; then
+      _emit_block "BLOCKED: KB has a bugfix entry \"$BLOCK_HIT\" that strongly matches this module. Review it via learn(query='$MODULE') before editing — the edit may re-introduce a past bug."
+      exit 2
+    fi
+  fi
 fi
 
 if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then

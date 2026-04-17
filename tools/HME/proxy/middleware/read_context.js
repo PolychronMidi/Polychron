@@ -17,6 +17,12 @@
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { openHypothesesFor, driftFor } = require('../context');
+const { enrich } = require('../worker_client');
+
+// Semantic hint only surfaces when static coverage is empty AND the top
+// RAG hit is above this threshold. Below this = weak match, probably noise.
+const SEMANTIC_HINT_MIN_SCORE = 0.55;
+const SEMANTIC_HINT_CATEGORIES = new Set(['architecture', 'decision', 'pattern', 'constitution']);
 
 const MAX_CALLERS_SHOWN = 4;
 const CALLER_SCAN_DIRS = ['src', 'tools/HME'];
@@ -85,7 +91,7 @@ function _appendToResult(toolResult, text) {
 module.exports = {
   name: 'read_context',
 
-  onToolResult({ toolUse, toolResult, ctx }) {
+  async onToolResult({ toolUse, toolResult, ctx }) {
     if (toolUse.name !== 'Read') return;
     const fp = (toolUse.input && toolUse.input.file_path) || '';
     if (!fp) return;
@@ -115,6 +121,19 @@ module.exports = {
         const shown = callers.slice(0, MAX_CALLERS_SHOWN).map((c) => path.basename(c)).join(', ');
         const tail = callers.length > MAX_CALLERS_SHOWN ? ` (+${callers.length - MAX_CALLERS_SHOWN} more)` : '';
         lines.push(`callers: ${shown}${tail} — signature changes propagate here`);
+      }
+    }
+
+    // Semantic KB hint — only when static coverage is empty and only for the
+    // top match above the score floor. Title only; agent can learn(query=) for
+    // full content if they want it.
+    if (lines.length === 0 && _isExportableModule(fp)) {
+      const result = await enrich(stem, 3);
+      const top = (result && Array.isArray(result.kb)) ? result.kb[0] : null;
+      if (top && typeof top.score === 'number' && top.score >= SEMANTIC_HINT_MIN_SCORE
+          && SEMANTIC_HINT_CATEGORIES.has(top.category)) {
+        const title = String(top.title || '').slice(0, 120);
+        if (title) lines.push(`KB [${top.category}] "${title}" — relevant; learn(query='${stem}') for detail`);
       }
     }
 
