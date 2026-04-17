@@ -52,12 +52,18 @@ const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
-// ── HME prefix rewrite (outgoing path) ───────────────────────────────────────
-// Strips `mcp__HME__` → `HME_` in the outgoing Anthropic payload so the model
-// sees clean names. Paired with hmePrefixRestore() on the incoming SSE path
-// which renames back for Claude Code's MCP dispatcher.
+// ── HME full-bypass: dispatcher + outgoing tool injection ───────────────────
+// Claude Code has no MCP connection to us for HME tools (.mcp.json has no
+// HME entry). The proxy injects HME tool schemas into payload.tools on
+// outgoing Anthropic requests; when the response contains HME_* tool_uses,
+// the dispatcher runs them via the worker and continues the conversation
+// with Anthropic until no HME_* remain. See hme_dispatcher.js for details.
+const hmeDispatcher = require('./hme_dispatcher');
+
 const HME_PREFIX = /^mcp__HME__/;
 function _stripHmePrefixOutgoing(payload) {
+  // Backward-compat: message histories may still contain mcp__HME__ tool_uses
+  // from prior sessions. Rename to HME_ so the model sees a consistent name.
   let changed = false;
   const rename = (name) => {
     if (typeof name !== 'string') return name;
@@ -65,11 +71,6 @@ function _stripHmePrefixOutgoing(payload) {
     changed = true;
     return name.replace(HME_PREFIX, 'HME_');
   };
-  if (Array.isArray(payload.tools)) {
-    for (const t of payload.tools) {
-      if (t && typeof t === 'object') t.name = rename(t.name);
-    }
-  }
   if (Array.isArray(payload.messages)) {
     for (const msg of payload.messages) {
       if (!msg || !Array.isArray(msg.content)) continue;
@@ -78,7 +79,30 @@ function _stripHmePrefixOutgoing(payload) {
       }
     }
   }
+  // Remove any deprecated mcp__HME__* tools from payload.tools — they would
+  // collide with our proxy-injected HME_ versions on the next step.
+  if (Array.isArray(payload.tools)) {
+    const before = payload.tools.length;
+    payload.tools = payload.tools.filter((t) => !(t && HME_PREFIX.test(t.name || '')));
+    if (payload.tools.length !== before) changed = true;
+  }
   return changed;
+}
+
+async function _injectHmeTools(payload) {
+  if (!Array.isArray(payload.tools)) payload.tools = [];
+  try {
+    const schemas = await hmeDispatcher.getSchemasCached();
+    // Skip any HME_ tool that's already present (idempotent on retries).
+    const existing = new Set(payload.tools.map((t) => t && t.name).filter(Boolean));
+    for (const s of schemas) {
+      if (!existing.has(s.name)) payload.tools.push(s);
+    }
+    return schemas.length;
+  } catch (err) {
+    console.error(`[hme-proxy] HME tool injection failed: ${err.message}`);
+    return 0;
+  }
 }
 
 function _handleSpawnRoute(clientReq, clientRes) {
@@ -139,7 +163,7 @@ function handleRequest(clientReq, clientRes) {
   }
   const chunks = [];
   clientReq.on('data', (c) => chunks.push(c));
-  clientReq.on('end', () => {
+  clientReq.on('end', async () => {
     const bodyBuf = Buffer.concat(chunks);
     let payload = null;
     if (bodyBuf.length > 0) {
@@ -160,7 +184,10 @@ function handleRequest(clientReq, clientRes) {
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
-        if (b > 0 || s > 0 || r) bodyDirtiedByStrip = true;
+        // HME tool injection (full bypass) — await so tools are in payload
+        // before we serialize and forward upstream.
+        const n = await _injectHmeTools(payload);
+        if (b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
 
       let scan = null;
@@ -249,19 +276,78 @@ function handleRequest(clientReq, clientRes) {
     const transport = upstream.tls ? https : http;
     const upstreamReq = transport.request(upstreamOpts, (upstreamRes) => {
       recordUpstreamSuccess();
-      clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
-      // Only transform SSE streams from Anthropic — other providers / non-SSE
-      // content types pass through verbatim. Identify SSE by Content-Type.
       const ct = (upstreamRes.headers['content-type'] || '').toLowerCase();
       const isSse = isAnthropic && ct.includes('text/event-stream');
-      if (isSse) {
-        const { SseTransform } = require('./sse_transform');
-        const { hmePrefixRestore, runInBackgroundRewrite } = require('./sse_rewriters');
-        const xform = new SseTransform({ rewriters: [hmePrefixRestore, runInBackgroundRewrite] });
-        upstreamRes.pipe(xform).pipe(clientRes);
-      } else {
+
+      if (!isAnthropic) {
+        // Non-Anthropic providers: pipe verbatim, no transforms.
+        clientRes.writeHead(upstreamRes.statusCode || 502, upstreamRes.headers);
         upstreamRes.pipe(clientRes);
+        return;
       }
+
+      // Anthropic path: buffer the entire response so we can scan for HME_*
+      // tool_uses. If none present, forward buffer + apply SSE transforms
+      // (Bash run_in_background rewrite). If HME_* present, run the
+      // continuation loop until a final HME-free response, then forward it.
+      const chunks = [];
+      upstreamRes.on('data', (c) => chunks.push(c));
+      upstreamRes.on('end', async () => {
+        const fullBody = Buffer.concat(chunks);
+        const status = upstreamRes.statusCode || 502;
+        const headers = { ...upstreamRes.headers };
+
+        let final = null;
+        if (status >= 200 && status < 300 && payload) {
+          try {
+            final = await hmeDispatcher.maybeHandleHme(
+              fullBody, headers, status, payload,
+              { host: upstream.host, port: upstream.port, tls: upstream.tls,
+                path: upstreamPath, method: 'POST', headers: upstreamHeaders },
+              isSse,
+            );
+          } catch (err) {
+            console.error('[hme-proxy] HME continuation failed:', err.message);
+          }
+        }
+
+        let outStatus = status;
+        let outHeaders = headers;
+        let outBuf = fullBody;
+        if (final) {
+          outStatus = final.finalStatus;
+          outHeaders = { ...final.finalHeaders };
+          outBuf = final.finalBody;
+          emit({ event: 'hme_continuation_complete', loops: final.loops, bytes: outBuf.length });
+          // Continuation loop runs stream:false. Normalize headers.
+          delete outHeaders['content-length'];
+        }
+
+        clientRes.writeHead(outStatus, outHeaders);
+
+        // Apply SSE transforms only if this is an SSE response being forwarded.
+        const isSseFinal = (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
+        if (isSseFinal && !final) {
+          // Original streaming path (no HME interception happened) — pipe
+          // through the Transform for Bash run_in_background rewriting.
+          const { SseTransform } = require('./sse_transform');
+          const { runInBackgroundRewrite } = require('./sse_rewriters');
+          const xform = new SseTransform({ rewriters: [runInBackgroundRewrite] });
+          xform.pipe(clientRes);
+          xform.end(outBuf);
+        } else {
+          clientRes.end(outBuf);
+        }
+      });
+      upstreamRes.on('error', (err) => {
+        console.error('[hme-proxy] upstream read error:', err.message);
+        if (!clientRes.headersSent) {
+          clientRes.writeHead(502, { 'Content-Type': 'application/json' });
+          clientRes.end(JSON.stringify({ type: 'error', error: { message: err.message } }));
+        } else {
+          clientRes.end();
+        }
+      });
     });
 
     const isStreaming = payload && payload.stream === true;

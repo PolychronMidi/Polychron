@@ -10,23 +10,9 @@
  * Rewriters run left-to-right — order matters.
  */
 
-// ── Rewriter: HME tool prefix restore ─────────────────────────────────────
-// On the OUTGOING path (handled in hme_proxy.js request rewrite, NOT here),
-// the proxy rewrites `mcp__HME__<foo>` → `HME_<foo>` in payload.tools and
-// assistant tool_use.name so Anthropic (and I, the model) see clean names.
-// On the INCOMING path, this rewriter detects the model returning a tool_use
-// with name `HME_<foo>` and renames it back to `mcp__HME__<foo>` so Claude
-// Code's MCP dispatcher recognizes it.
-
-function hmePrefixRestore(eventName, data, _ctx) {
-  if (eventName !== 'content_block_start' || !data) return data;
-  const block = data.content_block;
-  if (!block || block.type !== 'tool_use' || !block.name) return data;
-  const m = block.name.match(/^HME_(.+)$/);
-  if (!m) return data;
-  block.name = `mcp__HME__${m[1]}`;
-  return data;
-}
+// NOTE: `hmePrefixRestore` was removed — with full bypass, Claude Code never
+// sees HME tool_uses (the proxy handles dispatch internally and strips them
+// from the response before forwarding). No restoration needed.
 
 // ── Rewriter: Bash run_in_background → /hme/spawn ──────────────────────────
 // Holds all `content_block_delta` events for a Bash tool_use until the
@@ -120,6 +106,5 @@ function runInBackgroundRewrite(eventName, data, ctx) {
 }
 
 module.exports = {
-  hmePrefixRestore,
   runInBackgroundRewrite,
 };

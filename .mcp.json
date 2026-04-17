@@ -1,17 +1,3 @@
 {
-  "mcpServers": {
-    "HME": {
-      "type": "sse",
-      "url": "http://127.0.0.1:9099/mcp",
-      "ragIgnoreDirs": ["", "theory"],
-      "ragIndexDirs": [
-        "src/utils", "src/conductor", "src/rhythm", "src/time",
-        "src/composers", "src/fx", "src/crossLayer", "src/writer", "src/play",
-        "src/types",
-        "tools/HME/hooks", "tools/HME/mcp", "tools/HME/proxy",
-        "tools/HME/scripts", "tools/HME/activity",
-        "doc", "scripts/eslint-rules"
-      ]
-    }
-  }
+  "mcpServers": {}
 }
