@@ -94,14 +94,6 @@ def is_degraded() -> bool:
         return sp.is_degraded_or_worse()
     except Exception as e:
         logger.warning(f"is_degraded: system_phase check failed: {e}")
-        # Fallback to old proxy-state check if phase module not yet loaded
-        try:
-            from server.rag_proxy import RAGProxy
-            if isinstance(project_engine, RAGProxy):
-                return bool(project_engine._connection_failed or project_engine._consecutive_404s > 0)
-        except Exception as e2:
-            logger.warning(f"is_degraded: proxy fallback check also failed: {e2}")
-    # Both checks failed — assume degraded (fail-safe: better to show warning than hide it)
     return True
 
 
@@ -186,102 +178,6 @@ _kb_version: int = 0
 # Background startup synchronization — set by main.py after background load completes
 _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
-_recovery_last_attempt: float = 0.0  # epoch time of last recovery attempt; 0 = never tried
-_RECOVERY_COOLDOWN = 300.0  # seconds before allowing another recovery attempt
-_post_recovery_hook = None  # callable set by main.py; triggered after successful in-process recovery
-
-
-def _try_recover_from_proxy_error() -> bool:
-    """Recovery path for proxy-mode startup failures.
-
-    If the MCP server failed startup because the shim was running but didn't yet have
-    the /rag endpoint (e.g., old ChatPanel-managed shim), the error is cached and
-    every tool call fails. This detects that condition and re-initializes using the
-    proxy if the shim is now healthy.
-
-    Retries at most once per _RECOVERY_COOLDOWN seconds so mid-session shim
-    restarts can trigger a second recovery without permanently suppressing it.
-
-    Returns True if recovery succeeded.
-    """
-    global _startup_error, _recovery_last_attempt, project_engine, global_engine, shared_model, lib_engines
-    now = time.time()
-    if now - _recovery_last_attempt < _RECOVERY_COOLDOWN:
-        return False
-    _recovery_last_attempt = now
-
-    # Layer 0: transition to RECOVERING
-    try:
-        from server import system_phase as sp
-        sp.set_phase(sp.SystemPhase.RECOVERING, "in-process recovery attempt")
-    except (ImportError, AttributeError) as _sp_err:
-        logger.debug(f"recovery phase transition unavailable: {_sp_err}")
-
-    try:
-        from server.rag_proxy import RAGProxy, check_shim_rag_capable, get_lib_engines
-        if not check_shim_rag_capable():
-            logger.warning("HME recovery: shim not healthy or lacks /rag — cannot recover")
-            try:
-                from server import system_phase as sp
-                from server import operational_state as ops
-                sp.set_phase(sp.SystemPhase.DEGRADED, "shim not rag-capable")
-                ops.record_recovery(False)
-            except (ImportError, AttributeError) as _rec_err:
-                logger.debug(f"recovery: phase/ops unavailable: {_rec_err}")
-            return False
-        new_project = RAGProxy("project")
-        new_global = RAGProxy("global")
-        # Self-test: verify proxies actually work before committing
-        test_result = new_project.list_knowledge()
-        if not isinstance(test_result, list):
-            logger.warning(f"HME recovery: proxy self-test failed (list_knowledge returned {type(test_result).__name__}) — aborting")
-            try:
-                from server import system_phase as sp
-                from server import operational_state as ops
-                sp.set_phase(sp.SystemPhase.DEGRADED, "proxy self-test failed")
-                ops.record_recovery(False)
-            except (ImportError, AttributeError) as _st_err:
-                logger.debug(f"recovery: self-test fail transition unavailable: {_st_err}")
-            return False
-        project_engine = new_project
-        global_engine = new_global
-        shared_model = project_engine.model
-        lib_engines = get_lib_engines()
-        _startup_error = None
-
-        # Layer 0 + 2: mark READY, record success
-        try:
-            from server import system_phase as sp
-            from server import operational_state as ops
-            sp.set_phase(sp.SystemPhase.READY, "proxy self-test passed")
-            ops.record_recovery(True)
-        except (ImportError, AttributeError) as _ok_err:
-            logger.debug(f"recovery: success transition unavailable: {_ok_err}")
-
-        logger.info(f"HME: auto-recovered — shim healthy + /rag verified ({len(test_result)} KB entries)")
-        register_critical_failure(
-            "startup_recovery",
-            f"Session started degraded but auto-recovered ({len(test_result)} KB entries accessible). "
-            "Root cause: shim was running without /rag endpoint (old version).",
-            severity="WARNING",
-        )
-        if _post_recovery_hook is not None:
-            try:
-                _post_recovery_hook()
-                logger.info("HME: post-recovery startup chain triggered")
-            except Exception as _hk:
-                logger.warning(f"HME: post-recovery hook failed: {_hk}")
-        return True
-    except Exception as e:
-        logger.warning(f"HME: recovery attempt failed: {e}")
-        try:
-            from server import system_phase as sp
-            from server import operational_state as ops
-            sp.set_phase(sp.SystemPhase.DEGRADED, f"recovery exception: {type(e).__name__}")
-            ops.record_recovery(False)
-        except (ImportError, AttributeError) as _ex_err:
-            logger.debug(f"recovery: exception transition unavailable: {_ex_err}")
-        return False
 
 
 def _fmt_startup_error(err: Exception) -> str:
@@ -307,10 +203,7 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     """
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
-            # Attempt recovery for any startup error — shim restart fixes most proxy failures
-            _try_recover_from_proxy_error()
-            if _startup_error:
-                raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
+            raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
         if project_engine is None or global_engine is None or shared_model is None:
             raise RuntimeError(
                 "HME startup completed but engines are not initialized "

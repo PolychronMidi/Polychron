@@ -145,59 +145,21 @@ _startup_t0 = time.time()
 
 
 def _background_load():
-    from server.rag_proxy import (
-        RAGProxy, ensure_shim_running, check_shim_rag_capable,
-        kill_shim_by_pid, get_lib_engines, start_proxy_monitor,
-    )
     try:
-        shim_ok = ensure_shim_running()
-        if shim_ok and not check_shim_rag_capable():
-            # Shim is healthy but lacks /rag (old version) — kill it and start fresh
-            logger.warning("Shim healthy but lacks /rag endpoint — killing stale version and restarting")
-            kill_shim_by_pid()
-            time.sleep(1)
-            shim_ok = ensure_shim_running()
-        if shim_ok:
-            logger.info("RAG delegated to persistent HTTP shim (no local model loading)")
-            context.project_engine = RAGProxy("project")
-            context.global_engine = RAGProxy("global")
-            context.shared_model = context.project_engine.model
-            context.lib_engines = get_lib_engines()
-            start_proxy_monitor()
-            # Ensure llama-server instances are up before the monitor loop
-            # starts supervising them. sessionstart.sh handles cold boot from
-            # the bash side; this handles MCP process restarts that happen
-            # mid-session (e.g. hot-reload, crash recovery).
-            try:
-                from server import llamacpp_supervisor as _sup
-                _sup_status = _sup.ensure_all_running()
-                logger.info(f"llamacpp_supervisor: {_sup_status}")
-            except Exception as _sup_err:
-                logger.warning(f"llamacpp_supervisor startup failed: {type(_sup_err).__name__}: {_sup_err}")
-            logger.info(f"HME ready (proxy mode) | project={PROJECT_ROOT} | libs={list(context.lib_engines.keys())}")
-        else:
-            logger.warning("HTTP shim unavailable — loading RAG engines locally (duplicate, wasteful)")
-            from sentence_transformers import SentenceTransformer
-            from rag_engine import RAGEngine
-            from watcher import start_watcher
-            try:
-                shared_model = SentenceTransformer(MODEL_NAME, backend=MODEL_BACKEND, device="cpu",
-                                                   model_kwargs={"file_name": "onnx/model.onnx"})
-            except Exception as e:
-                logger.info(f"{MODEL_BACKEND} backend failed ({e}), falling back to torch")
-                shared_model = SentenceTransformer(MODEL_NAME, device="cpu")
-            context.project_engine = RAGEngine(db_path=PROJECT_DB, model=shared_model)
-            context.global_engine = RAGEngine(db_path=GLOBAL_DB, model=shared_model)
-            context.shared_model = shared_model
-            start_watcher(PROJECT_ROOT, context.project_engine)
-            lib_engines: dict = {}
-            for _lib_rel in get_lib_dirs():
-                _lib_name = _lib_rel.replace("/", "_").replace("\\", "_").strip("_")
-                _lib_db = os.path.join(PROJECT_DB, "libs", _lib_name)
-                os.makedirs(_lib_db, exist_ok=True)
-                lib_engines[_lib_rel] = RAGEngine(db_path=_lib_db, model=shared_model)
-            context.lib_engines = lib_engines
-            logger.info(f"HME ready (local mode) | project={PROJECT_ROOT} | libs={list(lib_engines.keys())}")
+        import rag_engines
+        if not rag_engines._engine_ready.wait(timeout=120):
+            raise RuntimeError("RAG engines did not load within 120s")
+        context.project_engine = rag_engines._project_engine
+        context.global_engine = rag_engines._global_engine
+        context.shared_model = getattr(rag_engines._project_engine, "text_model", None)
+        context.lib_engines = dict(rag_engines._lib_engines)
+        logger.info(f"HME ready | project={PROJECT_ROOT} | libs={list(context.lib_engines.keys())}")
+        try:
+            from server import llamacpp_supervisor as _sup
+            _sup_status = _sup.ensure_all_running()
+            logger.info(f"llamacpp_supervisor: {_sup_status}")
+        except Exception as _sup_err:
+            logger.warning(f"llamacpp_supervisor startup failed: {type(_sup_err).__name__}: {_sup_err}")
         from server.startup_validator import validate_startup
         validate_startup(context, PROJECT_ROOT)
         # Layer 0 + 2: record successful startup
@@ -319,10 +281,6 @@ def _background_startup_chain():
 
 
 threading.Thread(target=_background_startup_chain, daemon=True, name="HME-startup-chain").start()
-# Wire recovery hook so in-process recovery re-runs the full startup chain (llama.cpp init + priming + cache warm).
-context._post_recovery_hook = lambda: threading.Thread(
-    target=_background_startup_chain, daemon=True, name="HME-recovery-chain"
-).start()
 
 if __name__ == "__main__":
     from server.protocol_logging import install as _install_logging

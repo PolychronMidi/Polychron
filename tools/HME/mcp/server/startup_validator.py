@@ -41,18 +41,11 @@ def _check_engines(context) -> None:
     if context.shared_model is None:
         raise RuntimeError("shared_model is None — SentenceTransformer failed to load")
 
-    # In proxy mode the shim owns the model — its health check already verified readiness.
-    # Skip the smoke-test that would make an HTTP round-trip before the shim is fully warm.
-    from server.rag_proxy import RAGProxy, _ModelProxy
-    if isinstance(context.project_engine, RAGProxy):
-        return
-
-    # Smoke-test: ensure the embedding model actually works (local mode only)
+    # Smoke-test: ensure the embedding model actually works. With the shim
+    # gone, engines are always in-process — no proxy-mode branch to skip.
     try:
         result = context.shared_model.encode(["test"], show_progress_bar=False)
-        if result is None:
-            return  # proxy mode: _ModelProxy.encode returns None — shim owns the model
-        if len(result) == 0:
+        if result is None or len(result) == 0:
             raise RuntimeError("shared_model.encode returned empty result")
     except RuntimeError:
         raise
