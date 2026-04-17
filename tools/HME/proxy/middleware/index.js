@@ -88,7 +88,22 @@ function register(mod) {
 
 // ── Tool-result deduplication ────────────────────────────────────────────────
 // Each tool_use.id fires onToolResult exactly once per proxy lifetime.
-const _processed = new Set();
+// Map preserves insertion order; touch-on-access makes this LRU-ish (entries
+// seen recently move to the back and survive eviction longer than stale ones).
+const _processed = new Map(); // id → insertion timestamp
+const _PROCESSED_CAP = 50_000;
+
+function _markProcessed(id) {
+  // LRU touch: delete + re-insert moves the key to the end.
+  if (_processed.has(id)) {
+    _processed.delete(id);
+  }
+  _processed.set(id, Date.now());
+  if (_processed.size > _PROCESSED_CAP) {
+    const oldest = _processed.keys().next().value;
+    _processed.delete(oldest);
+  }
+}
 
 function _pairToolResults(payload) {
   const msgs = (payload && payload.messages) || [];
@@ -105,14 +120,11 @@ function _pairToolResults(payload) {
         if (b && b.type === 'tool_result' && b.tool_use_id) {
           const tu = toolUseById.get(b.tool_use_id);
           if (tu && !_processed.has(b.tool_use_id)) {
-            _processed.add(b.tool_use_id);
+            _markProcessed(b.tool_use_id);
             events.push({ toolUse: tu, toolResult: b });
-            // Cap the processed set so it can't grow unbounded across a very
-            // long session. 10k entries ≈ 500 KB RSS.
-            if (_processed.size > 10_000) {
-              const first = _processed.values().next().value;
-              _processed.delete(first);
-            }
+          } else if (tu) {
+            // Touch so a tool_id we see repeatedly stays in the recent set
+            _processed.set(b.tool_use_id, Date.now());
           }
         }
       }
