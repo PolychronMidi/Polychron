@@ -364,13 +364,13 @@ function buildStatusContext() {
 
 function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (proxy-injected)') {
   if (!block) return false;
+  // Do NOT add cache_control to system blocks — the tools array already has the
+  // cache breakpoint on the last injected tool. Mixing cache_control on system
+  // blocks that appear after ttl='1h' message-level markers from Claude Code
+  // triggers Anthropic 400: "ttl='5m' block must not come after ttl='1h' block."
   if (typeof payload.system === 'string') {
-    // Promote to array so we can attach cache_control to just the injected block.
     if (payload.system.includes(marker)) return false;
-    payload.system = [
-      { type: 'text', text: payload.system },
-      { type: 'text', text: block, cache_control: { type: 'ephemeral' } },
-    ];
+    payload.system = payload.system + block;
     return true;
   }
   if (Array.isArray(payload.system)) {
@@ -379,16 +379,11 @@ function injectIntoSystem(payload, block, marker = 'HME Jurisdiction Context (pr
       return typeof t === 'string' && t.includes(marker);
     });
     if (already) return false;
-    // Move cache_control to the new last block — Anthropic only caches up to the
-    // last marked block. Remove stale markers from existing blocks first.
-    for (const b of payload.system) {
-      if (b && b.cache_control) delete b.cache_control;
-    }
-    payload.system.push({ type: 'text', text: block, cache_control: { type: 'ephemeral' } });
+    payload.system.push({ type: 'text', text: block });
     return true;
   }
   if (payload.system == null) {
-    payload.system = [{ type: 'text', text: block, cache_control: { type: 'ephemeral' } }];
+    payload.system = block;
     return true;
   }
   return false;
