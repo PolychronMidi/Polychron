@@ -36,7 +36,7 @@ const {
   resolveUpstream, recordUpstreamSuccess, recordUpstreamFailure,
   DEFAULT_UPSTREAM_HOST, DEFAULT_UPSTREAM_PORT, DEFAULT_UPSTREAM_TLS,
 } = require('./upstream');
-const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem } = require('./context');
+const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem, stripSystemCacheControl } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
 const PORT = parseInt(process.env.HME_PROXY_PORT || '9099', 10);
@@ -245,6 +245,10 @@ function handleRequest(clientReq, clientRes) {
 
       let bodyDirtiedByStrip = false;
       if (isAnthropic) {
+        // Scrub any cache_control from system blocks — old proxy versions added
+        // them, and stale markers in conversation history cause Anthropic 400
+        // TTL ordering errors. Must run before any system mutation.
+        if (stripSystemCacheControl(payload)) bodyDirtiedByStrip = true;
         const b = stripBoilerplate(payload);
         const s = stripSemanticRedundancy(payload);
         const r = _stripHmePrefixOutgoing(payload);
