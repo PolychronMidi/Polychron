@@ -1,0 +1,66 @@
+'use strict';
+// Daemon-thread error watermark — scans the tail of log/hme.log for new
+// ERROR-level lines since the last tool call and appends them to
+// log/hme-errors.log so stop.sh's lifesaver check picks them up.
+// Replaces log-tool-call.sh's hme.log watermark block.
+//
+// Runs on every completed mcp__HME__ tool call (matching the original hook).
+
+const fs = require('fs');
+const path = require('path');
+
+const HME_LOG = 'log/hme.log';
+const ERR_LOG = 'log/hme-errors.log';
+const WATERMARK = 'tmp/hme-log-errors.watermark';
+// ,NNN ERROR anchor matches `2026-04-16 18:30:45,123 ERROR msg`.
+const ERR_LINE_RE = /,\d{3}\s+ERROR\s/;
+
+module.exports = {
+  name: 'hme_log_watermark',
+
+  onToolResult({ toolUse, ctx }) {
+    const name = toolUse.name || '';
+    if (!name.startsWith('mcp__HME__')) return;
+
+    const hmeLogPath = path.join(ctx.PROJECT_ROOT, HME_LOG);
+    const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);
+    const wmPath = path.join(ctx.PROJECT_ROOT, WATERMARK);
+
+    let lastSize = 0;
+    try {
+      lastSize = parseInt(fs.readFileSync(wmPath, 'utf8').trim(), 10) || 0;
+    } catch (_e) { /* first run */ }
+
+    let curSize = 0;
+    try {
+      curSize = fs.statSync(hmeLogPath).size;
+    } catch (_e) { return; /* no log yet */ }
+
+    // Log rotation → reset watermark.
+    if (curSize < lastSize) lastSize = 0;
+    if (curSize <= lastSize) return;
+
+    let fd;
+    try {
+      fd = fs.openSync(hmeLogPath, 'r');
+      const bytesToRead = curSize - lastSize;
+      const buf = Buffer.alloc(bytesToRead);
+      fs.readSync(fd, buf, 0, bytesToRead, lastSize);
+      const chunk = buf.toString('utf8');
+      const newErrors = chunk.split('\n').filter((l) => ERR_LINE_RE.test(l)).slice(0, 20);
+      if (newErrors.length > 0) {
+        try { fs.mkdirSync(path.dirname(errLogPath), { recursive: true }); } catch (_e) {}
+        const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+        const body = newErrors.map((l) => `[${ts}] hme.log: ${l}`).join('\n') + '\n';
+        fs.appendFileSync(errLogPath, body);
+        console.warn(`[middleware] hme_log_watermark: escalated ${newErrors.length} ERROR line(s) to hme-errors.log`);
+      }
+      try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) {}
+      fs.writeFileSync(wmPath, String(curSize));
+    } catch (err) {
+      ctx.warn(`hme_log_watermark read failed: ${err.message}`);
+    } finally {
+      if (fd !== undefined) fs.closeSync(fd);
+    }
+  },
+};

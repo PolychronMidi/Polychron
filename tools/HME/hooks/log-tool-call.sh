@@ -44,67 +44,10 @@ if [ -f "$TS_FILE" ]; then
   rm -f "$TS_FILE" 2>/dev/null
 fi
 
-# Reset streak counter when HME tool is used
+# LIFESAVER FAIL-scan + hme.log ERROR watermark moved to proxy middleware
+# (mcp_fail_scan.js + hme_log_watermark.js). Shell hook keeps only streak reset.
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _streak_reset
-
-  # LIFESAVER: scan ALL HME tool output for FAIL/FAILED — log to hme-errors.log for stop.sh pickup.
-  # Case-SENSITIVE match: test harnesses and pipeline runs emit uppercase
-  # FAIL / FAILED markers (pytest, unittest, our invariant battery, KB
-  # health, selftest). Prose "failed" (lowercase) commonly appears in
-  # monitoring status banners — "connection failed (TimeoutError)" — and
-  # must NOT be matched, or every HME tool call that quotes the banner
-  # produces a false-positive error log entry.
-  # Exclude lines containing PASS (test passed), "fail-fast" (project term),
-  # or prose modal constructions ("fail to", "may fail", "might fail",
-  # "could fail") from Edit Risks narrative text.
-  FAILS=$(echo "$TOOL_RESULT" | grep -E '\bFAIL(ED)?\b' | grep -v 'PASS' | grep -vi 'fail-fast\|fail to\|may fail\|might fail\|could fail' 2>/dev/null || true)
-  if [[ -n "$FAILS" ]]; then
-    PROJECT="$PROJECT_ROOT"
-    ERROR_LOG="$PROJECT/log/hme-errors.log"
-    mkdir -p "$(dirname "$ERROR_LOG")"
-    FAIL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    while IFS= read -r line; do
-      echo "[$FAIL_TS] $TOOL_NAME: $line" >> "$ERROR_LOG"
-    done <<< "$FAILS"
-    echo "🚨 LIFESAVER: FAIL in ${TOOL_NAME} output logged to hme-errors.log — stop.sh will block until fixed." >&2
-  fi
-
-  # LIFESAVER gap fix: the above only scans tool OUTPUT. Daemon threads
-  # (meta-observer, llamacpp supervisor, etc.) write ERROR-level lines
-  # directly to log/hme.log via the Python logger — completely invisible
-  # to the tool-call scanner. Tail the hme.log slice produced SINCE the
-  # last tool call and escalate any new ERROR lines to hme-errors.log so
-  # stop.sh picks them up on the next stop.
-  # PROJECT_ROOT may be empty at this stage (it's resolved further down
-  # from CWD). Resolve root independently here from hook cwd / env / $CWD.
-  LIFESAVER_ROOT="${PROJECT_ROOT:-${CWD:-$(pwd)}}"
-  HME_LOG_PATH="$LIFESAVER_ROOT/log/hme.log"
-  WATERMARK="$LIFESAVER_ROOT/tmp/hme-log-errors.watermark"
-  if [ -f "$HME_LOG_PATH" ]; then
-    mkdir -p "$(dirname "$WATERMARK")" 2>/dev/null
-    LAST_SIZE=0
-    [ -f "$WATERMARK" ] && LAST_SIZE=$(cat "$WATERMARK" 2>/dev/null || echo 0)
-    [[ ! "$LAST_SIZE" =~ ^[0-9]+$ ]] && LAST_SIZE=0
-    CUR_SIZE=$(stat -c%s "$HME_LOG_PATH" 2>/dev/null || echo 0)
-    # On log rotation CUR_SIZE may be smaller; reset watermark in that case.
-    [ "$CUR_SIZE" -lt "$LAST_SIZE" ] && LAST_SIZE=0
-    if [ "$CUR_SIZE" -gt "$LAST_SIZE" ]; then
-      # Use ,NNN ERROR anchor (milliseconds + LEVEL) so INFO lines that
-      # contain the word "ERROR" in their tool-input payload don't trigger.
-      NEW_ERRORS=$(tail -c +$((LAST_SIZE + 1)) "$HME_LOG_PATH" 2>/dev/null | grep -E ',[0-9]{3}[[:space:]]+ERROR[[:space:]]' | head -20)
-      if [ -n "$NEW_ERRORS" ]; then
-        ERROR_LOG="$LIFESAVER_ROOT/log/hme-errors.log"
-        FAIL_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        ERR_COUNT=$(echo "$NEW_ERRORS" | wc -l)
-        while IFS= read -r line; do
-          [ -n "$line" ] && echo "[$FAIL_TS] hme.log: $line" >> "$ERROR_LOG"
-        done <<< "$NEW_ERRORS"
-        echo "🚨 LIFESAVER: $ERR_COUNT ERROR line(s) in log/hme.log since last tool call — daemon-thread failure. stop.sh will block until investigated." >&2
-      fi
-      echo "$CUR_SIZE" > "$WATERMARK"
-    fi
-  fi
 fi
 
 # LIFESAVER threshold: warn when MCP HME synthesis exceeds expected duration
@@ -146,10 +89,7 @@ echo "$ENTRY" >> "$LOG_FILE" 2>/dev/null
 TOOL_LOG_LINE=$(echo "$TOOL_INPUT" | head -c 120 | tr '\n' ' ')
 printf '%s INFO tool: %s %s\n' "$(date '+%Y-%m-%d %H:%M:%S,000')" "$TOOL_NAME" "$TOOL_LOG_LINE" >> "$HME_LOG" 2>/dev/null
 
-# 2. Emit to activity bridge (MCP tool call logging)
-if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
-  _emit_activity mcp_tool_call --session="$SESSION_ID" --tool="$TOOL_NAME" --elapsed_s="$ELAPSED_S"
-fi
+# 2. mcp_tool_call activity emission moved to proxy middleware (activity_log.js).
 
 # 3. POST to HTTP shim (background, non-blocking)
 (_safe_curl "http://127.0.0.1:7734/transcript" "{\"entries\":[$ENTRY]}") &
