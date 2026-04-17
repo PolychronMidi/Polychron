@@ -68,16 +68,16 @@ module.exports = {
       const warnings = Array.isArray(semantic.warnings) ? semantic.warnings : [];
       for (const b of blocks) {
         if (typeof b.score === 'number' && b.score >= BUGFIX_MIN_SCORE) {
-          const t = String(b.title ? b.title : '').slice(0, 120);
-          if (t) semanticLines.push(`⚠ KB bugfix "${t}" matches this module — verify edit doesn't re-introduce it`);
-          if (semanticLines.length >= 2) break;
+          const t = String(b.title ? b.title : '').slice(0, 90);
+          if (t) semanticLines.push(`⚠ bugfix:"${t}"`);
+          if (semanticLines.length >= 1) break;
         }
       }
       for (const w of warnings) {
         if (semanticLines.length >= 2) break;
         if (typeof w.score === 'number' && w.score >= ANTIPATTERN_MIN_SCORE) {
-          const t = String(w.title ? w.title : '').slice(0, 120);
-          if (t) semanticLines.push(`⚠ KB antipattern/rule "${t}" relevant — cross-check`);
+          const t = String(w.title ? w.title : '').slice(0, 90);
+          if (t) semanticLines.push(`⚠ rule:"${t}"`);
         }
       }
     }
@@ -97,17 +97,16 @@ module.exports = {
 
     const footerLines = [];
     if (locks.length > 0) {
-      const prefix = touched.length > 0 ? '⚠ ' : '';
       const src = touched.length > 0 ? touched : locks;
-      const shown = src.slice(0, 4).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(', ');
-      const tail = src.length > 4 ? ` (+${src.length - 4} more)` : '';
-      const verb = touched.length > 0 ? 'edit mentions locked bias key(s)' : 'file has locked bias bounds';
-      footerLines.push(`${prefix}${verb}: ${shown}${tail} — if intentional, snapshot with: ${SNAPSHOT_CMD}`);
+      const shown = src.slice(0, 3).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(' ');
+      const tail = src.length > 3 ? ` +${src.length - 3}` : '';
+      const tag = touched.length > 0 ? '⚠ bias-touch' : 'bias-bounds';
+      footerLines.push(`${tag}: ${shown}${tail} — snapshot:${SNAPSHOT_CMD}`);
     }
     for (const line of semanticLines) footerLines.push(line);
 
     if (ctx.hasHmeFooter(toolResult)) return;
-    const footer = '\n[HME] ' + footerLines.join('\n[HME] ');
+    const footer = '\n[HME] ' + footerLines.join(' | ');
     _appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({

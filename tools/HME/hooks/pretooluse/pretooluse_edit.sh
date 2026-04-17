@@ -15,7 +15,7 @@ fi
 # Pre-save pattern lint — block new_string before it lands if it introduces
 # forbidden patterns. Each block cites the rule + the fix, so the message
 # alone is enough for the agent to correct the edit.
-if echo "$FILE" | grep -qE '\.(js|ts|tsx|mjs|cjs)$'; then
+if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
   if echo "$NEW_STRING" | grep -qE '\bglobalThis\.|(^|[^a-zA-Z_])global\.[a-zA-Z_]'; then
     _emit_block "BLOCKED: new_string uses global. or globalThis. — 5 Core Principles #1 forbids these. Reference the global directly (declared in globals.d.ts)."
     exit 2

@@ -99,47 +99,43 @@ module.exports = {
     const lines = [];
 
     const hyps = openHypothesesFor(stem);
-    for (const h of hyps.slice(0, 2)) {
-      const claim = String(h.claim || '').slice(0, 180).trim();
-      const falsifier = String(h.falsification || '').slice(0, 160).trim();
+    for (const h of hyps.slice(0, 1)) {
+      const claim = String(h.claim || '').slice(0, 120).trim();
+      const falsifier = String(h.falsification || '').slice(0, 100).trim();
       if (!claim) continue;
-      lines.push(`open hypothesis ${h.id}: ${claim}`);
-      if (falsifier) lines.push(`  falsify by: ${falsifier}`);
+      lines.push(`hyp ${h.id}: ${claim}`);
+      if (falsifier) lines.push(`  falsify: ${falsifier}`);
     }
 
     const drift = driftFor(stem);
     if (drift) {
-      const fields = (drift.diffs || [])
-        .filter((d) => d.field !== 'content_hash_prefix')
-        .map((d) => d.field).slice(0, 3).join(', ');
-      lines.push(`KB description for this module is stale (diverged: ${fields || 'structural'}) — trust the code above, not any cached description`);
+      const diffs = Array.isArray(drift.diffs) ? drift.diffs : [];
+      const fields = diffs.filter((d) => d.field !== 'content_hash_prefix').map((d) => d.field).slice(0, 3).join(', ');
+      lines.push(`KB stale (${fields || 'structural'}) — trust code, not cache`);
     }
 
     if (_isExportableModule(fp)) {
       const callers = _findCallers(ctx.PROJECT_ROOT, fp);
       if (callers.length > 0) {
         const shown = callers.slice(0, MAX_CALLERS_SHOWN).map((c) => path.basename(c)).join(', ');
-        const tail = callers.length > MAX_CALLERS_SHOWN ? ` (+${callers.length - MAX_CALLERS_SHOWN} more)` : '';
-        lines.push(`callers: ${shown}${tail} — signature changes propagate here`);
+        const tail = callers.length > MAX_CALLERS_SHOWN ? ` +${callers.length - MAX_CALLERS_SHOWN}` : '';
+        lines.push(`callers: ${shown}${tail}`);
       }
     }
 
-    // Semantic KB hint — only when static coverage is empty and only for the
-    // top match above the score floor. Title only; agent can learn(query=) for
-    // full content if they want it.
     if (lines.length === 0 && _isExportableModule(fp)) {
       const result = await enrich(stem, 3);
       const top = (result && Array.isArray(result.kb)) ? result.kb[0] : null;
       if (top && typeof top.score === 'number' && top.score >= SEMANTIC_HINT_MIN_SCORE
           && SEMANTIC_HINT_CATEGORIES.has(top.category)) {
-        const title = String(top.title || '').slice(0, 120);
-        if (title) lines.push(`KB [${top.category}] "${title}" — relevant; learn(query='${stem}') for detail`);
+        const title = String(top.title || '').slice(0, 100);
+        if (title) lines.push(`KB:${top.category} "${title}" — learn(query='${stem}')`);
       }
     }
 
     if (lines.length === 0) return;
     if (ctx.hasHmeFooter(toolResult)) return;
-    const footer = '\n[HME]\n' + lines.map((l) => `  ${l}`).join('\n');
+    const footer = '\n[HME] ' + lines.join(' | ');
     _appendToResult(toolResult, footer);
     ctx.markDirty();
     ctx.emit({ event: 'read_context', file: fp, lines: lines.length });
