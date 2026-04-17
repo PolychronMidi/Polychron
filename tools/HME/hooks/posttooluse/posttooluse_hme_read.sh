@@ -6,8 +6,13 @@ INPUT=$(cat)
 TARGET=$(_safe_jq "$INPUT" '.tool_input.target' '')
 MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'auto')
 
-# BRIEF nexus marker moved to proxy middleware (nexus_tracking.js).
-# Shell hook retained only for streak reset (Claude-Code-internal state).
+# BRIEF is written BOTH here (synchronous with Claude Code's hook chain) and
+# by proxy middleware (one request later). The double-write is idempotent and
+# the shell write is load-bearing: posttooluse_edit.sh checks BRIEF in the
+# same turn, and middleware's write won't land until the NEXT request.
+if [ -n "$TARGET" ]; then
+  _nexus_add BRIEF "$TARGET"
+fi
 
 _streak_reset
 

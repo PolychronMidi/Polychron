@@ -12,6 +12,8 @@ import functools
 import inspect
 import logging
 import time
+import types
+import typing
 
 logger = logging.getLogger("HME")
 
@@ -25,7 +27,50 @@ _TYPE_MAP = {
     bool: "boolean",
     list: "array",
     dict: "object",
+    type(None): "null",
 }
+
+
+def _annotation_to_schema(ann) -> dict:
+    """Translate a Python type annotation into a JSON Schema fragment.
+    Handles: primitives, typing.Optional[T], list[T], dict[K,V], Union,
+    and PEP 604 `X | Y`. Unknown types log a debug warning and fall back
+    to `{"type": "string"}` so the tool still registers."""
+    if ann is inspect.Parameter.empty:
+        return {"type": "string"}
+    if ann in _TYPE_MAP:
+        return {"type": _TYPE_MAP[ann]}
+
+    origin = typing.get_origin(ann)
+    args = typing.get_args(ann)
+
+    # Union / Optional — Optional[T] == Union[T, None], PEP 604 X|Y == types.UnionType
+    if origin is typing.Union or isinstance(ann, types.UnionType):
+        non_none = [a for a in args if a is not type(None)]
+        if len(non_none) == 1:
+            # Optional[T]: unwrap T, no need to mark nullable for MCP consumers
+            return _annotation_to_schema(non_none[0])
+        # True union: list of alternative schemas
+        return {"anyOf": [_annotation_to_schema(a) for a in non_none] or [{"type": "string"}]}
+
+    # list[T] / List[T]
+    if origin in (list, typing.List):
+        if args:
+            return {"type": "array", "items": _annotation_to_schema(args[0])}
+        return {"type": "array"}
+
+    # dict[K, V] / Dict[K, V]
+    if origin in (dict, typing.Dict):
+        if len(args) == 2:
+            return {"type": "object", "additionalProperties": _annotation_to_schema(args[1])}
+        return {"type": "object"}
+
+    # tuple[T1, T2, ...] — degrade to array (MCP tools rarely use tuples)
+    if origin in (tuple, typing.Tuple):
+        return {"type": "array"}
+
+    logger.debug(f"tool_registry: no schema rule for annotation {ann!r} — falling back to string")
+    return {"type": "string"}
 
 
 def _schema_for(fn) -> dict:
@@ -38,9 +83,7 @@ def _schema_for(fn) -> dict:
     for pname, param in sig.parameters.items():
         if pname in ("self", "cls"):
             continue
-        ann = param.annotation
-        json_type = _TYPE_MAP.get(ann, "string")
-        prop: dict = {"type": json_type}
+        prop = _annotation_to_schema(param.annotation)
         if param.default is inspect.Parameter.empty:
             required.append(pname)
         else:

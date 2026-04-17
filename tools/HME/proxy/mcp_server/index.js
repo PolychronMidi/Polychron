@@ -73,6 +73,13 @@ async function _handleRpc(sessionId, msg) {
   const method = msg.method;
   try {
     if (method === 'initialize') {
+      // Re-initialize on the same session is idempotent but worth flagging.
+      const sess = session.get(sessionId);
+      if (sess && sess.initialized) {
+        logger.warn(`initialize called twice on session=${sessionId} — returning current capabilities`);
+      } else {
+        session.markInitialized(sessionId);
+      }
       return jsonrpcResult(id, initializeResult());
     }
     if (method === 'notifications/initialized' || method && method.startsWith('notifications/')) {
@@ -88,7 +95,31 @@ async function _handleRpc(sessionId, msg) {
     if (method === 'tools/call') {
       const { name, arguments: args } = msg.params || {};
       if (!name) return jsonrpcError(id, -32602, 'tools/call: missing params.name');
-      const result = await dispatcher.callTool(name, args || {});
+      const { CHILDREN } = require('../supervisor/children');
+      const timeoutMs = (CHILDREN.find((c) => c.name === 'worker') || {}).callTimeoutMs || 90_000;
+      const t0 = Date.now();
+      let result;
+      try {
+        result = await dispatcher.callTool(name, args || {}, timeoutMs);
+      } catch (err) {
+        const elapsed = Date.now() - t0;
+        if (/timeout/i.test(err.message) && elapsed >= timeoutMs - 500) {
+          // Hang detected: worker didn't respond within the declared window.
+          // Signal supervisor + emit activity so the incident is visible in the
+          // activity bus and operator can see the correlation.
+          try {
+            const { killChild } = require('../supervisor/index');
+            const { emit } = require('../shared');
+            emit({ event: 'mcp_hang_kill', tool: name, elapsed_ms: elapsed });
+            killChild('worker', 'SIGKILL');
+            logger.error(`tools/call '${name}' hung > ${timeoutMs}ms — killed worker (supervisor will restart)`);
+          } catch (kerr) {
+            logger.error(`hang-kill failed: ${kerr.message}`);
+          }
+          return jsonrpcError(id, -32000, `Tool '${name}' timed out after ${timeoutMs}ms — worker restarting, retry shortly`);
+        }
+        throw err;
+      }
       return jsonrpcResult(id, result);
     }
     if (method === 'resources/list') return jsonrpcResult(id, { resources: [] });
@@ -109,7 +140,7 @@ async function handleMessagesPost(req, res, sessionId) {
     res.end(JSON.stringify({ error: 'bad JSON body' }));
     return;
   }
-  if (!msg || typeof msg !== 'object') {
+  if (!msg || (typeof msg !== 'object' && !Array.isArray(msg))) {
     res.writeHead(400, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: 'empty body' }));
     return;
@@ -123,6 +154,18 @@ async function handleMessagesPost(req, res, sessionId) {
   // Claude Code expects 202 Accepted; the actual response goes over SSE.
   res.writeHead(202, { 'content-type': 'application/json' });
   res.end('{"accepted":true}');
+
+  // JSON-RPC 2.0 supports batch requests: array of requests → array of
+  // responses. Dispatch each in parallel, filter out notification nulls.
+  if (Array.isArray(msg)) {
+    if (msg.length === 0) {
+      session.send(sessionId, jsonrpcError(null, -32600, 'empty batch'));
+      return;
+    }
+    const responses = (await Promise.all(msg.map((m) => _handleRpc(sessionId, m)))).filter((r) => r !== null);
+    if (responses.length > 0) session.send(sessionId, responses);
+    return;
+  }
 
   const response = await _handleRpc(sessionId, msg);
   if (response !== null) session.send(sessionId, response);

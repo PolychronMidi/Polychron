@@ -7,11 +7,13 @@
 const crypto = require('crypto');
 const { sseEvent } = require('./protocol');
 
-const _sessions = new Map(); // id → { res, createdAt, lastEvent }
+// id → { res, createdAt, lastEvent, initialized }
+const _sessions = new Map();
+const SESSION_TTL_MS = 10 * 60 * 1000; // reap streams that haven't seen traffic in 10 min
 
 function createSession(res) {
   const id = crypto.randomUUID();
-  _sessions.set(id, { res, createdAt: Date.now(), lastEvent: Date.now() });
+  _sessions.set(id, { res, createdAt: Date.now(), lastEvent: Date.now(), initialized: false });
   res.on('close', () => { _sessions.delete(id); });
   res.on('error', () => { _sessions.delete(id); });
   return id;
@@ -20,6 +22,23 @@ function createSession(res) {
 function get(id) {
   return _sessions.get(id) || null;
 }
+
+function markInitialized(id) {
+  const s = _sessions.get(id);
+  if (s) s.initialized = true;
+}
+
+// Reaper: drop sessions whose SSE stream has been silent too long. Runs every
+// 2 minutes. Prevents orphan sessions from a crashed client tying up memory.
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, s] of _sessions) {
+    if (now - s.lastEvent > SESSION_TTL_MS) {
+      try { s.res.end(); } catch (_e) { /* ignore */ }
+      _sessions.delete(id);
+    }
+  }
+}, 120_000).unref();
 
 function send(id, jsonrpcMessage) {
   const s = _sessions.get(id);
@@ -46,4 +65,4 @@ function stats() {
   return { active: _sessions.size };
 }
 
-module.exports = { createSession, get, send, close, stats };
+module.exports = { createSession, get, markInitialized, send, close, stats };

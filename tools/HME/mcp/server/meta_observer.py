@@ -260,8 +260,8 @@ def _meta_loop() -> None:
                 _last_archaeology_ts = now
 
             # L18: expire stale predictions + generate new ones from correlator
-            _expire_predictions()
-            _auto_predictions_from_correlator()
+            meta_layers._expire_predictions()
+            meta_layers._auto_predictions_from_correlator()
 
             # L30: periodic session document snapshot (every 10 minutes)
             if cycle % max(1, 600 // _HEARTBEAT_INTERVAL) == 0:

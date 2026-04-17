@@ -27,15 +27,11 @@ module.exports = {
       file: filePath || '',
     });
 
-    // Tool-specific events that old shell hooks emitted:
-    if (name === 'Edit' || name === 'NotebookEdit') {
-      ctx.emit({
-        event: 'edit_pending',
-        session,
-        file: filePath,
-        module,
-      });
-    } else if (name === 'Write') {
+    // edit_pending is a PRE-event (emitted by pretooluse_edit.sh before the
+    // tool runs). Middleware only sees POST-execution tool_results, so we
+    // emit file_written for both Edit and Write to match the "just finished"
+    // semantic. Shell hook retains the pre-event ownership.
+    if (name === 'Edit' || name === 'NotebookEdit' || name === 'Write') {
       ctx.emit({
         event: 'file_written',
         session,

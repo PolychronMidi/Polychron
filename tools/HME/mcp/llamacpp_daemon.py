@@ -182,6 +182,18 @@ class _Supervisor:
             logger.debug(f"supervisor: /health probe failed for {spec.base_url()}: {type(_probe_err).__name__}: {_probe_err}")
             return False
 
+    def _is_listening(self, spec: InstanceSpec) -> bool:
+        """Distinguish 'loading' (port bound but /health not ok) from 'truly dead'.
+        Any HTTP response — 200, 503 with status=loading, etc. — counts as
+        listening. Only ConnectionRefused / timeout counts as dead."""
+        try:
+            urllib.request.urlopen(f"{spec.base_url()}/health", timeout=self._health_timeout_s).read()
+            return True
+        except urllib.error.HTTPError:
+            return True
+        except Exception:
+            return False
+
     # ── GPU residence invariant ──────────────────────────────────────────
     def _vulkan_to_cuda_index(self, device: str) -> int | None:
         """Vulkan1 = CUDA 0, Vulkan2 = CUDA 1. Unknown → None (invariant violation)."""
@@ -223,6 +235,13 @@ class _Supervisor:
         kv_mb = (spec.ctx_size * 512) // 1024
         headroom_mb = 1024
         needed_mb = model_mb + kv_mb + headroom_mb
+
+        # Credit back the existing process's model_mb when the port is bound —
+        # the existing loading process is occupying that VRAM, not stealing it.
+        # Without this, self-respawn during model load fires a false offload
+        # invariant CRITICAL (see llamacpp_supervisor.py for the same fix).
+        if self._is_listening(spec):
+            free_mb += model_mb
 
         if needed_mb > free_mb:
             return False, (
@@ -402,6 +421,10 @@ class _Supervisor:
                 if spec.process is not None and spec.process.poll() is None:
                     result[spec.name] = "starting"
                     continue
+                # Port bound but /health not ok → model is loading; do not respawn.
+                if self._is_listening(spec):
+                    result[spec.name] = "loading"
+                    continue
                 ok = self._spawn(spec)
                 result[spec.name] = "spawned" if ok else "spawn_failed"
         return result
@@ -424,6 +447,15 @@ class _Supervisor:
                         "url": spec.base_url(),
                         "restart_count": spec.restart_count,
                         "age_s": round(time.time() - spec.last_start, 1) if spec.last_start else None,
+                    }
+                    continue
+                # Port bound but not healthy → still loading; skip respawn.
+                if self._is_listening(spec):
+                    out[spec.name] = {
+                        "healthy": False,
+                        "loading": True,
+                        "url": spec.base_url(),
+                        "restart_count": spec.restart_count,
                     }
                     continue
                 logger.warning(f"supervisor: {spec.name} unhealthy — attempting restart")
