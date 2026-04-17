@@ -89,6 +89,24 @@ function _stripHmePrefixOutgoing(payload) {
   return changed;
 }
 
+function _sanitizePayload(payload) {
+  // Remove empty text blocks left behind by regex-based strips. Anthropic's
+  // /v1/messages rejects them with 400 "text content blocks must be non-empty".
+  if (!Array.isArray(payload.messages)) return;
+  for (const msg of payload.messages) {
+    if (!msg || !Array.isArray(msg.content)) continue;
+    msg.content = msg.content.filter((b) => {
+      if (!b) return false;
+      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim().length === 0) return false;
+      return true;
+    });
+    if (msg.content.length === 0) {
+      // Preserve the turn boundary — inject a minimal placeholder.
+      msg.content = [{ type: 'text', text: '(content stripped by hme-proxy)' }];
+    }
+  }
+}
+
 async function _injectHmeTools(payload) {
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
@@ -187,6 +205,12 @@ function handleRequest(clientReq, clientRes) {
         // HME tool injection (full bypass) — await so tools are in payload
         // before we serialize and forward upstream.
         const n = await _injectHmeTools(payload);
+        // Safety: any strip above may have reduced a text block to an empty
+        // string. Anthropic rejects empty text content with HTTP 400
+        // ("messages: text content blocks must be non-empty"). Drop empty
+        // text blocks; if a message ends up content-less, inject a minimal
+        // placeholder so the topology survives.
+        _sanitizePayload(payload);
         if (b > 0 || s > 0 || r || n > 0) bodyDirtiedByStrip = true;
       }
 
