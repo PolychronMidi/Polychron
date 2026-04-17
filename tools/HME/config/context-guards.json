@@ -1,0 +1,32 @@
+{
+  "_doc": "Files/paths that must never (or only partially) enter agent context. Hooks use this at PreToolUse to block; proxy middleware uses it as a backstop for tool_result truncation. Patterns are relative to PROJECT_ROOT and use bash case-style globs.",
+
+  "blocked_paths": [
+    "doc/theory/",
+    "tools/models/training/",
+    "metrics/hme-dashboard.html",
+    "metrics/l0-dump.json",
+    "metrics/dependency-graph.json",
+    "metrics/trace.jsonl",
+    "metrics/hme-composition-signal.json",
+    "metrics/hme-narrative.jsonl"
+  ],
+
+  "blocked_extensions": [
+    ".gguf", ".safetensors", ".onnx", ".bin",
+    ".wav", ".mp3", ".ogg", ".sf2",
+    ".png", ".jpg", ".jpeg", ".webp"
+  ],
+
+  "paginated_paths": [
+    {"prefix": "log/session-transcript.jsonl", "max_lines": 100, "reason": "28MB transcript — tail only; use offset to walk back"},
+    {"prefix": "log/hme.log",                  "max_lines": 300, "reason": "debug log — tail only unless offset is set"},
+    {"prefix": "log/hme-hook-latency.jsonl",   "max_lines": 200, "reason": "append-only telemetry — tail only"},
+    {"prefix": "metrics/hme-activity.jsonl",   "max_lines": 300, "reason": "1.6MB activity stream — tail only"},
+    {"prefix": "metrics/trace-summary.json",   "max_lines": 500, "reason": "pipeline summary — use offset to walk sections"},
+    {"prefix": "metrics/hme-ground-truth.jsonl","max_lines": 50, "reason": "append-only — tail only"}
+  ],
+
+  "soft_size_limit_bytes": 150000,
+  "_soft_size_doc": "Any Read on a file larger than this without an offset+limit pair triggers a warning-and-truncate in the proxy middleware."
+}

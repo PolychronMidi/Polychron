@@ -28,6 +28,10 @@
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_bash.sh", "timeout": 10}]
       },
       {
+        "matcher": "Read",
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_read.sh", "timeout": 5}]
+      },
+      {
         "matcher": "TodoWrite",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_todowrite.sh", "timeout": 5}]
       }

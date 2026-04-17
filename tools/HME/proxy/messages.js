@@ -204,8 +204,9 @@ function stripSemanticRedundancy(payload) {
       if (!srcUse) continue;
       if (srcUse.name === 'Read') {
         const fp = (srcUse.input && (srcUse.input.file_path || srcUse.input.path)) || null;
+        const rawText = _textOf(block);
+        // Dup-read collapse (same file re-read with identical content → earlier one stripped)
         if (fp) {
-          const rawText = _textOf(block);
           const hash = _hashText(rawText);
           const prev = lastReadByFile.get(fp);
           if (prev && prev.hash === hash) {
@@ -213,6 +214,16 @@ function stripSemanticRedundancy(payload) {
             bump('dup_read_collapsed');
           }
           lastReadByFile.set(fp, { hash, block });
+        }
+        // Oversize-read backstop: if a hook missed, truncate the result before
+        // it hits the Anthropic cache. Tighter threshold than Bash since Read
+        // output is usually dense file content, not log spew.
+        if (rawText.length > D_MAX_BYTES) {
+          const head = rawText.slice(0, D_HEAD_BYTES);
+          const tail = rawText.slice(-D_TAIL_BYTES);
+          const elided = rawText.length - head.length - tail.length;
+          _setText(block, head + `\n…<${elided} bytes elided by hme-proxy — use offset+limit for paginated reads>…\n` + tail);
+          bump('oversize_read_trim');
         }
       }
       if (srcUse.name === 'Bash') {
