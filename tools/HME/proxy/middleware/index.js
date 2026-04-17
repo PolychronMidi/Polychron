@@ -103,6 +103,22 @@ const ctx = {
     if (!marker) return false;
     return _toolResultText(toolResult).includes(marker);
   },
+  // Append text to a tool_result regardless of whether content is a string,
+  // array-of-blocks, or null. Shared by all middleware — do not copy locally.
+  appendToResult: (toolResult, text) => {
+    if (typeof toolResult.content === 'string') {
+      toolResult.content = toolResult.content + text;
+      return;
+    }
+    if (Array.isArray(toolResult.content)) {
+      for (const block of toolResult.content) {
+        if (block && block.type === 'text') { block.text = (block.text || '') + text; return; }
+      }
+      toolResult.content.push({ type: 'text', text });
+      return;
+    }
+    toolResult.content = text;
+  },
 };
 
 // ── Registration ─────────────────────────────────────────────────────────────

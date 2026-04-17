@@ -19,24 +19,6 @@ function _textOf(toolResult) {
   return '';
 }
 
-function _appendToResult(toolResult, text) {
-  if (typeof toolResult.content === 'string') {
-    toolResult.content = toolResult.content + text;
-    return;
-  }
-  if (Array.isArray(toolResult.content)) {
-    for (const block of toolResult.content) {
-      if (block && block.type === 'text') {
-        block.text = (block.text || '') + text;
-        return;
-      }
-    }
-    toolResult.content.push({ type: 'text', text });
-    return;
-  }
-  toolResult.content = text;
-}
-
 function _firstErrorSnippet(text) {
   for (const line of text.split('\n')) {
     if (ERROR_RE.test(line)) return line.trim().slice(0, 120);
@@ -53,7 +35,7 @@ module.exports = {
     if (!text || !ERROR_RE.test(text)) return;
     const snip = _firstErrorSnippet(text);
     if (!snip) return;
-    _appendToResult(toolResult, `\n[err] ${snip}`);
+    ctx.appendToResult(toolResult, `\n[err] ${snip}`);
     ctx.markDirty();
     ctx.emit({ event: 'bash_error_surfaced' });
   },
