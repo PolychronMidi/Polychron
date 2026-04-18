@@ -54,10 +54,12 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _IS_HME_CALL=1
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
-  # Match: `npm run review`, `npm run learn --`, `node scripts/hme-cli.js trace`, etc.
-  if echo "$TOOL_INPUT" | grep -qE 'npm run (review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
+  # Match: `npm run review`, `npm run --silent review`, `npm run learn --`,
+  # `node scripts/hme-cli.js trace`, etc. Flags like --silent/-s come before
+  # the tool name; we skip over them.
+  if echo "$TOOL_INPUT" | grep -qE 'npm run( +-[^ ]+)* +(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
     _IS_HME_CALL=1
-    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE 'npm run ([a-z_-]+)' | head -1 | awk '{print $3}')
+    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE 'npm run( +-[^ ]+)* +[a-z_-]+' | head -1 | awk '{print $NF}')
   fi
 fi
 

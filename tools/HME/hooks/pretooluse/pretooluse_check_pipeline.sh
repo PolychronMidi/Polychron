@@ -15,7 +15,7 @@ fi
 # status` with no args defaults to _mode_pipeline on the server side, which IS
 # the pipeline check, so the default case counts too.
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
-if ! echo "$CMD" | grep -qE '\bnpm run status\b'; then
+if ! echo "$CMD" | grep -qE '\bnpm run( +-[^ ]+)* +status\b'; then
   exit 0
 fi
 
@@ -48,7 +48,9 @@ for line in reversed(lines):
                 name = block.get('name', '')
                 if name == 'Bash':
                     cmd = block.get('input', {}).get('command', '')
-                    if 'npm run status' in cmd:
+                    # Match 'npm run status' allowing optional flags (--silent etc).
+                    import re as _re
+                    if _re.search(r'\bnpm run(\s+-\S+)*\s+status\b', cmd):
                         count += 1
                 elif name in ('HME_status', 'mcp__HME__status'):
                     if block.get('input', {}).get('mode') == 'pipeline':
@@ -60,7 +62,7 @@ if [[ "$CALL_COUNT" -ge 1 ]]; then
   # permissionDecisionReason surfaces to Claude on deny; systemMessage is
   # user-terminal mirror only. Both emitted so Claude sees WHY the tool
   # was blocked AND the user sees the same note in the terminal.
-  REASON='ANTI-POLLING: `npm run status` already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run `npm run review -- mode=forget`, update KB/docs\n- If you must check freshness, run `npm run review -- mode=digest` which has its own freshness guard'
+  REASON='ANTI-POLLING: `npm run --silent status` already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run `npm run --silent review -- mode=forget`, update KB/docs\n- If you must check freshness, run `npm run --silent review -- mode=digest` which has its own freshness guard'
   jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
