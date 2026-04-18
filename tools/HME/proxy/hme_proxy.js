@@ -367,6 +367,29 @@ function handleRequest(clientReq, clientRes) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
+        // Inline fallback for UserPromptSubmit when Claude Code's hook system
+        // isn't reaching the /hme/lifecycle endpoint (plugin cache missing,
+        // forwarder not installed, etc.). No-op if a recent /hme/lifecycle
+        // UserPromptSubmit hit was received.
+        if (_lifecycleInactive('UserPromptSubmit')) {
+          const last = payload && Array.isArray(payload.messages)
+            ? payload.messages[payload.messages.length - 1] : null;
+          if (last && last.role === 'user') {
+            let promptText = '';
+            if (typeof last.content === 'string') promptText = last.content;
+            else if (Array.isArray(last.content)) {
+              promptText = last.content
+                .filter((b) => b && b.type === 'text' && typeof b.text === 'string')
+                .map((b) => b.text).join('\n');
+            }
+            if (promptText) {
+              const stdin = JSON.stringify({ user_prompt: promptText, session_id: session });
+              hookBridge.dispatchEvent('UserPromptSubmit', stdin).catch((err) => {
+                console.error('[hme-proxy] inline UserPromptSubmit failed:', err.message);
+              });
+            }
+          }
+        }
         // Run middleware pipeline. Must run AFTER scan so middleware sees the
         // reconciled tool_use/tool_result pairs. Returns true if any
         // middleware mutated the payload (via ctx.markDirty()) — we need to
