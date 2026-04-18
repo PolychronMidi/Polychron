@@ -1125,6 +1125,13 @@
       "severity": "error"
     },
     {
+      "id": "no-duplicate-output-dirs",
+      "description": "log/, metrics/, and tmp/ exist ONLY at the project root. Any subdirectory with those names is a duplicate that fragments telemetry (see the log-tool-call.sh $CWD-as-PROJECT_ROOT bug that silently spawned 10+ orphan log/ dirs). Writers must use $PROJECT_ROOT from .env; relative paths resolved against $(pwd) are banned in hook/daemon contexts. If a subsystem wants its own logs, route through $PROJECT_ROOT/log/<subsystem>-*.log instead of a sibling directory.",
+      "type": "shell_output_empty",
+      "shell": "find . -type d \\( -name log -o -name tmp -o -name metrics \\) -not -path './log' -not -path './tmp' -not -path './metrics' -not -path './node_modules/*' -not -path './.git/*' -not -path './.venv/*' -not -path '*/node_modules/*' 2>/dev/null",
+      "severity": "error"
+    },
+    {
       "id": "daemon-is-gpu-authority",
       "description": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement. Other HME files must not contain 'cuda:0' or 'cuda:1' device assignments — they route through the daemon which owns GPU topology. rag_engine/engine.py is exempt (fallback device picker for non-shim mode). # device-ok comments exempt specific lines.",
       "type": "shell_output_empty",

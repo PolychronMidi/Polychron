@@ -81,7 +81,14 @@ ENTRY=$(jq -nc \
 [ -z "$ENTRY" ] && exit 0
 
 # 1. Append to JSONL + hme.log
-PROJECT_ROOT="${CWD:-${PROJECT_ROOT:-$(pwd)}}"
+# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to CWD/pwd — the
+# hook's .cwd field is the TOOL's working directory (which can be anywhere in
+# the tree), and using it as PROJECT_ROOT silently spawns duplicate log/
+# directories (tools/HME/chat/log/, tools/HME/chat/webview/log/, etc.).
+if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
+  echo "log-tool-call: PROJECT_ROOT unset or invalid ($PROJECT_ROOT) — skipping transcript write" >&2
+  exit 0
+fi
 LOG_FILE="$PROJECT_ROOT/log/session-transcript.jsonl"
 HME_LOG="$PROJECT_ROOT/log/hme.log"
 mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null

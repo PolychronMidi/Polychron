@@ -39,6 +39,12 @@ _stderr_verdict() {
 }
 
 _hme_log_hook_latency() {
+  # PROJECT_ROOT must come from .env (sourced above). Never silently fall back
+  # to $(pwd) / cwd — that spawns orphan log/ dirs under whatever directory the
+  # tool happened to be running in.
+  if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
+    return 0
+  fi
   local log_file="$PROJECT_ROOT/log/hme-hook-latency.jsonl"
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
