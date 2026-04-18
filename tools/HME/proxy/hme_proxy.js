@@ -63,12 +63,16 @@ const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
 // ── Lifecycle hook bridge ─────────────────────────────────────────────────
-// The legacy Claude Code plugin cache is gone; ${CLAUDE_PLUGIN_ROOT} no longer
-// resolves to anything. We invoke the lifecycle bash hooks directly from the
-// proxy's natural attach points: onRequest = userpromptsubmit, response-end
-// = stop, startup = sessionstart. Hook scripts stay in tools/HME/hooks/.
+// All Claude Code lifecycle events funnel through a SINGLE forwarder script
+// (hooks/_proxy_bridge.sh) that POSTs to this proxy's /hme/lifecycle endpoint.
+// The proxy dispatches to the appropriate bash hooks and returns {stdout,
+// stderr, exit_code} — the forwarder relays each back to Claude Code's plugin
+// machinery, preserving block decisions, banners, and exit codes.
+//
+// This is the single minimal compromise with Claude Code — one stateless
+// 10-line bash script Claude Code is allowed to know about; all logic lives
+// here in proxy-land.
 const hookBridge = require('./hook_bridge');
-hookBridge.runSessionStart();
 
 // ── HME full-bypass: legacy inline-tool path (disabled by default) ──────────
 // Claude Code has no MCP connection to us for HME tools (.mcp.json was
