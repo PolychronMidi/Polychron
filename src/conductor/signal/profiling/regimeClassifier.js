@@ -205,7 +205,7 @@ regimeClassifier = (() => {
   function getExploringBeats() { return regimeClassifierState.exploringBeats; }
 
   /** @returns {string} */
-  function getLastRegime() { return regimeClassifierState.lastRegime; }
+  function getRegime() { return regimeClassifierState.lastRegime; }
 
   /**
    * Classify the current operating regime based on velocity and curvature patterns.
@@ -313,5 +313,5 @@ regimeClassifier = (() => {
     });
   }
 
-  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, setEvolvingMinDwellSec, getExploringBeats, getLastRegime, getTransitionReadiness, consumeForcedTransitionEvent, reset };
+  return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, setEvolvingMinDwellSec, getExploringBeats, getRegime, getTransitionReadiness, consumeForcedTransitionEvent, reset };
 })();

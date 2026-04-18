@@ -3,7 +3,8 @@
 // Pure query API - biases rhythm pattern selection weights.
 
 syncopationDensityTracker = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('syncopationDensityTracker', 4, { minNotes: 3 });
+  const V = validator.create('syncopationDensityTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
 
   /**
    * Compute the ratio of syncopated (off-beat) onsets in recent notes.

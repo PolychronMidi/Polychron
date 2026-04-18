@@ -104,7 +104,7 @@ phraseArcProfiler = (() => {
         independence: indFn
           ? (pos) => {
             const base = indFn(pos);
-            const reg = regimeClassifier.getLastRegime();
+            const reg = regimeClassifier.getRegime();
             const mod = V.optionalFinite(INDEPENDENCE_REGIME_MOD[reg], 0);
             return clamp(base + mod, 0.05, 0.95);
           }

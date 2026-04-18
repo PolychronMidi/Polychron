@@ -4,7 +4,8 @@
 // Pure query API - no side effects.
 
 intervalBalanceTracker = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('intervalBalanceTracker', 5, { minNotes: 3 });
+  const V = validator.create('intervalBalanceTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 5, { minNotes: 3 });
 
   // Beat-level cache: getIntervalProfile is called 2-3x per beat
   // (densityBias + getIntervalBias via stateProvider + getLeapPenaltyBias)

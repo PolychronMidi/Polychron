@@ -104,7 +104,7 @@ velocityInterference = (() => {
     // Stronger interference at midpoint supports tension arc peak.
     const midpointFocus = m.exp(-m.pow((sectionProg - 0.5) * 2.5, 2));
     // R91 E4: Regime-responsive interference scaling.
-    const regime = regimeClassifier.getLastRegime();
+    const regime = regimeClassifier.getRegime();
     const regimeScale = regime === 'exploring' ? 1.20
       : regime === 'coherent' ? 0.85
       : 1.0;

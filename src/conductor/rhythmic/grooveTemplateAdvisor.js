@@ -3,7 +3,8 @@
 // Pure query API - advises velocity humanization and swing feel per section phase.
 
 grooveTemplateAdvisor = (() => {
-  const { V, query } = analysisHelpers.createTrackerQuery('grooveTemplateAdvisor', 4, { minNotes: 4 });
+  const V = validator.create('grooveTemplateAdvisor');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   /**
    * Analyze micro-timing deviation of recent onsets from the beat grid.

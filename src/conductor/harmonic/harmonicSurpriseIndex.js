@@ -4,7 +4,8 @@
 // Pure query API - biases derivedTension toward harmonic freshness.
 
 harmonicSurpriseIndex = (() => {
-  const { V, query } = analysisHelpers.createTrackerQuery('harmonicSurpriseIndex', 6, { minNotes: 4 });
+  const V = validator.create('harmonicSurpriseIndex');
+  const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 
   /**
    * Compute pitch-class transition entropy from recent notes.

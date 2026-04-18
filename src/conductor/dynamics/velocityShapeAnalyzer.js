@@ -4,7 +4,8 @@
 // Pure query API - no side effects.
 
 velocityShapeAnalyzer = (() => {
-  const { V, query } = analysisHelpers.createTrackerQuery('velocityShapeAnalyzer', 5, { minNotes: 4 });
+  const V = validator.create('velocityShapeAnalyzer');
+  const query = analysisHelpers.createTrackerQuery(V, 5, { minNotes: 4 });
 
   /**
    * Analyze velocity trajectory and envelope shape.

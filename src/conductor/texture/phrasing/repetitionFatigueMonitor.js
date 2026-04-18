@@ -3,7 +3,8 @@
 // Pure query API - penalty weight for VoiceLeadingScore or composer note selection.
 
 repetitionFatigueMonitor = (() => {
-  const { V, query } = analysisHelpers.createTrackerQuery('repetitionFatigueMonitor', 4, { minNotes: 4 });
+  const V = validator.create('repetitionFatigueMonitor');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
   const MIN_PATTERN = 2;
   const MAX_PATTERN = 6;
 

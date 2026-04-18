@@ -4,7 +4,8 @@
 // Pure query API - recordExtremes for longitudinal memory.
 
 dynamicRangeTracker = (() => {
-  const { V, query } = analysisHelpers.createTrackerQuery('dynamicRangeTracker', 4, { minNotes: 3 });
+  const V = validator.create('dynamicRangeTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   let globalMin = 127;
   let globalMax = 0;
   /** @type {Array<{ time: number, min: number, max: number }>} */

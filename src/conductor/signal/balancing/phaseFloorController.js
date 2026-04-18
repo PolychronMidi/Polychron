@@ -220,7 +220,7 @@ phaseFloorController = (() => {
     phaseFloorControllerLastShare = share;
 
     // Track coherent regime streak length
-    const regime = regimeClassifier.getLastRegime();
+    const regime = regimeClassifier.getRegime();
     if (regime === 'coherent') {
       phaseFloorControllerCurrentCoherentStreak++;
     } else {

@@ -60,7 +60,7 @@ Modules register density/tension/flicker biases via `conductorIntelligence.regis
 
 **`conductorState`** holds the mutable per-beat state (densityMultiplier, tension, flicker, regime, playProb, stutterProb, etc). Cross-layer must NOT read this directly — use `conductorSignalBridge.getSignals()` (ESLint `no-direct-conductor-state-from-crosslayer`). `traceDrain` captures snap fields from this into `trace.jsonl`.
 
-**Regime access in crossLayer modules**: use `safePreBoot.call(() => regimeClassifier.getLastRegime(), 'evolving')` — do NOT call `systemDynamicsProfiler.getSnapshot()` just to read `regime`. `systemDynamicsProfiler` is for the conductor/coupling engine only; `regimeClassifier` is the shared read-only source.
+**Regime access in crossLayer modules**: use `safePreBoot.call(() => regimeClassifier.getRegime(), 'evolving')` — do NOT call `systemDynamicsProfiler.getSnapshot()` just to read `regime`. `systemDynamicsProfiler` is for the conductor/coupling engine only; `regimeClassifier` is the shared read-only source.
 
 ## The Signal Bridge
 

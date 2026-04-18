@@ -3,7 +3,8 @@
 // Pure query API - modifies derivedTension to prevent dissonance ruts or blandness.
 
 consonanceDissonanceTracker = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('consonanceDissonanceTracker', 4, { minNotes: 3 });
+  const V = validator.create('consonanceDissonanceTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   // Shared consonant intervals from pitchClassHelpers
   const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
 

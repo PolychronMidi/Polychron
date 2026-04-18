@@ -3,7 +3,8 @@
 // Pure query API - nudges pitch gravity toward underexplored registers.
 
 registerMigrationTracker = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('registerMigrationTracker', 6, { minNotes: 4 });
+  const V = validator.create('registerMigrationTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 
   /**
    * Measure the average pitch center across time slices and detect drift direction.

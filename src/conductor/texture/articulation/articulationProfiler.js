@@ -3,7 +3,8 @@
 // Pure query API - biases duration selection in motifConfig.
 
 articulationProfiler = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('articulationProfiler', 4, { minNotes: 3 });
+  const V = validator.create('articulationProfiler');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   // Duration thresholds relative to beat duration
   const STACCATO_RATIO = 0.25; // 25% of beat = staccato
   const LEGATO_RATIO = 0.75;   // 75% of beat = legato
@@ -16,10 +17,8 @@ articulationProfiler = (() => {
    * @returns {{ staccatoRatio: number, legatoRatio: number, avgDuration: number, monotonous: boolean, articulation: string }}
    */
   function getArticulationProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 3) {
-      return { staccatoRatio: 0, legatoRatio: 0, avgDuration: 0, monotonous: false, articulation: 'unknown' };
-    }
+    const notes = query(opts);
+    if (!notes) return { staccatoRatio: 0, legatoRatio: 0, avgDuration: 0, monotonous: false, articulation: 'unknown' };
 
     // Beat duration in seconds; fallback 0.5s
     const beatDur = beatGridHelpers.getBeatDuration();

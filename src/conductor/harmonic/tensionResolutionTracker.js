@@ -3,7 +3,8 @@
 // Pure query API - modifies derivedTension to penalize sustained unresolved dissonance.
 
 tensionResolutionTracker = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('tensionResolutionTracker', 4, { minNotes: 4 });
+  const V = validator.create('tensionResolutionTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
   const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;
 
   /**

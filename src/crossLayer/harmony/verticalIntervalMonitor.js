@@ -51,7 +51,7 @@ verticalIntervalMonitor = (() => {
       });
 
       // Regime-responsive penalty: coherent tolerates unisons, exploring penalizes
-      const regime = regimeClassifier.getLastRegime();
+      const regime = regimeClassifier.getRegime();
       const regimeScale = regime === 'coherent' ? 0.4 : regime === 'exploring' ? 1.5 : 1.0;
       // CIM: coordinated = more tolerance (layers meant to overlap), independent = harder penalty
       const cimPenaltyScale = 1.3 - cimScale * 0.6;
