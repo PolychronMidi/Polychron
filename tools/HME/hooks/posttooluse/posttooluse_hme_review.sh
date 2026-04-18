@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-# PostToolUse: mcp__HME__review — clear edit backlog, point to next step.
+# PostToolUse: `npm run review` dispatch (called by posttooluse_bash.sh).
+# Parses the review mode out of tool_input.command (either `mode=forget` or
+# `--mode forget`) — default digest.
 INPUT=$(cat)
-MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'digest')
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
+MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[= ]//')
+[ -z "$MODE" ] && MODE="digest"
 
 if [ "$MODE" = "forget" ]; then
   # EDIT clear + REVIEW mark moved to proxy middleware (nexus_tracking.js).

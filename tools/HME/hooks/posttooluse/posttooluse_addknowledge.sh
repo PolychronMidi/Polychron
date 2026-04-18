@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostToolUse: learn — clear pending KB entries from tab after an ADD call.
-# Only fires when the learn call is an add (title + content provided) — search,
-# remove, list, etc. should not clear the KB tab.
+# HME PostToolUse: `npm run learn` dispatch — clear pending KB entries from
+# tab after an ADD call. Only fires when the learn call is an add (title +
+# content provided) — search, remove, list, etc. should not clear the KB tab.
 #
-# History: this hook was originally matched to mcp__HME__add_knowledge, a tool
-# that was renamed to learn(title=, content=) during unification.
+# Called by posttooluse_bash.sh on Bash tool calls matching `npm run learn`.
+# Parses title/content/action out of tool_input.command; only clears the tab
+# if both title AND content are present and the action is not a read-style op.
 INPUT=$(cat)
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
-TITLE=$(_safe_jq "$INPUT" '.tool_input.title' '')
-CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
-ACTION=$(_safe_jq "$INPUT" '.tool_input.action' '')
+# Extract: title="..." / title=... / --title "..." / --title ...
+_extract_arg() {
+  local key="$1"
+  # Try quoted form first, then bare form.
+  local v
+  v=$(echo "$CMD" | grep -oE "\\b${key}[= ]\"[^\"]*\"" | head -1 | sed -E "s/^.*${key}[= ]\"([^\"]*)\"$/\\1/")
+  if [ -z "$v" ]; then
+    v=$(echo "$CMD" | grep -oE "\\b${key}[= ][^[:space:]\"]+" | head -1 | sed -E "s/^.*${key}[= ]//")
+  fi
+  printf '%s' "$v"
+}
 
-# Only run on add-style calls: title + content present and action != special
+TITLE=$(_extract_arg title)
+CONTENT=$(_extract_arg content)
+ACTION=$(_extract_arg action)
+
+# Only run on add-style calls: title + content present.
 if [[ -z "$TITLE" || -z "$CONTENT" ]]; then
   exit 0
 fi

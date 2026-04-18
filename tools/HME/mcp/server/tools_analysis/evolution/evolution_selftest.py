@@ -497,11 +497,8 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _err3:
         logger.debug(f"results.append: {type(_err3).__name__}: {_err3}")
 
-    for name, target in [
-        ("~/.claude/mcp/HME", "mcp symlink"),
-    ]:
-        path = os.path.expanduser(name)
-        results.append(f"{'PASS' if os.path.islink(path) else 'FAIL'}: {target} -- {path}")
+    # MCP symlink check removed in the MCP decoupling — HME no longer registers
+    # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
     passed = sum(1 for r in results if r.startswith("PASS"))
     failed = sum(1 for r in results if r.startswith("FAIL"))

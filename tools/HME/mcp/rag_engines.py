@@ -24,7 +24,7 @@ logger = logging.getLogger("HME.http")
 
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 PROJECT_DB = ENV.require("HME_RAG_DB_PATH")
-GLOBAL_DB = os.path.join(os.path.expanduser("~"), ".claude", "mcp", "HME", "global_kb")
+GLOBAL_DB = ENV.require("HME_GLOBAL_KB_PATH")
 MODEL_NAME = ENV.require("HME_MODEL_TEXT_EMBED")
 MODEL_BACKEND = ENV.require("HME_RAG_BACKEND")
 

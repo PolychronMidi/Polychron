@@ -1,0 +1,12 @@
+{
+  "_comment": "HME RAG configuration — migrated from the former mcpServers.HME block in .mcp.json. Owned by the HME worker (file_walker.py + rag_engine). Fields: ragIndexDirs (explicit allowlist, ONLY these dirs are indexed), ragIgnoreDirs (merged with DEFAULT_IGNORE_DIRS), ragIgnore (pathspec glob list), ragLibs (external library configs), ragMaxFileSize (KB).",
+  "ragIgnoreDirs": ["theory"],
+  "ragIndexDirs": [
+    "src/utils", "src/conductor", "src/rhythm", "src/time",
+    "src/composers", "src/fx", "src/crossLayer", "src/writer", "src/play",
+    "src/types",
+    "tools/HME/hooks", "tools/HME/mcp", "tools/HME/proxy",
+    "tools/HME/scripts", "tools/HME/activity",
+    "doc", "scripts/eslint-rules"
+  ]
+}

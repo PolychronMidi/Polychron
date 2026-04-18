@@ -13,6 +13,21 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 [[ -n "$BG_FILE" ]] && _append_file_to_tab "$BG_FILE"
 
+# Dispatch HME npm-script post-processors. These used to be triggered via
+# hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
+# MCP server; now HME tools run as `npm run <tool>` Bash calls and the dispatch
+# happens here. Each handler reads stdin (the same hook JSON) and returns
+# additionalContext / systemMessage / permissionDecisionReason for Claude.
+if echo "$CMD" | grep -qE '\bnpm run learn\b|scripts/hme-cli\.js learn\b'; then
+  echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_addknowledge.sh" || true
+fi
+if echo "$CMD" | grep -qE '\bnpm run hme-read\b|scripts/hme-cli\.js read\b'; then
+  echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_read.sh" || true
+fi
+if echo "$CMD" | grep -qE '\bnpm run review\b|scripts/hme-cli\.js review\b'; then
+  echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_review.sh" || true
+fi
+
 if echo "$CMD" | grep -q 'npm run main'; then
   # Onboarding: reviewed -> piped the moment npm run main is launched
   if ! _onb_is_graduated && [ "$(_onb_state)" = "reviewed" ]; then

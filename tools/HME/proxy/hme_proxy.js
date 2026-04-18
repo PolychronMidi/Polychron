@@ -52,12 +52,16 @@ const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
-// ── HME full-bypass: dispatcher + outgoing tool injection ───────────────────
-// Claude Code has no MCP connection to us for HME tools (.mcp.json has no
-// HME entry). The proxy injects HME tool schemas into payload.tools on
-// outgoing Anthropic requests; when the response contains HME_* tool_uses,
-// the dispatcher runs them via the worker and continues the conversation
-// with Anthropic until no HME_* remain. See hme_dispatcher.js for details.
+// ── HME full-bypass: legacy inline-tool path (disabled by default) ──────────
+// Claude Code has no MCP connection to us for HME tools (.mcp.json was
+// deleted in the MCP decoupling). Two possible Claude-facing surfaces exist:
+//   1. DEFAULT: Claude invokes HME via Bash(`npm run <tool>`) — the npm
+//      scripts dispatch to scripts/hme-cli.js → worker HTTP. Tool injection
+//      below is skipped.
+//   2. LEGACY (opt-in, HME_INJECT_TOOLS=1): the proxy injects HME tool
+//      schemas into payload.tools; when the response contains HME_* tool_uses,
+//      the dispatcher runs them via the worker and continues the conversation.
+// See hme_dispatcher.js for the legacy path.
 const hmeDispatcher = require('./hme_dispatcher');
 
 const HME_PREFIX = /^mcp__HME__/;
@@ -108,6 +112,10 @@ function _sanitizePayload(payload) {
 }
 
 async function _injectHmeTools(payload) {
+  // HME tools are invoked as Bash(`npm run <tool>`) calls; inline API-tool
+  // injection is disabled by default. Set HME_INJECT_TOOLS=1 in .env to
+  // restore the old path (Claude sees HME_* as inline tools directly).
+  if (process.env.HME_INJECT_TOOLS !== '1') return 0;
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();

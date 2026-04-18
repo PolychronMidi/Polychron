@@ -54,13 +54,6 @@
       "severity": "error"
     },
     {
-      "id": "symlink-mcp",
-      "description": "MCP symlink must resolve to tools/HME/mcp",
-      "type": "symlink_valid",
-      "path": "~/.claude/mcp/HME",
-      "severity": "error"
-    },
-    {
       "id": "project-rules-valid",
       "description": "project-rules.json must be valid JSON",
       "type": "json_valid",
@@ -75,10 +68,10 @@
       "severity": "error"
     },
     {
-      "id": "mcp-json-valid",
-      "description": ".mcp.json must be valid JSON",
+      "id": "rag-config-valid",
+      "description": "tools/HME/config/rag.json must be valid JSON (successor to the mcpServers.HME block in .mcp.json after the MCP decoupling)",
       "type": "json_valid",
-      "path": ".mcp.json",
+      "path": "tools/HME/config/rag.json",
       "severity": "error"
     },
     {
@@ -1112,7 +1105,7 @@
     },
     {
       "id": "index-directory-zero-args",
-      "description": "index_directory must take zero arguments everywhere — ragIndexDirs in .mcp.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
+      "description": "index_directory must take zero arguments everywhere — ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
       "type": "shell_output_empty",
       "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/mcp/rag_engine/engine_indexing.py 2>/dev/null",
       "severity": "error"

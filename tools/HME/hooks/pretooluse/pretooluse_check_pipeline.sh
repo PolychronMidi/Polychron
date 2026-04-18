@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PreToolUse: status(mode='pipeline') — block repeated calls (polling antipattern).
-# status has a freshness guard that auto-checks pipeline state; agents that
-# call it more than once per turn are polling. One call per turn max.
-#
-# History: this hook was originally matched to mcp__HME__check_pipeline, a
-# tool that never existed post-unification. Retargeted to the status tool
-# since status(mode='pipeline') is the canonical replacement.
+# HME PreToolUse dispatcher (called by pretooluse_bash.sh on `npm run status` Bash calls).
+# Blocks repeated status-polling within a single assistant turn. Status has a
+# freshness guard that auto-checks pipeline state; calling it more than once
+# per turn is polling. One call per turn max.
 INPUT=$(cat)
 
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
@@ -14,9 +11,11 @@ if [[ -z "$TRANSCRIPT_PATH" || ! -f "$TRANSCRIPT_PATH" ]]; then
   exit 0
 fi
 
-# Only apply to status(mode='pipeline') — other status modes are fine to call
-MODE=$(_safe_jq "$INPUT" '.tool_input.mode' '')
-if [[ "$MODE" != "pipeline" ]]; then
+# Only apply when the command asks for the pipeline mode explicitly. `npm run
+# status` with no args defaults to _mode_pipeline on the server side, which IS
+# the pipeline check, so the default case counts too.
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
+if ! echo "$CMD" | grep -qE '\bnpm run status\b'; then
   exit 0
 fi
 
@@ -43,9 +42,15 @@ for line in reversed(lines):
     if in_turn:
         for block in obj.get('content', []):
             if isinstance(block, dict) and block.get('type') == 'tool_use':
-                # Proxy normalizes mcp__HME__* → HME_* before dispatch; both forms appear in transcripts.
+                # HME tools run via Bash(npm run <tool>) now — count Bash calls
+                # whose command invokes `npm run status`. Keep the legacy MCP
+                # name in case mixed traces surface during the transition.
                 name = block.get('name', '')
-                if name in ('HME_status', 'mcp__HME__status'):
+                if name == 'Bash':
+                    cmd = block.get('input', {}).get('command', '')
+                    if 'npm run status' in cmd:
+                        count += 1
+                elif name in ('HME_status', 'mcp__HME__status'):
                     if block.get('input', {}).get('mode') == 'pipeline':
                         count += 1
 print(count)
@@ -55,7 +60,7 @@ if [[ "$CALL_COUNT" -ge 1 ]]; then
   # permissionDecisionReason surfaces to Claude on deny; systemMessage is
   # user-terminal mirror only. Both emitted so Claude sees WHY the tool
   # was blocked AND the user sees the same note in the terminal.
-  REASON='ANTI-POLLING: status(mode="pipeline") already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run mcp__HME__review, update KB/docs\n- If you must check freshness, use mcp__HME__review(mode="digest") which has freshness guard'
+  REASON='ANTI-POLLING: `npm run status` already called this turn. The pipeline runs in background and fires a task notification when done.\n\nInstead:\n- Wait for the background task notification\n- Do real work: implement next evolution, run `npm run review -- mode=forget`, update KB/docs\n- If you must check freshness, run `npm run review -- mode=digest` which has its own freshness guard'
   jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
