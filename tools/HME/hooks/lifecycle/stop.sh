@@ -40,10 +40,10 @@ elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
   if ! git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"; then
     echo "WARNING: stop.sh auto-commit: git add failed — see $_GIT_ERR" >&2
-  elif ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>"$_GIT_ERR"; then
+  elif ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet >"$_GIT_ERR" 2>&1; then
     # Retry once — transient lock or index contention
     sleep 1
-    if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet 2>"$_GIT_ERR"; then
+    if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet >"$_GIT_ERR" 2>&1; then
       # Check if the failure is "nothing to commit" (expected when no changes staged)
       if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
         source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
