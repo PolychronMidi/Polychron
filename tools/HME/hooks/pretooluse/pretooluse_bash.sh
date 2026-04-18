@@ -21,6 +21,41 @@ if echo "$CMD" | grep -qE '(^|[[:space:]/])i/(review|learn|trace|evolve|hme-admi
   echo "$INPUT" | bash "$SCRIPT_DIR/pretooluse_hme_primer.sh" || true
 fi
 
+# Auto-correct bare `i/<tool>` invocations when the tool's cwd is not the
+# project root. Without this, `i/status` from tools/HME/chat/ fails with
+# "i/status: No such file or directory" because the shell resolves it against
+# the tool's cwd. Rewrite occurrences of `i/<tool>` (when not already absolute
+# or `./`-prefixed with a real file) to `$PROJECT_ROOT/i/<tool>`, then re-emit
+# the command via updatedInput so Claude Code runs the corrected form.
+_TOOL_CWD=$(_safe_jq "$INPUT" '.tool_input.cwd' '')
+[ -z "$_TOOL_CWD" ] && _TOOL_CWD=$(_safe_jq "$INPUT" '.cwd' '')
+if [ -n "${PROJECT_ROOT:-}" ] && [ -n "$_TOOL_CWD" ] && [ "$_TOOL_CWD" != "$PROJECT_ROOT" ] \
+   && echo "$CMD" | grep -qE '(^|[[:space:]])i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b'; then
+  # Use python for the regex rewrite — bash sed with $PROJECT_ROOT expansion is
+  # fragile when the path contains slashes or the command contains quotes.
+  _FIXED_CMD=$(PROJECT_ROOT="$PROJECT_ROOT" python3 - "$CMD" <<'PYEOF' 2>/dev/null
+import os, re, sys
+cmd = sys.argv[1]
+root = os.environ["PROJECT_ROOT"]
+# Match bare `i/<tool>` at start-of-command or after whitespace. Skip if
+# already prefixed with `/` (absolute) or `./` (explicit-relative).
+pat = re.compile(r'(^|(?<=\s))i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b')
+print(pat.sub(lambda m: f"{m.group(1)}{root}/i/{m.group(2)}", cmd), end='')
+PYEOF
+)
+  if [ -n "$_FIXED_CMD" ] && [ "$_FIXED_CMD" != "$CMD" ]; then
+    _RUN_BG=$(_safe_jq "$INPUT" '.tool_input.run_in_background' 'false')
+    if [ "$_RUN_BG" = "true" ]; then
+      jq -n --arg cmd "$_FIXED_CMD" \
+        '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd,"run_in_background":true}},"systemMessage":"i/ wrapper path auto-corrected — call was issued from a subdir; rewritten to absolute path under PROJECT_ROOT"}'
+    else
+      jq -n --arg cmd "$_FIXED_CMD" \
+        '{"hookSpecificOutput":{"permissionDecision":"allow","updatedInput":{"command":$cmd}},"systemMessage":"i/ wrapper path auto-corrected — call was issued from a subdir; rewritten to absolute path under PROJECT_ROOT"}'
+    fi
+    exit 0
+  fi
+fi
+
 # Onboarding gate: npm run main requires 'reviewed' state (edited + reviewed)
 TRIMMED_CHECK=$(echo "$CMD" | sed 's/^[[:space:]]*//' | head -1)
 if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
