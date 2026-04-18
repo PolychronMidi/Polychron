@@ -28,6 +28,13 @@ deepwiki.config.json
 /tools/HME/mcp/*.db
 /tools/HME/mcp/metrics/
 /tools/HME/proxy/metrics/
+/tools/HME/chat/metrics/
+/tools/HME/chat/log/
+/tools/HME/chat/src/log/
+/tools/HME/chat/webview/log/
+/scripts/pipeline/metrics/
+/scripts/pipeline/log/
+/scripts/pipeline/hme/log/
 /tools/HME/warm-context-cache/*.json
 /tools/models
 *.bak
