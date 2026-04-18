@@ -10,7 +10,7 @@ exports.LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.0.0.1
 // ── Claude config validation & resolution ─────────────────────────────────────
 //
 // Claude CLI flags (verified from `claude --help`):
-//   --model <alias|id>   opus | sonnet | haiku | claude-sonnet-4-6 | ...
+//   --model <alias|id>   opus | sonnet | haiku
 //   --effort <level>     low | medium | high | xhigh | max
 //   --settings <json>    inline JSON; supports { "alwaysThinkingEnabled": boolean }
 //
@@ -19,9 +19,9 @@ exports.LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.0.0.1
 const VALID_MODEL_ALIASES = new Set(["opus", "sonnet", "haiku"]);
 const VALID_EFFORTS = new Set(["low", "medium", "high", "max"]);
 const MODEL_ID_MAP = {
-    opus: "claude-opus-4-7",
-    sonnet: "claude-sonnet-4-6",
-    haiku: "claude-haiku-4-5-20251001",
+    opus: "opus",
+    sonnet: "sonnet",
+    haiku: "haiku",
 };
 /** Throws on invalid config. Haiku has no effort/thinking controls in the UI. */
 function validateClaudeConfig(cfg) {

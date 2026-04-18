@@ -28,7 +28,10 @@ const _cache = new Map();
 // window, every subsequent failure also writes one line to hme-errors.log so
 // the user-facing LIFESAVER pipeline picks it up.
 let _failStreak = 0;
-const STREAK_WARN = 5;
+// Shared with _safe_curl in hooks/helpers/_safety.sh via HME_STREAK_WARN in .env.
+// Proxy is launched with .env vars set by sessionstart.sh, so the env var is
+// reliably present; fallback to 5 matches the bash-side default.
+const STREAK_WARN = parseInt(process.env.HME_STREAK_WARN || '5', 10);
 const _errLogPath = (() => {
   const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
   return path.join(root, 'log', 'hme-errors.log');

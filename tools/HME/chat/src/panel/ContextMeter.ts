@@ -23,6 +23,7 @@ export class ContextMeter {
   constructor(
     private readonly projectRoot: string,
     private readonly host: PanelHost,
+    private readonly errorSink?: { post: (source: string, message: string) => void },
   ) {}
 
   private static _blank(): ContextTracker {
@@ -63,7 +64,22 @@ export class ContextMeter {
     if (usage) {
       this._tracker.lastInputTokens = usage.inputTokens;
       this._tracker.lastOutputTokens = usage.outputTokens;
-      if (usage.usedPct != null) this._tracker.usedPct = usage.usedPct;
+      // Defense in depth: a fabricated percentage (e.g. 1456% from dividing
+      // a 1M-model's load by a 200k default) must never overwrite the
+      // tracker. The router-level computeTurnUsage should already drop these,
+      // but other callers (PTY path, llama routes) feed this method too.
+      // Accept only finite values in [0, 110]. Anything else is logged and
+      // ignored, preserving the last known good pct.
+      if (usage.usedPct != null) {
+        if (Number.isFinite(usage.usedPct) && usage.usedPct >= 0 && usage.usedPct <= 110) {
+          this._tracker.usedPct = usage.usedPct;
+        } else {
+          const msg = `ContextMeter rejected out-of-range usedPct=${usage.usedPct} ` +
+            `(model=${model}, modelId=${usage.modelId ?? "?"}). Keeping previous value ${this._tracker.usedPct}.`;
+          console.error(`[HME] ${msg}`);
+          if (this.errorSink) this.errorSink.post("ContextMeter.update", msg);
+        }
+      }
       if (usage.modelId) this._tracker.cliModelId = usage.modelId;
       if (usage.modelName) this._tracker.cliModelName = usage.modelName;
     }

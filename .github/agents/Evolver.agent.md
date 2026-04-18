@@ -5,8 +5,6 @@ description: |
   Operates across three cognitive layers — perceptual, systemic, emergent — using
   causal reasoning to evolve the composition engine toward increasingly self-aware
   musical expression.
-model: opus
-color: magenta
 tools:
   - Read
   - Edit

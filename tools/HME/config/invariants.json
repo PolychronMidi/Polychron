@@ -539,6 +539,54 @@
       "severity": "error"
     },
     {
+      "id": "review-verdict-marker-contract",
+      "description": "posttooluse_hme_review.sh must parse the canonical HME_REVIEW_VERDICT marker that onboarding_chain.emit_review_verdict_marker() emits. Drift between the two caused clean reviews to fall into REVIEW_PARSE_FAILED until the hook regex was updated.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
+      "patterns": [
+        "HME_REVIEW_VERDICT:",
+        "clean\\|warnings\\|error"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "review-verdict-marker-emitter-present",
+      "description": "The server must emit verdicts via the canonical emit_review_verdict_marker() function. If this name is removed/renamed, the hook's contract regex will silently stop matching.",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/server/onboarding_chain.py",
+      "pattern": "def emit_review_verdict_marker",
+      "severity": "error"
+    },
+    {
+      "id": "cli-modelUsage-contextWindow-shape",
+      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number ≥1000 — routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
+      "type": "shell_output_empty",
+      "shell": "bash scripts/check-claude-cli-result-shape.sh",
+      "severity": "warning"
+    },
+    {
+      "id": "hme-cli-error-prefix-emitter",
+      "description": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' — three PostToolUse hooks (posttooluse_hme_read, posttooluse_hme_review, posttooluse_addknowledge) grep for this prefix to detect transport failures. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state.",
+      "type": "patterns_all_in_file",
+      "path": "scripts/hme-cli.js",
+      "patterns": [
+        "hme-cli: \\$\\{e\\.message\\}",
+        "hme-cli: request failed",
+        "hme-cli: \\$\\{tool\\} failed"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "hme-cli-error-prefix-consumers",
+      "description": "Every hook that consumes hme-cli output must grep for the '^hme-cli:' prefix to distinguish transport failure from content. Removing this check silently lets a failed CLI call masquerade as a successful one.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/hooks/posttooluse/posttooluse_hme_review.sh",
+      "patterns": [
+        "'\\^hme-cli:'"
+      ],
+      "severity": "error"
+    },
+    {
       "id": "nexus-pending-review-gate",
       "description": "_nexus_pending() must check REVIEW_ISSUES count and block stop when count > 3",
       "type": "patterns_all_in_file",
@@ -1130,6 +1178,91 @@
       "type": "shell_output_empty",
       "shell": "grep -rnE '\"cuda:[0-9]\"' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -v llamacpp_daemon.py | grep -v rag_engines.py | grep -v 'rag_engine/engine.py' | grep -v vram_manager.py | grep -v '# device-ok'",
       "severity": "error"
+    },
+    {
+      "id": "review-verdict-emitter-importable",
+      "description": "emit_review_verdict_marker must be importable from server.onboarding_chain AND produce a string containing HME_REVIEW_VERDICT for the 'clean' verdict. Guards against signature drift that the pattern-in-file check can't catch — the function must actually work, not just exist.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import sys; sys.path.insert(0,'tools/HME/mcp'); from server.onboarding_chain import emit_review_verdict_marker; m=emit_review_verdict_marker('clean'); assert 'HME_REVIEW_VERDICT' in m and 'clean' in m, f'bad marker: {m!r}'\" 2>&1 | grep -v '^$'",
+      "severity": "error"
+    },
+    {
+      "id": "lance-deletions-not-excessive",
+      "description": "tools/HME/KB/code_chunks.lance/_deletions/ must have at most 50 files. Above this threshold, dead arrow files slow table opens and waste disk. Run `python3 scripts/compact-lance-tables.py` to compact. This count grows on every re-index cycle (delete old chunks + add new) and needs periodic compaction.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import os, sys; d='tools/HME/KB/code_chunks.lance/_deletions'; n=len([f for f in os.listdir(d) if os.path.isfile(os.path.join(d,f))]) if os.path.isdir(d) else 0; sys.stdout.write(f'_deletions has {n} files (cap=50)\\n') if n > 50 else None\"",
+      "severity": "warning"
+    },
+    {
+      "id": "hme-cli-version-stamp",
+      "description": "scripts/hme-cli.js must declare a CLI_VERSION constant and emit it in --version output. Allows version mismatch detection between old wrappers and new worker deployments.",
+      "type": "pattern_in_file",
+      "path": "scripts/hme-cli.js",
+      "pattern": "CLI_VERSION",
+      "severity": "error"
+    },
+    {
+      "id": "worker-version-endpoint",
+      "description": "tools/HME/mcp/worker.py must expose a GET /version endpoint. Paired with CLI_VERSION in hme-cli.js so deployment mismatches (old wrapper, new worker) are detectable.",
+      "type": "pattern_in_file",
+      "path": "tools/HME/mcp/worker.py",
+      "pattern": "/version",
+      "severity": "error"
+    },
+    {
+      "id": "lance-internals-not-tracked",
+      "description": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state — regenerated by rag_engines indexing and compacted by scripts/compact-lance-tables.py. Their _deletions/, _transactions/, _versions/, and data/ internals must not be tracked by git. Tracking them produces gigabytes of binary drift per indexer run and breaks patch-based commit tools (GitLens) with 'cannot apply binary patch without full index line' errors. If this invariant fails, the fix is: add to .gitignore, then `git rm --cached -r tools/HME/KB/<table>.lance`.",
+      "type": "shell_output_empty",
+      "shell": "git ls-files 'tools/HME/KB/*.lance/*' 2>/dev/null",
+      "severity": "error"
+    },
+    {
+      "id": "antagonism-registry-covers-observed-pairs",
+      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it hasn't named — per the antagonism-bridge principle, that's a missing design artifact. See doc/ANTAGONISM_BRIDGES.md.",
+      "type": "shell_output_empty",
+      "shell": "python3 scripts/check-antagonism-registry.py 2>&1 | grep -v '^$'",
+      "severity": "warning"
+    },
+    {
+      "id": "antagonism-registry-schema-valid",
+      "description": "tools/HME/config/invariants.json and metrics/hme-suspected-upstreams.json both parse and the suspected-upstreams registry has the required three buckets (candidates/confirmed/refuted).",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json; d=json.load(open('metrics/hme-suspected-upstreams.json')); assert all(k in d for k in ('candidates','confirmed','refuted')), 'missing bucket'\" 2>&1 | grep -v '^$'",
+      "severity": "error"
+    },
+    {
+      "id": "versions-single-source",
+      "description": "All three wire-version components (cli/proxy/worker) must read from tools/HME/config/versions.json — not hardcoded strings. Protects the three-way version check from typo-drift.",
+      "type": "patterns_all_in_file",
+      "path": "scripts/hme-cli.js",
+      "patterns": ["versions.json", "CLI_VERSION"],
+      "severity": "error"
+    },
+    {
+      "id": "versions-file-exists",
+      "description": "tools/HME/config/versions.json is the single source of truth for cli/proxy/worker wire versions. Must be valid JSON with all three keys.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json; d=json.load(open('tools/HME/config/versions.json')); assert 'cli' in d and 'proxy' in d and 'worker' in d, 'missing version key'\" 2>&1 | grep -v '^$'",
+      "severity": "error"
+    },
+    {
+      "id": "proxy-version-endpoint",
+      "description": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version` — a stale proxy between a new CLI and new worker is otherwise invisible.",
+      "type": "patterns_all_in_file",
+      "path": "tools/HME/proxy/hme_proxy.js",
+      "patterns": [
+        "PROXY_VERSION",
+        "'/version'"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "lab-sketches-patches-array",
+      "description": "Every sketch in lab/sketches.js must declare a patches: [] array listing globals it monkey-patches in postBoot(). Enforced by lab/run.js at sketch load time. Ensures patches are declared, auditable, and cleaned up between sketches.",
+      "type": "pattern_in_file",
+      "path": "lab/sketches.js",
+      "pattern": "patches:",
+      "severity": "warning"
     }
   ]
 }

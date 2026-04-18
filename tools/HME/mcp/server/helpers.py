@@ -84,11 +84,17 @@ def get_context_budget() -> str:
     except (ImportError, AttributeError) as _intent_err:
         logger.debug(f"session intent unavailable: {type(_intent_err).__name__}")
 
-    if remaining > 75:
+    # Scaling only kicks in below 25% remaining. Above that, greedy is correct:
+    # the 30B local model comfortably produces 8K output and Claude's
+    # auto-compact doesn't fire until ~5-15% remaining anyway, so throttling
+    # local synthesis at 75%/50% was cutting signal for no real reason.
+    # The tiered decay below is compressed into the bottom quartile where
+    # Claude's context is actually tight and compaction is imminent.
+    if remaining > 25:
         return "greedy"
-    elif remaining > 50:
+    elif remaining > 15:
         return "moderate"
-    elif remaining > 25:
+    elif remaining > 8:
         return "conservative"
     else:
         return "minimal"

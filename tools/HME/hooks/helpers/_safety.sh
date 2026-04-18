@@ -95,11 +95,24 @@ _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 # next turn. Previously this fire-and-forgot with `2>/dev/null || echo ''`
 # and silent 100% failure rates masqueraded as "worker returned nothing."
 # Usage: result=$(_safe_curl "http://..." '{"key":"val"}')
-_HME_CURL_STREAK_FILE="/tmp/hme-curl-fail.streak"
-_HME_CURL_STREAK_WARN=5
+# Threshold sourced from .env (HME_STREAK_WARN=5) so bash+node components
+# share one knob. Fallback to 5 if .env load failed earlier.
+_HME_CURL_STREAK_WARN="${HME_STREAK_WARN:-5}"
+# Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"
+# rule in CLAUDE.md. Resolved at call time so a missing PROJECT_ROOT at source
+# time doesn't lock us into /tmp/ — the .env load at the top of this file runs
+# first, so by the time _safe_curl is called PROJECT_ROOT is almost always set.
+_hme_curl_streak_path() {
+  if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/tmp" ]; then
+    echo "$PROJECT_ROOT/tmp/hme-curl-fail.streak"
+  else
+    echo "/tmp/hme-curl-fail.streak"
+  fi
+}
 _safe_curl() {
   local url="$1" body="${2:-}"
-  local out rc
+  local out rc streak_file
+  streak_file="$(_hme_curl_streak_path)"
   if [ -n "$body" ]; then
     out=$(curl -s --max-time 2 -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
     rc=$?
@@ -109,9 +122,9 @@ _safe_curl() {
   fi
   if [ $rc -ne 0 ]; then
     local streak
-    streak=$(_safe_int "$(cat "$_HME_CURL_STREAK_FILE" 2>/dev/null)")
+    streak=$(_safe_int "$(cat "$streak_file" 2>/dev/null)")
     streak=$((streak + 1))
-    echo "$streak" > "$_HME_CURL_STREAK_FILE"
+    echo "$streak" > "$streak_file"
     if [ "$streak" -ge "$_HME_CURL_STREAK_WARN" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
       printf '[%s] [_safe_curl] %s failed (rc=%d, streak=%d)\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$url" "$rc" "$streak" \
@@ -121,7 +134,7 @@ _safe_curl() {
     return 0
   fi
   # Success — reset streak.
-  [ -f "$_HME_CURL_STREAK_FILE" ] && rm -f "$_HME_CURL_STREAK_FILE" 2>/dev/null
+  [ -f "$streak_file" ] && rm -f "$streak_file" 2>/dev/null
   echo "$out"
 }
 

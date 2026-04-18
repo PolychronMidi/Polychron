@@ -10,7 +10,6 @@
     "cross-env": "^7.0.3",
     "depcheck": "^1.4.7",
     "eslint": "^9.0.0",
-    "husky": "^8.0.0",
     "ts-morph": "^27.0.2",
     "typescript": "^5.9.3"
   },
@@ -30,10 +29,8 @@
     "lint": "node scripts/utils/run-with-log.js lint.log npm run lint:raw",
     "tc": "node scripts/utils/run-with-log.js tc.log tsc -p . --noEmit",
     "test": "node test/regimeReactiveDampingCore.test.js",
-    "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",
     "deps:audit": "npm audit && depcheck"
   }
 }
-

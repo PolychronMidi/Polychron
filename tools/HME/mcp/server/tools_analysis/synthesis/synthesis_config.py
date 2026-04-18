@@ -41,7 +41,13 @@ def _build_think_system() -> str:
 _THINK_SYSTEM = _build_think_system()
 
 
-_BUDGET_TOKENS = {"greedy": 4096, "moderate": 2048, "conservative": 1024, "minimal": 256}
+# Single ceiling for local model generation. qwen3-coder:30b fully GPU-resident
+# on the M40 can handle 8K output without VRAM pressure (context window is the
+# VRAM-bound constraint, not generation length). Tune this one value; the
+# budget tiers scale proportionally via _BUDGET_TOKEN_SCALE.
+_BUDGET_TOKEN_CEILING = 8192
+_BUDGET_TOKEN_SCALE = {"greedy": 1.0, "moderate": 0.5, "conservative": 0.25, "minimal": 1/32}
+_BUDGET_TOKENS = {k: max(64, int(_BUDGET_TOKEN_CEILING * s)) for k, s in _BUDGET_TOKEN_SCALE.items()}
 _BUDGET_EFFORT = {"greedy": "high", "moderate": "medium", "conservative": "low", "minimal": "low"}
 _BUDGET_TOOL_CALLS = {"greedy": 12, "moderate": 6, "conservative": 3, "minimal": 0}
 
