@@ -1,86 +1,39 @@
 {
-  "description": "HyperMeta Ecstasy hooks — proxy middleware owns the bulk of the logic. HME tool calls are now Bash(npm run <tool>) invocations, dispatched from posttooluse_bash.sh.",
+  "description": "HyperMeta Ecstasy hooks — ALL events route through a single stateless forwarder (_proxy_bridge.sh) that POSTs to the proxy's /hme/lifecycle endpoint. All hook LOGIC lives in proxy-land (tools/HME/proxy/hook_bridge.js). The individual hook scripts in hooks/{lifecycle,pretooluse,posttooluse}/ are still invoked — but by the proxy, not by Claude Code directly. This is the single minimal coupling surface with Claude Code's plugin system.",
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/sessionstart.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh SessionStart", "timeout": 15}]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_edit.sh", "timeout": 10}]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_write.sh", "timeout": 10}]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_bash.sh", "timeout": 10}]
-      },
-      {
-        "matcher": "Read",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_read.sh", "timeout": 5}]
-      },
-      {
-        "matcher": "Grep",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_grep.sh", "timeout": 5}]
-      },
-      {
-        "matcher": "TodoWrite",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_todowrite.sh", "timeout": 5}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PreToolUse", "timeout": 15}]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/log-tool-call.sh", "timeout": 10}]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_bash.sh", "timeout": 10},
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_pipeline_kb.sh", "timeout": 10}
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_edit.sh", "timeout": 10}
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_write.sh", "timeout": 10}
-        ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_agent.sh", "timeout": 10}
-        ]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PostToolUse", "timeout": 15}]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/userpromptsubmit.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh UserPromptSubmit", "timeout": 15}]
       }
     ],
     "PreCompact": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/precompact.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PreCompact", "timeout": 15}]
       }
     ],
     "PostCompact": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/postcompact.sh", "timeout": 10}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh PostCompact", "timeout": 15}]
       }
     ],
     "Stop": [
       {
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/lifecycle/stop.sh", "timeout": 30}]
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh Stop", "timeout": 60}]
       }
     ]
   }
