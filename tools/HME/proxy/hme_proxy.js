@@ -245,6 +245,10 @@ function _handleLifecycleRoute(clientReq, clientRes) {
     // Mark Claude Code's hook system as active for this event so inline
     // fallback fires don't double-invoke it.
     _recordLifecycleHit(event);
+    // Log receipt so we can verify the forwarder path is active. Fallback
+    // callers always run through inline (no POST) so this log existing =
+    // Claude Code's hook system is reaching us.
+    console.error(`[hme-proxy] /hme/lifecycle received event=${event} (${stdin.length}B)`);
     try {
       const result = await hookBridge.dispatchEvent(event, stdin);
       json(200, result);
