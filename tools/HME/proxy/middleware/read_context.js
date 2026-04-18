@@ -52,7 +52,7 @@ function _findCallers(projectRoot, filePath) {
   // Match relative requires/imports ending in this basename. POSIX ERE for
   // plain grep — (require|from), optional whitespace + paren, a quote, any
   // non-quote chars, /stem, closing quote, optional paren.
-  const pattern = `(require|from)[[:space:]]*[(]?['\"][^'\"]*[/]${stem}['\"][)]?`;
+  const pattern = `(require|from)[[:space:]]*[(]?['"][^'"]*[/]${stem}['"][)]?`;
   const args = ['-rl', '-E', pattern, '--include=*.js', '--include=*.ts', '--include=*.tsx', '--include=*.mjs', '--include=*.cjs', '--', ...CALLER_SCAN_DIRS];
   let out = '';
   try {

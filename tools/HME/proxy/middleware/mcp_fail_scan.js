@@ -32,7 +32,7 @@ module.exports = {
     if (fails.length === 0) return;
 
     const errLogPath = path.join(ctx.PROJECT_ROOT, ERR_LOG);
-    try { fs.mkdirSync(path.dirname(errLogPath), { recursive: true }); } catch (_e) {}
+    try { fs.mkdirSync(path.dirname(errLogPath), { recursive: true }); } catch (_e) { /* best-effort */ }
     const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
     const body = fails.map((l) => `[${ts}] ${name}: ${l}`).join('\n') + '\n';
     try {
