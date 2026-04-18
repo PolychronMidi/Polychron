@@ -252,6 +252,13 @@ function handleRequest(clientReq, clientRes) {
     _handleSpawnRoute(clientReq, clientRes);
     return;
   }
+  // Lifecycle bridge: the single forwarder script (hooks/_proxy_bridge.sh)
+  // POSTs every Claude Code lifecycle event here. We dispatch to bash hooks
+  // and return {stdout, stderr, exit_code} for the forwarder to relay.
+  if (clientReq.url && clientReq.url.startsWith('/hme/lifecycle')) {
+    _handleLifecycleRoute(clientReq, clientRes);
+    return;
+  }
   // Route MCP requests to the proxy-native MCP server.
   if (clientReq.url && clientReq.url.startsWith('/mcp')) {
     handleMcpRequest(clientReq, clientRes);
