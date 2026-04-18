@@ -4,8 +4,7 @@
 // Pure query API - no side effects.
 
 velocityShapeAnalyzer = (() => {
-  const V = validator.create('velocityShapeAnalyzer');
-  const WINDOW_SECONDS = 5;
+  const { V, query } = analysisHelpers.createTrackerQuery('velocityShapeAnalyzer', 5, { minNotes: 4 });
 
   /**
    * Analyze velocity trajectory and envelope shape.
@@ -15,10 +14,8 @@ velocityShapeAnalyzer = (() => {
    * @returns {{ slope: number, shape: string, avgVelocity: number, flat: boolean, punchiness: number }}
    */
   function velocityShapeAnalyzerComputeVelocityShape(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { slope: 0, shape: 'insufficient', avgVelocity: 64, flat: true, punchiness: 0.5 };
-    }
+    const notes = query(opts);
+    if (!notes) return { slope: 0, shape: 'insufficient', avgVelocity: 64, flat: true, punchiness: 0.5 };
 
     // Extract velocities
     const velocities = analysisHelpers.extractVelocityArray(notes, 64);

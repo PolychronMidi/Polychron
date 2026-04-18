@@ -4,8 +4,7 @@
 // Pure query API - recordExtremes for longitudinal memory.
 
 dynamicRangeTracker = (() => {
-  const V = validator.create('dynamicRangeTracker');
-  const WINDOW_SECONDS = 4;
+  const { V, query } = analysisHelpers.createTrackerQuery('dynamicRangeTracker', 4, { minNotes: 3 });
   let globalMin = 127;
   let globalMax = 0;
   /** @type {Array<{ time: number, min: number, max: number }>} */
@@ -29,10 +28,8 @@ dynamicRangeTracker = (() => {
 
   /** @private */
   function dynamicRangeTrackerGetVelocityProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 3) {
-      return { min: 64, max: 64, mean: 64, spread: 0, compressed: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { min: 64, max: 64, mean: 64, spread: 0, compressed: false };
     const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 
     let lo = 127;

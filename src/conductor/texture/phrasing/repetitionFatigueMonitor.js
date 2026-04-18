@@ -3,8 +3,7 @@
 // Pure query API - penalty weight for VoiceLeadingScore or composer note selection.
 
 repetitionFatigueMonitor = (() => {
-  const V = validator.create('repetitionFatigueMonitor');
-  const WINDOW_SECONDS = 4;
+  const { V, query } = analysisHelpers.createTrackerQuery('repetitionFatigueMonitor', 4, { minNotes: 4 });
   const MIN_PATTERN = 2;
   const MAX_PATTERN = 6;
 
@@ -16,10 +15,8 @@ repetitionFatigueMonitor = (() => {
    * @returns {{ fatigueLevel: number, repeatedPatterns: number, totalPatterns: number, fatigued: boolean }}
    */
   function getRepetitionProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < MIN_PATTERN * 2) {
-      return { fatigueLevel: 0, repeatedPatterns: 0, totalPatterns: 0, fatigued: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { fatigueLevel: 0, repeatedPatterns: 0, totalPatterns: 0, fatigued: false };
 
     const pitches = analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(notes, 0), 0);
 

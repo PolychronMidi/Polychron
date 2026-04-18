@@ -3,8 +3,7 @@
 // Pure query API - biases duration envelope for intentional temporal shaping.
 
 durationalContourTracker = (() => {
-  const V = validator.create('durationalContourTracker');
-  const WINDOW_SECONDS = 4;
+  const { query } = analysisHelpers.createTrackerQuery('durationalContourTracker', 4, { minNotes: 4 });
 
   // Beat-level cache: getDurationBias is called 2x per beat (flickerModifier + stateProvider)
   const durationalContourTrackerBiasCache = beatCache.create(() => durationalContourTrackerGetDurationBias());
@@ -17,10 +16,8 @@ durationalContourTracker = (() => {
    * @returns {{ slope: number, trend: string, avgDuration: number, accelerating: boolean, decelerating: boolean }}
    */
   function getDurationContour(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { slope: 0, trend: 'insufficient', avgDuration: 0, accelerating: false, decelerating: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { slope: 0, trend: 'insufficient', avgDuration: 0, accelerating: false, decelerating: false };
 
     // Beat duration for normalization
     const beatDur = beatGridHelpers.getBeatDuration();

@@ -4,8 +4,7 @@
 // Pure query API - no side effects.
 
 intervalBalanceTracker = (() => {
-  const V = validator.create('intervalBalanceTracker');
-  const WINDOW_SECONDS = 5;
+  const { query } = analysisHelpers.createTrackerQuery('intervalBalanceTracker', 5, { minNotes: 3 });
 
   // Beat-level cache: getIntervalProfile is called 2-3x per beat
   // (densityBias + getIntervalBias via stateProvider + getLeapPenaltyBias)
@@ -25,10 +24,8 @@ intervalBalanceTracker = (() => {
 
   /** @private */
   function intervalBalanceTrackerGetIntervalProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 3) {
-      return { avgInterval: 0, maxInterval: 0, stepRatio: 0, leapRatio: 0, unisonRatio: 0, variety: 0, rut: null, monotonous: false, erratic: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { avgInterval: 0, maxInterval: 0, stepRatio: 0, leapRatio: 0, unisonRatio: 0, variety: 0, rut: null, monotonous: false, erratic: false };
     const midis = analysisHelpers.extractMidiArray(notes, 60);
 
     let sumInterval = 0;

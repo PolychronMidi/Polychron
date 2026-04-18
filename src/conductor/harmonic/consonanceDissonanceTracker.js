@@ -3,8 +3,7 @@
 // Pure query API - modifies derivedTension to prevent dissonance ruts or blandness.
 
 consonanceDissonanceTracker = (() => {
-  const V = validator.create('consonanceDissonanceTracker');
-  const WINDOW_SECONDS = 4;
+  const { query } = analysisHelpers.createTrackerQuery('consonanceDissonanceTracker', 4, { minNotes: 3 });
   // Shared consonant intervals from pitchClassHelpers
   const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
 
@@ -16,10 +15,8 @@ consonanceDissonanceTracker = (() => {
    * @returns {{ consonanceRatio: number, dissonanceRatio: number, bland: boolean, harsh: boolean }}
    */
   function getConsonanceProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 3) {
-      return { consonanceRatio: 0.5, dissonanceRatio: 0.5, bland: false, harsh: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { consonanceRatio: 0.5, dissonanceRatio: 0.5, bland: false, harsh: false };
     const midis = analysisHelpers.extractMidiArray(notes, 60);
 
     let consonant = 0;

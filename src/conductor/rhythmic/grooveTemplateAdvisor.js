@@ -3,8 +3,7 @@
 // Pure query API - advises velocity humanization and swing feel per section phase.
 
 grooveTemplateAdvisor = (() => {
-  const V = validator.create('grooveTemplateAdvisor');
-  const WINDOW_SECONDS = 4;
+  const { V, query } = analysisHelpers.createTrackerQuery('grooveTemplateAdvisor', 4, { minNotes: 4 });
 
   /**
    * Analyze micro-timing deviation of recent onsets from the beat grid.
@@ -14,10 +13,8 @@ grooveTemplateAdvisor = (() => {
    * @returns {{ avgDeviation: number, maxDeviation: number, swingRatio: number, rigid: boolean, loose: boolean }}
    */
   function getGrooveProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { avgDeviation: 0, maxDeviation: 0, swingRatio: 0.5, rigid: true, loose: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { avgDeviation: 0, maxDeviation: 0, swingRatio: 0.5, rigid: true, loose: false };
 
     // Subdivision duration in seconds
     const subdivDur = V.requireFinite(spSubdiv, 'spSubdiv');

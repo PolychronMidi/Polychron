@@ -3,8 +3,7 @@
 // Pure query API - biases velocity curves for variety.
 
 accentPatternTracker = (() => {
-  const V = validator.create('accentPatternTracker');
-  const WINDOW_SECONDS = 4;
+  const { V, query } = analysisHelpers.createTrackerQuery('accentPatternTracker', 4, { minNotes: 4 });
 
   /**
    * Analyze accent distribution across metric positions.
@@ -14,10 +13,8 @@ accentPatternTracker = (() => {
    * @returns {{ downbeatRatio: number, backbeatRatio: number, offbeatRatio: number, accentShape: string }}
    */
   function getAccentProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { downbeatRatio: 0, backbeatRatio: 0, offbeatRatio: 0, accentShape: 'unknown' };
-    }
+    const notes = query(opts);
+    if (!notes) return { downbeatRatio: 0, backbeatRatio: 0, offbeatRatio: 0, accentShape: 'unknown' };
     const velocities = analysisHelpers.extractVelocityArray(notes, 64);
 
     // Beat duration in seconds

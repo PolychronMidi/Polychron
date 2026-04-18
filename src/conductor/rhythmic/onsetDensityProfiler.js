@@ -3,8 +3,7 @@
 // Directly scales conductor densityBias and crossModBias.
 
 onsetDensityProfiler = (() => {
-  const V = validator.create('onsetDensityProfiler');
-  const WINDOW_SECONDS = 3;
+  const { query } = analysisHelpers.createTrackerQuery('onsetDensityProfiler', 3, { minNotes: 2 });
   const TARGET_NPS = 15; // target notes-per-second for "balanced" density
 
   // Beat-level cache: getDensity() with default opts is called 2-3x per beat
@@ -25,8 +24,8 @@ onsetDensityProfiler = (() => {
 
   /** @private */
   function onsetDensityProfilerGetDensity(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 2) return { nps: 0, trend: 'sparse' };
+    const notes = query(opts);
+    if (!notes) return { nps: 0, trend: 'sparse' };
 
     const first = notes[0];
     const last = notes[notes.length - 1];

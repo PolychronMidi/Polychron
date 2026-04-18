@@ -3,8 +3,7 @@
 // Pure query API - biases toward variety when IOI is too uniform, stabilizes when chaotic.
 
 onsetRegularityMonitor = (() => {
-  const V = validator.create('onsetRegularityMonitor');
-  const WINDOW_SECONDS = 4;
+  const { query } = analysisHelpers.createTrackerQuery('onsetRegularityMonitor', 4, { minNotes: 4 });
 
   /**
    * Compute IOI regularity from recent onsets.
@@ -14,10 +13,8 @@ onsetRegularityMonitor = (() => {
    * @returns {{ avgIOI: number, ioiCV: number, regularity: number, uniform: boolean, chaotic: boolean }}
    */
   function getRegularityProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { avgIOI: 0, ioiCV: 0, regularity: 0.5, uniform: false, chaotic: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { avgIOI: 0, ioiCV: 0, regularity: 0.5, uniform: false, chaotic: false };
 
     const iois = beatGridHelpers.getRecentIOIs(notes);
 

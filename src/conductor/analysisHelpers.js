@@ -98,12 +98,32 @@ analysisHelpers = (() => {
     return { slope: avgSecond - avgFirst, avgFirst, avgSecond };
   }
 
+  /**
+   * Creates a module-scoped validator and a query function that handles the
+   * standard getWindowNotes + minNotes early-return boilerplate.
+   * query(opts) returns the notes array, or null if notes.length < minNotes.
+   * @param {string} name
+   * @param {number} windowSeconds
+   * @param {{ minNotes?: number }} [options]
+   * @returns {{ V: any, query: (opts?: object) => any[]|null }}
+   */
+  function createTrackerQuery(name, windowSeconds, { minNotes = 2 } = {}) {
+    const V = validator.create(name);
+    function query(opts) {
+      const notes = getWindowNotes(V, opts, windowSeconds);
+      if (notes.length < minNotes) return null;
+      return notes;
+    }
+    return { V, query };
+  }
+
   return {
     getWindowNotes,
     getWindowLayerPairNotes,
     extractMidiArray,
     extractVelocityArray,
     extractPCArray,
-    halfSplitSlope
+    halfSplitSlope,
+    createTrackerQuery
   };
 })();
