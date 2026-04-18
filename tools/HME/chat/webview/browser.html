@@ -653,10 +653,19 @@
 <script>
 // Browser polyfill: replaces acquireVsCodeApi()
 const _lsKey = 'hme_vscode_state';
+var _sseReady = false;
+var _sseQueue = [];
+function _flushSseQueue() {
+  var q = _sseQueue.splice(0);
+  for (var i = 0; i < q.length; i++) _sendToServer(q[i]);
+}
+function _sendToServer(msg) {
+  fetch('/api/message', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(msg) })
+    .catch(function(e) { console.error('[HME] postMessage failed:', e); });
+}
 const vscode = {
   postMessage(msg) {
-    fetch('/api/message', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(msg) })
-      .catch((e) => console.error('[HME] postMessage failed:', e));
+    if (_sseReady) { _sendToServer(msg); } else { _sseQueue.push(msg); }
   },
   getState() { return JSON.parse(localStorage.getItem(_lsKey) || 'null'); },
   setState(s) { localStorage.setItem(_lsKey, JSON.stringify(s)); },
@@ -852,12 +861,17 @@ clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistor
 (function() {
   function connectSSE() {
     var evtSrc = new EventSource('/api/events');
+    evtSrc.onopen = function() {
+      _sseReady = true;
+      _flushSseQueue();
+    };
     evtSrc.onmessage = function(e) {
       var msg = JSON.parse(e.data);
       window.dispatchEvent(new MessageEvent('message', { data: msg }));
     };
     evtSrc.onerror = function(err) {
       console.error('[HME] SSE error, reconnecting in 2s:', err);
+      _sseReady = false;
       evtSrc.close();
       setTimeout(connectSSE, 2000);
     };
