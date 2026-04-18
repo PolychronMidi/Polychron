@@ -207,6 +207,28 @@ export default [
     }
   },
   {
+    // Proxy infrastructure (supervisor/, mcp_server/, middleware/, top-level helpers)
+    // uses CommonJS patterns (module.exports, require('fs')) that the catch-all
+    // would flag. These files are load-bearing tooling, not src/ code.
+    files: [
+      'tools/HME/proxy/**/*.js',
+      'tools/HME/proxy/*.js'
+    ],
+    ignores: ['tools/HME/proxy/hme_proxy.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      ecmaVersion: 'latest',
+      globals: { ...globalsPkg.node }
+    },
+    rules: {
+      'no-restricted-syntax': 'off',
+      'no-redeclare': 'off',
+      'no-empty': 'off',
+      'no-useless-escape': 'off',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
+    }
+  },
+  {
     // Proxy-specific override — relaxes the catch-all's strict rules for
     // this one file so we can still get meaningful lint coverage
     // (no-undef catches block-scope leaks) without drowning in
