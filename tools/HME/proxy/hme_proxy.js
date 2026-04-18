@@ -304,13 +304,6 @@ function handleRequest(clientReq, clientRes) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
-        // Lifecycle: fire userpromptsubmit for new user turns only (not tool-
-        // loop continuations). Must run before middleware pipeline so
-        // auto-commit captures state before any in-turn mutations are scanned.
-        const userPrompt = hookBridge.extractUserPrompt(payload);
-        if (userPrompt) {
-          hookBridge.runUserPromptSubmit(userPrompt, session);
-        }
         // Run middleware pipeline. Must run AFTER scan so middleware sees the
         // reconciled tool_use/tool_result pairs. Returns true if any
         // middleware mutated the payload (via ctx.markDirty()) — we need to
