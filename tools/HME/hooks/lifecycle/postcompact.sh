@@ -4,8 +4,8 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 cat > /dev/null  # consume stdin
 
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$HOOKS_DIR/_nexus.sh"
-source "$HOOKS_DIR/_onboarding.sh"
+source "$HOOKS_DIR/../helpers/_nexus.sh"
+source "$HOOKS_DIR/../helpers/_onboarding.sh"
 
 PROJECT="$PROJECT_ROOT"
 HME_LOG="$PROJECT/log/hme.log"
