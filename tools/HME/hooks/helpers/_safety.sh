@@ -90,14 +90,39 @@ _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 
 # Safe curl: returns empty string on timeout/failure, never crashes the hook.
+# Tracks failures via a rolling streak; after STREAK_WARN consecutive misses
+# the next failure appends to hme-errors.log so LIFESAVER surfaces it at the
+# next turn. Previously this fire-and-forgot with `2>/dev/null || echo ''`
+# and silent 100% failure rates masqueraded as "worker returned nothing."
 # Usage: result=$(_safe_curl "http://..." '{"key":"val"}')
+_HME_CURL_STREAK_FILE="/tmp/hme-curl-fail.streak"
+_HME_CURL_STREAK_WARN=5
 _safe_curl() {
   local url="$1" body="${2:-}"
+  local out rc
   if [ -n "$body" ]; then
-    curl -s --max-time 2 -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null || echo ''
+    out=$(curl -s --max-time 2 -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
+    rc=$?
   else
-    curl -s --max-time 2 "$url" 2>/dev/null || echo ''
+    out=$(curl -s --max-time 2 "$url" 2>/dev/null)
+    rc=$?
   fi
+  if [ $rc -ne 0 ]; then
+    local streak
+    streak=$(_safe_int "$(cat "$_HME_CURL_STREAK_FILE" 2>/dev/null)")
+    streak=$((streak + 1))
+    echo "$streak" > "$_HME_CURL_STREAK_FILE"
+    if [ "$streak" -ge "$_HME_CURL_STREAK_WARN" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+      printf '[%s] [_safe_curl] %s failed (rc=%d, streak=%d)\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$url" "$rc" "$streak" \
+        >> "$PROJECT_ROOT/log/hme-errors.log" 2>/dev/null
+    fi
+    echo ''
+    return 0
+  fi
+  # Success — reset streak.
+  [ -f "$_HME_CURL_STREAK_FILE" ] && rm -f "$_HME_CURL_STREAK_FILE" 2>/dev/null
+  echo "$out"
 }
 
 # Safe jq: extracts a field from JSON string, returns fallback on failure.

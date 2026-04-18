@@ -4,4 +4,6 @@
 #   i/learn query=<topic>
 #   i/learn title="…" content="…" category=pattern
 #   i/learn action=ground_truth title=<section> content=<comment> query=<round>
-exec node "$(dirname "$0")/../scripts/hme-cli.js" learn "$@"
+_HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
+[ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
+exec node "$_HME_CLI" learn "$@"

@@ -23,6 +23,11 @@
  * "true"/"false" become booleans. JSON values ([...]/{...}) are parsed as JSON.
  * Everything else stays a string.
  *
+ * To force a value to stay a string (bypass all coercion), prefix with `str:`:
+ *   i/learn title=str:42          → {"title": "42"}  (string, not int)
+ *   i/learn tags=str:[a,b]        → {"tags": "[a,b]"} (string, not parsed JSON)
+ * The `str:` prefix is stripped before the value is sent.
+ *
  * The worker endpoint is POST http://127.0.0.1:<port>/tool/<name> with the flag
  * map as the JSON body. Returns {ok:true, result:"..."} on success; the result
  * is printed to stdout. Non-200 or {ok:false} responses print to stderr and
@@ -88,6 +93,8 @@ function parseArgs(argv) {
 }
 
 function coerce(v) {
+  // Explicit string escape: `str:42` → "42" (bypass coercion entirely).
+  if (v.startsWith('str:')) return v.slice(4);
   if (v === 'true') return true;
   if (v === 'false') return false;
   if (/^-?\d+$/.test(v)) return parseInt(v, 10);

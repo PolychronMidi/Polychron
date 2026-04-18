@@ -10,6 +10,15 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
+# Fail-fast on CLI transport errors — never clear KB tab if the learn call
+# didn't actually land. Silent clear here was the class-of-bug pattern the
+# whole MCP decoupling is meant to eliminate.
+TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
+if echo "$TOOL_RESULT" | grep -q '^hme-cli:'; then
+  echo "NEXUS: learn CLI failed — KB tab NOT cleared. Investigate worker/shim health before re-running." >&2
+  exit 0
+fi
+
 # Extract: title="..." / title=... / --title "..." / --title ...
 _extract_arg() {
   local key="$1"

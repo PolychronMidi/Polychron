@@ -54,11 +54,17 @@ if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _IS_HME_CALL=1
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
-  # Match: `i/review`, `./i/learn --`, `bash i/trace ...`,
-  # `node scripts/hme-cli.js trace`, etc.
-  if echo "$TOOL_INPUT" | grep -qE '(^|[[:space:]/])i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
+  # Match i/<tool> ONLY when it appears in an invocation position — start of
+  # command, or after a shell separator (;|&&|||&|(|`|bash |sh |exec |time ).
+  # Previously matched any whitespace/slash prefix, which caused false
+  # positives like `grep i/review foo.txt` (a grep arg, not an invocation)
+  # to be treated as HME tool calls, wrongly resetting the non-HME streak.
+  if echo "$TOOL_INPUT" | grep -qE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
     _IS_HME_CALL=1
-    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE 'i/[a-z_-]+' | head -1 | cut -d/ -f2)
+    # Extract the tool name from the matched invocation (not from any other
+    # i/X substring that might appear as an arg elsewhere in the command).
+    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE '(^|[;|&`(]|&&|\|\||\b(bash|sh|exec|time)[[:space:]]+)[[:space:]]*i/[a-z_-]+' \
+                | head -1 | grep -oE 'i/[a-z_-]+' | cut -d/ -f2)
   fi
 fi
 
