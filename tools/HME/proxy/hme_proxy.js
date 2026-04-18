@@ -563,9 +563,7 @@ function handleRequest(clientReq, clientRes) {
           try {
             const stopSession = payload ? sessionKey(payload) : 'unknown';
             const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });
-            hookBridge.dispatchEvent('Stop', stdin).catch((err) => {
-              console.error('[hme-proxy] inline Stop failed:', err.message);
-            });
+            _runInlineFallback('Stop', stdin);
           } catch (e) {
             console.error('[hme-proxy] inline Stop threw:', e.message);
           }
