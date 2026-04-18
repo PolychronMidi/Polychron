@@ -30,9 +30,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const { PROJECT_ROOT } = require('./shared');
-// nexus-tracking probe: this comment is intentionally added then removed to
-// test whether an Edit in tools/HME/proxy/ populates hme-nexus.state with an
-// EDIT: entry via the nexus_tracking middleware.
 
 const HOOKS_DIR = path.join(PROJECT_ROOT, 'tools', 'HME', 'hooks');
 const LIFECYCLE = path.join(HOOKS_DIR, 'lifecycle');
