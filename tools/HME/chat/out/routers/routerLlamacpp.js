@@ -2,7 +2,7 @@
 // llama.cpp chat router — OpenAI /v1/chat/completions client for the chat UI.
 //
 // Replaces the former ollama /api/chat client. Exports streamLlamacpp,
-// streamLlamacppAgentic, and GPU_NUM_CTX for routerHme, chatStreaming, ChatPanel.
+// streamLlamacppAgentic, and GPU_NUM_CTX for routerHme, chatStreaming, BrowserPanel.
 //
 // Wire protocol:
 //   Streaming  → POST /v1/chat/completions with stream: true → SSE frames

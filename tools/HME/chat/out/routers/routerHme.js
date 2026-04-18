@@ -136,7 +136,7 @@ async function isHmeShimReady() {
 }
 async function logShimError(source, message, detail = "") {
     return shimPost("/error", JSON.stringify({ source, message, detail }), () => undefined);
-    // Do NOT swallow rejection here — ChatPanel's .catch() on this call is the disk fallback.
+    // Do NOT swallow rejection here — BrowserPanel's .catch() on this call is the disk fallback.
     // Swallowing here makes logShimError always resolve, killing the fallback silently.
 }
 // ── Hybrid route ──────────────────────────────────────────────────────────
