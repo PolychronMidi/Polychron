@@ -5,8 +5,11 @@ exports.streamClaudePty = streamClaudePty;
 const child_process_1 = require("child_process");
 const fs_1 = require("fs");
 // node-pty is loaded lazily — a native module crash must never take down the extension host.
+// Set process.env.HME_NO_PTY=1 to skip PTY entirely (e.g. browser/server mode).
 let _pty = null;
 function getPty() {
+    if (process.env["HME_NO_PTY"])
+        return null;
     if (_pty)
         return _pty;
     try {
