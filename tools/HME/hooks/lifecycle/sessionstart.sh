@@ -80,7 +80,7 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "$LLAMA_BIN" ]; then
     if [ -n "$lora" ] && [ -f "$lora" ]; then
       args+=("--lora" "$lora")
     fi
-    local log="$PROJECT/tools/HME/mcp/log/llama-server-${name}.log"
+    local log="$PROJECT/log/llama-server-${name}.log"
     mkdir -p "$(dirname "$log")"
     nohup "$LLAMA_BIN" "${args[@]}" >> "$log" 2>&1 &
     disown $! 2>/dev/null || true
