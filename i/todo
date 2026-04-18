@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME todo — hierarchical todo store with criticality + on-done triggers.
+# Usage: i/todo action=list|add|done|... [text=…] [parent_id=N] [criticality=normal|critical]
+exec node "$(dirname "$0")/../scripts/hme-cli.js" hme_todo "$@"

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME read — KB-briefed file read (KB constraints + callers + boundaries).
+# Usage: i/hme-read target=<moduleName> [mode=auto|before]
+exec node "$(dirname "$0")/../scripts/hme-cli.js" read "$@"

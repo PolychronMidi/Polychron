@@ -13,19 +13,18 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 [[ -n "$BG_FILE" ]] && _append_file_to_tab "$BG_FILE"
 
-# Dispatch HME npm-script post-processors. These used to be triggered via
+# Dispatch HME shell-wrapper post-processors. These used to be triggered via
 # hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
-# MCP server; now HME tools run as `npm run <tool>` Bash calls and the dispatch
-# happens here. Each handler reads stdin (the same hook JSON) and returns
-# additionalContext / systemMessage / permissionDecisionReason for Claude.
-# Regex permits optional npm flags (--silent, -s, etc.) between `run` and tool.
-if echo "$CMD" | grep -qE '\bnpm run( +-[^ ]+)* +learn\b|scripts/hme-cli\.js learn\b'; then
+# MCP server; now HME tools run as Bash(i/<tool>) shell wrappers and the
+# dispatch happens here. Each handler reads stdin (the same hook JSON) and
+# returns additionalContext / systemMessage / permissionDecisionReason.
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/learn\b|scripts/hme-cli\.js learn\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_addknowledge.sh" || true
 fi
-if echo "$CMD" | grep -qE '\bnpm run( +-[^ ]+)* +hme-read\b|scripts/hme-cli\.js read\b'; then
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/hme-read\b|scripts/hme-cli\.js read\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_read.sh" || true
 fi
-if echo "$CMD" | grep -qE '\bnpm run( +-[^ ]+)* +review\b|scripts/hme-cli\.js review\b'; then
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/review\b|scripts/hme-cli\.js review\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/posttooluse_hme_review.sh" || true
 fi
 

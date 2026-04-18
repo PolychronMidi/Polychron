@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME trace — causal/impact analysis and semantic search.
+# Usage: i/trace target=<module|query> [mode=auto|impact|diagnose] [section=N] [limit=N]
+exec node "$(dirname "$0")/../scripts/hme-cli.js" trace "$@"

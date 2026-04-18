@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME admin — selftest, reindex, hook inspection.
+# Usage: i/hme-admin action=selftest|index|...
+exec node "$(dirname "$0")/../scripts/hme-cli.js" hme_admin "$@"

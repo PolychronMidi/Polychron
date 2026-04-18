@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-# PostToolUse: `npm run hme-read` dispatch (called by posttooluse_bash.sh).
+# PostToolUse: `i/hme-read` dispatch (called by posttooluse_bash.sh).
 # Parses target from tool_input.command: `target=...` or `--target ...`.
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')

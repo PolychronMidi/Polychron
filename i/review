@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME review — invokes scripts/hme-cli.js against the worker (127.0.0.1:9098).
+# Usage: i/review [mode=digest|forget|changes] [section_a=N] [section_b=N] [critique=true] ...
+exec node "$(dirname "$0")/../scripts/hme-cli.js" review "$@"

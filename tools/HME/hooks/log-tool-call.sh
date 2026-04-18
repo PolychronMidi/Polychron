@@ -44,22 +44,21 @@ if [ -f "$TS_FILE" ]; then
   rm -f "$TS_FILE" 2>/dev/null
 fi
 
-# HME tools are now invoked via Bash(npm run <tool>) — the tool_name is "Bash"
-# and the actual HME call lives in tool_input.command. Detect by grepping the
-# command for `npm run <hme-tool>`. Also keep the legacy mcp__HME__ pattern
-# so any remaining MCP-era integrations keep emitting streak resets.
+# HME tools are now invoked via Bash(i/<tool>) shell wrappers — tool_name is
+# "Bash" and the actual HME call lives in tool_input.command. Detect by
+# matching `i/<tool>` at a word boundary. Also keep the legacy mcp__HME__
+# pattern so historical transcripts keep emitting streak resets.
 _IS_HME_CALL=0
 _HME_TOOL=""
 if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
   _IS_HME_CALL=1
   _HME_TOOL="${TOOL_NAME#mcp__HME__}"
 elif [[ "$TOOL_NAME" == "Bash" ]]; then
-  # Match: `npm run review`, `npm run --silent review`, `npm run learn --`,
-  # `node scripts/hme-cli.js trace`, etc. Flags like --silent/-s come before
-  # the tool name; we skip over them.
-  if echo "$TOOL_INPUT" | grep -qE 'npm run( +-[^ ]+)* +(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
+  # Match: `i/review`, `./i/learn --`, `bash i/trace ...`,
+  # `node scripts/hme-cli.js trace`, etc.
+  if echo "$TOOL_INPUT" | grep -qE '(^|[[:space:]/])i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
     _IS_HME_CALL=1
-    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE 'npm run( +-[^ ]+)* +[a-z_-]+' | head -1 | awk '{print $NF}')
+    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE 'i/[a-z_-]+' | head -1 | cut -d/ -f2)
   fi
 fi
 

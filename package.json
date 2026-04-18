@@ -33,15 +33,7 @@
     "prepare": "husky install",
     "audit": "npm audit",
     "deps:check": "depcheck",
-    "deps:audit": "npm audit && depcheck",
-    "review": "node scripts/hme-cli.js review",
-    "learn": "node scripts/hme-cli.js learn",
-    "trace": "node scripts/hme-cli.js trace",
-    "evolve": "node scripts/hme-cli.js evolve",
-    "hme-admin": "node scripts/hme-cli.js hme_admin",
-    "status": "node scripts/hme-cli.js _mode_pipeline",
-    "todo": "node scripts/hme-cli.js hme_todo",
-    "hme-read": "node scripts/hme-cli.js read",
-    "hme": "node scripts/hme-cli.js"
+    "deps:audit": "npm audit && depcheck"
   }
 }
+
