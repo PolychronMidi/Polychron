@@ -134,7 +134,7 @@ async function _injectHmeTools(payload) {
 
 function _handleSpawnRoute(clientReq, clientRes) {
   const supervisor = require('./supervisor/index');
-  const [rawPath, query = ''] = (clientReq.url || '').split('?');
+  const [rawPath] = (clientReq.url || '').split('?');
   const parts = rawPath.split('/').filter(Boolean);  // ['hme', 'spawn', <id>?]
   const spawnId = parts[2] || null;
 

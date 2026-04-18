@@ -343,11 +343,21 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post_validate(self, body: dict):
         from hme_http_handlers import _validate
+        import concurrent.futures
         query = body.get("query", "")
         if not query:
             self._json(400, {"error": "query required"})
             return
-        self._json(200, _validate(query))
+        # Stay under the 5s client timeout: if search takes >4s, return
+        # a deferred response rather than letting the client time out and log
+        # an error. High-memory-pressure scenarios cause slow vector search.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as _exec:
+            _fut = _exec.submit(_validate, query)
+            try:
+                result = _fut.result(timeout=4.0)
+            except concurrent.futures.TimeoutError:
+                result = {"warnings": [], "blocks": [], "deferred": "search timeout — engine under load"}
+        self._json(200, result)
 
     def _post_audit(self, body: dict):
         from hme_http_handlers import _post_audit

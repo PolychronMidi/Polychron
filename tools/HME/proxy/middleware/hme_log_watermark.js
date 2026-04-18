@@ -42,7 +42,7 @@ module.exports = {
     // Without this, every fresh proxy boot re-escalates every historical
     // ERROR line in hme.log to hme-errors.log.
     if (lastSize < 0) {
-      try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) {}
+      try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) { /* best-effort */ }
       fs.writeFileSync(wmPath, String(curSize));
       return;
     }
@@ -60,13 +60,13 @@ module.exports = {
       const chunk = buf.toString('utf8');
       const newErrors = chunk.split('\n').filter((l) => ERR_LINE_RE.test(l)).slice(0, 20);
       if (newErrors.length > 0) {
-        try { fs.mkdirSync(path.dirname(errLogPath), { recursive: true }); } catch (_e) {}
+        try { fs.mkdirSync(path.dirname(errLogPath), { recursive: true }); } catch (_e) { /* best-effort */ }
         const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
         const body = newErrors.map((l) => `[${ts}] hme.log: ${l}`).join('\n') + '\n';
         fs.appendFileSync(errLogPath, body);
         console.warn(`[middleware] hme_log_watermark: escalated ${newErrors.length} ERROR line(s) to hme-errors.log`);
       }
-      try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) {}
+      try { fs.mkdirSync(path.dirname(wmPath), { recursive: true }); } catch (_e) { /* best-effort */ }
       fs.writeFileSync(wmPath, String(curSize));
     } catch (err) {
       ctx.warn(`hme_log_watermark read failed: ${err.message}`);

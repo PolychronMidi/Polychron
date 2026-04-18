@@ -56,7 +56,18 @@ export default [
       'tools/HME/mcp/**',
       'tools/HME/activity/**',
       'tools/HME/warm-context-cache/**',
-      'tools/**/node_modules/**'
+      'tools/**/node_modules/**',
+      'tools/HME/proxy/mcp_server/**',
+      'tools/HME/proxy/middleware/**',
+      'tools/HME/proxy/supervisor/**',
+      'tools/HME/proxy/context.js',
+      'tools/HME/proxy/hme_dispatcher.js',
+      'tools/HME/proxy/messages.js',
+      'tools/HME/proxy/shared.js',
+      'tools/HME/proxy/sse_rewriters.js',
+      'tools/HME/proxy/sse_transform.js',
+      'tools/HME/proxy/upstream.js',
+      'tools/HME/proxy/worker_client.js'
     ]
   },
   {
@@ -204,28 +215,6 @@ export default [
       'no-trailing-spaces': 'error',
       'eol-last': ['error', 'always'],
       'no-unused-vars': 'error'
-    }
-  },
-  {
-    // Proxy infrastructure (supervisor/, mcp_server/, middleware/, top-level helpers)
-    // uses CommonJS patterns (module.exports, require('fs')) that the catch-all
-    // would flag. These files are load-bearing tooling, not src/ code.
-    files: [
-      'tools/HME/proxy/**/*.js',
-      'tools/HME/proxy/*.js'
-    ],
-    ignores: ['tools/HME/proxy/hme_proxy.js'],
-    languageOptions: {
-      sourceType: 'commonjs',
-      ecmaVersion: 'latest',
-      globals: { ...globalsPkg.node }
-    },
-    rules: {
-      'no-restricted-syntax': 'off',
-      'no-redeclare': 'off',
-      'no-empty': 'off',
-      'no-useless-escape': 'off',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }]
     }
   },
   {

@@ -101,7 +101,7 @@ analysisHelpers = (() => {
   /**
    * Returns a query function for a tracker module. query(opts) returns the
    * notes array or null if notes.length < minNotes.
-   * @param {{ optionalFinite: Function }} V - validator instance from the calling module
+   * @param {{ optionalFinite: (value: unknown, fallback?: number) => number }} V - validator instance from the calling module
    * @param {number} windowSeconds
    * @param {{ minNotes?: number }} [options]
    * @returns {(opts?: object) => any[]|null}

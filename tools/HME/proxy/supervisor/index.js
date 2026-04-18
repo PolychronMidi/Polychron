@@ -136,7 +136,7 @@ async function _healthLoop() {
           const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
           const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) — giving up`;
           console.error(msg);
-          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}\n`); } catch (_e) {}
+          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}\n`); } catch (_e) { /* best-effort */ }
           emit({ event: 'child_restart_limit', child: spec.name });
           state.gaveUp = true;
         }
@@ -330,10 +330,10 @@ function adhocSpawn({ name, cmd, args, env, cwd, ttl_sec }) {
   // Auto-reap on TTL expiry — SIGTERM, then SIGKILL after 2s grace.
   setTimeout(() => {
     if (proc.exitCode !== null) return; // already exited
-    try { process.kill(proc.pid, 'SIGTERM'); } catch (_e) {}
+    try { process.kill(proc.pid, 'SIGTERM'); } catch (_e) { /* already exited */ }
     setTimeout(() => {
       if (proc.exitCode === null) {
-        try { process.kill(proc.pid, 'SIGKILL'); } catch (_e) {}
+        try { process.kill(proc.pid, 'SIGKILL'); } catch (_e) { /* already exited */ }
       }
     }, 2000);
   }, ttlSec * 1000);
