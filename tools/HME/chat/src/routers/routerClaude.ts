@@ -163,21 +163,24 @@ function handleStreamEvent(
   }
 
   if (evt.type === "result") {
-    const inputTokens: number | undefined = evt.input_tokens;
-    const outputTokens: number | undefined = evt.output_tokens;
-    if (inputTokens == null || outputTokens == null) {
-      onChunk("[HME] WARN: result event missing token counts — context % will not update", "error");
-    }
+    // Token counts live under evt.usage, not top-level.
+    const inputTokens: number | undefined = evt.usage?.input_tokens;
+    const outputTokens: number | undefined = evt.usage?.output_tokens;
+    // Context window size from per-model usage block; fall back to 200k.
+    const modelEntry = evt.modelUsage ? Object.values(evt.modelUsage)[0] as any : undefined;
+    const contextWindow: number = modelEntry?.contextWindow ?? 200000;
+    const totalInput = (inputTokens ?? 0)
+      + (evt.usage?.cache_read_input_tokens ?? 0)
+      + (evt.usage?.cache_creation_input_tokens ?? 0);
     const usage: TokenUsage | undefined =
       (inputTokens != null && outputTokens != null)
         ? {
             inputTokens,
             outputTokens,
-            // All current Claude models have a 200k context window.
-            usedPct: Math.round((inputTokens / 200000) * 1000) / 10,
+            usedPct: Math.round((totalInput / contextWindow) * 1000) / 10,
           }
         : undefined;
-    onDone(evt.cost_usd ?? undefined, usage);
+    onDone(evt.total_cost_usd ?? evt.cost_usd ?? undefined, usage);
     return;
   }
 }
