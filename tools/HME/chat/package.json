@@ -1,31 +1,8 @@
 {
   "name": "hme-chat",
   "displayName": "HME Chat",
-  "description": "HME unified chat — route to Claude (Max/Pro), llama.cpp, or hybrid",
+  "description": "HME unified chat — route to Claude (Max/Pro), llama.cpp, or hybrid. Browser-only.",
   "version": "1.0.0",
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": ["onCommand:hme-chat.open", "onWebviewPanel:hmeChat", "*"],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "hme-chat.open",
-        "title": "HME: Open Chat"
-      }
-    ],
-    "keybindings": [
-      {
-        "command": "hme-chat.open",
-        "key": "ctrl+shift+h",
-        "mac": "cmd+shift+h"
-      }
-    ]
-  },
   "scripts": {
     "compile": "tsc -p tsconfig.json",
     "watch": "tsc -watch -p tsconfig.json",
@@ -35,7 +12,6 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.0.0",
-    "@types/vscode": "^1.85.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {

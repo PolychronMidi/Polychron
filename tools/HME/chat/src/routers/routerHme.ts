@@ -127,7 +127,7 @@ export async function isHmeShimReady(): Promise<{ ready: boolean; errors: any[] 
 
 export async function logShimError(source: string, message: string, detail: string = ""): Promise<void> {
   return shimPost("/error", JSON.stringify({ source, message, detail }), () => undefined);
-  // Do NOT swallow rejection here — ChatPanel's .catch() on this call is the disk fallback.
+  // Do NOT swallow rejection here — BrowserPanel's .catch() on this call is the disk fallback.
   // Swallowing here makes logShimError always resolve, killing the fallback silently.
 }
 

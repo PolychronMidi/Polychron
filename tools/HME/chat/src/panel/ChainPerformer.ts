@@ -13,7 +13,7 @@ export const CHAIN_THRESHOLD_PCT = 99;
 /**
  * The panel exposes this narrow surface to the ChainPerformer so it can
  * rotate session state when a chain link is saved. Keeps the performer
- * from taking a reference to the full ChatPanel.
+ * from taking a reference to the full BrowserPanel.
  */
 export interface ChainSessionBridge {
   getSessionId(): string | null;
