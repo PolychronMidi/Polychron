@@ -80,15 +80,14 @@ export class ChainPerformer {
     const todos = this._loadTodos();
     const priorSummaries = loadChainSummaries(this.projectRoot, sessionId);
     const messages = this.session.getMessages();
-    const recentMessages = messages.slice(-20);
-    const summaryPrompt = buildSummaryPrompt(recentMessages, todos, priorSummaries);
+    const summaryPrompt = buildSummaryPrompt(messages, todos, priorSummaries);
 
     let summary = "";
     try {
       summary = await synthesizeChainSummary(summaryPrompt);
     } catch (e) {
       console.error(`[HME Chat] Chain summary via local model failed: ${e}`);
-      summary = buildFallbackSummary(recentMessages, todos, priorSummaries);
+      summary = buildFallbackSummary(messages, todos, priorSummaries);
     }
 
     const link: ChainLink = {
