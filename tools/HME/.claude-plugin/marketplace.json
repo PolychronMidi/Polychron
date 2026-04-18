@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "HME",
-      "source": "./HME",
+      "source": "./",
       "description": "Master executive for hypermeta evolutionary intelligence. Full-stack: MCP server, hooks, skills, Evolver."
     }
   ]
