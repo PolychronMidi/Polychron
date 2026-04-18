@@ -2,4 +2,6 @@
 # HME generic dispatcher — pass any registered tool name as the first arg.
 # Usage: i/hme <tool-name> key=value ...
 # Example: i/hme agent prompt="explore coupling"
-exec node "$(dirname "$0")/../scripts/hme-cli.js" "$@"
+_HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
+[ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
+exec node "$_HME_CLI" "$@"

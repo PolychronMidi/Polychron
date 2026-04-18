@@ -473,75 +473,77 @@ class HookRegistrationVerifier(Verifier):
 
 
 class HookMatcherValidityVerifier(Verifier):
-    """Every `mcp__HME__*` matcher in hooks.json refers to a tool that
-    actually exists in the current tool surface. Catches post-unification
-    drift where a matcher is pinned to a renamed/removed tool — the hook
-    is then silently dead because the MCP event never fires it.
+    """Post-MCP-decoupling surface check. Every `i/<tool>` wrapper in the
+    project's `i/` directory must either (a) have a matching dispatch branch
+    in `posttooluse_bash.sh` for post-hooks that need to run after it, or
+    (b) be explicitly known-not-to-have-a-posthook. Conversely, every
+    dispatch branch in `posttooluse_bash.sh` must reference a wrapper that
+    actually exists. Catches the drift where a wrapper is renamed but the
+    hook still dispatches on the old name (or vice versa) — silently dead
+    hook path.
     """
     name = "hook-matcher-validity"
     category = "coverage"
     weight = 2.0  # high: silently-dead hooks are a major self-coherence failure
 
+    # Wrappers that have no posttooluse side-effect by design. Claude just
+    # reads the response; there's no nexus state to update.
+    _NO_POSTHOOK_OK = {"status", "trace", "evolve", "hme-admin", "todo", "hme"}
+
     def run(self) -> VerdictResult:
-        import ast
-        # Collect actual tool names from the server source
-        actual: set = set()
-        for root, _dirs, files in os.walk(_SERVER_DIR):
-            for f in files:
-                if not f.endswith(".py"):
-                    continue
-                path = os.path.join(root, f)
-                try:
-                    with open(path) as fp:
-                        tree = ast.parse(fp.read())
-                except Exception:
-                    continue
-                for node in ast.walk(tree):
-                    if not isinstance(node, ast.FunctionDef):
-                        continue
-                    if any(
-                        isinstance(d, ast.Call)
-                        and isinstance(d.func, ast.Attribute)
-                        and d.func.attr == "tool"
-                        for d in node.decorator_list
-                    ):
-                        actual.add(f"mcp__HME__{node.name}")
+        import re
 
-        # Read hooks.json and collect all mcp__HME__* matchers
-        hooks_json = os.path.join(_HOOKS_DIR, "hooks.json")
+        project_root = os.environ.get("PROJECT_ROOT", _PROJECT)
+        i_dir = os.path.join(project_root, "i")
+        if not os.path.isdir(i_dir):
+            return _result(FAIL, 0.0, "i/ directory missing — HME tool wrappers not installed")
+
+        # Enumerate wrappers (executable shell scripts in i/).
+        wrappers = set()
         try:
-            with open(hooks_json) as f:
-                data = json.load(f)
-        except Exception as e:
-            return _result(FAIL, 0.0, f"hooks.json invalid: {e}")
+            for name in os.listdir(i_dir):
+                p = os.path.join(i_dir, name)
+                if os.path.isfile(p) and os.access(p, os.X_OK):
+                    wrappers.add(name)
+        except OSError as e:
+            return _result(FAIL, 0.0, f"i/ unreadable: {e}")
 
-        dead = []
-        checked = 0
-        for _event, entries in data.get("hooks", {}).items():
-            for entry in entries:
-                matcher = entry.get("matcher", "")
-                # Skip empty matcher (matches all), non-MCP matchers, and the
-                # broad `mcp__HME__` prefix matcher which is a prefix filter.
-                if not matcher:
-                    continue
-                if not matcher.startswith("mcp__HME__"):
-                    continue
-                if matcher == "mcp__HME__":
-                    continue  # prefix matcher — matches any HME tool
-                checked += 1
-                if matcher not in actual:
-                    dead.append(matcher)
+        # Read posttooluse_bash.sh and collect dispatched tool names.
+        posthook_path = os.path.join(_HOOKS_DIR, "posttooluse", "posttooluse_bash.sh")
+        try:
+            with open(posthook_path) as fp:
+                posthook_src = fp.read()
+        except OSError as e:
+            return _result(FAIL, 0.0, f"posttooluse_bash.sh unreadable: {e}")
 
-        if checked == 0:
-            return _result(SKIP, 1.0, "no specific mcp__HME__ matchers to check")
-        if not dead:
-            return _result(PASS, 1.0, f"{checked}/{checked} HME matchers resolve to real tools")
-        score = 1.0 - len(dead) / checked
-        return _result(
-            FAIL, score,
-            f"{len(dead)}/{checked} HME matchers point at dead tools",
-            [f"{m} — no @ctx.mcp.tool() function with this name" for m in dead],
-        )
+        # Pattern: `i/<tool>\b` inside regexes within the dispatcher block.
+        dispatched = set(re.findall(r'i/([a-z-]+)\\b', posthook_src))
+
+        # A wrapper with a posthook dispatch is "covered". A wrapper on the
+        # NO_POSTHOOK_OK list is "explicitly excluded". Anything else is
+        # silently uncovered.
+        uncovered = [w for w in wrappers
+                     if w not in dispatched and w not in self._NO_POSTHOOK_OK]
+        # Conversely, any dispatch target that doesn't correspond to a
+        # wrapper is a dead branch.
+        dead_dispatches = [t for t in dispatched if t not in wrappers]
+
+        errors = []
+        for w in uncovered:
+            errors.append(f"wrapper i/{w} has no posthook dispatch and is not in _NO_POSTHOOK_OK")
+        for t in dead_dispatches:
+            errors.append(f"posttooluse_bash.sh dispatches on i/{t} but no such wrapper exists")
+
+        total_checks = len(wrappers) + len(dispatched)
+        if total_checks == 0:
+            return _result(SKIP, 1.0, "no wrappers or dispatches to check")
+        if not errors:
+            return _result(
+                PASS, 1.0,
+                f"{len(wrappers)} wrappers × {len(dispatched)} dispatches all resolve"
+            )
+        score = 1.0 - len(errors) / total_checks
+        return _result(FAIL, score, f"{len(errors)} wrapper/dispatch mismatch(es)", errors)
 
 
 class ToolSurfaceCoverageVerifier(Verifier):

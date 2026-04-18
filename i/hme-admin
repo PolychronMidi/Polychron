@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 # HME admin — selftest, reindex, hook inspection.
 # Usage: i/hme-admin action=selftest|index|...
-exec node "$(dirname "$0")/../scripts/hme-cli.js" hme_admin "$@"
+_HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
+[ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
+exec node "$_HME_CLI" hme_admin "$@"

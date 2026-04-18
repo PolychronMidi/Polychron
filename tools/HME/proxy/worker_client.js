@@ -2,18 +2,55 @@
 /**
  * Thin HTTP client for the worker's RAG/validate/enrich endpoints.
  * Used by enrichment middleware that wants semantic-search signal beyond
- * the static JSON maps. Fails silently (returns empty result) when the
- * worker is unreachable — enrichment is non-fatal; tools must always flow.
+ * the static JSON maps.
+ *
+ * Failure policy: enrichment is non-fatal (tools must always flow) so calls
+ * resolve null rather than rejecting. BUT silent-null-forever is a worse
+ * failure mode than loud — a quiet 100% drop rate masquerades as "no KB
+ * matches found." So we log every transport failure to stderr (captured by
+ * log/hme-proxy.out) AND track a rolling failure counter; once it crosses
+ * a streak threshold, we surface a warning so the next tool call has a hint
+ * that the worker is dead.
  *
  * Per-process LRU cache amortizes the 80-100ms semantic-search cost across
  * repeated calls within a session.
  */
 
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const { MCP_PORT } = require('./supervisor/children');
 
 const CACHE_CAP = 500;
 const _cache = new Map();
+
+// Rolling failure telemetry. After STREAK_WARN consecutive failures in a
+// window, every subsequent failure also writes one line to hme-errors.log so
+// the user-facing LIFESAVER pipeline picks it up.
+let _failStreak = 0;
+const STREAK_WARN = 5;
+const _errLogPath = (() => {
+  const root = process.env.PROJECT_ROOT || path.resolve(__dirname, '..', '..', '..');
+  return path.join(root, 'log', 'hme-errors.log');
+})();
+function _recordFailure(endpoint, reason) {
+  _failStreak += 1;
+  const msg = `[${new Date().toISOString()}] [worker_client] ${endpoint} ${reason} (streak=${_failStreak})`;
+  console.error(msg);
+  if (_failStreak >= STREAK_WARN) {
+    try {
+      fs.appendFileSync(_errLogPath, msg + '\n');
+    } catch (e) {
+      console.error(`[worker_client] could not append to hme-errors.log: ${e.message}`);
+    }
+  }
+}
+function _recordSuccess() {
+  if (_failStreak > 0) {
+    console.error(`[worker_client] recovered after ${_failStreak} failures`);
+  }
+  _failStreak = 0;
+}
 
 function _cacheGet(key) {
   if (!_cache.has(key)) return undefined;
@@ -32,12 +69,12 @@ function _cacheSet(key, value) {
   }
 }
 
-function _post(path, body, timeoutMs) {
+function _post(reqPath, body, timeoutMs) {
   return new Promise((resolve) => {
     const data = Buffer.from(JSON.stringify(body), 'utf8');
     const req = http.request(
       {
-        hostname: '127.0.0.1', port: MCP_PORT, path, method: 'POST',
+        hostname: '127.0.0.1', port: MCP_PORT, path: reqPath, method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
         timeout: timeoutMs,
       },
@@ -45,13 +82,24 @@ function _post(path, body, timeoutMs) {
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {
-          try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
-          catch (_e) { resolve(null); }
+          const raw = Buffer.concat(chunks).toString('utf8') || '{}';
+          try {
+            const parsed = JSON.parse(raw);
+            if (res.statusCode >= 400) {
+              _recordFailure(reqPath, `HTTP ${res.statusCode}: ${raw.slice(0, 120)}`);
+              resolve(null); return;
+            }
+            _recordSuccess();
+            resolve(parsed);
+          } catch (e) {
+            _recordFailure(reqPath, `JSON parse error: ${e.message} (raw=${raw.slice(0, 80)})`);
+            resolve(null);
+          }
         });
       },
     );
-    req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('error', (e) => { _recordFailure(reqPath, `transport: ${e.message}`); resolve(null); });
+    req.on('timeout', () => { req.destroy(); _recordFailure(reqPath, `timeout after ${timeoutMs}ms`); resolve(null); });
     req.write(data);
     req.end();
   });

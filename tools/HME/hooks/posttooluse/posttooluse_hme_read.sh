@@ -5,6 +5,16 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 # Parses target from tool_input.command: `target=...` or `--target ...`.
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
+
+# Fail-fast on CLI transport errors — never mark BRIEF if the read never
+# actually retrieved KB context. Otherwise pretooluse_edit.sh would see a
+# spurious BRIEF and let the edit through unbriefed.
+TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
+if echo "$TOOL_RESULT" | grep -q '^hme-cli:'; then
+  echo "NEXUS: hme-read CLI failed — BRIEF NOT marked. Investigate worker/shim health before editing this file." >&2
+  exit 0
+fi
+
 TARGET=$(echo "$CMD" | grep -oE '\btarget[= ][^[:space:]]+' | head -1 | sed -E 's/^.*target[= ]//')
 MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[= ]//')
 [ -z "$MODE" ] && MODE="auto"
