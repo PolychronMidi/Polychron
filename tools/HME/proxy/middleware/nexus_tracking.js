@@ -38,5 +38,20 @@ module.exports = {
       ctx.nexusMark('REVIEW', String(count));
       ctx.emit({ event: 'review_complete', cleared: count });
     }
+
+    // Also detect review invocations via the Bash wrapper (i/review). The
+    // old MCP tool HME_review no longer exists — the current agent path is
+    // Bash(`i/review mode=forget`) which dispatches via scripts/hme-cli.js.
+    // Without this, nexus would never see review events and stop.sh would
+    // block indefinitely after each edit.
+    if (name === 'Bash') {
+      const cmd = String(input.command || '');
+      if (/\bi\/review\b/.test(cmd)) {
+        const count = ctx.nexusCount('EDIT');
+        ctx.nexusClearType('EDIT');
+        ctx.nexusMark('REVIEW', String(count));
+        ctx.emit({ event: 'review_complete', cleared: count, via: 'bash_wrapper' });
+      }
+    }
   },
 };
