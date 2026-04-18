@@ -537,11 +537,22 @@ function handleRequest(clientReq, clientRes) {
         } else {
           clientRes.end(outBuf);
         }
-        // Lifecycle: fire stop hook (auto-commit + lifecycle checks). Runs
-        // after response has been sent to the client so commit latency
-        // doesn't affect user-visible turn end. Fire-and-forget (detached).
-        // `session` from line 277 is out of scope here — recompute from
-        // payload, falling back to 'unknown' if payload is absent.
+        // Lifecycle: fire stop hook (auto-commit + lifecycle checks) as
+        // fallback when Claude Code's hook system isn't reaching the
+        // /hme/lifecycle endpoint. Runs AFTER the response has been sent
+        // to the client so commit latency doesn't affect user-visible
+        // turn end. No-op if a recent /hme/lifecycle Stop hit was received.
+        if (isAnthropic && _lifecycleInactive('Stop')) {
+          try {
+            const stopSession = payload ? sessionKey(payload) : 'unknown';
+            const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });
+            hookBridge.dispatchEvent('Stop', stdin).catch((err) => {
+              console.error('[hme-proxy] inline Stop failed:', err.message);
+            });
+          } catch (e) {
+            console.error('[hme-proxy] inline Stop threw:', e.message);
+          }
+        }
       });
       upstreamRes.on('error', (err) => {
         console.error('[hme-proxy] upstream read error:', err.message);
