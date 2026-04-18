@@ -1,3 +1,6 @@
+// Disable PTY before any router modules load — browser server has no TTY.
+process.env["HME_NO_PTY"] = "1";
+
 import * as path from "path";
 import * as fs from "fs";
 import express from "express";
