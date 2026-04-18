@@ -18,6 +18,7 @@ export interface ContextPostArgs {
 
 export class ContextMeter {
   private _tracker: ContextTracker = ContextMeter._blank();
+  private _hasLiveUpdate = false;
 
   constructor(
     private readonly projectRoot: string,
@@ -35,8 +36,14 @@ export class ContextMeter {
     return this._tracker.usedPct ?? 0;
   }
 
+  /** True only after at least one live response has updated the meter this session. */
+  get hasLiveUpdate(): boolean {
+    return this._hasLiveUpdate;
+  }
+
   reset(args: ContextPostArgs, restoredPct?: number): void {
     this._tracker = ContextMeter._blank();
+    this._hasLiveUpdate = false;
     if (restoredPct) this._tracker.usedPct = restoredPct;
     this.post(args);
   }
@@ -47,6 +54,7 @@ export class ContextMeter {
    */
   resetSilently(): void {
     this._tracker = ContextMeter._blank();
+    this._hasLiveUpdate = false;
   }
 
   update(text: string, thinking: string, model: string, usage: TokenUsage | undefined, args: ContextPostArgs): void {
@@ -59,6 +67,7 @@ export class ContextMeter {
       if (usage.modelId) this._tracker.cliModelId = usage.modelId;
       if (usage.modelName) this._tracker.cliModelName = usage.modelName;
     }
+    this._hasLiveUpdate = true;
     this.post(args);
   }
 

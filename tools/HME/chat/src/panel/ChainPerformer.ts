@@ -21,6 +21,7 @@ export interface ChainSessionBridge {
   getChainIndex(): number;
   getClaudeSessionId(): string | null;
   getContextPct(): number;
+  hasMeterLiveUpdate(): boolean;
   /**
    * Clear messages + claude session id, advance chainIndex, reset context meter
    * (silently — no webview post), then seed messages with the continuation user
@@ -49,6 +50,7 @@ export class ChainPerformer {
    * running, synthesize a chain link summary and rotate the session.
    */
   maybeChain(): void {
+    if (!this.session.hasMeterLiveUpdate()) return;
     if (this.session.getContextPct() < CHAIN_THRESHOLD_PCT) return;
     if (this._inProgress) return;
     this._performChain().catch((e) => {
