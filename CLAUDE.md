@@ -88,10 +88,10 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 
 All HME tools are invoked via `npm run <tool>` (the proxy middleware owns MCP transport; Claude no longer connects to an MCP server). Full reference: [doc/HME.md](../doc/HME.md).
 
-- **After implementing changes:** `npm run review -- mode=forget` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
-- **After each listen-confirmed round:** `npm run learn -- title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `npm run learn -- action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
-- **Close the round window:** between the user's pipeline run and querying `npm run status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The `stop.sh` hook does this at turn end automatically; do it manually mid-turn.
-- **When pipeline fails:** read pipeline output, fix root cause. `npm run hme-read -- target=<moduleName> mode=before` on the failing file.
+- **After implementing changes:** `npm run --silent review -- mode=forget` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
+- **After each listen-confirmed round:** `npm run --silent learn -- title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `npm run --silent learn -- action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
+- **Close the round window:** between the user's pipeline run and querying `npm run --silent status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The `stop.sh` hook does this at turn end automatically; do it manually mid-turn.
+- **When pipeline fails:** read pipeline output, fix root cause. `npm run --silent hme-read -- target=<moduleName> mode=before` on the failing file.
 
 ## Reference Pointers
 

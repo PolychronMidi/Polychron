@@ -126,15 +126,15 @@ in `.mcp.json`. After the MCP decoupling they're invoked as Bash `npm run`
 scripts that hit the worker's HTTP endpoint directly:
 
 ```
-npm run review  -- mode=forget
-npm run learn   -- title="…" content="…"
-npm run trace   -- target=<module> mode=impact
-npm run evolve  -- focus=<axis>
-npm run status                   # pipeline status
-npm run hme-admin -- action=selftest
-npm run todo    -- action=list
-npm run hme-read -- target=<module>
-npm run hme     -- <any-tool> <key=value>...   # generic dispatcher
+npm run --silent review  -- mode=forget
+npm run --silent learn   -- title="…" content="…"
+npm run --silent trace   -- target=<module> mode=impact
+npm run --silent evolve  -- focus=<axis>
+npm run --silent status                   # pipeline status
+npm run --silent hme-admin -- action=selftest
+npm run --silent todo    -- action=list
+npm run --silent hme-read -- target=<module>
+npm run --silent hme     -- <any-tool> <key=value>...   # generic dispatcher
 ```
 
 All routes go through `scripts/hme-cli.js`, which POSTs `/tool/<name>` on the
@@ -477,7 +477,7 @@ The bridge is additive: no state is kept outside the JSONL itself, and `activity
 
 Phase 2 of the feature mapping. `tools/HME/proxy/hme_proxy.js` is a Node.js HTTP chokepoint between Claude Code and the Anthropic API. Point Claude Code at it by setting `ANTHROPIC_BASE_URL=http://127.0.0.1:9099` and launching `node tools/HME/proxy/hme_proxy.js`.
 
-Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks, HME read calls (Bash `npm run hme-read`, plus legacy `mcp__HME__read` in historical transcripts) are compared against write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`). Every call emits one `inference_call` event into `metrics/hme-activity.jsonl`; write-intent without a prior read adds a `coherence_violation` event with `source=proxy` and the offending tool name.
+Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks, HME read calls (Bash `npm run --silent hme-read`, plus legacy `mcp__HME__read` in historical transcripts) are compared against write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`). Every call emits one `inference_call` event into `metrics/hme-activity.jsonl`; write-intent without a prior read adds a `coherence_violation` event with `source=proxy` and the offending tool name.
 
 Streaming SSE responses pipe through verbatim — no buffering, no latency penalty. The proxy never modifies request bodies in v1 (observability only). System-prompt injection is deliberately deferred to a future phase so the observation signal can be validated in isolation.
 
@@ -669,7 +669,7 @@ Rolling 30-round EMA in `metrics/hme-intention-gap.json`. Surfaced via `status(m
 Phase 4.4 of the feature mapping. `tools_analysis/self_audit.py` queries three utility signals and surfaces architectural inefficiencies as *evolution candidates*:
 
 1. **KB category usage** — categories with ≥15 entries and zero retrievals (UNUSED), or ≥10 entries with retrievals < entries/10 (UNDER_QUERIED)
-2. **Silent injections** — proxy `jurisdiction_inject` events not followed by `npm run hme-read` in the same session before `round_complete`
+2. **Silent injections** — proxy `jurisdiction_inject` events not followed by `npm run --silent hme-read` in the same session before `round_complete`
 3. **Cascade overconfidence** — prediction-accuracy EMA < 0.5 over ≥5 rounds
 
 Data sources: `.claude/mcp/HME/knowledge_access.json`, `metrics/hme-activity.jsonl`, `metrics/hme-prediction-accuracy.json`. Read-only — never modifies anything, just reports.
@@ -834,8 +834,8 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `pretooluse_write.sh` | PreToolUse | Write | Block memory writes, detect secrets, lab rules for `sketches.js` |
 | `pretooluse_bash.sh` | PreToolUse | Bash | Block `rm run.lock`, anti-polling, anti-wait, FAILFAST enforcement; **correct** timeout via `updatedInput` (strips timeout silently, command proceeds) |
 | `pretooluse_todowrite.sh` | PreToolUse | TodoWrite | **Silent capture** — writes tasks directly to HME todo store (todos.json), blocks native TodoWrite with no further action required |
-| `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `npm run <hme-tool>`) | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `npm run hme-admin -- action=selftest` + `npm run evolve -- focus=invariants`); clears flag so it only fires once |
-| `pretooluse_check_pipeline.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `npm run status`) | **Redirect** — deny repeated status calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
+| `pretooluse_hme_primer.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `npm run <hme-tool>`) | **Enrich** — inject `AGENT_PRIMER.md` once per session via `systemMessage` on first HME tool call; appends mandatory boot check directive (run `npm run --silent hme-admin -- action=selftest` + `npm run --silent evolve -- focus=invariants`); clears flag so it only fires once |
+| `pretooluse_check_pipeline.sh` | PreToolUse | Bash (dispatched by pretooluse_bash.sh on `npm run --silent status`) | **Redirect** — deny repeated status calls (polling anti-pattern); pipeline status surfaces automatically via posttooluse hook |
 | `pretooluse_agent.sh` | PreToolUse | Agent | **Intercept** Explore-type subagents → route to local llama.cpp agentic loop with RAG+KB context; other agent types pass through; falls back to Claude on llama.cpp unreachable or empty answer |
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: detect HME calls (Bash(npm run <hme-tool>) or legacy mcp__HME__*) and warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main`; **emit `pipeline_run`** activity event with verdict/wall/hci |
@@ -844,9 +844,9 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
-| `posttooluse_hme_read.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `npm run hme-read`) | Track briefed files to NEXUS; reset streak |
-| `posttooluse_hme_review.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `npm run review`) | Clear NEXUS edit backlog on `mode=forget`; point to next step (pipeline / commit) |
-| `posttooluse_addknowledge.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `npm run learn`) | Clear `KB:` entries from tab after `npm run learn -- title=… content=…` add call |
+| `posttooluse_hme_read.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `npm run --silent hme-read`) | Track briefed files to NEXUS; reset streak |
+| `posttooluse_hme_review.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `npm run --silent review`) | Clear NEXUS edit backlog on `mode=forget`; point to next step (pipeline / commit) |
+| `posttooluse_addknowledge.sh` | PostToolUse | Bash (dispatched by posttooluse_bash.sh on `npm run --silent learn`) | Clear `KB:` entries from tab after `npm run --silent learn -- title=… content=…` add call |
 | `userpromptsubmit.sh` | UserPromptSubmit | * | Inject Evolver context on evolution-related prompts |
 | `precompact.sh` | PreCompact | * | Surface `KB:`/`FILE:` entries from tab + untracked `tmp/` files |
 | `postcompact.sh` | PostCompact | * | Re-surface the same tab state after compaction |

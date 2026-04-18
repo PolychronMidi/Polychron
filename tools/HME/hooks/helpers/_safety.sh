@@ -179,7 +179,7 @@ _streak_check() {
   local score
   score=$(_safe_int "$(cat "$_STREAK_FILE" 2>/dev/null)")
   if [ "$score" -ge "$_STREAK_BLOCK" ]; then
-    echo "BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK}. Use an HME npm script (\`npm run hme-read\`, \`npm run review\`, \`npm run trace\`, etc.) before continuing. They add KB context that raw tools miss." >&2
+    echo "BLOCKED: Raw tool streak ${score}/${_STREAK_BLOCK}. Use an HME npm script (\`npm run --silent hme-read\`, \`npm run --silent review\`, \`npm run --silent trace\`, etc.) before continuing. They add KB context that raw tools miss." >&2
     return 1
   elif [ "$score" -ge "$_STREAK_WARN" ]; then
     echo "REMINDER: Raw tool streak ${score}/${_STREAK_BLOCK}. Use HME tools (read, find, review) for KB-enriched results." >&2

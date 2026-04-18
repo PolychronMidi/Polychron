@@ -52,11 +52,11 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 | Hook | Trigger | Pattern | Message |
 |------|---------|---------|---------|
 | `pretooluse_bash.sh` | `timeout` in tool_input | **Correct** — strip timeout via updatedInput | "timeout removed — all project scripts handle timeouts inline" |
-| `pretooluse_read.sh` | Read on project src/ file with KB entries | **Enrich** — allow Read, inject KB titles + entry count | "KB context for {module} (N entries). For full briefing: `npm run hme-read -- target={module}`" |
-| `pretooluse_grep.sh` | Any Grep with KB matches | **Enrich** — allow Grep, inject KB titles + trace nudge | "HME has N KB entries. For KB-enriched results: `npm run trace -- target=<query>`" |
-| `pretooluse_grep.sh` | Any Grep without KB matches | **Enrich** — allow Grep, inject trace nudge | "`npm run trace` returns matches + KB cross-references" |
+| `pretooluse_read.sh` | Read on project src/ file with KB entries | **Enrich** — allow Read, inject KB titles + entry count | "KB context for {module} (N entries). For full briefing: `npm run --silent hme-read -- target={module}`" |
+| `pretooluse_grep.sh` | Any Grep with KB matches | **Enrich** — allow Grep, inject KB titles + trace nudge | "HME has N KB entries. For KB-enriched results: `npm run --silent trace -- target=<query>`" |
+| `pretooluse_grep.sh` | Any Grep without KB matches | **Enrich** — allow Grep, inject trace nudge | "`npm run --silent trace` returns matches + KB cross-references" |
 | `pretooluse_write.sh` | Write to src/ file with KB entries | **Enrich** — allow Write, inject KB constraint titles | "Writing to {module} — N KB constraints exist. Verify compliance..." |
-| `pretooluse_todowrite.sh` | Any TodoWrite call | **Redirect** — deny, extract tasks, format for HME todo | "Use `npm run todo` instead — supports subtodos. Your tasks: ..." |
+| `pretooluse_todowrite.sh` | Any TodoWrite call | **Redirect** — deny, extract tasks, format for HME todo | "Use `npm run --silent todo` instead — supports subtodos. Your tasks: ..." |
 | `pretooluse_hme_primer.sh` | First HME tool call of session (via Bash(npm run <tool>)) | **Enrich** — allow tool, inject AGENT_PRIMER.md content via systemMessage | One-shot primer injection via hookSpecificOutput |
 
 #### Correct example (Bash timeout stripping)
@@ -82,7 +82,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 ```json
 {
   "hookSpecificOutput": {"permissionDecision": "deny"},
-  "systemMessage": "Use `npm run todo` instead of TodoWrite...\nYour tasks:\n  - Fix coupling\n  - Run pipeline\nAPI: npm run todo -- action=add text=\"task\" ..."
+  "systemMessage": "Use `npm run --silent todo` instead of TodoWrite...\nYour tasks:\n  - Fix coupling\n  - Run pipeline\nAPI: npm run --silent todo -- action=add text=\"task\" ..."
 }
 ```
 
@@ -131,7 +131,7 @@ Raw tool calls accumulate a weighted score. HME MCP tool calls reset it to zero.
 | Bash | 15 | ~3 | ~5 |
 | Grep | 20 | ~3 | ~4 |
 
-Block message: "Use an HME npm script (`npm run hme-read`, `npm run trace`, `npm run review`) before continuing."
+Block message: "Use an HME npm script (`npm run --silent hme-read`, `npm run --silent trace`, `npm run --silent review`) before continuing."
 
 ---
 
@@ -172,11 +172,11 @@ After Agent spawns: extracts background output file path and appends to compact 
 
 ### posttooluse_hme_read.sh — NEXUS briefing tracker
 
-After `npm run hme-read`: marks target file as BRIEF in NEXUS state. The `pretooluse_edit.sh` hook checks NEXUS before edits — files not briefed trigger a warning. Also resets streak.
+After `npm run --silent hme-read`: marks target file as BRIEF in NEXUS state. The `pretooluse_edit.sh` hook checks NEXUS before edits — files not briefed trigger a warning. Also resets streak.
 
 ### posttooluse_hme_review.sh — edit backlog lifecycle
 
-After `npm run review -- mode=forget`: clears EDIT entries from NEXUS, marks REVIEW complete, and surfaces next step (commit if pipeline passed, run pipeline otherwise). Resets streak.
+After `npm run --silent review -- mode=forget`: clears EDIT entries from NEXUS, marks REVIEW complete, and surfaces next step (commit if pipeline passed, run pipeline otherwise). Resets streak.
 
 ### posttooluse_pipeline_kb.sh — trace summary extraction
 
@@ -184,7 +184,7 @@ After `npm run main` via Bash: parses `metrics/trace-summary.json` for regime di
 
 ### posttooluse_read.sh — silent KB enrichment
 
-After Read on project source files: checks KB for module entries. If found, surfaces count and suggests `npm run hme-read` for full briefing. Resets streak (reading = gathering context).
+After Read on project source files: checks KB for module entries. If found, surfaces count and suggests `npm run --silent hme-read` for full briefing. Resets streak (reading = gathering context).
 
 ### posttooluse_write.sh — note file tracking
 
