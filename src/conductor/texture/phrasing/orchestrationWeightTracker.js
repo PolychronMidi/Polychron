@@ -4,7 +4,8 @@
 // Pure query API - consumed via conductorState.
 
 orchestrationWeightTracker = (() => {
-  const WINDOW_SECONDS = 6;
+  const V = validator.create('orchestrationWeightTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 3 });
   // Register band boundaries (MIDI note numbers)
   const BASS_CEIL = 55;     // up to G3
   const MID_CEIL = 72;      // up to C5
@@ -15,11 +16,8 @@ orchestrationWeightTracker = (() => {
    * @returns {{ bassWeight: number, midWeight: number, trebleWeight: number, suggestion: string, dominantBand: string }}
    */
   function getWeightSignal() {
-    const notes = L0.query(L0_CHANNELS.note, { windowSeconds: WINDOW_SECONDS });
-
-    if (notes.length < 3) {
-      return { bassWeight: 0.33, midWeight: 0.34, trebleWeight: 0.33, suggestion: 'balanced', dominantBand: 'none' };
-    }
+    const notes = query();
+    if (!notes) return { bassWeight: 0.33, midWeight: 0.34, trebleWeight: 0.33, suggestion: 'balanced', dominantBand: 'none' };
 
     const midis = analysisHelpers.extractMidiArray(notes).filter((midi) => midi >= 0);
 
