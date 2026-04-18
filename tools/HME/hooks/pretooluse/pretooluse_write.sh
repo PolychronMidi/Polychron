@@ -11,6 +11,14 @@ if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   exit 2
 fi
 
+# Block writes to non-root log/, metrics/, or tmp/ directories
+if echo "$FILE" | grep -qE '/(log|metrics|tmp)/'; then
+  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)/'; then
+    _emit_block "BLOCKED: log/, metrics/, and tmp/ only exist at project root. Do not write files inside subdirectory variants (e.g. tools/HME/mcp/metrics/). Route all output through \$PROJECT_ROOT/{log,metrics,tmp}/."
+    exit 2
+  fi
+fi
+
 # Detect secret patterns in content (API keys, tokens, passwords)
 if echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9+/]{20,}'; then
   _emit_block "BLOCKED: Potential secret/credential detected in write content. Review before writing."

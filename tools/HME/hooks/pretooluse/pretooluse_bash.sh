@@ -32,6 +32,14 @@ if [ -n "$TIMEOUT" ] && [ "$TIMEOUT" != "0" ]; then
   exit 0
 fi
 
+# Block mkdir of non-root log/, metrics/, or tmp/ directories
+if echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/(log|metrics|tmp)($|/)'; then
+  if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)'; then
+    _emit_block "BLOCKED: log/, metrics/, and tmp/ only exist at project root. Do not mkdir subdirectory variants (e.g. tools/HME/mcp/metrics/). Route all output through \$PROJECT_ROOT/{log,metrics,tmp}/."
+    exit 2
+  fi
+fi
+
 # Block run.lock deletion (hard rule)
 if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
   _emit_block "BLOCKED: Never delete run.lock"
