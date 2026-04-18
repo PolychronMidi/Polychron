@@ -124,11 +124,8 @@ export class ChainPerformer {
 
   private _loadTodos(): any[] {
     try {
-      // Project-local todo store. Previously pointed at ~/.claude/mcp/HME/todos.json
-      // (the deleted home-dir MCP symlink), which never actually existed — ENOENT
-      // was silently swallowed and the method always returned []. todo.py writes
-      // todos.json inside the project tree; that's the canonical path.
-      const todoPath = path.join(this.projectRoot, ".claude", "mcp", "HME", "todos.json");
+      // Project-local todo store. todo.py writes tools/HME/KB/todos.json.
+      const todoPath = path.join(this.projectRoot, "tools", "HME", "KB", "todos.json");
       return JSON.parse(fs.readFileSync(todoPath, "utf8"));
     } catch (e: any) {
       if (e?.code !== "ENOENT") console.error(`[HME] Failed to load todos.json: ${e?.message ?? e}`);

@@ -36,7 +36,7 @@ import time
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
-KB_PATH = os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME")
+KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-trust-weights.json")
 COHERENCE_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-coherence.json")
 ACCURACY_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-prediction-accuracy.json")

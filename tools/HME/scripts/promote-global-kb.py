@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """H12: Global KB promotion — cross-project learning.
 
-Scans the project KB (.claude/mcp/HME) for entries that look domain-independent
+Scans the project KB (tools/HME/KB) for entries that look domain-independent
 (antipatterns, meta-rules, process lessons) and proposes promoting them to
 the global KB ($HME_GLOBAL_KB_PATH, default project-local at
-.claude/mcp/HME/global_kb). Domain-specific entries (music composition,
+tools/HME/KB/global_kb). Domain-specific entries (music composition,
 Polychron-specific modules) stay in the project KB.
 
 Heuristic for "domain-independent":

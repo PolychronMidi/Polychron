@@ -182,8 +182,8 @@ def capture_hook_surface() -> dict:
 
 
 def capture_kb_summary() -> dict:
-    """KB lives in .claude/mcp/HME/. Count entries via Lance metadata if available."""
-    db = os.path.join(_PROJECT, ".claude", "mcp", "HME")
+    """KB lives in tools/HME/KB/. Count entries via Lance metadata if available."""
+    db = os.path.join(_PROJECT, "tools", "HME", "KB")
     if not os.path.isdir(db):
         return {"_error": "kb directory missing"}
     info = {
@@ -221,7 +221,7 @@ def capture_pipeline_history() -> dict:
 
 
 def capture_todo_store() -> dict:
-    store = os.path.join(_PROJECT, ".claude", "mcp", "HME", "todos.json")
+    store = os.path.join(_PROJECT, "tools", "HME", "KB", "todos.json")
     if not os.path.isfile(store):
         return {"_skipped": "no todo store"}
     try:

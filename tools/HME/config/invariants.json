@@ -292,7 +292,7 @@
       "id": "kb-minimum-entries",
       "description": "KB Lance database must exist and contain at least one data file",
       "type": "glob_count_gte",
-      "glob": ".claude/mcp/HME/knowledge.lance/data/*.lance",
+      "glob": "tools/HME/KB/knowledge.lance/data/*.lance",
       "min_count": 1,
       "severity": "warning"
     },

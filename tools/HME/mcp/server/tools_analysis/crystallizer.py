@@ -52,7 +52,7 @@ def _load_kb_entries() -> list[dict]:
     except ImportError:
         return []
     try:
-        db = lancedb.connect(os.path.join(ctx.PROJECT_ROOT, ".claude", "mcp", "HME"))
+        db = lancedb.connect(os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "KB"))
         tbl = db.open_table("knowledge")
         df = tbl.to_pandas()
     except Exception as _e:  # noqa: BLE001

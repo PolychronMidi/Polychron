@@ -2,7 +2,7 @@
 //
 // Phase 4.3 -- intention vs execution gap tracking.
 //
-// The HME todo store (`.claude/mcp/HME/todos.json`) is the structured record
+// The HME todo store (`tools/HME/KB/todos.json`) is the structured record
 // of the Evolver's intentions within a session: every substantive plan item
 // becomes a todo with a unique id, text, status, and timestamp. The activity
 // bridge records every actual file_written event. Crossing these streams
@@ -31,7 +31,7 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const TODOS = path.join(ROOT, '.claude', 'mcp', 'HME', 'todos.json');
+const TODOS = path.join(ROOT, 'tools', 'HME', 'KB', 'todos.json');
 const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
 const OUT = path.join(ROOT, 'metrics', 'hme-intention-gap.json');
 

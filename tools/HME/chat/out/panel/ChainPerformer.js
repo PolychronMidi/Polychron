@@ -128,7 +128,8 @@ class ChainPerformer {
     }
     _loadTodos() {
         try {
-            const todoPath = path.join(process.env["HOME"] ?? process.env["USERPROFILE"] ?? "~", ".claude", "mcp", "HME", "todos.json");
+            // Project-local todo store. todo.py writes tools/HME/KB/todos.json.
+            const todoPath = path.join(this.projectRoot, "tools", "HME", "KB", "todos.json");
             return JSON.parse(fs.readFileSync(todoPath, "utf8"));
         }
         catch (e) {
