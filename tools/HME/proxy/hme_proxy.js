@@ -72,7 +72,25 @@ console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 // This is the single minimal compromise with Claude Code — one stateless
 // 10-line bash script Claude Code is allowed to know about; all logic lives
 // here in proxy-land.
+//
+// Fallback: inline fires for SessionStart/UserPromptSubmit/Stop also run
+// when the forwarder-based path isn't reaching us (Claude Code plugin cache
+// missing, forwarder not installed, etc.). Tracked via _lifecycleSeen so
+// we don't double-fire once Claude Code's hook system is active.
 const hookBridge = require('./hook_bridge');
+const _lifecycleSeen = { SessionStart: 0, UserPromptSubmit: 0, Stop: 0 };
+const _LIFECYCLE_FRESH_MS = 30_000;
+function _recordLifecycleHit(event) { _lifecycleSeen[event] = Date.now(); }
+function _lifecycleInactive(event) {
+  const last = _lifecycleSeen[event] || 0;
+  return (Date.now() - last) > _LIFECYCLE_FRESH_MS;
+}
+// Fire SessionStart inline at startup. If Claude Code hits /hme/lifecycle
+// with SessionStart shortly after, we'll note the dup but it's harmless
+// (sessionstart.sh is idempotent w.r.t. its state writes).
+hookBridge.dispatchEvent('SessionStart', '{}').catch((err) => {
+  console.error('[hme-proxy] inline SessionStart failed:', err.message);
+});
 
 // ── HME full-bypass: legacy inline-tool path (disabled by default) ──────────
 // Claude Code has no MCP connection to us for HME tools (.mcp.json was
