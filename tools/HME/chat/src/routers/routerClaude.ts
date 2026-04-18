@@ -80,8 +80,8 @@ export function streamClaude(
 
   let buf = "";
   let doneFired = false;
-  const safeOnDone = (cost?: number) => {
-    if (!doneFired) { doneFired = true; onDone(cost); }
+  const safeOnDone = (cost?: number, usage?: TokenUsage) => {
+    if (!doneFired) { doneFired = true; onDone(cost, usage); }
   };
 
   const INACTIVITY_MS = 30000;
