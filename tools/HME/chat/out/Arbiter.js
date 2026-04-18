@@ -54,7 +54,8 @@ exports.synthesizeChainSummary = synthesizeChainSummary;
  * - Recent error rate in transcript (errors → escalate to Claude)
  */
 const http = __importStar(require("http"));
-const ARBITER_MODEL = "qwen3:4b"; // small, CPU-only — dedicated instance on port 11436
+const DAEMON_PORT = parseInt(process.env.HME_LLAMACPP_DAEMON_PORT || "7735", 10);
+const ARBITER_MODEL = "qwen3:4b";
 const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
 // 30s TTL prevents redundant arbiter calls for repeated/similar messages
 const _decisionCache = new Map();
@@ -75,89 +76,32 @@ KB constraint hits for this message: {constraint_count} (high count = touches he
 Recent errors in session: {error_count} (high count = session is struggling → prefer claude)
 
 Message: {message}`;
-const CLASSIFY_FORMAT = {
-    type: "object",
-    properties: {
-        route: { type: "string", enum: ["claude", "local"] },
-        confidence: { type: "number" },
-        reason: { type: "string" },
-    },
-    required: ["route", "confidence", "reason"],
-};
-/**
- * Shared NDJSON streaming helper for llama.cpp API calls.
- * Accumulates message.content fields across chunks. Throws on HTTP errors,
- * hard timeout, inactivity timeout, or connection failure.
- * Inactivity timer starts at first byte (covers cold model loads before that).
- */
-function llamacppStreamNdjson(hostname, port, body, hardMs, inactivityMs) {
+/** POST to the llamacpp_daemon /generate — daemon owns routing, timeouts, busy flags. */
+function daemonPost(payload) {
     return new Promise((resolve, reject) => {
-        let done = false;
-        const fail = (err) => { if (!done) {
-            done = true;
-            req?.destroy();
-            reject(err);
-        } };
-        const hardTimer = setTimeout(() => fail(new Error(`llama.cpp timeout (${hardMs / 1000}s)`)), hardMs);
-        let inactivityTimer = null;
-        const resetInactivity = () => {
-            if (inactivityTimer)
-                clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => fail(new Error(`llama.cpp inactive (${inactivityMs / 1000}s mid-stream)`)), inactivityMs);
-        };
-        let req;
-        req = http.request({
-            hostname, port, path: "/api/chat", method: "POST",
-            headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
+        const body = Buffer.from(JSON.stringify(payload), "utf8");
+        const req = http.request({
+            hostname: "127.0.0.1", port: DAEMON_PORT, path: "/generate", method: "POST",
+            headers: { "Content-Type": "application/json", "Content-Length": body.length },
         }, (res) => {
-            if (res.statusCode && res.statusCode >= 400) {
-                let errBody = "";
-                res.on("data", (c) => { errBody += c.toString("utf8"); });
-                res.on("end", () => {
-                    clearTimeout(hardTimer);
-                    if (inactivityTimer)
-                        clearTimeout(inactivityTimer);
-                    try {
-                        fail(new Error(`HTTP ${res.statusCode}: ${JSON.parse(errBody).error ?? errBody.slice(0, 100)}`));
-                    }
-                    catch {
-                        fail(new Error(`HTTP ${res.statusCode}: ${errBody.slice(0, 100)}`));
-                    }
-                });
-                return;
-            }
-            let contentAccum = "";
-            let rawChunk = "";
-            res.on("data", (c) => {
-                resetInactivity();
-                rawChunk += c.toString("utf8");
-                const lines = rawChunk.split("\n");
-                rawChunk = lines.pop() ?? "";
-                for (const line of lines) {
-                    if (!line.trim())
-                        continue;
-                    try {
-                        contentAccum += JSON.parse(line).message?.content ?? "";
-                    }
-                    catch { /* partial streaming line */ }
-                }
-            });
+            let raw = "";
+            res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
-                clearTimeout(hardTimer);
-                if (inactivityTimer)
-                    clearTimeout(inactivityTimer);
-                if (done)
-                    return;
-                done = true;
-                resolve(contentAccum);
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.error) {
+                        reject(new Error(parsed.error));
+                        return;
+                    }
+                    resolve(parsed.response ?? "");
+                }
+                catch (e) {
+                    reject(new Error(`daemon parse error: ${e?.message ?? e}`));
+                }
             });
         });
         req.on("error", (e) => {
-            clearTimeout(hardTimer);
-            if (inactivityTimer)
-                clearTimeout(inactivityTimer);
-            const msg = e?.code === "ECONNREFUSED" ? "llama.cpp not running" : (e?.message ?? String(e));
-            fail(new Error(msg));
+            reject(new Error(e?.code === "ECONNREFUSED" ? "llamacpp_daemon not running" : (e?.message ?? String(e))));
         });
         req.write(body);
         req.end();
@@ -178,15 +122,12 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
         .replace("{transcript}", transcriptContext.slice(0, 1500))
         .replace("{constraint_count}", String(constraintCount))
         .replace("{error_count}", String(errorCount));
-    const body = JSON.stringify({
-        model: ARBITER_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        stream: true, think: false, format: CLASSIFY_FORMAT,
-        options: { temperature: 0, num_predict: 256, num_gpu: 0, num_ctx: 4096 },
-    });
     let contentAccum;
     try {
-        contentAccum = await llamacppStreamNdjson("localhost", 11436, body, 60000, 15000);
+        contentAccum = await daemonPost({
+            model: ARBITER_MODEL, messages: [{ role: "user", content: prompt }],
+            max_tokens: 256, temperature: 0, response_format: { type: "json_object" },
+        });
     }
     catch (e) {
         const reason = e?.message?.includes("not running")
@@ -226,15 +167,10 @@ Session activity:
 ${summaries.slice(0, 2000)}
 
 Digest:`;
-    const body = JSON.stringify({
-        model: ARBITER_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        stream: true, think: false,
-        options: { temperature: 0.2, num_predict: 512, num_gpu: 0, num_ctx: 4096 },
+    const content = await daemonPost({
+        model: ARBITER_MODEL, messages: [{ role: "user", content: prompt }],
+        max_tokens: 512, temperature: 0.2,
     });
-    // 180s cap — CPU-only qwen3:4b for 512 tokens can exceed 60s when busy.
-    // Narrative is background enrichment; timeout is expected and non-actionable.
-    const content = await llamacppStreamNdjson("localhost", 11436, body, 180000, 30000);
     return content.trim().slice(0, 500);
 }
 /**
@@ -243,12 +179,9 @@ Digest:`;
  * on the main llama.cpp port, not the tiny arbiter model.
  */
 async function synthesizeChainSummary(prompt) {
-    const body = JSON.stringify({
-        model: CHAIN_SUMMARY_MODEL,
-        messages: [{ role: "user", content: prompt }],
-        stream: true,
-        options: { temperature: 0.3, num_predict: 2048, num_ctx: 49152 },
+    const content = await daemonPost({
+        model: CHAIN_SUMMARY_MODEL, messages: [{ role: "user", content: prompt }],
+        max_tokens: 2048, temperature: 0.3,
     });
-    const content = await llamacppStreamNdjson("localhost", 11434, body, 180000, 30000);
     return content.trim();
 }
