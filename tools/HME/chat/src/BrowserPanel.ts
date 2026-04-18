@@ -279,6 +279,36 @@ export class BrowserPanel implements PanelHost {
     setMirrorMode: (_msg) => {
       // No-op: mirror terminal not available in browser mode
     },
+    setClaudeConfig: (msg) => {
+      try {
+        const validated = validateClaudeConfig({
+          model: msg.claudeModel,
+          effort: msg.claudeEffort,
+          thinking: msg.claudeThinking,
+        });
+        this._claudeConfig = validated;
+        const resolved = resolveClaudeConfig(validated);
+        this.post({
+          type: "claudeConfigApplied",
+          alias: resolved.alias,
+          modelId: resolved.modelId,
+          effort: resolved.cliEffort,
+          thinking: resolved.thinking,
+        });
+      } catch (e: any) {
+        this.postError("config", `setClaudeConfig rejected: ${e?.message ?? e}`);
+        // Re-broadcast current server-side config so the browser can reconcile.
+        const resolved = resolveClaudeConfig(this._claudeConfig);
+        this.post({
+          type: "claudeConfigApplied",
+          alias: resolved.alias,
+          modelId: resolved.modelId,
+          effort: resolved.cliEffort,
+          thinking: resolved.thinking,
+          rejected: true,
+        });
+      }
+    },
   };
 
   // ── Stream tracking & session persistence ────────────────────────────────
@@ -377,6 +407,14 @@ export class BrowserPanel implements PanelHost {
       this.post({ type: "sessionCreated", session: entry });
     }
 
+    // Server-side config is authoritative: overwrite msg fields from stored _claudeConfig
+    // so the Claude CLI always runs with exactly what the server last confirmed. This
+    // prevents UI/server drift if the browser's state gets out of sync.
+    const resolvedCfg = resolveClaudeConfig(this._claudeConfig);
+    msg.claudeModel = resolvedCfg.modelId;
+    msg.claudeEffort = resolvedCfg.cliEffort;
+    msg.claudeThinking = resolvedCfg.thinking;
+
     const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.llamacppModel : msg.claudeModel;
     this._transcript.logUser(msg.text, resolvedRoute, model);
 
@@ -413,7 +451,10 @@ export class BrowserPanel implements PanelHost {
     this._state.lastRoute = resolvedRoute;
 
     const assistantId = uid();
-    this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
+    const streamStartExtras = resolvedRoute === "claude"
+      ? { effort: resolvedCfg.cliEffort, thinking: resolvedCfg.thinking }
+      : {};
+    this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model, ...streamStartExtras });
 
     const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
     const ctx = this._ctx;

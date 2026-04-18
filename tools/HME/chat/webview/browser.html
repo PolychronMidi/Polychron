@@ -609,6 +609,7 @@
     <input type="checkbox" id="thinking-toggle" />
     <label for="thinking-toggle">Thinking</label>
   </div>
+  <span id="config-pill" title="Claude config sync status" style="font-size:10px;padding:1px 6px;border-radius:3px;background:#555;color:#eee;margin-left:4px;">…</span>
 
   <button id="mirror-btn" title="Toggle terminal mirror — show Claude PTY in a visible terminal panel" style="font-size:10px;padding:2px 6px;">BG</button>
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
@@ -681,6 +682,39 @@ const streamThinkingMap = new Map();  // per-stream active thinking block
 const claudeModel = document.getElementById('claude-model');
 const claudeEffort= document.getElementById('claude-effort');
 const thinkingChk = document.getElementById('thinking-toggle');
+const configPill  = document.getElementById('config-pill');
+
+function renderConfigPill() {
+  if (!configPill) return;
+  if (_configPending) {
+    configPill.textContent = 'syncing…';
+    configPill.style.background = '#7a6a00'; // amber
+    configPill.title = 'Sending config to server';
+    return;
+  }
+  if (!_configLastApplied) {
+    configPill.textContent = '…';
+    configPill.style.background = '#555';
+    configPill.title = 'No config confirmed yet';
+    return;
+  }
+  var a = _configLastApplied;
+  var uiModel = claudeModel.value;
+  var uiEffort = claudeEffort ? claudeEffort.value : 'medium';
+  var uiThinking = thinkingChk ? thinkingChk.checked : false;
+  var drift = (a.alias !== uiModel)
+    || (a.alias !== 'haiku' && a.effort !== uiEffort)
+    || (a.alias !== 'haiku' && a.thinking !== uiThinking);
+  if (drift) {
+    configPill.textContent = 'drift';
+    configPill.style.background = '#a63a2a';
+    configPill.title = 'UI differs from server. Server: ' + a.alias + '/' + a.effort + (a.thinking ? '/think' : '');
+  } else {
+    configPill.textContent = '\u2713 ' + a.alias + '/' + a.effort + (a.thinking ? '/think' : '');
+    configPill.style.background = '#2a6a2a';
+    configPill.title = 'Server confirmed: ' + a.modelId + ' effort=' + a.effort + ' thinking=' + a.thinking;
+  }
+}
 
 // Update effort/thinking visibility when model changes:
 // Opus: all options including Max. Sonnet: no Max. Haiku: hide effort+thinking entirely.
@@ -699,12 +733,28 @@ function updateModelControls() {
   if (!isHaiku && !maxOpt) { effortEl.insertAdjacentHTML('beforeend', _maxOptHtml); }
   if (isHaiku && maxOpt) { maxOpt.remove(); }
 }
+// Eagerly push config to server on every control change. Server echoes claudeConfigApplied
+// so we can render a confirmation pill ("✓ applied" / "✗ rejected").
+let _configPending = false;  // true while awaiting claudeConfigApplied
+let _configLastApplied = null;  // last server-confirmed {alias, modelId, effort, thinking}
+function sendClaudeConfig() {
+  _configPending = true;
+  renderConfigPill();
+  vscode.postMessage({
+    type: 'setClaudeConfig',
+    claudeModel: claudeModel.value,
+    claudeEffort: claudeEffort ? claudeEffort.value : 'medium',
+    claudeThinking: thinkingChk ? thinkingChk.checked : false,
+  });
+}
 claudeModel.addEventListener('change', function() {
   updateModelControls();
   vscode.setState(Object.assign({}, vscode.getState() || {}, { claudeModel: claudeModel.value }));
+  sendClaudeConfig();
 });
 claudeEffort && claudeEffort.addEventListener('change', function() {
   vscode.setState(Object.assign({}, vscode.getState() || {}, { claudeEffort: claudeEffort.value }));
+  sendClaudeConfig();
 });
 updateModelControls();
 const messages    = document.getElementById('messages');
@@ -946,6 +996,33 @@ window.addEventListener('message', (event) => {
       break;
     case 'chainCompleted':
       updateContextMeter(0, msg.linkIndex + 1, msg.chainIndex);
+      break;
+    case 'claudeConfigApplied':
+      _configPending = false;
+      _configLastApplied = {
+        alias: msg.alias, modelId: msg.modelId, effort: msg.effort, thinking: msg.thinking,
+      };
+      renderConfigPill();
+      if (msg.rejected) setStatus('Config rejected — reverted to server state');
+      break;
+    case 'claudeConfigDispatched':
+      // Server is about to invoke claude CLI with these args — show it.
+      setStatus('Dispatched ' + msg.modelId + ' effort=' + msg.effort + (msg.thinking ? ' thinking=on' : ''));
+      break;
+    case 'claudeConfigConfirmed':
+      // Response came back with matching model id.
+      if (configPill) {
+        configPill.style.background = '#2a6a2a';
+        configPill.title = 'Validated via response: ' + msg.modelId
+          + (msg.thinkingEmitted ? ' (thinking blocks observed)' : '');
+      }
+      break;
+    case 'claudeConfigMismatch':
+      if (configPill) {
+        configPill.textContent = 'MISMATCH';
+        configPill.style.background = '#a63a2a';
+        configPill.title = 'Requested ' + msg.requested + ' but Claude returned ' + msg.actual;
+      }
       break;
   }
 });
@@ -1252,8 +1329,15 @@ if (thinkingChk && typeof _uiState.thinkingEnabled === 'boolean') {
 if (thinkingChk) {
   thinkingChk.addEventListener('change', function() {
     vscode.setState(Object.assign({}, vscode.getState() || {}, { thinkingEnabled: thinkingChk.checked }));
+    sendClaudeConfig();
   });
 }
+// Send initial config on page load once SSE is ready (so server knows what the
+// restored UI selections are).
+(function waitSseThenSend() {
+  if (_sseReady) { sendClaudeConfig(); return; }
+  setTimeout(waitSseThenSend, 100);
+})();
 
 // ── Restore persisted textarea draft ──────────────────────────────────────
 if (input && _uiState.inputDraft) {

@@ -57,6 +57,8 @@ class ChainPerformer {
      * running, synthesize a chain link summary and rotate the session.
      */
     maybeChain() {
+        if (!this.session.hasMeterLiveUpdate())
+            return;
         if (this.session.getContextPct() < exports.CHAIN_THRESHOLD_PCT)
             return;
         if (this._inProgress)
@@ -88,15 +90,14 @@ class ChainPerformer {
         const todos = this._loadTodos();
         const priorSummaries = (0, SessionStore_1.loadChainSummaries)(this.projectRoot, sessionId);
         const messages = this.session.getMessages();
-        const recentMessages = messages.slice(-20);
-        const summaryPrompt = (0, chatChain_1.buildSummaryPrompt)(recentMessages, todos, priorSummaries);
+        const summaryPrompt = (0, chatChain_1.buildSummaryPrompt)(messages, todos, priorSummaries);
         let summary = "";
         try {
             summary = await (0, Arbiter_1.synthesizeChainSummary)(summaryPrompt);
         }
         catch (e) {
             console.error(`[HME Chat] Chain summary via local model failed: ${e}`);
-            summary = (0, chatChain_1.buildFallbackSummary)(recentMessages, todos, priorSummaries);
+            summary = (0, chatChain_1.buildFallbackSummary)(messages, todos, priorSummaries);
         }
         const link = {
             index: linkIndex,
