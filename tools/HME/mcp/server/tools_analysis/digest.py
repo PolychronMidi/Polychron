@@ -22,7 +22,7 @@ _PIPELINE_OUTPUT_FILES = [
     "log/pipeline.log",
 ]
 # Sentinel file records when pipeline_digest last ran successfully
-_DIGEST_SENTINEL = ".claude/mcp/HME/.last_pipeline_digest"
+_DIGEST_SENTINEL = "tools/HME/KB/.last_pipeline_digest"
 
 
 def _pipeline_outputs_fresh() -> bool:

@@ -20,7 +20,7 @@ import urllib.error
 
 PROJECT = os.environ.get("PROJECT_ROOT", os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SRC = os.path.join(PROJECT, "metrics", "hme-generalizations.json")
-KB_PATH = os.path.join(PROJECT, ".claude", "mcp", "HME")
+KB_PATH = os.path.join(PROJECT, "tools", "HME", "KB")
 
 # Try local arbiter first, fall back to shim synthesis endpoint
 ARBITER_URL = os.environ.get("HME_LLAMACPP_ARBITER_URL", "http://127.0.0.1:8080")

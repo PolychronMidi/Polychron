@@ -48,7 +48,7 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 _TODO_FILE = os.path.join(
-    ENV.require("PROJECT_ROOT"), ".claude", "mcp", "HME", "todos.json"
+    ENV.require("PROJECT_ROOT"), "tools", "HME", "KB", "todos.json"
 )
 _GRAPH_FILE = os.path.join(
     ENV.require("PROJECT_ROOT"), "metrics", "todo-graph.md"

@@ -8,7 +8,7 @@ injections land but the agent ignores them.
 
 Data sources (all read-only, all already generated elsewhere):
 
-  .claude/mcp/HME/knowledge_access.json  per-entry retrieval counts
+  tools/HME/KB/knowledge_access.json  per-entry retrieval counts
   metrics/hme-activity.jsonl             hook and proxy events
   metrics/hme-prediction-accuracy.json   cascade prediction outcomes
 
@@ -33,7 +33,7 @@ from collections import Counter
 from server import context as ctx
 from . import _track
 
-KNOWLEDGE_ACCESS_REL = os.path.join(".claude", "mcp", "HME", "knowledge_access.json")
+KNOWLEDGE_ACCESS_REL = os.path.join("tools", "HME", "KB", "knowledge_access.json")
 ACTIVITY_REL = os.path.join("metrics", "hme-activity.jsonl")
 ACCURACY_REL = os.path.join("metrics", "hme-prediction-accuracy.json")
 
@@ -73,7 +73,7 @@ def _load_kb_entries() -> list[dict]:
     except ImportError:
         return []
     try:
-        db = lancedb.connect(os.path.join(ctx.PROJECT_ROOT, ".claude", "mcp", "HME"))
+        db = lancedb.connect(os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "KB"))
         tbl = db.open_table("knowledge")
         df = tbl.to_pandas()
     except Exception as _e:  # noqa: BLE001

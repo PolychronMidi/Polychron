@@ -106,7 +106,7 @@ def _load_kb_module_refs() -> set[str]:
     except ImportError:
         return refs
     try:
-        db = lancedb.connect(os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME"))
+        db = lancedb.connect(os.path.join(PROJECT_ROOT, "tools", "HME", "KB"))
         tbl = db.open_table("knowledge")
         df = tbl.to_pandas()
     except Exception:  # noqa: BLE001

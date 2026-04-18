@@ -107,12 +107,12 @@ tools/HME/               The single source of truth
 ```
 ~/.claude/skills/HME  -> tools/HME/skills/
 ```
-(The former `~/.claude/mcp/HME → tools/HME/mcp/` symlink was removed when HME
+(The former `~/tools/HME/KB → tools/HME/mcp/` symlink was removed when HME
 decoupled from Claude Code's MCP system — see "Tool Invocation" below.)
 
 ### Databases
 ```
-Polychron/.claude/mcp/HME/
+Polychron/tools/HME/KB/
   code_chunks.lance/     Semantic code chunks (~3000 from 610+ files)
   knowledge.lance/       KB (68 entries with prediction error gating, FSRS-6 spaced repetition with persistent access log)
   symbols.lance/         Symbol index (3848+ symbols: 321 IIFE globals + inner functions)
@@ -201,7 +201,7 @@ When route is `auto`, `classifyMessage()` in `Arbiter.ts` calls qwen3:4b (port 1
 
 ## Setup
 
-Source tracked in `tools/HME/`. MCP server at `mcp/`, symlinked from `~/.claude/mcp/`. Skills at `skills/`, symlinked from `~/.claude/skills/`. Run `scripts/setup-mcp.sh` after cloning to create symlinks. Load the skill before first use: `/HME`
+Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables, todos, file hashes). The worker (`tools/HME/mcp/worker.py`) spawns under the proxy (`tools/HME/proxy/hme_proxy.js`); HME tools are invoked via the shell wrappers in `i/` (`i/review`, `i/trace`, `i/learn`, etc.). Skills at `skills/`, symlinked from `~/.claude/skills/`. Load the skill before first use: `/HME`
 
 ## Evolver Integration
 
@@ -654,7 +654,7 @@ Surfaced via `status(mode='kb_trust')`. The proxy reads this file at injection t
 
 ### Intention-Execution Gap Tracking
 
-Phase 4.3 of the feature mapping. `scripts/pipeline/compute-intention-gap.js` reads the HME todo store (`.claude/mcp/HME/todos.json`) and cross-references each todo against `file_written` events from the activity bridge. Every trackable todo lands in one of three buckets:
+Phase 4.3 of the feature mapping. `scripts/pipeline/compute-intention-gap.js` reads the HME todo store (`tools/HME/KB/todos.json`) and cross-references each todo against `file_written` events from the activity bridge. Every trackable todo lands in one of three buckets:
 
 - **fully_executed** — status=completed+done=true AND at least one file/module mentioned in the todo text appears in the round's write events
 - **partially_executed** — status=completed but none of the expected targets were actually written
@@ -674,7 +674,7 @@ Phase 4.4 of the feature mapping. `tools_analysis/self_audit.py` queries three u
 2. **Silent injections** — proxy `jurisdiction_inject` events not followed by `i/hme-read` in the same session before `round_complete`
 3. **Cascade overconfidence** — prediction-accuracy EMA < 0.5 over ≥5 rounds
 
-Data sources: `.claude/mcp/HME/knowledge_access.json`, `metrics/hme-activity.jsonl`, `metrics/hme-prediction-accuracy.json`. Read-only — never modifies anything, just reports.
+Data sources: `tools/HME/KB/knowledge_access.json`, `metrics/hme-activity.jsonl`, `metrics/hme-prediction-accuracy.json`. Read-only — never modifies anything, just reports.
 
 Surfaced via `status(mode='self_audit')`. This is the first step toward HME being subject to the same "structural over parametric" and "never delete — implement" laws that govern Polychron itself: when HME identifies a part of its own architecture that isn't working, that becomes an evolution candidate alongside Polychron candidates in the Evolver's Phase 3 selection.
 

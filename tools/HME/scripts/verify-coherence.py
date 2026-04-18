@@ -405,7 +405,7 @@ class TodoStoreSchemaVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        store = os.path.join(_PROJECT, ".claude", "mcp", "HME", "todos.json")
+        store = os.path.join(_PROJECT, "tools", "HME", "KB", "todos.json")
         if not os.path.isfile(store):
             return _result(SKIP, 1.0, "no todo store (fresh project)")
         try:
@@ -1531,7 +1531,7 @@ class ToolResponseLatencyVerifier(Verifier):
     def run(self) -> VerdictResult:
         candidates = [
             os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "hme-ops.json"),
-            os.path.join(_PROJECT, ".claude", "mcp", "HME", "hme-ops.json"),
+            os.path.join(_PROJECT, "tools", "HME", "KB", "hme-ops.json"),
             os.path.join(_PROJECT, "tmp", "hme-ops.json"),
         ]
         ops_file = next((p for p in candidates if os.path.isfile(p)), None)

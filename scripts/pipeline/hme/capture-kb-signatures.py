@@ -26,7 +26,7 @@ import time
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
-KB_PATH = os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME")
+KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-signatures.json")
 
 # Import current_signature() from the sibling drift checker — that's the

@@ -42,7 +42,7 @@ import time
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
-KB_PATH = os.path.join(PROJECT_ROOT, ".claude", "mcp", "HME")
+KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 ACTIVITY_LOG = os.path.join(PROJECT_ROOT, "metrics", "hme-activity.jsonl")
 OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-staleness.json")

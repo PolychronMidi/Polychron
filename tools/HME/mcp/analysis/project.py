@@ -130,7 +130,7 @@ def save_context_snapshot(project_root: str, snapshot_data: dict) -> str:
     import time
     snapshot_data["_timestamp"] = time.time()
     snapshot_data["_branch"] = _get_current_branch(project_root)
-    path = os.path.join(project_root, ".claude", "mcp", "HME", "context_snapshot.json")
+    path = os.path.join(project_root, "tools", "HME", "KB", "context_snapshot.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(snapshot_data, f, indent=2, ensure_ascii=False)
@@ -139,7 +139,7 @@ def save_context_snapshot(project_root: str, snapshot_data: dict) -> str:
 
 def load_context_snapshot(project_root: str) -> dict:
     import json
-    path = os.path.join(project_root, ".claude", "mcp", "HME", "context_snapshot.json")
+    path = os.path.join(project_root, "tools", "HME", "KB", "context_snapshot.json")
     if not os.path.exists(path):
         return {"error": "No snapshot found"}
     with open(path, "r", encoding="utf-8") as f:
