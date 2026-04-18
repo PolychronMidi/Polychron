@@ -3,8 +3,7 @@
 // Pure query API - modifies derivedTension to penalize sustained unresolved dissonance.
 
 tensionResolutionTracker = (() => {
-  const V = validator.create('tensionResolutionTracker');
-  const WINDOW_SECONDS = 4;
+  const { query } = analysisHelpers.createTrackerQuery('tensionResolutionTracker', 4, { minNotes: 4 });
   const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;
 
   /**
@@ -15,10 +14,8 @@ tensionResolutionTracker = (() => {
    * @returns {{ resolvedRatio: number, unresolvedCount: number, total: number, danglingTension: boolean }}
    */
   function getResolutionProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { resolvedRatio: 1, unresolvedCount: 0, total: 0, danglingTension: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { resolvedRatio: 1, unresolvedCount: 0, total: 0, danglingTension: false };
     const midis = analysisHelpers.extractMidiArray(notes, 60);
 
     let resolved = 0;

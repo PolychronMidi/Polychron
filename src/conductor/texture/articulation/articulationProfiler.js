@@ -3,8 +3,7 @@
 // Pure query API - biases duration selection in motifConfig.
 
 articulationProfiler = (() => {
-  const V = validator.create('articulationProfiler');
-  const WINDOW_SECONDS = 4;
+  const { query } = analysisHelpers.createTrackerQuery('articulationProfiler', 4, { minNotes: 3 });
   // Duration thresholds relative to beat duration
   const STACCATO_RATIO = 0.25; // 25% of beat = staccato
   const LEGATO_RATIO = 0.75;   // 75% of beat = legato

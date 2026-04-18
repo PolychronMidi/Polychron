@@ -3,8 +3,7 @@
 // Pure query API - nudges pitch gravity toward underexplored registers.
 
 registerMigrationTracker = (() => {
-  const V = validator.create('registerMigrationTracker');
-  const WINDOW_SECONDS = 6;
+  const { query } = analysisHelpers.createTrackerQuery('registerMigrationTracker', 6, { minNotes: 4 });
 
   /**
    * Measure the average pitch center across time slices and detect drift direction.
@@ -14,10 +13,8 @@ registerMigrationTracker = (() => {
    * @returns {{ avgPitch: number, slope: number, direction: string, static: boolean }}
    */
   function getMigrationProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { avgPitch: 60, slope: 0, direction: 'insufficient', static: true };
-    }
+    const notes = query(opts);
+    if (!notes) return { avgPitch: 60, slope: 0, direction: 'insufficient', static: true };
 
     // Extract MIDI pitches and use shared half-split slope
     const midis = analysisHelpers.extractMidiArray(notes, 60);

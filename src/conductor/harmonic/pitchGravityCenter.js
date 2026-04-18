@@ -3,8 +3,7 @@
 // Pure query API - advises register shifts toward or away from a tonal anchor.
 
 pitchGravityCenter = (() => {
-  const V = validator.create('pitchGravityCenter');
-  const WINDOW_SECONDS = 6;
+  const { query } = analysisHelpers.createTrackerQuery('pitchGravityCenter', 6, { minNotes: 1 });
   const ANCHOR_PITCH = 60; // Middle C as default tonal anchor
 
   /**
@@ -15,10 +14,8 @@ pitchGravityCenter = (() => {
    * @returns {{ center: number, drift: number, anchored: boolean }}
    */
   function getGravityCenter(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length === 0) {
-      return { center: ANCHOR_PITCH, drift: 0, anchored: true };
-    }
+    const notes = query(opts);
+    if (!notes) return { center: ANCHOR_PITCH, drift: 0, anchored: true };
     const velocities = analysisHelpers.extractVelocityArray(notes, 64);
     const midis = analysisHelpers.extractMidiArray(notes, ANCHOR_PITCH);
 

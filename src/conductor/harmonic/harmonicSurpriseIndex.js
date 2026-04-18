@@ -4,8 +4,7 @@
 // Pure query API - biases derivedTension toward harmonic freshness.
 
 harmonicSurpriseIndex = (() => {
-  const V = validator.create('harmonicSurpriseIndex');
-  const WINDOW_SECONDS = 6;
+  const { V, query } = analysisHelpers.createTrackerQuery('harmonicSurpriseIndex', 6, { minNotes: 4 });
 
   /**
    * Compute pitch-class transition entropy from recent notes.
@@ -15,10 +14,8 @@ harmonicSurpriseIndex = (() => {
    * @returns {{ entropy: number, surpriseIndex: number, stale: boolean, fresh: boolean }}
    */
   function getSurpriseProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 4) {
-      return { entropy: 0, surpriseIndex: 0.5, stale: false, fresh: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { entropy: 0, surpriseIndex: 0.5, stale: false, fresh: false };
     const pitchClasses = analysisHelpers.extractPCArray(analysisHelpers.extractMidiArray(notes, 0), 0);
 
     // Build pitch-class bigram transition counts

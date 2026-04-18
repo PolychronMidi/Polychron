@@ -3,8 +3,7 @@
 // Pure query API - biases rhythm pattern selection weights.
 
 syncopationDensityTracker = (() => {
-  const V = validator.create('syncopationDensityTracker');
-  const WINDOW_SECONDS = 4;
+  const { query } = analysisHelpers.createTrackerQuery('syncopationDensityTracker', 4, { minNotes: 3 });
 
   /**
    * Compute the ratio of syncopated (off-beat) onsets in recent notes.
@@ -15,10 +14,8 @@ syncopationDensityTracker = (() => {
    * @returns {{ syncopationRatio: number, onBeatCount: number, offBeatCount: number, total: number, monotonous: boolean, excessive: boolean }}
    */
   function getSyncopationProfile(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 3) {
-      return { syncopationRatio: 0, onBeatCount: 0, offBeatCount: 0, total: 0, monotonous: false, excessive: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { syncopationRatio: 0, onBeatCount: 0, offBeatCount: 0, total: 0, monotonous: false, excessive: false };
 
     // Beat duration in seconds; fallback to 0.5s if unavailable
     const beatDur = beatGridHelpers.getBeatDuration();
