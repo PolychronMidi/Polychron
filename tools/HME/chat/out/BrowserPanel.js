@@ -261,7 +261,14 @@ class BrowserPanel {
     }
     // ── Incoming message dispatch (from Express POST /api/message) ───────────
     handleMessage(msg) {
-        (0, webviewMessages_1.dispatchWebviewMessage)(msg, this._messageHandlers);
+        console.log(`[HME] handleMessage type=${msg?.type} clients=${this._sseClients.length}`);
+        try {
+            (0, webviewMessages_1.dispatchWebviewMessage)(msg, this._messageHandlers);
+        }
+        catch (e) {
+            console.error(`[HME] handleMessage threw: ${e?.message ?? e}\n${e?.stack}`);
+            this.post({ type: "errorBubble", source: "dispatch", message: String(e?.message ?? e) });
+        }
     }
     _displayMessages() {
         return this._state.messages.slice(-BrowserPanel.DISPLAY_CAP);

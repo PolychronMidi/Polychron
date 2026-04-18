@@ -171,7 +171,13 @@ export class BrowserPanel implements PanelHost {
   // ── Incoming message dispatch (from Express POST /api/message) ───────────
 
   public handleMessage(msg: any): void {
-    dispatchWebviewMessage(msg, this._messageHandlers);
+    console.log(`[HME] handleMessage type=${msg?.type} clients=${this._sseClients.length}`);
+    try {
+      dispatchWebviewMessage(msg, this._messageHandlers);
+    } catch (e: any) {
+      console.error(`[HME] handleMessage threw: ${e?.message ?? e}\n${e?.stack}`);
+      this.post({ type: "errorBubble", source: "dispatch", message: String(e?.message ?? e) });
+    }
   }
 
   private readonly _messageHandlers: import("./panel/webviewMessages").WebviewHandlers = {
