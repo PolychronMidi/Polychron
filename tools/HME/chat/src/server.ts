@@ -5,7 +5,8 @@ import cors from "cors";
 import { BrowserPanel } from "./BrowserPanel";
 
 const PORT = Number(process.env["HME_CHAT_PORT"] ?? 3131);
-const projectRoot = process.env["HME_PROJECT_ROOT"] ?? process.cwd();
+// Default: walk up from tools/HME/chat/out/ → Polychron root (3 levels up from __dirname)
+const projectRoot = process.env["HME_PROJECT_ROOT"] ?? path.resolve(__dirname, "..", "..", "..", "..");
 
 const app = express();
 app.use(cors());
@@ -28,9 +29,6 @@ app.get("/api/events", (req, res) => {
 
   const panel = BrowserPanel.createOrShow(projectRoot);
   panel.registerSseClient(res);
-
-  // Send initial session list so the UI boots immediately
-  panel.handleMessage({ type: "listSessions" });
 
   req.on("close", () => {
     panel.unregisterSseClient(res);
