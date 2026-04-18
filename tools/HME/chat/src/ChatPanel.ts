@@ -158,6 +158,7 @@ export class ChatPanel implements PanelHost {
       getChainIndex: () => this._state.chainIndex,
       getClaudeSessionId: () => this._state.claudeSessionId,
       getContextPct: () => this._contextMeter.pctUsed,
+      hasMeterLiveUpdate: () => this._contextMeter.hasLiveUpdate,
       rotate: (continuationMsg, newChainIndex) => {
         // Rotate session state without firing the context meter post — the
         // ChainPerformer will request a final post after chainCompleted + notice
