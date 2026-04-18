@@ -35,7 +35,7 @@ rm -f /tmp/hme-chain-snapshot-fired 2>/dev/null
 # The user's corrections carry the deepest signal in a session. Grep the
 # prompt for correction phrases and persist to hme-user-corrections.jsonl so
 # chain-snapshot can preserve them verbatim across compaction.
-_CORRECTION_FILE="${PROJECT}/tmp/hme-user-corrections.jsonl"
+_CORRECTION_FILE="${PROJECT_ROOT}/tmp/hme-user-corrections.jsonl"
 if [ -n "$PROMPT" ]; then
   _IS_CORRECTION=0
   # Case-insensitive grep for correction language
