@@ -26,6 +26,8 @@ deepwiki.config.json
 /tools/HME/session-state.json
 /tools/HME/mcp/db/
 /tools/HME/mcp/*.db
+/tools/HME/mcp/metrics/
+/tools/HME/proxy/metrics/
 /tools/HME/warm-context-cache/*.json
 /tools/models
 *.bak
