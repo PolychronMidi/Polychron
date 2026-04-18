@@ -32,6 +32,7 @@ import { ContextMeter, ContextPostArgs } from "./panel/ContextMeter";
 import { ChainPerformer, ChainSessionBridge } from "./panel/ChainPerformer";
 import { StreamPersister } from "./panel/StreamPersister";
 import { dispatchWebviewMessage, SendMsg } from "./panel/webviewMessages";
+import { validateClaudeConfig, resolveClaudeConfig, ClaudeConfig, ResolvedClaudeConfig } from "./msgHelpers";
 import type { Response as ExpressResponse } from "express";
 
 export class BrowserPanel implements PanelHost {
@@ -45,6 +46,10 @@ export class BrowserPanel implements PanelHost {
   private _restoreSessionId: string | null = null;
   private _disposed = false;
   private _sseClients: ExpressResponse[] = [];
+  // Authoritative Claude config — kept in sync with the browser UI via setClaudeConfig.
+  // Send/queue messages fall back to this if they omit the fields (they shouldn't, but
+  // it means the server state is the source of truth, not the browser payload).
+  private _claudeConfig: ClaudeConfig = { model: "sonnet", effort: "high", thinking: false };
 
   // ── Extracted components ─────────────────────────────────────────────────
   private readonly _errorSink: ErrorSink;
