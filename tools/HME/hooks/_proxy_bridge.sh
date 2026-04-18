@@ -38,6 +38,7 @@ EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>/dev/null)
 # Only relay stdout that is a structured decision JSON. Everything else
 # (git status output, KB draft hints, routine banners) stays in proxy
 # log and out of Claude's per-turn context.
+IS_DECISION=0
 if [ -n "$STDOUT" ]; then
   IS_DECISION=$(printf '%s' "$STDOUT" | jq -e 'has("decision") or has("permissionDecision")' >/dev/null 2>&1 && echo 1 || echo 0)
   if [ "$IS_DECISION" = "1" ]; then
@@ -45,4 +46,13 @@ if [ -n "$STDOUT" ]; then
   fi
 fi
 
-exit "${EXIT_CODE:-0}"
+# Exit-code policy: honor the hook's non-zero exit ONLY when it actually
+# produced a decision JSON to block with. Hook scripts that return non-zero
+# for internal reasons (e.g., _safety.sh trap verdicts, transient jq
+# failures) would otherwise be misread by Claude Code as blocks. In the
+# forwarder path non-decision exits map to 0, keeping the tool flowing.
+if [ "$IS_DECISION" = "1" ]; then
+  exit "${EXIT_CODE:-0}"
+else
+  exit 0
+fi
