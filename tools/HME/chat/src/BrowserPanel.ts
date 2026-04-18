@@ -122,13 +122,16 @@ export class BrowserPanel implements PanelHost {
 
   public post(data: any): void {
     const payload = `data: ${JSON.stringify(data)}\n\n`;
+    console.log(`[HME→SSE] type=${data?.type ?? '?'} clients=${this._sseClients.length}`);
     for (const res of this._sseClients) {
-      try { res.write(payload); } catch { /* client disconnected */ }
+      try { res.write(payload); } catch (e: any) { console.error(`[HME] SSE write failed: ${e?.message ?? e}`); }
     }
   }
 
   public postError(source: string, message: string): void {
+    console.error(`[HME] postError [${source}]: ${message}`);
     this._errorSink.post(source, message);
+    this.post({ type: "errorBubble", source, message });
   }
 
   // ── Extracted-component support ──────────────────────────────────────────

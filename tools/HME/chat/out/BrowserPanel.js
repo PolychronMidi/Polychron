@@ -213,15 +213,20 @@ class BrowserPanel {
     // ── PanelHost implementation ─────────────────────────────────────────────
     post(data) {
         const payload = `data: ${JSON.stringify(data)}\n\n`;
+        console.log(`[HME→SSE] type=${data?.type ?? '?'} clients=${this._sseClients.length}`);
         for (const res of this._sseClients) {
             try {
                 res.write(payload);
             }
-            catch { /* client disconnected */ }
+            catch (e) {
+                console.error(`[HME] SSE write failed: ${e?.message ?? e}`);
+            }
         }
     }
     postError(source, message) {
+        console.error(`[HME] postError [${source}]: ${message}`);
         this._errorSink.post(source, message);
+        this.post({ type: "errorBubble", source, message });
     }
     // ── Extracted-component support ──────────────────────────────────────────
     _ctxArgs() {
