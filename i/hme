@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# HME generic dispatcher — pass any registered tool name as the first arg.
+# Usage: i/hme <tool-name> key=value ...
+# Example: i/hme agent prompt="explore coupling"
+exec node "$(dirname "$0")/../scripts/hme-cli.js" "$@"

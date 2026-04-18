@@ -5,13 +5,13 @@
  * Usage:
  *   node scripts/hme-cli.js <tool-name> [flags...]
  *
- * Via npm scripts (the intended entry point):
- *   npm run review -- mode=forget
- *   npm run learn -- query="coupling targets"
- *   npm run trace -- target=coupling mode=impact section=3
- *   npm run evolve -- focus=boundaries
- *   npm run status -- mode=all
- *   npm run index -- what=codebase
+ * Via shell wrappers in `i/` (the intended entry point):
+ *   i/review  mode=forget
+ *   i/learn   query="coupling targets"
+ *   i/trace   target=coupling mode=impact section=3
+ *   i/evolve  focus=boundaries
+ *   i/status
+ *   i/hme     <any-tool-name> key=value ...   # generic dispatcher
  *
  * Flag forms (all equivalent where applicable):
  *   key=value       → {"key":"value"}
@@ -47,6 +47,12 @@ function parseArgs(argv) {
   let i = 0;
   while (i < argv.length) {
     const a = argv[i];
+
+    // Bare `--` is a POSIX arg separator, not a flag. Skip silently — some
+    // callers (e.g. habits from npm-run-script days) pass it before the real
+    // args: `i/review -- mode=forget`. Without this, `--` would be parsed as
+    // --<empty-key> and crash the worker.
+    if (a === '--') { i += 1; continue; }
 
     // --key=value  or  --key  (boolean)  or  --key value
     if (a.startsWith('--')) {

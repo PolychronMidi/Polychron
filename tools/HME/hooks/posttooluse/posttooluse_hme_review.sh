@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-# PostToolUse: `npm run review` dispatch (called by posttooluse_bash.sh).
+# PostToolUse: `i/review` dispatch (called by posttooluse_bash.sh).
 # Parses the review mode out of tool_input.command (either `mode=forget` or
 # `--mode forget`) — default digest.
 INPUT=$(cat)

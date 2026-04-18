@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME evolve — evolution suggestion + planning.
+# Usage: i/evolve [focus=all|design|invariants|coupling|...] [query=<topic>]
+exec node "$(dirname "$0")/../scripts/hme-cli.js" evolve "$@"

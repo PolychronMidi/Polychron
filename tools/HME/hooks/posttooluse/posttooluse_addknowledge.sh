@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
-# HME PostToolUse: `npm run learn` dispatch — clear pending KB entries from
+# HME PostToolUse: `i/learn` dispatch — clear pending KB entries from
 # tab after an ADD call. Only fires when the learn call is an add (title +
 # content provided) — search, remove, list, etc. should not clear the KB tab.
 #
-# Called by posttooluse_bash.sh on Bash tool calls matching `npm run learn`.
+# Called by posttooluse_bash.sh on Bash tool calls matching `i/learn`.
 # Parses title/content/action out of tool_input.command; only clears the tab
 # if both title AND content are present and the action is not a read-style op.
 INPUT=$(cat)

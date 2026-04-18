@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# HME pipeline status — maps to the registered _mode_pipeline tool.
+# Usage: i/status
+exec node "$(dirname "$0")/../scripts/hme-cli.js" _mode_pipeline "$@"

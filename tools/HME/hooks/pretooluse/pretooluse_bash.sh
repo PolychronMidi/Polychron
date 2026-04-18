@@ -5,20 +5,19 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
 INPUT=$(cat)
 CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 
-# Dispatch HME npm-script pre-hooks. These used to be triggered by MCP matchers
-# in hooks.json (mcp__HME__* PreToolUse); now HME tools run via Bash and the
-# dispatch happens here. The handler scripts read stdin (the same hook JSON)
-# and emit their own jq blocks when they want to deny/redirect the call.
+# Dispatch HME shell-wrapper pre-hooks. These used to be triggered by MCP
+# matchers in hooks.json (mcp__HME__* PreToolUse); now HME tools run via
+# Bash(i/<tool>) shell wrappers and the dispatch happens here. The handler
+# scripts read stdin (the same hook JSON) and emit their own jq blocks when
+# they want to deny/redirect the call.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Pipeline-status polling guard — fires on npm run status (formerly status(mode='pipeline')).
-# Regexes allow optional --silent (or other npm flags) between `run` and the
-# tool name: `npm run --silent review`, `npm run -s review`, `npm run review`
-# all match. Flags always start with `-`; the next non-flag token is the tool.
-if echo "$CMD" | grep -qE '\bnpm run( +-[^ ]+)* +status\b'; then
+# Pipeline-status polling guard — fires on `i/status`.
+# Match form: `i/status`, `./i/status`, `bash i/status`, etc.
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/status\b'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/pretooluse_check_pipeline.sh" || true
 fi
-# Agent primer — fires on FIRST HME tool call of a session (any npm run <hme-tool>).
-if echo "$CMD" | grep -qE '\bnpm run( +-[^ ]+)* +(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
+# Agent primer — fires on FIRST HME tool call of a session (any i/<hme-tool>).
+if echo "$CMD" | grep -qE '(^|[[:space:]/])i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
   echo "$INPUT" | bash "$SCRIPT_DIR/pretooluse_hme_primer.sh" || true
 fi
 
@@ -28,7 +27,7 @@ if echo "$TRIMMED_CHECK" | grep -qE '^npm run main' && ! _onb_is_graduated; then
   if _onb_before "reviewed"; then
     CUR_STEP=$(_onb_step_label)
     jq -n --arg step "$CUR_STEP" \
-      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("HME onboarding " + $step + "\n\nYou are about to run the pipeline but changes have not been audited against the KB.\n\nAUTO-CHAIN: run `npm run --silent review -- mode=forget` first.\nWhen it reports zero warnings, onboarding advances to reviewed and your npm run main will go through.")}}'
+      '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":("HME onboarding " + $step + "\n\nYou are about to run the pipeline but changes have not been audited against the KB.\n\nAUTO-CHAIN: run `i/review -- mode=forget` first.\nWhen it reports zero warnings, onboarding advances to reviewed and your npm run main will go through.")}}'
     exit 0
   fi
 fi
@@ -242,13 +241,13 @@ fi
 
 # Block ALL other run.lock access — reading lock status IS polling
 if echo "$CMD" | grep -q 'run\.lock'; then
-  _emit_block "BLOCKED: Checking run.lock is pipeline status polling. Run \`npm run --silent status\` NOW for current status, then continue with other work."
+  _emit_block "BLOCKED: Checking run.lock is pipeline status polling. Run \`i/status\` NOW for current status, then continue with other work."
   exit 2
 fi
 
 # Redirect: metric file timestamp polling → status tool
 if echo "$CMD" | grep -qE '(stat|ls -l).*(pipeline-summary|trace-summary|run-history|perceptual-report)'; then
-  REASON='Checking metric timestamps is indirect pipeline polling. Run `npm run --silent status` for current status, then continue with other work.'
+  REASON='Checking metric timestamps is indirect pipeline polling. Run `i/status` for current status, then continue with other work.'
   jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
@@ -276,7 +275,7 @@ fi
 
 # Redirect: pipeline log file polling → status tool
 if echo "$CMD" | grep -qE '(tail|cat|head|grep).*(r4[0-9]+_run|run\.log|pipeline\.log)'; then
-  REASON='Polling pipeline logs is the antipattern. Run `npm run --silent status` for current status, then continue with other work.'
+  REASON='Polling pipeline logs is the antipattern. Run `i/status` for current status, then continue with other work.'
   jq -n --arg reason "$REASON" '{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":$reason},"systemMessage":$reason}'
   exit 0
 fi
