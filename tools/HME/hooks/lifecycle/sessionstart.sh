@@ -65,6 +65,52 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
 fi
 
+# ── Worker health — surface recent_errors ───────────────────────────────────
+# The worker's /health endpoint returns a `recent_errors` array (populated by
+# the meta-observer, llamacpp_supervisor, rag_proxy, etc.) that previously had
+# no surface. Agents would step over accumulating CUDA/memory/connection
+# warnings without seeing them. Fetch with a tight timeout so an unreachable
+# worker doesn't delay SessionStart, and emit a loud banner if non-empty.
+WORKER_PORT="${HME_SHIM_PORT:-9098}"
+HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>/dev/null || echo "")
+if [ -n "$HEALTH_JSON" ]; then
+  # Write JSON to a temp file and have python read it — both `<<PYEOF` and
+  # piped stdin together are ambiguous (heredoc wins, stdin gets the script
+  # text instead of the payload). Temp-file dance is the reliable form.
+  _HEALTH_TMP=$(mktemp -t hme-health.XXXXXX)
+  printf '%s' "$HEALTH_JSON" > "$_HEALTH_TMP"
+  RECENT_ERRORS=$(HME_HEALTH_FILE="$_HEALTH_TMP" python3 -c "
+import json, os, sys
+try:
+    with open(os.environ['HME_HEALTH_FILE']) as f:
+        d = json.load(f)
+except Exception:
+    sys.exit(0)
+errs = d.get('recent_errors') or []
+if not errs:
+    sys.exit(0)
+print(f'HME worker has {len(errs)} recent error(s):')
+for e in errs[:10]:
+    if isinstance(e, dict):
+        msg = e.get('message', '')
+        src = e.get('source', '?')
+    else:
+        msg = str(e); src = '?'
+    print(f'  - [{src}] {msg[:200]}')
+if len(errs) > 10:
+    print(f'  ... and {len(errs) - 10} more')
+" 2>/dev/null || true)
+  rm -f "$_HEALTH_TMP"
+  if [ -n "$RECENT_ERRORS" ]; then
+    # Also write to hme-errors.log so the userpromptsubmit banner picks them
+    # up on the next turn — SessionStart stderr alone can be missed.
+    TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    mkdir -p "$(dirname "$ERROR_LOG")"
+    echo "$RECENT_ERRORS" | sed "s|^|[$TS] [worker-health] |" >> "$ERROR_LOG"
+    echo -e "\n🚨 $RECENT_ERRORS" >&2
+  fi
+fi
+
 # Build orientation message
 MSG=""
 
@@ -123,6 +169,21 @@ PYEOF
 )
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
+# ── Lance _deletions compaction ─────────────────────────────────────────────
+# If code_chunks.lance/_deletions/ has accumulated too many arrow files (>50),
+# run a background compaction so table opens stay fast. Non-blocking — runs
+# detached and won't delay session start. The invariant warns at >50; we
+# compact at the same threshold so the session usually starts clean.
+_LANCE_DEL="$PROJECT/tools/HME/KB/code_chunks.lance/_deletions"
+if [ -d "$_LANCE_DEL" ]; then
+  _DEL_COUNT=$(ls -1 "$_LANCE_DEL" 2>/dev/null | wc -l)
+  if [ "$_DEL_COUNT" -gt 50 ]; then
+    echo "HME: lance _deletions has $_DEL_COUNT files — compacting in background" >&2
+    PROJECT_ROOT="$PROJECT" python3 "$PROJECT/scripts/compact-lance-tables.py" \
+      > "$PROJECT/log/hme-lance-compact.log" 2>&1 &
+  fi
+fi
+
 # Capture a session-start holograph so the stop hook can diff against it and
 # surface drift that happened during the session. The holograph is the
 # substrate for self-coherence time-series analysis — every session adds a
@@ -137,16 +198,54 @@ fi
 # and writes metrics/hme-tool-effectiveness.json, which the LifesaverRate
 # and MetaObserverCoherence verifiers consume to compute the HCI.
 EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
-[ -f "$EFF_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 &
+EFF_PID=""
+[ -f "$EFF_SCRIPT" ] && { PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 & EFF_PID=$!; }
 
-# Update HCI trajectory in the background for time-series analysis
+# Update HCI trajectory in the background for time-series analysis.
+# The --summary call below reads this script's output file; wait on the
+# refresh before summarizing so we never print a previous-session trajectory.
 TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
-[ -f "$TRAJ_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 &
+TRAJ_PID=""
+[ -f "$TRAJ_SCRIPT" ] && { PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 & TRAJ_PID=$!; }
 
-# Surface the current HCI trajectory summary so agents see the health arc
+# Surface the current HCI trajectory summary so agents see the health arc.
+# Wait for the refresh job (bounded by a short timeout — analyze-hci-trajectory
+# typically completes in <3s; if it's stuck we'd rather show stale than hang).
 if [ -f "$TRAJ_SCRIPT" ]; then
+  if [ -n "$TRAJ_PID" ]; then
+    # Poll-wait for up to 5s. `wait -t` isn't portable across bash versions;
+    # kill after deadline to unblock if the background job has truly hung.
+    for _i in 1 2 3 4 5; do
+      kill -0 "$TRAJ_PID" 2>/dev/null || break
+      sleep 1
+    done
+  fi
   TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>/dev/null)
   [ -n "$TRAJ_LINE" ] && echo "$TRAJ_LINE" >&2
+fi
+
+# ── Antagonism bridge: streak calibrator recommendation ─────────────────────
+# The bridge observes post-banner resolution velocity across recent turns and
+# recommends where HME_STREAK_WARN should sit. Currently observe-only — prints
+# the recommendation and rationale so we can verify the signal tracks reality
+# before wiring auto-application. If recommended != current default, surface.
+CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
+if [ -f "$CALIB_SCRIPT" ]; then
+  CALIB_JSON=$(PROJECT_ROOT="$PROJECT" python3 "$CALIB_SCRIPT" 2>/dev/null)
+  if [ -n "$CALIB_JSON" ]; then
+    CALIB_LINE=$(echo "$CALIB_JSON" | python3 -c "
+import json, os, sys
+try: d = json.load(sys.stdin)
+except Exception: sys.exit(0)
+cur = int(os.environ.get('HME_STREAK_WARN', 5))
+rec = d.get('recommended_streak_warn')
+vel = d.get('resolution_velocity', 0.5)
+n   = d.get('history_samples', 0)
+if rec is not None and rec != cur and n >= 5:
+    print(f\"Streak calibrator: recommends HME_STREAK_WARN={rec} (current={cur}, resolution_velocity={vel:.2f}, n={n})\")
+" 2>/dev/null || true)
+    [ -n "$CALIB_LINE" ] && echo "$CALIB_LINE" >&2
+  fi
 fi
 
 # Previous session pending items (surfaced as a warning after main message)

@@ -43,6 +43,7 @@ const streamUtils_1 = require("./streamUtils");
 const chatStreaming_1 = require("./chatStreaming");
 const crossRouteHistory_1 = require("./session/crossRouteHistory");
 const ErrorSink_1 = require("./panel/ErrorSink");
+const routerClaude_1 = require("./routers/routerClaude");
 const ShimSupervisor_1 = require("./panel/ShimSupervisor");
 const ContextMeter_1 = require("./panel/ContextMeter");
 const ChainPerformer_1 = require("./panel/ChainPerformer");
@@ -194,9 +195,17 @@ class BrowserPanel {
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
         this._errorSink = new ErrorSink_1.ErrorSink(projectRoot);
+        // Route sanitizer/computeTurnUsage rejections (invalid contextWindow,
+        // out-of-range usedPct, etc.) through hme-errors.log so they surface in
+        // the next turn's userpromptsubmit banner. console.error alone vanishes.
+        (0, routerClaude_1.setSanitizerErrorSink)(this._errorSink);
+        // Turn-number provider lets the sanitizer flag "95%+ on turn 1-2" as
+        // suspicious_pct (the signature of the 1M-vs-200k miscalc). Count user
+        // messages so assistant responses and tool returns don't inflate it.
+        (0, routerClaude_1.setTurnNumberProvider)(() => this._state.messages.filter(m => m.role === "user").length);
         this._shim = new ShimSupervisor_1.ShimSupervisor(projectRoot, this);
-        this._contextMeter = new ContextMeter_1.ContextMeter(projectRoot, this);
-        this._chain = new ChainPerformer_1.ChainPerformer(projectRoot, this, this._chainBridge());
+        this._contextMeter = new ContextMeter_1.ContextMeter(projectRoot, this, this._errorSink);
+        this._chain = new ChainPerformer_1.ChainPerformer(projectRoot, this, this._chainBridge(), this._errorSink);
         this._streamPersister = new StreamPersister_1.StreamPersister(this);
         const self = this;
         this._ctx = {

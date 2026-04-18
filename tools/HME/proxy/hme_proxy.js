@@ -39,6 +39,16 @@ const {
 const { shouldInject, buildStatusContext, buildJurisdictionContext, injectIntoSystem, stripSystemCacheControl } = require('./context');
 const { stripBoilerplate, stripSemanticRedundancy, scanMessages } = require('./messages');
 
+// Proxy wire-level version. Single source of truth is
+// tools/HME/config/versions.json — bump it to version the three components
+// together. A three-way mismatch surfaces via `hme-cli --version`.
+const PROXY_VERSION = (() => {
+  try {
+    const p = require('path').resolve(__dirname, '..', 'config', 'versions.json');
+    return JSON.parse(require('fs').readFileSync(p, 'utf8')).proxy;
+  } catch (_) { return 'unknown'; }
+})();
+
 const PORT = parseInt(process.env.HME_PROXY_PORT || '9099', 10);
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
 const { MCP_PORT } = require('./supervisor/children');
@@ -51,6 +61,14 @@ const { handleMcpRequest } = require('./mcp_server/index');
 const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
+
+// ── Lifecycle hook bridge ─────────────────────────────────────────────────
+// The legacy Claude Code plugin cache is gone; ${CLAUDE_PLUGIN_ROOT} no longer
+// resolves to anything. We invoke the lifecycle bash hooks directly from the
+// proxy's natural attach points: onRequest = userpromptsubmit, response-end
+// = stop, startup = sessionstart. Hook scripts stay in tools/HME/hooks/.
+const hookBridge = require('./hook_bridge');
+hookBridge.runSessionStart();
 
 // ── HME full-bypass: legacy inline-tool path (disabled by default) ──────────
 // Claude Code has no MCP connection to us for HME tools (.mcp.json was
@@ -215,7 +233,14 @@ function _handleChatRoute(clientReq, clientRes) {
 function handleRequest(clientReq, clientRes) {
   if (clientReq.url === '/health') {
     clientRes.writeHead(200, { 'Content-Type': 'application/json' });
-    clientRes.end(JSON.stringify({ status: 'ok', port: PORT, supervisor: supervisorStatus() }));
+    clientRes.end(JSON.stringify({
+      status: 'ok', port: PORT, version: PROXY_VERSION, supervisor: supervisorStatus(),
+    }));
+    return;
+  }
+  if (clientReq.url === '/version') {
+    clientRes.writeHead(200, { 'Content-Type': 'application/json' });
+    clientRes.end(JSON.stringify({ version: PROXY_VERSION, component: 'hme-proxy' }));
     return;
   }
   // Ad-hoc spawn API: POST /hme/spawn, GET /hme/spawn, GET/DELETE /hme/spawn/<id>
@@ -275,6 +300,13 @@ function handleRequest(clientReq, clientRes) {
       let scan = null;
       if (isAnthropic) {
         scan = scanMessages(payload);
+        // Lifecycle: fire userpromptsubmit for new user turns only (not tool-
+        // loop continuations). Must run before middleware pipeline so
+        // auto-commit captures state before any in-turn mutations are scanned.
+        const userPrompt = hookBridge.extractUserPrompt(payload);
+        if (userPrompt) {
+          hookBridge.runUserPromptSubmit(userPrompt, session);
+        }
         // Run middleware pipeline. Must run AFTER scan so middleware sees the
         // reconciled tool_use/tool_result pairs. Returns true if any
         // middleware mutated the payload (via ctx.markDirty()) — we need to
@@ -421,6 +453,14 @@ function handleRequest(clientReq, clientRes) {
           xform.end(outBuf);
         } else {
           clientRes.end(outBuf);
+        }
+        // Lifecycle: fire stop hook (auto-commit + lifecycle checks). Runs
+        // after response has been sent to the client so commit latency
+        // doesn't affect user-visible turn end. Fire-and-forget (detached).
+        if (isAnthropic) {
+          try { hookBridge.runStop(session); } catch (e) {
+            console.error('[hme-proxy] runStop threw:', e.message);
+          }
         }
       });
       upstreamRes.on('error', (err) => {

@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.USED_PCT_SANITY_CEILING = exports.USED_PCT_SUSPICIOUS_FLOOR = exports.USED_PCT_HARD_CEILING = void 0;
 exports.streamClaude = streamClaude;
+exports.setSanitizerErrorSink = setSanitizerErrorSink;
+exports.setTurnNumberProvider = setTurnNumberProvider;
+exports.sanitizeUsedPct = sanitizeUsedPct;
 exports.streamClaudePty = streamClaudePty;
 const child_process_1 = require("child_process");
 const fs_1 = require("fs");
@@ -106,7 +110,7 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
                 continue;
             try {
                 const evt = JSON.parse(line);
-                handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
+                handleStreamEvent(evt, opts.model, onChunk, onSessionId, safeOnDone);
             }
             catch (e) {
                 console.error(`[HME] stream JSON parse failed: ${e?.message ?? e} | line: ${line.slice(0, 120)}`);
@@ -126,7 +130,7 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
         if (buf.trim()) {
             try {
                 const evt = JSON.parse(buf.trim());
-                handleStreamEvent(evt, onChunk, onSessionId, safeOnDone);
+                handleStreamEvent(evt, opts.model, onChunk, onSessionId, safeOnDone);
             }
             catch (e) {
                 console.error(`[HME] close-buf JSON parse failed: ${e?.message ?? e} | buf: ${buf.slice(0, 120)}`);
@@ -143,7 +147,123 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
     }
     catch { } };
 }
-function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
+// Sanity bounds for a reported/computed usedPct.
+//
+// HARD CEILING (100.5%) — anything above is a bug by definition. A context
+// window is a fixed denominator; >100% means the denominator is wrong (the
+// 1M-vs-200k bug that shipped 1456% as a "real" value). 0.5% of slop
+// accommodates floating-point rounding without admitting a 105% miscalc.
+//
+// SUSPICIOUS BAND (95..100%) — legitimately reachable only after a long
+// session; on turn 1-2 it's almost certainly a miscalculation. Values in
+// this band still propagate (we can't prove they're wrong) but also emit a
+// `suspicious_pct` rejection so investigations leave a trace.
+exports.USED_PCT_HARD_CEILING = 100.5;
+exports.USED_PCT_SUSPICIOUS_FLOOR = 95;
+// Legacy export — callers outside this module still reference the old name
+// for the hard ceiling. Kept as an alias rather than removed so a third-party
+// import doesn't silently resolve to undefined.
+exports.USED_PCT_SANITY_CEILING = exports.USED_PCT_HARD_CEILING;
+// Module-level error sink for sanitizer rejections. Set once at panel init
+// by BrowserPanel so every rejection lands in hme-errors.log and surfaces
+// in the userpromptsubmit banner next turn. console.error alone vanishes.
+let _sanitizerSink = null;
+function setSanitizerErrorSink(sink) {
+    _sanitizerSink = sink;
+}
+// Module-level turn-number getter. BrowserPanel sets this so the sanitizer
+// can distinguish "turn 1 reporting 99%" (almost always a miscalc) from
+// "turn 20 reporting 99%" (plausibly real). Defaults to null, which means
+// "unknown turn — skip the suspicious-band check" rather than silently
+// treating every reading as not-suspicious.
+let _getTurnNumber = null;
+function setTurnNumberProvider(fn) {
+    _getTurnNumber = fn;
+}
+function _reportRejection(source, message) {
+    console.error(`[HME] ${message}`);
+    if (_sanitizerSink)
+        _sanitizerSink.post(source, message);
+}
+/**
+ * Single sanitization gate for every path that produces a usedPct.
+ *
+ * Returns `undefined` (meter keeps last known value) when:
+ *  - raw is null/undefined (no signal)
+ *  - raw is non-finite or out of [0, USED_PCT_HARD_CEILING]
+ *
+ * When raw lands in the SUSPICIOUS band [USED_PCT_SUSPICIOUS_FLOOR, 100.5]
+ * AND `turnNumber` is ≤ 2, the value still propagates (we can't prove it's
+ * wrong) but emits a high-priority `suspicious_pct` rejection so post-hoc
+ * investigations find a trace. Turn 1-2 at 95%+ is the exact signature of
+ * the 1M-vs-200k miscalc that shipped before this guard existed.
+ *
+ * Call sites: result-event computeTurnUsage, PTY /context parseContextOutput,
+ * PTY ctxFile _buildPtyUsage.
+ */
+function sanitizeUsedPct(raw, source, turnNumberOverride) {
+    const turnNumber = turnNumberOverride ?? (_getTurnNumber ? _getTurnNumber() ?? undefined : undefined);
+    if (raw == null)
+        return undefined;
+    if (typeof raw !== "number" || !Number.isFinite(raw)) {
+        _reportRejection("sanitizeUsedPct", `sanitizeUsedPct(${source}) rejected non-finite value: ${JSON.stringify(raw)}`);
+        return undefined;
+    }
+    if (raw < 0 || raw > exports.USED_PCT_HARD_CEILING) {
+        _reportRejection("sanitizeUsedPct", `sanitizeUsedPct(${source}) rejected out-of-range value ${raw} (hard ceiling ${exports.USED_PCT_HARD_CEILING})`);
+        return undefined;
+    }
+    // Suspicious band: value is numerically plausible but suspicious on early
+    // turns. Log but propagate — never silently drop data that might be real.
+    if (raw >= exports.USED_PCT_SUSPICIOUS_FLOOR && turnNumber != null && turnNumber <= 2) {
+        _reportRejection("sanitizeUsedPct", `sanitizeUsedPct(${source}) suspicious_pct: ${raw}% on turn ${turnNumber} ` +
+            `(values >=${exports.USED_PCT_SUSPICIOUS_FLOOR}% so early almost always indicate a miscalc). ` +
+            `Value propagated — investigate if the meter triggers a chain soon.`);
+    }
+    return Math.round(raw * 10) / 10;
+}
+function computeTurnUsage(evt, uiModelAlias, inputTokens, outputTokens) {
+    if (inputTokens == null || outputTokens == null)
+        return undefined;
+    const modelUsage = evt.modelUsage;
+    if (!modelUsage || typeof modelUsage !== "object") {
+        _reportRejection("computeTurnUsage", `result event missing modelUsage — usedPct cannot be computed (uiAlias=${uiModelAlias})`);
+        return { inputTokens, outputTokens, usedPct: undefined };
+    }
+    const entries = Object.entries(modelUsage);
+    const prefix = `claude-${uiModelAlias}-`;
+    const match = entries.find(([k]) => k.startsWith(prefix));
+    if (!match) {
+        // UI alias doesn't match any modelUsage key. Hard fail — don't guess.
+        // Surfacing this loudly catches CLI naming drift (e.g. a future
+        // "claude-opus5-..." key that no longer matches "claude-opus-").
+        _reportRejection("computeTurnUsage", `no modelUsage entry matches UI alias "${uiModelAlias}" (prefix="${prefix}"). Available keys: ${entries.map(e => e[0]).join(", ")}`);
+        return { inputTokens, outputTokens, usedPct: undefined };
+    }
+    const [modelKey, modelEntry] = match;
+    const contextWindow = modelEntry?.contextWindow;
+    if (typeof contextWindow !== "number" || !Number.isFinite(contextWindow) || contextWindow < 1000) {
+        // A context window below 1000 tokens is always a bug (smallest real
+        // window is 200k). Refuse to divide — emitting a correctly-shaped
+        // TokenUsage with `usedPct=undefined` keeps the meter's last value
+        // instead of overwriting it with garbage.
+        _reportRejection("computeTurnUsage", `invalid contextWindow on modelUsage["${modelKey}"]: ${JSON.stringify(contextWindow)} — usedPct skipped (uiAlias=${uiModelAlias})`);
+        return { inputTokens, outputTokens, usedPct: undefined, modelId: modelKey, modelName: modelEntry?.modelName };
+    }
+    const totalInput = inputTokens
+        + (evt.usage?.cache_read_input_tokens ?? 0)
+        + (evt.usage?.cache_creation_input_tokens ?? 0);
+    const rawPct = (totalInput / contextWindow) * 100;
+    const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:totalInput=${totalInput},ctxWindow=${contextWindow},model=${modelKey}`);
+    return {
+        inputTokens,
+        outputTokens,
+        usedPct,
+        modelId: modelKey,
+        modelName: modelEntry?.modelName,
+    };
+}
+function handleStreamEvent(evt, uiModelAlias, onChunk, onSessionId, onDone) {
     if (evt.type === "system" && evt.subtype === "init" && evt.session_id) {
         onSessionId(evt.session_id);
         return;
@@ -163,25 +283,14 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
         return;
     }
     if (evt.type === "result") {
-        // Token counts live under evt.usage, not top-level.
         const inputTokens = evt.usage?.input_tokens;
         const outputTokens = evt.usage?.output_tokens;
-        // modelUsage is keyed by model id; capture which one Claude actually used.
-        const modelKey = evt.modelUsage ? Object.keys(evt.modelUsage)[0] : undefined;
-        const modelEntry = modelKey ? evt.modelUsage[modelKey] : undefined;
-        const contextWindow = modelEntry?.contextWindow ?? 200000;
-        const totalInput = (inputTokens ?? 0)
-            + (evt.usage?.cache_read_input_tokens ?? 0)
-            + (evt.usage?.cache_creation_input_tokens ?? 0);
-        const usage = (inputTokens != null && outputTokens != null)
-            ? {
-                inputTokens,
-                outputTokens,
-                usedPct: Math.round((totalInput / contextWindow) * 1000) / 10,
-                modelId: modelKey,
-                modelName: modelEntry?.modelName,
-            }
-            : undefined;
+        // modelUsage contains one entry per model the CLI touched this turn:
+        // the UI-selected model plus any auxiliaries (Haiku for sidechain work).
+        // Match by the UI alias so usedPct is computed against the context window
+        // of the model the UI actually picked — not keys[0] (often Haiku, 200k)
+        // nor the highest-token entry (fails on trivial turns).
+        const usage = computeTurnUsage(evt, uiModelAlias, inputTokens, outputTokens);
         onDone(evt.total_cost_usd ?? evt.cost_usd ?? undefined, usage);
         return;
     }
@@ -226,7 +335,8 @@ function parseContextOutput(text) {
     if (freeMatch && autoMatch) {
         const freePct = parseFloat(freeMatch[1]);
         const autoPct = parseFloat(autoMatch[1]);
-        const usedPct = Math.round((100 - freePct - autoPct) * 10) / 10;
+        const rawPct = 100 - freePct - autoPct;
+        const usedPct = sanitizeUsedPct(rawPct, `parseContextOutput:free/auto (free=${freePct},auto=${autoPct})`);
         // Also grab total token count from "Tokens: Xk / Yk (N%)" for inputTokens
         const tokenLine = text.match(/Tokens[:\s]+([\d.]+k?)\s*\/\s*([\d.]+k?)/i);
         const inputTokens = tokenLine ? parseK(tokenLine[1]) : 0;
@@ -235,7 +345,8 @@ function parseContextOutput(text) {
     // Fallback: use token line percentage directly
     const lineMatch = text.match(/Tokens[:\s]+([\d.]+k?)\s*\/\s*([\d.]+k?)\s*\((\d+(?:\.\d+)?)%\)/i);
     if (lineMatch) {
-        return { inputTokens: parseK(lineMatch[1]), outputTokens: 0, usedPct: parseFloat(lineMatch[3]) };
+        const usedPct = sanitizeUsedPct(parseFloat(lineMatch[3]), `parseContextOutput:tokenLine`);
+        return { inputTokens: parseK(lineMatch[1]), outputTokens: 0, usedPct };
     }
     return undefined;
 }
@@ -303,11 +414,10 @@ function streamClaudePty(message, sessionId, opts, workingDir, onChunk, onSessio
     const _buildPtyUsage = () => {
         try {
             const ctxData = JSON.parse((0, fs_1.readFileSync)(ctxFile, "utf8"));
-            const usedPct = typeof ctxData.used_pct === "number" ? ctxData.used_pct : undefined;
             return {
                 inputTokens: ctxData.input_tokens ?? 0,
                 outputTokens: ctxData.output_tokens ?? 0,
-                usedPct,
+                usedPct: sanitizeUsedPct(ctxData.used_pct, `_buildPtyUsage:${ctxFile}`),
                 modelId: ctxData.model_id || undefined,
                 modelName: ctxData.model_name || undefined,
             };

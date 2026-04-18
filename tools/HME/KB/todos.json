@@ -3,7 +3,7 @@
     "id": 0,
     "_meta": {
       "max_id": 557,
-      "updated_ts": 1776522465.2634892
+      "updated_ts": 1776532032.7670345
     }
   },
   {
@@ -196,8 +196,8 @@
         "id": 552,
         "text": "pick evolution target (evolve focus=design)",
         "activeForm": "pick evolution target (evolve focus=design)",
-        "status": "in_progress",
-        "done": false,
+        "status": "completed",
+        "done": true,
         "critical": false,
         "source": "onboarding",
         "on_done": "",
@@ -209,7 +209,7 @@
         "id": 553,
         "text": "edit target module (KB briefing auto-chains)",
         "activeForm": "edit target module (KB briefing auto-chains)",
-        "status": "pending",
+        "status": "in_progress",
         "done": false,
         "critical": false,
         "source": "onboarding",

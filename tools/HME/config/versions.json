@@ -1,0 +1,6 @@
+{
+  "_comment": "Single source of truth for HME component wire versions. All three components (cli, proxy, worker) read from here. Bump this file when the wire protocol between them changes. The three-way check in `hme-cli --version` asserts all three components are running the same version at runtime.",
+  "cli": "1.1.0",
+  "proxy": "1.1.0",
+  "worker": "1.1.0"
+}

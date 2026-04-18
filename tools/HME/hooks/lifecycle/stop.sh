@@ -317,6 +317,16 @@ fi
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 _emit_activity round_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
+# ── Antagonism bridge: record turn for streak calibrator ─────────────────────
+# Feeds the LIFESAVER streak-sensitivity <-> signal-trust bridge. At turn end
+# we snapshot (turnstart_lines, watermark, total_lines) into the calibrator
+# history. Resolution-velocity is computed across the rolling window and used
+# (observe-only for now) to recommend the next turn's HME_STREAK_WARN.
+# See tools/HME/activity/streak_calibrator.py. Silent-fail to keep stop.sh
+# non-fragile — this is telemetry, not a gate.
+PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
+  > /dev/null 2>&1 || true
+
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 # STOP_WORK was captured earlier via run_all.py.

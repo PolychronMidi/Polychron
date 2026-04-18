@@ -27,6 +27,7 @@ import {
 import { buildCrossRouteContext, applyCrossRouteContext } from "./session/crossRouteHistory";
 import { PanelHost } from "./panel/PanelHost";
 import { ErrorSink } from "./panel/ErrorSink";
+import { setSanitizerErrorSink, setTurnNumberProvider } from "./routers/routerClaude";
 import { ShimSupervisor } from "./panel/ShimSupervisor";
 import { ContextMeter, ContextPostArgs } from "./panel/ContextMeter";
 import { ChainPerformer, ChainSessionBridge } from "./panel/ChainPerformer";
@@ -68,9 +69,17 @@ export class BrowserPanel implements PanelHost {
     this._restoreSessionId = restoreSessionId ?? null;
 
     this._errorSink = new ErrorSink(projectRoot);
+    // Route sanitizer/computeTurnUsage rejections (invalid contextWindow,
+    // out-of-range usedPct, etc.) through hme-errors.log so they surface in
+    // the next turn's userpromptsubmit banner. console.error alone vanishes.
+    setSanitizerErrorSink(this._errorSink);
+    // Turn-number provider lets the sanitizer flag "95%+ on turn 1-2" as
+    // suspicious_pct (the signature of the 1M-vs-200k miscalc). Count user
+    // messages so assistant responses and tool returns don't inflate it.
+    setTurnNumberProvider(() => this._state.messages.filter(m => m.role === "user").length);
     this._shim = new ShimSupervisor(projectRoot, this);
-    this._contextMeter = new ContextMeter(projectRoot, this);
-    this._chain = new ChainPerformer(projectRoot, this, this._chainBridge());
+    this._contextMeter = new ContextMeter(projectRoot, this, this._errorSink);
+    this._chain = new ChainPerformer(projectRoot, this, this._chainBridge(), this._errorSink);
     this._streamPersister = new StreamPersister(this);
     const self = this;
     this._ctx = {

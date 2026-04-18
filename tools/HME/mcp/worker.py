@@ -5,6 +5,7 @@ Reuses main.py's bootstrap (env, pyc purge, RAG engine loading, llamacpp
 supervisor) but swaps FastMCP for a dict-backed tool registry. Exposes:
 
   GET  /health         — readiness probe (used by supervisor)
+  GET  /version        — {"version": WORKER_VERSION, "cli_compat": CLI_VERSION}
   GET  /tools/list     — MCP tools/list payload (schema list)
   POST /tool/<name>    — invoke a tool with JSON body as kwargs
                           returns {"ok": true, "result": "..."} or
@@ -24,6 +25,21 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# Single source of truth: tools/HME/config/versions.json.
+# Bump that file to move the three components (cli/proxy/worker) together.
+# A mismatch surfaces via `hme-cli --version`.
+def _load_versions() -> dict:
+    import json as _j
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "versions.json")
+    try:
+        with open(_p) as _f:
+            return _j.load(_f)
+    except Exception:
+        return {}
+_VERSIONS = _load_versions()
+WORKER_VERSION = _VERSIONS.get("worker", "unknown")
+CLI_COMPAT_VERSION = _VERSIONS.get("cli", "unknown")
 
 # ── Bootstrap (matches main.py) ──────────────────────────────────────────────
 _tool_root = os.path.dirname(os.path.abspath(__file__))
@@ -253,8 +269,12 @@ class _Handler(BaseHTTPRequestHandler):
             "pid": os.getpid(),
         })
 
+    def _get_version(self):
+        self._json(200, {"version": WORKER_VERSION, "cli_compat": CLI_COMPAT_VERSION})
+
     def do_GET(self):
         if self.path == "/health":            return self._get_health()
+        if self.path == "/version":           return self._get_version()
         if self.path == "/tools/list":        return self._json(200, {"tools": list_schemas()})
         if self.path == "/capabilities":      return self._get_capabilities()
         if self.path == "/rag/lib-list":      return self._get_rag_lib_list()

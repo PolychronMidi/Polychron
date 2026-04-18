@@ -40,13 +40,23 @@ const SessionStore_1 = require("../session/SessionStore");
 const Arbiter_1 = require("../Arbiter");
 const chatChain_1 = require("../session/chatChain");
 const streamUtils_1 = require("../streamUtils");
-// Fire chain at 99% — meter reaches this before autocompact kicks in.
-exports.CHAIN_THRESHOLD_PCT = 99;
+// Fire chain at 85% — low enough that the *chain synthesis itself* has
+// comfortable headroom to run without risking its own context overflow.
+// The old 99% threshold put the summary synthesis call inside the danger
+// zone: a context 1% from full had no room for Stage 1A+1B extract +
+// Stage 2 synthesis tokens. Lowering to 85% keeps ~15% of window (~150k
+// tokens on a 1M model) for the synthesis to complete cleanly.
+//
+// Auto-compaction by Claude Code fires at ~92-95%, so 85% also ensures
+// the chain artifact is persisted BEFORE the CLI itself starts compacting
+// the conversation, which would otherwise race.
+exports.CHAIN_THRESHOLD_PCT = 85;
 class ChainPerformer {
-    constructor(projectRoot, host, session) {
+    constructor(projectRoot, host, session, errorSink) {
         this.projectRoot = projectRoot;
         this.host = host;
         this.session = session;
+        this.errorSink = errorSink;
         this._inProgress = false;
     }
     get inProgress() {
@@ -59,7 +69,22 @@ class ChainPerformer {
     maybeChain() {
         if (!this.session.hasMeterLiveUpdate())
             return;
-        if (this.session.getContextPct() < exports.CHAIN_THRESHOLD_PCT)
+        const pct = this.session.getContextPct();
+        // Fail-fast against fabricated percentages. A healthy meter reads in
+        // [0, 100]; values above that are the exact bug class that caused a
+        // premature chain fire on turn 1 (1456% from a 1M/200k mismatch).
+        // Refuse to rotate on an impossible reading — log loudly and return.
+        if (!Number.isFinite(pct) || pct < 0 || pct > 110) {
+            const msg = `maybeChain refusing to fire with out-of-range pct=${pct}. ` +
+                `Upstream computeTurnUsage and ContextMeter.update should have dropped this — ` +
+                `investigate the token-accounting path.`;
+            console.error(`[HME Chat] ${msg}`);
+            if (this.errorSink)
+                this.errorSink.post("ChainPerformer.maybeChain", msg);
+            this.host.postError("chain", `invalid context pct=${pct} — chain suppressed`);
+            return;
+        }
+        if (pct < exports.CHAIN_THRESHOLD_PCT)
             return;
         if (this._inProgress)
             return;

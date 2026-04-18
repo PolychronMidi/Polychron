@@ -227,7 +227,7 @@ class RAGEngineSearchMixin:
                 resp = httpx.post(
                     "https://api.anthropic.com/v1/messages/count_tokens",
                     headers={"x-api-key": api_key, "content-type": "application/json", "anthropic-version": "2023-06-01"},
-                    json={"model": "claude-sonnet-4-6", "messages": [{"role": "user", "content": text}]},
+                    json={"model": "sonnet", "messages": [{"role": "user", "content": text}]},
                     timeout=3.0
                 )
                 if resp.status_code == 200:

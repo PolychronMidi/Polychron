@@ -200,12 +200,6 @@ function buildJurisdictionContext(filePaths) {
     'Write-bearing tool calls in this turn target files tracked by the hypermeta layer. Before editing, confirm the changes respect the constraints below — check-hypermeta-jurisdiction.js will fail the pipeline otherwise.',
     '',
     ...lines,
-    'If any bias bound is stale, re-snapshot with:',
-    '  node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
-    '',
-    'If a drifted KB entry is shown, re-capture its signature after updating the description:',
-    '  python3 scripts/pipeline/hme/capture-kb-signatures.py',
-    '',
   ].join('\n');
 }
 
@@ -264,18 +258,50 @@ function tailFileLines(filepath, maxLines, maxBytes = 500_000) {
 }
 
 function recentLifesaverErrors() {
-  const lines = tailFileLines(ERRORS_LOG, 20);
-  const now = Date.now();
-  const CUTOFF_MS = 30 * 60 * 1000;
-  const fresh = [];
-  for (const line of lines) {
-    const m = line.match(/^\[([^\]]+)\]/);
-    if (!m) continue;
-    const t = Date.parse(m[1]);
-    if (Number.isNaN(t)) continue;
-    if (now - t < CUTOFF_MS) fresh.push(line);
+  // Turn-aware: show only errors added since userpromptsubmit.sh recorded the
+  // turn-start line count in tmp/hme-errors.turnstart. This is the same anchor
+  // LIFESAVER uses, so the proxy's in-context reminders stay synchronized with
+  // the turn-boundary banner — no stale errors from prior turns and no fall-off
+  // after a fixed clock window.
+  //
+  // Fallback: if the turnstart file is missing (first turn, fresh clone), keep
+  // a 30-min clock cutoff so the injection is still bounded.
+  const TURNSTART_PATH = path.join(PROJECT_ROOT, 'tmp', 'hme-errors.turnstart');
+  let turnStartLine = null;
+  try {
+    const raw = fs.readFileSync(TURNSTART_PATH, 'utf8').trim();
+    const n = parseInt(raw, 10);
+    if (Number.isFinite(n) && n >= 0) turnStartLine = n;
+  } catch (_e) { /* no turnstart yet */ }
+
+  const lines = tailFileLines(ERRORS_LOG, 200);
+  let fresh;
+  if (turnStartLine !== null) {
+    // Read the full file line-count so we can slice by absolute position.
+    let totalLines = 0;
+    try { totalLines = fs.readFileSync(ERRORS_LOG, 'utf8').split('\n').filter((l) => l.length > 0).length; }
+    catch (_e) { /* fall through to clock cutoff */ }
+    const addedSinceTurnStart = Math.max(0, totalLines - turnStartLine);
+    fresh = addedSinceTurnStart > 0 ? lines.slice(-addedSinceTurnStart) : [];
+  } else {
+    const now = Date.now();
+    const CUTOFF_MS = 30 * 60 * 1000;
+    fresh = [];
+    for (const line of lines) {
+      const m = line.match(/^\[([^\]]+)\]/);
+      if (!m) continue;
+      const t = Date.parse(m[1]);
+      if (Number.isNaN(t)) continue;
+      if (now - t < CUTOFF_MS) fresh.push(line);
+    }
   }
-  return fresh.slice(-5);
+
+  // Strip sub-second and time-of-day from timestamps so the injected block
+  // stays byte-identical within the 4-min cache window.
+  return fresh.slice(-5).map((line) => {
+    const m = line.match(/^\[([^\]]+)\]/);
+    return m ? line.replace(/^\[[^\]]+\]/, `[${m[1].slice(0, 10)}]`) : line;
+  });
 }
 
 function coherenceStatusLine() {

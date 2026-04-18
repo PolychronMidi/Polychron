@@ -24,30 +24,75 @@ if [ "$MODE" = "forget" ]; then
     echo "NEXUS: review CLI call failed — worker down? Cannot trust REVIEW_ISSUES state. Re-run i/review mode=forget after fixing." >&2
     exit 0
   fi
-  # Parse the issue count. Two expected forms:
-  #   "Found N issues total"      (N > 0 → mark REVIEW_ISSUES N)
-  #   "Found 0 issues total" OR "All clean" sentinel (→ clear REVIEW_ISSUES)
-  # If NEITHER form is present, the output shape has drifted — mark
-  # REVIEW_PARSE_FAILED so stop.sh blocks (silently clearing would let
-  # format drift masquerade as "all clean").
-  ISSUES_COUNT=$(echo "$TOOL_RESULT" | grep -oE 'Found [0-9]+ issues total' | grep -oE '[0-9]+' | head -1 || true)
-  ALL_CLEAN=$(echo "$TOOL_RESULT" | grep -cE 'Found 0 issues total|^All clean$|review passed' || true)
-  if [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then
+  # Canonical verdict detection.
+  #
+  # The server's single source of truth is the structured HTML-comment marker
+  # emitted by onboarding_chain.emit_review_verdict_marker(verdict):
+  #   <!-- HME_REVIEW_VERDICT: clean -->
+  #   <!-- HME_REVIEW_VERDICT: warnings -->
+  #   <!-- HME_REVIEW_VERDICT: error -->
+  # If the marker is present, trust it exclusively and skip prose parsing.
+  # Prose-count patterns ("Found N issues total") are fallback only, kept
+  # for older review outputs that predate the marker.
+  # `|| true` on every grep is load-bearing — under `set -euo pipefail` a
+  # grep that legitimately finds nothing returns 1 and would kill the hook
+  # before the drift-detection branch runs, letting format drift masquerade
+  # as a silent pass. Trailing `|| true` converts "no match" to empty string.
+  VERDICT_MARKER=$(echo "$TOOL_RESULT" | { grep -oE '<!--[[:space:]]*HME_REVIEW_VERDICT:[[:space:]]*(clean|warnings|error)[[:space:]]*-->' || true; } | head -1 | { grep -oE '(clean|warnings|error)' || true; })
+  ISSUES_COUNT=$(echo "$TOOL_RESULT" | { grep -oE 'Found [0-9]+ issues total' || true; } | { grep -oE '[0-9]+' || true; } | head -1)
+  if [ -n "$VERDICT_MARKER" ]; then
+    case "$VERDICT_MARKER" in
+      clean)
+        _nexus_clear_type REVIEW_CLI_FAILURE
+        _nexus_clear_type REVIEW_PARSE_FAILED
+        _nexus_clear_type REVIEW_ISSUES
+        ;;
+      warnings)
+        _nexus_clear_type REVIEW_CLI_FAILURE
+        _nexus_clear_type REVIEW_PARSE_FAILED
+        # Prefer the precise count when present; otherwise record "?" so the
+        # stop hook still blocks on unknown-count warnings.
+        if [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then
+          _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
+          echo "NEXUS: ${ISSUES_COUNT} review issue(s) found — fix and re-run i/review mode=forget until 0." >&2
+        else
+          _nexus_mark REVIEW_ISSUES "?"
+          echo "NEXUS: review reported warnings (exact count unavailable) — fix and re-run i/review mode=forget." >&2
+        fi
+        ;;
+      error)
+        _nexus_mark REVIEW_CLI_FAILURE "review emitted verdict=error — server-side exception during what_did_i_forget"
+        _nexus_mark REVIEW_ISSUES "?"
+        echo "NEXUS: review server-side error — see worker log. Re-run i/review mode=forget after fixing." >&2
+        exit 0
+        ;;
+      *)
+        # Impossible branch: grep already constrained to (clean|warnings|error).
+        # Treat as parse failure rather than silently passing.
+        _nexus_mark REVIEW_PARSE_FAILED "unreachable verdict value: $VERDICT_MARKER"
+        _nexus_mark REVIEW_ISSUES "?"
+        exit 0
+        ;;
+    esac
+  elif [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then
+    # Legacy path: no marker, but explicit issue count present.
     _nexus_clear_type REVIEW_CLI_FAILURE
     _nexus_clear_type REVIEW_PARSE_FAILED
     _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
     echo "NEXUS: ${ISSUES_COUNT} review issue(s) found — fix and re-run i/review mode=forget until 0." >&2
-  elif [ -n "$ISSUES_COUNT" ] || [ "$ALL_CLEAN" -gt 0 ] 2>/dev/null; then
-    # Explicit zero-issues marker present → safe to clear.
+  elif echo "$TOOL_RESULT" | grep -qE 'Found 0 issues total|^All clean$|review passed'; then
+    # Legacy path: no marker, but an explicit zero-issues sentinel.
     _nexus_clear_type REVIEW_CLI_FAILURE
     _nexus_clear_type REVIEW_PARSE_FAILED
     _nexus_clear_type REVIEW_ISSUES
   else
-    # Neither "Found N issues total" nor the all-clean sentinel appeared.
-    # Output format has drifted — refuse to silently claim review passed.
-    _nexus_mark REVIEW_PARSE_FAILED "review output missing expected sentinels"
+    # No canonical marker, no legacy sentinel — the server output has drifted
+    # OR the worker returned a non-review payload. Refuse to silently claim
+    # review passed. This is the exact path that let the missing-sentinel bug
+    # masquerade as "clean" before the marker was added to the regex.
+    _nexus_mark REVIEW_PARSE_FAILED "review output missing HME_REVIEW_VERDICT marker and all legacy sentinels — sentinel list drifted from server emit"
     _nexus_mark REVIEW_ISSUES "?"
-    echo "NEXUS: review output format drifted — neither 'Found N issues total' nor 'All clean' detected. REVIEW_ISSUES marked unknown; investigate before proceeding." >&2
+    echo "NEXUS: review output missing canonical HME_REVIEW_VERDICT marker — server/hook sentinel contract broken. Investigate emit_review_verdict_marker() before proceeding." >&2
     exit 0
   fi
   # Point to next step

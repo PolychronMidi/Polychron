@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * HME CLI dispatcher — invokes a worker tool over HTTP.
+ * HME CLI dispatcher -- invokes a worker tool over HTTP.
  *
  * Usage:
  *   node scripts/hme-cli.js <tool-name> [flags...]
@@ -14,18 +14,18 @@
  *   i/hme     <any-tool-name> key=value ...   # generic dispatcher
  *
  * Flag forms (all equivalent where applicable):
- *   key=value       → {"key":"value"}
- *   --key value     → {"key":"value"}
- *   --key=value     → {"key":"value"}
- *   --flag          → {"flag":true}
+ *   key=value       -> {"key":"value"}
+ *   --key value     -> {"key":"value"}
+ *   --key=value     -> {"key":"value"}
+ *   --flag          -> {"flag":true}
  *
  * Values that look numeric (integers or floats) are auto-converted.
  * "true"/"false" become booleans. JSON values ([...]/{...}) are parsed as JSON.
  * Everything else stays a string.
  *
  * To force a value to stay a string (bypass all coercion), prefix with `str:`:
- *   i/learn title=str:42          → {"title": "42"}  (string, not int)
- *   i/learn tags=str:[a,b]        → {"tags": "[a,b]"} (string, not parsed JSON)
+ *   i/learn title=str:42          -> {"title": "42"}  (string, not int)
+ *   i/learn tags=str:[a,b]        -> {"tags": "[a,b]"} (string, not parsed JSON)
  * The `str:` prefix is stripped before the value is sent.
  *
  * The worker endpoint is POST http://127.0.0.1:<port>/tool/<name> with the flag
@@ -42,6 +42,17 @@
 'use strict';
 
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+// Single source of truth: tools/HME/config/versions.json.
+// Bump that file when the wire protocol between cli/proxy/worker changes —
+// all three components read from it so they can't silently drift apart.
+const _VERSIONS_PATH = path.resolve(__dirname, '..', 'tools', 'HME', 'config', 'versions.json');
+const CLI_VERSION = (() => {
+  try { return JSON.parse(fs.readFileSync(_VERSIONS_PATH, 'utf8')).cli; }
+  catch (_) { return 'unknown'; }
+})();
 
 const HOST = process.env.HME_CLI_HOST || '127.0.0.1';
 const PORT = Number(process.env.HME_MCP_PORT || 9098);
@@ -53,7 +64,7 @@ function parseArgs(argv) {
   while (i < argv.length) {
     const a = argv[i];
 
-    // Bare `--` is a POSIX arg separator, not a flag. Skip silently — some
+    // Bare `--` is a POSIX arg separator, not a flag. Skip silently -- some
     // callers (e.g. habits from npm-run-script days) pass it before the real
     // args: `i/review -- mode=forget`. Without this, `--` would be parsed as
     // --<empty-key> and crash the worker.
@@ -87,13 +98,13 @@ function parseArgs(argv) {
       continue;
     }
 
-    throw new Error(`Unrecognized arg "${a}" — expected key=value, --key value, or --flag`);
+    throw new Error(`Unrecognized arg "${a}" -- expected key=value, --key value, or --flag`);
   }
   return args;
 }
 
 function coerce(v) {
-  // Explicit string escape: `str:42` → "42" (bypass coercion entirely).
+  // Explicit string escape: `str:42` -> "42" (bypass coercion entirely).
   if (v.startsWith('str:')) return v.slice(4);
   if (v === 'true') return true;
   if (v === 'false') return false;
@@ -139,13 +150,49 @@ function postTool(name, args) {
   });
 }
 
+function _getVersion(host, port, timeoutMs) {
+  return new Promise((resolve) => {
+    const req = http.request(
+      { host, port, path: '/version', method: 'GET', timeout: timeoutMs },
+      (res) => {
+        let chunks = '';
+        res.on('data', (c) => { chunks += c; });
+        res.on('end', () => {
+          try { resolve(JSON.parse(chunks)); } catch (_) { resolve(null); }
+        });
+      },
+    );
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+}
+function getWorkerVersion(timeoutMs) { return _getVersion(HOST, PORT, timeoutMs); }
+function getProxyVersion(timeoutMs) {
+  const proxyPort = Number(process.env.HME_PROXY_PORT || 9099);
+  return _getVersion(HOST, proxyPort, timeoutMs);
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const tool = argv[0];
   if (!tool || tool === '--help' || tool === '-h') {
     console.error('Usage: hme-cli <tool> [key=value | --key value | --flag]...');
     console.error('Tools: review, learn, trace, evolve, hme_admin, status, hme_todo, read, agent');
+    console.error(`hme-cli version: ${CLI_VERSION}`);
     process.exit(tool ? 0 : 1);
+  }
+  if (tool === '--version' || tool === '-v') {
+    const [wv, pv] = await Promise.all([getWorkerVersion(3000), getProxyVersion(3000)]);
+    console.log(`hme-cli: ${CLI_VERSION}`);
+    console.log(`proxy:   ${pv ? (pv.version || '(no version field)') : '(unreachable)'}`);
+    console.log(`worker:  ${wv ? (wv.version || '(no version field)') : '(unreachable)'}`);
+    const versions = [CLI_VERSION, pv && pv.version, wv && wv.version].filter(Boolean);
+    const allMatch = versions.length >= 2 && versions.every((v) => v === versions[0]);
+    if (!allMatch && versions.length >= 2) {
+      console.error(`WARNING: version mismatch — restart the proxy after updating hme-cli`);
+    }
+    process.exit(0);
   }
   let args;
   try {
@@ -159,7 +206,7 @@ async function main() {
   try {
     res = await postTool(tool, args);
   } catch (e) {
-    console.error(`hme-cli: request failed — ${e.message}`);
+    console.error(`hme-cli: request failed -- ${e.message}`);
     console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
     console.error(`  is the proxy running? \`curl http://${HOST}:${PORT}/health\` should return status:ready`);
     process.exit(1);
