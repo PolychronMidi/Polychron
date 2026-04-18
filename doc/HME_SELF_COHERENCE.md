@@ -123,7 +123,7 @@ The holograph history is a time series. With enough snapshots, drift can be **pr
 HME currently lives in `tools/HME/` inside one project. The architecture is generic. The next breadth-jump:
 
 - **Plugin export.** Package HME as a Claude Code plugin installable in any project. Each install gets its own KB and onboarding chain but shares the engine.
-- **Cross-project KB sync.** The global KB at `~/.claude/mcp/HME/global_kb` is currently tiny. Auto-promote pattern entries from project KBs to global, with consent. Patterns learned in Polychron propagate to other projects.
+- **Cross-project KB sync.** The global KB at `$HME_GLOBAL_KB_PATH` (default: project-local `.claude/mcp/HME/global_kb` after the MCP decoupling) is currently tiny. Auto-promote pattern entries from project KBs to global, with consent. Patterns learned in Polychron propagate to other projects.
 - **Federated coherence.** HCI scores from multiple projects roll up into a meta-score. Best practices propagate. Worst practices get flagged across the federation.
 
 #### Phase 5: Self-modification

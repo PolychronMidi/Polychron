@@ -3,8 +3,9 @@
 
 Scans the project KB (.claude/mcp/HME) for entries that look domain-independent
 (antipatterns, meta-rules, process lessons) and proposes promoting them to
-the global KB (~/.claude/mcp/HME/global_kb). Domain-specific entries (music
-composition, Polychron-specific modules) stay in the project KB.
+the global KB ($HME_GLOBAL_KB_PATH, default project-local at
+.claude/mcp/HME/global_kb). Domain-specific entries (music composition,
+Polychron-specific modules) stay in the project KB.
 
 Heuristic for "domain-independent":
   1. Category ∈ {"antipattern", "decision", "pattern"} AND

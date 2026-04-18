@@ -44,23 +44,40 @@ if [ -f "$TS_FILE" ]; then
   rm -f "$TS_FILE" 2>/dev/null
 fi
 
+# HME tools are now invoked via Bash(npm run <tool>) — the tool_name is "Bash"
+# and the actual HME call lives in tool_input.command. Detect by grepping the
+# command for `npm run <hme-tool>`. Also keep the legacy mcp__HME__ pattern
+# so any remaining MCP-era integrations keep emitting streak resets.
+_IS_HME_CALL=0
+_HME_TOOL=""
+if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
+  _IS_HME_CALL=1
+  _HME_TOOL="${TOOL_NAME#mcp__HME__}"
+elif [[ "$TOOL_NAME" == "Bash" ]]; then
+  # Match: `npm run review`, `npm run learn --`, `node scripts/hme-cli.js trace`, etc.
+  if echo "$TOOL_INPUT" | grep -qE 'npm run (review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b|scripts/hme-cli\.js'; then
+    _IS_HME_CALL=1
+    _HME_TOOL=$(echo "$TOOL_INPUT" | grep -oE 'npm run ([a-z_-]+)' | head -1 | awk '{print $3}')
+  fi
+fi
+
 # LIFESAVER FAIL-scan + hme.log ERROR watermark moved to proxy middleware
 # (mcp_fail_scan.js + hme_log_watermark.js). Shell hook keeps only streak reset.
-if [[ "$TOOL_NAME" == mcp__HME__* ]]; then
+if [ "$_IS_HME_CALL" = "1" ]; then
   _streak_reset
 fi
 
-# LIFESAVER threshold: warn when MCP HME synthesis exceeds expected duration
-if [[ "$TOOL_NAME" == mcp__HME__* ]] && [ "$ELAPSED_S" -gt 0 ]; then
-  # warm_pre_edit_cache / review: 30s expected max (synthesis is now 60s HTTP timeout)
-  # all other HME tools: 15s expected max
+# LIFESAVER threshold: warn when HME synthesis exceeds expected duration
+if [ "$_IS_HME_CALL" = "1" ] && [ "$ELAPSED_S" -gt 0 ]; then
+  # review / warm_pre_edit_cache: 30s expected max (synthesis is 60s HTTP timeout).
+  # All other HME tools: 15s expected max.
   THRESHOLD=15
-  if [[ "$TOOL_NAME" == *warm_pre_edit_cache* ]] || [[ "$TOOL_NAME" == *review* ]]; then
+  if [[ "$_HME_TOOL" == *warm_pre_edit_cache* ]] || [[ "$_HME_TOOL" == *review* ]]; then
     THRESHOLD=30
   fi
   if [ "$ELAPSED_S" -ge "$THRESHOLD" ]; then
-    echo "LIFESAVER: ${TOOL_NAME} took ${ELAPSED_S}s (threshold: ${THRESHOLD}s)." >&2
-    echo "  Slow MCP tools = stuck synthesis or model not loaded. Check:" >&2
+    echo "LIFESAVER: HME tool '${_HME_TOOL}' took ${ELAPSED_S}s (threshold: ${THRESHOLD}s)." >&2
+    echo "  Slow HME tools = stuck synthesis or model not loaded. Check:" >&2
     echo "  1. llamacpp ps — is qwen3:30b-a3b or qwen3-coder:30b actually running?" >&2
     echo "  2. HME log for _local_think TIMEOUT / REFUSED entries" >&2
     echo "  3. _local_think has 60s interactive timeout — if it exceeded that, something else blocked" >&2

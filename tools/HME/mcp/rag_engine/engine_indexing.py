@@ -196,8 +196,8 @@ class RAGEngineIndexingMixin:
         return {"indexed": 0, "removed": removed}
 
     def index_directory(self) -> dict:
-        """Index all files from ragIndexDirs in .mcp.json. No arguments — the
-        allowlist is the only source of indexable paths."""
+        """Index all files from ragIndexDirs in tools/HME/config/rag.json.
+        No arguments — the allowlist is the only source of indexable paths."""
         self._bulk_indexing.set()
         try:
             with self._index_lock:

@@ -1,5 +1,5 @@
 {
-  "description": "HyperMeta Ecstasy hooks — only blocks Claude Code can't express via proxy middleware remain here",
+  "description": "HyperMeta Ecstasy hooks — proxy middleware owns the bulk of the logic. HME tool calls are now Bash(npm run <tool>) invocations, dispatched from posttooluse_bash.sh.",
   "hooks": {
     "SessionStart": [
       {
@@ -7,14 +7,6 @@
       }
     ],
     "PreToolUse": [
-      {
-        "matcher": "mcp__HME__status",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_check_pipeline.sh", "timeout": 10}]
-      },
-      {
-        "matcher": "mcp__HME__",
-        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_hme_primer.sh", "timeout": 5}]
-      },
       {
         "matcher": "Edit",
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pretooluse/pretooluse_edit.sh", "timeout": 10}]
@@ -68,24 +60,6 @@
         "matcher": "Agent",
         "hooks": [
           {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_agent.sh", "timeout": 10}
-        ]
-      },
-      {
-        "matcher": "mcp__HME__learn",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_addknowledge.sh", "timeout": 10}
-        ]
-      },
-      {
-        "matcher": "mcp__HME__read",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_hme_read.sh", "timeout": 10}
-        ]
-      },
-      {
-        "matcher": "mcp__HME__review",
-        "hooks": [
-          {"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/posttooluse/posttooluse_hme_review.sh", "timeout": 10}
         ]
       }
     ],

@@ -218,10 +218,10 @@ def clear_index() -> str:
 
 
 def list_libs() -> str:
-    """Show all configured external library directories and their index status. Libraries are configured via ragLibs in .mcp.json. Returns each library's file count and chunk count if indexed, or indicates whether the directory exists but is unindexed. Use index_codebase with lib='<name>' to index a specific library."""
+    """Show all configured external library directories and their index status. Libraries are configured via ragLibs in tools/HME/config/rag.json. Returns each library's file count and chunk count if indexed, or indicates whether the directory exists but is unindexed. Use index_codebase with lib='<name>' to index a specific library."""
     ctx.ensure_ready_sync()
     if not ctx.lib_engines:
-        return "No external libraries configured. Add ragLibs to .mcp.json to configure."
+        return "No external libraries configured. Add ragLibs to tools/HME/config/rag.json to configure."
 
     parts = [f"Configured libraries ({len(ctx.lib_engines)}):"]
     for lib_key, engine in ctx.lib_engines.items():

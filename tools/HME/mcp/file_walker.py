@@ -42,19 +42,20 @@ _config: dict = {
 
 def init_config(project_root: str):
     _config["project_root"] = project_root
-    mcp_path = os.path.join(project_root, ".mcp.json")
-    if not os.path.isfile(mcp_path):
-        logger.info("No .mcp.json found, using defaults")
+    # RAG config migrated from .mcp.json → tools/HME/config/rag.json (owned by HME,
+    # independent of Claude Code's MCP system). Schema is flat (no mcpServers.HME
+    # wrapper): ragIndexDirs, ragIgnoreDirs, ragIgnore, ragLibs, ragMaxFileSize.
+    rag_path = os.path.join(project_root, "tools", "HME", "config", "rag.json")
+    if not os.path.isfile(rag_path):
+        logger.info("No tools/HME/config/rag.json found, using defaults")
         return
 
     try:
-        with open(mcp_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        with open(rag_path, "r", encoding="utf-8") as f:
+            rag_cfg = json.load(f)
     except Exception as e:
-        logger.warning(f"Failed to read .mcp.json: {e}")
+        logger.warning(f"Failed to read tools/HME/config/rag.json: {e}")
         return
-
-    rag_cfg = data.get("mcpServers", {}).get("HME", {})
 
     dirs = rag_cfg.get("ragIgnoreDirs")
     if dirs and isinstance(dirs, list):
@@ -143,7 +144,7 @@ def walk_code_files(
     # LOCKED: ragIndexDirs is the ONLY source of truth for what gets indexed.
     # The `directory` argument is BANNED — it exists only for signature compat.
     if not _config["rag_index_dirs_abs"]:
-        logger.error("ragIndexDirs not configured in .mcp.json — refusing to index. Configure ragIndexDirs.")
+        logger.error("ragIndexDirs not configured in tools/HME/config/rag.json — refusing to index. Configure ragIndexDirs.")
         return
     roots: list[Path] = []
     for d in _config["rag_index_dirs_abs"]:

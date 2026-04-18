@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-# PostToolUse: mcp__HME__read — track briefed files for pre-edit verification.
+# PostToolUse: `npm run hme-read` dispatch (called by posttooluse_bash.sh).
+# Parses target from tool_input.command: `target=...` or `--target ...`.
 INPUT=$(cat)
-TARGET=$(_safe_jq "$INPUT" '.tool_input.target' '')
-MODE=$(_safe_jq "$INPUT" '.tool_input.mode' 'auto')
+CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
+TARGET=$(echo "$CMD" | grep -oE '\btarget[= ][^[:space:]]+' | head -1 | sed -E 's/^.*target[= ]//')
+MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[= ]//')
+[ -z "$MODE" ] && MODE="auto"
 
 # BRIEF is written BOTH here (synchronous with Claude Code's hook chain) and
 # by proxy middleware (one request later). The double-write is idempotent and
