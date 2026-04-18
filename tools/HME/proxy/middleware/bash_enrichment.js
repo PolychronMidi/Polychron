@@ -30,11 +30,14 @@ module.exports = {
   name: 'bash_enrichment',
 
   onToolResult({ toolUse, toolResult, ctx }) {
+    console.error(`[bash_enrichment] HIT name=${toolUse.name}`);
     if (toolUse.name !== 'Bash') return;
     const text = _textOf(toolResult);
+    console.error(`[bash_enrichment] text_len=${text.length} matches=${ERROR_RE.test(text)}`);
     if (!text || !ERROR_RE.test(text)) return;
     const snip = _firstErrorSnippet(text);
     if (!snip) return;
+    console.error(`[bash_enrichment] APPENDING: [err] ${snip}`);
     ctx.appendToResult(toolResult, `\n[err] ${snip}`);
     ctx.markDirty();
     ctx.emit({ event: 'bash_error_surfaced' });
