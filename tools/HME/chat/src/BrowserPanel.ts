@@ -411,12 +411,20 @@ export class BrowserPanel implements PanelHost {
 
     const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
     const ctx = this._ctx;
-    if (resolvedRoute === "local") {
-      streamLlamacppMsg(ctx, resolvedMsg, assistantId);
-    } else if (resolvedRoute === "hybrid") {
-      streamHybridMsg(ctx, resolvedMsg, assistantId);
-    } else {
-      streamClaudeMsg(ctx, resolvedMsg, assistantId);
+    try {
+      if (resolvedRoute === "local") {
+        console.log(`[HME] calling streamLlamacppMsg`);
+        streamLlamacppMsg(ctx, resolvedMsg, assistantId);
+      } else if (resolvedRoute === "hybrid") {
+        console.log(`[HME] calling streamHybridMsg`);
+        streamHybridMsg(ctx, resolvedMsg, assistantId);
+      } else {
+        console.log(`[HME] calling streamClaudeMsg`);
+        streamClaudeMsg(ctx, resolvedMsg, assistantId);
+      }
+    } catch (e: any) {
+      console.error(`[HME] stream call threw synchronously: ${e?.message ?? e}\n${e?.stack}`);
+      this.post({ type: "errorBubble", source: resolvedRoute, message: String(e?.message ?? e) });
     }
   }
 

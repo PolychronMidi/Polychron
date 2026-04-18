@@ -389,14 +389,23 @@ class BrowserPanel {
         this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
         const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
         const ctx = this._ctx;
-        if (resolvedRoute === "local") {
-            (0, chatStreaming_1.streamLlamacppMsg)(ctx, resolvedMsg, assistantId);
+        try {
+            if (resolvedRoute === "local") {
+                console.log(`[HME] calling streamLlamacppMsg`);
+                (0, chatStreaming_1.streamLlamacppMsg)(ctx, resolvedMsg, assistantId);
+            }
+            else if (resolvedRoute === "hybrid") {
+                console.log(`[HME] calling streamHybridMsg`);
+                (0, chatStreaming_1.streamHybridMsg)(ctx, resolvedMsg, assistantId);
+            }
+            else {
+                console.log(`[HME] calling streamClaudeMsg`);
+                (0, chatStreaming_1.streamClaudeMsg)(ctx, resolvedMsg, assistantId);
+            }
         }
-        else if (resolvedRoute === "hybrid") {
-            (0, chatStreaming_1.streamHybridMsg)(ctx, resolvedMsg, assistantId);
-        }
-        else {
-            (0, chatStreaming_1.streamClaudeMsg)(ctx, resolvedMsg, assistantId);
+        catch (e) {
+            console.error(`[HME] stream call threw synchronously: ${e?.message ?? e}\n${e?.stack}`);
+            this.post({ type: "errorBubble", source: resolvedRoute, message: String(e?.message ?? e) });
         }
     }
     async _onSendAgent(msg) {
