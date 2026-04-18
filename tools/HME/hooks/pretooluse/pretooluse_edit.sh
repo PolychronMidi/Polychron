@@ -7,6 +7,14 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
+# Block edits to non-root log/, metrics/, or tmp/ directories
+if echo "$FILE" | grep -qE '/(log|metrics|tmp)/'; then
+  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)/'; then
+    _emit_block "BLOCKED: log/, metrics/, and tmp/ only exist at project root. Do not edit files inside subdirectory variants (e.g. tools/HME/mcp/metrics/). Route all output through \$PROJECT_ROOT/{log,metrics,tmp}/."
+    exit 2
+  fi
+fi
+
 if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
   _emit_block "BLOCKED: Edit new_string contains comment-ellipsis stub placeholder. Use the ACTUAL replacement content — no stubs."
   exit 2
