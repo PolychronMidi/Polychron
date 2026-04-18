@@ -22,7 +22,7 @@ function walk(dir, violations) {
     const full = path.join(dir, entry.name);
     if (BANNED_NAMES.has(entry.name)) {
       violations.push(full);
-      // Don't descend — the whole subtree is the violation
+      // Don't descend -- the whole subtree is the violation
     } else {
       walk(full, violations);
     }
@@ -30,7 +30,7 @@ function walk(dir, violations) {
 }
 
 // Returns the set of paths that are staged for deletion (D in index column).
-// These are in-progress fixes — don't flag them.
+// These are in-progress fixes -- don't flag them.
 function getStagedDeletions() {
   try {
     const out = execSync('git status --porcelain', { cwd: ROOT, stdio: 'pipe' }).toString();
@@ -52,16 +52,16 @@ function getStagedDeletions() {
 function isSafe(absPath, stagedDeletions) {
   const rel = path.relative(ROOT, absPath);
 
-  // Untracked, non-ignored files inside the dir → not safe
+  // Untracked, non-ignored files inside the dir -> not safe
   try {
     const untracked = execSync(`git ls-files --others --exclude-standard "${rel}/"`, { cwd: ROOT, stdio: 'pipe' }).toString().trim();
     if (untracked) return false;
   } catch {
-    // If git command fails, assume safe — don't block on git errors
+    // If git command fails, assume safe -- don't block on git errors
     return true;
   }
 
-  // Tracked files inside the dir → only safe if all are staged for deletion
+  // Tracked files inside the dir -> only safe if all are staged for deletion
   try {
     const tracked = execSync(`git ls-files "${rel}/"`, { cwd: ROOT, stdio: 'pipe' }).toString().trim();
     if (tracked) {
@@ -94,7 +94,7 @@ function main() {
 
   if (unsafe.length > 0) {
     for (const v of unsafe) {
-      console.error('  VIOLATION: ' + path.relative(ROOT, v) + ' — must not exist outside project root');
+      console.error('  VIOLATION: ' + path.relative(ROOT, v) + ' -- must not exist outside project root');
     }
     throw new Error(
       'check-root-only-dirs: ' + unsafe.length + ' non-root log/metrics/tmp director' +
