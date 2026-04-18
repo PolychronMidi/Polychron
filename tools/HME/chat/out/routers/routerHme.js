@@ -46,7 +46,7 @@ exports.streamHybrid = streamHybrid;
 const http = __importStar(require("http"));
 const routerLlamacpp_1 = require("./routerLlamacpp");
 const streamUtils_1 = require("../streamUtils");
-const HME_HTTP_PORT = 9098;
+const HME_HTTP_PORT = parseInt(process.env.HME_PROXY_PORT || "9099", 10);
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
 async function fetchHmeContext(query, topK = 5) {
     return shimPost("/enrich", JSON.stringify({ query, top_k: topK }), (raw) => {
@@ -57,7 +57,7 @@ async function fetchHmeContext(query, topK = 5) {
 }
 function shimGet(path, parse, fallback, timeoutMs = 1000) {
     return new Promise((resolve) => {
-        const req = http.get(`${HME_HTTP_URL}${path}`, (res) => {
+        const req = http.get(`${HME_HTTP_URL}/chat${path}`, (res) => {
             let raw = "";
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
@@ -87,7 +87,7 @@ function shimPost(path, body, parse, timeoutMs = 5000) {
         } };
         const timer = setTimeout(() => fail(`HME shim ${path} timeout (${timeoutMs / 1000}s)`), timeoutMs);
         const req = http.request({
-            hostname: "127.0.0.1", port: HME_HTTP_PORT, path, method: "POST",
+            hostname: "127.0.0.1", port: HME_HTTP_PORT, path: `/chat${path}`, method: "POST",
             headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) },
         }, (res) => {
             let raw = "";
