@@ -14,6 +14,7 @@ import {
   renameSession,
   deriveTitle,
   listChainLinks,
+  loadChainSummaries,
 } from "./session/SessionStore";
 import { TranscriptLogger, nullTranscript } from "./session/TranscriptLogger";
 import { synthesizeNarrative, classifyMessage } from "./Arbiter";
@@ -335,16 +336,41 @@ export class ChatPanel implements PanelHost {
       sessionEntry: persisted.entry,
       chainIndex,
     };
+
+    // Inject chain summaries if links exist but no continuation message is present.
+    // This handles sessions where chain fired but the summary was lost, or where
+    // the token bug prevented chain rotation from happening.
+    if (chainLinks.length > 0) {
+      const firstText = this._state.messages[0]?.text ?? "";
+      if (!firstText.startsWith("[Context Chain")) {
+        const summaries = loadChainSummaries(this._projectRoot, id);
+        if (summaries.length > 0) {
+          const restoreMsg: ChatMessage = {
+            id: uid(),
+            role: "user",
+            text: `[Context restored from ${summaries.length} chain link${summaries.length > 1 ? "s" : ""}]\n\n${summaries[summaries.length - 1]}`,
+            route: "claude",
+            ts: Date.now(),
+          };
+          this._state.messages = [restoreMsg, ...this._state.messages];
+          this.post({
+            type: "notice", level: "info",
+            text: `Context restored from ${summaries.length} chain link${summaries.length > 1 ? "s" : ""}.`,
+          });
+        }
+      }
+    }
+
     this._contextMeter.reset(this._ctxArgs(), persisted.contextTokens);
     this._transcript.setSessionId(persisted.entry.id);
     this._transcript.logSessionStart(persisted.entry.id, persisted.entry.title, true);
     const display = this._displayMessages();
-    const pruned = display.length < persisted.messages.length;
+    const pruned = display.length < this._state.messages.length;
     this.post({ type: "sessionLoaded", id: persisted.entry.id, messages: display, title: persisted.entry.title });
     if (pruned) {
       this.post({
         type: "notice", level: "info",
-        text: `Showing last ${display.length} of ${persisted.messages.length} messages`,
+        text: `Showing last ${display.length} of ${this._state.messages.length} messages`,
       });
     }
   }
