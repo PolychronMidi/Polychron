@@ -8,6 +8,13 @@ export interface SendMsg {
   llamacppModel: string;
 }
 
+/** Claude config sent eagerly on any control change. */
+export interface ClaudeConfigMsg {
+  claudeModel: string;      // "opus" | "sonnet" | "haiku"
+  claudeEffort: string;     // "low" | "medium" | "high" | "max"
+  claudeThinking: boolean;
+}
+
 /**
  * Discriminated union of all messages the webview can post to the extension.
  * Exhaustive-checked at compile time via the typed dispatch helper below.
@@ -25,7 +32,8 @@ export type WebviewMessage =
   | { type: "enrichPrompt"; prompt: string; frame?: string }
   | { type: "checkHmeShim" }
   | { type: "setZoomLevel"; level: number }
-  | { type: "setMirrorMode"; enabled: boolean; model?: string; effort?: string };
+  | { type: "setMirrorMode"; enabled: boolean; model?: string; effort?: string }
+  | (ClaudeConfigMsg & { type: "setClaudeConfig" });
 
 /** Typed handler map: every key is a message type, handler receives the narrowed message. */
 export type WebviewHandlers = {
