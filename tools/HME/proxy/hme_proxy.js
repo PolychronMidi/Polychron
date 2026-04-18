@@ -456,14 +456,6 @@ function handleRequest(clientReq, clientRes) {
         // doesn't affect user-visible turn end. Fire-and-forget (detached).
         // `session` from line 277 is out of scope here — recompute from
         // payload, falling back to 'unknown' if payload is absent.
-        if (isAnthropic) {
-          try {
-            const stopSession = payload ? sessionKey(payload) : 'unknown';
-            hookBridge.runStop(stopSession);
-          } catch (e) {
-            console.error('[hme-proxy] runStop threw:', e.message);
-          }
-        }
       });
       upstreamRes.on('error', (err) => {
         console.error('[hme-proxy] upstream read error:', err.message);
