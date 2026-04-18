@@ -4,7 +4,7 @@
 
 voiceDensityBalancer = (() => {
   const V = validator.create('voiceDensityBalancer');
-  const WINDOW_SECONDS = 2;
+  const query = analysisHelpers.createTrackerQuery(V, 2, { minNotes: 2 });
   const COINCIDENCE_MS = 0.05; // notes within 50ms count as simultaneous
 
   /**
@@ -16,10 +16,8 @@ voiceDensityBalancer = (() => {
    * @returns {{ avgVoices: number, maxVoices: number, thin: boolean, crowded: boolean }}
    */
   function getVoiceDensity(opts = {}) {
-    const notes = analysisHelpers.getWindowNotes(V, opts, WINDOW_SECONDS);
-    if (notes.length < 2) {
-      return { avgVoices: notes.length, maxVoices: notes.length, thin: true, crowded: false };
-    }
+    const notes = query(opts);
+    if (!notes) return { avgVoices: 0, maxVoices: 0, thin: true, crowded: false };
 
     // Group notes into simultaneous clusters
     const clusters = [];

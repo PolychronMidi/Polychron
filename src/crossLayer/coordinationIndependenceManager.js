@@ -196,7 +196,7 @@ coordinationIndependenceManager = (() => {
     }
 
     // R26: auto-activate oscillation mode during oscillating regime
-    const regimeForOsc = /** @type {string} */ (regimeClassifier.getLastRegime());
+    const regimeForOsc = /** @type {string} */ (regimeClassifier.getRegime());
     if (regimeForOsc === 'oscillating' && !oscillationEnabled) { oscillationEnabled = true; oscillationBeat = 0; }
     else if (regimeForOsc !== 'oscillating' && oscillationEnabled) { oscillationEnabled = false; }
 

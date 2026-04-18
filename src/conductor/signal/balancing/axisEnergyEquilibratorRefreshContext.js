@@ -82,7 +82,7 @@ axisEnergyEquilibratorRefreshContext = (() => {
     if (trustSurface.surfaceHot) state.trustSurfaceHotBeats++;
     if (entropySurface.surfaceHot) state.entropySurfaceHotBeats++;
 
-    const currentRegime = regimeClassifier.getLastRegime();
+    const currentRegime = regimeClassifier.getRegime();
     const coherentHotspotScale = currentRegime === 'coherent' && (phaseSurface.surfaceHot || trustSurface.surfaceHot)
       ? clamp(
         config.COHERENT_HOTSPOT_MIN_SCALE +

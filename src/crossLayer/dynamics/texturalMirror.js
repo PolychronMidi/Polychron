@@ -58,7 +58,7 @@ texturalMirror = (() => {
     const otherMode = layerTextures[otherLayer].mode;
     // R30 lab: regime-texture-mirror -- coherent mirrors other layer's texture,
     // exploring opposes it. Creates regime-aware cross-layer relationship.
-    const mirrorRegime = regimeClassifier.getLastRegime();
+    const mirrorRegime = regimeClassifier.getRegime();
     let preferredMode = mirrorRegime === 'coherent'
       ? otherMode
       : (COMPLEMENT_MAP[otherMode] || 'normal');

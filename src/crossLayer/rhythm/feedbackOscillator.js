@@ -109,7 +109,7 @@ feedbackOscillator = (() => {
     // R41: regime-responsive feedback character. Coherent = longer feedback chains
     // (less damping, energy sustains), exploring = shorter chains (more damping,
     // energy dissipates quickly). Creates regime-specific cross-layer dialogue depth.
-    const fbRegime = regimeClassifier.getLastRegime();
+    const fbRegime = regimeClassifier.getRegime();
     const regimeDamping = fbRegime === 'coherent' ? 0.90 : fbRegime === 'exploring' ? 1.15 : 1.0;
     const dampedEnergy = incoming.energy * cimDamping * entropyModulation * regimeDamping;
     if (dampedEnergy < MIN_ENERGY) return null;

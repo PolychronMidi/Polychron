@@ -71,7 +71,7 @@ emergentRhythmEngine = (() => {
     if (beatStartTime === cachedBeatTime && cachedResult) return cachedResult;
     cachedBeatTime = beatStartTime;
 
-    const regime = regimeClassifier.getLastRegime();
+    const regime = regimeClassifier.getRegime();
     const baseWindow = regime === 'exploring' ? 3 : regime === 'coherent' ? 1.5 : 2;
     // Melodic coupling: tessituraLoad narrows the quantization window at register extremes.
     // Tight tessiture focus = focus on immediate rhythmic events; comfortable = wider context.

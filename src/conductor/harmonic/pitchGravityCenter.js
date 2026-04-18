@@ -3,7 +3,8 @@
 // Pure query API - advises register shifts toward or away from a tonal anchor.
 
 pitchGravityCenter = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('pitchGravityCenter', 6, { minNotes: 1 });
+  const V = validator.create('pitchGravityCenter');
+  const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 1 });
   const ANCHOR_PITCH = 60; // Middle C as default tonal anchor
 
   /**

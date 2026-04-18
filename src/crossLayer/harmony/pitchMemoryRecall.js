@@ -85,7 +85,7 @@ pitchMemoryRecall = (() => {
     if (absoluteSeconds - lastRecallSec < MIN_RECALL_INTERVAL_SEC) return null;
     // R41: regime-responsive recall probability. Coherent = more recall (reinforce patterns),
     // exploring = less recall (seek novelty). System's memory behavior adapts to its state.
-    const recallRegime = regimeClassifier.getLastRegime();
+    const recallRegime = regimeClassifier.getRegime();
     const recallScale = recallRegime === 'coherent' ? 1.4 : recallRegime === 'exploring' ? 0.6 : 1.0;
     // Melodic coupling: stale territory -> pull from memory to break repetition;
     // fresh territory -> let novelty continue, suppress recall.

@@ -3,7 +3,8 @@
 // Pure query API - biases toward variety when IOI is too uniform, stabilizes when chaotic.
 
 onsetRegularityMonitor = (() => {
-  const { query } = analysisHelpers.createTrackerQuery('onsetRegularityMonitor', 4, { minNotes: 4 });
+  const V = validator.create('onsetRegularityMonitor');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   /**
    * Compute IOI regularity from recent onsets.

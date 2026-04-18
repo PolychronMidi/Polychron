@@ -26,7 +26,7 @@ cadenceAlignment = (() => {
   // adventurous passages. In coherent regime, tighten (400->350ms) for precise
   // alignment. This connects macro regime state to micro harmonic decisions.
   function _getSyncTolerance() {
-    const regime = regimeClassifier.getLastRegime();
+    const regime = regimeClassifier.getRegime();
     if (regime === 'exploring') return 550;
     if (regime === 'coherent') return 350;
     return BASE_SYNC_TOLERANCE_MS;
@@ -34,7 +34,7 @@ cadenceAlignment = (() => {
 
   function _getSupportScale(consensus) {
     if (consensus) return 1.0;
-    const regime = regimeClassifier.getLastRegime();
+    const regime = regimeClassifier.getRegime();
     // Exploring: stronger non-consensus support (more cadence resolution)
     // Coherent: weaker non-consensus support (only resolve on strong agreement)
     if (regime === 'exploring') return 0.85;
@@ -131,7 +131,7 @@ cadenceAlignment = (() => {
     // (sustained tension beats) reduces it. Relief is regime-capped to protect
     // coherent stability floor (min ~0.89) while allowing more relief in exploring.
     const resolveThreshold = (function() {
-      const reg = regimeClassifier.getLastRegime();
+      const reg = regimeClassifier.getRegime();
       const base = reg === 'exploring' ? 0.80 : reg === 'coherent' ? 0.92 : 0.88;
       const relief = V.optionalFinite(THRESHOLD_PRESSURE_RELIEF[reg], 0.03);
       const pressure = clamp(tensionPressureAccum / TENSION_SATURATION_CALLS, 0, 1);

@@ -32,35 +32,37 @@ StutterManager = class StutterManager {
   static StutterManagerStutterFade;
   static StutterManagerStutterPan;
   static StutterManagerStutterFX;
-  static StutterManagerTextureIntensity;
+  static textureAccumulator;
   static StutterManagerLastTextureMode;
-  static StutterManagerTextureDecay;
-  static StutterManagerTextureListenerAttached;
 
   static StutterManagerAttachTextureListener() {
-    if (this.StutterManagerTextureListenerAttached) return true;
+    if (this.textureAccumulator) return true;
     const EVENTS = V.getEventsOrThrow();
-    const eventName = EVENTS.TEXTURE_CONTRAST;
 
-    eventBus.on(eventName, (data) => {
-      const composite = Number(data.composite);
-      const mode = data.mode;
-      const weight = mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
-      this.StutterManagerTextureIntensity = this.StutterManagerTextureIntensity * this.StutterManagerTextureDecay + weight * (1 - this.StutterManagerTextureDecay);
-      this.StutterManagerLastTextureMode = mode;
-
-      if (mode === 'chordBurst' && composite > 0.3) {
-        V.assertArray(reflection, 'reflection');
-        const reflChs = reflection.slice(0, 2);
-        if (reflChs.length > 0) {
-          const microRate = clamp(m.round(24 + composite * 16), 24, 48);
-          const microDuration = spUnit * rf(0.3, 0.6);
-          this.StutterManagerStutterPan.call(this, reflChs, microRate, microDuration);
+    this.textureAccumulator = feedbackAccumulator.create({
+      name: 'StutterManagerTexture',
+      decayRate: 0.85,
+      inputs: [{
+        eventName: EVENTS.TEXTURE_CONTRAST,
+        project: (data) => {
+          const mode = data.mode;
+          return mode === 'chordBurst' ? 0.8 : mode === 'flurry' ? 0.3 : 0;
+        }
+      }],
+      onInput: (data) => {
+        this.StutterManagerLastTextureMode = data.mode;
+        if (data.mode === 'chordBurst' && Number(data.composite) > 0.3) {
+          V.assertArray(reflection, 'reflection');
+          const reflChs = reflection.slice(0, 2);
+          if (reflChs.length > 0) {
+            const microRate = clamp(m.round(24 + Number(data.composite) * 16), 24, 48);
+            const microDuration = spUnit * rf(0.3, 0.6);
+            this.StutterManagerStutterPan.call(this, reflChs, microRate, microDuration);
+          }
         }
       }
     });
-
-    this.StutterManagerTextureListenerAttached = true;
+    this.textureAccumulator.initialize();
     return true;
   }
 
@@ -212,8 +214,9 @@ StutterManager = class StutterManager {
       beatContext.selectedReflectionChannels = new Set();
       beatContext.selectedBassChannels = new Set();
 
-      const textureSuppression = (this.StutterManagerLastTextureMode === 'flurry' && this.StutterManagerTextureIntensity > 0.15)
-        ? clamp(1 - this.StutterManagerTextureIntensity * 1.5, 0.1, 0.5)
+      const textureIntensity = this.textureAccumulator.getIntensity();
+      const textureSuppression = (this.StutterManagerLastTextureMode === 'flurry' && textureIntensity > 0.15)
+        ? clamp(1 - textureIntensity * 1.5, 0.1, 0.5)
         : 0.5;
 
       V.assertArray(reflection, 'reflection');
@@ -286,10 +289,8 @@ stutterManagerStatic.StutterManagerNextPlanId = 1;
 stutterManagerStatic.StutterManagerStutterFade = stutterFadeImpl;
 stutterManagerStatic.StutterManagerStutterPan = stutterPanImpl;
 stutterManagerStatic.StutterManagerStutterFX = stutterFXImpl;
-stutterManagerStatic.StutterManagerTextureIntensity = 0;
+stutterManagerStatic.textureAccumulator = null;
 stutterManagerStatic.StutterManagerLastTextureMode = 'single';
-stutterManagerStatic.StutterManagerTextureDecay = 0.85;
-stutterManagerStatic.StutterManagerTextureListenerAttached = false;
 stutterManagerStatic.StutterManagerChannelCoordination = 0.5;
 
 stutterFade = (...args) => StutterManager.stutterFade(...args);

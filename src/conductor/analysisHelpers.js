@@ -99,22 +99,19 @@ analysisHelpers = (() => {
   }
 
   /**
-   * Creates a module-scoped validator and a query function that handles the
-   * standard getWindowNotes + minNotes early-return boilerplate.
-   * query(opts) returns the notes array, or null if notes.length < minNotes.
-   * @param {string} name
+   * Returns a query function for a tracker module. query(opts) returns the
+   * notes array or null if notes.length < minNotes.
+   * @param {{ optionalFinite: Function }} V - validator instance from the calling module
    * @param {number} windowSeconds
    * @param {{ minNotes?: number }} [options]
-   * @returns {{ V: any, query: (opts?: object) => any[]|null }}
+   * @returns {(opts?: object) => any[]|null}
    */
-  function createTrackerQuery(name, windowSeconds, { minNotes = 2 } = {}) {
-    const V = validator.create(name);
-    function query(opts) {
+  function createTrackerQuery(V, windowSeconds, { minNotes = 2 } = {}) {
+    return function query(opts) {
       const notes = getWindowNotes(V, opts, windowSeconds);
       if (notes.length < minNotes) return null;
       return notes;
-    }
-    return { V, query };
+    };
   }
 
   return {

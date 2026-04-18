@@ -1585,7 +1585,7 @@ declare var regimeClassifier: {
   setEvolvingMinDwell(minDwell: number): void;
   setEvolvingMinDwellSec(sec: number): void;
   getExploringBeats(): number;
-  getLastRegime(): string;
+  getRegime(): string;
   getTransitionReadiness(): { gap: number; couplingStrength: number; coherentThreshold: number; velocity: number; velThreshold: number; thresholdScale: number; velocityBlocked: boolean; exploringBlock: string; coherentBlock: string; evolvingBeats: number; coherentBeats: number; runCoherentBeats: number; maxCoherentBeats: number; runBeatCount: number; runTickCount: number; runCoherentShare: number; runTransitionCount: number; forcedBreakCount: number; forcedRegime: string; forcedRegimeBeatsRemaining: number; forcedOverrideActive: boolean; forcedOverrideBeats: number; lastForcedReason: string; lastForcedTriggerStreak: number; lastForcedTriggerBeat: number; lastForcedTriggerTick: number; postForcedRecoveryBeats: number; postForcedRecoveryRemainingSec: number; tickSource: string; rawRegimeCounts: Record<string, number>; runRawRegimeCounts: Record<string, number>; rawRegimeMaxStreak: Record<string, number>; runResolvedRegimeCounts: Record<string, number>; effectiveDim: number; cadenceMonopolyPressure: number; cadenceMonopolyActive: boolean; cadenceMonopolyReason: string; rawExploringShare: number; rawEvolvingShare: number; rawNonCoherentOpportunityShare: number; resolvedNonCoherentShare: number; opportunityGap: number };
   consumeForcedTransitionEvent(): ForcedTransitionEvent | null;
   reset(): void;

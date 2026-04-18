@@ -3,7 +3,8 @@
 // Pure query API - biases velocity curves for variety.
 
 accentPatternTracker = (() => {
-  const { V, query } = analysisHelpers.createTrackerQuery('accentPatternTracker', 4, { minNotes: 4 });
+  const V = validator.create('accentPatternTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   /**
    * Analyze accent distribution across metric positions.
