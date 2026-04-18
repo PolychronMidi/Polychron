@@ -403,9 +403,7 @@ function handleRequest(clientReq, clientRes) {
             }
             if (promptText) {
               const stdin = JSON.stringify({ user_prompt: promptText, session_id: session });
-              hookBridge.dispatchEvent('UserPromptSubmit', stdin).catch((err) => {
-                console.error('[hme-proxy] inline UserPromptSubmit failed:', err.message);
-              });
+              _runInlineFallback('UserPromptSubmit', stdin);
             }
           }
         }
