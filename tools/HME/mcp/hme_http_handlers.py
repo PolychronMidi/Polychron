@@ -401,7 +401,7 @@ def _post_audit(changed_files: str = "") -> dict:
             result = subprocess.run(
                 ["git", "diff", "--name-only", "HEAD"],
                 capture_output=True, text=True, timeout=5,
-                cwd=ENV.optional("PROJECT_ROOT", os.getcwd())
+                cwd=ENV.require("PROJECT_ROOT")
             )
             files = [f.strip() for f in result.stdout.strip().splitlines() if f.strip()]
         except Exception as e:
