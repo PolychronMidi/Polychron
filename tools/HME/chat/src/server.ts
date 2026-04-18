@@ -26,6 +26,7 @@ app.get("/api/events", (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
+  console.log("[HME] SSE client connected");
 
   const panel = BrowserPanel.createOrShow(projectRoot);
   panel.registerSseClient(res);
@@ -38,6 +39,7 @@ app.get("/api/events", (req, res) => {
 // ── Message dispatch ─────────────────────────────────────────────────────────
 
 app.post("/api/message", (req, res) => {
+  console.log(`[HME] POST /api/message type=${req.body?.type}`);
   const panel = BrowserPanel.createOrShow(projectRoot);
   try {
     panel.handleMessage(req.body);
