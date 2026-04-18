@@ -242,6 +242,9 @@ function _handleLifecycleRoute(clientReq, clientRes) {
   clientReq.on('data', (c) => chunks.push(c));
   clientReq.on('end', async () => {
     const stdin = Buffer.concat(chunks).toString('utf8') || '{}';
+    // Mark Claude Code's hook system as active for this event so inline
+    // fallback fires don't double-invoke it.
+    _recordLifecycleHit(event);
     try {
       const result = await hookBridge.dispatchEvent(event, stdin);
       json(200, result);
