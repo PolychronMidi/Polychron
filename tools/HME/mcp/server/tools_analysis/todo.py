@@ -48,10 +48,10 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 _TODO_FILE = os.path.join(
-    ENV.optional("PROJECT_ROOT", os.getcwd()), ".claude", "mcp", "HME", "todos.json"
+    ENV.require("PROJECT_ROOT"), ".claude", "mcp", "HME", "todos.json"
 )
 _GRAPH_FILE = os.path.join(
-    ENV.optional("PROJECT_ROOT", os.getcwd()), "metrics", "todo-graph.md"
+    ENV.require("PROJECT_ROOT"), "metrics", "todo-graph.md"
 )
 _todo_lock = threading.RLock()
 
@@ -652,7 +652,7 @@ def _trigger_learn_prompt(entry: dict) -> str:
     """Write a prompt file that gets surfaced at the next UserPromptSubmit."""
     try:
         prompt_file = os.path.join(
-            ENV.optional("PROJECT_ROOT", os.getcwd()),
+            ENV.require("PROJECT_ROOT"),
             "tmp", "hme-todo-learn-prompts.log",
         )
         os.makedirs(os.path.dirname(prompt_file), exist_ok=True)
@@ -667,7 +667,7 @@ def _trigger_commit_nudge(entry: dict) -> str:
     """Flag the nexus that a commit is pending for this completed todo."""
     try:
         nexus_file = os.path.join(
-            ENV.optional("PROJECT_ROOT", os.getcwd()),
+            ENV.require("PROJECT_ROOT"),
             "tmp", "hme-nexus.state",
         )
         if os.path.isfile(nexus_file):

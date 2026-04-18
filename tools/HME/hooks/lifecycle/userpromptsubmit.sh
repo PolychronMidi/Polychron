@@ -7,11 +7,11 @@ PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 # ── Auto-commit snapshot ──────────────────────────────────────────────────────
 # Commit any uncommitted changes before Claude processes the message.
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
-# Same PROJECT_ROOT-fallback pattern as stop.sh: plugin-hook invocations
-# may not set PROJECT_ROOT in the env, so fall through to stdin.cwd → $PWD.
-_HOOK_CWD=$(_safe_jq "$INPUT" '.cwd' '')
-_AC_PROJECT="${PROJECT_ROOT:-${_HOOK_CWD:-$(pwd)}}"
-if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
+# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to stdin.cwd /
+# $(pwd) — tool cwd may be a subtree and git -C would commit against the wrong
+# root. If PROJECT_ROOT is invalid, skip.
+_AC_PROJECT="${PROJECT_ROOT:-}"
+if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ -d "$_AC_PROJECT/src" ] && [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
   git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"

@@ -56,53 +56,9 @@ if [ "${HME_PROXY_ENABLED:-0}" = "1" ]; then
   fi
 fi
 
-# Ensure llama-server instances are running (arbiter :8080, coder :8081).
-# Same /health-probe-then-nohup pattern as the shim, applied to the local
-# inference tier. HME's in-process supervisor (server/llamacpp_supervisor.py)
-# handles hot supervision during a session — this block handles cold boot
-# before Python is alive. Topology overrides come from env; defaults match
-# the committed supervisor config.
-LLAMA_BIN="$HME_LLAMA_SERVER_BIN"
-# DISABLED — user explicitly cancelled all auto-launch. Set HME_AUTOLAUNCH_LLAMA=1 to re-enable.
-if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "$LLAMA_BIN" ]; then
-  _start_llama() {
-    local name="$1" port="$2" model="$3" device="$4" alias="$5" ctx="$6" lora="$7"
-    if curl -sf --max-time 2 "http://127.0.0.1:${port}/health" 2>/dev/null | grep -q '"status":"ok"'; then
-      return 0
-    fi
-    if [ ! -f "$model" ]; then
-      echo "WARN: llama-server ${name} model missing: $model" >&2
-      return 1
-    fi
-    local args=("--model" "$model" "--host" "127.0.0.1" "--port" "$port"
-                "--ctx-size" "$ctx" "--n-gpu-layers" "999" "--device" "$device"
-                "--alias" "$alias" "--timeout" "30" "--jinja")
-    if [ -n "$lora" ] && [ -f "$lora" ]; then
-      args+=("--lora" "$lora")
-    fi
-    local log="$PROJECT/log/llama-server-${name}.log"
-    mkdir -p "$(dirname "$log")"
-    nohup "$LLAMA_BIN" "${args[@]}" >> "$log" 2>&1 &
-    disown $! 2>/dev/null || true
-    echo "llama-server ${name} started (pid $!) on :${port} ${device}" >&2
-  }
-  _start_llama arbiter \
-    "${HME_ARBITER_PORT:?HME_ARBITER_PORT not in .env}" \
-    "${HME_ARBITER:?HME_ARBITER not in .env}" \
-    "${HME_ARBITER_VULKAN:?HME_ARBITER_VULKAN not in .env}" \
-    "${HME_ARBITER_MODEL:?HME_ARBITER_MODEL not in .env}" \
-    "${HME_ARBITER_CTX:?HME_ARBITER_CTX not in .env}" \
-    ""
-  _start_llama coder \
-    "${HME_CODER_PORT:?HME_CODER_PORT not in .env}" \
-    "${HME_CODER:?HME_CODER not in .env}" \
-    "${HME_CODER_VULKAN:?HME_CODER_VULKAN not in .env}" \
-    "${HME_CODER_ALIAS:?HME_CODER_ALIAS not in .env}" \
-    "${HME_CODER_CTX:?HME_CODER_CTX not in .env}" \
-    ""
-else
-  echo "WARN: llama-server binary missing at $LLAMA_BIN — skipping local inference launch" >&2
-fi
+# llama-server cold boot moved to tools/HME/launcher/polychron-launch.sh so
+# inference is ready before Claude Code opens a session. Hot-supervision during
+# a session stays in server/llamacpp_supervisor.py.
 
 # Persist HME env vars for the session
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then

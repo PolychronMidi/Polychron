@@ -27,13 +27,13 @@ fi
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
 # After commit, the nexus EDIT backlog triggers review(mode='forget') automatically.
 #
-# PROJECT_ROOT may be unset in plugin-hook invocations (Claude Code passes
-# cwd via the stdin JSON, not the env). Fall through to stdin.cwd → $PWD
-# so the commit actually happens instead of git -C "" silently failing.
-_HOOK_CWD=$(_safe_jq "$INPUT" '.cwd' '')
-_AC_PROJECT="${PROJECT_ROOT:-${_HOOK_CWD:-$(pwd)}}"
-if [ -z "$_AC_PROJECT" ] || [ ! -d "$_AC_PROJECT/.git" ]; then
-  echo "WARNING: stop.sh auto-commit skipped — could not resolve project root (PROJECT_ROOT='$PROJECT_ROOT', stdin.cwd='$_HOOK_CWD')" >&2
+# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to stdin.cwd /
+# $(pwd) — the tool's working directory can be any subtree (e.g. tools/HME/chat)
+# and git -C <subtree> would commit to whatever .git it walks up to. If
+# PROJECT_ROOT is invalid, skip loudly instead of fabricating a target.
+_AC_PROJECT="${PROJECT_ROOT:-}"
+if [ -z "$_AC_PROJECT" ] || [ ! -d "$_AC_PROJECT/.git" ] || [ ! -d "$_AC_PROJECT/src" ]; then
+  echo "WARNING: stop.sh auto-commit skipped — PROJECT_ROOT unset or invalid ('$_AC_PROJECT')" >&2
 elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   # Capture git errors to a log so failures are visible, not hidden behind 2>/dev/null
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
