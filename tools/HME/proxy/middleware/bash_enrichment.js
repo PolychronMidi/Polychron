@@ -33,6 +33,11 @@ module.exports = {
     if (toolUse.name !== 'Bash') return;
     const text = _textOf(toolResult);
     if (!text || !ERROR_RE.test(text)) return;
+    // Guard against restart-stacking: _processed is in-memory only, so on
+    // every proxy restart the entire conversation's tool_results re-enter
+    // the pipeline. Without this check we'd stack `[err]` footers N deep
+    // after N restarts within a single conversation.
+    if (ctx.hasHmeFooter(toolResult, '[err] ')) return;
     const snip = _firstErrorSnippet(text);
     if (!snip) return;
     ctx.appendToResult(toolResult, `\n[err] ${snip}`);
