@@ -85,12 +85,27 @@ function _lifecycleInactive(event) {
   const last = _lifecycleSeen[event] || 0;
   return (Date.now() - last) > _LIFECYCLE_FRESH_MS;
 }
+
+/**
+ * Run an inline fallback dispatch and echo any captured stderr to the
+ * proxy's own stderr so the user sees hook banners (sessionstart orientation,
+ * LIFESAVER, etc.). Without this the stderr is silently swallowed into
+ * dispatchEvent's return value and lost.
+ */
+async function _runInlineFallback(event, stdinJson) {
+  try {
+    const r = await hookBridge.dispatchEvent(event, stdinJson);
+    if (r.stderr && r.stderr.length > 0) process.stderr.write(r.stderr);
+    if (r.stdout && r.stdout.length > 0) console.error(`[hme-proxy] inline ${event} stdout: ${r.stdout.slice(0, 200)}`);
+  } catch (err) {
+    console.error(`[hme-proxy] inline ${event} failed: ${err.message}`);
+  }
+}
+
 // Fire SessionStart inline at startup. If Claude Code hits /hme/lifecycle
 // with SessionStart shortly after, we'll note the dup but it's harmless
 // (sessionstart.sh is idempotent w.r.t. its state writes).
-hookBridge.dispatchEvent('SessionStart', '{}').catch((err) => {
-  console.error('[hme-proxy] inline SessionStart failed:', err.message);
-});
+_runInlineFallback('SessionStart', '{}');
 
 // ── HME full-bypass: legacy inline-tool path (disabled by default) ──────────
 // Claude Code has no MCP connection to us for HME tools (.mcp.json was
