@@ -71,10 +71,10 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
     proc.stdin.end();
     let buf = "";
     let doneFired = false;
-    const safeOnDone = (cost) => {
+    const safeOnDone = (cost, usage) => {
         if (!doneFired) {
             doneFired = true;
-            onDone(cost);
+            onDone(cost, usage);
         }
     };
     const INACTIVITY_MS = 30000;
