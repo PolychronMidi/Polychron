@@ -696,9 +696,8 @@ function updateModelControls() {
   thinkingWrap.style.display = isHaiku ? 'none' : '';
   // Max only valid for Opus — add/remove from DOM (display:none unreliable on <option>)
   var maxOpt = effortEl.querySelector('option[value="max"]');
-  if (isOpus && !maxOpt) { effortEl.insertAdjacentHTML('beforeend', _maxOptHtml); }
-  if (!isOpus && maxOpt) { maxOpt.remove(); }
-  if (!isOpus && effortEl.value === 'max') effortEl.value = 'high';
+  if (!isHaiku && !maxOpt) { effortEl.insertAdjacentHTML('beforeend', _maxOptHtml); }
+  if (isHaiku && maxOpt) { maxOpt.remove(); }
 }
 claudeModel.addEventListener('change', function() {
   updateModelControls();
