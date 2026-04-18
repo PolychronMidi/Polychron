@@ -202,6 +202,41 @@ function _handleSpawnRoute(clientReq, clientRes) {
   json(405, { error: 'method not allowed' });
 }
 
+/**
+ * Lifecycle bridge route. One forwarder script POSTs here with:
+ *   - query ?event=<EventName>
+ *   - body = the Claude Code hook stdin JSON payload
+ * We dispatch to the appropriate bash hook chain and respond with JSON:
+ *   {stdout: "...", stderr: "...", exit_code: <int>}
+ * The forwarder script relays each field back to Claude Code's plugin
+ * machinery, preserving block decisions, banners, and exit codes.
+ */
+function _handleLifecycleRoute(clientReq, clientRes) {
+  const json = (status, body) => {
+    clientRes.writeHead(status, { 'Content-Type': 'application/json' });
+    clientRes.end(JSON.stringify(body));
+  };
+  if (clientReq.method !== 'POST') return json(405, { error: 'POST only' });
+  const url = new URL(clientReq.url, 'http://127.0.0.1');
+  const event = url.searchParams.get('event') || '';
+  if (!event) return json(400, { error: 'missing ?event=<EventName>' });
+  const chunks = [];
+  clientReq.on('data', (c) => chunks.push(c));
+  clientReq.on('end', async () => {
+    const stdin = Buffer.concat(chunks).toString('utf8') || '{}';
+    try {
+      const result = await hookBridge.dispatchEvent(event, stdin);
+      json(200, result);
+    } catch (err) {
+      console.error(`[hme-proxy] lifecycle dispatch threw: ${err.message}`);
+      json(500, { stdout: '', stderr: `dispatch error: ${err.message}`, exit_code: -1 });
+    }
+  });
+  clientReq.on('error', (err) => {
+    if (!clientRes.headersSent) json(500, { error: err.message });
+  });
+}
+
 function _handleChatRoute(clientReq, clientRes) {
   const workerPath = (clientReq.url || '').replace(/^\/chat/, '') || '/';
   const chunks = [];
