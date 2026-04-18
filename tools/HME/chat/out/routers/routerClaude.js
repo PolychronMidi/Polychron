@@ -52,6 +52,8 @@ function buildClaudeArgs(opts, sessionId, prefix) {
         "--model", opts.model,
         "--effort", opts.effort,
         "--permission-mode", opts.permissionMode || "acceptEdits",
+        // Thinking is a separate independent toggle — delivered via inline --settings JSON.
+        "--settings", JSON.stringify({ alwaysThinkingEnabled: !!opts.thinking }),
     ];
     if (sessionId)
         args.push("--resume", sessionId);
@@ -164,8 +166,9 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
         // Token counts live under evt.usage, not top-level.
         const inputTokens = evt.usage?.input_tokens;
         const outputTokens = evt.usage?.output_tokens;
-        // Context window size from per-model usage block; fall back to 200k.
-        const modelEntry = evt.modelUsage ? Object.values(evt.modelUsage)[0] : undefined;
+        // modelUsage is keyed by model id; capture which one Claude actually used.
+        const modelKey = evt.modelUsage ? Object.keys(evt.modelUsage)[0] : undefined;
+        const modelEntry = modelKey ? evt.modelUsage[modelKey] : undefined;
         const contextWindow = modelEntry?.contextWindow ?? 200000;
         const totalInput = (inputTokens ?? 0)
             + (evt.usage?.cache_read_input_tokens ?? 0)
@@ -175,6 +178,8 @@ function handleStreamEvent(evt, onChunk, onSessionId, onDone) {
                 inputTokens,
                 outputTokens,
                 usedPct: Math.round((totalInput / contextWindow) * 1000) / 10,
+                modelId: modelKey,
+                modelName: modelEntry?.modelName,
             }
             : undefined;
         onDone(evt.total_cost_usd ?? evt.cost_usd ?? undefined, usage);

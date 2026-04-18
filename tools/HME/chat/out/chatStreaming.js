@@ -233,6 +233,14 @@ function streamClaudeMsg(ctx, msg, assistantId) {
     const route = msg._resolvedRoute ?? msg.route ?? "claude";
     const effectiveText = (msg._contextPrefix ?? "") + msg.text;
     const claudeOpts = (0, msgHelpers_1.claudeOptsFromMsg)(msg);
+    // Announce exactly what we're about to send — the browser reconciles this against its UI.
+    ctx.post({
+        type: "claudeConfigDispatched",
+        assistantId,
+        modelId: claudeOpts.model,
+        effort: claudeOpts.effort,
+        thinking: claudeOpts.thinking,
+    });
     runStream({
         ctx, assistantId, route,
         start: (h) => {
@@ -240,6 +248,25 @@ function streamClaudeMsg(ctx, msg, assistantId) {
                 if (h.isAborted())
                     return;
                 ctx.updateContextTracker(h.state.text, h.state.thinking, msg.claudeModel, usage);
+                // Validate: did Claude actually run with the model we asked for?
+                if (usage?.modelId && usage.modelId !== claudeOpts.model) {
+                    ctx.post({
+                        type: "claudeConfigMismatch",
+                        assistantId,
+                        requested: claudeOpts.model,
+                        actual: usage.modelId,
+                    });
+                    ctx.postError("claude", `model mismatch: requested ${claudeOpts.model}, got ${usage.modelId}`);
+                }
+                else if (usage?.modelId) {
+                    ctx.post({
+                        type: "claudeConfigConfirmed",
+                        assistantId,
+                        modelId: usage.modelId,
+                        modelName: usage.modelName,
+                        thinkingEmitted: !!h.state.thinking,
+                    });
+                }
                 finalizeStream(h, ctx, assistantId, route, { includeThinking: true, model: msg.claudeModel, checkChain: true });
                 h.safeEnd();
             };

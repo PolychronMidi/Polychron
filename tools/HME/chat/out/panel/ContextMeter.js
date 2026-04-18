@@ -7,6 +7,7 @@ class ContextMeter {
         this.projectRoot = projectRoot;
         this.host = host;
         this._tracker = ContextMeter._blank();
+        this._hasLiveUpdate = false;
     }
     static _blank() {
         return {
@@ -17,8 +18,13 @@ class ContextMeter {
     get pctUsed() {
         return this._tracker.usedPct ?? 0;
     }
+    /** True only after at least one live response has updated the meter this session. */
+    get hasLiveUpdate() {
+        return this._hasLiveUpdate;
+    }
     reset(args, restoredPct) {
         this._tracker = ContextMeter._blank();
+        this._hasLiveUpdate = false;
         if (restoredPct)
             this._tracker.usedPct = restoredPct;
         this.post(args);
@@ -29,6 +35,7 @@ class ContextMeter {
      */
     resetSilently() {
         this._tracker = ContextMeter._blank();
+        this._hasLiveUpdate = false;
     }
     update(text, thinking, model, usage, args) {
         this._tracker.model = model;
@@ -43,6 +50,7 @@ class ContextMeter {
             if (usage.modelName)
                 this._tracker.cliModelName = usage.modelName;
         }
+        this._hasLiveUpdate = true;
         this.post(args);
     }
     post(args) {

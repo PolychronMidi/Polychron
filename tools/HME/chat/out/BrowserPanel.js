@@ -48,6 +48,7 @@ const ContextMeter_1 = require("./panel/ContextMeter");
 const ChainPerformer_1 = require("./panel/ChainPerformer");
 const StreamPersister_1 = require("./panel/StreamPersister");
 const webviewMessages_1 = require("./panel/webviewMessages");
+const msgHelpers_1 = require("./msgHelpers");
 class BrowserPanel {
     static _blankState() {
         return { messages: [], claudeSessionId: null, llamacppHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
@@ -59,6 +60,10 @@ class BrowserPanel {
         this._restoreSessionId = null;
         this._disposed = false;
         this._sseClients = [];
+        // Authoritative Claude config — kept in sync with the browser UI via setClaudeConfig.
+        // Send/queue messages fall back to this if they omit the fields (they shouldn't, but
+        // it means the server state is the source of truth, not the browser payload).
+        this._claudeConfig = { model: "sonnet", effort: "high", thinking: false };
         this._messageHandlers = {
             send: (msg) => {
                 if (this._isStreaming) {
@@ -154,6 +159,37 @@ class BrowserPanel {
             setMirrorMode: (_msg) => {
                 // No-op: mirror terminal not available in browser mode
             },
+            setClaudeConfig: (msg) => {
+                try {
+                    const validated = (0, msgHelpers_1.validateClaudeConfig)({
+                        model: msg.claudeModel,
+                        effort: msg.claudeEffort,
+                        thinking: msg.claudeThinking,
+                    });
+                    this._claudeConfig = validated;
+                    const resolved = (0, msgHelpers_1.resolveClaudeConfig)(validated);
+                    this.post({
+                        type: "claudeConfigApplied",
+                        alias: resolved.alias,
+                        modelId: resolved.modelId,
+                        effort: resolved.cliEffort,
+                        thinking: resolved.thinking,
+                    });
+                }
+                catch (e) {
+                    this.postError("config", `setClaudeConfig rejected: ${e?.message ?? e}`);
+                    // Re-broadcast current server-side config so the browser can reconcile.
+                    const resolved = (0, msgHelpers_1.resolveClaudeConfig)(this._claudeConfig);
+                    this.post({
+                        type: "claudeConfigApplied",
+                        alias: resolved.alias,
+                        modelId: resolved.modelId,
+                        effort: resolved.cliEffort,
+                        thinking: resolved.thinking,
+                        rejected: true,
+                    });
+                }
+            },
         };
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
@@ -242,6 +278,7 @@ class BrowserPanel {
             getChainIndex: () => this._state.chainIndex,
             getClaudeSessionId: () => this._state.claudeSessionId,
             getContextPct: () => this._contextMeter.pctUsed,
+            hasMeterLiveUpdate: () => this._contextMeter.hasLiveUpdate,
             rotate: (continuationMsg, newChainIndex) => {
                 this._state.messages = [];
                 this._state.claudeSessionId = null;
@@ -354,6 +391,13 @@ class BrowserPanel {
             this._transcript.logSessionStart(entry.id, entry.title, false);
             this.post({ type: "sessionCreated", session: entry });
         }
+        // Server-side config is authoritative: overwrite msg fields from stored _claudeConfig
+        // so the Claude CLI always runs with exactly what the server last confirmed. This
+        // prevents UI/server drift if the browser's state gets out of sync.
+        const resolvedCfg = (0, msgHelpers_1.resolveClaudeConfig)(this._claudeConfig);
+        msg.claudeModel = resolvedCfg.modelId;
+        msg.claudeEffort = resolvedCfg.cliEffort;
+        msg.claudeThinking = resolvedCfg.thinking;
         const model = resolvedRoute === "local" || resolvedRoute === "hybrid" ? msg.llamacppModel : msg.claudeModel;
         this._transcript.logUser(msg.text, resolvedRoute, model);
         (0, router_1.validateMessage)(msg.text).then(({ warnings, blocks }) => {
@@ -386,7 +430,10 @@ class BrowserPanel {
         const contextPrefix = (0, crossRouteHistory_1.applyCrossRouteContext)(this._state, cross);
         this._state.lastRoute = resolvedRoute;
         const assistantId = (0, streamUtils_1.uid)();
-        this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model });
+        const streamStartExtras = resolvedRoute === "claude"
+            ? { effort: resolvedCfg.cliEffort, thinking: resolvedCfg.thinking }
+            : {};
+        this.post({ type: "streamStart", id: assistantId, route: resolvedRoute, model, ...streamStartExtras });
         const resolvedMsg = { ...msg, _resolvedRoute: resolvedRoute, _contextPrefix: contextPrefix };
         const ctx = this._ctx;
         try {
