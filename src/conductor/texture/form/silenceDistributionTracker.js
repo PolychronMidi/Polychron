@@ -5,18 +5,16 @@
 // Pure query API - no side effects.
 
 silenceDistributionTracker = (() => {
-  const WINDOW_SECONDS = 6;
+  const V = validator.create('silenceDistributionTracker');
+  const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 
   /**
    * Analyze rest distribution by checking onset gaps per layer.
    * @returns {{ clusterScore: number, staggerScore: number, silenceRatio: number, suggestion: string }}
    */
   function getSilenceSignal() {
-    const entries = L0.query(L0_CHANNELS.note, { windowSeconds: WINDOW_SECONDS });
-
-    if (entries.length < 4) {
-      return { clusterScore: 0, staggerScore: 0, silenceRatio: 0.5, suggestion: 'maintain' };
-    }
+    const entries = query();
+    if (!entries) return { clusterScore: 0, staggerScore: 0, silenceRatio: 0.5, suggestion: 'maintain' };
 
     // Group onsets by layer
     /** @type {Object.<string, number[]>} */
