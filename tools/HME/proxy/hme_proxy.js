@@ -457,8 +457,13 @@ function handleRequest(clientReq, clientRes) {
         // Lifecycle: fire stop hook (auto-commit + lifecycle checks). Runs
         // after response has been sent to the client so commit latency
         // doesn't affect user-visible turn end. Fire-and-forget (detached).
+        // `session` from line 277 is out of scope here — recompute from
+        // payload, falling back to 'unknown' if payload is absent.
         if (isAnthropic) {
-          try { hookBridge.runStop(session); } catch (e) {
+          try {
+            const stopSession = payload ? sessionKey(payload) : 'unknown';
+            hookBridge.runStop(stopSession);
+          } catch (e) {
             console.error('[hme-proxy] runStop threw:', e.message);
           }
         }
