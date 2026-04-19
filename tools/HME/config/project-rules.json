@@ -58,7 +58,9 @@
     "synthesis_reasoning", "synthesis_inference", "synthesis_llamacpp", "synthesis_pipeline",
     "synthesis_cascade", "synthesis_config", "synthesis_session", "synthesis_warm",
     "synthesis_gemini", "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
-    "synthesis_mistral", "synthesis_nvidia"
+    "synthesis_mistral", "synthesis_nvidia",
+    "pipeline_start", "pipeline_run", "turn_complete", "edit_pending",
+    "jurisdiction_inject", "status_inject", "pipeline_test_probe"
   ],
 
   "registration_patterns": [
