@@ -186,7 +186,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
   # `|| echo ok` per-detector fallbacks).
-  _RUN_ALL_OUT=$(python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>/dev/null || true)
+  _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>/dev/null || true)
   while IFS='=' read -r _k _v; do
     case "$_k" in
       poll_count)    POLL_COUNT="$_v" ;;
@@ -302,7 +302,12 @@ fi
 SESSION_HOLO="$_AC_PROJECT/tmp/hme-session-start.holograph.json"
 HOLO_SCRIPT="$_AC_PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
-  DIFF_OUT=$(PROJECT_ROOT="$_AC_PROJECT" python3 "$HOLO_SCRIPT" --diff "$SESSION_HOLO" 2>/dev/null)
+  # Run holograph diff with a timeout — purely informational, never blocks.
+  # Output goes to a temp file so we can read it without blocking stop.sh.
+  _HOLO_TMP=$(mktemp)
+  timeout 2 bash -c "PROJECT_ROOT='$_AC_PROJECT' python3 '$HOLO_SCRIPT' --diff '$SESSION_HOLO' 2>/dev/null" > "$_HOLO_TMP" 2>/dev/null || true
+  DIFF_OUT=$(cat "$_HOLO_TMP" 2>/dev/null)
+  rm -f "$_HOLO_TMP"
   if [ -n "$DIFF_OUT" ] && ! echo "$DIFF_OUT" | grep -q "No drift"; then
     # Filter noise — only surface dimensions that actually matter
     FILTERED=$(echo "$DIFF_OUT" | grep -vE "^  (hci|streak|onboarding|git_state|kb_summary|pipeline_history|codebase|todo_store)\." || true)
@@ -332,7 +337,7 @@ _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 # See tools/HME/activity/streak_calibrator.py. Silent-fail to keep stop.sh
 # non-fragile — this is telemetry, not a gate.
 PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
-  > /dev/null 2>&1 || true
+  > /dev/null 2>&1 &
 
 # Turn-closing audit trail
 # Summarize what changed this turn from nexus EDIT entries and emit to stderr

@@ -546,21 +546,27 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
         return True, "correlation file unparseable — can't check"
     hist = corr.get("history") or []
 
-    # Build {short_sha: [values]}
+    # Build {tree_hash_or_sha: [values]}
+    # tree_hash is preferred — it's stable across auto-commits that don't change
+    # file content, so two same-source-tree runs can be compared. Falls back to
+    # SHA extracted from round_id for older history entries that lack tree_hash.
     by_sha: dict = {}
     for h in hist:
-        rid = h.get("round_id", "")
-        if not isinstance(rid, str) or not rid.startswith("r_"):
-            continue
-        # r_<sha>_<seq>
-        parts = rid.split("_")
-        if len(parts) < 3:
-            continue
-        sha = parts[1]
+        tree = h.get("tree_hash")
+        if tree and isinstance(tree, str) and len(tree) >= 8:
+            key = f"tree_{tree}"
+        else:
+            rid = h.get("round_id", "")
+            if not isinstance(rid, str) or not rid.startswith("r_"):
+                continue
+            parts = rid.split("_")
+            if len(parts) < 3:
+                continue
+            key = f"sha_{parts[1]}"
         val = h.get(field)
         if val is None:
             continue
-        by_sha.setdefault(sha, []).append(val)
+        by_sha.setdefault(key, []).append(val)
 
     # Check any sha with >= 2 values
     violations: list = []
