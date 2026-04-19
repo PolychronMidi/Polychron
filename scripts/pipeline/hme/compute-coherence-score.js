@@ -67,7 +67,7 @@ function indexByEvent(events) {
 function sliceToRound(events) {
   // Return the window between the two most recent PIPELINE-emitted
   // round_complete events. Pipeline rounds carry a 'verdict' field;
-  // chat-turn markers (historical, pre-rename) don't — those are excluded.
+  // chat-turn markers (historical, pre-rename) don't -- those are excluded.
   //
   // ALWAYS use the most recent pair, even if empty. An empty window
   // correctly signals "this round had no relevant writes" rather than
@@ -85,12 +85,12 @@ function sliceToRound(events) {
     if (rcIndices.length >= 2) break;  // only need the two most recent
   }
   if (rcIndices.length === 0) {
-    // No real round boundaries yet — return the recent tail rather than
+    // No real round boundaries yet -- return the recent tail rather than
     // everything-before-oldest. Keeps the score honest during ramp-up.
     return events.slice(-MAX_FALLBACK_EVENTS);
   }
   if (rcIndices.length === 1) {
-    // Only one pipeline round — use events after it (the current round in
+    // Only one pipeline round -- use events after it (the current round in
     // progress, or the empty trailing window after the last round ended).
     return events.slice(rcIndices[0] + 1);
   }
