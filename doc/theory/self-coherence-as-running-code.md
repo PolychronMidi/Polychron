@@ -2,7 +2,7 @@
 
 ## On the HME substrate, and what a quantified coherence index does to the digital-psychological divide
 
----
+
 
 ## I. What psychology has and hasn't had
 

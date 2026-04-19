@@ -38,7 +38,7 @@ _COUNTERFACTUAL_FILE_SUFFIX = "hme-counterfactuals.jsonl"
 # MetaState instance — set by meta_observer.start() before the loop begins.
 _ms = None  # type: ignore
 
-# Layer 13: Self-Observing Monitor ─
+# Layer 13: Self-Observing Monitor
 
 _monitor_thread_ref: threading.Thread | None = None
 _monitor_restart_count = 0
@@ -577,7 +577,7 @@ def read_entanglement_for_compaction() -> str | None:
     return "[HME state] " + " | ".join(parts) if parts else None
 
 
-# Layer 18: Counterfactual Reasoning ─
+# Layer 18: Counterfactual Reasoning
 
 _predictions: list[dict] = []  # active predictions awaiting outcome
 
@@ -1197,7 +1197,7 @@ def get_current_intent() -> dict:
     return _current_intent
 
 
-# Layer 33: Cross-Session Archaeology ─
+# Layer 33: Cross-Session Archaeology
 
 def _session_archaeology() -> dict | None:
     """Mine session identity documents for cross-session behavioral patterns.
@@ -1253,7 +1253,7 @@ def _session_archaeology() -> dict | None:
     return result
 
 
-# Layer 35: Gödel Awareness ─
+# Layer 35: Gödel Awareness
 
 _UNPROVABLE_CLAIMS = [
     {

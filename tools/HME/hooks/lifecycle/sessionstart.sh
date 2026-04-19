@@ -38,7 +38,7 @@ mkdir -p "${PROJECT}/tmp"
 source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
 
-# HME Proxy + Supervisor (:9099) ─
+# HME Proxy + Supervisor (:9099)
 # Proxy owns shim + MCP as supervised children. Starting the proxy is all
 # that.s needed — the worker (9098) absorbs every former shim endpoint.
 # Claude Code connects via SSE: url = http://127.0.0.1:9099/mcp
@@ -65,7 +65,7 @@ if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export HME_ACTIVE=1" >> "$CLAUDE_ENV_FILE"
 fi
 
-# Worker health — surface recent_errors ─
+# Worker health — surface recent_errors
 # The worker's /health endpoint returns a `recent_errors` array (populated by
 # the meta-observer, llamacpp_supervisor, rag_proxy, etc.) that previously had
 # no surface. Agents would step over accumulating CUDA/memory/connection
@@ -169,7 +169,7 @@ PYEOF
 )
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
-# Lance _deletions compaction ─
+# Lance _deletions compaction
 # If code_chunks.lance/_deletions/ has accumulated too many arrow files (>50),
 # run a background compaction so table opens stay fast. Non-blocking — runs
 # detached and won't delay session start. The invariant warns at >50; we
@@ -224,7 +224,7 @@ if [ -f "$TRAJ_SCRIPT" ]; then
   [ -n "$TRAJ_LINE" ] && echo "$TRAJ_LINE" >&2
 fi
 
-# Antagonism bridge: streak calibrator recommendation ─
+# Antagonism bridge: streak calibrator recommendation
 # The bridge observes post-banner resolution velocity across recent turns and
 # recommends where HME_STREAK_WARN should sit. Currently observe-only — prints
 # the recommendation and rationale so we can verify the signal tracks reality

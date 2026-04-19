@@ -44,7 +44,7 @@ def analyze_diff(project_root: str, ref: str = "") -> dict:
         chunk = diff_text[start:end]
 
         ins = sum(1 for line in chunk.split("\n") if line.startswith("+") and not line.startswith("+++"))
-        dels = sum(1 for line in chunk.split("\n") if line.startswith("-") and not line.startswith("---"))
+        dels = sum(1 for line in chunk.split("\n") if line.startswith("-") and not line.startswith(""))
         total_ins += ins
         total_del += dels
 
@@ -241,7 +241,7 @@ def diff_configs(project_root: str) -> dict:
         if has_changes:
             lines = r.stdout.split("\n")
             added = [l for l in lines if l.startswith("+") and not l.startswith("+++")]
-            removed = [l for l in lines if l.startswith("-") and not l.startswith("---")]
+            removed = [l for l in lines if l.startswith("-") and not l.startswith("")]
             diff_summary = f"+{len(added)} -{len(removed)} lines"
 
             fname = os.path.basename(cf)

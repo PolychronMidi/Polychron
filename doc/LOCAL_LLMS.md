@@ -24,7 +24,7 @@ The arbiter is the stage that was hallucinating file paths in v5 — inventing m
 Two `llama-server` instances (Vulkan backend, build b8797) run as systemd services. One per M40. Both expose OpenAI-compatible `/v1/chat/completions`.
 
 | Role | Port | Model | LoRA | Systemd unit |
-|------|------|-------|------|--------------|
+
 | Arbiter | 8080 | `phi-4-Q4_K_M.gguf` | `hme-arbiter.gguf` | `llamacpp-arbiter.service` |
 | Coder | 8081 | `qwen3-coder-30b-Q4_K_M.gguf` | (none yet) | `llamacpp-coder.service` |
 
@@ -69,7 +69,7 @@ HME_REASONING_MODEL=qwen3-coder:30b
 Two Tesla M40 24 GB (Maxwell, sm_52) + an Intel UHD 770 iGPU visible to Vulkan. The M40s are the workhorses; the iGPU is a fallback surface for embedding models when both M40s are contested.
 
 | Vulkan index | Device | Capacity | Typical tenant |
-|--------------|--------|----------|----------------|
+-
 | Vulkan0 | Intel UHD 770 | 48 GB UMA | (fallback for embeddings only) |
 | Vulkan1 | Tesla M40 #A | 23 GB | arbiter llama-server (~10 GB) |
 | Vulkan2 | Tesla M40 #B | 23 GB | coder llama-server (~18.6 GB) + RAG engine overflow |
@@ -110,7 +110,7 @@ The arbiter's domain knowledge lives in its LoRA adapter, not the base model. To
 Sections inside each:
 
 | Section | Purpose | Examples |
-|---------|---------|----------|
+
 | A | Factual lookup (module → path → subsystem) | 1308 |
 | B | Planning (arbiter only) — 3-5 step investigation format | 600 |
 | C | Extraction (coder only) — FILE/FUNCTION/SIGNALS/CONNECTS | 300 |

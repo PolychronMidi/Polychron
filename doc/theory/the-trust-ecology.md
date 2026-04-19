@@ -2,7 +2,7 @@
 
 ## On plural governance without central authority
 
----
+
 
 ## I. The problem no tradition has solved cleanly
 

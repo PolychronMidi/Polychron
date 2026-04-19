@@ -214,7 +214,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     if not records:
         return "Empty trace.jsonl."
 
-    # --- Composition Arc (compact) ---
+    #  Composition Arc (compact)
     sections: dict = defaultdict(lambda: {
         "beats": 0, "regimes": defaultdict(int), "tensions": [],
         "profiles": defaultdict(int), "trust_weights": defaultdict(list),
@@ -324,7 +324,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             shown += 1
         out.append("")
 
-    # --- Regime Anomaly (inline) ---
+    #  Regime Anomaly (inline)
     alerts: list = []
     for expected in ["coherent", "evolving", "exploring"]:
         if regime_total.get(expected, 0) == 0:
@@ -356,7 +356,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     else:
         out.append("## Regime Health: ✓ ALL CLEAR\n")
 
-    # --- Run Delta (last 2 snapshots) ---
+    #  Run Delta (last 2 snapshots)
     history_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
     if os.path.isdir(history_dir):
         snaps = sorted([f for f in os.listdir(history_dir) if f.endswith(".json")], reverse=True)
@@ -405,7 +405,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             except Exception as _err3:
                 logger.debug(f'silent-except digest.py:404: {type(_err3).__name__}: {_err3}')
 
-    # --- Optional critique ---
+    #  Optional critique
     if critique:
         try:
             from .digest_analysis import composition_critique as _compose_critique
@@ -414,7 +414,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
         except Exception as e:
             out.append(f"## Musical Critique\n*(unavailable: {e})*")
 
-    # --- Inline evolution suggestions (default on) ---
+    #  Inline evolution suggestions (default on)
     # Cap total digest output at ~8000 chars (~2000 tokens) to limit Claude context spend.
     # If budget remains after composition arc/delta, include evolution; else skip with note.
     _DIGEST_CHAR_CAP = 8000
@@ -425,19 +425,17 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             from .synthesis import compress_for_claude as _compress
             _evo = _suggest_ev()
             if _current_len + len(_evo) <= _DIGEST_CHAR_CAP:
-                out.append("\n---")
+                out.append("\n")
                 out.append(_evo)
             else:
                 # Over budget: compress via arbiter rather than hard truncation
                 _remaining = max(800, _DIGEST_CHAR_CAP - _current_len - 8)
                 _compressed = _compress(_evo, max_chars=_remaining,
                                         hint="ranked evolution proposals for next Polychron round")
-                out.append("\n---")
+                out.append("\n")
                 out.append(_compressed)
         except Exception as e:
             out.append(f"\n## Evolution\n*(unavailable: {e})*")
 
     _touch_digest_sentinel()
     return "\n".join(out)
-
-

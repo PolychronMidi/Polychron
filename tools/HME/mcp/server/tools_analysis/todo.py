@@ -469,9 +469,9 @@ def merge_native_todowrite(incoming: list) -> list:
                 "status": t.get("status", "pending"),
             })
             for s in t.get("subs", []):
-                sub_prefix = "  └─ "
+                sub_prefix = "  └ "
                 if t.get("source") == "onboarding":
-                    sub_prefix = "  └─ [HME] "
+                    sub_prefix = "  └ [HME] "
                 flat.append({
                     "content": sub_prefix + s["text"],
                     "activeForm": s.get("activeForm") or (sub_prefix + s["text"]),

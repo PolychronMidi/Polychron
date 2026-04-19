@@ -196,7 +196,7 @@ class OpenAIProvider:
             logger.warning(f"{self.name} {model} failed: {type(e).__name__}: {e}")
             raise
 
-    # Cascade ─
+    # Cascade
 
     def _build_request_body(self, model: str, prompt: str, system: str,
                             max_tokens: int, temperature: float) -> dict:

@@ -52,7 +52,7 @@ def prediction_accuracy_report() -> str:
     lines.append("## Recent rounds")
     lines.append("")
     lines.append("| Round | Acc | EMA | Predicted | Confirmed | Refuted | Missed |")
-    lines.append("|---|---|---|---|---|---|---|")
+    lines.append("-")
     for r in rounds[-10:]:
         acc = r.get("accuracy")
         acc_s = f"{acc * 100:.0f}%" if isinstance(acc, (int, float)) else "n/a"

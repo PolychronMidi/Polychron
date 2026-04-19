@@ -418,7 +418,7 @@ if ! _streak_check; then exit 1; fi
 TASK_POLL_COUNTER="/tmp/polychron-task-poll-count"
 _POLLING=0
 # Pattern 1: file inspection tools targeting /tmp/claude-*, /tmp/*.log, /tmp/*.output
-if echo "$CMD" | grep -qE '(tail|cat|head|grep|wc|ls).*/tmp/(claude-|.*\.log|.*\.output)'; then
+if echo "$CMD" | grep -qE '(tail|cat|head|grep|wc|ls).*/tmp/(claude.*\.log|.*\.output)'; then
   _POLLING=1
 fi
 # Pattern 2: nvidia-smi repeatedly (GPU status polling)

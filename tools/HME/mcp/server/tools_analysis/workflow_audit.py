@@ -71,7 +71,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
 
     # 3. Append-only file write without a corresponding trim/truncate.
     append_opens = re.findall(r'open\([^,)]+,\s*["\']a["\']\)', content)
-    has_trim = bool(re.search(r'_trim_\w+|\.writelines\(.*\[-|truncate\(', content))
+    has_trim = bool(re.search(r'_trim_\w+|\.writelines\(.*\[truncate\(', content))
     if append_opens and not has_trim:
         warnings.append(
             f"[{rel_path}] PYTHON: {len(append_opens)} append-only write(s) with no trim — "

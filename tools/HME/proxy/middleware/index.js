@@ -136,7 +136,7 @@ const ctx = {
   },
 };
 
-//  Registration ─
+//  Registration
 const _modules = [];
 
 function register(mod) {

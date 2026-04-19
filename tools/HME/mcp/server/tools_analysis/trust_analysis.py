@@ -112,7 +112,7 @@ def trust_trajectory(system_name: str) -> str:
 
     # Per-section table
     parts_out.append("Sec | AvgWeight (Δ)         | AvgScore | Hotspot% | Dominant Regime    | Weight Arc")
-    parts_out.append("----|----------------------|----------|----------|--------------------|------------")
+    parts_out.append("-")
     prev_avg_w = None
     for sec_num in sorted(sections.keys()):
         s = sections[sec_num]

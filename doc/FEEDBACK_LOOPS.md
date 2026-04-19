@@ -7,7 +7,7 @@
 All loops register via `closedLoopController.create()` which auto-enrolls with `feedbackRegistry`. Each loop has: observe function, target function, gain, smoothing, clamp range.
 
 | Loop | Source Domain | Target Domain | Module |
-|------|--------------|---------------|--------|
+--
 | dynamic-architect-planner | intensity | tension | dynamicArchitectPlanner |
 | coherence-monitor | notes_emitted | density | coherenceMonitor |
 | pipeline-balancer-tension | tension_product | tension | pipelineBalancer |

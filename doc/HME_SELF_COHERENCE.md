@@ -13,7 +13,7 @@ This document describes the substrate that makes that possible — the **HME Coh
 The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **38 weighted verifiers** across 6 categories:
 
 | Category | Verifiers (partial list — 38 total) | What it measures |
-|---|---|---|
+--
 | **doc** | doc-drift, tool-docstrings, memetic-drift | Documentation matches code reality; CLAUDE.md rules aren't silently violated |
 | **code** | python-syntax, shell-syntax, hook-executability, decorator-order, todowrite-hook-nonblock | Source code can run; decorator order correct; TodoWrite hook stays non-blocking |
 | **state** | states-sync, onboarding-flow, onboarding-state-integrity, todo-store-schema, reloadable-sync, onboarding-chain-importable | Runtime state machines are valid and consistent |
@@ -173,7 +173,7 @@ That's it. Run `verify-coherence.py` and the new dimension shows up in the repor
 The HCI alone doesn't tell you everything — drill into the per-category and per-verifier scores to find specific drift. But the aggregate has one clear meaning: **how much of HME's own self-observation surface is currently in the green?**
 
 | HCI | Meaning |
-|---|---|
+
 | 100 | Every measured dimension is fully coherent |
 | 95-99 | Minor drift, mostly cosmetic |
 | 80-94 | Real drift in one or two dimensions; investigate the lowest verifier |
@@ -237,7 +237,7 @@ Pipeline:
 **Traps discovered along the way, in order:**
 
 | # | Layer | Trap | Fix |
-|---|---|---|---|
+-
 | 1 | `pip` | PEP 668 blocks user installs on Debian | `--break-system-packages` flag |
 | 2 | `peft 0.19.0` | References `torch.float8_e8m0fnu` which doesn't exist in `torch 2.5.1` | Downgrade to `peft==0.13.2` |
 | 3 | `DataCollatorForLanguageModeling` | Can't pad a manually-set `labels` field (expects ints, gets lists) | Don't set labels in `fmt()`; let the collator handle them from `input_ids` via `mlm=False` |
@@ -356,7 +356,7 @@ The line between "fixing the detector" (allowed) and "dampening the alert" (forb
 
 The `LifesaverIntegrityVerifier` catches cooldowns and time-based guards near `register_critical_failure` calls. It does NOT catch sample-count-based maturity gates because those fix the detector, not the alert. The semantic distinction is encoded in what patterns the verifier looks for.
 
----
+
 
 ## The Full Stack (as of 2026-04-16)
 
@@ -373,7 +373,7 @@ Everything below is implemented, tested, and wired into the pipeline. Not aspira
 ### Self-awareness layer (pipeline steps)
 
 | Step | Output | What it knows |
-|---|---|---|
+--
 | `build-kb-staleness-index` | `kb-staleness.json` | Which modules' KB entries are stale/missing |
 | `check-kb-semantic-drift` | `hme-semantic-drift.json` | Where KB descriptions diverge from code reality |
 | `compute-coherence-score` | `hme-coherence.json` | How grounded this round's evolution was in the KB |
@@ -381,7 +381,7 @@ Everything below is implemented, tested, and wired into the pipeline. Not aspira
 ### Self-assessment layer
 
 | Step | Output | What it measures |
-|---|---|---|
+--
 | `generate-predictions` | `hme-predictions.jsonl` | Cascade impact predictions from dependency BFS |
 | `reconcile-predictions` | `hme-prediction-accuracy.json` | Whether predictions matched actual fingerprint shifts |
 | `compute-musical-correlation` | `hme-musical-correlation.json` | Whether HME coherence predicts musical quality |
@@ -390,7 +390,7 @@ Everything below is implemented, tested, and wired into the pipeline. Not aspira
 ### Self-governance layer
 
 | Step | Output | What it governs |
-|---|---|---|
+--
 | `compute-coherence-budget` | `hme-coherence-budget.json` | Optimal coherence band — too high = over-disciplined, too low = chaotic |
 | `compute-kb-trust-weights` | `kb-trust-weights.json` | Epistemic reliability of each KB entry |
 | `compute-intention-gap` | `hme-intention-gap.json` | What keeps getting proposed but not finished |
@@ -399,7 +399,7 @@ Everything below is implemented, tested, and wired into the pipeline. Not aspira
 ### Meta-meta layer
 
 | Step | Output | What it produces |
-|---|---|---|
+--
 | `detect-doc-drift` | `hme-doc-drift.json` | Where documentation has diverged from KB knowledge |
 | `extract-generalizations` | `hme-generalizations.json` | Project-agnostic patterns from crystallized KB |
 | `synthesize-generalizations` | (updates generalizations) | Universal structural claims via reasoning cascade |

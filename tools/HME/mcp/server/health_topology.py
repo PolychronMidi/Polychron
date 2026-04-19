@@ -303,7 +303,7 @@ def _compute_coherence(shim: dict, daemon: dict, llamacpp: dict) -> float:
     return round(coherence, 3)
 
 
-# Layer 7: Predictive Health ─
+# Layer 7: Predictive Health
 
 def _record_shim_response_ms(ms: float) -> None:
     with _shim_response_lock:

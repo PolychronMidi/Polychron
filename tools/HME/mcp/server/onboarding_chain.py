@@ -373,9 +373,9 @@ def _run_selftest_prereq() -> str:
         result = hme_admin(action="selftest")
         header = (
             "[AUTO-CHAIN] Onboarding step 1/8: ran selftest as prerequisite.\n"
-            "--- selftest output ---"
+            " selftest output "
         )
-        footer = "--- prerequisite done, continuing with your original call ---\n"
+        footer = " prerequisite done, continuing with your original call \n"
         return f"{header}\n{result}\n{footer}"
     except Exception as e:
         return f"[AUTO-CHAIN] selftest prerequisite error: {e}\n"

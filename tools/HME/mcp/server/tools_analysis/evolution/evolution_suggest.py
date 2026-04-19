@@ -348,7 +348,7 @@ def suggest_evolution() -> str:
             ),
         )
         if _prescription:
-            parts.append("\n---\n## NEXT EVOLUTION PRESCRIPTION *(synthesized)*\n")
+            parts.append("\n\n## NEXT EVOLUTION PRESCRIPTION *(synthesized)*\n")
             parts.append(_prescription)
     except Exception as _err13:
         logger.debug(f'silent-except evolution_suggest.py:353: {type(_err13).__name__}: {_err13}')

@@ -191,8 +191,8 @@ function writeSummaryJSON(wallTime) {
   // Compute HCI inline so pipeline-summary.json always carries both the
   // music verdict AND the coherence index. Previously this was done by
   // posttooluse_bash.sh, which meant non-Claude invocations produced an
-  // hci=null summary. The HCI computation has no hook-specific context —
-  // it's just a subprocess call — so it belongs here.
+  // hci=null summary. The HCI computation has no hook-specific context --
+  // it's just a subprocess call -- so it belongs here.
   try {
     var hciScript = path.join(__dirname, '..', '..', 'tools', 'HME', 'scripts', 'verify-coherence.py');
     if (fs.existsSync(hciScript)) {
@@ -223,7 +223,7 @@ function writeSummaryJSON(wallTime) {
   }
 }
 
-// Activity emission — the pipeline is the authoritative source of truth for
+// Activity emission -- the pipeline is the authoritative source of truth for
 // "a round happened," so it must emit its own events. Previously only fired
 // via posttooluse_bash.sh hook, which requires the user to run `npm run main`
 // through Claude's Bash tool. Running from a shell, CI, cron, or another
@@ -287,13 +287,13 @@ function main() {
       'utf8'
     ));
     verdict = fp.verdict || fp.result || 'UNKNOWN';
-  } catch (_e) { /* fingerprint not produced — leave verdict UNKNOWN */ }
+  } catch (_e) { /* fingerprint not produced -- leave verdict UNKNOWN */ }
   try {
     var ps = JSON.parse(fs.readFileSync(
       path.join(__dirname, '..', '..', 'metrics', 'pipeline-summary.json'), 'utf8'
     ));
     if (typeof ps.hci === 'number') hci = ps.hci;
-  } catch (_e) { /* summary wasn't read back — leave hci null */ }
+  } catch (_e) { /* summary wasn't read back -- leave hci null */ }
   var session = process.env.HME_SESSION_ID || 'shell';
   emitActivity('pipeline_run', {
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
@@ -315,7 +315,7 @@ function main() {
     'build-hme-coupling-matrix.py',    // tool co-occurrence matrix
     'build-dashboard.py',              // interactive plotly dashboard
     'chain-snapshot.py',               // pre-compact session snapshot
-    'emit-hci-signal.py',              // HCI → composition-layer signal
+    'emit-hci-signal.py',              // HCI -> composition-layer signal
     'suggest-verifiers.py',            // verifier coverage report
     'memetic-drift.py',                // CLAUDE.md rule violation scan
   ];
@@ -332,7 +332,7 @@ function main() {
         stdio: 'ignore', detached: true, env: bgEnv,
         cwd: path.join(__dirname, '..', '..'),
       }).unref();
-    } catch (_e) { /* best-effort — don't block pipeline on analytics spawn */ }
+    } catch (_e) { /* best-effort -- don't block pipeline on analytics spawn */ }
   }
 
   console.log('Pipeline finished in ' + wallTime + 's');

@@ -30,7 +30,7 @@ if [ ! -f "$CONFIG" ]; then
   exit 0
 fi
 
-# --- Hard block list: never permit any read of these paths ----------------
+#  Hard block list: never permit any read of these paths -
 BLOCK_HIT=$(python3 - "$REL" "$CONFIG" <<'PYEOF' 2>/dev/null
 import json, sys
 rel, cfg = sys.argv[1], sys.argv[2]
@@ -55,7 +55,7 @@ if [ -n "$BLOCK_HIT" ]; then
   exit 2
 fi
 
-# --- Paginated paths: require offset+limit with bounded max_lines ---------
+#  Paginated paths: require offset+limit with bounded max_lines
 PAG=$(python3 - "$REL" "$CONFIG" "$OFFSET" "$LIMIT" <<'PYEOF' 2>/dev/null
 import json, sys
 rel, cfg, offset, limit = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
@@ -85,7 +85,7 @@ if [ -n "$PAG" ]; then
   exit 2
 fi
 
-# --- Soft size limit: large unexplored file without offset/limit → warn ---
+#  Soft size limit: large unexplored file without offset/limit → warn
 if [ -f "$FILE" ]; then
   SIZE=$(stat -c %s "$FILE" 2>/dev/null || echo 0)
   SOFT=$(python3 -c "import json; print(json.load(open('$CONFIG')).get('soft_size_limit_bytes', 150000))" 2>/dev/null || echo 150000)

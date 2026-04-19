@@ -21,7 +21,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
 ## State machine
 
 ```
-    boot ─┐
+    boot ┐
      │                │ hme_admin(action='selftest') passes
      ▼                ▼
  selftest_ok          │
@@ -48,7 +48,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
 ### State definitions
 
 | State | Meaning | Transition tool | Forward condition |
-|---|---|---|---|
+-
 | `boot` | Fresh session | `hme_admin(action='selftest')` | output contains no `FAIL:` lines |
 | `selftest_ok` | Tool surface + index + KB verified | `evolve(focus=...)` with a target-picking focus | always |
 | `targeted` | Evolution target chosen; ready for Edit | Edit on any `/src/` file | successful Edit in PostToolUse (briefing surfaces via pretooluse_edit's `_hme_validate`) |
@@ -77,7 +77,7 @@ This is the only rule because the other transitions already describe natural wor
 For tools outside the HME MCP server, hooks are the gatekeepers. Gates fire only during onboarding — graduated agents bypass them and hit the pre-existing soft warnings.
 
 | Hook | Gate | Reason |
-|---|---|---|
+--
 | [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh) | Block `Edit` on `/src/` when state is earlier than `briefed` | Force agent through read(mode='before') first |
 | [pretooluse_bash.sh](../tools/HME/hooks/pretooluse_bash.sh) | Block `Bash: npm run main` when state is earlier than `reviewed` | Force agent through review(mode='forget') first |
 | [posttooluse_edit.sh](../tools/HME/hooks/posttooluse_edit.sh) | Advance `briefed` → `edited` on successful src/ Edit | Automatic state bookkeeping |
@@ -149,7 +149,7 @@ The todo store is the single source of truth for visible work; the onboarding st
 ## Failure modes
 
 | Condition | Behavior |
-|---|---|
+
 | State file missing mid-session | Treated as `graduated`. Permissive — never gets the agent stuck. |
 | Python onboarding_chain import fails | Shell hooks still work (they read state file directly via `cat`). Tool handlers fall through — no state advancement, no chain output. |
 | Agent picks a non-existent target at step 3 | `read()` returns an error; state stays `targeted`. No advancement. Agent retries. |

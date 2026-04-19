@@ -16,7 +16,7 @@ A metaprofile is a JSON object with per-axis overrides. Controllers that aren't 
 What the regime self-balancer steers toward. The most audible dimension — determines whether the composition feels settled, searching, or volatile.
 
 | Profile | coherent | evolving | exploring |
-|---|---|---|---|
+-
 | atmospheric | 60% | 30% | 10% |
 | tense | 30% | 50% | 20% |
 | chaotic | 15% | 35% | 50% |
@@ -31,7 +31,7 @@ How aggressively cross-layer modules couple. Sparse coupling = independent voice
 - **antagonism threshold**: minimum |r| for negative-correlation pairs to become antagonism bridges
 
 | Profile | strength | density | antagonism |
-|---|---|---|---|
+-
 | atmospheric | [0.2, 0.5] | 0.15 | -0.35 |
 | tense | [0.5, 0.8] | 0.30 | -0.25 |
 | chaotic | [0.7, 1.0] | 0.50 | -0.15 |
@@ -46,7 +46,7 @@ How many trust systems dominate and how competitive the landscape is.
 - **starvation_floor**: minimum trust weight (prevents total suppression)
 
 | Profile | concentration | dominant_cap | starvation_floor |
-|---|---|---|---|
+-
 | atmospheric | high (0.7) | 1.8 | 0.8 |
 | tense | medium (0.5) | 1.6 | 0.6 |
 | chaotic | low (0.3) | 1.4 | 0.4 |
@@ -61,7 +61,7 @@ How tension builds across sections. Defines the target tension curve that the te
 - **ceiling**: maximum tension (0-1)
 
 | Profile | shape | floor | ceiling |
-|---|---|---|---|
+-
 | atmospheric | flat | 0.15 | 0.45 |
 | tense | ascending | 0.40 | 0.90 |
 | chaotic | erratic | 0.20 | 0.95 |
@@ -75,7 +75,7 @@ Density and flicker range — overall energy level and rhythmic volatility.
 - **flicker_range**: [lo, hi] for per-beat flicker
 
 | Profile | density_target | flicker_range |
-|---|---|---|
+--
 | atmospheric | 0.35 | [0.02, 0.08] |
 | tense | 0.55 | [0.05, 0.15] |
 | chaotic | 0.75 | [0.10, 0.30] |
@@ -89,7 +89,7 @@ How the polyrhythmic layers interact — locked, drifting, or repelling.
 - **layer_independence**: CIM base level (0 = fully coordinated, 1 = fully independent)
 
 | Profile | lock_bias | layer_independence |
-|---|---|---|
+--
 | atmospheric | 0.6 | 0.3 |
 | tense | 0.4 | 0.5 |
 | chaotic | 0.2 | 0.8 |
@@ -148,7 +148,7 @@ metrics/metaprofile-active.json         — current active profile (set by condu
 Every axis is connected to a real controller. All read dynamically per-tick so mid-run profile switches take effect immediately.
 
 | Axis | Controller | Method | What changes |
-|---|---|---|---|
+-
 | Regime | `regimeReactiveDamping` | `_getRegimeBudget()` | Target coherent/evolving/exploring share |
 | Tension | `regimeReactiveDamping` | `_getMaxTension()` + shape curve | Swing amplitude + curve shape (flat/ascending/arch/sawtooth/erratic) |
 | Density | `regimeReactiveDamping` | `_getMaxDensity()` | Swing amplitude scaled by densityTarget |

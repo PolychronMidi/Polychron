@@ -2,7 +2,7 @@
 
 ## Why two layers, and what that choice commits us to
 
----
+
 
 ## I. The question the architecture answers
 

@@ -59,7 +59,7 @@ def pick_gpu_or_cpu(min_free_gb, label=''):
     print(f'{label}: cpu (no GPU has {min_free_gb:.1f} GB free)', file=sys.stderr)
     return 'cpu'
 
-# --- Phase 2: EnCodec ---
+#  Phase 2: EnCodec
 from encodec import EncodecModel
 from encodec.utils import convert_audio
 
@@ -120,7 +120,7 @@ tensions = [encodec_sections[s]['tension'] for s in sorted(encodec_sections)]
 cb0_ents = [encodec_sections[s]['entropies']['cb0'] for s in sorted(encodec_sections)]
 corr = float(np.corrcoef(tensions, cb0_ents)[0,1]) if len(tensions) > 2 else 0
 
-# --- Phase 3: CLAP ---
+#  Phase 3: CLAP
 del model, wav, codes  # free memory
 
 import laion_clap

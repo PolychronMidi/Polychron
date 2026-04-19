@@ -2,7 +2,7 @@
 
 ## A diagnostic vocabulary for moments of any complex system
 
----
+
 
 ## I. The problem of not having words
 

@@ -841,7 +841,7 @@ rejectBtn.addEventListener('click', () => {
   frameInput.focus();
 });
 
-//  Send ─
+//  Send
 function send() {
   let text = input.value.trim();
   if (!text) return;
@@ -904,7 +904,7 @@ queueBtn.addEventListener('click', () => {
 });
 clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));
 
-//  Receive messages from extension ─
+//  Receive messages from extension
 // SSE event stream from server — dispatches synthetic message events into the page
 (function() {
   function connectSSE() {
@@ -1027,7 +1027,7 @@ window.addEventListener('message', (event) => {
   }
 });
 
-//  Scroll helpers ─
+//  Scroll helpers
 function isNearBottom() {
   return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
 }
@@ -1038,7 +1038,7 @@ function forceScrollToBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
 
-//  Tool step factory ─
+//  Tool step factory
 function makeToolStep(text) {
   const div = document.createElement('div');
   div.className = 'tool-step';
@@ -1254,7 +1254,7 @@ function setStatus(text) {
   statusLine.textContent = text;
 }
 
-//  Context meter ─
+//  Context meter
 const ctxMeter = document.getElementById('context-meter');
 const ctxFill = document.getElementById('context-meter-fill');
 const ctxPctLabel = document.getElementById('context-meter-pct');
@@ -1278,7 +1278,7 @@ function updateContextMeter(pct, chainLinks, chainIndex, cliModel) {
   }
 }
 
-//  Notice bar ─
+//  Notice bar
 const noticeBar = document.getElementById('notice-bar');
 noticeBar?.addEventListener('click', () => {
   if (noticeBar) { noticeBar.style.display = 'none'; noticeBar.textContent = ''; }
@@ -1292,7 +1292,7 @@ window.addEventListener('message', (event) => {
   }
 }, true);
 
-//  Sidebar toggle ─
+//  Sidebar toggle
 var sidebar = document.getElementById('sidebar');
 var sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
 var _uiState = vscode.getState() || {};

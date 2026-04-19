@@ -141,7 +141,7 @@ _check("drift: hook still exits 0 (marks state, doesn't crash)",
        code == 0, f"rc={code}")
 
 
-# empty response: also drift ─
+# empty response: also drift
 out, err, code = _run_hook("")
 _check("empty response: emits drift warning",
        "missing canonical HME_REVIEW_VERDICT marker" in err,

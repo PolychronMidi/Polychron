@@ -23,7 +23,7 @@ Layer 5: ESLint rules         — 22 custom rules enforcing fail-fast + architec
 Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
 ```
 
----
+
 
 ## Layer 0: SessionStart
 
@@ -37,7 +37,7 @@ Runs once at session start. Five responsibilities:
 4. **Environment** — exports `HME_ACTIVE=1` via `CLAUDE_ENV_FILE`.
 5. **Orientation** — surfaces pipeline verdict, last journal round, uncommitted change count, and suggests `status(mode='resume')`.
 
----
+
 
 ## Layer 1: PreToolUse Hooks
 
@@ -50,7 +50,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 **Redirect** (`permissionDecision: "deny"` + `systemMessage`): deny the tool, tell agent which tool to use instead with the original data pre-formatted.
 
 | Hook | Trigger | Pattern | Message |
-|------|---------|---------|---------|
+-
 | `pretooluse_bash.sh` | `timeout` in tool_input | **Correct** — strip timeout via updatedInput | "timeout removed — all project scripts handle timeouts inline" |
 | `pretooluse_read.sh` | Read on project src/ file with KB entries | **Enrich** — allow Read, inject KB titles + entry count | "KB context for {module} (N entries). For full briefing: `i/hme-read target={module}`" |
 | `pretooluse_grep.sh` | Any Grep with KB matches | **Enrich** — allow Grep, inject KB titles + trace nudge | "HME has N KB entries. For KB-enriched results: `i/trace target=<query>`" |
@@ -89,7 +89,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 ### Hard Blocks (exit 2 — command rejected, agent must retry differently)
 
 | Hook | Trigger | Principle |
-|------|---------|-----------|
+-
 | `pretooluse_bash.sh` | `rm` + `run.lock` in command | LIFESAVER — never delete run.lock |
 | `pretooluse_bash.sh` | Any `run.lock` access | Anti-polling — checking lock IS polling |
 | `pretooluse_bash.sh` | `stat`/`ls -l` on pipeline metric files | Anti-polling — timestamp checking is indirect polling |
@@ -109,7 +109,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 ### Soft Feedback (stderr — command proceeds, agent sees advice)
 
 | Hook | Trigger | Advice |
-|------|---------|--------|
+-
 | `pretooluse_bash.sh` | `grep`/`cat`/`head`/`tail` command | Suggest HME MCP tools for KB-enriched results |
 | `pretooluse_edit.sh` | Editing src/ without prior `read(mode='before')` | NEXUS: call read() for KB constraints + callers + risks |
 | `pretooluse_edit.sh` | Module has KB entries (via HTTP shim) | Surface KB constraint titles and counts |
@@ -125,7 +125,7 @@ Note: `pretooluse_read.sh` on project files WITH KB entries now uses the Enrich 
 Raw tool calls accumulate a weighted score. HME MCP tool calls reset it to zero.
 
 | Tool | Weight | Calls to warn (50) | Calls to block (70) |
-|------|--------|---------------------|---------------------|
+
 | Read | 5 | 10 | 14 |
 | Edit/Write | 10 | 5 | 7 |
 | Bash | 15 | ~3 | ~5 |
@@ -133,7 +133,7 @@ Raw tool calls accumulate a weighted score. HME MCP tool calls reset it to zero.
 
 Block message: "Use an HME npm script (`i/hme-read`, `i/trace`, `i/review`) before continuing."
 
----
+
 
 ## Layer 2: PostToolUse Hooks
 
@@ -190,7 +190,7 @@ After Read on project source files: checks KB for module entries. If found, surf
 
 After Write to `.md`/`.txt` files outside `tmp/`: appends path to compact tab. Ensures doc and note files survive compaction.
 
----
+
 
 ## Layer 3: Stop Hook
 
@@ -247,7 +247,7 @@ Detects last assistant message containing: "no response requested", "nothing to 
 
 Last message was <200 chars with no tool_use blocks. Hard block — if work remains, continue; if genuinely done, provide substantive summary.
 
----
+
 
 ## Layer 4: Declarative Invariants
 
@@ -258,7 +258,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 ### Check Types
 
 | Type | Description |
-|------|-------------|
+-
 | `files_executable` | Glob files must be executable |
 | `files_referenced` | Glob files must appear in reference file |
 | `file_exists` | Path must exist |
@@ -308,7 +308,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 - KB updated within 14 days
 - CLAUDE.md documents correct ESLint rule count (`pattern_in_file`)
 
----
+
 
 ## Layer 5: ESLint Rules
 
@@ -317,7 +317,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 ### Fail Fast Enforcement
 
 | Rule | Prevents |
-|------|----------|
+-
 | `no-empty-catch` | Empty catch blocks — must rethrow, log, or recover |
 | `only-error-throws` | Throwing strings/objects — must throw Error instances |
 | `no-silent-early-return` | Bare returns without prior error handling |
@@ -325,7 +325,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 ### Architectural Boundaries
 
 | Rule | Prevents |
-|------|----------|
+-
 | `no-direct-buffer-push-from-crosslayer` | Cross-layer calling p()/push() — must use crossLayerEmissionGateway |
 | `no-unregistered-feedback-loop` | Feedback loops without feedbackRegistry registration |
 | `no-direct-conductor-state-from-crosslayer` | Cross-layer reading conductorState — must use conductorSignalBridge |
@@ -337,7 +337,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 ### Channel & Math Discipline
 
 | Rule | Prevents |
-|------|----------|
+-
 | `no-bare-l0-channel` | Bare string literals in L0 calls — must use L0_CHANNELS constants |
 | `no-bare-math` | Direct Math.* access — must use project `m = Math` alias |
 | `no-math-random` | Math.random() — must use deterministic RNG |
@@ -345,7 +345,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 ### Validator & Code Organization
 
 | Rule | Prevents |
-|------|----------|
+-
 | `prefer-validator` | Ad-hoc typeof/isFinite checks when validator exists |
 | `validator-name-matches-filename` | Mismatched validator.create() name vs filename |
 | `no-unstamped-validator` | Validators without module name stamp |
@@ -356,7 +356,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 | `no-console-acceptable-warning` | Console calls outside accepted format |
 | `no-useless-expose-dependencies-comments` | Dead @expose-dependencies comments |
 
----
+
 
 ## Layer 6: Pipeline Validators
 
@@ -384,7 +384,7 @@ Validates adaptive tuning parameters within declared bounds from `doc/TUNING_MAP
 ### check-manifest-health.js
 Post-composition validation: regime distribution, density rates, coupling bounds, tail-end P90 limits.
 
----
+
 
 ## Supporting Infrastructure
 
@@ -403,7 +403,7 @@ Sourced by every hook. Provides:
 State file: `tmp/hme-nexus.state` (TYPE:TIMESTAMP:PAYLOAD per line)
 
 | Type | Set by | Meaning |
-|------|--------|---------|
+-
 | BRIEF | pretooluse_edit.sh | File briefed with read(mode='before') |
 | EDIT | posttooluse_edit.sh | File edited |
 | PIPELINE | posttooluse_bash.sh | Pipeline verdict |
@@ -452,7 +452,7 @@ Runs after compaction completes. Mirrors precompact surface so the agent can imm
 3. Logs `post_compact` event to `metrics/compact-log.jsonl`.
 4. Suggests `status(mode='resume')` for full session state recovery.
 
----
+
 
 ## Evolution: Block to Correct / Enrich / Redirect
 

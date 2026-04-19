@@ -39,7 +39,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     }
     trace["triage_ms"] = 0
 
-    # Stage 2: Context assembly (instant, no model) ─
+    # Stage 2: Context assembly (instant, no model)
     t1 = time.monotonic()
     assembled_parts = []
 
@@ -69,7 +69,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     assembled = "\n\n".join(assembled_parts) if assembled_parts else ""
     trace["assembly_ms"] = int((time.monotonic() - t1) * 1000)
 
-    # Stage 3: Reasoning model enrichment ─
+    # Stage 3: Reasoning model enrichment
     t2 = time.monotonic()
     mode_instructions = []
     if triage["kb"]:
@@ -173,7 +173,7 @@ def enrich_prompt(prompt: str, frame: str = "") -> str:
         out.append(f"\n\n⚠ *Grounding check: these paths don't exist — verify before using:*")
         for p in bad_paths:
             out.append(f"  - `{p}`")
-    out.append(f"\n\n---\n*Modes: {', '.join(modes)} | "
+    out.append(f"\n\n\n*Modes: {', '.join(modes)} | "
                f"Triage: {trace['triage_ms']}ms, Assembly: {trace['assembly_ms']}ms, "
                f"Enrich: {trace['enrich_ms']}ms, Compress: {trace['compress_ms']}ms*")
     return "\n".join(out)

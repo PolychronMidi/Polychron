@@ -57,7 +57,7 @@ else
   PASS=false
 fi
 
-# 2. Start mock upstream (echoes back a valid Anthropic-shaped response) ─
+# 2. Start mock upstream (echoes back a valid Anthropic-shaped response)
 echo ""
 echo "Test 4: live proxy → mock upstream (round-trip)"
 node -e "
@@ -254,7 +254,7 @@ else
   PASS=false
 fi
 
-# 7. Multi-upstream routing test ─
+# 7. Multi-upstream routing test
 echo ""
 echo "Test 7: X-HME-Upstream routes to different provider"
 

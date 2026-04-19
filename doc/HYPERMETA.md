@@ -7,7 +7,7 @@
 ## Controllers
 
 | # | Name | Owner | What it tunes |
-|---|------|-------|---------------|
+--
 | 1 | Self-Calibrating Coupling Targets | `pipelineCouplingManager` | Per-pair rolling \|r\| EMA. Intractable pairs relax upward; resolved pairs tighten. |
 | 2 | Regime Distribution Equilibrator | `regimeReactiveDamping` | 64-beat rolling histogram. Intent-aware exploring brake (onset 60 ticks, phase-scaled). |
 | 3 | Pipeline Product Centroid | `conductorDampening` | 20-beat product EMA. Corrective multiplier (+-25%) counteracts drift. Density/tension only. |

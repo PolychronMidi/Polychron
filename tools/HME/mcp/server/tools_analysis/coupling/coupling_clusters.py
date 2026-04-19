@@ -147,8 +147,8 @@ def _format_clusters(clusters, corr, modules, n_beats, coupling_state, trust, mi
             has_m = bool(info.get("melodic"))
             has_r = bool(info.get("rhythm"))
             has_p = bool(info.get("phase"))
-            _base = "[M+R]" if has_m and has_r else "[MEL]" if has_m else "[RHY]" if has_r else "[---]"
-            tag = _base[:-1] + "+P]" if has_p and _base != "[---]" else ("[PHZ]" if has_p else _base)
+            _base = "[M+R]" if has_m and has_r else "[MEL]" if has_m else "[RHY]" if has_r else "[]"
+            tag = _base[:-1] + "+P]" if has_p and _base != "[]" else ("[PHZ]" if has_p else _base)
 
             others = [o for o in cluster if o != m_name]
             top2 = sorted(others, key=lambda o: corr.get((m_name, o), 0), reverse=True)[:2]

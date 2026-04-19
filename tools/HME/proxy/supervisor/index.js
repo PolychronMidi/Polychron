@@ -19,7 +19,7 @@ const { CHILDREN } = require('./children');
 
 const LOG_DIR = path.join(PROJECT_ROOT, 'log');
 
-//  Supervisor state ─
+//  Supervisor state
 const _children = new Map(); // name → { spec, proc, restarts, lastStart, lastHealthy, healthy }
 
 function _logPath(name) {
@@ -212,7 +212,7 @@ function status() {
   return out;
 }
 
-//  Startup ─
+//  Startup
 // Start children in order: shim first, then MCP (MCP depends on shim).
 // healthLoop polls every 10s after initial startup delay.
 let _started = false;

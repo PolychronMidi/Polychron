@@ -620,7 +620,7 @@ def _pre_research(prompt: str) -> tuple[str, list[str]]:
     if grep_results:
         parts = []
         for term, result in grep_results.items():
-            parts.append(f"--- grep '{term}' ---\n{result}")
+            parts.append(f" grep '{term}' \n{result}")
         sections.append(f"=== Grep Results ===\n" + "\n".join(parts))
 
     # Phase 3: Glob for related files
@@ -855,7 +855,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                 tools_used.append(f"GREP_BROAD({pattern})")
 
     if grep_results:
-        parts = [f"--- {key} ---\n{result}" for key, result in grep_results.items()]
+        parts = [f" {key} \n{result}" for key, result in grep_results.items()]
         sections.append("=== Grep Results ===\n" + "\n".join(parts))
 
     # Glob with arbiter-planned patterns
@@ -907,7 +907,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     # Stage 3: Synthesize. System prompt + instructions vary by mode.
     synth_prompt = f"""{research_context}
 
----
+
 Question: {prompt}
 
 {mode_cfg["synth_suffix"]}"""
@@ -1010,7 +1010,7 @@ def main():
         print(json.dumps(result))
     else:
         print(result["answer"])
-        print(f"\n---\n[mode={mode} | {result['model']} | {result['iterations']} iterations | "
+        print(f"\n\n[mode={mode} | {result['model']} | {result['iterations']} iterations | "
               f"{len(result['tools_used'])} tools | {result['elapsed_s']}s]")
 
 

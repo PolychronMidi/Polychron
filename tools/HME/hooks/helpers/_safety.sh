@@ -84,7 +84,7 @@ _hme_exit_combined() {
 }
 trap _hme_exit_combined EXIT
 
-# Tunable constants (adjust here — not in individual hooks) ─
+# Tunable constants (adjust here — not in individual hooks)
 _HME_HTTP_PORT=9098
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
@@ -185,7 +185,7 @@ _emit_block() {
   jq -n --arg reason "$1" '{"decision":"block","reason":$reason}'
 }
 
-# Path / module helpers ─
+# Path / module helpers
 
 # Returns 0 if PATH is a project source file (src/ or HME chat/mcp).
 _is_project_src() { echo "$1" | grep -qE "$_HME_SRC_PATTERN"; }
@@ -229,7 +229,7 @@ _streak_reset() {
   echo 0 > "$_STREAK_FILE"
 }
 
-# HME HTTP shim helpers ─
+# HME HTTP shim helpers
 # Consolidated KB enrichment and validation via the worker at localhost:9098 (absorbed the shim).
 
 _hme_enrich() {

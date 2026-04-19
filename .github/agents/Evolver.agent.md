@@ -1,4 +1,4 @@
----
+
 name: Evolver
 description: |
   Metaintelligent evolutionary engine for Polychron, powered by HyperMeta Ecstasy.
@@ -13,7 +13,7 @@ tools:
   - Grep
   - Glob
   - Agent
----
+
 
 <!--
 HME tools are invoked via Bash:
@@ -118,7 +118,7 @@ Start with `i/review mode=changes` to see what changed since last round with KB 
 ### Tier 1 — Delta & Headline
 
 | File | Purpose |
-|------|---------|
+
 | `metrics/pipeline-summary.json` | Pipeline health, per-step timing, pass/fail |
 | `metrics/fingerprint-comparison.json` | Verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta |
 | `metrics/fingerprint-drift-explainer.json` | Causal narratives for drifts |
@@ -130,7 +130,7 @@ Start with `i/review mode=changes` to see what changed since last round with KB 
 ### Tier 1.5 — Perceptual Grounding (15% confidence)
 
 | File | Purpose |
-|------|---------|
+
 | `metrics/perceptual-report.json` | EnCodec: per-section token entropy (audio complexity), tension↔complexity correlation. CLAP: text↔audio similarity for 6 probes (tension, atmosphere, rhythm, sparse, dense, coherent). Dominant character label |
 
 Compare the conductor's INTENTION (trace-summary tension, regime) against what the audio SOUNDS LIKE (EnCodec complexity, CLAP character). Mismatches are evolution candidates. Agreement validates the system's self-model.
@@ -138,7 +138,7 @@ Compare the conductor's INTENTION (trace-summary tension, regime) against what t
 ### Tier 2 — Character & Attribution
 
 | File | Purpose |
-|------|---------|
+
 | `metrics/golden-fingerprint.json` | 10-dimension fingerprint with full detail |
 | `metrics/narrative-digest.md` | Prose composition story: section character, arc shape, coupling semantics |
 | `metrics/composition-diff.md` | Structural diff vs baseline |
@@ -153,7 +153,7 @@ Compare the conductor's INTENTION (trace-summary tension, regime) against what t
 ### Tier 3 — Reference
 
 | File | When |
-|------|------|
+
 | `metrics/tuning-invariants.json` | Modifying chained constants |
 | `metrics/boot-order.json` (74KB) | Initialization issues — grep only |
 | `metrics/dependency-graph.json` (573KB) | Cross-subsystem coupling — grep only |
@@ -309,12 +309,12 @@ Compact old entries when journal exceeds 500 lines.
 - `i/hme-admin action=index` to refresh HME embeddings for changed files
 - `i/learn query=health` periodically to find stale KB entries
 - Loop back to Phase 1
-- `--- Starting R<XX> ---`
+- ` Starting R<XX> `
 
 ## Fingerprint Reference
 
 | Dimension | Base Tolerance | Cross-Profile |
-|-----------|---------------|--------------|
+
 | pitchEntropy | 0.25 | 1.3x |
 | densityVariance | 0.08 | 1.3x |
 | tensionArc | 0.25-0.40 (profile) | 1.3x |

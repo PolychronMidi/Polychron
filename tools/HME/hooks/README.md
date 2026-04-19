@@ -16,7 +16,7 @@ Most reactive enrichment has migrated to the proxy middleware (`tools/HME/proxy/
 ## Output channels
 
 | Channel | Reaches agent? | Reaches terminal? | Use for |
-|---|---|---|---|
+-
 | STDERR | Yes | Yes | LIFESAVER warnings, NEXUS state transitions |
 | STDOUT (JSON decision) | Yes | Yes | Pre-tool blocks / allows with reason |
 | `_emit_block` | Yes (as denial) | Yes | Reject tool call, cite rule + fix |

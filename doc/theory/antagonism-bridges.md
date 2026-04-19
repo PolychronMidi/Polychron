@@ -2,7 +2,7 @@
 
 ## On coupling both sides of a structural tension rather than picking a winner
 
----
+
 
 ## I. The pattern
 

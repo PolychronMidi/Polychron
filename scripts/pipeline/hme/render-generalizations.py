@@ -44,7 +44,7 @@ def main():
         f"{meta.get('patterns_scanned', '?')} crystallized patterns.*",
         f"*Last updated: {datetime.now().strftime('%Y-%m-%d')}*",
         "",
-        "---",
+        "",
         "",
     ]
 
@@ -68,7 +68,7 @@ def main():
         lines.append("")
         lines.append(f"> {template}")
         lines.append("")
-        lines.append("---")
+        lines.append("")
         lines.append("")
 
     with open(DST, "w") as f:

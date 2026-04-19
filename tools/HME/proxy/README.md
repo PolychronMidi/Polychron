@@ -31,7 +31,7 @@ claude
 ## Env vars
 
 | Var | Default | Purpose |
-|-----|---------|---------|
+-
 | `HME_PROXY_PORT` | `9099` | Listen port |
 | `HME_MCP_PORT` | `9098` | Internal worker port |
 | `HME_LLAMACPP_DAEMON_PORT` | `7735` | Local-model daemon port |

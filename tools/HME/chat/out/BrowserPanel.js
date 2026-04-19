@@ -255,7 +255,7 @@ class BrowserPanel {
     unregisterSseClient(res) {
         this._sseClients = this._sseClients.filter(c => c !== res);
     }
-    //  PanelHost implementation ─
+    //  PanelHost implementation
     post(data) {
         const payload = `data: ${JSON.stringify(data)}\n\n`;
         console.log(`[HME→SSE] type=${data?.type ?? '?'} clients=${this._sseClients.length}`);
@@ -305,7 +305,7 @@ class BrowserPanel {
         BrowserPanel.current = new BrowserPanel(projectRoot);
         return BrowserPanel.current;
     }
-    //  Incoming message dispatch (from Express POST /api/message) ─
+    //  Incoming message dispatch (from Express POST /api/message)
     handleMessage(msg) {
         console.log(`[HME] handleMessage type=${msg?.type} clients=${this._sseClients.length}`);
         try {

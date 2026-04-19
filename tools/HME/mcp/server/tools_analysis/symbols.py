@@ -604,7 +604,7 @@ def get_function_body(function_name: str, file_path: str = "", language: str = "
         locs = [f"  {s['file']}:{s['line']} [{s['kind']}]" for s in results[:5]]
         return f"Found symbol but couldn't extract body:\n" + "\n".join(locs)
 
-    return "\n---\n".join(parts)
+    return "\n\n".join(parts)
 
 
 def l0_channel_map(channel: str = "") -> str:
@@ -697,5 +697,5 @@ def file_intel(file_path: str, mode: str = "both") -> str:
     if mode == "both":
         summary = get_file_summary(file_path)
         deps = get_dependency_graph(file_path)
-        return f"{summary}\n\n---\n\n{deps}"
+        return f"{summary}\n\n\n\n{deps}"
     return f"Unknown mode '{mode}'. Use 'both', 'summary', or 'deps'."

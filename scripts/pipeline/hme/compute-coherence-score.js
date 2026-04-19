@@ -67,12 +67,12 @@ function sliceToRound(events) {
     if (!e || e.event !== 'round_complete') continue;
     // Pipeline rounds carry a verdict; turn-boundary rounds don't.
     // Historical events before the turn_complete rename all look like
-    // turn markers — correctly excluded.
+    // turn markers -- correctly excluded.
     if (!e.verdict) continue;
     rcIndices.push(i);
   }
   if (rcIndices.length === 0) {
-    // No real round boundaries yet — return the recent tail rather than
+    // No real round boundaries yet -- return the recent tail rather than
     // the whole history. Keeps coherence score honest during the ramp-up
     // after the turn_complete/round_complete split.
     return events.slice(-MAX_FALLBACK_EVENTS);
@@ -89,7 +89,7 @@ function sliceToRound(events) {
   const lastRC = rcIndices[0];
   const tail = events.slice(lastRC + 1);
   if (tail.some((e) => e && e.event === 'file_written')) return tail;
-  // No writes anywhere in the pipeline-bounded windows — return the recent
+  // No writes anywhere in the pipeline-bounded windows -- return the recent
   // tail for "no data" signalling. Never reach back into pre-split history.
   return events.slice(-MAX_FALLBACK_EVENTS);
 }

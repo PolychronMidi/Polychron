@@ -51,7 +51,7 @@ def drama_map(top_n: int = 5) -> str:
 
     out = [f"# Drama Map ({len(beats)} beats)\n"]
 
-    # --- Tension spikes: beats where tension jumped vs 5-beat rolling mean ---
+    #  Tension spikes: beats where tension jumped vs 5-beat rolling mean
     window = 5
     spike_events: list[tuple[float, dict]] = []
     for i in range(window, len(beats)):
@@ -71,7 +71,7 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"  {direction}{delta:+.3f}  beat {b['bk']}  S{b['sec']}  t={b['tension']:.3f}  {b['regime']}  {b['notes']}n{ctx_note}")
         out.append("")
 
-    # --- Sustained coherent blocks (consecutive coherent beats ≥ 8) ---
+    #  Sustained coherent blocks (consecutive coherent beats ≥ 8)
     coherent_blocks: list[tuple[int, int, int]] = []  # (start_idx, length, sec)
     i = 0
     while i < len(beats):
@@ -95,7 +95,7 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"  {length:3d}b  {b_start['bk']} → {b_end['bk']}  S{sec}  avg_t={avg_tension:.3f}")
         out.append("")
 
-    # --- Trust reversals: one system rose ≥0.04 while another fell ≥0.04 in same beat ---
+    #  Trust reversals: one system rose ≥0.04 while another fell ≥0.04 in same beat
     reversal_events: list[tuple[float, dict, str, str, float, float]] = []
     for i in range(1, len(beats)):
         prev_t = beats[i - 1]["trust"]
@@ -123,7 +123,7 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"    ▲ {winner}{w_label} (+{w_d:.3f})  ▼ {loser}{l_label} ({l_d:.3f})")
         out.append("")
 
-    # --- Peak tension moments: beats with highest absolute tension (narrative peaks) ---
+    #  Peak tension moments: beats with highest absolute tension (narrative peaks)
     sorted_by_tension = sorted(beats, key=lambda b: b["tension"], reverse=True)
     if sorted_by_tension:
         out.append(f"## Peak Tension Moments (top {min(top_n, len(sorted_by_tension))})")
@@ -142,7 +142,7 @@ def drama_map(top_n: int = 5) -> str:
                 break
         out.append("")
 
-    # --- Density contrast pairs: find atmospheric valley (≤2 notes) within 10 beats of dense peak (≥6 notes) ---
+    #  Density contrast pairs: find atmospheric valley (≤2 notes) within 10 beats of dense peak (≥6 notes)
     # Filter out warmup beats (S0 first 8 beats) and zero-tension beats (section silence)
     contrast_pairs: list[tuple[float, int, int]] = []
     for i in range(len(beats)):
@@ -177,7 +177,7 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"  +{contrast}n  dense={b_peak['bk']}({b_peak['notes']}n,t={b_peak['tension']:.2f}) {direction}{gap}b valley={b_valley['bk']}({b_valley['notes']}n,t={b_valley['tension']:.2f})")
         out.append("")
 
-    # --- Dramatic Arc synthesis: one-sentence summary of what makes this composition compelling ---
+    #  Dramatic Arc synthesis: one-sentence summary of what makes this composition compelling
     try:
         from .synthesis import _two_stage_think
         sec_count = max((b["sec"] for b in beats), default=0) + 1

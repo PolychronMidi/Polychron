@@ -22,7 +22,7 @@ function assertClose(actual, expected, tolerance, msg) {
   else { failed++; console.error(`  FAIL: ${msg} (got ${actual}, expected ${expected} ±${tolerance})`); }
 }
 
-//  tensionShapeCurve ─
+//  tensionShapeCurve
 
 console.log('tensionShapeCurve:');
 
@@ -47,7 +47,7 @@ assert(regimeReactiveDampingCore.tensionShapeCurve('sawtooth', 0.32) > 0.9, 'saw
 const erratic = regimeReactiveDampingCore.tensionShapeCurve('erratic', 0.5);
 assert(erratic > -1 && erratic < 2, 'erratic is bounded');
 
-//  scaleByTarget ─
+//  scaleByTarget
 
 console.log('scaleByTarget:');
 
@@ -84,7 +84,7 @@ const eq3 = regimeReactiveDampingCore.equilibratorCorrection(
 assertClose(eq3.corrD, 0, 0.01, 'on-target → no correction');
 assertClose(eq3.corrT, 0, 0.01, 'on-target → no correction');
 
-//  Summary ─
+//  Summary
 
 //  metaProfiles.disableAxis
 // Requires full conductor load for this section
@@ -107,7 +107,7 @@ assert(restored.exploring === 0.50, 'enabled → chaotic exploring restored');
 
 metaProfiles.setActive(null);
 
-//  Summary ─
+//  Summary
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);

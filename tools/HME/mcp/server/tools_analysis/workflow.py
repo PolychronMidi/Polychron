@@ -140,7 +140,7 @@ def before_editing(file_path: str) -> str:
     rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
 
-    # Data gathering (order determined by dependencies) ─
+    # Data gathering (order determined by dependencies)
 
     # Git commits (needed by edit risks synthesis)
     _recent_commits = ""

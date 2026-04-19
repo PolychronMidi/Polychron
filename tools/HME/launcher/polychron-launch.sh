@@ -51,7 +51,7 @@ _port_healthy() {
   curl -sf --max-time 1 "$1" > /dev/null 2>&1
 }
 
-# 1. HME proxy ─
+# 1. HME proxy
 
 if _port_healthy "${PROXY_URL}/health"; then
   echo "[launch] proxy already up on :${PROXY_PORT}" >&2
@@ -80,7 +80,7 @@ else
   fi
 fi
 
-# 2. llama-server instances ─
+# 2. llama-server instances
 
 _llama_healthy() {
   curl -sf --max-time 2 "http://127.0.0.1:$1/health" 2>/dev/null | grep -q '"status":"ok"'
@@ -166,7 +166,7 @@ else
   fi
 fi
 
-# 4. Initial health check ─
+# 4. Initial health check
 
 echo "[launch] health check..." >&2
 _proxy_status=$(curl -sf --max-time 3 "${PROXY_URL}/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "unreachable")

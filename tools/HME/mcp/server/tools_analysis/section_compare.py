@@ -186,7 +186,7 @@ def section_compare(section_a: int, section_b: int) -> str:
         parts_out.append(f"  {narrative.strip()}")
 
     # Cross-reference suggestions
-    parts_out.append(f"\n---")
+    parts_out.append(f"\n")
     parts_out.append(f"See also: regime_report(mode='drama') for tension spikes and trust reversals")
     if abs(delta) > 0.05:
         parts_out.append(f"Large tension delta — try trust_rivalry to trace which system drove the shift")

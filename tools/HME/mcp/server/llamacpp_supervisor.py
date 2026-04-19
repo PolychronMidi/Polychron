@@ -77,7 +77,7 @@ class InstanceSpec:
         return argv
 
 
-# Topology ─
+# Topology
 # This is the authoritative inference allocation. Matches the comment in
 # hme_http.py:126: "arbiter on GPU1 (small), coder on GPU0 (big)".
 # Vulkan device indices: Vulkan0 = Intel iGPU, Vulkan1 = M40 #1, Vulkan2 = M40 #2.
@@ -111,7 +111,7 @@ def _default_instances() -> list[InstanceSpec]:
     ]
 
 
-# Supervisor ─
+# Supervisor
 class _Supervisor:
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -347,7 +347,7 @@ class _Supervisor:
             logger.exception(f"llamacpp_supervisor: spawn {spec.name} failed: {e}")
             return False
 
-    # public: ensure all ─
+    # public: ensure all
     def ensure_all_running(self) -> dict[str, str]:
         """Spawn any instance that isn't already serving /health=ok. Adopts
         externally-launched survivors. Returns {name: status} for logging."""
@@ -375,7 +375,7 @@ class _Supervisor:
                 result[spec.name] = "spawned" if ok else "spawn_failed"
         return result
 
-    # health tick ─
+    # health tick
     def health_tick(self) -> dict[str, dict]:
         """Probe all instances. Restart any that are unhealthy (with cooldown).
         Returns detailed per-instance status — suitable for logging / selftest."""
@@ -426,7 +426,7 @@ class _Supervisor:
                         logger.debug(f"llamacpp_supervisor: LIFESAVER register failed: {_life_err}")
         return out
 
-    # stats for selftest ─
+    # stats for selftest
     def stats(self) -> list[dict]:
         with self._lock:
             return [
