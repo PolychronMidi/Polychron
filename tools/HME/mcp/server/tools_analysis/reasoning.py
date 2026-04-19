@@ -7,7 +7,7 @@ from server.helpers import get_context_budget, validate_project_path, fmt_score,
 from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
-from .synthesis import _local_think, _REASONING_MODEL, _THINK_SYSTEM
+from .synthesis import _local_think, _reasoning_think, _THINK_SYSTEM
 from . import _get_compositional_context, _track
 
 logger = logging.getLogger("HME")
@@ -310,8 +310,7 @@ def module_story(module_name: str) -> str:
         "- Otherwise, in 1-3 bullet points: " + subsystem_prompt + "\n"
         "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
-    synthesis = _local_think(user_text, max_tokens=800, model=_REASONING_MODEL,
-                             system=_THINK_SYSTEM)
+    synthesis = _reasoning_think(user_text, max_tokens=800, system=_THINK_SYSTEM)
     if synthesis:
         from .synthesis.synthesis_inference import compress_for_claude
         synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"key constraints for {module_name}")

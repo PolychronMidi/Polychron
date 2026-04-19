@@ -9,7 +9,7 @@ from server.helpers import (
     KNOWN_L0_CHANNELS, DOC_UPDATE_TRIGGERS,
 )
 from symbols import find_callers as _find_callers
-from .synthesis import _local_think, _REASONING_MODEL, _THINK_SYSTEM
+from .synthesis import _reasoning_think, _THINK_SYSTEM
 from .synthesis_session import append_session_narrative
 from .tool_cache import cached_kb_search, cached_find_callers
 from . import _track
@@ -440,8 +440,8 @@ def what_did_i_forget(changed_files: str) -> str:
     synthesis = None
     _synthesis_timed_out = False
     try:
-        result = _local_think("/no_think\n" + user_text, max_tokens=400,
-                              model=_REASONING_MODEL, system=_THINK_SYSTEM)
+        result = _reasoning_think("/no_think\n" + user_text, max_tokens=400,
+                                  system=_THINK_SYSTEM)
         if result:
             from .synthesis.synthesis_inference import compress_for_claude
             synthesis = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")
@@ -586,9 +586,9 @@ def diagnose_error(error_text: str) -> str:
                                      answer_format=answer_format)
         if synthesis is None:
             kb_suffix = ("\n\nRelevant project KB entries:\n" + "\n".join(kb_lines)) if kb_lines else ""
-            synthesis = _local_think(
+            synthesis = _reasoning_think(
                 f"Error:\n{error_text[:600]}\n\n{question}" + kb_suffix,
-                max_tokens=800, model=_REASONING_MODEL, system=_THINK_SYSTEM
+                max_tokens=800, system=_THINK_SYSTEM
             )
         if synthesis:
             from .synthesis.synthesis_inference import compress_for_claude

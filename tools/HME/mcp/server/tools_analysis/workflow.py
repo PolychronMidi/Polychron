@@ -16,7 +16,7 @@ from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
     _local_think, compress_for_claude,
-    _THINK_MODEL, _REASONING_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
+    _THINK_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
     _THINK_SYSTEM, route_model,
 )
 from . import _get_compositional_context, _track

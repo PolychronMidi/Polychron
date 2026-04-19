@@ -180,13 +180,13 @@ def _auto_curate() -> str:
         parts.append(f"  -> learn(title='{c['title'][:60]}...', content='...', category='{c['category']}')")
         parts.append("")
 
-    from ..synthesis import _local_think, _REASONING_MODEL
+    from ..synthesis import _reasoning_think
     summary = "\n".join(f"- [{c['type']}] {c['title']}: {c['detail']}" for c in candidates[:6])
-    synthesis = _local_think(
+    synthesis = _reasoning_think(
         f"These patterns were detected in recent runs but aren't in the knowledge base:\n{summary}\n\n"
         "Which 1-2 are most important to document for maintaining compositional self-coherence? "
         "Answer in 2 sentences.",
-        max_tokens=200, model=_REASONING_MODEL,
+        max_tokens=200,
         system="You are a music composition intelligence assistant. Be concise.",
     )
     if synthesis:

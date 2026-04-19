@@ -186,6 +186,146 @@ def _scan_file(path: str) -> list:
     return hits
 
 
+def _discover_declared_env_keys() -> tuple:
+    """Walk all HME python sources AND scripts/ to classify env-key references.
+    Returns (required, optional):
+      required = ENV.require* calls — fail at boot if missing
+      optional = ENV.optional*, os.environ.get, os.getenv — have defaults
+    """
+    required: set = set()
+    optional: set = set()
+    scan_roots = [
+        os.path.join(_PROJECT, "tools", "HME"),
+        os.path.join(_PROJECT, "scripts"),
+    ]
+    for scan_root in scan_roots:
+        if not os.path.isdir(scan_root):
+            continue
+        for root, _dirs, files in os.walk(scan_root):
+            if "__pycache__" in root:
+                continue
+            for f in files:
+                if not f.endswith(".py"):
+                    continue
+                path = os.path.join(root, f)
+                try:
+                    with open(path, encoding="utf-8") as fh:
+                        src = fh.read()
+                    tree = ast.parse(src, filename=path)
+                except (OSError, SyntaxError):
+                    continue
+                for node in ast.walk(tree):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    key, kind = _classify_env_call(node)
+                    if key is None:
+                        continue
+                    if kind == "required":
+                        required.add(key)
+                    else:
+                        optional.add(key)
+    return required, optional
+
+
+def _classify_env_call(node) -> tuple:
+    """Given an ast.Call, return (env_key, kind) if it's an env-read, else (None, None).
+    kind is 'required' or 'optional'.
+    Recognized forms:
+      ENV.require*('KEY')                       → required
+      ENV.optional*('KEY', default)             → optional
+      os.environ.get('KEY', default)            → optional
+      os.getenv('KEY', default)                 → optional
+      os.environ['KEY']                         → (subscript, not handled here)
+    """
+    func = node.func
+    # Method-call forms: root.attr(...)
+    if isinstance(func, ast.Attribute):
+        attr = func.attr
+        # ENV.require* / ENV.optional*
+        root = func.value
+        if isinstance(root, ast.Name) and root.id in ("ENV", "env"):
+            if attr in ("require", "require_int", "require_float", "require_bool"):
+                if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+                    return node.args[0].value, "required"
+            if attr in ("optional", "optional_int", "optional_float", "optional_bool"):
+                if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+                    return node.args[0].value, "optional"
+        # os.environ.get('KEY', ...) — the attr is 'get', root is an Attribute (os.environ)
+        if attr == "get" and isinstance(root, ast.Attribute):
+            if (isinstance(root.value, ast.Name) and root.value.id == "os"
+                    and root.attr == "environ"):
+                if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+                    return node.args[0].value, "optional"
+        # os.getenv('KEY', ...) — func.attr is 'getenv', root is 'os'
+        if attr == "getenv" and isinstance(root, ast.Name) and root.id == "os":
+            if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+                return node.args[0].value, "optional"
+    return None, None
+
+
+def _discover_env_keys_in_file(path: str) -> set:
+    """Parse a .env file and return the set of keys it defines."""
+    keys: set = set()
+    try:
+        with open(path, encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, _, _v = line.partition("=")
+                k = k.strip()
+                if k:
+                    keys.add(k)
+    except OSError:
+        pass
+    return keys
+
+
+def _check_env_schema() -> list:
+    """Return a list of (rel_path, message) tuples for env schema drift.
+    Two checks:
+      1. Every ENV.require() key must exist in .env (or fail at boot — but
+         we surface at lint time too).
+      2. Backtick-fenced HME_* tokens in docs should match real .env keys.
+    """
+    issues: list = []
+    env_path = os.path.join(_PROJECT, ".env")
+    if not os.path.isfile(env_path):
+        return issues
+    declared = _discover_env_keys_in_file(env_path)
+    code_required, code_optional = _discover_declared_env_keys()
+    code_total = code_required | code_optional
+
+    # Code REQUIRES env key → must exist in .env (fail-fast means ENV.require
+    # throws at boot if missing, so drift here is always a real bug).
+    missing_in_env = sorted(code_required - declared)
+    for k in missing_in_env:
+        issues.append((".env", f"ENV.require(`{k}`) has no matching .env entry — will throw at boot"))
+
+    # Docs backtick-mention HME_* token → should be a real env key OR
+    # be referenced by code as optional. Unknown-everywhere tokens are stale
+    # doc references.
+    import glob as _glob
+    doc_pat = re.compile(r'`(HME_[A-Z0-9_]+)`')
+    for doc_dir in _DOC_DIRS:
+        if not os.path.isdir(doc_dir):
+            continue
+        for md in _glob.glob(os.path.join(doc_dir, "**", "*.md"), recursive=True):
+            try:
+                with open(md, encoding="utf-8") as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            for lineno, line in enumerate(text.splitlines(), 1):
+                for m in doc_pat.finditer(line):
+                    token = m.group(1)
+                    if token in declared or token in code_total:
+                        continue
+                    rel = os.path.relpath(md, _PROJECT)
+                    issues.append((rel, f"line {lineno}: `{token}` referenced but not in .env or ENV.* calls — stale doc reference"))
+    return issues
+
+
 def main(argv: list) -> int:
     fix_mode = "--fix" in argv
     actual_tools = _discover_actual_tools()
@@ -198,15 +338,21 @@ def main(argv: list) -> int:
             reports[rel] = hits
             total_hits += len(hits)
 
+    env_issues = _check_env_schema()
+    total_env_issues = len(env_issues)
+    total_hits += total_env_issues
+
     print(f"# Doc-code sync report")
     print(f"Project root: {_PROJECT}")
     print(f"Actual tool surface (from @ctx.mcp.tool() scan): {sorted(actual_tools)}")
     print(f"Files scanned: {sum(1 for _ in _iter_doc_files())}")
     print(f"Drift hits: {total_hits}")
+    if total_env_issues:
+        print(f"  (of which {total_env_issues} are env-schema issues)")
     print()
 
     if total_hits == 0:
-        print("OK — no stale tool references detected.")
+        print("OK — no stale tool references or env drift detected.")
         return 0
 
     for rel, hits in sorted(reports.items()):
@@ -216,6 +362,12 @@ def main(argv: list) -> int:
             if fix_mode:
                 trimmed = line_text.strip()[:80]
                 print(f"    (line: {trimmed!r})")
+        print()
+
+    if env_issues:
+        print("## env schema")
+        for rel, msg in env_issues:
+            print(f"  {rel}: {msg}")
         print()
 
     if fix_mode:
