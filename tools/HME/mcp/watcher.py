@@ -35,11 +35,17 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     # dropped into metrics/).
     try:
         from file_walker import DEFAULT_IGNORE_DIRS as _FW_IGNORE_DIRS
-        IGNORE_DIRS = set(_FW_IGNORE_DIRS)
+        IGNORE_DIRS = set(_FW_IGNORE_DIRS) | {
+            # LanceDB internals churn constantly (transactions, versions,
+            # manifests, tmp writes). These must never reach the reindexer
+            # OR the file_written emission — they're not code.
+            "_transactions", "_versions", "_deletions", "_indices", "data",
+        }
     except ImportError:
         IGNORE_DIRS = {
             ".git", ".claude", "node_modules", "__pycache__", "venv", ".venv",
             "dist", "build", "output", "tmp", "lab", "metrics",
+            "_transactions", "_versions", "_deletions", "_indices",
         }
     IGNORE_EXTS = {
         ".log", ".lock", ".json", ".jsonl", ".md", ".wav", ".mid",
@@ -48,18 +54,51 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         ".gguf", ".safetensors", ".bin", ".pt", ".pth", ".ckpt",
         ".h5", ".onnx", ".tflite", ".pb",
         ".gz", ".tar", ".zip", ".xz", ".zst", ".bz2",
+        # LanceDB internal files — churn on every index write.
+        ".manifest", ".txn", ".lance",
     }
+    # Catch patterns that don't have a clean extension: .tmpXXXXXX, .txn#N, etc.
+    _NOISE_SUFFIX_PATTERNS = (".tmp", ".txn", ".manifest")
+    # Allow-list: file_written activity events ONLY fire for paths under
+    # these roots. Everything else is infrastructure churn (KB internals,
+    # tmp, metrics) and shouldn't count as "a code edit happened." Reindex
+    # can still see them (broader IGNORE_DIRS set above), but they won't
+    # pollute the coherence score.
+    ACTIVITY_ALLOW_PREFIXES = (
+        "/src/",
+        "/tools/HME/mcp/", "/tools/HME/chat/", "/tools/HME/proxy/",
+        "/tools/HME/hooks/", "/tools/HME/scripts/", "/tools/HME/activity/",
+        "/tools/HME/config/",
+        "/scripts/",
+        "/doc/",
+    )
 
     # Deduplicate file_written emissions: the watcher receives modify + create
     # + close events for a single edit. Emit once per file per short window.
     _recent_emits: dict[str, float] = {}
     _EMIT_DEDUP_WINDOW = 2.0  # seconds
+    _last_size: dict[str, int] = {}
+    _EXT_LANG = {
+        ".js": "javascript", ".ts": "typescript", ".py": "python",
+        ".sh": "bash", ".md": "markdown", ".json": "json",
+        ".yaml": "yaml", ".yml": "yaml", ".toml": "toml",
+    }
+
+    def _pipeline_running() -> bool:
+        """True while tmp/run.lock exists — pipeline is executing. Writes
+        during this window are pipeline-mechanical, not human edits."""
+        return os.path.exists(os.path.join(project_root, "tmp", "run.lock"))
 
     def _emit_file_written(abs_path: str) -> None:
         """Make file_written agent-independent: emit from the filesystem
         watcher so edits via any editor (vim, VSCode direct, external script)
         produce the same event the proxy middleware used to get only from
-        Claude's Edit/Write tool invocations."""
+        Claude's Edit/Write tool invocations.
+
+        Payload fields: file, module, hme_read_prior, bytes, bytes_delta,
+        lang, source, session. bytes_delta lets downstream distinguish
+        typo-fixes from refactors; lang lets slicers partition by language.
+        """
         now = time.time()
         last = _recent_emits.get(abs_path, 0.0)
         if now - last < _EMIT_DEDUP_WINDOW:
@@ -71,12 +110,37 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             for k in list(_recent_emits.keys()):
                 if _recent_emits[k] < _cutoff:
                     del _recent_emits[k]
+        basename_full = os.path.basename(abs_path)
+        module = basename_full.rsplit(".", 1)[0]
         try:
-            from nexus_query import has_brief  # local helper (see below)
-            module = os.path.basename(abs_path).rsplit(".", 1)[0]
-            hme_read_prior = has_brief(module) or has_brief(abs_path)
+            from nexus_query import has_brief
+            # BRIEFs can be recorded by module name, abs path, or basename
+            # with extension. Try all three.
+            hme_read_prior = (
+                has_brief(module) or
+                has_brief(abs_path) or
+                has_brief(basename_full)
+            )
         except Exception:
             hme_read_prior = False
+        # Size + delta + language tagging
+        try:
+            cur_size = os.path.getsize(abs_path)
+        except OSError:
+            cur_size = 0
+        prev_size = _last_size.get(abs_path, 0)
+        bytes_delta = cur_size - prev_size
+        _last_size[abs_path] = cur_size
+        if len(_last_size) > 2048:
+            _last_size.clear()
+        ext = os.path.splitext(abs_path)[1].lower()
+        lang = _EXT_LANG.get(ext, "other")
+        # If the pipeline is running, this write is pipeline-mechanical
+        # (fix-non-ascii, verify-boot-order --fix, formatters, etc.) rather
+        # than a human/agent edit. Tag accordingly so downstream coherence
+        # analyzers can filter pipeline writes out of the human-edit signal.
+        source = "pipeline_script" if _pipeline_running() else "fs_watcher"
+
         # Spawn emit.py detached — never block the watcher thread
         import subprocess as _subp
         try:
@@ -85,14 +149,67 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                  os.path.join(project_root, "tools", "HME", "activity", "emit.py"),
                  "--event=file_written",
                  f"--file={abs_path}",
-                 f"--module={os.path.basename(abs_path).rsplit('.', 1)[0]}",
+                 f"--module={module}",
                  f"--hme_read_prior={'true' if hme_read_prior else 'false'}",
+                 f"--bytes={cur_size}",
+                 f"--bytes_delta={bytes_delta}",
+                 f"--lang={lang}",
+                 f"--source={source}",
                  "--session=fs_watcher"],
                 stdout=_subp.DEVNULL, stderr=_subp.DEVNULL,
                 env={**os.environ, "PROJECT_ROOT": project_root},  # env-ok: subprocess needs inherited env
             )
         except Exception as _emit_err:
             logger.debug(f"file_written emit failed: {_emit_err}")
+
+    # Noise-ratio tracker — periodically emit file_watcher_filtered so the
+    # volume of dropped-vs-emitted is visible. Lets us tune the allow-list
+    # without guessing.
+    _filter_counts = {"emitted": 0, "ignored_dir": 0, "ignored_ext": 0,
+                      "ignored_noise": 0, "ignored_not_allowed": 0}
+    _last_filter_flush = [time.time()]
+    _FILTER_FLUSH_INTERVAL = 300  # 5 min
+
+    def _maybe_flush_filter_stats():
+        now = time.time()
+        if now - _last_filter_flush[0] < _FILTER_FLUSH_INTERVAL:
+            return
+        total = sum(_filter_counts.values())
+        if total == 0:
+            _last_filter_flush[0] = now
+            return
+        import subprocess as _subp
+        try:
+            _subp.Popen(
+                ["python3",
+                 os.path.join(project_root, "tools", "HME", "activity", "emit.py"),
+                 "--event=file_watcher_filtered",
+                 f"--total={total}",
+                 f"--emitted={_filter_counts['emitted']}",
+                 f"--ignored_dir={_filter_counts['ignored_dir']}",
+                 f"--ignored_ext={_filter_counts['ignored_ext']}",
+                 f"--ignored_noise={_filter_counts['ignored_noise']}",
+                 f"--ignored_not_allowed={_filter_counts['ignored_not_allowed']}",
+                 f"--window_s={int(now - _last_filter_flush[0])}",
+                 "--session=fs_watcher"],
+                stdout=_subp.DEVNULL, stderr=_subp.DEVNULL,
+                env={**os.environ, "PROJECT_ROOT": project_root},  # env-ok: subprocess needs inherited env
+            )
+        except Exception as _flush_err:
+            logger.debug(f"filter-stats flush failed: {_flush_err}")
+        for k in _filter_counts:
+            _filter_counts[k] = 0
+        _last_filter_flush[0] = now
+
+    def _is_activity_eligible(abs_path: str) -> bool:
+        """Allow-list: only emit file_written for code/doc edits under the
+        project's real source tree. Writes to metrics/, tmp/, KB internals,
+        etc. never count as 'a code edit happened.'"""
+        norm = abs_path.replace("\\", "/")
+        for prefix in ACTIVITY_ALLOW_PREFIXES:
+            if prefix in norm:
+                return True
+        return False
 
     class Handler(FileSystemEventHandler):
         def on_any_event(self, event):
@@ -104,13 +221,30 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             path = getattr(event, "src_path", "") or ""
             parts = path.replace("\\", "/").split("/")
             if any(p in IGNORE_DIRS for p in parts):
+                if is_write:
+                    _filter_counts["ignored_dir"] += 1
+                    _maybe_flush_filter_stats()
+                return
+            basename = os.path.basename(path)
+            # Noise suffix check: patterns like .tmpXXXXXX, .txn#N, .manifest#N
+            # don't have a clean extension the ext check catches.
+            if any(s in basename for s in _NOISE_SUFFIX_PATTERNS):
+                if is_write:
+                    _filter_counts["ignored_noise"] += 1
                 return
             ext = os.path.splitext(path)[1].lower()
             if ext in IGNORE_EXTS:
+                if is_write:
+                    _filter_counts["ignored_ext"] += 1
                 return
             abs_path = os.path.abspath(path)
             if is_write:
-                _emit_file_written(abs_path)
+                if _is_activity_eligible(abs_path):
+                    _emit_file_written(abs_path)
+                    _filter_counts["emitted"] += 1
+                else:
+                    _filter_counts["ignored_not_allowed"] += 1
+                _maybe_flush_filter_stats()
             with _lock:
                 _changed_files.add(abs_path)
             _schedule_reindex()
