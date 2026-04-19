@@ -495,6 +495,93 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
     return True, "no chronic failures"
 
 
+def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
+    """Verify that consecutive pipeline rounds with the SAME commit produce
+    identical metric values. Non-determinism in hme_coherence / HCI across
+    same-commit runs means either the metric has random inputs (e.g. a
+    clock-dependent verifier) or cached state leaks between runs.
+
+    Config:
+      activity_path       — activity jsonl (default metrics/hme-activity.jsonl)
+      correlation_path    — musical-correlation.json (default)
+      field               — field to check (default 'hme_coherence')
+      tolerance           — absolute difference tolerance (default 0.01)
+      window_events       — tail to scan (default 2000)
+    """
+    import json as _json
+    activity_path = os.path.join(
+        ctx.PROJECT_ROOT,
+        inv.get("activity_path", "metrics/hme-activity.jsonl"),
+    )
+    corr_path = os.path.join(
+        ctx.PROJECT_ROOT,
+        inv.get("correlation_path", "metrics/hme-musical-correlation.json"),
+    )
+    field = inv.get("field", "hme_coherence")
+    tolerance = float(inv.get("tolerance", 0.01))
+
+    if not (os.path.isfile(activity_path) and os.path.isfile(corr_path)):
+        return True, "activity log or correlation file missing — can't check"
+    # Find consecutive pipeline_baseline_delta events with same_commit=1
+    baselines: list[dict] = []
+    try:
+        with open(activity_path, encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s:
+                    continue
+                try:
+                    e = _json.loads(s)
+                except ValueError:
+                    continue
+                if e.get("event") == "pipeline_baseline_delta":
+                    baselines.append(e)
+    except OSError as e:
+        return False, f"cannot read activity: {e}"
+    # Load correlation history keyed by round sha
+    try:
+        with open(corr_path, encoding="utf-8") as f:
+            corr = _json.load(f)
+    except (OSError, _json.JSONDecodeError):
+        return True, "correlation file unparseable — can't check"
+    hist = corr.get("history") or []
+
+    # Build {short_sha: [values]}
+    by_sha: dict = {}
+    for h in hist:
+        rid = h.get("round_id", "")
+        if not isinstance(rid, str) or not rid.startswith("r_"):
+            continue
+        # r_<sha>_<seq>
+        parts = rid.split("_")
+        if len(parts) < 3:
+            continue
+        sha = parts[1]
+        val = h.get(field)
+        if val is None:
+            continue
+        by_sha.setdefault(sha, []).append(val)
+
+    # Check any sha with >= 2 values
+    violations: list = []
+    for sha, vals in by_sha.items():
+        if len(vals) < 2:
+            continue
+        spread = max(vals) - min(vals)
+        if spread > tolerance:
+            violations.append(f"sha={sha} {field} spread={spread:.4f} across {len(vals)} rounds")
+    if violations:
+        return False, (
+            f"{len(violations)} same-commit spread violation(s) above tol={tolerance}: "
+            + "; ".join(violations[:3])
+        )
+    # Count how many shas had ≥2 rounds (any at all) as evidence the check ran
+    with_enough = sum(1 for vals in by_sha.values() if len(vals) >= 2)
+    if with_enough == 0:
+        return True, f"no commit has ≥2 rounds yet — check inert"
+    return True, f"{with_enough} commit(s) evaluated, all within tol={tolerance}"
+
+
 def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
     """Validate that a named field on recent activity events matches an
     expected pattern. Catches garbage-module bugs (file_written emitting
@@ -682,6 +769,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "correlation_direction": _check_correlation_direction,
         "activity_events_balanced": _check_activity_events_balanced,
         "activity_field_sanity": _check_activity_field_sanity,
+        "same_commit_determinism": _check_same_commit_determinism,
         "invariant_chronically_failing": _check_invariant_chronically_failing,
         "public_functions_reachable": _check_public_functions_reachable,
         "shell_output_empty": _check_shell_output_empty,

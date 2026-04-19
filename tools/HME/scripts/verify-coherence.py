@@ -1914,6 +1914,37 @@ def main(argv: list) -> int:
         sys.stderr.write(f"engine error: {e}\n{traceback.format_exc()}")
         return 2
 
+    # Persist per-verifier snapshot so consecutive-round diffs are answerable
+    # without re-running the battery. Answers "which of the 38 verifiers
+    # flipped between HCI=94 and HCI=96?" in one read of the JSON file.
+    try:
+        import json as _json
+        import time as _time
+        snapshot = {
+            "ts": int(_time.time()),
+            "hci": report.get("hci"),
+            "verifiers": {
+                name: {
+                    "status": info.get("status"),
+                    "score": info.get("score"),
+                }
+                for name, info in (report.get("verifiers") or {}).items()
+            },
+        }
+        snap_path = os.path.join(_PROJECT, "metrics", "hci-verifier-snapshot.json")
+        # Keep last snapshot as .prev and current as the live file, so we can
+        # always diff the two most recent HCI computations.
+        if os.path.isfile(snap_path):
+            prev_path = snap_path + ".prev"
+            try:
+                os.replace(snap_path, prev_path)
+            except OSError:
+                pass
+        with open(snap_path, "w", encoding="utf-8") as _f:
+            _json.dump(snapshot, _f, indent=2)
+    except Exception as _snap_err:
+        sys.stderr.write(f"snapshot persist failed: {_snap_err}\n")
+
     if output_mode == "json":
         print(json.dumps(report, indent=2))
     elif output_mode == "score":

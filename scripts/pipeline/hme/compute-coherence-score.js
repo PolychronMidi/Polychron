@@ -103,10 +103,48 @@ function sliceToRound(events) {
 
 
 
+function emitActivity(event, fields) {
+  // Best-effort async event emission so compute-coherence-score can surface
+  // idle_round / empty-window signals without blocking. Uses emit.py's CLI
+  // surface, same as every other pipeline step.
+  const { spawn } = require('child_process');
+  const args = [path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
+                '--event=' + event];
+  for (const k of Object.keys(fields || {})) {
+    if (fields[k] === null || fields[k] === undefined) continue;
+    args.push('--' + k + '=' + String(fields[k]));
+  }
+  try {
+    spawn('python3', args, {
+      stdio: 'ignore', detached: true, cwd: ROOT,
+      env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }),
+    }).unref();
+  } catch (_e) { /* best-effort */ }
+}
+
+
 function main() {
   const events = readEvents();
   const windowEvents = sliceToRound(events);
   const idx = indexByEvent(windowEvents);
+
+  // Idle-round detection: a window with zero human/agent file_written events
+  // is not a meaningful coherence measurement. Emit idle_round so downstream
+  // analyzers can distinguish "no data" rounds from "0% coverage" rounds —
+  // they have very different meanings.
+  const rawWrites_ = idx.get('file_written') || [];
+  const humanWrites_ = rawWrites_.filter((e) => e.source === 'fs_watcher').length;
+  if (humanWrites_ === 0) {
+    emitActivity('idle_round', {
+      session: 'pipeline',
+      window_events: windowEvents.length,
+      file_written_total: rawWrites_.length,
+      file_written_human: humanWrites_,
+      reason: rawWrites_.length === 0
+        ? 'no file_written events at all'
+        : `all ${rawWrites_.length} writes are pipeline_script or legacy`,
+    });
+  }
 
   // Component 1: read coverage -- only POST-MIGRATION human/agent writes
   // count. Three exclusion criteria:
@@ -211,16 +249,27 @@ function main() {
     // (computed below) is where that behavior gets rewarded.
   }
 
-  const effectiveReadCoverage = readCoverage !== null ? readCoverage : 0.5; // unmeasured = 0.5 (neither good nor bad)
-  const baseScore = effectiveReadCoverage * violationPenalty * stalenessPenalty;
-  const score = clamp(baseScore * explorationBonus, 0, 1);
+  // When read_coverage is null (no measurable human/agent writes), emit
+  // score=null too rather than multiplying out a 0.5 fallback that looks
+  // like a real measurement. The downstream musical-correlation will
+  // skip null entries; the old fallback silently produced a synthetic
+  // 0.5 signal that polluted the correlation with noise indistinguishable
+  // from a real mediocre round.
+  const baseScore = readCoverage !== null
+    ? (readCoverage * violationPenalty * stalenessPenalty)
+    : null;
+  const score = baseScore !== null
+    ? clamp(baseScore * explorationBonus, 0, 1)
+    : null;
 
   // Trend: diff against previous hme-coherence.json (if there's a backup)
   // We don't have a snapshot system for this file yet -- use the existing
   // report as "previous" by loading it before we overwrite.
   const prev = loadJson(OUT);
   const prevScore = prev && typeof prev.score === 'number' ? prev.score : null;
-  const delta = prevScore === null ? null : Number((score - prevScore).toFixed(4));
+  const delta = (prevScore === null || score === null)
+    ? null
+    : Number((score - prevScore).toFixed(4));
 
   const report = {
     meta: {
@@ -228,7 +277,7 @@ function main() {
       timestamp: new Date().toISOString(),
       window_events: windowEvents.length,
     },
-    score: Number(score.toFixed(4)),
+    score: score !== null ? Number(score.toFixed(4)) : null,
     previous_score: prevScore,
     delta,
     components: {
@@ -253,27 +302,38 @@ function main() {
         touches_on_missing: touchesOnMissing,
         touches_on_fresh: touchesOnFresh,
         touches_with_index_info: touchesWithIndexInfo,
+        // Distinguishes "no writes to evaluate" (staleness is vacuously
+        // clean) from "writes existed but none matched the index" (real
+        // coverage gap). Without this field, staleness_penalty=1.0 looked
+        // identical in both cases.
+        evaluation_reason: writes.length === 0
+          ? 'no_writes_to_evaluate'
+          : (touchesWithIndexInfo === 0
+              ? 'writes_exist_but_none_match_staleness_index'
+              : 'evaluated'),
       },
       exploration_bonus: Number(explorationBonus.toFixed(4)),
       exploration_detail: {
         productive_incoherence_count: productiveCount,
         bonus_cap: 1.2,
       },
-      base_score: Number(baseScore.toFixed(4)),
+      base_score: baseScore !== null ? Number(baseScore.toFixed(4)) : null,
     },
   };
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(report, null, 2) + '\n');
 
-  const pct = (report.score * 100).toFixed(1);
+  const pct = report.score !== null ? (report.score * 100).toFixed(1) : 'null';
   const deltaStr = delta === null ? '' : delta >= 0 ? ` (+${(delta * 100).toFixed(1)})` : ` (${(delta * 100).toFixed(1)})`;
+  const readPct = readCoverage !== null ? `${(readCoverage * 100).toFixed(0)}%` : 'null';
   console.log(
     `compute-coherence-score: ${pct}/100${deltaStr}  ` +
-      `[read=${(readCoverage * 100).toFixed(0)}% ` +
+      `[read=${readPct} ` +
       `lazy=${lazyViolationCount} ` +
       `stale_pen=${(stalenessPenalty * 100).toFixed(0)}% ` +
-      `expl_bonus=${((explorationBonus - 1) * 100).toFixed(0)}% (${productiveCount} productive)]`,
+      `expl_bonus=${((explorationBonus - 1) * 100).toFixed(0)}% (${productiveCount} productive)]` +
+      (readCoverageNullReason ? `  [${readCoverageNullReason}]` : ''),
   );
 }
 

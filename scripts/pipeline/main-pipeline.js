@@ -261,7 +261,7 @@ function main() {
   // Baseline delta: what changed vs the last pipeline run? Surfaces whether
   // we're genuinely in a stable plateau (zero-diff runs) or the pipeline is
   // measuring identical state N times. If commits_ahead=0 AND files_changed=0,
-  // this run is measuring the same codebase as the last one — informative
+  // this run is measuring the same codebase as the last one -- informative
   // context for downstream metrics.
   try {
     var lastSha = '';
