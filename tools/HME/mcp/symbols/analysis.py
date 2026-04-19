@@ -42,9 +42,45 @@ _TYPE_REF_CONTEXT = re.compile(r'(?::\s*$|->|<\s*$|\bextends\b|\bimplements\b|\b
 _STRING_CHAR = {'"', "'", '`'}
 
 
+# Two-tier cache: (1) a cached file-list snapshot keyed by lang_filter so
+# blast-radius BFS (which calls find_callers per-symbol per-layer) doesn't
+# re-walk the project tree for every symbol, (2) a per-symbol caller cache
+# keyed by (symbol, lang_filter, file_list_signature) so repeated calls for
+# the same symbol within one BFS pass are O(1).
+# Invalidation: the file_list_signature is the sorted-file-list count + sum
+# of mtimes — a cheap proxy that changes whenever any code file is
+# added/removed/touched. This is worker-lifetime cache, cleared implicitly
+# on worker restart.
+_FILE_LIST_CACHE: dict = {}     # lang_filter → (signature, [Path, ...])
+_CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) → [caller dict, ...]
+
+
+def _file_list_with_signature(lang_filter: str) -> tuple[tuple, list]:
+    """Return (signature, file_list). Signature is a cheap invalidation key
+    derived from file count + sum of mtimes. Re-computes walk_code_files
+    every call because mtime-sum is ~10ms for ~700 files — cheaper than
+    the 100ms+ we'd spend on stale cache hits after a real code change."""
+    from os import stat as _stat
+    files = list(walk_code_files(lang_filter=lang_filter))
+    mtime_sum = 0.0
+    for fp in files:
+        try:
+            mtime_sum += _stat(fp).st_mtime
+        except OSError:
+            pass
+    signature = (len(files), round(mtime_sum, 3))
+    return signature, files
+
+
 def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> list[dict]:
     if not symbol_name:
         return []
+    signature, files = _file_list_with_signature(lang_filter)
+    cache_key = (symbol_name, lang_filter, signature)
+    cached = _CALLERS_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
     call_patterns = [
         re.compile(rf'\b{re.escape(symbol_name)}\s*\('),
         re.compile(rf'\b{re.escape(symbol_name)}\s*<[^>]*>\s*\('),
@@ -63,12 +99,19 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
         re.compile(rf'^\s*(?:export\s+)?(?:async\s+)?(?:function|class|interface|type|enum|const|let|var)\s+{re.escape(symbol_name)}\b', re.MULTILINE),
     ]
 
+    # Fast pre-filter: files that don't contain the symbol name literally
+    # can't possibly match any regex pattern above. Read bytes and check
+    # with `in` — one scan per file, skips regex entirely for non-matches.
+    symbol_bytes = symbol_name.encode("utf-8")
     callers = []
-    for fpath in walk_code_files(lang_filter=lang_filter):
+    for fpath in files:
         try:
-            content = fpath.read_text(encoding="utf-8", errors="ignore")
+            content_bytes = fpath.read_bytes()
         except Exception:
             continue
+        if symbol_bytes not in content_bytes:
+            continue
+        content = content_bytes.decode("utf-8", errors="ignore")
         for line_num, line in enumerate(content.split("\n"), 1):
             is_def = any(p.search(line) for p in def_patterns)
             if is_def:
@@ -77,6 +120,11 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
                 if cp.search(line):
                     callers.append({"file": str(fpath), "line": line_num, "text": line.strip()[:120]})
                     break
+    # Cap the cache to prevent unbounded growth on malformed callers.
+    # At worst we re-scan; cap is a memory safety net.
+    if len(_CALLERS_CACHE) > 512:
+        _CALLERS_CACHE.clear()
+    _CALLERS_CACHE[cache_key] = callers
     return callers
 
 
