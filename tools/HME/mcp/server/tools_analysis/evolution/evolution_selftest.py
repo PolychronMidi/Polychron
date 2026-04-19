@@ -395,52 +395,24 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _rl_err:
         results.append(f"FAIL: reload mechanism -- {type(_rl_err).__name__}: {_rl_err}")
 
-    # fix_antipattern integration smoke test: exercises the whole chain —
-    # preflight daemon probe, model fallback, _local_think, bash validation,
-    # hook file append, post-append revert. Reverts the snippet on PASS so
-    # selftest is idempotent. Only runs when at least one model is healthy.
+    # fix_antipattern plumbing check: verify the preflight daemon probe works
+    # and the code path can reach synthesis. We deliberately DON'T call the
+    # full synthesis — a 30-60s LLM round-trip in selftest would push total
+    # selftest time past reasonable bounds. The full smoke test runs from the
+    # dedicated selftest script: scripts/selftest-fix-antipattern.py
     try:
-        from .evolution_admin import fix_antipattern
-        from server.startup_validator import _probe_llamacpp_instance
-        _arb_ready = _probe_llamacpp_instance(ENV.require("HME_LLAMACPP_ARBITER_URL")) == "healthy"
-        _cod_ready = _probe_llamacpp_instance(ENV.require("HME_LLAMACPP_CODER_URL")) == "healthy"
-        if not (_arb_ready or _cod_ready):
-            results.append("INFO: fix_antipattern integration -- skipped (no models healthy)")
+        from .evolution_admin import _daemon_health_snapshot
+        _snap = _daemon_health_snapshot()
+        if _snap.get("ready_aliases"):
+            results.append(f"PASS: fix_antipattern preflight -- daemon reports {len(_snap['ready_aliases'])} model(s) ready")
         else:
-            _marker = "HME-SELFTEST-FIX-ANTIPATTERN-PROBE"
-            _probe_text = f"selftest probe ({_marker}): no-op antipattern for smoke testing"
-            _hook_target = "pretooluse_bash"
-            _hook_path = os.path.join(
-                ctx.PROJECT_ROOT, "tools", "HME", "hooks",
-                "pretooluse", f"{_hook_target}.sh"
+            _statuses = _snap.get("statuses", {})
+            results.append(
+                f"WARN: fix_antipattern preflight -- no models ready: "
+                f"{', '.join(f'{k}:{v.split()[0]}' for k, v in _statuses.items())}"
             )
-            # Snapshot the hook file so we can restore it regardless of result.
-            try:
-                with open(_hook_path, encoding="utf-8") as _hf:
-                    _original = _hf.read()
-            except OSError as _hf_err:
-                results.append(f"FAIL: fix_antipattern integration -- hook read failed: {_hf_err}")
-                _original = None
-            if _original is not None:
-                try:
-                    _out = fix_antipattern(_probe_text, _hook_target)
-                    if "Could not synthesize" in _out or "REJECTED" in _out:
-                        results.append(f"WARN: fix_antipattern integration -- synthesis returned: {_out.splitlines()[0][:120]}")
-                    elif "Applied enforcement" in _out:
-                        results.append("PASS: fix_antipattern integration -- synthesis + bash validation + append succeeded")
-                    else:
-                        results.append(f"WARN: fix_antipattern integration -- unexpected output: {_out[:120]}")
-                except Exception as _fa_err:
-                    results.append(f"FAIL: fix_antipattern integration -- {type(_fa_err).__name__}: {_fa_err}")
-                finally:
-                    # Always restore the hook — selftest must be idempotent.
-                    try:
-                        with open(_hook_path, "w", encoding="utf-8") as _hf:
-                            _hf.write(_original)
-                    except OSError as _hw_err:
-                        results.append(f"FAIL: fix_antipattern integration -- hook revert failed, manual cleanup needed: {_hw_err}")
     except Exception as _fa_outer:
-        results.append(f"WARN: fix_antipattern integration -- probe setup failed: {_fa_outer}")
+        results.append(f"FAIL: fix_antipattern preflight -- {type(_fa_outer).__name__}: {_fa_outer}")
 
     try:
         from ..synthesis import warm_context_status
