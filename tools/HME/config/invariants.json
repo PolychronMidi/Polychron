@@ -518,11 +518,12 @@
     },
     {
       "id": "hme-py-meta-has-trim",
-      "description": "meta_observer.py must define a trim helper (_trim_) alongside its append-only file writes",
+      "description": "meta_layers.py must define trim helpers (_trim_narrative_file, _trim_counterfactuals_file) alongside its append-only file writes. Prevents unbounded JSONL growth.",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/meta_observer.py",
+      "path": "tools/HME/mcp/server/meta_layers.py",
       "patterns": [
-        "_trim_"
+        "_trim_narrative_file",
+        "_trim_counterfactuals_file"
       ],
       "severity": "warning"
     },

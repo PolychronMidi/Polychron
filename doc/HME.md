@@ -829,7 +829,6 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | Script | Event | Matcher | What It Does |
 |--------|-------|---------|-------------|
 | `sessionstart.sh` | SessionStart | * | Reset compact tab, capture previous session's nexus pending state before reset, inject HME awareness (pipeline verdict + wall time, last journal round, uncommitted changes, last commit), surface previous session unfinished items |
-| `pretooluse_lifesaver.sh` | PreToolUse | * | **LIFESAVER**: stamp start time to `/tmp/hme_lifesaver_{session}_{tool}` for every tool call |
 | `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; **enrich** project source reads with KB titles via `systemMessage` (Read proceeds + KB injected, no extra turn) |
 | `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")`; **emit `edit_pending`** activity event |
 | `pretooluse_grep.sh` | PreToolUse | Grep | Surface live KB relevance via shim (titles only); multiline exempt |
@@ -842,7 +841,9 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 | `log-tool-call.sh` | PostToolUse | * | Log every tool to `session-transcript.jsonl` + shim; **LIFESAVER**: detect HME calls (`Bash(i/<hme-tool>)` or legacy `mcp__HME__*`) and warn to stderr on 15-30s threshold |
 | `posttooluse_bash.sh` | PostToolUse | Bash | Track background output files to tab + Evolver phase triggers (verdict + wall time in header) + **LIFESAVER**: scan pipeline-summary.json for error patterns after `npm run main`; **emit `pipeline_run`** activity event with verdict/wall/hci |
 | `posttooluse_pipeline_kb.sh` | PostToolUse | Bash | Append `KB:` trace summary to tab after `npm run main` |
-| `posttooluse_read.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
+| `posttooluse_read_kb.sh` | PostToolUse | Read | Silent KB enrichment after file reads of project source files; reset streak |
+| `posttooluse_todowrite.sh` | PostToolUse | TodoWrite | Mirror completed onboarding steps back to the HME todo store so the sidebar stays in sync with agent-visible todos |
+| `pretooluse_toolsearch.sh` | PreToolUse | ToolSearch | Guard against tool-search polling; enrich with KB tool-surface context for the search query |
 | `posttooluse_edit.sh` | PostToolUse | Edit | Track edited src/HME files to NEXUS backlog; warn when backlog ≥ 3/5 files; **emit `file_written`** + **split into `coherence_violation` (lazy) vs `productive_incoherence` (exploratory)** using the KB staleness index |
 | `posttooluse_write.sh` | PostToolUse | Write | Track `.md`/`.txt` note files (outside `tmp/`) to tab |
 | `posttooluse_agent.sh` | PostToolUse | Agent | Track subagent background output files to tab |
