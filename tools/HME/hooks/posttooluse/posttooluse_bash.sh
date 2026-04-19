@@ -84,57 +84,15 @@ $ERROR_STEPS
 ERRMSG
     fi
   fi
+  # HCI computation + background analytics (snapshot-holograph, dashboard,
+  # chain-snapshot, tool-effectiveness, trajectory, coupling matrix,
+  # memetic-drift, verifier-coverage) now live in main-pipeline.js itself.
+  # That makes them agent-independent: shell, CI, cron, or any other agent
+  # running `npm run main` gets the same side-effects the hook-gated path
+  # used to provide. Hook only echoes the terminal summary now.
   PIPELINE_VERDICT=$(_safe_py3 "import json; print(json.load(open('$SUMMARY_FILE')).get('verdict','?'))" '?')
   PIPELINE_WALL=$(_safe_py3 "import json; d=json.load(open('$SUMMARY_FILE')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
-
-  # Composition ↔ coherence coupling: compute HCI right now and write it into
-  # pipeline-summary.json alongside the music verdict. Two axes converge into
-  # one record. Snapshot a holograph for time-series analysis.
-  HCI_SCRIPT="$PROJECT/tools/HME/scripts/verify-coherence.py"
-  HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
-  PIPELINE_HCI=""
-  if [ -f "$HCI_SCRIPT" ]; then
-    PIPELINE_HCI=$(PROJECT_ROOT="$PROJECT" python3 "$HCI_SCRIPT" --score 2>/dev/null | tr -d '\n ')
-    if [ -n "$PIPELINE_HCI" ]; then
-      _safe_py3 "
-import json
-d = json.load(open('$SUMMARY_FILE'))
-d['hci'] = int('$PIPELINE_HCI')
-d['hci_captured_at'] = $(date +%s)
-json.dump(d, open('$SUMMARY_FILE','w'), indent=2)
-print('wrote hci=' + str(d['hci']))
-" "" >/dev/null
-    fi
-  fi
-  if [ -f "$HOLO_SCRIPT" ]; then
-    PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" > /dev/null 2>&1 &
-  fi
-  # Refresh tool-effectiveness + trajectory + coupling matrix after each pipeline
-  # run so the next HCI computation has fresh data to score against.
-  EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
-  TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
-  COUPLING_SCRIPT="$PROJECT/tools/HME/scripts/build-hme-coupling-matrix.py"
-  [ -f "$EFF_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 &
-  [ -f "$TRAJ_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 &
-  [ -f "$COUPLING_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$COUPLING_SCRIPT" > /dev/null 2>&1 &
-  # H11 (revised): rebuild the interactive HTML dashboard alongside pipeline output
-  DASHBOARD_SCRIPT="$PROJECT/tools/HME/scripts/build-dashboard.py"
-  [ -f "$DASHBOARD_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$DASHBOARD_SCRIPT" > /dev/null 2>&1 &
-  # H-compact optimization #10: eager chain snapshot after every pipeline run.
-  # Pipeline completion is a natural "stable point" — the session has
-  # achieved something concrete. Snapshot for free (no LLM, background).
-  CHAIN_SNAPSHOT_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
-  [ -f "$CHAIN_SNAPSHOT_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$CHAIN_SNAPSHOT_SCRIPT" --eager > /dev/null 2>&1 &
-  # H15: emit HCI as a structured composition-layer signal
-  EMIT_SIGNAL="$PROJECT/tools/HME/scripts/emit-hci-signal.py"
-  [ -f "$EMIT_SIGNAL" ] && PROJECT_ROOT="$PROJECT" python3 "$EMIT_SIGNAL" > /dev/null 2>&1 &
-  # H13: refresh verifier coverage report (cheap)
-  COVERAGE_SCRIPT="$PROJECT/tools/HME/scripts/suggest-verifiers.py"
-  [ -f "$COVERAGE_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$COVERAGE_SCRIPT" > /dev/null 2>&1 &
-  # H16: refresh memetic drift (cheap)
-  MEMETIC_SCRIPT="$PROJECT/tools/HME/scripts/memetic-drift.py"
-  [ -f "$MEMETIC_SCRIPT" ] && PROJECT_ROOT="$PROJECT" python3 "$MEMETIC_SCRIPT" > /dev/null 2>&1 &
-
+  PIPELINE_HCI=$(_safe_py3 "import json; d=json.load(open('$SUMMARY_FILE')); print(d.get('hci','') or '')" '')
   echo "Pipeline ${PIPELINE_VERDICT}${PIPELINE_WALL:+ (${PIPELINE_WALL})}${PIPELINE_HCI:+ | HCI ${PIPELINE_HCI}/100}" >&2
 elif echo "$CMD" | grep -q 'npm run snapshot'; then
   echo 'Baseline captured. Persist any new calibration anchors or decisions to HME add_knowledge.' >&2
@@ -152,13 +110,10 @@ if echo "$CMD" | grep -q 'npm run main'; then
     FP="$PROJECT/metrics/fingerprint-comparison.json"
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
     WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
-    HCI_VAL=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('hci','?'))" "?")
-    _emit_activity pipeline_run --session="$SESSION_ID" --verdict="$VERDICT" --passed="$PASSED" --wall_s="$WALL_S" --hci="$HCI_VAL"
-    # Emit round_complete — this is the REAL round boundary for coherence
-    # scoring, trajectory analysis, and reflexivity. An evolution round
-    # ends when a pipeline finishes, not when a chat turn ends (that's
-    # turn_complete, emitted by stop.sh).
-    _emit_activity round_complete --session="$SESSION_ID" --verdict="$VERDICT" --passed="$PASSED"
+    # pipeline_run + round_complete + HCI are all emitted by main-pipeline.js
+    # itself — agent-independent observability. The hook no longer needs to
+    # re-emit. It still owns nexus + onboarding state advancement below
+    # because those are tied to Claude's Bash-tool invocation context.
     if [ "$PASSED" = "0" ]; then
       _nexus_mark PIPELINE "$VERDICT"
       _nexus_clear_type COMMIT
