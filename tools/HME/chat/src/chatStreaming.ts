@@ -282,7 +282,13 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
         if (h.isAborted()) return;
         ctx.updateContextTracker(h.state.text, h.state.thinking, msg.claudeModel, usage);
         // Validate: did Claude actually run with the model we asked for?
-        if (usage?.modelId && usage.modelId !== claudeOpts.model) {
+        // usage.modelId is the full CLI key (e.g. "claude-sonnet-4-6");
+        // claudeOpts.model is the short alias (e.g. "sonnet"). A mismatch
+        // is only real when the alias doesn't appear in the full ID at all.
+        const _modelMismatch = usage?.modelId &&
+          !usage.modelId.includes(claudeOpts.model) &&
+          !usage.modelId.startsWith(`claude-${claudeOpts.model}`);
+        if (_modelMismatch) {
           ctx.post({
             type: "claudeConfigMismatch",
             assistantId,
@@ -290,7 +296,7 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
             actual: usage.modelId,
           });
           ctx.postError("claude", `model mismatch: requested ${claudeOpts.model}, got ${usage.modelId}`);
-        } else if (usage?.modelId) {
+        } else if (usage?.modelId && !_modelMismatch) {
           ctx.post({
             type: "claudeConfigConfirmed",
             assistantId,
