@@ -254,7 +254,7 @@ class _Handler(BaseHTTPRequestHandler):
         # Unified health: worker tool-registry status + shim-absorbed RAG status.
         import rag_engines
         from hme_http_store import _get_recent_errors, _transcript_entries
-        _training_lock = os.environ.get("HME_TRAINING_LOCK", "")
+        _training_lock = ENV.optional("HME_TRAINING_LOCK", "")
         _training_locked = bool(_training_lock) and os.path.exists(_training_lock)
         rag_ready = rag_engines._engine_ready.is_set() and rag_engines._project_engine is not None
         self._json(200, {
@@ -472,7 +472,7 @@ class _Handler(BaseHTTPRequestHandler):
 def main():
     import argparse
     p = argparse.ArgumentParser(description="HME tool worker")
-    p.add_argument("--port", type=int, default=int(os.environ.get("HME_MCP_PORT", "9098")))
+    p.add_argument("--port", type=int, default=ENV.optional_int("HME_MCP_PORT", 9098))
     p.add_argument("--host", default="127.0.0.1")
     args = p.parse_args()
 

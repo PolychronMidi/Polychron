@@ -498,7 +498,7 @@
     },
     {
       "id": "hme-hooks-briefing-reaches-claude",
-      "description": "Hook scripts that emit Claude-facing briefings (KB CONSTRAINTS, AGENT PRIMER, ANTI-POLLING, etc.) must use `hookSpecificOutput.additionalContext` (on allow) or `permissionDecisionReason` (on deny), not `systemMessage` alone. systemMessage is user-terminal-only; a briefing hook that emits only systemMessage never reaches Claude — this silently gutted the entire pretooluse_edit briefing chain for months.",
+      "description": "Hook scripts that emit Claude-facing briefings (KB CONSTRAINTS, AGENT PRIMER, ANTI-POLLING, etc.) must use `hookSpecificOutput.additionalContext` (on allow) or `permissionDecisionReason` (on deny), not `systemMessage` alone. systemMessage is user-terminal-only; a briefing hook that emits only systemMessage never reaches Claude \u2014 this silently gutted the entire pretooluse_edit briefing chain for months.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-hook-context-injection.py tools/HME/hooks",
       "severity": "error"
@@ -559,14 +559,14 @@
     },
     {
       "id": "cli-modelUsage-contextWindow-shape",
-      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number ≥1000 — routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
+      "description": "Claude CLI result.modelUsage[alias].contextWindow must be a number \u22651000 \u2014 routerClaude.ts:computeTurnUsage divides by this. If CLI version drift drops or renames the field, the context meter silently stalls and the chain mistriggers. The probe script skips when the CLI is unavailable or the API is unreachable.",
       "type": "shell_output_empty",
       "shell": "bash scripts/check-claude-cli-result-shape.sh",
       "severity": "warning"
     },
     {
       "id": "hme-cli-error-prefix-emitter",
-      "description": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' — three PostToolUse hooks (posttooluse_hme_read, posttooluse_hme_review, posttooluse_addknowledge) grep for this prefix to detect transport failures. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state.",
+      "description": "scripts/hme-cli.js must prefix every stderr error line with 'hme-cli:' \u2014 three PostToolUse hooks (posttooluse_hme_read, posttooluse_hme_review, posttooluse_addknowledge) grep for this prefix to detect transport failures. Drift here silently turns 'worker down' into 'operation succeeded cleanly' in nexus state.",
       "type": "patterns_all_in_file",
       "path": "scripts/hme-cli.js",
       "patterns": [
@@ -614,14 +614,14 @@
     },
     {
       "id": "hme-py-no-os-environ",
-      "description": "HME Python files must not read os.environ directly — use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth. Subprocess env construction (os.environ.copy()) is exempt when marked with # env-ok. hme_env.py itself is exempt.",
+      "description": "HME Python files must not read os.environ directly \u2014 use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth. Subprocess env construction (os.environ.copy()) is exempt when marked with # env-ok. hme_env.py itself is exempt.",
       "type": "shell_output_empty",
       "shell": "grep -rn 'os\\.environ' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -vE 'hme_env\\.py|# env-ok'",
       "severity": "error"
     },
     {
       "id": "hme-py-no-hardcoded-home",
-      "description": "HME Python and shell files must not hardcode /home/jah — use PROJECT_ROOT from .env via hme_env.ENV or $PROJECT_ROOT in shell. Docs and logs are exempt.",
+      "description": "HME Python and shell files must not hardcode /home/jah \u2014 use PROJECT_ROOT from .env via hme_env.ENV or $PROJECT_ROOT in shell. Docs and logs are exempt.",
       "type": "shell_output_empty",
       "shell": "grep -rn '/home/jah' tools/HME/mcp/ tools/HME/hooks/ tools/HME/scripts/ tools/HME/activity/ tools/HME/proxy/ --include='*.py' --include='*.sh' --include='*.js' | grep -v '__pycache__' | grep -vE '\\.log:|# path-ok'",
       "severity": "error"
@@ -670,7 +670,7 @@
     },
     {
       "id": "no-subpackage-alias-collision",
-      "description": "_alias_subpackage must skip name==subpkg_name — aliasing a subpackage's own name to a .py module strips __path__, which breaks importlib.reload() for every submodule parent-lookup",
+      "description": "_alias_subpackage must skip name==subpkg_name \u2014 aliasing a subpackage's own name to a .py module strips __path__, which breaks importlib.reload() for every submodule parent-lookup",
       "type": "pattern_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/__init__.py",
       "pattern": "if name == subpkg_name",
@@ -869,7 +869,7 @@
       "id": "prediction-reconciler-exists",
       "description": "Phase 3.4 \u2014 prediction reconciler must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/reconcile-predictions.js",
+      "path": "scripts/pipeline/hme/reconcile-predictions.js",
       "severity": "error"
     },
     {
@@ -934,7 +934,7 @@
       "id": "kb-trust-weights-script-exists",
       "description": "Phase 4.2 \u2014 KB trust weight computer must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/compute-kb-trust-weights.py",
+      "path": "scripts/pipeline/hme/compute-kb-trust-weights.py",
       "severity": "error"
     },
     {
@@ -988,14 +988,14 @@
       "id": "trajectory-script-exists",
       "description": "Phase 5.1 \u2014 compositional trajectory script must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/compute-compositional-trajectory.js",
+      "path": "scripts/pipeline/hme/compute-compositional-trajectory.js",
       "severity": "error"
     },
     {
       "id": "coherence-budget-script-exists",
       "description": "Phase 5.2 \u2014 coherence budget script must exist (homeostatic governance vs. maximization)",
       "type": "file_exists",
-      "path": "scripts/pipeline/compute-coherence-budget.js",
+      "path": "scripts/pipeline/hme/compute-coherence-budget.js",
       "severity": "error"
     },
     {
@@ -1036,11 +1036,11 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
       "patterns": [
-        "mode == \"trajectory\"",
-        "mode == \"budget\"",
-        "mode == \"negative_space\"",
-        "mode == \"cognitive_load\"",
-        "mode == \"ground_truth\""
+        "\"trajectory\":",
+        "\"budget\":",
+        "\"negative_space\":",
+        "\"cognitive_load\":",
+        "\"ground_truth\":"
       ],
       "severity": "error"
     },
@@ -1056,7 +1056,7 @@
       "id": "ground-truth-kb-override",
       "description": "compute-kb-trust-weights.py must unconditionally tier human_ground_truth KB entries as HIGH",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/compute-kb-trust-weights.py",
+      "path": "scripts/pipeline/hme/compute-kb-trust-weights.py",
       "patterns": [
         "human_ground_truth",
         "\"tier\": \"HIGH\""
@@ -1075,7 +1075,7 @@
       "id": "reflexivity-split-in-reconciler",
       "description": "reconcile-predictions.js must split predictions into clean vs injected buckets",
       "type": "patterns_all_in_file",
-      "path": "scripts/pipeline/reconcile-predictions.js",
+      "path": "scripts/pipeline/hme/reconcile-predictions.js",
       "patterns": [
         "cleanPredicted",
         "injectedPredicted",
@@ -1087,21 +1087,21 @@
       "id": "constitution-script-exists",
       "description": "Phase 6.2 \u2014 constitutional identity derivation script must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/derive-constitution.py",
+      "path": "scripts/pipeline/hme/derive-constitution.py",
       "severity": "error"
     },
     {
       "id": "doc-drift-script-exists",
       "description": "Phase 6.3 \u2014 doc drift detector must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/detect-doc-drift.py",
+      "path": "scripts/pipeline/hme/detect-doc-drift.py",
       "severity": "error"
     },
     {
       "id": "generalizations-script-exists",
       "description": "Phase 6.4 \u2014 generalization extractor must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/extract-generalizations.py",
+      "path": "scripts/pipeline/hme/extract-generalizations.py",
       "severity": "error"
     },
     {
@@ -1136,11 +1136,11 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
       "patterns": [
-        "mode == \"constitution\"",
-        "mode == \"doc_drift\"",
-        "mode == \"generalizations\"",
-        "mode == \"reflexivity\"",
-        "mode == \"multi_agent\""
+        "\"constitution\":",
+        "\"doc_drift\":",
+        "\"generalizations\":",
+        "\"reflexivity\":",
+        "\"multi_agent\":"
       ],
       "severity": "error"
     },
@@ -1153,14 +1153,14 @@
     },
     {
       "id": "index-directory-zero-args",
-      "description": "index_directory must take zero arguments everywhere — ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
+      "description": "index_directory must take zero arguments everywhere \u2014 ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
       "type": "shell_output_empty",
       "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/mcp/rag_engine/engine_indexing.py 2>/dev/null",
       "severity": "error"
     },
     {
       "id": "no-direct-gpu-model-load-in-indexing",
-      "description": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch — they talk to the daemon via HTTP, which tells the shim what device to use. Direct model loading in these files bypasses the daemon's GPU allocation authority. See the 'catastrophic failure' fix where indexing_mode was loading models directly.",
+      "description": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch \u2014 they talk to the daemon via HTTP, which tells the shim what device to use. Direct model loading in these files bypasses the daemon's GPU allocation authority. See the 'catastrophic failure' fix where indexing_mode was loading models directly.",
       "type": "shell_output_empty",
       "shell": "grep -nE 'from sentence_transformers|import torch|SentenceTransformer' tools/HME/mcp/indexing_mode.py tools/HME/mcp/server/tools_index.py 2>/dev/null",
       "severity": "error"
@@ -1174,14 +1174,14 @@
     },
     {
       "id": "daemon-is-gpu-authority",
-      "description": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement. Other HME files must not contain 'cuda:0' or 'cuda:1' device assignments — they route through the daemon which owns GPU topology. rag_engine/engine.py is exempt (fallback device picker for non-shim mode). # device-ok comments exempt specific lines.",
+      "description": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement. Other HME files must not contain 'cuda:0' or 'cuda:1' device assignments \u2014 they route through the daemon which owns GPU topology. rag_engine/engine.py is exempt (fallback device picker for non-shim mode). # device-ok comments exempt specific lines.",
       "type": "shell_output_empty",
       "shell": "grep -rnE '\"cuda:[0-9]\"' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -v llamacpp_daemon.py | grep -v rag_engines.py | grep -v 'rag_engine/engine.py' | grep -v vram_manager.py | grep -v '# device-ok'",
       "severity": "error"
     },
     {
       "id": "review-verdict-emitter-importable",
-      "description": "emit_review_verdict_marker must be importable from server.onboarding_chain AND produce a string containing HME_REVIEW_VERDICT for the 'clean' verdict. Guards against signature drift that the pattern-in-file check can't catch — the function must actually work, not just exist.",
+      "description": "emit_review_verdict_marker must be importable from server.onboarding_chain AND produce a string containing HME_REVIEW_VERDICT for the 'clean' verdict. Guards against signature drift that the pattern-in-file check can't catch \u2014 the function must actually work, not just exist.",
       "type": "shell_output_empty",
       "shell": "python3 -c \"import sys; sys.path.insert(0,'tools/HME/mcp'); from server.onboarding_chain import emit_review_verdict_marker; m=emit_review_verdict_marker('clean'); assert 'HME_REVIEW_VERDICT' in m and 'clean' in m, f'bad marker: {m!r}'\" 2>&1 | grep -v '^$'",
       "severity": "error"
@@ -1211,14 +1211,14 @@
     },
     {
       "id": "lance-internals-not-tracked",
-      "description": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state — regenerated by rag_engines indexing and compacted by scripts/compact-lance-tables.py. Their _deletions/, _transactions/, _versions/, and data/ internals must not be tracked by git. Tracking them produces gigabytes of binary drift per indexer run and breaks patch-based commit tools (GitLens) with 'cannot apply binary patch without full index line' errors. If this invariant fails, the fix is: add to .gitignore, then `git rm --cached -r tools/HME/KB/<table>.lance`.",
+      "description": "KB lance tables (tools/HME/KB/*.lance/) are ephemeral generated state \u2014 regenerated by rag_engines indexing and compacted by scripts/compact-lance-tables.py. Their _deletions/, _transactions/, _versions/, and data/ internals must not be tracked by git. Tracking them produces gigabytes of binary drift per indexer run and breaks patch-based commit tools (GitLens) with 'cannot apply binary patch without full index line' errors. If this invariant fails, the fix is: add to .gitignore, then `git rm --cached -r tools/HME/KB/<table>.lance`.",
       "type": "shell_output_empty",
       "shell": "git ls-files 'tools/HME/KB/*.lance/*' 2>/dev/null",
       "severity": "error"
     },
     {
       "id": "antagonism-registry-covers-observed-pairs",
-      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it hasn't named — per the antagonism-bridge principle, that's a missing design artifact. See doc/ANTAGONISM_BRIDGES.md.",
+      "description": "Every strong-negative correlation (r <= -0.4) in metrics/trace.jsonl must be accounted for in metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted. An unaccounted negative correlation means the system is observing a tension it hasn't named \u2014 per the antagonism-bridge principle, that's a missing design artifact. See doc/ANTAGONISM_BRIDGES.md.",
       "type": "shell_output_empty",
       "shell": "python3 scripts/check-antagonism-registry.py 2>&1 | grep -v '^$'",
       "severity": "warning"
@@ -1232,10 +1232,13 @@
     },
     {
       "id": "versions-single-source",
-      "description": "All three wire-version components (cli/proxy/worker) must read from tools/HME/config/versions.json — not hardcoded strings. Protects the three-way version check from typo-drift.",
+      "description": "All three wire-version components (cli/proxy/worker) must read from tools/HME/config/versions.json \u2014 not hardcoded strings. Protects the three-way version check from typo-drift.",
       "type": "patterns_all_in_file",
       "path": "scripts/hme-cli.js",
-      "patterns": ["versions.json", "CLI_VERSION"],
+      "patterns": [
+        "versions.json",
+        "CLI_VERSION"
+      ],
       "severity": "error"
     },
     {
@@ -1247,7 +1250,7 @@
     },
     {
       "id": "proxy-version-endpoint",
-      "description": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version` — a stale proxy between a new CLI and new worker is otherwise invisible.",
+      "description": "tools/HME/proxy/hme_proxy.js must declare PROXY_VERSION and expose GET /version. Completes the three-way (cli/proxy/worker) version check surfaced via `hme-cli --version` \u2014 a stale proxy between a new CLI and new worker is otherwise invisible.",
       "type": "patterns_all_in_file",
       "path": "tools/HME/proxy/hme_proxy.js",
       "patterns": [
