@@ -17,7 +17,9 @@
     "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
     "shell_output_empty": "Run shell command; pass if stdout is empty, fail if any output produced. Use for git-clean checks.",
     "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken.",
-    "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome — i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm."
+    "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome — i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
+    "activity_events_balanced": "Paired activity events (start_event + end_event) must fire with matching counts in the recent window. Catches observability regressions where a refactor drops one of a paired emission silently.",
+    "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed."
   },
   "invariants": [
     {
@@ -954,6 +956,36 @@
       "field": "hme_prediction_accuracy",
       "min_distinct": 2,
       "min_rounds": 5,
+      "severity": "warning"
+    },
+    {
+      "id": "pipeline-start-end-balanced",
+      "description": "Every pipeline_start must be followed by exactly one pipeline_run in the recent activity window. Catches observability regressions where a refactor drops emission of one of the paired events — the pipeline owns its own instrumentation, and a missing emission silently breaks every downstream slicer.",
+      "type": "activity_events_balanced",
+      "path": "metrics/hme-activity.jsonl",
+      "start_event": "pipeline_start",
+      "end_event": "pipeline_run",
+      "window_events": 2000,
+      "min_occurrences": 2,
+      "severity": "error"
+    },
+    {
+      "id": "pipeline-run-round-balanced",
+      "description": "Every pipeline_run must be paired with a round_complete event in the recent window. These two events should always fire together (both emitted at pipeline finish); a mismatch means one of the two paths regressed.",
+      "type": "activity_events_balanced",
+      "path": "metrics/hme-activity.jsonl",
+      "start_event": "pipeline_run",
+      "end_event": "round_complete",
+      "window_events": 2000,
+      "min_occurrences": 2,
+      "severity": "error"
+    },
+    {
+      "id": "no-invariant-chronically-failing",
+      "description": "Meta-invariant: another invariant must not have been FAILing for ≥10 consecutive runs. Catches the meta-pattern where alarms become background noise and never get addressed.",
+      "type": "invariant_chronically_failing",
+      "path": "metrics/hme-invariant-history.json",
+      "min_streak": 10,
       "severity": "warning"
     },
     {

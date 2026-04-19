@@ -402,6 +402,172 @@ def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
     return True, f"{field!r} has {len(distinct)} distinct values over {len(values)} rounds"
 
 
+def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
+    """Verify paired activity events fire with matching counts over recent
+    rounds. Catches observability regressions where a refactor drops a
+    pipeline emission silently.
+
+    Config:
+      path           — activity jsonl file (default metrics/hme-activity.jsonl)
+      start_event    — name of the "begin" event (e.g. pipeline_start)
+      end_event      — name of the "end" event (e.g. pipeline_run)
+      window_events  — consider only the last N events (default 2000)
+      min_occurrences — only evaluate when >= this many start_events observed
+                        (default 2 — cold-start tolerance)
+    """
+    import json as _json
+    path = os.path.join(ctx.PROJECT_ROOT, inv.get("path", "metrics/hme-activity.jsonl"))
+    start_event = inv["start_event"]
+    end_event = inv["end_event"]
+    window = int(inv.get("window_events", 2000))
+    min_occ = int(inv.get("min_occurrences", 2))
+
+    if not os.path.isfile(path):
+        return True, f"activity log {inv.get('path','metrics/hme-activity.jsonl')} missing — can't check"
+    tail: list = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s:
+                    continue
+                try:
+                    tail.append(_json.loads(s))
+                except ValueError:
+                    continue
+    except OSError as e:
+        return False, f"cannot read {path}: {e}"
+    tail = tail[-window:]
+    starts = sum(1 for e in tail if e.get("event") == start_event)
+    ends = sum(1 for e in tail if e.get("event") == end_event)
+    if starts < min_occ:
+        return True, f"only {starts} {start_event!r} in last {window} events, need ≥{min_occ}"
+    if starts != ends:
+        return False, (
+            f"{start_event!r}={starts}  {end_event!r}={ends}  delta={abs(starts-ends)}. "
+            f"Pipeline observability is missing {abs(starts-ends)} paired emission(s). "
+            f"Either a pipeline run crashed mid-flight without emitting {end_event} "
+            f"or a refactor dropped one of the emissions."
+        )
+    return True, f"{start_event}={starts}  {end_event}={ends}  (balanced)"
+
+
+def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
+    """Escalation check: warn when ANOTHER invariant has been failing for
+    N consecutive invariant runs. Catches the meta-pattern where a FAIL
+    becomes background noise. Requires metrics/hme-invariant-history.json
+    (maintained by the invariants runner itself — not wired here yet).
+
+    Config:
+      path         — history file (default metrics/hme-invariant-history.json)
+      min_streak   — minimum consecutive-FAIL runs to trigger (default 10)
+    """
+    import json as _json
+    path = os.path.join(ctx.PROJECT_ROOT,
+                        inv.get("path", "metrics/hme-invariant-history.json"))
+    min_streak = int(inv.get("min_streak", 10))
+    if not os.path.isfile(path):
+        return True, "no invariant history yet — chronic-failure check inert"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = _json.load(f)
+    except (OSError, _json.JSONDecodeError) as e:
+        return False, f"cannot read {path}: {e}"
+    chronic = []
+    for inv_id, streaks in (data.get("fail_streaks") or {}).items():
+        if isinstance(streaks, int) and streaks >= min_streak:
+            chronic.append(f"{inv_id} ({streaks} runs)")
+    if chronic:
+        return False, (
+            f"{len(chronic)} invariant(s) chronically failing: {', '.join(chronic[:5])}"
+            + (f" +{len(chronic)-5} more" if len(chronic) > 5 else "")
+        )
+    return True, "no chronic failures"
+
+
+def _check_public_functions_reachable(inv: dict) -> tuple[bool, str]:
+    """Every undecorated public function (no leading `_`) in a scanned dir must
+    be either @ctx.mcp.tool-decorated, referenced from another module, OR
+    listed in the explicit `allowed_internals` list. Catches the class of
+    bug where a handler is defined with a public-looking name but nothing
+    can actually call it (status() was unreachable for months for exactly
+    this reason).
+
+    Config:
+      scan_dir         — directory to walk for .py files
+      allowed_internals — list of function names that are legitimately
+                          internal-but-undecorated (dispatch-table-called,
+                          test harness, etc.)
+    """
+    import ast as _ast
+    import re as _re
+    scan_dir = os.path.join(ctx.PROJECT_ROOT, inv["scan_dir"])
+    allowed = set(inv.get("allowed_internals", []))
+    candidates: dict = {}
+    for root, _dirs, files in os.walk(scan_dir):
+        if "__pycache__" in root:
+            continue
+        for f in files:
+            if not f.endswith(".py"):
+                continue
+            path = os.path.join(root, f)
+            try:
+                tree = _ast.parse(open(path, encoding="utf-8").read(), filename=path)
+            except (OSError, SyntaxError):
+                continue
+            for node in tree.body:
+                if not isinstance(node, _ast.FunctionDef):
+                    continue
+                if node.name.startswith("_"):
+                    continue
+                if node.name in allowed:
+                    continue
+                has_tool = any(
+                    "mcp.tool" in (_ast.unparse(d) if hasattr(_ast, "unparse") else "")
+                    for d in node.decorator_list
+                )
+                if has_tool:
+                    continue
+                rel = os.path.relpath(path, ctx.PROJECT_ROOT)
+                candidates[node.name] = (rel, node.lineno)
+
+    # Check cross-file references
+    scan_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp")
+    orphans: list = []
+    for name, (file, line) in candidates.items():
+        refs = 0
+        for root, _dirs, files in os.walk(scan_root):
+            if "__pycache__" in root:
+                continue
+            for f in files:
+                if not f.endswith(".py"):
+                    continue
+                path = os.path.join(root, f)
+                rel = os.path.relpath(path, ctx.PROJECT_ROOT)
+                if rel == file:
+                    continue
+                try:
+                    content = open(path, encoding="utf-8").read()
+                except OSError:
+                    continue
+                if _re.search(rf"\b{_re.escape(name)}\b", content):
+                    refs += 1
+                    break
+        if refs == 0:
+            orphans.append(f"{file}:{line}:{name}")
+
+    if orphans:
+        preview = ", ".join(orphans[:5])
+        suffix = f" (+{len(orphans)-5} more)" if len(orphans) > 5 else ""
+        return False, (
+            f"{len(orphans)} undecorated public function(s) with zero external "
+            f"references: {preview}{suffix}. Either prefix with `_` to mark "
+            f"internal, add @ctx.mcp.tool() to expose, or add to "
+            f"`allowed_internals` in the invariant config."
+        )
+    return True, f"all {len(candidates)} public functions reachable"
+
+
 def _check_shell_output_empty(inv: dict) -> tuple[bool, str]:
     """Run a shell command; pass if stdout is empty, fail if it produces any output.
 
@@ -444,6 +610,9 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "kb_freshness": _check_kb_freshness,
         "metric_has_variance": _check_metric_has_variance,
         "correlation_direction": _check_correlation_direction,
+        "activity_events_balanced": _check_activity_events_balanced,
+        "invariant_chronically_failing": _check_invariant_chronically_failing,
+        "public_functions_reachable": _check_public_functions_reachable,
         "shell_output_empty": _check_shell_output_empty,
     }
     inv_type = inv.get("type", "")
@@ -456,6 +625,43 @@ def _eval(inv: dict) -> tuple[bool, str]:
         return False, f"file not found: {e.filename}"
     except Exception as e:
         return False, f"check error: {e}"
+
+
+def _persist_invariant_history(results: list) -> None:
+    """Update metrics/hme-invariant-history.json with pass/fail streaks.
+    fail_streaks[id] = consecutive FAILs (reset on PASS, incremented on FAIL).
+    last_run tracks most recent timestamp so stale invariants can be detected.
+    """
+    import json as _json
+    import time as _time
+    history_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-invariant-history.json")
+    history: dict = {}
+    if os.path.isfile(history_path):
+        try:
+            with open(history_path, encoding="utf-8") as _f:
+                history = _json.load(_f) or {}
+        except (OSError, _json.JSONDecodeError):
+            history = {}
+    fail_streaks = history.get("fail_streaks") or {}
+    last_result = history.get("last_result") or {}
+    for inv, ok, _detail in results:
+        inv_id = inv.get("id", "?")
+        if ok:
+            fail_streaks[inv_id] = 0
+        else:
+            fail_streaks[inv_id] = int(fail_streaks.get(inv_id, 0)) + 1
+        last_result[inv_id] = "pass" if ok else "fail"
+    out = {
+        "last_run": int(_time.time()),
+        "total_runs": int(history.get("total_runs", 0)) + 1,
+        "fail_streaks": fail_streaks,
+        "last_result": last_result,
+    }
+    os.makedirs(os.path.dirname(history_path), exist_ok=True)
+    tmp = history_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as _f:
+        _json.dump(out, _f, indent=2)
+    os.replace(tmp, history_path)
 
 
 def check_invariants(verbose: bool = False) -> str:
@@ -472,6 +678,14 @@ def check_invariants(verbose: bool = False) -> str:
     for inv in invariants:
         ok, detail = _eval(inv)
         results.append((inv, ok, detail))
+
+    # Persist per-invariant pass/fail history so the chronic-failure check
+    # has data. Increments fail_streak on FAIL, resets on PASS. Tracked per
+    # invariant id so retirement/rename doesn't leak into unrelated streaks.
+    try:
+        _persist_invariant_history(results)
+    except Exception as _hist_err:
+        logger.debug(f"invariant history write failed: {type(_hist_err).__name__}: {_hist_err}")
 
     passed = sum(1 for _, ok, _ in results if ok)
     total = len(results)

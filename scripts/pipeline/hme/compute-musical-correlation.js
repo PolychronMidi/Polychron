@@ -137,17 +137,25 @@ function main() {
   const verdictMap = { STABLE: 1, EVOLVED: 1.1, DRIFTED: 0, UNKNOWN: 0.5 };
   const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;
 
-  // Round identity: prefer the current git HEAD short-hash so rounds can be
-  // aligned across compute-musical-correlation, intention-gap, reflexivity,
-  // trajectory, kb-trust, and self-audit. Without this, every pipeline run
-  // is an anonymous point and the downstream analyzers can't cross-reference.
+  // Round identity: git HEAD short-hash + sequence-for-this-sha. Two pipeline
+  // runs from the same commit produce r_abc_1 and r_abc_2, making "did my
+  // change improve metric Y" answerable — without the sequence, two runs
+  // of the same code got different timestamped IDs, turning identity into
+  // timing noise. The sequence comes from counting prior history entries
+  // whose round_id starts with r_<sha>_.
   let roundId = null;
   try {
     const { execSync } = require('child_process');
     const sha = execSync('git rev-parse --short HEAD', {
       cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
     }).toString().trim();
-    if (sha) roundId = `r_${sha}_${Math.floor(Date.now() / 1000)}`;
+    if (sha) {
+      const priorCount = Array.isArray(prev && prev.history)
+        ? prev.history.filter((h) => h && typeof h.round_id === 'string' &&
+                                      h.round_id.startsWith(`r_${sha}_`)).length
+        : 0;
+      roundId = `r_${sha}_${priorCount + 1}`;
+    }
   } catch (_err) { /* git not available -- fall through to timestamp-only */ }
   if (!roundId) roundId = `r_ts_${Math.floor(Date.now() / 1000)}`;
 

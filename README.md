@@ -35,7 +35,7 @@ Signal flow: [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)
 ## Subsystems
 
 | Directory | Files | Purpose |
---
+
 | `src/utils/` | 35 | Core utilities, registries, random, validation |
 | `src/conductor/` | 193 | Signal pipeline, profiles, dynamics, coupling, meta |
 | `src/rhythm/` | 22 | Pattern generation, feedback listeners, drums |
@@ -94,7 +94,7 @@ Details: [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) (Layer Isolation section)
 ## Conductor Profiles
 
 | Profile | Character |
---
+
 | `atmospheric` | Dense, lush, high reverb/delay. Canon-biased rhythm. Oscillating threshold 0.14. |
 | `explosive` | Maximum energy, wide dynamics, aggressive stutter rates |
 | `restrained` | Conservative density (0.25-0.42), low emission gates |
@@ -121,7 +121,7 @@ Generated per-run in `metrics/`:
 ## Documentation
 
 | File | Scope |
--
+
 | [CLAUDE.md](CLAUDE.md) | Coding rules, architectural boundaries, hard rules |
 | [doc/HME.md](doc/HME.md) | Local semantic RAG + MCP tool reference (13 tools, 22 hooks) |
 | [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) | Beat lifecycle, signal flow, layer isolation |

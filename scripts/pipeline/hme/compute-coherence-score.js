@@ -49,6 +49,21 @@ function readEvents() {
   return events;
 }
 
+// Build an event-type index once per run so the multiple filter() passes
+// below (file_written, coherence_violation, productive_incoherence) don't
+// each walk the full event list. For a 6000-event stream this converts
+// four O(n) scans into one O(n) partition + three O(k) lookups.
+function indexByEvent(events) {
+  const idx = new Map();
+  for (const e of events) {
+    if (!e || typeof e.event !== 'string') continue;
+    let bucket = idx.get(e.event);
+    if (!bucket) { bucket = []; idx.set(e.event, bucket); }
+    bucket.push(e);
+  }
+  return idx;
+}
+
 function sliceToRound(events) {
   // Find the two most recent round_complete events that have actual activity
   // between them. Only PIPELINE-emitted round_completes count (they carry a
@@ -99,9 +114,10 @@ function sliceToRound(events) {
 function main() {
   const events = readEvents();
   const windowEvents = sliceToRound(events);
+  const idx = indexByEvent(windowEvents);
 
   // Component 1: read coverage
-  const writes = windowEvents.filter((e) => e && e.event === 'file_written');
+  const writes = idx.get('file_written') || [];
   const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true).length;
   // 0 writes = no data, NOT perfect coherence. Use null to signal "unmeasured"
   // and fall back to the previous score if available.
@@ -110,7 +126,7 @@ function main() {
   // Component 2: violation penalty (lazy violations only).
   // productive_incoherence events do NOT count here -- they feed the
   // exploration bonus below.
-  const hookViolations = windowEvents.filter((e) => e && e.event === 'coherence_violation');
+  const hookViolations = idx.get('coherence_violation') || [];
   const violationsFromFile = loadJson(VIOLATIONS);
   const lazyViolationCount = hookViolations.length +
     (violationsFromFile && Array.isArray(violationsFromFile.violations)
@@ -119,9 +135,7 @@ function main() {
   const violationPenalty = clamp(1 - lazyViolationCount * 0.1, 0, 1);
 
   // Phase 3.2: exploration bonus for productive incoherence events
-  const productiveEvents = windowEvents.filter(
-    (e) => e && e.event === 'productive_incoherence',
-  );
+  const productiveEvents = idx.get('productive_incoherence') || [];
   const productiveCount = productiveEvents.length;
   const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
