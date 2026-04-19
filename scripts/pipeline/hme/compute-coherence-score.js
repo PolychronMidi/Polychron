@@ -116,8 +116,14 @@ function main() {
   const windowEvents = sliceToRound(events);
   const idx = indexByEvent(windowEvents);
 
-  // Component 1: read coverage
-  const writes = idx.get('file_written') || [];
+  // Component 1: read coverage — only human/agent writes count. Pipeline-
+  // mechanical writes (fix-non-ascii, verify-boot-order --fix, formatters)
+  // are not "human intent-bearing edits" and shouldn't dilute the
+  // coherence-of-editing signal. Tagged via source=pipeline_script by the
+  // fs watcher when tmp/run.lock is present at write-time.
+  const rawWrites = idx.get('file_written') || [];
+  const writes = rawWrites.filter((e) => e.source !== 'pipeline_script');
+  const pipelineWrites = rawWrites.length - writes.length;
   const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true).length;
   // 0 writes = no data, NOT perfect coherence. Use null to signal "unmeasured"
   // and fall back to the previous score if available.
@@ -139,11 +145,24 @@ function main() {
   const productiveCount = productiveEvents.length;
   const explorationBonus = 1 + Math.min(0.2, productiveCount * 0.05);
 
-  // Component 3: staleness penalty -- ratio of write events that touched a
-  // STALE or MISSING module. Uses the index built in the previous step.
+  // Component 3: staleness penalty -- ratio of writes to STALE modules.
+  // The critical distinction:
+  //   STALE    = KB entry exists but module has evolved past it (bad — we're
+  //              editing known-drifted code without updating KB)
+  //   MISSING  = no KB entry at all (not bad — exploratory edit into
+  //              uncharted territory; rewards via productive_incoherence)
+  //   FRESH    = KB up-to-date (good — edits are well-grounded)
+  //   (undef)  = module not in index (e.g. config files) — excluded
+  //
+  // The old formula conflated STALE and MISSING as both penalizing, which
+  // meant 100%-MISSING writes (shell scripts, config files, genuinely
+  // new territory) collapsed the score to 0 even though that's the
+  // "exploration rewarded" case. Now only STALE penalizes.
   const stalenessIdx = loadJson(STALENESS);
   let stalenessPenalty = 1;
   let touchesOnStale = 0;
+  let touchesOnMissing = 0;
+  let touchesOnFresh = 0;
   let touchesWithIndexInfo = 0;
   if (stalenessIdx && Array.isArray(stalenessIdx.modules)) {
     const statusByModule = new Map();
@@ -156,13 +175,24 @@ function main() {
       const status = statusByModule.get(mod);
       if (status === undefined) continue;
       touchesWithIndexInfo++;
-      if (status === 'STALE' || status === 'MISSING') {
+      if (status === 'STALE') {
         touchesOnStale++;
+      } else if (status === 'MISSING') {
+        touchesOnMissing++;
+      } else if (status === 'FRESH') {
+        touchesOnFresh++;
       }
     }
-    if (touchesWithIndexInfo > 0) {
-      stalenessPenalty = 1 - touchesOnStale / touchesWithIndexInfo;
+    // Only STALE touches (known-drifted code edited without KB refresh)
+    // count against the penalty. MISSING touches are exploration.
+    const penalizingTouches = touchesOnStale;
+    const nonMissingTouches = touchesOnStale + touchesOnFresh;
+    if (nonMissingTouches > 0) {
+      stalenessPenalty = 1 - penalizingTouches / nonMissingTouches;
     }
+    // If EVERY touch was MISSING, stalenessPenalty stays at 1.0 —
+    // exploration isn't punished, and the productive_incoherence bonus
+    // (computed below) is where that behavior gets rewarded.
   }
 
   const effectiveReadCoverage = readCoverage !== null ? readCoverage : 0.5; // unmeasured = 0.5 (neither good nor bad)
@@ -190,6 +220,7 @@ function main() {
       read_coverage_detail: {
         writes_with_prior_read: writesWithPriorRead,
         total_writes: writes.length,
+        pipeline_writes_excluded: pipelineWrites,
       },
       violation_penalty: Number(violationPenalty.toFixed(4)),
       violation_detail: {
@@ -200,7 +231,9 @@ function main() {
       },
       staleness_penalty: Number(stalenessPenalty.toFixed(4)),
       staleness_detail: {
-        touches_on_stale_or_missing: touchesOnStale,
+        touches_on_stale: touchesOnStale,
+        touches_on_missing: touchesOnMissing,
+        touches_on_fresh: touchesOnFresh,
         touches_with_index_info: touchesWithIndexInfo,
       },
       exploration_bonus: Number(explorationBonus.toFixed(4)),

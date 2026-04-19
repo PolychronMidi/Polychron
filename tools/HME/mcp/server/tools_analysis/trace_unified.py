@@ -49,6 +49,9 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
         from .runtime import beat_snapshot as _bs
         return _bs(target)
 
+    if mode == "round":
+        return _round_trace(target)
+
     if mode == "cascade":
         from .coupling import coupling_intel as _ci
         return _ci(mode=f"cascade:{target}")
@@ -67,8 +70,12 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
 
 
 def _detect_trace_type(target: str) -> str:
-    """Detect whether target is a beat key, L0 channel name, or module name."""
+    """Detect whether target is a beat key, L0 channel name, module name,
+    or round id (r_<sha>_<seq>)."""
     import re
+    # Round id: r_<git-short-sha>_<sequence>
+    if re.match(r'^r_[a-f0-9]{6,12}_\d+$', target):
+        return "round"
     # Beat key formats: 'S3'/'s3', '2:1:3:0' (colon-separated numeric), plain integer
     if re.match(r'^[Ss]\d+$', target):
         return "snapshot"
@@ -248,4 +255,70 @@ def _trace_delta(focus: str = "") -> str:
         except Exception as _err1:
             logger.debug(f"): {type(_err1).__name__}: {_err1}")
 
+    return "\n".join(parts)
+
+
+
+def _round_trace(round_id: str) -> str:
+    """Trace a specific pipeline round by its round_id (r_<sha>_<seq>).
+
+    Cross-references metrics/hme-musical-correlation.json for the snapshot
+    signals and metrics/hme-activity.jsonl for the activity window that
+    produced them. Requires deterministic round IDs (commit a-of-10-point
+    sweep) to work — rounds without IDs won't match.
+    """
+    corr_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-musical-correlation.json")
+    if not os.path.isfile(corr_path):
+        return f"Error: metrics/hme-musical-correlation.json not found — no round history."
+    try:
+        with open(corr_path, encoding="utf-8") as f:
+            corr = json.load(f)
+    except Exception as e:
+        return f"Error reading correlation history: {e}"
+    hist = corr.get("history", []) or []
+    match = next((h for h in hist if h.get("round_id") == round_id), None)
+    if not match:
+        known = [h.get("round_id") for h in hist if h.get("round_id")][-5:]
+        return (
+            f"Round {round_id!r} not found in musical-correlation history "
+            f"({len(hist)} entries). Recent IDs: {', '.join(known) or '(none)'}"
+        )
+    parts = [f"# Round Trace: {round_id}\n"]
+    parts.append("## Snapshot signals")
+    for key in ("timestamp", "fingerprint_verdict", "verdict_numeric",
+                "hme_coherence", "hme_prediction_accuracy",
+                "perceptual_complexity_avg", "clap_tension",
+                "encodec_entropy_avg"):
+        v = match.get(key)
+        if v is not None:
+            parts.append(f"  {key:<30} {v}")
+    parts.append("")
+    # Find activity window: events between this round's pipeline_start and pipeline_run
+    act_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-activity.jsonl")
+    if os.path.isfile(act_path):
+        try:
+            # Map round_id → approximate ts from timestamp field
+            import datetime as _dt
+            snap_ts = match.get("timestamp")
+            snap_epoch = int(_dt.datetime.fromisoformat(snap_ts.replace("Z", "+00:00")).timestamp()) if snap_ts else 0
+            # Scan for pipeline events in a ±30min window around snapshot time
+            events_in_window = []
+            with open(act_path, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        e = json.loads(line.strip())
+                    except Exception:
+                        continue
+                    ts = e.get("ts", 0)
+                    if snap_epoch and abs(ts - snap_epoch) < 1800:
+                        events_in_window.append(e)
+            if events_in_window:
+                # Counts by event type
+                from collections import Counter
+                by_event = Counter(e.get("event", "?") for e in events_in_window)
+                parts.append(f"## Activity window (±30min around snapshot, {len(events_in_window)} events)")
+                for event, n in by_event.most_common(10):
+                    parts.append(f"  {event:<30} {n}")
+        except Exception as _err:
+            logger.debug(f"_round_trace activity scan: {type(_err).__name__}: {_err}")
     return "\n".join(parts)
