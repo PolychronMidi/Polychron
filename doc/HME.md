@@ -463,13 +463,16 @@ All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks
 
 Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` — a zero-dependency CLI invoked from bash hooks in the background.
 
-| Event | Source hook | Fields |
-
-| `edit_pending` | `pretooluse_edit.sh` | file, module, hme_read_prior |
-| `file_written` | `posttooluse_edit.sh` | file, module, hme_read_prior |
-| `coherence_violation` | `posttooluse_edit.sh` | file, module, reason (only after onboarding graduation) |
-| `pipeline_run` | `posttooluse_bash.sh` | verdict, passed, wall_s, hci |
-| `round_complete` | `stop.sh` | session |
+| Event | Source | Agent-independent? | Fields |
+|---|---|---|---|
+| `edit_pending` | `pretooluse_edit.sh` (Claude Edit) | no — Claude-only | file, module, hme_read_prior |
+| `file_written` | `watcher.py` filesystem watcher + proxy middleware | **yes** — any editor triggers it | file, module, hme_read_prior |
+| `coherence_violation` | `posttooluse_edit.sh` | no — Claude-only | file, module, reason |
+| `pipeline_start` | `main-pipeline.js` | **yes** — pipeline emits directly | session |
+| `pipeline_run` | `main-pipeline.js` | **yes** — pipeline emits directly | verdict, passed, wall_s, hci |
+| `round_complete` | `main-pipeline.js` | **yes** — pipeline emits directly | verdict, passed, session |
+| `turn_complete` | `stop.sh` | no — Claude-only | session |
+| `inference_call` | `hme_proxy.js` | no — proxy-routed only | model, messages, injected |
 
 Query the stream via `status(mode='activity')` — surfaces event counts, coherence ratio (writes with vs. without prior HME read), pipeline runs, and recent writes. Window defaults to "round" (events since last `round_complete`).
 
