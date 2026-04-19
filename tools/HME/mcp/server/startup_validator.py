@@ -188,7 +188,8 @@ def _probe_llamacpp_instance(base: str) -> str:
             return "loading"
     except urllib.error.HTTPError:
         return "loading"  # port bound, any HTTP error counts as loading
-    except Exception:
+    except Exception as _probe_err:
+        logger.debug(f"llamacpp probe {base}: {type(_probe_err).__name__}: {_probe_err}")
         return "unreachable"
 
 
