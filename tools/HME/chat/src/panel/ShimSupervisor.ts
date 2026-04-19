@@ -1,4 +1,3 @@
-import * as path from "path";
 import { isHmeShimReady } from "../router";
 import { PanelHost } from "./PanelHost";
 
