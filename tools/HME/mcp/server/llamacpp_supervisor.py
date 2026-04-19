@@ -181,7 +181,8 @@ class _Supervisor:
         except urllib.error.HTTPError:
             # Non-2xx response means the server IS listening — it just isn't ready.
             return True
-        except Exception:
+        except Exception as _listen_err:
+            logger.debug(f"supervisor: _is_listening probe for {spec.base_url()}: {type(_listen_err).__name__}: {_listen_err}")
             return False
 
     # ── GPU residence invariant ──────────────────────────────────────────

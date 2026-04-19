@@ -7,7 +7,7 @@ CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
 # Block direct writes to compiled output — edit the .ts source instead
 if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
-  cd /home/jah/Polychron/tools/HME/chat && npx tsc 2>&1 | tail -20 >&2 || true
+  cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
   _emit_block "BLOCKED: Do NOT write files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
   exit 2
 fi
@@ -20,7 +20,7 @@ fi
 
 # Block writes to non-root log/, metrics/, or tmp/ directories
 if echo "$FILE" | grep -qE '/(log|metrics|tmp)/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)/'; then
+  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|metrics|tmp)/'; then
     _emit_block "BLOCKED: log/, metrics/, and tmp/ only exist at project root. Do not write files inside subdirectory variants (e.g. tools/HME/mcp/metrics/). Route all output through \$PROJECT_ROOT/{log,metrics,tmp}/."
     exit 2
   fi

@@ -112,14 +112,14 @@ fi
 
 # Block any bash access to compiled output — out/ is a black box
 if echo "$CMD" | grep -q "tools/HME/chat/out"; then
-  cd /home/jah/Polychron/tools/HME/chat && npx tsc 2>&1 | tail -20 >&2 || true
+  cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
   _emit_block "BLOCKED: tools/HME/chat/out/ is a black box. Work with the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
   exit 2
 fi
 
 # Block mkdir of non-root log/, metrics/, or tmp/ directories
 if echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/(log|metrics|tmp)($|/)'; then
-  if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)'; then
+  if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT}"'/(log|metrics|tmp)'; then
     _emit_block "BLOCKED: log/, metrics/, and tmp/ only exist at project root. Do not mkdir subdirectory variants (e.g. tools/HME/mcp/metrics/). Route all output through \$PROJECT_ROOT/{log,metrics,tmp}/."
     exit 2
   fi
