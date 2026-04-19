@@ -935,12 +935,12 @@
     },
     {
       "id": "coherence-has-variance",
-      "description": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage → coherence → musical_correlation → kb_trust cascade is silently broken. This invariant caught a months-long regression where the activity_log middleware emitted file_written events without the hme_read_prior field.",
+      "description": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage → coherence → musical_correlation → kb_trust cascade is silently broken. This invariant caught a months-long regression where the activity_log middleware emitted file_written events without the hme_read_prior field. min_distinct=3 because 0/1 outliers can occur even when upstream is broken — we need real motion to declare the cascade healthy.",
       "type": "metric_has_variance",
       "path": "metrics/hme-musical-correlation.json",
       "history_key": "history",
       "field": "hme_coherence",
-      "min_distinct": 2,
+      "min_distinct": 3,
       "min_rounds": 5,
       "severity": "error"
     },
@@ -957,13 +957,14 @@
     },
     {
       "id": "rounds-have-identity",
-      "description": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history.",
+      "description": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history. allow_null=false because null means 'no identity at all' here, not 'cold start' — identity should be present on every single round.",
       "type": "metric_has_variance",
       "path": "metrics/hme-musical-correlation.json",
       "history_key": "history",
       "field": "round_id",
       "min_distinct": 3,
       "min_rounds": 5,
+      "allow_null": false,
       "severity": "warning"
     },
     {
