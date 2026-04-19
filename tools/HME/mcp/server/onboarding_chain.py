@@ -382,15 +382,19 @@ def _run_selftest_prereq() -> str:
 
 
 def _selftest_clean(output: str) -> bool:
-    """Return True if selftest output indicates 0 FAILs."""
-    lo = output.lower()
-    if "0 fail" in lo:
-        return True
-    if "fail:" in lo and "0 fail" not in lo:
-        # Has explicit FAIL lines
+    """Return True if selftest output indicates 0 FAILs. Checks ONLY the
+    structured 'FAIL:' check lines (e.g. '  FAIL: doc sync -- OUT OF SYNC'),
+    not substring matches on the word 'fail' which triggered false negatives
+    from historical WARN log summaries ('default backend failed' inside a
+    benign ONNX-fallback WARNING was blocking onboarding graduation)."""
+    # Look for explicit FAIL-status lines in the structured selftest output.
+    # These have the form "  FAIL: <check name> -- <detail>" — case-sensitive
+    # "FAIL:" distinguishes them from the word "failed" in prose.
+    import re as _re
+    if _re.search(r'^\s*FAIL:\s', output, flags=_re.MULTILINE):
         return False
-    # Default: assume OK if no explicit FAIL
-    return "fail" not in lo or "0 fail" in lo
+    # No explicit FAIL lines — READY verdict or only WARN/INFO.
+    return True
 
 
 def _review_clean(output: str) -> bool:

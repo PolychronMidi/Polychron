@@ -320,9 +320,31 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
     return symbols
 
 
+# Worker-lifetime cache keyed by (file-count, sum-of-mtimes). Same
+# signature approach as find_callers — cheap to compute, changes whenever
+# any code file is touched. Before this cache, module_story called
+# collect_all_symbols once per invocation and walked ~819 files +
+# ran extract_symbols on every one (tens of seconds for large projects).
+_ALL_SYMBOLS_CACHE: dict = {}
+
 def collect_all_symbols(project_root: str) -> list[dict]:
+    from os import stat as _stat
+    files = list(walk_code_files())
+    mtime_sum = 0.0
+    for fp in files:
+        try:
+            mtime_sum += _stat(fp).st_mtime
+        except OSError:
+            pass
+    signature = (len(files), round(mtime_sum, 3))
+    cached = _ALL_SYMBOLS_CACHE.get(signature)
+    if cached is not None:
+        return cached
     all_symbols = []
-    for fpath in walk_code_files():
+    for fpath in files:
         syms = extract_symbols(str(fpath))
         all_symbols.extend(syms)
+    # Only keep the most recent signature to bound memory
+    _ALL_SYMBOLS_CACHE.clear()
+    _ALL_SYMBOLS_CACHE[signature] = all_symbols
     return all_symbols

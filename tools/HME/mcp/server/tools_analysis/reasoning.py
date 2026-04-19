@@ -310,14 +310,26 @@ def module_story(module_name: str) -> str:
         "- Otherwise, in 1-3 bullet points: " + subsystem_prompt + "\n"
         "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
-    synthesis = _reasoning_think(user_text, max_tokens=800, system=_THINK_SYSTEM)
-    if synthesis:
-        from .synthesis.synthesis_inference import compress_for_claude
-        synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"key constraints for {module_name}")
-        parts.append(f"\n## Key Constraints *(adaptive)*")
-        parts.append(synthesis)
+    # Adaptive synthesis is slow (45-115s depending on cascade). Allow the
+    # caller to skip it for fast reads — HME_READ_FAST=1 returns everything
+    # except the synthesis section in ~seconds. The structural sections above
+    # (KB constraints, callers, interactions, evolutionary potential) are
+    # already complete without the LLM.
+    if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):
+        parts.append(f"\n## Key Constraints *(adaptive)* — SKIPPED (HME_READ_FAST=1)")
     else:
-        logger.warning(f"module_story({module_name!r}): adaptive synthesis unavailable")
+        import time as _time_mod
+        _t0 = _time_mod.time()
+        synthesis = _reasoning_think(user_text, max_tokens=800, system=_THINK_SYSTEM)
+        _elapsed = _time_mod.time() - _t0
+        if synthesis:
+            from .synthesis.synthesis_inference import compress_for_claude
+            synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"key constraints for {module_name}")
+            parts.append(f"\n## Key Constraints *(adaptive, {_elapsed:.0f}s)*")
+            parts.append(synthesis)
+        else:
+            logger.warning(f"module_story({module_name!r}): adaptive synthesis unavailable after {_elapsed:.0f}s")
+            parts.append(f"\n## Key Constraints *(adaptive)* — synthesis unavailable ({_elapsed:.0f}s)")
 
     return "\n".join(parts)
 
