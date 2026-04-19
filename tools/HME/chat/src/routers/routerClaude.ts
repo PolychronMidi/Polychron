@@ -364,7 +364,9 @@ function handleStreamEvent(
 // ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
 
 const PTY_DONE_PATTERNS = [
-  /^>\s*$/m,
+  /\d+%\s*\|\s*\S/,    // statusline footer: "90% | Sonnet 4.6" — turn complete
+  /❯\s+\d+/,           // prompt with token count: "❯ 20378"
+  /^[>❯]\s*$/m,        // legacy: bare prompt (older CLI versions)
   /\nHuman:\s*$/,
   /\[H\]/,
 ];
@@ -417,6 +419,16 @@ function parseContextOutput(text: string): TokenUsage | undefined {
   if (lineMatch) {
     const usedPct = sanitizeUsedPct(parseFloat(lineMatch[3]), `parseContextOutput:tokenLine`);
     return { inputTokens: parseK(lineMatch[1]), outputTokens: 0, usedPct };
+  }
+  // Statusline footer format (CLI v2+): "❯ 20378\n\n90% | Sonnet 4.6\n\n  20378 tokens"
+  // The percentage here is directly from the API-provided context_window.used_percentage.
+  const statuslineMatch = text.match(/(\d+)%\s*\|\s*\S/);
+  if (statuslineMatch) {
+    const usedPct = sanitizeUsedPct(parseFloat(statuslineMatch[1]), `parseContextOutput:statusline`);
+    // Extract token count from "NNN tokens" or "NNNk tokens"
+    const tokMatch = text.match(/([\d.]+k?)\s+tokens/i);
+    const inputTokens = tokMatch ? parseK(tokMatch[1]) : 0;
+    return { inputTokens, outputTokens: 0, usedPct };
   }
   return undefined;
 }
@@ -494,6 +506,7 @@ export function streamClaudePty(
   };
 
   const _buildPtyUsage = (): TokenUsage | undefined => {
+    // Primary: dedicated ctxFile written by statusline.sh when HME_CTX_FILE is set.
     try {
       const ctxData = JSON.parse(readFileSync(ctxFile, "utf8"));
       return {
@@ -504,9 +517,27 @@ export function streamClaudePty(
         modelName: ctxData.model_name || undefined,
       };
     } catch (e: any) {
-      if (e?.code !== "ENOENT") hmeLog(`WARN _buildPtyUsage: ${e?.message ?? e}`);
-      return undefined;
+      if (e?.code !== "ENOENT") hmeLog(`WARN _buildPtyUsage ctxFile: ${e?.message ?? e}`);
     }
+    // Fallback: statusline.sh always writes /tmp/claude-statusline-raw.json with the
+    // real API used_percentage regardless of HME_CTX_FILE. Read it directly.
+    try {
+      const raw = JSON.parse(readFileSync("/tmp/claude-statusline-raw.json", "utf8"));
+      const usedPct = sanitizeUsedPct(raw?.context_window?.used_percentage, "_buildPtyUsage:statusline-raw");
+      if (usedPct != null) {
+        hmeLog(`_buildPtyUsage: statusline-raw fallback usedPct=${usedPct} model=${raw?.model?.id}`);
+        return {
+          inputTokens: raw?.context_window?.current_usage?.input_tokens ?? 0,
+          outputTokens: raw?.context_window?.current_usage?.output_tokens ?? 0,
+          usedPct,
+          modelId: raw?.model?.id || undefined,
+          modelName: raw?.model?.display_name || undefined,
+        };
+      }
+    } catch (e: any) {
+      if (e?.code !== "ENOENT") hmeLog(`WARN _buildPtyUsage statusline-raw: ${e?.message ?? e}`);
+    }
+    return undefined;
   };
 
   const finalizeTurn = () => {
@@ -564,7 +595,7 @@ export function streamClaudePty(
       // Wait for the prompt character at the very end of the buffer — never trigger
       // on │ (box-drawing borders in the startup banner) which causes the remainder
       // of the banner, including "bypassPermissions" notices, to leak into chat.
-      const promptFound = initBuf.includes("> ") || initBuf.includes("Human:");
+      const promptFound = initBuf.includes("> ") || initBuf.includes("❯") || initBuf.includes("Human:");
       const ready = promptFound || initBuf.length > 2000;
       if (ready) {
         if (!promptFound) {
