@@ -44,17 +44,23 @@ def main() -> None:
     args = ap.parse_args()
 
     try:
+        import lance as _lance  # type: ignore
+    except ImportError:
+        _lance = None
+    try:
         import lancedb  # type: ignore
     except ImportError:
-        print("compact-lance-tables: lancedb not installed — skipping", flush=True)
+        lancedb = None  # type: ignore
+
+    if _lance is None and lancedb is None:
+        print("compact-lance-tables: neither lance nor lancedb installed — skipping", flush=True)
         sys.exit(0)
 
-    db_path = str(KB_DIR)
     if not KB_DIR.is_dir():
         print(f"compact-lance-tables: KB dir missing ({KB_DIR}) — skipping", flush=True)
         sys.exit(0)
 
-    db = lancedb.connect(db_path)
+    db = lancedb.connect(str(KB_DIR)) if lancedb else None
     compacted = []
     skipped = []
     errors = []
@@ -76,23 +82,19 @@ def main() -> None:
             continue
 
         try:
-            tbl = db.open_table(name)
-            # LanceDB 0.21+ unifies compact_files + cleanup_old_versions into
-            # optimize() — rewrites data files AND purges the _deletions/
-            # arrow files that trigger this invariant warning. Optimize
-            # requires the `pylance` package; without it LanceDB raises a
-            # clear error that we surface as an actionable install hint.
-            if hasattr(tbl, "optimize"):
-                try:
+            # Use low-level lance.dataset for reliable cleanup — lancedb's
+            # optimize() requires the separate pylance package which may not
+            # be installed. lance.dataset.cleanup_old_versions() works without it.
+            if _lance is not None:
+                from datetime import timedelta
+                ds = _lance.dataset(str(table_path))
+                ds.cleanup_old_versions(older_than=timedelta(seconds=0), delete_unverified=True)
+            elif db is not None:
+                tbl = db.open_table(name)
+                if hasattr(tbl, "optimize"):
                     tbl.optimize()
-                except ImportError as _imp_err:
-                    errors.append(
-                        f"{name}: optimize() needs `pylance` installed "
-                        f"(pip install --user pylance). Underlying: {_imp_err}"
-                    )
-                    continue
-            elif hasattr(tbl, "compact_files"):
-                tbl.compact_files()
+                elif hasattr(tbl, "compact_files"):
+                    tbl.compact_files()
             after = _deletion_count(table_path)
             compacted.append(f"{name} ({count}→{after} deletions)")
         except Exception as e:

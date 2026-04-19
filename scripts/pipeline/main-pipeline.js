@@ -385,6 +385,16 @@ function main() {
     } catch (_e) { /* best-effort -- don't block pipeline on analytics spawn */ }
   }
 
+  // Warm-context reprime: touch sentinel so the HME server picks up stale KV
+  // contexts on next tick. verify-coherence.py only triggers this inside the
+  // full battery (not --score mode), so the pipeline explicitly ensures it
+  // fires after every run without requiring a full battery invocation.
+  try {
+    var warmSentinel = path.join(__dirname, '..', '..', 'tmp', 'hme-warm-reprime.request');
+    fs.mkdirSync(path.dirname(warmSentinel), { recursive: true });
+    fs.writeFileSync(warmSentinel, String(Math.floor(Date.now() / 1000)));
+  } catch (_we) { /* best-effort — warm reprime is advisory */ }
+
   console.log('Pipeline finished in ' + wallTime + 's');
 }
 

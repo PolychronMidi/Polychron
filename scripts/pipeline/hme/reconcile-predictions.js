@@ -98,7 +98,7 @@ function main() {
   const injectedPredicted = new Set();
   for (const p of predictions) {
     const target = p.injected ? injectedPredicted : cleanPredicted;
-    for (const m of p.predicted || []) target.add(m);
+    for (const m of p.predicted || p.affected_modules || []) target.add(m);
   }
   const predictedAll = new Set([...cleanPredicted, ...injectedPredicted]);
 

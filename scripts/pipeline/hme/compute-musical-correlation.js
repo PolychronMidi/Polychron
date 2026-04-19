@@ -144,12 +144,23 @@ function main() {
   // timing noise. The sequence comes from counting prior history entries
   // whose round_id starts with r_<sha>_.
   let roundId = null;
+  let currentSha = null;
+  let currentTreeHash = null;
   try {
     const { execSync } = require('child_process');
     const sha = execSync('git rev-parse --short HEAD', {
       cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
     }).toString().trim();
     if (sha) {
+      currentSha = sha;
+      // Tree hash: two runs from the same working tree (even different commits)
+      // produce identical tree hashes. Better for same-commit determinism check
+      // since auto-commits change the SHA but not the tree if files didn't change.
+      try {
+        currentTreeHash = execSync('git rev-parse HEAD^{tree}', {
+          cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
+        }).toString().trim().slice(0, 12);
+      } catch (_te) { /* tree hash optional */ }
       const priorCount = Array.isArray(prev && prev.history)
         ? prev.history.filter((h) => h && typeof h.round_id === 'string' &&
                                       h.round_id.startsWith(`r_${sha}_`)).length
@@ -161,6 +172,8 @@ function main() {
 
   const snapshot = {
     round_id: roundId,
+    sha: currentSha,
+    tree_hash: currentTreeHash,
     timestamp: new Date().toISOString(),
     hme_coherence: hmeCoherence,
     hme_prediction_accuracy: hmeAccuracy,

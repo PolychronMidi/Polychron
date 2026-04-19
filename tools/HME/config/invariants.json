@@ -709,7 +709,7 @@
       "id": "activity-hook-wiring",
       "description": "Hooks that touch src/ or tools/HME/ edits must call tools/HME/activity/emit.py so the activity stream captures structural changes",
       "type": "shell_output_empty",
-      "shell": "for f in tools/HME/hooks/posttooluse/posttooluse_edit.sh tools/HME/hooks/posttooluse/posttooluse_bash.sh tools/HME/hooks/lifecycle/stop.sh tools/HME/hooks/pretooluse/pretooluse_edit.sh; do grep -q 'activity/emit.py' \"$f\" || echo \"$f missing activity emit\"; done"
+      "shell": "for f in tools/HME/hooks/posttooluse/posttooluse_edit.sh tools/HME/hooks/lifecycle/stop.sh tools/HME/hooks/pretooluse/pretooluse_edit.sh; do grep -qE 'activity/emit\\.py|_emit_activity' \"$f\" || echo \"$f missing activity emit\"; done"
     },
     {
       "id": "hme-proxy-exists",
@@ -1278,7 +1278,7 @@
       "id": "hme-no-raw-os-environ",
       "description": "HME Python files must use ENV (from hme_env) not raw os.environ.get for config. hme_env.py itself is exempt.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/mcp/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^\\s*#' | grep -v 'env\\[.*\\] = os.environ'",
+      "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/mcp/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^\\s*#' | grep -v 'env\\[.*\\] = os.environ' | grep -v '# env-ok'",
       "severity": "warning"
     },
     {

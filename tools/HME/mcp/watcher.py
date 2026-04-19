@@ -58,7 +58,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         ".manifest", ".txn", ".lance",
     }
     # Catch patterns that don't have a clean extension: .tmpXXXXXX, .txn#N, etc.
-    _NOISE_SUFFIX_PATTERNS = (".tmp", ".txn", ".manifest")
+    _NOISE_SUFFIX_PATTERNS = (".tmp", ".txn", ".manifest", ".tmp.")  # .tmp.<pid> editor temp files
     # Allow-list: file_written activity events ONLY fire for paths under
     # these roots. Everything else is infrastructure churn (KB internals,
     # tmp, metrics) and shouldn't count as "a code edit happened." Reindex
