@@ -15,7 +15,8 @@
     "files_mtime_window": "Two files (path_a and path_b or path_b_glob for latest match) must have mtimes within max_delta_seconds of each other",
     "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)",
     "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
-    "shell_output_empty": "Run shell command; pass if stdout is empty, fail if any output produced. Use for git-clean checks."
+    "shell_output_empty": "Run shell command; pass if stdout is empty, fail if any output produced. Use for git-clean checks.",
+    "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken."
   },
   "invariants": [
     {
@@ -931,6 +932,39 @@
       "type": "file_exists",
       "path": "scripts/pipeline/hme/compute-musical-correlation.js",
       "severity": "error"
+    },
+    {
+      "id": "coherence-has-variance",
+      "description": "hme_coherence must show non-degenerate variance across rounds. If it stays at a single value (usually 0) for many rounds, the read_coverage → coherence → musical_correlation → kb_trust cascade is silently broken. This invariant caught a months-long regression where the activity_log middleware emitted file_written events without the hme_read_prior field.",
+      "type": "metric_has_variance",
+      "path": "metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "hme_coherence",
+      "min_distinct": 2,
+      "min_rounds": 5,
+      "severity": "error"
+    },
+    {
+      "id": "prediction-accuracy-has-variance",
+      "description": "hme_prediction_accuracy must show non-degenerate variance across rounds. Constant-zero accuracy means the cascade model predicts identically every time (dependency graph drifted, or reconciler never confirms).",
+      "type": "metric_has_variance",
+      "path": "metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "hme_prediction_accuracy",
+      "min_distinct": 2,
+      "min_rounds": 5,
+      "severity": "warning"
+    },
+    {
+      "id": "rounds-have-identity",
+      "description": "Every round snapshot must have a round_id so downstream analyzers (intention-gap, reflexivity, trajectory) can cross-reference. Anonymous rounds collapse into unordered history.",
+      "type": "metric_has_variance",
+      "path": "metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "round_id",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "severity": "warning"
     },
     {
       "id": "kb-trust-weights-script-exists",

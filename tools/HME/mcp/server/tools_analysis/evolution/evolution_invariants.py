@@ -284,6 +284,65 @@ def _check_kb_content_no_pattern(inv: dict) -> tuple[bool, str]:
     return True, f"all {len(entries)} entries clean"
 
 
+def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
+    """Verify a pipeline-metric JSON file has non-degenerate variance in the
+    named field across its recent history. Catches the class of bug where a
+    metric computation silently produces the same value every round (usually
+    because upstream inputs are zero/missing), which makes downstream
+    correlations degenerate.
+
+    Config keys:
+      path              — JSON file path (relative to PROJECT_ROOT)
+      history_key       — top-level array field holding round snapshots
+                          (default: 'history')
+      field             — the field inside each snapshot to check
+      min_distinct      — minimum distinct values required (default: 2)
+      min_rounds        — only evaluate when history has >= this many entries
+                          (default: 5 — don't fail cold-start pipelines)
+      allow_null        — if True, null entries don't count against variance
+                          (default: True — nulls are "no data", not "stuck")
+    """
+    import json as _json
+    path = os.path.join(ctx.PROJECT_ROOT, inv["path"])
+    field = inv["field"]
+    history_key = inv.get("history_key", "history")
+    min_distinct = int(inv.get("min_distinct", 2))
+    min_rounds = int(inv.get("min_rounds", 5))
+    allow_null = bool(inv.get("allow_null", True))
+
+    if not os.path.isfile(path):
+        return True, f"metric file {inv['path']} missing — can't check variance"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = _json.load(f)
+    except (OSError, _json.JSONDecodeError) as e:
+        return False, f"cannot read {inv['path']}: {e}"
+    history = data.get(history_key, [])
+    if not isinstance(history, list):
+        return False, f"{inv['path']}.{history_key} is not a list"
+    if len(history) < min_rounds:
+        return True, f"only {len(history)} rounds, need ≥{min_rounds} for variance check"
+    values = []
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        v = entry.get(field)
+        if v is None and allow_null:
+            continue
+        values.append(v)
+    if not values:
+        return True, f"no non-null {field!r} values in {len(history)} rounds"
+    distinct = set(values)
+    if len(distinct) < min_distinct:
+        sample = sorted(distinct)[:5]
+        return False, (
+            f"{field!r} stuck at {sample} across {len(values)} rounds "
+            f"(need ≥{min_distinct} distinct values). Upstream input is "
+            f"likely producing a constant — trace the metric's computation."
+        )
+    return True, f"{field!r} has {len(distinct)} distinct values over {len(values)} rounds"
+
+
 def _check_shell_output_empty(inv: dict) -> tuple[bool, str]:
     """Run a shell command; pass if stdout is empty, fail if it produces any output.
 
@@ -324,6 +383,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "files_mtime_window": _check_files_mtime_window,
         "kb_content_no_pattern": _check_kb_content_no_pattern,
         "kb_freshness": _check_kb_freshness,
+        "metric_has_variance": _check_metric_has_variance,
         "shell_output_empty": _check_shell_output_empty,
     }
     inv_type = inv.get("type", "")
