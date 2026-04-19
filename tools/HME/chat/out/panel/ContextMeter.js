@@ -62,22 +62,23 @@ class ContextMeter {
                         this.errorSink.post("ContextMeter.update", msg);
                 }
             }
-            else if (this._tracker.usedPct == null) {
-                // usedPct missing from usage object AND tracker has no prior value —
-                // context window is genuinely unpopulated. This is a LIFESAVER-level
-                // signal: computeTurnUsage failed to resolve a contextWindow (modelUsage
-                // key mismatch, missing field, etc.) and nothing will update the meter.
-                const msg = `context percentage unpopulated after response ` +
-                    `(model=${model}, modelId=${usage.modelId ?? "?"}) — ` +
-                    `modelUsage lookup likely failed; meter stuck at 0%`;
-                console.error(`[HME] CRITICAL: ${msg}`);
-                if (this.errorSink)
-                    this.errorSink.post("ContextMeter.unpopulated", msg);
-            }
             if (usage.modelId)
                 this._tracker.cliModelId = usage.modelId;
             if (usage.modelName)
                 this._tracker.cliModelName = usage.modelName;
+        }
+        // LIFESAVER: fire outside the usage guard so it catches both
+        // (a) usage present but usedPct undefined — modelUsage lookup failed
+        // (b) usage entirely absent — CLI exited without emitting a result event
+        // Only fire when tracker has no prior value so it doesn't spam every turn.
+        if (this._tracker.usedPct == null) {
+            const modelId = usage?.modelId ?? "?";
+            const reason = !usage ? "no usage object (CLI exited without result event)"
+                : "usedPct missing — modelUsage lookup or contextWindow validation failed";
+            const msg = `context percentage unpopulated after response (model=${model}, modelId=${modelId}) — ${reason}; meter stuck at 0%`;
+            console.error(`[HME] CRITICAL: ${msg}`);
+            if (this.errorSink)
+                this.errorSink.post("ContextMeter.unpopulated", msg);
         }
         this._hasLiveUpdate = true;
         this.post(args);
