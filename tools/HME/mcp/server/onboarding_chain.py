@@ -258,12 +258,13 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
             set_state("selftest_ok")
             return
 
-    # evolve(focus='design'|'forge'|'curate'|'stress'|'invariants') -> targeted
-    # Any "pick a target" call advances. We also capture the target module if
-    # we can parse one out of the output.
+    # evolve(focus=<target-picking>) -> targeted. Diagnostic foci
+    # (stress, invariants, coupling, loc, patterns) are forensic — they
+    # don't pick a target, so they MUST NOT advance onboarding state.
+    # Advancing on them skips the "pick evolution target" step entirely.
     if tool == "evolve":
         focus = args.get("focus", "all")
-        if focus in ("design", "forge", "curate", "stress", "invariants", "patterns"):
+        if focus in ("design", "forge", "curate"):
             if idx < step_index("targeted"):
                 picked = _extract_target_from_evolve(output)
                 if picked:
