@@ -379,6 +379,11 @@ if echo "$_TRIMMED" | grep -qE '^ls\b'; then
   Glob pattern=\"${_DIR:-.}/**\" [path=\"${_DIR:-.}\"]"
   exit 2
 fi
+# ANTI-STOP-ON-FAILURE: when lint/typecheck/pipeline fails, Claude must diagnose root cause and
+# continue fixing — never pause, ask, or abandon. Stopping mid-stream is the psychopathic antipattern.
+# ANTI-IGNORE-WARNINGS: review warnings are never "pre-existing" or "unrelated" — every warning
+# in every review output must be fixed before proceeding. Labeling warnings as ignorable is a violation.
+
 # FAIL FAST — the core invariant of this project: NO error, anywhere, ever, may be silently
 # swallowed, suppressed, logged-and-dropped, or masked by a fallback value.
 # Every error must surface immediately with full context all the way to the top of the agent's

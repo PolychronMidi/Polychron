@@ -64,9 +64,9 @@ def _training_locked() -> bool:
     return os.path.exists(TRAINING_LOCK)
 
 
-# ══════════════════════════════════════════════════════════════════════════
+
 #  InstanceSpec + Supervisor
-# ══════════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class InstanceSpec:
@@ -191,7 +191,8 @@ class _Supervisor:
             return True
         except urllib.error.HTTPError:
             return True
-        except Exception:
+        except Exception as _listen_err:
+            logger.debug(f"supervisor: _is_listening probe failed for {spec.base_url()}: {type(_listen_err).__name__}: {_listen_err}")
             return False
 
     # ── GPU residence invariant ──────────────────────────────────────────
@@ -343,8 +344,8 @@ class _Supervisor:
                 pid = int(line.strip())
                 if pid != os.getpid():
                     return pid
-        except Exception:
-            pass
+        except Exception as _lsof_err:
+            logger.debug(f"supervisor: lsof probe failed for port {port}: {_lsof_err}")
         return None
 
     def suspend(self, name: str) -> dict:
@@ -498,9 +499,9 @@ class _Supervisor:
             ]
 
 
-# ══════════════════════════════════════════════════════════════════════════
+
 #  Per-GPU busy flags + RAG routing
-# ══════════════════════════════════════════════════════════════════════════
+
 # Each physical GPU (keyed by Vulkan tag) has its own busy flag. A generation
 # call flips the flag for the GPU its target instance lives on; callers on
 # that GPU (RAG stack on GPU0, audio models on GPU1, etc.) read the flag to
@@ -631,9 +632,9 @@ def _resolve_rag_gpu_device(instances: list) -> str | None:
     return ENV.require("HME_RAG_VULKAN")
 
 
-# ══════════════════════════════════════════════════════════════════════════
+
 #  Generation proxy (llamacpp-shape → llama-server OpenAI-shape)
-# ══════════════════════════════════════════════════════════════════════════
+
 
 def _resolve_base_url(model: str, instances: list[InstanceSpec]) -> str:
     """Map a model alias to the llama-server base URL that serves it."""
@@ -744,9 +745,9 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             gpu_busy_clear(busy_device)
 
 
-# ══════════════════════════════════════════════════════════════════════════
+
 #  HTTP daemon
-# ══════════════════════════════════════════════════════════════════════════
+
 
 _supervisor_singleton = _Supervisor()
 _supervisor_singleton.configure()

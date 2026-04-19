@@ -4,7 +4,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
-# ── Auto-commit snapshot ──────────────────────────────────────────────────────
+# Auto-commit snapshot
 # Commit any uncommitted changes before Claude processes the message.
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
 # PROJECT_ROOT comes from .env via _safety.sh. Never fall back to stdin.cwd /
@@ -57,7 +57,7 @@ with open('$_CORRECTION_FILE', 'a') as f:
   fi
 fi
 
-# ── LIFESAVER — HME Error Log Monitor ───────────────────────────────────────
+# LIFESAVER — HME Error Log Monitor
 # LIFE-OR-DEATH: The HME Chat panel writes errors to log/hme-errors.log.
 # THIS is the ONLY mechanism that makes those errors visible to this agent.
 # Every error, everywhere, MUST be diagnosed and FIXED. Not acknowledged — FIXED.
@@ -82,11 +82,9 @@ if [ -f "$ERROR_LOG" ]; then
     # DO NOT advance watermark here — Stop hook is the only gate that advances it.
     # If watermark advanced here, unfixed errors vanish when Stop sees TOTAL==TURNSTART.
     echo "" >&2
-    echo "╔════════════════════════════════════════════════════════════════════════╗" >&2
-    echo "║  🚨 LIFESAVER — ERRORS DETECTED — FIX BEFORE ANYTHING ELSE 🚨         ║" >&2
-    echo "║  Acknowledging an error without fixing it is a CRITICAL VIOLATION.     ║" >&2
-    echo "║  You MUST: 1) diagnose root cause  2) implement fix  3) verify fix     ║" >&2
-    echo "╚════════════════════════════════════════════════════════════════════════╝" >&2
+    echo "LIFESAVER — ERRORS DETECTED — FIX BEFORE ANYTHING ELSE" >&2
+    echo "Acknowledging an error without fixing it is a CRITICAL VIOLATION." >&2
+    echo "You MUST: 1) diagnose root cause  2) implement fix  3) verify fix" >&2
     echo "$NEW_ERRORS" >&2
     echo "" >&2
     echo "DO NOT proceed with any other task until every error above is FIXED." >&2
@@ -133,7 +131,7 @@ fi
 # Always: anti-abandonment reminder
 echo 'PLAN DISCIPLINE: Finish the current atomic unit before pivoting. Clarify BEFORE starting, not after. Never leave code/tools in a broken intermediate state while switching approach. If user feedback changes direction: finish current unit, explicitly name what was left undone, get confirmation.' >&2
 
-# ── Context-aware rotating reminders ─────────────────────────────────────────
+# Context-aware rotating reminders
 # Normally cycles through reminders.txt. But if nexus signals specific behavior
 # patterns this turn, override with the most relevant reminder instead.
 REMINDERS_FILE="$(dirname "${BASH_SOURCE[0]}")/../reminders.txt"

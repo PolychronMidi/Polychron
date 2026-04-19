@@ -21,7 +21,8 @@ silenceDistributionTracker = (() => {
     const layerOnsets = {};
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i];
-      if (!e || typeof e.time !== 'number') continue;
+      if (!e) continue;
+      V.requireFinite(e.time, 'e.time');
       const layer = String(e.layer || 'default');
       if (!layerOnsets[layer]) layerOnsets[layer] = [];
       layerOnsets[layer].push(e.time);
