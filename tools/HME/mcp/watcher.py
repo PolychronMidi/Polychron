@@ -50,10 +50,57 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         ".gz", ".tar", ".zip", ".xz", ".zst", ".bz2",
     }
 
+    # Deduplicate file_written emissions: the watcher receives modify + create
+    # + close events for a single edit. Emit once per file per short window.
+    _recent_emits: dict[str, float] = {}
+    _EMIT_DEDUP_WINDOW = 2.0  # seconds
+
+    def _emit_file_written(abs_path: str) -> None:
+        """Make file_written agent-independent: emit from the filesystem
+        watcher so edits via any editor (vim, VSCode direct, external script)
+        produce the same event the proxy middleware used to get only from
+        Claude's Edit/Write tool invocations."""
+        now = time.time()
+        last = _recent_emits.get(abs_path, 0.0)
+        if now - last < _EMIT_DEDUP_WINDOW:
+            return
+        _recent_emits[abs_path] = now
+        # Cap dict to prevent unbounded growth
+        if len(_recent_emits) > 2048:
+            _cutoff = now - 60
+            for k in list(_recent_emits.keys()):
+                if _recent_emits[k] < _cutoff:
+                    del _recent_emits[k]
+        try:
+            from nexus_query import has_brief  # local helper (see below)
+            module = os.path.basename(abs_path).rsplit(".", 1)[0]
+            hme_read_prior = has_brief(module) or has_brief(abs_path)
+        except Exception:
+            hme_read_prior = False
+        # Spawn emit.py detached — never block the watcher thread
+        import subprocess as _subp
+        try:
+            _subp.Popen(
+                ["python3",
+                 os.path.join(project_root, "tools", "HME", "activity", "emit.py"),
+                 "--event=file_written",
+                 f"--file={abs_path}",
+                 f"--module={os.path.basename(abs_path).rsplit('.', 1)[0]}",
+                 f"--hme_read_prior={'true' if hme_read_prior else 'false'}",
+                 "--session=fs_watcher"],
+                stdout=_subp.DEVNULL, stderr=_subp.DEVNULL,
+                env={**os.environ, "PROJECT_ROOT": project_root},
+            )
+        except Exception as _emit_err:
+            logger.debug(f"file_written emit failed: {_emit_err}")
+
     class Handler(FileSystemEventHandler):
         def on_any_event(self, event):
             if event.is_directory:
                 return
+            # Only emit file_written for real content changes, not access/open
+            etype = getattr(event, "event_type", "")
+            is_write = etype in ("modified", "created")
             path = getattr(event, "src_path", "") or ""
             parts = path.replace("\\", "/").split("/")
             if any(p in IGNORE_DIRS for p in parts):
@@ -61,8 +108,11 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             ext = os.path.splitext(path)[1].lower()
             if ext in IGNORE_EXTS:
                 return
+            abs_path = os.path.abspath(path)
+            if is_write:
+                _emit_file_written(abs_path)
             with _lock:
-                _changed_files.add(os.path.abspath(path))
+                _changed_files.add(abs_path)
             _schedule_reindex()
 
     def _schedule_reindex():

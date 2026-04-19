@@ -75,6 +75,7 @@ const POST_COMPOSITION = [
   { label: 'synthesize-generalizations',   cmd: 'python3 scripts/pipeline/hme/synthesize-generalizations.py' },
   { label: 'render-generalizations',       cmd: 'python3 scripts/pipeline/hme/render-generalizations.py' },
   { label: 'compute-evolution-priority',   cmd: 'node scripts/pipeline/hme/compute-evolution-priority.js' },
+  { label: 'archive-activity',             cmd: 'python3 scripts/pipeline/hme/archive-activity.py' },
 ];
 
 // runner

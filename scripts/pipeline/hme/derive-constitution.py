@@ -142,6 +142,52 @@ def extract_claims_from_ground_truth(gt_stream: list[dict]) -> list[dict]:
     return out
 
 
+def extract_claims_from_pipeline() -> list[dict]:
+    """Pipeline observability contract — what events must fire, what files
+    must be written, what order they come in. These are structural invariants
+    of the system's own instrumentation; they belong in the constitution
+    alongside feedback loops.
+
+    Every pipeline run is contractually obligated to produce:
+      - pipeline_start activity event at launch
+      - pipeline_run activity event at finish (with verdict + hci)
+      - round_complete activity event at finish (with verdict)
+      - metrics/pipeline-summary.json with verdict, hci, wallTimeSeconds
+      - metrics/fingerprint-comparison.json with verdict
+
+    Surfacing these as constitutional claims makes them visible in
+    status(mode='constitution') and protected by the invariants in
+    config/invariants.json (pipeline-start-end-balanced, etc.).
+    """
+    out: list[dict] = []
+    contract = [
+        ("pipeline_emits_start",
+         "Every pipeline run emits exactly one `pipeline_start` activity event at launch — agent-independent via main-pipeline.js"),
+        ("pipeline_emits_run",
+         "Every pipeline run emits exactly one `pipeline_run` activity event at finish, carrying verdict + hci — agent-independent"),
+        ("pipeline_emits_round_complete",
+         "Every pipeline run emits exactly one `round_complete` activity event at finish, carrying verdict (distinguishes it from chat-turn markers)"),
+        ("pipeline_writes_summary",
+         "Every pipeline run writes metrics/pipeline-summary.json with verdict + hci + wallTimeSeconds + per-step ok flags"),
+        ("pipeline_writes_fingerprint",
+         "Every pipeline run writes metrics/fingerprint-comparison.json with the musical verdict (STABLE/EVOLVED/DRIFTED)"),
+        ("pipeline_spawns_analytics",
+         "Every pipeline run spawns 9 background analytics scripts (holograph, dashboard, chain-snapshot, trajectory, tool-effectiveness, coupling matrix, hci-signal, verifier-coverage, memetic-drift)"),
+    ]
+    for claim_id, text in contract:
+        out.append({
+            "id": f"const_pipeline_{claim_id}",
+            "text": text,
+            "kind": "structural",
+            "confidence": 1.0,
+            "evidence": {
+                "source": "scripts/pipeline/main-pipeline.js",
+                "claim_id": claim_id,
+            },
+        })
+    return out
+
+
 def extract_claims_from_feedback_graph() -> list[dict]:
     """Feedback loops + firewall ports are structural invariants. Any
     loop present in the graph is constitutional — the system REQUIRES it."""
@@ -188,6 +234,7 @@ def main() -> int:
     claims.extend(extract_claims_from_patterns(patterns))
     claims.extend(extract_claims_from_ground_truth(gt_stream))
     claims.extend(extract_claims_from_feedback_graph())
+    claims.extend(extract_claims_from_pipeline())
 
     # Sort by kind then confidence descending. Musical claims come first
     # because Polychron's constitutional identity is what it IS (a music
