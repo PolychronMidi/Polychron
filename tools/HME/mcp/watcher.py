@@ -89,7 +89,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                  f"--hme_read_prior={'true' if hme_read_prior else 'false'}",
                  "--session=fs_watcher"],
                 stdout=_subp.DEVNULL, stderr=_subp.DEVNULL,
-                env={**os.environ, "PROJECT_ROOT": project_root},
+                env={**os.environ, "PROJECT_ROOT": project_root},  # env-ok: subprocess needs inherited env
             )
         except Exception as _emit_err:
             logger.debug(f"file_written emit failed: {_emit_err}")
