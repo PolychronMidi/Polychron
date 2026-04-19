@@ -16,7 +16,8 @@
     "kb_content_no_pattern": "Scan all KB entries; fail if any title or content matches the given regex pattern (guards against LLM artifact leaks)",
     "kb_freshness": "Warn if no KB entry has been updated within max_age_days days (staleness signal)",
     "shell_output_empty": "Run shell command; pass if stdout is empty, fail if any output produced. Use for git-clean checks.",
-    "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken."
+    "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken.",
+    "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome — i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm."
   },
   "invariants": [
     {
@@ -954,6 +955,18 @@
       "min_distinct": 2,
       "min_rounds": 5,
       "severity": "warning"
+    },
+    {
+      "id": "coherence-tracks-musical-outcome",
+      "description": "The ultimate anti-drift check: hme_coherence must be at least WEAKLY positively correlated with the musical verdict, not flat and not inverse. A strongly negative correlation means HME's process discipline is actively hurting the music — the whole optimization direction is wrong. This invariant is INERT when the correlation is degenerate (that's covered by coherence-has-variance); it only fires once there's enough signal to judge direction.",
+      "type": "correlation_direction",
+      "path": "metrics/hme-musical-correlation.json",
+      "correlations_key": "correlations",
+      "name": "hme_coherence__verdict_numeric",
+      "direction": "positive",
+      "threshold": -0.10,
+      "min_n": 10,
+      "severity": "error"
     },
     {
       "id": "rounds-have-identity",
