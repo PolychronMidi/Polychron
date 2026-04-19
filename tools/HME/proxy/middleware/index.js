@@ -136,7 +136,7 @@ const ctx = {
   },
 };
 
-// ── Registration ─────────────────────────────────────────────────────────────
+//  Registration ─
 const _modules = [];
 
 function register(mod) {
@@ -144,7 +144,7 @@ function register(mod) {
   _modules.push(mod);
 }
 
-// ── Tool-result deduplication ────────────────────────────────────────────────
+//  Tool-result deduplication
 // Each tool_use.id fires onToolResult exactly once per proxy lifetime.
 // Map preserves insertion order; touch-on-access makes this LRU-ish (entries
 // seen recently move to the back and survive eviction longer than stale ones).
@@ -191,7 +191,7 @@ function _pairToolResults(payload) {
   return events;
 }
 
-// ── Main pipeline entry ──────────────────────────────────────────────────────
+//  Main pipeline entry
 // Async so middleware can do HTTP calls (e.g., KB lookups) in their handlers.
 // Synchronous handlers still work — `await` on a non-promise is a no-op.
 async function runPipeline(payload, scan, session) {
@@ -218,7 +218,7 @@ async function runPipeline(payload, scan, session) {
   return _pipelineDirty;
 }
 
-// ── Auto-load modules ────────────────────────────────────────────────────────
+//  Auto-load modules
 function loadAll() {
   const dir = __dirname;
   for (const fname of fs.readdirSync(dir)) {

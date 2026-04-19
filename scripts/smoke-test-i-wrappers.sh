@@ -22,7 +22,7 @@ PASS=0
 FAIL=0
 FAILURES=()
 
-# ── helpers ──────────────────────────────────────────────────────────────
+# helpers
 _ok() {
   PASS=$((PASS + 1))
   [ "$VERBOSE" = "1" ] && echo "  PASS: $1"
@@ -34,7 +34,7 @@ _fail() {
 }
 _section() { echo; echo "== $1 =="; }
 
-# ── section 1: regression checklist ──────────────────────────────────────
+# section 1: regression checklist
 _section "Regression checklist"
 
 # KB dir populated
@@ -106,7 +106,7 @@ else
   _fail ".env HME_RAG_DB_PATH not pointing at tools/HME/KB"
 fi
 
-# ── section 2: worker health ─────────────────────────────────────────────
+# section 2: worker health ─
 _section "Worker health"
 HEALTH=$(curl -s --max-time 3 http://127.0.0.1:9098/health 2>&1 || echo "")
 if echo "$HEALTH" | grep -q '"ready": *true'; then
@@ -122,7 +122,7 @@ else
   exit 1
 fi
 
-# ── section 3: 9-tool smoke battery (parallel) ───────────────────────────
+# section 3: 9-tool smoke battery (parallel) ─
 _section "9-tool smoke battery"
 
 # Per-tool check run in the background. Writes result to a temp file keyed
@@ -187,7 +187,7 @@ else
   _ok "selftest has no symlink FAIL"
 fi
 
-# ── section 4: review verdict branches ───────────────────────────────────
+# section 4: review verdict branches ─
 _section "Review verdict hook branches"
 
 _verdict_check() {
@@ -227,7 +227,7 @@ else
   _fail "review drift detection did not fire on empty response: $EMPTY_OUT"
 fi
 
-# ── section 5: auto-correct branches ─────────────────────────────────────
+# section 5: auto-correct branches ─
 _section "pretooluse_bash i/ auto-correct branches"
 
 _correct_check() {
@@ -275,7 +275,7 @@ else
   _ok "auto-correct: plain i/status at root is left alone"
 fi
 
-# ── summary ──────────────────────────────────────────────────────────────
+# summary
 _section "Summary"
 echo "Passed: $PASS"
 echo "Failed: $FAIL"

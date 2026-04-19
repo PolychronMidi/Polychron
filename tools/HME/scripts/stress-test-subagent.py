@@ -31,7 +31,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 _AGENT = os.path.join(_PROJECT, "tools", "HME", "mcp", "agent_local.py")
 
-# ── Stress test battery ──
+# Stress test battery
 # Each case targets a specific failure mode observed in the wild.
 TESTS = [
     {

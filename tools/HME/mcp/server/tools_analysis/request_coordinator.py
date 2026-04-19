@@ -144,7 +144,7 @@ class CoordinatorInstance:
         )
         self._dispatcher.start()
 
-    # ── public API ────────────────────────────────────────────────────────
+    # public API
     def submit(
         self,
         payload: dict,
@@ -207,7 +207,7 @@ class CoordinatorInstance:
             self._not_empty.notify_all()
         self._dispatcher.join(timeout=2.0)
 
-    # ── dispatcher ────────────────────────────────────────────────────────
+    # dispatcher
     def _dispatch_loop(self) -> None:
         while not self._stop.is_set():
             with self._heap_lock:
@@ -308,7 +308,7 @@ class CoordinatorInstance:
             self._stats["completed"] += 1
 
 
-# ── module-level registry ────────────────────────────────────────────────
+# module-level registry
 _instances: dict[str, CoordinatorInstance] = {}
 _registry_lock = threading.Lock()
 

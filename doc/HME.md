@@ -946,13 +946,13 @@ Each model maintains an independent pre-tokenized KV context cache. The system p
 `_parallel_two_stage_think` runs a five-stage pipeline for maximum quality:
 
 ```
-Stage 1A (GPU0 extract)  ──┐
-                            ├── parallel ──> Stage 1.5: Arbiter triage
-Stage 1B (GPU1 analyze) ──┘
+Stage 1A (GPU0 extract)  ┐
+                            ├ parallel > Stage 1.5: Arbiter triage
+Stage 1B (GPU1 analyze) ┘
         │
-        ├── ALIGNED  → proceed to Stage 2
-        ├── MINOR    → inject advisory note, proceed to Stage 2
-        └── COMPLEX  → Stage 1.75: GPU1 deep resolution → Stage 2
+        ├ ALIGNED  → proceed to Stage 2
+        ├ MINOR    → inject advisory note, proceed to Stage 2
+        └ COMPLEX  → Stage 1.75: GPU1 deep resolution → Stage 2
 
 Stage 2 (GPU1 final synthesis)  →  result + pipeline trace
 ```

@@ -21,7 +21,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
 ## State machine
 
 ```
-    boot ─────────────┐
+    boot ─┐
      │                │ hme_admin(action='selftest') passes
      ▼                ▼
  selftest_ok          │
@@ -42,7 +42,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
   verified            │
      │                │ learn(title=..., content=...) with non-empty args
      ▼                ▼
-  graduated ──────────┘
+  graduated ┘
 ```
 
 ### State definitions

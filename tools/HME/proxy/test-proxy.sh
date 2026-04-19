@@ -21,7 +21,7 @@ trap cleanup EXIT
 echo "=== HME Proxy Side Test ==="
 echo ""
 
-# ── 1. Test --test mode (offline scan, no network) ──────────────────────────
+# 1. Test --test mode (offline scan, no network)
 echo "Test 1: --test mode (no read → coherence violation)"
 RESULT=$(echo '{"model":"claude-sonnet-4-20250514","messages":[{"role":"user","content":"hello"},{"role":"assistant","content":[{"type":"tool_use","id":"t1","name":"Edit","input":{"file_path":"src/conductor/conductorIntelligence.js","old_string":"a","new_string":"b"}}]}]}' \
   | PROJECT_ROOT="$PROJECT_ROOT" node "$PROXY_SCRIPT" --test 2>/dev/null || true)
@@ -57,7 +57,7 @@ else
   PASS=false
 fi
 
-# ── 2. Start mock upstream (echoes back a valid Anthropic-shaped response) ───
+# 2. Start mock upstream (echoes back a valid Anthropic-shaped response) ─
 echo ""
 echo "Test 4: live proxy → mock upstream (round-trip)"
 node -e "
@@ -125,7 +125,7 @@ else
   PASS=false
 fi
 
-# ── 3. Test with injection enabled ──────────────────────────────────────────
+# 3. Test with injection enabled
 echo ""
 echo "Test 5: live proxy with jurisdiction injection"
 kill "$PROXY_PID" 2>/dev/null; wait "$PROXY_PID" 2>/dev/null || true
@@ -165,7 +165,7 @@ else
   PASS=false
 fi
 
-# ── 6. SSE streaming test ────────────────────────────────────────────────────
+# 6. SSE streaming test
 echo ""
 echo "Test 6: SSE streaming round-trip"
 kill "$PROXY_PID" 2>/dev/null; wait "$PROXY_PID" 2>/dev/null || true
@@ -254,7 +254,7 @@ else
   PASS=false
 fi
 
-# ── 7. Multi-upstream routing test ───────────────────────────────────────────
+# 7. Multi-upstream routing test ─
 echo ""
 echo "Test 7: X-HME-Upstream routes to different provider"
 
@@ -298,7 +298,7 @@ else
   echo "  INFO: unexpected response (may have hit real Anthropic): $(echo "$RESPONSE" | head -c 200)"
 fi
 
-# ── 9. Emergency valve test ──────────────────────────────────────────────────
+# 9. Emergency valve test
 echo ""
 echo "Test 9: emergency valve trips after 3 consecutive upstream failures"
 kill "$PROXY_PID" 2>/dev/null; wait "$PROXY_PID" 2>/dev/null || true
@@ -363,7 +363,7 @@ fi
 
 rm -rf "$VALVE_DIR"
 
-# ── Summary ──────────────────────────────────────────────────────────────────
+# Summary
 echo ""
 echo "=== Side Test Summary ==="
 if $PASS; then

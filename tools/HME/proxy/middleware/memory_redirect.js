@@ -125,7 +125,7 @@ module.exports = {
       '',
       `(the ${toolUse.name} tool call was redirected; query derived from input: "${query}")`,
       '',
-      '── HME KB semantic search ──',
+      ' HME KB semantic search ',
     ].join('\n');
 
     let replacement = header + '\n' + kbHits;
@@ -135,7 +135,7 @@ module.exports = {
     if (toolUse.name === 'Write' || toolUse.name === 'Edit') {
       const original = _resultText(toolResult).trim();
       if (original) {
-        replacement += '\n\n── original hook response ──\n' + original;
+        replacement += '\n\n original hook response \n' + original;
       }
     }
 

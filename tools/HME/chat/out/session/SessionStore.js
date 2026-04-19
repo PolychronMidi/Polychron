@@ -163,7 +163,7 @@ function renameSession(projectRoot, id, title) {
 function deriveTitle(firstMessage) {
     return firstMessage.slice(0, 60).replace(/\n/g, " ").trim() || "New session";
 }
-// ── Chain link storage ────────────────────────────────────────────────────
+//  Chain link storage
 function chainDir(projectRoot, sessionId) {
     return path.join(workspaceDir(projectRoot), "chains", sessionId);
 }

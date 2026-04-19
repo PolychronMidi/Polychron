@@ -45,7 +45,7 @@ fi
 echo "Proxy running on :${PROXY_PORT}"
 echo ""
 
-# ── Helper ───────────────────────────────────────────────────────────────────
+# Helper ─
 test_provider() {
   local name="$1"
   local upstream="$2"     # X-HME-Upstream value (empty = default/Anthropic)
@@ -82,7 +82,7 @@ test_provider() {
   fi
 }
 
-# ── Anthropic ────────────────────────────────────────────────────────────────
+# Anthropic
 echo "--- Anthropic (default upstream) ---"
 ANTHROPIC_KEY="${ANTHROPIC_API_KEY:-}"
 if [ -z "$ANTHROPIC_KEY" ]; then
@@ -95,7 +95,7 @@ else
     '"type":"message"|"text"'
 fi
 
-# ── Groq (OpenAI compat) ────────────────────────────────────────────────────
+# Groq (OpenAI compat)
 echo "--- Groq ---"
 if [ -z "${GROQ_API_KEY:-}" ]; then
   echo "  SKIP: no GROQ_API_KEY"
@@ -107,7 +107,7 @@ else
     '"choices"|"message"|"content"'
 fi
 
-# ── OpenRouter (OpenAI compat) ───────────────────────────────────────────────
+# OpenRouter (OpenAI compat) ─
 echo "--- OpenRouter ---"
 if [ -z "${OPENROUTER_API_KEY:-}" ]; then
   echo "  SKIP: no OPENROUTER_API_KEY"
@@ -119,7 +119,7 @@ else
     '"choices"|"message"|"content"'
 fi
 
-# ── Cerebras (OpenAI compat) ─────────────────────────────────────────────────
+# Cerebras (OpenAI compat) ─
 echo "--- Cerebras ---"
 if [ -z "${CEREBRAS_API_KEY:-}" ]; then
   echo "  SKIP: no CEREBRAS_API_KEY"
@@ -131,7 +131,7 @@ else
     '"choices"|"message"|"content"'
 fi
 
-# ── Mistral (OpenAI compat) ──────────────────────────────────────────────────
+# Mistral (OpenAI compat)
 echo "--- Mistral ---"
 if [ -z "${MISTRAL_API_KEY:-}" ]; then
   echo "  SKIP: no MISTRAL_API_KEY"
@@ -143,7 +143,7 @@ else
     '"choices"|"message"|"content"'
 fi
 
-# ── NVIDIA NIM (OpenAI compat) ───────────────────────────────────────────────
+# NVIDIA NIM (OpenAI compat) ─
 echo "--- NVIDIA ---"
 if [ -z "${NVIDIA_API_KEY:-}" ]; then
   echo "  SKIP: no NVIDIA_API_KEY"
@@ -155,7 +155,7 @@ else
     '"choices"|"message"|"content"'
 fi
 
-# ── Gemini (non-OpenAI format — uses query param auth, different path) ───────
+# Gemini (non-OpenAI format — uses query param auth, different path) ─
 echo "--- Gemini ---"
 if [ -z "${GEMINI_API_KEY:-}" ]; then
   echo "  SKIP: no GEMINI_API_KEY"
@@ -186,7 +186,7 @@ else
   fi
 fi
 
-# ── Local llama.cpp (if running) ─────────────────────────────────────────────
+# Local llama.cpp (if running) ─
 echo "--- Local llama.cpp arbiter ---"
 ARBITER_URL="${HME_LLAMACPP_ARBITER_URL:-http://127.0.0.1:8080}"
 if curl -sf --max-time 3 "${ARBITER_URL}/health" > /dev/null 2>&1; then
@@ -199,7 +199,7 @@ else
   echo "  SKIP: arbiter not running at $ARBITER_URL"
 fi
 
-# ── Summary ──────────────────────────────────────────────────────────────────
+# Summary
 echo ""
 echo "=== Live Smoke Test Summary ==="
 echo "$PASSED/$TESTED providers responded successfully through proxy"

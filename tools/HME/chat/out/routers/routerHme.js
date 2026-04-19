@@ -139,7 +139,7 @@ async function logShimError(source, message, detail = "") {
     // Do NOT swallow rejection here — BrowserPanel's .catch() on this call is the disk fallback.
     // Swallowing here makes logShimError always resolve, killing the fallback silently.
 }
-// ── Hybrid route ──────────────────────────────────────────────────────────
+//  Hybrid route
 async function streamHybrid(message, history, opts, workingDir, onChunk, onDone, onError) {
     let hmeWarm = "";
     try {

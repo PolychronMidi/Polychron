@@ -82,7 +82,7 @@ def _run_hook(tool_response: str) -> tuple[str, str, int]:
         return result.stdout, result.stderr, result.returncode
 
 
-# ── contract: emitter produces exactly one line per verdict ──────────────
+# contract: emitter produces exactly one line per verdict
 for v in ("clean", "warnings", "error"):
     marker = emit_review_verdict_marker(v)
     _check(f"emit_review_verdict_marker({v!r}) returns a marker string",
@@ -101,7 +101,7 @@ _check("emit_review_verdict_marker('') returns empty string",
        emit_review_verdict_marker("") == "")
 
 
-# ── hook parses emitter output — the actual contract check ──────────────
+# hook parses emitter output — the actual contract check
 def _hook_for_verdict(v: str) -> tuple[str, str, int]:
     body = "## Warnings: none found\n" + emit_review_verdict_marker(v)
     return _run_hook(body)
@@ -132,7 +132,7 @@ _check("error verdict: emits server-side error advice",
        f"stderr={err!r}")
 
 
-# ── drift: output missing BOTH marker and legacy sentinels fails loudly ──
+# drift: output missing BOTH marker and legacy sentinels fails loudly
 out, err, code = _run_hook("Totally unrelated output, no markers at all")
 _check("drift (no marker, no sentinels): emits drift warning",
        "missing canonical HME_REVIEW_VERDICT marker" in err,
@@ -141,21 +141,21 @@ _check("drift: hook still exits 0 (marks state, doesn't crash)",
        code == 0, f"rc={code}")
 
 
-# ── empty response: also drift ───────────────────────────────────────────
+# empty response: also drift ─
 out, err, code = _run_hook("")
 _check("empty response: emits drift warning",
        "missing canonical HME_REVIEW_VERDICT marker" in err,
        f"stderr={err!r}")
 
 
-# ── CLI transport failure: ^hme-cli: prefix ──────────────────────────────
+# CLI transport failure: ^hme-cli: prefix
 out, err, code = _run_hook("hme-cli: request failed -- connection refused")
 _check("hme-cli: prefix → CLI_FAILURE advice",
        "review CLI call failed" in err or "worker down" in err,
        f"stderr={err!r}")
 
 
-# ── summary ──────────────────────────────────────────────────────────────
+# summary
 print(f"\nPassed: {_pass}   Failed: {_fail}")
 if _fail > 0:
     print("\nFailures:")

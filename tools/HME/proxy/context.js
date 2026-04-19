@@ -8,7 +8,7 @@ const { emit, PROJECT_ROOT } = require('./shared');
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
 const REFRESH_INTERVAL_MS = 60_000;
 
-// ── Coherence budget ─────────────────────────────────────────────────────────
+//  Coherence budget ─
 const COHERENCE_BUDGET_PATH = path.join(PROJECT_ROOT, 'metrics', 'hme-coherence-budget.json');
 let _budgetState = null;
 let _budgetLoadedAt = 0;
@@ -38,7 +38,7 @@ function shouldInject() {
   return loadCoherenceBudget() !== 'above';
 }
 
-// ── File-backed manifest loaders ─────────────────────────────────────────────
+//  File-backed manifest loaders ─
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'scripts/pipeline/bias-bounds-manifest.json');
 const STALENESS_PATH = path.join(PROJECT_ROOT, 'metrics/kb-staleness.json');
 const HYPOTHESES_PATH = path.join(PROJECT_ROOT, 'metrics/hme-hypotheses.json');
@@ -203,7 +203,7 @@ function buildJurisdictionContext(filePaths) {
   ].join('\n');
 }
 
-// ── Session status context (S1+S2+S3+S4) ────────────────────────────────────
+//  Session status context (S1+S2+S3+S4)
 // Status is injected once per turn as the last system block with cache_control.
 // To maximise Anthropic cache hits, the text must be byte-identical within each
 // 5-minute cache window. We achieve this by:

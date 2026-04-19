@@ -30,7 +30,7 @@ def _excluded(basename: str, exclude: list[str]) -> bool:
     return any(fnmatch.fnmatch(basename, pat) for pat in exclude)
 
 
-# ── Check type implementations ──────────────────────────────────────────────
+# Check type implementations
 
 def _check_files_executable(inv: dict) -> tuple[bool, str]:
     pattern = os.path.join(ctx.PROJECT_ROOT, inv["glob"])
@@ -424,7 +424,7 @@ def _check_shell_output_empty(inv: dict) -> tuple[bool, str]:
     return True, "no untracked files"
 
 
-# ── Main entry point ────────────────────────────────────────────────────────
+# Main entry point
 
 def _eval(inv: dict) -> tuple[bool, str]:
     checkers = {

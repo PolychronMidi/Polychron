@@ -38,7 +38,7 @@ _COUNTERFACTUAL_FILE_SUFFIX = "hme-counterfactuals.jsonl"
 # MetaState instance — set by meta_observer.start() before the loop begins.
 _ms = None  # type: ignore
 
-# ── Layer 13: Self-Observing Monitor ───────────────────────────────────────
+# Layer 13: Self-Observing Monitor ─
 
 _monitor_thread_ref: threading.Thread | None = None
 _monitor_restart_count = 0
@@ -94,7 +94,7 @@ def _detect_observation_gap() -> str | None:
     return None
 
 
-# ── Layer 14: Temporal Correlator ──────────────────────────────────────────
+# Layer 14: Temporal Correlator
 
 _last_correlations: dict = {}
 _SYNTHESIS_WINDOW = 3600  # 1 hour of synthesis records for pattern detection
@@ -165,7 +165,7 @@ def _correlate(history: list[dict]) -> dict:
     return meta_correlator.correlate(history, ops, _CORRELATION_WINDOW)
 
 
-# ── Layer 15: Prescriptive Narrator ────────────────────────────────────────
+# Layer 15: Prescriptive Narrator
 
 def _narrate(monitor_status: dict, correlations: dict) -> str:
     intent = _current_intent  # snap to avoid TOCTOU between guard and access
@@ -335,7 +335,7 @@ def read_startup_narrative() -> str | None:
     return last.get("narrative")
 
 
-# ── Layer 16: Environmental Awareness ──────────────────────────────────────
+# Layer 16: Environmental Awareness
 
 _last_env_snapshot: dict = {}
 
@@ -412,7 +412,7 @@ def _scan_environment() -> dict:
     return env
 
 
-# ── Layer 17: Conversation Entanglement ────────────────────────────────────
+# Layer 17: Conversation Entanglement
 
 def _checkpoint_entanglement() -> None:
     """Checkpoint conversation-relevant state so the system's self-model survives compaction."""
@@ -577,7 +577,7 @@ def read_entanglement_for_compaction() -> str | None:
     return "[HME state] " + " | ".join(parts) if parts else None
 
 
-# ── Layer 18: Counterfactual Reasoning ─────────────────────────────────────
+# Layer 18: Counterfactual Reasoning ─
 
 _predictions: list[dict] = []  # active predictions awaiting outcome
 
@@ -848,7 +848,7 @@ def _auto_predictions_from_correlator() -> None:
             )
 
 
-# ── Layer 22: Causal Attribution Graph ────────────────────────────────────
+# Layer 22: Causal Attribution Graph
 
 def _causal_attribution() -> dict | None:
     """Attribute phantom rate to its structural causes via simple linear decomposition.
@@ -920,7 +920,7 @@ def _causal_attribution() -> dict | None:
         return None
 
 
-# ── Layer 24: Anticipatory Lookahead ──────────────────────────────────────
+# Layer 24: Anticipatory Lookahead
 
 def _anticipatory_lookahead() -> dict | None:
     """Simulate forward EMA trajectories at T+5/15/30min under current trajectory.
@@ -955,7 +955,7 @@ def _anticipatory_lookahead() -> dict | None:
     return result
 
 
-# ── Layer 27: Composition-Infrastructure Correlation ──────────────────────
+# Layer 27: Composition-Infrastructure Correlation
 
 _run_history_dir = ""
 
@@ -1059,7 +1059,7 @@ def _correlate_composition_runs() -> dict | None:
     return result
 
 
-# ── Layer 28: Living KB Confidence ────────────────────────────────────────
+# Layer 28: Living KB Confidence
 
 def _update_kb_confidence() -> dict | None:
     """Test self-coherence KB claims against recent operational data.
@@ -1117,7 +1117,7 @@ def _update_kb_confidence() -> dict | None:
     return results
 
 
-# ── Layer 32: Intent Classification ──────────────────────────────────────
+# Layer 32: Intent Classification
 
 _current_intent: dict = {}
 _INTENT_SIGNALS = {
@@ -1197,7 +1197,7 @@ def get_current_intent() -> dict:
     return _current_intent
 
 
-# ── Layer 33: Cross-Session Archaeology ───────────────────────────────────
+# Layer 33: Cross-Session Archaeology ─
 
 def _session_archaeology() -> dict | None:
     """Mine session identity documents for cross-session behavioral patterns.
@@ -1253,7 +1253,7 @@ def _session_archaeology() -> dict | None:
     return result
 
 
-# ── Layer 35: Gödel Awareness ─────────────────────────────────────────────
+# Layer 35: Gödel Awareness ─
 
 _UNPROVABLE_CLAIMS = [
     {
@@ -1312,7 +1312,7 @@ def _enumerate_unprovable_claims() -> list[dict]:
     return claims
 
 
-# ── Layer ∞∞: Coherence Ceiling Detector ──────────────────────────────────
+# Layer ∞∞: Coherence Ceiling Detector
 
 def _check_coherence_ceiling() -> dict | None:
     """Detect when the self-model's predictions have become too reliable to
@@ -1357,7 +1357,7 @@ def _check_coherence_ceiling() -> dict | None:
         return None
 
 
-# ── Main Loop ──────────────────────────────────────────────────────────────
+# Main Loop
 
 _last_narration_ts: float = 0.0
 _last_env_ts: float = 0.0

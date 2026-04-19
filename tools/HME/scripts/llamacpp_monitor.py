@@ -191,7 +191,7 @@ def monitor_tick() -> dict:
     gpu_by_idx = {g.get("idx"): g for g in _gpu_stats() if isinstance(g, dict) and "idx" in g}
     entry["gpu"] = list(gpu_by_idx.values())
 
-    # ── llama-server instances ──
+    # llama-server instances
     for inst in INSTANCES:
         status = _query_llamacpp(inst["port"])
         status["name"] = inst["name"]
@@ -240,7 +240,7 @@ def monitor_tick() -> dict:
 
         entry["instances"].append(status)
 
-    # ── GPU thermals ──
+    # GPU thermals
     for g in entry["gpu"]:
         if "error" in g:
             continue
@@ -251,7 +251,7 @@ def monitor_tick() -> dict:
         elif t >= GPU_TEMP_WARN:
             entry["alerts"].append(f"GPU{idx} THERMAL WARNING: {t}°C (>{GPU_TEMP_WARN}°C)")
 
-    # ── CPU temp ──
+    # CPU temp
     entry["cpu_temp_c"] = _cpu_temp()
     if entry["cpu_temp_c"]:
         ct = entry["cpu_temp_c"]
@@ -260,13 +260,13 @@ def monitor_tick() -> dict:
         elif ct >= CPU_TEMP_WARN:
             entry["alerts"].append(f"CPU THERMAL WARNING: {ct:.0f}°C")
 
-    # ── RAM ──
+    # RAM
     entry["ram"] = _ram_info()
     avail = entry["ram"].get("available_mb", 99999)
     if avail < RAM_LOW_MB:
         entry["alerts"].append(f"RAM LOW: {avail}MB available (threshold {RAM_LOW_MB}MB)")
 
-    # ── tmpfs buffers ──
+    # tmpfs buffers
     entry["buffers"] = _tmpfs_buffer_status()
 
     return entry

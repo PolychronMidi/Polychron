@@ -30,7 +30,7 @@ logger = logging.getLogger("HME")
 # Perceptual confidence starts low — earns trust through verified accuracy
 _PERCEPTUAL_CONFIDENCE = 0.15  # raised as predictions correlate with verdicts
 
-# ── VramManager integration ────────────────────────────────────────────────
+# VramManager integration
 # Single manager instance per process, covering the audio GPU.
 _audio_vram: "VramManager | None" = None        # type: ignore[name-defined]
 _mm_encodec = None                                # ManagedModel for EnCodec

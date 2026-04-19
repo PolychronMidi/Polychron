@@ -36,7 +36,7 @@ function buildClaudeEnv(): Record<string, string> {
   return env;
 }
 
-// ── Shared CLI arg builder ────────────────────────────────────────────────
+//  Shared CLI arg builder
 
 function buildClaudeArgs(
   opts: ClaudeOptions,
@@ -55,7 +55,7 @@ function buildClaudeArgs(
   return args;
 }
 
-// ── Claude CLI (pipe mode) ────────────────────────────────────────────────
+//  Claude CLI (pipe mode)
 
 export function streamClaude(
   message: string,
@@ -381,7 +381,7 @@ function handleStreamEvent(
   }
 }
 
-// ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
+//  Claude PTY (hook-aware interactive mode) ─
 
 const PTY_DONE_PATTERNS = [
   /\d+%\s*\|\s*\S/,    // statusline footer: "90% | Sonnet 4.6" — unambiguous turn-complete

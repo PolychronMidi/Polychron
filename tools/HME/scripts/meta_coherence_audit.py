@@ -58,9 +58,9 @@ def _require_project_root() -> Path:
     return Path(root)
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (A) invariants.json
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_invariants_json(root: Path) -> list[dict]:
     """Check every invariant's path exists and pattern still matches."""
@@ -138,9 +138,9 @@ def audit_invariants_json(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (B) check-tuning-invariants.js extractors
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_tuning_extractors(root: Path) -> list[dict]:
     """Run the tuning-invariants validator and check every named constant
@@ -175,9 +175,9 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (C) health.py doc-sync
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_doc_sync(root: Path) -> list[dict]:
     """Exercise the doc-sync check against doc/HME.md. Failures here mean
@@ -216,9 +216,9 @@ def audit_doc_sync(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (D) evolution_strategies.py stress probe file refs
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_stress_probe_refs(root: Path) -> list[dict]:
     """Verify every hook path referenced by the stress probe resolves, and
@@ -287,9 +287,9 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (E) detectors/*.py phrase-list coverage
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_detector_phrases(root: Path) -> list[dict]:
     """For each phrase list in detectors/*.py, sample a recent transcript
@@ -353,9 +353,9 @@ def audit_detector_phrases(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (F) hme.log ERROR freshness
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_hme_log_errors(root: Path) -> list[dict]:
     """Any ERROR-level line in log/hme.log that landed in the last 10 minutes
@@ -421,9 +421,9 @@ def audit_hme_log_errors(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (G) Hook source-path validity — the bug that almost killed this session
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_hook_sources(root: Path) -> list[dict]:
     """Every `source <path>` line in a shell hook must resolve to an
@@ -484,11 +484,11 @@ def audit_hook_sources(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # (H) Module-load smoke test — catches NameError/ImportError in module
 #     top-level code OR in any function body that references a missing
 #     global (shutil, subprocess, ENV) before a daemon discovers it
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def audit_module_imports(root: Path) -> list[dict]:
     """Parse every .py file under tools/HME/mcp/server/ and verify that
@@ -577,9 +577,9 @@ def audit_module_imports(root: Path) -> list[dict]:
     return findings
 
 
-# ─────────────────────────────────────────────────────────────────────────
+
 # main
-# ─────────────────────────────────────────────────────────────────────────
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()

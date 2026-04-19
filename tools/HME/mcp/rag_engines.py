@@ -37,7 +37,7 @@ _shared_reranker_cpu = None
 _lib_engines = {}
 
 
-# ── RAG routing: GPU vs CPU mirror ────────────────────────────────────────
+# RAG routing: GPU vs CPU mirror
 # When the arbiter is actively processing a request on the shared GPU, we
 # route jina / bge-reranker work to the CPU mirrors to avoid contending for
 # compute. The llamacpp_daemon exposes /rag-route which answers "gpu" or
@@ -724,7 +724,7 @@ def _load_engines():
 threading.Thread(target=_load_engines, daemon=True).start()
 
 
-# ── Indexing-mode device migration ──────────────────────────────────────
+# Indexing-mode device migration
 # Called by the daemon (via /reload-engines endpoint) to move embedding
 # models to a freed GPU for fast indexing, then back when done.
 # Stores the original device so restore knows where to put them back.

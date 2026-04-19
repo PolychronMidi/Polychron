@@ -29,7 +29,7 @@ const https = require('https');
 const { MCP_PORT } = require('./supervisor/children');
 const { emit } = require('./shared');
 
-// ── Tool schema cache ────────────────────────────────────────────────────────
+//  Tool schema cache
 const _SCHEMA_TTL_MS = 60_000;
 let _schemaCache = null;
 let _schemaCachedAt = 0;
@@ -76,7 +76,7 @@ async function getSchemasCached() {
   }
 }
 
-// ── Tool invocation ──────────────────────────────────────────────────────────
+//  Tool invocation
 async function executeHmeTool(name, input, timeoutMs = 120_000) {
   const toolName = name.replace(/^HME_/, '');
   const body = Buffer.from(JSON.stringify(input || {}), 'utf8');
@@ -110,7 +110,7 @@ async function executeHmeTool(name, input, timeoutMs = 120_000) {
   }
 }
 
-// ── SSE parsing ──────────────────────────────────────────────────────────────
+//  SSE parsing
 // Reconstructs a fully-assembled assistant message from a buffered SSE stream.
 // Returns { contentBlocks, usage, stopReason, raw }.
 function parseSseResponse(bufferStr) {
@@ -176,7 +176,7 @@ function parseSseResponse(bufferStr) {
   return { contentBlocks, usage, stopReason };
 }
 
-// ── Continuation loop ────────────────────────────────────────────────────────
+//  Continuation loop
 function _collectHmeToolUses(contentBlocks) {
   return contentBlocks.filter((b) => b.type === 'tool_use' && typeof b.name === 'string' && b.name.startsWith('HME_'));
 }

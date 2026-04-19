@@ -15,7 +15,7 @@ const HME_READ_TOOLS = new Set([
   'HME_before_editing',
 ]);
 
-// ── Boilerplate stub stripper ────────────────────────────────────────────────
+//  Boilerplate stub stripper
 // Strips signalless harness acknowledgement strings from the in-flight payload.
 // Runs BEFORE scanMessages so the scanner sees the cleaned payload.
 const BOILERPLATE_PATTERNS = [
@@ -123,7 +123,7 @@ function stripBoilerplate(payload) {
   return strippedCount;
 }
 
-// ── Semantic-redundancy strip ────────────────────────────────────────────────
+//  Semantic-redundancy strip
 // C. Dup Read tool_results for same file (no intervening Edit) → stub earlier.
 // D. Oversize Bash bodies > D_MAX_BYTES → head+elision+tail.
 // E. Identical ide_selection blocks (cross-message) → keep first.

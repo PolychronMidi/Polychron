@@ -22,7 +22,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
     t0 = time.monotonic()
 
-    # ── Stage 1: Rule-based triage (instant, no model calls) ──────────────
+    # Stage 1: Rule-based triage (instant, no model calls)
     # Arbiter model adds ~30s cold-start latency and frequently returns all-NO
     # due to thinking token exhaustion. Use lightweight heuristics instead:
     # - KB mode: only when prompt mentions code symbols (camelCase, file paths, module names)
@@ -39,7 +39,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     }
     trace["triage_ms"] = 0
 
-    # ── Stage 2: Context assembly (instant, no model) ─────────────────────
+    # Stage 2: Context assembly (instant, no model) ─
     t1 = time.monotonic()
     assembled_parts = []
 
@@ -69,7 +69,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     assembled = "\n\n".join(assembled_parts) if assembled_parts else ""
     trace["assembly_ms"] = int((time.monotonic() - t1) * 1000)
 
-    # ── Stage 3: Reasoning model enrichment ───────────────────────────────
+    # Stage 3: Reasoning model enrichment ─
     t2 = time.monotonic()
     mode_instructions = []
     if triage["kb"]:
@@ -115,7 +115,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
                 "unchanged": True, "reason": "Reasoning model returned empty — original preserved"}
 
-    # ── Stage 4: Arbiter compression (if enriched is too long) ────────────
+    # Stage 4: Arbiter compression (if enriched is too long)
     t3 = time.monotonic()
     max_len = max(len(prompt) * 10, 2000)
     if len(enriched) > max_len:
@@ -131,7 +131,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         f"enrich:{trace['enrich_ms']} compress:{trace['compress_ms']})"
     )
 
-    # ── Stage 5: Grounding check — flag hallucinated paths ────────────────
+    # Stage 5: Grounding check — flag hallucinated paths
     hallucinated = []
     import re as _re
     for m in _re.finditer(r'(?:src/|tools/)[^\s,)]+\.(?:js|py|ts)', enriched):

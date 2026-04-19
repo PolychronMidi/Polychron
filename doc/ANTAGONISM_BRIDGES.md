@@ -15,9 +15,9 @@ What this achieves: the destructive interference becomes a productive tension. A
 ## The archetypal bridge
 
 ```
-convergenceHarmonicTrigger ──┐
-                              ├── densitySurprise (shared upstream)
-verticalIntervalMonitor    ──┘
+convergenceHarmonicTrigger ┐
+                              ├ densitySurprise (shared upstream)
+verticalIntervalMonitor    ┘
 
 convergenceHarmonicTrigger: rarity *= f(densitySurprise)   ↑ with surprise
 verticalIntervalMonitor:     penalty *= g(densitySurprise) ↑ with surprise

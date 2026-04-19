@@ -49,7 +49,7 @@ function buildClaudeEnv() {
     }
     return env;
 }
-// ── Shared CLI arg builder ────────────────────────────────────────────────
+//  Shared CLI arg builder
 function buildClaudeArgs(opts, sessionId, prefix) {
     const args = [
         ...prefix,
@@ -63,7 +63,7 @@ function buildClaudeArgs(opts, sessionId, prefix) {
         args.push("--resume", sessionId);
     return args;
 }
-// ── Claude CLI (pipe mode) ────────────────────────────────────────────────
+//  Claude CLI (pipe mode)
 function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId, onDone, onError) {
     // opts.thinking: Extended thinking blocks come through natively in stream-json --verbose.
     const args = buildClaudeArgs(opts, sessionId, ["-p", "--output-format", "stream-json", "--verbose"]);
@@ -354,7 +354,7 @@ function handleStreamEvent(evt, uiModelAlias, onChunk, onSessionId, onDone) {
         return;
     }
 }
-// ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
+//  Claude PTY (hook-aware interactive mode) ─
 const PTY_DONE_PATTERNS = [
     /\d+%\s*\|\s*\S/, // statusline footer: "90% | Sonnet 4.6" — unambiguous turn-complete
     /❯\s+[1-9]\d+/, // prompt with non-zero token count: "❯ 20378" (not "❯ 0")

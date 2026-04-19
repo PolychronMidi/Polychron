@@ -11,7 +11,8 @@
  */
 'use strict';
 
-const { execSync, spawnSync } = require('child_process');
+const cp = require('child_process');
+const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
 
@@ -199,11 +200,38 @@ function writeSummaryJSON(wallTime) {
   }
 }
 
+// Activity emission — the pipeline is the authoritative source of truth for
+// "a round happened," so it must emit its own events. Previously only fired
+// via posttooluse_bash.sh hook, which requires the user to run `npm run main`
+// through Claude's Bash tool. Running from a shell, CI, cron, or another
+// agent would produce zero activity events and collapse downstream metrics
+// (coherence, trajectory, reflexivity) to null. The pipeline's observability
+// is now agent-independent: emit directly.
+function emitActivity(event, fields) {
+  var args = [path.join(__dirname, '..', '..', 'tools', 'HME', 'activity', 'emit.py'),
+              '--event=' + event];
+  for (var k in fields) {
+    if (fields[k] === null || fields[k] === undefined) continue;
+    args.push('--' + k + '=' + String(fields[k]));
+  }
+  try {
+    cp.spawn('python3', args, {
+      stdio: 'ignore', detached: true, cwd: path.join(__dirname, '..', '..'),
+    }).unref();
+  } catch (e) {
+    console.error('  emit_activity ' + event + ' failed: ' + (e && e.message ? e.message : e));
+  }
+}
+
 // main
 
 function main() {
   var pipelineStart = Date.now();
   console.log('Pipeline started at ' + new Date().toISOString());
+
+  // Pipeline-level activity: pipeline_start. session=shell so downstream
+  // consumers can distinguish agent-initiated runs from direct shell runs.
+  emitActivity('pipeline_start', { session: process.env.HME_SESSION_ID || 'shell' });
 
   // Pre-composition: fatal on failure
   for (var i = 0; i < PRE_COMPOSITION.length; i++) {
@@ -221,6 +249,28 @@ function main() {
   var wallTime = ((Date.now() - pipelineStart) / 1000).toFixed(1);
   printSummary();
   writeSummaryJSON(wallTime);
+
+  // Emit pipeline_run and round_complete from here so observability doesn't
+  // depend on the bash-hook substrate. Reads verdict from
+  // fingerprint-comparison.json (written by golden-fingerprint step).
+  var verdict = 'UNKNOWN';
+  var failed = timings.some(function(r) { return !r.ok; }) ? 1 : 0;
+  try {
+    var fp = JSON.parse(fs.readFileSync(
+      path.join(__dirname, '..', '..', 'metrics', 'fingerprint-comparison.json'),
+      'utf8'
+    ));
+    verdict = fp.verdict || fp.result || 'UNKNOWN';
+  } catch (_e) { /* fingerprint not produced — leave verdict UNKNOWN */ }
+  var session = process.env.HME_SESSION_ID || 'shell';
+  emitActivity('pipeline_run', {
+    session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
+    wall_s: Math.round(Number(wallTime)),
+  });
+  emitActivity('round_complete', {
+    session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
+  });
+
   console.log('Pipeline finished in ' + wallTime + 's');
 }
 

@@ -92,7 +92,7 @@ if [ -f "$ERROR_LOG" ]; then
   fi
 fi
 
-# ── HME critical todos — surface unresolved critical items at turn start ────
+# HME critical todos — surface unresolved critical items at turn start
 # Reads the HME store, filters critical+open items, emits them so the agent
 # cannot miss LIFESAVER alerts, high-priority work, or unresolved trigger notes.
 CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/mcp" python3 <<'PYEOF' 2>/dev/null

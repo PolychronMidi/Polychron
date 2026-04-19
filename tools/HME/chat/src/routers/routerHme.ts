@@ -6,7 +6,7 @@ import { AGENTIC_SYSTEM_PROMPT } from "../streamUtils";
 const HME_HTTP_PORT = parseInt(process.env.HME_PROXY_PORT || "9099", 10);
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
 
-// ── HME context enrichment ────────────────────────────────────────────────
+//  HME context enrichment
 
 export interface EnrichResult {
   warm: string;
@@ -131,7 +131,7 @@ export async function logShimError(source: string, message: string, detail: stri
   // Swallowing here makes logShimError always resolve, killing the fallback silently.
 }
 
-// ── Hybrid route ──────────────────────────────────────────────────────────
+//  Hybrid route
 
 export async function streamHybrid(
   message: string,

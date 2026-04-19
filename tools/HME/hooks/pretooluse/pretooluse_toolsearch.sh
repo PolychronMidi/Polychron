@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 QUERY=$(_safe_jq "$INPUT" '.tool_input.query' '')
 
-# ── Detailed per-tool descriptions for select: queries ───────────────────────
+# Detailed per-tool descriptions for select: queries ─
 
 case "$QUERY" in
   select:AskUserQuestion*)
@@ -120,7 +120,7 @@ case "$QUERY" in
     exit 2 ;;
 esac
 
-# ── Full manifest for all other queries ───────────────────────────────────────
+# Full manifest for all other queries ─
 
 _emit_block "TOOL MANIFEST — use these directly, no ToolSearch needed.
 

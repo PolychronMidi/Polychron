@@ -52,7 +52,7 @@ export class BrowserPanel implements PanelHost {
   // it means the server state is the source of truth, not the browser payload).
   private _claudeConfig: ClaudeConfig = { model: "sonnet", effort: "high", thinking: false };
 
-  // ── Extracted components ─────────────────────────────────────────────────
+  //  Extracted components ─
   private readonly _errorSink: ErrorSink;
   private readonly _shim: ShimSupervisor;
   private readonly _contextMeter: ContextMeter;
@@ -116,7 +116,7 @@ export class BrowserPanel implements PanelHost {
     }
   }
 
-  // ── SSE client registry ──────────────────────────────────────────────────
+  //  SSE client registry
 
   registerSseClient(res: ExpressResponse): void {
     this._sseClients.push(res);
@@ -132,7 +132,7 @@ export class BrowserPanel implements PanelHost {
     this._sseClients = this._sseClients.filter(c => c !== res);
   }
 
-  // ── PanelHost implementation ─────────────────────────────────────────────
+  //  PanelHost implementation ─
 
   public post(data: any): void {
     const payload = `data: ${JSON.stringify(data)}\n\n`;
@@ -148,7 +148,7 @@ export class BrowserPanel implements PanelHost {
     this.post({ type: "errorBubble", source, message });
   }
 
-  // ── Extracted-component support ──────────────────────────────────────────
+  //  Extracted-component support
 
   private _ctxArgs(): ContextPostArgs {
     return {
@@ -183,7 +183,7 @@ export class BrowserPanel implements PanelHost {
     return BrowserPanel.current;
   }
 
-  // ── Incoming message dispatch (from Express POST /api/message) ───────────
+  //  Incoming message dispatch (from Express POST /api/message) ─
 
   public handleMessage(msg: any): void {
     console.log(`[HME] handleMessage type=${msg?.type} clients=${this._sseClients.length}`);
@@ -320,7 +320,7 @@ export class BrowserPanel implements PanelHost {
     },
   };
 
-  // ── Stream tracking & session persistence ────────────────────────────────
+  //  Stream tracking & session persistence
 
   private static readonly DISPLAY_CAP = 100;
 
@@ -377,7 +377,7 @@ export class BrowserPanel implements PanelHost {
     });
   }
 
-  // ── Send pipeline ────────────────────────────────────────────────────────
+  //  Send pipeline
 
   private async _onSend(msg: SendMsg & { _queuedUserMsg?: ChatMessage }) {
     if (msg.route === "agent") {
@@ -521,7 +521,7 @@ export class BrowserPanel implements PanelHost {
     streamAgentHybridMsg(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
   }
 
-  // ── Queue & cleanup ──────────────────────────────────────────────────────
+  //  Queue & cleanup
 
   private _drainQueue() {
     this._isStreaming = false;

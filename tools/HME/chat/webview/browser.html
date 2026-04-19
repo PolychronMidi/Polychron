@@ -42,10 +42,10 @@
     overflow: hidden;
   }
 
-  /* ── Layout ── */
+  /*  Layout  */
   #layout { display: flex; flex: 1; overflow: hidden; }
 
-  /* ── Sidebar toggle ── */
+  /*  Sidebar toggle  */
   #sidebar-toggle-btn {
     background: transparent;
     border: none;
@@ -58,7 +58,7 @@
   }
   #sidebar-toggle-btn:hover { color: var(--fg); background: var(--user-bg); }
 
-  /* ── Session sidebar ── */
+  /*  Session sidebar  */
   #sidebar {
     width: 200px;
     min-width: 160px;
@@ -154,10 +154,10 @@
   .session-item:hover .session-delete { opacity: 1; }
   .session-delete:hover { color: var(--error-fg); }
 
-  /* ── Main area ── */
+  /*  Main area  */
   #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-  /* ── Toolbar ── */
+  /*  Toolbar  */
   #toolbar {
     display: flex;
     align-items: center;
@@ -196,7 +196,7 @@
   }
   #clear-btn:hover { border-color: var(--fg); color: var(--fg); }
 
-  /* ── Messages ── */
+  /*  Messages  */
   #messages {
     flex: 1;
     overflow-y: auto;
@@ -397,7 +397,7 @@
   .stream-cursor.done { animation: none; visibility: hidden; }
   @keyframes blink { 50% { opacity: 0; } }
 
-  /* ── Notice bar ── */
+  /*  Notice bar  */
   #notice-bar {
     display: none;
     padding: 6px 12px;
@@ -413,7 +413,7 @@
   #notice-bar.audit { background: color-mix(in srgb, var(--route-hybrid) 12%, transparent); color: var(--route-hybrid); border-left: 3px solid var(--route-hybrid); }
   #notice-bar.info  { background: color-mix(in srgb, var(--btn-bg) 12%, transparent); color: var(--btn-fg); border-left: 3px solid var(--btn-bg); }
 
-  /* ── Input area ── */
+  /*  Input area  */
   #input-area {
     display: flex;
     flex-direction: column;
@@ -671,14 +671,14 @@ const vscode = {
   setState(s) { localStorage.setItem(_lsKey, JSON.stringify(s)); },
 };
 
-// ── State ──────────────────────────────────────────────────────────────────
+//  State
 let streaming = false;
 const activeStreams = new Set();   // supports parallel streams (agent mode)
 let streamTools = [];
 const streamBodyMap = new Map();      // per-stream active text block
 const streamThinkingMap = new Map();  // per-stream active thinking block
 
-// ── UI refs ────────────────────────────────────────────────────────────────
+//  UI refs
 const claudeModel = document.getElementById('claude-model');
 const claudeEffort= document.getElementById('claude-effort');
 const thinkingChk = document.getElementById('thinking-toggle');
@@ -766,7 +766,7 @@ const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
 const mirrorBtn   = document.getElementById('mirror-btn');
 
-// ── Mirror mode toggle ────────────────────────────────────────────────────
+//  Mirror mode toggle
 let _mirrorMode = false;
 mirrorBtn?.addEventListener('click', () => {
   _mirrorMode = !_mirrorMode;
@@ -787,7 +787,7 @@ window.addEventListener('message', (event) => {
   }
 });
 
-// ── Enrich ────────────────────────────────────────────────────────────────
+//  Enrich
 const enrichBtn    = document.getElementById('enrich-btn');
 const frameToggle  = document.getElementById('frame-toggle-btn');
 const frameInput   = document.getElementById('frame-input');
@@ -841,7 +841,7 @@ rejectBtn.addEventListener('click', () => {
   frameInput.focus();
 });
 
-// ── Send ───────────────────────────────────────────────────────────────────
+//  Send ─
 function send() {
   let text = input.value.trim();
   if (!text) return;
@@ -904,7 +904,7 @@ queueBtn.addEventListener('click', () => {
 });
 clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));
 
-// ── Receive messages from extension ───────────────────────────────────────
+//  Receive messages from extension ─
 // SSE event stream from server — dispatches synthetic message events into the page
 (function() {
   function connectSSE() {
@@ -1027,7 +1027,7 @@ window.addEventListener('message', (event) => {
   }
 });
 
-// ── Scroll helpers ─────────────────────────────────────────────────────────
+//  Scroll helpers ─
 function isNearBottom() {
   return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
 }
@@ -1038,7 +1038,7 @@ function forceScrollToBottom() {
   messages.scrollTop = messages.scrollHeight;
 }
 
-// ── Tool step factory ───────────────────────────────────────────────────────
+//  Tool step factory ─
 function makeToolStep(text) {
   const div = document.createElement('div');
   div.className = 'tool-step';
@@ -1047,7 +1047,7 @@ function makeToolStep(text) {
   return div;
 }
 
-// ── Message rendering ──────────────────────────────────────────────────────
+//  Message rendering
 function appendMessage(msg) {
   const div = document.createElement('div');
   div.className = `msg ${msg.role}`;
@@ -1254,7 +1254,7 @@ function setStatus(text) {
   statusLine.textContent = text;
 }
 
-// ── Context meter ─────────────────────────────────────────────────────────
+//  Context meter ─
 const ctxMeter = document.getElementById('context-meter');
 const ctxFill = document.getElementById('context-meter-fill');
 const ctxPctLabel = document.getElementById('context-meter-pct');
@@ -1278,7 +1278,7 @@ function updateContextMeter(pct, chainLinks, chainIndex, cliModel) {
   }
 }
 
-// ── Notice bar ─────────────────────────────────────────────────────────────
+//  Notice bar ─
 const noticeBar = document.getElementById('notice-bar');
 noticeBar?.addEventListener('click', () => {
   if (noticeBar) { noticeBar.style.display = 'none'; noticeBar.textContent = ''; }
@@ -1292,7 +1292,7 @@ window.addEventListener('message', (event) => {
   }
 }, true);
 
-// ── Sidebar toggle ─────────────────────────────────────────────────────────
+//  Sidebar toggle ─
 var sidebar = document.getElementById('sidebar');
 var sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
 var _uiState = vscode.getState() || {};
@@ -1310,7 +1310,7 @@ if (sidebarToggleBtn) {
 }
 applySidebar();
 
-// ── Restore persisted model/effort selection ──────────────────────────────
+//  Restore persisted model/effort selection
 if (claudeModel && _uiState.claudeModel) {
   claudeModel.value = _uiState.claudeModel;
 }
@@ -1322,7 +1322,7 @@ if (claudeEffort && _uiState.claudeEffort) {
   claudeEffort.value = _uiState.claudeEffort;
 }
 
-// ── Restore persisted thinking state ──────────────────────────────────────
+//  Restore persisted thinking state
 if (thinkingChk && typeof _uiState.thinkingEnabled === 'boolean') {
   thinkingChk.checked = _uiState.thinkingEnabled;
 }
@@ -1339,14 +1339,14 @@ if (thinkingChk) {
   setTimeout(waitSseThenSend, 100);
 })();
 
-// ── Restore persisted textarea draft ──────────────────────────────────────
+//  Restore persisted textarea draft
 if (input && _uiState.inputDraft) {
   input.value = _uiState.inputDraft;
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 200) + 'px';
 }
 
-// ── Zoom controls ──────────────────────────────────────────────────────────
+//  Zoom controls
 var _defaultZoom = (typeof window.__HME_ZOOM__ === 'number') ? window.__HME_ZOOM__ : 1.0;
 var zoomLevel = (typeof _uiState.zoomLevel === 'number') ? _uiState.zoomLevel : _defaultZoom;
 var ZOOM_STEP = 0.1, ZOOM_MIN = 0.6, ZOOM_MAX = 1.8;
@@ -1381,7 +1381,7 @@ if (zoomOutBtn) {
 }
 applyZoom();
 
-// ── Session sidebar ────────────────────────────────────────────────────────
+//  Session sidebar
 const sessionList = document.getElementById('session-list');
 const newSessionBtn = document.getElementById('new-session-btn');
 let activeSessionId = null;
@@ -1472,7 +1472,7 @@ window.addEventListener('message', (event) => {
 // Load session list on startup
 vscode.postMessage({ type: 'listSessions' });
 
-// ── HME shim status ────────────────────────────────────────────────────────
+//  HME shim status
 const shimStatus = document.getElementById('shim-status');
 function checkShim() {
   vscode.postMessage({ type: 'checkHmeShim' });

@@ -140,7 +140,7 @@ def before_editing(file_path: str) -> str:
     rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
     module_name = os.path.basename(abs_path).replace(".js", "").replace(".ts", "")
 
-    # ── Data gathering (order determined by dependencies) ─────────────────
+    # Data gathering (order determined by dependencies) ─
 
     # Git commits (needed by edit risks synthesis)
     _recent_commits = ""
@@ -238,7 +238,7 @@ def before_editing(file_path: str) -> str:
         _py_stem = os.path.basename(abs_path).replace(".py", "")
         hme_ctx = _hme_self_aware_context(abs_path, _py_stem)
 
-    # ── Assembly: constraint-first order ──────────────────────────────────
+    # Assembly: constraint-first order
     # Priority zone: constraints, warnings, bridges, edit risks (what will bite you)
     # Reference zone: dependents, structure, signals, evolutionary potential, context, commits
 
@@ -295,7 +295,7 @@ def before_editing(file_path: str) -> str:
         parts.append(compress_for_claude(synthesis, max_chars=800,
                                          hint=f"edit risks for {rel_path}"))
 
-    # ── Reference zone (below the fold) ──────────────────────────────────
+    # Reference zone (below the fold)
 
     # R1. Dependents
     caller_limit = limits["callers"]
@@ -597,4 +597,3 @@ def _warm_pre_edit_cache_sync(max_files: int = 200, synthesis_hot: int = 30, tar
     return (f"Pre-edit cache warmed: {warmed} files (callers+KB). "
             f"Synthesis pre-loaded: {synth_warmed}/{len(hot_files)} hot files. "
             f"before_editing calls instant for all warmed files.")
-
