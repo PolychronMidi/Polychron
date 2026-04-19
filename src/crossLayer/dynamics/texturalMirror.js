@@ -44,6 +44,9 @@ texturalMirror = (() => {
     // Get intent
     const intent = sectionIntentCurves.getLastIntent() ?? { interactionTarget: 0.5, densityTarget: 0.5 };
     const interactionTarget = V.optionalFinite(intent.interactionTarget, 0.5);
+    // entropyRegulator antagonism bridge (r=-0.426): high density -> strengthen structural correction
+    const densityTarget = V.optionalFinite(intent.densityTarget, 0.5);
+    const densityBridgeMod = densityTarget > 0.7 ? 0.05 : 0;
 
     // Get role swap modifiers (consuming dead-end signals)
     const roleProfile = dynamicRoleSwap.getProfileModifiers(activeLayer) ?? { chordalBias: 0, melodicBias: 0, isSwapped: false };
@@ -118,7 +121,7 @@ texturalMirror = (() => {
     // R73: emergentRhythm hotspots coupling -- rhythmic burst positions boost texture suggestion weight.
     const rhythmEntryTM = L0.getLast(L0_CHANNELS.emergentRhythm, { layer: 'both' });
     const hotspotsScaleTM = rhythmEntryTM && Array.isArray(rhythmEntryTM.hotspots) ? rhythmEntryTM.hotspots.length / 16 : 0;
-    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) * melodicWeightTM * (1.0 + hotspotsScaleTM * 0.12) + coherenceBoost + spectralBoost, 0.1, 0.8);
+    const weight = clamp(interactionTarget * 0.7 * regimeWeightScale * (1.5 - cimScale) * melodicWeightTM * (1.0 + hotspotsScaleTM * 0.12) + coherenceBoost + spectralBoost + densityBridgeMod, 0.1, 0.8);
 
     return { preferredMode, weight };
   }
