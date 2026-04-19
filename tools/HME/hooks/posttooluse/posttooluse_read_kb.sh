@@ -18,7 +18,9 @@ MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
 [ -z "$MODULE" ] && exit 0
 
 # Mark BRIEF synchronously so pretooluse_edit.sh sees it this turn.
-_nexus_add BRIEF "$MODULE"
+# _brief_add (vs raw _nexus_add) also emits a brief_recorded activity event
+# so downstream can see which emission path fired.
+_brief_add "$MODULE" "posttooluse_read_kb"
 
 # Fire KB brief async — inject context into next response without blocking.
 WORKER="${HME_SHIM_PORT:-9098}"

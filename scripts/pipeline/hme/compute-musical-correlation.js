@@ -139,7 +139,7 @@ function main() {
 
   // Round identity: git HEAD short-hash + sequence-for-this-sha. Two pipeline
   // runs from the same commit produce r_abc_1 and r_abc_2, making "did my
-  // change improve metric Y" answerable — without the sequence, two runs
+  // change improve metric Y" answerable -- without the sequence, two runs
   // of the same code got different timestamped IDs, turning identity into
   // timing noise. The sequence comes from counting prior history entries
   // whose round_id starts with r_<sha>_.

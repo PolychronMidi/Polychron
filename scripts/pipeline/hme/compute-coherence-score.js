@@ -65,48 +65,40 @@ function indexByEvent(events) {
 }
 
 function sliceToRound(events) {
-  // Find the two most recent round_complete events that have actual activity
-  // between them. Only PIPELINE-emitted round_completes count (they carry a
-  // 'verdict' field). Historical stop.sh round_completes were chat-turn
-  // boundaries that flooded the log and collapsed this window to prehistoric
-  // data. Those are now emitted as turn_complete; any old round_complete
-  // WITHOUT a verdict field is treated as a stale turn marker and ignored.
+  // Return the window between the two most recent PIPELINE-emitted
+  // round_complete events. Pipeline rounds carry a 'verdict' field;
+  // chat-turn markers (historical, pre-rename) don't — those are excluded.
   //
-  // Also: if no pipeline-round window has writes, fall back to the last N
-  // events (not everything-before-oldest), so stale history can't hide a
-  // real "no writes yet" signal.
+  // ALWAYS use the most recent pair, even if empty. An empty window
+  // correctly signals "this round had no relevant writes" rather than
+  // searching backward through history for a window that did. Previous
+  // behavior walked old round pairs looking for writes, which pulled in
+  // prehistoric LanceDB noise when the current round was legitimately
+  // quiet.
   const MAX_FALLBACK_EVENTS = 2000;
   const rcIndices = [];
   for (let i = events.length - 1; i >= 0; i--) {
     const e = events[i];
     if (!e || e.event !== 'round_complete') continue;
-    // Pipeline rounds carry a verdict; turn-boundary rounds don't.
-    // Historical events before the turn_complete rename all look like
-    // turn markers -- correctly excluded.
     if (!e.verdict) continue;
     rcIndices.push(i);
+    if (rcIndices.length >= 2) break;  // only need the two most recent
   }
   if (rcIndices.length === 0) {
-    // No real round boundaries yet -- return the recent tail rather than
-    // the whole history. Keeps coherence score honest during the ramp-up
-    // after the turn_complete/round_complete split.
+    // No real round boundaries yet — return the recent tail rather than
+    // everything-before-oldest. Keeps the score honest during ramp-up.
     return events.slice(-MAX_FALLBACK_EVENTS);
   }
-  // Try successive pairs until we find one with activity between them
-  for (let p = 0; p < rcIndices.length - 1; p++) {
-    const latest = rcIndices[p];
-    const prev = rcIndices[p + 1];
-    const window = events.slice(prev + 1, latest);
-    const hasWrites = window.some((e) => e && e.event === 'file_written');
-    if (hasWrites) return window;
+  if (rcIndices.length === 1) {
+    // Only one pipeline round — use events after it (the current round in
+    // progress, or the empty trailing window after the last round ended).
+    return events.slice(rcIndices[0] + 1);
   }
-  // No pair had writes -- fall back to events after the last pipeline round.
-  const lastRC = rcIndices[0];
-  const tail = events.slice(lastRC + 1);
-  if (tail.some((e) => e && e.event === 'file_written')) return tail;
-  // No writes anywhere in the pipeline-bounded windows -- return the recent
-  // tail for "no data" signalling. Never reach back into pre-split history.
-  return events.slice(-MAX_FALLBACK_EVENTS);
+  // The canonical case: window between the second-most-recent and most-recent
+  // pipeline round_completes. That's the round that JUST finished.
+  const latest = rcIndices[0];
+  const prev = rcIndices[1];
+  return events.slice(prev + 1, latest + 1);
 }
 
 
@@ -116,18 +108,35 @@ function main() {
   const windowEvents = sliceToRound(events);
   const idx = indexByEvent(windowEvents);
 
-  // Component 1: read coverage — only human/agent writes count. Pipeline-
-  // mechanical writes (fix-non-ascii, verify-boot-order --fix, formatters)
-  // are not "human intent-bearing edits" and shouldn't dilute the
-  // coherence-of-editing signal. Tagged via source=pipeline_script by the
-  // fs watcher when tmp/run.lock is present at write-time.
+  // Component 1: read coverage -- only POST-MIGRATION human/agent writes
+  // count. Three exclusion criteria:
+  //   (a) source missing entirely -> pre-migration event, no source field
+  //       existed when the write was emitted. Can't judge its coherence.
+  //   (b) source=pipeline_script -> pipeline-mechanical edit (fix-non-ascii,
+  //       verify-boot-order --fix, formatters). Not human intent-bearing.
+  //   (c) source=fs_watcher -> the real signal: a human or agent edited a
+  //       file in the allow-listed source tree.
   const rawWrites = idx.get('file_written') || [];
-  const writes = rawWrites.filter((e) => e.source !== 'pipeline_script');
-  const pipelineWrites = rawWrites.length - writes.length;
+  const writes = rawWrites.filter((e) => e.source === 'fs_watcher');
+  const pipelineWrites = rawWrites.filter((e) => e.source === 'pipeline_script').length;
+  const legacyWrites = rawWrites.filter((e) => !e.source).length;
   const writesWithPriorRead = writes.filter((e) => e.hme_read_prior === true).length;
-  // 0 writes = no data, NOT perfect coherence. Use null to signal "unmeasured"
-  // and fall back to the previous score if available.
-  const readCoverage = writes.length > 0 ? writesWithPriorRead / writes.length : null;
+  // Null readCoverage = "no measurable writes in window." The downstream
+  // reason field distinguishes why: no writes at all vs all-legacy vs
+  // all-pipeline.
+  let readCoverage = null;
+  let readCoverageNullReason = null;
+  if (writes.length > 0) {
+    readCoverage = writesWithPriorRead / writes.length;
+  } else if (rawWrites.length === 0) {
+    readCoverageNullReason = "no file_written events in window";
+  } else if (legacyWrites === rawWrites.length) {
+    readCoverageNullReason = `all ${legacyWrites} writes lack source field (pre-migration legacy events)`;
+  } else if (pipelineWrites === rawWrites.length) {
+    readCoverageNullReason = `all ${pipelineWrites} writes are pipeline-mechanical (source=pipeline_script)`;
+  } else {
+    readCoverageNullReason = `${legacyWrites} legacy + ${pipelineWrites} pipeline writes, 0 human-intent writes`;
+  }
 
   // Component 2: violation penalty (lazy violations only).
   // productive_incoherence events do NOT count here -- they feed the
@@ -147,12 +156,12 @@ function main() {
 
   // Component 3: staleness penalty -- ratio of writes to STALE modules.
   // The critical distinction:
-  //   STALE    = KB entry exists but module has evolved past it (bad — we're
+  //   STALE    = KB entry exists but module has evolved past it (bad -- we're
   //              editing known-drifted code without updating KB)
-  //   MISSING  = no KB entry at all (not bad — exploratory edit into
+  //   MISSING  = no KB entry at all (not bad -- exploratory edit into
   //              uncharted territory; rewards via productive_incoherence)
-  //   FRESH    = KB up-to-date (good — edits are well-grounded)
-  //   (undef)  = module not in index (e.g. config files) — excluded
+  //   FRESH    = KB up-to-date (good -- edits are well-grounded)
+  //   (undef)  = module not in index (e.g. config files) -- excluded
   //
   // The old formula conflated STALE and MISSING as both penalizing, which
   // meant 100%-MISSING writes (shell scripts, config files, genuinely
@@ -190,7 +199,7 @@ function main() {
     if (nonMissingTouches > 0) {
       stalenessPenalty = 1 - penalizingTouches / nonMissingTouches;
     }
-    // If EVERY touch was MISSING, stalenessPenalty stays at 1.0 —
+    // If EVERY touch was MISSING, stalenessPenalty stays at 1.0 --
     // exploration isn't punished, and the productive_incoherence bonus
     // (computed below) is where that behavior gets rewarded.
   }
@@ -217,10 +226,12 @@ function main() {
     delta,
     components: {
       read_coverage: readCoverage !== null ? Number(readCoverage.toFixed(4)) : null,
+      read_coverage_null_reason: readCoverageNullReason,
       read_coverage_detail: {
         writes_with_prior_read: writesWithPriorRead,
         total_writes: writes.length,
         pipeline_writes_excluded: pipelineWrites,
+        legacy_writes_excluded: legacyWrites,
       },
       violation_penalty: Number(violationPenalty.toFixed(4)),
       violation_detail: {

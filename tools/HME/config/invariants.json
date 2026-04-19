@@ -19,6 +19,7 @@
     "metric_has_variance": "A pipeline-metric JSON file's field must have >= min_distinct values across its recent history. Catches silent zero-valued-metric cascades where the whole observability substrate reports null/0 because one upstream input is broken.",
     "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome — i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
     "activity_events_balanced": "Paired activity events (start_event + end_event) must fire with matching counts in the recent window. Catches observability regressions where a refactor drops one of a paired emission silently.",
+    "activity_field_sanity": "A named field on recent activity events must match an expected regex. Catches garbage-value bugs (e.g. file_written emitting module='<UUID>' from infrastructure files instead of real module basenames).",
     "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed."
   },
   "invariants": [
@@ -979,6 +980,19 @@
       "window_events": 2000,
       "min_occurrences": 2,
       "severity": "error"
+    },
+    {
+      "id": "file-written-module-sane",
+      "description": "file_written events must carry module names that look like real source file basenames — alphanumeric with underscore/dash/dot, 1-64 chars. Catches infrastructure leaks: LanceDB UUIDs, timestamps, hex strings that indicate the watcher filter is letting noise through.",
+      "type": "activity_field_sanity",
+      "path": "metrics/hme-activity.jsonl",
+      "event": "file_written",
+      "field": "module",
+      "pattern": "^[a-zA-Z_][a-zA-Z0-9_\\-.]{0,63}$",
+      "window_events": 2000,
+      "max_violations": 10,
+      "exclude_values": ["", null],
+      "severity": "warning"
     },
     {
       "id": "no-invariant-chronically-failing",
