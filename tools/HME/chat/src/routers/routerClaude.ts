@@ -306,16 +306,13 @@ function computeTurnUsage(
     );
     return { inputTokens, outputTokens, usedPct: undefined, modelId: modelKey, modelName: modelEntry?.modelName };
   }
-  // Total tokens in context this turn = new input + cache reads + cache writes.
-  // All three are present in the model's context window for this request.
-  // The API enforces the window limit, so this cannot legitimately exceed 100%.
-  // A value >100 means the contextWindow field is wrong (e.g. stale 200k for a
-  // 1M model) — sanitizeUsedPct rejects it and the meter keeps its last value.
-  const totalInput = inputTokens
-    + (evt.usage?.cache_read_input_tokens ?? 0)
-    + (evt.usage?.cache_creation_input_tokens ?? 0);
-  const rawPct = (totalInput / contextWindow) * 100;
-  const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:totalInput=${totalInput},ctxWindow=${contextWindow},model=${modelKey}`);
+  // inputTokens is the new tokens this turn only (no cache). Cache tokens
+  // accumulate across turns and can exceed the context window when summed,
+  // producing fabricated percentages like 694%. The StatusLine hook provides
+  // used_percentage directly from the API — this formula is only a fallback
+  // for cases where the hook hasn't fired yet.
+  const rawPct = (inputTokens / contextWindow) * 100;
+  const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:input=${inputTokens},ctxWindow=${contextWindow},model=${modelKey}`);
   return {
     inputTokens,
     outputTokens,
