@@ -76,7 +76,7 @@ if [ -n "$SEARCH_PATH" ]; then
   if echo "$_REL_PATH" | grep -qE '^(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy))/'; then
     source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
     _MODULE=$(basename "$SEARCH_PATH" | sed 's/\.[^.]*$//')
-    [ -n "$_MODULE" ] && _nexus_add BRIEF "$_MODULE"
+    [ -n "$_MODULE" ] && _brief_add "$_MODULE" "pretooluse_grep"
   fi
 fi
 exit 0

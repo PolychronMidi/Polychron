@@ -29,13 +29,18 @@ module.exports = {
     if (name === 'HME_read') {
       // Track the BRIEF marker so downstream pretooluse checks see read-prior.
       const target = input.target || input.module || input.file_path || '';
-      if (target) ctx.nexusAdd('BRIEF', String(target));
+      if (target) {
+        ctx.nexusAdd('BRIEF', String(target));
+        ctx.emit({ event: 'brief_recorded', target: String(target), source: 'middleware_hme_read' });
+      }
     }
 
     if (name === 'Read' && _isTrackedPath(fp)) {
       // Silent KB enrichment: reading a tracked src/ file auto-marks BRIEF,
       // same effect as an explicit i/hme-read call.
-      ctx.nexusAdd('BRIEF', _extractModule(fp));
+      const module = _extractModule(fp);
+      ctx.nexusAdd('BRIEF', module);
+      ctx.emit({ event: 'brief_recorded', target: module, source: 'middleware_read' });
     }
 
     if (name === 'HME_review') {

@@ -24,7 +24,7 @@ MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[
 # the shell write is load-bearing: posttooluse_edit.sh checks BRIEF in the
 # same turn, and middleware's write won't land until the NEXT request.
 if [ -n "$TARGET" ]; then
-  _nexus_add BRIEF "$TARGET"
+  _brief_add "$TARGET" "posttooluse_hme_read"
 fi
 
 _streak_reset

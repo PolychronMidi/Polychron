@@ -277,7 +277,7 @@ function main() {
   // Collect verdict + hci BEFORE writing summary so pipeline-summary.json
   // carries all three (verdict, hci, failed) as a single coherent record.
   // Previous ordering wrote summary first, then read verdict for the
-  // activity event — which meant pipeline-summary.json never had verdict
+  // activity event -- which meant pipeline-summary.json never had verdict
   // at all (the hook's re-write pass was the only thing that added it).
   var verdict = 'UNKNOWN';
   var failed = timings.some(function(r) { return !r.ok; }) ? 1 : 0;

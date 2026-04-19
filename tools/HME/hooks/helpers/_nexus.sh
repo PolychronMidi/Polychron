@@ -101,3 +101,24 @@ _nexus_pending() {
   fi
   echo -e "$issues"
 }
+
+# Canonical BRIEF-recording entry point. Writes to tmp/hme-nexus.state AND
+# emits a `brief_recorded` activity event so downstream can see WHICH paths
+# are firing. Centralizes what was previously 4 independent _nexus_add
+# call sites (posttooluse_read_kb, posttooluse_hme_read, pretooluse_grep,
+# nexus_tracking.js middleware) — each can still call _nexus_add directly
+# for backward compat, but new paths should use _brief_add.
+_brief_add() {
+  local target="${1:-}" source="${2:-unknown}"
+  [ -z "$target" ] && return 0
+  _nexus_add BRIEF "$target"
+  # Emit activity event in background; never block the caller
+  if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ] 2>/dev/null; then
+    python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
+      --event=brief_recorded \
+      --target="$target" \
+      --source="$source" \
+      --session="$(whoami 2>/dev/null || echo shell)" \
+      >/dev/null 2>&1 &
+  fi
+}

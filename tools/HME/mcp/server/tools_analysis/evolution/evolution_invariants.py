@@ -485,6 +485,66 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
     return True, "no chronic failures"
 
 
+def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
+    """Validate that a named field on recent activity events matches an
+    expected pattern. Catches garbage-module bugs (file_written emitting
+    module='18446744073709550176' from LanceDB internal files, for example).
+
+    Config:
+      path            — activity jsonl (default metrics/hme-activity.jsonl)
+      event           — event type to check (e.g. 'file_written')
+      field           — field name to validate (e.g. 'module')
+      pattern         — regex that the field value must match
+      window_events   — consider only the last N events (default 2000)
+      max_violations  — fail threshold (default 10 — tolerate legacy noise)
+      exclude_values  — field values to skip (e.g. empty strings)
+    """
+    import json as _json
+    import re as _re
+    path = os.path.join(ctx.PROJECT_ROOT,
+                        inv.get("path", "metrics/hme-activity.jsonl"))
+    event_name = inv["event"]
+    field = inv["field"]
+    pattern = _re.compile(inv["pattern"])
+    window = int(inv.get("window_events", 2000))
+    max_violations = int(inv.get("max_violations", 10))
+    exclude = set(inv.get("exclude_values", ["", None]))
+
+    if not os.path.isfile(path):
+        return True, f"activity log missing — can't check"
+    tail: list = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s:
+                    continue
+                try:
+                    tail.append(_json.loads(s))
+                except ValueError:
+                    continue
+    except OSError as e:
+        return False, f"cannot read {path}: {e}"
+    tail = tail[-window:]
+    violations: list = []
+    for e in tail:
+        if e.get("event") != event_name:
+            continue
+        val = e.get(field)
+        if val in exclude:
+            continue
+        if not pattern.match(str(val)):
+            violations.append(str(val))
+    if len(violations) > max_violations:
+        sample = ", ".join(violations[:5])
+        return False, (
+            f"{len(violations)} {event_name!r} events have invalid {field!r} "
+            f"values (max {max_violations}). Samples: {sample}. "
+            f"Pattern: {inv['pattern']}"
+        )
+    return True, f"{len(violations)} invalid (≤{max_violations} tolerance)"
+
+
 def _check_public_functions_reachable(inv: dict) -> tuple[bool, str]:
     """Every undecorated public function (no leading `_`) in a scanned dir must
     be either @ctx.mcp.tool-decorated, referenced from another module, OR
@@ -611,6 +671,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "metric_has_variance": _check_metric_has_variance,
         "correlation_direction": _check_correlation_direction,
         "activity_events_balanced": _check_activity_events_balanced,
+        "activity_field_sanity": _check_activity_field_sanity,
         "invariant_chronically_failing": _check_invariant_chronically_failing,
         "public_functions_reachable": _check_public_functions_reachable,
         "shell_output_empty": _check_shell_output_empty,
