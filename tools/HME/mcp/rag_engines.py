@@ -483,23 +483,42 @@ def _load_engines():
         _fp16_kwargs = {"torch_dtype": _torch_fp16.float16}
 
         # Text embedder (Qwen3-Embedding-0.6B) — knowledge_table + symbol_table.
-        # 1024-dim, Apache 2.0. Tries ONNX backend first; falls through to
-        # torch fp16 on GPU when no ONNX export is shipped.
-        try:
-            _shared_model = SentenceTransformer(
-                MODEL_NAME, backend=MODEL_BACKEND,
-                model_kwargs={"file_name": "onnx/model.onnx"},
+        # 1024-dim, Apache 2.0. Prefer ONNX backend when the export is actually
+        # shipped; otherwise go straight to torch fp16 without the failed-try
+        # warning that used to fire on every startup (12 times per selftest
+        # window — pure noise masking real warnings).
+        _onnx_path = os.path.join(MODEL_NAME, "onnx", "model.onnx") \
+                     if os.path.isabs(MODEL_NAME) \
+                     else None
+        _has_onnx = _onnx_path and os.path.isfile(_onnx_path)
+        if MODEL_BACKEND != "default" and not _has_onnx:
+            logger.info(
+                f"Text embedder: ONNX backend requested ({MODEL_BACKEND}) but "
+                f"no onnx/model.onnx found — using torch fp16 directly"
             )
-            logger.info(f"Text embedder: {MODEL_NAME} ({MODEL_BACKEND})")
-        except Exception as e:
-            logger.warning(
-                f"{MODEL_BACKEND} backend failed ({type(e).__name__}), "
-                f"falling back to torch fp16 on {_rag_device}"
-            )
+        if _has_onnx and MODEL_BACKEND != "default":
+            try:
+                _shared_model = SentenceTransformer(
+                    MODEL_NAME, backend=MODEL_BACKEND,
+                    model_kwargs={"file_name": "onnx/model.onnx"},
+                )
+                logger.info(f"Text embedder: {MODEL_NAME} ({MODEL_BACKEND})")
+            except Exception as _onnx_err:
+                logger.warning(
+                    f"{MODEL_BACKEND} backend load failed ({type(_onnx_err).__name__}: "
+                    f"{_onnx_err}) — falling back to torch fp16 on {_rag_device}"
+                )
+                _shared_model = SentenceTransformer(
+                    MODEL_NAME, device=_rag_device, trust_remote_code=True,
+                    model_kwargs=_fp16_kwargs,
+                )
+        else:
+            # Direct torch fp16 load — no failed ONNX attempt, no spam warning.
             _shared_model = SentenceTransformer(
                 MODEL_NAME, device=_rag_device, trust_remote_code=True,
                 model_kwargs=_fp16_kwargs,
             )
+            logger.info(f"Text embedder: {MODEL_NAME} (torch fp16 on {_rag_device})")
 
         # Code embedder (BAAI/bge-code-v1) — code_chunks table.
         # 1536-dim, Apache 2.0, Qwen2-based, 32K context. fp16 to fit in VRAM.

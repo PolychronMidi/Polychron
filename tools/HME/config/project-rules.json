@@ -60,7 +60,10 @@
     "synthesis_gemini", "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
     "synthesis_mistral", "synthesis_nvidia",
     "pipeline_start", "pipeline_run", "turn_complete", "edit_pending",
-    "jurisdiction_inject", "status_inject", "pipeline_test_probe"
+    "jurisdiction_inject", "status_inject", "pipeline_test_probe",
+    "brief_recorded", "file_watcher_filtered", "pipeline_baseline_delta",
+    "file_written", "coherence_violation", "productive_incoherence",
+    "review_complete", "round_complete"
   ],
 
   "registration_patterns": [

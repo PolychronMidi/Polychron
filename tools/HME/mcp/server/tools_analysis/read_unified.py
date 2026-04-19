@@ -66,20 +66,28 @@ def _emit_brief_recorded(target: str, source: str = "hme_read") -> None:
 
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("read")
-def read(target: str, mode: str = "auto") -> str:
+def read(target: str, mode: str = "auto", fast: bool = False) -> str:
     """Smart code reader — auto-routes by target format.
     'src/path/file.js' → file_intel (structure + KB).
     'src/path/file.js:10-50' → file_lines (line range).
     'functionName' → get_function_body (search all files).
     'moduleName' with mode='story'|'impact'|'both' → module_intel.
     mode='before' → before_editing pre-edit briefing (KB constraints, callers, risks).
-    mode='auto' (default) detects from target format."""
+    mode='auto' (default) detects from target format.
+    fast=True skips the slow adaptive-synthesis section (~60-120s saved).
+    Structural sections (KB constraints, callers, interactions, evolutionary
+    potential) are always included — only the LLM-generated summary is gated."""
     _track("read")
     if mode != "before":
         append_session_narrative("search", f"read({mode}): {target[:60]}")
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return "Error: target cannot be empty. Pass a file path, function name, or module name."
+
+    # Propagate fast flag via env so deep-call-chain synthesis gates can see it
+    # without threading fast= through every intermediate function signature.
+    if fast:
+        os.environ["HME_READ_FAST"] = "1"
 
     # Tool-layer BRIEF emission — agent-independent. When the agent calls
     # i/hme-read (or the Edit pre-hook auto-chains this), that IS a BRIEF.
