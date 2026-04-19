@@ -58,128 +58,119 @@ ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]
 
 
 def hme_hot_reload(modules: str = "") -> str:
-    """Hot-reload HME tool modules without restarting the server."""
+    """Hot-reload HME tool modules without restarting the server.
+
+    Works against the dict-backed `tool_registry._TOOLS` — the FastMCP
+    replacement. Re-importing a module causes its `@ctx.mcp.tool()` calls
+    to overwrite the registry entries, so the only state we need to manage
+    is stale-pyc nuking and the before/after tool-name diff for reporting.
+    """
     _track("hme_hot_reload")
+    from server import tool_registry
 
     if not modules or modules.strip().lower() == "all":
         targets = RELOADABLE + TOP_LEVEL_RELOADABLE + ROOT_RELOADABLE
     else:
         targets = [m.strip() for m in modules.split(",") if m.strip()]
 
-    inner = ctx.mcp._inner
-    old_warn = inner._tool_manager.warn_on_duplicate_tools
-    inner._tool_manager.warn_on_duplicate_tools = False
+    _tools = tool_registry._TOOLS
+
+    def _tools_owned_by(module_name: str) -> set:
+        owned = set()
+        for tname, entry in _tools.items():
+            fn = entry.get("fn")
+            mod = getattr(fn, "__module__", "")
+            if mod == module_name:
+                owned.add(tname)
+                continue
+            wrapped = getattr(fn, "__wrapped__", None)
+            if wrapped is not None and getattr(wrapped, "__module__", "") == module_name:
+                owned.add(tname)
+        return owned
 
     results = []
-    try:
-        for name in targets:
-            if name in ROOT_RELOADABLE:
-                full = name
-            elif name in TOP_LEVEL_RELOADABLE:
-                full = f"server.{name}"
-            else:
-                full = f"server.tools_analysis.{name}"
-            mod = sys.modules.get(full)
-            # Subpackage fallback: modules moved to synthesis/, evolution/, coupling/
-            if mod is None:
-                for subpkg in ("synthesis", "evolution", "coupling"):
-                    mod = sys.modules.get(f"server.tools_analysis.{subpkg}.{name}")
-                    if mod:
-                        break
-            if mod is None:
-                try:
-                    if name in ROOT_RELOADABLE:
-                        mod = importlib.import_module(name)
-                    elif name in TOP_LEVEL_RELOADABLE:
-                        mod = importlib.import_module(f".{name}", "server")
-                    else:
-                        # Try flat first, then subpackages
-                        try:
-                            mod = importlib.import_module(f".{name}", "server.tools_analysis")
-                        except (ImportError, ModuleNotFoundError):
-                            for subpkg in ("synthesis", "evolution", "coupling"):
-                                try:
-                                    mod = importlib.import_module(f".{name}", f"server.tools_analysis.{subpkg}")
-                                    break
-                                except (ImportError, ModuleNotFoundError):
-                                    continue
-                            else:
-                                raise
-                    actual_full = getattr(mod, "__name__", full)
-                    tools_new = {
-                        tname for tname, t in inner._tool_manager._tools.items()
-                        if getattr(t.fn, "__module__", "") == actual_full
-                           or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
-                    }
-                    results.append(f"  NEW {name}: {len(tools_new)} tools loaded")
-                except Exception as e:
-                    results.append(f"  ERR {name} (import): {e}")
-                continue
-            actual_full = getattr(mod, "__name__", full)
+    for name in targets:
+        if name in ROOT_RELOADABLE:
+            full = name
+        elif name in TOP_LEVEL_RELOADABLE:
+            full = f"server.{name}"
+        else:
+            full = f"server.tools_analysis.{name}"
+        mod = sys.modules.get(full)
+        # Subpackage fallback: modules moved to synthesis/, evolution/, coupling/
+        if mod is None:
+            for subpkg in ("synthesis", "evolution", "coupling"):
+                mod = sys.modules.get(f"server.tools_analysis.{subpkg}.{name}")
+                if mod:
+                    break
+        if mod is None:
             try:
-                tools_before = {
-                    tname: t for tname, t in inner._tool_manager._tools.items()
-                    if getattr(t.fn, "__module__", "") == actual_full
-                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
-                }
-                # Snapshot tool objects BEFORE removing so we can roll back if reload fails.
-                remove_errs = []
-                for tname in tools_before:
+                if name in ROOT_RELOADABLE:
+                    mod = importlib.import_module(name)
+                elif name in TOP_LEVEL_RELOADABLE:
+                    mod = importlib.import_module(f".{name}", "server")
+                else:
                     try:
-                        inner.remove_tool(tname)
-                    except Exception as _re:
-                        remove_errs.append(f"{tname}:{_re}")
-                if remove_errs:
-                    results.append(f"  WARN remove errors for {name}: {remove_errs[:3]}")
-                # Nuke the compiled bytecode BEFORE reloading. If the .pyc
-                # is newer than the .py source (common after a prior
-                # successful reload), Python will happily use the stale
-                # bytecode on reload and the "OK reload" verdict will
-                # silently hide the fact that the new source never ran.
-                # Observed this session: meta_layers.py edits appeared
-                # to reload successfully but the daemon kept throwing
-                # NameError because the .pyc was cached.
-                _mod_file = getattr(mod, "__file__", None)
-                if _mod_file:
-                    _pycache_dir = os.path.join(os.path.dirname(_mod_file), "__pycache__")
-                    _stem = os.path.splitext(os.path.basename(_mod_file))[0]
-                    if os.path.isdir(_pycache_dir):
-                        for _pyc_entry in os.listdir(_pycache_dir):
-                            if _pyc_entry.startswith(_stem + ".") and _pyc_entry.endswith(".pyc"):
-                                try:
-                                    os.remove(os.path.join(_pycache_dir, _pyc_entry))
-                                except OSError as _unlink_err:
-                                    logger.debug(f"pycache nuke {_pyc_entry}: {type(_unlink_err).__name__}: {_unlink_err}")
-                try:
-                    importlib.reload(mod)
-                except Exception as _reload_err:
-                    # Roll back: re-register the tools we just removed so a failed
-                    # reload doesn't leave the tool surface amputated.
-                    for tname, t in tools_before.items():
-                        try:
-                            inner._tool_manager._tools[tname] = t
-                        except Exception as _rb_err:
-                            logger.debug(f"rollback {tname}: {type(_rb_err).__name__}: {_rb_err}")
-                    raise
-                tools_after = {
-                    tname for tname, t in inner._tool_manager._tools.items()
-                    if getattr(t.fn, "__module__", "") == actual_full
-                       or getattr(getattr(t.fn, "__wrapped__", None), "__module__", "") == actual_full
-                }
-                removed = set(tools_before) - tools_after
-                added = tools_after - set(tools_before)
-                status_str = f"{len(tools_after)} tools"
-                if removed:
-                    status_str += f" (-{len(removed)}: {', '.join(sorted(removed))})"
-                if added:
-                    status_str += f" (+{len(added)}: {', '.join(sorted(added))})"
-                results.append(f"  OK {name}: {status_str} (was {len(tools_before)})")
+                        mod = importlib.import_module(f".{name}", "server.tools_analysis")
+                    except (ImportError, ModuleNotFoundError):
+                        for subpkg in ("synthesis", "evolution", "coupling"):
+                            try:
+                                mod = importlib.import_module(f".{name}", f"server.tools_analysis.{subpkg}")
+                                break
+                            except (ImportError, ModuleNotFoundError):
+                                continue
+                        else:
+                            raise
+                actual_full = getattr(mod, "__name__", full)
+                tools_new = _tools_owned_by(actual_full)
+                results.append(f"  NEW {name}: {len(tools_new)} tools loaded")
             except Exception as e:
-                results.append(f"  ERR {name}: {e}")
-    finally:
-        inner._tool_manager.warn_on_duplicate_tools = old_warn
+                results.append(f"  ERR {name} (import): {e}")
+            continue
 
-    total_tools = len(inner._tool_manager._tools)
+        actual_full = getattr(mod, "__name__", full)
+        tools_before = _tools_owned_by(actual_full)
+        # Snapshot entries BEFORE deleting so we can roll back on reload failure.
+        snapshot = {tname: _tools[tname] for tname in tools_before if tname in _tools}
+        for tname in tools_before:
+            _tools.pop(tname, None)
+
+        # Nuke the compiled bytecode BEFORE reloading. If the .pyc is newer
+        # than the .py source (common after a prior successful reload), Python
+        # will use the stale bytecode and the "OK" verdict silently hides that
+        # the new source never ran.
+        _mod_file = getattr(mod, "__file__", None)
+        if _mod_file:
+            _pycache_dir = os.path.join(os.path.dirname(_mod_file), "__pycache__")
+            _stem = os.path.splitext(os.path.basename(_mod_file))[0]
+            if os.path.isdir(_pycache_dir):
+                for _pyc_entry in os.listdir(_pycache_dir):
+                    if _pyc_entry.startswith(_stem + ".") and _pyc_entry.endswith(".pyc"):
+                        try:
+                            os.remove(os.path.join(_pycache_dir, _pyc_entry))
+                        except OSError as _unlink_err:
+                            logger.debug(f"pycache nuke {_pyc_entry}: {type(_unlink_err).__name__}: {_unlink_err}")
+        try:
+            importlib.reload(mod)
+        except Exception as e:
+            # Roll back: restore the snapshot so a failed reload doesn't
+            # leave the tool surface amputated.
+            for tname, entry in snapshot.items():
+                _tools[tname] = entry
+            results.append(f"  ERR {name}: {e}")
+            continue
+
+        tools_after = _tools_owned_by(actual_full)
+        removed = tools_before - tools_after
+        added = tools_after - tools_before
+        status_str = f"{len(tools_after)} tools"
+        if removed:
+            status_str += f" (-{len(removed)}: {', '.join(sorted(removed))})"
+        if added:
+            status_str += f" (+{len(added)}: {', '.join(sorted(added))})"
+        results.append(f"  OK {name}: {status_str} (was {len(tools_before)})")
+
+    total_tools = len(_tools)
     return (
         f"## HME Hot Reload\n"
         + "\n".join(results)

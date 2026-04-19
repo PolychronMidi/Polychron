@@ -7,7 +7,7 @@ import subprocess
 from server import context as ctx
 from server.onboarding_chain import chained
 from ..synthesis import _local_think
-from ..synthesis.synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL
+from ..synthesis.synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
 from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
@@ -306,15 +306,22 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         f"Antipattern to prevent: {antipattern}\n\n"
         f"Write ONLY the bash snippet (no markdown fences). 5-15 lines maximum."
     )
-    snippet = _local_think(synthesis_prompt, max_tokens=512)
-    if not snippet:
-        # Coder model unavailable — try reasoning model as fallback
-        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_REASONING_MODEL)
+    # Build fallback chain of DISTINCT models (dedup env overlaps — e.g. when
+    # HME_CODER_MODEL == HME_REASONING_MODEL, retrying the same model isn't a fallback).
+    _tried = []
+    snippet = None
+    for _m in (_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL):
+        if _m in _tried:
+            continue
+        _tried.append(_m)
+        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_m)
+        if snippet:
+            break
     if not snippet:
         return (
-            f"Could not synthesize snippet — both coder ({_LOCAL_MODEL}) and reasoning "
-            f"({_REASONING_MODEL}) models returned empty. Check selftest: if llama-server "
-            f"instances are unreachable, fix_antipattern cannot synthesize.\n"
+            f"Could not synthesize snippet — tried models: {', '.join(_tried)}. All returned "
+            f"empty. Check selftest: if llama-server instances are unreachable or still "
+            f"warming, fix_antipattern cannot synthesize.\n"
             f"Manually add detection logic to: {hook_path}\n"
             f"Antipattern to prevent: {antipattern}"
         )
