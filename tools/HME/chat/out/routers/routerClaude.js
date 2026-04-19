@@ -354,7 +354,7 @@ function handleStreamEvent(evt, uiModelAlias, onChunk, onSessionId, onDone) {
         return;
     }
 }
-//  Claude PTY (hook-aware interactive mode) ─
+//  Claude PTY (hook-aware interactive mode)
 const PTY_DONE_PATTERNS = [
     /\d+%\s*\|\s*\S/, // statusline footer: "90% | Sonnet 4.6" — unambiguous turn-complete
     /❯\s+[1-9]\d+/, // prompt with non-zero token count: "❯ 20378" (not "❯ 0")

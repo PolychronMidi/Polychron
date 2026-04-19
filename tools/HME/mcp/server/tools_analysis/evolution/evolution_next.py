@@ -78,7 +78,7 @@ def evolution_momentum() -> str:
     _track("evolution_momentum")
     import re as _re
 
-    # --- 1. Parse journal.md for round verdicts ---
+    #  1. Parse journal.md for round verdicts
     journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
     if not os.path.isfile(journal_path):
         return "No journal.md found at metrics/journal.md"
@@ -92,7 +92,7 @@ def evolution_momentum() -> str:
         round_n, verdict = m.group(1), m.group(2).strip().lower()
         verdict_map[round_n] = verdict
 
-    # --- 2. Categorize all KB entries by round + type ---
+    #  2. Categorize all KB entries by round + type
     _MELODIC_PAT = _re.compile(
         r'\b(melodic coupling|emergentMelodicEngine|contourShape|counterpoint|'
         r'thematicDensity|tessituraPressure|phraseBreath|restSynchronizer.*melodic|'
@@ -144,7 +144,7 @@ def evolution_momentum() -> str:
             if dims:
                 dimension_by_round.setdefault(round_n, []).extend(dims)
 
-    # --- 3. Build timeline ---
+    #  3. Build timeline
     out = ["# Evolution Momentum\n"]
     all_rounds = sorted(set(rounds + list(momentum_by_round.keys())), key=int)
 
@@ -174,7 +174,7 @@ def evolution_momentum() -> str:
         out.append(f"\nTotal rounds in journal: {len(all_rounds)} | KB entries: {len(all_kb)}")
         out.append("")
 
-        # --- 3b. Evolution velocity + bridge narrative ---
+        #  3b. Evolution velocity + bridge narrative
         legendary_rounds = [r for r in all_rounds if any(k in verdict_map.get(r, "").lower() for k in ("legendary",))]
         recent_n = 6
         recent_slice = all_rounds[-recent_n:] if len(all_rounds) >= recent_n else all_rounds
@@ -193,7 +193,7 @@ def evolution_momentum() -> str:
                     out.append(f"  Current streak: {streak} consecutive LEGENDARYs (R{legendary_rounds[-streak]}–R{legendary_rounds[-1]})")
             out.append("")
 
-        # --- 3c. Bridge saturation narrative ---
+        #  3c. Bridge saturation narrative
         try:
             from ..coupling import get_top_bridges
             bridges = get_top_bridges(n=6)
@@ -215,7 +215,7 @@ def evolution_momentum() -> str:
         except Exception as _err1:
             logger.debug(f"out.append: {type(_err1).__name__}: {_err1}")
 
-    # --- 4. Subsystem receptivity from journal ---
+    #  4. Subsystem receptivity from journal
     # Split into lines for ±5-line window search (subsystem name and verdict rarely co-occur on same line)
     journal_lines = journal_text.splitlines()
     subsystem_counts: dict[str, dict[str, int]] = {}
@@ -244,7 +244,7 @@ def evolution_momentum() -> str:
             out.append(f"  {sub:<15} {bar} {counts['confirmed']}/{counts['mentions']}")
         out.append("")
 
-    # --- 5. Dimension rut detection ---
+    #  5. Dimension rut detection
     all_dims: list[str] = []
     for dims in dimension_by_round.values():
         all_dims.extend(dims)
@@ -419,4 +419,3 @@ def _describe_rhythm_effect(name: str, field: str) -> str:
         if kw != "default" and kw in name_l:
             return desc
     return field_effects.get("default", f"emergentRhythm.{field} scales key parameter")
-

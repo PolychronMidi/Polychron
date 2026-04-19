@@ -155,7 +155,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     # Apply per-section budgets for compound modes, single budget otherwise
     if len(parts) > 1:
         parts = [_budget_section(p, BUDGET_SECTION) for p in parts]
-    result = "\n\n---\n\n".join(parts) if len(parts) > 1 else parts[0] if parts else "No data."
+    result = "\n\n\n\n".join(parts) if len(parts) > 1 else parts[0] if parts else "No data."
 
     # Auto-draft KB entry after digest with run delta
     if "digest" in modes and "Run Delta" in result and "ALL CLEAR" in result:

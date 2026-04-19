@@ -13,7 +13,7 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-# Shared warm context state ─
+# Shared warm context state
 # Imported by synthesis_warm (mutation) and synthesis (read-only reference).
 _warm_ctx: dict[str, list] = {}
 _warm_ctx_kb_ver: dict[str, int] = {}
@@ -22,7 +22,7 @@ _warm_ctx_append_count: dict = {}
 _warm_ctx_baseline_tokens: dict = {}
 _warm_ctx_incr_latency: dict = {}
 
-# Disk persistence config ─
+# Disk persistence config
 # Prefer tmpfs buffer (instant I/O) → fallback to project disk.
 _TMPFS_PATHS = ["/mnt/llamacpp-buffer-gpu0", "/mnt/llamacpp-buffer-gpu1"]
 _DISK_CACHE_DIR = None  # lazily initialized

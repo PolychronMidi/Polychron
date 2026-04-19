@@ -71,7 +71,7 @@ def _get_tool_budget() -> int:
     return _BUDGET_TOOL_CALLS.get(get_context_budget(), 6)
 
 
-# Shared text processing helpers ─
+# Shared text processing helpers
 # Used by all synthesis modules. Single source of truth for response cleanup.
 
 _THINK_RE = re.compile(

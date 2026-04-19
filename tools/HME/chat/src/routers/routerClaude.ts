@@ -381,7 +381,7 @@ function handleStreamEvent(
   }
 }
 
-//  Claude PTY (hook-aware interactive mode) ─
+//  Claude PTY (hook-aware interactive mode)
 
 const PTY_DONE_PATTERNS = [
   /\d+%\s*\|\s*\S/,    // statusline footer: "90% | Sonnet 4.6" — unambiguous turn-complete

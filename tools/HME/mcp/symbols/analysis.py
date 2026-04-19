@@ -38,7 +38,7 @@ _DEF_KW_RE = re.compile(
 )
 _IMPORT_RE = re.compile(r'\b(?:import|from|use|require)\b')
 _CALL_RE_TMPL = r'(?:^|[.\s:]){}(\s*(?:<[^>]*>\s*)?\()'
-_TYPE_REF_CONTEXT = re.compile(r'(?::\s*$|->|<\s*$|\bextends\b|\bimplements\b|\bwhere\b)')
+_TYPE_REF_CONTEXT = re.compile(r'(?::\s*$>|<\s*$|\bextends\b|\bimplements\b|\bwhere\b)')
 _STRING_CHAR = {'"', "'", '`'}
 
 

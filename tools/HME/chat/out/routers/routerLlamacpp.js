@@ -178,7 +178,7 @@ function streamLlamacpp(messages, opts, onChunk, onDone, onError) {
     req.end();
     return () => { aborted = true; req.destroy(); };
 }
-//  Agentic tool loop ─
+//  Agentic tool loop
 const LLAMACPP_TOOLS = [
     {
         type: "function",

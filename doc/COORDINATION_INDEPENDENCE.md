@@ -11,7 +11,7 @@ Lives in crossLayer subsystem. Reads conductor state via `conductorSignalBridge`
 Each dial ranges 0 (fully independent) to 1 (fully coordinated):
 
 | Pair | Modules Controlled | Coordinated | Independent |
-|------|-------------------|-------------|-------------|
+-
 | `restSync-rhythmComplement` | restSynchronizer, rhythmicComplementEngine | Shared rests, stable rhythm mode | Independent rest timing, rapid mode switching |
 | `stutterContagion-stutterVariants` | stutterContagion | Sticky contagion (low decay) | Fast contagion decay |
 | `spectralComp-velocityInterference` | spectralComplementarity | Strong spectral gap-filling | Each layer owns spectrum |

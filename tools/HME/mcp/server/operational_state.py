@@ -322,7 +322,7 @@ def _trim_synthesis_file() -> None:
         pass
 
 
-# Layer 23: Multi-Timescale Coherence ─
+# Layer 23: Multi-Timescale Coherence
 
 def record_coherence_multiscale(coherence: float) -> dict:
     """Update coherence EMAs at all four timescales. Returns the current multi-scale snapshot.
@@ -402,7 +402,7 @@ def record_prediction_brier(predicted_prob: float, occurred: bool) -> float:
         return _state["brier_score_ema"]
 
 
-# Layer 30: Session Identity Document ─
+# Layer 30: Session Identity Document
 
 def write_session_document() -> None:
     """Persist this session's identity + trajectory to hme-sessions.jsonl.

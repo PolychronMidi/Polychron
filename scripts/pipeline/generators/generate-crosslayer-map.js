@@ -207,7 +207,7 @@ function renderMarkdown(map) {
     lines.push(`### ${folder === '(top-level)' ? 'Top-Level' : folder.charAt(0).toUpperCase() + folder.slice(1)}`);
     lines.push('');
     lines.push('| Module | Scopes | ATG Channels | Reads Signals | Emits Explain |');
-    lines.push('|--|--|-|||');
+    lines.push('-||');
     for (const name of mods.sort()) {
       const mod = map.modules.find(m => m.name === name);
       if (!mod) continue;
@@ -246,7 +246,7 @@ function renderMarkdown(map) {
   lines.push('## Interaction Hubs (most referenced)');
   lines.push('');
   lines.push('| Module | Referenced By |');
-  lines.push('|--|-|');
+  lines.push('');
   for (const [name, count] of topHubs) {
     lines.push(`| ${name} | ${count} modules |`);
   }

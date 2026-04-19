@@ -45,7 +45,7 @@ const path = __importStar(require("path"));
 const router_1 = require("./router");
 const streamUtils_1 = require("./streamUtils");
 const msgHelpers_1 = require("./msgHelpers");
-//  Helpers ─
+//  Helpers
 const INDEXABLE_EXTS = new Set([
     ".js", ".ts", ".tsx", ".jsx", ".py", ".json", ".md", ".css", ".html", ".sh",
 ]);

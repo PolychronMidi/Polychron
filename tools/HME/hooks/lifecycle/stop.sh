@@ -8,7 +8,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 _DETECTORS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../scripts/detectors"
 
-# Context meter: merge token counts into existing statusLine data ─
+# Context meter: merge token counts into existing statusLine data
 # StatusLine writes authoritative used_pct/remaining_pct/size from the API.
 # Stop hook only adds input_tokens/output_tokens from the transcript — never
 # overwrites used_pct (that would replace real API data with a fabricated estimate).
@@ -103,13 +103,13 @@ if [ -f "$ERROR_LOG" ]; then
   fi
 fi
 
-# Evolver Loop (ralph-loop pattern) ─
+# Evolver Loop (ralph-loop pattern)
 # When .claude/hme-evolver.local.md exists, block exit and inject next iteration.
 LOOP_FILE="$CLAUDE_PROJECT_DIR/.claude/hme-evolver.local.md"
 
 if [[ -f "$LOOP_FILE" ]]; then
   # Parse frontmatter
-  FM=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$LOOP_FILE")
+  FM=$(sed -n '/^$/,/^$/{ /^$/d; p; }' "$LOOP_FILE")
 
   # `|| true` on each so set -euo pipefail doesn't kill the stop hook when
   # an optional frontmatter field is absent (grep returns 1 on no-match).
@@ -143,8 +143,8 @@ if [[ -f "$LOOP_FILE" ]]; then
         echo "Evolver loop: done signal detected. Removing loop file." >&2
         rm "$LOOP_FILE"
       else
-        # Extract prompt body (everything after second ---)
-        NEXT_PROMPT=$(awk '/^---$/{i++; next} i>=2' "$LOOP_FILE")
+        # Extract prompt body (everything after second )
+        NEXT_PROMPT=$(awk '/^$/{i++; next} i>=2' "$LOOP_FILE")
 
         # Increment iteration atomically
         NEXT_ITER=$((ITERATION + 1))
@@ -168,7 +168,7 @@ if [[ -f "$LOOP_FILE" ]]; then
   fi
 fi
 
-# Consolidated detector run ─
+# Consolidated detector run
 # All 6 stop-side detectors (poll_count / idle_after_bg / psycho_stop /
 # ack_skip / abandon_check / stop_work) run in ONE python3 invocation via
 # run_all.py — parse the transcript once, share the cache, amortize the
@@ -201,7 +201,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   [[ "$POLL_COUNT" =~ ^[0-9]+$ ]] || POLL_COUNT=0
 fi
 
-# Background task polling detection ─
+# Background task polling detection
 if [[ "$POLL_COUNT" -ge 2 ]]; then
   jq -n '{
     "decision": "block",
@@ -219,7 +219,7 @@ if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
   exit 0
 fi
 
-# Psychopathic-stop detection ─
+# Psychopathic-stop detection
 if [[ "$PSYCHO_STOP" == "psycho" ]]; then
   jq -n '{
     "decision": "block",
@@ -292,7 +292,7 @@ if [ -n "$NEXUS_ISSUES" ]; then
   exit 0
 fi
 
-# Session-end holograph diff ─
+# Session-end holograph diff
 # Compare the session-start holograph (captured at sessionstart.sh) against
 # the current state. Surfaces drift that happened during this session — e.g.,
 # a new hook that was added but not registered in hooks.json, a KB entry
@@ -314,7 +314,7 @@ if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
   fi
 fi
 
-# HME activity bridge: emit turn_complete ─
+# HME activity bridge: emit turn_complete
 # Snapshots the CHAT TURN boundary for metrics/hme-activity.jsonl. This is
 # NOT round_complete — that fires on pipeline finish (posttooluse_bash.sh
 # after `npm run main`). Chat turns happen every few seconds in active use;
@@ -324,7 +324,7 @@ fi
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
-# Antagonism bridge: record turn for streak calibrator ─
+# Antagonism bridge: record turn for streak calibrator
 # Feeds the LIFESAVER streak-sensitivity <-> signal-trust bridge. At turn end
 # we snapshot (turnstart_lines, watermark, total_lines) into the calibrator
 # history. Resolution-velocity is computed across the rolling window and used

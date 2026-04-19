@@ -20,7 +20,7 @@ Nine essays, written as a sequence, each standalone but cross-referenced by subj
 
 Reading order below is recommended but not required. Each essay stands on its own.
 
----
+
 
 ### 1. [Self-Coherence as Running Code](./self-coherence-as-running-code.md)
 
@@ -58,7 +58,7 @@ Takes HME's name — *Hypermeta Ecstasy* — seriously as a eudaimonic design ta
 
 **The capstone.** Argues that there is a single structural principle underlying every commitment the architecture makes. *Tensegrity* (Fuller/Snelson) names the structure: continuous tension (the grid, the trust ecology, the hooks, the coherence budget) holding discontinuous compression members (the individual modules) in productive relationship without direct contact. *Chaordic* (Dee Hock) names the dynamics: self-organizing, at the edge of chaos and order, powered from the periphery, unified from the core. *Individuation* (Jung) names the developmental arc: the lifelong spiral of integrating opposites, surfacing shadow material, circumambulating a center that cannot be reached. *Entrainment* (neural resonance theory) names the coupling mechanism that completes the circuit between the composition and the listener, producing shared frequencies present in neither alone. The compound term — *emergent self-coherence via chaordic tensegrity* — says it in five words. Every prior essay in the collection is re-read as a partial description of this unified principle.
 
----
+
 
 ## Recurring themes across the collection
 

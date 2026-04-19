@@ -273,7 +273,7 @@ HASKELL_PATTERNS = {
 
 R_PATTERNS = {
     "function": re.compile(
-        r'^(\w+)\s*(?:<-|=)\s*function\s*\(',
+        r'^(\w+)\s*(?:<=)\s*function\s*\(',
         re.MULTILINE,
     ),
 }

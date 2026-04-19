@@ -2,7 +2,7 @@
 
 ## Why HME is open at the top, and what that commits every self-observing system to
 
----
+
 
 ## I. The reef every theory hits
 

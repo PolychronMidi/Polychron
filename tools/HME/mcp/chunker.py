@@ -235,7 +235,7 @@ def _regex_find_function(source: str, language: str, function_name: str) -> Opti
         "dart": rf'[\w<>\[\]?,\s]+\s+{re.escape(function_name)}\s*\(',
         "elixir": rf'(?:def|defp|defmacro)\s+{re.escape(function_name)}\b',
         "haskell": rf'^{re.escape(function_name)}\s+',
-        "r": rf'{re.escape(function_name)}\s*(?:<-|=)\s*function\s*\(',
+        "r": rf'{re.escape(function_name)}\s*(?:<=)\s*function\s*\(',
         "julia": rf'function\s+{re.escape(function_name)}\s*(?:\{{[^}}]*\}})?\s*\(',
         "perl": rf'sub\s+{re.escape(function_name)}\b',
         "bash": rf'(?:function\s+)?{re.escape(function_name)}\s*\(\s*\)',
@@ -307,4 +307,3 @@ def _find_block_end(lines: list[str], start: int, language: str) -> int:
                     if found_open and depth == 0:
                         return i
         return min(start + 50, len(lines) - 1)
-

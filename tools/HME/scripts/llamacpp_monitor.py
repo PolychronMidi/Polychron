@@ -307,7 +307,7 @@ def run_daemon(interval: int = 60):
     _inst_desc = ", ".join(f"{i['name']}@:{i['port']}" for i in INSTANCES)
     print(f"Instances: {_inst_desc}")
     print(f"Thresholds: GPU {GPU_TEMP_WARN}/{GPU_TEMP_CRIT}°C, CPU {CPU_TEMP_WARN}/{CPU_TEMP_CRIT}°C, RAM<{RAM_LOW_MB}MB")
-    print("---")
+    print("")
     while True:
         try:
             entry = monitor_tick()

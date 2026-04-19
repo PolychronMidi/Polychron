@@ -30,8 +30,8 @@ _ECHO_PREFIXES = (
     "[CRITICAL] ",
     "[HME onboarding] ",
     "[LIFESAVER] ",
-    "  └─ ",
-    "  └─ [HME] ",
+    "  └ ",
+    "  └ [HME] ",
 )
 
 

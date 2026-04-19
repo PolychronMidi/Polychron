@@ -167,7 +167,7 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
                 f"[{i+1}] {r['title']} (id: {r['id']}, category: {r['category']}, tags: {tags_str}, score: {fmt_score(r['score'])})\n"
                 f"{r['content']}"
             )
-        parts.append("=== Project Knowledge ===\n" + "\n\n---\n\n".join(lines))
+        parts.append("=== Project Knowledge ===\n" + "\n\n\n\n".join(lines))
 
     if glob_results:
         lines = []
@@ -177,7 +177,7 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
                 f"[{i+1}] {r['title']} (id: {r['id']}, category: {r['category']}, tags: {tags_str}, score: {fmt_score(r['score'])})\n"
                 f"{r['content']}"
             )
-        parts.append("=== Global Knowledge ===\n" + "\n\n---\n\n".join(lines))
+        parts.append("=== Global Knowledge ===\n" + "\n\n\n\n".join(lines))
 
     return "\n\n".join(parts)
 
@@ -280,7 +280,7 @@ def export_knowledge(scope: str = "project", category: str = "") -> str:
     if not parts:
         return "No knowledge entries to export."
 
-    return "\n\n---\n\n".join(parts)
+    return "\n\n\n\n".join(parts)
 
 
 

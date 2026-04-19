@@ -45,7 +45,7 @@ def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
         try:
             content = open(fpath, encoding="utf-8", errors="ignore").read()
             rel = fpath.replace(ctx.PROJECT_ROOT + "/", "")
-            entry = f"\n// --- {rel} ---\n{content}\n"
+            entry = f"\n//  {rel} \n{content}\n"
             if used + len(entry) > char_budget:
                 entry = entry[:char_budget - used]
             parts.append(entry)

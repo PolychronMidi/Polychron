@@ -11,7 +11,7 @@ No layer is optional. Removing any one collapses the executive.
 ## The Five Layers
 
 | Layer | Location | What It Does |
-|-------|----------|-------------|
+--
 | **MCP Server** | `tools/HME/` | 7 tools: evolve / review / read / learn / trace / hme_admin / agent |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
@@ -152,7 +152,7 @@ A browser chat UI at `tools/HME/chat/` that routes every message through the HME
 ### Routes
 
 | Route | Backend | When to use |
-|-------|---------|-------------|
+-
 | `claude` | Claude CLI (PTY + pipe fallback) | Architectural work, multi-file changes, security, KB-dense work |
 | `local` | llama-server (`/v1/chat/completions`, agentic tool loop) | Fast single-file edits, explanations, quick lookups |
 | `hybrid` | local model + KB context enrichment from HME shim | Codebase-aware local responses without Claude API cost |
@@ -208,7 +208,7 @@ Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables,
 HME is the cognitive backbone of every Evolver phase. The Evolver doesn't just *use* HME tools — it *thinks through* HME.
 
 | Phase | HME Role | Tools |
-|-------|----------|-------|
+--
 | **1. Perceive** | Surface patterns from metrics, KB context on changed files | `learn(query='...')` |
 | **2. Diagnose** | Trace causal chains with KB constraints, find anti-patterns | `trace(target)`, `evolve(focus='blast', query='...')` |
 | **3. Evolve** | KB briefing auto-chained into Edit hook (no explicit call needed) | `Edit` (hook surfaces KB constraints), `learn(query='module')` |
@@ -280,12 +280,12 @@ The Stop hook implements the **ralph-loop pattern**: when `.claude/hme-evolver.l
 Create `.claude/hme-evolver.local.md` (gitignored):
 
 ```markdown
----
+
 enabled: true
 iteration: 1
 max_iterations: 5
 done_signal: "EVOLUTION COMPLETE"
----
+
 
 Continue simultaneous synergistic evolution of src/, doc/, and HME.
 Run npm run main after each round of changes. After a STABLE or EVOLVED pipeline,
@@ -298,20 +298,20 @@ The loop drives until `max_iterations` is reached or `done_signal` appears in th
 ### Fields
 
 | Field | Description |
-|-------|-------------|
+--
 | `enabled` | `true` to activate (set `false` to pause without deleting) |
 | `iteration` | Auto-incremented by the hook — do not set manually |
 | `max_iterations` | Hard cap (0 = unlimited) |
 | `done_signal` | String Claude outputs to signal completion |
 
-The prompt body (everything after the second `---`) is injected verbatim as the next user prompt.
+The prompt body (everything after the second ``) is injected verbatim as the next user prompt.
 
 **Note:** Hook changes require `claude plugin update HME@polychron-local` to refresh the plugin cache.
 
 ## When to Use What
 
 | I want to... | Use |
-|---|---|
+
 | Find code by intent | `find("where does convergence happen")` |
 | Find all callers of a function | `find("callers of convergenceDetector")` |
 | Find boundary violations | `find("X should use Y", mode="boundary")` |
@@ -337,7 +337,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 ### 1. `evolve(focus)` — "What should I work on next?"
 
 | focus | What it does |
-|-------|-------------|
+--
 | `"all"` (default) | LOC offenders + coupling gaps + pipeline suggestions + synthesis |
 | `"loc"` | Top oversized files in src/ |
 | `"coupling"` | Dimension gaps + antagonism leverage points |
@@ -351,7 +351,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 ### 2. `review(mode, ...)` — Post-pipeline review hub
 
 | mode | Extra params | What it does |
-|------|-------------|-------------|
+-
 | `"digest"` (default) | `critique=True/False` | Pipeline digest with evolution suggestions. Auto-drafts KB entry on STABLE |
 | `"regime"` | | ASCII regime timeline + transitions |
 | `"trust"` | `system_a`, `system_b` | Trust ecology. Empty = leaderboard. Two systems = rivalry with overtakes |
@@ -370,7 +370,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 **Auto-detection** (mode="auto", default): format determines behavior.
 
 | target format | What happens |
-|--------------|-------------|
+
 | `"src/path/file.js"` | File structure + KB context |
 | `"src/path/file.js:10-50"` | Extract lines 10-50 |
 | `"src/path/file.js:42"` | Line 42 ± 10 lines context |
@@ -380,7 +380,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 **Explicit modes:**
 
 | mode | What it does |
-|------|-------------|
+-
 | `"before"` | **Pre-edit briefing**: KB constraints + callers + boundaries + evolutionary potential |
 | `"story"` | Module living biography (definition, evolution, callers, neighbors) |
 | `"impact"` | Callers + KB constraints (blast radius) |
@@ -396,7 +396,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 **Auto-detection** from parameters (no mode needed):
 
 | What you pass | What happens |
-|--------------|-------------|
+
 | `query='coupling constraints'` | Search KB (semantic + BM25 + cross-encoder reranking) |
 | `title='R94 fix', content='...'` | Add KB entry. Optional: `category`, `tags`, `related_to`, `listening_notes` |
 | `remove='entry_id'` | Delete KB entry |
@@ -404,7 +404,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 **Explicit actions** (override auto-detection):
 
 | action | What it does |
-|--------|-------------|
+
 | `"list"` | List all entries (filter by `category`) |
 | `"compact"` | Deduplicate similar entries (threshold=0.85) |
 | `"export"` | Export entire KB as markdown |
@@ -418,7 +418,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 ### 5. `trace(target, mode, section, limit)` — Signal flow tracing
 
 | mode | What it does |
-|------|-------------|
+-
 | `"auto"` (default) | Detects: beat key (S3/2:1:3:0/400) → snapshot; L0 channel → cascade; else → module |
 | `"snapshot"` | Full state at one beat: regime, trust, coupling labels, notes. Beat key formats: `S3`, `2:1:3:0`, `400` |
 | `"cascade"` | L0 channel cascade trace, 3 hops deep |
@@ -430,7 +430,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 ### 6. `hme_admin(action, modules, antipattern, hook_target)` — HME maintenance
 
 | action | What it does |
-|--------|-------------|
+
 | `"selftest"` (default) | Verify tool registration, doc sync, index, llama.cpp, KB, symlinks |
 | `"reload"` | Hot-reload tool modules (modules='module1,module2' or 'all') |
 | `"both"` | Reload then selftest |
@@ -449,7 +449,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 68 entries across 4 categories. FSRS-6 spaced repetition: frequently retrieved entries resist temporal decay.
 
 | Category | Count | What to Store | Example |
-|----------|-------|--------------|---------|
+--
 | `architecture` | 27 | Boundary rules, module profiles, system topology | "feedbackOscillator — 198 lines, highest hotspot rate 31.7%" |
 | `decision` | 17 | Calibration anchors, threshold choices, confirmed rounds | "R80 LEGENDARY: complexity triple-bridge" |
 | `pattern` | 15 | Anti-patterns, proven patterns, evolution recipes | "antagonism bridge: couple BOTH sides of antagonist pair" |
@@ -464,7 +464,7 @@ All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks
 Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` — a zero-dependency CLI invoked from bash hooks in the background.
 
 | Event | Source hook | Fields |
-|-------|-------------|--------|
+
 | `edit_pending` | `pretooluse_edit.sh` | file, module, hme_read_prior |
 | `file_written` | `posttooluse_edit.sh` | file, module, hme_read_prior |
 | `coherence_violation` | `posttooluse_edit.sh` | file, module, reason (only after onboarding graduation) |
@@ -827,7 +827,7 @@ Surfaced via `status(mode='ground_truth')`.
 All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` for weighted streak counter (`_streak_tick WEIGHT` / `_streak_check` / `_streak_reset`) and HME HTTP enrichment helpers (`_hme_enrich` / `_hme_validate` / `_hme_kb_count` / `_hme_kb_titles`). Streak weights: Read=5, Edit=10, Write=10, Bash=15, Grep=20. Warns at 50, blocks at 70.
 
 | Script | Event | Matcher | What It Does |
-|--------|-------|---------|-------------|
+--
 | `sessionstart.sh` | SessionStart | * | Reset compact tab, capture previous session's nexus pending state before reset, inject HME awareness (pipeline verdict + wall time, last journal round, uncommitted changes, last commit), surface previous session unfinished items |
 | `pretooluse_read.sh` | PreToolUse | Read | Block polling of task output files; **enrich** project source reads with KB titles via `systemMessage` (Read proceeds + KB injected, no extra turn) |
 | `pretooluse_edit.sh` | PreToolUse | Edit | Surface live KB constraint warnings via shim for all project files; remind `read(mode="before")`; **emit `edit_pending`** activity event |
@@ -1000,7 +1000,7 @@ A running prose thread of what's happening this session — orthogonal to KB (st
 Composite tools auto-scale output via `/tmp/claude-context.json`:
 
 | Context Remaining | Budget | KB Entries | Callers | Local model max_tokens |
-|---|---|---|---|---|
+
 | >75% | greedy | 10 | 20 | 4096 |
 | 50-75% | moderate | 5 | 10 | 2048 |
 | 25-50% | conservative | 3 | 6 | 1024 |
@@ -1037,7 +1037,7 @@ tools/HME/chat/
 ### Five Routes
 
 | Route | Backend | HME Integration | Cost |
-|-------|---------|----------------|------|
+
 | **Auto** | Arbiter decides | Full: validation + enrichment + audit + transcript | Free classification, then Claude or Local |
 | **Claude** | `claude` via PTY (hooks fire) | Hooks enforce constraints, PostToolUse logs to transcript | Subscription (Max/Pro) |
 | **Local** | llama.cpp (qwen3-coder:30b) | Pre-send validation, post-response audit, transcript | Free |
@@ -1051,24 +1051,24 @@ Every message, regardless of route, passes through this pipeline:
 ```
 User types message
     │
-    ├─ POST /validate → KB anti-pattern check → ⛔ block or ⚠ warn notice
+    ├ POST /validate → KB anti-pattern check → ⛔ block or ⚠ warn notice
     │
-    ├─ [Auto?] Arbiter (qwen3:4b) classifies → Claude or Local
+    ├ [Auto?] Arbiter (qwen3:4b) classifies → Claude or Local
     │
-    ├─ TranscriptLogger.logUser() + POST /transcript (mirror to HTTP shim)
+    ├ TranscriptLogger.logUser() + POST /transcript (mirror to HTTP shim)
     │
-    ├─ Dispatch to backend (PTY Claude / llama.cpp / Hybrid)
-    │  └─ Tool calls logged to transcript in real-time
+    ├ Dispatch to backend (PTY Claude / llama.cpp / Hybrid)
+    │  └ Tool calls logged to transcript in real-time
     │
-    ├─ TranscriptLogger.logAssistant() + mirror to shim
+    ├ TranscriptLogger.logAssistant() + mirror to shim
     │
-    ├─ Parse tool calls for file paths → POST /reindex (sub-second KB freshness)
+    ├ Parse tool calls for file paths → POST /reindex (sub-second KB freshness)
     │
-    ├─ POST /audit → git diff → KB constraint check → notice bar
+    ├ POST /audit → git diff → KB constraint check → notice bar
     │
-    ├─ Every 8 turns: qwen3:4b synthesizes narrative digest → POST /narrative
+    ├ Every 8 turns: qwen3:4b synthesizes narrative digest → POST /narrative
     │
-    └─ Session saved to disk (messages + claudeSessionId + llamacppHistory)
+    └ Session saved to disk (messages + claudeSessionId + llamacppHistory)
 ```
 
 ### HME HTTP Shim
@@ -1081,7 +1081,7 @@ PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py
 ```
 
 | Endpoint | Method | Purpose |
-|----------|--------|---------|
+--
 | `/health` | GET | Readiness + transcript count + KB status |
 | `/enrich` | POST | KB hits + transcript context for message enrichment |
 | `/enrich_prompt` | POST | Four-stage local prompt enrichment (arbiter triage → KB assembly → reasoning → compression) |

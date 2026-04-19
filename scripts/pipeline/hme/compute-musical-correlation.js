@@ -148,7 +148,7 @@ function main() {
       cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
     }).toString().trim();
     if (sha) roundId = `r_${sha}_${Math.floor(Date.now() / 1000)}`;
-  } catch (_err) { /* git not available — fall through to timestamp-only */ }
+  } catch (_err) { /* git not available -- fall through to timestamp-only */ }
   if (!roundId) roundId = `r_ts_${Math.floor(Date.now() / 1000)}`;
 
   const snapshot = {

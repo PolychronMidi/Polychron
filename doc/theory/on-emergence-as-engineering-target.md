@@ -2,7 +2,7 @@
 
 ## A defense of building conditions rather than specifying outputs
 
----
+
 
 ## I. Two philosophies of building
 

@@ -200,7 +200,7 @@ class _EnvLoader:
             f"hme_env: {key}={val!r} in {self._path} is not a valid bool"
         )
 
-    # Introspection ─
+    # Introspection
 
     def path(self) -> str:
         if not self._loaded:

@@ -176,7 +176,7 @@ def hotspot_leaderboard() -> str:
 
     parts = [f"# Hotspot Leaderboard ({total_beats} beats)\n"]
     parts.append("Rank | System                    | Beats% | Avg Pressure | Peak Pressure")
-    parts.append("-----|---------------------------|--------|--------------|---------------")
+    parts.append("--")
     for i, (name, count) in enumerate(ranked, 1):
         total = beat_counts.get(name, 1)
         pct = count / total * 100

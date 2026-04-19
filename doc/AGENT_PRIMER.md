@@ -55,7 +55,7 @@ hme_todo(action='add', text=..., parent_id=..., critical=..., on_done=...)
 
 Native `TodoWrite` works as usual. The HME layer adds the following transparently:
 
-- **Subtodos + auto-completion.** Use `hme_todo(action='add', parent_id=N, text='...')` to add a sub under #N. A main todo is marked done only when all its subs are done; marking the last sub done auto-completes the parent. The native view shows subs as indented rows (`  └─ text`).
+- **Subtodos + auto-completion.** Use `hme_todo(action='add', parent_id=N, text='...')` to add a sub under #N. A main todo is marked done only when all its subs are done; marking the last sub done auto-completes the parent. The native view shows subs as indented rows (`  └ text`).
 - **Critical flag.** Pass `critical=True` on add. Critical items surface at every turn start via `userpromptsubmit.sh` until resolved. LIFESAVER alerts auto-append as critical.
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `hme_admin(action='index')` in the background. `learn` queues a reminder to call `learn()` at the next turn. `commit` flags a commit nudge in the nexus.
 - **Onboarding walkthrough appears in your native todo list.** The current step is always marked `in_progress`, completed steps are marked done, upcoming steps are pending. You don't need to manage it — hooks do.
@@ -128,7 +128,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 
 
 | Question | Mode |
-|---|---|
+
 | Did the pipeline produce good music? | `music_truth` (hme_coherence vs perceptual correlation) |
 | Is coherence in the sweet spot? | `budget` (homeostatic band, state BELOW/OPTIMAL/ABOVE) |
 | Is the music evolving or plateauing? | `trajectory` (GROWING/PLATEAU/DECLINING over N rounds) |
@@ -156,7 +156,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 Most derived metrics need history to become meaningful:
 
 | metric | needs | current | gap |
-|---|---|---|---|
+-
 | trajectory verdict | ≥5 rounds | 3 | 2 more rounds |
 | coherence budget derived band | ≥8 rounds | 3 | 5 more (uses prior [0.55, 0.85] until then) |
 | prediction-accuracy EMA | ≥10 rounds + cascade calls logged | 0 | invoke `trace(target, mode='impact')` to seed |

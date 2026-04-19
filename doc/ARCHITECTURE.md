@@ -145,7 +145,7 @@ Controller effectiveness EMA alpha scales with proven effectiveness (0.02-0.12 r
 7 regime states with hysteresis:
 
 | Regime | Character | Typical Share |
-|--------|-----------|--------------|
+--
 | `coherent` | Stable, interlocking layers | 30-40% |
 | `exploring` | Searching, variety-seeking | 25-40% |
 | `evolving` | Transitional, developing | 20-30% |
@@ -217,7 +217,7 @@ All cross-layer buffer writes route through `crossLayerEmissionGateway.emit(sour
 CrossLayer modules couple to `emergentMelodicEngine` by calling `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` and reading from the returned context object. Context fields:
 
 | Field | Type | Meaning |
-|---|---|---|
+--
 | `contourShape` | `'rising'\|'falling'\|'static'\|'arc'` | Overall melodic shape |
 | `directionBias` | `float [-1…1]` | Signed ascending (+) / descending (-) bias |
 | `ascendRatio` | `float [0…1]` | Fraction of recent intervals that ascend |
@@ -276,7 +276,7 @@ Channels that are posted but never consumed are prime evolution targets — they
 **New signal: `rhythmicPhaseLock.getMode()`** — ternary state ('lock'/'drift'/'repel') representing the inter-layer timing relationship. First use as a universal coupling signal across multiple systems. Access via `safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift')`.
 
 | Mode | Meaning | Expected response |
-|---|---|---|
+--
 | `lock` | Layers synchronized (< 20% of beat apart) | Reinforce, amplify, consonance, stability |
 | `drift` | Layers independent | Neutral, balanced, no coupling pressure |
 | `repel` | Layers in opposition (> 60% of beat apart) | Contrast, counterpoint, entropy, sharpness |

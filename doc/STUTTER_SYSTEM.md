@@ -5,7 +5,7 @@
 ## Variants
 
 | Variant | Character | Weight | selfGate | maxPerSection |
-|---------|-----------|--------|----------|---------------|
+--
 | ghostStutter | Barely-audible octave echoes (vel 15-30) | 1.2 | 1.0 | 400 |
 | rhythmicGrid | Grid-snapped echoes at subdivision boundaries | 1.0 | 0.9 | 220 |
 | rhythmicDotted | Dotted-note interval echoes (1.5x grid) | 1.0 | 0.9 | 240 |

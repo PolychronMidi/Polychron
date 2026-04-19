@@ -2,7 +2,7 @@
 
 ## The structural principle that unifies everything the architecture does
 
----
+
 
 ## I. What this essay is for
 

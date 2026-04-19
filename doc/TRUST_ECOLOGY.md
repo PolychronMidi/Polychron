@@ -54,7 +54,7 @@ Emits to `explainabilityBus` with systemName, syntheticPayoff, gap, newScore.
 `src/crossLayer/structure/trust/trustEcologyCharacter.js` tracks dominant trust system and biases composer family weights:
 
 | Dominant System | Favored Family | Boost |
-|----------------|---------------|-------|
+-
 | stutterContagion | rhythmicDrive | 1.5x |
 | harmonicIntervalGuard | diatonicCore | 1.5x |
 | convergenceHarmonicTrigger | harmonicMotion | 1.5x |

@@ -344,5 +344,5 @@ def module_intel(target: str, mode: str = "story") -> str:
         story = module_story(target)
         from .health import impact_analysis as _impact
         impact = _impact(target)
-        return f"{story}\n\n---\n\n## Impact Analysis\n{impact}"
+        return f"{story}\n\n\n\n## Impact Analysis\n{impact}"
     return f"Unknown mode '{mode}'. Use 'story', 'impact', or 'both'."

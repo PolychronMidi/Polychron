@@ -53,7 +53,7 @@ const PORT = parseInt(process.env.HME_PROXY_PORT || '9099', 10);
 const SUPERVISE = (process.env.HME_PROXY_SUPERVISE ?? '1') !== '0';
 const { MCP_PORT } = require('./supervisor/children');
 
-//  MCP protocol + supervisor status ─
+//  MCP protocol + supervisor status
 const { status: supervisorStatus } = require('./supervisor/index');
 const { handleMcpRequest } = require('./mcp_server/index');
 
@@ -62,7 +62,7 @@ const middleware = require('./middleware/index');
 const _loadedMiddleware = middleware.loadAll();
 console.log(`[hme-proxy] loaded middleware: ${_loadedMiddleware.join(', ')}`);
 
-//  Lifecycle hook bridge ─
+//  Lifecycle hook bridge
 // All Claude Code lifecycle events funnel through a SINGLE forwarder script
 // (hooks/_proxy_bridge.sh) that POSTs to this proxy's /hme/lifecycle endpoint.
 // The proxy dispatches to the appropriate bash hooks and returns {stdout,

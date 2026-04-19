@@ -128,7 +128,7 @@ from server import system_phase as _sp  # noqa: E402
 
 _sp.set_phase(_sp.SystemPhase.WARMING, "worker.py starting")
 
-# Tool registry (replaces FastMCP) ─
+# Tool registry (replaces FastMCP)
 from server import context as ctx  # noqa: E402
 from server.tool_registry import Registry, call as tool_call, list_schemas, names  # noqa: E402
 
@@ -150,7 +150,7 @@ from server import tools_analysis  # noqa: E402, F401
 
 logger.info(f"registered tools: {names()}")
 
-# Background RAG engine load (same as main.py) ─
+# Background RAG engine load (same as main.py)
 _startup_done = threading.Event()
 ctx._startup_done = _startup_done
 _startup_t0 = time.time()
@@ -201,7 +201,7 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HME-worker-startup").start()
 
 
-# HTTP server ─
+# HTTP server
 class _ThreadingServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -219,7 +219,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    # Shim-absorbed GET routes ─
+    # Shim-absorbed GET routes
     def _get_transcript(self):
         import urllib.parse
         from hme_http_store import _get_transcript, _transcript_entries

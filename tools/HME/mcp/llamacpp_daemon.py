@@ -110,7 +110,7 @@ class InstanceSpec:
         return argv
 
 
-# Topology ─
+# Topology
 # Vulkan device indices: Vulkan0 = Intel iGPU, Vulkan1 = M40 #1 (CUDA 0),
 # Vulkan2 = M40 #2 (CUDA 1). Each LLM owns its GPU end-to-end.
 # ARCHITECTURE INVARIANT: n_gpu_layers is always 999 (full offload). Any
@@ -586,7 +586,7 @@ def _get_default_device() -> str:
     return _default_device_cache
 
 
-# Backcompat shims (single-flag API targets the default/arbiter device) ─
+# Backcompat shims (single-flag API targets the default/arbiter device)
 def rag_gpu_busy_set() -> None:
     gpu_busy_set(_get_default_device())
 

@@ -19,7 +19,7 @@ function _budgetMessages(messages, charBudget) {
 }
 function buildSummaryPrompt(messages, todos, priorSummaries) {
     const priorContext = priorSummaries.length > 0
-        ? `Previous chain link summaries:\n${priorSummaries.map((s, i) => `--- Link ${i + 1} ---\n${s}`).join("\n\n")}\n\n`
+        ? `Previous chain link summaries:\n${priorSummaries.map((s, i) => ` Link ${i + 1} \n${s}`).join("\n\n")}\n\n`
         : "";
     const todoBlock = todos.length > 0
         ? `Current todo list:\n${JSON.stringify(todos, null, 2)}\n\n`
@@ -47,7 +47,7 @@ Respond ONLY with this structured format — no preamble, no extra text:
 ## Next
 [Immediate next steps the assistant should continue. Bullet list.]
 
----
+
 
 Keep total response under 600 words. Be precise — file paths and function names over prose.
 

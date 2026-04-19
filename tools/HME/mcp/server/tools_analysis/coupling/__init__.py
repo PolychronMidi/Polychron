@@ -291,7 +291,7 @@ def coupling_intel(mode: str = "full") -> str:
     _track("coupling_intel")
     if mode == "full":
         parts = [coupling_network(clusters=True), antagonist_map(), cluster_personality(), dimension_gap_finder()]
-        return "\n\n---\n\n".join(parts)
+        return "\n\n\n\n".join(parts)
     if mode == "network":
         return coupling_network(clusters=True)
     if mode == "clusters":

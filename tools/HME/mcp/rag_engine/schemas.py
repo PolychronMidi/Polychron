@@ -141,7 +141,7 @@ def _extract_signatures(text: str, language: str) -> list[str]:
         for m in re.finditer(r'^\s*(?:data|newtype|type|class|instance)\s+(\w+)', text, re.MULTILINE):
             sigs.append(m.group(0).strip())
     elif language in ("r",):
-        for m in re.finditer(r'^(\w+)\s*(?:<-|=)\s*function\s*\(', text, re.MULTILINE):
+        for m in re.finditer(r'^(\w+)\s*(?:<=)\s*function\s*\(', text, re.MULTILINE):
             sigs.append(f"{m.group(1)} <- function(...)")
     elif language in ("julia",):
         for m in re.finditer(r'^\s*function\s+(\w+)\s*(?:\{[^}]*\})?\s*\(', text, re.MULTILINE):
