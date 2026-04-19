@@ -32,11 +32,20 @@ module.exports = {
     // emit file_written for both Edit and Write to match the "just finished"
     // semantic. Shell hook retains the pre-event ownership.
     if (name === 'Edit' || name === 'NotebookEdit' || name === 'Write') {
+      // Compute hme_read_prior: was this file (or its module) recently
+      // briefed via Read / HME tool / Grep? Without this field,
+      // coherence-score read_coverage is always 0/N — the root cause of
+      // the cascade of zero-valued Phase 2-6 metrics.
+      const hmeReadPrior = (ctx.nexusHas && (
+        (module && ctx.nexusHas('BRIEF', module)) ||
+        (filePath && ctx.nexusHas('BRIEF', filePath))
+      )) === true;
       ctx.emit({
         event: 'file_written',
         session,
         file: filePath,
         module,
+        hme_read_prior: hmeReadPrior,
       });
     } else if (name && name.startsWith('HME_')) {
       // Rough elapsed proxy: tool_result is emitted immediately after run, we

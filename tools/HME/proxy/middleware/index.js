@@ -68,6 +68,20 @@ function nexusCount(type) {
   }
 }
 
+function nexusHas(type, payload) {
+  try {
+    if (!fs.existsSync(NEXUS_FILE)) return false;
+    const lines = fs.readFileSync(NEXUS_FILE, 'utf8').split('\n');
+    if (payload) {
+      const needle = `${type}:`;
+      return lines.some((l) => l.startsWith(needle) && l.endsWith(`:${payload}`));
+    }
+    return lines.some((l) => l.startsWith(`${type}:`));
+  } catch (_e) {
+    return false;
+  }
+}
+
 // Per-pipeline-run dirty flag — set via ctx.markDirty() when a middleware
 // mutates the payload. hme_proxy.js uses this to decide whether to
 // re-serialize the body before forwarding upstream.
@@ -92,6 +106,7 @@ const ctx = {
   nexusClearType,
   nexusMark,
   nexusCount,
+  nexusHas,
   markDirty: () => { _pipelineDirty = true; },
   warn: (...a) => console.warn('Acceptable warning: [middleware]', ...a),
   PROJECT_ROOT,

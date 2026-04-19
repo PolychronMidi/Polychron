@@ -137,7 +137,22 @@ function main() {
   const verdictMap = { STABLE: 1, EVOLVED: 1.1, DRIFTED: 0, UNKNOWN: 0.5 };
   const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;
 
+  // Round identity: prefer the current git HEAD short-hash so rounds can be
+  // aligned across compute-musical-correlation, intention-gap, reflexivity,
+  // trajectory, kb-trust, and self-audit. Without this, every pipeline run
+  // is an anonymous point and the downstream analyzers can't cross-reference.
+  let roundId = null;
+  try {
+    const { execSync } = require('child_process');
+    const sha = execSync('git rev-parse --short HEAD', {
+      cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString().trim();
+    if (sha) roundId = `r_${sha}_${Math.floor(Date.now() / 1000)}`;
+  } catch (_err) { /* git not available — fall through to timestamp-only */ }
+  if (!roundId) roundId = `r_ts_${Math.floor(Date.now() / 1000)}`;
+
   const snapshot = {
+    round_id: roundId,
     timestamp: new Date().toISOString(),
     hme_coherence: hmeCoherence,
     hme_prediction_accuracy: hmeAccuracy,

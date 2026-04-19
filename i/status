@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
-# HME pipeline status — maps to the registered _mode_pipeline tool.
-# Usage: i/status
+# HME status dispatcher — routes to the status() tool with any mode.
+# Default mode='pipeline' (the most common lookup) for backward compat.
+# Usage:
+#   i/status                  # pipeline status (default)
+#   i/status mode=coherence   # phase-2.3 round coherence
+#   i/status mode=self_audit  # phase-4.4 HME self-critique
+#   i/status mode=<any-of-35> # see status() docstring for full list
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
-exec node "$_HME_CLI" _mode_pipeline "$@"
+# If the caller passed a mode=/bare arg, use it; otherwise default to pipeline
+# (the most common invocation from posttooluse hooks).
+if [ $# -eq 0 ]; then
+  exec node "$_HME_CLI" status mode=pipeline
+else
+  exec node "$_HME_CLI" status "$@"
+fi
