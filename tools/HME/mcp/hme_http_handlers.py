@@ -433,13 +433,15 @@ def _post_audit(changed_files: str = "") -> dict:
 
     violations = []
     truncated = False
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_search_all)
-        try:
-            violations = future.result(timeout=12)
-        except concurrent.futures.TimeoutError:
-            truncated = True
-            logger.warning(f"audit: KB search timed out (12s) for {len(files)} files")
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(_search_all)
+    try:
+        violations = future.result(timeout=12)
+    except concurrent.futures.TimeoutError:
+        truncated = True
+        logger.warning(f"audit: KB search timed out (12s) for {len(files)} files")
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
     result = {"violations": violations, "changed_files": files}
     if truncated:

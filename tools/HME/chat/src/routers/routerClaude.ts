@@ -265,11 +265,12 @@ function computeTurnUsage(
     );
     return { inputTokens, outputTokens, usedPct: undefined, modelId: modelKey, modelName: modelEntry?.modelName };
   }
-  const totalInput = inputTokens
-    + (evt.usage?.cache_read_input_tokens ?? 0)
-    + (evt.usage?.cache_creation_input_tokens ?? 0);
-  const rawPct = (totalInput / contextWindow) * 100;
-  const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:totalInput=${totalInput},ctxWindow=${contextWindow},model=${modelKey}`);
+  // Use only the new input tokens for context % — adding cache_read and
+  // cache_creation inflates totalInput across the full session history,
+  // producing values like 2236% when context hasn't truly been exceeded.
+  // The context window measures current-turn headroom, not cumulative cache.
+  const rawPct = (inputTokens / contextWindow) * 100;
+  const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:inputTokens=${inputTokens},ctxWindow=${contextWindow},model=${modelKey}`);
   return {
     inputTokens,
     outputTokens,
