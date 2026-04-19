@@ -79,6 +79,16 @@ export class ContextMeter {
           console.error(`[HME] ${msg}`);
           if (this.errorSink) this.errorSink.post("ContextMeter.update", msg);
         }
+      } else if (this._tracker.usedPct == null) {
+        // usedPct missing from usage object AND tracker has no prior value —
+        // context window is genuinely unpopulated. This is a LIFESAVER-level
+        // signal: computeTurnUsage failed to resolve a contextWindow (modelUsage
+        // key mismatch, missing field, etc.) and nothing will update the meter.
+        const msg = `context percentage unpopulated after response ` +
+          `(model=${model}, modelId=${usage.modelId ?? "?"}) — ` +
+          `modelUsage lookup likely failed; meter stuck at 0%`;
+        console.error(`[HME] CRITICAL: ${msg}`);
+        if (this.errorSink) this.errorSink.post("ContextMeter.unpopulated", msg);
       }
       if (usage.modelId) this._tracker.cliModelId = usage.modelId;
       if (usage.modelName) this._tracker.cliModelName = usage.modelName;
