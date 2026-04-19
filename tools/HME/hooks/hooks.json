@@ -35,6 +35,11 @@
       {
         "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/_proxy_bridge.sh Stop", "timeout": 60}]
       }
+    ],
+    "StatusLine": [
+      {
+        "hooks": [{"type": "command", "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/statusline.sh", "timeout": 5}]
+      }
     ]
   }
 }
