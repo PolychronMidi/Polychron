@@ -102,17 +102,29 @@ export function streamClaude(
 
   let buf = "";
   let doneFired = false;
-  const safeOnDone = (cost?: number, usage?: TokenUsage) => {
-    if (!doneFired) {
-      doneFired = true;
-      // Statusline hook writes the real API-provided used_pct to ctxFile.
-      // Always prefer it over computeTurnUsage's token-count estimate.
-      const ctxOverride = _readCtxFile();
-      const merged: TokenUsage | undefined = usage
-        ? { ...usage, ...ctxOverride }
-        : (ctxOverride.usedPct != null ? ctxOverride as TokenUsage : undefined);
-      onDone(cost, merged);
-    }
+  // Store result-event data; emit after close so the Stop hook has already
+  // written the real API used_pct to ctxFile before we read it.
+  let pendingCost: number | undefined;
+  let pendingUsage: TokenUsage | undefined;
+  let resultReceived = false;
+
+  const storeResult = (cost?: number, usage?: TokenUsage) => {
+    resultReceived = true;
+    pendingCost = cost;
+    pendingUsage = usage;
+  };
+
+  const finalize = (code: number | null) => {
+    if (doneFired) return;
+    doneFired = true;
+    // Statusline hook (Stop hook) writes real API used_pct to ctxFile.
+    // Read it now — process has exited, hook has run.
+    const ctxOverride = _readCtxFile();
+    const base = resultReceived ? pendingUsage : undefined;
+    const merged: TokenUsage | undefined = base
+      ? { ...base, ...ctxOverride }
+      : (ctxOverride.usedPct != null ? { inputTokens: 0, outputTokens: 0, ...ctxOverride } as TokenUsage : undefined);
+    onDone(pendingCost, merged);
   };
 
   const INACTIVITY_MS = 30000;
@@ -137,7 +149,7 @@ export function streamClaude(
       if (!line.trim()) continue;
       try {
         const evt = JSON.parse(line);
-        handleStreamEvent(evt, opts.model, onChunk, onSessionId, safeOnDone);
+        handleStreamEvent(evt, opts.model, onChunk, onSessionId, storeResult);
       } catch (e) {
         console.error(`[HME] stream JSON parse failed: ${(e as any)?.message ?? e} | line: ${line.slice(0, 120)}`);
         if (line.trim()) onChunk(line.trim(), "error");
@@ -156,14 +168,14 @@ export function streamClaude(
     if (buf.trim()) {
       try {
         const evt = JSON.parse(buf.trim());
-        handleStreamEvent(evt, opts.model, onChunk, onSessionId, safeOnDone);
+        handleStreamEvent(evt, opts.model, onChunk, onSessionId, storeResult);
       } catch (e) {
         console.error(`[HME] close-buf JSON parse failed: ${(e as any)?.message ?? e} | buf: ${buf.slice(0, 120)}`);
         onChunk(buf.trim(), "error");
       }
     }
-    if (code !== 0) onError(`Claude CLI exited with code ${code}`);
-    else safeOnDone();
+    if (code !== 0) { onError(`Claude CLI exited with code ${code}`); return; }
+    finalize(code);
   });
 
   return () => { try { proc.kill(); } catch {} };
