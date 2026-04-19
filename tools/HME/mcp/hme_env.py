@@ -216,3 +216,32 @@ class _EnvLoader:
 ENV = _EnvLoader()
 # Eager load so import-time failures surface immediately.
 ENV.load()
+
+
+def _validate_local_model_aliases() -> None:
+    """Invariant: arbiter and coder are distinct llama-server aliases.
+
+    Reasoning does NOT live in a local llama-server — it's served by the
+    ranked API cascade (gemini/groq/etc. via synthesis_reasoning). So the
+    local-instance invariant is binary: arbiter vs coder. HME_REASONING_MODEL
+    is kept for legacy callers but is not a local instance alias; don't
+    validate it against the local aliases.
+
+    Why this matters: the fallback chain in fix_antipattern is
+    local-coder → api-reasoning-cascade → local-arbiter. If arbiter == coder,
+    the first and third hop are the same instance and the "fallback" is
+    actually a retry. Abort at boot so this can't silently degrade.
+    """
+    arbiter = ENV.require("HME_ARBITER_MODEL")
+    coder = ENV.require("HME_CODER_MODEL")
+    if arbiter == coder:
+        raise RuntimeError(
+            f"hme_env: local llama-server alias collision in {ENV.path()} — "
+            f"HME_ARBITER_MODEL={arbiter!r} equals HME_CODER_MODEL={coder!r}. "
+            f"The arbiter and coder must be distinct local instances so the "
+            f"synthesis fallback chain has a real last resort. Fix by setting "
+            f"HME_ARBITER_MODEL to the arbiter alias (commonly 'hme-arbiter')."
+        )
+
+
+_validate_local_model_aliases()

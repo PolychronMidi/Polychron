@@ -104,7 +104,7 @@ def composition_critique() -> str:
     trace-replay for grounded musical prose."""
     ctx.ensure_ready_sync()
     _track("composition_critique")
-    from .synthesis import _think_local_or_claude, _REASONING_MODEL
+    from .synthesis import _reasoning_think
 
     context_parts = []
 
@@ -189,9 +189,7 @@ def composition_critique() -> str:
     parts = ["# Composition Critique\n"]
     # Use reasoning model (GPU 1) + higher temperature for creative music prose.
     # Coder model (GPU 0) produces stilted output for non-code tasks.
-    synthesis = _think_local_or_claude(user_text,
-                                       model=_REASONING_MODEL,
-                                       temperature=0.55)
+    synthesis = _reasoning_think(user_text, temperature=0.55)
     if synthesis:
         parts.append(synthesis)
     else:

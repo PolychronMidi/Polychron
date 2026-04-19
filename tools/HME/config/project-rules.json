@@ -54,7 +54,11 @@
     "tool_use",
     "exploration_bonus", "productive_incoherence", "project_specificity",
     "read_coverage", "reflexivity_ratio", "staleness_penalty", "violation_penalty",
-    "human_ground_truth", "ground_truth_override"
+    "human_ground_truth", "ground_truth_override",
+    "synthesis_reasoning", "synthesis_inference", "synthesis_llamacpp", "synthesis_pipeline",
+    "synthesis_cascade", "synthesis_config", "synthesis_session", "synthesis_warm",
+    "synthesis_gemini", "synthesis_groq", "synthesis_openrouter", "synthesis_cerebras",
+    "synthesis_mistral", "synthesis_nvidia"
   ],
 
   "registration_patterns": [

@@ -23,7 +23,7 @@ from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, BUDGET_LIMITS, SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
 from ..synthesis import (
-    _local_think, _THINK_MODEL, _REASONING_MODEL,
+    _local_think, _THINK_MODEL,
     _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from .. import _get_compositional_context, _track, _usage_stats

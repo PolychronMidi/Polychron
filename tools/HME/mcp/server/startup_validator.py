@@ -28,6 +28,7 @@ def validate_startup(context, project_root: str) -> None:
     _check_kb_accessible(context)
     _check_project_root(project_root)
     _check_required_metrics_dirs(project_root)
+    _check_registry_api_surface()  # catches stale FastMCP refs at boot, not call time
     _check_llamacpp_connectivity()  # warning only — llama.cpp may start later
     logger.info("HME startup validation PASSED")
 
@@ -92,37 +93,159 @@ def _check_required_metrics_dirs(project_root: str) -> None:
             raise RuntimeError(f"Cannot create required directory {dirpath}: {e}") from e
 
 
+def _check_registry_api_surface() -> None:
+    """Scan loaded tool modules for references to Registry/ctx.mcp attributes
+    that don't exist on the current Registry class.
+
+    Catches leftover FastMCP internals (e.g. `ctx.mcp._inner._tool_manager`)
+    that were the authoritative API pre-decoupling. The Registry raises
+    AttributeError at call time; this check surfaces the problem at startup
+    instead, after every tool_analysis module is already imported.
+
+    Scope: attribute chains rooted at `ctx.mcp.` or `registry.` that
+    (a) are NOT a `.tool(` decorator call, and
+    (b) reference a name that `hasattr(Registry(), name)` returns False for.
+    """
+    import ast
+    import glob
+    from server.tool_registry import Registry
+    _legit_attrs = {"tool"}  # anything the Registry class exposes by name
+    probe = Registry()
+    for _a in dir(probe):
+        if not _a.startswith("_"):
+            _legit_attrs.add(_a)
+
+    mcp_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    offenders: list[str] = []
+    for py in glob.glob(os.path.join(mcp_dir, "**", "*.py"), recursive=True):
+        if "/__pycache__/" in py:
+            continue
+        try:
+            with open(py, encoding="utf-8") as f:
+                src = f.read()
+            tree = ast.parse(src, filename=py)
+        except (OSError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Attribute):
+                continue
+            # Look for `ctx.mcp.X` or `registry.X` where X is the immediate attr
+            chain = _attr_chain(node)
+            if len(chain) < 3:
+                continue
+            if chain[:2] != ["ctx", "mcp"]:
+                continue
+            target = chain[2]
+            if target in _legit_attrs:
+                continue
+            rel = os.path.relpath(py, mcp_dir)
+            offenders.append(f"{rel}:{node.lineno} → ctx.mcp.{target}")
+    if offenders:
+        joined = "\n  ".join(offenders[:10])
+        more = f"\n  ... and {len(offenders) - 10} more" if len(offenders) > 10 else ""
+        raise RuntimeError(
+            f"Registry API drift: {len(offenders)} reference(s) to ctx.mcp.<attr> "
+            f"not exposed by the current Registry class:\n  {joined}{more}\n"
+            f"These were likely FastMCP internals (e.g. _inner, _tool_manager) "
+            f"that no longer exist after the FastMCP removal. Rewrite against "
+            f"tool_registry._TOOLS / Registry.tool()."
+        )
+
+
+def _attr_chain(node) -> list:
+    """Return the dotted-attribute chain rooted at a Name, e.g.
+    `ctx.mcp.foo.bar` → ['ctx', 'mcp', 'foo', 'bar']. Returns [] for any
+    non-Name-rooted chain (function call results, subscripts, etc.)."""
+    import ast
+    parts: list = []
+    cur = node
+    while isinstance(cur, ast.Attribute):
+        parts.append(cur.attr)
+        cur = cur.value
+    if not hasattr(ast, "Name") or not isinstance(cur, ast.Name):
+        return []
+    parts.append(cur.id)
+    parts.reverse()
+    return parts
+
+
+def _probe_llamacpp_instance(base: str) -> str:
+    """Return one of: 'healthy', 'loading', 'unreachable'.
+
+    - 'healthy'     — GET /health returns 200 with status:ok
+    - 'loading'     — port bound, any HTTP response (200 with other status,
+                      or 503 "loading") — model weights still loading
+    - 'unreachable' — ConnectionRefused / timeout; the server process is
+                      dead or not yet spawned
+    """
+    import urllib.request
+    import urllib.error
+    try:
+        with urllib.request.urlopen(f"{base}/health", timeout=5) as resp:
+            body = resp.read().decode("utf-8", errors="ignore")
+            if resp.status == 200 and '"status":"ok"' in body:
+                return "healthy"
+            return "loading"
+    except urllib.error.HTTPError:
+        return "loading"  # port bound, any HTTP error counts as loading
+    except Exception:
+        return "unreachable"
+
+
 def _check_llamacpp_connectivity() -> None:
     """Warn if local inference models are not loaded — synthesis will fall back to templates.
 
     Probes the llama-server /health endpoints for arbiter (8080) and coder
     (8081). These URLs are owned by llamacpp_daemon + llamacpp_supervisor.
-    """
-    import urllib.request
 
+    Distinguishes three states:
+      healthy     — model ready for requests
+      loading     — port bound, weights still loading (cold boot / restart)
+      unreachable — no process listening (real failure)
+
+    Retries briefly during warmup: if an instance is loading, we poll up to
+    HME_SELFTEST_WARMUP_WAIT seconds before classifying it as still-loading.
+    This avoids spurious 'unreachable' warnings immediately after a worker
+    restart or daemon cold-start, when a 30B MoE model genuinely takes
+    60-90s to load.
+    """
     arbiter_url = ENV.require("HME_LLAMACPP_ARBITER_URL")
     coder_url   = ENV.require("HME_LLAMACPP_CODER_URL")
+    warmup_wait = ENV.optional_int("HME_SELFTEST_WARMUP_WAIT", 30)
+    poll_interval = 3
     import time
-    failed = []
-    for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
-        ok = False
-        for attempt in range(3):
-            try:
-                with urllib.request.urlopen(f"{base}/health", timeout=5) as resp:
-                    body = resp.read().decode("utf-8", errors="ignore")
-                    if resp.status == 200 and '"status":"ok"' in body:
-                        ok = True
-                        break
-            except Exception:
-                pass
-            if attempt < 2:
-                time.sleep(3)
-        if not ok:
-            failed.append(role)
-    if failed:
-        logger.warning(f"llama-server connectivity: {len(failed)} instance(s) unreachable: {failed}")
+    deadline = time.time() + warmup_wait
+    states: dict[str, str] = {}
+    while True:
+        for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
+            if states.get(role) == "healthy":
+                continue
+            states[role] = _probe_llamacpp_instance(base)
+        if all(v == "healthy" for v in states.values()):
+            break
+        if any(v == "unreachable" for v in states.values()):
+            # Real failure (not loading) — no point polling further.
+            break
+        if time.time() >= deadline:
+            break
+        time.sleep(poll_interval)
+
+    unreachable = [r for r, s in states.items() if s == "unreachable"]
+    loading = [r for r, s in states.items() if s == "loading"]
+    healthy = [r for r, s in states.items() if s == "healthy"]
+    if unreachable:
+        logger.warning(
+            f"llama-server connectivity: {len(unreachable)} UNREACHABLE: {unreachable} "
+            f"(no process listening). Loading: {loading}. Healthy: {healthy}."
+        )
+    elif loading:
+        logger.warning(
+            f"llama-server connectivity: {len(loading)} still LOADING after "
+            f"{warmup_wait}s: {loading}. Not a failure — cold-start MoE models "
+            f"can take 60-90s. Healthy: {healthy}."
+        )
     else:
-        logger.info("llama-server connectivity: OK (arbiter + coder healthy)")
+        logger.info(f"llama-server connectivity: OK ({', '.join(healthy)} healthy)")
 
 
 # Legacy alias — some callers still import _check_llamacpp_connectivity.

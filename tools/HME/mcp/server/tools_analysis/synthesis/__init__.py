@@ -25,7 +25,7 @@ from .synthesis_llamacpp import (  # noqa: F401
     _interactive_event, _background_yield, route_model,
 )
 from .synthesis_inference import (  # noqa: F401
-    _read_module_source, _local_chat, _local_think_with_system,
+    _read_module_source, _local_chat, _local_think_with_system, _reasoning_think,
 )
 from .synthesis_cascade import synthesize, dual_gpu_consensus  # noqa: F401
 # Late-binding proxies: survive hot-reload of underlying modules without stale references.

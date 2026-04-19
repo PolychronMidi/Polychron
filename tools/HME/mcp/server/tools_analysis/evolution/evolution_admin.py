@@ -7,7 +7,8 @@ import subprocess
 from server import context as ctx
 from server.onboarding_chain import chained
 from ..synthesis import _local_think
-from ..synthesis.synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
+from ..synthesis.synthesis_llamacpp import _LOCAL_MODEL, _ARBITER_MODEL
+from ..synthesis import synthesis_reasoning
 from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
@@ -203,6 +204,44 @@ def hme_inspect(mode: str = "both") -> str:
     return "\n\n".join(parts)
 
 
+def _daemon_health_snapshot() -> dict:
+    """Return {ready_aliases: [...], statuses: {name: 'healthy'|'loading'|'unreachable'}}.
+
+    Queries the llamacpp daemon's /health and translates instance-level
+    data (last_health_ok age, pid) into the same three-state taxonomy used
+    by startup_validator. Returns an empty snapshot if the daemon itself
+    is unreachable — callers treat that as "nothing ready."
+    """
+    import json as _json
+    import time as _time
+    import urllib.request as _ur
+    try:
+        daemon_url = os.environ.get("HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735")
+        with _ur.urlopen(f"{daemon_url}/health", timeout=3) as resp:
+            data = _json.loads(resp.read())
+    except Exception as _err:
+        logger.debug(f"_daemon_health_snapshot: daemon unreachable: {_err}")
+        return {"ready_aliases": [], "statuses": {"daemon": f"unreachable ({type(_err).__name__})"}}
+    ready_aliases: list[str] = []
+    statuses: dict[str, str] = {}
+    now = _time.time()
+    for inst in data.get("instances", []):
+        name = inst.get("name", "?")
+        alias = inst.get("alias", "")
+        last_ok = inst.get("last_health_ok", 0) or 0
+        age = now - last_ok if last_ok else float("inf")
+        pid = inst.get("pid")
+        if age < 120 and pid:
+            statuses[name] = f"healthy (alias={alias})"
+            if alias:
+                ready_aliases.append(alias)
+        elif pid:
+            statuses[name] = f"loading (alias={alias}, last_ok_age={age:.0f}s)"
+        else:
+            statuses[name] = f"unreachable (alias={alias})"
+    return {"ready_aliases": ready_aliases, "statuses": statuses}
+
+
 def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> str:
     """Permanently enforce a rule against a stubborn antipattern by adding detection logic
     to the specified hook script."""
@@ -306,22 +345,58 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         f"Antipattern to prevent: {antipattern}\n\n"
         f"Write ONLY the bash snippet (no markdown fences). 5-15 lines maximum."
     )
-    # Build fallback chain of DISTINCT models (dedup env overlaps — e.g. when
-    # HME_CODER_MODEL == HME_REASONING_MODEL, retrying the same model isn't a fallback).
-    _tried = []
+    # Preflight: survey all synthesis backends so an actionable diagnostic
+    # names what's actually down. Two substrates:
+    #   (1) local llama-server instances (coder on GPU1, arbiter on GPU0)
+    #   (2) the ranked API cascade (synthesis_reasoning) — gemini/groq/etc.
+    # "Reasoning" is NOT a local model — it lives entirely on the API side.
+    _health = _daemon_health_snapshot()
+    _ready_local = _health.get("ready_aliases", [])
+    try:
+        _api_reasoning_up = synthesis_reasoning.available(profile="reasoning")
+    except Exception as _api_err:
+        logger.debug(f"fix_antipattern preflight: reasoning cascade probe failed: {_api_err}")
+        _api_reasoning_up = False
+    if not _ready_local and not _api_reasoning_up:
+        _statuses = _health.get("statuses", {})
+        _status_lines = "\n  ".join(
+            f"local/{name}: {s}" for name, s in sorted(_statuses.items())
+        ) or "local: (daemon unreachable)"
+        return (
+            f"fix_antipattern preflight failed — no synthesis backend ready.\n"
+            f"{_status_lines}\n"
+            f"api/reasoning cascade: not reachable\n\n"
+            f"Options: wait for local models to load (60-90s for cold MoE), "
+            f"check llamacpp_daemon logs, or verify API keys for the ranked "
+            f"reasoning cascade (gemini/groq/etc. — see synthesis_reasoning).\n"
+            f"Manually add detection logic to: {hook_path}\n"
+            f"Antipattern to prevent: {antipattern}"
+        )
+
+    # Fallback chain: try local coder first (fast on a warm GPU), then the
+    # ranked API reasoning cascade (better quality, free tier), then arbiter
+    # as last resort (always-on but weaker for synthesis).
+    _tried: list[str] = []
     snippet = None
-    for _m in (_LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL):
-        if _m in _tried:
-            continue
-        _tried.append(_m)
-        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_m)
-        if snippet:
-            break
+    if _LOCAL_MODEL in _ready_local:
+        _tried.append(f"local/{_LOCAL_MODEL}")
+        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_LOCAL_MODEL)
+    if not snippet and _api_reasoning_up:
+        _tried.append("api/reasoning-cascade")
+        try:
+            snippet = synthesis_reasoning.call(
+                prompt=synthesis_prompt, max_tokens=512,
+                temperature=0.3, profile="reasoning",
+            )
+        except Exception as _api_err2:
+            logger.debug(f"fix_antipattern: api reasoning cascade failed: {_api_err2}")
+    if not snippet and _ARBITER_MODEL in _ready_local and _ARBITER_MODEL != _LOCAL_MODEL:
+        _tried.append(f"local/{_ARBITER_MODEL}")
+        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_ARBITER_MODEL)
     if not snippet:
         return (
-            f"Could not synthesize snippet — tried models: {', '.join(_tried)}. All returned "
-            f"empty. Check selftest: if llama-server instances are unreachable or still "
-            f"warming, fix_antipattern cannot synthesize.\n"
+            f"Could not synthesize snippet — tried: {', '.join(_tried) or 'nothing'}. "
+            f"All returned empty.\n"
             f"Manually add detection logic to: {hook_path}\n"
             f"Antipattern to prevent: {antipattern}"
         )

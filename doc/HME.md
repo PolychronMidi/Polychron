@@ -874,40 +874,49 @@ Polychron's primary module pattern: `globalName = (() => { function tick() {...}
 
 321 IIFE globals + 1914 inner functions = 3848+ total symbols. Internal helpers `lookup_symbol` and `find_callers` (callable via `trace(target)` for callers and `read(target)` internally for symbol lookup) work with Polychron's global-assignment pattern.
 
-### Three-Model llama.cpp Fleet
+### Two-Local + Ranked-API Synthesis Fleet
 
-HME runs a three-model local synthesis fleet. No external API. All synthesis is local on two dedicated GPUs + CPU RAM.
+HME splits synthesis across two local llama-server instances (Vulkan) and a
+ranked cascade of free-tier API providers. Reasoning tasks prefer the API
+cascade (better quality, faster time-to-first-token); coder tasks and the
+arbiter triage stay local.
 
-**GPU0 — Extractor** (`qwen3-coder:30b`, 18.6GB VRAM, `/api/generate`):
-- Specialized persona: "expert code extractor — facts, file paths, module names, no speculation"
-- Runs Stage 1A in parallel two-stage synthesis
-- Default model for `_local_think` (evolve focus=think), `before_editing` edit risks (hook-chained), `evolve(focus='blast')` dependency tracing, `review(mode='health')`, `learn(action='graph')`, `learn(action='dream')`
-- Configured via `HME_CODER_MODEL` + `HME_LOCAL_URL`
-
-**GPU1 — Reasoner** (`qwen3:30b-a3b`, 18.6GB VRAM, `/api/chat` streaming):
-- Specialized persona: full `_THINK_SYSTEM` prompt + synthesis guidance ("synthesizer for a self-evolving music composition system")
-- Runs Stage 1B (parallel) + Stage 1.75 (complex conflict resolution) + Stage 2 (final synthesis)
-- All deep architectural reasoning routes here
-- Configured via `HME_DEEP_MODEL` + `HME_DEEP_CHAT_URL`
-
-**Arbiter** (`qwen3:4b`, ~2.5GB, CPU/GPU hybrid from 64GB RAM):
+**GPU0 — Arbiter** (`phi-4-Q4_K_M.gguf`, served as `hme-arbiter`):
+- Port 8080, Vulkan1 (Tesla M40), full-offload invariant enforced by the daemon
 - Specialized persona: domain-aware hallucination guard — auto-discovers real module names via `src/crossLayer/**/*.js` glob, lists known signal fields
 - Runs Stage 1.5: triages GPU0/GPU1 output for conflicts
 - Three severity levels: `ALIGNED` (pass through), `MINOR` (advisory note injected), `COMPLEX` (escalate to Stage 1.75)
-- Configured via `HME_ARBITER_MODEL` (default: `qwen3:4b`)
+- Configured via `HME_ARBITER_MODEL` (default alias `hme-arbiter`)
 
-**Failure recovery:** Each model has a 3-state circuit breaker (CLOSED → OPEN → HALF_OPEN) that replaces fixed cooldowns. 3 failures within 60s opens the circuit (blocks calls for 15s recovery). HALF_OPEN allows one probe call — success resets, failure reopens.
+**GPU1 — Coder** (`qwen3-coder-30b-Q4_K_M.gguf`, served as `qwen3-coder:30b`):
+- Port 8081, Vulkan2 (Tesla M40), full-offload invariant enforced
+- Specialized persona: "expert code extractor — facts, file paths, module names, no speculation"
+- Runs Stage 1A in parallel two-stage synthesis
+- Default model for `_local_think` with the `coder` profile — structural code extraction, caller analysis, `review(mode='health')`, `learn(action='graph')`
+- Configured via `HME_CODER_MODEL` (alias `qwen3-coder:30b`)
+
+**Reasoning — API cascade** (`synthesis_reasoning.call(profile='reasoning')`):
+- Ranked list: Gemini 2.5-pro → Groq → OpenRouter → Cerebras → Gemini flash tiers
+- Each slot has its own quota/RPM/circuit-breaker; walks best→worst until one succeeds
+- Used by `reasoning.py`, `reasoning_think.py`, `digest_analysis.py`, `enrich_prompt.py`, `evolution_strategies.py`, `runtime.py`, `workflow_audit.py`
+- Local fallback: the coder instance above when every ranked slot is exhausted
+
+**Failure recovery:** Each local instance has a 3-state circuit breaker (CLOSED → OPEN → HALF_OPEN) that replaces fixed cooldowns. 3 failures within 60s opens the circuit (blocks calls for 15s recovery). Every API provider enforces its own daily quota and RPM via `synthesis_reasoning`.
+
+**Env-load invariant** (fail-fast at `hme_env.py` import): `HME_ARBITER_MODEL != HME_CODER_MODEL`. The two local aliases must be distinct so the fallback chain always has an independent last resort.
 
 **No model needed:**
-- All hooks (pure bash), all search/grep/index operations, `hme_inspect(mode='introspect')`, `doc_sync_check`
+- All hooks (pure bash), all search/grep/index operations, `hme_admin(action='introspect')`
 
-**Configuration** (in `.mcp.json` env):
+**Configuration** (in `.env`, loaded via `hme_env.py`):
 ```
-HME_CODER_MODEL=qwen3-coder:30b               # GPU0 extractor
-HME_LOCAL_URL=http://localhost:11434/api/generate
-HME_DEEP_MODEL=qwen3:30b-a3b                  # GPU1 reasoner
-HME_DEEP_CHAT_URL=http://localhost:11434/api/chat
-HME_ARBITER_MODEL=qwen3:4b                    # Arbiter (CPU/GPU hybrid)
+HME_ARBITER_MODEL=hme-arbiter             # GPU0 arbiter (phi-4)
+HME_CODER_MODEL=qwen3-coder:30b           # GPU1 coder
+HME_LLAMACPP_ARBITER_URL=http://127.0.0.1:8080
+HME_LLAMACPP_CODER_URL=http://127.0.0.1:8081
+GEMINI_API_KEY=...                        # ranked reasoning cascade
+GROQ_API_KEY=...
+OPENROUTER_API_KEY=...
 ```
 
 ### Warm KV Context System

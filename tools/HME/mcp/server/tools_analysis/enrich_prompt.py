@@ -16,9 +16,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     KB/context assembly runs instantly, reasoning model enriches,
     arbiter compresses if needed. All local, zero Claude tokens.
     """
-    from .synthesis_llamacpp import (
-        _local_think, _REASONING_MODEL, compress_for_claude,
-    )
+    from .synthesis import _reasoning_think, compress_for_claude
     from .synthesis_session import get_session_narrative
 
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
@@ -106,8 +104,8 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         "- Keep it concise — enriched should be at most 2x the original length"
     )
 
-    enriched = _local_think(
-        enrich_text, max_tokens=16000, model=_REASONING_MODEL,
+    enriched = _reasoning_think(
+        enrich_text, max_tokens=16000,
         system="You enrich prompts with project-specific knowledge. Output only the enriched prompt.",
         temperature=0.2,
     )

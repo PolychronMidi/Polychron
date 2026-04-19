@@ -5,7 +5,7 @@ import logging
 from server import context as ctx
 from symbols import find_callers as _find_callers
 from .synthesis import (
-    _local_think, _REASONING_MODEL, _THINK_SYSTEM,
+    _local_think, _reasoning_think, _THINK_SYSTEM,
     _two_stage_think, _parallel_two_stage_think,
     store_think_history, get_think_history_context,
     _read_module_source,
@@ -250,9 +250,9 @@ def think(about: str, context: str = "") -> str:
         # _two_stage_think falls back to single-stage anyway (no src/ paths in meta-HME context)
         # so skip Stage 1 entirely — faster and equally accurate for tool UX questions.
         # Inject _THINK_SYSTEM so the model knows the alien music + HME domain from the start.
-        local_answer = _local_think(
+        local_answer = _reasoning_think(
             raw_context[:10000] + "\n\n" + prompt,
-            max_tokens=4096, model=_REASONING_MODEL,
+            max_tokens=4096,
             system=_THINK_SYSTEM,
         )
         if local_answer:
@@ -449,8 +449,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
             "(2) what integration tests or validation steps are most important, "
             "(3) any cascade effects to watch for in deeper layers."
         )
-        synthesis = _local_think(user_text, max_tokens=1024, model=_REASONING_MODEL,
-                                 system=_THINK_SYSTEM)
+        synthesis = _reasoning_think(user_text, max_tokens=1024, system=_THINK_SYSTEM)
         if synthesis:
             from .synthesis.synthesis_inference import compress_for_claude
             synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"blast radius risk for {symbol_name}")
