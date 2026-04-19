@@ -258,6 +258,51 @@ function main() {
   // consumers can distinguish agent-initiated runs from direct shell runs.
   emitActivity('pipeline_start', { session: process.env.HME_SESSION_ID || 'shell' });
 
+  // Baseline delta: what changed vs the last pipeline run? Surfaces whether
+  // we're genuinely in a stable plateau (zero-diff runs) or the pipeline is
+  // measuring identical state N times. If commits_ahead=0 AND files_changed=0,
+  // this run is measuring the same codebase as the last one — informative
+  // context for downstream metrics.
+  try {
+    var lastSha = '';
+    var lastShaFile = path.join(__dirname, '..', '..', 'tmp', 'hme-last-pipeline-sha');
+    if (fs.existsSync(lastShaFile)) {
+      lastSha = fs.readFileSync(lastShaFile, 'utf8').trim();
+    }
+    var curSha = '';
+    try {
+      curSha = execSync('git rev-parse --short HEAD', {
+        cwd: path.join(__dirname, '..', '..'),
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).toString().trim();
+    } catch (_e) { /* git not available */ }
+    var filesChanged = 0;
+    if (lastSha && curSha) {
+      try {
+        var diff = execSync(`git diff --name-only ${lastSha}..${curSha}`, {
+          cwd: path.join(__dirname, '..', '..'),
+          stdio: ['ignore', 'pipe', 'ignore'],
+        }).toString().trim();
+        filesChanged = diff ? diff.split('\n').length : 0;
+      } catch (_e) { /* sha not reachable */ }
+    }
+    emitActivity('pipeline_baseline_delta', {
+      session: process.env.HME_SESSION_ID || 'shell',
+      prev_sha: lastSha || 'none',
+      cur_sha: curSha || 'none',
+      files_changed: filesChanged,
+      same_commit: lastSha && curSha && lastSha === curSha ? 1 : 0,
+    });
+    if (curSha) {
+      try {
+        fs.mkdirSync(path.dirname(lastShaFile), { recursive: true });
+        fs.writeFileSync(lastShaFile, curSha);
+      } catch (_e) { /* sha cache is best-effort */ }
+    }
+  } catch (e) {
+    console.error('  baseline-delta: ' + (e && e.message ? e.message : e));
+  }
+
   // Pre-composition: fatal on failure
   for (var i = 0; i < PRE_COMPOSITION.length; i++) {
     run(PRE_COMPOSITION[i].label, PRE_COMPOSITION[i].cmd, true);

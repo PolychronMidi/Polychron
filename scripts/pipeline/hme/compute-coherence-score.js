@@ -124,10 +124,17 @@ function main() {
   // Null readCoverage = "no measurable writes in window." The downstream
   // reason field distinguishes why: no writes at all vs all-legacy vs
   // all-pipeline.
+  // Low-sample-size floor: <5 human-intent writes means the read_coverage
+  // ratio swings wildly on single events. Flag as null-with-reason rather
+  // than computing a statistically meaningless score that would drag the
+  // musical correlation down. Set HME_COHERENCE_MIN_WRITES=1 to disable.
+  const MIN_WRITES_FOR_SCORE = parseInt(process.env.HME_COHERENCE_MIN_WRITES || '5', 10);
   let readCoverage = null;
   let readCoverageNullReason = null;
-  if (writes.length > 0) {
+  if (writes.length >= MIN_WRITES_FOR_SCORE) {
     readCoverage = writesWithPriorRead / writes.length;
+  } else if (writes.length > 0) {
+    readCoverageNullReason = `only ${writes.length} human-intent write(s), need >=${MIN_WRITES_FOR_SCORE} for statistically meaningful coverage`;
   } else if (rawWrites.length === 0) {
     readCoverageNullReason = "no file_written events in window";
   } else if (legacyWrites === rawWrites.length) {
