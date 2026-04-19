@@ -20,6 +20,7 @@
     "correlation_direction": "A named correlation's sign must match expectation (positive|negative) with minimum |r|. The ultimate anti-drift check: detects when HME's self-metric is actively ANTI-correlated with musical outcome — i.e., HME thinks it's improving while the music gets worse. Fires the 'optimization direction is wrong' alarm.",
     "activity_events_balanced": "Paired activity events (start_event + end_event) must fire with matching counts in the recent window. Catches observability regressions where a refactor drops one of a paired emission silently.",
     "activity_field_sanity": "A named field on recent activity events must match an expected regex. Catches garbage-value bugs (e.g. file_written emitting module='<UUID>' from infrastructure files instead of real module basenames).",
+    "same_commit_determinism": "Consecutive pipeline runs from the SAME commit must produce metric values within tolerance. Non-determinism means either random inputs (clock-dependent verifier) or cached state leaking between runs — both invalidate the metric.",
     "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed."
   },
   "invariants": [
@@ -1015,6 +1016,16 @@
       "window_events": 2000,
       "max_violations": 10,
       "exclude_values": ["", null],
+      "severity": "warning"
+    },
+    {
+      "id": "coherence-same-commit-deterministic",
+      "description": "Rounds with identical git SHA must produce hme_coherence values within 0.02 of each other. If the metric varies across identical-code runs, either a verifier has random inputs, a cache leaks state between runs, or something time-dependent is infecting the score.",
+      "type": "same_commit_determinism",
+      "correlation_path": "metrics/hme-musical-correlation.json",
+      "activity_path": "metrics/hme-activity.jsonl",
+      "field": "hme_coherence",
+      "tolerance": 0.02,
       "severity": "warning"
     },
     {
