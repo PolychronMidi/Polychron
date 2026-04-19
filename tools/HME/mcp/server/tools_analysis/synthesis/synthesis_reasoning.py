@@ -231,9 +231,16 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     profile='reasoning' (default) — deep think, architecture, analysis.
     profile='coder'                — structural code extraction, verified facts.
 
-    Returns None only when every ranked slot is exhausted — caller falls back
-    to local qwen3-coder:30b-a3b.
+    Returns None only when every ranked slot is exhausted OR the wall-clock
+    ceiling is hit — caller falls back to local qwen3-coder:30b-a3b.
+
+    Wall-clock ceiling (HME_REASONING_WALL_SECS, default 45s) protects against
+    cascade pathologies where multiple slots each burn their 60s per-call
+    timeout serially. Without a ceiling, one hung cascade can freeze a worker
+    thread for minutes and every request after it queues up behind the burn.
     """
+    import os as _os
+    import time as _time
     _refresh_env()
     try:
         providers = _load_providers()
@@ -241,8 +248,16 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.warning(f"reasoning dispatcher: provider load failed: {e}")
         return None
 
+    wall_secs = float(_os.environ.get("HME_REASONING_WALL_SECS", "45"))
+    deadline = _time.monotonic() + wall_secs
     ranking = _RANKINGS.get(profile, _RANKING_REASONING)
     for provider_key, model in ranking:
+        if _time.monotonic() >= deadline:
+            logger.warning(
+                f"reasoning cascade wall-clock ceiling hit ({wall_secs:.0f}s) — "
+                f"exhausting to local fallback. Last attempted: {provider_key}/{model}"
+            )
+            return None
         mod = providers.get(provider_key)
         if mod is None:
             continue
