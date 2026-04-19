@@ -6,9 +6,11 @@ These accumulate quickly when the indexer re-processes changed files (delete old
 chunks, add new ones). At 400+ files the directory is pure dead weight and slows
 down table opens.
 
-Compaction strategy: `table.compact_files()` rewrites data files and drops
+Compaction strategy: `table.optimize()` rewrites data files and drops
 _deletions/ entries without changing row contents or embeddings. Safe to run
 with the worker running — LanceDB's MVCC makes compaction atomic.
+(Older LanceDB versions used `compact_files()` — we fall back if `optimize`
+isn't present so this script works across a version bump.)
 
 Usage:
   python3 scripts/compact-lance-tables.py [--dry-run]
@@ -75,7 +77,22 @@ def main() -> None:
 
         try:
             tbl = db.open_table(name)
-            tbl.compact_files()
+            # LanceDB 0.21+ unifies compact_files + cleanup_old_versions into
+            # optimize() — rewrites data files AND purges the _deletions/
+            # arrow files that trigger this invariant warning. Optimize
+            # requires the `pylance` package; without it LanceDB raises a
+            # clear error that we surface as an actionable install hint.
+            if hasattr(tbl, "optimize"):
+                try:
+                    tbl.optimize()
+                except ImportError as _imp_err:
+                    errors.append(
+                        f"{name}: optimize() needs `pylance` installed "
+                        f"(pip install --user pylance). Underlying: {_imp_err}"
+                    )
+                    continue
+            elif hasattr(tbl, "compact_files"):
+                tbl.compact_files()
             after = _deletion_count(table_path)
             compacted.append(f"{name} ({count}→{after} deletions)")
         except Exception as e:

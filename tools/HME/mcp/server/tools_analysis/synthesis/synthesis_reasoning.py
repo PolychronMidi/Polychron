@@ -239,8 +239,8 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     timeout serially. Without a ceiling, one hung cascade can freeze a worker
     thread for minutes and every request after it queues up behind the burn.
     """
-    import os as _os
     import time as _time
+    from hme_env import ENV as _ENV
     _refresh_env()
     try:
         providers = _load_providers()
@@ -248,7 +248,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.warning(f"reasoning dispatcher: provider load failed: {e}")
         return None
 
-    wall_secs = float(_os.environ.get("HME_REASONING_WALL_SECS", "45"))
+    wall_secs = _ENV.optional_float("HME_REASONING_WALL_SECS", 45.0)
     deadline = _time.monotonic() + wall_secs
     ranking = _RANKINGS.get(profile, _RANKING_REASONING)
     for provider_key, model in ranking:

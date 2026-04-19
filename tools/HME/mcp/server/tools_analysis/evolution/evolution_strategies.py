@@ -460,15 +460,20 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("Stop hook: readable", False, str(e)))
 
-    # Probe 4: log-tool-call.sh catches FAIL in ALL HME tool output
+    # Probe 4: FAIL→hme-errors.log pipeline lives in proxy middleware
+    # (moved from log-tool-call.sh when HME decoupled from Claude Code MCP).
     try:
-        with open(_find_hook("log-tool-call.sh"), encoding="utf-8") as f:
-            ltc_content = f.read()
-        has_fail_scan = "FAIL" in ltc_content and "hme-errors.log" in ltc_content
-        results.append(("log-tool-call: FAIL→hme-errors.log pipeline", has_fail_scan,
-                        "" if has_fail_scan else "FAIL detection not wired to error log"))
+        fail_scan_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "proxy", "middleware", "mcp_fail_scan.js")
+        if not os.path.isfile(fail_scan_path):
+            results.append(("FAIL→hme-errors pipeline", False, f"missing: {fail_scan_path}"))
+        else:
+            with open(fail_scan_path, encoding="utf-8") as f:
+                fs_content = f.read()
+            has_fail_scan = "FAIL" in fs_content and "hme-errors.log" in fs_content
+            results.append(("FAIL→hme-errors pipeline (proxy middleware)", has_fail_scan,
+                            "" if has_fail_scan else "FAIL detection not wired to error log"))
     except Exception as e:
-        results.append(("log-tool-call: readable", False, str(e)))
+        results.append(("FAIL→hme-errors pipeline: readable", False, str(e)))
 
     # Probe 5: Doc sync runs and produces actionable output
     try:
@@ -489,12 +494,15 @@ def _adversarial_stress() -> str:
     else:
         results.append(("ESLint: rules directory exists", False, "scripts/eslint-rules/ missing"))
 
-    # Probe 7: All critical hook scripts exist and are executable
+    # Probe 7: All critical hook scripts exist and are executable.
+    # Post-migration layout: LIFESAVER moved to proxy middleware (no more
+    # pretooluse_lifesaver.sh), posttooluse_read.sh renamed to
+    # posttooluse_read_kb.sh, log-tool-call.sh is a stub (logic in proxy).
     critical_hooks = [
         "stop.sh", "sessionstart.sh", "userpromptsubmit.sh",
-        "log-tool-call.sh", "pretooluse_lifesaver.sh",
+        "log-tool-call.sh",
         "pretooluse_edit.sh", "pretooluse_bash.sh",
-        "posttooluse_read.sh", "postcompact.sh",
+        "posttooluse_read_kb.sh", "postcompact.sh",
     ]
     for hook in critical_hooks:
         path = _find_hook(hook)
@@ -504,26 +512,25 @@ def _adversarial_stress() -> str:
         results.append((f"Hook: {hook}", ok,
                         "" if ok else ("missing" if not exists else "not executable")))
 
-    # Probe 8: hooks.json hook coverage — every hook script should be registered
+    # Probe 8: hooks.json coverage — post-migration, all events route through
+    # _proxy_bridge.sh which dispatches internally to the real handlers. So
+    # the check is inverted: every event declared in hooks.json must point to
+    # _proxy_bridge.sh (otherwise the proxy-based dispatch is bypassed).
     try:
         with open(hooks_json_path, encoding="utf-8") as f:
             hooks_cfg = json.load(f)
-        registered_scripts = set()
-        for event_hooks in hooks_cfg.get("hooks", {}).values():
+        event_misrouted: list[str] = []
+        for event_name, event_hooks in hooks_cfg.get("hooks", {}).items():
             for h in event_hooks:
                 for cmd in h.get("hooks", []):
-                    script = cmd.get("command", "").split("/")[-1]
-                    registered_scripts.add(script)
-        # statusline.sh is registered as a Claude statusLine command, not a hook event
-        _STRESS_HOOK_EXCLUDE = {"statusline.sh"}
-        hook_scripts = {
-            f for f in os.listdir(hooks_dir)
-            if f.endswith(".sh") and not f.startswith("_") and f not in _STRESS_HOOK_EXCLUDE
-        }
-        unregistered = hook_scripts - registered_scripts
-        results.append((f"hooks.json: hook registration ({len(hook_scripts)} scripts)",
-                        len(unregistered) == 0,
-                        f"unregistered: {', '.join(sorted(unregistered))}" if unregistered else ""))
+                    command_str = cmd.get("command", "")
+                    # Any registered command that doesn't route through
+                    # _proxy_bridge.sh would bypass the proxy dispatch.
+                    if "_proxy_bridge.sh" not in command_str:
+                        event_misrouted.append(f"{event_name}:{command_str.split('/')[-1]}")
+        results.append((f"hooks.json: all events route through _proxy_bridge.sh",
+                        len(event_misrouted) == 0,
+                        f"misrouted: {', '.join(event_misrouted)}" if event_misrouted else ""))
     except Exception as e:
         results.append(("hooks.json: parseable", False, str(e)))
 

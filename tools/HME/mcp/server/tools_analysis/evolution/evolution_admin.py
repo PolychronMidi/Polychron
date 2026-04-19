@@ -215,8 +215,9 @@ def _daemon_health_snapshot() -> dict:
     import json as _json
     import time as _time
     import urllib.request as _ur
+    from hme_env import ENV
     try:
-        daemon_url = os.environ.get("HME_LLAMACPP_DAEMON_URL", "http://127.0.0.1:7735")
+        daemon_url = ENV.require("HME_LLAMACPP_DAEMON_URL")
         with _ur.urlopen(f"{daemon_url}/health", timeout=3) as resp:
             data = _json.loads(resp.read())
     except Exception as _err:
