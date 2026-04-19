@@ -44,6 +44,17 @@ PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
 )
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
+# Tools/HME subtrees ALSO count as project territory — edits to them should
+# show up in the coherence score as FRESH/STALE/MISSING too. Previously
+# excluded, which made tools/HME/ writes always score touches_with_index_info=0.
+HME_DIRS = [
+    os.path.join(PROJECT_ROOT, "tools", "HME", "mcp"),
+    os.path.join(PROJECT_ROOT, "tools", "HME", "hooks"),
+    os.path.join(PROJECT_ROOT, "tools", "HME", "proxy"),
+    os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"),
+    os.path.join(PROJECT_ROOT, "tools", "HME", "activity"),
+]
+HME_EXTS = (".js", ".py", ".sh")
 ACTIVITY_LOG = os.path.join(PROJECT_ROOT, "metrics", "hme-activity.jsonl")
 OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-staleness.json")
 
@@ -52,24 +63,35 @@ STALE_SECONDS = STALE_DAYS * 86400.0
 
 
 def walk_src_files() -> dict[str, tuple[str, float]]:
-    """Return {module_stem: (rel_path, mtime)} for every .js file under src/."""
+    """Return {module_stem: (rel_path, mtime)} for every .js file under src/
+    AND for .js/.py/.sh files under the HME_DIRS tool-infrastructure roots.
+    The module stem is the basename without extension, matching the
+    watcher's module-naming convention."""
     result: dict[str, tuple[str, float]] = {}
-    for root, _dirs, files in os.walk(SRC_DIR):
-        for f in files:
-            if not f.endswith(".js"):
+    def _walk_root(dir_path: str, extensions: tuple):
+        if not os.path.isdir(dir_path):
+            return
+        for root, _dirs, files in os.walk(dir_path):
+            if "__pycache__" in root:
                 continue
-            stem = f[:-3]
-            full = os.path.join(root, f)
-            rel = os.path.relpath(full, PROJECT_ROOT)
-            try:
-                mtime = os.path.getmtime(full)
-            except OSError:
-                continue
-            # If two files share a stem (rare — e.g. test copies), keep the
-            # first src/ path we find; rel_path disambiguation is beyond
-            # scope for v1.
-            if stem not in result:
-                result[stem] = (rel, mtime)
+            for f in files:
+                if not any(f.endswith(e) for e in extensions):
+                    continue
+                stem = os.path.splitext(f)[0]
+                full = os.path.join(root, f)
+                rel = os.path.relpath(full, PROJECT_ROOT)
+                try:
+                    mtime = os.path.getmtime(full)
+                except OSError:
+                    continue
+                # If two files share a stem, prefer src/ over tools/HME/
+                # (src is the composition engine; HME is infrastructure).
+                existing = result.get(stem)
+                if existing is None or (rel.startswith("src/") and not existing[0].startswith("src/")):
+                    result[stem] = (rel, mtime)
+    _walk_root(SRC_DIR, (".js",))
+    for hme_dir in HME_DIRS:
+        _walk_root(hme_dir, HME_EXTS)
     return result
 
 

@@ -91,6 +91,26 @@ if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
   fi
 fi
 
+# Unbriefed-edit detection: if the Edit target is under an allow-listed
+# source tree and hasn't been BRIEFed yet, emit an activity event
+# (edit_without_brief) that makes this visible without falsifying the
+# coherence metric. Auto-BRIEFing here would defeat the metric's purpose
+# (it measures "did agent read before edit?" — auto-BRIEF on edit lies).
+if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy|config))/'; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+  _auto_module=$(_extract_module "$FILE")
+  if [ -n "$_auto_module" ] && ! _nexus_has BRIEF "$_auto_module"; then
+    if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
+      python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
+        --event=edit_without_brief \
+        --file="$FILE" \
+        --module="$_auto_module" \
+        --session="$(whoami 2>/dev/null || echo shell)" \
+        >/dev/null 2>&1 &
+    fi
+  fi
+fi
+
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
 exit 0

@@ -112,17 +112,19 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                     del _recent_emits[k]
         basename_full = os.path.basename(abs_path)
         module = basename_full.rsplit(".", 1)[0]
+        # Try multiple BRIEF lookup keys. Track which one matched (if any)
+        # so the diagnostic payload shows WHY hme_read_prior was true/false.
+        tried_keys = [module, abs_path, basename_full]
+        matched_key = None
         try:
             from nexus_query import has_brief
-            # BRIEFs can be recorded by module name, abs path, or basename
-            # with extension. Try all three.
-            hme_read_prior = (
-                has_brief(module) or
-                has_brief(abs_path) or
-                has_brief(basename_full)
-            )
+            for _k in tried_keys:
+                if _k and has_brief(_k):
+                    matched_key = _k
+                    break
         except Exception:
-            hme_read_prior = False
+            pass
+        hme_read_prior = matched_key is not None
         # Size + delta + language tagging
         try:
             cur_size = os.path.getsize(abs_path)
@@ -151,6 +153,8 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                  f"--file={abs_path}",
                  f"--module={module}",
                  f"--hme_read_prior={'true' if hme_read_prior else 'false'}",
+                 f"--brief_match_key={matched_key or ''}",
+                 f"--brief_keys_tried={'|'.join(k for k in tried_keys if k)}",
                  f"--bytes={cur_size}",
                  f"--bytes_delta={bytes_delta}",
                  f"--lang={lang}",
