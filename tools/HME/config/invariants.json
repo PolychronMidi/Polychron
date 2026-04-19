@@ -30,15 +30,14 @@
     },
     {
       "id": "hooks-registered",
-      "description": "Every hook script (excluding helpers) must be registered in tools/HME/hooks/hooks.json",
+      "description": "Every hook script (excluding helpers) must be registered in the proxy dispatcher (tools/HME/proxy/hook_bridge.js). Post-MCP-decoupling, hooks.json only points to _proxy_bridge.sh which forwards to this dispatcher — the real routing table lives in hook_bridge.js.",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
         "_*.sh",
-        "hooks.json",
         "statusline.sh"
       ],
-      "reference_file": "tools/HME/hooks/hooks.json",
+      "reference_file": "tools/HME/proxy/hook_bridge.js",
       "severity": "error"
     },
     {
@@ -158,14 +157,13 @@
       "severity": "error"
     },
     {
-      "id": "log-tool-call-fail-scan",
-      "description": "log-tool-call.sh must scan HME tool output for FAIL and write to hme-errors.log",
+      "id": "proxy-fail-scan-exists",
+      "description": "FAIL-scan middleware must exist in the proxy (moved from log-tool-call.sh after the MCP decoupling — log-tool-call.sh itself is now a stub)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/hooks/log-tool-call.sh",
+      "path": "tools/HME/proxy/middleware/mcp_fail_scan.js",
       "patterns": [
         "FAIL",
-        "hme-errors\\.log",
-        "mcp__HME__"
+        "hme-errors\\.log"
       ],
       "severity": "error"
     },
@@ -213,10 +211,17 @@
       "severity": "error"
     },
     {
-      "id": "hme-http-shim-exists",
-      "description": "HTTP shim script must exist for session enrichment",
+      "id": "hme-http-handlers-exist",
+      "description": "HTTP handlers + store modules must exist — absorbed into worker.py after the shim split (was hme_http.py pre-decoupling)",
       "type": "file_exists",
-      "path": "tools/HME/mcp/hme_http.py",
+      "path": "tools/HME/mcp/hme_http_handlers.py",
+      "severity": "error"
+    },
+    {
+      "id": "hme-http-store-exists",
+      "description": "HTTP store module must exist (successor to parts of the old hme_http.py)",
+      "type": "file_exists",
+      "path": "tools/HME/mcp/hme_http_store.py",
       "severity": "error"
     },
     {
@@ -393,16 +398,11 @@
       "severity": "error"
     },
     {
-      "id": "hooks-registered-hooks-json",
-      "description": "Every hook script (excluding helpers) must also be registered in hooks.json",
-      "type": "files_referenced",
-      "glob": "tools/HME/hooks/**/*.sh",
-      "exclude": [
-        "_*.sh",
-        "hooks.json",
-        "statusline.sh"
-      ],
-      "reference_file": "tools/HME/hooks/hooks.json",
+      "id": "hooks-json-points-to-bridge",
+      "description": "hooks.json must route every event through _proxy_bridge.sh — the single entrypoint that forwards lifecycle events to the proxy-side dispatcher",
+      "type": "pattern_in_file",
+      "path": "tools/HME/hooks/hooks.json",
+      "pattern": "_proxy_bridge\\.sh",
       "severity": "error"
     },
     {
@@ -780,9 +780,9 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
       "patterns": [
-        "mode == \"staleness\"",
-        "mode == \"coherence\"",
-        "mode == \"blindspots\""
+        "\"staleness\":",
+        "\"coherence\":",
+        "\"blindspots\":"
       ],
       "severity": "error"
     },
@@ -862,7 +862,7 @@
       "id": "signature-capture-exists",
       "description": "capture-kb-signatures.py must exist so baselines can be bootstrapped",
       "type": "file_exists",
-      "path": "scripts/pipeline/capture-kb-signatures.py",
+      "path": "scripts/pipeline/hme/capture-kb-signatures.py",
       "severity": "error"
     },
     {
@@ -904,10 +904,10 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
       "patterns": [
-        "mode == \"hypotheses\"",
-        "mode == \"drift\"",
-        "mode == \"accuracy\"",
-        "mode == \"crystallized\""
+        "\"hypotheses\":",
+        "\"drift\":",
+        "\"accuracy\":",
+        "\"crystallized\":"
       ],
       "severity": "error"
     },
@@ -927,7 +927,7 @@
       "id": "musical-correlation-script-exists",
       "description": "Phase 4.1 \u2014 musical ground truth correlator must exist (the external anchor)",
       "type": "file_exists",
-      "path": "scripts/pipeline/compute-musical-correlation.js",
+      "path": "scripts/pipeline/hme/compute-musical-correlation.js",
       "severity": "error"
     },
     {
@@ -941,7 +941,7 @@
       "id": "intention-gap-script-exists",
       "description": "Phase 4.3 \u2014 intention-execution gap tracker must exist",
       "type": "file_exists",
-      "path": "scripts/pipeline/compute-intention-gap.js",
+      "path": "scripts/pipeline/hme/compute-intention-gap.js",
       "severity": "error"
     },
     {
@@ -976,11 +976,11 @@
       "type": "patterns_all_in_file",
       "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
       "patterns": [
-        "mode == \"music_truth\"",
-        "mode == \"kb_trust\"",
-        "mode == \"intention_gap\"",
-        "mode == \"self_audit\"",
-        "mode == \"probes\""
+        "\"music_truth\":",
+        "\"kb_trust\":",
+        "\"intention_gap\":",
+        "\"self_audit\":",
+        "\"probes\":"
       ],
       "severity": "error"
     },
