@@ -71,6 +71,12 @@ export function streamClaude(
   const args = buildClaudeArgs(opts, sessionId, ["-p", "--output-format", "stream-json", "--verbose"]);
 
   const env = buildClaudeEnv();
+  // Use a dedicated ctx file so the statusline hook's authoritative used_pct
+  // (from API's context_window.used_percentage) doesn't get clobbered by the
+  // main Claude Code session's stop hook writing to /tmp/claude-context.json.
+  const ctxFile = `/tmp/claude-ctx-pipe-${Date.now()}.json`;
+  env["HME_CTX_FILE"] = ctxFile;
+
   const proc = spawn("claude", args, {
     cwd: workingDir,
     env,
@@ -80,10 +86,33 @@ export function streamClaude(
   proc.stdin.write(message);
   proc.stdin.end();
 
+  const _readCtxFile = (): Partial<TokenUsage> => {
+    try {
+      const d = JSON.parse(readFileSync(ctxFile, "utf8"));
+      const usedPct = sanitizeUsedPct(d.used_pct, `streamClaude:ctxFile:${ctxFile}`);
+      return {
+        ...(usedPct != null ? { usedPct } : {}),
+        ...(d.model_id ? { modelId: d.model_id } : {}),
+        ...(d.model_name ? { modelName: d.model_name } : {}),
+      };
+    } catch {
+      return {};
+    }
+  };
+
   let buf = "";
   let doneFired = false;
   const safeOnDone = (cost?: number, usage?: TokenUsage) => {
-    if (!doneFired) { doneFired = true; onDone(cost, usage); }
+    if (!doneFired) {
+      doneFired = true;
+      // Statusline hook writes the real API-provided used_pct to ctxFile.
+      // Always prefer it over computeTurnUsage's token-count estimate.
+      const ctxOverride = _readCtxFile();
+      const merged: TokenUsage | undefined = usage
+        ? { ...usage, ...ctxOverride }
+        : (ctxOverride.usedPct != null ? ctxOverride as TokenUsage : undefined);
+      onDone(cost, merged);
+    }
   };
 
   const INACTIVITY_MS = 30000;
