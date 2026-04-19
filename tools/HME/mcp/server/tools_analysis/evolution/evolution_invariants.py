@@ -284,6 +284,65 @@ def _check_kb_content_no_pattern(inv: dict) -> tuple[bool, str]:
     return True, f"all {len(entries)} entries clean"
 
 
+def _check_correlation_direction(inv: dict) -> tuple[bool, str]:
+    """Verify a named correlation's sign + magnitude matches expectation.
+    This is the ultimate anti-drift check: it fires when HME's self-metric
+    is actively ANTI-correlated with musical outcome (HME thinks it's
+    improving while the music gets worse).
+
+    Config:
+      path              — JSON file containing the correlations dict
+      correlations_key  — top-level key holding the correlations object
+                          (default: 'correlations')
+      name              — correlation name (e.g. 'hme_coherence__verdict_numeric')
+      direction         — 'positive' (r > threshold) or 'negative' (r < -threshold)
+                          (default: 'positive')
+      threshold         — minimum |r| required (default: 0.0 — any matching sign)
+      min_n             — minimum sample size required to enforce (default: 10)
+    """
+    import json as _json
+    path = os.path.join(ctx.PROJECT_ROOT, inv["path"])
+    name = inv["name"]
+    corrs_key = inv.get("correlations_key", "correlations")
+    direction = inv.get("direction", "positive")
+    threshold = float(inv.get("threshold", 0.0))
+    min_n = int(inv.get("min_n", 10))
+
+    if not os.path.isfile(path):
+        return True, f"{inv['path']} missing — can't check correlation"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = _json.load(f)
+    except (OSError, _json.JSONDecodeError) as e:
+        return False, f"cannot read {inv['path']}: {e}"
+    corrs = data.get(corrs_key, {}) or {}
+    entry = corrs.get(name, {}) or {}
+    r = entry.get("r")
+    n = entry.get("n", 0)
+    if r is None or entry.get("degenerate"):
+        # Degenerate is a separate invariant's concern (metric_has_variance).
+        return True, f"{name!r} degenerate or missing — covered by variance check"
+    if n < min_n:
+        return True, f"{name!r} has n={n} < min_n={min_n}, too early to judge"
+    if direction == "positive":
+        if r < threshold:
+            return False, (
+                f"{name!r} r={r:+.3f} (want ≥{threshold:+.3f}, n={n}). "
+                f"HME's self-metric is NOT tracking the expected outcome. "
+                f"If this is the musical anchor and r is near 0 or negative, "
+                f"HME's discipline is not producing better music — the whole "
+                f"optimization direction is wrong."
+            )
+        return True, f"{name!r} r={r:+.3f}  n={n}  (positive, as expected)"
+    if direction == "negative":
+        if r > -threshold:
+            return False, (
+                f"{name!r} r={r:+.3f} (want ≤{-threshold:+.3f}, n={n})"
+            )
+        return True, f"{name!r} r={r:+.3f}  n={n}  (negative, as expected)"
+    return False, f"unknown direction {direction!r} — use 'positive' or 'negative'"
+
+
 def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
     """Verify a pipeline-metric JSON file has non-degenerate variance in the
     named field across its recent history. Catches the class of bug where a
@@ -384,6 +443,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "kb_content_no_pattern": _check_kb_content_no_pattern,
         "kb_freshness": _check_kb_freshness,
         "metric_has_variance": _check_metric_has_variance,
+        "correlation_direction": _check_correlation_direction,
         "shell_output_empty": _check_shell_output_empty,
     }
     inv_type = inv.get("type", "")
