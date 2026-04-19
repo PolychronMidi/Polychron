@@ -154,6 +154,11 @@ if echo "$CMD" | grep -q 'npm run main'; then
     WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
     HCI_VAL=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('hci','?'))" "?")
     _emit_activity pipeline_run --session="$SESSION_ID" --verdict="$VERDICT" --passed="$PASSED" --wall_s="$WALL_S" --hci="$HCI_VAL"
+    # Emit round_complete — this is the REAL round boundary for coherence
+    # scoring, trajectory analysis, and reflexivity. An evolution round
+    # ends when a pipeline finishes, not when a chat turn ends (that's
+    # turn_complete, emitted by stop.sh).
+    _emit_activity round_complete --session="$SESSION_ID" --verdict="$VERDICT" --passed="$PASSED"
     if [ "$PASSED" = "0" ]; then
       _nexus_mark PIPELINE "$VERDICT"
       _nexus_clear_type COMMIT

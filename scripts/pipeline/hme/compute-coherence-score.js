@@ -51,16 +51,32 @@ function readEvents() {
 
 function sliceToRound(events) {
   // Find the two most recent round_complete events that have actual activity
-  // between them. Skip consecutive round_complete events (which produce empty
-  // windows and false 1.0 scores). If no non-empty window exists, return all
-  // events after the last round_complete (the current in-progress round).
+  // between them. Only PIPELINE-emitted round_completes count (they carry a
+  // 'verdict' field). Historical stop.sh round_completes were chat-turn
+  // boundaries that flooded the log and collapsed this window to prehistoric
+  // data. Those are now emitted as turn_complete; any old round_complete
+  // WITHOUT a verdict field is treated as a stale turn marker and ignored.
+  //
+  // Also: if no pipeline-round window has writes, fall back to the last N
+  // events (not everything-before-oldest), so stale history can't hide a
+  // real "no writes yet" signal.
+  const MAX_FALLBACK_EVENTS = 2000;
   const rcIndices = [];
   for (let i = events.length - 1; i >= 0; i--) {
-    if (events[i] && events[i].event === 'round_complete') {
-      rcIndices.push(i);
-    }
+    const e = events[i];
+    if (!e || e.event !== 'round_complete') continue;
+    // Pipeline rounds carry a verdict; turn-boundary rounds don't.
+    // Historical events before the turn_complete rename all look like
+    // turn markers — correctly excluded.
+    if (!e.verdict) continue;
+    rcIndices.push(i);
   }
-  if (rcIndices.length === 0) return events;
+  if (rcIndices.length === 0) {
+    // No real round boundaries yet — return the recent tail rather than
+    // the whole history. Keeps coherence score honest during the ramp-up
+    // after the turn_complete/round_complete split.
+    return events.slice(-MAX_FALLBACK_EVENTS);
+  }
   // Try successive pairs until we find one with activity between them
   for (let p = 0; p < rcIndices.length - 1; p++) {
     const latest = rcIndices[p];
@@ -69,14 +85,13 @@ function sliceToRound(events) {
     const hasWrites = window.some((e) => e && e.event === 'file_written');
     if (hasWrites) return window;
   }
-  // No pair had writes -- fall back to everything after the last round_complete
-  // (the current in-progress round, which may have real edits).
+  // No pair had writes -- fall back to events after the last pipeline round.
   const lastRC = rcIndices[0];
   const tail = events.slice(lastRC + 1);
   if (tail.some((e) => e && e.event === 'file_written')) return tail;
-  // Absolutely nothing -- fall back to everything before the oldest round_complete
-  const oldest = rcIndices[rcIndices.length - 1];
-  return events.slice(0, oldest);
+  // No writes anywhere in the pipeline-bounded windows — return the recent
+  // tail for "no data" signalling. Never reach back into pre-split history.
+  return events.slice(-MAX_FALLBACK_EVENTS);
 }
 
 

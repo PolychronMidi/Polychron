@@ -8,7 +8,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 INPUT=$(cat)
 _DETECTORS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../scripts/detectors"
 
-# ── Context meter: merge token counts into existing statusLine data ───────────
+# Context meter: merge token counts into existing statusLine data ───────────
 # StatusLine writes authoritative used_pct/remaining_pct/size from the API.
 # Stop hook only adds input_tokens/output_tokens from the transcript — never
 # overwrites used_pct (that would replace real API data with a fabricated estimate).
@@ -22,7 +22,7 @@ if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null || true
 fi
 
-# ── Auto-commit snapshot ──────────────────────────────────────────────────────
+# Auto-commit snapshot ──────────────────────────────────────────────────────
 # Commit any uncommitted changes before lifecycle checks run.
 # Timestamps only — no description. Skipped during pipeline runs (run.lock present).
 # After commit, the nexus EDIT backlog triggers review(mode='forget') automatically.
@@ -60,7 +60,7 @@ elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   fi
 fi
 
-# ── LIFESAVER — mid-turn error detection ──────────────────────────────────────
+# LIFESAVER — mid-turn error detection ──────────────────────────────────────
 # LIFE-OR-DEATH: Catch errors that fired in HME Chat DURING this turn.
 # Block stopping — errors that appeared while you worked MUST be fixed before return.
 # Acknowledging without fixing is the violation this system exists to prevent.
@@ -103,7 +103,7 @@ if [ -f "$ERROR_LOG" ]; then
   fi
 fi
 
-# ── Evolver Loop (ralph-loop pattern) ─────────────────────────────────────────
+# Evolver Loop (ralph-loop pattern) ─────────────────────────────────────────
 # When .claude/hme-evolver.local.md exists, block exit and inject next iteration.
 LOOP_FILE="$CLAUDE_PROJECT_DIR/.claude/hme-evolver.local.md"
 
@@ -168,7 +168,7 @@ if [[ -f "$LOOP_FILE" ]]; then
   fi
 fi
 
-# ── Consolidated detector run ─────────────────────────────────────────────────
+# Consolidated detector run ─────────────────────────────────────────────────
 # All 6 stop-side detectors (poll_count / idle_after_bg / psycho_stop /
 # ack_skip / abandon_check / stop_work) run in ONE python3 invocation via
 # run_all.py — parse the transcript once, share the cache, amortize the
@@ -201,7 +201,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   [[ "$POLL_COUNT" =~ ^[0-9]+$ ]] || POLL_COUNT=0
 fi
 
-# ── Background task polling detection ─────────────────────────────────────────
+# Background task polling detection ─────────────────────────────────────────
 if [[ "$POLL_COUNT" -ge 2 ]]; then
   jq -n '{
     "decision": "block",
@@ -210,7 +210,7 @@ if [[ "$POLL_COUNT" -ge 2 ]]; then
   exit 0
 fi
 
-# ── Background-launch-then-idle detection ────────────────────────────────────
+# Background-launch-then-idle detection ────────────────────────────────────
 if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
   jq -n '{
     "decision": "block",
@@ -219,7 +219,7 @@ if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
   exit 0
 fi
 
-# ── Psychopathic-stop detection ───────────────────────────────────────────────
+# Psychopathic-stop detection ───────────────────────────────────────────────
 if [[ "$PSYCHO_STOP" == "psycho" ]]; then
   jq -n '{
     "decision": "block",
@@ -228,7 +228,7 @@ if [[ "$PSYCHO_STOP" == "psycho" ]]; then
   exit 0
 fi
 
-# ── Acknowledge-and-move-on detection ────────────────────────────────────────
+# Acknowledge-and-move-on detection ────────────────────────────────────────
 if [[ "$ACK_SKIP" == "ack_skip" ]]; then
   jq -n '{
     "decision": "block",
@@ -237,7 +237,7 @@ if [[ "$ACK_SKIP" == "ack_skip" ]]; then
   exit 0
 fi
 
-# ── Plan-abandonment detection ────────────────────────────────────────────────
+# Plan-abandonment detection ────────────────────────────────────────────────
 if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
   jq -n '{
     "decision": "block",
@@ -246,7 +246,7 @@ if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
   exit 0
 fi
 
-# ── Nexus lifecycle audit ────────────────────────────────────────────────────
+# Nexus lifecycle audit ────────────────────────────────────────────────────
 # If there are unreviewed EDITs, BLOCK and force the agent to run
 #   i/review mode=forget
 # The agent is fully capable of calling that directly via the Bash(i/review …)
@@ -292,7 +292,7 @@ if [ -n "$NEXUS_ISSUES" ]; then
   exit 0
 fi
 
-# ── Session-end holograph diff ───────────────────────────────────────────────
+# Session-end holograph diff ───────────────────────────────────────────────
 # Compare the session-start holograph (captured at sessionstart.sh) against
 # the current state. Surfaces drift that happened during this session — e.g.,
 # a new hook that was added but not registered in hooks.json, a KB entry
@@ -314,13 +314,17 @@ if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
   fi
 fi
 
-# ── HME activity bridge: emit round_complete ─────────────────────────────────
-# Snapshots the turn boundary for metrics/hme-activity.jsonl so activity_digest
-# can distinguish "this round" from history.
+# HME activity bridge: emit turn_complete ─────────────────────────────────
+# Snapshots the CHAT TURN boundary for metrics/hme-activity.jsonl. This is
+# NOT round_complete — that fires on pipeline finish (posttooluse_bash.sh
+# after `npm run main`). Chat turns happen every few seconds in active use;
+# evolution rounds happen on pipeline cadence. Conflating them collapsed
+# the coherence-score window to stale data. Separate events keep the
+# semantic clean.
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
-_emit_activity round_complete --session="$_SESSION_ID_FOR_ACTIVITY"
+_emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 
-# ── Antagonism bridge: record turn for streak calibrator ─────────────────────
+# Antagonism bridge: record turn for streak calibrator ─────────────────────
 # Feeds the LIFESAVER streak-sensitivity <-> signal-trust bridge. At turn end
 # we snapshot (turnstart_lines, watermark, total_lines) into the calibrator
 # history. Resolution-velocity is computed across the rolling window and used
@@ -330,7 +334,7 @@ _emit_activity round_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
   > /dev/null 2>&1 || true
 
-# ── Turn-closing audit trail ──────────────────────────────────────────────────
+# Turn-closing audit trail ──────────────────────────────────────────────────
 # Summarize what changed this turn from nexus EDIT entries and emit to stderr
 # so it appears in the session log. Silent when nothing was edited.
 _EDIT_FILES=$(grep '^EDIT:' "${PROJECT_ROOT}/tmp/hme-nexus.state" 2>/dev/null \
@@ -341,7 +345,7 @@ if [ -n "$_EDIT_FILES" ]; then
   echo "$_EDIT_FILES" | sed 's/^/  /' >&2
 fi
 
-# ── Default enforcement reminder ──────────────────────────────────────────────
+# Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 # STOP_WORK was captured earlier via run_all.py.
 if [[ "$STOP_WORK" == "DISMISSIVE" ]]; then
