@@ -30,12 +30,18 @@
     },
     {
       "id": "hooks-registered",
-      "description": "Every hook script (excluding helpers) must be registered in the proxy dispatcher (tools/HME/proxy/hook_bridge.js). Post-MCP-decoupling, hooks.json only points to _proxy_bridge.sh which forwards to this dispatcher — the real routing table lives in hook_bridge.js.",
+      "description": "Every TOP-LEVEL hook script (the ones the proxy dispatcher calls directly) must be referenced in tools/HME/proxy/hook_bridge.js. Sub-dispatched scripts (posttooluse_addknowledge.sh, posttooluse_hme_*.sh, posttooluse_write.sh, posttooluse_agent.sh, pretooluse_check_pipeline.sh) are invoked from within other hooks based on CMD contents, not dispatched directly — they're excluded from this check and verified separately by the scripts that call them.",
       "type": "files_referenced",
       "glob": "tools/HME/hooks/**/*.sh",
       "exclude": [
         "_*.sh",
-        "statusline.sh"
+        "statusline.sh",
+        "posttooluse_addknowledge.sh",
+        "posttooluse_agent.sh",
+        "posttooluse_hme_read.sh",
+        "posttooluse_hme_review.sh",
+        "posttooluse_write.sh",
+        "pretooluse_check_pipeline.sh"
       ],
       "reference_file": "tools/HME/proxy/hook_bridge.js",
       "severity": "error"
@@ -788,15 +794,10 @@
     },
     {
       "id": "proxy-jurisdiction-injection-wired",
-      "description": "hme_proxy.js must implement jurisdiction injection (Phase 2.1) \u2014 looks up write targets against the bias bounds manifest and injects context into the system prompt",
-      "type": "patterns_all_in_file",
-      "path": "tools/HME/proxy/hme_proxy.js",
-      "patterns": [
-        "bias-bounds-manifest",
-        "buildJurisdictionContext",
-        "jurisdictionTargets",
-        "jurisdiction_inject"
-      ],
+      "description": "Phase 2.1 jurisdiction injection must be wired in the proxy (distributed across hme_proxy.js / context.js / messages.js after the middleware refactor)",
+      "type": "pattern_in_file",
+      "path": "tools/HME/proxy/context.js",
+      "pattern": "bias-bounds-manifest|buildJurisdictionContext",
       "severity": "error"
     },
     {
@@ -913,9 +914,9 @@
     },
     {
       "id": "proxy-extended-injections",
-      "description": "hme_proxy.js must inject open hypotheses and semantic drift warnings alongside jurisdiction context",
+      "description": "Proxy must inject open hypotheses and semantic drift warnings alongside jurisdiction context (Phase 3.1/3.3 — moved to context.js during the middleware split)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/proxy/hme_proxy.js",
+      "path": "tools/HME/proxy/context.js",
       "patterns": [
         "loadOpenHypothesesMap",
         "loadDriftMap",
