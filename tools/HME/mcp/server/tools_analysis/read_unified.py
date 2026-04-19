@@ -15,6 +15,55 @@ from .synthesis_session import append_session_narrative
 logger = logging.getLogger("HME")
 
 
+def _emit_brief_recorded(target: str, source: str = "hme_read") -> None:
+    """Record BRIEF into tmp/hme-nexus.state AND emit brief_recorded activity
+    event. Stores under multiple keys so downstream hme_read_prior matching
+    works regardless of whether the caller later references the target by
+    module name, abs path, or basename with extension.
+    """
+    import subprocess as _subp
+    nexus_file = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-nexus.state")
+    os.makedirs(os.path.dirname(nexus_file), exist_ok=True)
+    # Derive all three forms: module (stem), basename_full, abs_path
+    keys = {target}
+    if os.path.isabs(target):
+        keys.add(os.path.basename(target))
+        keys.add(os.path.basename(target).rsplit(".", 1)[0])
+    else:
+        # Might be a module name or relative path
+        if "/" in target:
+            abs_p = os.path.join(ctx.PROJECT_ROOT, target)
+            keys.add(abs_p)
+            keys.add(os.path.basename(target))
+            keys.add(os.path.basename(target).rsplit(".", 1)[0])
+    ts = int(__import__("time").time())
+    try:
+        with open(nexus_file, "a", encoding="utf-8") as f:
+            for key in keys:
+                if key:
+                    f.write(f"BRIEF:{ts}:{key}\n")
+    except OSError as _e:
+        logger.debug(f"nexus write failed: {_e}")
+        return
+    # Fire activity event async
+    emit_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "activity", "emit.py")
+    if os.path.isfile(emit_path):
+        try:
+            _subp.Popen(
+                ["python3", emit_path,
+                 "--event=brief_recorded",
+                 f"--target={target}",
+                 f"--file={target if os.path.isabs(target) else ''}",
+                 f"--module={os.path.basename(target).rsplit('.', 1)[0] if '/' in target else target}",
+                 f"--source={source}",
+                 "--session=tool"],
+                stdout=_subp.DEVNULL, stderr=_subp.DEVNULL,
+                env={**os.environ, "PROJECT_ROOT": ctx.PROJECT_ROOT},  # env-ok: subprocess needs inherited env
+            )
+        except Exception as _spawn_err:
+            logger.debug(f"brief_recorded emit failed: {_spawn_err}")
+
+
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("read")
 def read(target: str, mode: str = "auto") -> str:
@@ -31,6 +80,16 @@ def read(target: str, mode: str = "auto") -> str:
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return "Error: target cannot be empty. Pass a file path, function name, or module name."
+
+    # Tool-layer BRIEF emission — agent-independent. When the agent calls
+    # i/hme-read (or the Edit pre-hook auto-chains this), that IS a BRIEF.
+    # Emit from the tool itself so BRIEFs don't depend on hook substrate or
+    # proxy middleware being active. Stores both bare module AND abs path so
+    # downstream hme_read_prior matching works regardless of form.
+    try:
+        _emit_brief_recorded(target.strip(), source=f"hme_read_{mode}")
+    except Exception as _brief_err:
+        logger.debug(f"read: brief emission failed: {_brief_err}")
 
     if mode == "before":
         from .workflow import before_editing as _be

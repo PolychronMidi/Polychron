@@ -949,6 +949,28 @@
       "severity": "error"
     },
     {
+      "id": "perceptual-complexity-has-variance",
+      "description": "EnCodec perceptual_complexity_avg must vary across rounds. If this is flat, the compositional output is genuinely identical every round OR the EnCodec pipeline is producing cached/stale signals. Either case means the external anchor's most-sensitive dimension is dead.",
+      "type": "metric_has_variance",
+      "path": "metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "perceptual_complexity_avg",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "severity": "warning"
+    },
+    {
+      "id": "clap-tension-has-variance",
+      "description": "CLAP tension query peak must vary across rounds. Flat CLAP means the CLAP model isn't sensitive to the compositional motion the pipeline produces — either broken inference or the compositions are all semantically identical to CLAP.",
+      "type": "metric_has_variance",
+      "path": "metrics/hme-musical-correlation.json",
+      "history_key": "history",
+      "field": "clap_tension",
+      "min_distinct": 3,
+      "min_rounds": 5,
+      "severity": "warning"
+    },
+    {
       "id": "prediction-accuracy-has-variance",
       "description": "hme_prediction_accuracy must show non-degenerate variance across rounds. Constant-zero accuracy means the cascade model predicts identically every time (dependency graph drifted, or reconciler never confirms).",
       "type": "metric_has_variance",

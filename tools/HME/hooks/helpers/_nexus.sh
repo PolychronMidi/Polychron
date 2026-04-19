@@ -111,12 +111,33 @@ _nexus_pending() {
 _brief_add() {
   local target="${1:-}" source="${2:-unknown}"
   [ -z "$target" ] && return 0
+  # Store under multiple forms so hme_read_prior matching works regardless
+  # of whether downstream looks up by module / basename / abs path.
   _nexus_add BRIEF "$target"
+  if [[ "$target" == */* ]]; then
+    # It's a path — also store basename and module stem
+    local _basename _stem
+    _basename="$(basename "$target")"
+    _stem="${_basename%.*}"
+    [ -n "$_basename" ] && _nexus_add BRIEF "$_basename"
+    [ -n "$_stem" ] && [ "$_stem" != "$_basename" ] && _nexus_add BRIEF "$_stem"
+  fi
+  # Derive file + module fields separately for structured downstream filtering
+  local _brief_file="" _brief_module=""
+  if [[ "$target" == */* ]]; then
+    _brief_file="$target"
+    local _bn; _bn="$(basename "$target")"
+    _brief_module="${_bn%.*}"
+  else
+    _brief_module="$target"
+  fi
   # Emit activity event in background; never block the caller
   if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ] 2>/dev/null; then
     python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
       --event=brief_recorded \
       --target="$target" \
+      --file="$_brief_file" \
+      --module="$_brief_module" \
       --source="$source" \
       --session="$(whoami 2>/dev/null || echo shell)" \
       >/dev/null 2>&1 &

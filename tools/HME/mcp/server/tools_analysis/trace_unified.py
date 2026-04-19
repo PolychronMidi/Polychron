@@ -45,6 +45,16 @@ def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -
     if mode == "auto":
         mode = _detect_trace_type(target)
 
+    # Tool-layer BRIEF emission: tracing a module IS a read-prior signal.
+    # Not emitted for snapshot/round/cascade modes (those target beats/
+    # channels/ids, not modules). Only module-ish traces emit.
+    if mode in ("module", "impact", "causal", "callers", "interaction"):
+        try:
+            from .read_unified import _emit_brief_recorded
+            _emit_brief_recorded(target, source=f"trace_{mode}")
+        except Exception as _brief_err:
+            logger.debug(f"trace: brief emission failed: {_brief_err}")
+
     if mode == "snapshot":
         from .runtime import beat_snapshot as _bs
         return _bs(target)
