@@ -411,6 +411,9 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
       path           — activity jsonl file (default metrics/hme-activity.jsonl)
       start_event    — name of the "begin" event (e.g. pipeline_start)
       end_event      — name of the "end" event (e.g. pipeline_run)
+      require_field  — optional: events must have this field present to count
+                        (useful for round_complete which was pre-rename emitted
+                        without verdict field from chat-turn Stop hooks)
       window_events  — consider only the last N events (default 2000)
       min_occurrences — only evaluate when >= this many start_events observed
                         (default 2 — cold-start tolerance)
@@ -419,6 +422,7 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
     path = os.path.join(ctx.PROJECT_ROOT, inv.get("path", "metrics/hme-activity.jsonl"))
     start_event = inv["start_event"]
     end_event = inv["end_event"]
+    require_field = inv.get("require_field", "")
     window = int(inv.get("window_events", 2000))
     min_occ = int(inv.get("min_occurrences", 2))
 
@@ -438,8 +442,14 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
     except OSError as e:
         return False, f"cannot read {path}: {e}"
     tail = tail[-window:]
-    starts = sum(1 for e in tail if e.get("event") == start_event)
-    ends = sum(1 for e in tail if e.get("event") == end_event)
+    def _matches(e: dict, event_name: str) -> bool:
+        if e.get("event") != event_name:
+            return False
+        if require_field and not e.get(require_field):
+            return False
+        return True
+    starts = sum(1 for e in tail if _matches(e, start_event))
+    ends = sum(1 for e in tail if _matches(e, end_event))
     if starts < min_occ:
         return True, f"only {starts} {start_event!r} in last {window} events, need ≥{min_occ}"
     if starts != ends:

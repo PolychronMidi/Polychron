@@ -307,7 +307,8 @@ def _round_trace(round_id: str) -> str:
                 for line in f:
                     try:
                         e = json.loads(line.strip())
-                    except Exception:
+                    except Exception as _parse_err:
+                        logger.debug(f"activity scan line parse: {type(_parse_err).__name__}")
                         continue
                     ts = e.get("ts", 0)
                     if snap_epoch and abs(ts - snap_epoch) < 1800:
