@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 557,
-      "updated_ts": 1776532032.7670345
+      "max_id": 565,
+      "updated_ts": 1776582106.1075826
     }
   },
   {
@@ -168,7 +168,7 @@
     "subs": []
   },
   {
-    "id": 550,
+    "id": 558,
     "text": "HME onboarding walkthrough",
     "activeForm": "HME onboarding walkthrough",
     "status": "in_progress",
@@ -176,11 +176,11 @@
     "critical": false,
     "source": "onboarding",
     "on_done": "",
-    "ts": 1776512227.7015436,
+    "ts": 1776582106.107568,
     "parent_id": 0,
     "subs": [
       {
-        "id": 551,
+        "id": 559,
         "text": "boot check (hme_admin action=selftest)",
         "activeForm": "boot check (hme_admin action=selftest)",
         "status": "completed",
@@ -188,12 +188,12 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.7015476,
-        "parent_id": 550,
+        "ts": 1776582106.107572,
+        "parent_id": 558,
         "subs": []
       },
       {
-        "id": 552,
+        "id": 560,
         "text": "pick evolution target (evolve focus=design)",
         "activeForm": "pick evolution target (evolve focus=design)",
         "status": "completed",
@@ -201,12 +201,12 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.7015495,
-        "parent_id": 550,
+        "ts": 1776582106.107574,
+        "parent_id": 558,
         "subs": []
       },
       {
-        "id": 553,
+        "id": 561,
         "text": "edit target module (KB briefing auto-chains)",
         "activeForm": "edit target module (KB briefing auto-chains)",
         "status": "in_progress",
@@ -214,12 +214,12 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.7015505,
-        "parent_id": 550,
+        "ts": 1776582106.107575,
+        "parent_id": 558,
         "subs": []
       },
       {
-        "id": 554,
+        "id": 562,
         "text": "audit changes (review mode=forget)",
         "activeForm": "audit changes (review mode=forget)",
         "status": "pending",
@@ -227,12 +227,12 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.7015512,
-        "parent_id": 550,
+        "ts": 1776582106.107576,
+        "parent_id": 558,
         "subs": []
       },
       {
-        "id": 555,
+        "id": 563,
         "text": "run pipeline (Bash: npm run main)",
         "activeForm": "run pipeline (Bash: npm run main)",
         "status": "pending",
@@ -240,12 +240,12 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.701552,
-        "parent_id": 550,
+        "ts": 1776582106.107577,
+        "parent_id": 558,
         "subs": []
       },
       {
-        "id": 556,
+        "id": 564,
         "text": "await pipeline verdict",
         "activeForm": "await pipeline verdict",
         "status": "pending",
@@ -253,12 +253,12 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.7015526,
-        "parent_id": 550,
+        "ts": 1776582106.1075776,
+        "parent_id": 558,
         "subs": []
       },
       {
-        "id": 557,
+        "id": 565,
         "text": "persist learning (learn title=, content=)",
         "activeForm": "persist learning (learn title=, content=)",
         "status": "pending",
@@ -266,8 +266,8 @@
         "critical": false,
         "source": "onboarding",
         "on_done": "",
-        "ts": 1776512227.7015533,
-        "parent_id": 550,
+        "ts": 1776582106.1075783,
+        "parent_id": 558,
         "subs": []
       }
     ]
