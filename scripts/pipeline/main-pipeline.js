@@ -188,6 +188,29 @@ function writeSummaryJSON(wallTime) {
     failed: timings.filter(function (t) { return !t.ok; }).length,
     errorPatterns: errorPatterns.length > 0 ? errorPatterns : undefined
   };
+  // Compute HCI inline so pipeline-summary.json always carries both the
+  // music verdict AND the coherence index. Previously this was done by
+  // posttooluse_bash.sh, which meant non-Claude invocations produced an
+  // hci=null summary. The HCI computation has no hook-specific context —
+  // it's just a subprocess call — so it belongs here.
+  try {
+    var hciScript = path.join(__dirname, '..', '..', 'tools', 'HME', 'scripts', 'verify-coherence.py');
+    if (fs.existsSync(hciScript)) {
+      var hciOut = cp.spawnSync('python3', [hciScript, '--score'], {
+        encoding: 'utf8', timeout: 30_000,
+        env: Object.assign({}, process.env, {
+          PROJECT_ROOT: path.join(__dirname, '..', '..'),
+        }),
+      });
+      var hciStr = (hciOut.stdout || '').trim();
+      if (hciStr && /^\d+$/.test(hciStr)) {
+        summary.hci = parseInt(hciStr, 10);
+        summary.hci_captured_at = Math.floor(Date.now() / 1000);
+      }
+    }
+  } catch (e) {
+    console.error('  HCI compute failed: ' + (e && e.message ? e.message : e));
+  }
   try {
     var outDir = path.join(__dirname, '../..', 'metrics');
     fs.mkdirSync(outDir, { recursive: true });
@@ -214,9 +237,11 @@ function emitActivity(event, fields) {
     if (fields[k] === null || fields[k] === undefined) continue;
     args.push('--' + k + '=' + String(fields[k]));
   }
+  var projectRoot = path.join(__dirname, '..', '..');
   try {
     cp.spawn('python3', args, {
-      stdio: 'ignore', detached: true, cwd: path.join(__dirname, '..', '..'),
+      stdio: 'ignore', detached: true, cwd: projectRoot,
+      env: Object.assign({}, process.env, { PROJECT_ROOT: projectRoot }),
     }).unref();
   } catch (e) {
     console.error('  emit_activity ' + event + ' failed: ' + (e && e.message ? e.message : e));
@@ -255,6 +280,7 @@ function main() {
   // fingerprint-comparison.json (written by golden-fingerprint step).
   var verdict = 'UNKNOWN';
   var failed = timings.some(function(r) { return !r.ok; }) ? 1 : 0;
+  var hci = null;
   try {
     var fp = JSON.parse(fs.readFileSync(
       path.join(__dirname, '..', '..', 'metrics', 'fingerprint-comparison.json'),
@@ -262,14 +288,52 @@ function main() {
     ));
     verdict = fp.verdict || fp.result || 'UNKNOWN';
   } catch (_e) { /* fingerprint not produced — leave verdict UNKNOWN */ }
+  try {
+    var ps = JSON.parse(fs.readFileSync(
+      path.join(__dirname, '..', '..', 'metrics', 'pipeline-summary.json'), 'utf8'
+    ));
+    if (typeof ps.hci === 'number') hci = ps.hci;
+  } catch (_e) { /* summary wasn't read back — leave hci null */ }
   var session = process.env.HME_SESSION_ID || 'shell';
   emitActivity('pipeline_run', {
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
-    wall_s: Math.round(Number(wallTime)),
+    wall_s: Math.round(Number(wallTime)), hci: hci,
   });
   emitActivity('round_complete', {
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
   });
+
+  // Background analytics + snapshots that need the freshly-written summary.
+  // Moved from posttooluse_bash.sh so non-Claude pipeline runs (shell, cron,
+  // CI, any other agent) also refresh these artifacts. Spawned detached so
+  // they don't block pipeline-finish latency.
+  var hmeScripts = path.join(__dirname, '..', '..', 'tools', 'HME', 'scripts');
+  var bgScripts = [
+    'snapshot-holograph.py',           // time-series holograph for HCI trend
+    'analyze-tool-effectiveness.py',   // tool-usage patterns per session
+    'analyze-hci-trajectory.py',       // HCI linear-regression forecast
+    'build-hme-coupling-matrix.py',    // tool co-occurrence matrix
+    'build-dashboard.py',              // interactive plotly dashboard
+    'chain-snapshot.py',               // pre-compact session snapshot
+    'emit-hci-signal.py',              // HCI → composition-layer signal
+    'suggest-verifiers.py',            // verifier coverage report
+    'memetic-drift.py',                // CLAUDE.md rule violation scan
+  ];
+  var bgEnv = Object.assign({}, process.env, {
+    PROJECT_ROOT: path.join(__dirname, '..', '..'),
+  });
+  for (var k = 0; k < bgScripts.length; k++) {
+    var script = path.join(hmeScripts, bgScripts[k]);
+    if (!fs.existsSync(script)) continue;
+    var scriptArgs = [script];
+    if (bgScripts[k] === 'chain-snapshot.py') scriptArgs.push('--eager');
+    try {
+      cp.spawn('python3', scriptArgs, {
+        stdio: 'ignore', detached: true, env: bgEnv,
+        cwd: path.join(__dirname, '..', '..'),
+      }).unref();
+    } catch (_e) { /* best-effort — don't block pipeline on analytics spawn */ }
+  }
 
   console.log('Pipeline finished in ' + wallTime + 's');
 }
