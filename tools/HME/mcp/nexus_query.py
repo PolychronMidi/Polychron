@@ -7,9 +7,17 @@ protocol centralized.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
-_PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
+# Use the central .env loader. Must be on sys.path because this module lives
+# in the same dir.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+from hme_env import ENV  # noqa: E402
+
+_PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 _NEXUS_FILE = Path(_PROJECT_ROOT) / "tmp" / "hme-nexus.state"
 
 
