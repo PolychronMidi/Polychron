@@ -127,6 +127,22 @@ fi
 if _port_healthy "${CHAT_URL}/api/health" || _port_healthy "${CHAT_URL}"; then
   echo "[launch] chat server already up on :${CHAT_PORT}" >&2
 else
+  # Compile TS → JS if any source file is newer than its compiled counterpart,
+  # or if out/ is missing entirely. Keeps running server untouched when no-op.
+  _chat_dir="$PROJECT_ROOT/tools/HME/chat"
+  _needs_build=0
+  if [ ! -f "$_chat_dir/out/server.js" ]; then
+    _needs_build=1
+  elif [ -n "$(find "$_chat_dir/src" -name '*.ts' -newer "$_chat_dir/out/server.js" -print -quit 2>/dev/null)" ]; then
+    _needs_build=1
+  fi
+  if [ "$_needs_build" = 1 ]; then
+    echo "[launch] compiling chat TS → JS..." >&2
+    if ! (cd "$_chat_dir" && npx tsc -p . > "$PROJECT_ROOT/log/hme-chat-build.log" 2>&1); then
+      echo "[launch] ERROR: tsc failed — see $PROJECT_ROOT/log/hme-chat-build.log" >&2
+      exit 1
+    fi
+  fi
   echo "[launch] starting HME chat server on :${CHAT_PORT}..." >&2
   cd "$PROJECT_ROOT/tools/HME/chat"
   HME_CHAT_PORT="$CHAT_PORT" PROJECT_ROOT="$PROJECT_ROOT" \

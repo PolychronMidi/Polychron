@@ -21,7 +21,7 @@ from ._helpers import (  # noqa: F401
     _git_run, _load_trace, _trace_cache, _git_cache,
 )
 
-# ---------------------------------------------------------------------------
+
 
 import sys as _sys
 _PKG = __name__

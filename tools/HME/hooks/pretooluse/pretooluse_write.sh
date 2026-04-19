@@ -5,6 +5,13 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
+# Block direct writes to compiled output — edit the .ts source instead
+if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
+  cd /home/jah/Polychron/tools/HME/chat && npx tsc 2>&1 | tail -20 >&2 || true
+  _emit_block "BLOCKED: Do NOT write files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
+  exit 2
+fi
+
 # Block writes to the auto-memory directory — memory saving is an antipattern here
 if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   _emit_block "BLOCKED: Memory saving is an antipattern. Do not write to .claude/projects memory directory. Fix behavior, not memory."

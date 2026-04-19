@@ -404,9 +404,9 @@ def _scan_environment() -> dict:
     for gpu in env.get("gpus", []):
         if gpu["free_mb"] < 500:
             alerts.append({"type": "gpu_memory_pressure", "message": f"GPU{gpu['index']} only {gpu['free_mb']}MB free — OOM imminent on next model load"})
-    if env.get("load_1m", 0) > os.cpu_count() * 3:
-        alerts.append({"type": "cpu_overload", "message": f"Load {env['load_1m']} exceeds 3x CPU count — system thrashing"})
-    if env.get("process_rss_mb", 0) > 2048:
+    if env.get("load_1m", 0) > os.cpu_count() * 2:
+        alerts.append({"type": "cpu_overload", "message": f"Load {env['load_1m']} exceeds 2x CPU count — system thrashing"})
+    if env.get("process_rss_mb", 0) > 8192:
         alerts.append({"type": "memory_bloat", "message": f"MCP process at {env['process_rss_mb']}MB RSS — possible memory leak"})
     env["alerts"] = alerts
     return env

@@ -110,6 +110,13 @@ if [ -n "$TIMEOUT" ] && [ "$TIMEOUT" != "0" ]; then
   exit 0
 fi
 
+# Block any bash access to compiled output — out/ is a black box
+if echo "$CMD" | grep -q "tools/HME/chat/out"; then
+  cd /home/jah/Polychron/tools/HME/chat && npx tsc 2>&1 | tail -20 >&2 || true
+  _emit_block "BLOCKED: tools/HME/chat/out/ is a black box. Work with the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
+  exit 2
+fi
+
 # Block mkdir of non-root log/, metrics/, or tmp/ directories
 if echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/(log|metrics|tmp)($|/)'; then
   if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)'; then
@@ -349,9 +356,28 @@ if echo "$CMD" | grep -qE 'sleep.*(tail|cat|head|grep|\.output)'; then
   exit 0
 fi
 
-# Suggest HME alternatives for shell commands
-if echo "$CMD" | grep -qE '^grep '; then
-  echo "PREFER: use the Grep tool — it is passthru-enriched with KB context." >&2
+# Redirect native-tool candidates — grep/cat/head/tail/ls via Bash wastes context
+# and bypasses KB enrichment. Block and give the exact native equivalent.
+_TRIMMED=$(echo "$CMD" | sed 's/^[[:space:]]*//')
+if echo "$_TRIMMED" | grep -qE '^grep\b'; then
+  _PATTERN=$(echo "$_TRIMMED" | sed -E 's/^grep[[:space:]]+(-[^ ]+ )*//; s/[[:space:]].*//')
+  _emit_block "Use the Grep tool instead of Bash grep — it is KB-enriched and context-aware.
+  Grep pattern=\"${_PATTERN}\" [path=...] [glob=\"*.ts\"] [output_mode=content|files_with_matches|count] [-i=true] [-C=3]"
+  exit 2
+fi
+if echo "$_TRIMMED" | grep -qE '^(cat|head|tail)\b'; then
+  _FILE=$(echo "$_TRIMMED" | awk '{print $NF}')
+  if echo "$_FILE" | grep -qE '\.(js|ts|sh|py|json|md)$'; then
+    _emit_block "Use the Read tool instead of Bash cat/head/tail — it is KB-enriched and context-aware.
+  Read file_path=\"${_FILE}\" [offset=N] [limit=N]"
+    exit 2
+  fi
+fi
+if echo "$_TRIMMED" | grep -qE '^ls\b'; then
+  _DIR=$(echo "$_TRIMMED" | sed -E 's/^ls[[:space:]]+((-[^ ]+ )*)?//')
+  _emit_block "Use the Glob tool instead of Bash ls.
+  Glob pattern=\"${_DIR:-.}/**\" [path=\"${_DIR:-.}\"]"
+  exit 2
 fi
 # FAIL FAST — the core invariant of this project: NO error, anywhere, ever, may be silently
 # swallowed, suppressed, logged-and-dropped, or masked by a fallback value.

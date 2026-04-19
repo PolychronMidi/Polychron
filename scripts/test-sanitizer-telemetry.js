@@ -6,7 +6,7 @@
 //   2. Call the registered ErrorSink with a non-empty message
 //
 // Without this verifier, a future refactor can silently drop either
-// half — returning undefined but never reporting, or logging but
+// half -- returning undefined but never reporting, or logging but
 // returning the bad value. The original 1M-vs-200k bug was exactly
 // "logged" (nowhere) + "returned" (to the meter, which trusted it).
 //
@@ -52,7 +52,7 @@ function check(label, condition, detail) {
 function reset() { captured.length = 0; }
 function lastMessage() { return captured.length ? captured[captured.length - 1].message : null; }
 
-// ── null/undefined: must return undefined, must NOT report ─────────────
+// ?unknown-ascii-character??unknown-ascii-character? null/undefined: must return undefined, must NOT report ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 reset();
 check("null returns undefined", sanitizeUsedPct(null, "test") === undefined);
 check("null does NOT emit telemetry", captured.length === 0, `got ${captured.length} reports`);
@@ -61,7 +61,7 @@ reset();
 check("undefined returns undefined", sanitizeUsedPct(undefined, "test") === undefined);
 check("undefined does NOT emit telemetry", captured.length === 0);
 
-// ── non-finite: must return undefined, MUST report ─────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? non-finite: must return undefined, MUST report ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 reset();
 check("NaN returns undefined", sanitizeUsedPct(NaN, "test") === undefined);
 check("NaN emits telemetry", captured.length === 1 && /non-finite/.test(lastMessage() || ""));
@@ -74,7 +74,7 @@ reset();
 check("string returns undefined", sanitizeUsedPct("50", "test") === undefined);
 check("string emits telemetry", captured.length === 1 && /non-finite/.test(lastMessage() || ""));
 
-// ── out of hard range: return undefined + report ───────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? out of hard range: return undefined + report ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 reset();
 check("-1 returns undefined", sanitizeUsedPct(-1, "test") === undefined);
 check("-1 emits telemetry", captured.length === 1 && /out-of-range|hard ceiling/.test(lastMessage() || ""));
@@ -88,7 +88,7 @@ reset();
 check("1456 (the original bug value) returns undefined", sanitizeUsedPct(1456.5, "test") === undefined);
 check("1456 emits telemetry", captured.length === 1, `expected 1 report, got ${captured.length}`);
 
-// ── in range: return rounded number, NO report ─────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? in range: return rounded number, NO report ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 setTurnNumberProvider(() => 10); // well past suspicious-band guard
 reset();
 check("50 returns 50", sanitizeUsedPct(50, "test") === 50);
@@ -102,7 +102,7 @@ reset();
 check("0 returns 0", sanitizeUsedPct(0, "test") === 0);
 check("USED_PCT_HARD_CEILING boundary", sanitizeUsedPct(USED_PCT_HARD_CEILING, "test") === USED_PCT_HARD_CEILING);
 
-// ── suspicious band ────────────────────────────────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? suspicious band ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 // Mid-session (turn 10): suspicious band should NOT emit.
 setTurnNumberProvider(() => 10);
 reset();
@@ -140,14 +140,14 @@ check(`99% with null turn provider propagates`, sanitizeUsedPct(99, "test") === 
 check(`99% with null turn provider does NOT emit suspicious_pct`,
   !captured.some(c => /suspicious_pct/.test(c.message)));
 
-// ── contract: every rejection carries the source tag ───────────────────
+// ?unknown-ascii-character??unknown-ascii-character? contract: every rejection carries the source tag ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 setTurnNumberProvider(() => 10);
 reset();
 sanitizeUsedPct(NaN, "my-unique-source-tag");
 check("rejection message contains the source tag",
   captured.length === 1 && captured[0].message.includes("my-unique-source-tag"));
 
-// ── summary ────────────────────────────────────────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? summary ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 console.log(`\nPassed: ${pass}   Failed: ${fail}`);
 if (fail > 0) {
   console.log("\nFailures:");

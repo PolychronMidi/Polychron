@@ -55,9 +55,9 @@ if lines:
     if [ -n "$ERROR_STEPS" ]; then
       cat >&2 <<ERRMSG
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   PIPELINE ERRORS DETECTED — DO NOT IGNORE
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 $ERROR_STEPS
 
   These are REAL failures in pipeline steps. You MUST:
@@ -65,7 +65,7 @@ $ERROR_STEPS
   (2) Diagnose the root cause
   (3) Fix the issue before proceeding with any other work
   DO NOT mark this pipeline run as successful.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 ERRMSG
     fi

@@ -32,6 +32,12 @@ module.exports = {
       if (target) ctx.nexusAdd('BRIEF', String(target));
     }
 
+    if (name === 'Read' && _isTrackedPath(fp)) {
+      // Silent KB enrichment: reading a tracked src/ file auto-marks BRIEF,
+      // same effect as an explicit i/hme-read call.
+      ctx.nexusAdd('BRIEF', _extractModule(fp));
+    }
+
     if (name === 'HME_review') {
       const count = ctx.nexusCount('EDIT');
       ctx.nexusClearType('EDIT');

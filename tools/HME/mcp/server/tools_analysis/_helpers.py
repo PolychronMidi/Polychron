@@ -14,9 +14,9 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-# ---------------------------------------------------------------------------
+
 # Session tracking + output budgets
-# ---------------------------------------------------------------------------
+
 
 _usage_stats: dict[str, int] = {}
 
@@ -332,4 +332,3 @@ def _load_trace(trace_path: str) -> list[dict]:
     _trace_cache["mtime"] = mt
     _trace_cache["records"] = records
     return records
-
