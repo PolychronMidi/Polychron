@@ -7,6 +7,7 @@ import subprocess
 from server import context as ctx
 from server.onboarding_chain import chained
 from ..synthesis import _local_think
+from ..synthesis.synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL
 from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
@@ -307,8 +308,13 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     )
     snippet = _local_think(synthesis_prompt, max_tokens=512)
     if not snippet:
+        # Coder model unavailable — try reasoning model as fallback
+        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_REASONING_MODEL)
+    if not snippet:
         return (
-            f"Could not synthesize snippet.\n"
+            f"Could not synthesize snippet — both coder ({_LOCAL_MODEL}) and reasoning "
+            f"({_REASONING_MODEL}) models returned empty. Check selftest: if llama-server "
+            f"instances are unreachable, fix_antipattern cannot synthesize.\n"
             f"Manually add detection logic to: {hook_path}\n"
             f"Antipattern to prevent: {antipattern}"
         )
