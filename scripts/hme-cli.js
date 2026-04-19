@@ -56,7 +56,8 @@ const CLI_VERSION = (() => {
 
 const HOST = process.env.HME_CLI_HOST || '127.0.0.1';
 const PORT = Number(process.env.HME_MCP_PORT || 9098);
-const TIMEOUT_MS = Number(process.env.HME_CLI_TIMEOUT_MS || 120000);
+// Timeouts removed per request: handled at lower layers
+const TIMEOUT_MS = 0;
 
 function parseArgs(argv) {
   const args = {};
@@ -128,7 +129,7 @@ function postTool(name, args) {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
       },
-      timeout: TIMEOUT_MS,
+      // No client-side timeout: handled by worker/network stack
     }, (res) => {
       let chunks = '';
       res.on('data', (c) => { chunks += c; });
@@ -142,9 +143,7 @@ function postTool(name, args) {
       });
     });
     req.on('error', reject);
-    req.on('timeout', () => {
-      req.destroy(new Error(`timeout after ${TIMEOUT_MS}ms`));
-    });
+    // Client-side timeout disabled entirely
     req.write(body);
     req.end();
   });
