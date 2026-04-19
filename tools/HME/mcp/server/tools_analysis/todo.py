@@ -227,9 +227,9 @@ def _write_graph_file(todos: list) -> None:
         f.write(body)
 
 
-# --------------------------------------------------------------------------
+
 # External API
-# --------------------------------------------------------------------------
+
 
 def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
     """LIFESAVER entry point — dedup-aware.
@@ -480,9 +480,9 @@ def merge_native_todowrite(incoming: list) -> list:
         return flat
 
 
-# --------------------------------------------------------------------------
+
 # MCP tool — agents call this for hierarchical features TodoWrite lacks
-# --------------------------------------------------------------------------
+
 
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("hme_todo")
@@ -615,9 +615,9 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         return f"Unknown action '{action}'. Use: list, add, done, undo, remove, clear, critical."
 
 
-# --------------------------------------------------------------------------
+
 # on_done dispatch — E6: lifecycle triggers fire when entries are completed
-# --------------------------------------------------------------------------
+
 
 def _fire_on_done(entry: dict) -> str:
     """Run the on_done trigger named in the entry. Returns a short status

@@ -69,9 +69,9 @@ def _kb_full(query: str) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
+
 # grep — absorbs find's search modes (callers, boundary, semantic, diagnose)
-# ---------------------------------------------------------------------------
+
 
 def _detect_search_intent(query: str) -> str:
     q = query.lower().strip()
@@ -231,9 +231,9 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
         return f"Error: {e}"
 
 
-# ---------------------------------------------------------------------------
+
 # glob_search — absorbs find's structural modes (map, hierarchy, symbols, etc.)
-# ---------------------------------------------------------------------------
+
 
 @ctx.mcp.tool(meta={"hidden": True})
 def glob_search(pattern: str, path: str = "", mode: str = "auto",
@@ -328,9 +328,9 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
     return header + "\n" + "\n".join(parts)
 
 
-# ---------------------------------------------------------------------------
+
 # edit — file editing with KB constraint surfacing
-# ---------------------------------------------------------------------------
+
 
 @ctx.mcp.tool(meta={"hidden": True})
 def edit(file_path: str, old_string: str, new_string: str,

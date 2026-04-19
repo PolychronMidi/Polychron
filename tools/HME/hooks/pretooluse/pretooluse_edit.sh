@@ -7,6 +7,13 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
+# Block direct edits to compiled output — edit the .ts source instead
+if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
+  cd /home/jah/Polychron/tools/HME/chat && npx tsc 2>&1 | tail -20 >&2 || true
+  _emit_block "BLOCKED: Do NOT edit files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
+  exit 2
+fi
+
 # Block edits to non-root log/, metrics/, or tmp/ directories
 if echo "$FILE" | grep -qE '/(log|metrics|tmp)/'; then
   if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT:-/home/jah/Polychron}"'/(log|metrics|tmp)/'; then

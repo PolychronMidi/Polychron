@@ -48,9 +48,9 @@ _SCRIPTS_DIR = os.path.join(_PROJECT, "tools", "HME", "scripts")
 _DOC_DIRS = [os.path.join(_PROJECT, "doc"), os.path.join(_PROJECT, "tools", "HME", "skills")]
 
 
-# --------------------------------------------------------------------------
+
 # Result types
-# --------------------------------------------------------------------------
+
 
 PASS = "PASS"
 WARN = "WARN"
@@ -76,9 +76,9 @@ def _result(status: str, score: float, summary: str, details=None) -> VerdictRes
                          summary=summary, details=details or [])
 
 
-# --------------------------------------------------------------------------
+
 # Verifier base + helpers
-# --------------------------------------------------------------------------
+
 
 class Verifier:
     """Each subclass declares name, category, weight, and run()."""
@@ -111,9 +111,9 @@ def _run_subprocess(script: str, timeout: int = 30) -> tuple:
     return rc.returncode, rc.stdout, rc.stderr
 
 
-# --------------------------------------------------------------------------
+
 # Verifiers — DOC category
-# --------------------------------------------------------------------------
+
 
 class DocDriftVerifier(Verifier):
     name = "doc-drift"
@@ -187,9 +187,9 @@ class DocstringPresenceVerifier(Verifier):
                        missing)
 
 
-# --------------------------------------------------------------------------
+
 # Verifiers — CODE category
-# --------------------------------------------------------------------------
+
 
 class PythonSyntaxVerifier(Verifier):
     name = "python-syntax"
@@ -324,9 +324,9 @@ class DecoratorOrderVerifier(Verifier):
                        violations)
 
 
-# --------------------------------------------------------------------------
+
 # Verifiers — STATE category
-# --------------------------------------------------------------------------
+
 
 class StatesSyncVerifier(Verifier):
     name = "states-sync"
@@ -434,9 +434,9 @@ class TodoStoreSchemaVerifier(Verifier):
         return _result(WARN, score, f"{len(violations)} schema violations", violations[:10])
 
 
-# --------------------------------------------------------------------------
+
 # Verifiers — COVERAGE category
-# --------------------------------------------------------------------------
+
 
 class HookRegistrationVerifier(Verifier):
     """Every matcher in hooks.json points to a real .sh file."""
@@ -606,9 +606,9 @@ class ToolSurfaceCoverageVerifier(Verifier):
                        missing)
 
 
-# --------------------------------------------------------------------------
+
 # Verifiers — RUNTIME category
-# --------------------------------------------------------------------------
+
 
 class ShimHealthVerifier(Verifier):
     name = "shim-health"
@@ -659,9 +659,9 @@ class ErrorLogVerifier(Verifier):
                        f"{unread} unacknowledged errors", lines[-min(5, unread):])
 
 
-# --------------------------------------------------------------------------
+
 # Verifiers — TOPOLOGY category
-# --------------------------------------------------------------------------
+
 
 class LifesaverRateVerifier(Verifier):
     """Scores LIFESAVER rate using multi-window recency:
@@ -1771,9 +1771,9 @@ class OnboardingChainImportVerifier(Verifier):
         return _result(PASS, 1.0, "onboarding_chain parses and has no risky top-level calls")
 
 
-# --------------------------------------------------------------------------
+
 # Registry
-# --------------------------------------------------------------------------
+
 
 REGISTRY = [
     DocDriftVerifier(),
@@ -1816,9 +1816,9 @@ REGISTRY = [
 ]
 
 
-# --------------------------------------------------------------------------
+
 # Engine
-# --------------------------------------------------------------------------
+
 
 def run_engine() -> dict:
     results = {}
@@ -1857,9 +1857,7 @@ def run_engine() -> dict:
     }
 
 
-# --------------------------------------------------------------------------
 # Output formatters
-# --------------------------------------------------------------------------
 
 def format_text(report: dict) -> str:
     lines = []

@@ -68,11 +68,10 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
     // opts.thinking: Extended thinking blocks come through natively in stream-json --verbose.
     const args = buildClaudeArgs(opts, sessionId, ["-p", "--output-format", "stream-json", "--verbose"]);
     const env = buildClaudeEnv();
-    // Use a dedicated ctx file so the statusline hook's authoritative used_pct
-    // (from API's context_window.used_percentage) doesn't get clobbered by the
-    // main Claude Code session's stop hook writing to /tmp/claude-context.json.
-    const ctxFile = `/tmp/claude-ctx-pipe-${Date.now()}.json`;
-    env["HME_CTX_FILE"] = ctxFile;
+    // The statusline hook always writes to /tmp/claude-context.json in Claude Code's
+    // environment — setting HME_CTX_FILE on the subprocess env has no effect on the
+    // hook. Read the fixed path directly.
+    const ctxFile = `/tmp/claude-context.json`;
     const proc = (0, child_process_1.spawn)("claude", args, {
         cwd: workingDir,
         env,
@@ -110,9 +109,23 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
         if (doneFired)
             return;
         doneFired = true;
-        // Statusline hook (Stop hook) writes real API used_pct to ctxFile.
-        // Read it now — process has exited, hook has run.
-        const ctxOverride = _readCtxFile();
+        // Read used_pct from statusline-raw — the statusline hook writes this for
+        // every Claude Code session. used_percentage is the direct API value, no math.
+        let ctxOverride = {};
+        try {
+            const raw = JSON.parse((0, fs_1.readFileSync)("/tmp/claude-statusline-raw.json", "utf8"));
+            const usedPct = sanitizeUsedPct(raw?.context_window?.used_percentage, "streamClaude:statusline-raw");
+            if (usedPct != null) {
+                ctxOverride = {
+                    usedPct,
+                    modelId: raw?.model?.id || undefined,
+                    modelName: raw?.model?.display_name || undefined,
+                };
+            }
+        }
+        catch { }
+        if (ctxOverride.usedPct == null)
+            ctxOverride = _readCtxFile();
         const base = resultReceived ? pendingUsage : undefined;
         const merged = base
             ? { ...base, ...ctxOverride }
@@ -219,8 +232,20 @@ function setTurnNumberProvider(fn) {
 }
 function _reportRejection(source, message) {
     console.error(`[HME] ${message}`);
-    if (_sanitizerSink)
+    if (_sanitizerSink) {
         _sanitizerSink.post(source, message);
+    }
+    else {
+        // Sink not wired yet (e.g. called before BrowserPanel init). Write directly
+        // so the LIFESAVER can catch it — never silently drop a rejection.
+        const root = process.env["PROJECT_ROOT"] ?? "";
+        if (root) {
+            try {
+                (0, fs_1.appendFileSync)(`${root}/log/hme-errors.log`, `[${new Date().toISOString()}] [${source}] ${message}\n`);
+            }
+            catch (_e) { /* last resort already logged to console above */ }
+        }
+    }
 }
 /**
  * Single sanitization gate for every path that produces a usedPct.
@@ -280,20 +305,20 @@ function computeTurnUsage(evt, uiModelAlias, inputTokens, outputTokens) {
     const [modelKey, modelEntry] = match;
     const contextWindow = modelEntry?.contextWindow;
     if (typeof contextWindow !== "number" || !Number.isFinite(contextWindow) || contextWindow < 1000) {
-        // A context window below 1000 tokens is always a bug (smallest real
-        // window is 200k). Refuse to divide — emitting a correctly-shaped
-        // TokenUsage with `usedPct=undefined` keeps the meter's last value
-        // instead of overwriting it with garbage.
         _reportRejection("computeTurnUsage", `invalid contextWindow on modelUsage["${modelKey}"]: ${JSON.stringify(contextWindow)} — usedPct skipped (uiAlias=${uiModelAlias})`);
         return { inputTokens, outputTokens, usedPct: undefined, modelId: modelKey, modelName: modelEntry?.modelName };
     }
-    // inputTokens is the new tokens this turn only (no cache). Cache tokens
-    // accumulate across turns and can exceed the context window when summed,
-    // producing fabricated percentages like 694%. The StatusLine hook provides
-    // used_percentage directly from the API — this formula is only a fallback
-    // for cases where the hook hasn't fired yet.
-    const rawPct = (inputTokens / contextWindow) * 100;
-    const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:input=${inputTokens},ctxWindow=${contextWindow},model=${modelKey}`);
+    // Use the last iteration's cache_read as the context fill — multi-turn tool
+    // calls produce multiple iterations, each re-reading the full cache, so summing
+    // across iterations gives a multiple of the real fill. The last iteration's
+    // cache_read_input_tokens IS the actual window occupancy this turn.
+    const iterations = evt.usage?.iterations ?? [];
+    const lastIter = iterations[iterations.length - 1] ?? {};
+    const fill = (lastIter.input_tokens ?? 0)
+        + (lastIter.cache_read_input_tokens ?? 0)
+        + (lastIter.cache_creation_input_tokens ?? 0);
+    const rawPct = (fill / contextWindow) * 100;
+    const usedPct = sanitizeUsedPct(rawPct, `computeTurnUsage:fill=${fill},ctxWindow=${contextWindow},model=${modelKey}`);
     return {
         inputTokens,
         outputTokens,
@@ -324,11 +349,6 @@ function handleStreamEvent(evt, uiModelAlias, onChunk, onSessionId, onDone) {
     if (evt.type === "result") {
         const inputTokens = evt.usage?.input_tokens;
         const outputTokens = evt.usage?.output_tokens;
-        // modelUsage contains one entry per model the CLI touched this turn:
-        // the UI-selected model plus any auxiliaries (Haiku for sidechain work).
-        // Match by the UI alias so usedPct is computed against the context window
-        // of the model the UI actually picked — not keys[0] (often Haiku, 200k)
-        // nor the highest-token entry (fails on trivial turns).
         const usage = computeTurnUsage(evt, uiModelAlias, inputTokens, outputTokens);
         onDone(evt.total_cost_usd ?? evt.cost_usd ?? undefined, usage);
         return;
@@ -336,9 +356,8 @@ function handleStreamEvent(evt, uiModelAlias, onChunk, onSessionId, onDone) {
 }
 // ── Claude PTY (hook-aware interactive mode) ───────────────────────────────
 const PTY_DONE_PATTERNS = [
-    /\d+%\s*\|\s*\S/,
-    /❯\s+\d+/,
-    /^[>❯]\s*$/m,
+    /\d+%\s*\|\s*\S/, // statusline footer: "90% | Sonnet 4.6" — unambiguous turn-complete
+    /❯\s+[1-9]\d+/, // prompt with non-zero token count: "❯ 20378" (not "❯ 0")
     /\nHuman:\s*$/,
     /\[H\]/,
 ];
@@ -389,12 +408,12 @@ function parseContextOutput(text) {
         const usedPct = sanitizeUsedPct(parseFloat(lineMatch[3]), `parseContextOutput:tokenLine`);
         return { inputTokens: parseK(lineMatch[1]), outputTokens: 0, usedPct };
     }
-    // Statusline footer format (CLI v2+): "❯ 20378\n\n90% | Sonnet 4.6\n\n  20378 tokens"
-    // The percentage here is directly from the API-provided context_window.used_percentage.
-    const statuslineMatch = text.match(/(\d+)%\s*\|\s*\S/);
+    // Statusline footer format (CLI v2+): "❯ 20378\n\nXX% | Sonnet 4.6\n\n  20378 tokens"
+    // The XX% value is context_window.remaining_percentage — invert to get used%.
+    const statuslineMatch = text.match(/(\d+(?:\.\d+)?)%\s*\|\s*\S/);
     if (statuslineMatch) {
-        const usedPct = sanitizeUsedPct(parseFloat(statuslineMatch[1]), `parseContextOutput:statusline`);
-        // Extract token count from "NNN tokens" or "NNNk tokens"
+        const remainingPct = parseFloat(statuslineMatch[1]);
+        const usedPct = sanitizeUsedPct(100 - remainingPct, `parseContextOutput:statusline(100-${remainingPct})`);
         const tokMatch = text.match(/([\d.]+k?)\s+tokens/i);
         const inputTokens = tokMatch ? parseK(tokMatch[1]) : 0;
         return { inputTokens, outputTokens: 0, usedPct };

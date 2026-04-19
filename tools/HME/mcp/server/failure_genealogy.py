@@ -37,7 +37,7 @@ def record_failure(
     is_new=False means the caller hit an existing dedup entry — the count was
     incremented but no new record was created. Callers can use this to
     suppress duplicate log lines so the same alert doesn't spam hme.log on
-    every monitor tick (see commit fix: health_topology LIFESAVER flood).
+    every monitor tick.
     """
     with _failures_lock:
         now = time.time()
@@ -133,15 +133,11 @@ def format_tree_as_banner(trees: list[list[dict]]) -> str:
     """Format causal trees as a LIFESAVER-style banner.
 
     Root failures are shown first; child failures (caused_by) are indented.
-    Repeated failures show a ×N count to prevent visual spam.
     """
     if not trees:
         return ""
     lines = [
-        "",
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
         "  LIFESAVER: CRITICAL FAILURES DETECTED — ADDRESS NOW",
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
     ]
     for tree in trees:
         if not tree:
@@ -153,10 +149,7 @@ def format_tree_as_banner(trees: list[list[dict]]) -> str:
             count_str = f" ×{child.get('count', 1)}" if child.get("count", 1) > 1 else ""
             lines.append(f"    → [{child['severity']}] {child['source']}: {child['error']}{count_str}")
     lines += [
-        "",
         "  These failures occurred in background threads and were queued",
         "  for your attention. Diagnose and fix before proceeding.",
-        "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-        "",
     ]
     return "\n".join(lines)

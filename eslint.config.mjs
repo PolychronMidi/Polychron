@@ -52,6 +52,7 @@ export default [
       'tmp/**',
       'eslint-rules/**',
       'lab/**',
+      'tools/**',
       'tools/HME/chat/**',
       'tools/HME/mcp/**',
       'tools/HME/activity/**',
@@ -85,7 +86,7 @@ export default [
     },
     rules: {
       'no-undef': 'error',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
     }
   },
   {
@@ -141,16 +142,13 @@ export default [
       'local/no-direct-conductor-state-from-crosslayer': 'error',
       'local/no-direct-crosslayer-write-from-conductor': 'error',
       'local/no-direct-buffer-push-from-crosslayer': 'error',
-      'local/prefer-validator': 'warn',
+      'local/prefer-validator': 'error',
       'local/no-bare-math': 'error',
       'local/no-direct-coupling-matrix-read': 'error',
       'local/no-empty-catch': 'error',
       'local/no-bare-l0-channel': 'error',
       'local/no-doubled-fallback': 'error',
-      // Warn (not error) while the corpus is still being hardened — flip
-      // to 'error' once config-read sites across conductor/ and crossLayer/
-      // are fully validator-gated and the rule reports 0 hits.
-      'local/no-or-fallback-on-config-read': 'warn'
+      'local/no-or-fallback-on-config-read': 'error'
     },
 
   },
@@ -229,7 +227,7 @@ export default [
       globals: { ...globalsPkg.nodeBuiltin }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'no-redeclare': 'off',
       'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
       'no-restricted-syntax': 'off'

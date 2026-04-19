@@ -82,9 +82,9 @@ _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
 _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
 
-# --------------------------------------------------------------------------
+
 # State I/O — single-file flat storage, never raises
-# --------------------------------------------------------------------------
+
 
 def state() -> str:
     """Current onboarding state. Missing file = 'graduated' (permissive)."""
@@ -199,9 +199,9 @@ def status_line() -> str:
     return f"\n\n[HME onboarding: step {STEP_LABELS.get(s, s)}]"
 
 
-# --------------------------------------------------------------------------
+
 # Chain enter/exit — the "middleman" that decides when to chain prerequisites
-# --------------------------------------------------------------------------
+
 
 def chain_enter(tool: str, args: dict) -> Optional[str]:
     """Auto-run prerequisites for `tool` based on current state.
@@ -293,9 +293,9 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
             return
 
 
-# --------------------------------------------------------------------------
+
 # Decorator — the clean wrap point for @ctx.mcp.tool() functions
-# --------------------------------------------------------------------------
+
 
 def chained(tool_name: str) -> Callable:
     """Decorator that wraps an HME tool handler with chain_enter/chain_exit.
@@ -344,9 +344,9 @@ def chained(tool_name: str) -> Callable:
     return decorator
 
 
-# --------------------------------------------------------------------------
+
 # External API — for shell hooks to drive Edit/Bash state transitions
-# --------------------------------------------------------------------------
+
 
 def force_state(s: str) -> bool:
     """External state advance — used by hooks via `python3 -c`.
@@ -361,9 +361,9 @@ def force_state(s: str) -> bool:
     return True
 
 
-# --------------------------------------------------------------------------
+
 # Helpers
-# --------------------------------------------------------------------------
+
 
 def _run_selftest_prereq() -> str:
     """Run hme_admin(action='selftest') in-process and format its output."""
@@ -472,9 +472,9 @@ def emit_review_verdict_marker(verdict: str) -> str:
     return f"<!-- HME_REVIEW_VERDICT: {verdict} -->"
 
 
-# --------------------------------------------------------------------------
+
 # CLI — callable from shell hooks via `python3 -m server.onboarding_chain ...`
-# --------------------------------------------------------------------------
+
 
 def _cli():
     """CLI for shell hooks. Usage:

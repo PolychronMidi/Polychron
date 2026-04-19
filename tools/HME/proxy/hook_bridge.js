@@ -44,7 +44,9 @@ const PRETOOL_SCRIPTS = {
   Bash: [path.join(PRETOOLUSE, 'pretooluse_bash.sh')],
   Read: [path.join(PRETOOLUSE, 'pretooluse_read.sh')],
   Grep: [path.join(PRETOOLUSE, 'pretooluse_grep.sh')],
+  Glob: [path.join(PRETOOLUSE, 'pretooluse_glob.sh')],
   TodoWrite: [path.join(PRETOOLUSE, 'pretooluse_todowrite.sh')],
+  ToolSearch: [path.join(PRETOOLUSE, 'pretooluse_toolsearch.sh')],
 };
 
 // Tool-name → posttooluse scripts (log-tool-call runs for all).
@@ -57,6 +59,8 @@ const POSTTOOL_SCRIPTS = {
   Edit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
   MultiEdit: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
   Write: [path.join(POSTTOOLUSE, 'posttooluse_edit.sh')],
+  Read: [path.join(POSTTOOLUSE, 'posttooluse_read_kb.sh')],
+  TodoWrite: [path.join(POSTTOOLUSE, 'posttooluse_todowrite.sh')],
 };
 
 /**

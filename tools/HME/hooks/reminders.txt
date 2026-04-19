@@ -1,0 +1,10 @@
+Polite reminder: Use Explore agents for multi-file research instead of serial Bash chains — agents parallelize and protect context.
+Polite reminder: Read/Grep/Glob are preferred over Bash for file reads and searches — they're enriched with KB context.
+Polite reminder: This project follows fail-fast first — no silent catches, no fallback values, no graceful degradation.
+Polite reminder: When context window pressure is high, spawn an Agent to do deep research and report back concisely.
+Polite reminder: Atomic units must complete before pivoting — finish the file sweep, finish the merge, finish the KB cleanup.
+Polite reminder: Never hand-tune hypermeta controller constants — modify the controller logic instead.
+Polite reminder: Cross-layer emission goes through crossLayerEmissionGateway.emit() — never push() directly.
+Polite reminder: New L0 channels must use L0_CHANNELS.xxx constants — bare strings in L0 calls are a hard error.
+Polite reminder: Single-Manager Hub per subsystem — one *Manager, helpers load first in index.js, manager loads last.
+Polite reminder: Globals via side-effect require() in index.js only — never global. / globalThis. / /* global */.

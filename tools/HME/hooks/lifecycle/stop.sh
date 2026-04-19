@@ -330,6 +330,17 @@ _emit_activity round_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/streak_calibrator.py" --record \
   > /dev/null 2>&1 || true
 
+# ── Turn-closing audit trail ──────────────────────────────────────────────────
+# Summarize what changed this turn from nexus EDIT entries and emit to stderr
+# so it appears in the session log. Silent when nothing was edited.
+_EDIT_FILES=$(grep '^EDIT:' "${PROJECT_ROOT}/tmp/hme-nexus.state" 2>/dev/null \
+  | sed 's/^EDIT:[0-9]*://' | sort -u)
+if [ -n "$_EDIT_FILES" ]; then
+  _EDIT_COUNT=$(echo "$_EDIT_FILES" | wc -l | tr -d ' ')
+  echo "[turn audit] $_EDIT_COUNT file(s) edited this turn:" >&2
+  echo "$_EDIT_FILES" | sed 's/^/  /' >&2
+fi
+
 # ── Default enforcement reminder ──────────────────────────────────────────────
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 # STOP_WORK was captured earlier via run_all.py.

@@ -392,8 +392,7 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"INFO: think history -- {wcs.get('think_history', 0)} exchanges")
         results.append(f"INFO: session narrative -- {wcs.get('session_narrative', 0)} events")
     except Exception as _err:
-        logger.debug(f"unnamed-except evolution_selftest.py:319: {type(_err).__name__}: {_err}")
-        results.append("INFO: warm ctx -- not available")
+        logger.debug(f"warm ctx unavailable ({type(_err).__name__}: {_err}) — llama-server may still be starting")
 
     try:
         kb = ctx.project_engine.list_knowledge()

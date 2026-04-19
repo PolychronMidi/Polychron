@@ -19,6 +19,7 @@ export interface ContextPostArgs {
 export class ContextMeter {
   private _tracker: ContextTracker = ContextMeter._blank();
   private _hasLiveUpdate = false;
+  private _consecutiveNullPct = 0;
 
   constructor(
     private readonly projectRoot: string,
@@ -45,6 +46,7 @@ export class ContextMeter {
   reset(args: ContextPostArgs, restoredPct?: number): void {
     this._tracker = ContextMeter._blank();
     this._hasLiveUpdate = false;
+    this._consecutiveNullPct = 0;
     if (restoredPct) this._tracker.usedPct = restoredPct;
     this.post(args);
   }
@@ -56,6 +58,7 @@ export class ContextMeter {
   resetSilently(): void {
     this._tracker = ContextMeter._blank();
     this._hasLiveUpdate = false;
+    this._consecutiveNullPct = 0;
   }
 
   update(text: string, thinking: string, model: string, usage: TokenUsage | undefined, args: ContextPostArgs): void {
@@ -83,17 +86,28 @@ export class ContextMeter {
       if (usage.modelId) this._tracker.cliModelId = usage.modelId;
       if (usage.modelName) this._tracker.cliModelName = usage.modelName;
     }
-    // LIFESAVER: fire outside the usage guard so it catches both
-    // (a) usage present but usedPct undefined — modelUsage lookup failed
-    // (b) usage entirely absent — CLI exited without emitting a result event
-    // Only fire when tracker has no prior value so it doesn't spam every turn.
-    if (this._tracker.usedPct == null) {
-      const modelId = usage?.modelId ?? "?";
-      const reason = !usage ? "no usage object (CLI exited without result event)"
-        : "usedPct missing — modelUsage lookup or contextWindow validation failed";
-      const msg = `context percentage unpopulated after response (model=${model}, modelId=${modelId}) — ${reason}; meter stuck at 0%`;
-      console.error(`[HME] CRITICAL: ${msg}`);
-      if (this.errorSink) this.errorSink.post("ContextMeter.unpopulated", msg);
+    // LIFESAVER: fires on every null usedPct after a response. Covers:
+    // (a) usage absent — CLI exited without result event
+    // (b) usage present but usedPct undefined — formula/lookup failure
+    // (c) usedPct was populated before but stopped arriving — regression or CLI change
+    // _consecutiveNullPct prevents noisy duplicates: alert on turn 1, then every 3rd.
+    const usedPctAfterUpdate = this._tracker.usedPct;
+    if (usedPctAfterUpdate == null) {
+      this._consecutiveNullPct++;
+      if (this._consecutiveNullPct === 1 || this._consecutiveNullPct % 3 === 0) {
+        const modelId = usage?.modelId ?? "?";
+        const wasWorking = this._hasLiveUpdate;
+        const reason = !usage
+          ? "no usage object (CLI exited without result event)"
+          : wasWorking
+            ? `usedPct stopped arriving after previously working — CLI format change or regression (streak=${this._consecutiveNullPct})`
+            : "usedPct missing — modelUsage lookup or contextWindow validation failed";
+        const msg = `context percentage unpopulated after response (model=${model}, modelId=${modelId}) — ${reason}; meter stuck at 0%`;
+        console.error(`[HME] CRITICAL: ${msg}`);
+        if (this.errorSink) this.errorSink.post("ContextMeter.unpopulated", msg);
+      }
+    } else {
+      this._consecutiveNullPct = 0;
     }
     this._hasLiveUpdate = true;
     this.post(args);

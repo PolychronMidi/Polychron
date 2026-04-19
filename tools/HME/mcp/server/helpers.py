@@ -5,10 +5,10 @@ import logging
 
 logger = logging.getLogger("HME")
 
-# ---------------------------------------------------------------------------
+
 # Project rules — loaded from config/project-rules.json at import time.
 # Logic stays in Python; declarations live in config. Add new rules there.
-# ---------------------------------------------------------------------------
+
 def _load_project_rules() -> dict:
     config_path = os.path.realpath(
         os.path.join(os.path.dirname(__file__), "..", "..", "config", "project-rules.json")

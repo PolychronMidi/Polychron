@@ -46,7 +46,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Single source of truth: tools/HME/config/versions.json.
-// Bump that file when the wire protocol between cli/proxy/worker changes —
+// Bump that file when the wire protocol between cli/proxy/worker changes --
 // all three components read from it so they can't silently drift apart.
 const _VERSIONS_PATH = path.resolve(__dirname, '..', 'tools', 'HME', 'config', 'versions.json');
 const CLI_VERSION = (() => {
@@ -189,7 +189,7 @@ async function main() {
     const versions = [CLI_VERSION, pv && pv.version, wv && wv.version].filter(Boolean);
     const allMatch = versions.length >= 2 && versions.every((v) => v === versions[0]);
     if (!allMatch && versions.length >= 2) {
-      console.error(`WARNING: version mismatch — restart the proxy after updating hme-cli`);
+      console.error(`WARNING: version mismatch -- restart the proxy after updating hme-cli`);
     }
     process.exit(0);
   }

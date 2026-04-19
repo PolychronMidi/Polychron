@@ -133,4 +133,48 @@ fi
 # Always: anti-abandonment reminder
 echo 'PLAN DISCIPLINE: Finish the current atomic unit before pivoting. Clarify BEFORE starting, not after. Never leave code/tools in a broken intermediate state while switching approach. If user feedback changes direction: finish current unit, explicitly name what was left undone, get confirmation.' >&2
 
+# ── Context-aware rotating reminders ─────────────────────────────────────────
+# Normally cycles through reminders.txt. But if nexus signals specific behavior
+# patterns this turn, override with the most relevant reminder instead.
+REMINDERS_FILE="$(dirname "${BASH_SOURCE[0]}")/../reminders.txt"
+if [ -f "$REMINDERS_FILE" ]; then
+  TOTAL_REMINDERS=$(grep -c . "$REMINDERS_FILE" 2>/dev/null || echo 0)
+  if [ "$TOTAL_REMINDERS" -gt 0 ]; then
+    IDX_FILE="$PROJECT_ROOT/tmp/hme-reminder-idx"
+    mkdir -p "$PROJECT_ROOT/tmp"
+
+    # Behavior-specific override: check nexus + last turn signals
+    OVERRIDE_REMINDER=""
+    NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
+
+    # Many edits but no REVIEW marker → nudge toward i/review
+    _EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" 2>/dev/null || echo 0)
+    _REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" 2>/dev/null || echo 0)
+    if [ "$_EDIT_CT" -gt 3 ] && [ "$_REVIEW_CT" -eq 0 ]; then
+      OVERRIDE_REMINDER="Polite reminder: You have $_EDIT_CT unreviewed edits — run \`i/review mode=forget\` before stopping to catch KB constraint violations."
+    fi
+
+    # High bash call streak from prior turn (poll counter left behind) → agent reminder
+    if [ -z "$OVERRIDE_REMINDER" ] && [ -f "/tmp/polychron-bash-call-count" ]; then
+      _BASH_CT=$(cat /tmp/polychron-bash-call-count 2>/dev/null || echo 0)
+      if [ "$_BASH_CT" -gt 8 ]; then
+        OVERRIDE_REMINDER="Polite reminder: Explore agents are preferred over serial Bash chains — spawn one for multi-file research and get a concise report back."
+      fi
+    fi
+
+    if [ -n "$OVERRIDE_REMINDER" ]; then
+      echo "<system-reminder>${OVERRIDE_REMINDER}</system-reminder>" >&2
+    else
+      # Default: rotate through the list
+      IDX=$(cat "$IDX_FILE" 2>/dev/null || echo 0)
+      IDX=$((IDX % TOTAL_REMINDERS))
+      REMINDER=$(sed -n "$((IDX + 1))p" "$REMINDERS_FILE")
+      echo $((IDX + 1)) > "$IDX_FILE"
+      if [ -n "$REMINDER" ]; then
+        echo "<system-reminder>${REMINDER}</system-reminder>" >&2
+      fi
+    fi
+  fi
+fi
+
 exit 0

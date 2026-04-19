@@ -12,6 +12,12 @@ SEARCH_PATH=$(_safe_jq "$INPUT" '.tool_input.path' '')
 OUTPUT_MODE=$(_safe_jq "$INPUT" '.tool_input.output_mode' 'files_with_matches')
 GLOB=$(_safe_jq "$INPUT" '.tool_input.glob' '')
 
+# Block any grep targeting compiled output — out/ is a black box
+if echo "$SEARCH_PATH" | grep -q "tools/HME/chat/out"; then
+  _emit_block "BLOCKED: tools/HME/chat/out/ is a black box. Grep the .ts source in tools/HME/chat/src/ instead."
+  exit 2
+fi
+
 # Only content mode is dangerous — default (files_with_matches) and count are fine.
 if [ "$OUTPUT_MODE" != "content" ]; then
   exit 0
@@ -59,4 +65,18 @@ fi
 
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
+
+# KB brief: if grepping within a tracked src file, mark BRIEF so pretooluse_edit
+# knows this module has been examined before any edit.
+if [ -n "$SEARCH_PATH" ]; then
+  _REL_PATH="$SEARCH_PATH"
+  if [ -n "$PROJECT_ROOT" ] && [[ "$SEARCH_PATH" == "$PROJECT_ROOT"/* ]]; then
+    _REL_PATH="${SEARCH_PATH#"$PROJECT_ROOT"/}"
+  fi
+  if echo "$_REL_PATH" | grep -qE '^(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy))/'; then
+    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+    _MODULE=$(basename "$SEARCH_PATH" | sed 's/\.[^.]*$//')
+    [ -n "$_MODULE" ] && _nexus_add BRIEF "$_MODULE"
+  fi
+fi
 exit 0

@@ -5,7 +5,7 @@
 //   3. Out-of-range pct is refused (fail-fast guard)
 //   4. Summary prompt is actually built (not stubbed out) when the chain fires
 //
-// The LLM call itself (synthesizeChainSummary) is stubbed — we're testing
+// The LLM call itself (synthesizeChainSummary) is stubbed -- we're testing
 // every layer of ChainPerformer *except* the network hop. A real local model
 // would make this flaky across environments; stubbing keeps it deterministic
 // while still exercising the rotation plumbing.
@@ -46,7 +46,7 @@ function check(label, cond, detail) {
   else { fail++; failures.push(`${label}${detail ? ` (${detail})` : ""}`); console.log(`FAIL: ${label}${detail ? ` (${detail})` : ""}`); }
 }
 
-// ── fixtures ───────────────────────────────────────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? fixtures ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 function makeHost() {
   const posts = [];
   const errors = [];
@@ -77,43 +77,43 @@ function makeSink() {
   return { rejections, post: (s, m) => rejections.push({ s, m }) };
 }
 
-// ── threshold constant sanity ──────────────────────────────────────────
-check(`CHAIN_THRESHOLD_PCT is 85 (was 99 — see ChainPerformer.ts:11)`, CHAIN_THRESHOLD_PCT === 85,
+// ?unknown-ascii-character??unknown-ascii-character? threshold constant sanity ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
+check(`CHAIN_THRESHOLD_PCT is 85 (was 99 -- see ChainPerformer.ts:11)`, CHAIN_THRESHOLD_PCT === 85,
   `got ${CHAIN_THRESHOLD_PCT}`);
 
-// ── gate 1: no live update → no fire ───────────────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? gate 1: no live update -> no fire ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 {
   const host = makeHost();
   const session = makeSession({ pct: 95, hasUpdate: false });
   const sink = makeSink();
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
   perf.maybeChain();
-  check("no live update → maybeChain does not fire", session.rotated.length === 0);
-  check("no live update → no error posted", host.errors.length === 0 && sink.rejections.length === 0);
+  check("no live update -> maybeChain does not fire", session.rotated.length === 0);
+  check("no live update -> no error posted", host.errors.length === 0 && sink.rejections.length === 0);
 }
 
-// ── gate 2: pct below threshold → no fire ──────────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? gate 2: pct below threshold -> no fire ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 {
   const host = makeHost();
   const session = makeSession({ pct: 84 });
   const sink = makeSink();
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
   perf.maybeChain();
-  check("pct=84 (< threshold 85) → no fire", session.rotated.length === 0);
+  check("pct=84 (< threshold 85) -> no fire", session.rotated.length === 0);
 }
 
-// ── gate 3: out-of-range pct → refused (fail-fast) ─────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? gate 3: out-of-range pct -> refused (fail-fast) ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 {
   const host = makeHost();
   const session = makeSession({ pct: 150 });
   const sink = makeSink();
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
   perf.maybeChain();
-  check("pct=150 → maybeChain does not rotate", session.rotated.length === 0);
-  check("pct=150 → errorSink received rejection",
+  check("pct=150 -> maybeChain does not rotate", session.rotated.length === 0);
+  check("pct=150 -> errorSink received rejection",
     sink.rejections.some(r => /out-of-range|maybeChain/.test(r.m)),
     `rejections: ${JSON.stringify(sink.rejections)}`);
-  check("pct=150 → host.postError emitted",
+  check("pct=150 -> host.postError emitted",
     host.errors.some(e => /invalid context pct/.test(e.m)));
 }
 
@@ -123,8 +123,8 @@ check(`CHAIN_THRESHOLD_PCT is 85 (was 99 — see ChainPerformer.ts:11)`, CHAIN_T
   const sink = makeSink();
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
   perf.maybeChain();
-  check("pct=-1 → maybeChain does not rotate", session.rotated.length === 0);
-  check("pct=-1 → errorSink received rejection", sink.rejections.length === 1);
+  check("pct=-1 -> maybeChain does not rotate", session.rotated.length === 0);
+  check("pct=-1 -> errorSink received rejection", sink.rejections.length === 1);
 }
 
 {
@@ -133,11 +133,11 @@ check(`CHAIN_THRESHOLD_PCT is 85 (was 99 — see ChainPerformer.ts:11)`, CHAIN_T
   const sink = makeSink();
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
   perf.maybeChain();
-  check("pct=NaN → maybeChain does not rotate", session.rotated.length === 0);
-  check("pct=NaN → errorSink received rejection", sink.rejections.length === 1);
+  check("pct=NaN -> maybeChain does not rotate", session.rotated.length === 0);
+  check("pct=NaN -> errorSink received rejection", sink.rejections.length === 1);
 }
 
-// ── fire: pct >= threshold → full chain executes async ─────────────────
+// ?unknown-ascii-character??unknown-ascii-character? fire: pct >= threshold -> full chain executes async ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 async function runFireTest() {
   const host = makeHost();
   const session = makeSession({ pct: 85 });
@@ -145,17 +145,17 @@ async function runFireTest() {
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
   perf.maybeChain();
 
-  // _performChain is async — wait briefly for the promise chain to settle.
+  // _performChain is async -- wait briefly for the promise chain to settle.
   await new Promise(r => setTimeout(r, 100));
 
-  check("pct=85 (>= threshold) → rotation happened", session.rotated.length === 1,
+  check("pct=85 (>= threshold) -> rotation happened", session.rotated.length === 1,
     `rotated=${session.rotated.length}, inProgress=${perf.inProgress}, errors=${JSON.stringify(host.errors)}`);
   if (session.rotated.length === 1) {
     const { msg, idx } = session.rotated[0];
     check("rotation advances chainIndex by 1", idx === 1);
     check("rotation continuation message has role=user", msg.role === "user");
     check("rotation continuation message references link index",
-      /Context Chain — Link 1/.test(msg.text));
+      /Context Chain -- Link 1/.test(msg.text));
     check("rotation continuation includes the (stubbed) summary",
       /stubbed-summary/.test(msg.text));
   }
@@ -173,15 +173,15 @@ async function runFireTest() {
     typeof lastPrompt === "string" && /hi|hello/.test(lastPrompt));
 }
 
-// ── fire suppressed when already in progress ───────────────────────────
+// ?unknown-ascii-character??unknown-ascii-character? fire suppressed when already in progress ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
 async function runConcurrentFireTest() {
   const host = makeHost();
   const session = makeSession({ pct: 95 });
   const sink = makeSink();
   const perf = new ChainPerformer("/tmp/test-root", host, session, sink);
-  // Fire once → starts async work.
+  // Fire once -> starts async work.
   perf.maybeChain();
-  // Immediately fire again → should be suppressed by _inProgress.
+  // Immediately fire again -> should be suppressed by _inProgress.
   perf.maybeChain();
   // Fire a third time for good measure.
   perf.maybeChain();

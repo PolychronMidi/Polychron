@@ -102,15 +102,23 @@ def _check_llamacpp_connectivity() -> None:
 
     arbiter_url = ENV.require("HME_LLAMACPP_ARBITER_URL")
     coder_url   = ENV.require("HME_LLAMACPP_CODER_URL")
+    import time
     failed = []
     for role, base in (("arbiter", arbiter_url), ("coder", coder_url)):
-        try:
-            with urllib.request.urlopen(f"{base}/health", timeout=3) as resp:
-                body = resp.read().decode("utf-8", errors="ignore")
-                if resp.status != 200 or '"status":"ok"' not in body:
-                    failed.append(f"{role}@{base}")
-        except Exception as e:
-            failed.append(f"{role}@{base} ({type(e).__name__})")
+        ok = False
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(f"{base}/health", timeout=5) as resp:
+                    body = resp.read().decode("utf-8", errors="ignore")
+                    if resp.status == 200 and '"status":"ok"' in body:
+                        ok = True
+                        break
+            except Exception:
+                pass
+            if attempt < 2:
+                time.sleep(3)
+        if not ok:
+            failed.append(role)
     if failed:
         logger.warning(f"llama-server connectivity: {len(failed)} instance(s) unreachable: {failed}")
     else:
