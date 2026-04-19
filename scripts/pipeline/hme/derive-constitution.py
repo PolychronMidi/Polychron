@@ -189,8 +189,15 @@ def main() -> int:
     claims.extend(extract_claims_from_ground_truth(gt_stream))
     claims.extend(extract_claims_from_feedback_graph())
 
-    # Sort by kind then confidence descending
-    kind_order = {"structural": 0, "musical": 1, "methodological": 2, "behavioral": 3}
+    # Sort by kind then confidence descending. Musical claims come first
+    # because Polychron's constitutional identity is what it IS (a music
+    # composition system), not what holds it together (feedback loops,
+    # firewall ports). Structural claims are prerequisites, not the identity.
+    # Previous ordering put structural first which flattened musical identity
+    # into a footnote — an inverted priority that shaped every downstream
+    # self-model (crystallizer, self_audit, trust weights) toward structure
+    # over sound.
+    kind_order = {"musical": 0, "methodological": 1, "structural": 2, "behavioral": 3}
     claims.sort(key=lambda c: (kind_order.get(c["kind"], 99), -c.get("confidence", 0)))
 
     by_kind: dict[str, int] = {}

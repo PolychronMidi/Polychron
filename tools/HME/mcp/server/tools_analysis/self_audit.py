@@ -36,6 +36,7 @@ from . import _track
 KNOWLEDGE_ACCESS_REL = os.path.join("tools", "HME", "KB", "knowledge_access.json")
 ACTIVITY_REL = os.path.join("metrics", "hme-activity.jsonl")
 ACCURACY_REL = os.path.join("metrics", "hme-prediction-accuracy.json")
+CORRELATION_REL = os.path.join("metrics", "hme-musical-correlation.json")
 
 
 def _load_json(rel: str):
@@ -193,15 +194,80 @@ def _audit_prediction_overconfidence() -> dict:
     return {"ema": ema, "rounds_observed": len(rounds), "candidates": candidates}
 
 
+def _audit_musical_anchor() -> dict:
+    """The strongest CASCADE_UNRELIABLE signal: HME's self-coherence score
+    doesn't correlate with the music it produces. Every internal HME metric
+    is ultimately circular (they all depend on each other). Only the
+    musical correlation provides external ground-truth about whether HME's
+    process discipline is actually producing better music. A flat or
+    negative correlation means HME is optimizing the wrong thing.
+
+    This differs from _audit_prediction_overconfidence: that one checks
+    whether the cascade graph's structural predictions hold; this one
+    checks whether the entire self-model tracks reality at all.
+    """
+    data = _load_json(CORRELATION_REL) or {}
+    corrs = data.get("correlations", {})
+    history = data.get("history") or []
+    candidates: list[dict] = []
+
+    # Primary anchor: coherence ↔ verdict correlation. Missing or degenerate
+    # (null r from zero-variance inputs) is the top-priority red flag.
+    primary_key = "hme_coherence__verdict_numeric"
+    primary = corrs.get(primary_key) or {}
+    primary_r = primary.get("r")
+    primary_n = primary.get("n", 0)
+    degenerate = primary.get("degenerate", False)
+
+    if len(history) >= 5:
+        if degenerate or primary_r is None:
+            candidates.append({
+                "verdict": "ANCHOR_DEGENERATE",
+                "correlation": primary_key,
+                "rounds": primary_n or len(history),
+                "reason": primary.get("reason", "null r"),
+                "recommendation": (
+                    "hme_coherence ↔ musical-verdict correlation is degenerate "
+                    "(typically because coherence is stuck at one value). "
+                    "HME's external anchor is unusable: self-score can't be "
+                    "validated against real musical outcomes. Diagnose the "
+                    "upstream metric that's stuck before trusting any "
+                    "HME-reported improvement."
+                ),
+            })
+        elif isinstance(primary_r, (int, float)) and abs(primary_r) < 0.15 and primary_n >= 10:
+            candidates.append({
+                "verdict": "ANCHOR_WEAK",
+                "correlation": primary_key,
+                "r": round(primary_r, 3),
+                "rounds": primary_n,
+                "recommendation": (
+                    f"hme_coherence ↔ verdict correlation |r|={abs(primary_r):.2f} "
+                    f"over {primary_n} rounds. HME's self-score is weakly "
+                    f"tracking musical outcome. Either the coherence formula "
+                    f"doesn't capture what drives verdict, or verdict itself "
+                    f"isn't sensitive enough. Consider weighting coherence "
+                    f"against perceptual_complexity / clap_tension instead."
+                ),
+            })
+    return {
+        "correlations": corrs,
+        "rounds": len(history),
+        "candidates": candidates,
+    }
+
+
 def self_audit_report() -> str:
     _track("self_audit")
     events = _load_events()
     kb_audit = _audit_kb_categories()
     inject_audit = _audit_silent_injections(events)
     pred_audit = _audit_prediction_overconfidence()
+    music_audit = _audit_musical_anchor()
 
     all_candidates = (
-        kb_audit["candidates"] + inject_audit["candidates"] + pred_audit["candidates"]
+        kb_audit["candidates"] + inject_audit["candidates"] +
+        pred_audit["candidates"] + music_audit["candidates"]
     )
 
     lines = [
@@ -249,6 +315,28 @@ def self_audit_report() -> str:
             f"  EMA: {ema * 100:.1f}%  over {pred_audit['rounds_observed']} rounds"
         )
         for c in pred_audit["candidates"]:
+            lines.append(f"  ⚠ {c['verdict']}: {c['recommendation']}")
+
+    # Musical anchor section — the external-anchor check: does HME's
+    # self-score correlate with the music it produces?
+    lines.append("")
+    lines.append("## Musical anchor correlation")
+    if music_audit["rounds"] < 5:
+        lines.append(
+            f"  Only {music_audit['rounds']} round(s) of history — need ≥5 "
+            f"for meaningful anchor check."
+        )
+    else:
+        primary = music_audit["correlations"].get("hme_coherence__verdict_numeric") or {}
+        r = primary.get("r")
+        n = primary.get("n", music_audit["rounds"])
+        if primary.get("degenerate"):
+            lines.append(f"  r=n/a  n={n}  DEGENERATE ({primary.get('reason','?')})")
+        elif r is None:
+            lines.append(f"  r=n/a  n={n}  (no data)")
+        else:
+            lines.append(f"  r={r:+.3f}  n={n}  (hme_coherence ↔ musical verdict)")
+        for c in music_audit["candidates"]:
             lines.append(f"  ⚠ {c['verdict']}: {c['recommendation']}")
 
     if all_candidates:
