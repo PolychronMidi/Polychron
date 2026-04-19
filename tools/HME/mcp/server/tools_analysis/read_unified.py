@@ -87,7 +87,7 @@ def read(target: str, mode: str = "auto", fast: bool = False) -> str:
     # Propagate fast flag via env so deep-call-chain synthesis gates can see it
     # without threading fast= through every intermediate function signature.
     if fast:
-        os.environ["HME_READ_FAST"] = "1"
+        os.environ["HME_READ_FAST"] = "1"  # env-ok: transient per-call flag, not persistent config
 
     # Tool-layer BRIEF emission — agent-independent. When the agent calls
     # i/hme-read (or the Edit pre-hook auto-chains this), that IS a BRIEF.

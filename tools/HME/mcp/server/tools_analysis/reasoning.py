@@ -315,7 +315,7 @@ def module_story(module_name: str) -> str:
     # except the synthesis section in ~seconds. The structural sections above
     # (KB constraints, callers, interactions, evolutionary potential) are
     # already complete without the LLM.
-    if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):
+    if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):  # env-ok: read transient per-call flag set by read_unified
         parts.append(f"\n## Key Constraints *(adaptive)* — SKIPPED (HME_READ_FAST=1)")
     else:
         import time as _time_mod
