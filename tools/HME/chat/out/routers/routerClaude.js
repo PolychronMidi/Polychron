@@ -96,17 +96,28 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
     };
     let buf = "";
     let doneFired = false;
-    const safeOnDone = (cost, usage) => {
-        if (!doneFired) {
-            doneFired = true;
-            // Statusline hook writes the real API-provided used_pct to ctxFile.
-            // Always prefer it over computeTurnUsage's token-count estimate.
-            const ctxOverride = _readCtxFile();
-            const merged = usage
-                ? { ...usage, ...ctxOverride }
-                : (ctxOverride.usedPct != null ? ctxOverride : undefined);
-            onDone(cost, merged);
-        }
+    // Store result-event data; emit after close so the Stop hook has already
+    // written the real API used_pct to ctxFile before we read it.
+    let pendingCost;
+    let pendingUsage;
+    let resultReceived = false;
+    const storeResult = (cost, usage) => {
+        resultReceived = true;
+        pendingCost = cost;
+        pendingUsage = usage;
+    };
+    const finalize = (code) => {
+        if (doneFired)
+            return;
+        doneFired = true;
+        // Statusline hook (Stop hook) writes real API used_pct to ctxFile.
+        // Read it now — process has exited, hook has run.
+        const ctxOverride = _readCtxFile();
+        const base = resultReceived ? pendingUsage : undefined;
+        const merged = base
+            ? { ...base, ...ctxOverride }
+            : (ctxOverride.usedPct != null ? { inputTokens: 0, outputTokens: 0, ...ctxOverride } : undefined);
+        onDone(pendingCost, merged);
     };
     const INACTIVITY_MS = 30000;
     let inactivityTimer = setTimeout(() => {
@@ -135,7 +146,7 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
                 continue;
             try {
                 const evt = JSON.parse(line);
-                handleStreamEvent(evt, opts.model, onChunk, onSessionId, safeOnDone);
+                handleStreamEvent(evt, opts.model, onChunk, onSessionId, storeResult);
             }
             catch (e) {
                 console.error(`[HME] stream JSON parse failed: ${e?.message ?? e} | line: ${line.slice(0, 120)}`);
@@ -155,17 +166,18 @@ function streamClaude(message, sessionId, opts, workingDir, onChunk, onSessionId
         if (buf.trim()) {
             try {
                 const evt = JSON.parse(buf.trim());
-                handleStreamEvent(evt, opts.model, onChunk, onSessionId, safeOnDone);
+                handleStreamEvent(evt, opts.model, onChunk, onSessionId, storeResult);
             }
             catch (e) {
                 console.error(`[HME] close-buf JSON parse failed: ${e?.message ?? e} | buf: ${buf.slice(0, 120)}`);
                 onChunk(buf.trim(), "error");
             }
         }
-        if (code !== 0)
+        if (code !== 0) {
             onError(`Claude CLI exited with code ${code}`);
-        else
-            safeOnDone();
+            return;
+        }
+        finalize(code);
     });
     return () => { try {
         proc.kill();
