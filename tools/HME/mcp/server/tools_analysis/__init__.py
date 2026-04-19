@@ -58,7 +58,7 @@ def _alias_subpackage(subpkg_name, module_names):
         )
 
 
-# ── Import order: subpackages first (subpackage __init__.py is the hub), then flat modules
+# Import order: subpackages first (subpackage __init__.py is the hub), then flat modules
 from . import tool_cache  # noqa: E402, F401
 
 # synthesis/ — the subpackage __init__ IS the hub (was synthesis.py; inlined to fix reload).
@@ -115,7 +115,7 @@ _alias_subpackage("evolution", [
     "evolution_suggest", "evolution_trace", "evolution_strategies",
 ])
 
-# ── Flat modules (import after subpackages are aliased)
+# Flat modules (import after subpackages are aliased)
 from . import symbols          # noqa: E402, F401
 from . import workflow         # noqa: E402, F401
 from . import workflow_audit   # noqa: E402, F401

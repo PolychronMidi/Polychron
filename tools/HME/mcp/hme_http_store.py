@@ -32,7 +32,7 @@ def init_store(project_root: str) -> None:
     _load_transcript()
 
 
-# ── Critical error log ────────────────────────────────────────────────────────
+# Critical error log
 
 def _log_error(source: str, message: str, detail: str = "") -> None:
     """Append a critical error to the in-memory log and hme-errors.log.
@@ -81,7 +81,7 @@ def _get_recent_errors(minutes: int = 60) -> list[dict]:
         return [e for e in _error_log if e["ts"] >= cutoff]
 
 
-# ── Transcript store ──────────────────────────────────────────────────────────
+# Transcript store
 
 def _load_transcript() -> None:
     """Load existing transcript from JSONL file into memory."""

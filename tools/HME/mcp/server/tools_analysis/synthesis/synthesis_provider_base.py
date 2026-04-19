@@ -111,7 +111,7 @@ class OpenAIProvider:
                     out["any_available"] = True
         return out
 
-    # ── Internal quota/circuit methods ────────────────────────────────────
+    # Internal quota/circuit methods
 
     def _day_start_ts(self) -> float:
         import calendar
@@ -165,7 +165,7 @@ class OpenAIProvider:
                 tier.cb_open_until = time.monotonic() + self.CB_COOLDOWN
                 logger.warning(f"{self.name} {tier.label} ({tier.model}) circuit breaker OPEN for {self.CB_COOLDOWN}s")
 
-    # ── Core HTTP call ────────────────────────────────────────────────────
+    # Core HTTP call
 
     def _call_model(self, model: str, prompt: str, system: str,
                     max_tokens: int, temperature: float) -> str | None:
@@ -196,7 +196,7 @@ class OpenAIProvider:
             logger.warning(f"{self.name} {model} failed: {type(e).__name__}: {e}")
             raise
 
-    # ── Cascade ───────────────────────────────────────────────────────────
+    # Cascade ─
 
     def _build_request_body(self, model: str, prompt: str, system: str,
                             max_tokens: int, temperature: float) -> dict:

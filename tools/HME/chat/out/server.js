@@ -46,12 +46,12 @@ const projectRoot = process.env["HME_PROJECT_ROOT"] ?? path.resolve(__dirname, "
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: "4mb" }));
-// ── Static HTML ──────────────────────────────────────────────────────────────
+//  Static HTML
 app.get("/", (_req, res) => {
     const htmlPath = path.join(__dirname, "..", "webview", "browser.html");
     res.sendFile(htmlPath);
 });
-// ── SSE event stream ─────────────────────────────────────────────────────────
+//  SSE event stream ─
 app.get("/api/events", (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -64,7 +64,7 @@ app.get("/api/events", (req, res) => {
         panel.unregisterSseClient(res);
     });
 });
-// ── Message dispatch ─────────────────────────────────────────────────────────
+//  Message dispatch ─
 app.post("/api/message", (req, res) => {
     console.log(`[HME] POST /api/message type=${req.body?.type}`);
     const panel = BrowserPanel_1.BrowserPanel.createOrShow(projectRoot);
@@ -76,7 +76,7 @@ app.post("/api/message", (req, res) => {
         res.status(500).json({ ok: false, error: String(e?.message ?? e) });
     }
 });
-// ── Start ─────────────────────────────────────────────────────────────────────
+//  Start ─
 const server = app.listen(PORT, "127.0.0.1", () => {
     console.log(`HME Chat listening on http://localhost:${PORT}`);
 });

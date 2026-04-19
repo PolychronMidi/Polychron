@@ -28,7 +28,7 @@ function resolveUpstream(req) {
   }
 }
 
-// ── Emergency valve ──────────────────────────────────────────────────────────
+//  Emergency valve
 // N consecutive upstream failures → write CRITICAL alert, disable proxy, exit.
 const EMERGENCY_THRESHOLD = 3;
 let _consecutiveFailures = 0;

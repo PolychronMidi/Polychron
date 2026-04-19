@@ -188,7 +188,7 @@ def suggest_evolution() -> str:
     except Exception as _err6:
         logger.debug(f'silent-except evolution_suggest.py:188: {type(_err6).__name__}: {_err6}')
 
-    # ── Build output ──
+    # Build output
     parts = ["# Evolution Suggestions\n"]
     parts.append(f"**Signals analyzed:** {len(signals)} categories")
     parts.append(f"**Melodically uncoupled:** {len(melodic_uncoupled_names)} crossLayer modules")

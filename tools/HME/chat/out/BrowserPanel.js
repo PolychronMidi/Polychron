@@ -242,7 +242,7 @@ class BrowserPanel {
             this._transcript = (0, TranscriptLogger_1.nullTranscript)();
         }
     }
-    // ── SSE client registry ──────────────────────────────────────────────────
+    //  SSE client registry
     registerSseClient(res) {
         this._sseClients.push(res);
         // Send any pending restore on first connect
@@ -255,7 +255,7 @@ class BrowserPanel {
     unregisterSseClient(res) {
         this._sseClients = this._sseClients.filter(c => c !== res);
     }
-    // ── PanelHost implementation ─────────────────────────────────────────────
+    //  PanelHost implementation ─
     post(data) {
         const payload = `data: ${JSON.stringify(data)}\n\n`;
         console.log(`[HME→SSE] type=${data?.type ?? '?'} clients=${this._sseClients.length}`);
@@ -273,7 +273,7 @@ class BrowserPanel {
         this._errorSink.post(source, message);
         this.post({ type: "errorBubble", source, message });
     }
-    // ── Extracted-component support ──────────────────────────────────────────
+    //  Extracted-component support
     _ctxArgs() {
         return {
             sessionId: this._state.sessionEntry?.id ?? null,
@@ -305,7 +305,7 @@ class BrowserPanel {
         BrowserPanel.current = new BrowserPanel(projectRoot);
         return BrowserPanel.current;
     }
-    // ── Incoming message dispatch (from Express POST /api/message) ───────────
+    //  Incoming message dispatch (from Express POST /api/message) ─
     handleMessage(msg) {
         console.log(`[HME] handleMessage type=${msg?.type} clients=${this._sseClients.length}`);
         try {
@@ -363,7 +363,7 @@ class BrowserPanel {
             chainIndex: this._state.chainIndex,
         });
     }
-    // ── Send pipeline ────────────────────────────────────────────────────────
+    //  Send pipeline
     async _onSend(msg) {
         if (msg.route === "agent") {
             return this._onSendAgent(msg);
@@ -502,7 +502,7 @@ class BrowserPanel {
         (0, chatStreaming_1.streamAgentMsg)(ctx, msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
         (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
     }
-    // ── Queue & cleanup ──────────────────────────────────────────────────────
+    //  Queue & cleanup
     _drainQueue() {
         this._isStreaming = false;
         if (this._messageQueue.length > 0) {
@@ -547,5 +547,5 @@ class BrowserPanel {
     }
 }
 exports.BrowserPanel = BrowserPanel;
-// ── Stream tracking & session persistence ────────────────────────────────
+//  Stream tracking & session persistence
 BrowserPanel.DISPLAY_CAP = 100;

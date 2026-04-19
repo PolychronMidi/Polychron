@@ -161,7 +161,7 @@ def _num_ctx_for(model: str) -> int:
     _refresh_arbiter()
     return _NUM_CTX_4B if model == _ARBITER_MODEL else _NUM_CTX_30B
 
-# ── llama-server (Vulkan) routing ──────────────────────────────────────────
+# llama-server (Vulkan) routing
 # Two llama-server instances, each owning its GPU end-to-end. Both expose
 # OpenAI-compatible /v1/chat/completions. llamacpp_daemon enforces the
 # full-offload invariant at spawn time.
@@ -275,7 +275,7 @@ def _daemon_generate(payload: dict, wall_timeout: float = 30.0) -> dict | None:
         logger.info(f"daemon /generate: {type(e).__name__} (timeout={_http_timeout}s)")
         return None
 
-# ── Intelligent model routing ──────────────────────────────────────────────
+# Intelligent model routing
 _CODE_SIGNALS = {"function", "implementation", "code", "callers", "logic",
                  "algorithm", "pattern", "method", "class", "module", "import",
                  "variable", "constant", "return", "parameter", "signature",
@@ -303,7 +303,7 @@ def route_model(prompt: str) -> str:
     return _REASONING_MODEL  # default: reasoner for ambiguous queries
 
 
-# ── llama.cpp priority ────────────────────────────────────────────────────────
+# llama.cpp priority
 # _interactive_event: set by interactive callers. Background checks this flag and
 # yields (before sending) or cancels mid-stream (via socket timeout in _cancellable_urlopen).
 # No Python locks — llama.cpp handles its own per-model FIFO queue.

@@ -67,7 +67,7 @@ function stripThinkTags(text) {
         return text.slice(0, openIdx).trim();
     return text;
 }
-// ── Streaming: SSE parsing ────────────────────────────────────────────────
+//  Streaming: SSE parsing
 //
 // llama-server streams OpenAI-compatible SSE:
 //   data: {"choices":[{"delta":{"content":"…"}}],…}
@@ -178,7 +178,7 @@ function streamLlamacpp(messages, opts, onChunk, onDone, onError) {
     req.end();
     return () => { aborted = true; req.destroy(); };
 }
-// ── Agentic tool loop ─────────────────────────────────────────────────────
+//  Agentic tool loop ─
 const LLAMACPP_TOOLS = [
     {
         type: "function",

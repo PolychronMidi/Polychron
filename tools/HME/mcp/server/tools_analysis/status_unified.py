@@ -134,7 +134,7 @@ def _mode_introspect():
     return _hi()
 
 
-# ── Mode registry ────────────────────────────────────────────────────────────
+# Mode registry
 _STATUS_MODES: dict[str, callable] = {
     "resume": lambda: _resume_briefing(),
     "pipeline": _mode_pipeline,

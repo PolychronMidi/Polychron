@@ -44,7 +44,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
 
     concise = response_format == "concise"
 
-    # ── Hybrid search: semantic + keyword fusion ──────────────────────────────
+    # Hybrid search: semantic + keyword fusion
     # Extract code identifiers from query (camelCase, snake_case, module names).
     # Grep for them in parallel with semantic search. Files found by BOTH methods
     # get a score boost. Keyword-only files are appended as fallback results.

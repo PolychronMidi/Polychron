@@ -84,7 +84,7 @@ _hme_exit_combined() {
 }
 trap _hme_exit_combined EXIT
 
-# ── Tunable constants (adjust here — not in individual hooks) ─────────────────
+# Tunable constants (adjust here — not in individual hooks) ─
 _HME_HTTP_PORT=9098
 _HME_SRC_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
@@ -163,7 +163,7 @@ _safe_int() {
   if [[ "$val" =~ ^-?[0-9]+$ ]]; then echo "$val"; else echo "0"; fi
 }
 
-# ── Hook output emitters ──────────────────────────────────────────────────────
+# Hook output emitters
 
 # Emit hookSpecificOutput allow + additionalContext + systemMessage.
 # additionalContext reaches Claude's next-turn context (load-bearing for
@@ -185,7 +185,7 @@ _emit_block() {
   jq -n --arg reason "$1" '{"decision":"block","reason":$reason}'
 }
 
-# ── Path / module helpers ─────────────────────────────────────────────────────
+# Path / module helpers ─
 
 # Returns 0 if PATH is a project source file (src/ or HME chat/mcp).
 _is_project_src() { echo "$1" | grep -qE "$_HME_SRC_PATTERN"; }
@@ -197,7 +197,7 @@ _is_project_edit_src() { echo "$1" | grep -qE "$_HME_EDIT_PATTERN"; }
 # "src/foo/barBaz.js" → "barBaz"
 _extract_module() { basename "$1" | sed 's/\.[^.]*$//'; }
 
-# ── Streak counter ────────────────────────────────────────────────────────
+# Streak counter
 # Weighted tool-type streak tracking. Weight guide:
 #   Read=5 (0.5x), Edit/Write=10 (1x), Bash=15 (1.5x), Grep=20 (2x)
 # Thresholds: warn at 50, block at 70 (equivalent to 5/7 raw calls at 1x).
@@ -229,7 +229,7 @@ _streak_reset() {
   echo 0 > "$_STREAK_FILE"
 }
 
-# ── HME HTTP shim helpers ─────────────────────────────────────────────────
+# HME HTTP shim helpers ─
 # Consolidated KB enrichment and validation via the worker at localhost:9098 (absorbed the shim).
 
 _hme_enrich() {
@@ -252,7 +252,7 @@ _hme_kb_titles() {
   _safe_jq "$json" '.kb[]?.title // empty' '' | head -"$max" | sed 's/^/    /'
 }
 
-# ── Activity bridge emit helper ──────────────────────────────────────────────
+# Activity bridge emit helper
 # Shorthand for emitting to hme-activity.jsonl. Args are --key=value pairs.
 # Usage: _emit_activity file_written --session="$SID" --file="$F" --module="$M"
 _emit_activity() {

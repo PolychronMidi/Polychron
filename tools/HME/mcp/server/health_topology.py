@@ -6,16 +6,16 @@ than assumed healthy — preventing false confidence from stale checks.
 
 Topology:
   MCP Server
-    └── RAG Proxy
-          └── HTTP worker (9098) — absorbs former shim role
-                ├── ProjectEngine
-                ├── GlobalEngine
-                └── File Watcher
-    └── Startup Chain
-          └── llama.cpp Daemon (7735)
-                ├── GPU0 Extractor (11434)
-                ├── GPU1 Reasoner  (11435)
-                └── CPU Arbiter    (11436)
+    └ RAG Proxy
+          └ HTTP worker (9098) — absorbs former shim role
+                ├ ProjectEngine
+                ├ GlobalEngine
+                └ File Watcher
+    └ Startup Chain
+          └ llama.cpp Daemon (7735)
+                ├ GPU0 Extractor (11434)
+                ├ GPU1 Reasoner  (11435)
+                └ CPU Arbiter    (11436)
 
 Layer 7 (Predictive Health): tracks shim response time EMA and warns when
 trending toward OOM/timeout before the crash actually happens.
@@ -303,7 +303,7 @@ def _compute_coherence(shim: dict, daemon: dict, llamacpp: dict) -> float:
     return round(coherence, 3)
 
 
-# ── Layer 7: Predictive Health ───────────────────────────────────────────────
+# Layer 7: Predictive Health ─
 
 def _record_shim_response_ms(ms: float) -> None:
     with _shim_response_lock:

@@ -77,7 +77,7 @@ class InstanceSpec:
         return argv
 
 
-# ── Topology ─────────────────────────────────────────────────────────────
+# Topology ─
 # This is the authoritative inference allocation. Matches the comment in
 # hme_http.py:126: "arbiter on GPU1 (small), coder on GPU0 (big)".
 # Vulkan device indices: Vulkan0 = Intel iGPU, Vulkan1 = M40 #1, Vulkan2 = M40 #2.
@@ -111,7 +111,7 @@ def _default_instances() -> list[InstanceSpec]:
     ]
 
 
-# ── Supervisor ───────────────────────────────────────────────────────────
+# Supervisor ─
 class _Supervisor:
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -140,7 +140,7 @@ class _Supervisor:
         with self._lock:
             return list(self._instances.values())
 
-    # ── adoption: recognize externally-launched instances ────────────────
+    # adoption: recognize externally-launched instances
     def _adopt_external(self, spec: InstanceSpec) -> bool:
         """If a llama-server is already listening on spec.port AND its /health
         reports ok, treat it as adopted — skip spawning our own. Returns True
@@ -185,7 +185,7 @@ class _Supervisor:
             logger.debug(f"supervisor: _is_listening probe for {spec.base_url()}: {type(_listen_err).__name__}: {_listen_err}")
             return False
 
-    # ── GPU residence invariant ──────────────────────────────────────────
+    # GPU residence invariant
     def _vulkan_to_cuda_index(self, device: str) -> int | None:
         """Map a Vulkan device label to a CUDA-compatible index for nvidia-smi.
 
@@ -280,7 +280,7 @@ class _Supervisor:
         except Exception as _life_err:
             logger.error(f"llamacpp_supervisor: failed to register LIFESAVER for offload violation: {_life_err}")
 
-    # ── spawn ────────────────────────────────────────────────────────────
+    # spawn
     def _spawn(self, spec: InstanceSpec) -> bool:
         """Launch spec as a detached subprocess. Returns True if the process
         started (not that it's healthy yet — that's for the next health tick).
@@ -347,7 +347,7 @@ class _Supervisor:
             logger.exception(f"llamacpp_supervisor: spawn {spec.name} failed: {e}")
             return False
 
-    # ── public: ensure all ───────────────────────────────────────────────
+    # public: ensure all ─
     def ensure_all_running(self) -> dict[str, str]:
         """Spawn any instance that isn't already serving /health=ok. Adopts
         externally-launched survivors. Returns {name: status} for logging."""
@@ -375,7 +375,7 @@ class _Supervisor:
                 result[spec.name] = "spawned" if ok else "spawn_failed"
         return result
 
-    # ── health tick ─────────────────────────────────────────────────────
+    # health tick ─
     def health_tick(self) -> dict[str, dict]:
         """Probe all instances. Restart any that are unhealthy (with cooldown).
         Returns detailed per-instance status — suitable for logging / selftest."""
@@ -426,7 +426,7 @@ class _Supervisor:
                         logger.debug(f"llamacpp_supervisor: LIFESAVER register failed: {_life_err}")
         return out
 
-    # ── stats for selftest ───────────────────────────────────────────────
+    # stats for selftest ─
     def stats(self) -> list[dict]:
         with self._lock:
             return [

@@ -258,13 +258,13 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     trace = {"triage_ms": 0, "assembly_ms": 0, "enrich_ms": 0, "compress_ms": 0}
     t0 = _time.monotonic()
 
-    # ── Stage 1: Skip arbiter triage in HTTP shim ─────────────────────────────
+    # Stage 1: Skip arbiter triage in HTTP shim ─
     # The user clicked Enrich explicitly — always run all modes.
     # Arbiter triage is reserved for the MCP tool path (where warm KV context
     # makes it fast); in the shim the thinking model is cold and unreliable.
     triage = {"kb": True, "structural": True, "contextual": True, "raw": "explicit"}
 
-    # ── Stage 2: Context assembly (instant, no model) ─────────────────────────
+    # Stage 2: Context assembly (instant, no model) ─
     t1 = _time.monotonic()
     assembled_parts = []
 
@@ -303,7 +303,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     assembled = "\n\n".join(assembled_parts)
     trace["assembly_ms"] = int((_time.monotonic() - t1) * 1000)
 
-    # ── Stage 3: Reasoning model enrichment ──────────────────────────────────
+    # Stage 3: Reasoning model enrichment
     t2 = _time.monotonic()
     mode_instructions = []
     if triage["kb"]:
@@ -367,7 +367,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
                 "unchanged": True, "reason": "Reasoning model returned empty — original preserved"}
 
-    # ── Stage 4: Hard truncate only if absurdly long ─────────────────────────
+    # Stage 4: Hard truncate only if absurdly long ─
     # Min floor of 2000 chars — short prompts can legitimately expand significantly.
     max_len = max(len(prompt) * 10, 2000)
     if len(enriched) > max_len:

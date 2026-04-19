@@ -9,7 +9,7 @@ import { claudeOptsFromMsg, llamacppOptsFromMsg } from "./msgHelpers";
 import { ChatMessage } from "./types";
 import type { SendMsg } from "./panel/webviewMessages";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers ─
 
 const INDEXABLE_EXTS = new Set([
   ".js", ".ts", ".tsx", ".jsx", ".py", ".json", ".md", ".css", ".html", ".sh",
@@ -52,7 +52,7 @@ export function runPostAudit(ctx: ChatCtx, changedFiles?: Set<string>) {
   }).catch((e: any) => ctx.postError("audit", String(e)));
 }
 
-// ── Stream harness ────────────────────────────────────────────────────────────
+//  Stream harness
 
 interface ChunkState {
   text: string;
@@ -246,7 +246,7 @@ function attachPromiseCancel(
   });
 }
 
-// ── Streaming methods ─────────────────────────────────────────────────────────
+//  Streaming methods ─
 
 /** SendMsg enriched by _onSend before routing to a specific stream function. */
 type ResolvedMsg = SendMsg & { _resolvedRoute?: string; _contextPrefix?: string };

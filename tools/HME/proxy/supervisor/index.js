@@ -19,7 +19,7 @@ const { CHILDREN } = require('./children');
 
 const LOG_DIR = path.join(PROJECT_ROOT, 'log');
 
-// ── Supervisor state ─────────────────────────────────────────────────────────
+//  Supervisor state ─
 const _children = new Map(); // name → { spec, proc, restarts, lastStart, lastHealthy, healthy }
 
 function _logPath(name) {
@@ -92,7 +92,7 @@ async function _startChild(spec) {
   emit({ event: 'child_started', child: spec.name, pid: proc.pid });
 }
 
-// ── Health probing ──────────────────────────────────────────────────────────
+//  Health probing
 function _probe(healthUrl) {
   return new Promise((resolve) => {
     const req = http.get(healthUrl, { timeout: 3000 }, (res) => {
@@ -176,7 +176,7 @@ async function _healthLoop() {
   }
 }
 
-// ── Restart API (for hang-kill) ──────────────────────────────────────────────
+//  Restart API (for hang-kill)
 function killChild(name, signal = 'SIGTERM') {
   const state = _children.get(name);
   if (!state || !state.proc) return false;
@@ -212,7 +212,7 @@ function status() {
   return out;
 }
 
-// ── Startup ─────────────────────────────────────────────────────────────────
+//  Startup ─
 // Start children in order: shim first, then MCP (MCP depends on shim).
 // healthLoop polls every 10s after initial startup delay.
 let _started = false;
@@ -306,7 +306,7 @@ function start() {
   installShutdownHandlers();
 }
 
-// ── Ad-hoc process spawn (TTL-bounded, no restart) ──────────────────────────
+//  Ad-hoc process spawn (TTL-bounded, no restart)
 // Exposed via /hme/spawn so Claude (or any other caller) can launch short-lived
 // helpers without the Bash tool's run_in_background — no task-notification on
 // exit, auto-reaped after ttl_sec, tracked by id.

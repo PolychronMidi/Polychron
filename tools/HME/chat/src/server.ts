@@ -12,14 +12,14 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "4mb" }));
 
-// ── Static HTML ──────────────────────────────────────────────────────────────
+//  Static HTML
 
 app.get("/", (_req, res) => {
   const htmlPath = path.join(__dirname, "..", "webview", "browser.html");
   res.sendFile(htmlPath);
 });
 
-// ── SSE event stream ─────────────────────────────────────────────────────────
+//  SSE event stream ─
 
 app.get("/api/events", (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -36,7 +36,7 @@ app.get("/api/events", (req, res) => {
   });
 });
 
-// ── Message dispatch ─────────────────────────────────────────────────────────
+//  Message dispatch ─
 
 app.post("/api/message", (req, res) => {
   console.log(`[HME] POST /api/message type=${req.body?.type}`);
@@ -49,7 +49,7 @@ app.post("/api/message", (req, res) => {
   }
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+//  Start ─
 
 const server = app.listen(PORT, "127.0.0.1", () => {
   console.log(`HME Chat listening on http://localhost:${PORT}`);

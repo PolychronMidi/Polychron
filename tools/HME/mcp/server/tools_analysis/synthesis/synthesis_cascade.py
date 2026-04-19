@@ -25,7 +25,7 @@ logger = logging.getLogger("HME")
 
 from hme_env import ENV  # noqa: E402
 
-# ── Adaptive multi-stage synthesis ────────────────────────────────────────
+# Adaptive multi-stage synthesis
 # synthesize() auto-detects complexity, injects context, routes to optimal
 # strategy, and quality-gates output. Strategies:
 #   direct (1):   route_model() → single call (fast)

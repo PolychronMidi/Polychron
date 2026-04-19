@@ -161,7 +161,7 @@ def _collect_data() -> dict:
     }
 
 
-# ── HTML template with plotly.js via CDN ──
+# HTML template with plotly.js via CDN
 
 _HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -240,7 +240,7 @@ const DARK = {
   margin: { l: 50, r: 20, t: 40, b: 50 },
 };
 
-// ── KPI row
+//  KPI row
 const verData = D.verifiers || {};
 const hci = verData.hci || 0;
 const cats = verData.categories || {};
@@ -263,7 +263,7 @@ addKpi('KB entries', (D.coupling || {}).session_count || '-');
 const fc = D.hci_forecast || {};
 if (fc.predicted_next_hci !== undefined) addKpi('Next HCI', fc.predicted_next_hci, fc.predicted_next_hci >= 80 ? 'good' : 'warn');
 
-// ── HCI time series with per-category overlays
+//  HCI time series with per-category overlays
 if (samples.length >= 1) {
   const xs = samples.map(s => new Date(s.ts * 1000));
   const traces = [{
@@ -291,7 +291,7 @@ if (samples.length >= 1) {
   }, {displaylogo: false});
 }
 
-// ── Current category radar
+//  Current category radar
 if (Object.keys(cats).length) {
   const catKeys = Object.keys(cats).sort();
   Plotly.newPlot('category-radar', [{
@@ -307,7 +307,7 @@ if (Object.keys(cats).length) {
   }, {displaylogo: false});
 }
 
-// ── Verifier status bars (grouped by category)
+//  Verifier status bars (grouped by category)
 const vs = verData.verifiers || {};
 if (Object.keys(vs).length) {
   const byCat = {};
@@ -329,7 +329,7 @@ if (Object.keys(vs).length) {
   }, {displaylogo: false});
 }
 
-// ── Tool invocation frequency
+//  Tool invocation frequency
 const tic = eff.tool_invocation_counts || {};
 if (Object.keys(tic).length) {
   const sorted = Object.entries(tic).sort((a,b) => b[1] - a[1]);
@@ -344,7 +344,7 @@ if (Object.keys(tic).length) {
   }, {displaylogo: false});
 }
 
-// ── Hook latency box plot
+//  Hook latency box plot
 const hl = D.hook_latency || {};
 if (Object.keys(hl).length) {
   const traces = Object.entries(hl).map(([name, stats]) => ({
@@ -358,7 +358,7 @@ if (Object.keys(hl).length) {
   }, {displaylogo: false});
 }
 
-// ── Coupling matrix heatmap
+//  Coupling matrix heatmap
 const cm = (D.coupling || {}).matrix || {};
 const nodes = (D.coupling || {}).nodes || [];
 if (nodes.length >= 2) {
@@ -377,7 +377,7 @@ if (nodes.length >= 2) {
   }, {displaylogo: false});
 }
 
-// ── Memetic drift: rule violations
+//  Memetic drift: rule violations
 const mv = (D.memetic || {}).violation_counts || {};
 if (Object.keys(mv).length) {
   const sorted = Object.entries(mv).sort((a,b) => b[1] - a[1]);
@@ -392,7 +392,7 @@ if (Object.keys(mv).length) {
   }, {displaylogo: false});
 }
 
-// ── Coherence log scatter over time (historical data, from pre-deprecation)
+//  Coherence log scatter over time (historical data, from pre-deprecation)
 const ch = D.coherence_log || [];
 if (ch.length) {
   const xs = ch.map(e => new Date((e.ts || 0) * 1000));

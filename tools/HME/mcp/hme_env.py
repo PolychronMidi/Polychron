@@ -116,7 +116,7 @@ class _EnvLoader:
             self.load()
         return self._values.get(key)
 
-    # ── Required accessors (fail-fast) ──────────────────────────────────
+    # Required accessors (fail-fast)
 
     def require(self, key: str) -> str:
         val = self._raw(key)
@@ -156,7 +156,7 @@ class _EnvLoader:
             f"(use 1/0, true/false, yes/no, on/off)"
         )
 
-    # ── Optional accessors (explicit opt-in to a default) ──────────────
+    # Optional accessors (explicit opt-in to a default)
     #
     # Use ONLY for truly optional knobs that don't need to be declared.
     # Every use is a liability — prefer `require` and add to .env.
@@ -200,7 +200,7 @@ class _EnvLoader:
             f"hme_env: {key}={val!r} in {self._path} is not a valid bool"
         )
 
-    # ── Introspection ───────────────────────────────────────────────────
+    # Introspection ─
 
     def path(self) -> str:
         if not self._loaded:

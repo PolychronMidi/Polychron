@@ -7,7 +7,7 @@ exports.claudeOptsFromConfig = claudeOptsFromConfig;
 exports.claudeOptsFromMsg = claudeOptsFromMsg;
 exports.llamacppOptsFromMsg = llamacppOptsFromMsg;
 exports.LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.0.0.1:8080";
-// ── Claude config validation & resolution ─────────────────────────────────────
+//  Claude config validation & resolution ─
 //
 // Claude CLI flags (verified from `claude --help`):
 //   --model <alias|id>   opus | sonnet | haiku

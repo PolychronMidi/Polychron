@@ -14,7 +14,7 @@
 // sees HME tool_uses (the proxy handles dispatch internally and strips them
 // from the response before forwarding). No restoration needed.
 
-// ── Rewriter: Bash run_in_background → /hme/spawn ──────────────────────────
+//  Rewriter: Bash run_in_background → /hme/spawn
 // Holds all `content_block_delta` events for a Bash tool_use until the
 // corresponding `content_block_stop`, parses the accumulated input, and if
 // run_in_background=true, replaces the command with a synchronous curl to

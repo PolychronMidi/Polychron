@@ -19,13 +19,13 @@ from mcp.server.fastmcp import FastMCP
 
 logger = logging.getLogger("HME")
 
-# ── Cross-component session identity (Layer 1) ────────────────────────────────
+# Cross-component session identity (Layer 1)
 # Unique per MCP server process lifetime. Passed as X-HME-Session header on all
 # shim requests so logs across MCP server, shim, and daemon can be correlated.
 SESSION_ID: str = str(uuid.uuid4())[:12]
 
 
-# ── LIFESAVER: register_critical_failure → failure_genealogy (Layer 4) ────────
+# LIFESAVER: register_critical_failure → failure_genealogy (Layer 4)
 
 def register_critical_failure(
     source: str,

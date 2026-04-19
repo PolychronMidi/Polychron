@@ -37,7 +37,7 @@ _kill_pid() {
   fi
 }
 
-# ── 1. SIGTERM to launcher-tracked PIDs ──────────────────────────────────────
+# 1. SIGTERM to launcher-tracked PIDs
 
 declare -A _TRACKED_PIDS
 if [ -f "$PID_FILE" ]; then
@@ -48,7 +48,7 @@ if [ -f "$PID_FILE" ]; then
   done < "$PID_FILE"
 fi
 
-# ── 2. Pattern-based SIGTERM sweep (catches anything not in PID file) ────────
+# 2. Pattern-based SIGTERM sweep (catches anything not in PID file)
 
 _PATTERNS=(
   "hme_proxy.js"
@@ -65,7 +65,7 @@ done
 
 sleep 3
 
-# ── 3. SIGKILL anything that survived ────────────────────────────────────────
+# 3. SIGKILL anything that survived
 
 for label in "${!_TRACKED_PIDS[@]}"; do
   _kill_pid "${_TRACKED_PIDS[$label]}" "$label"
@@ -74,7 +74,7 @@ for pat in "${_PATTERNS[@]}"; do
   pkill -KILL -f "$pat" 2>/dev/null && echo "[shutdown] SIGKILL → $pat" >&2 || true
 done
 
-# ── 4. Cleanup ────────────────────────────────────────────────────────────────
+# 4. Cleanup
 
 [ -f "$PID_FILE" ] && rm -f "$PID_FILE" && echo "[shutdown] removed $PID_FILE" >&2
 

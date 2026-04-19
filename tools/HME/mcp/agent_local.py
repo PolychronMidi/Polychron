@@ -741,7 +741,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     tools_used = []
     arbiter_plan = None
 
-    # ── Stage 1: Arbiter plans the research strategy ──
+    # Stage 1: Arbiter plans the research strategy
     # The CPU 4b model takes 10-60s on amateur hardware. For most queries,
     # _extract_search_terms + _infer_directories produces an equivalent plan
     # in 0ms. The arbiter is only genuinely useful for Plan mode where
@@ -807,7 +807,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
             grep_patterns.append(sym)
     grep_patterns = grep_patterns[:8]  # cap
 
-    # ── Stage 2: Execute tools (parallel-safe, pure I/O) ──
+    # Stage 2: Execute tools (parallel-safe, pure I/O)
     sections = []
 
     # KB search
@@ -904,7 +904,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
             "model": f"{_ARBITER_MODEL} + {_REASONER_MODEL}",
         }
 
-    # ── Stage 3: Synthesize. System prompt + instructions vary by mode.
+    # Stage 3: Synthesize. System prompt + instructions vary by mode.
     synth_prompt = f"""{research_context}
 
 ---
