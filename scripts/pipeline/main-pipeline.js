@@ -110,10 +110,9 @@ function scanForErrors(label, output) {
 }
 
 function run(label, cmd, fatal) {
-  const sep = '='.repeat(60);
-  console.log('\n' + sep);
+  console.log('\n');
   console.log('  ' + label + (fatal ? '' : '  (non-fatal)'));
-  console.log(sep + '\n');
+  console.log('\n');
 
   var t0 = Date.now();
   try {
@@ -151,10 +150,9 @@ function run(label, cmd, fatal) {
 }
 
 function printSummary() {
-  var sep = '='.repeat(60);
-  console.log('\n' + sep);
+  console.log('\n');
   console.log('  PIPELINE SUMMARY');
-  console.log(sep);
+  console.log('\n');
   var total = 0;
   for (var i = 0; i < timings.length; i++) {
     var t = timings[i];
@@ -163,9 +161,9 @@ function printSummary() {
     console.log('  ' + padLabel + ' ' + status.padEnd(4) + '  ' + t.elapsed + 's');
     total += Number(t.elapsed);
   }
-  console.log(sep);
+  console.log('\n');
   console.log('  Total: ' + total.toFixed(1) + 's');
-  console.log(sep);
+  console.log('\n');
   if (errorPatterns.length > 0) {
     console.log('');
     console.error('  !!! ERRORS DETECTED IN NON-FATAL STEPS !!!');
@@ -177,10 +175,11 @@ function printSummary() {
   console.log('');
 }
 
-function writeSummaryJSON(wallTime) {
+function writeSummaryJSON(wallTime, extra) {
   var summary = {
     generated: new Date().toISOString(),
     wallTimeSeconds: Number(wallTime),
+    verdict: (extra && extra.verdict) || 'UNKNOWN',
     steps: timings.map(function (t) {
       return { label: t.label, elapsedSeconds: Number(t.elapsed), ok: t.ok };
     }),
@@ -273,14 +272,14 @@ function main() {
 
   var wallTime = ((Date.now() - pipelineStart) / 1000).toFixed(1);
   printSummary();
-  writeSummaryJSON(wallTime);
 
-  // Emit pipeline_run and round_complete from here so observability doesn't
-  // depend on the bash-hook substrate. Reads verdict from
-  // fingerprint-comparison.json (written by golden-fingerprint step).
+  // Collect verdict + hci BEFORE writing summary so pipeline-summary.json
+  // carries all three (verdict, hci, failed) as a single coherent record.
+  // Previous ordering wrote summary first, then read verdict for the
+  // activity event — which meant pipeline-summary.json never had verdict
+  // at all (the hook's re-write pass was the only thing that added it).
   var verdict = 'UNKNOWN';
   var failed = timings.some(function(r) { return !r.ok; }) ? 1 : 0;
-  var hci = null;
   try {
     var fp = JSON.parse(fs.readFileSync(
       path.join(__dirname, '..', '..', 'metrics', 'fingerprint-comparison.json'),
@@ -288,6 +287,11 @@ function main() {
     ));
     verdict = fp.verdict || fp.result || 'UNKNOWN';
   } catch (_e) { /* fingerprint not produced -- leave verdict UNKNOWN */ }
+
+  writeSummaryJSON(wallTime, { verdict: verdict });
+
+  // Re-read summary to pick up hci (computed inside writeSummaryJSON)
+  var hci = null;
   try {
     var ps = JSON.parse(fs.readFileSync(
       path.join(__dirname, '..', '..', 'metrics', 'pipeline-summary.json'), 'utf8'
