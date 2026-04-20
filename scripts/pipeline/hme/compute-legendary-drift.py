@@ -174,12 +174,13 @@ def _load_snapshots() -> list[dict]:
 def _compute_envelope(snaps: list[dict]) -> dict[str, dict]:
     """Per-field envelope from historical snapshots.
 
-    R24 #2: exponential weighting — recent snapshots count more heavily.
-    weight = 0.9^age where age=0 is the most-recent snapshot in snaps.
-    This lets the envelope ADAPT to regime shifts without discarding history.
-    Over a 10-snapshot window: newest has weight 1.0, oldest has weight 0.39,
-    so a 3-round persistent drift meaningfully shifts the envelope center
-    within ~5 rounds rather than being drowned by older data.
+    R24 #2 + R25 #4: exponential weighting — recent snapshots count more
+    heavily. weight = 0.7^age where age=0 is the most-recent snapshot.
+    Decay reduced from 0.9 to 0.7 after R25 confirmed 0.9 wasn't fast enough
+    (density drift went 2.61→2.98 instead of shrinking under 0.9 adaptation).
+    At 0.7: newest=1.0, 3 rounds old=0.34, 5 rounds old=0.17 — envelope
+    center-of-mass dominated by the last 2-3 rounds. Regime shifts accepted
+    within 3 rounds instead of 5.
 
     Weighted median via cumulative-weight lookup; weighted stdev via
     Σ(w·(x-μ)²) / Σw where μ is the weighted mean.
@@ -191,7 +192,7 @@ def _compute_envelope(snaps: list[dict]) -> dict[str, dict]:
     by_field: dict[str, list[tuple[float, float]]] = {}
     for i, s in enumerate(snaps):
         age = (n - 1) - i  # 0 = newest
-        w = 0.9 ** age
+        w = 0.7 ** age
         for k, v in _flatten(s).items():
             by_field.setdefault(k, []).append((v, w))
     env: dict[str, dict] = {}

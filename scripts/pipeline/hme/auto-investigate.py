@@ -91,6 +91,29 @@ def _investigate_consensus(pattern: dict) -> dict:
             findings["verdict"] = "trending-down — consensus has degraded over recent rounds"
         else:
             findings["verdict"] = "recovering — consensus improved vs earlier rounds"
+
+        # R25 #3: propose action class. If consensus degraded but HCI rose
+        # across the same rounds, composition is improving WHILE substrate-
+        # agreement drops — that's regime shift, not degradation. Accept.
+        hci_traj = [r.get("arc_iv", {}).get("pass_rate") for r in tail]
+        # Better: use top-outlier-field from arc_iii.top_outlier_field history
+        # + consensus trajectory + HCI from pipeline-summary. HCI isn't in
+        # timeseries rows; read summary directly.
+        try:
+            ps_path = os.path.join(PROJECT_ROOT, "metrics", "pipeline-summary.json")
+            hci_now = None
+            if os.path.isfile(ps_path):
+                with open(ps_path) as hf:
+                    ps = json.load(hf)
+                    hci_now = ps.get("hci")
+            if isinstance(hci_now, (int, float)) and hci_now >= 96 and delta < -0.05:
+                findings["proposed_action_class"] = "accept_regime_shift"
+                findings["proposed_reason"] = f"consensus trending down but HCI={hci_now}≥96"
+            elif delta < -0.05:
+                findings["proposed_action_class"] = "correct_outlier_via_controller"
+                findings["proposed_reason"] = "consensus trending down AND HCI below 96 threshold"
+        except Exception:
+            pass
     return findings
 
 

@@ -394,6 +394,24 @@ Through R17 the substrate was tactical: seven independent observability systems,
 
 **The theorem** (conjectured, not proved): *any self-evolving creative system requires (1) a consensus mechanism across multiple measurement substrates, (2) a pattern registry of codified meta-patterns, (3) an inverse-reasoning envelope tracking historical success states, and (4) a meta-measurement layer that tracks which measurements earn their cost — and these four together produce emergent action-synthesis that the individual parts can't.* Polychron-HME is one instance; the structure is generic.
 
+### Round 12: The Sabbatical Test (R23-R25)
+
+After the four-arc framework landed (R18-R21) and the emergent 5th+6th behaviors appeared (R22-R23 harvester + auto-investigate), the substrate began producing a specific signal: density axis drifted +2.6σ above legendary median, flicker drifted −2.4σ below, consensus_mean dropped 0.2. Arc II's `investigate-consensus-divergence` pattern matched. The harvester queued 2 actions. The listening verdict stayed legendary, HCI stayed 96.4.
+
+R24 was the sabbatical: **no composition code touched**. The R24 response was option 1c — "wait and watch." New pattern `accept-regime-shift-after-n-rounds.json` codified the decision gate: if HCI stays ≥95 while drift persists, the regime has shifted (accept); if HCI drops, correct via controller.
+
+R25 gave the answer. HCI climbed from 96.4 to **97.0**. Drift intensified (density z=+2.98, flicker z=−2.99) — but listening verdict stayed legendary four rounds running. `harvester_acted_on: 0/2` across both repeat-rounds — the agent was "ignoring" the harvester's prescribed investigation.
+
+Except: the agent *wasn't* ignoring. The agent was executing the `accept-regime-shift` pattern, which says "wait for HCI to tell you whether to accept or correct." The substrate's metric couldn't yet distinguish "correctly waiting per pattern semantics" from "deferring indefinitely."
+
+R25's resolution: **`expected_defer_rounds` per pattern category**. Decision-gate patterns declare 3-round waits. Investigation patterns declare 1-round. Retirement patterns declare 2-round. `harvester_ignored` fires only when a repeat-count EXCEEDS the declared defer window. The substrate now distinguishes disciplined waiting from neglect.
+
+And: **#7 auto-apply — the 7th emergent behavior**. The `accept-regime-shift` pattern declares `auto_apply: true` + an `auto_apply_script`. When the matcher sees such a pattern match, it executes the non-destructive steps (log epoch transition, emit activity event) automatically. The agent's authority retained for destructive actions (envelope reset, decay tuning).
+
+**The Sabbatical Test lesson**: *the substrate can distinguish "the envelope needs updating" from "composition is degrading" — but only if we let HCI be the arbiter.* The envelope is a historical construct; composition reality is ground truth. When they disagree, composition wins; the envelope catches up via exponential weighting (R25 tightened decay 0.9→0.7 to accelerate adaptation).
+
+**Empirical theorem proven**: *a four-arc substrate with declared defer semantics and auto-apply patterns can detect drift, distinguish regime-shift from degradation via an external anchor (HCI + listening verdict), and self-apply acceptance without destructive agent intervention.* R24-R25 IS the test case. Future rounds inherit this precedent.
+
 ## The principle
 
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.
