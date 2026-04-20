@@ -168,7 +168,7 @@ function main() {
         ], { stdio: 'ignore', detached: true, cwd: ROOT,
              env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }) }).unref();
       } catch (_e) { /* best-effort */ }
-      // Persist structured alert so i/status can surface it — the activity
+      // Persist structured alert so i/status can surface it -- the activity
       // event alone isn't guaranteed to be read before the next user turn.
       try {
         fs.writeFileSync(
@@ -186,7 +186,7 @@ function main() {
       } catch (_we) { /* best-effort */ }
     }
   } else {
-    // No regression this round — clear any stale alert file.
+    // No regression this round -- clear any stale alert file.
     const alertPath = path.join(ROOT, 'metrics', 'hci-regression-alert.json');
     try { if (fs.existsSync(alertPath)) fs.unlinkSync(alertPath); }
     catch (_ue) { /* best-effort */ }
