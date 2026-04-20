@@ -1064,9 +1064,9 @@
     },
     {
       "id": "legacy-override-chronically-zero",
-      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds — by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) → warn (3 rounds) → error (5 rounds). entropy-cap-0.19 was the first retirement via this pattern (R13).",
+      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds — by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) → warn (3 rounds) → error (5 rounds). Retired ids (those in legacy-override-retirement-log.jsonl) are excluded so historical zero rows don't flag already-removed overrides. entropy-cap-0.19 (R13) and phase-trust-seesaw (R15) were the first retirements via this pattern.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
+      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rp='metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip()} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
       "severity": "error"
     },
     {
