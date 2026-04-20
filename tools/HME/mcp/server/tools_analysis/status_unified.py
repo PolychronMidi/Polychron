@@ -199,6 +199,23 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # HCI regression alert — surface FIRST since it demands action. Cleared
+    # automatically by compute-musical-correlation.js when HCI stabilizes.
+    try:
+        import json as _json_alert
+        _alert_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hci-regression-alert.json")
+        if os.path.isfile(_alert_path):
+            with open(_alert_path) as _af:
+                _alert = _json_alert.load(_af)
+            parts.append(
+                f"## !! HCI REGRESSION !!\n"
+                f"  {_alert.get('prev_hci')} -> {_alert.get('current_hci')} "
+                f"(delta_cur={_alert.get('delta_cur')}, delta_prev={_alert.get('delta_prev')})\n"
+                f"  {_alert.get('action','Investigate verifier regressions.')}"
+            )
+    except Exception as _ae:
+        logger.debug(f'silent-except status_unified hci-regression: {type(_ae).__name__}: {_ae}')
+
     # Compact freshness summary — surface STALE/MISSING/SYNC issues upfront
     try:
         import glob as _gl

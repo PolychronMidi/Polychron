@@ -305,6 +305,31 @@ The observability substrate landed in Phases 1-6 but was silently decoupled by a
 
 **Principle crystallized:** *Observability is not a view into the system — it IS the system's nervous system. If the substrate depends on the agent to fire, the agent is the only thing visible.* Pipeline-owned observability means every pipeline run, from any caller, produces equal-fidelity telemetry.
 
+### Round 9: The measurement loop closes (2026-04-19, R11-R14)
+
+The observability substrate from Round 8 produced its first composition-layer result: a legacy override retired via data-driven measurement. This is the closing of a loop we'd been building for 11 rounds — from raw activity telemetry to actionable structural decisions.
+
+**The pattern codified:**
+
+1. **Instrument** — the thing you want to measure gets counters: `perLegacyOverride` (fires per override id) + `perLegacyOverrideEntries` (condition-true count). Flowed through `crossLayerBeatRecord` → `trace-summary.json` → `metrics/legacy-override-history.jsonl`.
+2. **Measure** — append-only history across multiple pipeline runs. Not a single-round snapshot; a trend.
+3. **Threshold** — declarative invariant: "any override with 0 fires AND 0 entries across 5+ runs is a data-proven removal candidate." Fires at `warning` after 3 rounds, `error` after 5.
+4. **Act** — when the invariant escalates, retire the override. The generic controller handler covers what the specialized override did, if the override was genuinely unused.
+5. **Verify** — next pipeline run's `perAxisAdj.<axis>` should confirm the axis still adjusts (just through the generic path).
+
+**First retirement: `entropy-cap-0.19` (R13).** Two rounds of 0 fires, 0 entries. Generic `AXIS_OVERSHOOT` at 0.22 picks up the slack. Post-removal, `perAxisAdj.entropy` = 18 (unchanged from pre-removal rounds). Non-regression confirmed.
+
+**The meta-lesson — rationale comments lie, data doesn't.** Three of the six legacy overrides carried "Candidate for removal" comments left by prior rounds. Instrumentation proved:
+- `tension-floor-0.15`: 23 fires/round = LOAD-BEARING (opposite of comment)
+- `trust-floor-0.14`: 25-42 fires/round = LOAD-BEARING (opposite of comment)
+- `entropy-cap-0.19`: 0 fires = correctly flagged (agrees with comment)
+
+Without measurement, we would have retired `tension-floor-0.15` and `trust-floor-0.14` based on stale commentary and silently degraded composition. The data-driven migration path is *not* an optimization of the comment-driven one — it's a correction of it.
+
+**The prediction cascade bug (R14).** The same instrumentation exposed a latent bug in `generate-predictions.js`: adjacency was built from `to` back to `from`, making BFS find a changed file's *upstream dependencies* instead of its *downstream consumers*. Predictions for an edit to `axisAdjustments.js` returned {pipelineCouplingManager, clamps, index, phaseFloorController} (files it reads from) instead of {axisEnergyEquilibrator} (the consumer). Cascade prediction went from "accurate about the wrong direction" to accurate about the right one. Accuracy jumped 16x once the current-round window was also added (R13).
+
+**Principle crystallized:** *Instrumentation is not a tax, it's the substrate that makes structural decisions truthful.* Every assumption about what a meta-controller "should do" or "is doing" must be measurable. Every `Candidate for removal` comment is a hypothesis waiting for data.
+
 ## The principle
 
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.

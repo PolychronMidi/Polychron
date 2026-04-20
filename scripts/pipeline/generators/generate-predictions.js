@@ -33,15 +33,21 @@ function loadDepGraph() {
 }
 
 function buildAdjacency(dg) {
-  // edges: [{from, to, globals}]
-  // Build forward adjacency: if A requires global from B, editing B affects A
+  // edges: [{from, to, globals}] where `from` provides a global `to` consumes.
+  // We want downstream cascade: editing X predicts files that consume X's globals.
+  // So adjacency is from→to: adj[from] = set of files affected when `from` changes.
+  //
+  // R14 fix: previously this was adj[to].add(from), which made BFS from a node
+  // find its UPSTREAM dependencies (wrong direction). Predictions for an edit
+  // to axisAdjustments.js returned {pipelineCouplingManager, clamps, ...}
+  // (files it reads from) instead of {axisEnergyEquilibrator} (the consumer).
   const adj = new Map();
   for (const edge of dg.edges || []) {
     const from = stemOf(edge.from);
     const to = stemOf(edge.to);
     if (!from || !to || from === to) continue;
-    if (!adj.has(to)) adj.set(to, new Set());
-    adj.get(to).add(from);
+    if (!adj.has(from)) adj.set(from, new Set());
+    adj.get(from).add(to);
   }
   return adj;
 }

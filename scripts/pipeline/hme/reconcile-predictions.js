@@ -243,12 +243,14 @@ function main() {
     } catch (_e) { /* best-effort */ }
   }
 
-  // Truncate predictions log so the next round starts fresh. Keep the last
-  // 200 lines as trailing history for debugging.
+  // Truncate predictions log so the next round starts fresh. Cap at 200 lines
+  // as trailing history for debugging. Must run AFTER the missed-feedback
+  // append above so the truncation window includes that record.
+  const LOG_CAP = 200;
   try {
     const raw = fs.readFileSync(PREDICTIONS, 'utf8');
     const lines = raw.split('\n').filter(Boolean);
-    const keep = lines.slice(-200);
+    const keep = lines.slice(-LOG_CAP);
     fs.writeFileSync(PREDICTIONS, keep.join('\n') + '\n');
   } catch (_e) { /* ignore */ }
 
