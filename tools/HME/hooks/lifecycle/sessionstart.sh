@@ -253,4 +253,28 @@ if [ -n "$PREV_PENDING" ]; then
   echo -e "\nPrevious session left unfinished:$PREV_PENDING" >&2
 fi
 
+# R23 #10: Substrate pre-turn briefing — four-arc state auto-surfaced at
+# session start so the agent enters with substrate context visible. Reads
+# pre-computed artifacts only (no heavy computation), silent if unavailable.
+SUBSTRATE_BRIEF=$(python3 -c "
+import json, os
+ROOT = '$PROJECT'
+def _j(p):
+    try:
+        with open(os.path.join(ROOT, p)) as f: return json.load(f)
+    except Exception: return None
+na = _j('metrics/hme-next-actions.json') or {}
+con = _j('metrics/hme-consensus.json') or {}
+dr  = _j('metrics/hme-legendary-drift.json') or {}
+eff = _j('metrics/hme-invariant-efficacy.json') or {}
+n_act = na.get('total_actions', 0)
+bits = []
+bits.append(f'substrate: consensus={con.get(\"mean\",\"?\")} stdev={con.get(\"stdev\",\"?\")} drift={dr.get(\"drift_score\",\"?\")} actions={n_act}')
+if n_act > 0:
+    for a in (na.get('actions') or [])[:3]:
+        bits.append(f'  -> [{a.get(\"source\",\"?\")}] {a.get(\"id\",\"?\")}')
+print('\\n'.join(bits))
+" 2>/dev/null)
+[ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
+
 exit 0

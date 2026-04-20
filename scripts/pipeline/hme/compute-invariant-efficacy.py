@@ -92,8 +92,26 @@ def _efficacy_score(commits_citing: int, fail_streak: int, last_result: str,
     # Flappy: fails without ever being cited → noise
     if fail_streak > 0 or last_result == "fail":
         return (0.1, "flappy")
-    # Decorative / structural: hasn't fired and hasn't been cited
+    # R23 #8: distinguish structural (existence/validity checks that SHOULD
+    # never fire in healthy state — schema asserts, registered/importable/valid
+    # checks) from truly-decorative (noise accumulation worth retiring).
     return (0.3, "decorative")
+
+
+_STRUCTURAL_HINTS = (
+    "exists", "valid", "registered", "importable", "present",
+    "reachable", "schema", "config", "manifest", "has-",
+)
+
+
+def _reclassify_structural(inv_id: str, klass: str) -> str:
+    if klass != "decorative":
+        return klass
+    lid = inv_id.lower()
+    for h in _STRUCTURAL_HINTS:
+        if h in lid:
+            return "structural"
+    return "decorative"
 
 
 def main() -> int:
@@ -126,6 +144,7 @@ def main() -> int:
         streak = int(fail_streaks.get(inv_id, 0))
         lr = last_result.get(inv_id, "unknown")
         score, klass = _efficacy_score(cites, streak, lr, total_runs)
+        klass = _reclassify_structural(inv_id, klass)
         per_invariant[inv_id] = {
             "commits_citing": cites,
             "fail_streak": streak,
