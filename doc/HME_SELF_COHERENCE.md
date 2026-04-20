@@ -330,6 +330,46 @@ Without measurement, we would have retired `tension-floor-0.15` and `trust-floor
 
 **Principle crystallized:** *Instrumentation is not a tax, it's the substrate that makes structural decisions truthful.* Every assumption about what a meta-controller "should do" or "is doing" must be measurable. Every `Candidate for removal` comment is a hypothesis waiting for data.
 
+### Round 10: The retirement arc (2026-04-19, R11-R15)
+
+With Round 9's measurement loop established, five rounds of data-driven decisions reshaped the hypermeta allowlist. This is the arc.
+
+**Numeric journey:**
+
+| Round | LEGACY_OVERRIDES | Invariants PASS | HCI | What happened |
+|-------|------------------|-----------------|-----|---------------|
+| R11   | 6                | 145/145         | 95.1 | Instrumentation added (`perLegacyOverride` fire counts) |
+| R12   | 6                | 151/153         | 96.4 | Entry counts added, first round of 2x zero-fire data |
+| R13   | 5                | 155/155         | 96.4 | `entropy-cap-0.19` retired — 1st data-driven removal |
+| R14   | 5                | 155/156         | 96.4 | Cascade direction bug fixed (`buildAdjacency` from→to) |
+| R15   | **2**            | 156/158         | 96.4 | `phase-trust-seesaw` + 2 graduated retired; cascade validated (accuracy 0.005→0.333, 66x) |
+
+**What was retired:**
+- `entropy-cap-0.19` (R13) — 2 zero rounds; generic `AXIS_OVERSHOOT` at 0.22 covers
+- `phase-trust-seesaw` + `-graduated-0.02` + `-graduated-0.04` (R15) — 5 zero rounds; phaseFloorController + trustStarvationAutoNourishment cover
+
+**What was kept, data-proven:**
+- `tension-floor-0.15` — 4-23 fires/round, load-bearing
+- `trust-floor-0.14` — 13-42 fires/round (up to 57% of trust-axis adjustments), load-bearing
+
+Both "keepers" had comments saying "Candidate for removal" that instrumentation contradicted. The comments came from pre-measurement intuition about what should be retired; the data said the intuition was wrong.
+
+**Meta-pattern codified (`metrics/legacy-override-retirement-log.jsonl`):**
+
+```
+retire:  {id, rounds_observed_zero, reason, fallback_handler, retired_in, commit}
+keep:    {id, action:"keep", rounds_observed, reason, decision_in, decision_type}
+```
+
+Every decision is an audit entry. The retirement log itself becomes the measurement of the measurement process — did we remove the right ones? The generic controller chain keeps working post-removal, so: yes.
+
+**Observability side-effects:**
+- R14 cascade direction fix made recall calculable at all (was structurally 0).
+- R15 self-prediction gap identified: edited file wasn't in its own prediction set (addressed R16).
+- `coherence-tracks-musical-outcome` invariant crossed n=10 activation but remains degenerate (verdict_numeric collapses to 1.0 for all STABLE; `hci_normalized` added R16 as real-variance anchor).
+
+**Principle crystallized:** *The allowlist is not a compromise surface. It's a measurement output.* Every entry is either data-proven load-bearing or data-proven unused. There is no "probably needed" category anymore — only "fires N times per round" or "has fired zero times for N rounds." Future additions must enter through the same measurement gate.
+
 ## The principle
 
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.

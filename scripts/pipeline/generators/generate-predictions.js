@@ -78,21 +78,26 @@ function bfs(adj, start, depth) {
 }
 
 function getChangedFiles() {
-  // Get files changed since last pipeline run. Use git diff against the
-  // previous pipeline commit tag, or HEAD~1 as fallback.
+  // R16 #4: align range with reconcile-predictions.js extractShiftedModules.
+  // Both must look at the SAME git range or they disagree about what's shifted:
+  //   predictions generated for modules A,B,C (range wide)
+  //   reconcile sees modules X,Y (range narrow)
+  // → false refuted on A,B,C even when predictions are correct.
+  // Reconcile uses HEAD~2..HEAD (generate runs before commit). Match that.
   try {
-    // Look back up to 30 commits for src/ changes. In rounds with only
-    // tool/hook edits, src/ changes may be further back. The reconciler
-    // handles duplicates, so wider window is safe.
-    const diff = execSync('git diff HEAD~30 --name-only 2>/dev/null || git diff HEAD~5 --name-only 2>/dev/null || git diff --cached --name-only', {
-      cwd: ROOT,
-      encoding: 'utf8',
-      timeout: 10000,
-    });
-    return diff.split('\n')
-      .filter((f) => f.startsWith('src/') && f.endsWith('.js'))
-      .map((f) => stemOf(f))
-      .filter(Boolean);
+    for (const range of ['HEAD~2..HEAD', 'HEAD~1..HEAD', 'HEAD']) {
+      try {
+        const diff = execSync(`git diff --name-only ${range}`, {
+          cwd: ROOT, encoding: 'utf8', timeout: 10000,
+        });
+        const files = diff.split('\n')
+          .filter((f) => f.startsWith('src/') && f.endsWith('.js'))
+          .map((f) => stemOf(f))
+          .filter(Boolean);
+        if (files.length > 0) return files;
+      } catch (_e) { /* try next range */ }
+    }
+    return [];
   } catch (_e) {
     return [];
   }
@@ -118,13 +123,18 @@ function main() {
 
   for (const mod of changed) {
     const affected = bfs(adj, mod, MAX_DEPTH);
-    if (affected.length === 0) continue;
+    // R16 #1: include the edited file itself in affected_modules. A file that
+    // changes IS shifted per git diff; reconcile counts it as "missed" when
+    // absent. Previously generate-predictions only emitted outward-from-target,
+    // which produced a structural floor on recall (recall ≤ deps/(deps+self)).
+    const affectedWithSelf = [mod, ...affected.map((a) => a.module)];
+    if (affectedWithSelf.length === 0) continue;
 
     const record = {
       ts,
       target_module: mod,
-      affected_modules: affected.map((a) => a.module),
-      affected_count: affected.length,
+      affected_modules: affectedWithSelf,
+      affected_count: affectedWithSelf.length,
       max_depth: MAX_DEPTH,
       injected: false,
       source: 'pipeline',

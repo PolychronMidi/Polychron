@@ -1030,6 +1030,13 @@
       "severity": "warning"
     },
     {
+      "id": "axis-rebalance-cost-stable",
+      "description": "axis_rebalance_cost (total_adjustments per 100 beats) should not rise >50% over 3 consecutive rounds. Sustained rise means the controller chain is working harder every round — early warning of controller instability or axis imbalance.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-activity.jsonl'; lines=open(p).readlines() if os.path.isfile(p) else []; costs=[json.loads(l).get('cost_per_100_beats') for l in lines[-2000:] if l.strip() and '\\\"axis_rebalance_cost\\\"' in l]; costs=[float(c) for c in costs if c is not None][-3:]; print(f'axis_rebalance_cost trend over 3 rounds: {costs} (rose {100*(costs[-1]-costs[0])/max(costs[0],0.01):.0f}%, threshold 50%)') if len(costs)==3 and costs[0]>0 and (costs[-1]-costs[0])/costs[0] > 0.50 else None\"",
+      "severity": "warning"
+    },
+    {
       "id": "predictions-log-gap-bounded",
       "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. If gap > 100 the current-round window filter is leaking — reconcile is scoring old predictions against this round's shifts.",
       "type": "shell_output_empty",
@@ -1040,7 +1047,7 @@
       "id": "retirement-log-consistent",
       "description": "Every retirement in metrics/legacy-override-retirement-log.jsonl must NOT appear as a current LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js. And every LEGACY_OVERRIDES entry that's been removed (absent from source detection) must have a retirement log entry. Catches silent removals that bypass the measurement-driven retirement pattern.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os, re; rp='metrics/legacy-override-retirement-log.jsonl'; jp='scripts/pipeline/validators/check-hypermeta-jurisdiction.js'; retired={json.loads(l).get('id') for l in open(rp) if l.strip()} if os.path.isfile(rp) else set(); src=open(jp).read() if os.path.isfile(jp) else ''; current=set(re.findall(r\\\"id:\\s*'([\\w.-]+)'\\\", src)); overlap=retired & current; print('\\n'.join('retired id still allowlisted: '+i for i in overlap))\"",
+      "shell": "python3 -c \"import json, os, re; rp='metrics/legacy-override-retirement-log.jsonl'; jp='scripts/pipeline/validators/check-hypermeta-jurisdiction.js'; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); src=open(jp).read() if os.path.isfile(jp) else ''; current=set(re.findall(r\\\"id:\\s*'([\\w.-]+)'\\\", src)); overlap=retired & current; print('\\n'.join('retired id still allowlisted: '+i for i in overlap))\"",
       "severity": "error"
     },
     {
@@ -1066,7 +1073,7 @@
       "id": "legacy-override-chronically-zero",
       "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds — by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) → warn (3 rounds) → error (5 rounds). Retired ids (those in legacy-override-retirement-log.jsonl) are excluded so historical zero rows don't flag already-removed overrides. entropy-cap-0.19 (R13) and phase-trust-seesaw (R15) were the first retirements via this pattern.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rp='metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip()} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
+      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rp='metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
       "severity": "error"
     },
     {
