@@ -888,6 +888,18 @@ def _persist_invariant_history(results: list) -> None:
             history = {}
     fail_streaks = history.get("fail_streaks") or {}
     last_result = history.get("last_result") or {}
+    # R22 #3: prune entries for invariants that no longer exist in current
+    # config — otherwise retired invariants linger forever with stale fail
+    # status, polluting the efficacy report. file-written-has-source-majority
+    # was the first retired invariant (R22); this prune makes the retirement
+    # actually clean.
+    current_ids = {inv.get("id") for inv in results if inv.get("id")}
+    for stale in list(fail_streaks.keys()):
+        if stale not in current_ids:
+            del fail_streaks[stale]
+    for stale in list(last_result.keys()):
+        if stale not in current_ids:
+            del last_result[stale]
     for inv, ok, _detail in results:
         inv_id = inv.get("id", "?")
         if ok:
