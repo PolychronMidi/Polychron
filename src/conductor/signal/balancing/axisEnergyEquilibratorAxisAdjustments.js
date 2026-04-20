@@ -198,6 +198,8 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     // coordinated cap. If phase collapse ever returns, investigate WHY
     // phaseFloorController is insufficient rather than re-adding this.
 
+    const trustSmoothed = state.smoothedShares.trust;
+
     // R6 E5 + R7 E2: Trust-axis share floor enforcement. When trust share drops
     // below 0.14, apply gentle bias to trust-pair baselines. R7: reduced from
     // 1.05x to 0.50x -- R6's 1.05x over-corrected (trust 12.2%->19.4%, phase displaced).

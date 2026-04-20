@@ -62,7 +62,7 @@ function main() {
     .join(' ');
   console.log(`emit-legacy-override-history: ${summary}`);
 
-  // #7: axis_rebalance_cost — total adjustments per 100 beats across all axes.
+  // #7: axis_rebalance_cost -- total adjustments per 100 beats across all axes.
   // Trend signal: rising cost = system working harder to stay balanced.
   const totalAdj = Object.values(aee.perAxisAdj || {})
     .reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0);
