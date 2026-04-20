@@ -13,7 +13,7 @@
 //   -1  = substrate asserts "broken"
 //
 // The mean across substrates is the consensus score. The stdev is the
-// divergence signal — high stdev means substrates DISAGREE, which is often
+// divergence signal -- high stdev means substrates DISAGREE, which is often
 // more actionable than any individual substrate's verdict (it surfaces
 // hidden tensions in the measurement stack).
 //
@@ -37,13 +37,13 @@ function loadJson(p) {
   catch (_e) { return null; }
 }
 
-// Clamp helper — bounds a scalar to [-1, +1].
+// Clamp helper -- bounds a scalar to [-1, +1].
 function clamp1(x) { return Math.max(-1, Math.min(1, x)); }
 
 // ---- voters ----
 
 // HCI voter: 0-100 scale mapped to [-1, +1] using 80 as neutral point.
-// hci=80 → 0, hci=100 → +1, hci=60 → -1.
+// hci=80 -> 0, hci=100 -> +1, hci=60 -> -1.
 function voteHci() {
   const summary = loadJson(path.join(ROOT, 'metrics', 'pipeline-summary.json'));
   if (!summary || typeof summary.hci !== 'number') return null;
@@ -52,7 +52,7 @@ function voteHci() {
 
 // Invariant battery voter: pass-rate in [0, 1] mapped to [-1, +1].
 // 90% pass = 0 (neutral), 95% = +1, 85% = -1. Tight band because the battery
-// regularly sits at 95%+ — small drops are meaningful signal.
+// regularly sits at 95%+ -- small drops are meaningful signal.
 function voteInvariants() {
   const hist = loadJson(path.join(ROOT, 'metrics', 'hme-invariant-history.json'));
   if (!hist || !hist.last_result) return null;
@@ -63,7 +63,7 @@ function voteInvariants() {
   return clamp1(2 * (rate - 0.90) / 0.10);
 }
 
-// Prediction recall voter: [0, 1] → [-1, +1]. Skipped rounds return null.
+// Prediction recall voter: [0, 1] -> [-1, +1]. Skipped rounds return null.
 function votePredictionRecall() {
   const acc = loadJson(path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json'));
   if (!acc || !Array.isArray(acc.rounds) || acc.rounds.length === 0) return null;
@@ -72,14 +72,14 @@ function votePredictionRecall() {
   return clamp1(2 * last.recall - 1);
 }
 
-// Verdict numeric voter: STABLE=1 → +1, EVOLVED=1.1 → +1, DRIFTED=0 → -1.
+// Verdict numeric voter: STABLE=1 -> +1, EVOLVED=1.1 -> +1, DRIFTED=0 -> -1.
 // Uses the most recent musical-correlation snapshot.
 function voteVerdict() {
   const mc = loadJson(path.join(ROOT, 'metrics', 'hme-musical-correlation.json'));
   if (!mc || !Array.isArray(mc.history) || mc.history.length === 0) return null;
   const last = mc.history[mc.history.length - 1];
   if (typeof last.verdict_numeric !== 'number') return null;
-  // Map 0 (DRIFTED) → -1, 0.5 (UNKNOWN) → 0, 1 (STABLE) → +1, 1.1 (EVOLVED) → +1.
+  // Map 0 (DRIFTED) -> -1, 0.5 (UNKNOWN) -> 0, 1 (STABLE) -> +1, 1.1 (EVOLVED) -> +1.
   return clamp1(2 * last.verdict_numeric - 1);
 }
 
@@ -99,12 +99,12 @@ function voteAxisCostTrend() {
   }).filter((c) => c !== null);
   if (costs.length < 3 || costs[0] <= 0) return null;
   const growth = (costs[costs.length - 1] - costs[0]) / costs[0];
-  // growth=0 → 0, growth=+0.5 (+50%) → -1, growth=-0.5 (-50%) → +1 (falling is good).
+  // growth=0 -> 0, growth=+0.5 (+50%) -> -1, growth=-0.5 (-50%) -> +1 (falling is good).
   return clamp1(-growth / 0.5);
 }
 
 // CLAP stability voter: check perceptual-report for CLAP tension.
-// If tension stays within [0.2, 0.6] band, +1; outside → proportionally lower.
+// If tension stays within [0.2, 0.6] band, +1; outside -> proportionally lower.
 function voteClapStability() {
   const perc = loadJson(path.join(ROOT, 'metrics', 'perceptual-report.json'));
   const clap = perc && perc.clap && perc.clap.queries;
@@ -113,7 +113,7 @@ function voteClapStability() {
   const peak = tensionKey && typeof clap[tensionKey].peak === 'number'
     ? clap[tensionKey].peak : null;
   if (peak === null) return null;
-  // In-band [0.2, 0.6] → +1; further outside → lower.
+  // In-band [0.2, 0.6] -> +1; further outside -> lower.
   const mid = 0.4;
   const halfBand = 0.2;
   const dist = Math.abs(peak - mid);
@@ -123,7 +123,7 @@ function voteClapStability() {
 
 // User listening verdict voter: reads metrics/hme-ground-truth.jsonl if present,
 // scoring the most recent entry. legendary=+1, stable=+0.5, drifted=-0.5, broken=-1.
-// Returns null if no ground truth recorded (most common case — user only records
+// Returns null if no ground truth recorded (most common case -- user only records
 // occasional verdicts, not every round).
 function voteListeningVerdict() {
   const gtPath = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');
@@ -169,7 +169,7 @@ function main() {
   const activeValues = activeVoters.map(([, v]) => v);
 
   if (activeValues.length < 2) {
-    console.log('compute-consensus: insufficient voters (<2) — skip');
+    console.log('compute-consensus: insufficient voters (<2) -- skip');
     return;
   }
 
