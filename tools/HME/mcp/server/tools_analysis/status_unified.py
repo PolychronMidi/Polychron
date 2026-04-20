@@ -220,7 +220,8 @@ def status(mode: str = "all") -> str:
                         continue
                     try:
                         _re = _json_ret.loads(_rl)
-                    except Exception:
+                    except Exception as _parse_err:
+                        logger.debug(f'retirement line parse: {type(_parse_err).__name__}')
                         continue
                     if _re.get("action") == "keep":
                         _keepers.append(_re.get("id", "?"))
