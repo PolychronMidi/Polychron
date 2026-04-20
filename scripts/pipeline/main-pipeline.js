@@ -400,7 +400,7 @@ function main() {
     'emit-hci-signal.py',              // HCI -> composition-layer signal
     'suggest-verifiers.py',            // verifier coverage report
     'memetic-drift.py',                // CLAUDE.md rule violation scan
-    'verify-coherence.py',             // full invariant battery — clears stale streaks
+    'verify-coherence.py',             // full invariant battery -- clears stale streaks
   ];
   var bgEnv = Object.assign({}, process.env, {
     PROJECT_ROOT: path.join(__dirname, '..', '..'),

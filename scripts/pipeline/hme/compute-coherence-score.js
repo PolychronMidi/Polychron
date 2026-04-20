@@ -130,7 +130,7 @@ function main() {
 
   // Idle-round detection: a window with zero human/agent file_written events
   // is not a meaningful coherence measurement. Emit idle_round so downstream
-  // analyzers can distinguish "no data" rounds from "0% coverage" rounds —
+  // analyzers can distinguish "no data" rounds from "0% coverage" rounds --
   // they have very different meanings.
   const rawWrites_ = idx.get('file_written') || [];
   const humanWrites_ = rawWrites_.filter((e) => e.source === 'fs_watcher').length;

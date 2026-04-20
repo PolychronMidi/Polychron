@@ -47,7 +47,7 @@ function loadPredictions() {
 function extractShiftedModules() {
   // Use git diff to find actually-changed source modules this round.
   // fingerprint-comparison.json tracks acoustic dimensions (pitchEntropy etc.),
-  // not code modules — it can't tell us which JS modules were edited.
+  // not code modules -- it can't tell us which JS modules were edited.
   // Git diff gives us the ground truth: which src/ files changed in the last
   // 2 commits (generate-predictions runs before the commit, so we look back 2).
   const { execSync } = require('child_process');
