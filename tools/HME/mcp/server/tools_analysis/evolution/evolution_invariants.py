@@ -399,11 +399,14 @@ def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
         qualifying.append(v)
     if len(qualifying) < min_rounds:
         return True, f"only {len(qualifying)} qualifying rounds, need ≥{min_rounds}"
-    # Check the most-recent round (strict) — we care about current state, not historical
+    # Check the most-recent round (strict) — we care about current state, not historical.
+    # R16 #2: thresholds are inclusive (>= min_val, <= max_val). Previously used
+    # strict inequality which caused off-by-one failures (recall=0.5 with min_value=0.5
+    # incorrectly flagged as "below threshold").
     latest = qualifying[-1]
-    if min_val is not None and latest <= min_val:
+    if min_val is not None and latest < min_val:
         return False, f"{field}={latest} below min_value={min_val} (over {len(qualifying)} rounds)"
-    if max_val is not None and latest >= max_val:
+    if max_val is not None and latest > max_val:
         return False, f"{field}={latest} above max_value={max_val} (over {len(qualifying)} rounds)"
     return True, f"{field}={latest} within threshold ({len(qualifying)} rounds)"
 

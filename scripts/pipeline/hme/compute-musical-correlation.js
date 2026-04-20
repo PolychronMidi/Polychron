@@ -250,6 +250,15 @@ function main() {
     encodec_entropy_avg: percSignals.encodec_entropy_avg,
     hci: currentHci,
     hci_delta: hciDelta,
+    // R16 #6: hci_normalized as verdict_numeric_v2. verdict_numeric collapses
+    // to 1.0 for all STABLE runs, making correlation degenerate. hci has real
+    // variance (94.7→95.1→96.4→96.5 across recent rounds) — normalize to 0..1
+    // for the same role: "how well is composition doing" anchor.
+    hci_normalized: typeof currentHci === 'number' ? currentHci / 100 : null,
+    // R16 #3: drifted_dimension_count. STABLE=0, EVOLVED=1-2, DRIFTED=3+.
+    // Even in all-STABLE sessions, dimension-level drift counts carry trend signal.
+    drifted_dimension_count: (fingerprint && typeof fingerprint.driftedDimensions === 'number')
+      ? fingerprint.driftedDimensions : null,
     // Per-axis adjustment totals: enables correlating "how much does each axis
     // need re-balancing" against "does HME self-assess well" and "is the music
     // actually good." High trust_adj_count correlated with low verdict_numeric
@@ -299,6 +308,9 @@ function main() {
     ['hme_coherence', 'perceptual_complexity_avg'],
     ['hme_coherence', 'clap_tension'],
     ['hme_coherence', 'hci_delta'],
+    // R16: hci_normalized as the outcome anchor (verdict_numeric is constant).
+    ['hme_coherence', 'hci_normalized'],
+    ['hme_coherence', 'drifted_dimension_count'],
     ['hme_prediction_accuracy', 'verdict_numeric'],
     ['hme_prediction_accuracy', 'perceptual_complexity_avg'],
     ['hme_prediction_accuracy', 'clap_tension'],

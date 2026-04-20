@@ -379,10 +379,21 @@ function main() {
     if (typeof ps.hci === 'number') hci = ps.hci;
   } catch (_e) { /* summary wasn't read back -- leave hci null */ }
   var session = process.env.HME_SESSION_ID || 'shell';
-  emitActivity('pipeline_run', {
+  // R16 #5: guarantee pipeline_run emission by writing directly to the jsonl
+  // if spawn fails. Previously emitActivity used detached spawn only; a python
+  // crash silently dropped the event (detected via 16 start / 15 run imbalance
+  // in pipeline-start-end-balanced invariant).
+  var runRecord = {
+    event: 'pipeline_run',
+    ts: Math.floor(Date.now() / 1000),
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
     wall_s: Math.round(Number(wallTime)), hci: hci,
-  });
+  };
+  emitActivity('pipeline_run', runRecord);
+  try {
+    var activityLog = path.join(__dirname, '..', '..', 'metrics', 'hme-activity.jsonl');
+    fs.appendFileSync(activityLog, JSON.stringify(runRecord) + '\n');
+  } catch (_ae) { /* best-effort fallback */ }
   emitActivity('round_complete', {
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
   });
