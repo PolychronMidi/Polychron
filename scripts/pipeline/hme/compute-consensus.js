@@ -213,6 +213,82 @@ function main() {
   console.log(`compute-consensus: mean=${m.toFixed(2)} stdev=${sd.toFixed(2)} ` +
               `divergence=${divergenceLevel} n=${activeValues.length}  [${summary}]`);
 
+  // R23 #6: consensus_regression event when stdev rises >0.3 vs prior round.
+  // Distinct from one-round high-divergence: this catches ACCELERATION.
+  try {
+    const tsPath = path.join(ROOT, 'metrics', 'hme-arc-timeseries.jsonl');
+    if (fs.existsSync(tsPath)) {
+      const tsLines = fs.readFileSync(tsPath, 'utf8').split('\n').filter(Boolean);
+      if (tsLines.length >= 1) {
+        const prevRow = JSON.parse(tsLines[tsLines.length - 1]);
+        const prevStdev = prevRow && prevRow.arc_i ? prevRow.arc_i.stdev : null;
+        if (typeof prevStdev === 'number' && (sd - prevStdev) > 0.3) {
+          const { spawn } = require('child_process');
+          try {
+            spawn('python3', [
+              path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
+              '--event=consensus_regression',
+              `--stdev_cur=${sd.toFixed(3)}`,
+              `--stdev_prev=${prevStdev.toFixed(3)}`,
+              `--delta=${(sd - prevStdev).toFixed(3)}`,
+              '--session=pipeline',
+            ], { stdio: 'ignore', detached: true, cwd: ROOT,
+                 env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }) }).unref();
+          } catch (_re) { /* best-effort */ }
+        }
+      }
+    }
+  } catch (_tse) { /* best-effort */ }
+
+  // R23 #5: axis_cost_trend forecaster — linear extrapolation from
+  // history. If voter has been declining, estimate rounds until it
+  // reaches -0.5 (significant negative). Tiny forecaster; writes to
+  // the consensus record.
+  try {
+    const tsPath = path.join(ROOT, 'metrics', 'hme-arc-timeseries.jsonl');
+    if (fs.existsSync(tsPath)) {
+      const tsLines = fs.readFileSync(tsPath, 'utf8').split('\n').filter(Boolean);
+      const tsRows = tsLines.map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } }).filter(Boolean);
+      const trail = tsRows.slice(-3);
+      // voter data isn't in timeseries; we have mean + stdev. Use mean decline
+      // as the proxy for consensus deterioration pace.
+      const means = trail.map((r) => (r.arc_i && r.arc_i.mean)).filter((x) => typeof x === 'number');
+      means.push(m);
+      if (means.length >= 3) {
+        // simple linear slope: (last - first) / (n-1)
+        const slope = (means[means.length - 1] - means[0]) / (means.length - 1);
+        if (slope < -0.05) {
+          // how many rounds until mean hits -0.3?
+          const target = -0.3;
+          const roundsToTarget = Math.ceil((target - means[means.length - 1]) / slope);
+          record.forecast = {
+            consensus_mean_slope_per_round: Number(slope.toFixed(3)),
+            rounds_to_significant_decline: roundsToTarget > 0 ? roundsToTarget : null,
+          };
+        }
+      }
+    }
+  } catch (_fe) { /* best-effort */ }
+
+  // R23 #9: harvester action acted-on accounting. For each previous round's
+  // action ids in hme-next-actions.json, check whether the commit between
+  // now and that round mentions the id. If any do, increment "acted_on".
+  try {
+    const { execSync } = require('child_process');
+    const naPath = path.join(ROOT, 'metrics', 'hme-next-actions.json');
+    if (fs.existsSync(naPath)) {
+      const naData = JSON.parse(fs.readFileSync(naPath, 'utf8'));
+      const prevIds = (naData.actions || []).map((a) => a.id).filter(Boolean);
+      const log = execSync('git log -30 --pretty=%s%n%b', { cwd: ROOT, encoding: 'utf8', timeout: 10000 });
+      const hit = prevIds.filter((id) => log.toLowerCase().includes(id.toLowerCase()));
+      record.harvester_previous_round_ids = prevIds;
+      record.harvester_acted_on_count = hit.length;
+    }
+  } catch (_harv) { /* best-effort */ }
+
+  // (write record again with any additions from above blocks)
+  fs.writeFileSync(OUT, JSON.stringify(record, null, 2) + '\n');
+
   // Emit consensus_divergence activity event when stdev crosses threshold.
   if (sd > DIVERGENCE_THRESHOLD) {
     const { spawn } = require('child_process');
