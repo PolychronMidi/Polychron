@@ -285,6 +285,26 @@ Every one of these traps is now documented in this log so the next training roun
 
 **The pipeline is proven end-to-end.** Iteration 2 with a richer corpus and larger base model should produce a real quality lift. The substrate is ready; the data and hardware are the current bottleneck.
 
+### Round 8: Pipeline-owned observability (2026-04-19)
+
+The observability substrate landed in Phases 1-6 but was silently decoupled by an architectural assumption: agent-initiated. HCI, `round_complete`, `pipeline_run`, the coherence score, the invariant battery — every one of these was gated on a Claude hook firing, which meant direct shell runs, cron, CI, or any other agent produced collapsed telemetry. R05-R10 rewired everything to be **agent-independent**: the pipeline owns its own observability.
+
+**Structural moves:**
+1. **`emitActivity()` in `main-pipeline.js`** — `pipeline_start`, `pipeline_run`, `round_complete`, `pipeline_baseline_delta`, `idle_round` fire directly from the orchestrator. Prior path (posttooluse_bash.sh) remained for Claude-only metadata (onboarding, nexus) but lost the emission monopoly.
+2. **Background analytics in-pipeline** — 9 scripts (snapshot-holograph, analyze-hci-trajectory, etc.) spawn detached from the pipeline so non-Claude runs still refresh artifacts.
+3. **`run-invariant-battery.py`** — the declarative invariant battery (`check_invariants()` in `evolution_invariants.py`) updates `hme-invariant-history.json` only when invoked. Wrapped into a pipeline background spawn; stubs `ctx.mcp` to bypass decorator side-effects. Chronic streak tracker now refreshes every run, not every agent session.
+4. **Watcher `moved` event** — the Edit tool uses atomic rename (`.tmp.<pid>` → final); watchdog fires `moved`, not `modified`. Adding `moved` to the write-event set made human edits visible as `source=fs_watcher` (were invisible before). This was the single upstream leak that kept `hme_coherence` null.
+5. **`coherence-same-commit-deterministic`** — auto-commits change SHA every run, so same-SHA pairs never existed. Switched to tree-hash grouping: two runs from identical working trees (different commits) are comparable. Uses `git rev-parse HEAD^{tree}`.
+6. **Prediction reconciler via git diff** — fingerprint-comparison tracks audio dimensions (pitchEntropy etc.), not code modules; `extractShiftedModules` was always empty, accuracy was permanently 0. Switched to `git diff --name-only HEAD~2..HEAD -- src/` for ground truth.
+7. **Missed-prediction feedback loop** — reconciler appends missed modules back to `hme-predictions.jsonl` tagged `source: missed_prediction` so the cascade model can learn the gaps over time.
+8. **`hci_delta` in correlation snapshot** — `verdict_numeric` is always 1.0 for STABLE runs (degenerate). Added `hci`/`hci_delta` fields to the round snapshot so correlation tracking has a dimension with real variance.
+9. **`hci-snapshot-diff.json`** — pipeline inline-writes per-verifier diff vs previous snapshot so regressions surface without manual invocation.
+10. **Subagent guard SKIP-not-FAIL** — `subagent-short-prompt-guard` was failing when the backend was down (returns empty JSON). A missing backend is not a guard regression; now it SKIPs cleanly and defers to `subagent-backends`.
+
+**Result:** Ten R-rounds of observability hardening, all `listening verdict: legendary`. HCI climbed 88 → 96.4. Six chronic-failing invariant streaks cleared (activity-hook-wiring, hme-no-raw-os-environ, lance-deletions, file-written-module-sane pending watcher restart, plus three from shell-level fixes). The cascade that collapsed every downstream metric to zero for months is fully closed.
+
+**Principle crystallized:** *Observability is not a view into the system — it IS the system's nervous system. If the substrate depends on the agent to fire, the agent is the only thing visible.* Pipeline-owned observability means every pipeline run, from any caller, produces equal-fidelity telemetry.
+
 ## The principle
 
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.
