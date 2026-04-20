@@ -46,6 +46,7 @@ module.exports = {
         file: filePath,
         module,
         hme_read_prior: hmeReadPrior,
+        source: 'proxy_tool',  // Distinguishes agent Edit/Write from fs_watcher + pipeline_script
       });
     } else if (name && name.startsWith('HME_')) {
       // Rough elapsed proxy: tool_result is emitted immediately after run, we
