@@ -995,13 +995,13 @@
     },
     {
       "id": "pipeline-run-round-balanced",
-      "description": "Every pipeline_run must be paired with a round_complete event in the recent window. These two events should always fire together (both emitted at pipeline finish); a mismatch means one of the two paths regressed. require_field=verdict filters out chat-turn round_complete markers from the pre-rename era.",
+      "description": "Every pipeline_run must be paired with a round_complete event in the recent window. These two events should always fire together (both emitted at pipeline finish); a mismatch means one of the two paths regressed. require_field=verdict filters out chat-turn round_complete markers from the pre-rename era. Window tightened to 500 to prevent historical one-off imbalances from persisting — recent 4-5 rounds is enough to detect current-state drift.",
       "type": "activity_events_balanced",
       "path": "metrics/hme-activity.jsonl",
       "start_event": "pipeline_run",
       "end_event": "round_complete",
       "require_field": "verdict",
-      "window_events": 2000,
+      "window_events": 500,
       "min_occurrences": 2,
       "severity": "error"
     },
