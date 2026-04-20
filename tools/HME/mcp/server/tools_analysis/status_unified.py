@@ -199,6 +199,29 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # Arc I: Cross-substrate consensus — surface at the TOP (above retirement,
+    # above HCI alert) since divergence is the most actionable hidden signal.
+    try:
+        import json as _json_con
+        _con_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-consensus.json")
+        if os.path.isfile(_con_path):
+            with open(_con_path) as _cf:
+                _con = _json_con.load(_cf)
+            _voters = _con.get("voters", {})
+            _active = [(k, v) for k, v in _voters.items() if v is not None]
+            _vtr_bits = " ".join(f"{k.split('_')[0]}={v:+.2f}" for k, v in _active)
+            _outs = ", ".join(o.get("voter", "?") for o in _con.get("outliers", []))
+            _icon = {"low": "ok", "moderate": "~", "high": "!!"}.get(_con.get("divergence"), "?")
+            parts.append(
+                f"## Consensus [{_icon}]\n"
+                f"  mean={_con.get('mean')} stdev={_con.get('stdev')} divergence={_con.get('divergence')} "
+                f"(n={_con.get('active_count')})\n"
+                f"  voters: {_vtr_bits}\n"
+                + (f"  outliers: {_outs}" if _outs else "  (no outliers — substrates agree)")
+            )
+    except Exception as _con_err:
+        logger.debug(f'silent-except status_unified consensus: {type(_con_err).__name__}: {_con_err}')
+
     # R17 #9: Legacy-override retirement summary. One-line status: N active,
     # N retired (with IDs + round), N keepers. Surfaces the data-driven migration
     # state of the hypermeta allowlist at a glance.

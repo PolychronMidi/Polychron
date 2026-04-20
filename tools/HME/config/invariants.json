@@ -1111,6 +1111,13 @@
       "severity": "error"
     },
     {
+      "id": "consensus-not-divergent",
+      "description": "Arc I: cross-substrate consensus. metrics/hme-consensus.json reports agreement variance across 7 voters (HCI, invariants, prediction recall, verdict, axis cost trend, CLAP, listening verdict). If stdev > 0.4, substrates disagree meaningfully about whether the round is healthy — a hidden tension the individual substrates don't surface. Fires when divergence='high'.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-consensus.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('voter','') for o in d.get('outliers',[])); print(f'consensus divergent: stdev={d.get(\\\"stdev\\\")} mean={d.get(\\\"mean\\\")} outliers=[{outs}]') if d.get('divergence') == 'high' else None\"",
+      "severity": "warning"
+    },
+    {
       "id": "coherence-tracks-hci",
       "description": "Fallback anchor for coherence-tracks-musical-outcome. verdict_numeric collapses to 1.0 for every STABLE run (most rounds), making its correlation permanently degenerate. hci has real variance (94.7→96.5 across recent rounds); hme_coherence correlated with hci_normalized is the working alternative. Inert until both metrics have 3+ distinct values.",
       "type": "correlation_direction",
