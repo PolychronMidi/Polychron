@@ -1,0 +1,25 @@
+{
+  "id": "retire-legacy-override-after-5-zero-rounds",
+  "category": "retirement",
+  "description": "A legacy override with 0 fires AND 0 entries across 5+ consecutive pipeline rounds is a data-proven removal candidate. First demonstrated R13 (entropy-cap-0.19) and R15 (phase-trust-seesaw + graduated). Pattern: instrument → measure → threshold at 5 zero rounds → remove source + state init + allowlist entry → append retirement log entry.",
+  "trigger": {
+    "kind": "file_shell",
+    "source": "metrics/legacy-override-history.jsonl",
+    "check": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rp='metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print(','.join(zero))\"",
+    "matches_when": "stdout is non-empty; comma-separated list of override ids ready for retirement"
+  },
+  "action": {
+    "summary": "Retire each matched override id.",
+    "steps": [
+      "Remove the override's branch from src/conductor/signal/balancing/axisEnergyEquilibratorAxisAdjustments.js (leave explanatory comment with commit link).",
+      "Remove entries from perLegacyOverride + perLegacyOverrideEntries init in src/conductor/signal/balancing/axisEnergyEquilibrator.js.",
+      "Remove entry from LEGACY_OVERRIDES in scripts/pipeline/validators/check-hypermeta-jurisdiction.js (replace with retirement comment).",
+      "Append record to metrics/legacy-override-retirement-log.jsonl: {ts, id, rounds_observed_zero, reason, fallback_handler, retired_in, commit}.",
+      "Verify next pipeline's perAxisAdj.<axis> stays non-zero (generic handler picks up the slack)."
+    ]
+  },
+  "history": [
+    {"round": "R13", "id": "entropy-cap-0.19", "rounds_zero": 2, "fallback": "AXIS_OVERSHOOT generic"},
+    {"round": "R15", "id": "phase-trust-seesaw (+ graduated 0.02/0.04)", "rounds_zero": 5, "fallback": "phaseFloorController #14 + trustStarvationAutoNourishment #5"}
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "validate-cascade-direction",
+  "category": "validation",
+  "description": "When prediction recall is persistently low (<=0.5) while the dependency graph looks correct, suspect cascade direction bug in generate-predictions.js::buildAdjacency. Demonstrated R14: adj[to].add(from) made BFS find upstream DEPENDENCIES instead of downstream CONSUMERS — editing X predicted files X reads from, not files that read X. Fixed by inverting to adj[from].add(to). Pattern: low recall + known shifts = suspect cascade direction.",
+  "trigger": {
+    "kind": "metric_threshold",
+    "source": "metrics/hme-prediction-accuracy.json",
+    "check": "python3 -c \"import json; d=json.load(open('metrics/hme-prediction-accuracy.json')); rds=[r for r in d.get('rounds',[]) if not r.get('skipped') and r.get('recall') is not None][-3:]; print('recall low:'+str([r.get('recall') for r in rds])) if len(rds)==3 and all(r.get('recall',1) <= 0.5 for r in rds) else None\"",
+    "matches_when": "3+ consecutive non-skipped rounds with recall <= 0.5"
+  },
+  "action": {
+    "summary": "Diagnose whether the adjacency direction is wrong.",
+    "steps": [
+      "Identify one confirmed-edited src/ file from last round (via git diff HEAD~2..HEAD).",
+      "Run generate-predictions.js for that file with MAX_DEPTH=1; check the predicted affected_modules list.",
+      "Manually verify: are the predicted modules ones that READ from the edited file (correct) or ones the edited file READS FROM (inverted)?",
+      "If inverted: flip adj[to].add(from) to adj[from].add(to). Add a validate_adjacency test case with a known file pair.",
+      "Verify recall recovers to 1.0 next pipeline run."
+    ]
+  },
+  "history": [
+    {"round": "R14", "symptom": "recall=0.5 persisted R11-R13", "fix": "adj[from].add(to) in buildAdjacency", "result": "recall jumped to 1.0 R16"}
+  ]
+}
