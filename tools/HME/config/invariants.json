@@ -1111,6 +1111,13 @@
       "severity": "error"
     },
     {
+      "id": "legendary-drift-bounded",
+      "description": "Arc III: current round's HME state must stay within 2σ envelope of prior legendary rounds (mean |z-score| across numeric state fields < 2.0). Preemptive detection: fires BEFORE the listening verdict fails, catching drift toward non-legendary territory. Reads metrics/hme-legendary-drift.json. Inert until envelope is computable (5+ snapshots).",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-legendary-drift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('field','') for o in d.get('outliers',[])[:3]); print(f'drift={d.get(\\\"drift_score\\\")} > {d.get(\\\"drift_threshold\\\")} top_outliers=[{outs}]') if d.get('status') == 'drift_detected' else None\"",
+      "severity": "warning"
+    },
+    {
       "id": "patterns-have-action-on-match",
       "description": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps. A pattern that triggers without defining what to do is decorative — it flags a condition but gives the agent no script to run. The registry's value is action-grounding, not just condition-detection.",
       "type": "shell_output_empty",

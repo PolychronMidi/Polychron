@@ -199,6 +199,39 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # Arc III: Legendary state drift — preemptive detection from inverse
+    # reasoning. If current state drifted >2σ from legendary envelope, the
+    # outliers name the exact dimensions that departed. Appears above pattern
+    # matches because drift is the signal patterns react to.
+    try:
+        import json as _json_drift
+        _drift_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-legendary-drift.json")
+        if os.path.isfile(_drift_path):
+            with open(_drift_path) as _df:
+                _drift = _json_drift.load(_df)
+            _status = _drift.get("status")
+            _n = _drift.get("envelope_n") or 0
+            _score = _drift.get("drift_score")
+            if _status == "drift_detected":
+                _outs = ", ".join(
+                    f"{o['field']}(z={o['z_score']:+.2f})"
+                    for o in (_drift.get("outliers") or [])[:3]
+                )
+                parts.append(
+                    f"## Legendary Drift [!!]\n"
+                    f"  drift={_score} (threshold={_drift.get('drift_threshold')}) "
+                    f"envelope_n={_n}\n"
+                    f"  outliers: {_outs}"
+                )
+            elif _status == "within_envelope" and _score is not None:
+                parts.append(
+                    f"## Legendary Drift [ok]\n"
+                    f"  drift={_score} envelope_n={_n} "
+                    f"(within {_drift.get('drift_threshold')}σ)"
+                )
+    except Exception as _drift_err:
+        logger.debug(f'silent-except status_unified drift: {type(_drift_err).__name__}: {_drift_err}')
+
     # Arc II: Matched patterns — the MOST actionable surface in status output.
     # Each match names a specific action script. Sits at the top because if
     # any pattern fires, THAT is what the next turn should address.
