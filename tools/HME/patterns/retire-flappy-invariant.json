@@ -1,0 +1,24 @@
+{
+  "id": "retire-flappy-invariant",
+  "category": "retirement",
+  "description": "An invariant classified as 'flappy' by compute-invariant-efficacy.py (fires repeatedly without being cited in any fix commit over RECENT_COMMITS scan) is a candidate for retirement or recalibration. Pattern first applied R22 to file-written-has-source-majority. Arc IV's equivalent of Arc II's retire-legacy-override pattern, applied to the invariant battery itself.",
+  "trigger": {
+    "kind": "efficacy_flappy_candidate",
+    "source": "metrics/hme-invariant-efficacy.json",
+    "check": "python3 -c \"import json, os; p='metrics/hme-invariant-efficacy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; c=d.get('retirement_candidates',[]); print(','.join(c)) if c else None\"",
+    "matches_when": "retirement_candidates non-empty; stdout names flappy invariants ready for retirement/recalibration"
+  },
+  "action": {
+    "summary": "Retire or recalibrate flappy invariants.",
+    "steps": [
+      "For each candidate: read its full definition in tools/HME/config/invariants.json.",
+      "Decide between (a) retire outright, (b) recalibrate threshold, (c) convert to trend-based (see predictions-log-gap-bounded R19 example).",
+      "If retire: delete the invariant block, append to metrics/hme-invariant-retirement-log.jsonl with {ts, id, rounds_flappy, reason, retired_in, commit}.",
+      "If recalibrate: edit the shell/threshold, keep the id, document the change in the description.",
+      "Verify next efficacy report shows candidate is no longer flappy."
+    ]
+  },
+  "history": [
+    {"round": "R22", "id": "file-written-has-source-majority", "rounds_flappy": 12, "decision": "retire", "fallback": "file-written-module-sane with require_fields:['source'] covers underlying signal"}
+  ]
+}

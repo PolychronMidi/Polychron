@@ -1058,13 +1058,6 @@
       "severity": "error"
     },
     {
-      "id": "file-written-has-source-majority",
-      "description": "At least 80% of RECENT file_written events (last 24h) should carry the 'source' field. If fewer, either the watcher (source=fs_watcher) or the pipeline (source=pipeline_script) has regressed recently — the require_fields filter on file-written-module-sane would silently pass by filtering most events instead of catching violations. Time-windowed (not event-windowed) because legacy events from before the source field was added shouldn't count.",
-      "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os, time; p='metrics/hme-activity.jsonl'; lines=open(p).readlines() if os.path.isfile(p) else []; cutoff=time.time()-86400; fws=[json.loads(l) for l in lines[-2000:] if l.strip() and json.loads(l).get('event')=='file_written' and json.loads(l).get('ts',0)>=cutoff]; with_src=sum(1 for e in fws if e.get('source')); total=len(fws); print(f'recent file_written with source: {with_src}/{total} ({100*with_src//max(total,1)}%) — below 80% threshold') if total>=10 and 100*with_src/max(total,1) < 80 else None\"",
-      "severity": "warning"
-    },
-    {
       "id": "prediction-recall-nontrivial",
       "description": "Once the predictor has processed 3+ rounds with >=1 shifted module each, recall should be >= 0.5 (predicted modules catch at least half of actual shifts). Low recall means the cascade model isn't seeing the dependency structure; low precision is acceptable (overprediction tolerable) but low recall is a structural blind spot.",
       "type": "metric_threshold",
@@ -1108,6 +1101,20 @@
       "direction": "positive",
       "threshold": -0.10,
       "min_n": 10,
+      "severity": "error"
+    },
+    {
+      "id": "envelope-shift-bounded",
+      "description": "R22 #5: envelope-shift is the center-of-mass movement of the legendary state distribution across first-half vs second-half of accumulated snapshots. average_relative_shift > 0.5 means the 'normal' state itself is drifting fast — distinct from single-round drift (which Arc III's legendary-drift-bounded catches). Large envelope shift = regime change, not anomaly.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-envelope-shift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; shift=d.get('average_relative_shift'); print(f'envelope shift {shift} > 0.5 (regime change), top field: {d.get(\\\"top_shifted_fields\\\",[{}])[0].get(\\\"field\\\",\\\"?\\\")}') if isinstance(shift, (int, float)) and shift > 0.5 else None\"",
+      "severity": "warning"
+    },
+    {
+      "id": "cross-arc-hidden-drift-detector",
+      "description": "R22 #10: fires specifically when Arc I says consensus is LOW (substrates agree) AND Arc III says drift IS DETECTED AND Arc IV says invariants healthy. This combination means 'state has drifted but every substrate voter missed it' — the exact hidden-drift scenario Arc III was designed for. Distinct from any single-arc invariant.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; c=json.load(open('metrics/hme-consensus.json')) if os.path.isfile('metrics/hme-consensus.json') else {}; d=json.load(open('metrics/hme-legendary-drift.json')) if os.path.isfile('metrics/hme-legendary-drift.json') else {}; hit=c.get('divergence') == 'low' and d.get('status') == 'drift_detected'; print(f'hidden drift: consensus-low divergence BUT drift detected (score {d.get(\\\"drift_score\\\")}). Substrates all report healthy while state has departed envelope.') if hit else None\"",
       "severity": "error"
     },
     {

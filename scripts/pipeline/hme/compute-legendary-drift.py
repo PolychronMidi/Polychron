@@ -219,7 +219,24 @@ def _compute_drift(current_flat: dict[str, float], envelope: dict[str, dict]
 def main() -> int:
     current = _capture_state()
 
-    # Append current state (every pipeline run is assumed legendary by default)
+    # R22 #4: ground-truth integration. Default assumption: legendary. If the
+    # user tagged a recent round with a non-legendary sentiment in
+    # hme-ground-truth.jsonl, mark the snapshot accordingly — envelope
+    # computation excludes non-legendary snapshots from the baseline.
+    gt_path = os.path.join(PROJECT_ROOT, "metrics", "hme-ground-truth.jsonl")
+    current["legendary_confirmed"] = True  # default
+    try:
+        if os.path.isfile(gt_path):
+            with open(gt_path, encoding="utf-8") as gf:
+                gt_lines = [ln.strip() for ln in gf if ln.strip()]
+            if gt_lines:
+                last_gt = json.loads(gt_lines[-1])
+                tags = [str(t).lower() for t in (last_gt.get("tags") or [])]
+                # Most recent ground truth is legendary-if-tagged-as-such
+                current["legendary_confirmed"] = "legendary" in tags
+    except Exception:
+        pass
+
     os.makedirs(os.path.dirname(SNAPSHOTS), exist_ok=True)
     with open(SNAPSHOTS, "a", encoding="utf-8") as f:
         f.write(json.dumps(current) + "\n")
@@ -245,7 +262,10 @@ def main() -> int:
         return 0
 
     # Exclude current snapshot from envelope so drift measures current against past.
-    history = snaps[:-1]
+    # R22 #4: also exclude any snapshot explicitly marked non-legendary
+    # (legendary_confirmed=False). Default True for backfilled snapshots.
+    history = [s for s in snaps[:-1]
+               if s.get("legendary_confirmed", True) is not False]
     envelope = _compute_envelope(history)
     current_flat = _flatten(current)
     drift, outliers = _compute_drift(current_flat, envelope)
