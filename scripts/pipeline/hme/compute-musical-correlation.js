@@ -148,7 +148,7 @@ function main() {
   const hciDelta = (currentHci !== null && prevHci !== null) ? currentHci - prevHci : null;
 
   // HCI regression detection: two consecutive rounds with hci_delta < -2 emits
-  // an activity event. The 2-point threshold is intentionally loose — a single
+  // an activity event. The 2-point threshold is intentionally loose -- a single
   // noisy round shouldn't alert, but sustained decline should.
   const REGRESSION_THRESHOLD = -2;
   if (hciDelta !== null && hciDelta < REGRESSION_THRESHOLD) {

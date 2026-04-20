@@ -6,7 +6,7 @@
 // entropy-cap-0.19 ever fired?" is a simple grep over history.
 //
 // Writes a one-line console summary for pipeline output consumption.
-// Non-fatal — missing trace-summary is a skip, not an error.
+// Non-fatal -- missing trace-summary is a skip, not an error.
 
 'use strict';
 
@@ -25,14 +25,14 @@ function loadJson(p) {
 function main() {
   const trace = loadJson(TRACE);
   if (!trace) {
-    console.log('emit-legacy-override-history: trace-summary missing — skip');
+    console.log('emit-legacy-override-history: trace-summary missing -- skip');
     return;
   }
   const aee = trace.axisEnergyEquilibrator || {};
   const fires = aee.perLegacyOverride || {};
   const entries = aee.perLegacyOverrideEntries || {};
   if (!Object.keys(fires).length) {
-    console.log('emit-legacy-override-history: no perLegacyOverride data — skip');
+    console.log('emit-legacy-override-history: no perLegacyOverride data -- skip');
     return;
   }
   const { execSync } = require('child_process');
