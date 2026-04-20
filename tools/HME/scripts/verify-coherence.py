@@ -1327,6 +1327,23 @@ class SubagentGuardVerifier(Verifier):
         script = os.path.join(_SCRIPTS_DIR, "stress-test-subagent.py")
         if not os.path.isfile(script):
             return _result(SKIP, 1.0, "stress-test script not found")
+        # Skip if agent_local backend is unreachable — a missing backend makes
+        # the JSON decode fail (empty stdout), which is a backend outage not a
+        # guard regression. The subagent-backends verifier covers this separately.
+        agent = os.path.join(os.path.dirname(_SCRIPTS_DIR), "mcp", "agent_local.py")
+        if not os.path.isfile(agent):
+            return _result(SKIP, 1.0, "agent_local.py not found — skip guard test")
+        try:
+            probe = subprocess.run(
+                ["python3", agent, "--stdin", "--json", "--project", _PROJECT],
+                input='{"prompt":"?","mode":"explore"}',
+                capture_output=True, text=True, timeout=5,
+                env={**os.environ, "PROJECT_ROOT": _PROJECT},
+            )
+            if not probe.stdout.strip():
+                return _result(SKIP, 1.0, "agent_local returned empty — backend down, skipping guard test")
+        except (subprocess.TimeoutExpired, Exception):
+            return _result(SKIP, 1.0, "agent_local unreachable — backend down, skipping guard test")
         try:
             rc = subprocess.run(
                 ["python3", script, "--only", "1"],

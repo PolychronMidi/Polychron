@@ -75,6 +75,7 @@ const POST_COMPOSITION = [
   { label: 'synthesize-generalizations',   cmd: 'python3 scripts/pipeline/hme/synthesize-generalizations.py' },
   { label: 'render-generalizations',       cmd: 'python3 scripts/pipeline/hme/render-generalizations.py' },
   { label: 'compute-evolution-priority',   cmd: 'node scripts/pipeline/hme/compute-evolution-priority.js' },
+  { label: 'compact-lance-tables',          cmd: 'python3 scripts/compact-lance-tables.py' },
   { label: 'archive-activity',             cmd: 'python3 scripts/pipeline/hme/archive-activity.py' },
 ];
 
@@ -221,6 +222,37 @@ function writeSummaryJSON(wallTime, extra) {
     console.error('  Summary dump: ' + JSON.stringify(summary));
     throw e;
   }
+  // HCI snapshot diff: compare current vs previous verifier snapshot so i/status
+  // can surface which verifiers regressed without requiring a manual diff command.
+  try {
+    var snapCur  = path.join(__dirname, '../..', 'metrics', 'hci-verifier-snapshot.json');
+    var snapPrev = snapCur + '.prev';
+    if (fs.existsSync(snapCur) && fs.existsSync(snapPrev)) {
+      var cur  = JSON.parse(fs.readFileSync(snapCur,  'utf8'));
+      var prev2 = JSON.parse(fs.readFileSync(snapPrev, 'utf8'));
+      var curV  = cur.verifiers  || {};
+      var prevV = prev2.verifiers || {};
+      var changed2 = [];
+      var allKeys = new Set([...Object.keys(curV), ...Object.keys(prevV)]);
+      allKeys.forEach(function(k) {
+        var cs = (curV[k]  || {}).status;
+        var ps = (prevV[k] || {}).status;
+        if (cs !== ps) changed2.push({ verifier: k, prev: ps, cur: cs });
+      });
+      var diff2 = {
+        generated_at: new Date().toISOString(),
+        hci_prev: prev2.hci,
+        hci_cur:  cur.hci,
+        hci_delta: (typeof cur.hci === 'number' && typeof prev2.hci === 'number')
+          ? Number((cur.hci - prev2.hci).toFixed(1)) : null,
+        changed_verifiers: changed2,
+      };
+      fs.writeFileSync(
+        path.join(__dirname, '../..', 'metrics', 'hci-snapshot-diff.json'),
+        JSON.stringify(diff2, null, 2) + '\n',
+      );
+    }
+  } catch (_de) { /* best-effort */ }
 }
 
 // Activity emission -- the pipeline is the authoritative source of truth for
@@ -368,6 +400,7 @@ function main() {
     'emit-hci-signal.py',              // HCI -> composition-layer signal
     'suggest-verifiers.py',            // verifier coverage report
     'memetic-drift.py',                // CLAUDE.md rule violation scan
+    'verify-coherence.py',             // full invariant battery — clears stale streaks
   ];
   var bgEnv = Object.assign({}, process.env, {
     PROJECT_ROOT: path.join(__dirname, '..', '..'),
@@ -393,7 +426,7 @@ function main() {
     var warmSentinel = path.join(__dirname, '..', '..', 'tmp', 'hme-warm-reprime.request');
     fs.mkdirSync(path.dirname(warmSentinel), { recursive: true });
     fs.writeFileSync(warmSentinel, String(Math.floor(Date.now() / 1000)));
-  } catch (_we) { /* best-effort — warm reprime is advisory */ }
+  } catch (_we) { /* best-effort -- warm reprime is advisory */ }
 
   console.log('Pipeline finished in ' + wallTime + 's');
 }
