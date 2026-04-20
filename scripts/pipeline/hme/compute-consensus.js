@@ -240,7 +240,7 @@ function main() {
     }
   } catch (_tse) { /* best-effort */ }
 
-  // R23 #5: axis_cost_trend forecaster — linear extrapolation from
+  // R23 #5: axis_cost_trend forecaster -- linear extrapolation from
   // history. If voter has been declining, estimate rounds until it
   // reaches -0.5 (significant negative). Tiny forecaster; writes to
   // the consensus record.
