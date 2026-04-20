@@ -170,6 +170,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
           state.perAxisAdj.tension = (V.optionalFinite(state.perAxisAdj.tension, 0)) + 1;
+          state.perLegacyOverride['tension-floor-0.15']++;
         }
       }
     }
@@ -191,6 +192,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
           state.perAxisAdj.entropy = (V.optionalFinite(state.perAxisAdj.entropy, 0)) + 1;
+          state.perLegacyOverride['entropy-cap-0.19']++;
         }
       }
     }
@@ -223,6 +225,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
           state.perAxisAdj.trust = (V.optionalFinite(state.perAxisAdj.trust, 0)) + 1;
+          state.perLegacyOverride['phase-trust-seesaw']++;
         }
       }
     }
@@ -255,6 +258,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
           state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
           state.axisAdjustments++;
           state.perAxisAdj.trust = (V.optionalFinite(state.perAxisAdj.trust, 0)) + 1;
+          state.perLegacyOverride['trust-floor-0.14']++;
         }
       }
     }

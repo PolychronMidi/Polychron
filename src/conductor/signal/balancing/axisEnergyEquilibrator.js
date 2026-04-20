@@ -66,6 +66,17 @@ axisEnergyEquilibrator = (() => {
       axisAdjustments: 0,
       perAxisAdj: {},
       perPairAdj: {},
+      // Legacy override instrumentation. Counts how many times each
+      // SpecialCaps legacy override actually changes a pair baseline.
+      // Candidate-for-removal overrides showing 0 fires across many rounds
+      // are data-driven migration candidates. Ids match LEGACY_OVERRIDES
+      // in scripts/pipeline/validators/check-hypermeta-jurisdiction.js.
+      perLegacyOverride: {
+        'tension-floor-0.15': 0,
+        'entropy-cap-0.19': 0,
+        'phase-trust-seesaw': 0,
+        'trust-floor-0.14': 0,
+      },
       lastBaselines: {},
       regimeBeats: {},
       regimePairAdj: {},
@@ -113,6 +124,7 @@ axisEnergyEquilibrator = (() => {
       smoothedShares: Object.assign({}, axisEnergyEquilibratorState.smoothedShares),
       perAxisAdj: Object.assign({}, axisEnergyEquilibratorState.perAxisAdj),
       perPairAdj: Object.assign({}, axisEnergyEquilibratorState.perPairAdj),
+      perLegacyOverride: Object.assign({}, axisEnergyEquilibratorState.perLegacyOverride),
       lastBaselines: Object.assign({}, axisEnergyEquilibratorState.lastBaselines),
       regimeBeats: Object.assign({}, axisEnergyEquilibratorState.regimeBeats),
       regimePairAdj: Object.assign({}, axisEnergyEquilibratorState.regimePairAdj),
