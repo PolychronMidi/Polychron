@@ -373,6 +373,12 @@ function main() {
   bits.push(
     `strongest_r=${strongestCorrelation !== null ? strongestCorrelation.toFixed(2) : 'n/a'}`,
   );
+  // #8 Progress metric: samples accumulated toward min_n activation of the
+  // coherence-tracks-musical-outcome invariant (needs min_n=10). Prints
+  // "progress=n/10" so watchers can see how close activation is.
+  const activationKey = 'hme_coherence__verdict_numeric';
+  const activationN = correlations[activationKey] ? correlations[activationKey].n : 0;
+  bits.push(`activation=${activationN}/10`);
   console.log(`compute-musical-correlation: ${bits.join('  ')}`);
   if (warning) {
     console.warn(warning);

@@ -1030,6 +1030,20 @@
       "severity": "warning"
     },
     {
+      "id": "predictions-log-gap-bounded",
+      "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. If gap > 100 the current-round window filter is leaking — reconcile is scoring old predictions against this round's shifts.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-prediction-accuracy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; r=(d.get('rounds') or [{}])[-1]; gap=(r.get('predictions_log_size') or 0) - (r.get('predictions_total') or 0); print(f'predictions_log_size={r.get(\\\"predictions_log_size\\\")} predictions_total={r.get(\\\"predictions_total\\\")} gap={gap} (threshold 100)') if gap > 100 else None\"",
+      "severity": "warning"
+    },
+    {
+      "id": "retirement-log-consistent",
+      "description": "Every retirement in metrics/legacy-override-retirement-log.jsonl must NOT appear as a current LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js. And every LEGACY_OVERRIDES entry that's been removed (absent from source detection) must have a retirement log entry. Catches silent removals that bypass the measurement-driven retirement pattern.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os, re; rp='metrics/legacy-override-retirement-log.jsonl'; jp='scripts/pipeline/validators/check-hypermeta-jurisdiction.js'; retired={json.loads(l).get('id') for l in open(rp) if l.strip()} if os.path.isfile(rp) else set(); src=open(jp).read() if os.path.isfile(jp) else ''; current=set(re.findall(r\\\"id:\\s*'([\\w.-]+)'\\\", src)); overlap=retired & current; print('\\n'.join('retired id still allowlisted: '+i for i in overlap))\"",
+      "severity": "error"
+    },
+    {
       "id": "file-written-has-source-majority",
       "description": "At least 80% of RECENT file_written events (last 24h) should carry the 'source' field. If fewer, either the watcher (source=fs_watcher) or the pipeline (source=pipeline_script) has regressed recently — the require_fields filter on file-written-module-sane would silently pass by filtering most events instead of catching violations. Time-windowed (not event-windowed) because legacy events from before the source field was added shouldn't count.",
       "type": "shell_output_empty",

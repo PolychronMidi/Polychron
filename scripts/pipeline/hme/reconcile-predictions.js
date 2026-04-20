@@ -165,13 +165,14 @@ function main() {
   const injectedBucket = classifyBucket(injectedPredicted);
 
   const total = confirmed.length + refuted.length;
-  const accuracy = total > 0 ? confirmed.length / total : null;
-  // Recall: fraction of actually-shifted modules that were predicted.
-  // Precision (accuracy above) measures false positives; recall measures
-  // false negatives. A high-recall low-precision cascade predicts too much;
-  // a low-recall high-precision cascade predicts too narrowly.
+  // R15 #9: When no modules shifted this round, predictions can't be scored —
+  // refuted count is misleading (those predictions may be valid, just untested
+  // this round). Flag as skipped so metrics aren't polluted by untestable zeros.
   const shiftedCount = shifted.size;
-  const recall = shiftedCount > 0 ? confirmed.length / shiftedCount : null;
+  const skipped = shiftedCount === 0;
+  const accuracy = skipped ? null : (total > 0 ? confirmed.length / total : null);
+  // Recall: fraction of actually-shifted modules that were predicted.
+  const recall = skipped ? null : (shiftedCount > 0 ? confirmed.length / shiftedCount : null);
 
   // EMA update
   const prevEma = typeof history.ema === 'number' ? history.ema : null;
@@ -193,6 +194,8 @@ function main() {
 
   const roundRecord = {
     timestamp: new Date().toISOString(),
+    skipped: skipped,
+    skipped_reason: skipped ? 'no_src_shifts_this_round' : null,
     predictions_total: currentRoundPredictions.length,
     predictions_log_size: predictions.length,  // historical: total in jsonl
     predicted_modules: Array.from(predictedAll),

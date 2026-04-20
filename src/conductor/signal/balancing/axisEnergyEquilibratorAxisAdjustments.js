@@ -189,32 +189,14 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     // (progressive giniMult + symmetric undershoot recovery), the generic
     // handler should recover entropy without manual overrides.
 
-    const phaseSmoothed = state.smoothedShares.phase;
-    const trustSmoothed = state.smoothedShares.trust;
-    if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.08 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95))) {
-      state.perLegacyOverrideEntries['phase-trust-seesaw']++;
-      const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95));
-      const phaseShortfall = clamp((0.06 - phaseSmoothed) / 0.06, 0, 1);
-      const trustExcess = trustSmoothed - trustThreshold;
-      const trustPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
-      const trustCapStrength = phaseSmoothed < 0.02 ? 2.4 : (phaseSmoothed < 0.04 ? 1.9 : 1.5);
-      const trustCapRate = m.min(0.035, config.AXIS_TIGHTEN_RATE * trustCapStrength * trustPairScale * (1 + phaseShortfall * 0.95 + clamp((trustSmoothed - config.FAIR_SHARE) / config.FAIR_SHARE, 0, 1) * 0.35) * clamp(trustExcess / config.FAIR_SHARE, 0.5, 2.0));
-      const trustPairs = V.assertArray(config.axisToPairs.trust, "config.axisToPairs.trust");
-      for (let i = 0; i < trustPairs.length; i++) {
-        const pair = trustPairs[i];
-        if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
-        const baseline = V.optionalFinite(state.lastBaselines[pair]);
-        if (baseline === undefined) continue;
-        const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - trustCapRate);
-        if (nextBaseline < baseline) {
-          pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
-          state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
-          state.axisAdjustments++;
-          state.perAxisAdj.trust = (V.optionalFinite(state.perAxisAdj.trust, 0)) + 1;
-          state.perLegacyOverride['phase-trust-seesaw']++;
-        }
-      }
-    }
+    // R15: Removed phase-trust-seesaw (+ graduated 0.02/0.04 sub-thresholds).
+    // Instrumentation across R11-R14 showed 0 fires AND 0 entries for 5
+    // consecutive rounds: phase never dropped below 0.08 under current
+    // composition, so the seesaw never activated. phaseFloorController (#14)
+    // handles phase recovery directly; trustStarvationAutoNourishment (#5)
+    // handles trust recovery. Both operate without needing the seesaw's
+    // coordinated cap. If phase collapse ever returns, investigate WHY
+    // phaseFloorController is insufficient rather than re-adding this.
 
     // R6 E5 + R7 E2: Trust-axis share floor enforcement. When trust share drops
     // below 0.14, apply gentle bias to trust-pair baselines. R7: reduced from
