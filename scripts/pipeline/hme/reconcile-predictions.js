@@ -165,6 +165,15 @@ function main() {
   const injectedBucket = classifyBucket(injectedPredicted);
 
   const total = confirmed.length + refuted.length;
+  // R17 #2: Accuracy vs recall trade-off — intentional asymmetry.
+  //   accuracy (precision) = confirmed / (confirmed + refuted)
+  //   recall              = confirmed / shifted
+  // depth-1 predictions include ALL direct consumers of the edited file.
+  // Typically only a subset get edited in the same round, so `refuted` count
+  // stays moderate (4-15 per edit) while `recall` should hit 1.0 when the
+  // cascade direction is correct. Low recall = structural bug (fixed R14);
+  // low accuracy = normal over-prediction that reflects dependency breadth,
+  // NOT a cascade bug. Target: recall >= 0.8, accuracy >= 0.3.
   // R15 #9: When no modules shifted this round, predictions can't be scored --
   // refuted count is misleading (those predictions may be valid, just untested
   // this round). Flag as skipped so metrics aren't polluted by untestable zeros.

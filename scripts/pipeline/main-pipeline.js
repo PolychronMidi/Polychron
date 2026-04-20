@@ -214,6 +214,34 @@ function writeSummaryJSON(wallTime, extra) {
   } catch (e) {
     console.error('  HCI compute failed: ' + (e && e.message ? e.message : e));
   }
+  // R17 #3+#7: Enrich summary with rebalance cost + per-override fire sparklines
+  // from legacy-override-history.jsonl. i/status and downstream tools can read
+  // these directly without scanning the activity log or trace.
+  try {
+    var histPath = path.join(__dirname, '../..', 'metrics', 'legacy-override-history.jsonl');
+    if (fs.existsSync(histPath)) {
+      var histLines = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean);
+      var last5 = histLines.slice(-5).map(function(l) {
+        try { return JSON.parse(l); } catch (_e2) { return null; }
+      }).filter(Boolean);
+      if (last5.length > 0) {
+        var fireTrends = {};
+        last5.forEach(function(r) {
+          Object.keys(r.fires || {}).forEach(function(id) {
+            if (!fireTrends[id]) fireTrends[id] = [];
+            fireTrends[id].push(r.fires[id]);
+          });
+        });
+        summary.legacy_override_fires_last_5 = fireTrends;
+        // Total axis rebalance cost from most recent history row
+        var latest = last5[last5.length - 1];
+        var totalAdj = Object.values(latest.per_axis_adj || {})
+          .reduce(function(a, b) { return a + (typeof b === 'number' ? b : 0); }, 0);
+        summary.axis_rebalance_cost_per_100_beats = latest.beat_count > 0
+          ? Number((totalAdj / latest.beat_count * 100).toFixed(2)) : null;
+      }
+    }
+  } catch (_se) { /* best-effort */ }
   try {
     var outDir = path.join(__dirname, '../..', 'metrics');
     fs.mkdirSync(outDir, { recursive: true });
@@ -264,22 +292,35 @@ function writeSummaryJSON(wallTime, extra) {
 // agent would produce zero activity events and collapse downstream metrics
 // (coherence, trajectory, reflexivity) to null. The pipeline's observability
 // is now agent-independent: emit directly.
+// R17 #1: direct-append first (guaranteed), then optional spawn for emit.py
+// side-effects (nexus, downstream subscribers). Previously spawn-only risked
+// silent loss on python crash; R16 added direct-append but left spawn in place,
+// causing duplicate emissions. This consolidates into one call that's always
+// single-fire: append-first guarantees the event lands, spawn-second adds any
+// side-effects emit.py performs (detached so it can't block or duplicate).
 function emitActivity(event, fields) {
-  var args = [path.join(__dirname, '..', '..', 'tools', 'HME', 'activity', 'emit.py'),
-              '--event=' + event];
+  var projectRoot = path.join(__dirname, '..', '..');
+  // 1. Guaranteed direct-append to the activity log.
+  var record = Object.assign({ event: event, ts: Math.floor(Date.now() / 1000) }, fields || {});
+  try {
+    var activityLog = path.join(projectRoot, 'metrics', 'hme-activity.jsonl');
+    fs.appendFileSync(activityLog, JSON.stringify(record) + '\n');
+  } catch (e) {
+    console.error('  emit_activity append ' + event + ' failed: ' + (e && e.message ? e.message : e));
+  }
+  // 2. Optional spawn for emit.py side-effects (skip_append env prevents dup).
+  var args = [path.join(projectRoot, 'tools', 'HME', 'activity', 'emit.py'),
+              '--event=' + event, '--skip-append'];
   for (var k in fields) {
     if (fields[k] === null || fields[k] === undefined) continue;
     args.push('--' + k + '=' + String(fields[k]));
   }
-  var projectRoot = path.join(__dirname, '..', '..');
   try {
     cp.spawn('python3', args, {
       stdio: 'ignore', detached: true, cwd: projectRoot,
       env: Object.assign({}, process.env, { PROJECT_ROOT: projectRoot }),
     }).unref();
-  } catch (e) {
-    console.error('  emit_activity ' + event + ' failed: ' + (e && e.message ? e.message : e));
-  }
+  } catch (_e) { /* spawn is best-effort side-channel */ }
 }
 
 // main
@@ -379,21 +420,12 @@ function main() {
     if (typeof ps.hci === 'number') hci = ps.hci;
   } catch (_e) { /* summary wasn't read back -- leave hci null */ }
   var session = process.env.HME_SESSION_ID || 'shell';
-  // R16 #5: guarantee pipeline_run emission by writing directly to the jsonl
-  // if spawn fails. Previously emitActivity used detached spawn only; a python
-  // crash silently dropped the event (detected via 16 start / 15 run imbalance
-  // in pipeline-start-end-balanced invariant).
-  var runRecord = {
-    event: 'pipeline_run',
-    ts: Math.floor(Date.now() / 1000),
+  // R17 #1: emitActivity now guarantees direct-append; no separate append
+  // needed. Both pipeline_run AND round_complete use the same guaranteed path.
+  emitActivity('pipeline_run', {
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
     wall_s: Math.round(Number(wallTime)), hci: hci,
-  };
-  emitActivity('pipeline_run', runRecord);
-  try {
-    var activityLog = path.join(__dirname, '..', '..', 'metrics', 'hme-activity.jsonl');
-    fs.appendFileSync(activityLog, JSON.stringify(runRecord) + '\n');
-  } catch (_ae) { /* best-effort fallback */ }
+  });
   emitActivity('round_complete', {
     session: session, verdict: verdict, passed: failed === 0 ? 1 : 0,
   });

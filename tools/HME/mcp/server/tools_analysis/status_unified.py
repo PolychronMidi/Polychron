@@ -199,6 +199,43 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # R17 #9: Legacy-override retirement summary. One-line status: N active,
+    # N retired (with IDs + round), N keepers. Surfaces the data-driven migration
+    # state of the hypermeta allowlist at a glance.
+    try:
+        import json as _json_ret
+        _retire_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "legacy-override-retirement-log.jsonl")
+        _juris_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hypermeta-jurisdiction.json")
+        _active_count = None
+        if os.path.isfile(_juris_path):
+            with open(_juris_path) as _jf:
+                _juris = _json_ret.load(_jf)
+            _active_count = _juris.get("meta", {}).get("registeredUnique")
+        _retired, _keepers = [], []
+        if os.path.isfile(_retire_path):
+            with open(_retire_path) as _rf:
+                for _rl in _rf:
+                    _rl = _rl.strip()
+                    if not _rl:
+                        continue
+                    try:
+                        _re = _json_ret.loads(_rl)
+                    except Exception:
+                        continue
+                    if _re.get("action") == "keep":
+                        _keepers.append(_re.get("id", "?"))
+                    else:
+                        _retired.append(f"{_re.get('id', '?')} ({_re.get('retired_in', '?')})")
+        if _active_count is not None or _retired or _keepers:
+            parts.append(
+                f"## Legacy Overrides\n"
+                f"  active={_active_count} retired={len(_retired)} keepers={len(_keepers)}\n"
+                + (f"  retired: {', '.join(_retired)}\n" if _retired else "")
+                + (f"  keepers: {', '.join(_keepers)}" if _keepers else "")
+            )
+    except Exception as _re_err:
+        logger.debug(f'silent-except status_unified retirement: {type(_re_err).__name__}: {_re_err}')
+
     # HCI regression alert — surface FIRST since it demands action. Cleared
     # automatically by compute-musical-correlation.js when HCI stabilizes.
     try:

@@ -1030,6 +1030,13 @@
       "severity": "warning"
     },
     {
+      "id": "legacy-override-cooldown-not-excessive",
+      "description": "For any legacy override, entries/fires ratio > 5 across 3+ consecutive rounds means the condition triggers often but cooldowns block 80%+ of potential actions. High ratio = cooldowns too aggressive for the control signal cadence. Either reduce AXIS_COOLDOWN or investigate why the override is checking when it can't act.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=[r for r in rows[-3:] if r.get('entries')]; bad=[]; [bad.append(f'{i} entries/fires={r[\\\"entries\\\"][i]}/{r[\\\"fires\\\"].get(i,0)} = {r[\\\"entries\\\"][i]/max(r[\\\"fires\\\"].get(i,1),1):.1f}x') for r in rows for i in r.get('entries',{}) if r.get('fires',{}).get(i,0)>0 and r['entries'][i]/r['fires'][i] > 5] if len(rows)>=3 else None; print('\\n'.join(set(bad)))\"",
+      "severity": "warning"
+    },
+    {
       "id": "axis-rebalance-cost-stable",
       "description": "axis_rebalance_cost (total_adjustments per 100 beats) should not rise >50% over 3 consecutive rounds. Sustained rise means the controller chain is working harder every round — early warning of controller instability or axis imbalance.",
       "type": "shell_output_empty",
@@ -1098,6 +1105,18 @@
       "path": "metrics/hme-musical-correlation.json",
       "correlations_key": "correlations",
       "name": "hme_coherence__verdict_numeric",
+      "direction": "positive",
+      "threshold": -0.10,
+      "min_n": 10,
+      "severity": "error"
+    },
+    {
+      "id": "coherence-tracks-hci",
+      "description": "Fallback anchor for coherence-tracks-musical-outcome. verdict_numeric collapses to 1.0 for every STABLE run (most rounds), making its correlation permanently degenerate. hci has real variance (94.7→96.5 across recent rounds); hme_coherence correlated with hci_normalized is the working alternative. Inert until both metrics have 3+ distinct values.",
+      "type": "correlation_direction",
+      "path": "metrics/hme-musical-correlation.json",
+      "correlations_key": "correlations",
+      "name": "hme_coherence__hci_normalized",
       "direction": "positive",
       "threshold": -0.10,
       "min_n": 10,

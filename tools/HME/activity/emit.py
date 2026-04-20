@@ -46,7 +46,13 @@ def _coerce(v: str):
 
 def main(argv: list[str]) -> int:
     fields: dict = {"ts": int(time.time())}
+    skip_append = False
     for arg in argv[1:]:
+        if arg == "--skip-append":
+            # R17 #1: caller has already appended (e.g. main-pipeline.js for
+            # guaranteed emission). Skip append here to avoid duplicates.
+            skip_append = True
+            continue
         if not arg.startswith("--"):
             continue
         body = arg[2:]
@@ -58,6 +64,9 @@ def main(argv: list[str]) -> int:
     if "event" not in fields:
         sys.stderr.write("emit.py: missing --event=NAME\n")
         return 2
+
+    if skip_append:
+        return 0
 
     project_root = os.environ["PROJECT_ROOT"]  # env-ok: set by caller from .env
     out_path = os.path.join(project_root, "metrics", "hme-activity.jsonl")
