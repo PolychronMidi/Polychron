@@ -35,7 +35,7 @@ function loadDepGraph() {
 function buildAdjacency(dg) {
   // edges: [{from, to, globals}] where `from` provides a global `to` consumes.
   // We want downstream cascade: editing X predicts files that consume X's globals.
-  // So adjacency is from→to: adj[from] = set of files affected when `from` changes.
+  // So adjacency is from->to: adj[from] = set of files affected when `from` changes.
   //
   // R14 fix: previously this was adj[to].add(from), which made BFS from a node
   // find its UPSTREAM dependencies (wrong direction). Predictions for an edit
