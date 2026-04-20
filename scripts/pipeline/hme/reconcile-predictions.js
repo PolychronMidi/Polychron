@@ -165,7 +165,7 @@ function main() {
   const injectedBucket = classifyBucket(injectedPredicted);
 
   const total = confirmed.length + refuted.length;
-  // R17 #2: Accuracy vs recall trade-off — intentional asymmetry.
+  // R17 #2: Accuracy vs recall trade-off -- intentional asymmetry.
   //   accuracy (precision) = confirmed / (confirmed + refuted)
   //   recall              = confirmed / shifted
   // depth-1 predictions include ALL direct consumers of the edited file.
