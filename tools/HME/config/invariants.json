@@ -1111,6 +1111,13 @@
       "severity": "error"
     },
     {
+      "id": "patterns-have-action-on-match",
+      "description": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps. A pattern that triggers without defining what to do is decorative — it flags a condition but gives the agent no script to run. The registry's value is action-grounding, not just condition-detection.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-pattern-matches.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; bad=[m['id'] for m in d.get('matches',[]) if not m.get('action_summary') or not m.get('action_steps')]; print('\\n'.join('pattern matched without action: '+i for i in bad))\"",
+      "severity": "error"
+    },
+    {
       "id": "invariant-efficacy-not-flappy-excessive",
       "description": "Arc IV meta-measurement: more than 3 invariants in 'flappy' class (firing without citation in any commit message) means the battery has accumulated noise that clutters fail-reporting without driving action. Either fix the underlying bug OR recalibrate the flappy invariants OR retire them via the same data-driven pattern used for legacy overrides. Reads metrics/hme-invariant-efficacy.json.",
       "type": "shell_output_empty",

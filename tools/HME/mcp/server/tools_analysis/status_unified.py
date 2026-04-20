@@ -199,6 +199,28 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # Arc II: Matched patterns — the MOST actionable surface in status output.
+    # Each match names a specific action script. Sits at the top because if
+    # any pattern fires, THAT is what the next turn should address.
+    try:
+        import json as _json_pat
+        _pat_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-pattern-matches.json")
+        if os.path.isfile(_pat_path):
+            with open(_pat_path) as _pf:
+                _pat = _json_pat.load(_pf)
+            _matches = _pat.get("matches") or []
+            if _matches:
+                _bits = [f"## Matched Patterns ({len(_matches)}/{_pat.get('patterns_total', 0)})"]
+                for _m in _matches:
+                    _bits.append(f"  [{_m.get('category', '?')}] {_m.get('id')}")
+                    if _m.get("payload"):
+                        _bits.append(f"    payload: {_m['payload'][:200]}")
+                    if _m.get("action_summary"):
+                        _bits.append(f"    action: {_m['action_summary']}")
+                parts.append("\n".join(_bits))
+    except Exception as _pat_err:
+        logger.debug(f'silent-except status_unified patterns: {type(_pat_err).__name__}: {_pat_err}')
+
     # Arc IV: Meta-measurement efficacy summary. Surfaces which invariants
     # earn their place (cited in commits) vs which are decorative/flappy.
     # Sits above consensus because it affects how we INTERPRET the consensus

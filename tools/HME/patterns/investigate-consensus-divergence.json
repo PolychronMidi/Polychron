@@ -1,0 +1,24 @@
+{
+  "id": "investigate-consensus-divergence",
+  "category": "investigation",
+  "description": "Arc I cross-substrate consensus with stdev > 0.4 means substrates meaningfully disagree about whether the round is healthy. The disagreement itself is the signal — typically one substrate sees a tension that the majority-voter ensemble doesn't. Outlier voter names the substrate; investigate what it sees that the others miss.",
+  "trigger": {
+    "kind": "consensus_threshold",
+    "source": "metrics/hme-consensus.json",
+    "check": "python3 -c \"import json, os; d=json.load(open('metrics/hme-consensus.json')) if os.path.isfile('metrics/hme-consensus.json') else {}; print(','.join(o.get('voter','') for o in d.get('outliers',[]))) if d.get('divergence')=='high' else None\"",
+    "matches_when": "divergence=high; stdout is comma-separated outlier voter names"
+  },
+  "action": {
+    "summary": "Investigate each outlier voter — what does it see that the others don't?",
+    "steps": [
+      "For each outlier voter, read its underlying metric (see compute-consensus.js vote* functions for the source file).",
+      "Check: does the outlier have a trend over 3+ rounds, or is it a single-round blip?",
+      "If trend: the outlier substrate is catching real drift. Decide: is it right (and majority blind) or broken (and majority correct)?",
+      "If blip: usually safe to ignore; re-check next round.",
+      "Document the decision in commit message citing consensus-not-divergent OR add a new invariant that encodes the discovered signal."
+    ]
+  },
+  "history": [
+    {"round": "R19", "outlier": "axis_cost_trend", "stdev": 0.787, "resolution": "rising axis rebalance cost flagged — investigation pending"}
+  ]
+}
