@@ -252,7 +252,7 @@ function main() {
     hci_delta: hciDelta,
     // R16 #6: hci_normalized as verdict_numeric_v2. verdict_numeric collapses
     // to 1.0 for all STABLE runs, making correlation degenerate. hci has real
-    // variance (94.7→95.1→96.4→96.5 across recent rounds) — normalize to 0..1
+    // variance (94.7->95.1->96.4->96.5 across recent rounds) -- normalize to 0..1
     // for the same role: "how well is composition doing" anchor.
     hci_normalized: typeof currentHci === 'number' ? currentHci / 100 : null,
     // R16 #3: drifted_dimension_count. STABLE=0, EVOLVED=1-2, DRIFTED=3+.

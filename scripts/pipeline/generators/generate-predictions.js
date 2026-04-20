@@ -82,7 +82,7 @@ function getChangedFiles() {
   // Both must look at the SAME git range or they disagree about what's shifted:
   //   predictions generated for modules A,B,C (range wide)
   //   reconcile sees modules X,Y (range narrow)
-  // → false refuted on A,B,C even when predictions are correct.
+  // -> false refuted on A,B,C even when predictions are correct.
   // Reconcile uses HEAD~2..HEAD (generate runs before commit). Match that.
   try {
     for (const range of ['HEAD~2..HEAD', 'HEAD~1..HEAD', 'HEAD']) {
@@ -126,7 +126,7 @@ function main() {
     // R16 #1: include the edited file itself in affected_modules. A file that
     // changes IS shifted per git diff; reconcile counts it as "missed" when
     // absent. Previously generate-predictions only emitted outward-from-target,
-    // which produced a structural floor on recall (recall ≤ deps/(deps+self)).
+    // which produced a structural floor on recall (recall <= deps/(deps+self)).
     const affectedWithSelf = [mod, ...affected.map((a) => a.module)];
     if (affectedWithSelf.length === 0) continue;
 
