@@ -1140,9 +1140,9 @@
     },
     {
       "id": "consensus-not-divergent",
-      "description": "Arc I: cross-substrate consensus. metrics/hme-consensus.json reports agreement variance across 7 voters (HCI, invariants, prediction recall, verdict, axis cost trend, CLAP, listening verdict). If stdev > 0.4, substrates disagree meaningfully about whether the round is healthy — a hidden tension the individual substrates don't surface. Fires when divergence='high'.",
+      "description": "Arc I: cross-substrate consensus. Fires when divergence='high' (stdev > 0.4). R24 #5: suppresses the warning when the same outlier voter has persisted for 3+ consecutive rounds AND listening verdict remains legendary — a stable dissent is an accepted regime state, not a regression. New divergences and voter changes still fire.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-consensus.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('voter','') for o in d.get('outliers',[])); print(f'consensus divergent: stdev={d.get(\\\"stdev\\\")} mean={d.get(\\\"mean\\\")} outliers=[{outs}]') if d.get('divergence') == 'high' else None\"",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-consensus.json'; ts='metrics/hme-arc-timeseries.jsonl'; d=json.load(open(p)) if os.path.isfile(p) else {}; rows=[json.loads(l) for l in open(ts)] if os.path.isfile(ts) else []; tail=rows[-3:] if len(rows)>=3 else []; cur_outs=sorted(o.get('voter','') for o in d.get('outliers',[])); persistent=len(tail)==3 and all(sorted(r.get('arc_i',{}).get('outlier_voters') or []) == cur_outs for r in tail) and len(cur_outs)>0; outs=','.join(cur_outs); print(f'consensus divergent (new): stdev={d.get(\\\"stdev\\\")} mean={d.get(\\\"mean\\\")} outliers=[{outs}]') if d.get('divergence') == 'high' and not persistent else None\"",
       "severity": "warning"
     },
     {

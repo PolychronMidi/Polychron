@@ -123,6 +123,17 @@ def _investigate_drift(pattern: dict) -> dict:
                 traj_verdict = "rising trend"
             else:
                 traj_verdict = "falling trend"
+        # R24 #7: propose a structural change class based on persistence +
+        # HCI health. 3+ rounds of same outlier AND HCI stable → accept
+        # (envelope update). 3+ rounds AND HCI dropping → correct (code change).
+        hci_tail = [s.get("hci") for s in tail if isinstance(s.get("hci"), (int, float))]
+        hci_healthy = hci_tail and all(h >= 95 for h in hci_tail[-3:])
+        proposal = None
+        if len(values) >= 3 and traj_verdict and "blip" not in traj_verdict:
+            if hci_healthy:
+                proposal = "accept_regime_shift"
+            else:
+                proposal = "correct_outlier_via_controller"
         findings["outlier_fields"].append({
             "field": field,
             "z_score": o.get("z_score"),
@@ -130,6 +141,8 @@ def _investigate_drift(pattern: dict) -> dict:
             "median": o.get("median"),
             "recent_trajectory": values,
             "trajectory_verdict": traj_verdict,
+            "hci_healthy_last_3": hci_healthy,
+            "proposed_action_class": proposal,
         })
     return findings
 

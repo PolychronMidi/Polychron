@@ -192,11 +192,54 @@ def step_index(s: str) -> int:
 
 
 def status_line() -> str:
-    """One-line suffix for tool output (empty if graduated)."""
+    """One-line suffix for tool output.
+
+    R24 #6: when graduated, prepends substrate briefing from the four-arc
+    state IF there are queued actions or high divergence. Silent when the
+    substrate reports healthy quiescent state. Agent gets the briefing
+    via normal tool output instead of needing to query status_unified.
+    """
     s = state()
     if s == "graduated":
+        return _substrate_brief_line()
+    onboard = f"\n\n[HME onboarding: step {STEP_LABELS.get(s, s)}]"
+    return _substrate_brief_line() + onboard
+
+
+def _substrate_brief_line() -> str:
+    """Return a brief substrate status line if there's a signal; else empty.
+
+    Fast: reads only pre-computed JSON artifacts, no shell/git work.
+    """
+    try:
+        import json as _json
+        from server import context as _ctx
+        root = _ctx.PROJECT_ROOT
+        na_path = os.path.join(root, "metrics", "hme-next-actions.json")
+        con_path = os.path.join(root, "metrics", "hme-consensus.json")
+        na = {}
+        con = {}
+        if os.path.isfile(na_path):
+            with open(na_path) as f:
+                na = _json.load(f) or {}
+        if os.path.isfile(con_path):
+            with open(con_path) as f:
+                con = _json.load(f) or {}
+        n_actions = na.get("total_actions", 0)
+        stdev = con.get("stdev")
+        divergence = con.get("divergence")
+        # Show only when signal exists: queued actions OR high divergence
+        if n_actions <= 0 and divergence != "high":
+            return ""
+        bits = [f"consensus stdev={stdev} divergence={divergence}"]
+        if n_actions > 0:
+            bits.append(f"{n_actions} action(s) queued")
+            top = (na.get("actions") or [{}])[0]
+            if top.get("id"):
+                bits.append(f"next: {top['id']}")
+        return f"\n\n[HME substrate: {' | '.join(bits)}]"
+    except Exception:
         return ""
-    return f"\n\n[HME onboarding: step {STEP_LABELS.get(s, s)}]"
 
 
 

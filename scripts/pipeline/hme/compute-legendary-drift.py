@@ -172,23 +172,50 @@ def _load_snapshots() -> list[dict]:
 
 
 def _compute_envelope(snaps: list[dict]) -> dict[str, dict]:
-    """Per-field median + stdev from historical snapshots."""
+    """Per-field envelope from historical snapshots.
+
+    R24 #2: exponential weighting — recent snapshots count more heavily.
+    weight = 0.9^age where age=0 is the most-recent snapshot in snaps.
+    This lets the envelope ADAPT to regime shifts without discarding history.
+    Over a 10-snapshot window: newest has weight 1.0, oldest has weight 0.39,
+    so a 3-round persistent drift meaningfully shifts the envelope center
+    within ~5 rounds rather than being drowned by older data.
+
+    Weighted median via cumulative-weight lookup; weighted stdev via
+    Σ(w·(x-μ)²) / Σw where μ is the weighted mean.
+    """
     if not snaps:
         return {}
-    by_field: dict[str, list[float]] = {}
-    for s in snaps:
+    # Index snaps so most-recent (index len-1) gets smallest age
+    n = len(snaps)
+    by_field: dict[str, list[tuple[float, float]]] = {}
+    for i, s in enumerate(snaps):
+        age = (n - 1) - i  # 0 = newest
+        w = 0.9 ** age
         for k, v in _flatten(s).items():
-            by_field.setdefault(k, []).append(v)
+            by_field.setdefault(k, []).append((v, w))
     env: dict[str, dict] = {}
-    for k, vals in by_field.items():
-        if len(vals) < 2:
+    for k, pairs in by_field.items():
+        if len(pairs) < 2:
             continue
-        sorted_v = sorted(vals)
-        median = sorted_v[len(sorted_v) // 2]
-        mean = sum(vals) / len(vals)
-        var = sum((x - mean) ** 2 for x in vals) / len(vals)
-        sd = math.sqrt(var)
-        env[k] = {"median": median, "stdev": sd, "n": len(vals)}
+        total_w = sum(w for _, w in pairs)
+        if total_w <= 0:
+            continue
+        w_mean = sum(v * w for v, w in pairs) / total_w
+        # Weighted median: sort by value, cumulate weight, pick middle.
+        sorted_pairs = sorted(pairs, key=lambda p: p[0])
+        cum = 0.0
+        half = total_w / 2.0
+        w_median = sorted_pairs[-1][0]
+        for v, w in sorted_pairs:
+            cum += w
+            if cum >= half:
+                w_median = v
+                break
+        w_var = sum(w * (v - w_mean) ** 2 for v, w in pairs) / total_w
+        sd = math.sqrt(w_var)
+        env[k] = {"median": w_median, "stdev": sd, "n": len(pairs),
+                  "effective_n": round(total_w, 2)}
     return env
 
 
@@ -264,8 +291,19 @@ def main() -> int:
     # Exclude current snapshot from envelope so drift measures current against past.
     # R22 #4: also exclude any snapshot explicitly marked non-legendary
     # (legendary_confirmed=False). Default True for backfilled snapshots.
-    history = [s for s in snaps[:-1]
-               if s.get("legendary_confirmed", True) is not False]
+    # R24 #3: also exclude snapshots where HCI < 95 (when HCI is recorded).
+    # Arc III's "legendary envelope" is specifically the TOP-TIER legendary
+    # distribution — ramp-up rounds and rounds with verifier regressions
+    # shouldn't pollute the baseline.
+    HCI_MIN = 95
+    def _include(s):
+        if s.get("legendary_confirmed", True) is False:
+            return False
+        hci = s.get("hci")
+        if isinstance(hci, (int, float)) and hci < HCI_MIN:
+            return False
+        return True
+    history = [s for s in snaps[:-1] if _include(s)]
     envelope = _compute_envelope(history)
     current_flat = _flatten(current)
     drift, outliers = _compute_drift(current_flat, envelope)
@@ -291,6 +329,45 @@ def main() -> int:
     print(msg)
 
     # Preemptive alert: emit activity event when drift exceeds threshold.
+    # R24 #9: epoch-transition detection. If drift stayed elevated for 3+
+    # consecutive rounds while verdict remained legendary, log an epoch
+    # transition. Marks a regime change — future drift measurements can
+    # use per-epoch envelopes to avoid mixing fundamentally different
+    # composition eras.
+    try:
+        ts_path = os.path.join(PROJECT_ROOT, "metrics", "hme-arc-timeseries.jsonl")
+        ep_path = os.path.join(PROJECT_ROOT, "metrics", "hme-epoch-transitions.jsonl")
+        if os.path.isfile(ts_path):
+            rows = []
+            with open(ts_path, encoding="utf-8") as tf:
+                for ln in tf:
+                    s = ln.strip()
+                    if s:
+                        try:
+                            rows.append(json.loads(s))
+                        except Exception:
+                            pass
+            tail_scores = [r.get("arc_iii", {}).get("drift_score") for r in rows[-3:]]
+            tail_scores = [s for s in tail_scores if isinstance(s, (int, float))]
+            if len(tail_scores) == 3 and all(s > 1.0 for s in tail_scores):
+                # Check if we already logged this epoch (avoid dup entries)
+                existing = []
+                if os.path.isfile(ep_path):
+                    with open(ep_path, encoding="utf-8") as ef:
+                        existing = [json.loads(l) for l in ef if l.strip()]
+                last_epoch_sha = existing[-1].get("sha") if existing else None
+                if last_epoch_sha != current.get("sha"):
+                    with open(ep_path, "a", encoding="utf-8") as ef:
+                        ef.write(json.dumps({
+                            "ts": current["ts"],
+                            "sha": current.get("sha"),
+                            "reason": "drift > 1.0 for 3+ consecutive rounds with legendary verdict",
+                            "drift_trajectory": tail_scores,
+                            "top_outlier": (outliers[0].get("field") if outliers else None),
+                        }) + "\n")
+    except Exception:
+        pass
+
     if drift > DRIFT_THRESHOLD:
         emit = os.path.join(PROJECT_ROOT, "tools", "HME", "activity", "emit.py")
         if os.path.isfile(emit):

@@ -111,7 +111,54 @@ def main() -> int:
             ],
         })
 
+    # R24 #4: escalate priority for actions that appeared in the PREVIOUS
+    # round's queue but didn't get acted on (no commit citation). Repeated
+    # actions are either load-bearing (solve this or accept deferred) OR
+    # genuinely hard. Either way, bumping priority surfaces the deferral.
+    prev = _load("metrics/hme-next-actions.json") or {}
+    prev_ids = {a.get("id") for a in (prev.get("actions") or []) if a.get("id")}
+    if prev_ids:
+        try:
+            import subprocess
+            log = subprocess.check_output(
+                ["git", "log", "-10", "--pretty=%s%n%b"],
+                cwd=PROJECT_ROOT, timeout=5, text=True,
+            )
+        except Exception:
+            log = ""
+        for a in actions:
+            if a["id"] in prev_ids and a["id"].lower() not in log.lower():
+                a["priority"] = max(1, a["priority"] - 1)  # bump up
+                a["repeated_from_previous_round"] = True
+
     actions.sort(key=lambda a: a["priority"])
+
+    # R24 #4: emit harvester_ignored if 3+ consecutive rounds have proposed
+    # the same id without a commit citation.
+    try:
+        import subprocess
+        log_long = subprocess.check_output(
+            ["git", "log", "-30", "--pretty=%s%n%b"],
+            cwd=PROJECT_ROOT, timeout=5, text=True,
+        )
+        ignored = [a["id"] for a in actions
+                   if a.get("repeated_from_previous_round")
+                   and a["id"].lower() not in log_long.lower()]
+        if ignored:
+            try:
+                subprocess.Popen([
+                    "python3",
+                    os.path.join(PROJECT_ROOT, "tools", "HME", "activity", "emit.py"),
+                    "--event=harvester_ignored",
+                    f"--count={len(ignored)}",
+                    f"--ids={','.join(ignored)}",
+                    "--session=pipeline",
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    env={**os.environ, "PROJECT_ROOT": PROJECT_ROOT})
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     # Build a terse one-line summary for console output.
     bucket_counts = {"arc_ii_pattern": 0, "arc_iii_drift": 0,
