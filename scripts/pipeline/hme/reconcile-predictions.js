@@ -256,7 +256,7 @@ function main() {
   }
 
   // Truncate predictions log so the next round starts fresh. Cap at 50 lines
-  // — previously 200 but with depth=1 producing ~2-5 records per round, that's
+  // -- previously 200 but with depth=1 producing ~2-5 records per round, that's
   // 20-40 rounds of history. predictions-log-gap-bounded requires gap<100, so
   // 50 keeps us well under (and still enough for debug traceback across a
   // handful of rounds).
