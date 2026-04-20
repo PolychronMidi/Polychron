@@ -199,6 +199,24 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # R22 #2: Auto-proposed next actions — the emergent fifth behavior.
+    # Sits above individual arc surfaces because it's the synthesis.
+    try:
+        import json as _json_na
+        _na_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-next-actions.json")
+        if os.path.isfile(_na_path):
+            with open(_na_path) as _nf:
+                _na = _json_na.load(_nf)
+            if _na.get("total_actions", 0) > 0:
+                _bits = [f"## Next Actions ({_na['total_actions']} queued)"]
+                for _a in (_na.get("actions") or [])[:5]:
+                    _bits.append(f"  [p{_a.get('priority')}] {_a.get('id')}: {_a.get('summary', '')[:120]}")
+                parts.append("\n".join(_bits))
+            else:
+                parts.append("## Next Actions\n  [empty — substrate reports healthy quiescent state]")
+    except Exception as _na_err:
+        logger.debug(f'silent-except status_unified next-actions: {type(_na_err).__name__}: {_na_err}')
+
     # Arc III: Legendary state drift — preemptive detection from inverse
     # reasoning. If current state drifted >2σ from legendary envelope, the
     # outliers name the exact dimensions that departed. Appears above pattern

@@ -370,6 +370,30 @@ Every decision is an audit entry. The retirement log itself becomes the measurem
 
 **Principle crystallized:** *The allowlist is not a compromise surface. It's a measurement output.* Every entry is either data-proven load-bearing or data-proven unused. There is no "probably needed" category anymore — only "fires N times per round" or "has fired zero times for N rounds." Future additions must enter through the same measurement gate.
 
+### Round 11: The four-arc framework (R18-R22)
+
+Through R17 the substrate was tactical: seven independent observability systems, each catching one kind of bug. Starting R18 the framework became strategic. Four arcs now interlock:
+
+**Arc I — Cross-Substrate Consensus** (R18, `compute-consensus.js`). Seven voters, each producing a bounded scalar in [-1, +1] for "is this round healthy." Mean is the consensus score; stdev is the divergence signal. When substrates DISAGREE, that disagreement is more informative than any individual substrate's verdict.
+
+**Arc II — Pattern Registry** (R20, `tools/HME/patterns/`). Meta-patterns codified as declarative JSON: trigger condition, measurement phase, decision gate, action steps, precedent history. The retirement arc (R13, R15) becomes `retire-legacy-override-after-5-zero-rounds.json`. The cascade-direction-fix (R14) becomes `validate-cascade-direction.json`. Every future round, the matcher evaluates all patterns and produces an action queue.
+
+**Arc III — Inverse Reasoning** (R21, `compute-legendary-drift.py`). Each pipeline round snapshots 14 state dimensions into `metrics/hme-legendary-states.jsonl`. Envelope = median + stdev per field across history. Current round's per-field z-score surfaces outliers; mean |z| is the drift score. Fires BEFORE the listening verdict fails, catching state drift toward non-legendary territory preemptively.
+
+**Arc IV — Meta-Measurement** (R19, `compute-invariant-efficacy.py`). The substrate measures itself. Each invariant classified from commit-log citations + recent fire state: load-bearing (cited and firing), load-bearing-historical (cited, currently passing), flappy (fires without citation), decorative (neither). First application retired `file-written-has-source-majority` (R22) as flappy.
+
+**The emergent fifth behavior**: `propose-next-actions.py` (R22). Reads all four arcs' outputs and synthesizes a prioritized action queue. The shift from "agent proposes 10 ad-hoc suggestions per round" to "data proposes; agent executes." When all substrates agree there's nothing to do, the action queue is empty — a quiescent-healthy state is first-class observable.
+
+**Cross-arc detectors** (R22): specific invariants for combinations. `cross-arc-hidden-drift-detector` fires when Arc I says agreement+healthy AND Arc III says drift AND Arc IV says invariants healthy — the exact hidden-drift scenario that motivated Arc III.
+
+**Envelope shift tracking** (R22): compares the median-of-first-half vs median-of-second-half of snapshots. Large envelope shift = the "normal" state distribution itself is drifting (regime change), distinct from single-round drift. First observed: trust axis adjustments dropped 45% across R11-R22, signaling self-stabilization.
+
+**Retirement pattern applied recursively**: entropy-cap-0.19 (legacy override, R13), phase-trust-seesaw (legacy override, R15), file-written-has-source-majority (invariant, R22). The same measurement-to-decision pattern works for code-level overrides AND measurement-level invariants. Fractal applicability.
+
+**Principle crystallized**: *The four arcs are not four features — they're one nervous system.* Arc I detects substrate disagreement. Arc II prescribes actions. Arc III catches state drift. Arc IV measures the measurement. Together they produce the emergent behavior of data-driven action synthesis. Any one arc removed and the system collapses back to tactical bug-catching.
+
+**The theorem** (conjectured, not proved): *any self-evolving creative system requires (1) a consensus mechanism across multiple measurement substrates, (2) a pattern registry of codified meta-patterns, (3) an inverse-reasoning envelope tracking historical success states, and (4) a meta-measurement layer that tracks which measurements earn their cost — and these four together produce emergent action-synthesis that the individual parts can't.* Polychron-HME is one instance; the structure is generic.
+
 ## The principle
 
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.

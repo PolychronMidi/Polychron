@@ -80,6 +80,8 @@ const POST_COMPOSITION = [
   { label: 'compute-invariant-efficacy',   cmd: 'python3 scripts/pipeline/hme/compute-invariant-efficacy.py' },
   { label: 'compute-legendary-drift',      cmd: 'python3 scripts/pipeline/hme/compute-legendary-drift.py' },
   { label: 'match-patterns',               cmd: 'python3 scripts/pipeline/hme/match-patterns.py' },
+  { label: 'emit-arc-timeseries',          cmd: 'python3 scripts/pipeline/hme/emit-arc-timeseries.py' },
+  { label: 'propose-next-actions',         cmd: 'python3 scripts/pipeline/hme/propose-next-actions.py' },
   { label: 'antagonism-registry-auto-append', cmd: 'python3 scripts/check-antagonism-registry.py --auto-append' },
   { label: 'compact-lance-tables',          cmd: 'python3 scripts/compact-lance-tables.py' },
   { label: 'archive-activity',             cmd: 'python3 scripts/pipeline/hme/archive-activity.py' },
