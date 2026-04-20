@@ -178,7 +178,7 @@ function main() {
 
   // R25 #10: time-averaged per-voter metrics. Compute rolling mean + slope
   // per voter across the last 5 timeseries rows (plus current round).
-  // Trajectory-aware consensus — single-round outliers get damped; sustained
+  // Trajectory-aware consensus -- single-round outliers get damped; sustained
   // outliers persist. Arc I v2.
   const voterTrajectories = {};
   try {
