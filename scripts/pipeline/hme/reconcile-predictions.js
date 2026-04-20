@@ -165,7 +165,7 @@ function main() {
   const injectedBucket = classifyBucket(injectedPredicted);
 
   const total = confirmed.length + refuted.length;
-  // R15 #9: When no modules shifted this round, predictions can't be scored —
+  // R15 #9: When no modules shifted this round, predictions can't be scored --
   // refuted count is misleading (those predictions may be valid, just untested
   // this round). Flag as skipped so metrics aren't polluted by untestable zeros.
   const shiftedCount = shifted.size;
