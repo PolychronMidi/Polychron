@@ -176,6 +176,52 @@ function main() {
   const m = mean(activeValues);
   const sd = stdev(activeValues);
 
+  // R25 #10: time-averaged per-voter metrics. Compute rolling mean + slope
+  // per voter across the last 5 timeseries rows (plus current round).
+  // Trajectory-aware consensus — single-round outliers get damped; sustained
+  // outliers persist. Arc I v2.
+  const voterTrajectories = {};
+  try {
+    const tsPath = path.join(ROOT, 'metrics', 'hme-arc-timeseries.jsonl');
+    if (fs.existsSync(tsPath)) {
+      // Timeseries doesn't carry per-voter scalars (just outlier_voters array).
+      // For trajectory, we'd need to either (a) re-emit per-voter scalars in
+      // timeseries, or (b) store running history in consensus JSON itself.
+      // Choose (b): per-voter history written into hme-consensus-history.jsonl.
+      const histPath = path.join(ROOT, 'metrics', 'hme-consensus-history.jsonl');
+      const prevLines = fs.existsSync(histPath)
+        ? fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean)
+        : [];
+      const prevRows = prevLines.slice(-4).map((l) => {
+        try { return JSON.parse(l); } catch (_e) { return null; }
+      }).filter(Boolean);
+      // Compute trajectory per voter from prev + current.
+      for (const [name, score] of activeVoters) {
+        const series = prevRows.map((r) => r.voters ? r.voters[name] : null)
+          .filter((x) => typeof x === 'number');
+        series.push(score);
+        if (series.length >= 2) {
+          const trajMean = series.reduce((a, b) => a + b, 0) / series.length;
+          const slope = (series[series.length - 1] - series[0]) / (series.length - 1);
+          voterTrajectories[name] = {
+            mean: Number(trajMean.toFixed(3)),
+            slope: Number(slope.toFixed(3)),
+            n: series.length,
+          };
+        }
+      }
+      // Append current round to history (even if computed series was short)
+      const curVoters = Object.fromEntries(Object.entries(voters)
+        .map(([k, v]) => [k, v === null ? null : Number(v.toFixed(3))]));
+      fs.appendFileSync(histPath, JSON.stringify({
+        ts: new Date().toISOString(),
+        voters: curVoters,
+        mean: Number(m.toFixed(3)),
+        stdev: Number(sd.toFixed(3)),
+      }) + '\n');
+    }
+  } catch (_tre) { /* best-effort */ }
+
   // Identify outliers: voters >1.5 stdev from mean.
   const outliers = activeVoters
     .filter(([, v]) => Math.abs(v - m) > 1.5 * sd)
@@ -202,6 +248,7 @@ function main() {
     stdev: Number(sd.toFixed(3)),
     divergence: divergenceLevel,
     outliers: outliers,
+    voter_trajectories: voterTrajectories,
   };
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

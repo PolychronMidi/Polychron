@@ -44,17 +44,28 @@ def _load(p):
 def main() -> int:
     actions: list[dict] = []
 
+    # R25 #5: expected_defer_rounds per pattern category — distinguishes
+    # "agent correctly waiting" from "agent ignoring."
+    DEFER_ROUNDS_BY_CATEGORY = {
+        "decision_gate": 3,   # wait-and-watch patterns (accept-regime-shift)
+        "investigation": 1,   # should investigate next round
+        "retirement": 2,      # confirm 2 rounds before removing
+        "validation": 1,
+    }
+
     # Arc II: matched patterns (highest priority — each carries prescribed steps)
     matches = _load("metrics/hme-pattern-matches.json") or {}
     for m in matches.get("matches", []):
+        cat = m.get("category")
         actions.append({
             "priority": 1,
             "source": "arc_ii_pattern",
             "id": m.get("id"),
-            "category": m.get("category"),
+            "category": cat,
             "summary": m.get("action_summary"),
             "detail": f"trigger payload: {m.get('payload', '')[:200]}",
             "steps": m.get("action_steps", []),
+            "expected_defer_rounds": DEFER_ROUNDS_BY_CATEGORY.get(cat, 1),
         })
 
     # Arc III: drift outliers (preemptive — catches state drift before verdict fails)
@@ -111,13 +122,15 @@ def main() -> int:
             ],
         })
 
-    # R24 #4: escalate priority for actions that appeared in the PREVIOUS
-    # round's queue but didn't get acted on (no commit citation). Repeated
-    # actions are either load-bearing (solve this or accept deferred) OR
-    # genuinely hard. Either way, bumping priority surfaces the deferral.
+    # R24 #4 + R25 #5: track repeat-count across rounds. Only escalate once
+    # repeat-count exceeds the pattern's expected_defer_rounds. A decision-gate
+    # pattern with 3-round expected defer correctly waits 3 rounds without
+    # being labeled "ignored"; at round 4 it's genuinely deferred too long.
     prev = _load("metrics/hme-next-actions.json") or {}
-    prev_ids = {a.get("id") for a in (prev.get("actions") or []) if a.get("id")}
-    if prev_ids:
+    prev_actions_by_id = {
+        a.get("id"): a for a in (prev.get("actions") or []) if a.get("id")
+    }
+    if prev_actions_by_id:
         try:
             import subprocess
             log = subprocess.check_output(
@@ -127,9 +140,16 @@ def main() -> int:
         except Exception:
             log = ""
         for a in actions:
-            if a["id"] in prev_ids and a["id"].lower() not in log.lower():
-                a["priority"] = max(1, a["priority"] - 1)  # bump up
+            prev_a = prev_actions_by_id.get(a["id"])
+            if prev_a and a["id"].lower() not in log.lower():
+                repeat = int(prev_a.get("repeat_count", 0)) + 1
+                a["repeat_count"] = repeat
                 a["repeated_from_previous_round"] = True
+                # Only escalate when over the expected defer window
+                expected = a.get("expected_defer_rounds", 1)
+                if repeat > expected:
+                    a["priority"] = max(1, a["priority"] - 1)
+                    a["deferred_beyond_expected"] = True
 
     actions.sort(key=lambda a: a["priority"])
 
@@ -141,8 +161,11 @@ def main() -> int:
             ["git", "log", "-30", "--pretty=%s%n%b"],
             cwd=PROJECT_ROOT, timeout=5, text=True,
         )
+        # R25 #5: harvester_ignored fires only for DEFERRED_BEYOND_EXPECTED
+        # actions (past their expected defer window) — not actions correctly
+        # waiting per pattern-declared defer semantics.
         ignored = [a["id"] for a in actions
-                   if a.get("repeated_from_previous_round")
+                   if a.get("deferred_beyond_expected")
                    and a["id"].lower() not in log_long.lower()]
         if ignored:
             try:

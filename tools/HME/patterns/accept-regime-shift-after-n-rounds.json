@@ -10,13 +10,16 @@
   },
   "action": {
     "summary": "Accept regime shift — update Arc III envelope to recent-only snapshots.",
+    "auto_apply": true,
+    "auto_apply_script": "scripts/pipeline/hme/auto-apply-regime-shift.py",
     "steps": [
       "Confirm HCI has been ≥95 across the persistent-drift window.",
-      "Decide on envelope strategy: exponential weighting (preferred) OR recent-N cutoff.",
-      "Apply exponential weighting in compute-legendary-drift.py: weight snapshot by 0.9^age.",
-      "Verify next pipeline's drift score drops toward 0 as envelope adapts.",
-      "Log the epoch transition in metrics/hme-epoch-transitions.jsonl with timestamp + reason."
+      "Log the epoch transition in metrics/hme-epoch-transitions.jsonl with timestamp + reason (auto-applied).",
+      "Exponential weighting in compute-legendary-drift.py already adapts the envelope; auto-apply verifies decay coefficient is tuned (R25: 0.7).",
+      "Verify next pipeline's drift score drops toward 0 as envelope adapts."
     ]
   },
-  "history": []
+  "history": [
+    {"round": "R25", "outliers": ["smoothed_shares.density", "smoothed_shares.flicker"], "hci_trajectory": [96.4, 96.5, 96.5, 97.0, 97.0], "decision": "accept", "applied_by": "agent", "note": "First application of the pattern; follow-up rounds should auto-apply"}
+  ]
 }

@@ -92,6 +92,32 @@ def main() -> int:
         json.dump(result, f, indent=2)
         f.write("\n")
 
+    # R25 #7: auto-apply matched patterns whose action.auto_apply is true.
+    # Only runs non-destructive scripts (append + emit, never mutate).
+    matched_ids = {m["id"] for m in matches}
+    for p in patterns:
+        if p.get("id") not in matched_ids:
+            continue
+        act = p.get("action") or {}
+        if not act.get("auto_apply"):
+            continue
+        script_rel = act.get("auto_apply_script")
+        if not script_rel:
+            continue
+        script = os.path.join(PROJECT_ROOT, script_rel)
+        if not os.path.isfile(script):
+            continue
+        try:
+            r = subprocess.run(
+                ["python3", script], cwd=PROJECT_ROOT,
+                capture_output=True, text=True, timeout=30,
+                env={**os.environ, "PROJECT_ROOT": PROJECT_ROOT},
+            )
+            if r.stdout.strip():
+                print(f"  auto-applied {p.get('id')}: {r.stdout.strip()[:200]}")
+        except Exception as e:
+            print(f"  auto-apply failed for {p.get('id')}: {type(e).__name__}")
+
     summary = ", ".join(f"{m['id']} ({m['category']})" for m in matches)
     print(f"match-patterns: {len(matches)}/{len(patterns)} matched"
           + (f"  [{summary}]" if matches else ""))
