@@ -892,8 +892,8 @@ def _persist_invariant_history(results: list) -> None:
     # config — otherwise retired invariants linger forever with stale fail
     # status, polluting the efficacy report. file-written-has-source-majority
     # was the first retired invariant (R22); this prune makes the retirement
-    # actually clean.
-    current_ids = {inv.get("id") for inv in results if inv.get("id")}
+    # actually clean. Note: results is list of (inv, ok, detail) tuples.
+    current_ids = {inv.get("id") for (inv, _ok, _d) in results if inv.get("id")}
     for stale in list(fail_streaks.keys()):
         if stale not in current_ids:
             del fail_streaks[stale]
