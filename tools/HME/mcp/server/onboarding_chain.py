@@ -238,7 +238,9 @@ def _substrate_brief_line() -> str:
             if top.get("id"):
                 bits.append(f"next: {top['id']}")
         return f"\n\n[HME substrate: {' | '.join(bits)}]"
-    except Exception:
+    except Exception as _brief_err:
+        # Silent — briefing is opportunistic; never break tool output.
+        _ = _brief_err
         return ""
 
 
