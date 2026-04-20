@@ -349,6 +349,65 @@ def _check_correlation_direction(inv: dict) -> tuple[bool, str]:
     return False, f"unknown direction {direction!r} — use 'positive' or 'negative'"
 
 
+def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
+    """Verify a named metric field stays above min_value (or below max_value)
+    across recent rounds. Used for enforcing prediction-accuracy/recall floors
+    once enough data has accumulated.
+
+    Config:
+      path                     — metric JSON file path
+      history_key              — top-level array key (default: 'rounds')
+      field                    — field inside each snapshot to check
+      min_value                — required minimum (exclusive: value > min)
+      max_value                — required maximum (exclusive: value < max)
+      min_rounds               — only evaluate when ≥ this many data points
+                                 (default: 3)
+      require_positive_shifts  — only count rounds where 'shifted_modules'
+                                 has >= 1 entry (for reconcile metrics that
+                                 are null/0 on idle rounds)
+    """
+    import json as _json
+    path = os.path.join(ctx.PROJECT_ROOT, inv["path"])
+    field = inv["field"]
+    history_key = inv.get("history_key", "rounds")
+    min_val = inv.get("min_value")
+    max_val = inv.get("max_value")
+    min_rounds = int(inv.get("min_rounds", 3))
+    require_positive_shifts = bool(inv.get("require_positive_shifts", False))
+
+    if not os.path.isfile(path):
+        return True, f"metric file {inv['path']} missing — can't check"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = _json.load(f)
+    except (OSError, _json.JSONDecodeError) as e:
+        return False, f"cannot read {inv['path']}: {e}"
+    history = data.get(history_key, [])
+    if not isinstance(history, list):
+        return True, f"{inv['path']}.{history_key} is not a list — skip"
+    qualifying = []
+    for entry in history:
+        if not isinstance(entry, dict):
+            continue
+        if require_positive_shifts:
+            sm = entry.get("shifted_modules")
+            if not isinstance(sm, list) or len(sm) == 0:
+                continue
+        v = entry.get(field)
+        if v is None:
+            continue
+        qualifying.append(v)
+    if len(qualifying) < min_rounds:
+        return True, f"only {len(qualifying)} qualifying rounds, need ≥{min_rounds}"
+    # Check the most-recent round (strict) — we care about current state, not historical
+    latest = qualifying[-1]
+    if min_val is not None and latest <= min_val:
+        return False, f"{field}={latest} below min_value={min_val} (over {len(qualifying)} rounds)"
+    if max_val is not None and latest >= max_val:
+        return False, f"{field}={latest} above max_value={max_val} (over {len(qualifying)} rounds)"
+    return True, f"{field}={latest} within threshold ({len(qualifying)} rounds)"
+
+
 def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
     """Verify a pipeline-metric JSON file has non-degenerate variance in the
     named field across its recent history. Catches the class of bug where a
@@ -788,6 +847,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "kb_content_no_pattern": _check_kb_content_no_pattern,
         "kb_freshness": _check_kb_freshness,
         "metric_has_variance": _check_metric_has_variance,
+        "metric_threshold": _check_metric_threshold,
         "correlation_direction": _check_correlation_direction,
         "activity_events_balanced": _check_activity_events_balanced,
         "activity_field_sanity": _check_activity_field_sanity,

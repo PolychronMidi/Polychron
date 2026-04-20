@@ -1030,6 +1030,18 @@
       "severity": "warning"
     },
     {
+      "id": "prediction-recall-nontrivial",
+      "description": "Once the predictor has processed 3+ rounds with >=1 shifted module each, recall should be >= 0.5 (predicted modules catch at least half of actual shifts). Low recall means the cascade model isn't seeing the dependency structure; low precision is acceptable (overprediction tolerable) but low recall is a structural blind spot.",
+      "type": "metric_threshold",
+      "path": "metrics/hme-prediction-accuracy.json",
+      "history_key": "rounds",
+      "field": "recall",
+      "min_value": 0.5,
+      "min_rounds": 3,
+      "require_positive_shifts": true,
+      "severity": "warning"
+    },
+    {
       "id": "legacy-override-chronically-zero",
       "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at warning-level so the signal surfaces without blocking; actual removal is a separate decision.",
       "type": "shell_output_empty",

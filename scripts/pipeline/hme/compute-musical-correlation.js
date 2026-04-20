@@ -168,7 +168,28 @@ function main() {
         ], { stdio: 'ignore', detached: true, cwd: ROOT,
              env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }) }).unref();
       } catch (_e) { /* best-effort */ }
+      // Persist structured alert so i/status can surface it — the activity
+      // event alone isn't guaranteed to be read before the next user turn.
+      try {
+        fs.writeFileSync(
+          path.join(ROOT, 'metrics', 'hci-regression-alert.json'),
+          JSON.stringify({
+            ts: new Date().toISOString(),
+            current_hci: currentHci,
+            prev_hci: prevHci,
+            delta_cur: Number(hciDelta.toFixed(2)),
+            delta_prev: Number(prevDelta.toFixed(2)),
+            action: 'Run `i/review mode=forget` to investigate. '
+                  + 'Inspect metrics/hci-verifier-snapshot.json vs .prev for which verifiers regressed.',
+          }, null, 2) + '\n',
+        );
+      } catch (_we) { /* best-effort */ }
     }
+  } else {
+    // No regression this round — clear any stale alert file.
+    const alertPath = path.join(ROOT, 'metrics', 'hci-regression-alert.json');
+    try { if (fs.existsSync(alertPath)) fs.unlinkSync(alertPath); }
+    catch (_ue) { /* best-effort */ }
   }
 
   // Verdict -> numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0, other=0.5

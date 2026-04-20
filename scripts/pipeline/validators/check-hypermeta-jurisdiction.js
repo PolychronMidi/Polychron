@@ -50,14 +50,11 @@ const LEGACY_OVERRIDES = [
     rationale: 'LOAD-BEARING per R11 instrumentation: fires ~23x per 96-beat round. Catches tension axis at 0.15 before it drops to the generic 0.12 floor -- faster recovery at the shallower threshold. Not a removal candidate despite pre-hypermeta origin; the generic undershoot handler alone is insufficient.',
     pattern: /tensionSmoothed\s*<\s*0\.15/
   },
-  {
-    id: 'entropy-cap-0.19',
-    axis: 'entropy',
-    type: 'cap',
-    threshold: 0.19,
-    rationale: 'Removal candidate per R11 instrumentation: fires 0x in observed rounds. Entropy stays below 0.19 under current composition -- the cap never activates. Keep under observation for 5+ rounds before removal (legacy-override-chronically-zero invariant tracks this).',
-    pattern: /entropySmoothed\s*>\s*0\.19/
-  },
+  // entropy-cap-0.19 REMOVED in R13 after 2 rounds of 0 fires + 0 entries.
+  // Per R11/R12 instrumentation, entropy never exceeded 0.19 under current
+  // composition. The generic AXIS_OVERSHOOT handler at 0.22 covers the rare
+  // case if entropy ever spikes. If entropy domination returns, investigate
+  // WHY the generic handler is insufficient — do not re-add this override.
   {
     id: 'phase-trust-seesaw',
     axis: 'phase+trust',
