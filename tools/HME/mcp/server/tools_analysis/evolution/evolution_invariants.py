@@ -200,6 +200,8 @@ def _check_files_mtime_window(inv: dict) -> tuple[bool, str]:
 
 def _check_symbols_have_kb(inv: dict) -> tuple[bool, str]:
     """Top-N highest-caller IIFE globals must each have at least one KB entry."""
+    if ctx.project_engine is None:
+        return True, "engine not available — skipped (pipeline context)"
     from tools_analysis.health_analysis import _compute_iife_caller_counts
     src_root = os.path.join(ctx.PROJECT_ROOT, "src")
     _, caller_counts, _ = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
@@ -249,6 +251,8 @@ def _is_regex(s: str) -> bool:
 
 def _check_kb_freshness(inv: dict) -> tuple[bool, str]:
     """Warn if no KB entry has been updated within max_age_days days (staleness signal)."""
+    if ctx.project_engine is None:
+        return True, "engine not available — skipped (pipeline context)"
     import time
     max_age_days = inv.get("max_age_days", 14)
     entries = ctx.project_engine.list_knowledge_full()
@@ -270,6 +274,8 @@ def _check_kb_content_no_pattern(inv: dict) -> tuple[bool, str]:
 
     Use to guard against LLM artifact leaks (e.g. <|thinking|> tags in KB content).
     """
+    if ctx.project_engine is None:
+        return True, "engine not available — skipped (pipeline context)"
     pattern = inv["pattern"]
     entries = ctx.project_engine.list_knowledge_full()
     if not entries:
