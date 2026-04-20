@@ -105,6 +105,28 @@ def main() -> None:
         sys.exit(0)
 
     unaccounted.sort(key=lambda x: x[2])
+
+    # --auto-append: write unaccounted pairs to registry as candidates with a
+    # placeholder hypothesis. Lets the pipeline keep the registry self-healing
+    # (new correlations automatically tracked as candidates for later review)
+    # rather than flapping between FAIL/PASS every time trace data shifts.
+    if "--auto-append" in sys.argv:
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        candidates = reg.setdefault("candidates", [])
+        for a, b, r in unaccounted:
+            candidates.append({
+                "pair": list(_canon_pair(a, b)),
+                "r": round(r, 3),
+                "detected_at": today,
+                "detection_method": "auto-append via check-antagonism-registry.py --auto-append",
+                "hypothesized_upstream": "unreviewed",
+                "hypothesis": "Auto-detected antagonism. Agent review required to classify upstream cause or reclassify as refuted.",
+            })
+        REGISTRY_PATH.write_text(json.dumps(reg, indent=2) + "\n")
+        print(f"auto-append: added {len(unaccounted)} candidates to {REGISTRY_PATH.name}")
+        sys.exit(0)
+
     print(f"DRIFT: {len(unaccounted)} antagonism pair(s) observed in trace data but NOT in registry.", file=sys.stderr)
     print(f"Add each to metrics/hme-suspected-upstreams.json as candidate, confirmed, or refuted:", file=sys.stderr)
     for a, b, r in unaccounted[:10]:

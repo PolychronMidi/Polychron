@@ -607,6 +607,10 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
       window_events   — consider only the last N events (default 2000)
       max_violations  — fail threshold (default 10 — tolerate legacy noise)
       exclude_values  — field values to skip (e.g. empty strings)
+      require_fields  — event must have ALL these fields (non-empty) to count;
+                        skips legacy events that predate a schema extension
+                        (e.g. 'source' was added post-R09 — pre-R09 events
+                        without it are legacy noise, not current violations)
     """
     import json as _json
     import re as _re
@@ -618,6 +622,7 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
     window = int(inv.get("window_events", 2000))
     max_violations = int(inv.get("max_violations", 10))
     exclude = set(inv.get("exclude_values", ["", None]))
+    require_fields = inv.get("require_fields", [])
 
     if not os.path.isfile(path):
         return True, f"activity log missing — can't check"
@@ -638,6 +643,11 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
     violations: list = []
     for e in tail:
         if e.get("event") != event_name:
+            continue
+        # Skip legacy events missing schema-extension fields (e.g. pre-R09
+        # events without 'source'). Without this, adding a new field causes
+        # retroactive invariant failures on all historical events.
+        if require_fields and any(not e.get(rf) for rf in require_fields):
             continue
         val = e.get(field)
         if val in exclude:

@@ -77,6 +77,16 @@ axisEnergyEquilibrator = (() => {
         'phase-trust-seesaw': 0,
         'trust-floor-0.14': 0,
       },
+      // Entry counts: condition was true (e.g. tensionSmoothed < 0.15) but
+      // baseline may not have changed (cooldown, non-nudgeable, already at max).
+      // entries >> fires means the override is checked often but action blocked
+      // — useful signal for tuning cooldowns or understanding override efficacy.
+      perLegacyOverrideEntries: {
+        'tension-floor-0.15': 0,
+        'entropy-cap-0.19': 0,
+        'phase-trust-seesaw': 0,
+        'trust-floor-0.14': 0,
+      },
       lastBaselines: {},
       regimeBeats: {},
       regimePairAdj: {},
@@ -125,6 +135,7 @@ axisEnergyEquilibrator = (() => {
       perAxisAdj: Object.assign({}, axisEnergyEquilibratorState.perAxisAdj),
       perPairAdj: Object.assign({}, axisEnergyEquilibratorState.perPairAdj),
       perLegacyOverride: Object.assign({}, axisEnergyEquilibratorState.perLegacyOverride),
+      perLegacyOverrideEntries: Object.assign({}, axisEnergyEquilibratorState.perLegacyOverrideEntries),
       lastBaselines: Object.assign({}, axisEnergyEquilibratorState.lastBaselines),
       regimeBeats: Object.assign({}, axisEnergyEquilibratorState.regimeBeats),
       regimePairAdj: Object.assign({}, axisEnergyEquilibratorState.regimePairAdj),

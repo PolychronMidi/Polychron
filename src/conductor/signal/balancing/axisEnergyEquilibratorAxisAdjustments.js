@@ -155,6 +155,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
   function axisEnergyEquilibratorAxisAdjustmentsApplySpecialCaps(state, config, V) {
     const tensionSmoothed = state.smoothedShares.tension;
     if (typeof tensionSmoothed === 'number' && tensionSmoothed < 0.15 && tensionSmoothed > 0.001) {
+      state.perLegacyOverrideEntries['tension-floor-0.15']++;
       const tensionDeficit = 0.15 - tensionSmoothed;
       const tensionPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.tension || config.RELAX_RATE_REF);
       const tensionFloorRate = m.min(0.03, config.AXIS_RELAX_RATE * 2.5 * tensionPairScale * clamp(tensionDeficit / config.FAIR_SHARE, 0.5, 2.0));
@@ -177,6 +178,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
 
     const entropySmoothed = state.smoothedShares.entropy;
     if (typeof entropySmoothed === 'number' && entropySmoothed > 0.19) {
+      state.perLegacyOverrideEntries['entropy-cap-0.19']++;
       const entropyExcess = entropySmoothed - 0.19;
       const entropyPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.entropy || config.RELAX_RATE_REF);
       const entropyCapRate = m.min(0.03, config.AXIS_TIGHTEN_RATE * 2.5 * entropyPairScale * clamp(entropyExcess / config.FAIR_SHARE, 0.5, 2.0));
@@ -207,6 +209,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     const phaseSmoothed = state.smoothedShares.phase;
     const trustSmoothed = state.smoothedShares.trust;
     if (typeof phaseSmoothed === 'number' && phaseSmoothed < 0.08 && typeof trustSmoothed === 'number' && trustSmoothed > config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95))) {
+      state.perLegacyOverrideEntries['phase-trust-seesaw']++;
       const trustThreshold = config.FAIR_SHARE * (phaseSmoothed < 0.02 ? 1.20 : (phaseSmoothed < 0.04 ? 1.05 : 0.95));
       const phaseShortfall = clamp((0.06 - phaseSmoothed) / 0.06, 0, 1);
       const trustExcess = trustSmoothed - trustThreshold;
@@ -234,6 +237,7 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
     // below 0.14, apply gentle bias to trust-pair baselines. R7: reduced from
     // 1.05x to 0.50x -- R6's 1.05x over-corrected (trust 12.2%->19.4%, phase displaced).
     if (typeof trustSmoothed === 'number' && trustSmoothed < 0.14 && trustSmoothed > 0.001) {
+      state.perLegacyOverrideEntries['trust-floor-0.14']++;
       const trustDeficit = 0.14 - trustSmoothed;
       const trustFloorPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.trust || config.RELAX_RATE_REF);
       // R3 E2: Trust floor rate 0.50 -> 1.2. Trust recovery was 5x slower
