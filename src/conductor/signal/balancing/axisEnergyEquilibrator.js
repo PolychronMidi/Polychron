@@ -80,7 +80,7 @@ axisEnergyEquilibrator = (() => {
       // Entry counts: condition was true (e.g. tensionSmoothed < 0.15) but
       // baseline may not have changed (cooldown, non-nudgeable, already at max).
       // entries >> fires means the override is checked often but action blocked
-      // — useful signal for tuning cooldowns or understanding override efficacy.
+      // -- useful signal for tuning cooldowns or understanding override efficacy.
       perLegacyOverrideEntries: {
         'tension-floor-0.15': 0,
         'entropy-cap-0.19': 0,
