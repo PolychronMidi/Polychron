@@ -448,18 +448,25 @@ function main() {
   const specialCapsSrc = extractSpecialCapsSource();
   const detected = detectManualOverrides(specialCapsSrc);
 
-  // Check each detected override against the allowlist
+  // Check each detected override against the allowlist. Track which legacy id
+  // matched so we can report per-id occurrence counts (call-site multiplicity
+  // is useful: e.g. phaseSmoothed < 0.02 appearing 3x = 3 call sites that
+  // depend on the override, each a future migration point).
   const unregistered = [];
   const registered = [];
+  const registeredByLegacyId = {};
 
   for (const override of detected) {
-    const isAllowlisted = LEGACY_OVERRIDES.some(legacy => legacy.pattern.test(override.rawMatch));
-    if (isAllowlisted) {
+    const matchedLegacy = LEGACY_OVERRIDES.find(legacy => legacy.pattern.test(override.rawMatch));
+    if (matchedLegacy) {
+      override.legacyId = matchedLegacy.id;
       registered.push(override);
+      registeredByLegacyId[matchedLegacy.id] = (registeredByLegacyId[matchedLegacy.id] || 0) + 1;
     } else {
       unregistered.push(override);
     }
   }
+  const registeredUnique = Object.keys(registeredByLegacyId).length;
 
   // Verify all allowlisted overrides still exist (detect removals to update allowlist)
   const removedLegacy = [];
@@ -486,6 +493,7 @@ function main() {
       generated: new Date().toISOString(),
       legacyAllowlistSize: LEGACY_OVERRIDES.length,
       detectedOverrides: detected.length,
+      registeredUnique: registeredUnique,
       unregisteredOverrides: unregistered.length,
       removedLegacy: removedLegacy.length,
       couplingMatrixViolations: matrixViolations.length,
@@ -497,7 +505,8 @@ function main() {
       watchedConstantViolations: watchedViolations.length,
       watchedConstantCount: WATCHED_CONSTANTS.length
     },
-    registered: registered.map(o => ({ axis: o.axis, type: o.type, threshold: o.threshold })),
+    registered: registered.map(o => ({ axis: o.axis, type: o.type, threshold: o.threshold, legacyId: o.legacyId })),
+    registeredByLegacyId: registeredByLegacyId,
     unregistered: unregistered.map(o => ({ axis: o.axis, type: o.type, threshold: o.threshold, rawMatch: o.rawMatch })),
     removedLegacy: removedLegacy.map(l => ({ id: l.id, axis: l.axis })),
     legacyOverrides: LEGACY_OVERRIDES.map(l => ({ id: l.id, axis: l.axis, type: l.type, threshold: l.threshold, rationale: l.rationale })),

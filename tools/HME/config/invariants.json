@@ -1029,6 +1029,13 @@
       "severity": "warning"
     },
     {
+      "id": "hypermeta-legacy-overrides-covered",
+      "description": "Every LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js must match at least one call site in SpecialCaps source. An id with zero matches means its detector regex drifted (variable renamed, refactored out, etc.) — silently disarming the jurisdiction gate. registeredByLegacyId must have a positive count for every allowlisted id.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json; d=json.load(open('metrics/hypermeta-jurisdiction.json')); reg=d.get('registeredByLegacyId',{}); legacy=d.get('legacyOverrides',[]); missing=[l['id'] for l in legacy if reg.get(l['id'],0)==0]; print('\\n'.join('legacy id has zero matches: '+m for m in missing))\"",
+      "severity": "error"
+    },
+    {
       "id": "no-invariant-chronically-failing",
       "description": "Meta-invariant: another invariant must not have been FAILing for ≥10 consecutive runs. Catches the meta-pattern where alarms become background noise and never get addressed.",
       "type": "invariant_chronically_failing",
