@@ -54,7 +54,7 @@ const LEGACY_OVERRIDES = [
   // Per R11/R12 instrumentation, entropy never exceeded 0.19 under current
   // composition. The generic AXIS_OVERSHOOT handler at 0.22 covers the rare
   // case if entropy ever spikes. If entropy domination returns, investigate
-  // WHY the generic handler is insufficient — do not re-add this override.
+  // WHY the generic handler is insufficient -- do not re-add this override.
   {
     id: 'phase-trust-seesaw',
     axis: 'phase+trust',
