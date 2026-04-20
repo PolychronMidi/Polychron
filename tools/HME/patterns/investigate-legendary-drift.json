@@ -1,0 +1,23 @@
+{
+  "id": "investigate-legendary-drift",
+  "category": "investigation",
+  "description": "Arc III inverse-reasoning signal: current round's HME state has drifted >2σ from the envelope of prior legendary rounds. Fires BEFORE the listening verdict fails — preemptive detection. The outliers field names the exact state dimension(s) that departed from legendary distribution. Often a single axis share or fire count has slid into non-legendary territory while HCI/verdict/consensus still say healthy.",
+  "trigger": {
+    "kind": "legendary_drift_threshold",
+    "source": "metrics/hme-legendary-drift.json",
+    "check": "python3 -c \"import json, os; p='metrics/hme-legendary-drift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('field','') for o in d.get('outliers',[])[:3]); print(f'drift={d.get(\\\"drift_score\\\")} outliers={outs}') if d.get('status') == 'drift_detected' else None\"",
+    "matches_when": "status=drift_detected; stdout names top drifted fields with score"
+  },
+  "action": {
+    "summary": "Identify which field(s) drifted and decide: normalize (composition correction) or update envelope (state distribution expanded).",
+    "steps": [
+      "Read metrics/hme-legendary-drift.json `outliers` array.",
+      "For each outlier, inspect the field's trajectory: is it a sudden jump (anomaly) or a slow drift (regime change)?",
+      "Sudden jump + consensus still healthy = likely false alarm from a single round; re-check next pipeline.",
+      "Slow drift + consensus stable = the legendary envelope itself is shifting; consider whether the new state is ALSO legendary or whether composition is degrading undetected.",
+      "If the field corresponds to a retired override's axis, check whether the generic handler is over-correcting or under-correcting vs the retired override's behavior.",
+      "If consensus divergence is also high, this is likely the same root cause — investigate both together."
+    ]
+  },
+  "history": []
+}
