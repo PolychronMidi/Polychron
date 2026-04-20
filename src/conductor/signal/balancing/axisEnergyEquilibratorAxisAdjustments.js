@@ -176,28 +176,11 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
       }
     }
 
-    const entropySmoothed = state.smoothedShares.entropy;
-    if (typeof entropySmoothed === 'number' && entropySmoothed > 0.19) {
-      state.perLegacyOverrideEntries['entropy-cap-0.19']++;
-      const entropyExcess = entropySmoothed - 0.19;
-      const entropyPairScale = config.RELAX_RATE_REF / (config.EFFECTIVE_NUDGEABLE.entropy || config.RELAX_RATE_REF);
-      const entropyCapRate = m.min(0.03, config.AXIS_TIGHTEN_RATE * 2.5 * entropyPairScale * clamp(entropyExcess / config.FAIR_SHARE, 0.5, 2.0));
-      const entropyPairs = V.assertArray(config.axisToPairs.entropy, "config.axisToPairs.entropy");
-      for (let i = 0; i < entropyPairs.length; i++) {
-        const pair = entropyPairs[i];
-        if ((V.optionalFinite(state.pairCooldowns[pair], 0)) > 0) continue;
-        const baseline = V.optionalFinite(state.lastBaselines[pair]);
-        if (baseline === undefined) continue;
-        const nextBaseline = m.max(pair === 'density-flicker' ? config.DENSITY_FLICKER_BASELINE_MIN : config.BASELINE_MIN, baseline - entropyCapRate);
-        if (nextBaseline < baseline) {
-          pipelineCouplingManager.setPairBaseline(pair, nextBaseline);
-          state.pairCooldowns[pair] = config.AXIS_COOLDOWN;
-          state.axisAdjustments++;
-          state.perAxisAdj.entropy = (V.optionalFinite(state.perAxisAdj.entropy, 0)) + 1;
-          state.perLegacyOverride['entropy-cap-0.19']++;
-        }
-      }
-    }
+    // R13: Removed entropy-cap-0.19 legacy override. Instrumentation over
+    // multiple rounds showed 0 fires AND 0 entries: entropy stayed below 0.19
+    // under current composition, so the cap never activated. The generic
+    // AXIS_OVERSHOOT handler at 0.22 covers the rare case if entropy ever
+    // spikes above that threshold.
 
     // R5 E5: Removed R4 E3 manual entropy floor at 0.13. This was a
     // whack-a-mole constant that duplicated the generic AXIS_UNDERSHOOT

@@ -73,7 +73,6 @@ axisEnergyEquilibrator = (() => {
       // in scripts/pipeline/validators/check-hypermeta-jurisdiction.js.
       perLegacyOverride: {
         'tension-floor-0.15': 0,
-        'entropy-cap-0.19': 0,
         'phase-trust-seesaw': 0,
         'trust-floor-0.14': 0,
       },
@@ -83,7 +82,6 @@ axisEnergyEquilibrator = (() => {
       // -- useful signal for tuning cooldowns or understanding override efficacy.
       perLegacyOverrideEntries: {
         'tension-floor-0.15': 0,
-        'entropy-cap-0.19': 0,
         'phase-trust-seesaw': 0,
         'trust-floor-0.14': 0,
       },

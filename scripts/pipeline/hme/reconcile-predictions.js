@@ -79,19 +79,55 @@ function main() {
   const history = loadJson(ACCURACY_OUT) || { meta: {}, rounds: [], ema: null };
 
   if (predictions.length === 0) {
-    console.log('reconcile-predictions: no predictions logged this round -- skipping');
+    console.log('reconcile-predictions: no predictions logged -- skipping');
     return;
   }
 
   const shifted = extractShiftedModules();
 
-  // Phase 6.1 -- split predictions into clean (prediction made post-hoc,
-  // with no proxy injection in the loop) vs injected (prediction surfaced
-  // to the Evolver before the edit). Clean predictions are a true test of
-  // the cascade model; injected ones are influence (self-fulfilling).
+  // R13: Only score predictions from THIS round. Previously every prediction
+  // in the jsonl (accumulated across 200-record truncation window = ~10 past
+  // rounds) was compared against current round's git diff, producing wildly
+  // over-weighted refuted counts. A prediction made 5 rounds ago for a
+  // different commit shouldn't score against this commit's changes.
+  //
+  // Current-round window: predictions whose ts is >= the most recent
+  // round_complete's ts in the activity log. Falls back to "last 30 minutes"
+  // if the activity log is unavailable (prevents accidental full-history scan).
+  const CURRENT_ROUND_WINDOW_MS = 30 * 60 * 1000;
+  let windowStart = Date.now() - CURRENT_ROUND_WINDOW_MS;
+  try {
+    const activityPath = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
+    if (fs.existsSync(activityPath)) {
+      const raw = fs.readFileSync(activityPath, 'utf8');
+      const lines = raw.split('\n').reverse();
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const e = JSON.parse(line);
+          if (e.event === 'round_complete' && e.verdict && e.ts) {
+            // Prior round's round_complete marks the start of THIS round's window.
+            // Since this reconcile runs inside the new round but before that
+            // round_complete fires, the most recent verdict-bearing round_complete
+            // is the prior round's.
+            windowStart = Number(e.ts) * 1000;
+            break;
+          }
+        } catch (_e2) { /* skip malformed */ }
+      }
+    }
+  } catch (_e) { /* fall through to 30min default */ }
+
+  const currentRoundPredictions = predictions.filter((p) => {
+    if (!p.ts) return false;
+    const predTs = Date.parse(p.ts);
+    return Number.isFinite(predTs) && predTs >= windowStart;
+  });
+
+  // Phase 6.1 -- split predictions into clean vs injected.
   const cleanPredicted = new Set();
   const injectedPredicted = new Set();
-  for (const p of predictions) {
+  for (const p of currentRoundPredictions) {
     const target = p.injected ? injectedPredicted : cleanPredicted;
     for (const m of p.predicted || p.affected_modules || []) target.add(m);
   }
@@ -157,7 +193,8 @@ function main() {
 
   const roundRecord = {
     timestamp: new Date().toISOString(),
-    predictions_total: predictions.length,
+    predictions_total: currentRoundPredictions.length,
+    predictions_log_size: predictions.length,  // historical: total in jsonl
     predicted_modules: Array.from(predictedAll),
     shifted_modules: Array.from(shifted),
     confirmed,
