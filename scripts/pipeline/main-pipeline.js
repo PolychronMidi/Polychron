@@ -400,7 +400,6 @@ function main() {
     'emit-hci-signal.py',              // HCI -> composition-layer signal
     'suggest-verifiers.py',            // verifier coverage report
     'memetic-drift.py',                // CLAUDE.md rule violation scan
-    'verify-coherence.py',             // full invariant battery -- clears stale streaks
   ];
   var bgEnv = Object.assign({}, process.env, {
     PROJECT_ROOT: path.join(__dirname, '..', '..'),
@@ -417,6 +416,16 @@ function main() {
       }).unref();
     } catch (_e) { /* best-effort -- don't block pipeline on analytics spawn */ }
   }
+  // Invariant battery runs the declarative checks in config/invariants.json and
+  // writes to metrics/hme-invariant-history.json so chronic streaks clear every
+  // round. Lives under scripts/pipeline/hme/ (not HME scripts/) so it spawns
+  // separately from the hmeScripts loop above.
+  try {
+    cp.spawn('python3', [path.join(__dirname, 'hme', 'run-invariant-battery.py')], {
+      stdio: 'ignore', detached: true, env: bgEnv,
+      cwd: path.join(__dirname, '..', '..'),
+    }).unref();
+  } catch (_e) { /* best-effort */ }
 
   // Warm-context reprime: touch sentinel so the HME server picks up stale KV
   // contexts on next tick. verify-coherence.py only triggers this inside the
