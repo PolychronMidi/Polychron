@@ -1016,6 +1016,7 @@
       "window_events": 2000,
       "max_violations": 10,
       "exclude_values": ["", null],
+      "require_fields": ["source"],
       "severity": "warning"
     },
     {
@@ -1026,6 +1027,13 @@
       "activity_path": "metrics/hme-activity.jsonl",
       "field": "hme_coherence",
       "tolerance": 0.02,
+      "severity": "warning"
+    },
+    {
+      "id": "legacy-override-chronically-zero",
+      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at warning-level so the signal surfaces without blocking; actual removal is a separate decision.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds: '+i for i in zero))\"",
       "severity": "warning"
     },
     {

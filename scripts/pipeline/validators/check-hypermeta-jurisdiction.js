@@ -47,7 +47,7 @@ const LEGACY_OVERRIDES = [
     axis: 'tension',
     type: 'floor',
     threshold: 0.15,
-    rationale: 'Pre-hypermeta legacy. Generic undershoot at 0.12 is 0.03 below; tension floor at 0.15 with 2.5x rate provides faster recovery. Candidate for removal once giniMult proves sufficient.',
+    rationale: 'LOAD-BEARING per R11 instrumentation: fires ~23x per 96-beat round. Catches tension axis at 0.15 before it drops to the generic 0.12 floor — faster recovery at the shallower threshold. Not a removal candidate despite pre-hypermeta origin; the generic undershoot handler alone is insufficient.',
     pattern: /tensionSmoothed\s*<\s*0\.15/
   },
   {
@@ -55,7 +55,7 @@ const LEGACY_OVERRIDES = [
     axis: 'entropy',
     type: 'cap',
     threshold: 0.19,
-    rationale: 'Pre-hypermeta legacy. Generic overshoot at 0.22 is 0.03 above; entropy cap at 0.19 with 2.5x rate prevents entropy domination. Candidate for removal once giniMult proves sufficient.',
+    rationale: 'Removal candidate per R11 instrumentation: fires 0x in observed rounds. Entropy stays below 0.19 under current composition — the cap never activates. Keep under observation for 5+ rounds before removal (legacy-override-chronically-zero invariant tracks this).',
     pattern: /entropySmoothed\s*>\s*0\.19/
   },
   {
@@ -87,7 +87,7 @@ const LEGACY_OVERRIDES = [
     axis: 'trust',
     type: 'floor',
     threshold: 0.14,
-    rationale: 'Post-R6 legacy with R3 rate adjustment (1.20x). Generic undershoot at 0.12 is 0.02 below. trustStarvationAutoNourishment (#5) handles velocity-based recovery. Candidate for removal.',
+    rationale: 'LOAD-BEARING per R11 instrumentation: fires ~25x per 96-beat round (57% of all trust-axis adjustments). Catches trust at 0.14 before it drops to 0.12 — trustStarvationAutoNourishment (#5) alone is insufficient, it handles velocity but this handles absolute floor. Not a removal candidate.',
     pattern: /trustSmoothed\s*<\s*0\.14/
   }
 ];

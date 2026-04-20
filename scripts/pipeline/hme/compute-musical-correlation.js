@@ -147,6 +147,30 @@ function main() {
   } catch (_e) { /* optional */ }
   const hciDelta = (currentHci !== null && prevHci !== null) ? currentHci - prevHci : null;
 
+  // HCI regression detection: two consecutive rounds with hci_delta < -2 emits
+  // an activity event. The 2-point threshold is intentionally loose — a single
+  // noisy round shouldn't alert, but sustained decline should.
+  const REGRESSION_THRESHOLD = -2;
+  if (hciDelta !== null && hciDelta < REGRESSION_THRESHOLD) {
+    const prevDelta = prevHistory.length > 0
+      ? (prevHistory[prevHistory.length - 1].hci_delta ?? null) : null;
+    if (prevDelta !== null && prevDelta < REGRESSION_THRESHOLD) {
+      const { spawn } = require('child_process');
+      try {
+        spawn('python3', [
+          path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
+          '--event=hci_regression',
+          `--current_hci=${currentHci}`,
+          `--prev_hci=${prevHci}`,
+          `--delta_cur=${hciDelta.toFixed(2)}`,
+          `--delta_prev=${prevDelta.toFixed(2)}`,
+          '--session=pipeline',
+        ], { stdio: 'ignore', detached: true, cwd: ROOT,
+             env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }) }).unref();
+      } catch (_e) { /* best-effort */ }
+    }
+  }
+
   // Verdict -> numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0, other=0.5
   const verdictMap = { STABLE: 1, EVOLVED: 1.1, DRIFTED: 0, UNKNOWN: 0.5 };
   const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;

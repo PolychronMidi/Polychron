@@ -130,6 +130,12 @@ function main() {
 
   const total = confirmed.length + refuted.length;
   const accuracy = total > 0 ? confirmed.length / total : null;
+  // Recall: fraction of actually-shifted modules that were predicted.
+  // Precision (accuracy above) measures false positives; recall measures
+  // false negatives. A high-recall low-precision cascade predicts too much;
+  // a low-recall high-precision cascade predicts too narrowly.
+  const shiftedCount = shifted.size;
+  const recall = shiftedCount > 0 ? confirmed.length / shiftedCount : null;
 
   // EMA update
   const prevEma = typeof history.ema === 'number' ? history.ema : null;
@@ -158,6 +164,7 @@ function main() {
     refuted,
     missed,
     accuracy: accuracy !== null ? Number(accuracy.toFixed(4)) : null,
+    recall: recall !== null ? Number(recall.toFixed(4)) : null,
     ema_after: newEma !== null ? Number(newEma.toFixed(4)) : null,
     // Phase 6.1 reflexivity breakdown
     clean_bucket: cleanBucket,
