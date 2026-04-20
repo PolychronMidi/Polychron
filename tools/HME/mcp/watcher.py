@@ -219,10 +219,14 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         def on_any_event(self, event):
             if event.is_directory:
                 return
-            # Only emit file_written for real content changes, not access/open
+            # Only emit file_written for real content changes, not access/open.
+            # "moved" catches atomic-rename writes (Edit tool writes to .tmp.<pid>
+            # then renames to the final path — watchdog fires "moved" on the rename).
+            # Use dest_path (the final path) for moved events.
             etype = getattr(event, "event_type", "")
-            is_write = etype in ("modified", "created")
-            path = getattr(event, "src_path", "") or ""
+            is_write = etype in ("modified", "created", "moved")
+            path = (getattr(event, "dest_path", "") if etype == "moved"
+                    else getattr(event, "src_path", "")) or ""
             parts = path.replace("\\", "/").split("/")
             if any(p in IGNORE_DIRS for p in parts):
                 if is_write:

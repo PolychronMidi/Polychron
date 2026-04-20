@@ -133,6 +133,20 @@ function main() {
   const verdict      = (fingerprint && (fingerprint.verdict || fingerprint.result)) || null;
   const percSignals  = extractPerceptualSignals(perceptual) || {};
 
+  // HCI delta: round-over-round change in the HCI score. Non-null after the
+  // first round. Has real variance (unlike verdict_numeric which is always 1
+  // for STABLE runs), enabling meaningful correlation with coherence metrics.
+  const prevHistory = Array.isArray(prev && prev.history) ? prev.history : [];
+  const prevHci = prevHistory.length > 0
+    ? (prevHistory[prevHistory.length - 1].hci ?? null) : null;
+  // Read current HCI from pipeline-summary.json (written before this script runs)
+  let currentHci = null;
+  try {
+    const summary = loadJson(path.join(ROOT, 'metrics', 'pipeline-summary.json'));
+    if (summary && typeof summary.hci === 'number') currentHci = summary.hci;
+  } catch (_e) { /* optional */ }
+  const hciDelta = (currentHci !== null && prevHci !== null) ? currentHci - prevHci : null;
+
   // Verdict -> numeric: STABLE=1, EVOLVED=1.1, DRIFTED=0, other=0.5
   const verdictMap = { STABLE: 1, EVOLVED: 1.1, DRIFTED: 0, UNKNOWN: 0.5 };
   const verdictNumeric = verdict ? (verdictMap[verdict] ?? 0.5) : null;
@@ -182,6 +196,8 @@ function main() {
     perceptual_complexity_avg: percSignals.complexity_avg,
     clap_tension: percSignals.clap_tension,
     encodec_entropy_avg: percSignals.encodec_entropy_avg,
+    hci: currentHci,
+    hci_delta: hciDelta,
   };
 
   // Append to history
@@ -223,6 +239,7 @@ function main() {
     ['hme_coherence', 'verdict_numeric'],
     ['hme_coherence', 'perceptual_complexity_avg'],
     ['hme_coherence', 'clap_tension'],
+    ['hme_coherence', 'hci_delta'],
     ['hme_prediction_accuracy', 'verdict_numeric'],
     ['hme_prediction_accuracy', 'perceptual_complexity_avg'],
     ['hme_prediction_accuracy', 'clap_tension'],

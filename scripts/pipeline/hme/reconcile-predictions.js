@@ -44,36 +44,31 @@ function loadPredictions() {
   return out;
 }
 
-function extractShiftedModules(fingerprint) {
-  // fingerprint-comparison.json shape varies by pipeline version. Try a few
-  // known structures:
-  //   { verdict, changes: [{ field: 'trustWeight.motifEcho', ... }, ...] }
-  //   { verdict, deltas: { 'motifEcho': {weight: 0.1}, ... } }
-  //   { verdict, trust: { 'motifEcho': 0.1, ... } }
-  if (!fingerprint || typeof fingerprint !== 'object') return new Set();
+function extractShiftedModules() {
+  // Use git diff to find actually-changed source modules this round.
+  // fingerprint-comparison.json tracks acoustic dimensions (pitchEntropy etc.),
+  // not code modules — it can't tell us which JS modules were edited.
+  // Git diff gives us the ground truth: which src/ files changed in the last
+  // 2 commits (generate-predictions runs before the commit, so we look back 2).
+  const { execSync } = require('child_process');
   const shifted = new Set();
-  const pushFromKey = (k) => {
-    if (typeof k !== 'string') return;
-    // Extract the trailing module stem from dotted keys like "trust.motifEcho"
-    const parts = k.split(/[.:/]/);
-    const tail = parts[parts.length - 1];
-    if (tail && /^[a-zA-Z][a-zA-Z0-9]*$/.test(tail)) shifted.add(tail);
+  const toModule = (p) => {
+    const base = require('path').basename(p);
+    return base.replace(/\.(js|ts|py|sh)$/, '');
   };
-  if (Array.isArray(fingerprint.changes)) {
-    for (const c of fingerprint.changes) {
-      if (c && c.field) pushFromKey(c.field);
-      if (c && c.module) pushFromKey(c.module);
-      if (c && c.path) pushFromKey(c.path);
-    }
-  }
-  if (fingerprint.deltas && typeof fingerprint.deltas === 'object') {
-    for (const k of Object.keys(fingerprint.deltas)) pushFromKey(k);
-  }
-  if (fingerprint.trust && typeof fingerprint.trust === 'object') {
-    for (const k of Object.keys(fingerprint.trust)) pushFromKey(k);
-  }
-  if (Array.isArray(fingerprint.shifted_modules)) {
-    for (const m of fingerprint.shifted_modules) pushFromKey(m);
+  // Try last 2 commits first, fall back to last 1 (for first-commit edge case)
+  for (const range of ['HEAD~2..HEAD', 'HEAD~1..HEAD', 'HEAD']) {
+    try {
+      const out = execSync(`git diff --name-only ${range} -- src/`, {
+        cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'],
+      }).toString().trim();
+      if (out) {
+        for (const line of out.split('\n')) {
+          if (line.trim()) shifted.add(toModule(line.trim()));
+        }
+      }
+      if (shifted.size > 0) break;
+    } catch (_e) { /* git not available or range invalid */ }
   }
   return shifted;
 }
@@ -88,7 +83,7 @@ function main() {
     return;
   }
 
-  const shifted = extractShiftedModules(fingerprint);
+  const shifted = extractShiftedModules();
 
   // Phase 6.1 -- split predictions into clean (prediction made post-hoc,
   // with no proxy injection in the loop) vs injected (prediction surfaced
@@ -186,6 +181,23 @@ function main() {
 
   fs.mkdirSync(path.dirname(ACCURACY_OUT), { recursive: true });
   fs.writeFileSync(ACCURACY_OUT, JSON.stringify(updated, null, 2) + '\n');
+
+  // Feed missed modules back as learning signal: append them to the predictions
+  // log tagged source=missed_prediction so future reconcile rounds can track
+  // whether the cascade model learns to predict these over time.
+  if (missed.length > 0) {
+    try {
+      const missedRecord = JSON.stringify({
+        ts: new Date().toISOString(),
+        target_module: '_missed_feedback',
+        affected_modules: missed,
+        affected_count: missed.length,
+        injected: false,
+        source: 'missed_prediction',
+      });
+      fs.appendFileSync(PREDICTIONS, missedRecord + '\n');
+    } catch (_e) { /* best-effort */ }
+  }
 
   // Truncate predictions log so the next round starts fresh. Keep the last
   // 200 lines as trailing history for debugging.
