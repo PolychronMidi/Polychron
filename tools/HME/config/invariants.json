@@ -1031,9 +1031,9 @@
     },
     {
       "id": "file-written-has-source-majority",
-      "description": "At least 50% of file_written events in the last 2000 should carry the 'source' field. If fewer, either the watcher (which emits source=fs_watcher) or the pipeline (source=pipeline_script) has regressed — and the require_fields filter on file-written-module-sane is silently passing because it filters out most events, not because violations are absent.",
+      "description": "At least 80% of RECENT file_written events (last 24h) should carry the 'source' field. If fewer, either the watcher (source=fs_watcher) or the pipeline (source=pipeline_script) has regressed recently — the require_fields filter on file-written-module-sane would silently pass by filtering most events instead of catching violations. Time-windowed (not event-windowed) because legacy events from before the source field was added shouldn't count.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os, collections; p='metrics/hme-activity.jsonl'; lines=open(p).readlines() if os.path.isfile(p) else []; evs=[json.loads(l) for l in lines[-2000:] if l.strip()]; fws=[e for e in evs if e.get('event')=='file_written']; with_src=sum(1 for e in fws if e.get('source')); total=len(fws); print(f'file_written with source field: {with_src}/{total} ({100*with_src//max(total,1)}%) — below 50% threshold') if total>=20 and with_src < total//2 else None\"",
+      "shell": "python3 -c \"import json, os, time; p='metrics/hme-activity.jsonl'; lines=open(p).readlines() if os.path.isfile(p) else []; cutoff=time.time()-86400; fws=[json.loads(l) for l in lines[-2000:] if l.strip() and json.loads(l).get('event')=='file_written' and json.loads(l).get('ts',0)>=cutoff]; with_src=sum(1 for e in fws if e.get('source')); total=len(fws); print(f'recent file_written with source: {with_src}/{total} ({100*with_src//max(total,1)}%) — below 80% threshold') if total>=10 and 100*with_src/max(total,1) < 80 else None\"",
       "severity": "warning"
     },
     {
