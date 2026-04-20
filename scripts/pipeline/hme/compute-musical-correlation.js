@@ -127,6 +127,13 @@ function main() {
   const fingerprint = loadJson(FINGERPRINT);
   const perceptual  = loadJson(PERCEPTUAL);
   const prev        = loadJson(OUT);
+  const traceSummary = loadJson(path.join(ROOT, 'metrics', 'trace-summary.json'));
+  const _axisAdj = (axis) => {
+    const v = traceSummary && traceSummary.axisEnergyEquilibrator
+      && traceSummary.axisEnergyEquilibrator.perAxisAdj
+      && traceSummary.axisEnergyEquilibrator.perAxisAdj[axis];
+    return typeof v === 'number' ? v : null;
+  };
 
   const hmeCoherence = coherence && typeof coherence.score === 'number' ? coherence.score : null;
   const hmeAccuracy  = accuracy && typeof accuracy.ema === 'number' ? accuracy.ema : null;
@@ -243,6 +250,13 @@ function main() {
     encodec_entropy_avg: percSignals.encodec_entropy_avg,
     hci: currentHci,
     hci_delta: hciDelta,
+    // Per-axis adjustment totals: enables correlating "how much does each axis
+    // need re-balancing" against "does HME self-assess well" and "is the music
+    // actually good." High trust_adj_count correlated with low verdict_numeric
+    // would mean the trust floor is firing most when music degrades.
+    trust_adj_count: _axisAdj('trust'),
+    tension_adj_count: _axisAdj('tension'),
+    entropy_adj_count: _axisAdj('entropy'),
   };
 
   // Append to history
@@ -288,6 +302,13 @@ function main() {
     ['hme_prediction_accuracy', 'verdict_numeric'],
     ['hme_prediction_accuracy', 'perceptual_complexity_avg'],
     ['hme_prediction_accuracy', 'clap_tension'],
+    // Per-axis adjustment counts vs outcome: reveal whether high adjustment
+    // volume correlates with better or worse music (negative = overrides fire
+    // most when composition struggles = system is reactive as designed).
+    ['trust_adj_count', 'verdict_numeric'],
+    ['tension_adj_count', 'verdict_numeric'],
+    ['trust_adj_count', 'hci_delta'],
+    ['tension_adj_count', 'hci_delta'],
   ];
   for (const [xk, yk] of targets) {
     const { xs: xv, ys: yv, n } = aligned(xk, yk);

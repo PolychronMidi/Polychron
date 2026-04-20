@@ -1030,6 +1030,13 @@
       "severity": "warning"
     },
     {
+      "id": "file-written-has-source-majority",
+      "description": "At least 50% of file_written events in the last 2000 should carry the 'source' field. If fewer, either the watcher (which emits source=fs_watcher) or the pipeline (source=pipeline_script) has regressed — and the require_fields filter on file-written-module-sane is silently passing because it filters out most events, not because violations are absent.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os, collections; p='metrics/hme-activity.jsonl'; lines=open(p).readlines() if os.path.isfile(p) else []; evs=[json.loads(l) for l in lines[-2000:] if l.strip()]; fws=[e for e in evs if e.get('event')=='file_written']; with_src=sum(1 for e in fws if e.get('source')); total=len(fws); print(f'file_written with source field: {with_src}/{total} ({100*with_src//max(total,1)}%) — below 50% threshold') if total>=20 and with_src < total//2 else None\"",
+      "severity": "warning"
+    },
+    {
       "id": "prediction-recall-nontrivial",
       "description": "Once the predictor has processed 3+ rounds with >=1 shifted module each, recall should be >= 0.5 (predicted modules catch at least half of actual shifts). Low recall means the cascade model isn't seeing the dependency structure; low precision is acceptable (overprediction tolerable) but low recall is a structural blind spot.",
       "type": "metric_threshold",
@@ -1043,10 +1050,10 @@
     },
     {
       "id": "legacy-override-chronically-zero",
-      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at warning-level so the signal surfaces without blocking; actual removal is a separate decision.",
+      "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds — by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) → warn (3 rounds) → error (5 rounds). entropy-cap-0.19 was the first retirement via this pattern (R13).",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds: '+i for i in zero))\"",
-      "severity": "warning"
+      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
+      "severity": "error"
     },
     {
       "id": "hypermeta-legacy-overrides-covered",
