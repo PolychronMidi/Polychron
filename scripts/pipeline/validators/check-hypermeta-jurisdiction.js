@@ -55,30 +55,11 @@ const LEGACY_OVERRIDES = [
   // composition. The generic AXIS_OVERSHOOT handler at 0.22 covers the rare
   // case if entropy ever spikes. If entropy domination returns, investigate
   // WHY the generic handler is insufficient -- do not re-add this override.
-  {
-    id: 'phase-trust-seesaw',
-    axis: 'phase+trust',
-    type: 'coordinated-cap',
-    threshold: 0.08,
-    rationale: 'Coordination layer with no generic equivalent. Suppresses trust when phase is starved (<0.08). May conflict with phaseFloorController (#14) and trustStarvationAutoNourishment (#5). Evaluate for refactoring into a cross-axis controller.',
-    pattern: /phaseSmoothed\s*<\s*0\.08/
-  },
-  {
-    id: 'phase-trust-seesaw-graduated-0.04',
-    axis: 'phase',
-    type: 'floor',
-    threshold: 0.04,
-    rationale: 'Sub-threshold within phase-trust seesaw graduated response. Moderate phase collapse triggers 1.05x trust threshold and 1.9x cap strength.',
-    pattern: /phaseSmoothed\s*<\s*0\.04/
-  },
-  {
-    id: 'phase-trust-seesaw-graduated-0.02',
-    axis: 'phase',
-    type: 'floor',
-    threshold: 0.02,
-    rationale: 'Sub-threshold within phase-trust seesaw graduated response. Deep phase collapse triggers 1.20x trust threshold and 2.4x cap strength.',
-    pattern: /phaseSmoothed\s*<\s*0\.02/
-  },
+  // phase-trust-seesaw + graduated 0.02/0.04 REMOVED in R15 after 5 rounds of
+  // 0 fires + 0 entries. Phase never dropped below 0.08 under current composition.
+  // phaseFloorController (#14) handles phase recovery; trustStarvationAutoNourishment
+  // (#5) handles trust recovery. The legacy-override-chronically-zero invariant
+  // fired at error severity after 5 zero rounds, triggering retirement.
   {
     id: 'trust-floor-0.14',
     axis: 'trust',

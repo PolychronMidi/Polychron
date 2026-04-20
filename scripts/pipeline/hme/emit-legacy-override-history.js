@@ -62,6 +62,24 @@ function main() {
     .join(' ');
   console.log(`emit-legacy-override-history: ${summary}`);
 
+  // #7: axis_rebalance_cost — total adjustments per 100 beats across all axes.
+  // Trend signal: rising cost = system working harder to stay balanced.
+  const totalAdj = Object.values(aee.perAxisAdj || {})
+    .reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0);
+  const cost = aee.beatCount > 0 ? (totalAdj / aee.beatCount) * 100 : 0;
+  try {
+    const { spawn } = require('child_process');
+    spawn('python3', [
+      path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
+      '--event=axis_rebalance_cost',
+      `--total_adjustments=${totalAdj}`,
+      `--beats=${aee.beatCount}`,
+      `--cost_per_100_beats=${cost.toFixed(2)}`,
+      '--session=pipeline',
+    ], { stdio: 'ignore', detached: true, cwd: ROOT,
+         env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }) }).unref();
+  } catch (_e) { /* best-effort */ }
+
   // axis-share-deviation: emit activity event when any axis share stays more
   // than 20% from FAIR_SHARE (1/6 = 0.1667). Silent when balanced.
   const FAIR_SHARE = 1 / 6;
@@ -78,16 +96,61 @@ function main() {
   }
   if (deviations.length > 0) {
     const { spawn } = require('child_process');
+    // R15: Flatten deviation details into per-axis CLI args so emit.py produces
+    // a queryable activity event with discrete fields (not a JSON string blob).
+    const args = [
+      path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
+      '--event=axis_share_deviation',
+      `--count=${deviations.length}`,
+      `--max_abs_delta_pct=${Math.max(...deviations.map((d) => Math.abs(d.delta_pct))).toFixed(3)}`,
+      '--session=pipeline',
+    ];
+    deviations.slice(0, 6).forEach((d, i) => {
+      args.push(`--axis${i}=${d.axis}`);
+      args.push(`--share${i}=${d.share}`);
+      args.push(`--delta_pct${i}=${d.delta_pct}`);
+    });
     try {
-      spawn('python3', [
-        path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
-        '--event=axis_share_deviation',
-        `--count=${deviations.length}`,
-        `--summary=${JSON.stringify(deviations).slice(0, 200)}`,
-        '--session=pipeline',
-      ], { stdio: 'ignore', detached: true, cwd: ROOT,
+      spawn('python3', args, { stdio: 'ignore', detached: true, cwd: ROOT,
            env: Object.assign({}, process.env, { PROJECT_ROOT: ROOT }) }).unref();
     } catch (_e) { /* best-effort */ }
+
+    // R15 #10: Wire sustained deviations (3+ consecutive rounds) to the
+    // hci-regression-alert so i/status surfaces composition-health drift
+    // even when HCI itself is stable.
+    try {
+      const histPath = path.join(ROOT, 'metrics', 'legacy-override-history.jsonl');
+      const lines = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean);
+      const recent = lines.slice(-3).map((l) => {
+        try { return JSON.parse(l); } catch (_e) { return null; }
+      }).filter(Boolean);
+      if (recent.length >= 3) {
+        const stuck = new Set();
+        const FS = 1 / 6;
+        for (const r of recent) {
+          for (const [ax, sh] of Object.entries(r.smoothed_shares || {})) {
+            if (typeof sh === 'number' && Math.abs(sh - FS) / FS > DEVIATION_FRAC) stuck.add(ax);
+          }
+        }
+        // Keep only axes that deviate in ALL 3 recent rounds
+        const persistent = [...stuck].filter((ax) =>
+          recent.every((r) => {
+            const sh = (r.smoothed_shares || {})[ax];
+            return typeof sh === 'number' && Math.abs(sh - FS) / FS > DEVIATION_FRAC;
+          })
+        );
+        if (persistent.length > 0) {
+          const alertPath = path.join(ROOT, 'metrics', 'hci-regression-alert.json');
+          fs.writeFileSync(alertPath, JSON.stringify({
+            ts: new Date().toISOString(),
+            kind: 'axis_share_persistent_deviation',
+            axes: persistent,
+            rounds: recent.length,
+            action: `Axes ${persistent.join(', ')} have been >20% off FAIR_SHARE for ${recent.length} consecutive rounds. Investigate controller tuning.`,
+          }, null, 2) + '\n');
+        }
+      }
+    } catch (_deve) { /* best-effort */ }
   }
 }
 
