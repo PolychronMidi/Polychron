@@ -199,6 +199,32 @@ def status(mode: str = "all") -> str:
     # mode == "all" — unified overview
     parts = []
 
+    # Arc IV: Meta-measurement efficacy summary. Surfaces which invariants
+    # earn their place (cited in commits) vs which are decorative/flappy.
+    # Sits above consensus because it affects how we INTERPRET the consensus
+    # (low invariant efficacy = invariants voter is less trustworthy).
+    try:
+        import json as _json_eff
+        _eff_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-invariant-efficacy.json")
+        if os.path.isfile(_eff_path):
+            with open(_eff_path) as _ef:
+                _eff = _json_eff.load(_ef)
+            _cc = _eff.get("class_counts", {})
+            _total = _eff.get("total_invariants", 0)
+            _cands = _eff.get("retirement_candidates", [])
+            _top = _eff.get("top_load_bearing", [])[:3]
+            parts.append(
+                f"## Invariant Efficacy\n"
+                f"  total={_total} load-bearing={_cc.get('load-bearing', 0)} "
+                f"historical={_cc.get('load-bearing-historical', 0)} "
+                f"decorative={_cc.get('decorative', 0)} flappy={_cc.get('flappy', 0)}\n"
+                + (f"  retirement_candidates: {', '.join(_cands)}\n" if _cands else "")
+                + (f"  top cites: " + ", ".join(
+                    f"{e['id']}({e['commits_citing']})" for e in _top) if _top else "")
+            )
+    except Exception as _eff_err:
+        logger.debug(f'silent-except status_unified efficacy: {type(_eff_err).__name__}: {_eff_err}')
+
     # Arc I: Cross-substrate consensus — surface at the TOP (above retirement,
     # above HCI alert) since divergence is the most actionable hidden signal.
     try:

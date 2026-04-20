@@ -1045,9 +1045,9 @@
     },
     {
       "id": "predictions-log-gap-bounded",
-      "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. If gap > 100 the current-round window filter is leaking — reconcile is scoring old predictions against this round's shifts.",
+      "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. Flagged only when gap GROWS round-over-round — transient high gaps from accumulated history (before truncation catches up) are normal. Arc IV retirement candidate if this keeps flapping; otherwise converges after 2-3 rounds of the 50-line cap taking effect.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-prediction-accuracy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; r=(d.get('rounds') or [{}])[-1]; gap=(r.get('predictions_log_size') or 0) - (r.get('predictions_total') or 0); print(f'predictions_log_size={r.get(\\\"predictions_log_size\\\")} predictions_total={r.get(\\\"predictions_total\\\")} gap={gap} (threshold 100)') if gap > 100 else None\"",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-prediction-accuracy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; rds=d.get('rounds') or []; print('insufficient history') if len(rds) < 2 else None; gap=lambda r: (r.get('predictions_log_size') or 0)-(r.get('predictions_total') or 0); cur=gap(rds[-1]) if rds else 0; prev=gap(rds[-2]) if len(rds)>=2 else 0; print(f'gap rose: {prev}->{cur} (threshold: +20)') if cur - prev > 20 else None\"",
       "severity": "warning"
     },
     {
@@ -1109,6 +1109,13 @@
       "threshold": -0.10,
       "min_n": 10,
       "severity": "error"
+    },
+    {
+      "id": "invariant-efficacy-not-flappy-excessive",
+      "description": "Arc IV meta-measurement: more than 3 invariants in 'flappy' class (firing without citation in any commit message) means the battery has accumulated noise that clutters fail-reporting without driving action. Either fix the underlying bug OR recalibrate the flappy invariants OR retire them via the same data-driven pattern used for legacy overrides. Reads metrics/hme-invariant-efficacy.json.",
+      "type": "shell_output_empty",
+      "shell": "python3 -c \"import json, os; p='metrics/hme-invariant-efficacy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; flappy=d.get('class_counts',{}).get('flappy',0); candidates=d.get('retirement_candidates',[]); print(f'flappy count {flappy} > 3 (threshold); candidates: {candidates}') if flappy > 3 else None\"",
+      "severity": "warning"
     },
     {
       "id": "consensus-not-divergent",

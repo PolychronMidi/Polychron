@@ -77,6 +77,7 @@ const POST_COMPOSITION = [
   { label: 'compute-evolution-priority',   cmd: 'node scripts/pipeline/hme/compute-evolution-priority.js' },
   { label: 'emit-legacy-override-history', cmd: 'node scripts/pipeline/hme/emit-legacy-override-history.js' },
   { label: 'compute-consensus',            cmd: 'node scripts/pipeline/hme/compute-consensus.js' },
+  { label: 'compute-invariant-efficacy',   cmd: 'python3 scripts/pipeline/hme/compute-invariant-efficacy.py' },
   { label: 'antagonism-registry-auto-append', cmd: 'python3 scripts/check-antagonism-registry.py --auto-append' },
   { label: 'compact-lance-tables',          cmd: 'python3 scripts/compact-lance-tables.py' },
   { label: 'archive-activity',             cmd: 'python3 scripts/pipeline/hme/archive-activity.py' },
