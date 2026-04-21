@@ -142,17 +142,9 @@ def _capture_state() -> dict:
     return state
 
 
-def _flatten(state: dict) -> dict[str, float]:
-    """Extract all numeric leaf fields for envelope computation."""
-    flat: dict[str, float] = {}
-    for k, v in state.items():
-        if isinstance(v, (int, float)):
-            flat[k] = float(v)
-        elif isinstance(v, dict):
-            for sk, sv in v.items():
-                if isinstance(sv, (int, float)):
-                    flat[f"{k}.{sk}"] = float(sv)
-    return flat
+# R31: envelope math extracted to drift_envelope helper module.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from drift_envelope import flatten as _flatten, compute_envelope as _compute_envelope, compute_drift as _compute_drift  # noqa: E402
 
 
 def _load_snapshots() -> list[dict]:
@@ -169,85 +161,6 @@ def _load_snapshots() -> list[dict]:
             except Exception:
                 continue
     return out
-
-
-def _compute_envelope(snaps: list[dict]) -> dict[str, dict]:
-    """Per-field envelope from historical snapshots.
-
-    R24 #2 + R25 #4 + R29: exponential weighting. Decay history:
-      0.9 — too slow (R25 density drift 2.61→2.98 instead of shrinking)
-      0.7 — too fast (R28 density flipped sign +2.98→−2.80 = envelope oscillation)
-      0.85 — stable middle. newest=1.0, 3-old=0.61, 5-old=0.44.
-    Regime shifts absorbed in ~4 rounds; single-round noise doesn't flip
-    envelope center-of-mass. The R28 sign-flip taught this coefficient: too
-    fast an envelope becomes volatile, too slow and it can't track real shifts.
-
-    Weighted median via cumulative-weight lookup; weighted stdev via
-    Σ(w·(x-μ)²) / Σw where μ is the weighted mean.
-    """
-    if not snaps:
-        return {}
-    # Index snaps so most-recent (index len-1) gets smallest age
-    n = len(snaps)
-    by_field: dict[str, list[tuple[float, float]]] = {}
-    for i, s in enumerate(snaps):
-        age = (n - 1) - i  # 0 = newest
-        w = 0.85 ** age
-        for k, v in _flatten(s).items():
-            by_field.setdefault(k, []).append((v, w))
-    env: dict[str, dict] = {}
-    for k, pairs in by_field.items():
-        if len(pairs) < 2:
-            continue
-        total_w = sum(w for _, w in pairs)
-        if total_w <= 0:
-            continue
-        w_mean = sum(v * w for v, w in pairs) / total_w
-        # Weighted median: sort by value, cumulate weight, pick middle.
-        sorted_pairs = sorted(pairs, key=lambda p: p[0])
-        cum = 0.0
-        half = total_w / 2.0
-        w_median = sorted_pairs[-1][0]
-        for v, w in sorted_pairs:
-            cum += w
-            if cum >= half:
-                w_median = v
-                break
-        w_var = sum(w * (v - w_mean) ** 2 for v, w in pairs) / total_w
-        sd = math.sqrt(w_var)
-        env[k] = {"median": w_median, "stdev": sd, "n": len(pairs),
-                  "effective_n": round(total_w, 2)}
-    return env
-
-
-def _compute_drift(current_flat: dict[str, float], envelope: dict[str, dict]
-                   ) -> tuple[float, list[dict]]:
-    """Mean |z-score| across fields with variance, plus per-field outliers."""
-    # R27: floor for meaningful stdev. Weighted envelope with strong decay (0.7)
-    # can produce vanishing stdev when recent snapshots cluster tight (e.g. HCI
-    # = 97, 97, 97, 98 → weighted stdev ~1e-14). Dividing by that yields NaN-
-    # grade z-scores that blow up the drift total. Skip any field whose stdev
-    # is below a sanity floor — we can't compute meaningful z there.
-    STDEV_FLOOR = 1e-4
-    z_scores = []
-    outliers = []
-    for k, v in current_flat.items():
-        e = envelope.get(k)
-        if not e or e["stdev"] < STDEV_FLOOR:
-            continue
-        z = (v - e["median"]) / e["stdev"]
-        z_scores.append(abs(z))
-        if abs(z) >= 2.0:
-            outliers.append({
-                "field": k,
-                "current": round(v, 4),
-                "median": round(e["median"], 4),
-                "stdev": round(e["stdev"], 4),
-                "z_score": round(z, 2),
-            })
-    outliers.sort(key=lambda o: -abs(o["z_score"]))
-    drift = sum(z_scores) / len(z_scores) if z_scores else 0.0
-    return (drift, outliers)
 
 
 def main() -> int:

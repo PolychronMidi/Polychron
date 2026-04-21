@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-# i/freeze — see scripts/hme/ for implementation
+# i/freeze [query] — show arc-freeze marker; optionally check query against forbidden list.
 python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" freeze "$@" &
 exec python3 "$(dirname "$0")/../scripts/hme/freeze-check.py" "$@"

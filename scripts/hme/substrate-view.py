@@ -20,33 +20,7 @@ import json
 import os
 import sys
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-
-def _load(p):
-    full = os.path.join(PROJECT_ROOT, p)
-    if not os.path.isfile(full):
-        return None
-    try:
-        with open(full, encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return None
-
-
-def _load_jsonl_tail(p, n=5):
-    full = os.path.join(PROJECT_ROOT, p)
-    if not os.path.isfile(full):
-        return []
-    with open(full, encoding="utf-8") as f:
-        lines = [l.strip() for l in f if l.strip()]
-    out = []
-    for l in lines[-n:]:
-        try:
-            out.append(json.loads(l))
-        except Exception:
-            continue
-    return out
+from _common import PROJECT_ROOT, load_json as _load, load_jsonl_tail as _load_jsonl_tail
 
 
 def brief():

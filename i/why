@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-# i/why — see scripts/hme/ for implementation
+# i/why <invariant-id> — explain an invariant: class, streak, citations, recent commits.
 python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" why "$@" &
 exec python3 "$(dirname "$0")/../scripts/hme/why-invariant.py" "$@"

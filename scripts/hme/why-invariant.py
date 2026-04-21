@@ -5,23 +5,10 @@ Reads: hme-invariant-history.json (current state, streak), hme-invariant-efficac
 (class + citation count + role), and git log for recent commit references.
 """
 from __future__ import annotations
-import json
-import os
 import subprocess
 import sys
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-
-
-def _load(p):
-    full = os.path.join(PROJECT_ROOT, p)
-    if not os.path.isfile(full):
-        return None
-    try:
-        with open(full) as f:
-            return json.load(f)
-    except Exception:
-        return None
+from _common import PROJECT_ROOT, load_json as _load
 
 
 def main(argv):
