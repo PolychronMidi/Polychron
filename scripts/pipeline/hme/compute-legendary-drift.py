@@ -223,11 +223,17 @@ def _compute_envelope(snaps: list[dict]) -> dict[str, dict]:
 def _compute_drift(current_flat: dict[str, float], envelope: dict[str, dict]
                    ) -> tuple[float, list[dict]]:
     """Mean |z-score| across fields with variance, plus per-field outliers."""
+    # R27: floor for meaningful stdev. Weighted envelope with strong decay (0.7)
+    # can produce vanishing stdev when recent snapshots cluster tight (e.g. HCI
+    # = 97, 97, 97, 98 → weighted stdev ~1e-14). Dividing by that yields NaN-
+    # grade z-scores that blow up the drift total. Skip any field whose stdev
+    # is below a sanity floor — we can't compute meaningful z there.
+    STDEV_FLOOR = 1e-4
     z_scores = []
     outliers = []
     for k, v in current_flat.items():
         e = envelope.get(k)
-        if not e or e["stdev"] == 0:
+        if not e or e["stdev"] < STDEV_FLOOR:
             continue
         z = (v - e["median"]) / e["stdev"]
         z_scores.append(abs(z))
