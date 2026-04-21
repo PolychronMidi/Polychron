@@ -1,0 +1,20 @@
+{
+  "frozen_at": "2026-04-20",
+  "frozen_in": "R29",
+  "thaw_after_runs": 5,
+  "reason": "R18-R28 built the four-arc framework + 7 emergent behaviors. R26-R28 showed every structural change since R25 has been about the measurement substrate itself — composition code untouched, HCI stable at 97-98, listening verdict legendary throughout. Further arc additions are diminishing-returns substrate-navel-gazing until composition changes create real signal. Freeze: no new voters, no new patterns, no new invariants for the next 5 pipeline runs. ONLY bug fixes and retirements of existing measurements. The framework is complete; further investment earns nothing until the composition itself gives the arcs something to measure.",
+  "allowed": [
+    "bug fixes in existing arc code",
+    "retirement of decorative/flappy invariants",
+    "decay coefficient tuning",
+    "documentation of meta-learnings"
+  ],
+  "forbidden": [
+    "new voters in compute-consensus.js",
+    "new patterns in tools/HME/patterns/",
+    "new invariants in tools/HME/config/invariants.json",
+    "new arc scripts in scripts/pipeline/hme/",
+    "extending Arc III's snapshot state fields"
+  ],
+  "thaw_condition": "run_count >= frozen_run_count + thaw_after_runs OR listening verdict changes to non-legendary OR HCI drops below 95 for 2+ consecutive rounds"
+}
