@@ -89,7 +89,10 @@ def _detect_observation_gap() -> str | None:
         return "no prior heartbeat (first run or file lost)"
     age = time.time() - hb.get("ts", 0)
     old_pid = hb.get("pid", 0)
-    if age > _HEARTBEAT_INTERVAL * 3:
+    # R31 #6: raised from 3x (90s) to 10x (300s = 5min). Normal idle periods
+    # between sessions trip 3x repeatedly (131s, 153s, 247s gaps all benign).
+    # 5min catches real downtime without the 455-entry log noise observed.
+    if age > _HEARTBEAT_INTERVAL * 10:
         return f"{age:.0f}s since last heartbeat (pid {old_pid}) — meta-observer was down"
     return None
 

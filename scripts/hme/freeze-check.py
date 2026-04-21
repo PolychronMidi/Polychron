@@ -5,7 +5,8 @@ import json
 import os
 import sys
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+from _common import PROJECT_ROOT
+
 FREEZE = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "arc-freeze.json")
 
 

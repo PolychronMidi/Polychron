@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# i/help — list all i/ tools with one-line descriptions.
+# Generated from each tool's header comment (line 2).
+cd "$(dirname "$0")"
+printf "HME tool surface (i/):\n\n"
+for tool in $(ls | grep -v '^help$' | sort); do
+  # Extract the first non-shebang comment line from each tool
+  desc=$(head -3 "$tool" 2>/dev/null | grep -m1 '^# ' | sed 's/^# *//')
+  printf "  %-12s  %s\n" "i/$tool" "$desc"
+done
+printf "\nCommon modes:\n"
+printf "  i/substrate [mode=brief|detail|actions|drift|consensus|efficacy|patterns|diff]\n"
+printf "  i/pattern [list|matched|<id>]\n"
+printf "  i/why <invariant-id>\n"
+printf "  i/freeze [query-string-to-check-against-forbidden-list]\n"
+printf "  i/hme-read target=<path|module|function>\n"
+printf "  i/status mode=<any-of-35>  # legacy status_unified modes\n"
+printf "  i/review mode=forget        # post-edit review\n"
+printf "\nSee doc/HME.md for full reference.\n"
