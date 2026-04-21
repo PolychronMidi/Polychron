@@ -232,7 +232,7 @@ function main() {
   else if (sd > DIVERGENCE_THRESHOLD / 2) divergenceLevel = 'moderate';
 
   // R29 #4: composition_reality_overrides_substrate_divergence.
-  // When the EXTERNAL ground truth (listening verdict = legendary) + HCI ≥ 95
+  // When the EXTERNAL ground truth (listening verdict = legendary) + HCI >= 95
   // for 3+ consecutive rounds, internal substrate divergence is STRUCTURALLY
   // INTERESTING but practically irrelevant. The substrate's disagreements
   // about HOW composition is healthy don't override the USER saying it IS
