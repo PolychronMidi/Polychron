@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 # HME evolve — evolution suggestion + planning.
-# Usage: i/evolve [focus=all|design|invariants|coupling|...] [query=<topic>]
+# Usage:
+#   i/evolve                         # harvester-driven next actions (data-first)
+#   i/evolve focus=design            # legacy LLM-planning path
+#   i/evolve focus=invariants        # legacy invariant-battery path
+#
+# R30 #5: with no focus arg, route through the harvester output
+# (metrics/hme-next-actions.json) — the data-driven action queue produced by
+# the four-arc framework. Skips LLM roundtrip when substrate has a clear
+# prescription. Falls through to LLM-planning when focus= is given.
+if [ $# -eq 0 ]; then
+  exec python3 "$(dirname "$0")/../scripts/hme/substrate-view.py" actions
+fi
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
 exec node "$_HME_CLI" evolve "$@"

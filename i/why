@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# i/why — see scripts/hme/ for implementation
+python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" why "$@" &
+exec python3 "$(dirname "$0")/../scripts/hme/why-invariant.py" "$@"

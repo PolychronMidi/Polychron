@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# i/substrate — unified four-arc view.
+# Rolls in what compute-consensus/compute-legendary-drift/propose-next-actions/
+# auto-investigate produce. One call replaces 20-line Python inlines.
+#
+# Modes:
+#   i/substrate                  # brief headline
+#   i/substrate detail           # full four-arc dump
+#   i/substrate actions          # harvester queue with steps
+#   i/substrate drift            # Arc III outliers
+#   i/substrate consensus        # Arc I voter state
+#   i/substrate efficacy         # Arc IV classes
+#   i/substrate patterns         # Arc II matched patterns
+#   i/substrate diff             # delta vs previous round
+_SCRIPT="$(dirname "$0")/../scripts/hme/substrate-view.py"
+[ -f "$_SCRIPT" ] || { echo "i/: scripts/hme/substrate-view.py missing" >&2; exit 1; }
+python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" substrate "$@" &
+exec python3 "$_SCRIPT" "$@"
