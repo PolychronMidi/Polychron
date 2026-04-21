@@ -231,6 +231,33 @@ function main() {
   if (sd > DIVERGENCE_THRESHOLD) divergenceLevel = 'high';
   else if (sd > DIVERGENCE_THRESHOLD / 2) divergenceLevel = 'moderate';
 
+  // R29 #4: composition_reality_overrides_substrate_divergence.
+  // When the EXTERNAL ground truth (listening verdict = legendary) + HCI ≥ 95
+  // for 3+ consecutive rounds, internal substrate divergence is STRUCTURALLY
+  // INTERESTING but practically irrelevant. The substrate's disagreements
+  // about HOW composition is healthy don't override the USER saying it IS
+  // healthy. Override divergence level to "low" in this case; keep the raw
+  // stdev + outliers so investigation still surfaces the signal.
+  let overrideApplied = false;
+  try {
+    const gtPath = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');
+    const sumPath = path.join(ROOT, 'metrics', 'pipeline-summary.json');
+    if (fs.existsSync(gtPath) && fs.existsSync(sumPath)) {
+      const gtLines = fs.readFileSync(gtPath, 'utf8').split('\n').filter(Boolean);
+      const recentGt = gtLines.slice(-3).map((l) => {
+        try { return JSON.parse(l); } catch (_e) { return null; }
+      }).filter(Boolean);
+      const allLegendary = recentGt.length >= 3 && recentGt.every((g) =>
+        (g.tags || []).map((t) => String(t).toLowerCase()).includes('legendary'));
+      const summary = JSON.parse(fs.readFileSync(sumPath, 'utf8'));
+      const hciOk = typeof summary.hci === 'number' && summary.hci >= 95;
+      if (allLegendary && hciOk && divergenceLevel !== 'low') {
+        overrideApplied = true;
+        divergenceLevel = 'low_override_by_reality';
+      }
+    }
+  } catch (_ore) { /* best-effort */ }
+
   let sha = null;
   try {
     sha = execSync('git rev-parse --short HEAD', {
@@ -247,6 +274,7 @@ function main() {
     mean: Number(m.toFixed(3)),
     stdev: Number(sd.toFixed(3)),
     divergence: divergenceLevel,
+    divergence_override_applied: overrideApplied,
     outliers: outliers,
     voter_trajectories: voterTrajectories,
   };

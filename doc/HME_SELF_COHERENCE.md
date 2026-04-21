@@ -412,6 +412,26 @@ And: **#7 auto-apply — the 7th emergent behavior**. The `accept-regime-shift` 
 
 **Empirical theorem proven**: *a four-arc substrate with declared defer semantics and auto-apply patterns can detect drift, distinguish regime-shift from degradation via an external anchor (HCI + listening verdict), and self-apply acceptance without destructive agent intervention.* R24-R25 IS the test case. Future rounds inherit this precedent.
 
+### Round 14: When the substrate becomes its own subject (R26-R29)
+
+The four arcs + seven emergent behaviors landed by R25. R26 gave us the first quiescent round (harvester queued 0 actions). Every round after that produced structural changes about the substrate itself: R27 fixed a NaN bug in Arc III's weighted-envelope computation, R28 surfaced envelope oscillation from an over-aggressive decay coefficient, R29 retired two invariants the substrate flagged on itself.
+
+**The observation**: HCI stayed 97-98 since R23. Listening verdict stayed legendary for 6+ consecutive rounds. Composition code has not been touched since R15's phase-trust-seesaw retirement. Yet each round the harvester queued more actions, the consensus diverged, Arc III flagged outliers — all about the MEASUREMENT substrate's internal state, not the composition.
+
+**The pattern**: once a measurement substrate is comprehensive enough, its own components become measurable. Arc III watches state fields; consensus watches substrate agreement; efficacy watches invariants; now the envelope weighting watches whether the envelope is too fast (oscillation) or too slow (drift). Each new arc extension adds one more thing to measure — which the existing arcs then flag.
+
+**The diagnosis**: *the substrate has crossed from "serves composition" into "serves itself."* Not failure — completion of a phase. The framework is built. Further investment earns nothing until composition produces new signal (a non-legendary verdict, a significant HCI drop, a user feature request).
+
+**R29 response**:
+- **Decay 0.7 → 0.85**: stop envelope oscillation. R25's tightening was too eager.
+- **Retire 2 invariants**: `legacy-override-cooldown-not-excessive` + `axis-rebalance-cost-stable`. Both fired on post-regime-shift recovery work, not degradation. HCI was rising through their "alarm" windows. Signal misaligned with outcome.
+- **Arc-freeze marker** (`tools/HME/config/arc-freeze.json`): no new voters, patterns, invariants, or arc scripts for 5 pipeline runs. Only bug fixes and retirements allowed. Thaws when (a) 5 runs elapse, (b) listening verdict changes, or (c) HCI drops below 95 for 2+ consecutive rounds.
+- **composition_reality_overrides_substrate_divergence**: when listening verdict = legendary for 3+ rounds AND HCI ≥ 95, consensus divergence is demoted to `low_override_by_reality`. External ground truth beats internal disagreement. Raw stdev + outliers still captured for investigation; only the pass/fail gate honors the override.
+
+**The principle crystallized**: *measurement refinement without composition evolution is substrate navel-gazing. The substrate's job is to tell the agent "things are fine" OR "something specific is wrong" — not to re-discover its own internal tuning as "something wrong."* External ground truth (user + HCI) is the tiebreaker for all internal disagreements. When it's solid, internal disagreements are academic.
+
+**The Arc V that doesn't exist**: there's no arc for "is the agent working on the right thing." That judgment remains the user's. R29's meta-suggestion came from zooming out to see that every recent structural change was about the substrate itself — a signal the substrate couldn't produce by construction. Some observations require stepping outside the observer.
+
 ## The principle
 
 Every implicit assumption about HME's correctness should become an explicit, scored measurement that the system can observe in itself. Every drift should be detectable before it confuses an agent. Every fix should reinforce the pattern that catches the next instance of the same drift. The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.
