@@ -8,10 +8,11 @@
 #   i/status mode=<any-of-35> # see status() docstring for full list
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
-# If the caller passed a mode=/bare arg, use it; otherwise default to pipeline
-# (the most common invocation from posttooluse hooks).
+# R30 #6: default output is the brief four-arc view (Arc I-IV headline).
+# Previous default dumped 20+ sections from status_unified mode=pipeline.
+# Full status still available via explicit `i/status mode=<anything>`.
 if [ $# -eq 0 ]; then
-  exec node "$_HME_CLI" status mode=pipeline
+  exec python3 "$(dirname "$0")/../scripts/hme/substrate-view.py" brief
 else
   exec node "$_HME_CLI" status "$@"
 fi

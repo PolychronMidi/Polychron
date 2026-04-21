@@ -133,6 +133,12 @@ if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
+    # R30 #3: auto-fire i/review mode=forget after auto-commits so the agent
+    # gets the substrate-aware review without having to remember to invoke it.
+    # Runs detached; output surfaces via system-reminder on next turn if issues.
+    if [[ -x "$PROJECT_ROOT/i/review" ]]; then
+      (cd "$PROJECT_ROOT" && timeout 30 ./i/review mode=forget > "$PROJECT_ROOT/tmp/hme-review-auto.out" 2>&1 &) >/dev/null 2>&1 || true
+    fi
   fi
 fi
 

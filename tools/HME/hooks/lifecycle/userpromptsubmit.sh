@@ -175,4 +175,35 @@ if [ -f "$REMINDERS_FILE" ]; then
   fi
 fi
 
+# R30 #2: auto-append ground-truth when user message contains
+# "listening verdict: legendary/stable/drifted/broken". Stops manual
+# jsonl appending for every legendary round.
+PROMPT_BODY=$(_safe_jq "$INPUT" '.prompt' '')
+if [[ -n "$PROMPT_BODY" ]]; then
+  VERDICT=""
+  if echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*legendary'; then VERDICT=legendary
+  elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*stable'; then VERDICT=stable
+  elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*drifted'; then VERDICT=drifted
+  elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*broken'; then VERDICT=broken
+  fi
+  if [[ -n "$VERDICT" ]]; then
+    GT_FILE="$PROJECT_ROOT/metrics/hme-ground-truth.jsonl"
+    SHA=$(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo unknown)
+    TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    # Dedupe: skip if the last entry already has this SHA + same verdict
+    LAST_SHA_VERDICT=""
+    if [[ -f "$GT_FILE" ]]; then
+      LAST_SHA_VERDICT=$(tail -1 "$GT_FILE" | python3 -c "
+import sys, json
+try:
+    d = json.loads(sys.stdin.read())
+    print(f\"{d.get('sha')}|{','.join(d.get('tags') or [])}\")
+except Exception: pass" 2>/dev/null || echo "")
+    fi
+    if [[ "$LAST_SHA_VERDICT" != "$SHA|$VERDICT" ]]; then
+      echo "{\"ts\":\"$TS\",\"sha\":\"$SHA\",\"tags\":[\"$VERDICT\"],\"source\":\"userpromptsubmit_auto\",\"note\":\"Auto-captured from user prompt\"}" >> "$GT_FILE"
+    fi
+  fi
+fi
+
 exit 0

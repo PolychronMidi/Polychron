@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# i/pattern — see scripts/hme/ for implementation
+python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" pattern "$@" &
+exec python3 "$(dirname "$0")/../scripts/hme/pattern-registry.py" "$@"
