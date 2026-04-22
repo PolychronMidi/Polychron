@@ -89,14 +89,17 @@ else
   _fail "tools/HME/config/invariants.json does not parse as JSON"
 fi
 
-# Orphan log/tmp/metrics dirs — these must exist only at project root
-ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp -o -name metrics \) \
-  -not -path "./log*" -not -path "./tmp*" -not -path "./metrics*" \
+# log/ and tmp/ must be at project root; metrics/ must be at output/metrics/ only
+ORPHAN_DIRS=$(find . -type d \( -name log -o -name tmp \) \
+  -not -path "./log*" -not -path "./tmp*" \
+  -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null; \
+  find . -type d -name metrics \
+  -not -path "./output/metrics*" \
   -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null)
 if [ -z "$ORPHAN_DIRS" ]; then
-  _ok "no orphan log/tmp/metrics directories outside project root"
+  _ok "no misplaced log/tmp/metrics directories"
 else
-  _fail "orphan log/tmp/metrics dirs found:\n$ORPHAN_DIRS"
+  _fail "misplaced log/tmp/metrics dirs found:\n$ORPHAN_DIRS"
 fi
 
 # HME_RAG_DB_PATH points at tools/HME/KB

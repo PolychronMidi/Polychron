@@ -18,10 +18,16 @@ if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   exit 2
 fi
 
-# Block writes to non-root log/, metrics/, or tmp/ directories
-if echo "$FILE" | grep -qE '/(log|metrics|tmp)/'; then
-  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|metrics|tmp)/'; then
-    _emit_block "BLOCKED: log/, metrics/, and tmp/ only exist at project root. Do not write files inside subdirectory variants (e.g. tools/HME/mcp/metrics/). Route all output through \$PROJECT_ROOT/{log,metrics,tmp}/."
+# Block writes to misplaced log/, metrics/, or tmp/ directories
+if echo "$FILE" | grep -qE '/(log|tmp)/'; then
+  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|tmp)/'; then
+    _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not write files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
+    exit 2
+  fi
+fi
+if echo "$FILE" | grep -qE '/metrics/'; then
+  if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/output/metrics/'; then
+    _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not write files in any other metrics/ directory."
     exit 2
   fi
 fi

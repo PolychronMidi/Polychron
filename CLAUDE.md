@@ -69,7 +69,6 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 
 ## Hard Rules (Never Violate)
 
-- **`log/`, `metrics/`, and `tmp/` exist only at project root.** Never create or reference directories with these names at any other path (e.g. `tools/HME/mcp/metrics/`, `tools/HME/proxy/metrics/`, `src/tmp/`). All runtime output, diagnostics, and scratch files route through the root-level directories exclusively. If a tool or subsystem needs to write logs or metrics, it must use `PROJECT_ROOT/log/`, `PROJECT_ROOT/metrics/`, or `PROJECT_ROOT/tmp/`. Creating subdirectory variants causes permission bleed, git noise, and hook failures.
 - **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. `setBinaural` runs from `grandFinale` post-loop walk ONLY, never from `processBeat`.
 - **Never remove `tmp/run.lock`.** A lock means a run was abandoned without canceling. Do not suggest, attempt, or execute removal. Enforced by PreToolUse hook + deny rule.
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement.

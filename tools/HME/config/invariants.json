@@ -1453,9 +1453,9 @@
     },
     {
       "id": "no-duplicate-output-dirs",
-      "description": "log/, metrics/, and tmp/ exist ONLY at the project root. Any subdirectory with those names is a duplicate that fragments telemetry (see the log-tool-call.sh $CWD-as-PROJECT_ROOT bug that silently spawned 10+ orphan log/ dirs). Writers must use $PROJECT_ROOT from .env; relative paths resolved against $(pwd) are banned in hook/daemon contexts. If a subsystem wants its own logs, route through $PROJECT_ROOT/log/<subsystem>-*.log instead of a sibling directory.",
+      "description": "log/ and tmp/ exist ONLY at the project root; metrics/ exists ONLY at output/metrics/. Any other instance of these directory names is a duplicate that fragments telemetry. Writers must use $PROJECT_ROOT from .env; relative paths resolved against $(pwd) are banned in hook/daemon contexts.",
       "type": "shell_output_empty",
-      "shell": "find . -type d \\( -name log -o -name tmp -o -name metrics \\) -not -path './log' -not -path './tmp' -not -path './metrics' -not -path './node_modules/*' -not -path './.git/*' -not -path './.venv/*' -not -path '*/node_modules/*' 2>/dev/null",
+      "shell": "find . -type d \\( -name log -o -name tmp \\) -not -path './log' -not -path './tmp' -not -path './node_modules/*' -not -path './.git/*' -not -path './.venv/*' -not -path '*/node_modules/*' 2>/dev/null; find . -type d -name metrics -not -path './output/metrics' -not -path './node_modules/*' -not -path './.git/*' -not -path './.venv/*' -not -path '*/node_modules/*' 2>/dev/null",
       "severity": "error"
     },
     {

@@ -1,0 +1,257 @@
+#!/usr/bin/env node
+// lab/run.js - Mad scientist lab runner.
+// Each sketch runs in an isolated temp working directory so lab output
+// never touches rootDir/output/. Safe to run concurrently with npm run main.
+// Usage: node lab/run.js [sketch-name] ...
+// No args = run all sketches.
+
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const sketches = require('./sketches');
+const requested = process.argv.slice(2);
+const toRun = requested.length > 0
+  ? sketches.filter(s => requested.includes(s.name))
+  : sketches;
+
+if (toRun.length === 0) {
+  console.error('No matching sketches. Available:', sketches.map(s => s.name).join(', '));
+  process.exit(1);
+}
+
+const labDir = path.resolve(__dirname);
+const rootDir = path.resolve(__dirname, '..');
+const labOutputDir = path.join(labDir, 'output');
+const SF = path.join(process.env.HOME, 'Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2');
+const INTERP = path.join(rootDir, 'scripts/fluidsynth-init.txt');
+
+fs.mkdirSync(labOutputDir, { recursive: true });
+
+/**
+ * Create a temp working directory with symlinks to everything in rootDir
+ * except output/, which gets its own fresh real directory.
+ * The engine writes to output/ relative to cwd, so this isolates completely.
+ */
+function createIsolatedWorkDir() {
+  const tmpWork = fs.mkdtempSync(path.join(os.tmpdir(), 'polychron-lab-'));
+  for (const entry of fs.readdirSync(rootDir)) {
+    if (entry === 'output') continue;
+    fs.symlinkSync(path.join(rootDir, entry), path.join(tmpWork, entry));
+  }
+  fs.mkdirSync(path.join(tmpWork, 'output'));
+  return tmpWork;
+}
+
+function cleanupWorkDir(tmpWork) {
+  try { fs.rmSync(tmpWork, { recursive: true, force: true }); } catch (_) { /* */ }
+}
+
+const FLUIDSYNTH_OPTS = [
+  '-ni', '-f', INTERP, '-T', 'wav', '-O', 's16',
+  '-r', '22050',
+  '-o', 'synth.sample-rate=22050',
+  '-o', 'synth.polyphony=65535',
+  '-o', 'synth.cpu-cores=20',
+  '-o', 'synth.dynamic-sample-loading=0',
+  '-o', 'synth.overflow.age=10000',
+  '-o', 'synth.overflow.volume=500',
+  '-o', 'synth.overflow.released=-10000',
+  '-o', 'synth.overflow.sustained=-10000',
+  '-o', 'synth.overflow.important=50000',
+  '-o', 'synth.reverb.active=0',
+  '-o', 'synth.chorus.active=0',
+  '-o', 'audio.period-size=1024',
+  '-o', 'audio.periods=4',
+  '-o', 'audio.sample-format=s16'
+].join(' ');
+
+// Validate that every sketch declares patches: []. Fail loudly rather than
+// silently running sketches whose patch surface is unknown.
+const missingPatches = toRun.filter(s => !Array.isArray(s.patches));
+if (missingPatches.length > 0) {
+  console.error(`Lab: ABORT — sketch(es) missing required patches: [] array:`);
+  for (const s of missingPatches) console.error(`  - ${s.name}`);
+  console.error(`Each sketch must declare patches: ['global.method', ...] listing all`);
+  console.error(`globals monkey-patched in postBoot(). Use patches: [] if none.`);
+  process.exit(1);
+}
+
+// Cross-check declared patches: against actual assignment patterns in postBoot.
+// Regex scans the stringified function body for `X.Y = function` and `X = function`
+// assignment patterns; anything not in the declared array is drift. This turns
+// patches: from documentation into a real invariant — you can't patch a global
+// without declaring it.
+// False-positive scenarios accepted: assignments to non-global targets (local
+// variables, closures) would need ESLint-level AST parsing to filter out. For
+// now, we list-compare exact tokens; if a sketch trips a false positive it can
+// add the local-looking name to patches:.
+const _ASSIGN_RE = /(?:^|\n)\s*(?:const\s+\w+\s*=\s*)?([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)?)\s*=\s*function\b/g;
+const patchesDrift = [];
+for (const s of toRun) {
+  if (typeof s.postBoot !== 'function') continue;
+  const body = s.postBoot.toString();
+  const assigned = new Set();
+  let m;
+  while ((m = _ASSIGN_RE.exec(body)) !== null) {
+    const target = m[1];
+    // Skip assignments to obvious locals: single-word lowercase names with no dot
+    // are almost always `const origX = ...` captures, not writes to globals.
+    if (!target.includes('.') && /^(orig|origEmitPick|origApply|origProcess|origOn\w+)$/.test(target)) continue;
+    if (!target.includes('.') && /^[a-z][a-zA-Z0-9]*$/.test(target)) {
+      // Bare `playNotesEmitPick = function` is a write to a global (reassigning
+      // the global, not a const capture). Keep these.
+    }
+    assigned.add(target);
+  }
+  const declared = new Set(s.patches);
+  const undeclared = [...assigned].filter(x => !declared.has(x));
+  if (undeclared.length > 0) {
+    patchesDrift.push({ name: s.name, undeclared });
+  }
+}
+if (patchesDrift.length > 0) {
+  console.error(`Lab: ABORT — sketch(es) patch globals not declared in patches: []:`);
+  for (const { name, undeclared } of patchesDrift) {
+    console.error(`  - ${name}: ${undeclared.join(', ')}`);
+  }
+  console.error(`Add the above to each sketch's patches: array, or refactor to avoid the write.`);
+  process.exit(1);
+}
+
+console.log(`\n  Lab: ${toRun.length} sketch${toRun.length > 1 ? 'es' : ''} queued\n`);
+
+for (const sketch of toRun) {
+  const sketchDir = path.join(labOutputDir, sketch.name);
+  fs.mkdirSync(sketchDir, { recursive: true });
+
+  const tmpWork = createIsolatedWorkDir();
+  const tmpOut = path.join(tmpWork, 'output');
+
+  const runnerFile = path.join(sketchDir, '_runner.js');
+  const overridesJson = JSON.stringify(sketch.overrides || {});
+  const hasPostBoot = typeof sketch.postBoot === 'function';
+  let postBootSrc = 'null';
+  if (hasPostBoot) {
+    const raw = sketch.postBoot.toString();
+    postBootSrc = raw.startsWith('function') ? raw : 'function ' + raw;
+  }
+  const hasMainLoop = typeof sketch.mainLoop === 'function';
+  let mainLoopSrc = 'null';
+  if (hasMainLoop) {
+    const raw = sketch.mainLoop.toString();
+    mainLoopSrc = raw.startsWith('function') ? raw : 'function ' + raw;
+  }
+
+  // Runner chdir's to the temp working dir — output/ writes go there
+  fs.writeFileSync(runnerFile, `
+// Auto-generated lab runner for sketch: ${sketch.name}
+process.chdir(${JSON.stringify(tmpWork)});
+require(${JSON.stringify(path.join(rootDir, 'src/index'))});
+
+// Apply config overrides (reassign frozen globals)
+const _overrides = ${overridesJson};
+for (const [key, val] of Object.entries(_overrides)) {
+  if (typeof global[key] !== 'undefined') {
+    global[key] = typeof val === 'object' ? Object.freeze(val) : val;
+  }
+}
+
+// Post-boot hooks
+const _postBoot = ${postBootSrc};
+if (typeof _postBoot === 'function') _postBoot();
+
+// Custom main loop or stock
+const _mainLoop = ${mainLoopSrc};
+if (typeof _mainLoop === 'function') {
+  Promise.resolve(_mainLoop()).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+} else {
+  main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+}
+`);
+
+  console.log(`  [${'='.repeat(50)}]`);
+  console.log(`  ${sketch.name}`);
+  console.log(`  [${'='.repeat(50)}]`);
+
+  // Generate — runs in isolated tmpWork dir
+  const t0 = Date.now();
+  try {
+    execSync(`node ${runnerFile} --trace`, {
+      cwd: tmpWork,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 600000
+    });
+  } catch (e) {
+    const timedOut = e.killed || (e.signal && e.signal === 'SIGTERM');
+    if (timedOut) {
+      console.error('  FAILED: composition timed out (>180s)\n');
+    } else {
+      const stdout = e.stdout && e.stdout.length > 0 ? e.stdout.toString() : '';
+      const stderr = e.stderr && e.stderr.length > 0 ? e.stderr.toString() : '';
+      const combined = (stderr + '\n' + stdout).trim();
+      const msg = (combined || e.message || 'unknown error').trim();
+      const tail = msg.split('\n').slice(-25).join('\n');
+      console.error(`  FAILED:\n${tail}\n`);
+    }
+    cleanupWorkDir(tmpWork);
+    continue;
+  }
+  const genTime = ((Date.now() - t0) / 1000).toFixed(1);
+
+  // Convert CSV -> MIDI (runs in tmpWork so c2m.py reads tmpWork/output/)
+  try {
+    execSync(`python3 scripts/c2m.py`, { cwd: tmpWork, stdio: 'pipe' });
+  } catch (e) {
+    const stderr = e.stderr && e.stderr.length > 0 ? e.stderr.toString().split('\n').slice(-6).join('\n') : '';
+    const msg = (stderr || e.message || 'unknown error').trim();
+    console.error(`  CSV->MIDI failed:\n${msg}`);
+    cleanupWorkDir(tmpWork);
+    continue;
+  }
+
+  // Copy MIDI + CSV to sketch dir
+  for (const f of ['output1.mid', 'output2.mid', 'output1.csv', 'output2.csv']) {
+    const src = path.join(tmpOut, f);
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(sketchDir, f));
+  }
+
+  // Render: run fluidsynth + ffmpeg directly with absolute paths (avoids
+  // render-lite.sh which cd's back to rootDir and would break isolation)
+  try {
+    const mid1 = path.join(tmpOut, 'output1.mid');
+    const mid2 = path.join(tmpOut, 'output2.mid');
+    const wav1 = path.join(tmpOut, 'output1.wav');
+    const wav2 = path.join(tmpOut, 'output2.wav');
+    const combined = path.join(tmpOut, 'combined.wav');
+
+    execSync(`fluidsynth ${FLUIDSYNTH_OPTS} -F ${wav1} ${SF} ${mid1}`, { stdio: 'pipe', timeout: 180000 });
+    execSync(`fluidsynth ${FLUIDSYNTH_OPTS} -F ${wav2} ${SF} ${mid2}`, { stdio: 'pipe', timeout: 180000 });
+    execSync(`ffmpeg -i ${wav1} -i ${wav2} -filter_complex amix=inputs=2:duration=longest:dropout_transition=0 -c:a pcm_f32le ${combined} -y`, { stdio: 'pipe', timeout: 240000 });
+
+    // Copy to sketch dir and lab root
+    for (const f of ['output1.wav', 'output2.wav', 'combined.wav']) {
+      const src = path.join(tmpOut, f);
+      if (fs.existsSync(src)) fs.copyFileSync(src, path.join(sketchDir, f));
+    }
+    if (fs.existsSync(combined)) fs.copyFileSync(combined, path.join(labDir, sketch.name + '.wav'));
+  } catch (e) {
+    const stderr = e.stderr && e.stderr.length > 0 ? e.stderr.toString().split('\n').slice(-6).join('\n') : '';
+    const msg = (stderr || e.message || 'unknown error').trim();
+    console.error(`  Render failed:\n${msg}`);
+    cleanupWorkDir(tmpWork);
+    continue;
+  }
+
+  cleanupWorkDir(tmpWork);
+
+  let dur = '?';
+  try {
+    dur = execSync(`ffprobe -i "${path.join(labDir, sketch.name + '.wav')}" -show_entries format=duration -v quiet -of csv="p=0"`, { encoding: 'utf8' }).trim();
+  } catch { /* */ }
+
+  console.log(`  ${genTime}s gen | ${dur}s audio | -> lab/${sketch.name}.wav\n`);
+}
+
+console.log('  Lab session complete.\n');
