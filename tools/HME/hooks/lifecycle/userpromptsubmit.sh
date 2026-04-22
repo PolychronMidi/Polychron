@@ -18,6 +18,14 @@ if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ -d "$_AC_PROJECT/src
   # "nothing to commit" on a clean tree is expected; any other error is surfaced
   if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>"$_GIT_ERR"; then
     if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
+      # R46 LIFESAVER FIX: autocommit failures previously wrote only to
+      # stderr (dropped by _proxy_bridge) and to tmp/hme-autocommit.err
+      # (not monitored). LIFESAVER never saw them. Route the same failure
+      # to hme-errors.log so the next userpromptsubmit LIFESAVER scan
+      # surfaces it as a decision-blocking alert.
+      _AC_ERR_SUMMARY=$(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')
+      _AC_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      echo "[$_AC_TS] [autocommit] userpromptsubmit git commit failed: $_AC_ERR_SUMMARY" >> "$_AC_PROJECT/log/hme-errors.log"
       echo "WARNING: userpromptsubmit auto-commit failed — see $_GIT_ERR" >&2
     fi
   else
