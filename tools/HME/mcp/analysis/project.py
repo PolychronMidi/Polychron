@@ -153,5 +153,6 @@ def _get_current_branch(project_root: str) -> str:
             cwd=project_root, capture_output=True, text=True, timeout=5,
         )
         return r.stdout.strip() if r.returncode == 0 else ""
-    except Exception:
+    except Exception as _git_err:
+        logger.debug(f"git branch read failed: {type(_git_err).__name__}: {_git_err}")
         return ""

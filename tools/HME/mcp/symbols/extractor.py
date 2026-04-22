@@ -27,7 +27,8 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
     if not content:
         try:
             content = Path(file_path).read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except Exception as _read_err:
+            logger.debug(f"extractor: could not read {file_path}: {type(_read_err).__name__}: {_read_err}")
             return []
 
     if lang == "vue":

@@ -1,8 +1,11 @@
+import logging
 import re
 import os
 from pathlib import Path
 from lang_registry import ext_to_lang, SUPPORTED_EXTENSIONS, LANGUAGES
 from file_walker import walk_code_files
+
+logger = logging.getLogger(__name__)
 
 
 def _extract_balanced_braces(content: str, start: int) -> tuple[int, str]:
@@ -301,7 +304,8 @@ def compute_complexity(file_path: str) -> list[dict]:
 
     try:
         content = fpath.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
+    except Exception as _read_err:
+        logger.debug(f"complexity: could not read {fpath}: {type(_read_err).__name__}: {_read_err}")
         return []
 
     if lang == "vue":

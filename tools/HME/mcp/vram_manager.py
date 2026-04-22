@@ -208,7 +208,8 @@ def start_reload_poller(
             ) as resp:
                 data = json.loads(resp.read())
                 return bool(data.get("rag_gpu_busy", False))
-        except Exception:
+        except Exception as _probe_err:
+            logger.debug(f"rag-route probe failed: {type(_probe_err).__name__}: {_probe_err}")
             return False
 
     def _loop():
