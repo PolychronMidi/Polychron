@@ -133,11 +133,16 @@ if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
-    # R30 #3: auto-fire i/review mode=forget after auto-commits so the agent
-    # gets the substrate-aware review without having to remember to invoke it.
-    # Runs detached; output surfaces via system-reminder on next turn if issues.
+    # R32: auto-fire i/review mode=forget after src/ auto-commits.
+    # R30 had three catastrophic sins (30s timeout, `|| true` swallowing
+    # failures, no LIFESAVER surfacing). _lifesaver_bg (added R32 to
+    # _safety.sh) fixes all three by construction. Gate on src/ changes
+    # keeps cost aligned with value: doc/substrate commits skip the review.
     if [[ -x "$PROJECT_ROOT/i/review" ]]; then
-      (cd "$PROJECT_ROOT" && timeout 30 ./i/review mode=forget > "$PROJECT_ROOT/tmp/hme-review-auto.out" 2>&1 &) >/dev/null 2>&1 || true
+      if git -C "$PROJECT_ROOT" diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "^src/"; then
+        _lifesaver_bg "review_auto_fire" 600 "$PROJECT_ROOT/tmp/hme-review-auto.out" \
+          "$PROJECT_ROOT/i/review" mode=forget
+      fi
     fi
   fi
 fi
