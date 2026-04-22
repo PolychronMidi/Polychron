@@ -10,11 +10,13 @@ Usage:
 The behaviour mirrors :mod:`c2m` except that mid -> csv is performed.
 """
 
-from csv_maestro import py_midicsv as x
 import os
 import sys
 import argparse
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from csv_maestro import py_midicsv as x
 
 
 def convert_midi_to_csv(midi_path, outdir=None):

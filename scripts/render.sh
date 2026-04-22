@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-python3 c2m.py
+python3 scripts/c2m.py
 
 SF="$HOME/Downloads/SGM-v2.01-NicePianosGuitarsBass-V1.2.sf2"
 INTERP="scripts/fluidsynth-init.txt"
