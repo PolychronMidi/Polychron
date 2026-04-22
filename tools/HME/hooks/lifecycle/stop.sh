@@ -182,6 +182,7 @@ PSYCHO_STOP=ok
 ACK_SKIP=ok
 ABANDON_CHECK=ok
 STOP_WORK=ok
+FABRICATION_CHECK=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
@@ -195,6 +196,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       ack_skip)      ACK_SKIP="$_v" ;;
       abandon_check) ABANDON_CHECK="$_v" ;;
       stop_work)     STOP_WORK="$_v" ;;
+      fabrication_check) FABRICATION_CHECK="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
@@ -215,6 +217,19 @@ if [[ "$IDLE_AFTER_BG" == "idle" ]]; then
   jq -n '{
     "decision": "block",
     "reason": "ANTI-IDLE: Pipeline is running in background — do NOT stop. Continue with real work now:\n1. Run index_codebase (KB stays fresh for next round)\n2. Pick next evolution targets from the suggest_evolution output and implement them\n3. Run what_did_i_forget on any recently changed files\n4. Update docs or KB entries for this round\nDo not end your turn until the pipeline completes or you have done 20+ tool calls of substantive work."
+  }'
+  exit 0
+fi
+
+# Fabrication detection — asserting quantitative pipeline invariants
+# ("held steady", "stayed constant", "unchanged across runs") without
+# the turn having read the artifact that would prove them. Origin: R36
+# invented "total beats held steady" to justify a stochastic-gating
+# hypothesis, when recent runs varied 781-1409 beats. The stiffarm.
+if [[ "$FABRICATION_CHECK" == "fabrication" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "FABRICATION DETECTED: final text asserts a quantitative invariant about pipeline state (\"held steady\", \"stayed constant\", \"unchanged across runs\", \"same as last\", etc.) without the turn containing a verification disclosure marker. In a stochastic music generator every run-level metric is different; invariance is the claim that needs proof, not the default. Choose one and resume: (a) VERIFY the claim now via i/status or Read output/metrics or grep run-history, then annotate the claim with \"(verified)\" / \"(confirmed)\"; (b) REMOVE the fabricated claim from the response; (c) EXPLICITLY qualify it with \"(unverified)\" / \"(assumed)\" / \"(didn't check)\". Silent fabrication to bridge reasoning gaps is the antipattern this gate exists to block."
   }'
   exit 0
 fi

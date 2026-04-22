@@ -105,6 +105,33 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   currentSectionType = activeSectionType ? activeSectionType.type : null;
   currentSectionDynamics = activeSectionType ? activeSectionType.dynamics : null;
   sectionBpmScale = activeSectionType && Number.isFinite(activeSectionType.bpmScale) ? activeSectionType.bpmScale : 1.0;
+
+  // R38 E3: per-section metaprofile rotation for cross-section spectral variety.
+  // perceptual_complexity_avg (EnCodec codebook-token entropy) regressed 3 rounds
+  // because sections were spectrally uniform (R38 cb0 span only 0.43 across 7
+  // sections). Rotating metaprofiles per section produces different regime
+  // targets / coupling density / tension envelope / energy envelope -> different
+  // composition character -> more differentiated EnCodec tokens per section.
+  // Respects ACTIVE_META_PROFILE pin: rotation only fires when user has NOT
+  // pinned a single profile.
+  if (!ACTIVE_META_PROFILE) {
+    const SECTION_PROFILE_MAP = {
+      intro:       ['atmospheric', 'meditative'],
+      exposition:  ['tense', 'atmospheric'],
+      development: ['tense', 'chaotic', 'volatile'],
+      climax:      ['chaotic', 'volatile'],
+      resolution:  ['tense', 'atmospheric'],
+      conclusion:  ['meditative', 'atmospheric'],
+      coda:        ['meditative', 'atmospheric'],
+    };
+    const prevProfile = metaProfiles.getActiveName();
+    const sectionTypeKey = currentSectionType || 'exposition';
+    const candidates = SECTION_PROFILE_MAP[sectionTypeKey] || ['tense', 'chaotic'];
+    const filtered = candidates.filter((p) => p !== prevProfile);
+    const pool = filtered.length > 0 ? filtered : candidates;
+    metaProfiles.setActive(pool[ri(0, pool.length - 1)]);
+  }
+
   phrasesPerSection = ri(sectionPhraseRange.min, sectionPhraseRange.max);
   mainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
   if (phrasesPerSection <= 0) {

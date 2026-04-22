@@ -26,6 +26,7 @@ const REPLACEMENTS = [
   ['\u2260', '!='],         // not equal to
   ['\u2264', '<='],         // less-than or equal to
   ['\u2265', '>='],         // greater-than or equal to
+  ['\u2248', '~='],         // almost equal to (approximately)
   ['\u00D7', '*'],          // multiplication sign
   ['\u00B7', '.'],          // middle dot
   ['\u00B1', '+/-'],         // plus-minus sign

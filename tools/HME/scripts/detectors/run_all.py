@@ -39,6 +39,7 @@ DETECTORS = [
     ("ack_skip", "ack_skip"),
     ("abandon_check", "abandon_check"),
     ("stop_work", "stop_work"),
+    ("fabrication_check", "fabrication_check"),
 ]
 
 

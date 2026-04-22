@@ -216,6 +216,38 @@ return [
     ...bass.map(ch=>rfx('bass',ch,94,(c)=>c===cCH3)),
     ...bass.map(ch=>rfx('bass',ch,95,(c)=>c===cCH3)),
   ];  });
+
+  // R41 B: cooperation post-pass. setBalanceAndFX is the dominant voice in
+  // the channelStateField ecology (~1700 writes/run, ~6x any regime writer).
+  // Prior rounds showed regime cooperation alone can't reach multi-writer
+  // synergy because setBalanceAndFX's writes were uncorrelated random
+  // samples. This pass reads substrate trend and, for 15% of pan/fade/
+  // filter emissions, replaces the fresh value with a trend-aligned nudge
+  // from the last written value. Keeps 85% of writes as the existing
+  // random-walk / rfx logic -- cooperation supplement, not replacement.
+  const _COOP_PROB = 0.15;
+  const _COOP_AMP = { 10: [4, 10], 7: [3, 7], 74: [5, 12] };
+  for (let _ci = 0; _ci < setBalanceAndFXEvents.length; _ci++) {
+    const _ev = setBalanceAndFXEvents[_ci];
+    if (!_ev || _ev.type !== 'control_c') continue;
+    const _vals = V.optionalType(_ev.vals, 'array', []);
+    if (_vals.length < 3) continue;
+    const _cc = _vals[1];
+    const _amp = _COOP_AMP[_cc];
+    if (!_amp) continue;
+    if (rf() > _COOP_PROB) continue;
+    const _paramName = _cc === 10 ? 'pan' : _cc === 7 ? 'fade' : 'filter';
+    const _trend = channelStateField.recentTrend(_vals[0], _paramName);
+    if (_trend === 0) continue;
+    // _trend != 0 implies the slot has >=2 prior writes, so _slot exists
+    // and _slot.value is a valid number (set by the most recent write()).
+    const _slot = channelStateField.read(_vals[0], _paramName);
+    if (!_slot) continue;
+    const _base = V.optionalFinite(Number(_slot.value), 0);
+    const _nudge = _trend * rf(_amp[0], _amp[1]);
+    _vals[2] = clamp(m.round(_base + _nudge), 0, MIDI_MAX_VALUE);
+  }
+
   for (let _i=0;_i<setBalanceAndFXEvents.length;_i++){ const _ev=setBalanceAndFXEvents[_i]; if (_ev && _ev.type==='control_c' && Array.isArray(_ev.vals)) { channelStateField.observeControl(_ev.vals[0], _ev.vals[1], _ev.vals[2], 'setBalanceAndFX'); } }
   p(c,...setBalanceAndFXEvents);
 

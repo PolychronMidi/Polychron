@@ -86,7 +86,16 @@ grandFinale = () => {
       }), null),
       channelField: {
         stats: channelStateField.getStats(),
-        rollup: channelStateField.getRollup()
+        rollup: channelStateField.getRollup(),
+        rollupByLayer: channelStateField.getRollupByLayer(),
+        rollupByParam: channelStateField.getRollupByParam(),
+        spectrum: channelStateField.getSynergySpectrum(),
+        // Full per-slot snapshot including raw write histories. Needed for
+        // forensic investigation of why specific slots show synergy vs
+        // antagonism (R40 investigation established fade cooperates /
+        // filter antagonizes but raw histories were unavailable). Cost:
+        // ~3KB per run at typical slot counts -- trivial for forensics.
+        snapshot: channelStateField.getFieldSnapshot()
       }
     };
     fs.writeFileSync(path.join(METRICS_DIR, 'runtime-snapshots.json'), JSON.stringify(runtimeSnap, null, 2));
