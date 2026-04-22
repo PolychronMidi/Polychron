@@ -32,7 +32,7 @@ def constitution_report() -> str:
     if not data:
         return (
             "# HME Constitution\n\n"
-            os.path.join(METRICS_DIR, "hme-constitution.json not found.\n")
+            "output/metrics/hme-constitution.json not found.\n"
             "Run: python3 scripts/pipeline/derive-constitution.py"
         )
     meta = data.get("meta", {}) or {}
@@ -74,7 +74,7 @@ def doc_drift_report() -> str:
     if not data:
         return (
             "# HME Doc Drift\n\n"
-            os.path.join(METRICS_DIR, "hme-doc-drift.json not found.\n")
+            "output/metrics/hme-doc-drift.json not found.\n"
             "Run: python3 scripts/pipeline/detect-doc-drift.py"
         )
     meta = data.get("meta", {}) or {}
@@ -117,7 +117,7 @@ def generalizations_report() -> str:
     if not data:
         return (
             "# HME Generalizations\n\n"
-            os.path.join(METRICS_DIR, "hme-generalizations.json not found.\n")
+            "output/metrics/hme-generalizations.json not found.\n"
             "Run: python3 scripts/pipeline/extract-generalizations.py"
         )
     meta = data.get("meta", {}) or {}
@@ -152,7 +152,7 @@ def reflexivity_report() -> str:
     if not data:
         return (
             "# HME Reflexivity\n\n"
-            os.path.join(METRICS_DIR, "hme-prediction-accuracy.json not found yet.")
+            "output/metrics/hme-prediction-accuracy.json not found yet."
         )
     rounds = data.get("rounds") or []
     if not rounds:

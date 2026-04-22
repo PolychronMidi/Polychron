@@ -84,7 +84,7 @@ def _check_project_root(project_root: str) -> None:
 
 
 def _check_required_metrics_dirs(project_root: str) -> None:
-    ""os.path.join(METRICS_DIR, " and log/ directories must be creatable — needed for all pipeline outputs.")""
+    """output/metrics/ and log/ directories must be creatable — needed for all pipeline outputs."""
     for dirname in ("metrics", "log"):
         dirpath = os.path.join(project_root, dirname)
         try:

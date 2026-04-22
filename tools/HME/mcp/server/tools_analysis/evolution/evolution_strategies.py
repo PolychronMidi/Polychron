@@ -638,7 +638,7 @@ def _adversarial_stress() -> str:
             results.append(("Pipeline summary: error patterns detected",
                             False, f"{len(ps['errorPatterns'])} error pattern(s) in last run"))
     except FileNotFoundError:
-        results.append(("Pipeline summary: exists", False, os.path.join(METRICS_DIR, "pipeline-summary.json missing")))
+        results.append(("Pipeline summary: exists", False, "output/metrics/pipeline-summary.json missing"))
     except Exception as e:
         results.append(("Pipeline summary: parseable", False, str(e)))
 
@@ -649,7 +649,7 @@ def _adversarial_stress() -> str:
         results.append((f"Run-history: {len(snapshots)} snapshots",
                         len(snapshots) >= 5, "" if len(snapshots) >= 5 else f"only {len(snapshots)}"))
     else:
-        results.append(("Run-history: directory exists", False, os.path.join(METRICS_DIR, "run-history/ missing")))
+        results.append(("Run-history: directory exists", False, "output/metrics/run-history/ missing"))
 
     # Probe 17: Journal exists and has rounds
     journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
@@ -672,7 +672,7 @@ def _adversarial_stress() -> str:
         results.append(("Adaptive state: valid structure",
                         has_emas, "" if has_emas else "missing EMA fields"))
     except FileNotFoundError:
-        results.append(("Adaptive state: exists", False, os.path.join(METRICS_DIR, "adaptive-state.json missing")))
+        results.append(("Adaptive state: exists", False, "output/metrics/adaptive-state.json missing"))
     except Exception as e:
         results.append(("Adaptive state: parseable", False, str(e)))
 

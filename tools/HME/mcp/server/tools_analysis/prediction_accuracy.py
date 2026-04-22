@@ -21,7 +21,7 @@ def prediction_accuracy_report() -> str:
     if not os.path.exists(path):
         return (
             "# HME Prediction Accuracy\n\n"
-            os.path.join(METRICS_DIR, "hme-prediction-accuracy.json not found.\n")
+            "output/metrics/hme-prediction-accuracy.json not found.\n"
             "Runs automatically as a post-composition step "
             "(`reconcile-predictions.js`). Invoke "
             "`trace(target='moduleName', mode='impact')` during a session to "

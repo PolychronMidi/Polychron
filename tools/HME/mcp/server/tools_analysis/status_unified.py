@@ -835,7 +835,7 @@ def _trajectory_report() -> str:
     if not os.path.exists(path):
         return (
             "# Compositional Trajectory\n\n"
-            os.path.join(METRICS_DIR, "hme-trajectory.json not found.\n")
+            "output/metrics/hme-trajectory.json not found.\n"
             "Run: node scripts/pipeline/compute-compositional-trajectory.js"
         )
     try:
@@ -876,7 +876,7 @@ def _budget_report() -> str:
     if not os.path.exists(path):
         return (
             "# Coherence Budget\n\n"
-            os.path.join(METRICS_DIR, "hme-coherence-budget.json not found.\n")
+            "output/metrics/hme-coherence-budget.json not found.\n"
             "Run: node scripts/pipeline/compute-coherence-budget.js"
         )
     try:
@@ -922,7 +922,7 @@ def _staleness_report() -> str:
     if not os.path.exists(path):
         return (
             "# KB Staleness Index\n\n"
-            os.path.join(METRICS_DIR, "kb-staleness.json not found.\n")
+            "output/metrics/kb-staleness.json not found.\n"
             "Run: python3 scripts/pipeline/build-kb-staleness-index.py"
         )
     try:
@@ -975,7 +975,7 @@ def _coherence_report() -> str:
     if not os.path.exists(path):
         return (
             "# Round Coherence Score\n\n"
-            os.path.join(METRICS_DIR, "hme-coherence.json not found.\n")
+            "output/metrics/hme-coherence.json not found.\n"
             "Run: node scripts/pipeline/compute-coherence-score.js"
         )
     try:
