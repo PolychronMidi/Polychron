@@ -382,7 +382,7 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
     # Per-section complexity (codebook 0 = coarsest = rhythmic structure)
     parts.append(f"\n## Section Complexity (CB0 entropy)")
     section_entropies = []
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     section_times: dict = {}
     from . import _load_trace as _lt
     for rec in _lt(trace_path):
@@ -522,7 +522,7 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
     # Per-section mismatch coaching: compare CLAP character to section intent
     # Load section intent data if available
     try:
-        trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
         section_regimes: dict = {}
         if os.path.isfile(trace_path):
             with open(trace_path, encoding="utf-8") as _tf:

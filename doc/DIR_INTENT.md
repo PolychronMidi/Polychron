@@ -2,7 +2,7 @@
 
 Every cohesion-boundary directory gets a `README.md` that renders normally on GitHub, with a machine-readable block hidden at the bottom. The hidden block contains the local `rules` that govern edits in that subtree; the visible README content above it is the dir's `intro`.
 
-Aggregated into `metrics/hme-dir-intent.json` by `scripts/pipeline/hme/build-dir-intent-index.py`. The proxy's `dir_context` middleware reads the index and injects the closest ancestor dir's `rules` into tool results when the agent touches files in that subtree.
+Aggregated into `output/metrics/hme-dir-intent.json` by `scripts/pipeline/hme/build-dir-intent-index.py`. The proxy's `dir_context` middleware reads the index and injects the closest ancestor dir's `rules` into tool results when the agent touches files in that subtree.
 
 ## When to add a README
 
@@ -54,8 +54,8 @@ The aggregator captures everything above the `<!-- HME-DIR-INTENT -->` block and
 1. Walks project, finds every `README.md` containing an `<!-- HME-DIR-INTENT -->` block
 2. Parses YAML inside the block; captures the README body above it as `intro`
 3. Computes drift signature: `(file_count_depth_1, file_list_hash, manager_file_content_hash_prefix)`
-4. Compares against stored signature in `metrics/hme-dir-signatures.json`; flags drift
-5. Writes `metrics/hme-dir-intent.json`
+4. Compares against stored signature in `output/metrics/hme-dir-signatures.json`; flags drift
+5. Writes `output/metrics/hme-dir-intent.json`
 6. Flags candidate dirs missing a README (≥5 source files + `index.js`/`__init__.py`/`Manager.js`)
 
 READMEs without the `<!-- HME-DIR-INTENT -->` block are ignored — they're normal human READMEs using some other convention (e.g., HuggingFace model cards).
@@ -73,7 +73,7 @@ READMEs without the `<!-- HME-DIR-INTENT -->` block are ignored — they're norm
 
 ## Drift handling
 
-- `metrics/hme-dir-signatures.json` stores each directory's last-known signature
+- `output/metrics/hme-dir-signatures.json` stores each directory's last-known signature
 - On aggregation: if current signature diverges, the directory is tagged `drifted: true` in the index
 - The middleware still injects rules even when drifted, but adds a `(drifted)` tag — rules age slower than prose, but the agent should be skeptical
 - `review(mode='health')` surfaces drifted and invalid entries

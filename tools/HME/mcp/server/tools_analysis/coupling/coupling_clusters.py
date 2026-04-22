@@ -17,7 +17,7 @@ _clusters_cache: dict = {"key": None, "result": None}
 def _compute_clusters(min_r: float = 0.35) -> tuple:
     """Compute cooperation clusters from trace data. Cached by trace mtime + min_r.
     Returns (clusters, corr, modules, n_beats, coupling_state, trust)."""
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     try:
         _mt = os.path.getmtime(trace_path) if os.path.exists(trace_path) else 0.0
     except OSError:

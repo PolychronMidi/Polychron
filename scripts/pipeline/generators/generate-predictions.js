@@ -17,8 +17,9 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const DEPGRAPH = path.join(ROOT, 'metrics', 'dependency-graph.json');
-const OUT = path.join(ROOT, 'metrics', 'hme-predictions.jsonl');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const DEPGRAPH = path.join(METRICS_DIR, 'dependency-graph.json');
+const OUT = path.join(METRICS_DIR, 'hme-predictions.jsonl');
 // R12: depth 2 overpredicted (382 modules for 2 actual shifts = 0.5% accuracy).
 // BFS at depth 1 = direct dependents only, typically 5-30 modules per source.
 const MAX_DEPTH = 1;

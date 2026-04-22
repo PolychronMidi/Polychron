@@ -1,4 +1,5 @@
 // systemManifest.js - Emit system-manifest.json and capability-matrix.md after composition.
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 // Captures the organism's configuration and module topology for each run,
 // enabling compositional forensics and newcomer onboarding.
 
@@ -35,8 +36,8 @@ systemManifest = (() => {
     // -- Coherence verdicts --
     manifest.coherenceVerdicts = coherenceVerdicts.compute(manifest, attribution);
 
-const manifestPath = 'metrics/system-manifest.json';
-  const matrixPath = 'metrics/capability-matrix.md';
+const manifestPath = path.join(METRICS_DIR, 'system-manifest.json');
+  const matrixPath = path.join(METRICS_DIR, 'capability-matrix.md');
 
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
     console.log(`Wrote file: ${manifestPath}`);

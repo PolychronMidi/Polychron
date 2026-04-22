@@ -16,8 +16,9 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const CL_DIR = path.join(ROOT, 'src', 'crossLayer');
-const OUTPUT_DIR = path.join(ROOT, 'metrics');
+const OUTPUT_DIR = path.join(METRICS_DIR);
 const JSON_PATH  = path.join(OUTPUT_DIR, 'crosslayer-map.json');
 const MD_PATH    = path.join(OUTPUT_DIR, 'crosslayer-map.md');
 

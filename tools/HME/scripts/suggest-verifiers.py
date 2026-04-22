@@ -33,7 +33,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 _VERIFIER_SRC = os.path.join(
     _PROJECT, "tools", "HME", "scripts", "verify-coherence.py"
 )
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-verifier-coverage.json")
+_OUTPUT = os.path.join(METRICS_DIR, "hme-verifier-coverage.json")
 
 _FIX_KEYWORDS = (
     "fix", "bug", "regression", "repair", "patch",

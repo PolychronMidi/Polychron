@@ -4,7 +4,7 @@ Cross-run persistence, structural discontinuity detection, regime-adaptive conve
 
 ## Cross-Run Warm-Start
 
-`metrics/adaptive-state.json` persists terminal EMA values at end of each composition (written by `grandFinale.js`):
+`output/metrics/adaptive-state.json` persists terminal EMA values at end of each composition (written by `grandFinale.js`):
 
 ```json
 {

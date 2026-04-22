@@ -32,11 +32,11 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const COHERENCE    = path.join(ROOT, 'metrics', 'hme-coherence.json');
-const ACCURACY     = path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json');
-const FINGERPRINT  = path.join(ROOT, 'metrics', 'fingerprint-comparison.json');
-const PERCEPTUAL   = path.join(ROOT, 'metrics', 'perceptual-report.json');
-const OUT          = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
+const COHERENCE    = path.join(METRICS_DIR, 'hme-coherence.json');
+const ACCURACY     = path.join(METRICS_DIR, 'hme-prediction-accuracy.json');
+const FINGERPRINT  = path.join(METRICS_DIR, 'fingerprint-comparison.json');
+const PERCEPTUAL   = path.join(METRICS_DIR, 'perceptual-report.json');
+const OUT          = path.join(METRICS_DIR, 'hme-musical-correlation.json');
 
 const ROLLING_WINDOW = 20;
 const HISTORY_CAP = 60;
@@ -52,7 +52,7 @@ function main() {
   const fingerprint = loadJson(FINGERPRINT);
   const perceptual  = loadJson(PERCEPTUAL);
   const prev        = loadJson(OUT);
-  const traceSummary = loadJson(path.join(ROOT, 'metrics', 'trace-summary.json'));
+  const traceSummary = loadJson(path.join(METRICS_DIR, 'trace-summary.json'));
   const _axisAdj = (axis) => {
     const v = traceSummary && traceSummary.axisEnergyEquilibrator
       && traceSummary.axisEnergyEquilibrator.perAxisAdj
@@ -74,7 +74,7 @@ function main() {
   // Read current HCI from pipeline-summary.json (written before this script runs)
   let currentHci = null;
   try {
-    const summary = loadJson(path.join(ROOT, 'metrics', 'pipeline-summary.json'));
+    const summary = loadJson(path.join(METRICS_DIR, 'pipeline-summary.json'));
     if (summary && typeof summary.hci === 'number') currentHci = summary.hci;
   } catch (_e) { /* optional */ }
   const hciDelta = (currentHci !== null && prevHci !== null) ? currentHci - prevHci : null;
@@ -104,7 +104,7 @@ function main() {
       // event alone isn't guaranteed to be read before the next user turn.
       try {
         fs.writeFileSync(
-          path.join(ROOT, 'metrics', 'hci-regression-alert.json'),
+          path.join(METRICS_DIR, 'hci-regression-alert.json'),
           JSON.stringify({
             ts: new Date().toISOString(),
             current_hci: currentHci,
@@ -119,7 +119,7 @@ function main() {
     }
   } else {
     // No regression this round -- clear any stale alert file.
-    const alertPath = path.join(ROOT, 'metrics', 'hci-regression-alert.json');
+    const alertPath = path.join(METRICS_DIR, 'hci-regression-alert.json');
     try { if (fs.existsSync(alertPath)) fs.unlinkSync(alertPath); }
     catch (_ue) { /* best-effort */ }
   }
@@ -150,6 +150,7 @@ function main() {
       try {
         currentTreeHash = execSync('git rev-parse HEAD^{tree}', {
           cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
         }).toString().trim().slice(0, 12);
       } catch (_te) { /* tree hash optional */ }
       const priorCount = Array.isArray(prev && prev.history)

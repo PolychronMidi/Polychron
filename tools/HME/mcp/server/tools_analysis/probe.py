@@ -32,11 +32,11 @@ from typing import Any
 from server import context as ctx
 from . import _track
 
-BLINDSPOTS_REL = os.path.join("metrics", "hme-blindspots.json")  # informational
-ACCURACY_REL = os.path.join("metrics", "hme-prediction-accuracy.json")
-TRUST_REL = os.path.join("metrics", "kb-trust-weights.json")
-DEP_GRAPH_REL = os.path.join("metrics", "dependency-graph.json")
-OUT_REL = os.path.join("metrics", "hme-probes.json")
+BLINDSPOTS_REL = os.path.join("output", "metrics", "hme-blindspots.json")  # informational
+ACCURACY_REL = os.path.join("output", "metrics", "hme-prediction-accuracy.json")
+TRUST_REL = os.path.join("output", "metrics", "kb-trust-weights.json")
+DEP_GRAPH_REL = os.path.join("output", "metrics", "dependency-graph.json")
+OUT_REL = os.path.join("output", "metrics", "hme-probes.json")
 
 
 def _load_json(rel: str):

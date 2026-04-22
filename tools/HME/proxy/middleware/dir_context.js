@@ -14,8 +14,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
-const INTENT_PATH = 'metrics/hme-dir-intent.json';
+const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
 const REFRESH_MS = 60_000;
 const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;

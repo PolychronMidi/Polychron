@@ -10,7 +10,7 @@ Every signal getter that may be called more than once per beat must be wrapped i
 
 ## Adding a module
 
-Require from `index.js`; no consumer outside this dir should require a module here directly. Expose a single global (IIFE pattern). If the module drives a feedback loop, declare it in `metrics/feedback_graph.json`.
+Require from `index.js`; no consumer outside this dir should require a module here directly. Expose a single global (IIFE pattern). If the module drives a feedback loop, declare it in `output/metrics/feedback_graph.json`.
 
 <!-- HME-DIR-INTENT
 rules:

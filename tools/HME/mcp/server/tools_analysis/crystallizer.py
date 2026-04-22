@@ -33,7 +33,7 @@ from server import context as ctx
 from . import _track
 from hme_env import ENV
 
-OUT_REL = os.path.join("metrics", "hme-crystallized.json")
+OUT_REL = os.path.join("output", "metrics", "hme-crystallized.json")
 MIN_ENTRIES = ENV.require_int("HME_CRYSTALLIZE_MIN_ENTRIES")
 MIN_ROUNDS = ENV.require_int("HME_CRYSTALLIZE_MIN_ROUNDS")
 # Tags that are purely metadata / status and shouldn't seed a crystallized
@@ -230,7 +230,7 @@ def crystallized_report() -> str:
     if not os.path.exists(path):
         return (
             "# Crystallized Patterns\n\n"
-            "metrics/hme-crystallized.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-crystallized.json not found.\n")
             "Run: `learn(action='crystallize')` or wait for next pipeline."
         )
     try:

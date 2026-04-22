@@ -16,6 +16,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { ROOT, loadJson } = require('../hme/utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const SRC  = path.join(ROOT, 'src');
 
@@ -73,7 +74,7 @@ const topWrapped = [...wrappedGlobals.entries()]
   .map(([name, { count, files }]) => ({ global: name, calls: count, fileCount: files.size }));
 
 // Output
-const outputPath = path.join(ROOT, 'metrics', 'safe-preboot-audit.json');
+const outputPath = path.join(METRICS_DIR, 'safe-preboot-audit.json');
 fs.writeFileSync(outputPath, JSON.stringify({
   meta: {
     script: 'check-safe-preboot-audit.js',

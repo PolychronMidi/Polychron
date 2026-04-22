@@ -203,7 +203,7 @@ def status(mode: str = "all") -> str:
     # Sits above individual arc surfaces because it's the synthesis.
     try:
         import json as _json_na
-        _na_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-next-actions.json")
+        _na_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-next-actions.json")
         if os.path.isfile(_na_path):
             with open(_na_path) as _nf:
                 _na = _json_na.load(_nf)
@@ -223,7 +223,7 @@ def status(mode: str = "all") -> str:
     # matches because drift is the signal patterns react to.
     try:
         import json as _json_drift
-        _drift_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-legendary-drift.json")
+        _drift_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-legendary-drift.json")
         if os.path.isfile(_drift_path):
             with open(_drift_path) as _df:
                 _drift = _json_drift.load(_df)
@@ -255,7 +255,7 @@ def status(mode: str = "all") -> str:
     # any pattern fires, THAT is what the next turn should address.
     try:
         import json as _json_pat
-        _pat_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-pattern-matches.json")
+        _pat_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-pattern-matches.json")
         if os.path.isfile(_pat_path):
             with open(_pat_path) as _pf:
                 _pat = _json_pat.load(_pf)
@@ -278,7 +278,7 @@ def status(mode: str = "all") -> str:
     # (low invariant efficacy = invariants voter is less trustworthy).
     try:
         import json as _json_eff
-        _eff_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-invariant-efficacy.json")
+        _eff_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-invariant-efficacy.json")
         if os.path.isfile(_eff_path):
             with open(_eff_path) as _ef:
                 _eff = _json_eff.load(_ef)
@@ -302,7 +302,7 @@ def status(mode: str = "all") -> str:
     # above HCI alert) since divergence is the most actionable hidden signal.
     try:
         import json as _json_con
-        _con_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-consensus.json")
+        _con_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-consensus.json")
         if os.path.isfile(_con_path):
             with open(_con_path) as _cf:
                 _con = _json_con.load(_cf)
@@ -326,8 +326,8 @@ def status(mode: str = "all") -> str:
     # state of the hypermeta allowlist at a glance.
     try:
         import json as _json_ret
-        _retire_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "legacy-override-retirement-log.jsonl")
-        _juris_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hypermeta-jurisdiction.json")
+        _retire_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "legacy-override-retirement-log.jsonl")
+        _juris_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hypermeta-jurisdiction.json")
         _active_count = None
         if os.path.isfile(_juris_path):
             with open(_juris_path) as _jf:
@@ -363,7 +363,7 @@ def status(mode: str = "all") -> str:
     # automatically by compute-musical-correlation.js when HCI stabilizes.
     try:
         import json as _json_alert
-        _alert_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hci-regression-alert.json")
+        _alert_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hci-regression-alert.json")
         if os.path.isfile(_alert_path):
             with open(_alert_path) as _af:
                 _alert = _json_alert.load(_af)
@@ -380,7 +380,7 @@ def status(mode: str = "all") -> str:
     try:
         import glob as _gl
         from datetime import datetime as _dt
-        _m = os.path.join(ctx.PROJECT_ROOT, "metrics")
+        _m = os.path.join(ctx.PROJECT_ROOT, "output", "metrics")
         _key_files = [
             ("trace.jsonl", os.path.join(_m, "trace.jsonl")),
             ("pipeline-summary", os.path.join(_m, "pipeline-summary.json")),
@@ -414,7 +414,7 @@ def status(mode: str = "all") -> str:
     # VRAM snapshot — one-line summary from the monitor's latest sample
     try:
         import json as _json_vram
-        _vram_hist = os.path.join(ctx.PROJECT_ROOT, "metrics", "vram-history.jsonl")
+        _vram_hist = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "vram-history.jsonl")
         if os.path.isfile(_vram_hist):
             with open(_vram_hist) as _vf:
                 _last = None
@@ -545,7 +545,7 @@ def _vram_report() -> str:
     import json as _json
     from datetime import datetime as _dt
 
-    hist_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "vram-history.jsonl")
+    hist_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "vram-history.jsonl")
     if not os.path.isfile(hist_path):
         return (
             "VRAM monitor has not written any samples yet. If this persists,\n"
@@ -645,7 +645,7 @@ def _freshness_report() -> str:
     def _ts(path: str) -> float:
         return os.path.getmtime(path) if os.path.exists(path) else 0.0
 
-    m = os.path.join(ctx.PROJECT_ROOT, "metrics")
+    m = os.path.join(ctx.PROJECT_ROOT, "output", "metrics")
     sources = [
         ("trace.jsonl",          os.path.join(m, "trace.jsonl")),
         ("pipeline-summary.json", os.path.join(m, "pipeline-summary.json")),
@@ -719,7 +719,7 @@ def _resume_briefing() -> str:
 
     # 2. Pipeline verdict + timing
     try:
-        summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "pipeline-summary.json")
+        summary_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "pipeline-summary.json")
         with open(summary_path, encoding="utf-8") as f:
             ps = json.load(f)
         verdict = ps.get("verdict")
@@ -801,7 +801,7 @@ def _resume_briefing() -> str:
 def _evolution_priority_report() -> str:
     """Render metrics/hme-evolution-priority.json — HME's self-directed roadmap."""
     _track("evolution_priority_report")
-    ppath = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-evolution-priority.json")
+    ppath = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-evolution-priority.json")
     if not os.path.exists(ppath):
         return "# Evolution Priorities\n\nNo priority data — run pipeline first.\n"
     try:
@@ -831,11 +831,11 @@ def _evolution_priority_report() -> str:
 
 def _trajectory_report() -> str:
     """Render metrics/hme-trajectory.json (Phase 5.1)."""
-    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-trajectory.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-trajectory.json")
     if not os.path.exists(path):
         return (
             "# Compositional Trajectory\n\n"
-            "metrics/hme-trajectory.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-trajectory.json not found.\n")
             "Run: node scripts/pipeline/compute-compositional-trajectory.js"
         )
     try:
@@ -872,11 +872,11 @@ def _trajectory_report() -> str:
 
 def _budget_report() -> str:
     """Render metrics/hme-coherence-budget.json (Phase 5.2)."""
-    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-coherence-budget.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-coherence-budget.json")
     if not os.path.exists(path):
         return (
             "# Coherence Budget\n\n"
-            "metrics/hme-coherence-budget.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-coherence-budget.json not found.\n")
             "Run: node scripts/pipeline/compute-coherence-budget.js"
         )
     try:
@@ -918,11 +918,11 @@ def _budget_report() -> str:
 
 def _staleness_report() -> str:
     """Render metrics/kb-staleness.json. Phase 2.2 of openshell feature mapping."""
-    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "kb-staleness.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "kb-staleness.json")
     if not os.path.exists(path):
         return (
             "# KB Staleness Index\n\n"
-            "metrics/kb-staleness.json not found.\n"
+            os.path.join(METRICS_DIR, "kb-staleness.json not found.\n")
             "Run: python3 scripts/pipeline/build-kb-staleness-index.py"
         )
     try:
@@ -971,11 +971,11 @@ def _staleness_report() -> str:
 
 def _coherence_report() -> str:
     """Render metrics/hme-coherence.json. Phase 2.3 of openshell feature mapping."""
-    path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-coherence.json")
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-coherence.json")
     if not os.path.exists(path):
         return (
             "# Round Coherence Score\n\n"
-            "metrics/hme-coherence.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-coherence.json not found.\n")
             "Run: node scripts/pipeline/compute-coherence-score.js"
         )
     try:

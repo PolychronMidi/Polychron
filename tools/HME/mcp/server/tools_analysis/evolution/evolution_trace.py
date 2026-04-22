@@ -127,7 +127,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
     ctx.ensure_ready_sync()
     _track("trace_query")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found. Run `npm run main` to generate."
 
@@ -290,7 +290,7 @@ def interaction_map(module_a: str, module_b: str = "") -> str:
     ctx.ensure_ready_sync()
     _track("interaction_map")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 

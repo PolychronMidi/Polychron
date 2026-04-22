@@ -60,7 +60,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 - **on_done triggers.** Pass `on_done='reindex'|'learn'|'commit'` to fire a lifecycle hook when the item is marked done. `reindex` runs `hme_admin(action='index')` in the background. `learn` queues a reminder to call `learn()` at the next turn. `commit` flags a commit nudge in the nexus.
 - **Onboarding walkthrough appears in your native todo list.** The current step is always marked `in_progress`, completed steps are marked done, upcoming steps are pending. You don't need to manage it — hooks do.
 - **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until `clear` is called.
-- **Live mermaid graph.** The store writes a live rendering to [metrics/todo-graph.md](../metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
+- **Live mermaid graph.** The store writes a live rendering to [output/metrics/todo-graph.md](../metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
 
 ## Guardrails
 
@@ -74,7 +74,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 
 **Ownership:** 19 meta-controllers own all coupling constants. Never hand-tune what a controller manages. `check-hypermeta-jurisdiction.js` enforces across 4 phases. Modify controller logic instead.
 
-**New feedback loops:** register with `feedbackRegistry` + declare in `metrics/feedback_graph.json`.
+**New feedback loops:** register with `feedbackRegistry` + declare in `output/metrics/feedback_graph.json`.
 
 ## Hard Rules
 
@@ -97,7 +97,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
          tags=[moment_type, sentiment], query=ROUND_TAG)
    (SECTION: S0..S6 or 'all'. moment_type: convergence|climax|breath|
    arrival|misfire|... sentiment: compelling|surprising|moving|flat|
-   mechanical|... Writes metrics/hme-ground-truth.jsonl + mirrors to
+   mechanical|... Writes output/metrics/hme-ground-truth.jsonl + mirrors to
    KB with tag `human_ground_truth` → unconditional HIGH trust tier)
 
 2. learn(title='RNN ...', content='...', category='decision')
@@ -177,4 +177,4 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - [doc/HME.md](./HME.md) — HME internals + Phase 1-6 per-subsystem narrative
 - [doc/openshell_features_to_mimic.md](./openshell_features_to_mimic.md) — design doc that spawned Phases 1-6
 - [doc/hme-discoveries.md](./hme-discoveries.md) — externalized generalizations (v1 DRAFT templates)
-- [metrics/journal.md](../metrics/journal.md) — listening verdicts and calibration anchors
+- [output/metrics/journal.md](../metrics/journal.md) — listening verdicts and calibration anchors

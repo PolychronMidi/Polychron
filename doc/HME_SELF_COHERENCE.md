@@ -47,9 +47,9 @@ The score also flows through `hme_admin(action='selftest')`, so every selftest c
 - Git state (branch, ahead, dirty)
 - Streak counters
 
-Saved as `metrics/holograph/holograph-YYYYMMDD-HHMMSS.json` (~14KB). Two snapshots can be diffed:
+Saved as `output/metrics/holograph/holograph-YYYYMMDD-HHMMSS.json` (~14KB). Two snapshots can be diffed:
 ```bash
-python3 tools/HME/scripts/snapshot-holograph.py --diff metrics/holograph/holograph-PRIOR.json
+python3 tools/HME/scripts/snapshot-holograph.py --diff output/metrics/holograph/holograph-PRIOR.json
 ```
 
 The diff filters timing/timestamp noise so the output focuses on real state drift. Use it to verify reproducibility, detect unintended side effects, or feed historical state into HME for meta-learning.
@@ -74,7 +74,7 @@ Every dimension that HME could measure should *be* measured. Each verifier added
 10. **eslint-rule-coverage** — every rule in `scripts/eslint-rules/*.js` is wired into `eslint.config.js` AND mentioned in CLAUDE.md or doc/HYPERMETA.md.
 11. **L0-channel-usage** — every constant in `src/time/l0Channels.js` is consumed somewhere; unused channels score low.
 12. **bias-bounds-manifest sync** — `scripts/bias-bounds-manifest.json` matches the actual bias registrations (already enforced by `check-hypermeta-jurisdiction.js` Phase 3, but the HCI should surface it).
-13. **firewall-port declarations** — every cross-boundary data flow in code has a matching firewall port in `metrics/feedback_graph.json`.
+13. **firewall-port declarations** — every cross-boundary data flow in code has a matching firewall port in `output/metrics/feedback_graph.json`.
 14. **session-narrative continuity** — `synthesis_session.py` narrative shouldn't have gaps longer than N events without an explicit "session resumed" marker.
 15. **adaptive-state.json freshness** — cross-run warm-start state should update at least once per pipeline run.
 16. **tool-arg consistency** — every tool's docstring describes its actual parameter signature (parse Python AST, parse docstring, diff).
@@ -96,7 +96,7 @@ Treat HME's coherence the way Polychron treats its musical coherence. Specifical
 - **HME as a coupling matrix.** Every tool is a node. Every pair of tools has an edge weight = how often they co-occur in successful sessions vs. failed sessions. Antagonist bridges between under-coupled tool pairs become candidate evolutions. **HME literally runs Polychron's coupling engine on itself.**
 - **Hypermeta controllers for HME.** The 19 controllers in `src/conductor/signal/meta/` manage musical axes. Add a 20th controller that manages the HCI score, autotuning verifier weights toward whatever produces the most-stable trajectory.
 - **Lab sketches for HME.** Lab sketches currently prototype musical behavior. They could equally prototype HME behavior — e.g., "this hook configuration produces 30% higher onboarding completion." Run, measure HCI delta, promote to /src.
-- **Feedback graph for HME.** Currently `metrics/feedback_graph.json` describes Polychron's feedback loops. Add a sibling `metrics/hme-feedback-graph.json` describing HME's own loops: streak counter → hook block → agent retry → tool call → streak reset. Visualize the same way.
+- **Feedback graph for HME.** Currently `output/metrics/feedback_graph.json` describes Polychron's feedback loops. Add a sibling `output/metrics/hme-feedback-graph.json` describing HME's own loops: streak counter → hook block → agent retry → tool call → streak reset. Visualize the same way.
 
 #### Phase 2: Co-evolution loop
 
@@ -252,9 +252,9 @@ The Maxwell trap (#8) is the most painful because it's silent: loss prints as 0.
 **Trained adapter:** `Qwen/Qwen2.5-0.5B-Instruct` (0.5B params, fp32) with LoRA r=8 α=16, 3 epochs, 262 examples, lr=1e-4, gradient checkpointing. Final train_loss=3.21 (healthy, not NaN). Fits in 24GB with room. Training took 271 seconds (~4.5 min).
 
 **Artifacts produced:**
-- `metrics/hme-arbiter/` — LoRA adapter (4.35MB)
-- `metrics/hme-arbiter-merged/` — merged base+adapter (full model weights)
-- `metrics/hme-arbiter.gguf` — 949MB f16 GGUF, loadable by llama.cpp
+- `output/metrics/hme-arbiter/` — LoRA adapter (4.35MB)
+- `output/metrics/hme-arbiter-merged/` — merged base+adapter (full model weights)
+- `output/metrics/hme-arbiter.gguf` — 949MB f16 GGUF, loadable by llama.cpp
 - `llamacpp list` shows `hme-arbiter:latest` (994MB) registered and callable
 
 **Quality assessment (the honest outcome):**
@@ -311,7 +311,7 @@ The observability substrate from Round 8 produced its first composition-layer re
 
 **The pattern codified:**
 
-1. **Instrument** — the thing you want to measure gets counters: `perLegacyOverride` (fires per override id) + `perLegacyOverrideEntries` (condition-true count). Flowed through `crossLayerBeatRecord` → `trace-summary.json` → `metrics/legacy-override-history.jsonl`.
+1. **Instrument** — the thing you want to measure gets counters: `perLegacyOverride` (fires per override id) + `perLegacyOverrideEntries` (condition-true count). Flowed through `crossLayerBeatRecord` → `trace-summary.json` → `output/metrics/legacy-override-history.jsonl`.
 2. **Measure** — append-only history across multiple pipeline runs. Not a single-round snapshot; a trend.
 3. **Threshold** — declarative invariant: "any override with 0 fires AND 0 entries across 5+ runs is a data-proven removal candidate." Fires at `warning` after 3 rounds, `error` after 5.
 4. **Act** — when the invariant escalates, retire the override. The generic controller handler covers what the specialized override did, if the override was genuinely unused.
@@ -354,7 +354,7 @@ With Round 9's measurement loop established, five rounds of data-driven decision
 
 Both "keepers" had comments saying "Candidate for removal" that instrumentation contradicted. The comments came from pre-measurement intuition about what should be retired; the data said the intuition was wrong.
 
-**Meta-pattern codified (`metrics/legacy-override-retirement-log.jsonl`):**
+**Meta-pattern codified (`output/metrics/legacy-override-retirement-log.jsonl`):**
 
 ```
 retire:  {id, rounds_observed_zero, reason, fallback_handler, retired_in, commit}
@@ -378,7 +378,7 @@ Through R17 the substrate was tactical: seven independent observability systems,
 
 **Arc II — Pattern Registry** (R20, `tools/HME/patterns/`). Meta-patterns codified as declarative JSON: trigger condition, measurement phase, decision gate, action steps, precedent history. The retirement arc (R13, R15) becomes `retire-legacy-override-after-5-zero-rounds.json`. The cascade-direction-fix (R14) becomes `validate-cascade-direction.json`. Every future round, the matcher evaluates all patterns and produces an action queue.
 
-**Arc III — Inverse Reasoning** (R21, `compute-legendary-drift.py`). Each pipeline round snapshots 14 state dimensions into `metrics/hme-legendary-states.jsonl`. Envelope = median + stdev per field across history. Current round's per-field z-score surfaces outliers; mean |z| is the drift score. Fires BEFORE the listening verdict fails, catching state drift toward non-legendary territory preemptively.
+**Arc III — Inverse Reasoning** (R21, `compute-legendary-drift.py`). Each pipeline round snapshots 14 state dimensions into `output/metrics/hme-legendary-states.jsonl`. Envelope = median + stdev per field across history. Current round's per-field z-score surfaces outliers; mean |z| is the drift score. Fires BEFORE the listening verdict fails, catching state drift toward non-legendary territory preemptively.
 
 **Arc IV — Meta-Measurement** (R19, `compute-invariant-efficacy.py`). The substrate measures itself. Each invariant classified from commit-log citations + recent fire state: load-bearing (cited and firing), load-bearing-historical (cited, currently passing), flappy (fires without citation), decorative (neither). First application retired `file-written-has-source-majority` (R22) as flappy.
 
@@ -513,9 +513,9 @@ Everything below is implemented, tested, and wired into the pipeline. Not aspira
 
 **Inference proxy** (`tools/HME/proxy/hme_proxy.js`). Authoritative filter for all inference — Anthropic (default upstream), Groq, OpenRouter, Cerebras, Mistral, NVIDIA, Gemini, local llama.cpp. Multi-upstream routing via `X-HME-Upstream` header. Emergency valve self-disables after 3 consecutive upstream failures: writes `PROXY_EMERGENCY` to `hme-errors.log`, flips `HME_PROXY_ENABLED=0` in `.env`, kills itself. Coherence budget gates injection behavior — when coherence is ABOVE band, injection is suppressed to allow exploration. Two test suites: `test-proxy.sh` (9 mock tests) and `test-proxy-live.sh` (7 live API smoke tests).
 
-**Activity bridge** (`metrics/hme-activity.jsonl`). 9 event types: `edit_pending`, `file_written`, `mcp_tool_call`, `pipeline_start`, `pipeline_run`, `round_complete`, `coherence_violation`, `inference_call`, `injection_influence`. Emitters: hooks (file edits, pipeline lifecycle), proxy (inference calls, violations, injections), `tools/HME/activity/emit.py` (CLI interface for any component).
+**Activity bridge** (`output/metrics/hme-activity.jsonl`). 9 event types: `edit_pending`, `file_written`, `mcp_tool_call`, `pipeline_start`, `pipeline_run`, `round_complete`, `coherence_violation`, `inference_call`, `injection_influence`. Emitters: hooks (file edits, pipeline lifecycle), proxy (inference calls, violations, injections), `tools/HME/activity/emit.py` (CLI interface for any component).
 
-**Policy engine** (`scripts/pipeline/check-hme-coherence.js`). Pre-composition pipeline step. Reads activity log, enforces coherence invariants, writes `metrics/hme-violations.json`.
+**Policy engine** (`scripts/pipeline/check-hme-coherence.js`). Pre-composition pipeline step. Reads activity log, enforces coherence invariants, writes `output/metrics/hme-violations.json`.
 
 ### Self-awareness layer (pipeline steps)
 

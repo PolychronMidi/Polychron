@@ -8,7 +8,7 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from _common import PROJECT_ROOT, load_json as _load
+from _common import PROJECT_ROOT, METRICS_DIR, load_json as _load
 
 
 def main(argv):
@@ -17,8 +17,8 @@ def main(argv):
         return 2
     inv_id = argv[1]
 
-    hist = _load("metrics/hme-invariant-history.json") or {}
-    eff = _load("metrics/hme-invariant-efficacy.json") or {}
+    hist = _load("output/metrics/hme-invariant-history.json") or {}
+    eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
     per_inv = eff.get("per_invariant", {}).get(inv_id)
     if not per_inv:
         print(f"invariant '{inv_id}' not found in efficacy report", file=sys.stderr)

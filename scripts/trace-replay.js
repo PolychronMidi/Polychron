@@ -20,7 +20,8 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUTPUT_DIR = path.join(ROOT, 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const OUTPUT_DIR = path.join(METRICS_DIR);
 const TRACE_PATH = path.join(OUTPUT_DIR, 'trace.jsonl');
 const REPLAY_JSON_PATH = path.join(OUTPUT_DIR, 'trace-replay.json');
 

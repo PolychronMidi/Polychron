@@ -38,12 +38,12 @@ if [ -f "$FLAG" ]; then
     # that historically led to clean sessions. This makes the dormant coupling
     # data load-bearing — agents see "these sequences tend to work."
     COUPLING_HINT=""
-    COUPLING_FILE="$PROJECT/metrics/hme-coupling.json"
+    COUPLING_FILE="${METRICS_DIR:-$PROJECT/output/metrics}/hme-coupling.json"
     if [ -f "$COUPLING_FILE" ]; then
       COUPLING_HINT=$(python3 <<'PYEOF' 2>/dev/null
 import json
 try:
-    d = json.load(open('metrics/hme-coupling.json'))
+    d = json.load(open(os.environ.get("METRICS_DIR", os.path.join(os.environ.get("PROJECT_ROOT","."), "output", "metrics")) + "/hme-coupling.json"))
     matrix = d.get('matrix', {})
     # Find pairs with high lift (co-occurrence correlates with clean sessions)
     pairs = []

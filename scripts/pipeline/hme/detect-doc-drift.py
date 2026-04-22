@@ -31,6 +31,7 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
 DOCS = [
@@ -40,8 +41,8 @@ DOCS = [
     "doc/TUNING_MAP.md",
     "CLAUDE.md",
 ]
-OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-doc-drift.json")
-ACTIVITY_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-activity.jsonl")
+OUT_PATH = os.path.join(METRICS_DIR, "hme-doc-drift.json")
+ACTIVITY_PATH = os.path.join(METRICS_DIR, "hme-activity.jsonl")
 
 _MODULE_TOKEN_RE = re.compile(r"\b([a-z][a-zA-Z0-9]{3,}(?:[A-Z][a-zA-Z0-9]+)+)\b")
 _CODE_FENCE_RE = re.compile(r"`([a-z][a-zA-Z0-9]{3,}(?:[A-Z][a-zA-Z0-9]+)+)`")

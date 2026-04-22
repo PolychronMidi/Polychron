@@ -33,15 +33,16 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
-const OUT = path.join(ROOT, 'metrics', 'hme-evolution-priority.json');
+const OUT = path.join(METRICS_DIR, 'hme-evolution-priority.json');
 
 
 function main() {
   const priorities = [];
 
   // 1. Negative space -> structural gaps
-  const ns = loadJson('metrics/hme-negative-space.json');
+  const ns = loadJson(path.join(METRICS_DIR, 'hme-negative-space.json'));
   if (ns && Array.isArray(ns.gaps)) {
     for (const gap of ns.gaps.slice(0, 5)) {
       priorities.push({
@@ -54,7 +55,7 @@ function main() {
   }
 
   // 2. KB staleness -> stale modules need re-understanding
-  const stale = loadJson('metrics/kb-staleness.json');
+  const stale = loadJson(path.join(METRICS_DIR, 'kb-staleness.json'));
   if (stale && Array.isArray(stale.modules)) {
     const staleModules = stale.modules
       .filter((m) => m.status === 'STALE' || m.status === 'MISSING')
@@ -70,7 +71,7 @@ function main() {
   }
 
   // 3. Semantic drift -> KB entries that are wrong
-  const drift = loadJson('metrics/hme-semantic-drift.json');
+  const drift = loadJson(path.join(METRICS_DIR, 'hme-semantic-drift.json'));
   if (drift && Array.isArray(drift.drifted_entries)) {
     for (const d of drift.drifted_entries.slice(0, 5)) {
       const driftScore = (d.diffs || []).length / 10;
@@ -84,7 +85,7 @@ function main() {
   }
 
   // 4. Coherence budget -> too disciplined = explore; too chaotic = consolidate
-  const budget = loadJson('metrics/hme-coherence-budget.json');
+  const budget = loadJson(path.join(METRICS_DIR, 'hme-coherence-budget.json'));
   if (budget) {
     const score = budget.current_coherence || 0;
     const band = budget.band || [0.55, 0.85];
@@ -108,7 +109,7 @@ function main() {
   }
 
   // 5. Compositional trajectory -> plateau detection
-  const trajectory = loadJson('metrics/hme-compositional-trajectory.json');
+  const trajectory = loadJson(path.join(METRICS_DIR, 'hme-compositional-trajectory.json'));
   if (trajectory) {
     const trend = trajectory.classification || trajectory.trend;
     if (trend === 'declining' || trend === 'plateau') {
@@ -123,7 +124,7 @@ function main() {
   }
 
   // 6. Prediction accuracy -> where HME's model is wrong
-  const pred = loadJson('metrics/hme-prediction-accuracy.json');
+  const pred = loadJson(path.join(METRICS_DIR, 'hme-prediction-accuracy.json'));
   if (pred && pred.ema !== null && pred.ema < 0.5) {
     priorities.push({
       target: 'prediction_model',
@@ -135,7 +136,7 @@ function main() {
   }
 
   // 7. Intention gap -> what keeps getting abandoned
-  const gap = loadJson('metrics/hme-intention-gap.json');
+  const gap = loadJson(path.join(METRICS_DIR, 'hme-intention-gap.json'));
   if (gap && gap.ema !== null && gap.ema > 0.3) {
     priorities.push({
       target: 'execution_gap',
@@ -147,7 +148,7 @@ function main() {
   }
 
   // 8. Crystallized patterns -> ripe for exploitation
-  const cryst = loadJson('metrics/hme-crystallized.json');
+  const cryst = loadJson(path.join(METRICS_DIR, 'hme-crystallized.json'));
   if (cryst && Array.isArray(cryst.patterns || cryst.crystals)) {
     const patterns = cryst.patterns || cryst.crystals;
     const unexploited = patterns.filter((p) => !p.exploited && (p.rounds || []).length >= 5);
@@ -162,7 +163,7 @@ function main() {
   }
 
   // 9. Doc drift -> documentation lagging
-  const docDrift = loadJson('metrics/hme-doc-drift.json');
+  const docDrift = loadJson(path.join(METRICS_DIR, 'hme-doc-drift.json'));
   if (docDrift && docDrift.meta && docDrift.meta.kb_orphans > 50) {
     priorities.push({
       target: 'documentation',

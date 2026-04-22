@@ -7,11 +7,12 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const PROJECT_ROOT = path.join(__dirname, '..', '..');
 const WAV_PATH = path.join(PROJECT_ROOT, 'output', 'combined.wav');
-const TRACE_SUMMARY = path.join(PROJECT_ROOT, 'metrics', 'trace-summary.json');
-const REPORT_PATH = path.join(PROJECT_ROOT, 'metrics', 'perceptual-report.json');
+const TRACE_SUMMARY = path.join(METRICS_DIR, 'trace-summary.json');
+const REPORT_PATH = path.join(METRICS_DIR, 'perceptual-report.json');
 
 function main() {
   if (!fs.existsSync(WAV_PATH)) {
@@ -220,9 +221,9 @@ with open(sys.argv[3], 'w') as f:
 `;
 
   try {
-    const tmpReport = path.join(PROJECT_ROOT, 'metrics', '.perceptual-tmp.json');
+    const tmpReport = path.join(METRICS_DIR, '.perceptual-tmp.json');
     execSync(
-      `python3 -c '${pyScript.replace(/'/g, "'\\''").replace(/\n/g, '\n')}' '${WAV_PATH}' '${path.join(PROJECT_ROOT, 'metrics', 'trace.jsonl')}' '${tmpReport}'`,
+      `python3 -c '${pyScript.replace(/'/g, "'\\''").replace(/\n/g, '\n')}' '${WAV_PATH}' '${path.join(METRICS_DIR, 'trace.jsonl')}' '${tmpReport}'`,
       {
         timeout: 300000,
         encoding: 'utf-8',

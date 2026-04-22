@@ -30,10 +30,11 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-MATCHES = os.path.join(PROJECT_ROOT, "metrics", "hme-pattern-matches.json")
-TIMESERIES = os.path.join(PROJECT_ROOT, "metrics", "hme-arc-timeseries.jsonl")
-SNAPSHOTS = os.path.join(PROJECT_ROOT, "metrics", "hme-legendary-states.jsonl")
-REPORTS = os.path.join(PROJECT_ROOT, "metrics", "hme-investigation-reports.jsonl")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+MATCHES = os.path.join(METRICS_DIR, "hme-pattern-matches.json")
+TIMESERIES = os.path.join(METRICS_DIR, "hme-arc-timeseries.jsonl")
+SNAPSHOTS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
+REPORTS = os.path.join(METRICS_DIR, "hme-investigation-reports.jsonl")
 LOOKBACK_ROUNDS = 5
 
 
@@ -100,7 +101,7 @@ def _investigate_consensus(pattern: dict) -> dict:
         # + consensus trajectory + HCI from pipeline-summary. HCI isn't in
         # timeseries rows; read summary directly.
         try:
-            ps_path = os.path.join(PROJECT_ROOT, "metrics", "pipeline-summary.json")
+            ps_path = os.path.join(METRICS_DIR, "pipeline-summary.json")
             hci_now = None
             if os.path.isfile(ps_path):
                 with open(ps_path) as hf:
@@ -119,7 +120,7 @@ def _investigate_consensus(pattern: dict) -> dict:
 
 def _investigate_drift(pattern: dict) -> dict:
     """Field-by-field trajectory for Arc III drift outliers."""
-    drift = _load_json(os.path.join(PROJECT_ROOT, "metrics", "hme-legendary-drift.json")) or {}
+    drift = _load_json(os.path.join(METRICS_DIR, "hme-legendary-drift.json")) or {}
     outliers = drift.get("outliers") or []
     snaps = _load_jsonl(SNAPSHOTS)
     tail = snaps[-LOOKBACK_ROUNDS:]

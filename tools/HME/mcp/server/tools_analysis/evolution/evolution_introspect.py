@@ -48,7 +48,7 @@ def hme_introspect() -> str:
         parts.append("### Last Run Musical Context")
         parts.append(comp)
 
-    journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
+    journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     if os.path.isfile(journal_path):
         try:
             with open(journal_path, encoding="utf-8") as _jf:

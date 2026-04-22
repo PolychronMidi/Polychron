@@ -34,9 +34,9 @@ from server import context as ctx
 from . import _track
 
 KNOWLEDGE_ACCESS_REL = os.path.join("tools", "HME", "KB", "knowledge_access.json")
-ACTIVITY_REL = os.path.join("metrics", "hme-activity.jsonl")
-ACCURACY_REL = os.path.join("metrics", "hme-prediction-accuracy.json")
-CORRELATION_REL = os.path.join("metrics", "hme-musical-correlation.json")
+ACTIVITY_REL = os.path.join("output", "metrics", "hme-activity.jsonl")
+ACCURACY_REL = os.path.join("output", "metrics", "hme-prediction-accuracy.json")
+CORRELATION_REL = os.path.join("output", "metrics", "hme-musical-correlation.json")
 
 
 def _load_json(rel: str):

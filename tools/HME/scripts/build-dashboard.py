@@ -51,7 +51,7 @@ except ImportError:
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_METRICS = os.path.join(_PROJECT, "metrics")
+_METRICS = os.path.join(METRICS_DIR)
 _LOG = os.path.join(_PROJECT, "log")
 _OUTPUT = os.path.join(_METRICS, "hme-dashboard.html")
 

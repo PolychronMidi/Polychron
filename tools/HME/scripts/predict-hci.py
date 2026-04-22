@@ -37,7 +37,7 @@ import time
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-hci-forecast.json")
+_OUTPUT = os.path.join(METRICS_DIR, "hme-hci-forecast.json")
 
 
 def _simple_regression(xs: list, ys: list) -> tuple:
@@ -62,7 +62,7 @@ def _stddev(vs: list) -> float:
 
 
 def predict() -> dict:
-    snap_dir = os.path.join(_PROJECT, "metrics", "holograph")
+    snap_dir = os.path.join(METRICS_DIR, "holograph")
     if not os.path.isdir(snap_dir):
         return {"_warning": "no holograph dir", "generated_at": time.time()}
     paths = sorted(glob.glob(os.path.join(snap_dir, "holograph-*.json")))

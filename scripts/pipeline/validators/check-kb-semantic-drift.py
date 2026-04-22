@@ -29,13 +29,14 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
-SIGNATURES_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-signatures.json")
-DRIFT_OUT = os.path.join(PROJECT_ROOT, "metrics", "hme-semantic-drift.json")
-DEP_GRAPH = os.path.join(PROJECT_ROOT, "metrics", "dependency-graph.json")
+SIGNATURES_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
+DRIFT_OUT = os.path.join(METRICS_DIR, "hme-semantic-drift.json")
+DEP_GRAPH = os.path.join(METRICS_DIR, "dependency-graph.json")
 BIAS_MANIFEST = os.path.join(PROJECT_ROOT, "scripts", "pipeline", "bias-bounds-manifest.json")
-FEEDBACK_GRAPH = os.path.join(PROJECT_ROOT, "metrics", "feedback_graph.json")
+FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 
 # A drift is flagged when the structural signature differs by at least this

@@ -57,8 +57,8 @@ def init(project_root: str) -> dict:
     if _STATE_FILE:
         return snapshot()  # already initialized
     _STATE_FILE = os.path.join(project_root, "tmp", "hme-ops.json")
-    _SYNTHESIS_FILE = os.path.join(project_root, "metrics", "hme-synthesis.jsonl")
-    _SESSIONS_FILE = os.path.join(project_root, "metrics", "hme-sessions.jsonl")
+    _SYNTHESIS_FILE = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-synthesis.jsonl")
+    _SESSIONS_FILE = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-sessions.jsonl")
     os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
     os.makedirs(os.path.dirname(_SYNTHESIS_FILE), exist_ok=True)
     today = time.strftime("%Y-%m-%d")

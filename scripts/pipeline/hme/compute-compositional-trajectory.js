@@ -31,9 +31,10 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
-const MUSICAL = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
-const OUT = path.join(ROOT, 'metrics', 'hme-trajectory.json');
+const MUSICAL = path.join(METRICS_DIR, 'hme-musical-correlation.json');
+const OUT = path.join(METRICS_DIR, 'hme-trajectory.json');
 
 const WINDOW = 20;
 const MIN_ROUNDS = 5;

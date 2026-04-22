@@ -18,9 +18,9 @@ import os
 from server import context as ctx
 from . import _track
 
-MUSICAL_REL = os.path.join("metrics", "hme-musical-correlation.json")
-TRUST_REL = os.path.join("metrics", "kb-trust-weights.json")
-GAP_REL = os.path.join("metrics", "hme-intention-gap.json")
+MUSICAL_REL = os.path.join("output", "metrics", "hme-musical-correlation.json")
+TRUST_REL = os.path.join("output", "metrics", "kb-trust-weights.json")
+GAP_REL = os.path.join("output", "metrics", "hme-intention-gap.json")
 
 
 def _load(rel: str):
@@ -40,7 +40,7 @@ def music_truth_report() -> str:
     if not data:
         return (
             "# HME Musical Ground Truth\n\n"
-            "metrics/hme-musical-correlation.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-musical-correlation.json not found.\n")
             "Runs automatically post-composition "
             "(`scripts/pipeline/compute-musical-correlation.js`)."
         )
@@ -103,7 +103,7 @@ def kb_trust_report() -> str:
     if not data:
         return (
             "# KB Trust Weights\n\n"
-            "metrics/kb-trust-weights.json not found.\n"
+            os.path.join(METRICS_DIR, "kb-trust-weights.json not found.\n")
             "Runs automatically post-composition "
             "(`scripts/pipeline/compute-kb-trust-weights.py`)."
         )
@@ -143,7 +143,7 @@ def intention_gap_report() -> str:
     if not data:
         return (
             "# HME Intention-Execution Gap\n\n"
-            "metrics/hme-intention-gap.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-intention-gap.json not found.\n")
             "Runs automatically post-composition "
             "(`scripts/pipeline/compute-intention-gap.js`)."
         )

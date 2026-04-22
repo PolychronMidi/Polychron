@@ -23,9 +23,10 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson } = require('../hme/utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
-const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
-const OUT = path.join(ROOT, 'metrics', 'hme-violations.json');
+const ACTIVITY = path.join(METRICS_DIR, 'hme-activity.jsonl');
+const OUT = path.join(METRICS_DIR, 'hme-violations.json');
 
 function readEvents() {
   if (!fs.existsSync(ACTIVITY)) return [];

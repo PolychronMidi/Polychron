@@ -676,7 +676,7 @@ class LifesaverRateVerifier(Verifier):
     weight = 2.0
 
     def run(self) -> VerdictResult:
-        data_path = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
+        data_path = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
         if not os.path.isfile(data_path):
             return _result(SKIP, 1.0, "no effectiveness data yet — run analyze-tool-effectiveness.py")
         try:
@@ -717,7 +717,7 @@ class MetaObserverCoherenceVerifier(Verifier):
     weight = 2.0
 
     def run(self) -> VerdictResult:
-        data_path = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
+        data_path = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
         if not os.path.isfile(data_path):
             return _result(SKIP, 1.0, "no effectiveness data yet")
         try:
@@ -862,7 +862,7 @@ class VerifierCoverageGapVerifier(Verifier):
     weight = 0.5
 
     def run(self) -> VerdictResult:
-        data_path = os.path.join(_PROJECT, "metrics", "hme-verifier-coverage.json")
+        data_path = os.path.join(METRICS_DIR, "hme-verifier-coverage.json")
         if not os.path.isfile(data_path):
             return _result(SKIP, 1.0, "no coverage report — run suggest-verifiers.py")
         try:
@@ -894,7 +894,7 @@ class MemeticDriftVerifier(Verifier):
     weight = 0.5
 
     def run(self) -> VerdictResult:
-        data_path = os.path.join(_PROJECT, "metrics", "hme-memetic-drift.json")
+        data_path = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
         if not os.path.isfile(data_path):
             return _result(SKIP, 1.0, "no memetic drift report")
         try:
@@ -998,7 +998,7 @@ class ContextBudgetVerifier(Verifier):
         if used is None:
             return _result(SKIP, 1.0, "no used_pct in statusline data")
 
-        link_latest = os.path.join(_PROJECT, "metrics", "chain-history", "latest.yaml")
+        link_latest = os.path.join(METRICS_DIR, "chain-history", "latest.yaml")
         link_age_s = None
         if os.path.isfile(link_latest) or os.path.islink(link_latest):
             try:
@@ -1044,7 +1044,7 @@ class PredictiveHCIVerifier(Verifier):
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        forecast_path = os.path.join(_PROJECT, "metrics", "hme-hci-forecast.json")
+        forecast_path = os.path.join(METRICS_DIR, "hme-hci-forecast.json")
         script = os.path.join(_SCRIPTS_DIR, "predict-hci.py")
         # Refresh forecast (cheap)
         if os.path.isfile(script):
@@ -1565,7 +1565,7 @@ class ToolResponseLatencyVerifier(Verifier):
         if ema_ms <= 0:
             return _result(SKIP, 1.0, "no tool_response_ms_ema data")
 
-        history_file = os.path.join(_PROJECT, "metrics", "hme-latency-history.json")
+        history_file = os.path.join(METRICS_DIR, "hme-latency-history.json")
         history: list = []
         try:
             if os.path.isfile(history_file):
@@ -1639,7 +1639,7 @@ class TrajectoryTrendVerifier(Verifier):
     weight = 1.5
 
     def run(self) -> VerdictResult:
-        data_path = os.path.join(_PROJECT, "metrics", "hme-trajectory.json")
+        data_path = os.path.join(METRICS_DIR, "hme-trajectory.json")
         if not os.path.isfile(data_path):
             return _result(SKIP, 1.0, "no trajectory data — run analyze-hci-trajectory.py")
         try:
@@ -1677,13 +1677,13 @@ class TrajectoryTrendVerifier(Verifier):
 
 
 class FeedbackGraphVerifier(Verifier):
-    """metrics/feedback_graph.json validates against scripts/validate-feedback-graph.js"""
+    ""os.path.join(METRICS_DIR, "feedback_graph.json validates against scripts/validate-feedback-graph.js")""
     name = "feedback-graph"
     category = "topology"
     weight = 1.0
 
     def run(self) -> VerdictResult:
-        graph = os.path.join(_PROJECT, "metrics", "feedback_graph.json")
+        graph = os.path.join(METRICS_DIR, "feedback_graph.json")
         if not os.path.isfile(graph):
             return _result(SKIP, 1.0, "no feedback_graph.json")
         try:
@@ -1948,7 +1948,7 @@ def main(argv: list) -> int:
                 for name, info in (report.get("verifiers") or {}).items()
             },
         }
-        snap_path = os.path.join(_PROJECT, "metrics", "hci-verifier-snapshot.json")
+        snap_path = os.path.join(METRICS_DIR, "hci-verifier-snapshot.json")
         # Keep last snapshot as .prev and current as the live file, so we can
         # always diff the two most recent HCI computations.
         if os.path.isfile(snap_path):

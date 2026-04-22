@@ -22,10 +22,11 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-EPOCH_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-epoch-transitions.jsonl")
-DRIFT_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-legendary-drift.json")
-PS_PATH = os.path.join(PROJECT_ROOT, "metrics", "pipeline-summary.json")
-CONSENSUS_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-consensus.json")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+EPOCH_PATH = os.path.join(METRICS_DIR, "hme-epoch-transitions.jsonl")
+DRIFT_PATH = os.path.join(METRICS_DIR, "hme-legendary-drift.json")
+PS_PATH = os.path.join(METRICS_DIR, "pipeline-summary.json")
+CONSENSUS_PATH = os.path.join(METRICS_DIR, "hme-consensus.json")
 
 
 def _load(p):

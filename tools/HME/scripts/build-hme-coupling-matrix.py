@@ -42,8 +42,8 @@ from collections import defaultdict
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_EFFECTIVENESS = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-coupling.json")
+_EFFECTIVENESS = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
+_OUTPUT = os.path.join(METRICS_DIR, "hme-coupling.json")
 
 # Tools we consider "HME surface" — both the public HME tools and the hooks
 # that dispatch on native tool calls. Any tool co-occurring with these is a

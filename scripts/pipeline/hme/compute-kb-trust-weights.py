@@ -34,13 +34,14 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
-OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-trust-weights.json")
-COHERENCE_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-coherence.json")
-ACCURACY_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-prediction-accuracy.json")
-MUSICAL_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-musical-correlation.json")
+OUT_PATH = os.path.join(METRICS_DIR, "kb-trust-weights.json")
+COHERENCE_PATH = os.path.join(METRICS_DIR, "hme-coherence.json")
+ACCURACY_PATH = os.path.join(METRICS_DIR, "hme-prediction-accuracy.json")
+MUSICAL_PATH = os.path.join(METRICS_DIR, "hme-musical-correlation.json")
 
 
 def _load_json(path: str):

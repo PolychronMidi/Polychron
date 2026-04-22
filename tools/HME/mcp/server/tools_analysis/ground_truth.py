@@ -35,8 +35,8 @@ import time
 from server import context as ctx
 from . import _track
 
-GROUND_TRUTH_LOG_REL = os.path.join("metrics", "hme-ground-truth.jsonl")
-OUT_REL = os.path.join("metrics", "hme-ground-truth-index.json")
+GROUND_TRUTH_LOG_REL = os.path.join("output", "metrics", "hme-ground-truth.jsonl")
+OUT_REL = os.path.join("output", "metrics", "hme-ground-truth-index.json")
 
 VALID_SENTIMENTS = {
     "compelling", "surprising", "moving", "mechanical", "flat",

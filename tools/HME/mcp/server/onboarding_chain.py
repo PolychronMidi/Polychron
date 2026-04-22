@@ -215,8 +215,8 @@ def _substrate_brief_line() -> str:
         import json as _json
         from server import context as _ctx
         root = _ctx.PROJECT_ROOT
-        na_path = os.path.join(root, "metrics", "hme-next-actions.json")
-        con_path = os.path.join(root, "metrics", "hme-consensus.json")
+        na_path = os.path.join(root, "output", "metrics", "hme-next-actions.json")
+        con_path = os.path.join(root, "output", "metrics", "hme-consensus.json")
         na = {}
         con = {}
         if os.path.isfile(na_path):

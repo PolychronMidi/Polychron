@@ -12,8 +12,8 @@ logger = logging.getLogger("HME")
 
 def _check_trace_staleness() -> str:
     """Compare trace.jsonl mtime against latest run-history snapshot. Returns warning if stale."""
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
-    rh_dir = os.path.join(ctx.PROJECT_ROOT, "metrics", "run-history")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
+    rh_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
     if not os.path.isfile(trace_path) or not os.path.isdir(rh_dir):
         return ""
     trace_mtime = os.path.getmtime(trace_path)
@@ -39,7 +39,7 @@ def drama_finder(top_n: int = 10) -> str:
     ctx.ensure_ready_sync()
     _track("drama_finder")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
@@ -199,7 +199,7 @@ def beat_snapshot(beat_key: str) -> str:
     ctx.ensure_ready_sync()
     _track("beat_snapshot")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 

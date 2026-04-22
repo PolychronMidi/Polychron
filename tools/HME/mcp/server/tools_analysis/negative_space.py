@@ -35,9 +35,9 @@ from collections import defaultdict
 from server import context as ctx
 from . import _track
 
-DEP_GRAPH_REL = os.path.join("metrics", "dependency-graph.json")
-FEEDBACK_GRAPH_REL = os.path.join("metrics", "feedback_graph.json")
-OUT_REL = os.path.join("metrics", "hme-negative-space.json")
+DEP_GRAPH_REL = os.path.join("output", "metrics", "dependency-graph.json")
+FEEDBACK_GRAPH_REL = os.path.join("output", "metrics", "feedback_graph.json")
+OUT_REL = os.path.join("output", "metrics", "hme-negative-space.json")
 
 
 def _load(rel: str) -> dict | None:

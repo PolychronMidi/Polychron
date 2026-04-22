@@ -33,9 +33,9 @@ from collections import defaultdict
 from server import context as ctx
 from . import _track
 
-ACTIVITY_REL = os.path.join("metrics", "hme-activity.jsonl")
-GAP_REL = os.path.join("metrics", "hme-intention-gap.json")
-OUT_REL = os.path.join("metrics", "hme-cognitive-load.json")
+ACTIVITY_REL = os.path.join("output", "metrics", "hme-activity.jsonl")
+GAP_REL = os.path.join("output", "metrics", "hme-intention-gap.json")
+OUT_REL = os.path.join("output", "metrics", "hme-cognitive-load.json")
 
 
 def _load(rel: str):

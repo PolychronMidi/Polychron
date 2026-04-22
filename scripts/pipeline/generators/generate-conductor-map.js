@@ -19,8 +19,9 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const SRC  = path.join(ROOT, 'src');
-const OUTPUT_DIR = path.join(ROOT, 'metrics');
+const OUTPUT_DIR = path.join(METRICS_DIR);
 const MANIFEST_PATH = path.join(OUTPUT_DIR, 'system-manifest.json');
 const BOOT_ORDER_PATH = path.join(OUTPUT_DIR, 'boot-order.json');
 const JSON_OUTPUT = path.join(OUTPUT_DIR, 'conductor-map.json');

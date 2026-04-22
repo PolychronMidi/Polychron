@@ -157,7 +157,7 @@ def get_top_bridges(n: int = 3, threshold: float = -0.30) -> list:
     threshold: r-value cutoff (default -0.30 for global views; pass -0.20 for module-specific
     lookups to surface weaker-but-real virgin tensions like feedbackOscillator↔motifEcho)."""
     try:
-        trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
         trace_mtime = os.path.getmtime(trace_path) if os.path.isfile(trace_path) else 0
         src_root_b = os.path.join(ctx.PROJECT_ROOT, "src")
         cl_dir = os.path.join(src_root_b, "crossLayer")
@@ -328,7 +328,7 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         _antag_thresh = -0.30
         try:
             from ...synthesis.synthesis_config import load_json
-            _mp = load_json("metrics/metaprofile-active.json")
+            _mp = load_json(os.path.join(METRICS_DIR, "metaprofile-active.json"))
             if _mp and "coupling" in _mp:
                 _antag_thresh = _mp["coupling"].get("antagonismThreshold", -0.30)
         except Exception as _mp_err:
@@ -367,7 +367,7 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
     # Get latest round number for staleness computation
     _latest_round = 0
     try:
-        journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
+        journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
         if os.path.isfile(journal_path):
             import re as _re_j
             with open(journal_path, encoding="utf-8") as _jf:

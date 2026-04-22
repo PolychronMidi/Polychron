@@ -30,7 +30,7 @@ from typing import Any
 from server import context as ctx
 from . import _track
 
-REGISTRY_REL = os.path.join("metrics", "hme-hypotheses.json")
+REGISTRY_REL = os.path.join("output", "metrics", "hme-hypotheses.json")
 
 VALID_STATUSES = {"OPEN", "CONFIRMED", "REFUTED", "INCONCLUSIVE", "ABANDONED"}
 

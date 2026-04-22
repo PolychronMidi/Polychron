@@ -25,7 +25,8 @@ import tempfile
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-ACTIVITY = os.path.join(PROJECT_ROOT, "metrics", "hme-activity.jsonl")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+ACTIVITY = os.path.join(METRICS_DIR, "hme-activity.jsonl")
 CUTOFF_SECS = 86400  # events older than 24h lacking source are legacy
 
 
