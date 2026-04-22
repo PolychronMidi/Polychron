@@ -3,4 +3,8 @@
 require('./stutter');
 require('./noise');
 require('./setBalanceAndFX');
+require('./regimePan');
+require('./regimeFade');
+require('./regimeFx');
+require('./regimeVelocity');
 require('./setBinaural');

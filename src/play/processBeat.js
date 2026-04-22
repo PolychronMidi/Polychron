@@ -27,6 +27,10 @@ processBeat = function processBeat(layer, playProbIn, stutterProbIn, boot) {
   setUnitTiming('beat');
   setOtherInstruments();
   setBalanceAndFX();
+  regimePan.tick('beat');
+  regimeFade.tick('beat');
+  regimeFx.tick('beat');
+  regimeVelocity.tick('beat');
   StutterManager.prepareBeat(beatStartTime);
   const fxStereoPan = m.abs(requireFiniteNumber('balOffset', balOffset)) / boot.fxStereoPanDenominator;
   const fxVelocityShift = m.abs(requireFiniteNumber('refVar', refVar) + requireFiniteNumber('bassVar', bassVar)) / boot.fxVelocityShiftDenominator;

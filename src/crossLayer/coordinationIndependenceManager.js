@@ -170,6 +170,26 @@ coordinationIndependenceManager = (() => {
   }
 
   /**
+   * Read channelStateField rollup and derive a small coordination bias.
+   * Deep antagonism in the emission ecology => push dial targets UP
+   * (module pairs should coordinate harder to compensate for writer-level
+   * disagreement). Deep cooperation => pull dial targets DOWN (the ecology
+   * is tight; loosen coordination for variety).
+   * Bounded to +/-0.06 so it biases without overriding CIM's primary logic.
+   */
+  function _substrateCoordinationBias() {
+    const rollup = channelStateField.getRollup();
+    const coop = V.optionalFinite(rollup.meanCooperation, 0);
+    // Piecewise linear mapping: -0.3 or below => +0.06 (push coordination);
+    // +0.2 or above => -0.06 (pull coordination down); 0 => 0 bias.
+    if (coop <= -0.3) return 0.06;
+    if (coop >= 0.2) return -0.06;
+    // Smooth interpolation across the middle zone.
+    if (coop < 0) return (coop / -0.3) * 0.06;  // -0.3..0 => +0.06..0
+    return (coop / 0.2) * -0.06;                 // 0..+0.2 => 0..-0.06
+  }
+
+  /**
    * Main tick: update dial targets and ease dials toward targets.
    * Phase-gated: only adjust during stabilized system phase.
    * Self-interference detection: revert on health drop.
@@ -235,12 +255,21 @@ coordinationIndependenceManager = (() => {
     }
 
     // Normal operation: compute targets and ease dials toward them
+    // Substrate feedback: close the loop between channelStateField state and
+    // CIM dial targets. Deep antagonism in the emission ecology suggests
+    // coordination modules should push HARDER (raise dial targets); deep
+    // cooperation suggests the ecology is already tight and dials can relax.
+    // Small bias (+-0.06) so CIM's primary signals (phase/regime/topology/
+    // health) still dominate -- substrate just nudges the target.
+    const substrateBias = _substrateCoordinationBias();
+
     // R26 E4: staggered dwell per pair for temporal separation
     for (let i = 0; i < MODULE_PAIRS.length; i++) {
       const pair = MODULE_PAIRS[i];
       if (beatsSinceChange[pair] < MIN_DWELL_BEATS + i * PAIR_DWELL_STAGGER) continue;
 
-      const target = computeTarget(pair, sigs);
+      const rawTarget = computeTarget(pair, sigs);
+      const target = clamp(rawTarget + substrateBias, 0.05, 0.95);
       dialTargets[pair] = target;
 
       const diff = target - dials[pair];
@@ -367,12 +396,23 @@ coordinationIndependenceManager = (() => {
     // see how independence manifests at the per-channel-per-param level
     // (collision density, cooperation direction, contention locality).
     // The dials are the coarse control surface; the field is the texture.
+    //
+    // R39+: widened/deepened CIS readout. Single scalar meanCooperation
+    // hides structure -- a field with deep antagonism on pan and full
+    // synergy on filter has the same mean as a featureless flatline.
+    // Per-layer + per-param + synergy-spectrum exposes the full trajectory
+    // from deep antagonism through independence to true synergy.
     return {
       dials: Object.assign({}, dials),
       targets: Object.assign({}, dialTargets),
       effectiveness: Object.assign({}, effectiveness),
       tickCount,
-      fieldRollup: channelStateField.getRollup()
+      fieldRollup: channelStateField.getRollup(),
+      fieldByLayer: channelStateField.getRollupByLayer(),
+      fieldByParam: channelStateField.getRollupByParam(),
+      fieldSpectrum: channelStateField.getSynergySpectrum(),
+      fieldCrossParam: channelStateField.getCrossParamCorrelations(20),
+      substrateCoordinationBias: _substrateCoordinationBias(),
     };
   }
 

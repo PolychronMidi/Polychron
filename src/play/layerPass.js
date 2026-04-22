@@ -87,19 +87,19 @@ layerPass = (() => {
         for (divIndex = 0; divIndex < divsPerBeat; divIndex++) {
           timeStream.setPosition('div', divIndex);
           setUnitTiming('div');
-          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); }
+          if (divIndex > 0) { playNotes('div', { playProb, stutterProb }); regimePan.tick('div'); regimeFade.tick('div'); regimeFx.tick('div'); regimeVelocity.tick('div'); }
           timeStream.setBounds('subdiv', subdivsPerDiv);
           microUnitAttenuator.begin('subdiv', subdivsPerDiv);
           for (subdivIndex = 0; subdivIndex < subdivsPerDiv; subdivIndex++) {
             timeStream.setPosition('subdiv', subdivIndex);
             setUnitTiming('subdiv');
-            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); }
+            if (subdivIndex > 0) { playNotes('subdiv', { playProb, stutterProb }); regimePan.tick('subdiv'); regimeFade.tick('subdiv'); regimeFx.tick('subdiv'); regimeVelocity.tick('subdiv'); }
             timeStream.setBounds('subsubdiv', subsubsPerSub);
             microUnitAttenuator.begin('subsubdiv', subsubsPerSub);
             for (subsubdivIndex = 0; subsubdivIndex < subsubsPerSub; subsubdivIndex++) {
               timeStream.setPosition('subsubdiv', subsubdivIndex);
               setUnitTiming('subsubdiv');
-              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); }
+              if (subsubdivIndex > 0) { playNotes('subsubdiv', { playProb, stutterProb }); regimePan.tick('subsubdiv'); regimeFade.tick('subsubdiv'); regimeFx.tick('subsubdiv'); regimeVelocity.tick('subsubdiv'); }
             }
             microUnitAttenuator.flush();
           }

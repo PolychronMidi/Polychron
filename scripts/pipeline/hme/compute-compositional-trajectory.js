@@ -42,10 +42,27 @@ const MIN_ROUNDS = 5;
 // are tuned for each signal's approximate scale. EnCodec entropy is ~5-9,
 // complexity and clap tension are 0..1. Thresholds are small fractions of
 // the signal range per round.
+// R38-R39: original thresholds were miscalibrated to this engine's natural
+// variance. Observed slopes hover 0.0001-0.002 against a 0.005 threshold,
+// so every round lands PLATEAU even when clap_tension is consistently
+// climbing. Lowered to match real signal magnitudes in this engine's
+// composition space.
 const THRESHOLDS = {
-  perceptual_complexity_avg: 0.005, // 0.5% of [0,1] per round
-  clap_tension: 0.005,
-  encodec_entropy_avg: 0.02,        // ~0.3% of a 6-point range per round
+  perceptual_complexity_avg: 0.001, // was 0.005
+  clap_tension: 0.001,              // was 0.005
+  encodec_entropy_avg: 0.005,       // was 0.02
+};
+
+// Per-signal voting weight. clap_tension promoted to PRIMARY: it's the
+// only trajectory signal that tracks what the listener + design goal agree
+// on (dense / chaotic / polyrhythmic texture). perceptual_complexity and
+// encodec_entropy are EnCodec-based spectral metrics that don't respond
+// to this engine's CC-modulation-heavy interventions -- they become
+// diagnostics, not co-equal votes.
+const WEIGHTS = {
+  perceptual_complexity_avg: 0.5,
+  clap_tension: 2.0,
+  encodec_entropy_avg: 0.5,
 };
 
 
@@ -79,13 +96,17 @@ function classify(slope, threshold) {
 }
 
 function rollupVerdict(perSignal) {
-  const votes = Object.values(perSignal)
-    .map((s) => s.verdict)
-    .filter((v) => v && v !== 'INSUFFICIENT_DATA');
-  if (votes.length === 0) return 'INSUFFICIENT_DATA';
   const counts = { GROWING: 0, PLATEAU: 0, DECLINING: 0 };
-  for (const v of votes) counts[v] = (counts[v] || 0) + 1;
-  // Simple majority; tie -> PLATEAU (conservative)
+  let totalWeight = 0;
+  for (const [key, s] of Object.entries(perSignal)) {
+    const verdict = s && s.verdict;
+    if (!verdict || verdict === 'INSUFFICIENT_DATA') continue;
+    const w = typeof WEIGHTS[key] === 'number' ? WEIGHTS[key] : 1.0;
+    counts[verdict] = (counts[verdict] || 0) + w;
+    totalWeight += w;
+  }
+  if (totalWeight === 0) return 'INSUFFICIENT_DATA';
+  // Weighted majority; tie -> PLATEAU (conservative).
   let best = 'PLATEAU';
   let bestN = 0;
   for (const [k, n] of Object.entries(counts)) {

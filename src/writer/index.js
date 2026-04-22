@@ -26,7 +26,22 @@ path = require('path');
  * @param {...*} items - Items to push onto the buffer.
  * @returns {void}
  */
-pushMultiple = (buffer, ...items) => { buffer.push(...items); };
+// Tap every emission to populate channelStateField. Note-on events feed the
+// 'velocity' dimension (no other path does -- gateway only observes cross-layer
+// modules). Control_c events are already observed at their call sites, but
+// catching them here too is harmless (substrate dedupe via writer tag).
+// Writer tag 'direct-p' marks emissions that bypassed any module-level tag;
+// anyone wanting finer attribution should call channelStateField.write()
+// directly with their module name before p().
+pushMultiple = (buffer, ...items) => {
+  buffer.push(...items);
+  for (let i = 0; i < items.length; i++) {
+    const ev = items[i];
+    if (ev && ev.type === 'on' && Array.isArray(ev.vals) && ev.vals.length >= 3) {
+      channelStateField.write(ev.vals[0], 'velocity', ev.vals[2], 'direct-p');
+    }
+  }
+};
 p = pushMultiple;
 
 c1 = []; // layer 1 CSV row buffer
