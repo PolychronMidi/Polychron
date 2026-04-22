@@ -2044,7 +2044,7 @@ declare var channelStateField: {
   getStats(): { L1: any; L2: any };
   getRollup(): { slotCount: number; meanCooperation: number; meanContention: number; meanVariance: number; totalWrites: number; dominance: Array<{ writer: string; count: number }> };
   getRollupByLayer(): { L1: any; L2: any };
-  getRollupByParam(): Record<string, { slotCount: number; meanCooperation: number; meanContention: number; meanVariance: number; writerCount: number }>;
+  getRollupByParam(): Record<string, { slotCount: number; meanCooperation: number; meanContention: number; meanVariance: number; writerCount: number; multiWriter: { slotCount: number; meanCooperation: number; meanContention: number; meanVariance: number }; singleWriter: { slotCount: number; meanCooperation: number } }>;
   getSynergySpectrum(): { globalBins: Record<string, number>; multiWriterBins: Record<string, number>; perLayer: Record<string, Record<string, number>>; totalSlots: number; multiWriterSlots: number; trueSynergyCount: number; trueAntagonismCount: number; hotspots: Array<{ layer: string; channel: string | number; param: string; cooperation: number; kind: string }> };
   getCrossParamCorrelations(limit?: number): Array<{ layer: string; channel: string | number; paramA: string; paramB: string; coopA: number; coopB: number; correlation: number }>;
   reset(): void;

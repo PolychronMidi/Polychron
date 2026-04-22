@@ -221,12 +221,22 @@ channelStateField = (() => {
   //   (+0.1, +0.4]  cooperation      -- mostly aligned
   //   (+0.4, +1.0]  synergy          -- strictly aligned pushes
   //
-  // R43: thresholds tightened from +/-0.5 to +/-0.4. R39-R42 populated
-  // antagonism / independence / cooperation but trueSynergyCount stayed
-  // at 0 across four cooperation-amplification rounds. Multi-writer
-  // slots (avg 3-5 writers, 16-entry history) can't easily reach +0.5
-  // by combinatorics; +0.4 captures genuine cooperation peaks without
-  // being combinatorically unreachable.
+  // R43: thresholds tightened from +/-0.5 to +/-0.4 because R39-R42 never
+  // populated synergy at +/-0.5.
+  //
+  // R46 forensic finding: trueSynergyCount=0 is STRUCTURAL, not a
+  // threshold artifact. Multi-writer slots topped out at +0.333 (single
+  // pan slot, 3 writers); no multi-writer slot crossed +0.4 on any
+  // dimension across 7 cooperation-amplification rounds. Root cause:
+  // writers have different value CENTERS (setBalanceAndFX rfx picks
+  // random in FX_CC_DEFAULTS range; regimeFx centers around 80; etc).
+  // Cooperation-mode aligns DIRECTIONS but can't overcome different
+  // centers. Fix would require channel-convergence forcing or center
+  // alignment -- both trade off against other goals. Accepted as the
+  // ecology's structural ceiling under current writer architecture.
+  // The synergy bucket exists for completeness but is expected to stay
+  // near-zero for multi-writer slots. Single-writer slots CAN populate
+  // it via auto-correlation, which is now split out in getRollupByParam.
   const _bucket = (coop) => {
     if (coop <= -0.4) return 'deep_antagonism';
     if (coop <= -0.1) return 'antagonism';
@@ -277,33 +287,65 @@ channelStateField = (() => {
   // Per-param rollup: cooperation/contention aggregated by param name
   // across every (layer, channel) that has that param. Answers questions
   // like "is pan dimension in synergy while filter is in antagonism?"
+  // R46 forensic finding: the flat per-param aggregate conflated two
+  // very different things -- (a) cross-writer dynamics on multi-writer
+  // slots and (b) auto-correlation patterns on single-writer slots. fade
+  // aggregate read +0.471 for 29 single-writer slots and -0.429 on the
+  // 1 multi-writer slot, but the aggregate metric hid that. This split
+  // reports multiWriter separately so cross-module cooperation can't be
+  // confused with single-writer value-sequence auto-correlation.
   const getRollupByParam = () => {
-    /** @type {Record<string, {coopSum:number,contSum:number,varSum:number,slotCount:number,writers:Set<string>}>} */
+    /** @type {Record<string, {totCoop:number,totCont:number,totVar:number,totN:number,mwCoop:number,mwCont:number,mwVar:number,mwN:number,swCoop:number,swN:number,writers:Set<string>}>} */
     const byParam = {};
     for (const layer of LAYERS) {
       for (const ch of field[layer].values()) {
         for (const [param, slot] of ch.entries()) {
           if (!byParam[param]) {
-            byParam[param] = { coopSum: 0, contSum: 0, varSum: 0, slotCount: 0, writers: new Set() };
+            byParam[param] = {
+              totCoop: 0, totCont: 0, totVar: 0, totN: 0,
+              mwCoop: 0, mwCont: 0, mwVar: 0, mwN: 0,
+              swCoop: 0, swN: 0,
+              writers: new Set(),
+            };
           }
           const s = _computeSlotStats(slot);
-          byParam[param].coopSum += s.cooperation;
-          byParam[param].contSum += s.contention;
-          byParam[param].varSum += s.variance;
-          byParam[param].slotCount++;
-          for (const e of slot.history) byParam[param].writers.add(e.writer);
+          const agg = byParam[param];
+          agg.totCoop += s.cooperation;
+          agg.totCont += s.contention;
+          agg.totVar += s.variance;
+          agg.totN++;
+          for (const e of slot.history) agg.writers.add(e.writer);
+          if (s.writerCount >= 2) {
+            agg.mwCoop += s.cooperation;
+            agg.mwCont += s.contention;
+            agg.mwVar += s.variance;
+            agg.mwN++;
+          } else {
+            agg.swCoop += s.cooperation;
+            agg.swN++;
+          }
         }
       }
     }
-    /** @type {Record<string, {slotCount:number,meanCooperation:number,meanContention:number,meanVariance:number,writerCount:number}>} */
+    /** @type {Record<string, {slotCount:number,meanCooperation:number,meanContention:number,meanVariance:number,writerCount:number,multiWriter:{slotCount:number,meanCooperation:number,meanContention:number,meanVariance:number},singleWriter:{slotCount:number,meanCooperation:number}}>} */
     const out = {};
     for (const [param, agg] of Object.entries(byParam)) {
       out[param] = {
-        slotCount: agg.slotCount,
-        meanCooperation: agg.slotCount > 0 ? agg.coopSum / agg.slotCount : 0,
-        meanContention: agg.slotCount > 0 ? agg.contSum / agg.slotCount : 0,
-        meanVariance: agg.slotCount > 0 ? agg.varSum / agg.slotCount : 0,
+        slotCount: agg.totN,
+        meanCooperation: agg.totN > 0 ? agg.totCoop / agg.totN : 0,
+        meanContention: agg.totN > 0 ? agg.totCont / agg.totN : 0,
+        meanVariance: agg.totN > 0 ? agg.totVar / agg.totN : 0,
         writerCount: agg.writers.size,
+        multiWriter: {
+          slotCount: agg.mwN,
+          meanCooperation: agg.mwN > 0 ? agg.mwCoop / agg.mwN : 0,
+          meanContention: agg.mwN > 0 ? agg.mwCont / agg.mwN : 0,
+          meanVariance: agg.mwN > 0 ? agg.mwVar / agg.mwN : 0,
+        },
+        singleWriter: {
+          slotCount: agg.swN,
+          meanCooperation: agg.swN > 0 ? agg.swCoop / agg.swN : 0,
+        },
       };
     }
     return out;

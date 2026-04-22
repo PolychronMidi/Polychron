@@ -32,13 +32,26 @@ fi
 # and git -C <subtree> would commit to whatever .git it walks up to. If
 # PROJECT_ROOT is invalid, skip loudly instead of fabricating a target.
 _AC_PROJECT="${PROJECT_ROOT:-}"
+# R46 LIFESAVER FIX: autocommit failures previously wrote only to stderr
+# (dropped by _proxy_bridge) and to tmp/hme-autocommit.err (not monitored).
+# LIFESAVER never saw them. Three distinct failure paths below each route
+# to hme-errors.log so the next userpromptsubmit LIFESAVER scan surfaces
+# them as decision-blocking alerts.
+_ac_log_error() {
+  if [ -n "${_AC_PROJECT:-}" ] && [ -d "$_AC_PROJECT/log" ]; then
+    local _ts; _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    echo "[$_ts] [autocommit:stop] $*" >> "$_AC_PROJECT/log/hme-errors.log"
+  fi
+}
 if [ -z "$_AC_PROJECT" ] || [ ! -d "$_AC_PROJECT/.git" ] || [ ! -d "$_AC_PROJECT/src" ]; then
+  _ac_log_error "PROJECT_ROOT unset or invalid ('$_AC_PROJECT') — uncommitted work at turn end"
   echo "WARNING: stop.sh auto-commit skipped — PROJECT_ROOT unset or invalid ('$_AC_PROJECT')" >&2
 elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
   # Capture git errors to a log so failures are visible, not hidden behind 2>/dev/null
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
   if ! git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"; then
+    _ac_log_error "git add failed: $(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')"
     echo "WARNING: stop.sh auto-commit: git add failed — see $_GIT_ERR" >&2
   elif ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet >"$_GIT_ERR" 2>&1; then
     # Retry once — transient lock or index contention
@@ -48,6 +61,7 @@ elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
       if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
         source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
         _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist (see $_GIT_ERR)"
+        _ac_log_error "commit failed twice — uncommitted changes exist: $(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')"
         echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status + $_GIT_ERR." >&2
       fi
     fi
@@ -229,7 +243,7 @@ fi
 if [[ "$FABRICATION_CHECK" == "fabrication" ]]; then
   jq -n '{
     "decision": "block",
-    "reason": "FABRICATION DETECTED: final text asserts a quantitative invariant about pipeline state (\"held steady\", \"stayed constant\", \"unchanged across runs\", \"same as last\", etc.) without the turn containing a verification disclosure marker. In a stochastic music generator every run-level metric is different; invariance is the claim that needs proof, not the default. Choose one and resume: (a) VERIFY the claim now via i/status or Read output/metrics or grep run-history, then annotate the claim with \"(verified)\" / \"(confirmed)\"; (b) REMOVE the fabricated claim from the response; (c) EXPLICITLY qualify it with \"(unverified)\" / \"(assumed)\" / \"(didn't check)\". Silent fabrication to bridge reasoning gaps is the antipattern this gate exists to block."
+    "reason": "FABRICATION DETECTED: final text asserts a quantitative invariant about pipeline state (\"held steady\", \"stayed constant\", \"unchanged across runs\", \"same as last\", etc.) without the turn containing a verification disclosure marker. In a stochastic music generator every run-level metric is different; invariance is the claim that needs proof, not the default. Choose one and resume: (a) VERIFY the claim now via i/status or Read output/metrics or grep run-history, then annotate the claim with \"(verified)\" / \"(confirmed)\"; (b) REMOVE the fabricated claim from the response; (c) EXPLICITLY qualify it with \"(unverified)\" / \"(assumed)\" / \"(did not check)\". Silent fabrication to bridge reasoning gaps is the antipattern this gate exists to block."
   }'
   exit 0
 fi
