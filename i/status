@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# HME status dispatcher — routes to the status() tool with any mode.
+# i/status — default: brief four-arc view (R30). mode=<35-options> for legacy status_unified.
 # Default mode='pipeline' (the most common lookup) for backward compat.
 # Usage:
 #   i/status                  # pipeline status (default)
