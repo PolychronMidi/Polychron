@@ -283,7 +283,8 @@ class RAGKnowledgeMixin:
                  "timestamp": r.get("timestamp", 0)}
                 for r in rows
             ]
-        except Exception:
+        except Exception as _full_err:
+            logger.warning(f"list_knowledge_full failed: {type(_full_err).__name__}: {_full_err}")
             return []
 
     def list_knowledge(self, category: str | None = None) -> list[dict]:
@@ -396,7 +397,8 @@ class RAGKnowledgeMixin:
             if category:
                 rows = [r for r in rows if r["category"] == category]
             rows.sort(key=lambda r: r.get("timestamp", 0), reverse=True)
-        except Exception:
+        except Exception as _export_err:
+            logger.warning(f"export_markdown: failed to read knowledge_table: {type(_export_err).__name__}: {_export_err}")
             return ""
 
         lines = []

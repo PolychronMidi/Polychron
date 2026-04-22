@@ -35,7 +35,9 @@ def _load_versions() -> dict:
     try:
         with open(_p) as _f:
             return _j.load(_f)
-    except Exception:
+    except Exception as _ver_err:
+        # Module-init time — logger isn't set up yet (line ~83). Use stderr.
+        print(f"worker: versions.json read failed: {type(_ver_err).__name__}: {_ver_err}", file=__import__("sys").stderr)
         return {}
 _VERSIONS = _load_versions()
 WORKER_VERSION = _VERSIONS.get("worker", "unknown")

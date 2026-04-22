@@ -502,6 +502,27 @@
       "severity": "error"
     },
     {
+      "id": "hme-py-no-silent-fallback",
+      "description": "HME Python files must not silently return an empty default (`[]`, `None`, `False`, `{}`, `''`, `dict()`, etc.) from an `except Exception` without calling `logger.*` or `print` first. R33 found 3 instances in the wild (i/review auto-fire, list_knowledge, get_knowledge_status); each degraded a substrate capability invisibly because the fallback value LOOKED legitimate. Sibling of hme-py-no-silent-catchall but distinct: that catches `pass`, this catches silent-return-default.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-silent-fallback.py tools/HME/mcp",
+      "severity": "error"
+    },
+    {
+      "id": "hme-py-no-non-ascii",
+      "description": "Python equivalent of ESLint local/no-non-ascii (scripts/eslint-rules/no-non-ascii.js). HME Python source must be ASCII except for an allowlist of legitimate typography (em-dash, arrows, box-drawing, Greek, accented Latin) declared in check-py-no-non-ascii.py. Blocks the copy-paste failure mode: NBSP, curly quotes, zero-width spaces, BOM — invisible chars that break regex matching and produce diff noise.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-py-no-non-ascii.py tools/HME/mcp",
+      "severity": "warning"
+    },
+    {
+      "id": "hme-py-no-doubled-fallback",
+      "description": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial — either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python.",
+      "type": "shell_output_empty",
+      "shell": "python3 tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/mcp",
+      "severity": "error"
+    },
+    {
       "id": "hme-py-no-fallback-infra-imports",
       "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback. Silent ImportError swallowed behind `os.environ.get(...)` fallback hid the synthesis_proxy_route ENV bug for weeks. Infrastructure imports must fail loud at module load time.",
       "type": "shell_output_empty",
