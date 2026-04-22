@@ -35,7 +35,9 @@ stutterVariants.register('stereoScatter', function stereoScatter(opts) {
       const t = opts.on + (panDuration / panSteps) * i;
       const panVal = m.round(64 + rf(-40, 40));
       for (let j = 0; j < allChs.length; j++) {
-        p(c, { timeInSeconds: t, type: 'control_c', vals: [allChs[j], 10, clamp(panVal + ri(-10, 10), 0, 127)] });
+        const jitteredPan = clamp(panVal + ri(-10, 10), 0, 127);
+        channelStateField.observeControl(allChs[j], 10, jitteredPan, 'stereoScatter');
+        p(c, { timeInSeconds: t, type: 'control_c', vals: [allChs[j], 10, jitteredPan] });
       }
     }
   } else {

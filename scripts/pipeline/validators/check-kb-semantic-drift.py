@@ -29,9 +29,9 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 SIGNATURES_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
 DRIFT_OUT = os.path.join(METRICS_DIR, "hme-semantic-drift.json")
 DEP_GRAPH = os.path.join(METRICS_DIR, "dependency-graph.json")

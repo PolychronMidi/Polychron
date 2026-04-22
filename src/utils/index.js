@@ -35,3 +35,7 @@ require('./safePreBoot');
 
 require('./formatTime');
 require('./musicalTimeWindows');
+// Cross-emitter observation substrate. Must load before any subsystem that
+// emits pan/fade/fx/velocity, so writers can call channelStateField.write()
+// or .observeControl() unconditionally.
+require('./channelStateField');

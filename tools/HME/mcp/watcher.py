@@ -5,11 +5,18 @@ import time
 
 logger = logging.getLogger(__name__)
 
+def _env_int(key: str, default: int) -> int:
+    try:
+        return int(os.environ.get(key, ""))
+    except (ValueError, TypeError):
+        return default
+
+
 # Per-file reindex is fast (~0.2-2s per file with chunk diffing),
 # so short cooldown. Full directory reindex keeps the longer cooldown.
-MIN_FILE_INTERVAL = 10    # seconds between per-file reindex batches
-MIN_DIR_INTERVAL = 300    # seconds between full directory reindexes
-BATCH_THRESHOLD = 15      # more than this many files -> full directory reindex
+MIN_FILE_INTERVAL = _env_int("HME_WATCHER_FILE_INTERVAL", 10)
+MIN_DIR_INTERVAL  = _env_int("HME_WATCHER_DIR_INTERVAL", 300)
+BATCH_THRESHOLD   = _env_int("HME_WATCHER_BATCH_THRESHOLD", 15)
 
 
 def start_watcher(project_root: str, engine, debounce: float = 3.0):
@@ -47,7 +54,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             "dist", "build", "output", "tmp", "lab", "metrics",
             "_transactions", "_versions", "_deletions", "_indices",
         }
-    IGNORE_EXTS = {
+    _BUILTIN_IGNORE_EXTS = {
         ".log", ".lock", ".json", ".jsonl", ".md", ".wav", ".mid",
         ".csv", ".png", ".jpg", ".gif", ".mp3", ".ogg",
         # Binary model artifacts — must never hit the embedder.
@@ -57,6 +64,10 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         # LanceDB internal files — churn on every index write.
         ".manifest", ".txn", ".lance",
     }
+    _env_exts_raw = os.environ.get("HME_IGNORE_EXTS", "")
+    _env_exts = {e.strip() if e.strip().startswith(".") else "." + e.strip()
+                 for e in _env_exts_raw.split(",") if e.strip()}
+    IGNORE_EXTS = _env_exts if _env_exts else _BUILTIN_IGNORE_EXTS
     # Catch patterns that don't have a clean extension: .tmpXXXXXX, .txn#N, etc.
     _NOISE_SUFFIX_PATTERNS = (".tmp", ".txn", ".manifest", ".tmp.")  # .tmp.<pid> editor temp files
     # Allow-list: file_written activity events ONLY fire for paths under

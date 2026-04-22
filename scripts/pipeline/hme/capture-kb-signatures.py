@@ -24,9 +24,9 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 OUT_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
 

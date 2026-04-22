@@ -565,6 +565,7 @@ fullBootstrap = (() => {
     'stutterRegistry',
     'stutterVariants',
     'stutterSteps',
+    'stutterShift',
     'stutterMetrics',
     'stutterConfig',
     'stutterPlanScheduler',
@@ -699,6 +700,10 @@ fullBootstrap = (() => {
     // -- node / timing --
     'fs',
     'path',
+    'METRICS_DIR',
+    'minMidi',
+    'maxMidi',
+    'channelStateField',
     'endTime',
 
     // -- play --

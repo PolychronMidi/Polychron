@@ -3,14 +3,7 @@
 
 stutterVariants.register('stutterSwarm', function stutterSwarm(opts) {
   const swarmSize = ri(3, 6);
-  const minMidi = OCTAVE.min * 12;
-  const maxMidi = OCTAVE.max * 12 - 1;
-  const pc = opts.note % 12;
-  const octaveNotes = [];
-  for (let oct = OCTAVE.min; oct <= OCTAVE.max; oct++) {
-    const n = oct * 12 + pc;
-    if (n >= minMidi && n <= maxMidi && n !== opts.note) octaveNotes.push(n);
-  }
+  const octaveNotes = stutterShift.enumerateOctaves(opts.note % 12, { exclude: opts.note });
   for (let i = octaveNotes.length - 1; i > 0; i--) {
     const j = ri(i);
     const tmp = octaveNotes[i];

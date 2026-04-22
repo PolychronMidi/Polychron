@@ -60,13 +60,13 @@ function emitShiftEvents(shiftSyncSec, shiftFlip, bendDuration, maxVol) {
     const volIn = shiftFlip ? m.floor(100 * frac) : m.floor(100 * (1 - frac));
     // Volume dip at midpoint to mask detune overlap
     const dipScale = 1.0 - 0.25 * m.exp(-m.pow((frac - 0.5) / 0.15, 2));
-    flipBinF2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volOut * maxVol * dipScale)] }); });
-    flipBinT2.forEach(ch => { p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, m.round(volIn * maxVol * dipScale)] }); });
+    flipBinF2.forEach(ch => { const volOutVal = m.round(volOut * maxVol * dipScale); channelStateField.observeControl(ch, 7, volOutVal, 'setBinaural'); p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, volOutVal] }); });
+    flipBinT2.forEach(ch => { const volInVal = m.round(volIn * maxVol * dipScale); channelStateField.observeControl(ch, 7, volInVal, 'setBinaural'); p(c, { timeInSeconds: t, type: 'control_c', vals: [ch, 7, volInVal] }); });
   }
   // Restore full volume on both channel sets after crossfade completes
   const restoreTime = fadeStart + flipBinCrossfade + 0.01;
-  flipBinF2.forEach(ch => { p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
-  flipBinT2.forEach(ch => { p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
+  flipBinF2.forEach(ch => { channelStateField.observeControl(ch, 7, 100, 'setBinaural'); p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
+  flipBinT2.forEach(ch => { channelStateField.observeControl(ch, 7, 100, 'setBinaural'); p(c, { timeInSeconds: restoreTime, type: 'control_c', vals: [ch, 7, 100] }); });
   // Snap all channels to final target pitch bend after crossfade - no residual glide
   const snapTime = restoreTime + 0.005;
   binauralL.forEach(ch => {

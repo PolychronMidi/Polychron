@@ -20,7 +20,7 @@ stutterVariants.register('alienArpeggio', function alienArpeggio(opts) {
   let lastShared = opts.shared;
   for (let i = 0; i < noteCount; i++) {
     const dir = rf() < ascendBias ? 1 : -1;
-    currentNote = clamp(currentNote + intervals[i] * dir, 21, 108);
+    currentNote = stutterShift.shift(currentNote, intervals[i] * dir);
     const velScale = rf(0.42, 0.76) * (1 - i * 0.09);
     const vel = clamp(m.round(opts.velocity * velScale), 1, 127);
     lastShared = stutterNotes(Object.assign({}, opts, {

@@ -66,6 +66,8 @@ OCTAVE={
   max: 9,
   weights: [8,22,30,35,35,38,35,12,5]
 };
+minMidi = OCTAVE.min * 12;
+maxMidi = OCTAVE.max * 12 - 1;
 /** @tier-2 - per-beat polyphonic voice count */
 BEAT_VOICES = {
   min: 1,

@@ -9,9 +9,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 function makeVoters(ROOT) {
+  const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
   function loadJson(p) {
     try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
     catch (_e) { return null; }

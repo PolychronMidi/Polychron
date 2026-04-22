@@ -330,7 +330,7 @@
       "id": "run-history-snapshots",
       "description": "Must have at least 5 run-history snapshots",
       "type": "glob_count_gte",
-      "glob": "metrics/run-history/*.json",
+      "glob": "output/metrics/run-history/*.json",
       "min_count": 5,
       "severity": "info"
     },
@@ -379,8 +379,8 @@
       "id": "trace-run-history-sync",
       "description": "trace.jsonl and latest run-history snapshot must be from the same pipeline run (within 5 minutes)",
       "type": "files_mtime_window",
-      "path_a": "metrics/trace.jsonl",
-      "path_b_glob": "metrics/run-history/*.json",
+      "path_a": "output/metrics/trace.jsonl",
+      "path_b_glob": "output/metrics/run-history/*.json",
       "max_delta_seconds": 300,
       "severity": "warning"
     },
@@ -1084,7 +1084,7 @@
       "id": "coherence-same-commit-deterministic",
       "description": "Rounds with identical git SHA must produce hme_coherence values within 0.02 of each other. If the metric varies across identical-code runs, either a verifier has random inputs, a cache leaks state between runs, or something time-dependent is infecting the score.",
       "type": "same_commit_determinism",
-      "correlation_path": "metrics/hme-musical-correlation.json",
+      "correlation_path": "output/metrics/hme-musical-correlation.json",
       "activity_path": "output/metrics/hme-activity.jsonl",
       "field": "hme_coherence",
       "tolerance": 0.02,
@@ -1094,14 +1094,14 @@
       "id": "predictions-log-gap-bounded",
       "description": "predictions_log_size minus predictions_total measures how many stale predictions linger from previous rounds. Flagged only when gap GROWS round-over-round — transient high gaps from accumulated history (before truncation catches up) are normal. Arc IV retirement candidate if this keeps flapping; otherwise converges after 2-3 rounds of the 50-line cap taking effect.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-prediction-accuracy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; rds=d.get('rounds') or []; print('insufficient history') if len(rds) < 2 else None; gap=lambda r: (r.get('predictions_log_size') or 0)-(r.get('predictions_total') or 0); cur=gap(rds[-1]) if rds else 0; prev=gap(rds[-2]) if len(rds)>=2 else 0; print(f'gap rose: {prev}->{cur} (threshold: +20)') if cur - prev > 20 else None\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/hme-prediction-accuracy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; rds=d.get('rounds') or []; print('insufficient history') if len(rds) < 2 else None; gap=lambda r: (r.get('predictions_log_size') or 0)-(r.get('predictions_total') or 0); cur=gap(rds[-1]) if rds else 0; prev=gap(rds[-2]) if len(rds)>=2 else 0; print(f'gap rose: {prev}->{cur} (threshold: +20)') if cur - prev > 20 else None\"",
       "severity": "warning"
     },
     {
       "id": "retirement-log-consistent",
       "description": "Every retirement in metrics/legacy-override-retirement-log.jsonl must NOT appear as a current LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js. And every LEGACY_OVERRIDES entry that's been removed (absent from source detection) must have a retirement log entry. Catches silent removals that bypass the measurement-driven retirement pattern.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os, re; rp='metrics/legacy-override-retirement-log.jsonl'; jp='scripts/pipeline/validators/check-hypermeta-jurisdiction.js'; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); src=open(jp).read() if os.path.isfile(jp) else ''; current=set(re.findall(r\\\"id:\\s*'([\\w.-]+)'\\\", src)); overlap=retired & current; print('\\n'.join('retired id still allowlisted: '+i for i in overlap))\"",
+      "shell": "python3 -c \"import json, os, re; rp='output/metrics/legacy-override-retirement-log.jsonl'; jp='scripts/pipeline/validators/check-hypermeta-jurisdiction.js'; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); src=open(jp).read() if os.path.isfile(jp) else ''; current=set(re.findall(r\\\"id:\\s*'([\\w.-]+)'\\\", src)); overlap=retired & current; print('\\n'.join('retired id still allowlisted: '+i for i in overlap))\"",
       "severity": "error"
     },
     {
@@ -1120,14 +1120,14 @@
       "id": "legacy-override-chronically-zero",
       "description": "Any legacy override with 0 fires AND 0 entries across the last 5 pipeline runs is a data-proven removal candidate. Fires at error severity after 5 zero rounds — by that point the signal is strong enough to demand action, not just warn. Escalation path: instrument (R11) → warn (3 rounds) → error (5 rounds). Retired ids (those in legacy-override-retirement-log.jsonl) are excluded so historical zero rows don't flag already-removed overrides. entropy-cap-0.19 (R13) and phase-trust-seesaw (R15) were the first retirements via this pattern.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/legacy-override-history.jsonl'; rp='metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/legacy-override-history.jsonl'; rp='output/metrics/legacy-override-retirement-log.jsonl'; rows=[json.loads(l) for l in open(p)] if os.path.isfile(p) else []; rows=rows[-5:]; retired={json.loads(l).get('id') for l in open(rp) if l.strip() and json.loads(l).get('action') != 'keep'} if os.path.isfile(rp) else set(); ids=set(); [ids.update(r.get('fires',{}).keys()) for r in rows]; [ids.update(r.get('entries',{}).keys()) for r in rows]; ids -= retired; zero=[i for i in ids if all(r.get('fires',{}).get(i,0)==0 and r.get('entries',{}).get(i,0)==0 for r in rows) and len(rows)>=5]; print('\\n'.join('legacy override unused 5+ rounds — RETIRE: '+i for i in zero))\"",
       "severity": "error"
     },
     {
       "id": "hypermeta-legacy-overrides-covered",
       "description": "Every LEGACY_OVERRIDES entry in check-hypermeta-jurisdiction.js must match at least one call site in SpecialCaps source. An id with zero matches means its detector regex drifted (variable renamed, refactored out, etc.) — silently disarming the jurisdiction gate. registeredByLegacyId must have a positive count for every allowlisted id.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json; d=json.load(open('metrics/hypermeta-jurisdiction.json')); reg=d.get('registeredByLegacyId',{}); legacy=d.get('legacyOverrides',[]); missing=[l['id'] for l in legacy if reg.get(l['id'],0)==0]; print('\\n'.join('legacy id has zero matches: '+m for m in missing))\"",
+      "shell": "python3 -c \"import json; d=json.load(open('output/metrics/hypermeta-jurisdiction.json')); reg=d.get('registeredByLegacyId',{}); legacy=d.get('legacyOverrides',[]); missing=[l['id'] for l in legacy if reg.get(l['id'],0)==0]; print('\\n'.join('legacy id has zero matches: '+m for m in missing))\"",
       "severity": "error"
     },
     {
@@ -1154,42 +1154,42 @@
       "id": "envelope-shift-bounded",
       "description": "R22 #5: envelope-shift is the center-of-mass movement of the legendary state distribution across first-half vs second-half of accumulated snapshots. average_relative_shift > 0.5 means the 'normal' state itself is drifting fast — distinct from single-round drift (which Arc III's legendary-drift-bounded catches). Large envelope shift = regime change, not anomaly.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-envelope-shift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; shift=d.get('average_relative_shift'); print(f'envelope shift {shift} > 0.5 (regime change), top field: {d.get(\\\"top_shifted_fields\\\",[{}])[0].get(\\\"field\\\",\\\"?\\\")}') if isinstance(shift, (int, float)) and shift > 0.5 else None\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/hme-envelope-shift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; shift=d.get('average_relative_shift'); print(f'envelope shift {shift} > 0.5 (regime change), top field: {d.get(\\\"top_shifted_fields\\\",[{}])[0].get(\\\"field\\\",\\\"?\\\")}') if isinstance(shift, (int, float)) and shift > 0.5 else None\"",
       "severity": "warning"
     },
     {
       "id": "cross-arc-hidden-drift-detector",
       "description": "R22 #10: fires specifically when Arc I says consensus is LOW (substrates agree) AND Arc III says drift IS DETECTED AND Arc IV says invariants healthy. This combination means 'state has drifted but every substrate voter missed it' — the exact hidden-drift scenario Arc III was designed for. Distinct from any single-arc invariant.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; c=json.load(open('metrics/hme-consensus.json')) if os.path.isfile('metrics/hme-consensus.json') else {}; d=json.load(open('metrics/hme-legendary-drift.json')) if os.path.isfile('metrics/hme-legendary-drift.json') else {}; hit=c.get('divergence') == 'low' and d.get('status') == 'drift_detected'; print(f'hidden drift: consensus-low divergence BUT drift detected (score {d.get(\\\"drift_score\\\")}). Substrates all report healthy while state has departed envelope.') if hit else None\"",
+      "shell": "python3 -c \"import json, os; c=json.load(open('output/metrics/hme-consensus.json')) if os.path.isfile('output/metrics/hme-consensus.json') else {}; d=json.load(open('output/metrics/hme-legendary-drift.json')) if os.path.isfile('output/metrics/hme-legendary-drift.json') else {}; hit=c.get('divergence') == 'low' and d.get('status') == 'drift_detected'; print(f'hidden drift: consensus-low divergence BUT drift detected (score {d.get(\\\"drift_score\\\")}). Substrates all report healthy while state has departed envelope.') if hit else None\"",
       "severity": "error"
     },
     {
       "id": "legendary-drift-bounded",
       "description": "Arc III: current round's HME state must stay within 2σ envelope of prior legendary rounds (mean |z-score| across numeric state fields < 2.0). Preemptive detection: fires BEFORE the listening verdict fails, catching drift toward non-legendary territory. Reads metrics/hme-legendary-drift.json. Inert until envelope is computable (5+ snapshots).",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-legendary-drift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('field','') for o in d.get('outliers',[])[:3]); print(f'drift={d.get(\\\"drift_score\\\")} > {d.get(\\\"drift_threshold\\\")} top_outliers=[{outs}]') if d.get('status') == 'drift_detected' else None\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/hme-legendary-drift.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; outs=','.join(o.get('field','') for o in d.get('outliers',[])[:3]); print(f'drift={d.get(\\\"drift_score\\\")} > {d.get(\\\"drift_threshold\\\")} top_outliers=[{outs}]') if d.get('status') == 'drift_detected' else None\"",
       "severity": "warning"
     },
     {
       "id": "patterns-have-action-on-match",
       "description": "Arc II: every matched pattern in metrics/hme-pattern-matches.json must carry non-empty action_summary + action_steps. A pattern that triggers without defining what to do is decorative — it flags a condition but gives the agent no script to run. The registry's value is action-grounding, not just condition-detection.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-pattern-matches.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; bad=[m['id'] for m in d.get('matches',[]) if not m.get('action_summary') or not m.get('action_steps')]; print('\\n'.join('pattern matched without action: '+i for i in bad))\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/hme-pattern-matches.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; bad=[m['id'] for m in d.get('matches',[]) if not m.get('action_summary') or not m.get('action_steps')]; print('\\n'.join('pattern matched without action: '+i for i in bad))\"",
       "severity": "error"
     },
     {
       "id": "invariant-efficacy-not-flappy-excessive",
       "description": "Arc IV meta-measurement: more than 3 invariants in 'flappy' class (firing without citation in any commit message) means the battery has accumulated noise that clutters fail-reporting without driving action. Either fix the underlying bug OR recalibrate the flappy invariants OR retire them via the same data-driven pattern used for legacy overrides. Reads metrics/hme-invariant-efficacy.json.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-invariant-efficacy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; flappy=d.get('class_counts',{}).get('flappy',0); candidates=d.get('retirement_candidates',[]); print(f'flappy count {flappy} > 3 (threshold); candidates: {candidates}') if flappy > 3 else None\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/hme-invariant-efficacy.json'; d=json.load(open(p)) if os.path.isfile(p) else {}; flappy=d.get('class_counts',{}).get('flappy',0); candidates=d.get('retirement_candidates',[]); print(f'flappy count {flappy} > 3 (threshold); candidates: {candidates}') if flappy > 3 else None\"",
       "severity": "warning"
     },
     {
       "id": "consensus-not-divergent",
       "description": "Arc I: cross-substrate consensus. Fires when divergence='high' (stdev > 0.4). R24 #5: suppresses the warning when the same outlier voter has persisted for 3+ consecutive rounds AND listening verdict remains legendary — a stable dissent is an accepted regime state, not a regression. New divergences and voter changes still fire.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json, os; p='metrics/hme-consensus.json'; ts='metrics/hme-arc-timeseries.jsonl'; d=json.load(open(p)) if os.path.isfile(p) else {}; rows=[json.loads(l) for l in open(ts)] if os.path.isfile(ts) else []; tail=rows[-2:] if len(rows)>=2 else []; cur_outs=sorted(o.get('voter','') for o in d.get('outliers',[])); persistent=len(tail)==2 and all(sorted(r.get('arc_i',{}).get('outlier_voters') or []) == cur_outs for r in tail) and len(cur_outs)>0; outs=','.join(cur_outs); print(f'consensus divergent (new): stdev={d.get(\\\"stdev\\\")} mean={d.get(\\\"mean\\\")} outliers=[{outs}]') if d.get('divergence') == 'high' and not persistent else None\"",
+      "shell": "python3 -c \"import json, os; p='output/metrics/hme-consensus.json'; ts='output/metrics/hme-arc-timeseries.jsonl'; d=json.load(open(p)) if os.path.isfile(p) else {}; rows=[json.loads(l) for l in open(ts)] if os.path.isfile(ts) else []; tail=rows[-2:] if len(rows)>=2 else []; cur_outs=sorted(o.get('voter','') for o in d.get('outliers',[])); persistent=len(tail)==2 and all(sorted(r.get('arc_i',{}).get('outlier_voters') or []) == cur_outs for r in tail) and len(cur_outs)>0; outs=','.join(cur_outs); print(f'consensus divergent (new): stdev={d.get(\\\"stdev\\\")} mean={d.get(\\\"mean\\\")} outliers=[{outs}]') if d.get('divergence') == 'high' and not persistent else None\"",
       "severity": "warning"
     },
     {
@@ -1453,7 +1453,7 @@
     },
     {
       "id": "no-hardcoded-metrics-path",
-      "description": "No JS, Python, or shell file may hardcode the string 'metrics/' as a path segment outside of output/metrics/. All callers must use METRICS_DIR (env var set in .env as ${PROJECT_ROOT}/output/metrics). Bare 'metrics/' in path.join(), os.path.join(), or shell strings is the violation class that caused path fragmentation across 100+ files when metrics/ moved to output/metrics/. Exempt: this invariant's own shell, migration script, comments in .md files.",
+      "description": "No JS, Python, or shell file may hardcode the string 'output/metrics/' as a path segment outside of output/metrics/. All callers must use METRICS_DIR (env var set in .env as ${PROJECT_ROOT}/output/metrics). Bare 'output/metrics/' in path.join(), os.path.join(), or shell strings is the violation class that caused path fragmentation across 100+ files when metrics/ moved to output/metrics/. Exempt: this invariant's own shell, migration script, comments in .md files.",
       "type": "shell_output_empty",
       "shell": "grep -rn --include='*.js' --include='*.py' --include='*.sh' -E \"['\\\"]metrics/|path\\.join\\([^)]*['\\\"]metrics['\\\"]|os\\.path\\.join\\([^)]*['\\\"]metrics['\\\"]\" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.venv | grep -v '# metrics-ok' | grep -v 'output/metrics' | grep -v 'scripts/migrate-metrics-path\\.py' | grep -v tools/HME/KB/",
       "severity": "error"
@@ -1520,7 +1520,7 @@
       "id": "antagonism-registry-schema-valid",
       "description": "tools/HME/config/invariants.json and metrics/hme-suspected-upstreams.json both parse and the suspected-upstreams registry has the required three buckets (candidates/confirmed/refuted).",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import json; d=json.load(open('metrics/hme-suspected-upstreams.json')); assert all(k in d for k in ('candidates','confirmed','refuted')), 'missing bucket'\" 2>&1 | grep -v '^$'",
+      "shell": "python3 -c \"import json; d=json.load(open('output/metrics/hme-suspected-upstreams.json')); assert all(k in d for k in ('candidates','confirmed','refuted')), 'missing bucket'\" 2>&1 | grep -v '^$'",
       "severity": "error"
     },
     {

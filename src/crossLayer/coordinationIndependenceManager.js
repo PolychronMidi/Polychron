@@ -94,7 +94,7 @@ coordinationIndependenceManager = (() => {
   // Cross-run warm-start: restore terminal dial and effectiveness state from previous run
   try {
     const _cimFs = require('fs');
-    const _cimPath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    const _cimPath = require('path').join(METRICS_DIR, 'adaptive-state.json');
     if (_cimFs.existsSync(_cimPath)) {
       const _cimState = JSON.parse(_cimFs.readFileSync(_cimPath, 'utf8'));
       if (_cimState.cimDials && typeof _cimState.cimDials === 'object') {
@@ -363,11 +363,16 @@ coordinationIndependenceManager = (() => {
   }
 
   function getSnapshot() {
+    // channelStateField provides the fine-grained substrate CIM uses to
+    // see how independence manifests at the per-channel-per-param level
+    // (collision density, cooperation direction, contention locality).
+    // The dials are the coarse control surface; the field is the texture.
     return {
       dials: Object.assign({}, dials),
       targets: Object.assign({}, dialTargets),
       effectiveness: Object.assign({}, effectiveness),
-      tickCount
+      tickCount,
+      fieldRollup: channelStateField.getRollup()
     };
   }
 

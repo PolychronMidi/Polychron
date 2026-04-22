@@ -9,7 +9,7 @@ controllerConfig = (() => {
 
   function _load() {
     if (_config) return _config;
-    const configPath = _path.join(process.cwd(), 'metrics', 'controller-config.json');
+    const configPath = _path.join(METRICS_DIR, 'controller-config.json');
     if (!_fs.existsSync(configPath)) {
       _config = {};
       return _config;

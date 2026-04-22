@@ -4,7 +4,7 @@
 
 'use strict';
 
-// Load just the core module — no conductor, no globals, no side effects.
+// Load just the core module -- no conductor, no globals, no side effects.
 require('../src/utils');  // validator, clamp
 require('../src/conductor/signal/profiling/regimeReactiveDampingCore');
 
@@ -19,7 +19,7 @@ function assert(condition, msg) {
 function assertClose(actual, expected, tolerance, msg) {
   const diff = Math.abs(actual - expected);
   if (diff <= tolerance) { passed++; }
-  else { failed++; console.error(`  FAIL: ${msg} (got ${actual}, expected ${expected} ±${tolerance})`); }
+  else { failed++; console.error(`  FAIL: ${msg} (got ${actual}, expected ${expected} +/-${tolerance})`); }
 }
 
 //  tensionShapeCurve
@@ -37,7 +37,7 @@ assertClose(regimeReactiveDampingCore.tensionShapeCurve('ascending', 1.0), 1.0, 
 // arch peaks at 0.5
 assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 0.0), 0.0, 0.001, 'arch at 0');
 assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 0.5), 1.0, 0.001, 'arch at 0.5 = peak');
-assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 1.0), 0.0, 0.01, 'arch at 1 ≈ 0');
+assertClose(regimeReactiveDampingCore.tensionShapeCurve('arch', 1.0), 0.0, 0.01, 'arch at 1 ?unknown-ascii-character? 0');
 
 // sawtooth resets 3x per piece
 assertClose(regimeReactiveDampingCore.tensionShapeCurve('sawtooth', 0.0), 0.0, 0.001, 'sawtooth at 0');
@@ -66,23 +66,23 @@ const eq1 = regimeReactiveDampingCore.equilibratorCorrection(
   { exploring: 0.35, coherent: 0.35, evolving: 0.20 },
   0.28
 );
-assert(eq1.corrD < 0, 'exploring excess → suppress density');
-assert(eq1.corrF < 0, 'exploring excess → suppress flicker');
+assert(eq1.corrD < 0, 'exploring excess -> suppress density');
+assert(eq1.corrF < 0, 'exploring excess -> suppress flicker');
 
 const eq2 = regimeReactiveDampingCore.equilibratorCorrection(
   { exploring: 0.10, coherent: 0.60, evolving: 0.20 },
   { exploring: 0.35, coherent: 0.35, evolving: 0.20 },
   0.28
 );
-assert(eq2.corrD > 0, 'coherent excess → boost density');
+assert(eq2.corrD > 0, 'coherent excess -> boost density');
 
 const eq3 = regimeReactiveDampingCore.equilibratorCorrection(
   { exploring: 0.35, coherent: 0.35, evolving: 0.20 },
   { exploring: 0.35, coherent: 0.35, evolving: 0.20 },
   0.28
 );
-assertClose(eq3.corrD, 0, 0.01, 'on-target → no correction');
-assertClose(eq3.corrT, 0, 0.01, 'on-target → no correction');
+assertClose(eq3.corrD, 0, 0.01, 'on-target -> no correction');
+assertClose(eq3.corrT, 0, 0.01, 'on-target -> no correction');
 
 //  Summary
 
@@ -98,12 +98,12 @@ assert(before.exploring === 0.50, 'chaotic exploring = 0.50');
 
 metaProfiles.disableAxis('regime-budget');
 const disabled = metaProfiles.getRegimeTargets();
-assertClose(disabled.exploring, 0.333, 0.001, 'disabled → fallback 0.333');
-assertClose(disabled.coherent, 0.333, 0.001, 'disabled → fallback 0.333');
+assertClose(disabled.exploring, 0.333, 0.001, 'disabled -> fallback 0.333');
+assertClose(disabled.coherent, 0.333, 0.001, 'disabled -> fallback 0.333');
 
 metaProfiles.enableAxis('regime-budget');
 const restored = metaProfiles.getRegimeTargets();
-assert(restored.exploring === 0.50, 'enabled → chaotic exploring restored');
+assert(restored.exploring === 0.50, 'enabled -> chaotic exploring restored');
 
 metaProfiles.setActive(null);
 

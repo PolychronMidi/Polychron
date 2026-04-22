@@ -73,7 +73,9 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
       lastNorm = norm;
 
       const dipVolume = clamp(m.round(volume * rf(0.74, 0.88)), 52, maxVol);
+      channelStateField.observeControl(channelToStutter, 7, dipVolume, 'stutterFade');
       p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, 7, dipVolume] });
+      channelStateField.observeControl(channelToStutter, 7, volume, 'stutterFade');
       p(c, { timeInSeconds: timeInSeconds + duration * rf(.95, 1.95), type: 'control_c', vals: [channelToStutter, 7, volume] });
     }
     if (timeInSeconds === undefined) throw new Error('stutterFade: for-loop produced no iterations');
@@ -82,6 +84,7 @@ stutterFade = function stutterFade(channels, numStutters = ri(10, 70), duration 
     const profile = stutterFailFast.inferProfile(channelToStutter, reflectionChannels, bassChannels);
     eventBus.emit(eventName, { type: 'cc', subtype: 'fade', profile, channel: channelToStutter, intensity: clamp(lastNorm, 0, 1), timeInSeconds });
 
+    channelStateField.observeControl(channelToStutter, 7, maxVol, 'stutterFade');
     p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 7, maxVol] });
   });
 };

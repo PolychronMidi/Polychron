@@ -61,7 +61,7 @@ fi
 # Log compact event for context meter calibration.
 # Captures the statusline's last known reading so we can compare meter estimate vs actual trigger.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="$PROJECT/metrics/compact-log.jsonl"
+LOG="${METRICS_DIR:-$PROJECT/output/metrics}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
@@ -77,7 +77,7 @@ fi
 # least take the chain snapshot NOW (before compaction destroys context)
 # so postcompact has something fresh to hydrate from. This is a safety net.
 CHAIN_SCRIPT="$PROJECT/tools/HME/scripts/chain-snapshot.py"
-LATEST_LINK="$PROJECT/metrics/chain-history/latest.yaml"
+LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
 _NEEDS_FALLBACK=1
 if [ -f "$LATEST_LINK" ]; then
   # If a link exists and is < 10 min old, assume preemption fired

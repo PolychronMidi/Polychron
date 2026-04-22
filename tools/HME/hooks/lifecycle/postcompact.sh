@@ -52,7 +52,7 @@ echo '{}' > "${HME_CTX_FILE:-/tmp/claude-context.json}"
 
 # Re-orient after compaction — surface current session state directly
 ORIENT=""
-PS="$PROJECT/metrics/pipeline-summary.json"
+PS="${METRICS_DIR:-$PROJECT/output/metrics}/pipeline-summary.json"
 if [ -f "$PS" ]; then
   VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
   WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
@@ -82,17 +82,15 @@ echo -e "[PostCompact] Context compacted. Session state:$ORIENT" >&2
 # conversation wakes up with structured session state from the link, not
 # from scratch. Dumps the link YAML to stderr so Claude sees it as part
 # of post-compaction context.
-LATEST_LINK="$PROJECT/metrics/chain-history/latest.yaml"
+LATEST_LINK="${METRICS_DIR:-$PROJECT/output/metrics}/chain-history/latest.yaml"
 if [ -f "$LATEST_LINK" ]; then
   echo "" >&2
   echo "━━━ CHAIN LINK HYDRATION (PostCompact) ━━━" >&2
   echo "  Loading state from: $(readlink -f "$LATEST_LINK")" >&2
   python3 <<'PYEOF' 2>/dev/null >&2
 import json, os
-link_path = "$LATEST_LINK"
-import os
 project = os.environ["PROJECT_ROOT"]
-latest = os.path.join(project, "metrics", "chain-history", "latest.yaml")
+latest = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project, "output", "metrics")), "chain-history", "latest.yaml")
 try:
     with open(latest) as f:
         data = json.load(f)
@@ -138,7 +136,7 @@ onb = data.get("onboarding", {})
 if onb and onb.get("state") != "graduated":
     print(f"  Onboarding: state={onb.get('state')} target={onb.get('target', '')}")
 
-print("  (full link readable at metrics/chain-history/latest.yaml)")
+print("  (full link readable at output/metrics/chain-history/latest.yaml)")
 PYEOF
   echo "━━━ END CHAIN LINK HYDRATION ━━━" >&2
 fi

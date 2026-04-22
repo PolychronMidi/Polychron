@@ -146,7 +146,7 @@ regimeClassifier = (() => {
   // Cross-run warm-start: restore terminal coherentThresholdScale from previous run
   try {
     const _rcFs = require('fs');
-    const _rcPath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    const _rcPath = require('path').join(METRICS_DIR, 'adaptive-state.json');
     if (_rcFs.existsSync(_rcPath)) {
       const _rcState = JSON.parse(_rcFs.readFileSync(_rcPath, 'utf8'));
       if (Number.isFinite(_rcState.coherentThresholdScale)) {

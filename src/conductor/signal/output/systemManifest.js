@@ -1,5 +1,4 @@
 // systemManifest.js - Emit system-manifest.json and capability-matrix.md after composition.
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 // Captures the organism's configuration and module topology for each run,
 // enabling compositional forensics and newcomer onboarding.
 

@@ -35,6 +35,7 @@ stutterVariants.register('stereoWidthModulation', function stereoWidthModulation
   const jitteredTarget = clamp(balTarget + jitter, audibleLeft ? 0 : centerVal, audibleLeft ? centerVal : 127);
 
   // Emit balance CC before stutter note
+  channelStateField.observeControl(opts.channel, 10, jitteredTarget, 'stereoWidthModulation');
   p(c, { timeInSeconds: opts.on, type: 'control_c', vals: [opts.channel, 10, jitteredTarget] });
 
   const vel = clamp(m.round(opts.velocity * rf(0.35, 0.6)), 1, 127);
@@ -45,6 +46,7 @@ stutterVariants.register('stereoWidthModulation', function stereoWidthModulation
   // Restore balance to baseline + mild residual jitter for organic feel
   const restoreJitter = ri(-3, 3);
   const restoreVal = clamp(sideBaseline + restoreJitter, audibleLeft ? 0 : centerVal, audibleLeft ? centerVal : 127);
+  channelStateField.observeControl(opts.channel, 10, restoreVal, 'stereoWidthModulation');
   p(c, { timeInSeconds: opts.on + opts.sustain * 0.8, type: 'control_c', vals: [opts.channel, 10, restoreVal] });
 
   return result;

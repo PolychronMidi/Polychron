@@ -159,7 +159,7 @@ if (rf() < .5*bpmRatio3 || absoluteSeconds * 1000 >= nextBalanceAndFXShiftMs || 
   refVar=ri(1,10); cBal2=rf()<.5?cBal+m.round(refVar*.5) : cBal+m.round(refVar*-.5);
   bassVar=refVar*rf(-2,2); cBal3=rf()<.5?cBal2+m.round(bassVar*.5) : cBal2+m.round(bassVar*-.5);
 
-  p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'control_c' }; fxEventTemplate=tmp;
+  const setBalanceAndFXEvents=['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:'control_c' }; fxEventTemplate=tmp;
 return [
     ...source2.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? lBal : rBal) : ch.toString().startsWith('rCH') ? (flipBin ? rBal : lBal) : ch===drumCH ? cBal3+m.round((rf(-.5,.5)*bassVar)) : cBal]})),
     ...reflection.map(ch=>({...tmp,vals:[ch,10,ch.toString().startsWith('lCH') ? (flipBin ? (rf()<.1 ? lBal+refVar*2 : lBal+refVar) : (rf()<.1 ? rBal-refVar*2 : rBal-refVar)) : ch.toString().startsWith('rCH') ? (flipBin ? (rf()<.1 ? rBal-refVar*2 : rBal-refVar) : (rf()<.1 ? lBal+refVar*2 : lBal+refVar)) : cBal2+m.round((rf(-.5,.5)*refVar)) ]})),
@@ -215,7 +215,9 @@ return [
     ...bass.map(ch=>rfx('bass',ch,93,(c)=>c===cCH3)),
     ...bass.map(ch=>rfx('bass',ch,94,(c)=>c===cCH3)),
     ...bass.map(ch=>rfx('bass',ch,95,(c)=>c===cCH3)),
-  ];  })  );
+  ];  });
+  for (let _i=0;_i<setBalanceAndFXEvents.length;_i++){ const _ev=setBalanceAndFXEvents[_i]; if (_ev && _ev.type==='control_c' && Array.isArray(_ev.vals)) { channelStateField.observeControl(_ev.vals[0], _ev.vals[1], _ev.vals[2], 'setBalanceAndFX'); } }
+  p(c,...setBalanceAndFXEvents);
 
   // -- Texture-reactive FX modulation (#5) - conductor-driven --
   // When texture contrast intensity is high, boost reverb send (CC91),
@@ -252,10 +254,16 @@ return [
 
       for (let ti = 0; ti < allChs.length; ti++) {
         const tCh = allChs[ti];
-        p(c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [tCh, 91, clampToFxDefault(tCh, 91, reverbBoost)] }); // Reverb
-        p(c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [tCh, 74, clampToFxDefault(tCh, 74, 80 + filterBoost)] }); // Filter cutoff
+        const reverbVal = clampToFxDefault(tCh, 91, reverbBoost);
+        channelStateField.observeControl(tCh, 91, reverbVal, 'setBalanceAndFX');
+        p(c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [tCh, 91, reverbVal] }); // Reverb
+        const filterVal = clampToFxDefault(tCh, 74, 80 + filterBoost);
+        channelStateField.observeControl(tCh, 74, filterVal, 'setBalanceAndFX');
+        p(c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [tCh, 74, filterVal] }); // Filter cutoff
         if (texInt > 0.25) {
-          p(c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [tCh, 94, clampToFxDefault(tCh, 94, delaySpike)] }); // Delay
+          const delayVal = clampToFxDefault(tCh, 94, delaySpike);
+          channelStateField.observeControl(tCh, 94, delayVal, 'setBalanceAndFX');
+          p(c, { timeInSeconds: beatStartTime, type: 'control_c', vals: [tCh, 94, delayVal] }); // Delay
         }
       }
     }

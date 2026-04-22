@@ -1,5 +1,7 @@
 // init.js - global initialization & channel mapping.
 
+METRICS_DIR = process.env.METRICS_DIR || (process.cwd() + '/output/metrics');
+
 // Timing and counter variables (documented inline for brevity)
 // composer profile globals for bootstrap ordering
 // created unconditionally here; profile source modules will populate them later

@@ -19,6 +19,7 @@ import urllib.request
 import urllib.error
 
 PROJECT = os.environ.get("PROJECT_ROOT", os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(PROJECT, "output", "metrics"))
 SRC = os.path.join(METRICS_DIR, "hme-generalizations.json")
 KB_PATH = os.path.join(PROJECT, "tools", "HME", "KB")
 

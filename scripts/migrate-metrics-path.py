@@ -32,6 +32,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SKIP_DIRS = {
     "node_modules", ".git", "__pycache__", ".venv", "venv",
     "tools/HME/KB",  # lance tables / KB chunks — no path refs
+    "src",           # METRICS_DIR is a boot global in src/ — no per-file declarations needed
 }
 
 SKIP_FILES = {
@@ -39,6 +40,7 @@ SKIP_FILES = {
     "scripts/migrate-metrics-path.py",
     # Already-correct files (the enforcement layer we just updated)
     "scripts/pipeline/validators/check-root-only-dirs.js",
+    "scripts/pipeline/validators/check-manifest-health.js",
     "scripts/smoke-test-i-wrappers.sh",
     "tools/HME/hooks/pretooluse/pretooluse_bash.sh",
     "tools/HME/hooks/pretooluse/pretooluse_edit.sh",

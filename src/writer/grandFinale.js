@@ -1,5 +1,4 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const V = validator.create('grandFinale');
 
@@ -65,9 +64,9 @@ grandFinale = () => {
         l0Dump[ch] = arr;
       }
     }
-    fs.mkdirSync('metrics', { recursive: true });
+    fs.mkdirSync(METRICS_DIR, { recursive: true });
     fs.writeFileSync(path.join(METRICS_DIR, 'l0-dump.json'), JSON.stringify(l0Dump, null, 2));
-    console.log('Wrote file: metrics/l0-dump.json');
+    console.log('Wrote file: output/metrics/l0-dump.json');
     // CIM, stutter variant, and correlation shuffler telemetry snapshots
     const runtimeSnap = {
       cim: safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null),
@@ -84,7 +83,11 @@ grandFinale = () => {
         tensionTrajectory: sectionMemory.getTensionTrajectory(),
         densityTrajectory: sectionMemory.getDensityTrajectory(),
         perSection: sectionMemory.getHistory()
-      }), null)
+      }), null),
+      channelField: {
+        stats: channelStateField.getStats(),
+        rollup: channelStateField.getRollup()
+      }
     };
     fs.writeFileSync(path.join(METRICS_DIR, 'runtime-snapshots.json'), JSON.stringify(runtimeSnap, null, 2));
     console.log('Wrote file: metrics/runtime-snapshots.json');

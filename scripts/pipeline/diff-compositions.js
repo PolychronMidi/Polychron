@@ -16,7 +16,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '../..');
-const METRICS_DIR     = path.join(METRICS_DIR);
+const METRICS_DIR     = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const COMPOSITION_DIR = path.join(ROOT, 'output');
 const SNAPSHOT_DIR    = path.join(METRICS_DIR, 'snapshots');
 const DIFF_JSON       = path.join(METRICS_DIR, 'composition-diff.json');

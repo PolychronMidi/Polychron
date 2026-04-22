@@ -5,9 +5,8 @@
 // Cooperates with CC effects via beatContext (pan-register, fade-velocity).
 
 const stutterNotesClampStutterNote = (n, isBassLocal) => {
-  const lo = m.max(0, OCTAVE.min * 12);
-  if (isBassLocal) return clamp(m.round(n), lo, 59);
-  return clamp(m.round(n), lo, m.max(lo, OCTAVE.max * 12 - 1));
+  const hi = isBassLocal ? 59 : maxMidi;
+  return clamp(m.round(n), minMidi, m.max(minMidi, hi));
 };
 
 /**
@@ -15,8 +14,8 @@ const stutterNotesClampStutterNote = (n, isBassLocal) => {
  * panBias: -1 (hard left) to +1 (hard right), 0 = no bias.
  */
 const stutterNotesPickRandomOctaveShift = (baseNote, isBassLocal, maxOctaves, lastShift = null, panBias = 0) => {
-  const minNote = m.max(0, OCTAVE.min * 12 - 1);
-  const maxNote = isBassLocal ? 59 : (OCTAVE.max * 12 - 1);
+  const minNote = minMidi - 1;
+  const maxNote = isBassLocal ? 59 : maxMidi;
   const candidates = [];
   const maxOct = m.max(1, m.floor(Number(maxOctaves)));
   for (let octaveMag = 1; octaveMag <= maxOct; octaveMag++) {

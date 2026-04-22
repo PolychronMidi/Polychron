@@ -43,7 +43,7 @@ hyperMetaManagerState = (() => {
   let warmStartState = null;
   try {
     const fs = require('fs');
-    const statePath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    const statePath = require('path').join(METRICS_DIR, 'adaptive-state.json');
     if (fs.existsSync(statePath)) {
       warmStartState = JSON.parse(fs.readFileSync(statePath, 'utf8'));
     }
