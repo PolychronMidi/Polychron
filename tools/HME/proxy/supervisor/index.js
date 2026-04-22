@@ -126,6 +126,11 @@ async function _healthLoop() {
           state.gaveUp = false;
           state.healthy = true;
           state.lastHealthy = Date.now();
+          // Clear the abandon sentinel now that a healthy process is serving.
+          try {
+            const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
+            if (fs.existsSync(sentinel)) fs.unlinkSync(sentinel);
+          } catch (_e) { /* best-effort */ }
           continue;
         }
       }
@@ -134,9 +139,32 @@ async function _healthLoop() {
       if (state.restarts >= spec.maxRestarts) {
         if (!state.gaveUp) {
           const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+          const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
           const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) — giving up`;
+          // Capture last 20 lines of child stderr so the sentinel includes the actual cause
+          // (previously the supervisor wrote the give-up line with zero diagnostic context).
+          let childTail = '';
+          try {
+            const childLog = path.join(PROJECT_ROOT, 'log', `hme-${spec.name}.out`);
+            if (fs.existsSync(childLog)) {
+              const data = fs.readFileSync(childLog, 'utf8').split('\n').slice(-20).join('\n');
+              childTail = `\n--- last 20 lines of ${childLog} ---\n${data}\n--- end ---\n`;
+            }
+          } catch (_e) { /* best-effort */ }
           console.error(msg);
-          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}\n`); } catch (_e) { /* best-effort */ }
+          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}${childTail}\n`); } catch (_e) { /* best-effort */ }
+          // Filesystem sentinel the i/ wrappers + statusline check for immediate surfacing.
+          // Cleared on successful adoption (see the adopt path above).
+          try {
+            fs.mkdirSync(path.dirname(sentinel), { recursive: true });
+            fs.writeFileSync(sentinel, JSON.stringify({
+              child: spec.name,
+              restarts: spec.maxRestarts,
+              abandoned_at: new Date().toISOString(),
+              message: msg,
+              last_output: childTail
+            }, null, 2));
+          } catch (_e) { /* best-effort */ }
           emit({ event: 'child_restart_limit', child: spec.name });
           state.gaveUp = true;
         }

@@ -81,14 +81,40 @@ if [ -f "$ERROR_LOG" ]; then
     NEW_ERRORS=$(awk "NR > $LAST" "$ERROR_LOG" | sort -u)
     # DO NOT advance watermark here — Stop hook is the only gate that advances it.
     # If watermark advanced here, unfixed errors vanish when Stop sees TOTAL==TURNSTART.
+    # Emit to stderr (local proxy log) AND stdout as UserPromptSubmit additionalContext
+    # so the proxy bridge relays it back into Claude's turn context. Stderr-only
+    # was the old path; the proxy bridge drops stderr entirely (see _proxy_bridge.sh),
+    # which meant every LIFESAVER alert since plugin mode was silently discarded.
     echo "" >&2
-    echo "LIFESAVER — ERRORS DETECTED — FIX BEFORE ANYTHING ELSE" >&2
-    echo "Acknowledging an error without fixing it is a CRITICAL VIOLATION." >&2
-    echo "You MUST: 1) diagnose root cause  2) implement fix  3) verify fix" >&2
+    echo "LIFESAVER - ERRORS DETECTED - FIX BEFORE ANYTHING ELSE" >&2
     echo "$NEW_ERRORS" >&2
-    echo "" >&2
-    echo "DO NOT proceed with any other task until every error above is FIXED." >&2
-    echo "" >&2
+    BANNER="LIFESAVER - ERRORS DETECTED - FIX BEFORE ANYTHING ELSE
+Acknowledging an error without fixing it is a CRITICAL VIOLATION.
+You MUST: 1) diagnose root cause  2) implement fix  3) verify fix
+
+${NEW_ERRORS}
+
+DO NOT proceed with any other task until every error above is FIXED."
+    # Block ONLY if the supervisor-abandoned sentinel currently exists
+    # (live catastrophic state, not historical log entry). Otherwise
+    # allow-with-context so the LIFESAVER is surfaced without blocking
+    # what may be a harmless continuation prompt.
+    export BLOCK="false"
+    [ -f "$PROJECT/tmp/hme-supervisor-abandoned" ] && export BLOCK="true"
+    python3 -c "
+import json, sys, os
+banner = sys.stdin.read()
+block = os.environ.get('BLOCK') == 'true'
+payload = {
+    'hookSpecificOutput': {
+        'hookEventName': 'UserPromptSubmit',
+        'additionalContext': banner
+    },
+    'decision': 'block' if block else 'allow',
+    'reason': 'LIFESAVER: worker supervisor abandoned — restart before proceeding.' if block else 'LIFESAVER: unresolved errors in hme-errors.log.'
+}
+print(json.dumps(payload))
+" <<< "$BANNER"
   fi
 fi
 
