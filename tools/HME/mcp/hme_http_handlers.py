@@ -17,15 +17,17 @@ _engine_ready: threading.Event = threading.Event()
 _project_engine = None
 _global_engine = None
 PROJECT_ROOT: str = ""
+METRICS_DIR: str = os.environ.get("METRICS_DIR", "")
 
 
 def init_handlers(engine_ready: threading.Event, project_engine, global_engine, project_root: str) -> None:
     """Wire engine references after startup. Call once engines are ready."""
-    global _engine_ready, _project_engine, _global_engine, PROJECT_ROOT
+    global _engine_ready, _project_engine, _global_engine, PROJECT_ROOT, METRICS_DIR
     _engine_ready = engine_ready
     _project_engine = project_engine
     _global_engine = global_engine
     PROJECT_ROOT = project_root
+    METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics"))
 
 
 def _is_indexable(abs_path: str) -> str | None:

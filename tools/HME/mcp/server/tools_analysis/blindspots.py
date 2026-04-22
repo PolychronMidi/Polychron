@@ -141,7 +141,7 @@ def blindspots(window: int = 0) -> str:
     if not events:
         return (
             "# Blind Spot Report\n\n"
-            os.path.join(METRICS_DIR, "hme-activity.jsonl is empty. Nothing to analyse — ")
+            "output/metrics/hme-activity.jsonl is empty. Nothing to analyse — "
             "activity stream must run for at least one round first."
         )
 

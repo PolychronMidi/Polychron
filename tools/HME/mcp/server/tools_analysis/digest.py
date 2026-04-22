@@ -15,10 +15,11 @@ from . import _load_trace as _load_trace_impl  # shared helper
 # Files written by every pipeline run — used to detect freshness.
 # pipeline.log is written LAST (the "Pipeline finished" line), so it detects completion
 # even when digest was called mid-run and already consumed the early metrics files.
+_METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(ctx.PROJECT_ROOT, "output", "metrics"))
 _PIPELINE_OUTPUT_FILES = [
-    os.path.join(METRICS_DIR, "trace.jsonl"),
-    os.path.join(METRICS_DIR, "trace-summary.json"),
-    os.path.join(METRICS_DIR, "fingerprint-comparison.json"),
+    os.path.join(_METRICS_DIR, "trace.jsonl"),
+    os.path.join(_METRICS_DIR, "trace-summary.json"),
+    os.path.join(_METRICS_DIR, "fingerprint-comparison.json"),
     "log/pipeline.log",
 ]
 # Sentinel file records when pipeline_digest last ran successfully

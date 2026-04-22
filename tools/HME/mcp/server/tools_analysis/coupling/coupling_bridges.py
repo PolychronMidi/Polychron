@@ -9,6 +9,9 @@ from server import context as ctx
 from .. import _track
 
 logger = logging.getLogger("HME")
+
+_PROJECT_ROOT_FALLBACK = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", ".."))
+METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(ctx.PROJECT_ROOT or _PROJECT_ROOT_FALLBACK, "output", "metrics"))
 from .coupling_data import (
     _TRUST_FILE_ALIASES,
     _scan_coupling_state, _load_trust_scores,
