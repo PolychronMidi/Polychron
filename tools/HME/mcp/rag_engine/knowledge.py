@@ -294,16 +294,30 @@ class RAGKnowledgeMixin:
             if category:
                 rows = [r for r in rows if r["category"] == category]
             rows.sort(key=lambda r: r.get("timestamp", 0), reverse=True)
-            return [
-                {
-                    "id": r["id"],
-                    "title": r["title"],
-                    "category": r["category"],
-                    "tags": r["tags"].split(",") if r["tags"] else [],
-                }
-                for r in rows
-            ]
-        except Exception:
+            out = []
+            for r in rows:
+                # R33: graceful per-row decoding. Previously one bad row
+                # (missing column, unexpected None) would raise and the
+                # outer bare `except Exception: return []` would swallow
+                # it, making the entire KB invisible to `i/learn list`
+                # while `i/learn search` worked fine (vector path, different
+                # column access). Silent degradation of the KB's own
+                # inventory endpoint for an unknown period.
+                try:
+                    tags_raw = r.get("tags", "")
+                    out.append({
+                        "id": r.get("id", ""),
+                        "title": r.get("title", "") or "?",
+                        "category": r.get("category", "") or "uncategorized",
+                        "tags": tags_raw.split(",") if tags_raw else [],
+                    })
+                except Exception as _row_err:
+                    logger.debug(f"list_knowledge: skipping malformed row: {type(_row_err).__name__}: {_row_err}")
+                    continue
+            return out
+        except Exception as _list_err:
+            # R33: surface the exception instead of silently returning [].
+            logger.warning(f"list_knowledge failed: {type(_list_err).__name__}: {_list_err}")
             return []
 
     def get_knowledge_status(self) -> dict:
@@ -311,13 +325,16 @@ class RAGKnowledgeMixin:
             return {"has_knowledge": False, "total_entries": 0, "categories": []}
         try:
             rows = self.knowledge_table.to_arrow().to_pylist()
-            categories = list({r["category"] for r in rows})
+            categories = list({r.get("category", "") for r in rows if r.get("category")})
             return {
                 "has_knowledge": True,
                 "total_entries": len(rows),
                 "categories": categories,
             }
-        except Exception:
+        except Exception as _status_err:
+            # R33: same LIFESAVER lesson — surface the exception instead of
+            # silently lying "has_knowledge=False" when the table exists.
+            logger.warning(f"get_knowledge_status failed: {type(_status_err).__name__}: {_status_err}")
             return {"has_knowledge": False, "total_entries": 0, "categories": []}
 
     def compact_knowledge(self, similarity_threshold: float = 0.85) -> dict:
