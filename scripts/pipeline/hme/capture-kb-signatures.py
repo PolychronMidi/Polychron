@@ -24,10 +24,11 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
-OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-signatures.json")
+OUT_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
 
 # Import current_signature() from the sibling drift checker — that's the
 # single source of truth for signature composition. runpy handles the
@@ -124,7 +125,7 @@ def main() -> int:
 
     # Load dep graph once for module-stem disambiguation
     dep_graph = _load_json(
-        os.path.join(PROJECT_ROOT, "metrics", "dependency-graph.json")
+        os.path.join(METRICS_DIR, "dependency-graph.json")
     ) or {"nodes": {}}
     dep_nodes = dep_graph.get("nodes", {}) or {}
 

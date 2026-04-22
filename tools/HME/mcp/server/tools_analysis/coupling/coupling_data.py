@@ -116,7 +116,7 @@ _trust_scores_cache: dict = {"path": "", "mtime": 0.0, "scores": {}}
 
 def _load_trust_scores(project_root: str) -> dict:
     """Load ALL per-module trust scores from trace-summary.json. Mtime-cached."""
-    summary_path = os.path.join(project_root, "metrics", "trace-summary.json")
+    summary_path = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "trace-summary.json")
     if not os.path.isfile(summary_path):
         return {}
     try:
@@ -152,7 +152,7 @@ def _load_trust_scores(project_root: str) -> dict:
 
 def _detect_traced_modules(project_root: str) -> set:
     """Return set of module names that appear in trace.jsonl trust data."""
-    trace_path = os.path.join(project_root, "metrics", "trace.jsonl")
+    trace_path = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "trace.jsonl")
     found: set = set()
     if not os.path.isfile(trace_path):
         return found

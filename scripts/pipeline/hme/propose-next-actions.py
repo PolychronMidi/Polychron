@@ -30,7 +30,8 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-OUT = os.path.join(PROJECT_ROOT, "metrics", "hme-next-actions.json")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+OUT = os.path.join(METRICS_DIR, "hme-next-actions.json")
 
 
 def _load(p):
@@ -54,7 +55,7 @@ def main() -> int:
     }
 
     # Arc II: matched patterns (highest priority — each carries prescribed steps)
-    matches = _load("metrics/hme-pattern-matches.json") or {}
+    matches = _load(os.path.join(METRICS_DIR, "hme-pattern-matches.json")) or {}
     for m in matches.get("matches", []):
         cat = m.get("category")
         actions.append({
@@ -69,7 +70,7 @@ def main() -> int:
         })
 
     # Arc III: drift outliers (preemptive — catches state drift before verdict fails)
-    drift = _load("metrics/hme-legendary-drift.json") or {}
+    drift = _load(os.path.join(METRICS_DIR, "hme-legendary-drift.json")) or {}
     if drift.get("status") == "drift_detected":
         for o in (drift.get("outliers") or [])[:5]:
             actions.append({
@@ -88,7 +89,7 @@ def main() -> int:
             })
 
     # Arc I: consensus outliers (substrates disagree)
-    con = _load("metrics/hme-consensus.json") or {}
+    con = _load(os.path.join(METRICS_DIR, "hme-consensus.json")) or {}
     if con.get("divergence") in ("moderate", "high"):
         for o in con.get("outliers", []):
             actions.append({
@@ -106,7 +107,7 @@ def main() -> int:
             })
 
     # Arc IV: retirement candidates (flappy invariants accumulated without citation)
-    eff = _load("metrics/hme-invariant-efficacy.json") or {}
+    eff = _load(os.path.join(METRICS_DIR, "hme-invariant-efficacy.json")) or {}
     for cand in eff.get("retirement_candidates", []):
         actions.append({
             "priority": 4,
@@ -126,7 +127,7 @@ def main() -> int:
     # repeat-count exceeds the pattern's expected_defer_rounds. A decision-gate
     # pattern with 3-round expected defer correctly waits 3 rounds without
     # being labeled "ignored"; at round 4 it's genuinely deferred too long.
-    prev = _load("metrics/hme-next-actions.json") or {}
+    prev = _load(os.path.join(METRICS_DIR, "hme-next-actions.json")) or {}
     prev_actions_by_id = {
         a.get("id"): a for a in (prev.get("actions") or []) if a.get("id")
     }

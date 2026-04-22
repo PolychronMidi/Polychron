@@ -34,11 +34,11 @@ Each subsystem `index.js`: helpers first, manager/orchestrator last.
 - **Cross-layer cannot write to conductor.** Only local `playProb`/`stutterProb` and `explainabilityBus` diagnostics.
 - **Conductor cannot mutate cross-layer state.** Read-only via getters is fine; writes are banned (`local/no-direct-crosslayer-write-from-conductor`).
 - **Signal reading:** always through `signalReader`, never `conductorIntelligence.getSignalSnapshot()` directly.
-- **New feedback loops:** must register with `feedbackRegistry` and declare in `metrics/feedback_graph.json`.
+- **New feedback loops:** must register with `feedbackRegistry` and declare in `output/metrics/feedback_graph.json`.
 - **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*`. Never hardcode strings.
 - **Cross-layer emission:** route all buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
 - **Inter-module communication:** via `L0` (L0) channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants; bare strings in L0 method calls are a hard error (`local/no-bare-l0-channel`). New channel: add to `l0Channels.js`, declare in `globals.d.ts`.
-- **Firewall ports:** the 9 controlled cross-boundary openings are declared in `metrics/feedback_graph.json` under `firewallPorts`. New cross-boundary data flow → declare a port.
+- **Firewall ports:** the 9 controlled cross-boundary openings are declared in `output/metrics/feedback_graph.json` under `firewallPorts`. New cross-boundary data flow → declare a port.
 
 ### Hypermeta-First (no whack-a-mole overrides)
 
@@ -64,12 +64,12 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 ## Pipeline Discipline
 
 - **Lab runner** at `lab/run.js` uses isolated temp working directories — never touches `output/`. 180s timeout.
-- **Non-fatal step error scanning:** `main-pipeline.js` captures stdout+stderr from post-composition steps and scans for error keywords. Detected errors are written to `metrics/pipeline-summary.json` under `errorPatterns`. **A non-fatal step marked OK with exit code 0 can still contain real failures** — always check `errorPatterns` in the summary.
+- **Non-fatal step error scanning:** `main-pipeline.js` captures stdout+stderr from post-composition steps and scans for error keywords. Detected errors are written to `output/metrics/pipeline-summary.json` under `errorPatterns`. **A non-fatal step marked OK with exit code 0 can still contain real failures** — always check `errorPatterns` in the summary.
 - **Lab sketches:** every `postBoot()` must contain real implementation code that creates the described behavior. A `setActiveProfile()`-only postBoot is empty and tests nothing. Monkey-patching globals/functions in postBoot is the integration prototyping mechanism.
 
 ## Hard Rules (Never Violate)
 
-- **`log/`, `metrics/`, and `tmp/` exist only at project root.** Never create or reference directories with these names at any other path (e.g. `tools/HME/mcp/metrics/`, `tools/HME/proxy/metrics/`, `src/tmp/`). All runtime output, diagnostics, and scratch files route through the root-level directories exclusively. If a tool or subsystem needs to write logs or metrics, it must use `PROJECT_ROOT/log/`, `PROJECT_ROOT/metrics/`, or `PROJECT_ROOT/tmp/`. Creating subdirectory variants causes permission bleed, git noise, and hook failures.
+- **`log/`, `output/metrics/`, and `tmp/` exist only at project root.** Never create or reference directories with these names at any other path (e.g. `tools/HME/mcp/metrics/`, `tools/HME/proxy/metrics/`, `src/tmp/`). All runtime output, diagnostics, and scratch files route through the root-level directories exclusively. If a tool or subsystem needs to write logs or metrics, it must use `PROJECT_ROOT/log/`, `PROJECT_ROOT/metrics/`, or `PROJECT_ROOT/tmp/`. Creating subdirectory variants causes permission bleed, git noise, and hook failures.
 - **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. `setBinaural` runs from `grandFinale` post-loop walk ONLY, never from `processBeat`.
 - **Never remove `tmp/run.lock`.** A lock means a run was abandoned without canceling. Do not suggest, attempt, or execute removal. Enforced by PreToolUse hook + deny rule.
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement.
@@ -89,14 +89,14 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`, `i/trace`). The proxy middleware owns MCP transport; Claude no longer connects to an MCP server. Full reference: [doc/HME.md](../doc/HME.md).
 
 - **After implementing changes:** `i/review mode=forget` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
-- **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
+- **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `output/metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
 - **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The `stop.sh` hook does this at turn end automatically; do it manually mid-turn.
 - **When pipeline fails:** read pipeline output, fix root cause. `i/hme-read target=<moduleName> mode=before` on the failing file.
 
 ## Reference Pointers
 
-- Lab calibration anchors → [metrics/journal.md](../metrics/journal.md)
+- Lab calibration anchors → [output/metrics/journal.md](../metrics/journal.md)
 - ESLint rules (24) → `scripts/eslint-rules/` (enforced at lint time; no need to memorize)
-- Per-run diagnostics → `metrics/conductor-map.md`, `metrics/crosslayer-map.md`, `metrics/narrative-digest.md`, `metrics/trace-replay.json`, `metrics/runtime-snapshots.json`, `metrics/feedback-graph.html`
-- Cross-run state → `metrics/adaptive-state.json`
-- Feedback loop topology → [metrics/feedback_graph.json](../metrics/feedback_graph.json)
+- Per-run diagnostics → `output/metrics/conductor-map.md`, `output/metrics/crosslayer-map.md`, `output/metrics/narrative-digest.md`, `output/metrics/trace-replay.json`, `output/metrics/runtime-snapshots.json`, `output/metrics/feedback-graph.html`
+- Cross-run state → `output/metrics/adaptive-state.json`
+- Feedback loop topology → [output/metrics/feedback_graph.json](../metrics/feedback_graph.json)

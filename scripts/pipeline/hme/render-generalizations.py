@@ -12,7 +12,8 @@ import sys
 from datetime import datetime
 
 PROJECT = os.environ.get("PROJECT_ROOT", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SRC = os.path.join(PROJECT, "metrics", "hme-generalizations.json")
+METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(PROJECT, "output", "metrics"))
+SRC = os.path.join(METRICS_DIR, "hme-generalizations.json")
 DST = os.path.join(PROJECT, "doc", "hme-discoveries.md")
 
 

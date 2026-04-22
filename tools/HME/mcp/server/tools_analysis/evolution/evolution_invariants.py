@@ -487,7 +487,7 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
                         (default 2 — cold-start tolerance)
     """
     import json as _json
-    path = os.path.join(ctx.PROJECT_ROOT, inv.get("path", "metrics/hme-activity.jsonl"))
+    path = os.path.join(ctx.PROJECT_ROOT, inv.get("path", os.path.join(METRICS_DIR, "hme-activity.jsonl")))
     start_event = inv["start_event"]
     end_event = inv["end_event"]
     require_field = inv.get("require_field", "")
@@ -495,7 +495,7 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
     min_occ = int(inv.get("min_occurrences", 2))
 
     if not os.path.isfile(path):
-        return True, f"activity log {inv.get('path','metrics/hme-activity.jsonl')} missing — can't check"
+        return True, f"activity log {inv.get('path',os.path.join(METRICS_DIR, 'hme-activity.jsonl'))} missing — can't check"
     tail: list = []
     try:
         with open(path, encoding="utf-8") as f:
@@ -542,7 +542,7 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
     """
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT,
-                        inv.get("path", "metrics/hme-invariant-history.json"))
+                        inv.get("path", os.path.join(METRICS_DIR, "hme-invariant-history.json")))
     min_streak = int(inv.get("min_streak", 10))
     if not os.path.isfile(path):
         return True, "no invariant history yet — chronic-failure check inert"
@@ -579,11 +579,11 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
     import json as _json
     activity_path = os.path.join(
         ctx.PROJECT_ROOT,
-        inv.get("activity_path", "metrics/hme-activity.jsonl"),
+        inv.get("activity_path", os.path.join(METRICS_DIR, "hme-activity.jsonl")),
     )
     corr_path = os.path.join(
         ctx.PROJECT_ROOT,
-        inv.get("correlation_path", "metrics/hme-musical-correlation.json"),
+        inv.get("correlation_path", os.path.join(METRICS_DIR, "hme-musical-correlation.json")),
     )
     field = inv.get("field", "hme_coherence")
     tolerance = float(inv.get("tolerance", 0.01))
@@ -677,7 +677,7 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
     import json as _json
     import re as _re
     path = os.path.join(ctx.PROJECT_ROOT,
-                        inv.get("path", "metrics/hme-activity.jsonl"))
+                        inv.get("path", os.path.join(METRICS_DIR, "hme-activity.jsonl")))
     event_name = inv["event"]
     field = inv["field"]
     pattern = _re.compile(inv["pattern"])
@@ -944,7 +944,7 @@ def _persist_invariant_history(results: list) -> None:
     """
     import json as _json
     import time as _time
-    history_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-invariant-history.json")
+    history_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-invariant-history.json")
     history: dict = {}
     if os.path.isfile(history_path):
         try:

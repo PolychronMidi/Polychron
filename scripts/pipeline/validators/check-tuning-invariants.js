@@ -15,6 +15,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { ROOT, loadJson } = require('../hme/utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const SRC  = path.join(ROOT, 'src');
 
@@ -272,7 +273,7 @@ function main() {
   }
 
   // Write results for forensics
-  const outputPath = path.join(ROOT, 'metrics', 'tuning-invariants.json');
+  const outputPath = path.join(METRICS_DIR, 'tuning-invariants.json');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify({
     meta: { generated: new Date().toISOString(), total: invariants.length, passed: invariants.length - failures - skipped, failed: failures, skipped },

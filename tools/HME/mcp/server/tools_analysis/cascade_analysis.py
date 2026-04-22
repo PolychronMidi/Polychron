@@ -26,9 +26,9 @@ from typing import Any
 from server import context as ctx
 from . import _track
 
-DEP_GRAPH_REL = os.path.join("metrics", "dependency-graph.json")
-FEEDBACK_GRAPH_REL = os.path.join("metrics", "feedback_graph.json")
-PREDICTIONS_LOG_REL = os.path.join("metrics", "hme-predictions.jsonl")
+DEP_GRAPH_REL = os.path.join("output", "metrics", "dependency-graph.json")
+FEEDBACK_GRAPH_REL = os.path.join("output", "metrics", "feedback_graph.json")
+PREDICTIONS_LOG_REL = os.path.join("output", "metrics", "hme-predictions.jsonl")
 
 _CACHE: dict[str, Any] = {}
 

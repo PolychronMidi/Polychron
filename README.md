@@ -76,7 +76,7 @@ Details: [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md)
 Details: [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md)
 
 ### Adaptive Infrastructure
-Cross-run warm-start via `metrics/adaptive-state.json`. Reconvergence accelerator detects structural discontinuities and spikes EMA alphas. Regime-adaptive alphas (3x on transition, decay 0.88/tick). Effectiveness-weighted convergence rates (proven controllers adapt faster).
+Cross-run warm-start via `output/metrics/adaptive-state.json`. Reconvergence accelerator detects structural discontinuities and spikes EMA alphas. Regime-adaptive alphas (3x on transition, decay 0.88/tick). Effectiveness-weighted convergence rates (proven controllers adapt faster).
 
 Details: [doc/ADAPTIVE_INFRASTRUCTURE.md](doc/ADAPTIVE_INFRASTRUCTURE.md)
 
@@ -104,7 +104,7 @@ Details: [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) (Layer Isolation section)
 
 ## Diagnostics
 
-Generated per-run in `metrics/`:
+Generated per-run in `output/metrics/`:
 
 | File | Purpose |
 

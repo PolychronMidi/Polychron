@@ -18,9 +18,10 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT        = path.join(__dirname, '../..');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const SRC         = path.join(ROOT, 'src');
 const GLOBALS_DTS = path.join(SRC, 'types', 'globals.d.ts');
-const OUTPUT      = path.join(ROOT, 'metrics', 'boot-order.json');
+const OUTPUT      = path.join(METRICS_DIR, 'boot-order.json');
 
 // -Parse globals.d.ts for every `declare var NAME:` entry -
 

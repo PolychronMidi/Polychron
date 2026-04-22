@@ -103,7 +103,7 @@ How the polyrhythmic layers interact — locked, drifting, or repelling.
 ```
 src/conductor/metaProfiles.js          — profile registry + loader
 src/conductor/metaProfileDefinitions.js — built-in profile definitions
-metrics/metaprofile-active.json         — current active profile (set by conductor config)
+output/metrics/metaprofile-active.json         — current active profile (set by conductor config)
 ```
 
 ### Profile schema
@@ -191,7 +191,7 @@ Hot-switch mid-composition (controllers smooth the transition via their own EMAs
 if (sectionIndex === 3) metaProfiles.setActive('chaotic');
 ```
 
-When activated, the profile is persisted to `metrics/metaprofile-active.json` so HME Python tools (coupling_bridges, evolution suggestions) can read it.
+When activated, the profile is persisted to `output/metrics/metaprofile-active.json` so HME Python tools (coupling_bridges, evolution suggestions) can read it.
 
 ### Interaction with conductor profiles
 

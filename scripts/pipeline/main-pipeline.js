@@ -15,6 +15,7 @@ const cp = require('child_process');
 const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const MEASURE_TIMEOUT_SEC = 30;
 
@@ -310,7 +311,7 @@ function emitActivity(event, fields) {
   // 1. Guaranteed direct-append to the activity log.
   var record = Object.assign({ event: event, ts: Math.floor(Date.now() / 1000) }, fields || {});
   try {
-    var activityLog = path.join(projectRoot, 'metrics', 'hme-activity.jsonl');
+    var activityLog = path.join(METRICS_DIR, 'hme-activity.jsonl');
     fs.appendFileSync(activityLog, JSON.stringify(record) + '\n');
   } catch (e) {
     console.error('  emit_activity append ' + event + ' failed: ' + (e && e.message ? e.message : e));

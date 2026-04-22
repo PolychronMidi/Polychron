@@ -12,7 +12,7 @@ import os
 from server import context as ctx
 from . import _track
 
-REPORT_REL = os.path.join("metrics", "hme-prediction-accuracy.json")
+REPORT_REL = os.path.join("output", "metrics", "hme-prediction-accuracy.json")
 
 
 def prediction_accuracy_report() -> str:
@@ -21,7 +21,7 @@ def prediction_accuracy_report() -> str:
     if not os.path.exists(path):
         return (
             "# HME Prediction Accuracy\n\n"
-            "metrics/hme-prediction-accuracy.json not found.\n"
+            os.path.join(METRICS_DIR, "hme-prediction-accuracy.json not found.\n")
             "Runs automatically as a post-composition step "
             "(`reconcile-predictions.js`). Invoke "
             "`trace(target='moduleName', mode='impact')` during a session to "

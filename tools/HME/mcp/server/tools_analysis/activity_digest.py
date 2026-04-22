@@ -21,7 +21,7 @@ from . import _track
 
 logger = logging.getLogger("HME")
 
-ACTIVITY_PATH_REL = os.path.join("metrics", "hme-activity.jsonl")
+ACTIVITY_PATH_REL = os.path.join("output", "metrics", "hme-activity.jsonl")
 DEFAULT_LOOKBACK_LINES = 500
 
 

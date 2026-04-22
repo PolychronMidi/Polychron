@@ -17,8 +17,9 @@ import os
 import sys
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-HIST = os.path.join(PROJECT_ROOT, "metrics", "legacy-override-history.jsonl")
-SNAPS = os.path.join(PROJECT_ROOT, "metrics", "hme-legendary-states.jsonl")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+HIST = os.path.join(METRICS_DIR, "legacy-override-history.jsonl")
+SNAPS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
 
 
 def _load_jsonl(path):

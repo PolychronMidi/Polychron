@@ -115,7 +115,7 @@ fi
 MSG=""
 
 # Pipeline verdict + wall time
-PS="$PROJECT/metrics/pipeline-summary.json"
+PS="${METRICS_DIR:-$PROJECT/output/metrics}/pipeline-summary.json"
 if [ -f "$PS" ]; then
   VERDICT=$(_safe_py3 "import json; print(json.load(open('$PS')).get('verdict',''))" '')
   WALL=$(_safe_py3 "import json; d=json.load(open('$PS')); w=d.get('wallTimeSeconds',0); print(f'{w:.0f}s' if w else '')" '')
@@ -123,7 +123,7 @@ if [ -f "$PS" ]; then
 fi
 
 # Last journal round
-JOURNAL="$PROJECT/metrics/journal.md"
+JOURNAL="${METRICS_DIR:-$PROJECT/output/metrics}/journal.md"
 if [ -f "$JOURNAL" ]; then
   LAST_ROUND=$(grep -m1 '^## R' "$JOURNAL" | head -1)
   [ -n "$LAST_ROUND" ] && MSG="$MSG\n$LAST_ROUND"
@@ -263,10 +263,10 @@ def _j(p):
     try:
         with open(os.path.join(ROOT, p)) as f: return json.load(f)
     except Exception: return None
-na = _j('metrics/hme-next-actions.json') or {}
-con = _j('metrics/hme-consensus.json') or {}
-dr  = _j('metrics/hme-legendary-drift.json') or {}
-eff = _j('metrics/hme-invariant-efficacy.json') or {}
+na = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-next-actions.json")) or {}
+con = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-consensus.json")) or {}
+dr  = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-legendary-drift.json")) or {}
+eff = _j(os.path.join(os.environ.get("METRICS_DIR", os.path.join(os.environ["PROJECT_ROOT"], "output", "metrics")), "hme-invariant-efficacy.json")) or {}
 n_act = na.get('total_actions', 0)
 bits = []
 bits.append(f'substrate: consensus={con.get(\"mean\",\"?\")} stdev={con.get(\"stdev\",\"?\")} drift={dr.get(\"drift_score\",\"?\")} actions={n_act}')

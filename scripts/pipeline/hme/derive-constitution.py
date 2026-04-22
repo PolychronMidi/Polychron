@@ -33,12 +33,13 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
-CRYSTALLIZED_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-crystallized.json")
-GROUND_TRUTH_LOG = os.path.join(PROJECT_ROOT, "metrics", "hme-ground-truth.jsonl")
-FEEDBACK_GRAPH = os.path.join(PROJECT_ROOT, "metrics", "feedback_graph.json")
-OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "hme-constitution.json")
+CRYSTALLIZED_PATH = os.path.join(METRICS_DIR, "hme-crystallized.json")
+GROUND_TRUTH_LOG = os.path.join(METRICS_DIR, "hme-ground-truth.jsonl")
+FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")
+OUT_PATH = os.path.join(METRICS_DIR, "hme-constitution.json")
 
 MIN_PATTERN_ROUNDS = int(os.environ.get("HME_CONSTITUTION_MIN_PATTERN_ROUNDS", "4"))
 MIN_PATTERN_MEMBERS = int(os.environ.get("HME_CONSTITUTION_MIN_PATTERN_MEMBERS", "3"))
@@ -205,7 +206,7 @@ def extract_claims_from_feedback_graph() -> list[dict]:
             "confidence": 1.0,
             "evidence": {
                 "loop_id": loop_id,
-                "source": "metrics/feedback_graph.json",
+                "source": os.path.join(METRICS_DIR, "feedback_graph.json"),
             },
         })
     for port in ports:
@@ -218,7 +219,7 @@ def extract_claims_from_feedback_graph() -> list[dict]:
             "confidence": 1.0,
             "evidence": {
                 "port_id": port_id,
-                "source": "metrics/feedback_graph.json",
+                "source": os.path.join(METRICS_DIR, "feedback_graph.json"),
             },
         })
     return out

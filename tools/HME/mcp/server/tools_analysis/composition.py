@@ -20,7 +20,7 @@ def composition_arc() -> str:
     ctx.ensure_ready_sync()
     _track("composition_arc")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
@@ -140,7 +140,7 @@ def hotspot_leaderboard() -> str:
     ctx.ensure_ready_sync()
     _track("hotspot_leaderboard")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 

@@ -199,7 +199,7 @@ def _emit_stats(pattern: str, detail: str) -> None:
                     break
         if not root:
             return
-        out_path = os.path.join(root, "metrics", "detector-stats.jsonl")
+        out_path = os.path.join(root, "output", "metrics", "detector-stats.jsonl")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "a", encoding="utf-8") as f:
             f.write(json.dumps({

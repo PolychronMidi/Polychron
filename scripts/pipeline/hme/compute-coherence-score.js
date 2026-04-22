@@ -32,10 +32,10 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const ACTIVITY = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
-const STALENESS = path.join(ROOT, 'metrics', 'kb-staleness.json');
-const VIOLATIONS = path.join(ROOT, 'metrics', 'hme-violations.json');
-const OUT = path.join(ROOT, 'metrics', 'hme-coherence.json');
+const ACTIVITY = path.join(METRICS_DIR, 'hme-activity.jsonl');
+const STALENESS = path.join(METRICS_DIR, 'kb-staleness.json');
+const VIOLATIONS = path.join(METRICS_DIR, 'hme-violations.json');
+const OUT = path.join(METRICS_DIR, 'hme-coherence.json');
 
 function readEvents() {
   if (!fs.existsSync(ACTIVITY)) return [];
@@ -108,6 +108,7 @@ function emitActivity(event, fields) {
   // idle_round / empty-window signals without blocking. Uses emit.py's CLI
   // surface, same as every other pipeline step.
   const { spawn } = require('child_process');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
   const args = [path.join(ROOT, 'tools', 'HME', 'activity', 'emit.py'),
                 '--event=' + event];
   for (const k of Object.keys(fields || {})) {

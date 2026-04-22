@@ -1,4 +1,5 @@
 // grandFinale.js - Finalize and write out all layer buffers to CSV files
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const V = validator.create('grandFinale');
 
@@ -65,7 +66,7 @@ grandFinale = () => {
       }
     }
     fs.mkdirSync('metrics', { recursive: true });
-    fs.writeFileSync('metrics/l0-dump.json', JSON.stringify(l0Dump, null, 2));
+    fs.writeFileSync(path.join(METRICS_DIR, 'l0-dump.json'), JSON.stringify(l0Dump, null, 2));
     console.log('Wrote file: metrics/l0-dump.json');
     // CIM, stutter variant, and correlation shuffler telemetry snapshots
     const runtimeSnap = {
@@ -85,7 +86,7 @@ grandFinale = () => {
         perSection: sectionMemory.getHistory()
       }), null)
     };
-    fs.writeFileSync('metrics/runtime-snapshots.json', JSON.stringify(runtimeSnap, null, 2));
+    fs.writeFileSync(path.join(METRICS_DIR, 'runtime-snapshots.json'), JSON.stringify(runtimeSnap, null, 2));
     console.log('Wrote file: metrics/runtime-snapshots.json');
     // Cross-run adaptive state: save terminal EMA values for next boot warm-start
     // Xenolinguistic L5: cross-run personality persistence
@@ -112,7 +113,7 @@ grandFinale = () => {
       },
       savedAt: new Date().toISOString()
     };
-    fs.writeFileSync('metrics/adaptive-state.json', JSON.stringify(adaptiveState, null, 2));
+    fs.writeFileSync(path.join(METRICS_DIR, 'adaptive-state.json'), JSON.stringify(adaptiveState, null, 2));
     console.log('Wrote file: metrics/adaptive-state.json');
   } catch (e) {
     throw new Error('grandFinale: failed to write l0-dump.json: ' + e.message);

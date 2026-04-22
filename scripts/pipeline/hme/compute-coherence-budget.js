@@ -39,11 +39,12 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
-const MUSICAL = path.join(ROOT, 'metrics', 'hme-musical-correlation.json');
-const COHERENCE = path.join(ROOT, 'metrics', 'hme-coherence.json');
-const GROUND_TRUTH = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');
-const OUT = path.join(ROOT, 'metrics', 'hme-coherence-budget.json');
+const MUSICAL = path.join(METRICS_DIR, 'hme-musical-correlation.json');
+const COHERENCE = path.join(METRICS_DIR, 'hme-coherence.json');
+const GROUND_TRUTH = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
+const OUT = path.join(METRICS_DIR, 'hme-coherence-budget.json');
 
 const MIN_HISTORY = 8;
 const PRIOR_BAND = [0.55, 0.85];

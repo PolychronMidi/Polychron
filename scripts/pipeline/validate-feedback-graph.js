@@ -20,8 +20,9 @@ const fs   = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '../..');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 const SRC  = path.join(ROOT, 'src');
-const METRICS  = path.join(ROOT, 'metrics');
+const METRICS  = path.join(METRICS_DIR);
 
 function readFile(relPath) {
   const abs = path.join(SRC, relPath);
@@ -251,7 +252,7 @@ const results = {
   meta: {
     script: 'validate-feedback-graph.js',
     timestamp: new Date().toISOString(),
-    graphPath: 'metrics/feedback_graph.json'
+    graphPath: path.join(METRICS_DIR, 'feedback_graph.json')
   },
   jsonLoopCount: jsonLoops.length,
   sourceLoopCount: sourceLoops.length,
@@ -263,7 +264,7 @@ const results = {
   warnings
 };
 
-const outputPath = path.join(ROOT, 'metrics', 'feedback-graph-validation.json');
+const outputPath = path.join(METRICS_DIR, 'feedback-graph-validation.json');
 fs.writeFileSync(outputPath, JSON.stringify(results, null, 2) + '\n');
 
 // -Report -

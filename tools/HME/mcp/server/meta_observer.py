@@ -64,13 +64,13 @@ def start(project_root: str) -> None:
         return
     _ms = MetaState(
         heartbeat_file=os.path.join(project_root, "tmp", "hme-meta-observer.heartbeat"),
-        coherence_file=os.path.join(project_root, "metrics", "hme-coherence.jsonl"),
-        narrative_file=os.path.join(project_root, "metrics", "hme-narrative.jsonl"),
+        coherence_file=os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-coherence.jsonl"),
+        narrative_file=os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-narrative.jsonl"),
         ops_file=os.path.join(project_root, "tmp", "hme-ops.json"),
-        counterfactual_file=os.path.join(project_root, "metrics", _COUNTERFACTUAL_FILE_SUFFIX),
+        counterfactual_file=os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), _COUNTERFACTUAL_FILE_SUFFIX),
         entanglement_file=os.path.join(project_root, "tmp", "hme-entanglement.json"),
-        synthesis_file=os.path.join(project_root, "metrics", "hme-synthesis.jsonl"),
-        synthesis_patterns_file=os.path.join(project_root, "metrics", "hme-synthesis-patterns.json"),
+        synthesis_file=os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-synthesis.jsonl"),
+        synthesis_patterns_file=os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-synthesis-patterns.json"),
     )
     os.makedirs(os.path.dirname(_ms.heartbeat_file), exist_ok=True)
     os.makedirs(os.path.dirname(_ms.narrative_file), exist_ok=True)

@@ -108,7 +108,7 @@ Modules with internal state use `byLayer` maps keyed by `LM.activeLayer`:
 
 ### Cross-Run Warm-Start
 
-`metrics/adaptive-state.json` persists terminal EMA values across runs. Loaded at bootstrap by `hyperMetaManagerState` via `loadWarmStartState()`. Fields persisted:
+`output/metrics/adaptive-state.json` persists terminal EMA values across runs. Loaded at bootstrap by `hyperMetaManagerState` via `loadWarmStartState()`. Fields persisted:
 
 - `healthEma`, `exceedanceTrendEma` — system health and exceedance trend (clamped to [0.4, 0.9] and [0.0, 0.5] on load)
 - `systemPhase`, `coherentThresholdScale` — regime self-balancer state

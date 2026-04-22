@@ -17,10 +17,11 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
-ACTIVITY = os.path.join(PROJECT_ROOT, "metrics", "hme-activity.jsonl")
-ARCHIVE = os.path.join(PROJECT_ROOT, "metrics", "hme-activity-archive.jsonl")
+ACTIVITY = os.path.join(METRICS_DIR, "hme-activity.jsonl")
+ARCHIVE = os.path.join(METRICS_DIR, "hme-activity-archive.jsonl")
 KEEP_DAYS = float(os.environ.get("HME_ACTIVITY_KEEP_DAYS", "14"))
 
 
@@ -67,7 +68,7 @@ def main() -> int:
 
     print(
         f"archive-activity: moved {len(archive)} event(s) to "
-        f"metrics/hme-activity-archive.jsonl ({len(keep)} kept)"
+        fos.path.join(METRICS_DIR, "hme-activity-archive.jsonl ({len(keep)} kept)")
     )
     return 0
 

@@ -67,8 +67,8 @@ except ImportError:
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_HOLOGRAPH_DIR = os.path.join(_PROJECT, "metrics", "holograph")
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-trajectory.json")
+_HOLOGRAPH_DIR = os.path.join(METRICS_DIR, "holograph")
+_OUTPUT = os.path.join(METRICS_DIR, "hme-trajectory.json")
 _DEFAULT_WINDOW = 5
 
 

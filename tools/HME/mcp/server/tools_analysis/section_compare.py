@@ -20,7 +20,7 @@ def section_compare(section_a: int, section_b: int) -> str:
     ctx.ensure_ready_sync()
     _track("section_compare")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     records = _load_trace(trace_path)
     if not records:
         return "No trace.jsonl found."
@@ -199,7 +199,7 @@ def regime_timeline(row_width: int = 80) -> str:
     ctx.ensure_ready_sync()
     _track("regime_timeline")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     records = _load_trace(trace_path)
     if not records:
         return "No trace.jsonl found."

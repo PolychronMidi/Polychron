@@ -20,15 +20,15 @@ import json
 import os
 import sys
 
-from _common import PROJECT_ROOT, load_json as _load, load_jsonl_tail as _load_jsonl_tail
+from _common import PROJECT_ROOT, METRICS_DIR, load_json as _load, load_jsonl_tail as _load_jsonl_tail
 
 
 def brief():
-    na = _load("metrics/hme-next-actions.json") or {}
-    con = _load("metrics/hme-consensus.json") or {}
-    dr = _load("metrics/hme-legendary-drift.json") or {}
-    eff = _load("metrics/hme-invariant-efficacy.json") or {}
-    ps = _load("metrics/pipeline-summary.json") or {}
+    na = _load("output/metrics/hme-next-actions.json") or {}
+    con = _load("output/metrics/hme-consensus.json") or {}
+    dr = _load("output/metrics/hme-legendary-drift.json") or {}
+    eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
+    ps = _load("output/metrics/pipeline-summary.json") or {}
 
     n_actions = na.get("total_actions", 0)
     div = con.get("divergence", "?")
@@ -57,26 +57,26 @@ def brief():
 def detail():
     bits = [brief(), ""]
     # Arc III outliers
-    dr = _load("metrics/hme-legendary-drift.json") or {}
+    dr = _load("output/metrics/hme-legendary-drift.json") or {}
     if dr.get("outliers"):
         bits.append("Arc III outliers:")
         for o in dr["outliers"][:6]:
             bits.append(f"  {o['field']:35s} current={o['current']:.3f} median={o['median']:.3f} z={o['z_score']:+.2f}")
     # Arc I voter trajectories
-    con = _load("metrics/hme-consensus.json") or {}
+    con = _load("output/metrics/hme-consensus.json") or {}
     vtr = con.get("voter_trajectories") or {}
     if vtr:
         bits.append("Voter trajectories:")
         for v, t in vtr.items():
             bits.append(f"  {v:22s} mean={t.get('mean'):+.2f} slope={t.get('slope'):+.2f} n={t.get('n')}")
     # Arc II patterns (top 3)
-    pm = _load("metrics/hme-pattern-matches.json") or {}
+    pm = _load("output/metrics/hme-pattern-matches.json") or {}
     if pm.get("matches"):
         bits.append("Matched patterns:")
         for m in pm["matches"][:3]:
             bits.append(f"  [{m.get('category')}] {m.get('id')}: {m.get('action_summary','')[:80]}")
     # Arc IV retirement candidates
-    eff = _load("metrics/hme-invariant-efficacy.json") or {}
+    eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
     cands = eff.get("retirement_candidates", [])
     if cands:
         bits.append(f"Retirement candidates: {', '.join(cands)}")
@@ -84,7 +84,7 @@ def detail():
 
 
 def actions():
-    na = _load("metrics/hme-next-actions.json") or {}
+    na = _load("output/metrics/hme-next-actions.json") or {}
     lines = [f"Harvester: {na.get('total_actions', 0)} action(s)"]
     for a in (na.get("actions") or []):
         lines.append(f"\n[p{a.get('priority')}] {a.get('id')}")
@@ -95,7 +95,7 @@ def actions():
 
 
 def drift_view():
-    dr = _load("metrics/hme-legendary-drift.json") or {}
+    dr = _load("output/metrics/hme-legendary-drift.json") or {}
     lines = [
         f"Drift score: {dr.get('drift_score')} "
         f"(threshold {dr.get('drift_threshold', 2.0)}) status={dr.get('status')}",
@@ -109,7 +109,7 @@ def drift_view():
 
 
 def consensus_view():
-    con = _load("metrics/hme-consensus.json") or {}
+    con = _load("output/metrics/hme-consensus.json") or {}
     lines = [
         f"Consensus: mean={con.get('mean')} stdev={con.get('stdev')} "
         f"divergence={con.get('divergence')} n={con.get('active_count')}",
@@ -126,7 +126,7 @@ def consensus_view():
 
 
 def efficacy_view():
-    eff = _load("metrics/hme-invariant-efficacy.json") or {}
+    eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
     classes = eff.get("class_counts", {})
     lines = [
         f"Invariants: total={eff.get('total_invariants')}  runs={eff.get('total_runs')}",
@@ -149,7 +149,7 @@ def efficacy_view():
 
 def patterns_view():
     import glob
-    pm = _load("metrics/hme-pattern-matches.json") or {}
+    pm = _load("output/metrics/hme-pattern-matches.json") or {}
     lines = [
         f"Pattern registry: {pm.get('patterns_total', 0)} patterns, "
         f"{pm.get('matches_count', 0)} matched this round",
@@ -176,7 +176,7 @@ def patterns_view():
 
 
 def diff_view():
-    rows = _load_jsonl_tail("metrics/hme-arc-timeseries.jsonl", n=5)
+    rows = _load_jsonl_tail("output/metrics/hme-arc-timeseries.jsonl", n=5)
     if len(rows) < 2:
         return f"diff: need ≥2 timeseries rows (have {len(rows)})"
     cur, prev = rows[-1], rows[-2]

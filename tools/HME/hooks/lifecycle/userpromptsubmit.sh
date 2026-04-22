@@ -187,7 +187,7 @@ if [[ -n "$PROMPT_BODY" ]]; then
   elif echo "$PROMPT_BODY" | grep -qiE 'listening verdict:\s*broken'; then VERDICT=broken
   fi
   if [[ -n "$VERDICT" ]]; then
-    GT_FILE="$PROJECT_ROOT/metrics/hme-ground-truth.jsonl"
+    GT_FILE="${METRICS_DIR}/hme-ground-truth.jsonl"
     SHA=$(cd "$PROJECT_ROOT" && git rev-parse --short HEAD 2>/dev/null || echo unknown)
     TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     # Dedupe: skip if the last entry already has this SHA + same verdict

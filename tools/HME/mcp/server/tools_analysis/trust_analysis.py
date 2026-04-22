@@ -58,7 +58,7 @@ def trust_trajectory(system_name: str) -> str:
     ctx.ensure_ready_sync()
     _track("trust_trajectory")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
@@ -167,7 +167,7 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
     ctx.ensure_ready_sync()
     _track("trust_rivalry")
 
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if not os.path.isfile(trace_path):
         return "No trace.jsonl found."
 
@@ -269,7 +269,7 @@ def trust_report(system_a: str = "", system_b: str = "", mode: str = "both") -> 
 
     if not system_a.strip():
         # Overview mode: sample first 200 trace records, rank all systems by avg weight
-        trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+        trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
         if not os.path.isfile(trace_path):
             return "No trace.jsonl found. Run pipeline first."
         try:

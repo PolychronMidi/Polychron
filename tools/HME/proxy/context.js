@@ -4,12 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
 const REFRESH_INTERVAL_MS = 60_000;
 
 //  Coherence budget
-const COHERENCE_BUDGET_PATH = path.join(PROJECT_ROOT, 'metrics', 'hme-coherence-budget.json');
+const COHERENCE_BUDGET_PATH = path.join(METRICS_DIR, 'hme-coherence-budget.json');
 let _budgetState = null;
 let _budgetLoadedAt = 0;
 
@@ -40,9 +41,9 @@ function shouldInject() {
 
 //  File-backed manifest loaders
 const BIAS_MANIFEST = path.join(PROJECT_ROOT, 'scripts/pipeline/bias-bounds-manifest.json');
-const STALENESS_PATH = path.join(PROJECT_ROOT, 'metrics/kb-staleness.json');
-const HYPOTHESES_PATH = path.join(PROJECT_ROOT, 'metrics/hme-hypotheses.json');
-const DRIFT_PATH = path.join(PROJECT_ROOT, 'metrics/hme-semantic-drift.json');
+const STALENESS_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'kb-staleness.json'));
+const HYPOTHESES_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'hme-hypotheses.json'));
+const DRIFT_PATH = path.join(PROJECT_ROOT, path.join(METRICS_DIR, 'hme-semantic-drift.json'));
 const JURISDICTION_ZONES = [
   'src/conductor/signal/meta/',
   'src/conductor/signal/profiling/',
@@ -215,9 +216,9 @@ let _statusSnapshot = null;
 let _statusSnapshotAt = 0;
 
 const ERRORS_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
-const ACTIVITY_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-activity.jsonl');
-const GROUND_TRUTH_LOG = path.join(PROJECT_ROOT, 'metrics', 'hme-ground-truth.jsonl');
-const DIR_INTENT_PATH = path.join(PROJECT_ROOT, 'metrics', 'hme-dir-intent.json');
+const ACTIVITY_LOG = path.join(METRICS_DIR, 'hme-activity.jsonl');
+const GROUND_TRUTH_LOG = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
+const DIR_INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
 
 function _dirIntentHealthLine() {
   try {

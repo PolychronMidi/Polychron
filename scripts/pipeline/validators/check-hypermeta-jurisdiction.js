@@ -33,6 +33,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { ROOT, loadJson } = require('../hme/utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const SRC  = path.join(ROOT, 'src');
 
@@ -464,7 +465,7 @@ function main() {
   const watchedViolations = detectWatchedConstantViolations();
 
   // Write results
-  const outputPath = path.join(ROOT, 'metrics', 'hypermeta-jurisdiction.json');
+  const outputPath = path.join(METRICS_DIR, 'hypermeta-jurisdiction.json');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify({
     meta: {

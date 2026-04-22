@@ -5,7 +5,7 @@ Each layer has: current state and items for next dedicated pass.
 
 ## Layer 1: Enforcement (TIGHT)
 
-**State**: 40 invariants (39 pass, 1 trace-sync warning that clears after pipeline). 14 invariant types: `files_executable`, `files_referenced`, `file_exists`, `symlink_valid`, `json_valid`, `glob_count_gte`, `pattern_in_file`, `patterns_all_in_file`, `pattern_count_gte`, `symbols_used`, `symbols_have_kb`, `files_mtime_window`, `kb_content_no_pattern`, `kb_freshness`. `coupling-labels-documented` enforces ARCHITECTURE.md sync. `kb-no-thinking-leak` guards LLM artifact leaks. `directionbias-documented` guards directionBias coupling doc coverage. `kb-freshness` warns if no KB entry updated in >14 days. `current-run-valid` guards metrics/current-run.json integrity.
+**State**: 40 invariants (39 pass, 1 trace-sync warning that clears after pipeline). 14 invariant types: `files_executable`, `files_referenced`, `file_exists`, `symlink_valid`, `json_valid`, `glob_count_gte`, `pattern_in_file`, `patterns_all_in_file`, `pattern_count_gte`, `symbols_used`, `symbols_have_kb`, `files_mtime_window`, `kb_content_no_pattern`, `kb_freshness`. `coupling-labels-documented` enforces ARCHITECTURE.md sync. `kb-no-thinking-leak` guards LLM artifact leaks. `directionbias-documented` guards directionBias coupling doc coverage. `kb-freshness` warns if no KB entry updated in >14 days. `current-run-valid` guards output/metrics/current-run.json integrity.
 
 ### Next pass
 - seed remaining modules below top-15 as they become edit targets
@@ -26,7 +26,7 @@ Each layer has: current state and items for next dedicated pass.
 
 ## Layer 4: Data Coherence (SOLID)
 
-**State**: `metrics/current-run.json` unified pointer written by `snapshot-run.js` every pipeline run — tools read this instead of hunting the latest run-history snapshot. `current-run-valid` invariant guards against corrupt JSON. adaptive-state.json warm-start healthy (9 keys, load-and-clamp prevents stressed-state boot loops, VERY_STALE auto-clears after successful run). EnCodec S1 truncation hypothesis verified NOT confirmed (S0=6.040, S1=6.176 — normal tension arc). `trace-run-history-sync` invariant enforces mtime coherence (300s window). current-run.json in freshness display (verified).
+**State**: `output/metrics/current-run.json` unified pointer written by `snapshot-run.js` every pipeline run — tools read this instead of hunting the latest run-history snapshot. `current-run-valid` invariant guards against corrupt JSON. adaptive-state.json warm-start healthy (9 keys, load-and-clamp prevents stressed-state boot loops, VERY_STALE auto-clears after successful run). EnCodec S1 truncation hypothesis verified NOT confirmed (S0=6.040, S1=6.176 — normal tension arc). `trace-run-history-sync` invariant enforces mtime coherence (300s window). current-run.json in freshness display (verified).
 
 ### Next pass
 - ongoing: monitor perceptual data consistency between snapshot-run inline capture and post-render perceptual-analysis

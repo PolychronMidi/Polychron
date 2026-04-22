@@ -137,7 +137,7 @@ python3 tools/HME/scripts/train_arbiter_v6.py --sanity --base phi4
 
 # Full run, warm-started from sanity checkpoint to save the first epoch
 python3 tools/HME/scripts/train_arbiter_v6.py --base phi4 \
-  --warm-from metrics/hme-arbiter-phi4/checkpoint-50 \
+  --warm-from output/metrics/hme-arbiter-phi4/checkpoint-50 \
   --epochs 1
 ```
 
@@ -158,7 +158,7 @@ python3 /home/jah/tools/llama.cpp/convert_lora_to_gguf.py \
   --outtype f16 \
   --base-model-id microsoft/phi-4 \
   --outfile /home/jah/models/hme-arbiter-v7-lora-f16.gguf \
-  metrics/hme-arbiter-phi4/checkpoint-N
+  output/metrics/hme-arbiter-phi4/checkpoint-N
 ```
 
 `--base-model-id` pulls only the base model's `config.json` + `tokenizer.json` from HuggingFace (a few MB). You don't need the full base weights cached for this step.

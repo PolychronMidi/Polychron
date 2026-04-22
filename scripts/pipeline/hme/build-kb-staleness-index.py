@@ -40,6 +40,7 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
@@ -55,8 +56,8 @@ HME_DIRS = [
     os.path.join(PROJECT_ROOT, "tools", "HME", "activity"),
 ]
 HME_EXTS = (".js", ".py", ".sh")
-ACTIVITY_LOG = os.path.join(PROJECT_ROOT, "metrics", "hme-activity.jsonl")
-OUT_PATH = os.path.join(PROJECT_ROOT, "metrics", "kb-staleness.json")
+ACTIVITY_LOG = os.path.join(METRICS_DIR, "hme-activity.jsonl")
+OUT_PATH = os.path.join(METRICS_DIR, "kb-staleness.json")
 
 STALE_DAYS = float(os.environ.get("HME_STALENESS_STALE_DAYS", "7"))
 STALE_SECONDS = STALE_DAYS * 86400.0

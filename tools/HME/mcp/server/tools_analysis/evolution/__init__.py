@@ -43,7 +43,7 @@ def evolution_patterns() -> str:
     ctx.ensure_ready_sync()
     _track("evolution_patterns")
 
-    journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
+    journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     if not os.path.isfile(journal_path):
         return "No journal.md found."
 

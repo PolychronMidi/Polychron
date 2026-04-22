@@ -62,7 +62,7 @@ def _load_patterns_cache() -> dict | None:
     if _patterns_cache is not None and now - _patterns_cache_ts < _PATTERNS_CACHE_TTL:
         return _patterns_cache
     try:
-        path = os.path.join(ctx.PROJECT_ROOT, "metrics", "hme-synthesis-patterns.json")
+        path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-synthesis-patterns.json")
         with open(path) as f:
             _patterns_cache = json.load(f)
         _patterns_cache_ts = now

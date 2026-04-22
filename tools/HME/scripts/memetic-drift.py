@@ -28,7 +28,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 _CLAUDE_MD = os.path.join(_PROJECT, "CLAUDE.md")
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-memetic-drift.json")
+_OUTPUT = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
 
 # Violation signals — phrases in error log or commit messages that indicate
 # a rule was broken. Each rule gets paired with one or more signal regexes.

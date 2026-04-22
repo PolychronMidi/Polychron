@@ -4,7 +4,7 @@ Evolution-loop internals. `evolution_evolve.py` is the public dispatcher; this d
 
 `evolution_invariants.py` is particularly load-bearing: it declares the invariant battery checked by `check_invariants()`. Invariants are declared in `tools/HME/config/invariants.json`; each check-type is dispatched to a `_check_*` function here. Adding a new invariant type = new JSON entry + new `_check_*` handler + register in the `_eval` dispatch.
 
-`_persist_invariant_history()` writes to `metrics/hme-invariant-history.json`. R22 added stale-id pruning; R33 confirmed no regression. Changes to the streak tracking must preserve the prune behavior or retired invariants linger forever.
+`_persist_invariant_history()` writes to `output/metrics/hme-invariant-history.json`. R22 added stale-id pruning; R33 confirmed no regression. Changes to the streak tracking must preserve the prune behavior or retired invariants linger forever.
 
 <!-- HME-DIR-INTENT
 rules:

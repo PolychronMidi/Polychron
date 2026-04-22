@@ -26,8 +26,8 @@ from server import context as ctx
 from . import _track
 from hme_env import ENV
 
-ACTIVITY_PATH_REL = os.path.join("metrics", "hme-activity.jsonl")
-STALENESS_PATH_REL = os.path.join("metrics", "kb-staleness.json")
+ACTIVITY_PATH_REL = os.path.join("output", "metrics", "hme-activity.jsonl")
+STALENESS_PATH_REL = os.path.join("output", "metrics", "kb-staleness.json")
 
 DEFAULT_WINDOW = ENV.require_int("HME_BLINDSPOT_WINDOW")
 
@@ -141,7 +141,7 @@ def blindspots(window: int = 0) -> str:
     if not events:
         return (
             "# Blind Spot Report\n\n"
-            "metrics/hme-activity.jsonl is empty. Nothing to analyse — "
+            os.path.join(METRICS_DIR, "hme-activity.jsonl is empty. Nothing to analyse — ")
             "activity stream must run for at least one round first."
         )
 

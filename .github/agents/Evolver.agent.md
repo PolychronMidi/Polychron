@@ -119,19 +119,19 @@ Start with `i/review mode=changes` to see what changed since last round with KB 
 
 | File | Purpose |
 
-| `metrics/pipeline-summary.json` | Pipeline health, per-step timing, pass/fail |
-| `metrics/fingerprint-comparison.json` | Verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta |
-| `metrics/fingerprint-drift-explainer.json` | Causal narratives for drifts |
-| `metrics/run-comparison.json` | A/B vs baseline: notes, regime, trust, stats. Verdict: SIMILAR/DIFFERENT/DIVERGENT |
-| `metrics/trace-summary.json` | Statistical core: beats, regimes, signals, coupling, trust, axis energy, homeostasis, phase telemetry, sectionStats (per-section regime/tension/density), aggregateCouplingLabels (whole-run) |
-| `metrics/trace-replay.json` | Per-section/phrase breakdown: regime, tension, note counts, profile |
-| `metrics/journal.md` | Most recent entry only: what was attempted, what was learned |
+| `output/metrics/pipeline-summary.json` | Pipeline health, per-step timing, pass/fail |
+| `output/metrics/fingerprint-comparison.json` | Verdict (STABLE/EVOLVED/DRIFTED), per-dimension delta |
+| `output/metrics/fingerprint-drift-explainer.json` | Causal narratives for drifts |
+| `output/metrics/run-comparison.json` | A/B vs baseline: notes, regime, trust, stats. Verdict: SIMILAR/DIFFERENT/DIVERGENT |
+| `output/metrics/trace-summary.json` | Statistical core: beats, regimes, signals, coupling, trust, axis energy, homeostasis, phase telemetry, sectionStats (per-section regime/tension/density), aggregateCouplingLabels (whole-run) |
+| `output/metrics/trace-replay.json` | Per-section/phrase breakdown: regime, tension, note counts, profile |
+| `output/metrics/journal.md` | Most recent entry only: what was attempted, what was learned |
 
 ### Tier 1.5 — Perceptual Grounding (15% confidence)
 
 | File | Purpose |
 
-| `metrics/perceptual-report.json` | EnCodec: per-section token entropy (audio complexity), tension↔complexity correlation. CLAP: text↔audio similarity for 6 probes (tension, atmosphere, rhythm, sparse, dense, coherent). Dominant character label |
+| `output/metrics/perceptual-report.json` | EnCodec: per-section token entropy (audio complexity), tension↔complexity correlation. CLAP: text↔audio similarity for 6 probes (tension, atmosphere, rhythm, sparse, dense, coherent). Dominant character label |
 
 Compare the conductor's INTENTION (trace-summary tension, regime) against what the audio SOUNDS LIKE (EnCodec complexity, CLAP character). Mismatches are evolution candidates. Agreement validates the system's self-model.
 
@@ -139,28 +139,28 @@ Compare the conductor's INTENTION (trace-summary tension, regime) against what t
 
 | File | Purpose |
 
-| `metrics/golden-fingerprint.json` | 10-dimension fingerprint with full detail |
-| `metrics/narrative-digest.md` | Prose composition story: section character, arc shape, coupling semantics |
-| `metrics/composition-diff.md` | Structural diff vs baseline |
-| `metrics/capability-matrix.md` | Module attribution: contributing vs inert |
-| `metrics/conductor-map.md` | Module bias contributions, interactions |
-| `metrics/crosslayer-map.md` | Cross-layer topology, channel usage |
-| `metrics/l0-dump.json` | L0 channel activity |
-| `metrics/binaural-shifts.json` summary | Binaural behavior |
-| `metrics/family-loudness.json` | Instrument family balance |
-| `metrics/system-manifest.json` | Runtime config, coherence verdicts (read specific sections) |
+| `output/metrics/golden-fingerprint.json` | 10-dimension fingerprint with full detail |
+| `output/metrics/narrative-digest.md` | Prose composition story: section character, arc shape, coupling semantics |
+| `output/metrics/composition-diff.md` | Structural diff vs baseline |
+| `output/metrics/capability-matrix.md` | Module attribution: contributing vs inert |
+| `output/metrics/conductor-map.md` | Module bias contributions, interactions |
+| `output/metrics/crosslayer-map.md` | Cross-layer topology, channel usage |
+| `output/metrics/l0-dump.json` | L0 channel activity |
+| `output/metrics/binaural-shifts.json` summary | Binaural behavior |
+| `output/metrics/family-loudness.json` | Instrument family balance |
+| `output/metrics/system-manifest.json` | Runtime config, coherence verdicts (read specific sections) |
 
 ### Tier 3 — Reference
 
 | File | When |
 
-| `metrics/tuning-invariants.json` | Modifying chained constants |
-| `metrics/boot-order.json` (74KB) | Initialization issues — grep only |
-| `metrics/dependency-graph.json` (573KB) | Cross-subsystem coupling — grep only |
-| `metrics/trace.jsonl` (~25MB) | Beat-level forensics — use trace-replay.js |
-| `metrics/feedback_graph.json` | Feedback topology |
-| `metrics/feedback-graph-validation.json` | Validation failures |
-| `metrics/hypermeta-jurisdiction.json` | Jurisdiction violations |
+| `output/metrics/tuning-invariants.json` | Modifying chained constants |
+| `output/metrics/boot-order.json` (74KB) | Initialization issues — grep only |
+| `output/metrics/dependency-graph.json` (573KB) | Cross-subsystem coupling — grep only |
+| `output/metrics/trace.jsonl` (~25MB) | Beat-level forensics — use trace-replay.js |
+| `output/metrics/feedback_graph.json` | Feedback topology |
+| `output/metrics/feedback-graph-validation.json` | Validation failures |
+| `output/metrics/hypermeta-jurisdiction.json` | Jurisdiction violations |
 
 ### Diagnostic Scripts
 
@@ -263,7 +263,7 @@ Wait for completion. Do not send commands while running.
 
 ## Phase 5: Verify
 
-1. Check `metrics/fingerprint-comparison.json`
+1. Check `output/metrics/fingerprint-comparison.json`
 2. STABLE: proceed
 3. EVOLVED (1-2 drifted): re-run once. If still EVOLVED, accept
 4. DRIFTED (3+): diagnose, moderate/revert, re-run
@@ -271,7 +271,7 @@ Wait for completion. Do not send commands while running.
 
 ## Phase 6: Journal
 
-New entry at **top** of `metrics/journal.md`:
+New entry at **top** of `output/metrics/journal.md`:
 
 ```markdown
 ## R<XX> — <date> — <verdict>

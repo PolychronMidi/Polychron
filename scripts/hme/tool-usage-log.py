@@ -11,7 +11,8 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LOG = os.path.join(PROJECT_ROOT, "metrics", "hme-tool-usage.jsonl")
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
+LOG = os.path.join(METRICS_DIR, "hme-tool-usage.jsonl")
 
 
 def main(argv):

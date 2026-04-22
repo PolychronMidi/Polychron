@@ -40,7 +40,7 @@ def suggest_evolution() -> str:
     signals = {}
 
     # 1. Trace summary — regime, trust, hotspots, coupling
-    trace_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-summary.json")
+    trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-summary.json")
     if os.path.isfile(trace_path):
         try:
             with open(trace_path) as f:
@@ -59,7 +59,7 @@ def suggest_evolution() -> str:
             logger.debug(f'silent-except evolution_suggest.py:58: {type(_err1).__name__}: {_err1}')
 
     # 2. Perceptual report — CLAP character + CB0
-    perc_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "perceptual-report.json")
+    perc_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "perceptual-report.json")
     if os.path.isfile(perc_path):
         try:
             with open(perc_path) as f:
@@ -105,7 +105,7 @@ def suggest_evolution() -> str:
     signals["already_coupled"] = already_coupled
 
     trace_records: list = []
-    trace_raw_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl")
+    trace_raw_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
     if os.path.isfile(trace_raw_path):
         try:
             trace_records = _load_trace(trace_raw_path)
@@ -126,7 +126,7 @@ def suggest_evolution() -> str:
                 ]
 
     # 4. Narrative excerpt
-    narrative_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
+    narrative_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "narrative-digest.md")
     if os.path.isfile(narrative_path):
         try:
             with open(narrative_path, encoding="utf-8") as f:
@@ -142,7 +142,7 @@ def suggest_evolution() -> str:
         ]
 
     # 6. Verdict model top features
-    model_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "verdict-model.json")
+    model_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "verdict-model.json")
     if os.path.isfile(model_path):
         try:
             with open(model_path) as f:

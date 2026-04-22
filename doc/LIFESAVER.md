@@ -140,7 +140,7 @@ Block message: "Use an HME npm script (`i/hme-read`, `i/trace`, `i/review`) befo
 ### posttooluse_bash.sh — Pipeline verdict tracking
 
 After `npm run main` completes:
-1. Scan `metrics/pipeline-summary.json` for `errorPatterns` (Traceback, CUDA OOM, RuntimeError)
+1. Scan `output/metrics/pipeline-summary.json` for `errorPatterns` (Traceback, CUDA OOM, RuntimeError)
 2. Scan for failed steps (`ok: false`)
 3. If errors found: emit loud banner — "PIPELINE ERRORS DETECTED — DO NOT IGNORE"
 4. Track NEXUS state: mark pipeline verdict (STABLE/EVOLVED/DRIFTED/FAILED)
@@ -180,7 +180,7 @@ After `i/review mode=forget`: clears EDIT entries from NEXUS, marks REVIEW compl
 
 ### posttooluse_pipeline_kb.sh — trace summary extraction
 
-After `npm run main` via Bash: parses `metrics/trace-summary.json` for regime distribution, trust dominance, coupling labels, beat/section counts. Writes a summary line to `tmp/hme-tab.txt` as a pending KB anchor.
+After `npm run main` via Bash: parses `output/metrics/trace-summary.json` for regime distribution, trust dominance, coupling labels, beat/section counts. Writes a summary line to `tmp/hme-tab.txt` as a pending KB anchor.
 
 ### posttooluse_read.sh — silent KB enrichment
 
@@ -363,7 +363,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 6 scripts integrated into `npm run main`, run before composition:
 
 ### validate-feedback-graph.js
-Cross-validates `metrics/feedback_graph.json` against source code registrations. Every JSON loop must have a source registration, and vice versa. Checks firewall port structure.
+Cross-validates `output/metrics/feedback_graph.json` against source code registrations. Every JSON loop must have a source registration, and vice versa. Checks firewall port structure.
 
 ### check-registration-coherence.js
 Modules with functional registrations (registerDensityBias, etc.) must also call `conductorIntelligence.registerModule()` for lifecycle resets. Reports orphans.
@@ -441,7 +441,7 @@ Runs before Claude Code compacts context. Three responsibilities:
 
 1. **KB anchor surface** — reads `tmp/hme-tab.txt` for `KB:` entries (pending, unsaved knowledge). Surfaces them to stderr so the agent can persist them before context is wiped.
 2. **Note file surface** — surfaces `FILE:` entries from tab (tracked note files from background tasks, writes, agents).
-3. **Context meter logging** — reads `/tmp/claude-context.json` from the statusline, writes a `pre_compact` entry to `metrics/compact-log.jsonl` with used/remaining percentages and timestamp for compaction frequency analysis.
+3. **Context meter logging** — reads `/tmp/claude-context.json` from the statusline, writes a `pre_compact` entry to `output/metrics/compact-log.jsonl` with used/remaining percentages and timestamp for compaction frequency analysis.
 
 ### postcompact.sh — post-compaction re-surface
 
@@ -449,7 +449,7 @@ Runs after compaction completes. Mirrors precompact surface so the agent can imm
 
 1. Re-surfaces unsaved `KB:` entries from tab (still pending after compaction).
 2. Re-surfaces tracked `FILE:` entries.
-3. Logs `post_compact` event to `metrics/compact-log.jsonl`.
+3. Logs `post_compact` event to `output/metrics/compact-log.jsonl`.
 4. Suggests `status(mode='resume')` for full session state recovery.
 
 

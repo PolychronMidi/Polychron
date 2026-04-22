@@ -69,7 +69,7 @@ def main(argv: list[str]) -> int:
         return 0
 
     project_root = os.environ["PROJECT_ROOT"]  # env-ok: set by caller from .env
-    out_path = os.path.join(project_root, "metrics", "hme-activity.jsonl")
+    out_path = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-activity.jsonl")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     line = json.dumps(fields, separators=(",", ":"), sort_keys=True) + "\n"

@@ -40,7 +40,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 _LOG_FILE = os.path.join(_PROJECT, "log", "hme.log")
 _HOOKS_JSON = os.path.join(_PROJECT, "tools", "HME", "hooks", "hooks.json")
-_OUTPUT = os.path.join(_PROJECT, "metrics", "hme-tool-effectiveness.json")
+_OUTPUT = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
 
 _SESSION_PAT = re.compile(r"INFO HME session=(\w+)")
 _RESP_PAT = re.compile(r"RESP (\w+) \[([0-9.]+)s\]")

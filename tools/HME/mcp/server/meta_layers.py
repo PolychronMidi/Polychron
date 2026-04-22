@@ -969,7 +969,7 @@ def _load_run_history() -> list[dict]:
         root = ENV.optional("PROJECT_ROOT", "")
         if not root:
             return []
-        _run_history_dir = os.path.join(root, "metrics", "run-history")
+        _run_history_dir = os.path.join(root, "output", "metrics", "run-history")
     try:
         filenames = sorted(os.listdir(_run_history_dir))
     except OSError:

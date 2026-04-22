@@ -27,13 +27,13 @@ verticalIntervalMonitor:     penalty *= g(densitySurprise) ↑ with surprise
   co-produced rather than traded off.
 ```
 
-Documented historical r = -0.626. Current r does not appear in the top-8 negative correlations (see `metrics/hme-suspected-upstreams.json` → `confirmed`) — the bridge is likely resolving the antagonism successfully.
+Documented historical r = -0.626. Current r does not appear in the top-8 negative correlations (see `output/metrics/hme-suspected-upstreams.json` → `confirmed`) — the bridge is likely resolving the antagonism successfully.
 
 ## Recognizing candidates
 
-Run `scripts/detect-antagonism-candidates.py`. It computes pairwise Pearson correlation across 27 trust-system scores in `metrics/trace.jsonl`. Any pair with r ≤ -0.4 is a *candidate* bridge — two modules may be measuring the same axis antagonistically.
+Run `scripts/detect-antagonism-candidates.py`. It computes pairwise Pearson correlation across 27 trust-system scores in `output/metrics/trace.jsonl`. Any pair with r ≤ -0.4 is a *candidate* bridge — two modules may be measuring the same axis antagonistically.
 
-Output goes into `metrics/hme-suspected-upstreams.json` under `candidates`. Each candidate has:
+Output goes into `output/metrics/hme-suspected-upstreams.json` under `candidates`. Each candidate has:
 
 - `pair`: the two modules
 - `r`: current correlation coefficient
@@ -68,11 +68,11 @@ The `refuted` bucket in the registry is where hypotheses go when evidence discon
 ## Files
 
 - `scripts/detect-antagonism-candidates.py` — correlation scanner over trace data
-- `metrics/hme-suspected-upstreams.json` — registry of candidates / confirmed / refuted
+- `output/metrics/hme-suspected-upstreams.json` — registry of candidates / confirmed / refuted
 - `tools/HME/activity/streak_calibrator.py` — first HME-layer bridge implementation
 - `scripts/verdict-polar.py` — verdict-space polar reformulation (`distance × direction`)
 
 ## Related project principles
 
 - CLAUDE.md's "Hypermeta-First" rule — don't hand-tune meta-controller constants. Antagonism bridges operationalize this by making the controller's input *derive from observation* rather than author intuition.
-- `metrics/feedback_graph.json` — documents all known feedback loops. Bridge candidates surface loops that *should exist* but don't.
+- `output/metrics/feedback_graph.json` — documents all known feedback loops. Bridge candidates surface loops that *should exist* but don't.

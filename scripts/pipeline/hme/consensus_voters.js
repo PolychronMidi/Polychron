@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 function makeVoters(ROOT) {
   function loadJson(p) {
@@ -19,14 +20,14 @@ function makeVoters(ROOT) {
 
   // HCI voter: hci=80 -> 0, hci=100 -> +1, hci=60 -> -1.
   function voteHci() {
-    const summary = loadJson(path.join(ROOT, 'metrics', 'pipeline-summary.json'));
+    const summary = loadJson(path.join(METRICS_DIR, 'pipeline-summary.json'));
     if (!summary || typeof summary.hci !== 'number') return null;
     return clamp1((summary.hci - 80) / 20);
   }
 
   // Invariant pass-rate voter. Tight band: 90%=0, 95%=+1, 85%=-1.
   function voteInvariants() {
-    const hist = loadJson(path.join(ROOT, 'metrics', 'hme-invariant-history.json'));
+    const hist = loadJson(path.join(METRICS_DIR, 'hme-invariant-history.json'));
     if (!hist || !hist.last_result) return null;
     const results = Object.values(hist.last_result);
     if (results.length === 0) return null;
@@ -37,7 +38,7 @@ function makeVoters(ROOT) {
 
   // Prediction recall voter. Skipped rounds return null.
   function votePredictionRecall() {
-    const acc = loadJson(path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json'));
+    const acc = loadJson(path.join(METRICS_DIR, 'hme-prediction-accuracy.json'));
     if (!acc || !Array.isArray(acc.rounds) || acc.rounds.length === 0) return null;
     const last = acc.rounds[acc.rounds.length - 1];
     if (last.skipped || typeof last.recall !== 'number') return null;
@@ -46,7 +47,7 @@ function makeVoters(ROOT) {
 
   // Verdict numeric voter (fingerprint result mapped to scalar).
   function voteVerdict() {
-    const mc = loadJson(path.join(ROOT, 'metrics', 'hme-musical-correlation.json'));
+    const mc = loadJson(path.join(METRICS_DIR, 'hme-musical-correlation.json'));
     if (!mc || !Array.isArray(mc.history) || mc.history.length === 0) return null;
     const last = mc.history[mc.history.length - 1];
     if (typeof last.verdict_numeric !== 'number') return null;
@@ -55,7 +56,7 @@ function makeVoters(ROOT) {
 
   // Axis rebalance cost trend voter. Rising > 50% over 3 rounds -> -1.
   function voteAxisCostTrend() {
-    const histPath = path.join(ROOT, 'metrics', 'legacy-override-history.jsonl');
+    const histPath = path.join(METRICS_DIR, 'legacy-override-history.jsonl');
     if (!fs.existsSync(histPath)) return null;
     const rows = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean)
       .map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } })
@@ -74,7 +75,7 @@ function makeVoters(ROOT) {
 
   // CLAP tension stability voter. In [0.2, 0.6] band -> +1; linear decay outside.
   function voteClapStability() {
-    const perc = loadJson(path.join(ROOT, 'metrics', 'perceptual-report.json'));
+    const perc = loadJson(path.join(METRICS_DIR, 'perceptual-report.json'));
     const clap = perc && perc.clap && perc.clap.queries;
     if (!clap) return null;
     const tensionKey = Object.keys(clap).find((k) => /tension/i.test(k));
@@ -90,7 +91,7 @@ function makeVoters(ROOT) {
 
   // Listening verdict voter (user-confirmed, from hme-ground-truth.jsonl).
   function voteListeningVerdict() {
-    const gtPath = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');
+    const gtPath = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
     if (!fs.existsSync(gtPath)) return null;
     const lines = fs.readFileSync(gtPath, 'utf8').split('\n').filter(Boolean);
     if (lines.length === 0) return null;

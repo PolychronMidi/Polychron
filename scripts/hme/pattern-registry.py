@@ -16,7 +16,7 @@ import sys
 from _common import PROJECT_ROOT
 
 PATTERNS_DIR = os.path.join(PROJECT_ROOT, "tools", "HME", "patterns")
-MATCHES = os.path.join(PROJECT_ROOT, "metrics", "hme-pattern-matches.json")
+MATCHES = os.path.join(METRICS_DIR, "hme-pattern-matches.json")
 
 
 def _load_patterns():

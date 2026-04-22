@@ -147,7 +147,7 @@ That is a move no human self-report instrument can make. It requires an external
 
 Phase 6.2. The distinction the document draws is psychologically precise:
 
-> CLAUDE.md says what Polychron *can't be* (prohibitions). `metrics/hme-constitution.json` says what Polychron *fundamentally IS* (positive affirmations).
+> CLAUDE.md says what Polychron *can't be* (prohibitions). `output/metrics/hme-constitution.json` says what Polychron *fundamentally IS* (positive affirmations).
 
 `derive-constitution.py` extracts constitutional claims from three evidence sources: structural (every feedback loop and firewall port in `feedback_graph.json` is an architectural invariant at confidence 1.0), methodological (crystallized patterns with at least four rounds and three members become standing fixtures, confidence scaling with evidence breadth), and musical (human ground truth entries with compelling or moving sentiment, grouped by section and moment type). Every claim carries an evidence trail: rounds, pattern IDs, ground-truth IDs. First run produced 37 claims.
 

@@ -13,7 +13,7 @@ logger = logging.getLogger("HME")
 def _load_trace_local() -> list[dict]:
     """Load trace.jsonl for this project."""
     from . import _load_trace as _load_trace_impl
-    return _load_trace_impl(os.path.join(ctx.PROJECT_ROOT, "metrics", "trace.jsonl"))
+    return _load_trace_impl(os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl"))
 
 
 def regime_anomaly() -> str:
@@ -108,7 +108,7 @@ def composition_critique() -> str:
 
     context_parts = []
 
-    narrative_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "narrative-digest.md")
+    narrative_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "narrative-digest.md")
     if os.path.isfile(narrative_path):
         try:
             with open(narrative_path, encoding="utf-8") as f:
@@ -116,7 +116,7 @@ def composition_critique() -> str:
         except Exception as _err1:
             logger.debug(f"context_parts.append: {type(_err1).__name__}: {_err1}")
 
-    perc_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "perceptual-report.json")
+    perc_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "perceptual-report.json")
     if os.path.isfile(perc_path):
         try:
             with open(perc_path) as f:
@@ -149,7 +149,7 @@ def composition_critique() -> str:
         except Exception as _err2:
             logger.debug(f"context_parts.append: {type(_err2).__name__}: {_err2}")
 
-    replay_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "trace-replay.json")
+    replay_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-replay.json")
     if os.path.isfile(replay_path):
         try:
             with open(replay_path) as f:

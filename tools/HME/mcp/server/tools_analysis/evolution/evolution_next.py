@@ -79,7 +79,7 @@ def evolution_momentum() -> str:
     import re as _re
 
     #  1. Parse journal.md for round verdicts
-    journal_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "journal.md")
+    journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     if not os.path.isfile(journal_path):
         return "No journal.md found at metrics/journal.md"
 

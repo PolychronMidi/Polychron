@@ -56,7 +56,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         narrative = get_session_narrative(max_entries=5, categories=["edit", "search", "enrich", "evolve"])
         if narrative:
             assembled_parts.append(narrative.strip())
-        summary_path = os.path.join(ctx.PROJECT_ROOT, "metrics", "pipeline-summary.json")
+        summary_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "pipeline-summary.json")
         if os.path.exists(summary_path):
             try:
                 with open(summary_path) as f:

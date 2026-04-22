@@ -29,8 +29,8 @@ except ImportError:
 PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-OUTPUT = os.path.join(PROJECT, "metrics", "hme-dir-intent.json")
-SIGNATURES = os.path.join(PROJECT, "metrics", "hme-dir-signatures.json")
+OUTPUT = os.path.join(METRICS_DIR, "hme-dir-intent.json")
+SIGNATURES = os.path.join(METRICS_DIR, "hme-dir-signatures.json")
 
 # Dirs never walked
 SKIP_DIRS = {

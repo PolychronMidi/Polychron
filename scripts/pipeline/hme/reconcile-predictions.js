@@ -25,9 +25,9 @@ const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
 
-const PREDICTIONS = path.join(ROOT, 'metrics', 'hme-predictions.jsonl');
-const FINGERPRINT = path.join(ROOT, 'metrics', 'fingerprint-comparison.json');
-const ACCURACY_OUT = path.join(ROOT, 'metrics', 'hme-prediction-accuracy.json');
+const PREDICTIONS = path.join(METRICS_DIR, 'hme-predictions.jsonl');
+const FINGERPRINT = path.join(METRICS_DIR, 'fingerprint-comparison.json');
+const ACCURACY_OUT = path.join(METRICS_DIR, 'hme-prediction-accuracy.json');
 const EMA_ALPHA = 0.2; // 20% weight on newest round, 80% on history
 const HISTORY_CAP = 50;
 
@@ -54,6 +54,7 @@ function extractShiftedModules() {
   const shifted = new Set();
   const toModule = (p) => {
     const base = require('path').basename(p);
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
     return base.replace(/\.(js|ts|py|sh)$/, '');
   };
   // Try last 2 commits first, fall back to last 1 (for first-commit edge case)
@@ -97,7 +98,7 @@ function main() {
   const CURRENT_ROUND_WINDOW_MS = 30 * 60 * 1000;
   let windowStart = Date.now() - CURRENT_ROUND_WINDOW_MS;
   try {
-    const activityPath = path.join(ROOT, 'metrics', 'hme-activity.jsonl');
+    const activityPath = path.join(METRICS_DIR, 'hme-activity.jsonl');
     if (fs.existsSync(activityPath)) {
       const raw = fs.readFileSync(activityPath, 'utf8');
       const lines = raw.split('\n').reverse();

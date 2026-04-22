@@ -45,7 +45,7 @@ import time
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_SIGNAL = os.path.join(_PROJECT, "metrics", "hme-composition-signal.json")
+_SIGNAL = os.path.join(METRICS_DIR, "hme-composition-signal.json")
 
 
 def _get_hci() -> dict:

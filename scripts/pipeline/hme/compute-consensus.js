@@ -29,7 +29,8 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..', '..', '..');
-const OUT = path.join(ROOT, 'metrics', 'hme-consensus.json');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const OUT = path.join(METRICS_DIR, 'hme-consensus.json');
 const DIVERGENCE_THRESHOLD = 0.4;  // stdev above this triggers divergence alert
 
 // R32: voters extracted to consensus_voters.js. Adding a new voter = define
@@ -86,13 +87,13 @@ function main() {
   // outliers persist. Arc I v2.
   const voterTrajectories = {};
   try {
-    const tsPath = path.join(ROOT, 'metrics', 'hme-arc-timeseries.jsonl');
+    const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       // Timeseries doesn't carry per-voter scalars (just outlier_voters array).
       // For trajectory, we'd need to either (a) re-emit per-voter scalars in
       // timeseries, or (b) store running history in consensus JSON itself.
       // Choose (b): per-voter history written into hme-consensus-history.jsonl.
-      const histPath = path.join(ROOT, 'metrics', 'hme-consensus-history.jsonl');
+      const histPath = path.join(METRICS_DIR, 'hme-consensus-history.jsonl');
       const prevLines = fs.existsSync(histPath)
         ? fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean)
         : [];
@@ -144,8 +145,8 @@ function main() {
   // stdev + outliers so investigation still surfaces the signal.
   let overrideApplied = false;
   try {
-    const gtPath = path.join(ROOT, 'metrics', 'hme-ground-truth.jsonl');
-    const sumPath = path.join(ROOT, 'metrics', 'pipeline-summary.json');
+    const gtPath = path.join(METRICS_DIR, 'hme-ground-truth.jsonl');
+    const sumPath = path.join(METRICS_DIR, 'pipeline-summary.json');
     if (fs.existsSync(gtPath) && fs.existsSync(sumPath)) {
       const gtLines = fs.readFileSync(gtPath, 'utf8').split('\n').filter(Boolean);
       const recentGt = gtLines.slice(-3).map((l) => {
@@ -195,7 +196,7 @@ function main() {
   // R23 #6: consensus_regression event when stdev rises >0.3 vs prior round.
   // Distinct from one-round high-divergence: this catches ACCELERATION.
   try {
-    const tsPath = path.join(ROOT, 'metrics', 'hme-arc-timeseries.jsonl');
+    const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       const tsLines = fs.readFileSync(tsPath, 'utf8').split('\n').filter(Boolean);
       if (tsLines.length >= 1) {
@@ -224,7 +225,7 @@ function main() {
   // reaches -0.5 (significant negative). Tiny forecaster; writes to
   // the consensus record.
   try {
-    const tsPath = path.join(ROOT, 'metrics', 'hme-arc-timeseries.jsonl');
+    const tsPath = path.join(METRICS_DIR, 'hme-arc-timeseries.jsonl');
     if (fs.existsSync(tsPath)) {
       const tsLines = fs.readFileSync(tsPath, 'utf8').split('\n').filter(Boolean);
       const tsRows = tsLines.map((l) => { try { return JSON.parse(l); } catch (_e) { return null; } }).filter(Boolean);
@@ -254,7 +255,7 @@ function main() {
   // now and that round mentions the id. If any do, increment "acted_on".
   try {
     const { execSync } = require('child_process');
-    const naPath = path.join(ROOT, 'metrics', 'hme-next-actions.json');
+    const naPath = path.join(METRICS_DIR, 'hme-next-actions.json');
     if (fs.existsSync(naPath)) {
       const naData = JSON.parse(fs.readFileSync(naPath, 'utf8'));
       const prevIds = (naData.actions || []).map((a) => a.id).filter(Boolean);

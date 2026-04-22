@@ -291,7 +291,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
                 assembled_parts.append("\n".join(lines))
         except Exception as e:
             logger.info(f"enrich_prompt: transcript load failed: {e}")
-        summary_path = os.path.join(PROJECT_ROOT, "metrics", "pipeline-summary.json")
+        summary_path = os.path.join(METRICS_DIR, "pipeline-summary.json")
         if os.path.exists(summary_path):
             try:
                 with open(summary_path) as f:
