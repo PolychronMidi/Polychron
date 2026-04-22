@@ -12,5 +12,6 @@ require('./stutterPlanScheduler');
 require('./StutterManager');
 require('./stutterVariants');
 require('./stutterSteps');
+require('./stutterShift');
 require('./stutterNotes');
 require('./variants');

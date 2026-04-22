@@ -35,7 +35,8 @@ from pathlib import Path
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
-_HISTORY = Path(_PROJECT) / "metrics" / "chain-history"
+_METRICS = Path(os.environ.get("METRICS_DIR", os.path.join(_PROJECT, "output", "metrics")))
+_HISTORY = _METRICS / "chain-history"
 _SESSION_SHA = Path(_PROJECT) / "tmp" / "hme-session-sha.txt"
 _CORRECTIONS = Path(_PROJECT) / "tmp" / "hme-user-corrections.jsonl"
 _ENTANGLE = Path(_PROJECT) / "tmp" / "hme-entanglement.json"
@@ -77,8 +78,8 @@ def _git_diff_section() -> dict:
             capture_output=True, text=True, timeout=3,
         ).stdout.strip()
         # Persist raw diff + commits for the chain link
-        diff_file = Path(_PROJECT) / "metrics" / "chain-session-diff.txt"
-        commits_file = Path(_PROJECT) / "metrics" / "chain-session-commits.txt"
+        diff_file = _METRICS / "chain-session-diff.txt"
+        commits_file = _METRICS / "chain-session-commits.txt"
         diff_file.parent.mkdir(exist_ok=True)
         diff_file.write_text(diff_stat)
         commits_file.write_text(commits)
@@ -179,7 +180,7 @@ def _kb_section() -> dict:
 def _tool_usage_section() -> dict:
     """Optimization 9: tool call histogram, not narrative."""
     # Parse hook latency log for this session's tool usage
-    hook_log = Path(_PROJECT) / "metrics" / "hme-hook-latency.jsonl"
+    hook_log = _METRICS / "hme-hook-latency.jsonl"
     counts: Counter = Counter()
     if hook_log.exists():
         try:

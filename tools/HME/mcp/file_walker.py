@@ -9,24 +9,81 @@ from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES, ext_to_lang
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_IGNORE_DIRS = {
+# Baseline fallback — used only when HME_IGNORE_DIRS env var is absent.
+# "doc" and "hooks" intentionally NOT here — HME indexes its own enforcement
+# hooks (tools/HME/hooks/) and project docs (doc/) for full self-awareness.
+_BUILTIN_IGNORE_DIRS = {
     "node_modules", ".git", "target", "dist", "build",
     "__pycache__", ".cache", "pkg", "wasm-pack-out",
     ".claude", "venv", ".venv", "env", ".env",
     "runtime", ".idea", ".vscode", ".next",
     "coverage", ".nyc_output", ".turbo",
     ".github", "metrics", "output", "tmp", "lab",
-    # "doc" and "hooks" intentionally NOT ignored — HME indexes its own
-    # enforcement hooks (tools/HME/hooks/) and project docs (doc/) for
-    # full self-awareness. These are small, high-value files.
 }
 
-IGNORE_FILES = {
+
+def _dirs_from_env() -> set[str]:
+    """Parse HME_IGNORE_DIRS env var (comma-separated). Returns empty set if unset."""
+    raw = os.environ.get("HME_IGNORE_DIRS", "")
+    return {d.strip() for d in raw.split(",") if d.strip()} if raw.strip() else set()
+
+
+def _dirs_from_gitignore(project_root: str) -> set[str]:
+    """Extract bare directory names from .gitignore (no path separators, no wildcards)."""
+    gi_path = os.path.join(project_root, ".gitignore")
+    dirs: set[str] = set()
+    try:
+        with open(gi_path, encoding="utf-8") as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                # Strip leading slash (root-anchored) and trailing slash (dir marker)
+                name = line.lstrip("/").rstrip("/")
+                # Skip: wildcards, path separators, file extensions, negations
+                if any(c in name for c in ("*", "?", "[", "/", ".")):
+                    continue
+                if name.startswith("!"):
+                    continue
+                dirs.add(name)
+    except OSError:
+        pass
+    return dirs
+
+
+def _build_ignore_dirs(project_root: str = "") -> set[str]:
+    env_dirs = _dirs_from_env()
+    base = env_dirs if env_dirs else _BUILTIN_IGNORE_DIRS
+    gitignore_dirs = _dirs_from_gitignore(project_root) if project_root else set()
+    return base | gitignore_dirs
+
+
+# Module-level default (no project_root yet — gitignore dirs added in init_config).
+DEFAULT_IGNORE_DIRS = _build_ignore_dirs()
+
+_BUILTIN_IGNORE_FILES = {
     "pnpm-lock.yaml", "package-lock.json", "yarn.lock",
     "Cargo.lock", "poetry.lock", "composer.lock",
 }
 
-DEFAULT_MAX_FILE_SIZE = 256 * 1024
+
+def _files_from_env() -> set[str]:
+    raw = os.environ.get("HME_IGNORE_FILES", "")
+    return {f.strip() for f in raw.split(",") if f.strip()} if raw.strip() else set()
+
+
+IGNORE_FILES = _files_from_env() or _BUILTIN_IGNORE_FILES
+
+_BUILTIN_MAX_FILE_SIZE_KB = 256
+
+
+def _max_file_size_from_env() -> int:
+    raw = os.environ.get("HME_RAG_MAX_FILE_SIZE_KB", "")
+    try:
+        return int(raw) * 1024 if raw.strip() else _BUILTIN_MAX_FILE_SIZE_KB * 1024
+    except ValueError:
+        return _BUILTIN_MAX_FILE_SIZE_KB * 1024
+
 
 _config: dict = {
     "ignore_dirs": set(DEFAULT_IGNORE_DIRS),
@@ -35,13 +92,16 @@ _config: dict = {
     "rag_lib_abs": [],
     "rag_index_dirs": [],      # explicit allowlist — ONLY these dirs get indexed
     "rag_index_dirs_abs": [],  # resolved absolute paths
-    "max_file_size": DEFAULT_MAX_FILE_SIZE,
+    "max_file_size": _max_file_size_from_env(),
     "project_root": "",
 }
 
 
 def init_config(project_root: str):
     _config["project_root"] = project_root
+    # Rebuild ignore_dirs now that we have project_root for .gitignore parsing.
+    _config["ignore_dirs"] = _build_ignore_dirs(project_root)
+    logger.info(f"ignore_dirs: {len(_config['ignore_dirs'])} entries (env+gitignore merged)")
     # RAG config migrated from .mcp.json → tools/HME/config/rag.json (owned by HME,
     # independent of Claude Code's MCP system). Schema is flat (no mcpServers.HME
     # wrapper): ragIndexDirs, ragIgnoreDirs, ragIgnore, ragLibs, ragMaxFileSize.
@@ -56,13 +116,6 @@ def init_config(project_root: str):
     except Exception as e:
         logger.warning(f"Failed to read tools/HME/config/rag.json: {e}")
         return
-
-    dirs = rag_cfg.get("ragIgnoreDirs")
-    if dirs and isinstance(dirs, list):
-        # Merge with defaults rather than replace — losing 'node_modules'/'.git'/etc
-        # would cause the server to index vendor dependencies
-        _config["ignore_dirs"] = set(DEFAULT_IGNORE_DIRS) | set(dirs)
-        logger.info(f"ragIgnoreDirs loaded: {len(dirs)} entries (merged with {len(DEFAULT_IGNORE_DIRS)} defaults)")
 
     patterns = rag_cfg.get("ragIgnore")
     if patterns and isinstance(patterns, list):
@@ -82,11 +135,6 @@ def init_config(project_root: str):
             os.path.normpath(os.path.join(project_root, lib)) for lib in libs
         ]
         logger.info(f"ragLibs loaded: {libs}")
-
-    max_kb = rag_cfg.get("ragMaxFileSize")
-    if max_kb and isinstance(max_kb, (int, float)):
-        _config["max_file_size"] = int(max_kb) * 1024
-        logger.info(f"ragMaxFileSize: {max_kb} KB")
 
     # ragIndexDirs: explicit allowlist of directories to index (relative to project root).
     # When set, ONLY these directories are indexed — no directory argument can override this.

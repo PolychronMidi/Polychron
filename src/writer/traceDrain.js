@@ -82,7 +82,7 @@ traceDrain = (() => {
         p90: traceDrainResolvePercentile(bucket.histogram, bucket.count, 0.90)
       };
     }
-    const outDir = path.resolve(process.cwd(), 'metrics');
+    const outDir = METRICS_DIR;
     fs.writeFileSync(path.join(outDir, 'family-loudness.json'), JSON.stringify({
       generated: new Date().toISOString(),
       traced: true,
@@ -117,7 +117,7 @@ traceDrain = (() => {
       if (shift.nearTrackEnd) nearTrackEndCount++;
       if (shift.usedCrossLayerShift) crossLayerSyncedCount++;
     }
-    const outDir = path.resolve(process.cwd(), 'metrics');
+    const outDir = METRICS_DIR;
     fs.writeFileSync(path.join(outDir, 'binaural-shifts.json'), JSON.stringify({
       generated: new Date().toISOString(),
       traced: true,
@@ -161,7 +161,7 @@ traceDrain = (() => {
         maxMs: Number(bucket.maxMs.toFixed(6))
       };
     }
-    const outDir = path.resolve(process.cwd(), 'metrics');
+    const outDir = METRICS_DIR;
     fs.writeFileSync(path.join(outDir, 'play-runtime-profile.json'), JSON.stringify({
       generated: new Date().toISOString(),
       traced: true,
@@ -178,7 +178,7 @@ traceDrain = (() => {
     traceDrainResetFamilyVelocityStats();
     traceDrainResetBinauralShifts();
 
-    const outDir = path.resolve(process.cwd(), 'metrics');
+    const outDir = METRICS_DIR;
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }

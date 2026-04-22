@@ -24,6 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const PREDICTIONS = path.join(METRICS_DIR, 'hme-predictions.jsonl');
 const FINGERPRINT = path.join(METRICS_DIR, 'fingerprint-comparison.json');
@@ -54,7 +55,6 @@ function extractShiftedModules() {
   const shifted = new Set();
   const toModule = (p) => {
     const base = require('path').basename(p);
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
     return base.replace(/\.(js|ts|py|sh)$/, '');
   };
   // Try last 2 commits first, fall back to last 1 (for first-commit edge case)

@@ -13,8 +13,8 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '../..');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
-const GRAPH_PATH = path.join(ROOT, path.join(METRICS_DIR, 'feedback_graph.json'));
-const OUTPUT_DIR = path.join(METRICS_DIR);
+const GRAPH_PATH = path.join(METRICS_DIR, 'feedback_graph.json');
+const OUTPUT_DIR = METRICS_DIR;
 const HTML_PATH  = path.join(OUTPUT_DIR, 'feedback-graph.html');
 const INVARIANTS_PATH = path.join(OUTPUT_DIR, 'tuning-invariants.json');
 

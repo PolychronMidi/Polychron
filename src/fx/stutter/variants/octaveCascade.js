@@ -4,13 +4,9 @@
 stutterVariants.register('octaveCascade', function octaveCascade(opts) {
   const direction = rf() < 0.5 ? 1 : -1;
   const steps = ri(3, 5);
-  const minMidi = OCTAVE.min * 12;
-  const maxMidi = OCTAVE.max * 12 - 1;
   let lastShared = opts.shared;
   for (let i = 0; i < steps; i++) {
-    const shiftSemitones = direction * (i + 1) * 12;
-    const targetNote = opts.note + shiftSemitones;
-    if (targetNote < minMidi || targetNote > maxMidi) break;
+    const targetNote = stutterShift.shift(opts.note, direction * (i + 1) * 12);
     lastShared = stutterNotes(Object.assign({}, opts, {
       note: targetNote,
       on: opts.on + opts.sustain * 0.12 * i,

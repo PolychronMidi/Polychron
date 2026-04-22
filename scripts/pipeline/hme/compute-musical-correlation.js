@@ -31,6 +31,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ROOT, loadJson, loadJsonl, clamp } = require('./utils');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
 
 const COHERENCE    = path.join(METRICS_DIR, 'hme-coherence.json');
 const ACCURACY     = path.join(METRICS_DIR, 'hme-prediction-accuracy.json');
@@ -150,7 +151,6 @@ function main() {
       try {
         currentTreeHash = execSync('git rev-parse HEAD^{tree}', {
           cwd: require('path').dirname(OUT) + '/..', stdio: ['ignore', 'pipe', 'ignore'],
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
         }).toString().trim().slice(0, 12);
       } catch (_te) { /* tree hash optional */ }
       const priorCount = Array.isArray(prev && prev.history)

@@ -4,8 +4,6 @@
 
 stutterVariants.register('directionalOscillation', function directionalOscillation(opts) {
   const steps = ri(4, 7);
-  const minMidi = OCTAVE.min * 12;
-  const maxMidi = OCTAVE.max * 12 - 1;
   const ascending = rf() < 0.5;
   let lastShared = opts.shared;
   for (let i = 0; i < steps; i++) {
@@ -13,8 +11,7 @@ stutterVariants.register('directionalOscillation', function directionalOscillati
     const halfPoint = steps / 2;
     const direction = (i < halfPoint) === ascending ? 1 : -1;
     const magnitude = (i < halfPoint ? i + 1 : steps - i) * 12;
-    const targetNote = opts.note + direction * magnitude;
-    if (targetNote < minMidi || targetNote > maxMidi) continue;
+    const targetNote = stutterShift.shift(opts.note, direction * magnitude);
     const progress = i / steps;
     const vel = clamp(m.round(opts.velocity * rf(0.3, 0.55) * (1 - progress * 0.3)), 1, 127);
     lastShared = stutterNotes(Object.assign({}, opts, {

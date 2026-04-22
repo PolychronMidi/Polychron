@@ -29,6 +29,7 @@ except ImportError:
 PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
+METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(PROJECT, "output", "metrics"))
 OUTPUT = os.path.join(METRICS_DIR, "hme-dir-intent.json")
 SIGNATURES = os.path.join(METRICS_DIR, "hme-dir-signatures.json")
 

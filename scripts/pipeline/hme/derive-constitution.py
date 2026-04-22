@@ -33,9 +33,9 @@ import sys
 import time
 
 PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
-METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
     "PROJECT_ROOT", "/home/jah/Polychron"
 )
+METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 CRYSTALLIZED_PATH = os.path.join(METRICS_DIR, "hme-crystallized.json")
 GROUND_TRUTH_LOG = os.path.join(METRICS_DIR, "hme-ground-truth.jsonl")
 FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")

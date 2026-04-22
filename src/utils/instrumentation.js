@@ -5,13 +5,22 @@
  * @returns {void}
  */
 setTuningAndInstruments = () => {
-  p(c,...['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
+  const instrEvents1 = ['control_c','program_c'].flatMap(type=>[ ...source.map(ch=>({
   timeInSeconds:measureStartTime,type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [primaryInstrument]) : (type==='control_c' ? [10,127] : [primaryInstrument]))]})),
   { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH1,...(type==='control_c' ? [tuningPitchBend] : [primaryInstrument])]},
-  { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]));
-  p(c,...['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
+  { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH2,...(type==='control_c' ? [tuningPitchBend] : [secondaryInstrument])]}]);
+  for (let _i=0;_i<instrEvents1.length;_i++){ const _ev=instrEvents1[_i]; if (_ev && _ev.type==='control_c' && Array.isArray(_ev.vals)) { channelStateField.observeControl(_ev.vals[0], _ev.vals[1], _ev.vals[2], 'instrumentation'); } }
+  p(c,...instrEvents1);
+  const instrEvents2 = ['control_c','program_c'].flatMap(type=>[ ...bass.map(ch=>({
     timeInSeconds:measureStartTime,type,vals:[ch,...(ch.toString().startsWith('lCH') ? (type==='control_c' ? [10,0] : [bassInstrument]) : (type==='control_c' ? [10,127] : [bassInstrument2]))]})),
-    { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]));
+    { timeInSeconds:measureStartTime,type:type==='control_c' ? 'pitch_bend_c' : 'program_c',vals:[cCH3,...(type==='control_c' ? [tuningPitchBend] : [bassInstrument])]}]);
+  for (let _i=0;_i<instrEvents2.length;_i++){ const _ev=instrEvents2[_i]; if (_ev && _ev.type==='control_c' && Array.isArray(_ev.vals)) { channelStateField.observeControl(_ev.vals[0], _ev.vals[1], _ev.vals[2], 'instrumentation'); } }
+  p(c,...instrEvents2);
+  source.forEach(ch => channelStateField.observeControl(ch, 7, 104, 'instrumentation'));
+  reflection.forEach(ch => channelStateField.observeControl(ch, 7, 100, 'instrumentation'));
+  bass.forEach(ch => channelStateField.observeControl(ch, 7, 102, 'instrumentation'));
+  channelStateField.observeControl(drumCH, 7, 104, 'instrumentation');
+  channelStateField.observeControl(0, 127, 0, 'instrumentation');
   p(c,
     ...source.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 104] })),
     ...reflection.map(ch => ({ timeInSeconds: measureStartTime, type: 'control_c', vals: [ch, 7, 100] })),
@@ -75,14 +84,14 @@ p(c,...['control_c'].flatMap(()=>{ const tmp={ timeInSeconds:beatStartTime,type:
  * @param {number} [timeInSeconds=measureStartTime] - Time position for All Notes Off.
  * @returns {Array} Array of CC events.
  */
-allNotesOff=(timeInSeconds=measureStartTime)=>{return p(c,...allCHs.map(ch=>({timeInSeconds,type:'control_c',vals:[ch,123,0]  })));}
+allNotesOff=(timeInSeconds=measureStartTime)=>{allCHs.forEach(ch => channelStateField.observeControl(ch, 123, 0, 'instrumentation')); return p(c,...allCHs.map(ch=>({timeInSeconds,type:'control_c',vals:[ch,123,0]  })));}
 
 /**
  * Send Mute All CC (120) to silence all channels.
  * @param {number} [timeInSeconds=measureStartTime] - Time position for Mute All.
  * @returns {Array} Array of CC events.
  */
-muteAll=(timeInSeconds=measureStartTime)=>{return p(c,...allCHs.map(ch=>({timeInSeconds,type:'control_c',vals:[ch,120,0]  })));}
+muteAll=(timeInSeconds=measureStartTime)=>{allCHs.forEach(ch => channelStateField.observeControl(ch, 120, 0, 'instrumentation')); return p(c,...allCHs.map(ch=>({timeInSeconds,type:'control_c',vals:[ch,120,0]  })));}
 
 /**
  * Neutral pitch bend value (center of pitch bend range).

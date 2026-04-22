@@ -2,11 +2,7 @@
 // and its octave (up or down). Tremolo/trill effect using octave intervals.
 
 stutterVariants.register('stutterTremolo', function stutterTremolo(opts) {
-  const minMidi = OCTAVE.min * 12;
-  const maxMidi = OCTAVE.max * 12 - 1;
-  const octUp = opts.note + 12;
-  const octDown = opts.note - 12;
-  const altNote = (octUp <= maxMidi) ? octUp : ((octDown >= minMidi) ? octDown : opts.note);
+  const altNote = stutterShift.pickOctaveAlternate(opts.note);
   if (altNote === opts.note) return stutterNotes(opts);
   const alternations = ri(15, 30);
   const stepDur = opts.sustain / alternations;

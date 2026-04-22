@@ -65,7 +65,9 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = s
         return clamp(raw, 0, 127);
       };
 
-      p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, ccParam, mapToFxRange(channelToStutter, ccParam, currentValue)] });
+      const fxVal = mapToFxRange(channelToStutter, ccParam, currentValue);
+      channelStateField.observeControl(channelToStutter, ccParam, fxVal, 'stutterFX');
+      p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, ccParam, fxVal] });
     }
     if (timeInSeconds === undefined) throw new Error('stutterFX: for-loop produced no iterations');
 
@@ -82,6 +84,8 @@ stutterFX = function stutterFX(channels, numStutters = ri(30, 100), duration = s
       if (def && Number.isFinite(Number(def.min)) && Number.isFinite(Number(def.max))) return m.round((Number(def.min) + Number(def.max)) / 2);
       return 64;
     };
-    p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, defaultReset(channelToStutter, ccParam)] });
+    const fxResetVal = defaultReset(channelToStutter, ccParam);
+    channelStateField.observeControl(channelToStutter, ccParam, fxResetVal, 'stutterFX');
+    p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, ccParam, fxResetVal] });
   });
 };

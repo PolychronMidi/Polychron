@@ -34,6 +34,16 @@ crossLayerEmissionGateway = (() => {
     // Push event to MIDI buffer
     buffer.push(event);
 
+    // Observe control_c events in the channel state field so CIM can read
+    // per-channel writer lineage. Note emissions are tracked via velocity.
+    if (event && Array.isArray(event.vals)) {
+      if (event.type === 'control_c' && event.vals.length >= 3) {
+        channelStateField.observeControl(event.vals[0], event.vals[1], event.vals[2], sourceModule);
+      } else if (event.type === 'on' && event.vals.length >= 3) {
+        channelStateField.write(event.vals[0], 'velocity', event.vals[2], sourceModule);
+      }
+    }
+
     // Track emission count per source module
     if (!counts[sourceModule]) counts[sourceModule] = 0;
     counts[sourceModule]++;

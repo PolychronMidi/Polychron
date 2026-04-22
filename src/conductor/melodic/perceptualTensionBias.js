@@ -10,7 +10,7 @@ perceptualTensionBias = (() => {
   const _perc = (() => {
     try {
       const fs = require('fs');
-      const statePath = require('path').join(process.cwd(), 'metrics', 'perceptual-report.json');
+      const statePath = require('path').join(METRICS_DIR, 'perceptual-report.json');
       const rep = JSON.parse(fs.readFileSync(statePath, 'utf8'));
       const secs = (rep.encodec && rep.encodec.sections) ?? {};
       const cb0Values = Object.values(secs)

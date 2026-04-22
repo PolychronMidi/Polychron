@@ -61,6 +61,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
       this.beatContext.mod[channelToStutter] = Object.assign(this.beatContext.mod[channelToStutter] || {}, { pan: clamp(norm, -1, 1) });
       lastIntensity = m.abs(norm);
 
+      channelStateField.observeControl(channelToStutter, 10, currentPan, 'stutterPan');
       p(c, { timeInSeconds, type: 'control_c', vals: [channelToStutter, 10, currentPan] });
     }
     if (timeInSeconds === undefined) throw new Error('stutterPan: for-loop produced no iterations');
@@ -73,6 +74,7 @@ stutterPan = function stutterPan(channels, numStutters = ri(30, 90), duration = 
     // negative = left-biased, positive = right-biased, 0 = center
     this.beatContext.panDirections[channelToStutter] = (currentPan - 64) / 64;
 
+    channelStateField.observeControl(channelToStutter, 10, 64, 'stutterPan');
     p(c, { timeInSeconds: timeInSeconds + duration * rf(.5, 3), type: 'control_c', vals: [channelToStutter, 10, 64] });
   });
 };

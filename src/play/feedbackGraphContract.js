@@ -47,7 +47,7 @@ feedbackGraphContract = (() => {
    * Throws on any contract violation.
    */
   function assert() {
-    const graphPath = path.join(process.cwd(), 'metrics', 'feedback_graph.json');
+    const graphPath = path.join(METRICS_DIR, 'feedback_graph.json');
     if (!fs.existsSync(graphPath)) {
       throw new Error(`feedbackGraphContract: missing feedback_graph.json at ${graphPath}`);
     }

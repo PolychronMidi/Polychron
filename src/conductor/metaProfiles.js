@@ -14,7 +14,7 @@ metaProfiles = (() => {
   function setActive(name) {
     const _fs = require('fs');
     const _path = require('path');
-    const _out = _path.join(process.cwd(), 'metrics', 'metaprofile-active.json');
+    const _out = _path.join(METRICS_DIR, 'metaprofile-active.json');
     if (name === null || name === undefined) {
       activeProfile = null;
       activeProfileName = null;

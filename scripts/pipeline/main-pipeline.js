@@ -15,7 +15,7 @@ const cp = require('child_process');
 const { execSync, spawnSync } = cp;
 const fs   = require('fs');
 const path = require('path');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(__dirname, '..', '..', 'output', 'metrics');
 
 const MEASURE_TIMEOUT_SEC = 30;
 
@@ -226,7 +226,7 @@ function writeSummaryJSON(wallTime, extra) {
   // from legacy-override-history.jsonl. i/status and downstream tools can read
   // these directly without scanning the activity log or trace.
   try {
-    var histPath = path.join(__dirname, '../..', 'metrics', 'legacy-override-history.jsonl');
+    var histPath = path.join(METRICS_DIR, 'legacy-override-history.jsonl');
     if (fs.existsSync(histPath)) {
       var histLines = fs.readFileSync(histPath, 'utf8').split('\n').filter(Boolean);
       var last5 = histLines.slice(-5).map(function(l) {
@@ -251,10 +251,9 @@ function writeSummaryJSON(wallTime, extra) {
     }
   } catch (_se) { /* best-effort */ }
   try {
-    var outDir = path.join(__dirname, '../..', 'metrics');
-    fs.mkdirSync(outDir, { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'pipeline-summary.json'), JSON.stringify(summary, null, 2) + '\n');
-    console.log('  Pipeline summary -> metrics/pipeline-summary.json');
+    fs.mkdirSync(METRICS_DIR, { recursive: true });
+    fs.writeFileSync(path.join(METRICS_DIR, 'pipeline-summary.json'), JSON.stringify(summary, null, 2) + '\n');
+    console.log('  Pipeline summary -> output/metrics/pipeline-summary.json');
   } catch (e) {
     console.error('  FAILFAST: pipeline-summary.json write failed: ' + (e && e.message ? e.message : e));
     console.error('  Summary dump: ' + JSON.stringify(summary));
@@ -263,7 +262,7 @@ function writeSummaryJSON(wallTime, extra) {
   // HCI snapshot diff: compare current vs previous verifier snapshot so i/status
   // can surface which verifiers regressed without requiring a manual diff command.
   try {
-    var snapCur  = path.join(__dirname, '../..', 'metrics', 'hci-verifier-snapshot.json');
+    var snapCur  = path.join(METRICS_DIR, 'hci-verifier-snapshot.json');
     var snapPrev = snapCur + '.prev';
     if (fs.existsSync(snapCur) && fs.existsSync(snapPrev)) {
       var cur  = JSON.parse(fs.readFileSync(snapCur,  'utf8'));
@@ -286,7 +285,7 @@ function writeSummaryJSON(wallTime, extra) {
         changed_verifiers: changed2,
       };
       fs.writeFileSync(
-        path.join(__dirname, '../..', 'metrics', 'hci-snapshot-diff.json'),
+        path.join(METRICS_DIR, 'hci-snapshot-diff.json'),
         JSON.stringify(diff2, null, 2) + '\n',
       );
     }
@@ -411,7 +410,7 @@ function main() {
   var failed = timings.some(function(r) { return !r.ok; }) ? 1 : 0;
   try {
     var fp = JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', '..', 'metrics', 'fingerprint-comparison.json'),
+      path.join(METRICS_DIR, 'fingerprint-comparison.json'),
       'utf8'
     ));
     verdict = fp.verdict || fp.result || 'UNKNOWN';
@@ -423,7 +422,7 @@ function main() {
   var hci = null;
   try {
     var ps = JSON.parse(fs.readFileSync(
-      path.join(__dirname, '..', '..', 'metrics', 'pipeline-summary.json'), 'utf8'
+      path.join(METRICS_DIR, 'pipeline-summary.json'), 'utf8'
     ));
     if (typeof ps.hci === 'number') hci = ps.hci;
   } catch (_e) { /* summary wasn't read back -- leave hci null */ }

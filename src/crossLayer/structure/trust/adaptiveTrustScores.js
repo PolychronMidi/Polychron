@@ -80,7 +80,7 @@ adaptiveTrustScores = (() => {
   const adaptiveTrustScoresLoadedScores = /** @type {Record<string, number>} */ ({});
   try {
     const _atsFs = require('fs');
-    const _atsPath = require('path').join(process.cwd(), 'metrics', 'adaptive-state.json');
+    const _atsPath = require('path').join(METRICS_DIR, 'adaptive-state.json');
     if (_atsFs.existsSync(_atsPath)) {
       const _atsState = JSON.parse(_atsFs.readFileSync(_atsPath, 'utf8'));
       if (_atsState.trustScores && typeof _atsState.trustScores === 'object') {

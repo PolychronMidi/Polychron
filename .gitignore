@@ -5,6 +5,7 @@ package-lock.json
 *.log
 /.vscode
 /output
+/output/metrics/
 /.serena
 /.mcp
 .clinerules
@@ -37,6 +38,9 @@ deepwiki.config.json
 /scripts/pipeline/hme/log/
 /tools/HME/warm-context-cache/*.json
 /tools/models
+/tools/bin
+/tools/HME/warm-context-cache/
+/tools/HME/KB
 *.bak
 log/
 

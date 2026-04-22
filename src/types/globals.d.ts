@@ -1863,6 +1863,7 @@ declare var selectMirrorChannels: (targetSet: Set<number>, candidates: number[],
 declare var stutterRegistry: any;
 declare var stutterVariants: any;
 declare var stutterSteps: { shouldEmit(sustain: number): boolean; getStepProbability(sustain: number): number; patternAllows(): boolean };
+declare var stutterShift: { shift(note: number, semitones: number, opts?: { isBass?: boolean; wrap?: boolean }): number; pickOctaveAlternate(note: number, opts?: { isBass?: boolean }): number; enumerateOctaves(pitchClass: number, opts?: { isBass?: boolean; exclude?: number | null }): number[] };
 declare var stutterMetrics: any;
 declare var stutterConfig: any;
 declare var stutterPlanScheduler: any;
@@ -2027,6 +2028,18 @@ declare var FactoryManager: ComposerFactoryAPI;
 // -- node / timing --
 declare var fs: any;
 declare var path: any;
+declare var METRICS_DIR: string;
+declare var minMidi: number;
+declare var maxMidi: number;
+declare var channelStateField: {
+  write(channel: string | number, param: string, value: number, writer: string): void;
+  observeControl(channel: string | number, ccNumber: number, value: number, writer: string): void;
+  read(channel: string | number, param: string, opts?: { layer?: string }): { value: number | null; writer: string | null; lastBeat: number; writeCount: number; history: Array<{ value: number; writer: string; beat: number }> } | null;
+  getFieldSnapshot(): { L1: any; L2: any };
+  getStats(): { L1: any; L2: any };
+  getRollup(): { slotCount: number; meanCooperation: number; meanContention: number; meanVariance: number; totalWrites: number; dominance: Array<{ writer: string; count: number }> };
+  reset(): void;
+};
 declare var endTime: number;
 
 // -- play --
