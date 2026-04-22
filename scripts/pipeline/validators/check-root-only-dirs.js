@@ -1,16 +1,15 @@
 'use strict';
 
-// Enforces: log/, metrics/, and tmp/ exist only at project root.
-// Any such directory found elsewhere indicates a path bug in a tool or script
-// that is writing runtime output to a non-standard location. This causes
-// permission bleed, git noise, and hook failures.
+// Enforces canonical locations: log/ and tmp/ at project root; metrics/ at output/metrics/.
+// Any instance elsewhere indicates a path bug writing runtime output to a non-standard location.
 
 const fs   = require('fs');
 const path = require('path');
 const { ROOT } = require('../hme/utils');
 const { execSync } = require('child_process');
 
-const BANNED_NAMES = new Set(['log', 'metrics', 'tmp']);
+// log/ and tmp/ must be at root only. metrics/ is special: allowed only at output/metrics/.
+const ROOT_ONLY_NAMES = new Set(['log', 'tmp']);
 const SKIP_DIRS = new Set(['node_modules', '.git', 'venv', '__pycache__']);
 
 function walk(dir, violations) {
@@ -20,9 +19,15 @@ function walk(dir, violations) {
     if (!entry.isDirectory()) continue;
     if (SKIP_DIRS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
-    if (BANNED_NAMES.has(entry.name)) {
+    if (ROOT_ONLY_NAMES.has(entry.name)) {
       violations.push(full);
       // Don't descend -- the whole subtree is the violation
+    } else if (entry.name === 'metrics') {
+      // metrics/ is allowed only at output/metrics/; flag any other location
+      const rel = path.relative(ROOT, full);
+      if (rel !== path.join('output', 'metrics')) {
+        violations.push(full);
+      }
     } else {
       walk(full, violations);
     }
@@ -85,7 +90,9 @@ function main() {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     if (SKIP_DIRS.has(entry.name)) continue;
-    if (BANNED_NAMES.has(entry.name)) continue; // root-level allowed
+    if (ROOT_ONLY_NAMES.has(entry.name)) continue; // root-level log/ and tmp/ allowed
+    // metrics/ at root level is now a violation (moved to output/metrics/)
+    if (entry.name === 'metrics') { violations.push(path.join(ROOT, entry.name)); continue; }
     walk(path.join(ROOT, entry.name), violations);
   }
 
@@ -97,9 +104,9 @@ function main() {
       console.error('  VIOLATION: ' + path.relative(ROOT, v) + ' -- must not exist outside project root');
     }
     throw new Error(
-      'check-root-only-dirs: ' + unsafe.length + ' non-root log/metrics/tmp director' +
+      'check-root-only-dirs: ' + unsafe.length + ' misplaced log/metrics/tmp director' +
       (unsafe.length === 1 ? 'y' : 'ies') + ' found with live content. ' +
-      'Route all runtime output through root-level log/, metrics/, or tmp/. ' +
+      'log/ and tmp/ must be at project root; metrics/ must be at output/metrics/. ' +
       'Add gitignore entries for any runtime-only paths.'
     );
   }
