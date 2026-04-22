@@ -14,19 +14,13 @@ Each rule follows the standard ESLint rule shape: `meta` (docs, type, schema) + 
 
 ## Python parity
 
-A subset of these rules has a Python equivalent in `tools/HME/scripts/check-*.py`, registered as invariants under `tools/HME/config/invariants.json`:
+The authoritative concordance map lives in [`tools/HME/config/invariants.json`](../../tools/HME/config/invariants.json) under the top-level `_js_rules.rules` array. Each entry names an ESLint rule with one of three statuses:
 
-| ESLint rule | Python invariant | Notes |
-|-------------|------------------|-------|
-| `no-empty-catch` | `hme-py-no-silent-catchall` | `except Exception: pass` (R33 sibling) |
-| `no-silent-early-return` | `hme-py-no-silent-fallback` | `except Exception: return []/None/False/...` without a `logger.*` call first. R33 class of bug. |
-| `no-non-ascii` | `hme-py-no-non-ascii` | Allowlist includes em-dash, arrows, box-drawing, Greek, sparklines; blocks NBSP, curly quotes, zero-width spaces |
-| `no-doubled-fallback` | `hme-py-no-doubled-fallback` | `dict.get(k, DEFAULT) or X` — silently coerces legit falsy values |
-| `no-or-fallback-on-config-read` | `hme-py-no-raw-os-environ` (partial) | Covered by forcing `ENV.get()` helper instead of `os.environ.get(X) or default` |
-| `only-error-throws` | — | Not ported: Python's `raise` already restricts to exception types |
-| `case-conventions` | — | Python has PEP8 (snake_case); enforced by Python tooling conventions |
-| `no-math-random`, `no-bare-math` | — | JS-only (no Math global in Python) |
-| `no-requires-outside-index`, `no-bare-l0-channel`, `no-direct-*` | — | JS composition-engine architecture rules |
+- **`ported`** — has a Python equivalent registered as an invariant; the entry names the `python_invariant` id. Scripts live in `tools/HME/scripts/check-*.py`.
+- **`js_only`** — architecturally JS-specific (composition engine boundaries, CommonJS load order, JS globals, validator stamp chain) with no Python surface to enforce against.
+- **`conventions_cover`** — partially covered by an existing Python invariant or by language/tooling conventions (PEP8, `raise` semantics); a strict port would be noisy or redundant.
+
+The `eslint-concordance-complete` invariant validates the map every battery run: every file in this directory must appear in `_js_rules.rules`, every `ported` entry must name a real invariant id, and no entry may point to a deleted rule file. Ported Python invariants also carry a `js_equivalent` backlink field. Add a rule on either side → update `_js_rules` in the same change or the battery fails.
 
 Pattern: JS-side rules enforced at lint time; Python-side rules enforced by the invariant battery. Both are first-class — neither is fallback for the other.
 
@@ -36,7 +30,7 @@ Pattern: JS-side rules enforced at lint time; Python-side rules enforced by the 
 2. Register in `index.js`
 3. Enable in `.eslintrc.js` under `rules: { 'local/<rule-name>': 'error' }`
 4. Document the reason in the rule's `meta.docs.description` — future readers need to know WHY it exists
-5. If the rule has a Python analog (e.g. concerns silent failure, ASCII hygiene, fallback patterns), also add `check-py-<rule>.py` and register in `invariants.json` — update the Python parity table above
+5. Add an entry to `_js_rules.rules` in `tools/HME/config/invariants.json` with the appropriate status (`ported`, `js_only`, or `conventions_cover`). If ported, also add `check-py-<rule>.py`, register a Python invariant with a `js_equivalent: "<rule-name>"` backlink, and point the entry's `python_invariant` field at its id. The `eslint-concordance-complete` invariant will fail if this step is skipped.
 
 <!-- HME-DIR-INTENT
 rules:

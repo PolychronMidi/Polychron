@@ -2,7 +2,7 @@
 //
 // Each voter produces a scalar in [-1, +1] or null (insufficient data).
 // Adding a new voter is a matter of defining its function here and
-// importing it in compute-consensus.js main voters block — no touching
+// importing it in compute-consensus.js main voters block -- no touching
 // the orchestration layer.
 
 'use strict';
@@ -17,7 +17,7 @@ function makeVoters(ROOT) {
   }
   function clamp1(x) { return Math.max(-1, Math.min(1, x)); }
 
-  // HCI voter: hci=80 → 0, hci=100 → +1, hci=60 → -1.
+  // HCI voter: hci=80 -> 0, hci=100 -> +1, hci=60 -> -1.
   function voteHci() {
     const summary = loadJson(path.join(ROOT, 'metrics', 'pipeline-summary.json'));
     if (!summary || typeof summary.hci !== 'number') return null;
@@ -53,7 +53,7 @@ function makeVoters(ROOT) {
     return clamp1(2 * last.verdict_numeric - 1);
   }
 
-  // Axis rebalance cost trend voter. Rising > 50% over 3 rounds → -1.
+  // Axis rebalance cost trend voter. Rising > 50% over 3 rounds -> -1.
   function voteAxisCostTrend() {
     const histPath = path.join(ROOT, 'metrics', 'legacy-override-history.jsonl');
     if (!fs.existsSync(histPath)) return null;
@@ -72,7 +72,7 @@ function makeVoters(ROOT) {
     return clamp1(-growth / 0.5);
   }
 
-  // CLAP tension stability voter. In [0.2, 0.6] band → +1; linear decay outside.
+  // CLAP tension stability voter. In [0.2, 0.6] band -> +1; linear decay outside.
   function voteClapStability() {
     const perc = loadJson(path.join(ROOT, 'metrics', 'perceptual-report.json'));
     const clap = perc && perc.clap && perc.clap.queries;

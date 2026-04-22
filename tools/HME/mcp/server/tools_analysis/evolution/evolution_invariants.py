@@ -831,6 +831,71 @@ def _check_shell_output_empty(inv: dict) -> tuple[bool, str]:
     return True, "no untracked files"
 
 
+def _check_eslint_concordance_complete(inv: dict) -> tuple[bool, str]:
+    """Validate the _js_rules concordance map in invariants.json.
+
+    Ensures:
+      (a) every scripts/eslint-rules/*.js (minus index.js) appears in _js_rules.rules
+      (b) every rule with status='ported' names a python_invariant id that exists
+      (c) no _js_rules entry names a rule file that no longer exists
+      (d) every status value is one of: ported, js_only, conventions_cover
+    """
+    config_path = os.path.join(ctx.PROJECT_ROOT, _CONFIG_REL)
+    with open(config_path, encoding="utf-8") as f:
+        data = json.load(f)
+    js_block = data.get("_js_rules", {})
+    rules = js_block.get("rules", [])
+    invariants_list = data.get("invariants", [])
+    invariant_ids = {inv_.get("id") for inv_ in invariants_list}
+
+    rules_dir = os.path.join(ctx.PROJECT_ROOT, "scripts", "eslint-rules")
+    try:
+        on_disk = {
+            os.path.splitext(f_)[0]
+            for f_ in os.listdir(rules_dir)
+            if f_.endswith(".js") and f_ != "index.js"
+        }
+    except OSError as e:
+        return False, f"cannot list eslint-rules dir: {e}"
+
+    mapped = {r.get("name") for r in rules}
+    valid_statuses = {"ported", "js_only", "conventions_cover"}
+    problems = []
+
+    missing_from_map = on_disk - mapped
+    if missing_from_map:
+        problems.append(
+            f"{len(missing_from_map)} rule file(s) missing from _js_rules: "
+            f"{', '.join(sorted(missing_from_map))}"
+        )
+
+    stale_in_map = mapped - on_disk
+    if stale_in_map:
+        problems.append(
+            f"{len(stale_in_map)} _js_rules entry/entries point to missing file(s): "
+            f"{', '.join(sorted(stale_in_map))}"
+        )
+
+    for r in rules:
+        name = r.get("name", "<unnamed>")
+        status = r.get("status")
+        if status not in valid_statuses:
+            problems.append(f"{name}: invalid status {status!r} (must be one of {sorted(valid_statuses)})")
+            continue
+        if status == "ported":
+            py_id = r.get("python_invariant")
+            if not py_id:
+                problems.append(f"{name}: status='ported' but python_invariant is empty")
+            elif py_id not in invariant_ids:
+                problems.append(f"{name}: python_invariant {py_id!r} is not a registered invariant id")
+
+    if problems:
+        preview = "; ".join(problems[:5])
+        suffix = f" (+{len(problems) - 5} more)" if len(problems) > 5 else ""
+        return False, preview + suffix
+    return True, f"{len(rules)} rules mapped; {sum(1 for r in rules if r.get('status') == 'ported')} ported, {len(on_disk)} on disk"
+
+
 # Main entry point
 
 def _eval(inv: dict) -> tuple[bool, str]:
@@ -858,6 +923,7 @@ def _eval(inv: dict) -> tuple[bool, str]:
         "invariant_chronically_failing": _check_invariant_chronically_failing,
         "public_functions_reachable": _check_public_functions_reachable,
         "shell_output_empty": _check_shell_output_empty,
+        "eslint_concordance_complete": _check_eslint_concordance_complete,
     }
     inv_type = inv.get("type", "")
     checker = checkers.get(inv_type)

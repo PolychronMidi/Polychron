@@ -21,7 +21,37 @@
     "activity_events_balanced": "Paired activity events (start_event + end_event) must fire with matching counts in the recent window. Catches observability regressions where a refactor drops one of a paired emission silently.",
     "activity_field_sanity": "A named field on recent activity events must match an expected regex. Catches garbage-value bugs (e.g. file_written emitting module='<UUID>' from infrastructure files instead of real module basenames).",
     "same_commit_determinism": "Consecutive pipeline runs from the SAME commit must produce metric values within tolerance. Non-determinism means either random inputs (clock-dependent verifier) or cached state leaking between runs — both invalidate the metric.",
-    "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed."
+    "invariant_chronically_failing": "Escalation: another invariant has been FAILing for N consecutive runs. Catches the meta-pattern where alarms become background noise and never get fixed.",
+    "eslint_concordance_complete": "Single source of truth for JS↔Python rule pairing. Validates that (a) every file in scripts/eslint-rules/*.js (minus index.js) appears in _js_rules with a known status, (b) every entry with status='ported' names a python_invariant id that exists in the invariants list, and (c) no _js_rules entry names a rule file that no longer exists. Replaces the hand-maintained parity table in scripts/eslint-rules/README.md; adding a rule on either side without updating _js_rules fails the battery."
+  },
+  "_js_rules": {
+    "_comment": "Concordance map between custom ESLint rules (scripts/eslint-rules/*.js) and their Python invariants. Status values: 'ported' = has a Python equivalent registered under python_invariant; 'js_only' = architecturally JS-specific (composition engine, CommonJS, JS globals) or covered by Python language/tooling conventions (PEP8, raise semantics). This block is the source of truth for the README parity table and is validated by the eslint_concordance_complete invariant.",
+    "rules": [
+      {"name": "no-empty-catch", "status": "ported", "python_invariant": "hme-py-no-silent-catchall", "reason": "Silent `except Exception: pass` is the direct Python analog of an empty catch block."},
+      {"name": "no-silent-early-return", "status": "ported", "python_invariant": "hme-py-no-silent-fallback", "reason": "Silent `except Exception: return <empty default>` without a logger call is the Python form of the R33-class silent-failure pattern."},
+      {"name": "no-non-ascii", "status": "ported", "python_invariant": "hme-py-no-non-ascii", "reason": "Same copy-paste failure mode (NBSP, curly quotes, zero-width spaces) in Python source. Python port uses an expanded INTENTIONAL_UNICODE allowlist for legitimate typography in docstrings."},
+      {"name": "no-doubled-fallback", "status": "ported", "python_invariant": "hme-py-no-doubled-fallback", "reason": "`dict.get(k, DEFAULT) or X` silently coerces legitimate falsy values — same class of bug as the regimeClassifier 0→0.5 tension incident that motivated the JS rule."},
+      {"name": "no-or-fallback-on-config-read", "status": "conventions_cover", "python_invariant": null, "reason": "Partial coverage via hme-py-no-os-environ (forces ENV.get() helper) and hme-py-no-doubled-fallback (catches the .get(k, D) or X variant). Python has no equivalent to the JS `_cc`/`_atsc` config-section naming convention, so a strict port would be noisy on legitimate `.get(k) or {}` idioms."},
+      {"name": "only-error-throws", "status": "js_only", "python_invariant": null, "reason": "Python's `raise` statement already requires a BaseException subclass at runtime; raising a literal raises TypeError immediately. No static check needed."},
+      {"name": "case-conventions", "status": "js_only", "python_invariant": null, "reason": "Python has PEP8 (snake_case for functions/vars, PascalCase for classes) enforced by ruff/flake8/black. Not re-enforcing in the battery."},
+      {"name": "no-console-acceptable-warning", "status": "js_only", "python_invariant": null, "reason": "Python HME code uses structured logger.* calls, not console-equivalent `print`. The discipline is enforced by reviewing new `print(` calls, not by lint."},
+      {"name": "no-math-random", "status": "js_only", "python_invariant": null, "reason": "No Math global in Python; deterministic-random discipline lives in pipeline determinism invariants instead."},
+      {"name": "no-bare-math", "status": "js_only", "python_invariant": null, "reason": "No Math global in Python."},
+      {"name": "no-typeof-validated-global", "status": "js_only", "python_invariant": null, "reason": "Boot-validated globals are a JS/CommonJS concept; Python has no `typeof` operator and no equivalent boot-validation chain."},
+      {"name": "no-requires-outside-index", "status": "js_only", "python_invariant": null, "reason": "CommonJS require() load-order discipline is JS-specific; Python imports have no equivalent hazard."},
+      {"name": "no-bare-l0-channel", "status": "js_only", "python_invariant": null, "reason": "L0 channels are a composition-engine concept living entirely in src/ (JS). No Python-side surface."},
+      {"name": "no-direct-signal-read", "status": "js_only", "python_invariant": null, "reason": "conductorIntelligence.getSignalSnapshot is a JS composition-engine surface; no Python consumer."},
+      {"name": "no-direct-buffer-push-from-crosslayer", "status": "js_only", "python_invariant": null, "reason": "crossLayerEmissionGateway is a JS-side boundary; Python pipeline scripts don't participate."},
+      {"name": "no-direct-conductor-state-from-crosslayer", "status": "js_only", "python_invariant": null, "reason": "Conductor/cross-layer boundary lives entirely in src/."},
+      {"name": "no-direct-crosslayer-write-from-conductor", "status": "js_only", "python_invariant": null, "reason": "Conductor/cross-layer boundary lives entirely in src/."},
+      {"name": "no-direct-coupling-matrix-read", "status": "js_only", "python_invariant": null, "reason": "Coupling matrix firewall is a JS-only architectural rule covering src/ only."},
+      {"name": "no-conductor-registration-from-crosslayer", "status": "js_only", "python_invariant": null, "reason": "Conductor registration surface is JS-only."},
+      {"name": "no-unregistered-feedback-loop", "status": "js_only", "python_invariant": null, "reason": "feedbackRegistry is a JS-side registry; Python pipeline scripts declare loops via metrics/feedback_graph.json directly."},
+      {"name": "no-unstamped-validator", "status": "js_only", "python_invariant": null, "reason": "The validator stamp chain is a JS-side invariant; Python has no equivalent validator factory."},
+      {"name": "prefer-validator", "status": "js_only", "python_invariant": null, "reason": "validator.create pattern is JS-only."},
+      {"name": "validator-name-matches-filename", "status": "js_only", "python_invariant": null, "reason": "JS-only naming discipline tied to validator.create('ModuleName')."},
+      {"name": "no-useless-expose-dependencies-comments", "status": "js_only", "python_invariant": null, "reason": "`// expose dependencies` comments are a JS/CommonJS boot-chain artifact; no Python analog."}
+    ]
   },
   "invariants": [
     {
@@ -62,6 +92,12 @@
       ],
       "reference_file": "eslint.config.mjs",
       "match_mode": "stem",
+      "severity": "error"
+    },
+    {
+      "id": "eslint-concordance-complete",
+      "description": "Single source of truth for ESLint-rule <-> Python-invariant pairing lives in invariants.json under _js_rules. Every file in scripts/eslint-rules/*.js (minus index.js) must appear there with a known status; every status='ported' entry must name a python_invariant id that exists; no _js_rules entry may point to a deleted rule file. Guards against drift between the two sides — adding a rule on either side without updating the concordance fails the battery.",
+      "type": "eslint_concordance_complete",
       "severity": "error"
     },
     {
@@ -499,6 +535,7 @@
       "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared \u2014 any new instance is a regression.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/mcp/server",
+      "js_equivalent": "no-empty-catch",
       "severity": "error"
     },
     {
@@ -506,6 +543,7 @@
       "description": "HME Python files must not silently return an empty default (`[]`, `None`, `False`, `{}`, `''`, `dict()`, etc.) from an `except Exception` without calling `logger.*` or `print` first. R33 found 3 instances in the wild (i/review auto-fire, list_knowledge, get_knowledge_status); each degraded a substrate capability invisibly because the fallback value LOOKED legitimate. Sibling of hme-py-no-silent-catchall but distinct: that catches `pass`, this catches silent-return-default.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-silent-fallback.py tools/HME/mcp",
+      "js_equivalent": "no-silent-early-return",
       "severity": "error"
     },
     {
@@ -513,6 +551,7 @@
       "description": "Python equivalent of ESLint local/no-non-ascii (scripts/eslint-rules/no-non-ascii.js). HME Python source must be ASCII except for an allowlist of legitimate typography (em-dash, arrows, box-drawing, Greek, accented Latin) declared in check-py-no-non-ascii.py. Blocks the copy-paste failure mode: NBSP, curly quotes, zero-width spaces, BOM — invisible chars that break regex matching and produce diff noise.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-py-no-non-ascii.py tools/HME/mcp",
+      "js_equivalent": "no-non-ascii",
       "severity": "warning"
     },
     {
@@ -520,6 +559,7 @@
       "description": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial — either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python.",
       "type": "shell_output_empty",
       "shell": "python3 tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/mcp",
+      "js_equivalent": "no-doubled-fallback",
       "severity": "error"
     },
     {

@@ -1,9 +1,9 @@
 // R32: correlation math extracted from compute-musical-correlation.js.
 //
-// Pure computation — no I/O. Pearson correlation with degenerate-case
+// Pure computation -- no I/O. Pearson correlation with degenerate-case
 // detection, plus the perceptual-signal extraction from perceptual-report.
 // Keeping these here means compute-musical-correlation.js stays an
-// orchestrator (load JSON → compute snapshot → emit), not a math library.
+// orchestrator (load JSON -> compute snapshot -> emit), not a math library.
 
 'use strict';
 

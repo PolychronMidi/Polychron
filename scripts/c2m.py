@@ -8,11 +8,13 @@ Usage:
   python c2m.py file1.csv file2 # convert multiple files
 """
 
-from csv_maestro import py_midicsv as x
 import os
 import sys
 import argparse
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from csv_maestro import py_midicsv as x
 
 
 def convert_csv_to_midi(csv_path):
