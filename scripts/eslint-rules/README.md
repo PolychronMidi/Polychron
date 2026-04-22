@@ -12,12 +12,31 @@ Each rule follows the standard ESLint rule shape: `meta` (docs, type, schema) + 
 - **Globals discipline** — `no-typeof-validated-global`, `no-math-random`, `no-bare-math`, `no-requires-outside-index`
 - **Cosmetics / drift** — `case-conventions`, `no-non-ascii`, `no-console-acceptable-warning`, `no-useless-expose-dependencies-comments`, `validator-name-matches-filename`
 
+## Python parity
+
+A subset of these rules has a Python equivalent in `tools/HME/scripts/check-*.py`, registered as invariants under `tools/HME/config/invariants.json`:
+
+| ESLint rule | Python invariant | Notes |
+|-------------|------------------|-------|
+| `no-empty-catch` | `hme-py-no-silent-catchall` | `except Exception: pass` (R33 sibling) |
+| `no-silent-early-return` | `hme-py-no-silent-fallback` | `except Exception: return []/None/False/...` without a `logger.*` call first. R33 class of bug. |
+| `no-non-ascii` | `hme-py-no-non-ascii` | Allowlist includes em-dash, arrows, box-drawing, Greek, sparklines; blocks NBSP, curly quotes, zero-width spaces |
+| `no-doubled-fallback` | `hme-py-no-doubled-fallback` | `dict.get(k, DEFAULT) or X` — silently coerces legit falsy values |
+| `no-or-fallback-on-config-read` | `hme-py-no-raw-os-environ` (partial) | Covered by forcing `ENV.get()` helper instead of `os.environ.get(X) or default` |
+| `only-error-throws` | — | Not ported: Python's `raise` already restricts to exception types |
+| `case-conventions` | — | Python has PEP8 (snake_case); enforced by Python tooling conventions |
+| `no-math-random`, `no-bare-math` | — | JS-only (no Math global in Python) |
+| `no-requires-outside-index`, `no-bare-l0-channel`, `no-direct-*` | — | JS composition-engine architecture rules |
+
+Pattern: JS-side rules enforced at lint time; Python-side rules enforced by the invariant battery. Both are first-class — neither is fallback for the other.
+
 ## Adding a rule
 
 1. Write `<rule-name>.js` with `meta` + `create` exports
 2. Register in `index.js`
 3. Enable in `.eslintrc.js` under `rules: { 'local/<rule-name>': 'error' }`
 4. Document the reason in the rule's `meta.docs.description` — future readers need to know WHY it exists
+5. If the rule has a Python analog (e.g. concerns silent failure, ASCII hygiene, fallback patterns), also add `check-py-<rule>.py` and register in `invariants.json` — update the Python parity table above
 
 <!-- HME-DIR-INTENT
 rules:
