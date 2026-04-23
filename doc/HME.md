@@ -229,15 +229,15 @@ src/
     MirrorTerminal.ts   PTY mirror terminal for raw Claude CLI output
 ```
 
-### HME Shim (`mcp/hme_http.py`)
+### HME Worker HTTP
 
-HTTP bridge between the chat extension and the Python MCP server. Endpoints used by the chat:
+The Python worker at `mcp/worker.py` absorbs the endpoints the chat and hooks rely on (previously split across a separate `hme_http.py` shim, now consolidated). Endpoints:
 - `POST /enrich` — KB top-k retrieval for hybrid context injection
 - `POST /enrich_prompt` — Full reasoning-model prompt enrichment (200s timeout)
 - `POST /validate` — Rule validation + constraint warnings
 - `POST /audit` — Post-change boundary audit
 - `POST /transcript` — Session narrative mirroring into KB
-- `GET /health` — Readiness check (polled by ShimSupervisor on startup)
+- `GET /health` — Readiness check
 
 ### Auto-routing Arbiter
 
