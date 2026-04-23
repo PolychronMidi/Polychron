@@ -105,11 +105,19 @@ export interface LlamacppStreamOptions extends BaseStreamOptions {
   workingDir: string;
 }
 
+// llama.cpp / hybrid backends don't carry API session ids. A synthetic id
+// keeps the RouterInterface contract uniform — session-resumption code sees
+// an id on every route and can match the `llama-` prefix to skip resume attempts.
+function syntheticLlamaSessionId(): string {
+  return `llama-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export const llamacppAdapter: RouterAdapter<LlamacppMessage[], LlamacppStreamOptions> =
   wrapLegacyStream<LlamacppMessage[], LlamacppStreamOptions>(
     "local",
     "llama.cpp (agentic)",
     (messages, opts, cb) => {
+      cb.sessionId?.(syntheticLlamaSessionId());
       return streamLlamacppAgentic(
         messages,
         opts.llamacpp,
