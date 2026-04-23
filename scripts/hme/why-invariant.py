@@ -39,15 +39,29 @@ def main(argv):
             defn = i
             break
 
+    # Class-to-meaning map for readers unfamiliar with Arc IV taxonomy.
+    _CLASS_GLOSS = {
+        "load-bearing": "actively cited in fix commits — removing this would hide real regressions",
+        "load-bearing-historical": "cited in fix commits within the last 90 days but quiet recently",
+        "structural": "never-failing sanity check; hard to regress against",
+        "decorative": "never-failing; no fix-commit citations ever — ornamental",
+        "flappy": "fires repeatedly without being cited in fix commits — candidate for retirement",
+    }
+    klass_gloss = _CLASS_GLOSS.get(klass, "")
+
     print(f"{inv_id}")
-    print(f"  class={klass}  severity={severity}  efficacy={efficacy}")
-    print(f"  last_result={last}  fail_streak={streak}")
+    print(f"  class={klass}" + (f"  ({klass_gloss})" if klass_gloss else ""))
+    print(f"  severity={severity}  efficacy={efficacy}  (efficacy = fix-commit citations / fails; 1.0 = every fail fixed)")
+    print(f"  last_result={last}  fail_streak={streak}" + (" consecutive rounds" if streak else ""))
     print(f"  commits_citing: {cites}")
     if defn:
         print(f"  type: {defn.get('type')}")
         desc = defn.get("description", "")
         if desc:
             print(f"  description: {desc[:300]}")
+        born = defn.get("born_from")
+        if born:
+            print(f"  born_from: {born}")
     # Recent git log snippets
     try:
         log = subprocess.check_output(
