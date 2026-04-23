@@ -489,6 +489,14 @@ export class BrowserPanel implements PanelHost {
           type: "notice", level: "info",
           text: `🔀 → ${label} (${Math.round(decision.confidence * 100)}% — ${decision.reason})`,
         });
+      } else {
+        // Surface the fallback. Hidden auto-route failures erode trust in
+        // routing decisions — a user who thinks they're hitting a local
+        // model but is actually paying Claude API costs needs to know.
+        this.post({
+          type: "notice", level: "warn",
+          text: `⚠ Auto-route unavailable — falling back to ${decision.route}. (${decision.reason || "arbiter unreachable"})`,
+        });
       }
     } else {
       resolvedRoute = msg.route as "claude" | "local" | "hybrid";
