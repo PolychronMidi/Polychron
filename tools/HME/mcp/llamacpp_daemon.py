@@ -279,6 +279,16 @@ class _Supervisor:
     def _spawn(self, spec: InstanceSpec) -> bool:
         """Launch spec as a detached subprocess. Returns True if the process
         started. Health comes later via probe. Enforces full-offload invariant."""
+        # Defense-in-depth: never spawn a suspended instance even if a caller
+        # bypasses the ensure_all_running / health_tick gates. indexing-mode
+        # flips suspended=True before freeing the GPU; a spawn here would
+        # land directly into the embedder's working VRAM and OOM.
+        if spec.suspended:
+            logger.error(
+                f"supervisor: refusing to spawn suspended instance {spec.name} — "
+                f"only resume() may clear the suspended flag"
+            )
+            return False
         if not os.path.isfile(self._bin):
             logger.error(f"supervisor: binary not found at {self._bin}")
             return False
