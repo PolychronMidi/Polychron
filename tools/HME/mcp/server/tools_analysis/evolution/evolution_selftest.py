@@ -54,7 +54,7 @@ RELOADABLE = [
 ]
 TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge",
                         "meta_layers", "meta_observer"]
-ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]
+ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker", "structure"]
 
 
 def hme_hot_reload(modules: str = "") -> str:
