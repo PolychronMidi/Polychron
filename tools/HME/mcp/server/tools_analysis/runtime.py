@@ -166,22 +166,32 @@ def drama_finder(top_n: int = 10) -> str:
         if ev.get("hotspots"):
             parts.append(f"  hotspots: {', '.join(f'{n}={v}' for n, v in ev['hotspots'])}")
 
-    # Micro-narrative synthesis for top 3 events
-    from .synthesis import _reasoning_think
-    top3_summary = "\n".join(
-        f"{i+1}. Beat {ev['beat']} [{ev['type']}]: {ev['detail']}"
-        for i, ev in enumerate(top[:3])
+    # Micro-narrative synthesis for top 3 events. Gated: this was the
+    # single 60s call in `i/review mode=composition`. The structural
+    # drama listing above is the high-signal part; the narrative is a
+    # "nice to have" that a status-surface caller shouldn't pay 60s for.
+    # Enabled by default when called directly (explicit intent), skipped
+    # under HME_READ_FAST=1 or HME_DRAMA_NO_SYNTHESIS=1.
+    _skip_synth = (
+        os.environ.get("HME_READ_FAST") in ("1", "true", "yes")
+        or os.environ.get("HME_DRAMA_NO_SYNTHESIS") in ("1", "true", "yes")
     )
-    narrative = _reasoning_think(
-        f"For each of these 3 dramatic moments in a generative music composition, "
-        f"write ONE sentence explaining WHY it was dramatic musically (what the listener would hear). "
-        f"Be specific about musical effects like rhythmic disruption, textural shift, harmonic tension.\n\n"
-        f"{top3_summary}",
-        max_tokens=512,
-    )
-    if narrative:
-        parts.append(f"\n## What the Listener Hears")
-        parts.append(narrative)
+    if not _skip_synth:
+        from .synthesis import _reasoning_think
+        top3_summary = "\n".join(
+            f"{i+1}. Beat {ev['beat']} [{ev['type']}]: {ev['detail']}"
+            for i, ev in enumerate(top[:3])
+        )
+        narrative = _reasoning_think(
+            f"For each of these 3 dramatic moments in a generative music composition, "
+            f"write ONE sentence explaining WHY it was dramatic musically (what the listener would hear). "
+            f"Be specific about musical effects like rhythmic disruption, textural shift, harmonic tension.\n\n"
+            f"{top3_summary}",
+            max_tokens=512,
+        )
+        if narrative:
+            parts.append(f"\n## What the Listener Hears")
+            parts.append(narrative)
 
     return "\n".join(parts)
 
