@@ -190,6 +190,11 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
 
 def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     """Delete a knowledge entry by its ID. Use after kb_health identifies stale entries, or when a decision has been superseded. Specify scope='global' to remove from the shared KB instead of the project KB."""
+    try:
+        from server.lifecycle_writers import assert_writer
+        assert_writer("kb", __file__)
+    except ImportError:
+        pass
     ctx.ensure_ready_sync()
     if not entry_id.strip():
         return "Error: entry_id cannot be empty."
