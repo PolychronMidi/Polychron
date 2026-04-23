@@ -177,17 +177,43 @@ def ground_truth_report() -> str:
         f"**Entries recorded:** {len(records)}",
         "",
     ]
-    # Distribution by sentiment
+    # Distribution by sentiment / moment type. Records stored from
+    # malformed CLI calls have stub values like "c" or "[" — bucketing
+    # those as "(unparsed)" stops the distribution from looking like
+    # legitimate sentiments. Recognized vocabulary lives in the help
+    # text; anything outside it is suspect input.
     from collections import Counter
-    sent_count = Counter(r.get("sentiment", "?") for r in records)
-    moment_count = Counter(r.get("moment_type", "?") for r in records)
+    _RECOGNIZED_SENTIMENTS = {
+        "compelling", "flat", "surprising", "legendary", "transcendent",
+        "boring", "musical", "stale", "off", "clipped", "punchy",
+        "emergent", "convincing", "uncanny", "?",
+    }
+    _RECOGNIZED_MOMENTS = {
+        "convergence", "climax", "misfire", "arrival", "transcendent",
+        "calibration", "whole-run", "collapse", "release", "pivot", "?",
+    }
+
+    def _bucket(val: str, recognized: set) -> str:
+        v = (val or "").strip()
+        if not v:
+            return "(empty)"
+        if v.lower() in recognized:
+            return v.lower()
+        return "(unparsed)"
+
+    sent_count = Counter(_bucket(r.get("sentiment", "?"), _RECOGNIZED_SENTIMENTS) for r in records)
+    moment_count = Counter(_bucket(r.get("moment_type", "?"), _RECOGNIZED_MOMENTS) for r in records)
     lines.append("## Sentiment distribution")
     for s, n in sent_count.most_common(10):
         lines.append(f"  {s:<20} {n}")
+    if sent_count.get("(unparsed)"):
+        lines.append(f"  (unparsed entries are CLI calls that didn't pass tags[1]=<sentiment>)")
     lines.append("")
     lines.append("## Moment type distribution")
     for m, n in moment_count.most_common(10):
         lines.append(f"  {m:<20} {n}")
+    if moment_count.get("(unparsed)"):
+        lines.append(f"  (unparsed entries are CLI calls that didn't pass tags[0]=<moment_type>)")
     lines.append("")
     lines.append("## Recent entries")
     for r in records[-10:]:
