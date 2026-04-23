@@ -20,8 +20,12 @@ class RAGEngineIndexingMixin:
         kind='code' → self.code_model (RAG_CODE_MODEL from .env) for code_chunks.
         kind='text' → self.text_model (RAG_MODEL from .env) for knowledge + symbols.
         """
-        batch_size = getattr(self, "_embed_batch_size", BATCH_SIZE)
-        model = self.code_model if kind == "code" else self.text_model
+        if kind == "code":
+            batch_size = getattr(self, "_embed_batch_size_code", BATCH_SIZE)
+            model = self.code_model
+        else:
+            batch_size = getattr(self, "_embed_batch_size_text", BATCH_SIZE)
+            model = self.text_model
         results = []
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
