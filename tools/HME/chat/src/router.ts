@@ -37,7 +37,7 @@ export interface TokenUsage {
 }
 
 // Re-export all functions from split modules so existing imports from "./router" keep working.
-export { streamClaude, streamClaudePty } from "./routers/routerClaude";
+export { streamClaude } from "./routers/routerClaude";
 export { streamLlamacpp, streamLlamacppAgentic, GPU_NUM_CTX } from "./routers/routerLlamacpp";
 export {
   fetchHmeContext,
@@ -64,11 +64,11 @@ export { wrapLegacyStream, makeResult, streamAsIterable } from "./routers/Router
 // Concrete adapters — one per backend, all normalized through the
 // RouterAdapter interface. Use getAdapterForRoute() + runAdapter().
 export {
-  claudeAdapter, claudePtyAdapter, llamacppAdapter, hybridAdapter,
+  claudeAdapter, llamacppAdapter, hybridAdapter,
   getAdapterForRoute, runAdapter,
 } from "./routers/adapters";
 export type {
-  ClaudeStreamInput, ClaudeStreamOptions, ClaudePtyStreamOptions,
+  ClaudeStreamInput, ClaudeStreamOptions,
   LlamacppStreamOptions,
   HybridStreamInput, HybridStreamOptions,
   StreamInput, StreamOpts,
