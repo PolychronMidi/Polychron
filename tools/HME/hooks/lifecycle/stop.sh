@@ -83,6 +83,8 @@ else
     # Clean up empty err log on success
     rm -f "$_GIT_ERR" 2>/dev/null
   fi
+  # Release the autocommit flock so the next Stop invocation can proceed.
+  exec 9>&-
 fi
 
 # LIFESAVER — mid-turn error detection
