@@ -244,6 +244,36 @@ HTTP bridge between the chat extension and the Python MCP server. Endpoints used
 
 When route is `auto`, `classifyMessage()` in `Arbiter.ts` calls qwen3:4b (port 11436, CPU-only) with the message + recent transcript context. Decisions are cached 30s to avoid redundant calls. Low-confidence local decisions (< 65%) are automatically escalated to Claude. Falls back to Claude on any arbiter error.
 
+### Router adapter layer
+
+Tonight's unification pass introduced a normalized `RouterAdapter` interface in [tools/HME/chat/src/routers/RouterInterface.ts](../tools/HME/chat/src/routers/RouterInterface.ts). The three legacy stream functions (`streamClaude`, `streamLlamacpp`, `streamHybrid`) now have wrapped adapter equivalents in [adapters.ts](../tools/HME/chat/src/routers/adapters.ts):
+
+- `claudeAdapter` / `claudePtyAdapter` — Claude CLI via pipe or PTY
+- `llamacppAdapter` — llama.cpp agentic loop
+- `hybridAdapter` — llama.cpp + KB enrichment
+
+New code should consume routes via `getAdapterForRoute(route)` + `runAdapter(adapter, messages, opts)`. Each adapter returns a `StreamHandle { cancel(), done: Promise<StreamResult> }` — unified error shape, sessionId/token-usage callbacks, and optional `deadlineMs` wall-clock cap. The legacy `streamXxxMsg` functions in `chatStreaming.ts` still work via callbacks and will migrate to the adapter pattern incrementally.
+
+### Self-coherence probes (added 2026-04-23)
+
+Selftest now runs these additional structural probes beyond the legacy 17:
+
+| Probe | Catches |
+|---|---|
+| daemon uniqueness | more than one `llamacpp_daemon` process visible to pgrep |
+| llama-server count | more than 2 running (declared topology = arbiter + coder) |
+| daemon thread hygiene | `Exception in thread` in recent daemon log = silent thread crash |
+| GPU attribution | >200 MB VRAM used but not attributed to a declared process |
+| single-writer registry | `_OWNERS` empty or module unimportable (invariants disabled) |
+| invariant enforcement coverage | every registered owner's source contains `assert_writer(<domain>, ...)` |
+| version consistency | daemon + worker + canonical `versions.json` all agree |
+| meta-invariant coverage | non-owner module calls a protected mutation (runs `scripts/check-single-writer-coverage.py`) |
+| HME dogfooding | HME's own Python obeys the no-silent-catch rule (runs `scripts/check-hme-dogfooding.py`) |
+| invariant genealogy | share of invariants with `born_from` origin citation |
+| temporal drift | selftest result flips PASS→FAIL after ≥3 PASSes (from `hme-coherence-timeseries.jsonl`) |
+
+Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert the corresponding probe catches them — `run-all.sh` runs the full battery.
+
 ### Chat invariants (tonight's pass added these guarantees)
 
 | Invariant | Where enforced | Failure mode it prevents |
