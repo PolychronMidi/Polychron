@@ -1255,7 +1255,6 @@ function _updatePruneBanner() {
   _pruneBanner.textContent =
     _prunedMessages.length + ' older message(s) pruned — click to load more (oldest first)';
 }
-let _restoring = false;
 function _restoreOlderMessages() {
   if (_prunedMessages.length === 0) return;
   // Restore in batches of 50 — walking most-recently-pruned first, then
