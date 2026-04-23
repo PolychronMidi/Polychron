@@ -133,8 +133,8 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                 if _k and has_brief(_k):
                     matched_key = _k
                     break
-        except Exception:
-            pass
+        except Exception as _brief_err:
+            logger.debug(f"nexus brief check failed: {type(_brief_err).__name__}: {_brief_err}")
         hme_read_prior = matched_key is not None
         # Size + delta + language tagging
         try:
