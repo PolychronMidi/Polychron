@@ -697,6 +697,26 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: GPU attribution -- probe failed: {type(_e).__name__}: {_e}")
 
+    # Probe 4: single-writer registry must be loadable and non-empty.
+    # A broken import or an empty _OWNERS means assert_writer is no-ops,
+    # silently removing the invariant. If the module isn't on path at all
+    # (standalone script), this is INFO; if the module IS on path but
+    # loads badly, it's a real FAIL.
+    try:
+        from server.lifecycle_writers import all_domains as _all_domains
+        domains = _all_domains()
+        if not domains:
+            results.append("FAIL: single-writer registry -- _OWNERS is empty; invariants disabled")
+        else:
+            results.append(
+                f"PASS: single-writer registry -- {len(domains)} domains registered "
+                f"({', '.join(sorted(domains.keys())[:4])}{'…' if len(domains) > 4 else ''})"
+            )
+    except ImportError as _imp_err:
+        results.append(f"WARN: single-writer registry -- module not importable: {_imp_err}")
+    except Exception as _e:
+        results.append(f"FAIL: single-writer registry -- probe crashed: {type(_e).__name__}: {_e}")
+
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
