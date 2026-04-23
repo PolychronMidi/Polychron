@@ -14,11 +14,10 @@ No layer is optional. Removing any one collapses the executive.
 --
 | **MCP Server** | `tools/HME/` | 7 tools: evolve / review / read / learn / trace / hme_admin / agent |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
-| **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
 | **Hooks** | `tools/HME/hooks/` + `~/.claude/settings.json` | Automated workflow enforcement + evolution loop driver (pre/post tool use, session lifecycle) |
 | **Lab** | `lab/` | Experimental harness for isolated prototyping |
 
-On top of that substrate, Phase 1-6 (landed 2026-04-15 from [openshell_features_to_mimic.md](openshell_features_to_mimic.md)) adds 30 observability/governance features: the activity bridge, inference proxy, pipeline policy gate, staleness + drift + cascade indexes, hypothesis registry, crystallizer, musical correlation, trust-weighted KB, coherence budget, negative space discovery, human ground truth, reflexivity model, constitutional identity, and a multi-agent scaffold. Surfaced through 23 new `status(mode=...)` branches (activity, staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized, music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget, negative_space, cognitive_load, ground_truth, constitution, doc_drift, generalizations, reflexivity, multi_agent) — search this file for "Phase N.M of the feature mapping" for each subsystem's narrative.
+On top of that substrate, Phase 1-6 (landed 2026-04-15) adds 30 observability/governance features: the activity bridge, inference proxy, pipeline policy gate, staleness + drift + cascade indexes, hypothesis registry, crystallizer, musical correlation, trust-weighted KB, coherence budget, negative space discovery, human ground truth, reflexivity model, constitutional identity, and a multi-agent scaffold. Surfaced through 23 new `status(mode=...)` branches (activity, staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized, music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget, negative_space, cognitive_load, ground_truth, constitution, doc_drift, generalizations, reflexivity, multi_agent) — search this file for "Phase N.M of the feature mapping" for each subsystem's narrative.
 
 ## Phase 7: Four-Arc Framework (R18-R31, 2026-04-19 → 2026-04-20)
 
@@ -716,7 +715,7 @@ coherence_score = read_coverage * violation_penalty * staleness_penalty
 
 Output: `output/metrics/hme-coherence.json` with score, delta vs previous round, and per-component breakdown. Surfaced via `status(mode='coherence')`.
 
-### Evolver Blind-Spot Surfacing
+### Blind-Spot Surfacing
 
 Phase 2.4 of the feature mapping. `tools_analysis/blindspots.py` walks the full activity-bridge history, splits events into closed rounds at each `round_complete`, and over the last N rounds (default 10, `HME_BLINDSPOT_WINDOW` env var) computes three coverage gaps:
 
