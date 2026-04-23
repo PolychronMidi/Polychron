@@ -31,9 +31,36 @@ const DAEMON_PORT = parseInt(process.env.HME_LLAMACPP_DAEMON_PORT || "7735", 10)
 const ARBITER_MODEL = "qwen3:4b";
 const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
 
-// 30s TTL prevents redundant arbiter calls for repeated/similar messages
+// 30s TTL + LRU cap. TTL prevents redundant calls for repeated messages;
+// the cap prevents unbounded growth when every message is unique (a long
+// session with distinct queries would otherwise hoard one entry per
+// turn forever until process exit). Map iteration order is insertion
+// order, so a size-gated delete of the oldest entry is simple LRU.
 const _decisionCache = new Map<string, { decision: ArbiterDecision; ts: number }>();
 const CACHE_TTL_MS = 30_000;
+const CACHE_CAPACITY = 256;
+
+function _cacheGet(key: string): ArbiterDecision | null {
+  const entry = _decisionCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts >= CACHE_TTL_MS) {
+    _decisionCache.delete(key);
+    return null;
+  }
+  // LRU touch: delete + re-insert so this key is now most-recent.
+  _decisionCache.delete(key);
+  _decisionCache.set(key, entry);
+  return entry.decision;
+}
+
+function _cacheSet(key: string, decision: ArbiterDecision): void {
+  _decisionCache.set(key, { decision, ts: Date.now() });
+  while (_decisionCache.size > CACHE_CAPACITY) {
+    const oldest = _decisionCache.keys().next().value;
+    if (oldest === undefined) break;
+    _decisionCache.delete(oldest);
+  }
+}
 
 // Tiny non-cryptographic hash for cache-key fingerprinting. The audit
 // surfaced that the prior cache key ignored transcriptContext entirely,
