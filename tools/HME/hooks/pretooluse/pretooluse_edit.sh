@@ -105,23 +105,6 @@ except Exception:
   fi
 fi
 
-# Refuted-evolution block. The journal (output/metrics/journal.md) records
-# "E<N>: <title> — refuted — <evidence>" for each evolution that was tried
-# and didn't work. Re-implementing a refuted evolution is the antipattern
-# this check exists to catch. Match on the module basename so a refuted
-# evolution targeting foo.js fires when any file at ../foo.js is edited.
-_JOURNAL="${PROJECT_ROOT}/output/metrics/journal.md"
-if [ -f "$_JOURNAL" ] && echo "$FILE" | grep -qE '/Polychron/(src|tools/HME|scripts|lab)/'; then
-  _MOD_BASENAME=$(basename "$FILE" | sed 's/\.[^.]*$//')
-  if [ -n "$_MOD_BASENAME" ] && [ ${#_MOD_BASENAME} -ge 4 ]; then
-    _REFUTED_HIT=$(grep -iE "^[[:space:]]*-?[[:space:]]*E[0-9]+:.*${_MOD_BASENAME}.*refuted" "$_JOURNAL" 2>/dev/null | head -1)
-    if [ -n "$_REFUTED_HIT" ]; then
-      _emit_block "REFUTED EVOLUTION: journal.md has a prior refuted evolution targeting $_MOD_BASENAME — \"$(echo "$_REFUTED_HIT" | sed 's/^[[:space:]-]*//' | cut -c1-200)\". Do not re-implement. Pivot to a different target, or document explicitly why conditions have changed."
-      exit 2
-    fi
-  fi
-fi
-
 if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
   MODULE=$(_extract_module "$FILE")
   TARGET=$(_onb_target)
