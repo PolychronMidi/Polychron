@@ -19,12 +19,15 @@ making an edit, rather than after the pipeline flags them.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from collections import deque
 from typing import Any
 
 from server import context as ctx
 from . import _track
+
+logger = logging.getLogger("HME")
 
 DEP_GRAPH_REL = os.path.join("output", "metrics", "dependency-graph.json")
 FEEDBACK_GRAPH_REL = os.path.join("output", "metrics", "feedback_graph.json")
