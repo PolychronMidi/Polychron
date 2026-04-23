@@ -81,9 +81,19 @@ class _EnvLoader:
                 key, _, val = line.partition("=")
                 key = key.strip()
                 val = val.strip()
-                # Strip matched surrounding quotes but not partial ones
+                # Strip matched surrounding quotes but not partial ones.
+                # Quoted values preserve `#` literally; unquoted values treat
+                # ` #` (hash preceded by whitespace) as start of a line comment
+                # per dotenv convention — otherwise `PORT=9098 # note` would
+                # silently propagate the comment into the numeric value.
                 if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
                     val = val[1:-1]
+                else:
+                    _hash = val.find(" #")
+                    if _hash == -1:
+                        _hash = val.find("\t#")
+                    if _hash != -1:
+                        val = val[:_hash].rstrip()
                 if not key:
                     continue
                 parsed[key] = val
