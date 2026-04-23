@@ -1677,7 +1677,7 @@ class TrajectoryTrendVerifier(Verifier):
 
 
 class FeedbackGraphVerifier(Verifier):
-    ""os.path.join(METRICS_DIR, "feedback_graph.json validates against scripts/validate-feedback-graph.js")""
+    """output/metrics/feedback_graph.json validates against scripts/validate-feedback-graph.js"""
     name = "feedback-graph"
     category = "topology"
     weight = 1.0
