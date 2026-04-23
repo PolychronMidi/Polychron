@@ -19,6 +19,10 @@ function mcpEnv() {
     HF_HUB_OFFLINE: '1',
     TRANSFORMERS_OFFLINE: '1',
     HME_MCP_PORT: String(MCP_PORT),
+    // Must be set BEFORE PyTorch's first cuda init or it's ignored.
+    // expandable_segments avoids the fragmentation that turns a 5 GiB
+    // fresh request into a 48 GiB allocation failure during reindex.
+    PYTORCH_CUDA_ALLOC_CONF: process.env.PYTORCH_CUDA_ALLOC_CONF || 'expandable_segments:True',
   };
 }
 
