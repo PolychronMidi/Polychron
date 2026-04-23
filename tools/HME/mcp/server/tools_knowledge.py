@@ -18,7 +18,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("kb", __file__)
-    except ImportError:
+    except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
     _track("add_knowledge")
     ctx.ensure_ready_sync()
@@ -193,7 +193,7 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("kb", __file__)
-    except ImportError:
+    except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
     ctx.ensure_ready_sync()
     if not entry_id.strip():
