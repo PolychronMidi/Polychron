@@ -46,7 +46,15 @@ exports.streamHybrid = streamHybrid;
 const http = __importStar(require("http"));
 const routerLlamacpp_1 = require("./routerLlamacpp");
 const streamUtils_1 = require("../streamUtils");
-const HME_HTTP_PORT = parseInt(process.env.HME_PROXY_PORT || "9099", 10);
+const HME_HTTP_PORT = (() => {
+    const raw = process.env.HME_PROXY_PORT;
+    if (raw == null || raw === "") return 9099;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 0 || n > 65535) {
+        throw new Error(`HME_PROXY_PORT="${raw}" is not a valid port (0-65535)`);
+    }
+    return n;
+})();
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
 async function fetchHmeContext(query, topK = 5) {
     return shimPost("/enrich", JSON.stringify({ query, top_k: topK }), (raw) => {
