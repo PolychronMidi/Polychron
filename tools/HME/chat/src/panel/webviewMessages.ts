@@ -23,6 +23,7 @@ export type WebviewMessage =
   | (SendMsg & { type: "send" })
   | (SendMsg & { type: "queue" })
   | { type: "cancel" }
+  | { type: "drainQueue" }
   | { type: "clearHistory" }
   | { type: "listSessions" }
   | { type: "loadSession"; id: string }

@@ -101,6 +101,15 @@ class BrowserPanel {
                     };
                     this.post({ type: "message", message: queuedUserMsg });
                     this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
+                    // Surface queue depth + warning when stream may be stuck.
+                    const depth = this._messageQueue.length;
+                    this.post({ type: "queueStatus", pending: depth, limit: QUEUE_LIMIT });
+                    if (depth >= QUEUE_LIMIT - 2) {
+                        this.post({
+                            type: "queueAlert", pending: depth, limit: QUEUE_LIMIT,
+                            reason: "current stream may be stuck",
+                        });
+                    }
                 }
                 else {
                     this._isStreaming = true;
@@ -114,8 +123,27 @@ class BrowserPanel {
                 this._cancelCurrent?.();
                 this._cancelCurrent = undefined;
                 this._messageQueue = [];
+                // Ghost-message cleanup: remove the trailing partially-streamed
+                // assistant message from state so the UI doesn't show a half-written
+                // orphan that can't be edited or continued. Persister flushed the
+                // partial earlier for crash-safety; on user cancel we drop it.
+                const last = this._state.messages[this._state.messages.length - 1];
+                if (last && last.role === "assistant" && last.id) {
+                    const removedId = last.id;
+                    this._state.messages.pop();
+                    this.post({ type: "messageRemoved", id: removedId });
+                }
                 this.post({ type: "cancelConfirmed" });
                 this._isStreaming = false;
+            },
+            drainQueue: () => {
+                // Explicit user-initiated queue drain. Use this when the UI shows
+                // a queueAlert — preserves the in-flight stream but discards all
+                // queued pending messages so the user can retype from a clean state.
+                const dropped = this._messageQueue.length;
+                this._messageQueue = [];
+                this.post({ type: "queueStatus", pending: 0, limit: 10 });
+                this.post({ type: "notice", level: "info", text: `Queue drained (${dropped} message${dropped === 1 ? "" : "s"} discarded).` });
             },
             clearHistory: () => {
                 this._state = BrowserPanel._blankState();
