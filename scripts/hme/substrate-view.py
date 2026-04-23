@@ -6,14 +6,15 @@ compute-legendary-drift.py produce, presented as the agent-facing surface.
 This replaces the 20-line Python inline incantations with one call.
 
 Modes:
-  (default)       brief headline + action queue
-  mode=detail     full four-arc dump
-  mode=actions    just the harvester queue + steps
-  mode=drift      Arc III outliers with trajectories
-  mode=consensus  Arc I voter state
-  mode=efficacy   Arc IV invariant classes
-  mode=patterns   Arc II matched patterns
-  mode=diff       delta vs previous round (requires hme-arc-timeseries.jsonl)
+  (default)         brief headline + action queue
+  mode=detail       full four-arc dump
+  mode=actions      just the harvester queue + steps
+  mode=drift        Arc III outliers with trajectories
+  mode=consensus    Arc I voter state
+  mode=efficacy     Arc IV invariant classes
+  mode=patterns     Arc II matched patterns
+  mode=diff         delta vs previous round (requires hme-arc-timeseries.jsonl)
+  mode=invariants   browse invariants.json registry (filter=<substring>)
 """
 from __future__ import annotations
 import json
