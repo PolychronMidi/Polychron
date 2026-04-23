@@ -495,12 +495,16 @@ def merge_native_todowrite(incoming: list) -> list:
 
         sorted_entries = sorted(new_store, key=_sort_key)
         # Cap critical items to _MAX_CRITICAL_IN_MERGE to avoid alert-flood
-        # drowning the agent's real todos. Overflow collapses to one summary.
+        # drowning the agent's real todos. Completed crits are filtered out
+        # entirely (no value in re-surfacing resolved alerts), and overflow
+        # of pending crits collapses to one summary entry.
         critical_shown = 0
         critical_overflow = 0
         for t in sorted_entries:
             is_critical = bool(t.get("critical"))
             if is_critical:
+                if t.get("status") == "completed":
+                    continue
                 if critical_shown >= _MAX_CRITICAL_IN_MERGE:
                     critical_overflow += 1
                     continue
