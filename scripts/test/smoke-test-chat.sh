@@ -44,6 +44,11 @@ trap _cleanup EXIT
 
 echo "=== HME chat end-to-end smoke test ==="
 
+# Choose a message type that the server's known to echo back through SSE.
+# "listSessions" is the safest: it forces a sessionList SSE event, which
+# is a concrete delivery signal distinct from keepalive heartbeats.
+_PROBE_TYPE="listSessions"
+
 # --- Assertion 1: build artifact present ---
 echo "[1/5] build artifact present"
 if [ ! -f "$_CHAT_DIR/out/server.js" ]; then
