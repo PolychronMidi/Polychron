@@ -1101,17 +1101,36 @@ def _coherence_report() -> str:
         "",
         headline,
         "",
-        "## Components",
+        "## Components  (100 = perfect; lower is worse)",
         f"  read_coverage      {_pct(comps.get('read_coverage'))}   "
         f"({comps.get('read_coverage_detail', {}).get('writes_with_prior_read', 0)}"
-        f"/{comps.get('read_coverage_detail', {}).get('total_writes', 0)} writes)",
+        f"/{comps.get('read_coverage_detail', {}).get('total_writes', 0)} writes had prior HME read)",
         f"  violation_penalty  {_pct(comps.get('violation_penalty'))}   "
-        f"(count={comps.get('violation_detail', {}).get('count', 0)})",
+        f"({comps.get('violation_detail', {}).get('count', 0)} boundary violations this round)",
         f"  staleness_penalty  {_pct(comps.get('staleness_penalty'))}   "
         f"({comps.get('staleness_detail', {}).get('touches_on_stale_or_missing', 0)}"
-        f"/{comps.get('staleness_detail', {}).get('touches_with_index_info', 0)} touches stale)",
+        f"/{comps.get('staleness_detail', {}).get('touches_with_index_info', 0)} writes touched stale/missing-KB modules)",
     ]
+    # Gentle interpretation line — helps users who aren't steeped in the scoring.
+    if isinstance(score, (int, float)):
+        if score >= 90:
+            lines.append("")
+            lines.append("Interpretation: HEALTHY — high read-coverage, few violations, KB tracks code.")
+        elif score >= 70:
+            lines.append("")
+            lines.append("Interpretation: ACCEPTABLE — one or two components dragging; see the lowest above.")
+        elif score >= 50:
+            lines.append("")
+            lines.append("Interpretation: DEGRADED — address the lowest component before next major change.")
+        else:
+            lines.append("")
+            lines.append("Interpretation: POOR — KB/code alignment is breaking down. Do `i/status mode=staleness` + `i/status mode=blindspots` for specifics.")
     if prev is not None:
         lines.append("")
-        lines.append(f"Previous round: {_pct(prev)}")
+        if isinstance(prev, (int, float)) and isinstance(score, (int, float)):
+            delta = score - prev
+            arrow = "↑" if delta > 0.5 else ("↓" if delta < -0.5 else "→")
+            lines.append(f"Previous round: {_pct(prev)}  ({arrow} {delta:+.1f})")
+        else:
+            lines.append(f"Previous round: {_pct(prev)}")
     return "\n".join(lines)
