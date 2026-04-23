@@ -1042,18 +1042,55 @@ def _run_indexing_mode_locked() -> dict:
         except Exception as e:
             logger.error(f"indexing-mode: restore failed: {e} — models may still be on {indexing_device}")
 
-        # Step 5: Resume coder (only if we suspended it)
+        # Step 5: Resume coder (only if we suspended it). If the first spawn
+        # attempt fails due to VRAM fits (stale CUDA context from the
+        # embedder we just moved back), nvidia-smi may take a few seconds
+        # to reflect the freed memory after empty_cache. Retry up to 3
+        # times with a 3s gap between attempts. If we still can't spawn,
+        # fire a CRITICAL LIFESAVER with the exact shortfall instead of
+        # letting the health-tick silently retry every 60s for minutes.
         if suspended:
             try:
                 resume_result = _supervisor_singleton.resume("coder")
+                for _retry in range(3):
+                    if resume_result.get("error") or resume_result.get("spawned"):
+                        break
+                    time.sleep(3)
+                    free_mb = _supervisor_singleton._gpu_free_mb(cuda_idx)
+                    logger.info(
+                        f"indexing-mode: coder spawn retry {_retry + 1}/3 — "
+                        f"GPU{cuda_idx} has {free_mb} MB free"
+                    )
+                    with _supervisor_singleton._lock:
+                        resume_result = {
+                            "name": "coder",
+                            "suspended": False,
+                            "spawned": _supervisor_singleton._spawn(
+                                _supervisor_singleton._instances["coder"],
+                                bypass_cooldown=True,
+                            ),
+                        }
                 if resume_result.get("error"):
                     logger.error(f"indexing-mode: resume returned error: {resume_result['error']}")
                 elif not resume_result.get("spawned"):
-                    logger.error(
-                        f"indexing-mode: coder resume flag cleared but spawn failed — "
-                        f"GPU{cuda_idx} may still have stale tensors from indexing. "
-                        f"Health tick will retry spawn."
+                    free_mb = _supervisor_singleton._gpu_free_mb(cuda_idx)
+                    msg = (
+                        f"coder respawn failed after 3 retries post-indexing-mode — "
+                        f"GPU{cuda_idx} has {free_mb} MB free, coder needs "
+                        f"~{_supervisor_singleton._instances['coder'].ctx_size // 2 + 17697 + 256} MB "
+                        f"(model+kv+headroom). Likely residual CUDA context from the embedder. "
+                        f"Manual remediation: restart the worker (kill pid of worker.py)."
                     )
+                    logger.error(f"indexing-mode: {msg}")
+                    try:
+                        from server import context as _ctx
+                        _ctx.register_critical_failure(
+                            "llamacpp_indexing_mode_resume",
+                            msg,
+                            severity="CRITICAL",
+                        )
+                    except Exception as _life_err:
+                        logger.debug(f"indexing-mode: LIFESAVER register failed: {_life_err}")
                 else:
                     logger.info(f"indexing-mode: coder resumed: {resume_result}")
             except Exception as e:
