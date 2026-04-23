@@ -983,7 +983,7 @@ def _coherence_report() -> str:
             data = json.load(f)
     except (OSError, json.JSONDecodeError) as _e:
         return f"# Round Coherence Score\n\nCould not read: {type(_e).__name__}: {_e}"
-    score = data.get("score", 0)
+    score = data.get("score")
     prev = data.get("previous_score")
     delta = data.get("delta")
     comps = data.get("components", {}) or {}
@@ -992,17 +992,27 @@ def _coherence_report() -> str:
         try:
             return f"{float(v) * 100:.1f}"
         except (TypeError, ValueError):
-            return "?"
+            return "N/A"
 
+    # Headline line: when score is null (not enough data), show "N/A" without
+    # the "/100" suffix — the slash implies a denominator that doesn't apply
+    # when the numerator is missing.
     delta_s = ""
     if isinstance(delta, (int, float)):
         sign = "+" if delta >= 0 else ""
         delta_s = f" ({sign}{delta * 100:+.1f} vs prev)"
+    window_events = data.get("meta", {}).get("window_events", "?")
+    if isinstance(score, (int, float)):
+        headline = f"**{_pct(score)}/100**{delta_s}  ({window_events} events in window)"
+    else:
+        null_reason = data.get("score_null_reason") or comps.get("read_coverage_null_reason") or ""
+        headline = f"**N/A** — score unavailable ({window_events} events in window)"
+        if null_reason:
+            headline += f"\nReason: {null_reason}"
     lines = [
         "# Round Coherence Score",
         "",
-        f"**{_pct(score)}/100**{delta_s}  "
-        f"({data.get('meta', {}).get('window_events', '?')} events in window)",
+        headline,
         "",
         "## Components",
         f"  read_coverage      {_pct(comps.get('read_coverage'))}   "
