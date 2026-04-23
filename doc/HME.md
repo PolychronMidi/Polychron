@@ -317,14 +317,17 @@ HME is the cognitive backbone of every evolution phase. The loop is driven by li
 | **3. Evolve** | KB briefing auto-chained into Edit hook (no explicit call needed) | `Edit` (hook surfaces KB constraints), `learn(query='module')` |
 | **4. Run** | Pipeline executes; file watcher auto-reindexes (5min cooldown) | (automatic) |
 | **5. Verify** | Post-change audit, missed constraint detection | `review(mode='forget')`, `review(mode='convention')`, `review(mode='health')` |
-| **6. Journal** | Persist findings as KB entries, link related knowledge | `learn(title='...', content='...')`, `learn(action='graph')` |
+| **6. Persist** | Persist findings to KB / docs / hme-discoveries | `learn(title='...', content='...')`, `learn(action='graph')`, `learn(action='promote_discovery')` |
 | **7. Maintain** | Reindex, KB health check, doc sync | `hme_admin(action='index')`, `learn(action='health')`, `review(mode='docs')` |
 
 **After every confirmed round:**
 1. File watcher auto-reindexes (or `hme_admin(action='index')` for batch changes)
-2. `learn(title='...', content='...', category='pattern')` — persist calibration anchors
+2. `learn(title='...', content='...', category='pattern')` — persist calibration anchors to KB
 3. `learn(action='compact')` — if KB > 30 entries, deduplicate
-4. Update CLAUDE.md and relevant doc files if architectural rules changed
+4. `learn(action='promote_discovery', id=…)` if a KB entry has matured into a universal principle (promotes into `doc/hme-discoveries.md`)
+5. Update CLAUDE.md and relevant doc files if architectural rules changed
+
+**Retired:** `output/metrics/journal.md` is no longer an active surface (deprecated). Existing content kept as historical archive; evolution tooling still reads it for past-round context.
 
 ## Lab Governance
 
