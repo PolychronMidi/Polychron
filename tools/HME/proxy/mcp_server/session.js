@@ -47,7 +47,11 @@ function send(id, jsonrpcMessage) {
     s.res.write(sseEvent('message', jsonrpcMessage));
     s.lastEvent = Date.now();
     return true;
-  } catch (_err) {
+  } catch (err) {
+    // Don't silently delete the session — log first so a flaky client
+    // socket is observable. The previous silent-swallow let SSE
+    // disconnects rot until "worker health degraded with no clue why."
+    console.error(`[mcp_server] SSE send failed for session ${id}, removing: ${err && err.message ? err.message : err}`);
     _sessions.delete(id);
     return false;
   }
