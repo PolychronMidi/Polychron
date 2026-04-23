@@ -499,7 +499,7 @@ The loop drives until `max_iterations` is reached or `done_signal` appears in th
 
 The prompt body (everything after the second ``) is injected verbatim as the next user prompt.
 
-**Note:** Hook changes require `claude plugin update HME@polychron-local` to refresh the plugin cache.
+**Note:** Hooks are registered in top-level `~/.claude/settings.json` and pick up edits at the next session start. The `HME@polychron-local` plugin has been retired — no plugin cache refresh is required.
 
 ## When to Use What
 
