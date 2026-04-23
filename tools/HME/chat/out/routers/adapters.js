@@ -27,8 +27,6 @@ exports.claudeAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (pipe)"
         cb.done();
     }, cb.error);
 });
-// Claude PTY — same shape as pipe but routes through the PTY harness.
-// Note: streamClaudePty's onDone takes a single `usage?` arg (no cost).
 exports.claudePtyAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (PTY)", (input, opts, cb) => {
     return (0, router_1.streamClaudePty)(input.message, input.sessionId, opts.claude, input.workingDir, cb.chunk, (id) => cb.sessionId?.(id), (usage) => {
         if (usage) {
@@ -39,7 +37,7 @@ exports.claudePtyAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (PTY
             });
         }
         cb.done();
-    }, cb.error);
+    }, cb.error, opts.onRawData, opts.onPtyReady);
 });
 exports.llamacppAdapter = (0, router_1.wrapLegacyStream)("local", "llama.cpp (agentic)", (messages, opts, cb) => {
     return (0, router_1.streamLlamacppAgentic)(messages, opts.llamacpp, opts.workingDir, cb.chunk, cb.done, cb.error);

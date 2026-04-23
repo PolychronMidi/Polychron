@@ -296,6 +296,12 @@ function streamClaudeMsg(ctx, msg, assistantId) {
                 const pipeHandle = router_1.claudeAdapter.stream({ message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot }, {
                     onChunk: h.onChunk,
                     claude: claudeOpts,
+                    // Hard wall-clock cap. Without this, runaway thinking or a
+                    // hung stdio pipe can leave Claude streaming indefinitely
+                    // with no user recourse beyond manual cancel. 300s is
+                    // generous enough for thorough thinking, tight enough to
+                    // surface stuck streams.
+                    deadlineMs: 300000,
                     onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
                     onTokenUsage: (u) => {
                         onCompleted({
@@ -315,13 +321,46 @@ function streamClaudeMsg(ctx, msg, assistantId) {
                         onCompleted(undefined);
                 });
             };
-            // PTY still goes through the legacy direct call because it needs
-            // the onRawData + onPtyReady side-channels that the current
-            // adapter doesn't forward. On PTY unavailable, adapter takes over.
-            h.setCancel((0, router_1.streamClaudePty)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, onCompleted, (err) => {
-                console.log(`[HME Chat] PTY unavailable (${err}), falling back to pipe via claudeAdapter`);
-                startPipeFallback();
-            }, ctx.mirrorPty ? (raw) => ctx.mirrorPty.onRawData(raw) : undefined, ctx.mirrorPty ? (fn) => ctx.mirrorPty.onPtyReady(fn) : undefined));
+            // PTY path now goes through claudePtyAdapter — the adapter's
+            // extended options carry the onRawData / onPtyReady side-channels
+            // that the mirror terminal needs. On PTY unavailable, pipe adapter
+            // takes over via startPipeFallback.
+            let _ptyErrorFallback = false;
+            const ptyHandle = router_1.claudePtyAdapter.stream({ message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot }, {
+                onChunk: h.onChunk,
+                claude: claudeOpts,
+                deadlineMs: 300000, // same hard cap as pipe — a hung PTY is worse
+                onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
+                onTokenUsage: (u) => {
+                    onCompleted({
+                        inputTokens: u.input ?? 0,
+                        outputTokens: u.output ?? 0,
+                        usedPct: u.usedPct,
+                    });
+                },
+                onRawData: ctx.mirrorPty ? (raw) => ctx.mirrorPty.onRawData(raw) : undefined,
+                onPtyReady: ctx.mirrorPty ? (fn) => ctx.mirrorPty.onPtyReady(fn) : undefined,
+            });
+            h.setCancel(() => ptyHandle.cancel());
+            ptyHandle.done.then((result) => {
+                if (_ptyErrorFallback)
+                    return; // pipe path already took over
+                if (h.isAborted())
+                    return;
+                if (!result.ok) {
+                    const err = result.error ?? "unknown PTY error";
+                    // PTY failures typically mean the PTY binding refused at spawn
+                    // (node-pty unavailable, etc.). Fall back to pipe via adapter.
+                    console.log(`[HME Chat] PTY unavailable (${err}), falling back to pipe via claudeAdapter`);
+                    _ptyErrorFallback = true;
+                    startPipeFallback();
+                    return;
+                }
+                // Success path: onCompleted was called via onTokenUsage when
+                // usage arrived. If no usage (rare — legacy CLIs), finalize now.
+                if (!result.tokens)
+                    onCompleted(undefined);
+            });
         },
     });
 }
