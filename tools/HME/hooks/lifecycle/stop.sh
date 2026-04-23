@@ -53,6 +53,14 @@ else
   # Capture git errors to a log so failures are visible, not hidden behind 2>/dev/null
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
+  # Serialize against concurrent stop.sh invocations and pipeline git ops.
+  # Observed: rapid Stop events fire overlapping hooks that race on .git/index.lock,
+  # producing "Another git process seems to be running" errors every turn.
+  # flock on an advisory lockfile (not .git/index.lock itself) bounds waiting
+  # to 30s — after that the caller proceeds and reports the actual git error.
+  _AC_LOCK="$_AC_PROJECT/tmp/hme-autocommit.lock"
+  exec 9>"$_AC_LOCK"
+  flock -w 30 9 || _ac_log_error "autocommit flock timeout (30s) — proceeding anyway"
   if ! git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"; then
     _ac_log_error "git add failed: $(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')"
     echo "WARNING: stop.sh auto-commit: git add failed — see $_GIT_ERR" >&2
