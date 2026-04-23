@@ -805,6 +805,33 @@ def hme_selftest(verbose: bool = False) -> str:
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
+    # Probe: meta-invariant — no module outside the registered owner
+    # calls protected mutations. Runs the static analyzer as a subprocess
+    # so analyzer crashes don't break selftest; rc=0 clean, rc=1 violations.
+    try:
+        import subprocess as _sp_meta
+        analyzer = os.path.join(_project_root, "scripts", "check-single-writer-coverage.py")
+        if os.path.isfile(analyzer):
+            _res = _sp_meta.run(
+                ["python3", analyzer],
+                capture_output=True, text=True, timeout=30,
+            )
+            if _res.returncode == 0:
+                results.append("PASS: meta-invariant coverage -- no non-owner module mutates a protected domain")
+            elif _res.returncode == 1:
+                _count_line = (_res.stdout or "").splitlines()[0] if _res.stdout else ""
+                results.append(
+                    f"FAIL: meta-invariant coverage -- {_count_line} "
+                    f"(single-writer invariant silently violated; "
+                    f"run scripts/check-single-writer-coverage.py for detail)"
+                )
+            else:
+                results.append(f"WARN: meta-invariant coverage -- analyzer rc={_res.returncode}: {(_res.stderr or '')[:100]}")
+        else:
+            results.append("INFO: meta-invariant coverage -- analyzer script missing")
+    except Exception as _e:
+        results.append(f"WARN: meta-invariant coverage -- probe failed: {type(_e).__name__}: {_e}")
+
     # Probe: invariant genealogy coverage.
     # Every invariant should declare the incident/KB entry that birthed it
     # via the optional `born_from` field. Invariants without genealogy
