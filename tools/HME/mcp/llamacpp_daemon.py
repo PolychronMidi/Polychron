@@ -1156,7 +1156,8 @@ def _run_indexing_mode_locked() -> dict:
                         f"GPU{cuda_idx} has {free_mb} MB free, coder needs "
                         f"~{_supervisor_singleton._instances['coder'].ctx_size // 2 + 17697 + 256} MB "
                         f"(model+kv+headroom). Likely residual CUDA context from the embedder. "
-                        f"Manual remediation: restart the worker (kill pid of worker.py)."
+                        f"Daemon health-loop will keep retrying every {int(_HEALTH_INTERVAL)}s; "
+                        f"if it never recovers, restart the worker (kill pid of worker.py)."
                     )
                     logger.error(f"indexing-mode: {msg}")
                     try:
