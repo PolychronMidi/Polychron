@@ -34,6 +34,15 @@ mkdir -p "${PROJECT}/tmp"
 > "${PROJECT}/tmp/hme-nexus.state"
 > "${PROJECT}/tmp/hme-primer-needed.flag"
 
+# Refresh adaptive config and coherence health on every session start.
+# Both are fast (no network, no worker), non-blocking on failure, and
+# ensure subsequent hooks see current-state exports instead of stale
+# values from the previous session.
+(python3 "${PROJECT}/tools/HME/scripts/adapt-from-activity.py" >/dev/null 2>&1 || true) &
+(python3 "${PROJECT}/tools/HME/scripts/verify-coherence-registry.py" >/dev/null 2>&1 || true) &
+
+_signal_emit session_start sessionstart session '{}'
+
 # Initialize onboarding state machine — every new session re-arms the walkthrough
 source "$HOOKS_DIR/../helpers/_onboarding.sh"
 _onb_init
