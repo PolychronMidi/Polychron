@@ -387,6 +387,7 @@ class _Supervisor:
             from server.lifecycle_writers import assert_writer
             assert_writer("llama-server", __file__)
         except ImportError:  # silent-ok: lifecycle_writers optional when running daemon standalone
+            pass
         # Defense-in-depth: never spawn a suspended instance even if a caller
         # bypasses the ensure_all_running / health_tick gates. indexing-mode
         # flips suspended=True before freeing the GPU; a spawn here would
