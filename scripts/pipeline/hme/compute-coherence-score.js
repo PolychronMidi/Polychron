@@ -167,7 +167,15 @@ function main() {
   // ratio swings wildly on single events. Flag as null-with-reason rather
   // than computing a statistically meaningless score that would drag the
   // musical correlation down. Set HME_COHERENCE_MIN_WRITES=1 to disable.
-  const MIN_WRITES_FOR_SCORE = parseInt(process.env.HME_COHERENCE_MIN_WRITES || '5', 10);
+  const MIN_WRITES_FOR_SCORE = (() => {
+    const raw = process.env.HME_COHERENCE_MIN_WRITES;
+    if (raw == null || raw === '') return 5;
+    const n = Number(raw);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`HME_COHERENCE_MIN_WRITES="${raw}" is not a positive integer`);
+    }
+    return n;
+  })();
   let readCoverage = null;
   let readCoverageNullReason = null;
   if (writes.length >= MIN_WRITES_FOR_SCORE) {
