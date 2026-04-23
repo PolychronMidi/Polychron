@@ -403,11 +403,29 @@ export function streamLlamacppAgentic(
         let result = "";
         try {
           if (fnName === "bash") {
-            result = execSync(String(args.command ?? ""), {
-              cwd: workingDir,
-              timeout: 30000,
-              encoding: "utf8",
-            });
+            // Cap output size — a runaway command (large `find /`, streaming log
+            // tail, etc.) otherwise balloons RSS and can take the server down
+            // or trivially blow through the model's context budget on the next
+            // tool turn. 256 KiB is generous for legitimate output and tight
+            // enough to cut pathological cases. `maxBuffer` raises ERR_CHILD_
+            // PROCESS_STDIO_MAXBUFFER which we catch and surface as a clear
+            // message, preserving any output captured before the limit.
+            const BASH_MAX_BYTES = 256 * 1024;
+            try {
+              result = execSync(String(args.command ?? ""), {
+                cwd: workingDir,
+                timeout: 30000,
+                encoding: "utf8",
+                maxBuffer: BASH_MAX_BYTES,
+              });
+            } catch (execErr: any) {
+              const partial = typeof execErr?.stdout === "string" ? execErr.stdout : "";
+              if (execErr?.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+                result = `${partial}\n[bash: output truncated — exceeded ${BASH_MAX_BYTES} bytes; narrow the command]`;
+              } else {
+                throw execErr;
+              }
+            }
             result = result.trim() || "(no output)";
           } else if (fnName === "read_file") {
             const abs = _resolveWithinWorkdir(workingDir, String(args.path ?? ""));
