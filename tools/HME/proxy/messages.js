@@ -319,7 +319,12 @@ function scanMessages(payload) {
     jurisdictionTargets: [],
   };
   const msgs = (payload && payload.messages) || [];
-  const KB_BRIEFING_RE = /KB (CONSTRAINTS|CONTEXT) for \w/;
+  // Match KB briefing markers produced by i/hme-read, i/find, etc. The
+  // slash-command CLI emits markdown headers like "# Before Editing: <path>"
+  // or "## KB Constraints/Context" — both signal the agent fetched KB context.
+  // Legacy "KB CONSTRAINTS/CONTEXT for X" form kept for backward compat with
+  // any older proxy-injection path.
+  const KB_BRIEFING_RE = /^# Before Editing:|^## KB (Constraints|Context)\b|KB (CONSTRAINTS|CONTEXT) for \w/m;
   let lastAssistantTools = [];
   for (const m of msgs) {
     const content = m && m.content;
