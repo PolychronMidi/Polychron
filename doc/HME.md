@@ -15,8 +15,8 @@ No layer is optional. Removing any one collapses the executive.
 | **MCP Server** | `tools/HME/` | 7 tools: evolve / review / read / learn / trace / hme_admin / agent |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Skills** | `~/.claude/skills/HME/` | Single-page mega-tool reference loaded per session via `/HME` |
-| **Hooks** | `hooks/` (27 scripts, registered in `hooks/hooks.json`) | Automated workflow enforcement (pre/post tool use) |
-| **Evolver + Lab** | `agents/Evolver.agent.md` + `lab/` | 7-phase evolution loop + experimental harness |
+| **Hooks** | `tools/HME/hooks/` + `~/.claude/settings.json` | Automated workflow enforcement + evolution loop driver (pre/post tool use, session lifecycle) |
+| **Lab** | `lab/` | Experimental harness for isolated prototyping |
 
 On top of that substrate, Phase 1-6 (landed 2026-04-15 from [openshell_features_to_mimic.md](openshell_features_to_mimic.md)) adds 30 observability/governance features: the activity bridge, inference proxy, pipeline policy gate, staleness + drift + cascade indexes, hypothesis registry, crystallizer, musical correlation, trust-weighted KB, coherence budget, negative space discovery, human ground truth, reflexivity model, constitutional identity, and a multi-agent scaffold. Surfaced through 23 new `status(mode=...)` branches (activity, staleness, coherence, blindspots, hypotheses, drift, accuracy, crystallized, music_truth, kb_trust, intention_gap, self_audit, probes, trajectory, budget, negative_space, cognitive_load, ground_truth, constitution, doc_drift, generalizations, reflexivity, multi_agent) — search this file for "Phase N.M of the feature mapping" for each subsystem's narrative.
 
