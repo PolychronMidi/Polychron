@@ -94,13 +94,23 @@ export class ContextMeter {
     const usedPctAfterUpdate = this._tracker.usedPct;
     if (usedPctAfterUpdate == null) {
       this._consecutiveNullPct++;
-      if (this._consecutiveNullPct === 1 || this._consecutiveNullPct % 3 === 0) {
+      // Decaying-cadence alert: once on first miss, then at 10, 50, 100, 500…
+      // The previous "every 3rd" rule spammed long sessions where usedPct
+      // is structurally absent (PTY mode, missing model entry). Decay
+      // surfaces the FIRST miss loudly, then gets quieter unless the
+      // streak grows by orders of magnitude — which itself is signal.
+      const streak = this._consecutiveNullPct;
+      const shouldAlert = streak === 1
+        || streak === 10
+        || streak === 50
+        || (streak >= 100 && streak % 100 === 0);
+      if (shouldAlert) {
         const modelId = usage?.modelId ?? "?";
         const wasWorking = this._hasLiveUpdate;
         const reason = !usage
           ? "no usage object (CLI exited without result event)"
           : wasWorking
-            ? `usedPct stopped arriving after previously working — CLI format change or regression (streak=${this._consecutiveNullPct})`
+            ? `usedPct stopped arriving after previously working — CLI format change or regression (streak=${streak})`
             : "usedPct missing — modelUsage lookup or contextWindow validation failed";
         const msg = `context percentage unpopulated after response (model=${model}, modelId=${modelId}) — ${reason}; meter stuck at 0%`;
         console.error(`[HME] CRITICAL: ${msg}`);
