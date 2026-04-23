@@ -92,7 +92,8 @@ export class ChainPerformer {
       this.host.postError("chain", `invalid context pct=${pct} — chain suppressed`);
       return;
     }
-    if (pct < CHAIN_THRESHOLD_PCT) return;
+    const threshold = resolveChainThresholdPct(this.session.getModelId());
+    if (pct < threshold) return;
     if (this._inProgress) return;
     this._performChain().catch((e) => {
       console.error(`[HME Chat] Chain failed: ${e}`);
