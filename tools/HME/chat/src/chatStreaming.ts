@@ -347,20 +347,22 @@ export function streamLlamacppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: s
   runStream({
     ctx, assistantId, route: "local",
     start: (h) => {
-      const onDone = () => {
+      const handle = llamacppAdapter.stream(requestHistory, {
+        onChunk: h.onChunk,
+        llamacpp: llamacppOptsFromMsg(msg),
+        workingDir: ctx.projectRoot,
+      });
+      h.setCancel(() => handle.cancel());
+      handle.done.then((result) => {
         if (h.isAborted()) return;
+        if (!result.ok) {
+          if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
+          ctx.postError("local", result.error ?? "unknown error");
+          return;
+        }
         finalizeStream(h, ctx, assistantId, "local", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
         h.safeEnd();
-      };
-      h.setCancel(streamLlamacppAgentic(
-        requestHistory,
-        llamacppOptsFromMsg(msg),
-        ctx.projectRoot, h.onChunk, onDone,
-        (err) => {
-          if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
-          ctx.postError("local", err);
-        },
-      ));
+      });
     },
   });
 }
