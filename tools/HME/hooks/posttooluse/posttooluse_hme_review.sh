@@ -10,9 +10,13 @@ MODE=$(echo "$CMD" | grep -oE '\bmode[= ][a-z_]+' | head -1 | sed -E 's/^.*mode[
 [ -z "$MODE" ] && MODE="digest"
 
 if [ "$MODE" = "forget" ]; then
-  # EDIT clear + REVIEW mark moved to proxy middleware (nexus_tracking.js).
-  # Shell hook keeps user-facing stderr + REVIEW_ISSUES parsing (requires
-  # the tool_response text which middleware doesn't reliably receive).
+  # EDIT clear + REVIEW mark live in BOTH the proxy middleware and this hook.
+  # The middleware path covers sessions whose API requests route through the
+  # HME proxy. Direct-to-api.anthropic.com sessions (VS Code Claude Code with
+  # no HME_PROXY_URL) never trigger the middleware, so without the shell-hook
+  # path here, EDIT entries accumulated indefinitely and stop.sh blocked
+  # forever. _nexus_clear_type is idempotent — double-clear is safe when both
+  # paths fire.
   TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
   # Fail-fast on CLI transport errors — `hme-cli: request failed ...` means
   # the worker was down or the request timed out. Never interpret that as
