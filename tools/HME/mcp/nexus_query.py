@@ -24,7 +24,7 @@ _NEXUS_FILE = Path(_PROJECT_ROOT) / "tmp" / "hme-nexus.state"
 # BRIEF TTL: briefs older than this count as stale. A BRIEF from 3 sessions
 # ago shouldn't mark a current edit as "read-prior" — the agent doesn't
 # remember what it read yesterday. 2h matches a typical chat session span.
-_BRIEF_TTL_SEC = int(ENV.optional_int("HME_BRIEF_TTL_SEC", 7200))
+_BRIEF_TTL_SEC = ENV.optional_int("HME_BRIEF_TTL_SEC", 7200)
 
 
 def has_brief(target: str) -> bool:
