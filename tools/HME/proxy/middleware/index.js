@@ -219,10 +219,34 @@ async function runPipeline(payload, scan, session) {
 }
 
 //  Auto-load modules
+//
+// Load order matters when one middleware enriches a payload that another
+// reads (e.g. lifesaver_inject must run BEFORE proxy_autocommit so a
+// failed autocommit surfaces as the lifesaver banner on the same turn).
+// The previous loader used readdirSync ordering — filesystem inode order,
+// undefined across filesystems and OS upgrades. We now consult an
+// explicit `order.json` manifest and fall back to alphabetical for any
+// file not listed (so a new middleware doesn't get silently disabled).
 function loadAll() {
   const dir = __dirname;
-  for (const fname of fs.readdirSync(dir)) {
-    if (fname === 'index.js' || !fname.endsWith('.js')) continue;
+  let manifest = [];
+  try {
+    const manifestPath = path.join(dir, 'order.json');
+    if (fs.existsSync(manifestPath)) {
+      const raw = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      if (Array.isArray(raw.order)) manifest = raw.order;
+    }
+  } catch (err) {
+    console.error(`[middleware] order.json read failed (using alphabetical): ${err.message}`);
+  }
+  const allFiles = fs.readdirSync(dir).filter(f => f !== 'index.js' && f !== 'order.json' && f.endsWith('.js'));
+  const inManifest = manifest.filter(name => allFiles.includes(name));
+  const unlisted = allFiles.filter(name => !manifest.includes(name)).sort();
+  if (unlisted.length > 0 && manifest.length > 0) {
+    console.warn(`[middleware] ${unlisted.length} file(s) not in order.json (loaded alphabetically AFTER manifest): ${unlisted.join(', ')}`);
+  }
+  const ordered = [...inManifest, ...unlisted];
+  for (const fname of ordered) {
     try {
       const mod = require(path.join(dir, fname));
       register(mod);
