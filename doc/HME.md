@@ -403,8 +403,23 @@ Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe th
 | `i/hme-admin action=selftest` | Full self-check; ~15 probes covering tool registration, docs, index, KB, llamacpp, version consistency, single-writer invariants, timeseries drift |
 | `i/hme-admin action=health` | Operator triage view: daemon PID+uptime, worker PID+uptime, llama aliases, /health states, per-GPU VRAM, recent errors, version banner, single-writer domain snapshot |
 | `i/hme-admin action=reload modules=<name>` | Hot-reload one or more tool modules without restarting the worker (runs against `tool_registry._TOOLS`) |
-| `i/hme-admin action=index` | Incremental reindex; use after batch changes when file watcher hasn't caught up |
+| `i/hme-admin action=index` | Incremental reindex. R97: now routes through the daemon's GPU-orchestrated `indexing-mode` (same path as `clear_index`) instead of calling `_index_main` directly — eliminates the coder-on-GPU1 race that used to corrupt CUDA context every reindex. |
 | `i/hme-admin action=clear_index` | Full reindex via daemon's GPU-orchestrated indexing-mode (suspends coder → moves embedders to cuda:1 → indexes → restores) |
+
+### Indexing-mode self-heal (R97)
+
+The daemon's indexing-mode is the sole GPU-coordinator for reindex. Three
+architectural safeguards keep it from requiring manual recovery:
+
+1. **Worker CUDA-corruption auto-restart** — `rag_engines.reload_on_device()` detects `CUDA error: illegal memory access` + `CUDNN_STATUS_EXECUTION_FAILED`, registers a CRITICAL LIFESAVER, and calls `os._exit(98)`. The proxy supervisor respawns the worker with a fresh CUDA context. [rag_engines.py:reload_on_device](../tools/HME/mcp/rag_engines.py)
+
+2. **In-flight restore retry across worker death** — when the worker dies mid-index, `_run_indexing_mode_locked`'s `finally` block detects the failed restore, waits up to 60s for the respawned worker's `/health` to go READY, then re-issues `/reload-engines {device:cuda:N}` explicitly (new worker has no `_original_rag_device` memory). [llamacpp_daemon.py:_run_indexing_mode_locked](../tools/HME/mcp/llamacpp_daemon.py)
+
+3. **Daemon boot-recovery for cross-daemon-restart** — if the daemon itself died mid-session, the next daemon spawn runs `_boot_recover_stuck_indexing_state` which detects embedders squatting coder's GPU (shim alive + coder's GPU has >>2GB allocated + coder not running) and issues a corrective `/reload-engines {device:cuda:0}` before the supervisor tries to spawn coder. [llamacpp_daemon.py:_boot_recover_stuck_indexing_state](../tools/HME/mcp/llamacpp_daemon.py)
+
+Topology assertion (`assert_topology_ready`) checks shim reachability before aborting on VRAM fit failure — if the shim is alive, boot-recovery will reclaim the GPU, so the daemon proceeds instead of exiting. This replaces the R96 behavior where a dead indexing session permanently prevented daemon restart until a human manually killed the worker.
+
+No documented failure mode in this chain requires human intervention. If one surfaces, that's a regression — file it against one of the three safeguards above.
 | `i/hme --version` | Print cli / proxy / worker versions and warn on drift |
 
 **KB entries worth querying when working on HME internals:**
