@@ -105,6 +105,11 @@ def set_state(s: str) -> None:
     Also mirrors the new state into the HME todo tree so the walkthrough is
     visible in the agent's native todo view (E4 integration).
     """
+    try:
+        from server.lifecycle_writers import assert_writer
+        assert_writer("onboarding-state", __file__)
+    except ImportError:
+        pass
     if s not in STATES:
         logger.warning(f"onboarding: rejected invalid state {s!r}")
         return
