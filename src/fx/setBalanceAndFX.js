@@ -226,40 +226,24 @@ return [
   // written value. Keeps 85% of writes as the existing rfx/random logic
   // -- cooperation supplement, not replacement.
   //
-  // R47 EXPANSION: previously only pan/fade/filter (CC10/7/74) got
-  // cooperation. That left ~60 CCs per fire (CC1, CC5, CC11, CC65-73,
-  // CC91-95) bypassing CIS entirely -- setBalanceAndFX was emitting
-  // ~100k CC writes per run without any substrate coordination. Widened
-  // to every CC setBalanceAndFX writes. Each CC gets its own param name
-  // + amplitude tuned to its audible sensitivity.
+  // R49 audit: pruned from 19 CCs to 8 -- the CCs fluidsynth + SGM-v2.01
+  // actually produce audible output for. Coordinating CCs the synth
+  // ignores was burning cycles on inaudible emissions and polluting
+  // meanCooperation with single-writer rfx-random auto-correlation.
   const _COOP_PROB = 0.15;
   const _COOP_AMP = {
-    1:  [3, 8],    // mod wheel - subtle so vibrato modulates gradually
-    5:  [2, 5],    // portamento time - small nudges
+    1:  [3, 8],    // mod wheel
     7:  [3, 7],    // fade (channel volume)
     10: [4, 10],   // pan
     11: [4, 10],   // fx / expression
-    65: [2, 4],    // portamento switch - nearly binary
-    67: [2, 4],    // soft pedal
-    68: [2, 4],    // legato
-    69: [3, 6],    // hold 2
-    70: [3, 7],    // sound variation
-    71: [4, 10],   // resonance - audible when swept
-    72: [3, 8],    // release time
-    73: [3, 8],    // attack time
-    74: [5, 12],   // filter cutoff - the most spectrally active dimension
-    91: [5, 12],   // reverb send - audibly dramatic
-    92: [3, 8],    // tremolo depth
+    71: [4, 10],   // resonance
+    74: [5, 12],   // filter cutoff
+    91: [5, 12],   // reverb send
     93: [5, 12],   // chorus send
-    94: [4, 10],   // celeste / detune
-    95: [4, 10],   // phaser
   };
   const _CC_PARAM = {
-    1: 'mod', 5: 'portTime', 7: 'fade', 10: 'pan', 11: 'fx',
-    65: 'portSwitch', 67: 'softPedal', 68: 'legato', 69: 'hold2',
-    70: 'soundVar', 71: 'resonance', 72: 'release', 73: 'attack',
-    74: 'filter', 91: 'reverb', 92: 'tremolo', 93: 'chorus',
-    94: 'celeste', 95: 'phaser',
+    1: 'mod', 7: 'fade', 10: 'pan', 11: 'fx',
+    71: 'resonance', 74: 'filter', 91: 'reverb', 93: 'chorus',
   };
   for (let _ci = 0; _ci < setBalanceAndFXEvents.length; _ci++) {
     const _ev = setBalanceAndFXEvents[_ci];
