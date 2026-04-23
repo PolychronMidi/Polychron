@@ -950,16 +950,28 @@ _indexing_mode_lock = threading.Lock()
 
 
 def _run_indexing_mode() -> dict:
-    """Orchestrate GPU-dedicated full reindex. Called by /indexing-mode handler.
+    """Run a full reindex with embedders PINNED on their home GPU.
 
-    Steps:
-      1. Suspend coder → free GPU1 (Vulkan2/cuda:1)
-      2. Tell shim to reload embedding models on cuda:1
-      3. Tell shim to run index_directory
-      4. Tell shim to restore models to original device
-      5. Resume coder
-    ALL GPU allocation goes through this daemon. The shim never decides
-    which GPU to use — the daemon tells it.
+    R97 rewrite: previously this function suspended coder, migrated
+    embedders cuda:0 → cuda:1, indexed, migrated back, resumed coder. That
+    migration dance was the source of every CUDA-corruption incident on
+    2026-04-23 and the reason the user has re-implemented "model pinning"
+    ten different times. Pinning is meaningless if this function violates
+    it every reindex.
+
+    New flow: DO NOT MIGRATE, DO NOT SUSPEND ANYTHING. Just tell the shim
+    to run index_directory where the embedders already live. Costs ~30%
+    embedder throughput during indexing (shared cuda:0 with arbiter) but
+    eliminates:
+      - CUDA context corruption from repeated device migration
+      - Coder-kill-then-respawn-fail race
+      - Stuck-embedder-on-GPU1 zombie state across worker crashes
+      - The "self-heal" bandaids that only existed to paper over migration
+
+    If `max_seq_length=2048` + `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
+    + arbiter's 9.4 GB on a 22 GB card isn't enough for embedder encoding
+    (~6.5 GB resident + attention matrix peaks): fix THAT (smaller batch,
+    smaller seq len, different embedder), don't migrate around the problem.
     """
     if not _indexing_mode_lock.acquire(blocking=False):
         return {"error": "indexing mode already in progress"}
@@ -993,218 +1005,24 @@ def _run_indexing_mode_locked() -> dict:
             logger.warning(f"shim {endpoint} returned error: {result['error']}")
         return result
 
-    # Determine indexing GPU from coder's device (Vulkan2 → cuda:1)
-    coder_spec = None
-    for spec in _supervisor_singleton.instances():
-        if spec.name == "coder":
-            coder_spec = spec
-            break
-    if coder_spec is None:
-        return {"error": "no coder instance configured"}
+    logger.info(
+        "indexing-mode: starting — embedders stay pinned on their home GPU "
+        "(no migration, no coder suspend)"
+    )
 
-    cuda_idx = _supervisor_singleton._vulkan_to_cuda_index(coder_spec.device)
-    if cuda_idx is None:
-        return {"error": f"cannot map {coder_spec.device} to CUDA index"}
-    indexing_device = f"cuda:{cuda_idx}"
-
-    logger.info(f"indexing-mode: starting — will use {indexing_device} (freed by suspending coder)")
-
-    # Step 1: Suspend coder to free GPU1
-    suspended = False
+    # Run index_directory in-place. No device change. No coder impact.
     try:
-        result = _supervisor_singleton.suspend("coder")
-        if result.get("error"):
-            return {"error": f"suspend coder failed: {result['error']}"}
-        suspended = True
-        logger.info("indexing-mode: coder suspended")
+        index_result = _shim_post(
+            "/rag",
+            {"engine": "project", "method": "index_directory"},
+            timeout=500,
+        )
+        result_data = index_result.get("result", index_result)
+        logger.info(f"indexing-mode: index complete: {result_data}")
+        return result_data
     except Exception as e:
-        return {"error": f"suspend coder failed: {e}"}
-
-    # Wait for GPU memory to actually free up after coder termination.
-    # CUDA doesn't release VRAM instantly — poll nvidia-smi until the GPU
-    # has significant free space (coder uses ~18 GB of 22 GB).
-    _min_free_mb = 15000  # expect ~18 GB free after coder dies on a 22 GB card
-    for _poll in range(30):
-        time.sleep(2)
-        free = _supervisor_singleton._gpu_free_mb(cuda_idx)
-        if free is not None and free >= _min_free_mb:
-            logger.info(f"indexing-mode: GPU{cuda_idx} has {free} MB free — proceeding")
-            break
-        logger.debug(f"indexing-mode: waiting for GPU{cuda_idx} to free up (poll {_poll}, free={free})")
-    else:
-        free = _supervisor_singleton._gpu_free_mb(cuda_idx)
-        logger.warning(f"indexing-mode: GPU{cuda_idx} only has {free} MB free after 60s — proceeding anyway")
-
-    try:
-        # Step 2: Tell shim to reload embeddings on the freed GPU.
-        # Cold-start reload: 3 SentenceTransformer instances + FP16 GPU
-        # allocation + up to 30s of _engine_ready wait if boot overlap.
-        # 300s covers the observed ~90-120s worst case with margin.
-        try:
-            reload_result = _shim_post("/reload-engines", {"device": indexing_device}, timeout=300)
-            if reload_result.get("error"):
-                logger.warning(f"indexing-mode: reload-engines failed: {reload_result['error']}")
-                return {"error": f"reload-engines failed: {reload_result['error']}"}
-            logger.info(f"indexing-mode: models reloaded on {indexing_device}: {reload_result.get('reloaded', [])}")
-        except Exception as e:
-            logger.error(f"indexing-mode: reload-engines request failed: {e}")
-            return {"error": f"reload-engines request failed: {e}"}
-
-        # Defense check: confirm no rogue llama-server snuck back onto the
-        # indexing GPU during the ~10-90s reload window. The original failure
-        # mode was a competing supervisor respawning coder concurrently with
-        # the embedder reload, so the embedder's index pass OOM'd against the
-        # squatter. Now that the worker-side supervisor is removed, the only
-        # spawner is the daemon's own loops — which honor spec.suspended —
-        # but defense-in-depth: refuse to proceed if any non-embedder process
-        # holds VRAM on this GPU.
-        rogue = _supervisor_singleton._find_pid_on_port(coder_spec.port)
-        if rogue is not None:
-            return {
-                "error": (
-                    f"rogue process PID {rogue} listening on coder port {coder_spec.port} "
-                    f"during indexing-mode — abort to prevent OOM. The daemon's suspended "
-                    f"flag should have prevented respawn; investigate spawn paths."
-                )
-            }
-        free_after_reload = _supervisor_singleton._gpu_free_mb(cuda_idx)
-        if free_after_reload is not None and free_after_reload < 2000:
-            return {
-                "error": (
-                    f"GPU{cuda_idx} only {free_after_reload} MB free after embedder reload — "
-                    f"unexpected memory pressure. Aborting before index_directory OOMs."
-                )
-            }
-
-        # Step 3: Tell shim to run index_directory
-        try:
-            index_result = _shim_post(
-                "/rag",
-                {"engine": "project", "method": "index_directory"},
-                timeout=500,
-            )
-            result_data = index_result.get("result", index_result)
-            logger.info(f"indexing-mode: index complete: {result_data}")
-        except Exception as e:
-            logger.error(f"indexing-mode: index_directory failed: {e}")
-            result_data = {"error": f"index_directory failed: {e}"}
-
-    finally:
-        # Step 4: Tell shim to restore models to original device.
-        #
-        # If the worker died mid-indexing (CUDA illegal memory → auto-exit
-        # via reload_on_device, or any other crash), the first restore call
-        # will fail because the worker is gone. In that case we WAIT for the
-        # supervisor to respawn it (typical: 8-15s), then re-issue restore
-        # against the fresh worker — but with an explicit device target
-        # (cuda:0) instead of "restore", because the new worker has no
-        # _original_rag_device memory of where embedders were before.
-        # This is the "self-heal across worker crash" loop the user got
-        # angry about having to do manually.
-        _restore_succeeded = False
-        try:
-            restore_result = _shim_post("/reload-engines", {"device": "restore"}, timeout=300)
-            if restore_result.get("error"):
-                logger.warning(f"indexing-mode: restore returned error: {restore_result['error']}")
-            else:
-                logger.info(f"indexing-mode: models restored: {restore_result}")
-                _restore_succeeded = True
-        except Exception as e:
-            logger.warning(f"indexing-mode: restore failed (likely worker dead mid-flight): {e}")
-
-        if not _restore_succeeded:
-            # Determine the home GPU explicitly — fall back to HME_RAG_GPU
-            # if env reads work; otherwise default to cuda:0.
-            try:
-                _home_gpu = ENV.optional_int("HME_RAG_GPU", 0)
-            except Exception:
-                _home_gpu = 0
-            _home_device = f"cuda:{_home_gpu}"
-            # Wait for fresh worker to be ready before re-issuing.
-            for _wait in range(30):  # ~60s budget
-                try:
-                    _h = urllib.request.urlopen(f"{_SHIM_URL}/health", timeout=2)
-                    _hb = json.loads(_h.read())
-                    if _hb.get("ready"):
-                        logger.info(f"indexing-mode: fresh worker ready (pid={_hb.get('pid')}) — retrying restore on {_home_device}")
-                        break
-                except Exception:
-                    pass
-                time.sleep(2)
-            try:
-                restore_result = _shim_post(
-                    "/reload-engines", {"device": _home_device}, timeout=300,
-                )
-                if restore_result.get("error"):
-                    logger.error(f"indexing-mode: post-respawn restore failed: {restore_result['error']}")
-                else:
-                    logger.info(f"indexing-mode: models restored to {_home_device} on fresh worker: {restore_result.get('reloaded', [])}")
-                    _restore_succeeded = True
-            except Exception as e:
-                logger.error(f"indexing-mode: post-respawn restore request failed: {e}")
-
-        # Step 5: Resume coder (only if we suspended it). If the first spawn
-        # attempt fails due to VRAM fits (stale CUDA context from the
-        # embedder we just moved back), nvidia-smi may take a few seconds
-        # to reflect the freed memory after empty_cache. Retry up to 3
-        # times with a 3s gap between attempts. If we still can't spawn,
-        # fire a CRITICAL LIFESAVER with the exact shortfall instead of
-        # letting the health-tick silently retry every 60s for minutes.
-        if suspended:
-            try:
-                resume_result = _supervisor_singleton.resume("coder")
-                for _retry in range(3):
-                    if resume_result.get("error") or resume_result.get("spawned"):
-                        break
-                    time.sleep(3)
-                    free_mb = _supervisor_singleton._gpu_free_mb(cuda_idx)
-                    logger.info(
-                        f"indexing-mode: coder spawn retry {_retry + 1}/3 — "
-                        f"GPU{cuda_idx} has {free_mb} MB free"
-                    )
-                    with _supervisor_singleton._lock:
-                        resume_result = {
-                            "name": "coder",
-                            "suspended": False,
-                            "spawned": _supervisor_singleton._spawn(
-                                _supervisor_singleton._instances["coder"],
-                                bypass_cooldown=True,
-                            ),
-                        }
-                if resume_result.get("error"):
-                    logger.error(f"indexing-mode: resume returned error: {resume_result['error']}")
-                elif not resume_result.get("spawned"):
-                    free_mb = _supervisor_singleton._gpu_free_mb(cuda_idx)
-                    msg = (
-                        f"coder respawn failed after 3 retries post-indexing-mode — "
-                        f"GPU{cuda_idx} has {free_mb} MB free, coder needs "
-                        f"~{_supervisor_singleton._instances['coder'].ctx_size // 2 + 17697 + 256} MB "
-                        f"(model+kv+headroom). Likely residual CUDA context from the embedder. "
-                        f"Daemon health-loop will keep retrying every {int(_HEALTH_INTERVAL)}s; "
-                        f"if it never recovers, restart the worker (kill pid of worker.py)."
-                    )
-                    logger.error(f"indexing-mode: {msg}")
-                    try:
-                        from server import context as _ctx
-                        _ctx.register_critical_failure(
-                            "llamacpp_indexing_mode_resume",
-                            msg,
-                            severity="CRITICAL",
-                        )
-                    except Exception as _life_err:
-                        logger.debug(f"indexing-mode: LIFESAVER register failed: {_life_err}")
-                else:
-                    logger.info(f"indexing-mode: coder resumed: {resume_result}")
-            except Exception as e:
-                # Health-loop keeps retrying; if daemon itself dies, the
-                # boot-recovery on the next daemon spawn unstucks embedders
-                # before coder-respawn is attempted.
-                logger.error(
-                    f"indexing-mode: coder resume hit exception: {e} — "
-                    f"health-loop + boot-recovery will self-heal"
-                )
-
-    return result_data
+        logger.error(f"indexing-mode: index_directory failed: {e}")
+        return {"error": f"index_directory failed: {e}"}
 
 
 def _boot_recover_stuck_indexing_state():
