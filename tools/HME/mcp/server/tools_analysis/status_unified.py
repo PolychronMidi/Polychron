@@ -112,22 +112,37 @@ def _mode_multi_agent():
     return _ma()
 
 def _mode_perceptual():
-    from .perceptual import audio_analyze as _aa
-    try:
-        return _aa(analysis="both")
-    except Exception as e:
-        err = str(e).lower()
-        if "cuda" in err or "out of memory" in err or "oom" in err or "gpu" in err:
-            try:
-                from .digest import check_pipeline as _cp_check
-                pipeline_status = _cp_check()
-                if "IN PROGRESS" in pipeline_status or "BLOCKED" in pipeline_status:
-                    return ("Perceptual analysis unavailable: GPU busy (pipeline running).\n"
-                            "Re-run after pipeline completes.")
-            except Exception as _cp_err:
-                logger.debug(f"_mode_perceptual pipeline-check: {type(_cp_err).__name__}: {_cp_err}")
-            return "Perceptual analysis unavailable: GPU out of memory.\nCheck with `nvidia-smi`."
-        return f"Perceptual analysis unavailable: {e}"
+    # Status is a "quick look" surface — reading the cached report from the
+    # last pipeline run is what users actually want, not triggering a fresh
+    # (multi-minute) EnCodec+CLAP inference pass. For a live re-run, call
+    # `audio_analyze(analysis='both')` directly via i/hme.
+    cache_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "perceptual-report.json")
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, encoding="utf-8") as _f:
+                data = json.load(_f)
+            ts = data.get("timestamp", "?")
+            confidence = data.get("confidence", 0)
+            sections = (data.get("encodec", {}) or {}).get("sections", {}) or {}
+            parts = [
+                f"# Perceptual Analysis — cached (confidence: {confidence:.0%})",
+                f"Source: metrics/perceptual-report.json  (ts={ts})",
+                "For a fresh analysis: `i/hme audio_analyze analysis=both`  (takes ~2-5 min)",
+                "",
+                "## Per-section tension (from EnCodec cb0 entropy)",
+            ]
+            for sid in sorted(sections.keys(), key=lambda s: int(s) if s.isdigit() else 0):
+                s = sections[sid]
+                tens = s.get("tension", 0)
+                clap = s.get("clap", {}) or {}
+                top = sorted(clap.items(), key=lambda kv: -kv[1])[:3]
+                top_str = ", ".join(f"{k}={v:+.2f}" for k, v in top)
+                parts.append(f"  S{sid}  tension={tens:.3f}  top_clap: {top_str}")
+            return "\n".join(parts)
+        except (OSError, json.JSONDecodeError, TypeError, KeyError) as _e:
+            return f"Perceptual cache read failed: {type(_e).__name__}: {_e}"
+    return ("No perceptual-report.json cached. Run `npm run main` (or "
+            "`i/hme audio_analyze`) to generate.")
 
 def _mode_introspect():
     from .evolution.evolution_admin import hme_introspect as _hi
