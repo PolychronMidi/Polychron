@@ -73,6 +73,9 @@
     ]
   },
   "known_non_tool_identifiers": [
+    "HME_ALLOW_EMBEDDER_MIGRATION",
+    "HME_CODE_EMBED_BATCH",
+    "HME_RAG_GPU",
     "_append_file_to_tab",
     "_extract_bg_output_path",
     "_hme_enrich",
@@ -154,6 +157,7 @@
     "llamacpp_daemon",
     "low_override_by_reality",
     "max_iterations",
+    "max_seq_length",
     "pattern",
     "per_axis_adj",
     "perceptual_complexity_avg",
