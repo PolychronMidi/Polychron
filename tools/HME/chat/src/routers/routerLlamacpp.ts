@@ -118,7 +118,15 @@ export function streamLlamacpp(
               }
               if (inThink) { accThink += content; continue; }
               accText += content;
-            } catch {}
+            } catch (parseErr: any) {
+              // Don't silently drop malformed frames — that hid a partial-JSON
+              // bug for weeks before the chat went unresponsive on restart-mid-
+              // stream. Surface the parse failure to the UI as a 'parse-error'
+              // chunk so the operator sees the broken frame instead of just
+              // noticing missing tokens.
+              const _msg = parseErr?.message ?? String(parseErr);
+              onChunk(`[parse-error] ${_msg}: ${payload.slice(0, 120)}`, "error");
+            }
           }
         }
       });
