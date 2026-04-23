@@ -396,31 +396,60 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
   });
 }
 
-export function streamLlamacppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
-  const contextMessages = contextPrefixMessages(msg._contextPrefix);
-  const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
-  const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
-
+/**
+ * Generic adapter-driven runner: handle the common harness + finalize +
+ * error-propagation pattern for any adapter-based route. Claude still
+ * needs its own path because PTY-vs-pipe fallback + model-mismatch
+ * detection are unique to it; llamacpp and hybrid are fully covered here.
+ */
+function runAdapterStream<M, O extends BaseStreamOptions>(args: {
+  ctx: ChatCtx;
+  assistantId: string;
+  route: "local" | "hybrid";
+  adapter: RouterAdapter<M, O>;
+  buildInput: (chunk: ChatCtx["postError"]) => { messages: M; opts: O };
+  finalize: { pushLlamacpp?: boolean; userText?: string; model?: string };
+  preludeChunk?: string;
+}) {
+  const { ctx, assistantId, route, adapter, buildInput, finalize, preludeChunk } = args;
   runStream({
-    ctx, assistantId, route: "local",
+    ctx, assistantId, route, preludeChunk,
     start: (h) => {
-      const handle = llamacppAdapter.stream(requestHistory, {
-        onChunk: h.onChunk,
-        llamacpp: llamacppOptsFromMsg(msg),
-        workingDir: ctx.projectRoot,
-      });
+      const { messages, opts } = buildInput(ctx.postError);
+      // Force the harness's onChunk into the adapter options so both
+      // the UI (via post) and the finalize bookkeeping see every chunk.
+      const fullOpts = { ...opts, onChunk: h.onChunk } as O;
+      const handle: StreamHandle = adapter.stream(messages, fullOpts);
       h.setCancel(() => handle.cancel());
       handle.done.then((result) => {
         if (h.isAborted()) return;
         if (!result.ok) {
           if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
-          ctx.postError("local", result.error ?? "unknown error");
+          ctx.postError(route, result.error ?? "unknown error");
           return;
         }
-        finalizeStream(h, ctx, assistantId, "local", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
+        finalizeStream(h, ctx, assistantId, route, finalize);
         h.safeEnd();
       });
     },
+  });
+}
+
+export function streamLlamacppMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: string) {
+  const contextMessages = contextPrefixMessages(msg._contextPrefix);
+  const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
+  const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user" as const, content: msg.text }];
+  runAdapterStream({
+    ctx, assistantId, route: "local", adapter: llamacppAdapter,
+    buildInput: () => ({
+      messages: requestHistory,
+      opts: {
+        onChunk: () => {},  // overwritten by runAdapterStream
+        llamacpp: llamacppOptsFromMsg(msg),
+        workingDir: ctx.projectRoot,
+      },
+    }),
+    finalize: { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel },
   });
 }
 
