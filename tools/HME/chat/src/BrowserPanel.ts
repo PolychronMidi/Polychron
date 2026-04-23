@@ -525,8 +525,7 @@ export class BrowserPanel implements PanelHost {
     const userMsg: ChatMessage = (msg as any)._queuedUserMsg ?? {
       id: uid(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
     };
-    this._state.messages.push(userMsg);
-    this._persistState();
+    this._applyStateChange((s) => { s.messages.push(userMsg); });
     if (!(msg as any)._queuedUserMsg) {
       this.post({ type: "message", message: userMsg });
     }
@@ -535,8 +534,13 @@ export class BrowserPanel implements PanelHost {
       this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
     }
     const cross = buildCrossRouteContext(this._state.messages, this._state.lastRoute, resolvedRoute);
-    const contextPrefix = applyCrossRouteContext(this._state, cross);
-    this._state.lastRoute = resolvedRoute;
+    // applyCrossRouteContext mutates state in-place + returns the prefix.
+    // Route through the broker so the persist path is uniform.
+    let contextPrefix = "";
+    this._applyStateChange((s) => {
+      contextPrefix = applyCrossRouteContext(s, cross);
+      s.lastRoute = resolvedRoute;
+    });
 
     const assistantId = uid();
     const streamStartExtras = resolvedRoute === "claude"
