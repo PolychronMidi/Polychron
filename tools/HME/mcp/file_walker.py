@@ -46,7 +46,7 @@ def _dirs_from_gitignore(project_root: str) -> set[str]:
                 if name.startswith("!"):
                     continue
                 dirs.add(name)
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
     return dirs
 
@@ -253,7 +253,7 @@ def walk_code_files(
                     rel = fpath.relative_to(root).as_posix()
                     if rag_ignore.match_file(rel):
                         continue
-                except ValueError:  # silent-ok: expected parse miss; validated upstream
+                except ValueError:
                     pass
 
             yield fpath

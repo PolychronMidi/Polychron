@@ -145,7 +145,7 @@ def learn(query: str = "", title: str = "", content: str = "",
                 # Only likely-module: has an internal capital (camelCase)
                 if any(c.isupper() for c in _token[1:]):
                     _emit_brief_recorded(_token, source="learn_query")
-        except Exception as _brief_err:  # silent-ok: best-effort; failure is non-fatal for this call site
+        except Exception as _brief_err:
             pass  # best-effort
         return _sk(search_term, top_k=top_k, category=search_cat)
 

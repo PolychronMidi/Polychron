@@ -116,7 +116,7 @@ class Registry:
                 try:
                     with open("/tmp/hme-non-hme-streak.count", "w") as _f:
                         _f.write("0")
-                except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+                except OSError:
                     pass
                 name = fn.__name__
                 t0 = time.time()

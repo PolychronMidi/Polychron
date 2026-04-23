@@ -71,7 +71,7 @@ def _write_heartbeat() -> None:
     try:
         with open(_ms.heartbeat_file, "w") as f:
             json.dump({"ts": time.time(), "pid": os.getpid()}, f)
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
 
@@ -161,7 +161,7 @@ def _correlate(history: list[dict]) -> dict:
     try:
         with open(_ms.ops_file) as f:
             ops = json.load(f)
-    except (OSError, json.JSONDecodeError):  # silent-ok: best-effort file/stat; downstream already handles absence
+    except (OSError, json.JSONDecodeError):
         pass
 
     from server import meta_correlator
@@ -301,7 +301,7 @@ def _trim_narrative_file() -> None:
         if len(lines) > _MAX_NARRATIVE_LINES:
             with open(_ms.narrative_file, "w") as f:
                 f.writelines(lines[-_MAX_NARRATIVE_LINES:])
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
 
@@ -351,7 +351,7 @@ def _scan_environment() -> dict:
         usage = shutil.disk_usage(ENV.optional("PROJECT_ROOT", "/"))
         env["disk_free_gb"] = round(usage.free / (1024 ** 3), 1)
         env["disk_pct_used"] = round((usage.used / usage.total) * 100, 1)
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
     # System load average (1, 5, 15 min)
@@ -360,7 +360,7 @@ def _scan_environment() -> dict:
         env["load_1m"] = round(load[0], 2)
         env["load_5m"] = round(load[1], 2)
         env["load_15m"] = round(load[2], 2)
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
     # GPU memory (nvidia-smi, non-blocking)
@@ -387,7 +387,7 @@ def _scan_environment() -> dict:
                     except (ValueError, IndexError):
                         continue  # skip lines with N/A or malformed values
             env["gpus"] = gpus
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):  # silent-ok: best-effort file/stat; downstream already handles absence
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         pass
 
     # Process RSS (own memory footprint)
@@ -397,7 +397,7 @@ def _scan_environment() -> dict:
                 if line.startswith("VmRSS:"):
                     env["process_rss_mb"] = round(int(line.split()[1]) / 1024, 1)
                     break
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
     # Generate alerts
@@ -477,7 +477,7 @@ def _checkpoint_entanglement() -> None:
             if thermo_eff is not None:
                 state["thermo_efficiency"] = thermo_eff
                 state["thermo_entropy"] = ops.get("thermo_entropy_ema")
-        except (OSError, json.JSONDecodeError):  # silent-ok: best-effort file/stat; downstream already handles absence
+        except (OSError, json.JSONDecodeError):
             pass
 
         # Last narrative (the system's own interpretation)
@@ -511,7 +511,7 @@ def _checkpoint_entanglement() -> None:
                         continue
                 if recent_files:
                     state["recent_files"] = sorted(recent_files)[:10]
-        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+        except OSError:
             pass
 
         # Write atomically
@@ -673,7 +673,7 @@ def _write_counterfactual(pred: dict) -> None:
         with open(_ms.counterfactual_file, "a") as f:
             f.write(json.dumps(pred) + "\n")
         _trim_counterfactuals_file()
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
 
@@ -684,7 +684,7 @@ def _trim_counterfactuals_file(max_lines: int = 2000) -> None:
         if len(lines) > max_lines:
             with open(_ms.counterfactual_file, "w") as f:
                 f.writelines(lines[-max_lines:])
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
 
@@ -1310,7 +1310,7 @@ def _enumerate_unprovable_claims() -> list[dict]:
                     "reason": "Optimal gate rate unknown — too high = false alarms, too low = missed phantoms",
                     "validation": "A/B_comparison",
                 })
-    except (OSError, json.JSONDecodeError):  # silent-ok: best-effort file/stat; downstream already handles absence
+    except (OSError, json.JSONDecodeError):
         pass
     return claims
 
@@ -1341,7 +1341,7 @@ def _check_coherence_ceiling() -> dict | None:
         try:
             with operational_state._state_lock:  # type: ignore[attr-defined]
                 outcomes = operational_state._state.get("prediction_outcomes_today")  # type: ignore[attr-defined]
-        except AttributeError:  # silent-ok: defensive against duck-typing; caller tolerates
+        except AttributeError:
             pass
         return {
             "ceiling_hit": True,

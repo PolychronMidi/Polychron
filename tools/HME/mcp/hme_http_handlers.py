@@ -54,7 +54,7 @@ def _is_indexable(abs_path: str) -> str | None:
     try:
         if os.path.getsize(abs_path) > get_max_file_size():
             return f"exceeds max file size ({get_max_file_size()} bytes)"
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
     return None

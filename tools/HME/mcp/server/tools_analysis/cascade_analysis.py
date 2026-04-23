@@ -58,7 +58,7 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
         }
         with open(path, "a", encoding="utf-8") as f:
             f.write(_json.dumps(record, separators=(",", ":")) + "\n")
-    except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+    except OSError:
         pass
 
 

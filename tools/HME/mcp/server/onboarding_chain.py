@@ -118,7 +118,7 @@ def set_state(s: str) -> None:
             for f in (_STATE_FILE, _TARGET_FILE):
                 try:
                     os.remove(f)
-                except FileNotFoundError:  # silent-ok: best-effort; file absence is expected
+                except FileNotFoundError:
                     pass
             _mirror_to_todo_tree_graduated()
             return
