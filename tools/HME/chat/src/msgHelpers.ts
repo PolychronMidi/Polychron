@@ -15,12 +15,6 @@ export const LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.
 const VALID_MODEL_ALIASES = new Set(["opus", "sonnet", "haiku"]);
 const VALID_EFFORTS = new Set(["low", "medium", "high", "max"]);
 
-const MODEL_ID_MAP: Record<string, string> = {
-  opus: "opus",
-  sonnet: "sonnet",
-  haiku: "haiku",
-};
-
 export interface ClaudeConfig {
   model: string;
   effort: string;
@@ -53,9 +47,11 @@ export function validateClaudeConfig(cfg: Partial<ClaudeConfig>): ClaudeConfig {
 }
 
 export function resolveClaudeConfig(cfg: ClaudeConfig): ResolvedClaudeConfig {
-  const modelId = MODEL_ID_MAP[cfg.model];
-  if (!modelId) throw new Error(`Unmapped model alias: ${cfg.model}`);
-  return { alias: cfg.model, modelId, cliEffort: cfg.effort, thinking: cfg.thinking };
+  // `cfg.model` is already the CLI alias (opus/sonnet/haiku), which the Claude
+  // CLI accepts directly as --model. No aliasing table needed — the alias *is*
+  // the id the CLI wants. Earlier versions carried a full MODEL_ID_MAP for
+  // long-form ids; the CLI deprecated those in favor of the short aliases.
+  return { alias: cfg.model, modelId: cfg.model, cliEffort: cfg.effort, thinking: cfg.thinking };
 }
 
 export function claudeOptsFromConfig(resolved: ResolvedClaudeConfig): ClaudeOptions {
