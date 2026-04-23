@@ -39,32 +39,44 @@ exports.claudePtyAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (PTY
         cb.done();
     }, cb.error, opts.onRawData, opts.onPtyReady);
 });
+// llama.cpp / hybrid backends don't carry API session ids. A synthetic id
+// keeps the RouterInterface contract uniform — session-resumption code sees
+// an id on every route and can match the `llama-` prefix to skip resume attempts.
+function syntheticLlamaSessionId() {
+    return `llama-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 exports.llamacppAdapter = (0, router_1.wrapLegacyStream)("local", "llama.cpp (agentic)", (messages, opts, cb) => {
+    cb.sessionId?.(syntheticLlamaSessionId());
     return (0, router_1.streamLlamacppAgentic)(messages, opts.llamacpp, opts.workingDir, cb.chunk, cb.done, cb.error);
 });
 exports.hybridAdapter = (0, router_1.wrapLegacyStream)("hybrid", "llama.cpp + KB (hybrid)", (input, opts, cb) => {
+    // Race guard: the cancellor from streamHybrid arrives via Promise.then.
+    // If the caller cancels BEFORE .then fires, we must remember the request
+    // and fire the real cancellor the moment it's available — otherwise an
+    // early cancel is silently dropped and the stream keeps emitting chunks
+    // into a disposed consumer.
+    cb.sessionId?.(syntheticLlamaSessionId());
     let cancelFn = null;
-    let cancelled = false;
-    (0, router_1.streamHybrid)(input.message, input.history, opts.llamacpp, input.workingDir, cb.chunk, cb.done, cb.error).then((inner) => {
-        cancelFn = inner;
-        if (cancelled) {
-            try {
-                inner();
-            }
-            catch { /* silent-ok: inner cancel may already be past completion */ }
-        }
-    }).catch((e) => {
-        if (!cancelled)
-            cb.error(String(e?.message ?? e));
-    });
-    return () => {
-        cancelled = true;
-        if (cancelFn) {
+    let cancelRequested = false;
+    const fireCancelIfReady = () => {
+        if (cancelRequested && cancelFn) {
             try {
                 cancelFn();
             }
-            catch { /* silent-ok: legacy cancel may throw on already-done */ }
+            catch { /* silent-ok: inner cancel may already be past completion */ }
+            cancelFn = null;
         }
+    };
+    (0, router_1.streamHybrid)(input.message, input.history, opts.llamacpp, input.workingDir, cb.chunk, cb.done, cb.error).then((inner) => {
+        cancelFn = inner;
+        fireCancelIfReady();
+    }).catch((e) => {
+        if (!cancelRequested)
+            cb.error(String(e?.message ?? e));
+    });
+    return () => {
+        cancelRequested = true;
+        fireCancelIfReady();
     };
 });
 /**
