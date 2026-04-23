@@ -145,13 +145,13 @@ export const hybridAdapter: RouterAdapter<HybridStreamInput, HybridStreamOptions
  * Return the adapter appropriate for the given route. Caller is
  * responsible for supplying the right input shape per adapter.
  */
-export function getAdapterForRoute(route: Route, opts?: { claudePty?: boolean }):
+export function getAdapterForRoute(route: Route):
   | RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions>
   | RouterAdapter<LlamacppMessage[], LlamacppStreamOptions>
   | RouterAdapter<HybridStreamInput, HybridStreamOptions> {
   switch (route) {
     case "claude":
-      return opts?.claudePty ? claudePtyAdapter : claudeAdapter;
+      return claudeAdapter;
     case "local":
       return llamacppAdapter;
     case "hybrid":
