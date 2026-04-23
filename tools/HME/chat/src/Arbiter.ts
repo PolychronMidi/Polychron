@@ -111,7 +111,7 @@ export async function classifyMessage(
   constraintCount: number,
   errorCount: number = 0
 ): Promise<ArbiterDecision> {
-  const key = _cacheKey(message, constraintCount, errorCount);
+  const key = _cacheKey(message, constraintCount, errorCount, transcriptContext);
   const cached = _decisionCache.get(key);
   if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.decision;
 
