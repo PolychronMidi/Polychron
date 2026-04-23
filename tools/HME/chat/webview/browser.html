@@ -1607,7 +1607,13 @@ window.addEventListener('message', (event) => {
     _resetPruneBanner();
     for (const m of msg.messages) appendMessage(m);
     _enforceMessageDomCap();
-    forceScrollToBottom();
+    // If we had a remembered scroll offset for this session's last-
+    // focused message, scroll there; otherwise land at the bottom.
+    if (prevScroll !== null && typeof prevScroll === 'number') {
+      messages.scrollTop = prevScroll;
+    } else {
+      forceScrollToBottom();
+    }
     setStatus(`Loaded: ${msg.title}`);
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'historyCleared') {
