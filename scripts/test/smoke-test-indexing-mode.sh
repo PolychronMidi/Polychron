@@ -70,13 +70,16 @@ if ! echo "$_result" | grep -q '"total_files"'; then
 fi
 _pass "indexing-mode cycle completed in ${_elapsed}s: $(echo "$_result" | head -c 100)"
 
-# --- Assertion 4: coder returns to healthy within 60s ---
+# --- Assertion 4: coder returns to healthy within 120s ---
+# Same budget as baseline wait: llama-server cold-boot is ~90s worst case.
+# Shorter budgets conflate "indexing-mode left coder stuck" with "normal
+# cold-load is slow"; 120s clearly separates the two.
 echo "[4/5] coder returns to /health=ok post-indexing-mode"
 _t0=$(date +%s)
 until curl -sf "$_CODER_URL/health" 2>/dev/null | grep -q "ok"; do
   _tend=$(date +%s)
   _elapsed=$((_tend - _t0))
-  if [ "$_elapsed" -ge 60 ]; then
+  if [ "$_elapsed" -ge 120 ]; then
     _fail "coder not healthy after ${_elapsed}s post-indexing-mode — stuck respawn? Check llamacpp_daemon.out for 'resume failed' or 'coder unhealthy' loops"
   fi
   sleep 3
