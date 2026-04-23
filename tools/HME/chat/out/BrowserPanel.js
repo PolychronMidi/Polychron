@@ -61,6 +61,11 @@ class BrowserPanel {
         this._restoreSessionId = null;
         this._disposed = false;
         this._sseClients = [];
+        // Per-client last-activity timestamp. A stuck client (laptop closed,
+        // browser frozen) otherwise lives forever — res.write queues into
+        // kernel buffers that never drain, holding the panel alive and
+        // slowing every broadcast. Clients idle > SSE_IDLE_MS are removed.
+        this._sseClientSeen = new WeakMap();
         // Authoritative Claude config — kept in sync with the browser UI via setClaudeConfig.
         // Send/queue messages fall back to this if they omit the fields (they shouldn't, but
         // it means the server state is the source of truth, not the browser payload).
@@ -201,6 +206,13 @@ class BrowserPanel {
                 }
             },
         };
+        /**
+         * Serialize writes to disk via a Promise chain so concurrent
+         * _persistState() calls (agent-mode completion + user send during
+         * chain rotation + SSE post) can't race. Each call returns a
+         * Promise that resolves after the write completes.
+         */
+        this._persistChain = Promise.resolve();
         this._projectRoot = projectRoot;
         this._restoreSessionId = restoreSessionId ?? null;
         this._errorSink = new ErrorSink_1.ErrorSink(projectRoot);
@@ -251,9 +263,9 @@ class BrowserPanel {
             this._transcript = (0, TranscriptLogger_1.nullTranscript)();
         }
     }
-    //  SSE client registry
     registerSseClient(res) {
         this._sseClients.push(res);
+        this._sseClientSeen.set(res, Date.now());
         // Send any pending restore on first connect
         if (this._restoreSessionId) {
             const id = this._restoreSessionId;
@@ -263,19 +275,43 @@ class BrowserPanel {
     }
     unregisterSseClient(res) {
         this._sseClients = this._sseClients.filter(c => c !== res);
+        this._sseClientSeen.delete(res);
     }
     //  PanelHost implementation
     post(data) {
         const payload = `data: ${JSON.stringify(data)}\n\n`;
+        const now = Date.now();
         console.log(`[HME→SSE] type=${data?.type ?? '?'} clients=${this._sseClients.length}`);
+        // Remove idle clients opportunistically so a stream of posts
+        // self-heals a client registry that accumulates orphans.
+        const stillAlive = [];
         for (const res of this._sseClients) {
+            const lastSeen = this._sseClientSeen.get(res) ?? 0;
+            if (now - lastSeen > BrowserPanel._SSE_IDLE_MS) {
+                try {
+                    res.end();
+                }
+                catch { /* silent-ok: already dead */ }
+                this._sseClientSeen.delete(res);
+                continue;
+            }
             try {
                 res.write(payload);
+                this._sseClientSeen.set(res, now);
+                stillAlive.push(res);
             }
             catch (e) {
-                console.error(`[HME] SSE write failed: ${e?.message ?? e}`);
+                // Write failed — client's TCP window is stuck or socket is dead.
+                // Drop it; the browser will reconnect if still interested.
+                console.error(`[HME] SSE write failed, dropping client: ${e?.message ?? e}`);
+                try {
+                    res.end();
+                }
+                catch { /* silent-ok: already broken */ }
+                this._sseClientSeen.delete(res);
             }
         }
+        this._sseClients = stillAlive;
     }
     postError(source, message) {
         console.error(`[HME] postError [${source}]: ${message}`);
@@ -360,17 +396,44 @@ class BrowserPanel {
     }
     _persistState() {
         if (!this._state.sessionEntry)
-            return;
+            return this._persistChain;
+        // Snapshot state at call time — the write may happen later and
+        // we want the snapshot to reflect the moment of the call.
         const entry = {
             ...this._state.sessionEntry,
             claudeSessionId: this._state.claudeSessionId,
             updatedAt: Date.now(),
         };
         this._state.sessionEntry = entry;
-        (0, SessionStore_1.saveSession)(this._projectRoot, entry, this._state.messages, this._state.llamacppHistory, {
+        const messages = [...this._state.messages];
+        const llamacppHistory = [...this._state.llamacppHistory];
+        const opts = {
             contextTokens: this._contextMeter.pctUsed,
             chainIndex: this._state.chainIndex,
+        };
+        this._persistChain = this._persistChain.then(() => {
+            try {
+                (0, SessionStore_1.saveSession)(this._projectRoot, entry, messages, llamacppHistory, opts);
+            }
+            catch (e) {
+                console.error(`[HME] saveSession failed: ${e?.message ?? e}`);
+            }
         });
+        return this._persistChain;
+    }
+    /**
+     * Canonical state-mutation broker. Every caller that modifies this._state
+     * SHOULD go through here so (a) mutations are visible in one place for
+     * debugging, (b) persistence is automatic, (c) concurrent callers
+     * serialize through _persistChain instead of writing in parallel.
+     * Pass persist=false when the mutation is transient (e.g. chainIndex
+     * bump that the next _persistState() will pick up anyway).
+     */
+    _applyStateChange(mutate, persist = true) {
+        mutate(this._state);
+        if (persist) {
+            void this._persistState();
+        }
     }
     //  Send pipeline
     async _onSend(msg) {
@@ -495,21 +558,34 @@ class BrowserPanel {
         const hybridId = (0, streamUtils_1.uid)();
         this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.llamacppModel}` });
         this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.llamacppModel}` });
-        let doneCount = 0;
+        // Agent-mode runs local + hybrid in parallel. Each stream calls
+        // checkBothDone exactly once on completion. JS is single-threaded
+        // so ++doneCount is atomic per-microtask, BUT a rogue double-call
+        // from either stream (e.g. onDone + onError firing on the same
+        // abort) would trip the >= 2 gate early. A Set of seen labels
+        // makes the completion set explicit and idempotent.
+        const seenDone = new Set();
         let drained = false;
+        let persisted = false;
         const cancelFns = [];
         const safeDrain = () => { if (!drained) {
             drained = true;
             this._drainQueue();
         } };
-        const checkBothDone = () => { if (++doneCount >= 2) {
-            this._persistState();
-            safeDrain();
-        } };
+        const markDone = (label) => {
+            if (seenDone.has(label))
+                return;
+            seenDone.add(label);
+            if (seenDone.size >= 2 && !persisted) {
+                persisted = true;
+                this._persistState();
+                safeDrain();
+            }
+        };
         this._cancelCurrent = () => cancelFns.forEach((fn) => fn());
         const ctx = this._ctx;
-        (0, chatStreaming_1.streamAgentMsg)(ctx, msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
-        (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
+        (0, chatStreaming_1.streamAgentMsg)(ctx, msg, localId, "local", () => markDone("local"), () => markDone("local"), cancelFns);
+        (0, chatStreaming_1.streamAgentHybridMsg)(ctx, msg, hybridId, "hybrid", () => markDone("hybrid"), () => markDone("hybrid"), cancelFns);
     }
     //  Queue & cleanup
     _drainQueue() {
@@ -556,5 +632,9 @@ class BrowserPanel {
     }
 }
 exports.BrowserPanel = BrowserPanel;
+//  SSE client registry
+// 5 minutes of no writes at all = client is almost certainly gone.
+// The sweep runs on post() so we don't need a persistent timer.
+BrowserPanel._SSE_IDLE_MS = 5 * 60 * 1000;
 //  Stream tracking & session persistence
 BrowserPanel.DISPLAY_CAP = 100;

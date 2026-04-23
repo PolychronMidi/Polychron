@@ -1,7 +1,7 @@
 "use strict";
 // Router barrel — types and re-exports from split modules.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.streamHybrid = exports.logShimError = exports.isHmeShimReady = exports.postNarrative = exports.reindexFiles = exports.postTranscript = exports.auditChanges = exports.validateMessage = exports.enrichPrompt = exports.fetchHmeContext = exports.GPU_NUM_CTX = exports.streamLlamacppAgentic = exports.streamLlamacpp = exports.streamClaudePty = exports.streamClaude = void 0;
+exports.makeResult = exports.wrapLegacyStream = exports.streamHybrid = exports.logShimError = exports.isHmeShimReady = exports.postNarrative = exports.reindexFiles = exports.postTranscript = exports.auditChanges = exports.validateMessage = exports.enrichPrompt = exports.fetchHmeContext = exports.GPU_NUM_CTX = exports.streamLlamacppAgentic = exports.streamLlamacpp = exports.streamClaudePty = exports.streamClaude = void 0;
 // Re-export all functions from split modules so existing imports from "./router" keep working.
 var routerClaude_1 = require("./routers/routerClaude");
 Object.defineProperty(exports, "streamClaude", { enumerable: true, get: function () { return routerClaude_1.streamClaude; } });
@@ -21,3 +21,6 @@ Object.defineProperty(exports, "postNarrative", { enumerable: true, get: functio
 Object.defineProperty(exports, "isHmeShimReady", { enumerable: true, get: function () { return routerHme_1.isHmeShimReady; } });
 Object.defineProperty(exports, "logShimError", { enumerable: true, get: function () { return routerHme_1.logShimError; } });
 Object.defineProperty(exports, "streamHybrid", { enumerable: true, get: function () { return routerHme_1.streamHybrid; } });
+var RouterInterface_1 = require("./routers/RouterInterface");
+Object.defineProperty(exports, "wrapLegacyStream", { enumerable: true, get: function () { return RouterInterface_1.wrapLegacyStream; } });
+Object.defineProperty(exports, "makeResult", { enumerable: true, get: function () { return RouterInterface_1.makeResult; } });
