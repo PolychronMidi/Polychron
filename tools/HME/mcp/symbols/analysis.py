@@ -336,8 +336,12 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
                     continue
                 if "export" in src_lines[sym_line - 1]:
                     continue
-        except Exception:
-            pass
+        except (IndexError, AttributeError) as _export_err:
+            # Narrowed from `Exception`: these are the only plausible
+            # failures in a slice-and-check. Anything else is a real bug
+            # we want to surface. Log at debug — per-symbol skip here is
+            # expected for lines past EOF.
+            logger.debug(f"export-detection skip for {sym_file}:{sym_line}: {type(_export_err).__name__}: {_export_err}")
 
         if name not in name_pattern_cache:
             name_pattern_cache[name] = re.compile(rf'\b{re.escape(name)}\b')
