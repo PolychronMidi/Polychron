@@ -774,6 +774,10 @@ claudeEffort && claudeEffort.addEventListener('change', function() {
 });
 updateModelControls();
 const messages    = document.getElementById('messages');
+// Wire scroll-position tracking (declared below in the virtualization
+// section) so every scroll event debounces a save. Passive listener
+// keeps the scroll path unaffected.
+messages.addEventListener('scroll', () => _recordScrollPosition(), { passive: true });
 const input       = document.getElementById('msg-input');
 const sendBtn     = document.getElementById('send-btn');
 const stopBtn     = document.getElementById('stop-btn');
