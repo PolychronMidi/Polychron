@@ -393,13 +393,21 @@ export function streamLlamacppAgentic(
             });
             result = result.trim() || "(no output)";
           } else if (fnName === "read_file") {
-            const abs = path.resolve(workingDir, String(args.path ?? ""));
-            result = fs.readFileSync(abs, "utf8");
+            const abs = _resolveWithinWorkdir(workingDir, String(args.path ?? ""));
+            if (!abs) {
+              result = `Refused: path '${args.path}' resolves outside workingDir ${workingDir}`;
+            } else {
+              result = fs.readFileSync(abs, "utf8");
+            }
           } else if (fnName === "write_file") {
-            const abs = path.resolve(workingDir, String(args.path ?? ""));
-            fs.mkdirSync(path.dirname(abs), { recursive: true });
-            fs.writeFileSync(abs, String(args.content ?? ""), "utf8");
-            result = `Written: ${args.path}`;
+            const abs = _resolveWithinWorkdir(workingDir, String(args.path ?? ""));
+            if (!abs) {
+              result = `Refused: path '${args.path}' resolves outside workingDir ${workingDir}`;
+            } else {
+              fs.mkdirSync(path.dirname(abs), { recursive: true });
+              fs.writeFileSync(abs, String(args.content ?? ""), "utf8");
+              result = `Written: ${args.path}`;
+            }
           } else {
             result = `Unknown tool: ${fnName}`;
           }
