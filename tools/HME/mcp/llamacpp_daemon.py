@@ -364,9 +364,11 @@ class _Supervisor:
         # Single-writer invariant: only llamacpp_daemon may spawn llama-server.
         # This assertion catches the class of bug we fixed tonight where a
         # second supervisor (in worker.py) tried to spawn the same processes.
+        # Use __file__ (not __name__): daemon runs as a script, so __name__
+        # is "__main__" but __file__ reliably contains "llamacpp_daemon.py".
         try:
             from server.lifecycle_writers import assert_writer
-            assert_writer("llama-server", __name__)
+            assert_writer("llama-server", __file__)
         except ImportError:
             pass  # server.lifecycle_writers not on path — running outside full HME tree
         # Defense-in-depth: never spawn a suspended instance even if a caller
