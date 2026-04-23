@@ -175,7 +175,3 @@ Polychron generates music. It does so through a structural principle that is old
 Dee Hock saw this in organizations. Fuller saw this in structures. Jung saw this in the psyche. The neuroscience of rhythm is seeing this in the brain. Polychron sees this in music. The principle is the same everywhere it appears, and it appears everywhere anything coherent exists.
 
 What this small system has done is make the principle inspectable. Every tension member has a name. Every compression island has a file. Every chaordic dial has a value. Every entrainment event has a trace. The principle, which is usually invisible — hidden in the structure of living things, in the dynamics of functional institutions, in the felt quality of a coherent mind — is here visible, auditable, and running.
-
-That visibility is the contribution. Not the principle itself, which is ancient. Not the architecture, which is small. The contribution is that the principle can now be *shown* rather than described. The code is the argument. The music is the evidence.
-
-The rest, as always, is work.
