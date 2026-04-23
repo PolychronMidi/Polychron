@@ -170,6 +170,9 @@ def evolution_momentum() -> str:
             timeline_parts.append(f"  R{run_start}–R{all_rounds[-1]}: **{current_cat}** ← current")
 
         out.append("## Evolution Arc")
+        _banner = _journal_freshness_banner()
+        if _banner:
+            out.append(_banner.rstrip())
         out.extend(timeline_parts)
         out.append(f"\nTotal rounds in journal: {len(all_rounds)} | KB entries: {len(all_kb)}")
         out.append("")
