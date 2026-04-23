@@ -1032,10 +1032,16 @@ class _Handler(BaseHTTPRequestHandler):
             # suspend coder → tell shim to reindex on freed GPU → resume coder.
             # Blocks until complete. Only the daemon touches GPU allocation.
             import threading
+            import traceback
             result = {"error": "not started"}
             def _run():
                 nonlocal result
-                result = _run_indexing_mode()
+                try:
+                    result = _run_indexing_mode()
+                except Exception as e:
+                    tb = traceback.format_exc()
+                    logger.error(f"indexing-mode: _run_indexing_mode raised: {tb}")
+                    result = {"error": f"indexing-mode crashed: {type(e).__name__}: {e}"}
             t = threading.Thread(target=_run)
             t.start()
             t.join(timeout=580)  # slightly under the client's 600s timeout
