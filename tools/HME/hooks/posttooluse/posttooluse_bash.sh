@@ -139,7 +139,11 @@ if echo "$CMD" | grep -qE '^git commit'; then
     # _safety.sh) fixes all three by construction. Gate on src/ changes
     # keeps cost aligned with value: doc/substrate commits skip the review.
     if [[ -x "$PROJECT_ROOT/i/review" ]]; then
-      if git -C "$PROJECT_ROOT" diff --name-only HEAD~1 HEAD 2>/dev/null | grep -q "^src/"; then
+      # Widened from ^src/ → code+tooling scope. tools/HME/ (hooks, proxy,
+      # mcp, chat) and scripts/ edits are real engineering that must be
+      # reviewed against KB constraints just like src/ edits. Pure doc/
+      # log/ metrics/ tmp/ commits still skip — noise gate intact.
+      if git -C "$PROJECT_ROOT" diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE '^(src|tools/HME|scripts|lab)/'; then
         _lifesaver_bg "review_auto_fire" 600 "$PROJECT_ROOT/tmp/hme-review-auto.out" \
           "$PROJECT_ROOT/i/review" mode=forget
       fi
