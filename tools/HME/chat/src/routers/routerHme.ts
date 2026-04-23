@@ -173,11 +173,11 @@ export async function enrichPrompt(prompt: string, frame: string = ""): Promise<
 }
 
 export async function validateMessage(message: string): Promise<{ warnings: any[]; blocks: any[] }> {
-  return shimPost("/validate", JSON.stringify({ query: message }), JSON.parse);
+  return shimPost("/validate", JSON.stringify({ query: message }), _parseValidateResult);
 }
 
 export async function auditChanges(changedFiles: string = ""): Promise<{ violations: any[]; changed_files: string[] }> {
-  return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse, 15000);
+  return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), _parseAuditResult, 15000);
 }
 
 export async function postTranscript(entries: any[]): Promise<void> {
@@ -185,7 +185,7 @@ export async function postTranscript(entries: any[]): Promise<void> {
 }
 
 export async function reindexFiles(files: string[]): Promise<{ indexed: string[]; count: number }> {
-  return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 30000);
+  return shimPost("/reindex", JSON.stringify({ files }), _parseReindexResult, 30000);
 }
 
 export async function postNarrative(narrative: string): Promise<void> {
