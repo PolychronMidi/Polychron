@@ -18,9 +18,12 @@ _AC_PROJECT="${PROJECT_ROOT:-}"
 if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ -d "$_AC_PROJECT/src" ]; then
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
-  git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"
-  # "nothing to commit" on a clean tree is expected; any other error is surfaced
-  if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet 2>"$_GIT_ERR"; then
+  git -C "$_AC_PROJECT" add -A >"$_GIT_ERR" 2>&1
+  # "nothing to commit" on a clean tree is expected; any other error is surfaced.
+  # Capture BOTH stdout and stderr (>FILE 2>&1) — git writes "nothing to commit"
+  # to stdout, not stderr, so a stderr-only redirect leaves an empty err file
+  # and the grep below misclassifies clean-tree as failure.
+  if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet >"$_GIT_ERR" 2>&1; then
     if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
       # R46 LIFESAVER FIX: autocommit failures previously wrote only to
       # stderr (dropped by _proxy_bridge) and to tmp/hme-autocommit.err
