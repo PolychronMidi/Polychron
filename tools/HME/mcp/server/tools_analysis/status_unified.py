@@ -298,6 +298,7 @@ _STATUS_MODES: dict[str, callable] = {
     "freshness": lambda: _freshness_report(),
     "vram": lambda: _vram_report(),
     "introspect": _mode_introspect,
+    "signals": _mode_signals,
 }
 
 
