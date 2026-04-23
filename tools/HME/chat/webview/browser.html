@@ -1573,9 +1573,25 @@ window.addEventListener('message', (event) => {
       shimStatus.style.color = event.data.ready ? 'var(--route-hybrid)' : event.data.failed ? 'var(--error-fg)' : 'var(--subtle)';
       shimStatus.title = event.data.ready ? 'HME KB shim: ready' : event.data.failed ? 'HME KB shim: FAILED — see chat for error' : 'HME KB shim: starting…';
     }
+  } else if (event.data.type === 'arbiterHealth') {
+    const arb = document.getElementById('arbiter-status');
+    if (arb) {
+      const healthy = event.data.healthy;
+      const fails = event.data.consecutiveFailures || 0;
+      arb.textContent = healthy ? 'ARB ●' : 'ARB ✗';
+      arb.style.color = healthy ? 'var(--route-hybrid)' : 'var(--error-fg)';
+      arb.title = healthy
+        ? 'Auto-routing arbiter: healthy (last ok ' + (event.data.lastOkMs ? new Date(event.data.lastOkMs).toISOString().slice(11,19) : 'never') + ')'
+        : 'Auto-routing arbiter: UNHEALTHY (' + fails + ' consecutive failures) — route=auto falls back to claude';
+    }
   }
 }, true);
 checkShim();
+// Poll arbiter health every 30s. Lightweight — the endpoint just
+// reads in-memory state on the server side.
+function checkArbiterHealth() { vscode.postMessage({ type: 'checkArbiterHealth' }); }
+setInterval(checkArbiterHealth, 30_000);
+setTimeout(checkArbiterHealth, 2_000);
 </script>
 </body>
 </html>
