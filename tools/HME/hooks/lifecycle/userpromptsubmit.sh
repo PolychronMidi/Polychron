@@ -6,12 +6,16 @@ PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 
 # Auto-commit snapshot
 # Commit any uncommitted changes before Claude processes the message.
-# Timestamps only — no description. Skipped during pipeline runs (run.lock present).
+# Timestamps only — no description. Runs unconditionally; pipeline state
+# does not gate commits. Mid-pipeline file states get committed at
+# whatever bytes are on disk; the next autocommit captures the final
+# state. One extra "in-progress" commit is the cost; persistent
+# uncommitted work during long pipeline runs is the bug we're avoiding.
 # PROJECT_ROOT comes from .env via _safety.sh. Never fall back to stdin.cwd /
 # $(pwd) — tool cwd may be a subtree and git -C would commit against the wrong
 # root. If PROJECT_ROOT is invalid, skip.
 _AC_PROJECT="${PROJECT_ROOT:-}"
-if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ -d "$_AC_PROJECT/src" ] && [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
+if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ -d "$_AC_PROJECT/src" ]; then
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
   git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"

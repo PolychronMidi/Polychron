@@ -46,7 +46,10 @@ _ac_log_error() {
 if [ -z "$_AC_PROJECT" ] || [ ! -d "$_AC_PROJECT/.git" ] || [ ! -d "$_AC_PROJECT/src" ]; then
   _ac_log_error "PROJECT_ROOT unset or invalid ('$_AC_PROJECT') — uncommitted work at turn end"
   echo "WARNING: stop.sh auto-commit skipped — PROJECT_ROOT unset or invalid ('$_AC_PROJECT')" >&2
-elif [ ! -f "$_AC_PROJECT/tmp/run.lock" ]; then
+else
+  # Autocommit runs unconditionally; pipeline state (run.lock) does not
+  # gate commits. Mid-pipeline files commit at whatever bytes are on disk
+  # at this instant; subsequent autocommits capture final states.
   # Capture git errors to a log so failures are visible, not hidden behind 2>/dev/null
   _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
   mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
