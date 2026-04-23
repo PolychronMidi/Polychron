@@ -134,7 +134,6 @@ Generated per-run in `output/metrics/`:
 | [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md) | 27 trust-scored systems |
 | [doc/CONVERGENCE_SYSTEMS.md](doc/CONVERGENCE_SYSTEMS.md) | Convergence detection, cascades |
 | [doc/SUBSYSTEMS.md](doc/SUBSYSTEMS.md) | Directory overview |
-| [.github/agents/Evolver.agent.md](.github/agents/Evolver.agent.md) | Evolution methodology |
 | [doc/theory/README.md](doc/theory/README.md) | Collection of theory essays about what drives Polychron |
 
 ## Dependencies
