@@ -40,11 +40,13 @@ fi
 _pass "worker reachable at $_WORKER_URL"
 
 # --- Assertion 2: coder healthy before we start ---
+# 120s cap: a fresh coder load from cold pagecache pulls 17 GB off disk
+# into VRAM, routinely takes 60-90s before /health returns ok.
 echo "[2/5] coder healthy at baseline"
 _waited=0
 until curl -sf "$_CODER_URL/health" 2>/dev/null | grep -q "ok"; do
-  if [ "$_waited" -ge 60 ]; then
-    _fail "coder not healthy after 60s baseline wait — can't establish baseline"
+  if [ "$_waited" -ge 120 ]; then
+    _fail "coder not healthy after 120s baseline wait — can't establish baseline (cold-boot from disk should never exceed 90s)"
   fi
   sleep 3
   _waited=$((_waited + 3))
