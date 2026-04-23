@@ -41,7 +41,15 @@ const OUT          = path.join(METRICS_DIR, 'hme-musical-correlation.json');
 
 const ROLLING_WINDOW = 20;
 const HISTORY_CAP = 60;
-const WARN_THRESHOLD = parseFloat(process.env.HME_MUSICAL_WARN_THRESHOLD || '0.2');
+const WARN_THRESHOLD = (() => {
+  const raw = process.env.HME_MUSICAL_WARN_THRESHOLD;
+  if (raw == null || raw === '') return 0.2;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) {
+    throw new Error(`HME_MUSICAL_WARN_THRESHOLD="${raw}" is not a finite number`);
+  }
+  return n;
+})();
 
 
 // R32: math extracted to correlation_math.js helper module.
