@@ -522,7 +522,12 @@ export class BrowserPanel implements PanelHost {
       this.post({ type: "notice", level: "info", text: "🔀 Auto-routing…" });
       const transcriptContext = this._state.messages.slice(-6)
         .map((m) => `${m.role}: ${m.text.slice(0, 100)}`).join("\n");
-      const decision = await classifyMessage(msg.text, transcriptContext, 0);
+      // Recent-window signals: high constraint density or recent errors
+      // steer the arbiter toward claude even for messages that look simple.
+      // Without these, route=auto only ever saw "message text + context" —
+      // no sense of whether the session was struggling.
+      const { constraintCount, errorCount } = this._transcript.getRecentActivitySignals();
+      const decision = await classifyMessage(msg.text, transcriptContext, constraintCount, errorCount);
       resolvedRoute = decision.route;
       if (!decision.isError) {
         const label = decision.escalated ? `⬆ escalated to ${decision.route}` : decision.route;
