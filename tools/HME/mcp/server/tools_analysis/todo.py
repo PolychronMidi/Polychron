@@ -122,7 +122,7 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("hme-todo-store", __file__)
-    except ImportError:
+    except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
     return {
         "id": _allocate_id(meta),
