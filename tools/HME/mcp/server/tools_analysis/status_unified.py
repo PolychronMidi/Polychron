@@ -32,7 +32,7 @@ def _mode_trust():
     return _tr("", "")
 
 def _mode_hme():
-    from ..evolution_admin import hme_selftest as _st
+    from .evolution.evolution_admin import hme_selftest as _st
     return _st()
 
 def _mode_activity():
