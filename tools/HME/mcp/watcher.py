@@ -1,22 +1,18 @@
 import logging
-import os
 import threading
 import time
 
+from hme_env import ENV
+
 logger = logging.getLogger(__name__)
-
-def _env_int(key: str, default: int) -> int:
-    try:
-        return int(os.environ.get(key, ""))
-    except (ValueError, TypeError):
-        return default
-
 
 # Per-file reindex is fast (~0.2-2s per file with chunk diffing),
 # so short cooldown. Full directory reindex keeps the longer cooldown.
-MIN_FILE_INTERVAL = _env_int("HME_WATCHER_FILE_INTERVAL", 10)
-MIN_DIR_INTERVAL  = _env_int("HME_WATCHER_DIR_INTERVAL", 300)
-BATCH_THRESHOLD   = _env_int("HME_WATCHER_BATCH_THRESHOLD", 15)
+# ENV.optional_int raises ValueError on garbage, so a typo in .env
+# surfaces immediately instead of silently using the default.
+MIN_FILE_INTERVAL = ENV.optional_int("HME_WATCHER_FILE_INTERVAL", 10)
+MIN_DIR_INTERVAL  = ENV.optional_int("HME_WATCHER_DIR_INTERVAL", 300)
+BATCH_THRESHOLD   = ENV.optional_int("HME_WATCHER_BATCH_THRESHOLD", 15)
 
 
 def start_watcher(project_root: str, engine, debounce: float = 3.0):
