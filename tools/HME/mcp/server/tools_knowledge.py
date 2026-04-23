@@ -359,14 +359,20 @@ def memory_dream() -> str:
                 "Which ones should be explicitly linked via add_knowledge? "
                 "Are any of these connections surprising given the codebase design?"
             )
-            with _cf.ThreadPoolExecutor(max_workers=1) as _ex:
-                _fut = _ex.submit(_think_local_or_claude, user_text)
-                try:
-                    synthesis = _fut.result(timeout=15)
-                except _cf.TimeoutError:
-                    synthesis = None
-                    parts.append("\n## Architectural Interpretation")
-                    parts.append("  (skipped — local coder model did not respond within 15s)")
+            # ThreadPoolExecutor.__exit__ blocks on shutdown(wait=True) even
+            # after our future timed out — which defeats the entire purpose of
+            # the timeout. Submit then shut down immediately with wait=False
+            # so the hung future is abandoned cleanly.
+            _ex = _cf.ThreadPoolExecutor(max_workers=1)
+            _fut = _ex.submit(_think_local_or_claude, user_text)
+            try:
+                synthesis = _fut.result(timeout=15)
+            except _cf.TimeoutError:
+                synthesis = None
+                parts.append("\n## Architectural Interpretation")
+                parts.append("  (skipped — local coder model did not respond within 15s)")
+            finally:
+                _ex.shutdown(wait=False, cancel_futures=True)
             if synthesis:
                 parts.append("\n## Architectural Interpretation *(adaptive)*")
                 parts.append(synthesis)
