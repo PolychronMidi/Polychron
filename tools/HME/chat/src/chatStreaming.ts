@@ -327,6 +327,12 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
           {
             onChunk: h.onChunk,
             claude: claudeOpts,
+            // Hard wall-clock cap. Without this, runaway thinking or a
+            // hung stdio pipe can leave Claude streaming indefinitely
+            // with no user recourse beyond manual cancel. 300s is
+            // generous enough for thorough thinking, tight enough to
+            // surface stuck streams.
+            deadlineMs: 300_000,
             onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
             onTokenUsage: (u) => {
               onCompleted({
