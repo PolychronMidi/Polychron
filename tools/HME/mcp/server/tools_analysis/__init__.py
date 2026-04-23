@@ -19,6 +19,8 @@ from ._helpers import (  # noqa: F401
     _filter_kb_relevance, _get_compositional_context,
     _compositional_context_cache,
     _git_run, _load_trace, _trace_cache, _git_cache,
+    _journal_freshness_banner, _journal_latest_archived_round,
+    _activity_latest_round,
 )
 
 
