@@ -307,9 +307,9 @@ Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a
 
 Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables, todos, file hashes). The worker (`tools/HME/mcp/worker.py`) spawns under the proxy (`tools/HME/proxy/hme_proxy.js`); HME tools are invoked via the shell wrappers in `i/` (`i/review`, `i/trace`, `i/learn`, etc.). Skills at `skills/`, symlinked from `~/.claude/skills/`. Load the skill before first use: `/HME`
 
-## Evolver Integration
+## Evolution Loop Integration
 
-HME is the cognitive backbone of every Evolver phase. The Evolver doesn't just *use* HME tools — it *thinks through* HME.
+HME is the cognitive backbone of every evolution phase. The loop is driven by lifecycle hooks rather than a dedicated subagent — each phase calls HME tools directly.
 
 | Phase | HME Role | Tools |
 --
