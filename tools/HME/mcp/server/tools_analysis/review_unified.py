@@ -150,11 +150,36 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                 # advance state deterministically regardless of output format.
                 try:
                     from server.onboarding_chain import emit_review_verdict_marker
+                    import re as _re_vw
                     lo = _wdif_out.lower()
                     if "warnings: none" in lo or "no changed files" in lo:
                         verdict = "clean"
                     elif "warning" in lo:
-                        verdict = "warnings"
+                        # Parse the `## Warnings (N)` block and see if every
+                        # bullet is a SCAFFOLDING reminder (HOOK CHANGE, DOC
+                        # CHECK, SKIPPED, KB). workflow_audit's internal
+                        # _actionable filter already treats those as
+                        # non-defects; the verdict marker should honor the
+                        # same filter. Without this, every edit creates two
+                        # boilerplate reminders → stop.sh blocks forever.
+                        warnings_section = _re_vw.search(
+                            r'^## Warnings \(\d+\)\s*\n((?:^[ \t]*-.*\n?)+)',
+                            _wdif_out, _re_vw.MULTILINE,
+                        )
+                        if warnings_section:
+                            bullets = [
+                                ln for ln in warnings_section.group(1).splitlines()
+                                if ln.strip().startswith("-")
+                            ]
+                            scaffold_re = _re_vw.compile(
+                                r'\]\s+(HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
+                            )
+                            if bullets and all(scaffold_re.search(b) for b in bullets):
+                                verdict = "clean"
+                            else:
+                                verdict = "warnings"
+                        else:
+                            verdict = "warnings"
                     else:
                         verdict = "clean"  # No explicit warnings → treat as clean
                     parts.append(emit_review_verdict_marker(verdict))
