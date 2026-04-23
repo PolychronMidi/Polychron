@@ -389,6 +389,22 @@ Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe th
 | `i/hme-admin action=clear_index` | Full reindex via daemon's GPU-orchestrated indexing-mode (suspends coder → moves embedders to cuda:1 → indexes → restores) |
 | `i/hme --version` | Print cli / proxy / worker versions and warn on drift |
 
+**KB entries worth querying when working on HME internals:**
+
+The 2026-04-22 indexing-mode incident ([7 root causes](../tools/HME/KB/)) was persisted as KB entries. Retrieve with `i/learn query="<topic>"`:
+
+| Topic | KB entry (short id) | Query hint |
+|---|---|---|
+| dotenv inline-comment parse bug | `a8b4eeb6d3fa` | `i/learn query="dotenv inline comment"` |
+| duplicate supervisor race | `54e18b372699` | `i/learn query="duplicate supervisor"` |
+| PyTorch cuda context residual | `e8c883ae6af1` | `i/learn query="cuda context residual"` |
+| SentenceTransformer.to() NaN trap | `042eda002c1f` | `i/learn query="sentence transformer to nan"` |
+| attention matrix OOM | `b071e13f523f` | `i/learn query="attention matrix oom"` |
+| PYTORCH_CUDA_ALLOC_CONF timing | `2a6479eb0877` | `i/learn query="PYTORCH_CUDA_ALLOC_CONF"` |
+| planned-restart cooldown bypass | `743b9ddea0a2` | `i/learn query="planned restart cooldown"` |
+
+These entries document the root-cause chain end-to-end, not just the symptoms. Before touching `llamacpp_daemon.py`, `rag_engines.py`, or the indexing-mode flow, query the relevant entry — tonight's 6-hour investigation is a one-liner away.
+
 **Programmatic arbiter health** (from `Arbiter.ts`):
 
 ```ts
