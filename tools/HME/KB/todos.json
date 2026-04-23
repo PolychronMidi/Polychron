@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 572,
-      "updated_ts": 1776941833.9347563
+      "max_id": 573,
+      "updated_ts": 1776941843.0701857
     }
   },
   {
@@ -360,6 +360,19 @@
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776941833.934755,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 573,
+    "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_indexing_mode_resume: coder respawn failed after 3 retries post-indexing-mode \u2014 GPU1 has 12828 MB free, coder needs ~22049 MB (model+kv+headroom). Likely residual CUDA context from the embedder. Manual remediation: restart the worker (kill pid of worker.py).",
+    "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_indexing_mode_resume: coder respawn failed after 3 retries post-indexing-mode \u2014 GPU1 has 12828 MB free, coder needs ~22049 MB (model+kv+headroom). Likely residual CUDA context from the embedder. Manual remediation: restart the worker (kill pid of worker.py).",
+    "status": "pending",
+    "done": false,
+    "critical": true,
+    "source": "lifesaver",
+    "on_done": "",
+    "ts": 1776941843.0701845,
     "parent_id": 0,
     "subs": []
   }
