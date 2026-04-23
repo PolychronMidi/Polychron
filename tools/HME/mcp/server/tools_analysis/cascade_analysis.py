@@ -58,8 +58,21 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
         }
         with open(path, "a", encoding="utf-8") as f:
             f.write(_json.dumps(record, separators=(",", ":")) + "\n")
-    except OSError:
-        pass
+    except OSError as _cascade_err:
+        # Silently losing cascade records breaks the entire prediction-
+        # accuracy validation loop (downstream scripts read this file to
+        # score cascade predictions). LIFESAVER so degraded observability
+        # isn't discoverable only via "why are our cascade metrics flat?"
+        logger.error(f"cascade record append FAILED: {type(_cascade_err).__name__}: {_cascade_err}")
+        try:
+            from server import context as _ctx
+            _ctx.register_critical_failure(
+                "cascade_analysis.record_append",
+                f"cascade record lost ({type(_cascade_err).__name__}); prediction-accuracy loop is now missing data",
+                severity="CRITICAL",
+            )
+        except Exception as _life_err:
+            logger.debug(f"LIFESAVER register failed: {_life_err}")
 
 
 def _load_dep_graph() -> dict:
