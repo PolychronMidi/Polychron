@@ -972,6 +972,20 @@ window.addEventListener('message', (event) => {
     case 'cancelConfirmed':
       [...activeStreams].forEach(sid => endStream(sid, undefined));
       break;
+    case 'messageRemoved':
+      // Drop the DOM node for a cancelled partial assistant message so the
+      // conversation doesn't show a half-written orphan.
+      if (msg.id) {
+        var el = document.querySelector('[data-message-id="' + msg.id + '"]');
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      }
+      break;
+    case 'contextMeterStuck':
+      setStatus('⚠ Context meter offline — ' + (msg.reason || 'usedPct not arriving') + ' (last good: ' + (msg.lastGoodPct || 0) + '%)');
+      break;
+    case 'contextMeterRestored':
+      setStatus('');
+      break;
     case 'streamingRestored':
       // Panel was reshown during an active stream — restore stop/queue visibility
       streaming = true;
