@@ -33,8 +33,6 @@ export type WebviewMessage =
   | { type: "enrichPrompt"; prompt: string; frame?: string }
   | { type: "checkHmeShim" }
   | { type: "checkArbiterHealth" }
-  | { type: "setZoomLevel"; level: number }
-  | { type: "setMirrorMode"; enabled: boolean; model?: string; effort?: string }
   | (ClaudeConfigMsg & { type: "setClaudeConfig" });
 
 /** Typed handler map: every key is a message type, handler receives the narrowed message. */

@@ -52,7 +52,6 @@ export class BrowserPanel implements PanelHost {
   // kernel buffers that never drain, holding the panel alive and
   // slowing every broadcast. Clients idle > SSE_IDLE_MS are removed.
   private _sseClientSeen = new WeakMap<ExpressResponse, number>();
-  private _sseSweepTimer?: NodeJS.Timeout;
   // Authoritative Claude config — kept in sync with the browser UI via setClaudeConfig.
   // Send/queue messages fall back to this if they omit the fields (they shouldn't, but
   // it means the server state is the source of truth, not the browser payload).
@@ -381,12 +380,6 @@ export class BrowserPanel implements PanelHost {
         consecutiveFailures: health.consecutiveFailures,
         lastOkMs: health.lastOkMs,
       });
-    },
-    setZoomLevel: (_msg) => {
-      // No-op: browser uses localStorage for zoom persistence
-    },
-    setMirrorMode: (_msg) => {
-      // No-op: mirror terminal not available in browser mode
     },
     setClaudeConfig: (msg) => {
       try {
