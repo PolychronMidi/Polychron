@@ -8,6 +8,8 @@ PROMPT=$(_safe_jq "$INPUT" '.user_prompt' '')
 # in pretooluse_edit.sh). Scope is a single user turn, not the whole session.
 rm -f "${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt" 2>/dev/null || true
 
+_signal_emit turn_start userpromptsubmit turn '{}'
+
 # Auto-commit snapshot
 # Commit any uncommitted changes before Claude processes the message.
 # Timestamps only — no description. Runs unconditionally; pipeline state
