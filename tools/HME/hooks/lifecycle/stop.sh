@@ -367,6 +367,11 @@ if [ -f "$SESSION_HOLO" ] && [ -f "$HOLO_SCRIPT" ]; then
   fi
 fi
 
+# Signal bus emission alongside the activity bridge. Activity events
+# feed analytics; the signal bus is the one-file truth of "what fired
+# this turn" for quick replay / status / debugging.
+_signal_emit turn_complete stop.sh turn '{}'
+
 # HME activity bridge: emit turn_complete
 # Snapshots the CHAT TURN boundary for metrics/hme-activity.jsonl. This is
 # NOT round_complete — that fires on pipeline finish (posttooluse_bash.sh
