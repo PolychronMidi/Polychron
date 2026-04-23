@@ -34,6 +34,14 @@ export class TranscriptLogger {
   private _turnCount = 0;
   private _sessionId = "";
   private _narrativeCallback?: (entries: TranscriptEntry[]) => Promise<string>;
+  // Write queue + flush flag — appendFileSync is technically blocking, but
+  // concurrent log() calls from agent-mode parallel streams or rapid
+  // user spam can interleave their effects on the in-memory _entries
+  // array even if the syscall itself is atomic. Buffering through the
+  // queue + flushing under a single-writer flag eliminates the
+  // interleave + reduces syscall pressure.
+  private _writeQueue: string[] = [];
+  private _flushing = false;
 
   constructor(projectRoot: string) {
     const logDir = path.join(projectRoot, "log");
