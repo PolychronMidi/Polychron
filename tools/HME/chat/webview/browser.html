@@ -925,6 +925,10 @@ queueBtn.addEventListener('click', () => {
   });
 });
 clearBtn.addEventListener('click', () => vscode.postMessage({ type: 'clearHistory' }));
+drainBtn.addEventListener('click', () => {
+  vscode.postMessage({ type: 'drainQueue' });
+  drainBtn.style.display = 'none';
+});
 
 //  Receive messages from extension
 // SSE event stream from server — dispatches synthetic message events into the page
