@@ -48,11 +48,12 @@ from pathlib import Path
 from datetime import datetime, UTC
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", Path(__file__).resolve().parent.parent.parent.parent))
+METRICS_DIR = Path(os.environ.get("METRICS_DIR", PROJECT_ROOT / "output" / "metrics"))
 ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 WATERMARK = PROJECT_ROOT / "tmp" / "hme-errors.lastread"
 TURNSTART = PROJECT_ROOT / "tmp" / "hme-errors.turnstart"
-HISTORY = PROJECT_ROOT / "metrics" / "hme-streak-calibration-history.jsonl"
-OUTPUT = PROJECT_ROOT / "metrics" / "hme-streak-calibration.json"
+HISTORY = METRICS_DIR / "hme-streak-calibration-history.jsonl"
+OUTPUT = METRICS_DIR / "hme-streak-calibration.json"
 
 # Bounds on recommended threshold. Bridges are constrained — an uncontrolled
 # controller violates hypermeta jurisdiction. These locked ranges prevent the
