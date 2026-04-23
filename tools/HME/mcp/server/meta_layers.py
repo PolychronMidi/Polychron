@@ -479,10 +479,19 @@ def _checkpoint_entanglement() -> None:
                 state["thermo_entropy"] = ops.get("thermo_entropy_ema")
         except (OSError, json.JSONDecodeError) as _ops_err:
             # ops-file read failure means L28/L29/L34 signals (prediction
-            # calibration, thermo efficiency, Brier score) vanish from the
-            # state snapshot. Log it — silent loss would present as
-            # "system suddenly has no observability" with no clue why.
-            logger.error(f"ops file read FAILED — L28/29/34 signals dropped from state: {type(_ops_err).__name__}: {_ops_err}")
+            # calibration, thermo efficiency, Brier score) drop from the
+            # state snapshot. Surface via LIFESAVER so the agent sees
+            # "observability partial" banner and knows why the reports went blank.
+            logger.error(f"ops file read FAILED: {type(_ops_err).__name__}: {_ops_err}")
+            try:
+                from server import context as _ctx
+                _ctx.register_critical_failure(
+                    "meta_layers.ops_file",
+                    f"operational_state unreadable ({type(_ops_err).__name__}); L28/29/34 signals missing from state snapshot",
+                    severity="CRITICAL",
+                )
+            except Exception as _life_err:
+                logger.debug(f"LIFESAVER register failed: {_life_err}")
 
         # Last narrative (the system's own interpretation)
         last_narr = _read_last_narrative()
