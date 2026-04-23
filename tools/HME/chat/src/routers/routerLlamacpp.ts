@@ -283,6 +283,23 @@ function llamacppChatOnce(
   return { promise, cancel };
 }
 
+/**
+ * Resolve an agent-supplied path safely under workingDir. Returns null
+ * if the resolved path escapes workingDir (e.g. via '..' or absolute
+ * path). Without this guard, an agent could read /etc/passwd or
+ * write to ~/.ssh/authorized_keys.
+ */
+function _resolveWithinWorkdir(workingDir: string, requested: string): string | null {
+  if (!requested) return null;
+  const root = path.resolve(workingDir);
+  const candidate = path.resolve(root, requested);
+  // Exact match is OK; otherwise must be a child path.
+  if (candidate === root) return candidate;
+  if (!candidate.startsWith(root + path.sep)) return null;
+  return candidate;
+}
+
+
 function parseXmlFunctionCalls(content: string): any[] {
   const calls: any[] = [];
   const fnRe = /<function=(\w+)>([\s\S]*?)<\/function>/g;
