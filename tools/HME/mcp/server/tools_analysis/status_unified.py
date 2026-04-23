@@ -111,6 +111,67 @@ def _mode_multi_agent():
     from .multi_agent import multi_agent_report as _ma
     return _ma()
 
+def _list_modes():
+    """Grouped catalogue of mode= options. The bare 'Unknown mode' error
+    used to be the only way to discover what was available — that error
+    list isn't grouped, isn't described, and gave no hint of aliases."""
+    groups = [
+        ("Pipeline / data freshness", [
+            ("pipeline", "last pipeline run summary"),
+            ("freshness", "age of every metric source + sync warnings"),
+            ("vram", "GPU usage + 30-min trend sparklines"),
+            ("activity", "event counts + read/write coherence"),
+            ("budget", "coherence band state + prescription"),
+            ("resume", "session briefing: git + pipeline + narrative"),
+        ]),
+        ("Self-coherence (HME-on-HME)", [
+            ("self_audit", "CASCADE_UNRELIABLE / ANCHOR_DEGENERATE flags"),
+            ("reflexivity", "clean vs injected prediction-accuracy buckets"),
+            ("accuracy", "EMA + per-round confirmed/refuted lists"),
+            ("cognitive_load", "session workload vs historical p25/p50/p90"),
+            ("introspect", "tool usage breakdown for this session"),
+            ("hme", "full HME selftest output"),
+            ("health", "codebase line-count / convention / boundary scan"),
+            ("doc_drift", "per-doc orphan-reference counts"),
+            ("staleness", "FRESH/STALE/MISSING per module"),
+        ]),
+        ("Evolution / planning", [
+            ("priorities", "ranked evolution priorities (alias of `next`)"),
+            ("next", "ranked evolution priorities (alias of `priorities`)"),
+            ("blindspots", "untouched subsystems + write-without-read modules"),
+            ("probes", "adversarial probe candidates"),
+            ("hypotheses", "OPEN/CONFIRMED hypothesis registry"),
+            ("crystallized", "multi-round patterns + synthesis text"),
+            ("generalizations", "patterns that may generalize beyond Polychron"),
+            ("constitution", "positive affirmations of what Polychron IS"),
+        ]),
+        ("Trust / coupling / drift", [
+            ("trust", "trust leaderboard with musical roles"),
+            ("coupling", "melodic/rhythmic/phase coupling network"),
+            ("drift", "Arc III outliers with z-scores"),
+            ("trajectory", "verdict + per-signal slope/range"),
+            ("kb_trust", "tier distribution + top/bottom entries"),
+            ("intention_gap", "todos vs tracked execution"),
+            ("negative_space", "feedback-loop near-miss candidates"),
+            ("multi_agent", "role distribution"),
+        ]),
+        ("Music / perception", [
+            ("perceptual", "cached EnCodec+CLAP per-section report"),
+            ("music_truth", "ground-truth correlations"),
+            ("ground_truth", "human listening verdicts"),
+            ("coherence", "per-round coherence score breakdown"),
+        ]),
+    ]
+    parts = ["# i/status modes (35+ available)\n"]
+    for group_name, items in groups:
+        parts.append(f"## {group_name}")
+        for name, desc in items:
+            parts.append(f"  {name:<18s} {desc}")
+        parts.append("")
+    parts.append("Pass any name as `i/status mode=<name>` (or `mode=all` for the unified overview).")
+    return "\n".join(parts)
+
+
 def _mode_perceptual():
     # Status is a "quick look" surface — reading the cached report from the
     # last pipeline run is what users actually want, not triggering a fresh
