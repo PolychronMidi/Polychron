@@ -367,16 +367,13 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
     except Exception as _err1:
         logger.debug(f'silent-except coupling_bridges.py:354: {type(_err1).__name__}: {_err1}')
 
-    # Get latest round number for staleness computation
+    # Get latest round number for staleness computation.
+    # Prefer the activity bridge (live source); fall back to the journal
+    # archive only if the activity bridge has no round_complete events yet.
     _latest_round = 0
     try:
-        journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
-        if os.path.isfile(journal_path):
-            import re as _re_j
-            with open(journal_path, encoding="utf-8") as _jf:
-                first_match = _re_j.search(r'\bR(\d+)\b', _jf.read(500))
-                if first_match:
-                    _latest_round = int(first_match.group(1))
+        from .. import _activity_latest_round, _journal_latest_archived_round
+        _latest_round = _activity_latest_round() or _journal_latest_archived_round() or 0
     except Exception as _err2:
         logger.debug(f'silent-except coupling_bridges.py:367: {type(_err2).__name__}: {_err2}')
 
