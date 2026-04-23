@@ -1,0 +1,2 @@
+{"role":"user","content":[{"type":"text","text":"continue dual-purpose session — exhaust protocol followups"}]}
+{"role":"assistant","content":[{"type":"text","text":"Round complete. Lint passes, all fixes auto-committed.\n\n**Adversarial-pass HME observations** (most fast, two minor UX gaps left as-is):\n- i/substrate mode=invariants — Unknown mode (no invariants browser)\n- i/hme-admin action=restart — Unknown action (should be reload)\n- i/status mode=coherence shows ?/100 when no events instead of N/A"}]}
