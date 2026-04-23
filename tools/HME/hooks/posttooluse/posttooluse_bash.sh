@@ -29,6 +29,7 @@ if echo "$CMD" | grep -qE '(^|[[:space:]/])i/review\b|scripts/hme-cli\.js review
 fi
 
 if echo "$CMD" | grep -q 'npm run main'; then
+  _signal_emit pipeline_finished posttooluse_bash pipeline "{\"exit_code\":$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // 0' '0')}"
   # ANTI-STOP: when the pipeline fails at lint/typecheck, diagnose and fix without pausing.
   # Stopping after a failure — asking, summarizing, or waiting — is the psychopathic antipattern.
   # Review warnings are NEVER ignorable: fix every one before proceeding.
