@@ -277,6 +277,15 @@ export class BrowserPanel implements PanelHost {
         };
         this.post({ type: "message", message: queuedUserMsg });
         this._messageQueue.push({ ...msg, _queuedUserMsg: queuedUserMsg });
+        // Surface queue depth + warning when stream may be stuck.
+        const depth = this._messageQueue.length;
+        this.post({ type: "queueStatus", pending: depth, limit: QUEUE_LIMIT });
+        if (depth >= QUEUE_LIMIT - 2) {
+          this.post({
+            type: "queueAlert", pending: depth, limit: QUEUE_LIMIT,
+            reason: "current stream may be stuck",
+          });
+        }
       } else {
         this._isStreaming = true;
         this._onSend(msg).catch((e) => {
