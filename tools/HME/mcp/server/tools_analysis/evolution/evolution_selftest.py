@@ -907,6 +907,53 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: meta-invariant coverage -- probe failed: {type(_e).__name__}: {_e}")
 
+    # Probe: stop-hook detectors are alive and firing.
+    # If detector-stats.jsonl hasn't gotten a row in the last 7 days, the
+    # hook dispatch chain or the telemetry path is silently broken — every
+    # detector will say "ok" and the antipatterns go uncaught.
+    try:
+        import json as _json_ds
+        stats_path = os.path.join(_project_root, "output", "metrics", "detector-stats.jsonl")
+        if not os.path.isfile(stats_path):
+            results.append("INFO: detector telemetry -- stats file not yet created")
+        else:
+            with open(stats_path, encoding="utf-8") as _sf:
+                lines = _sf.readlines()[-500:]
+            if not lines:
+                results.append("WARN: detector telemetry -- stats file empty")
+            else:
+                last_row = None
+                detectors_seen = set()
+                for ln in lines:
+                    try:
+                        r = _json_ds.loads(ln)
+                        detectors_seen.add(r.get("detector", "?"))
+                        if (last_row is None) or (r.get("ts", 0) > last_row.get("ts", 0)):
+                            last_row = r
+                    except Exception:  # silent-ok: malformed jsonl line skipped in tally
+                        continue
+                import time as _time_ds
+                age_days = (_time_ds.time() - (last_row or {}).get("ts", 0)) / 86400 if last_row else 999
+                expected = {"psycho_stop", "early_stop", "fabrication_check"}
+                missing = expected - detectors_seen
+                if missing:
+                    results.append(
+                        f"WARN: detector telemetry -- never-seen: {sorted(missing)} "
+                        f"(run a turn matching their trigger to verify plumbing)"
+                    )
+                elif age_days > 7:
+                    results.append(
+                        f"WARN: detector telemetry -- most recent fire is {age_days:.1f} days old; "
+                        f"hook dispatch may be broken"
+                    )
+                else:
+                    results.append(
+                        f"PASS: detector telemetry -- {len(detectors_seen)} detectors logging; "
+                        f"last fire {age_days:.1f} days ago"
+                    )
+    except Exception as _e:
+        results.append(f"WARN: detector telemetry -- probe failed: {type(_e).__name__}: {_e}")
+
     # Probe: middleware load-order manifest covers every present file.
     # Without this, a new middleware silently runs in alphabetical fallback
     # position — which may break a dependency chain (lifesaver_inject must
