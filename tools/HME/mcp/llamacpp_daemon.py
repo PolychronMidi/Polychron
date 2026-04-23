@@ -1172,7 +1172,13 @@ def _run_indexing_mode_locked() -> dict:
                 else:
                     logger.info(f"indexing-mode: coder resumed: {resume_result}")
             except Exception as e:
-                logger.error(f"indexing-mode: coder resume failed: {e} — MANUAL INTERVENTION NEEDED")
+                # Health-loop keeps retrying; if daemon itself dies, the
+                # boot-recovery on the next daemon spawn unstucks embedders
+                # before coder-respawn is attempted.
+                logger.error(
+                    f"indexing-mode: coder resume hit exception: {e} — "
+                    f"health-loop + boot-recovery will self-heal"
+                )
 
     return result_data
 
