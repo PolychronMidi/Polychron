@@ -974,9 +974,10 @@ window.addEventListener('message', (event) => {
       break;
     case 'messageRemoved':
       // Drop the DOM node for a cancelled partial assistant message so the
-      // conversation doesn't show a half-written orphan.
+      // conversation doesn't show a half-written orphan. appendMessage uses
+      // id="msg-${msg.id}" for the outer div.
       if (msg.id) {
-        var el = document.querySelector('[data-message-id="' + msg.id + '"]');
+        var el = document.getElementById('msg-' + msg.id);
         if (el && el.parentNode) el.parentNode.removeChild(el);
       }
       break;
