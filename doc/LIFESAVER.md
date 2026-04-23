@@ -95,7 +95,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 | `pretooluse_bash.sh` | `stat`/`ls -l` on pipeline metric files | Anti-polling — timestamp checking is indirect polling |
 | `pretooluse_bash.sh` | Pipeline command without `run_in_background=true` | Anti-wait — pipeline must run in background |
 | `pretooluse_bash.sh` | `run_in_background=true` AND trailing `&` | Correctness — double-backgrounding fires false completion |
-| `pretooluse_bash.sh` | `tail`/`cat`/`grep` on pipeline log files | Anti-polling — use check_pipeline MCP tool |
+| `pretooluse_bash.sh` | `tail`/`cat`/`grep` on pipeline log files | Anti-polling — use `i/status` |
 | `pretooluse_bash.sh` | `sleep` + `tail`/`cat`/`grep` in same command | Anti-polling — sleep-then-check is the antipattern |
 | `pretooluse_bash.sh` | Empty catch blocks, no-op error handlers, suppressed stderr | Fail fast — no silent error suppression |
 | `pretooluse_bash.sh` | 3rd+ read of `/tmp/claude-*` task output | Anti-polling — already checked twice, wait for notification |
@@ -104,7 +104,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 | `pretooluse_write.sh` | API key/password/secret/token pattern detected | Security — review before writing credentials |
 | `pretooluse_write.sh` | LLM stub placeholder in full file write | Correctness — stubs destroy files |
 | `pretooluse_write.sh` | `logger.warning()` for expected background failures | fix_antipattern — use logger.info for expected failures |
-| `pretooluse_check_pipeline.sh` | 2nd+ `check_pipeline` call in same turn | **Redirect** — deny + suggest `status(mode='pipeline')` |
+| `pretooluse_check_pipeline.sh` | 2nd+ `i/status` call in same turn | **Redirect** — deny + suggest continuing real work while the pipeline runs |
 
 ### Soft Feedback (stderr — command proceeds, agent sees advice)
 
