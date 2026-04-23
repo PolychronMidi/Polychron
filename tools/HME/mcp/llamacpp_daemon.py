@@ -820,7 +820,7 @@ def _run_indexing_mode() -> dict:
 
 
 def _run_indexing_mode_locked() -> dict:
-    _SHIM_PORT = int(ENV.optional("HME_SHIM_PORT", "9098"))
+    _SHIM_PORT = ENV.optional_int("HME_SHIM_PORT", 9098)
     _SHIM_URL = f"http://127.0.0.1:{_SHIM_PORT}"
 
     def _shim_post(endpoint: str, data: dict, timeout: float = 30) -> dict:
