@@ -757,6 +757,51 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: invariant enforcement coverage -- probe failed: {type(_e).__name__}: {_e}")
 
+    # Probe 6: version consistency across daemon + worker + config.
+    # A wire-protocol mismatch (e.g. post-upgrade daemon talking to a
+    # pre-upgrade worker) tonight would have surfaced as mystery "not
+    # started" errors with no obvious culprit. Reading all endpoints'
+    # /version and comparing to the canonical versions.json catches this.
+    try:
+        import json as _json_vc
+        import urllib.request as _url
+        versions_path = os.path.join(_project_root, "tools", "HME", "config", "versions.json")
+        with open(versions_path) as _vf:
+            canonical = _json_vc.load(_vf)
+        probes = [
+            ("daemon", "http://127.0.0.1:7735/version"),
+            ("worker", "http://127.0.0.1:9098/version"),
+        ]
+        observed = {}
+        for name, url in probes:
+            try:
+                with _url.urlopen(url, timeout=2) as _r:
+                    observed[name] = _json_vc.loads(_r.read()).get("version", "?")
+            except Exception as _vprobe:
+                observed[name] = f"unreachable({type(_vprobe).__name__})"
+        mismatches = []
+        for name in ("daemon", "worker"):
+            expected = canonical.get(name, "?")
+            got = observed.get(name, "?")
+            if expected == "?" or got == "?":
+                continue
+            if got.startswith("unreachable"):
+                continue
+            if expected != got:
+                mismatches.append(f"{name}: running={got} expected={expected}")
+        if mismatches:
+            results.append(
+                "FAIL: version consistency -- " + "; ".join(mismatches)
+                + " (restart the drifted component; wire-protocol bugs here are invisible at runtime)"
+            )
+        else:
+            results.append(
+                f"PASS: version consistency -- daemon={observed.get('daemon', '?')} "
+                f"worker={observed.get('worker', '?')} canonical={canonical.get('worker', '?')}"
+            )
+    except Exception as _e:
+        results.append(f"WARN: version consistency -- probe failed: {type(_e).__name__}: {_e}")
+
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
