@@ -149,49 +149,32 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
         for lib_key, engine in ctx.lib_engines.items():
             futures[lib_key] = pool.submit(_index_lib, lib_key, engine)
 
-        lines = []
-        for key, future in futures.items():
-            try:
-                r = future.result()
-            except Exception as e:
-                lines.append(f"[{key}] Error: {type(e).__name__}: {e}")
-                continue
-
-            if key == "__main__":
-                # Use explicit key presence checks with named error messages
-                # instead of `r['key']` (which raises KeyError on shim
-                # failure returning malformed dicts).
-                # on empty responses, but defend here too for any
-                # legitimate partial-success dict.
-                if not isinstance(r, dict):
-                    lines.insert(0, f"[main] Error: result is {type(r).__name__}, expected dict")
-                    continue
-                missing = [k for k in ("total_files", "indexed", "skipped_unchanged",
-                                       "chunks_created", "symbols_indexed") if k not in r]
-                if missing:
-                    lines.insert(0, f"[main] Error: missing keys {missing} in result {list(r.keys())}")
-                    continue
-                lines.insert(0,
-                    f"[main] files={r['total_files']} indexed={r['indexed']} "
-                    f"skipped={r['skipped_unchanged']} chunks={r['chunks_created']} "
-                    f"symbols={r['symbols_indexed']}"
-                )
+    lines = [
+        f"[main] files={main_result['total_files']} indexed={main_result['indexed']} "
+        f"skipped={main_result.get('skipped_unchanged', 0)} chunks={main_result.get('chunks_created', 0)} "
+        f"symbols={main_result.get('symbols_indexed', 0)}"
+    ]
+    for lib_name, future in futures.items():
+        try:
+            r = future.result()
+        except Exception as e:
+            lines.append(f"[{lib_name}] Error: {type(e).__name__}: {e}")
+            continue
+        _, lib_result = r
+        if isinstance(lib_result, str):
+            lines.append(f"[{lib_name}] Error: {lib_result}")
+        elif not isinstance(lib_result, dict):
+            lines.append(f"[{lib_name}] Error: result is {type(lib_result).__name__}, expected dict")
+        else:
+            missing = [k for k in ("total_files", "indexed", "skipped_unchanged",
+                                   "chunks_created") if k not in lib_result]
+            if missing:
+                lines.append(f"[{lib_name}] Error: missing keys {missing} in result {list(lib_result.keys())}")
             else:
-                lib_name, lib_result = r
-                if isinstance(lib_result, str):
-                    lines.append(f"[{lib_name}] Error: {lib_result}")
-                elif not isinstance(lib_result, dict):
-                    lines.append(f"[{lib_name}] Error: result is {type(lib_result).__name__}, expected dict")
-                else:
-                    missing = [k for k in ("total_files", "indexed", "skipped_unchanged",
-                                           "chunks_created") if k not in lib_result]
-                    if missing:
-                        lines.append(f"[{lib_name}] Error: missing keys {missing} in result {list(lib_result.keys())}")
-                    else:
-                        lines.append(
-                            f"[{lib_name}] files={lib_result['total_files']} indexed={lib_result['indexed']} "
-                            f"skipped={lib_result['skipped_unchanged']} chunks={lib_result['chunks_created']}"
-                        )
+                lines.append(
+                    f"[{lib_name}] files={lib_result['total_files']} indexed={lib_result['indexed']} "
+                    f"skipped={lib_result['skipped_unchanged']} chunks={lib_result['chunks_created']}"
+                )
 
     return "Indexing complete:\n" + "\n".join(lines)
 
