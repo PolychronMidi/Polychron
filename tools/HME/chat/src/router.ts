@@ -65,7 +65,7 @@ export {
   getAdapterForRoute, runAdapter,
 } from "./routers/adapters";
 export type {
-  ClaudeStreamInput, ClaudeStreamOptions,
+  ClaudeStreamInput, ClaudeStreamOptions, ClaudePtyStreamOptions,
   LlamacppStreamOptions,
   HybridStreamInput, HybridStreamOptions,
   StreamInput, StreamOpts,
