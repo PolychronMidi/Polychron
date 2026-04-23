@@ -55,6 +55,14 @@ class TranscriptLogger {
         this._entries = [];
         this._turnCount = 0;
         this._sessionId = "";
+        // Write queue + flush flag — appendFileSync is technically blocking, but
+        // concurrent log() calls from agent-mode parallel streams or rapid
+        // user spam can interleave their effects on the in-memory _entries
+        // array even if the syscall itself is atomic. Buffering through the
+        // queue + flushing under a single-writer flag eliminates the
+        // interleave + reduces syscall pressure.
+        this._writeQueue = [];
+        this._flushing = false;
         const logDir = path.join(projectRoot, "log");
         fs.mkdirSync(logDir, { recursive: true });
         this._logPath = path.join(logDir, "session-transcript.jsonl");
@@ -86,7 +94,8 @@ class TranscriptLogger {
     setSessionId(id) {
         this._sessionId = id;
     }
-    /** Append an entry to both memory and disk. */
+    /** Append an entry to both memory and disk. Disk write is queued so
+     * concurrent log() calls (agent mode, parallel streams) can't interleave. */
     log(entry) {
         const e = this._sessionId ? { session_id: this._sessionId, ...entry } : entry;
         this._entries.push(e);
@@ -94,12 +103,30 @@ class TranscriptLogger {
         if (this._entries.length > MAX_ENTRIES_IN_MEMORY) {
             this._entries = this._entries.slice(-MAX_ENTRIES_IN_MEMORY);
         }
-        // Append to JSONL file
+        this._writeQueue.push(JSON.stringify(e) + "\n");
+        this._flushQueue();
+    }
+    _flushQueue() {
+        if (this._flushing)
+            return;
+        if (this._writeQueue.length === 0)
+            return;
+        this._flushing = true;
         try {
-            fs.appendFileSync(this._logPath, JSON.stringify(e) + "\n", "utf8");
+            // Drain everything queued so far in one syscall — appendFileSync of
+            // a multi-line string is atomic at the POSIX level on most filesystems.
+            const batch = this._writeQueue.join("");
+            this._writeQueue = [];
+            fs.appendFileSync(this._logPath, batch, "utf8");
         }
         catch (err) {
             console.error(`[TranscriptLogger] Disk write failed: ${err?.message ?? err}`);
+        }
+        finally {
+            this._flushing = false;
+            // Anything queued during the flush — drain again synchronously.
+            if (this._writeQueue.length > 0)
+                this._flushQueue();
         }
     }
     /** Log a user message. */

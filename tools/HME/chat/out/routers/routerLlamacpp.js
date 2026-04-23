@@ -154,7 +154,15 @@ function streamLlamacpp(messages, opts, onChunk, onDone, onError) {
                         }
                         accText += content;
                     }
-                    catch { }
+                    catch (parseErr) {
+                        // Don't silently drop malformed frames — that hid a partial-JSON
+                        // bug for weeks before the chat went unresponsive on restart-mid-
+                        // stream. Surface the parse failure to the UI as a 'parse-error'
+                        // chunk so the operator sees the broken frame instead of just
+                        // noticing missing tokens.
+                        const _msg = parseErr?.message ?? String(parseErr);
+                        onChunk(`[parse-error] ${_msg}: ${payload.slice(0, 120)}`, "error");
+                    }
                 }
             }
         });
@@ -302,6 +310,24 @@ function llamacppChatOnce(messages, tools, opts) {
         clearTimeout(hardTimer); };
     return { promise, cancel };
 }
+/**
+ * Resolve an agent-supplied path safely under workingDir. Returns null
+ * if the resolved path escapes workingDir (e.g. via '..' or absolute
+ * path). Without this guard, an agent could read /etc/passwd or
+ * write to ~/.ssh/authorized_keys.
+ */
+function _resolveWithinWorkdir(workingDir, requested) {
+    if (!requested)
+        return null;
+    const root = path.resolve(workingDir);
+    const candidate = path.resolve(root, requested);
+    // Exact match is OK; otherwise must be a child path.
+    if (candidate === root)
+        return candidate;
+    if (!candidate.startsWith(root + path.sep))
+        return null;
+    return candidate;
+}
 function parseXmlFunctionCalls(content) {
     const calls = [];
     const fnRe = /<function=(\w+)>([\s\S]*?)<\/function>/g;
@@ -405,14 +431,24 @@ function streamLlamacppAgentic(messages, opts, workingDir, onChunk, onDone, onEr
                         result = result.trim() || "(no output)";
                     }
                     else if (fnName === "read_file") {
-                        const abs = path.resolve(workingDir, String(args.path ?? ""));
-                        result = fs.readFileSync(abs, "utf8");
+                        const abs = _resolveWithinWorkdir(workingDir, String(args.path ?? ""));
+                        if (!abs) {
+                            result = `Refused: path '${args.path}' resolves outside workingDir ${workingDir}`;
+                        }
+                        else {
+                            result = fs.readFileSync(abs, "utf8");
+                        }
                     }
                     else if (fnName === "write_file") {
-                        const abs = path.resolve(workingDir, String(args.path ?? ""));
-                        fs.mkdirSync(path.dirname(abs), { recursive: true });
-                        fs.writeFileSync(abs, String(args.content ?? ""), "utf8");
-                        result = `Written: ${args.path}`;
+                        const abs = _resolveWithinWorkdir(workingDir, String(args.path ?? ""));
+                        if (!abs) {
+                            result = `Refused: path '${args.path}' resolves outside workingDir ${workingDir}`;
+                        }
+                        else {
+                            fs.mkdirSync(path.dirname(abs), { recursive: true });
+                            fs.writeFileSync(abs, String(args.content ?? ""), "utf8");
+                            result = `Written: ${args.path}`;
+                        }
                     }
                     else {
                         result = `Unknown tool: ${fnName}`;
