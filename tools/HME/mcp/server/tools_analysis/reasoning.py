@@ -77,22 +77,36 @@ def module_story(module_name: str) -> str:
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
     parts = [f"# Module Story: {module_name} (context: {budget})\n"]
-    # Definition — try exact symbol match, then prefix match, then file search
-    syms = collect_all_symbols(ctx.PROJECT_ROOT)
-    matching = [s for s in syms if s["name"] == module_name]
-    if matching and len(matching) > 1:
-        # Prefer the file whose basename matches the module name (definition over call site)
-        name_matched = [s for s in matching if os.path.basename(s["file"]).replace(".js", "") == module_name]
-        if name_matched:
-            matching = name_matched
+    # Definition — FILE LOOKUP FIRST (cheap). Previously we ran
+    # collect_all_symbols() up-front, which walks ~1000 files and re-extracts
+    # symbols for each on every cache-miss (auto-commits invalidate mtime
+    # signatures constantly). That added 2-3 minutes per call on the
+    # 2026-04-23 measurement. If a file named <module_name>.js exists in
+    # src/, that's the definition — no global scan needed. Only fall back
+    # to the symbol scan if the file-lookup miss AND a prefix-match search
+    # is needed.
+    import glob as _glob
+    matching = []
+    candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"), recursive=True)
+    if candidates:
+        matching = [{"name": module_name, "kind": "module", "file": candidates[0], "line": 1, "signature": ""}]
     if not matching:
-        # File search first: a file named after the module is almost certainly the definition
-        import glob as _glob
-        candidates = _glob.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", f"{module_name}.js"), recursive=True)
-        if candidates:
-            matching = [{"name": module_name, "kind": "module", "file": candidates[0], "line": 1, "signature": ""}]
+        # Fall-back to full symbol scan — rare path when the module's symbol
+        # name doesn't match any file basename (inner functions, renamed,
+        # etc). This is the slow branch but it's no longer on every call.
+        syms = collect_all_symbols(ctx.PROJECT_ROOT)
+        matching = [s for s in syms if s["name"] == module_name]
+        if matching and len(matching) > 1:
+            # Prefer the file whose basename matches the module name (definition over call site)
+            name_matched = [s for s in matching if os.path.basename(s["file"]).replace(".js", "") == module_name]
+            if name_matched:
+                matching = name_matched
+    else:
+        syms = None  # only load if prefix-fallback needs it
     if not matching:
         # Prefix match: find symbols whose name starts with the module name (inner functions)
+        if syms is None:
+            syms = collect_all_symbols(ctx.PROJECT_ROOT)
         prefix_matches = [s for s in syms if s["name"].startswith(module_name) and s["kind"] in ("function", "method")]
         if prefix_matches:
             matching = [{"name": module_name, "kind": "module", "file": prefix_matches[0]["file"], "line": 1, "signature": ""}]
