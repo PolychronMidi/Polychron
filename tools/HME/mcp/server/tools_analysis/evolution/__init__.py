@@ -39,13 +39,20 @@ from .evolution_admin import (  # noqa: F401
 
 
 def evolution_patterns() -> str:
-    """Analyze metrics/journal.md for meta-patterns across evolution rounds."""
+    """Analyze the journal archive for meta-patterns across evolution rounds.
+
+    Journal is a deprecated archive; live per-round state is in the activity
+    bridge. This function intentionally operates on the frozen archive for
+    historical pattern mining — the output is prefixed with a banner if the
+    archive is staler than the activity bridge's last round_complete event.
+    """
+    from .. import _journal_freshness_banner
     ctx.ensure_ready_sync()
     _track("evolution_patterns")
 
     journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     if not os.path.isfile(journal_path):
-        return "No journal.md found."
+        return "No journal.md archive found."
 
     try:
         with open(journal_path, encoding="utf-8") as f:
