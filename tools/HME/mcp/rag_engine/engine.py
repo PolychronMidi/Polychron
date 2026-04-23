@@ -176,13 +176,13 @@ class RAGEngine(
             for path in (self.hash_cache_path, self._per_file_chunks_path):
                 try:
                     os.remove(path)
-                except OSError:
+                except OSError:  # silent-ok: hash-cache delete in clear(); missing file means already cleaned
                     pass
             self._save_hashes()
             self._save_per_file_chunks()
             for path in (self.hash_cache_path, self._per_file_chunks_path):
                 try:
                     os.remove(path)
-                except OSError:
+                except OSError:  # silent-ok: per-file-chunks delete in clear(); missing file means already cleaned
                     pass
             self._clearing = False

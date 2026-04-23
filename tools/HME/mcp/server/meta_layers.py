@@ -71,7 +71,7 @@ def _write_heartbeat() -> None:
     try:
         with open(_ms.heartbeat_file, "w") as f:
             json.dump({"ts": time.time(), "pid": os.getpid()}, f)
-    except OSError:
+    except OSError:  # silent-ok: heartbeat write is advisory; a missed beat is tolerated by readers
         pass
 
 
@@ -161,7 +161,7 @@ def _correlate(history: list[dict]) -> dict:
     try:
         with open(_ms.ops_file) as f:
             ops = json.load(f)
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError):  # silent-ok: ops file absent or empty on first read; downstream handles empty dict
         pass
 
     from server import meta_correlator
@@ -301,7 +301,7 @@ def _trim_narrative_file() -> None:
         if len(lines) > _MAX_NARRATIVE_LINES:
             with open(_ms.narrative_file, "w") as f:
                 f.writelines(lines[-_MAX_NARRATIVE_LINES:])
-    except OSError:
+    except OSError:  # silent-ok: narrative-file trim; failure defers compaction one cycle
         pass
 
 
@@ -351,7 +351,7 @@ def _scan_environment() -> dict:
         usage = shutil.disk_usage(ENV.optional("PROJECT_ROOT", "/"))
         env["disk_free_gb"] = round(usage.free / (1024 ** 3), 1)
         env["disk_pct_used"] = round((usage.used / usage.total) * 100, 1)
-    except OSError:
+    except OSError:  # silent-ok: disk-usage probe is advisory telemetry; absence on exotic filesystems is acceptable
         pass
 
     # System load average (1, 5, 15 min)
@@ -360,7 +360,7 @@ def _scan_environment() -> dict:
         env["load_1m"] = round(load[0], 2)
         env["load_5m"] = round(load[1], 2)
         env["load_15m"] = round(load[2], 2)
-    except OSError:
+    except OSError:  # silent-ok: loadavg probe is Linux-specific; non-Linux hosts intentionally skip
         pass
 
     # GPU memory (nvidia-smi, non-blocking)
@@ -387,7 +387,7 @@ def _scan_environment() -> dict:
                     except (ValueError, IndexError):
                         continue  # skip lines with N/A or malformed values
             env["gpus"] = gpus
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):  # silent-ok: nvidia-smi probe; non-NVIDIA hosts or missing binary intentionally skip
         pass
 
     # Process RSS (own memory footprint)
@@ -397,7 +397,7 @@ def _scan_environment() -> dict:
                 if line.startswith("VmRSS:"):
                     env["process_rss_mb"] = round(int(line.split()[1]) / 1024, 1)
                     break
-    except OSError:
+    except OSError:  # silent-ok: /proc/self/status probe is Linux-specific; non-Linux hosts skip
         pass
 
     # Generate alerts
@@ -524,7 +524,7 @@ def _checkpoint_entanglement() -> None:
                         continue
                 if recent_files:
                     state["recent_files"] = sorted(recent_files)[:10]
-        except OSError:
+        except OSError:  # silent-ok: recent-files probe; directory absence or permission issue leaves state without that field
             pass
 
         # Write atomically
@@ -709,7 +709,7 @@ def _trim_counterfactuals_file(max_lines: int = 2000) -> None:
         if len(lines) > max_lines:
             with open(_ms.counterfactual_file, "w") as f:
                 f.writelines(lines[-max_lines:])
-    except OSError:
+    except OSError:  # silent-ok: counterfactual-file trim; failure defers compaction one cycle
         pass
 
 
@@ -1379,7 +1379,7 @@ def _check_coherence_ceiling() -> dict | None:
         try:
             with operational_state._state_lock:  # type: ignore[attr-defined]
                 outcomes = operational_state._state.get("prediction_outcomes_today")  # type: ignore[attr-defined]
-        except AttributeError:
+        except AttributeError:  # silent-ok: reflexivity claim skip; reader tolerates missing claim gracefully
             pass
         return {
             "ceiling_hit": True,
