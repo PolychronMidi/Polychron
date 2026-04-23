@@ -113,13 +113,25 @@ def _scan_file(path: str, checks: list[tuple[str, str, callable]]) -> list[str]:
 
 
 def _match_llama_spawn(node: ast.Call, src: str) -> bool:
-    """Popen(argv) where argv references a llama-server binary."""
+    """Popen(argv) where argv references a llama-server binary.
+    Source-text substring check on the surrounding context avoids
+    flagging unrelated subprocess.Popen (nvidia-smi, git, lsof)."""
     fn = node.func
-    if isinstance(fn, ast.Attribute) and fn.attr == "Popen":
-        return True
-    if isinstance(fn, ast.Name) and fn.id == "Popen":
-        return True
-    return False
+    is_popen = (
+        (isinstance(fn, ast.Attribute) and fn.attr == "Popen")
+        or (isinstance(fn, ast.Name) and fn.id == "Popen")
+    )
+    if not is_popen:
+        return False
+    # Only flag Popen calls in a context that mentions llama-server.
+    # ast.unparse is py3.9+; fall back to lineno-window slice.
+    try:
+        snippet = ast.unparse(node)
+    except Exception:
+        start = max(0, (getattr(node, "lineno", 1) - 1))
+        end = getattr(node, "end_lineno", start + 5)
+        snippet = "\n".join(src.splitlines()[start:end])
+    return "llama-server" in snippet or "build_argv" in snippet
 
 
 def _match_sentence_transformer(node: ast.Call, src: str) -> bool:
