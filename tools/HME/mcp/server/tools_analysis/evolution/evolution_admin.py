@@ -88,8 +88,14 @@ def hme_admin(action: str = "selftest", modules: str = "",
         parts.append(_hme_validate_golden())
     if action == "fix_antipattern":
         parts.append(fix_antipattern(antipattern, hook_target))
+    if action == "health":
+        try:
+            from server.health_summary import health as _health
+            parts.append(_health())
+        except Exception as e:
+            parts.append(f"health summary error: {type(e).__name__}: {e}")
     if not parts:
-        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', or 'both'."
+        return f"Unknown action '{action}'. Use 'selftest', 'reload', 'index', 'clear_index', 'warm', 'introspect', 'validate', 'fix_antipattern', 'health', or 'both'."
     return "\n\n".join(parts)
 
 
