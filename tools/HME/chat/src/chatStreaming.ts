@@ -3,6 +3,7 @@ import {
   LlamacppMessage, TokenUsage,
   streamClaude, streamClaudePty, streamLlamacppAgentic, streamHybrid,
   postTranscript, reindexFiles, auditChanges,
+  hybridAdapter,
 } from "./router";
 import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit, AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 import { claudeOptsFromMsg, llamacppOptsFromMsg } from "./msgHelpers";
