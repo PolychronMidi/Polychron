@@ -34,12 +34,21 @@ if echo "$CMD" | grep -q 'npm run main'; then
   # Review warnings are NEVER ignorable: fix every one before proceeding.
   EXIT_CODE_CHECK=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE_CHECK" != "0" ]; then
+    # Extract the first ERROR line from tool_response for the diagnose hint so
+    # the agent has a concrete query to paste into i/trace. Fall back to a
+    # generic hint if no error line is surfacable.
+    _FIRST_ERR=$(_safe_jq "$INPUT" '.tool_response' '' \
+      | grep -iE '^[^#]*(error|exception|failed|traceback):' \
+      | head -1 | sed 's/^[[:space:]]*//' | cut -c1-180)
     cat >&2 <<ANTIMSG
 
   PIPELINE FAILED — DO NOT STOP — FIX IT NOW
   Stopping, summarizing, or asking what to do next is the psychopathic antipattern.
   Read the error above, diagnose the root cause, fix it, rerun. No pausing.
   Review warnings are never "pre-existing" — fix every one in the review output.
+
+  Diagnose via HME: i/trace target="${_FIRST_ERR:-<paste error text>}" mode=diagnose
+  (Pulls source trace + similar historical bugs from KB for this failure class.)
 
 ANTIMSG
   fi
