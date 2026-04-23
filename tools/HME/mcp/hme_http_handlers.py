@@ -54,8 +54,10 @@ def _is_indexable(abs_path: str) -> str | None:
     try:
         if os.path.getsize(abs_path) > get_max_file_size():
             return f"exceeds max file size ({get_max_file_size()} bytes)"
-    except OSError:
-        pass
+    except OSError as _size_err:
+        # File was path-valid but stat failed — unusual. Log; downstream
+        # read will surface the concrete I/O error to the caller.
+        logger.debug(f"size probe failed for {abs_path}: {type(_size_err).__name__}: {_size_err}")
 
     return None
 
