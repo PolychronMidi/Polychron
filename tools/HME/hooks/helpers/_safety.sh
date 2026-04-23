@@ -28,6 +28,13 @@ if [ -n "${PROJECT_ROOT:-}" ] && [ -f "$_HME_ADAPT_FILE" ]; then
   source "$_HME_ADAPT_FILE"
 fi
 
+# Unified signal bus. Every hook that emits events calls _signal_emit;
+# status + diagnostics tail the bus instead of reconstructing state from
+# multiple tmp/ files. Sourced alongside _safety so every hook has the
+# helpers available.
+# shellcheck disable=SC1091
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_signals.sh"
+
 # H3: Hook latency telemetry — each hook self-logs its wall time to
 # log/hme-hook-latency.jsonl on exit via a trap. The HookLatencyVerifier
 # reads this log and flags hooks that exceed 500ms p95.
