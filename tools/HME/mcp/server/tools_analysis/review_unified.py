@@ -38,8 +38,18 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     parts = []
 
     modes = [mode] if mode != "full" else ["digest", "regime", "trust"]
+    # mode=full concatenates three subsections; emit explicit `# ` headers
+    # before each so they don't blur together. Single-mode calls don't need
+    # the header — the subsection's own output is the whole response.
+    _HEADERS = {
+        "digest": "# Pipeline Digest",
+        "regime": "# Regime Timeline",
+        "trust":  "# Trust Ecology",
+    }
 
     for m in modes:
+        if mode == "full" and m in _HEADERS:
+            parts.append(f"\n{_HEADERS[m]}\n")
         if m == "digest":
             from .digest import pipeline_digest as _pd
             try:
