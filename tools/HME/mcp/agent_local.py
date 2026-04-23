@@ -282,8 +282,8 @@ def _get_rag_context(query: str) -> str:
                 title = r.get("title", "")
                 content = r.get("content", "")[:300]
                 parts.append(f"- {title}: {content}")
-    except Exception:
-        pass
+    except Exception as _kb_err:
+        logger.debug(f"agent_local KB context probe failed: {type(_kb_err).__name__}: {_kb_err}")
     # Code search
     try:
         payload = json.dumps({"engine": "project", "method": "search",
@@ -300,8 +300,8 @@ def _get_rag_context(query: str) -> str:
                 text = r.get("text", r.get("chunk", ""))[:200]
                 if path != "?":
                     parts.append(f"- {path}: {text}")
-    except Exception:
-        pass
+    except Exception as _code_err:
+        logger.debug(f"agent_local code-chunk probe failed: {type(_code_err).__name__}: {_code_err}")
     return "\n".join(parts) if parts else ""
 
 
