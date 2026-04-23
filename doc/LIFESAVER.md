@@ -206,9 +206,9 @@ Two checks:
 
 "Acknowledging an error without fixing it is a CRITICAL VIOLATION."
 
-### 2. Evolver loop
+### 2. Autonomous evolution loop
 
-**State file**: `.claude/hme-evolver.local.md` (frontmatter: enabled, iteration, max_iterations, done_signal)
+**State file**: `.claude/hme-evolver.local.md` (frontmatter: enabled, iteration, max_iterations, done_signal). Filename is legacy — the Evolver subagent was retired; the mechanism is now pure hook logic.
 
 If enabled and not done: block exit, inject next evolution prompt, increment iteration counter. The Stop hook re-injects the prompt, preventing the agent from stopping between rounds.
 
