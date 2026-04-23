@@ -72,6 +72,13 @@ def _load_daemon_version() -> str:
 
 DAEMON_VERSION = _load_daemon_version()
 
+# Rotate logs at daemon boot so daemon.out doesn't grow without bound.
+try:
+    from log_rotation import rotate_on_boot as _rotate_logs
+    _rotate_logs(os.environ.get("PROJECT_ROOT", "") or os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # env-ok: boot fallback
+except Exception as _rot_err:
+    print(f"daemon: log rotation at boot failed (non-fatal): {_rot_err}", file=sys.stderr)
+
 _DEFAULT_WALL_TIMEOUT = 45  # hard wall-clock cap for /generate proxy
 _HEALTH_INTERVAL = 60       # self-health-tick interval (s)
 
