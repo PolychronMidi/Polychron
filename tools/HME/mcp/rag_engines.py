@@ -854,6 +854,32 @@ def reload_on_device(target_device: str) -> dict:
             reloaded.append(f"code:{CODE_MODEL_NAME}")
             logger.info(f"reload_on_device: code embedder → {target_device} (freed {freed} old refs)")
         except Exception as e:
+            # CUDA illegal memory access is terminal: torch's allocator pool
+            # is corrupted and every subsequent reload/encode will fail the
+            # same way. Only a fresh Python process clears it. Hard-exit so
+            # the proxy supervisor respawns the worker — which is what the
+            # LIFESAVER message tells the user to do manually anyway
+            # ("Manual remediation: restart the worker"). Self-healing.
+            _err_str = str(e)
+            if "illegal memory access" in _err_str or "CUDNN_STATUS_EXECUTION_FAILED" in _err_str:
+                logger.error(
+                    f"reload_on_device: CUDA context corrupted ({_err_str[:120]}). "
+                    f"Hard-exiting worker — proxy supervisor will respawn with a fresh CUDA context. "
+                    f"Indexing will continue automatically after restart."
+                )
+                try:
+                    from server import context as _ctx
+                    _ctx.register_critical_failure(
+                        "cuda_context_corruption",
+                        f"CUDA illegal memory access during reload_on_device({target_device}) — worker auto-restart initiated",
+                        severity="CRITICAL",
+                    )
+                except Exception as _life_err:
+                    logger.debug(f"LIFESAVER register failed pre-exit: {_life_err}")
+                # Small delay so the log flushes before we die.
+                import time as _t
+                _t.sleep(0.2)
+                os._exit(98)  # nonzero + unique so supervisor logs cleanly
             logger.error(f"reload_on_device: code embedder failed: {e}")
             return {"error": f"code embedder reload failed: {e}", "reloaded": reloaded}
 
