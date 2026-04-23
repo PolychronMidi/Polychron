@@ -42,7 +42,7 @@ def record_failure(
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("lifesaver-registry", __file__)
-    except ImportError:
+    except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
     with _failures_lock:
         now = time.time()
