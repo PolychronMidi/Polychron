@@ -843,9 +843,12 @@ def _run_indexing_mode_locked() -> dict:
         logger.warning(f"indexing-mode: GPU{cuda_idx} only has {free} MB free after 60s — proceeding anyway")
 
     try:
-        # Step 2: Tell shim to reload embeddings on the freed GPU
+        # Step 2: Tell shim to reload embeddings on the freed GPU.
+        # Cold-start reload: 3 SentenceTransformer instances + FP16 GPU
+        # allocation + up to 30s of _engine_ready wait if boot overlap.
+        # 300s covers the observed ~90-120s worst case with margin.
         try:
-            reload_result = _shim_post("/reload-engines", {"device": indexing_device}, timeout=120)
+            reload_result = _shim_post("/reload-engines", {"device": indexing_device}, timeout=300)
             if reload_result.get("error"):
                 logger.warning(f"indexing-mode: reload-engines failed: {reload_result['error']}")
                 return {"error": f"reload-engines failed: {reload_result['error']}"}
