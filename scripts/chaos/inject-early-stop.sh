@@ -27,6 +27,7 @@ _fail=0
 declare -A _expected
 _expected[early_stop_positive.jsonl]="early_stop"
 _expected[early_stop_positive_meta.jsonl]="early_stop"
+_expected[early_stop_positive_round_complete.jsonl]="early_stop"
 _expected[early_stop_negative_executed.jsonl]="ok"
 _expected[early_stop_negative_narrow.jsonl]="ok"
 _expected[early_stop_negative_not_open.jsonl]="ok"
