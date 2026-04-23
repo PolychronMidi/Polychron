@@ -122,13 +122,6 @@ if [ -f "$PS" ]; then
   [ -n "$VERDICT" ] && MSG="$MSG\nPipeline: $VERDICT${WALL:+ (${WALL})}"
 fi
 
-# Last journal round
-JOURNAL="${METRICS_DIR:-$PROJECT/output/metrics}/journal.md"
-if [ -f "$JOURNAL" ]; then
-  LAST_ROUND=$(grep -m1 '^## R' "$JOURNAL" | head -1)
-  [ -n "$LAST_ROUND" ] && MSG="$MSG\n$LAST_ROUND"
-fi
-
 # Uncommitted changes (count + subsystems)
 CHANGED_COUNT=$(_safe_int "$(git -C "$PROJECT" diff --name-only 2>/dev/null | wc -l)")
 STAGED_COUNT=$(_safe_int "$(git -C "$PROJECT" diff --cached --name-only 2>/dev/null | wc -l)")
