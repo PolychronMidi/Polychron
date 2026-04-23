@@ -303,72 +303,82 @@ def before_editing(file_path: str) -> str:
         logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
     # P4. Edit Risks — synthesized danger zones
-    if synthesis:
+    # Moved behind HME_READ_VERBOSE=1 because this is an LLM-synthesized
+    # speculation about risks (not grounded in the session's intent) and
+    # frequently dumps pages of "maybe this could…" content unrelated to
+    # the actual edit. The KB Constraints + Warnings + Bridges above
+    # already cover real defects. Opt-in when deeply auditing a module.
+    _verbose = os.environ.get("HME_READ_VERBOSE", "0") == "1"
+    if synthesis and _verbose:
         parts.append(f"\n## Edit Risks *(adaptive)*")
         parts.append(compress_for_claude(synthesis, max_chars=800,
                                          hint=f"edit risks for {rel_path}"))
 
-    # Reference zone (below the fold)
+    # Reference zone — dependents/structure/signals/evolutionary/musical/commits
+    # all gated behind HME_READ_VERBOSE=1. Default output keeps only the
+    # priority zone (KB constraints + warnings + HME internal context +
+    # antagonism bridges) which is ~15 lines vs the prior 80+. Agents that
+    # actually need the reference data opt in explicitly.
+    if _verbose:
+        caller_limit = limits["callers"]
+        parts.append(f"\n## Dependents ({len(caller_files)} files)")
+        for f in caller_files[:caller_limit]:
+            parts.append(f"  {f}")
+        if len(caller_files) > caller_limit:
+            parts.append(f"  ... and {len(caller_files) - caller_limit} more")
 
-    # R1. Dependents
-    caller_limit = limits["callers"]
-    parts.append(f"\n## Dependents ({len(caller_files)} files)")
-    for f in caller_files[:caller_limit]:
-        parts.append(f"  {f}")
-    if len(caller_files) > caller_limit:
-        parts.append(f"  ... and {len(caller_files) - caller_limit} more")
+        if not result.get("error"):
+            sym_limit = limits["symbols"]
+            parts.append(f"\n## Structure ({result.get('lines', '?')} lines)")
+            if result.get("symbols"):
+                for s in result["symbols"][:sym_limit]:
+                    sig = f" {s['signature']}" if s.get('signature') else ""
+                    parts.append(f"  L{s['line']}: [{s['kind']}] {s['name']}{sig}")
+                if len(result["symbols"]) > sym_limit:
+                    parts.append(f"  ... and {len(result['symbols']) - sym_limit} more symbols")
 
-    # R2. Structure
-    if not result.get("error"):
-        sym_limit = limits["symbols"]
-        parts.append(f"\n## Structure ({result.get('lines', '?')} lines)")
-        if result.get("symbols"):
-            for s in result["symbols"][:sym_limit]:
-                sig = f" {s['signature']}" if s.get('signature') else ""
-                parts.append(f"  L{s['line']}: [{s['kind']}] {s['name']}{sig}")
-            if len(result["symbols"]) > sym_limit:
-                parts.append(f"  ... and {len(result['symbols']) - sym_limit} more symbols")
-
-    # R3. L0 Signal I/O
-    try:
-        import re as _re
-        _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", content)))
-        _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", content))
-        for _var, _ch in _chan_vars.items():
-            if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", content):
-                _posts = sorted(set(_posts + [_ch]))
-        _reads = sorted(set(_re.findall(r"L0\.getLast\('([^']+)'", content)))
-        if _posts or _reads:
-            parts.append(f"\n## L0 Signal I/O")
-            if _posts:
-                parts.append(f"  POSTS: {', '.join(_posts)}")
-            if _reads:
-                parts.append(f"  READS: {', '.join(_reads)}")
-    except Exception as _err5:
-        logger.debug(f"parts.append: {type(_err5).__name__}: {_err5}")
-
-    # R4. Evolutionary Potential
-    if abs_path.endswith(".js") and "/src/" in abs_path:
         try:
-            from .reasoning import build_evolutionary_potential
-            evo_lines = build_evolutionary_potential(module_name)
-            actionable = [l for l in evo_lines if "OPPORTUNITY" in l or "Unused" in l or "Not " in l]
-            if actionable:
-                parts.append(f"\n## Evolutionary Potential")
-                parts.extend(evo_lines)
-        except Exception as _err6:
-            logger.debug(f"parts.extend: {type(_err6).__name__}: {_err6}")
+            import re as _re
+            _posts = sorted(set(_re.findall(r"L0\.post\('([^']+)'", content)))
+            _chan_vars = dict(_re.findall(r"const\s+(\w+)\s*=\s*'([^']+)'", content))
+            for _var, _ch in _chan_vars.items():
+                if _re.search(r"L0\.post\(" + _re.escape(_var) + r"\b", content):
+                    _posts = sorted(set(_posts + [_ch]))
+            _reads = sorted(set(_re.findall(r"L0\.getLast\('([^']+)'", content)))
+            if _posts or _reads:
+                parts.append(f"\n## L0 Signal I/O")
+                if _posts:
+                    parts.append(f"  POSTS: {', '.join(_posts)}")
+                if _reads:
+                    parts.append(f"  READS: {', '.join(_reads)}")
+        except Exception as _err5:
+            logger.debug(f"parts.append: {type(_err5).__name__}: {_err5}")
 
-    # R5. Musical Context
-    if comp:
-        parts.append(f"\n## Musical Context (last run)")
-        parts.append(comp)
+        if abs_path.endswith(".js") and "/src/" in abs_path:
+            try:
+                from .reasoning import build_evolutionary_potential
+                evo_lines = build_evolutionary_potential(module_name)
+                actionable = [l for l in evo_lines if "OPPORTUNITY" in l or "Unused" in l or "Not " in l]
+                if actionable:
+                    parts.append(f"\n## Evolutionary Potential")
+                    parts.extend(evo_lines)
+            except Exception as _err6:
+                logger.debug(f"parts.extend: {type(_err6).__name__}: {_err6}")
 
-    # R6. Recent Commits
-    if _recent_commits:
-        parts.append(f"\n## Recent Commits")
-        for line in _recent_commits.splitlines():
-            parts.append(f"  {line}")
+        if comp:
+            parts.append(f"\n## Musical Context (last run)")
+            parts.append(comp)
+
+        if _recent_commits:
+            parts.append(f"\n## Recent Commits")
+            for line in _recent_commits.splitlines():
+                parts.append(f"  {line}")
+    else:
+        # Terse footer so the agent knows there's more on demand.
+        parts.append(
+            f"\n_Reference sections (dependents/structure/L0/musical/commits) "
+            f"suppressed by default — set HME_READ_VERBOSE=1 to include them._"
+        )
 
     return "\n".join(parts)
 
