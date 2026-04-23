@@ -53,7 +53,17 @@ export interface StreamResult {
  * discriminated union at the caller boundary (not this interface). */
 export interface BaseStreamOptions {
   onChunk: ChunkCallback;
-  /** Called at most once if the backend produces a session id. */
+  /** Called exactly once with a session identifier.
+   *
+   * - **Claude**: fires with the API-assigned session_id from the `system/init`
+   *   frame. Can be passed back to resume the same Claude conversation.
+   * - **llama.cpp / hybrid**: fires with a synthetic `llama-<ts>-<rand>` id.
+   *   Not a resume token — these backends are stateless — but lets upstream
+   *   session plumbing treat all routes uniformly.
+   *
+   * Callers wanting to distinguish resumable vs synthetic ids can match
+   * on the `llama-` prefix.
+   */
   onSessionId?(id: string | null): void;
   /** Called at most once with final token usage if known. */
   onTokenUsage?(usage: { input?: number; output?: number; usedPct?: number }): void;
