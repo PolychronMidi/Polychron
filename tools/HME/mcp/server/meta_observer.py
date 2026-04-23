@@ -271,6 +271,18 @@ def _meta_loop() -> None:
                 except Exception as _err7:
                     logger.debug(f"operational_state.write_session_document: {type(_err7).__name__}: {_err7}")
 
+            # Periodic log rotation (every 30 minutes). Boot rotation
+            # alone is insufficient for long-lived workers — a worker
+            # running for a week will accumulate hundreds of MB of logs
+            # without this. rotate_on_boot is safe-to-call-always and
+            # only actually trims when a policy cap is exceeded.
+            if cycle % max(1, 1800 // _HEARTBEAT_INTERVAL) == 0:
+                try:
+                    import log_rotation
+                    log_rotation.rotate_on_boot(project_root)
+                except Exception as _rot_err:
+                    logger.debug(f"periodic log rotation: {type(_rot_err).__name__}: {_rot_err}")
+
         except Exception as e:
             logger.error(f"Meta-observer loop error: {e}")
             # Crashloop detection: same message repeats → escalate + kill.
