@@ -12,9 +12,12 @@ if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
   exit 2
 fi
 
-# Block writes to the auto-memory directory — memory saving is an antipattern here
+# Block writes to the auto-memory directory — HME KB is the canonical
+# place for cross-session knowledge. Memory writes here are an
+# antipattern: they're invisible to the rest of the system, can't be
+# semantically searched, and accumulate without retirement.
 if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
-  _emit_block "BLOCKED: Memory saving is an antipattern. Do not write to .claude/projects memory directory. Fix behavior, not memory."
+  _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
   exit 2
 fi
 
