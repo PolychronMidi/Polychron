@@ -493,9 +493,20 @@ def merge_native_todowrite(incoming: list) -> list:
                 return (1, t["id"])
             return (2, t["id"])
 
-        for t in sorted(new_store, key=_sort_key):
+        sorted_entries = sorted(new_store, key=_sort_key)
+        # Cap critical items to _MAX_CRITICAL_IN_MERGE to avoid alert-flood
+        # drowning the agent's real todos. Overflow collapses to one summary.
+        critical_shown = 0
+        critical_overflow = 0
+        for t in sorted_entries:
+            is_critical = bool(t.get("critical"))
+            if is_critical:
+                if critical_shown >= _MAX_CRITICAL_IN_MERGE:
+                    critical_overflow += 1
+                    continue
+                critical_shown += 1
             prefix = ""
-            if t.get("critical"):
+            if is_critical:
                 prefix = "[CRITICAL] "
             elif t.get("source") == "onboarding":
                 prefix = "[HME onboarding] "
@@ -515,6 +526,16 @@ def merge_native_todowrite(incoming: list) -> list:
                     "activeForm": s.get("activeForm") or (sub_prefix + s["text"]),
                     "status": s.get("status", "pending"),
                 })
+        if critical_overflow > 0:
+            summary_text = (
+                f"[CRITICAL] +{critical_overflow} older critical alert(s) "
+                f"suppressed — run `i/status mode=signals` or check todos.json"
+            )
+            flat.insert(critical_shown, {
+                "content": summary_text,
+                "activeForm": summary_text,
+                "status": "pending",
+            })
         return flat
 
 
