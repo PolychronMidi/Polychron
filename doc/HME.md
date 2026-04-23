@@ -465,9 +465,9 @@ const h = getArbiterHealth();
 
 Call when you need to distinguish "arbiter classified as claude" from "arbiter daemon was down, we defaulted to claude." The latter has `healthy=false` after 3 consecutive failures.
 
-## Autonomous Evolver Loop
+## Autonomous Evolution Loop
 
-The Stop hook implements the **ralph-loop pattern**: when `.claude/hme-evolver.local.md` exists, the Stop hook blocks session exit and injects the next evolution directive, creating an autonomous multi-round evolution cycle.
+The Stop hook implements the **ralph-loop pattern**: when `.claude/hme-evolver.local.md` exists, the Stop hook blocks session exit and injects the next evolution directive, creating an autonomous multi-round evolution cycle. The filename predates the retirement of the Evolver subagent and is kept for backward compatibility; the mechanism is now purely hook-driven.
 
 ### Setup
 

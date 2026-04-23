@@ -144,7 +144,7 @@ After `npm run main` completes:
 2. Scan for failed steps (`ok: false`)
 3. If errors found: emit loud banner — "PIPELINE ERRORS DETECTED — DO NOT IGNORE"
 4. Track NEXUS state: mark pipeline verdict (STABLE/EVOLVED/DRIFTED/FAILED)
-5. Remind about evolver phases 5-7 (fingerprint, trace-summary, journal, KB update)
+5. Remind about post-pipeline phases 5-7 (fingerprint, trace-summary, journal, KB update)
 
 After `npm run snapshot`: remind to persist calibration anchors.
 After `node lab/run`: check for FAIL/PASS in sketch results.
