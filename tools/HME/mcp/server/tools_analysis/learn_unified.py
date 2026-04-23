@@ -137,16 +137,25 @@ def learn(query: str = "", title: str = "", content: str = "",
         search_cat = category if category and category != "general" else ""
         # Tool-layer BRIEF emission: a KB search IS a read-prior signal if
         # the query mentions a module name. Emit for any camelCase token ≥6
-        # chars that looks like a module identifier.
+        # chars that looks like a module identifier. Narrow try around
+        # each token — the previous single outer try meant one bad emit
+        # aborted the whole loop so later tokens in the same query were
+        # never recorded.
         try:
             from .read_unified import _emit_brief_recorded
             import re as _re
             for _token in _re.findall(r'\b[a-z][a-zA-Z0-9]{5,}\b', search_term):
-                # Only likely-module: has an internal capital (camelCase)
-                if any(c.isupper() for c in _token[1:]):
+                if not any(c.isupper() for c in _token[1:]):
+                    continue
+                try:
                     _emit_brief_recorded(_token, source="learn_query")
-        except Exception as _brief_err:
-            pass  # best-effort
+                except Exception as _emit_err:
+                    logger.warning(f"brief-recorded emit failed for {_token!r}: {type(_emit_err).__name__}: {_emit_err}")
+        except ImportError as _brief_err:
+            # read_unified is optional — log at debug so planned
+            # environments without it don't spam but any regression
+            # (module vanished mid-session) is still visible.
+            logger.debug(f"brief-recorded import unavailable: {_brief_err}")
         return _sk(search_term, top_k=top_k, category=search_cat)
 
     return ("Error: provide query (search), title+content (add), remove=id (delete), or action=list/compact/export/graph/dream/health.\n"
