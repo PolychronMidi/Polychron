@@ -350,9 +350,9 @@ init_store(PROJECT_ROOT)
 def _ensure_llamacpp_daemon():
     """Start the llama.cpp persistence daemon if not already running.
 
-    Owns llamacpp_supervisor (spawns/adopts llama-server instances for arbiter
-    and coder), the arbiter-busy flag that drives RAG CPU/GPU routing, and the
-    generation proxy for legacy callers.
+    Owns the llama-server supervisor (spawns/adopts llama-server instances
+    for arbiter and coder), the arbiter-busy flag that drives RAG CPU/GPU
+    routing, and the generation proxy for legacy callers.
     """
     import urllib.request as _urlreq
     _daemon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "llamacpp_daemon.py")
