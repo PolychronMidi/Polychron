@@ -203,7 +203,16 @@ export function wrapLegacyStream<MessageT, OptionsT extends BaseStreamOptions>(
         done: () => resolveOnce(makeResult({ text: acc, thinking: think, ok: true, sessionId, tokens })),
         error: (msg) => resolveOnce(makeResult({ text: acc, thinking: think, ok: false, error: msg, sessionId, tokens })),
         sessionId: (id) => { sessionId = id; opts.onSessionId?.(id); },
-        tokens: (u) => { tokens = u; opts.onTokenUsage?.(u); },
+        tokens: (u) => {
+          // Defense in depth: every adapter-layer token emission flows through
+          // sanitizeUsedPct, regardless of which backend produced it. Claude's
+          // backends already pre-sanitize, but llama/hybrid will eventually
+          // produce usedPct too — this guards against the 1456%-style miscalc
+          // sneaking through a non-Claude path.
+          const cleanedPct = sanitizeUsedPct(u.usedPct, `adapter:${name}`);
+          tokens = { input: u.input, output: u.output, usedPct: cleanedPct };
+          opts.onTokenUsage?.(tokens);
+        },
       });
       if (opts.deadlineMs && opts.deadlineMs > 0) {
         deadlineTimer = setTimeout(() => {
