@@ -20,6 +20,8 @@ export class ContextMeter {
   private _tracker: ContextTracker = ContextMeter._blank();
   private _hasLiveUpdate = false;
   private _consecutiveNullPct = 0;
+  private _stuckBannerPosted = false;
+  private _lastGoodPct: number | null = null;
 
   constructor(
     private readonly projectRoot: string,
@@ -54,6 +56,8 @@ export class ContextMeter {
     this._tracker = ContextMeter._blank();
     this._hasLiveUpdate = false;
     this._consecutiveNullPct = 0;
+    this._stuckBannerPosted = false;
+    this._lastGoodPct = null;
     if (restoredPct) this._tracker.usedPct = restoredPct;
     this.post(args);
   }
