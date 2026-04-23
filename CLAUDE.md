@@ -90,12 +90,14 @@ All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`
 - **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `output/metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
 - **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The `stop.sh` hook does this at turn end automatically; do it manually mid-turn.
 - **When pipeline fails:** read pipeline output, fix root cause. `i/hme-read target=<moduleName> mode=before` on the failing file. The PostToolUse hook extracts the first error line and suggests `i/trace target="<error>" mode=diagnose` for KB-backed source trace.
+- **After a confirmed round:** persist findings to one of three surfaces, not the retired journal:
+  - `i/learn title="…" content="…" category=pattern` — per-round calibration anchors, causal observations, refuted evolutions
+  - `doc/hme-discoveries.md` — promote a KB entry to a universal principle via `i/learn action=promote_discovery`
+  - `doc/*.md` — architectural rule changes, subsystem documentation
 - **Hook-enforced gates (automatic, not optional):**
   - src/ edits blocked while `tmp/run.lock` exists (pipeline running) — edit tooling/docs or use HME tools instead
   - `npm run snapshot` denied unless fingerprint verdict is STABLE
-  - Edits to modules named in `journal.md` as `refuted` are denied — pivot instead of re-implementing
   - `conductorIntelligence.register(Trust|Coupling|Jurisdiction)Bias` edits auto-fire `scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds` in the background
-  - Stop hook blocks if the pipeline produced a verdict (STABLE/EVOLVED/DRIFTED) but `output/metrics/journal.md` wasn't updated this round
 
 ## Reference Pointers
 
