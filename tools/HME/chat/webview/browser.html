@@ -999,9 +999,8 @@ window.addEventListener('message', (event) => {
       }
       break;
     case 'queueAlert':
-      setStatus('⚠ Queue ' + msg.pending + '/' + msg.limit + ' — ' + (msg.reason || 'stream stuck') + '. Cancel to clear, or drain the queue.');
-      // Offer drain: reuse the existing stop button area by injecting a drain link into status.
-      // Minimal approach — full button requires DOM wiring; for now the user can click stop (cancels + clears queue).
+      setStatus('⚠ Queue ' + msg.pending + '/' + msg.limit + ' — ' + (msg.reason || 'stream stuck') + '.');
+      drainBtn.style.display = 'inline-block';
       break;
     case 'streamingRestored':
       // Panel was reshown during an active stream — restore stop/queue visibility
