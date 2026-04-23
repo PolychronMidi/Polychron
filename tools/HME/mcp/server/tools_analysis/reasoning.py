@@ -127,11 +127,18 @@ def module_story(module_name: str) -> str:
             if len(result["symbols"]) > sym_limit:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
-    # Evolution history from KB — filtered for actual relevance to this module
+    # Evolution history from KB — filtered for actual relevance to this module.
+    # KB search + caller scan dominate the wall-clock on a cold worker
+    # (2-3 minutes observed). Under HME_READ_FAST, cap the search depth
+    # aggressively and skip the global KB lookup. The structural sections
+    # that follow are the high-signal parts of a story read anyway.
+    _fast = os.environ.get("HME_READ_FAST") in ("1", "true", "yes")
     from . import _filter_kb_relevance
-    kb_limit = limits["kb_entries"] * 2
+    kb_limit = 5 if _fast else (limits["kb_entries"] * 2)
     kb_results = ctx.project_engine.search_knowledge(module_name, top_k=kb_limit)
-    glob_results = ctx.global_engine.search_knowledge(module_name, top_k=3) if ctx.global_engine else []
+    glob_results = [] if _fast else (
+        ctx.global_engine.search_knowledge(module_name, top_k=3) if ctx.global_engine else []
+    )
     all_kb = kb_results + [dict(r, title=f"[global] {r['title']}") for r in glob_results]
     relevant = _filter_kb_relevance(all_kb, module_name)
     if relevant:
