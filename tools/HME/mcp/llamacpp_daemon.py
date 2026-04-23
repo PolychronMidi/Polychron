@@ -1144,11 +1144,22 @@ def main():
 
     logger.info(f"llamacpp daemon starting on port {args.port} (pid={os.getpid()})")
 
-    init_thread = threading.Thread(target=_supervisor_singleton.ensure_all_running, daemon=True)
-    init_thread.start()
+    # Wrap thread targets so any exception is logged with traceback. Bare
+    # threading.Thread(target=fn) silently discards exceptions when fn
+    # raises — this is exactly how the original "not started" indexing-mode
+    # bug went unnoticed for so long. Every thread must surface its own
+    # failure or it might as well not run.
+    def _logged_thread(name: str, fn):
+        def _wrapped():
+            try:
+                fn()
+            except Exception:
+                import traceback
+                logger.error(f"daemon thread {name!r} crashed:\n{traceback.format_exc()}")
+        return threading.Thread(target=_wrapped, daemon=True, name=name)
 
-    health_thread = threading.Thread(target=_health_loop, daemon=True)
-    health_thread.start()
+    _logged_thread("supervisor-init", _supervisor_singleton.ensure_all_running).start()
+    _logged_thread("supervisor-health", _health_loop).start()
 
     server = _ThreadingHTTPServer(("127.0.0.1", args.port), _Handler)
     logger.info(f"llamacpp daemon listening on 127.0.0.1:{args.port}")
