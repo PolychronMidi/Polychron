@@ -106,7 +106,7 @@ Couple Polychron's pipeline verdict with HME's HCI:
 - Every pipeline run also runs `verify-coherence.py` and produces an HCI score.
 - Both flow into a single 2D state space: `(music_verdict_score, hci)`.
 - Successful evolution moves both up. Drift in either is a coupled signal.
-- The Evolver's next target picker considers BOTH: a round that improves music but degrades HCI by 5 points should rank lower than a round that improves both modestly.
+- HME's next target selection considers BOTH: a round that improves music but degrades HCI by 5 points should rank lower than a round that improves both modestly.
 
 The two signals become one coupled organism. Music coherence ≈ self-coherence. The system that writes music well also writes itself well, and vice versa.
 
