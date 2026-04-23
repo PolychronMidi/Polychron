@@ -547,6 +547,156 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _err3:
         logger.debug(f"results.append: {type(_err3).__name__}: {_err3}")
 
+    # Self-coherence probes — detect the failure modes that tonight's
+    # incident exposed. Each probe fails SELFTEST (not just warns) because
+    # any of these three means the system's own description of its health
+    # is a lie and investigation is blocked.
+
+    # Probe 1: every running llama-server MUST be a child of llamacpp_daemon.
+    # Tonight's duplicate-supervisor bug: worker.py's own supervisor spawned
+    # a parallel coder, silently racing the daemon. Selftest reported READY
+    # while two coders fought for GPU 1.
+    try:
+        import subprocess as _sp_probe
+        out = _sp_probe.check_output(
+            ["pgrep", "-af", "tools/bin/llama-server"],
+            stderr=_sp_probe.DEVNULL, timeout=3,
+        ).decode(errors="replace")
+        rogue = []
+        for line in out.strip().splitlines():
+            parts = line.split(None, 1)
+            if not parts:
+                continue
+            try:
+                pid = int(parts[0])
+            except ValueError:
+                continue
+            # Look up ppid chain: llama-server's ppid should resolve to
+            # llamacpp_daemon (directly or via a supervisor/shell hop).
+            try:
+                with open(f"/proc/{pid}/status") as _st:
+                    ppid_line = next(
+                        (ln for ln in _st if ln.startswith("PPid:")),
+                        "PPid:\t0",
+                    )
+                ppid = int(ppid_line.split()[1])
+                parent_cmd = ""
+                if ppid > 0:
+                    with open(f"/proc/{ppid}/cmdline") as _cm:
+                        parent_cmd = _cm.read().replace("\0", " ")
+                if "llamacpp_daemon" not in parent_cmd:
+                    rogue.append(f"PID {pid} parent={parent_cmd[:80] or f'pid {ppid}'}")
+            except FileNotFoundError:
+                continue
+            except Exception as _rog_err:
+                logger.debug(f"selftest: rogue-probe skipped pid {pid}: {_rog_err}")
+        if rogue:
+            results.append(
+                "FAIL: spawner-ownership -- llama-server not owned by "
+                "llamacpp_daemon: " + "; ".join(rogue[:3])
+                + " (single-writer invariant violated — see tonight's incident)"
+            )
+        else:
+            results.append("PASS: spawner-ownership -- all llama-server spawns traced to llamacpp_daemon")
+    except FileNotFoundError:
+        results.append("WARN: spawner-ownership -- pgrep unavailable, probe skipped")
+    except _sp_probe.CalledProcessError:
+        # pgrep returns 1 when no matches — that's valid (no llama-server up).
+        results.append("PASS: spawner-ownership -- no llama-server processes found")
+    except Exception as _e:
+        results.append(f"WARN: spawner-ownership -- probe failed: {type(_e).__name__}: {_e}")
+
+    # Probe 2: daemon log must be clean of silent thread traces. When a
+    # threading.Thread(target=fn) crashes, Python writes "Exception in
+    # thread ..." to stderr without raising. That pattern caused the
+    # "not started" sentinel to hide the real env-parse ValueError for
+    # days before tonight. We read daemon stderr log and fail if any
+    # uncaught thread exception appears in the last 100 lines.
+    try:
+        daemon_log = os.path.join(_project_root, "log", "hme-llamacpp_daemon.out")
+        if os.path.isfile(daemon_log):
+            with open(daemon_log, encoding="utf-8", errors="replace") as _dl:
+                recent = _dl.readlines()[-150:]
+            thread_crashes = [
+                ln.rstrip() for ln in recent
+                if "Exception in thread" in ln
+            ]
+            if thread_crashes:
+                results.append(
+                    f"FAIL: daemon thread hygiene -- {len(thread_crashes)} unhandled "
+                    f"thread exception(s) in recent daemon log. Wrap the offending "
+                    f"thread target in try/except: {thread_crashes[0][:160]}"
+                )
+            else:
+                results.append("PASS: daemon thread hygiene -- no unhandled thread exceptions in recent log")
+        else:
+            results.append("INFO: daemon thread hygiene -- daemon log not present (daemon not running?)")
+    except Exception as _e:
+        results.append(f"WARN: daemon thread hygiene -- probe failed: {type(_e).__name__}: {_e}")
+
+    # Probe 3: every GPU's reported memory usage must be attributable to
+    # a declared process. Unattributed VRAM means a dead process left
+    # stuck allocations or a user-space CUDA context is squatting — both
+    # block coder/arbiter respawn with silent spawn_failed. Uses
+    # nvidia-smi sum vs per-process used to compute residual.
+    try:
+        import subprocess as _sp_probe2
+        gpu_totals = _sp_probe2.check_output(
+            ["nvidia-smi", "--query-gpu=index,memory.used", "--format=csv,noheader,nounits"],
+            stderr=_sp_probe2.DEVNULL, timeout=3,
+        ).decode().strip().splitlines()
+        per_proc = _sp_probe2.check_output(
+            ["nvidia-smi", "--query-compute-apps=pid,gpu_uuid,used_memory", "--format=csv,noheader,nounits"],
+            stderr=_sp_probe2.DEVNULL, timeout=3,
+        ).decode().strip().splitlines()
+        # Map gpu index → used, attributed
+        used_by_idx = {}
+        for ln in gpu_totals:
+            parts = [p.strip() for p in ln.split(",")]
+            if len(parts) >= 2:
+                used_by_idx[int(parts[0])] = (int(parts[1]), 0)  # total_used, attributed
+        # Attribute per-process memory back to indices via uuid→index.
+        uuid_to_idx = {}
+        uuid_out = _sp_probe2.check_output(
+            ["nvidia-smi", "--query-gpu=index,gpu_uuid", "--format=csv,noheader"],
+            stderr=_sp_probe2.DEVNULL, timeout=3,
+        ).decode().strip().splitlines()
+        for ln in uuid_out:
+            parts = [p.strip() for p in ln.split(",")]
+            if len(parts) >= 2:
+                uuid_to_idx[parts[1]] = int(parts[0])
+        for ln in per_proc:
+            parts = [p.strip() for p in ln.split(",")]
+            if len(parts) >= 3 and parts[1] in uuid_to_idx:
+                idx = uuid_to_idx[parts[1]]
+                tot, attr = used_by_idx.get(idx, (0, 0))
+                try:
+                    used_by_idx[idx] = (tot, attr + int(parts[2]))
+                except ValueError:
+                    pass
+        residuals = []
+        for idx, (total, attr) in used_by_idx.items():
+            unattributed = total - attr
+            # A few MB of CUDA driver overhead is normal; 200 MB+ means a
+            # leaked context or zombie process. That 170 MB stuck on cuda:1
+            # after indexing-mode restore is exactly the class of bug this
+            # catches.
+            if unattributed > 200:
+                residuals.append(f"GPU{idx}={unattributed}MB unattributed")
+        if residuals:
+            results.append(
+                "WARN: GPU attribution -- unattributed VRAM residual: "
+                + ", ".join(residuals)
+                + " (stale CUDA context or zombie process; "
+                "may block llama-server respawn with fits-check failure)"
+            )
+        else:
+            results.append("PASS: GPU attribution -- all used VRAM traceable to a declared process")
+    except FileNotFoundError:
+        results.append("INFO: GPU attribution -- nvidia-smi unavailable, probe skipped")
+    except Exception as _e:
+        results.append(f"WARN: GPU attribution -- probe failed: {type(_e).__name__}: {_e}")
+
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
