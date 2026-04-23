@@ -46,11 +46,32 @@ def main(argv):
         if os.path.isfile(MATCHES):
             with open(MATCHES) as f:
                 matches = json.load(f)
-        print(f"Matched this round: {matches.get('matches_count', 0)}/{matches.get('patterns_total', 0)}")
+        n_matched = matches.get('matches_count', 0)
+        n_total = matches.get('patterns_total', 0)
+        print(f"Matched this round: {n_matched}/{n_total}")
         for m in (matches.get("matches") or []):
             print(f"  [{m.get('category')}] {m.get('id')}")
             print(f"    payload: {m.get('payload', '')[:120]}")
             print(f"    action: {m.get('action_summary', '')}")
+        # When nothing matched, surface why instead of leaving the user
+        # staring at "0/N". Patterns are condition-gated; show the gate
+        # condition for each registered pattern so it's clear what would
+        # need to happen for a match.
+        if n_matched == 0 and n_total > 0:
+            print("\nNo patterns matched this round. Trigger conditions:")
+            for _, p in _load_patterns():
+                pid = p.get("id", "?")
+                trig = p.get("trigger_when") or p.get("when") or p.get("condition")
+                if isinstance(trig, dict):
+                    trig = "; ".join(f"{k}={v}" for k, v in trig.items())[:140]
+                elif isinstance(trig, list):
+                    trig = "; ".join(str(t) for t in trig)[:140]
+                else:
+                    trig = (str(trig) if trig else "(no `trigger_when` declared)")
+                print(f"  [{p.get('category', '?')}] {pid}")
+                print(f"    when: {trig}")
+            print("\nInspect the full pattern with: i/pattern <id>")
+            print("Compute fresh matches with: node scripts/pipeline/hme/match-patterns.js")
         return 0
     # Otherwise treat as pattern id
     for _, p in _load_patterns():
