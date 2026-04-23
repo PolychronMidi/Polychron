@@ -2,46 +2,20 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 589,
-      "updated_ts": 1776954921.2394712
+      "max_id": 590,
+      "updated_ts": 1776966568.3104584
     }
   },
   {
-    "id": 525,
-    "text": "Bulk-fix 89 unnamed-except violations in tools/HME/mcp/server/",
-    "activeForm": "Bulk-fixing 89 unnamed-except violations",
-    "status": "completed",
-    "done": true,
+    "id": 590,
+    "text": "test",
+    "activeForm": "testing",
+    "status": "pending",
+    "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776253903.2478604,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 526,
-    "text": "Audit remaining conductor || 0 sites and promote histogram-nullish rule to error",
-    "activeForm": "Auditing remaining conductor || 0 sites",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776253903.2478638,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 529,
-    "text": "Commit all changes",
-    "activeForm": "Committing all changes",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776254104.4599867,
+    "ts": 1776966568.3104534,
     "parent_id": 0,
     "subs": []
   },
