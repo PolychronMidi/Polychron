@@ -157,7 +157,7 @@ Counts edits to `src/` and `tools/HME/` files via NEXUS state:
 ### log-tool-call.sh — LIFESAVER timing + FAIL scanning
 
 Runs on every tool (empty matcher):
-1. **Timing**: reads start timestamp from pretooluse_lifesaver.sh, warns if threshold exceeded (15s default, 30s for review/warm_pre_edit_cache)
+1. **Timing**: reads start timestamp written by the matching pretooluse hook, warns if threshold exceeded (15s default, 30s for review/warm_pre_edit_cache)
 2. **FAIL scan**: greps tool output for "FAIL", writes to `log/hme-errors.log` with timestamp
 3. **Streak reset**: resets raw tool streak to 0 (HME tool used = streak cleared)
 
