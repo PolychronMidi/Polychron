@@ -1,0 +1,2 @@
+{"role":"user","content":[{"type":"text","text":"do all"}]}
+{"role":"assistant","content":[{"type":"text","text":"Implemented all six asks:\n- fixed coupling display\n- added invariants browser\n- restart action aliases reload\n- coherence shows N/A cleanly\n- learn drops 0%-score noise\n- chaos verifier now 6/6"}]}
