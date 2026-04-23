@@ -89,11 +89,28 @@ def music_truth_report() -> str:
                 computable.append((k, c))
         # Sort computable by |r| desc so strongest correlations lead.
         computable.sort(key=lambda kc: -abs(kc[1].get("r", 0) if isinstance(kc[1].get("r"), (int, float)) else 0))
+        # Magnitude label: |r| < 0.2 = negligible, 0.2-0.4 = weak,
+        # 0.4-0.6 = moderate, 0.6-0.8 = strong, > 0.8 = very strong.
+        # Sign gets its own label because a strong negative correlation is
+        # substantively different from a strong positive one.
+        def _r_tier(r_val: float) -> str:
+            ar = abs(r_val)
+            if ar < 0.20: base = "negligible"
+            elif ar < 0.40: base = "weak"
+            elif ar < 0.60: base = "moderate"
+            elif ar < 0.80: base = "strong"
+            else: base = "very strong"
+            return f"{base}{' +' if r_val > 0 else ' −'}"
         for k, c in computable:
             r = c.get("r")
             n = c.get("n", 0)
-            r_s = f"{r:+.3f}" if isinstance(r, (int, float)) else "n/a"
-            lines.append(f"  {k:<55} r={r_s}  n={n}")
+            if isinstance(r, (int, float)):
+                r_s = f"{r:+.3f}"
+                tier = f"  [{_r_tier(r)}]"
+            else:
+                r_s = "n/a"
+                tier = ""
+            lines.append(f"  {k:<55} r={r_s}  n={n}{tier}")
         if degenerate_items:
             lines.append("")
             lines.append(f"  ── {len(degenerate_items)} degenerate pair(s) suppressed ──")
