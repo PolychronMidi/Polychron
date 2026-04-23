@@ -35,7 +35,11 @@ function makeResult(partial) {
 /** Thin adapter wrapper: converts a legacy `onChunk/onDone/onError + cancel`
  * function into a RouterAdapter shape without rewriting the legacy
  * implementation. Used by routerClaude/routerLlamacpp/routerHme
- * adapters until the full internals can be unified. */
+ * adapters until the full internals can be unified.
+ *
+ * The MessageT generic is independent of the launch signature — callers
+ * supply their own message-shaping (Claude takes a string, llama takes
+ * a LlamacppMessage[], hybrid takes both via its options). */
 function wrapLegacyStream(route, name, launch) {
     return {
         route,

@@ -1,7 +1,7 @@
 "use strict";
 // Router barrel — types and re-exports from split modules.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.makeResult = exports.wrapLegacyStream = exports.streamHybrid = exports.logShimError = exports.isHmeShimReady = exports.postNarrative = exports.reindexFiles = exports.postTranscript = exports.auditChanges = exports.validateMessage = exports.enrichPrompt = exports.fetchHmeContext = exports.GPU_NUM_CTX = exports.streamLlamacppAgentic = exports.streamLlamacpp = exports.streamClaudePty = exports.streamClaude = void 0;
+exports.runAdapter = exports.getAdapterForRoute = exports.hybridAdapter = exports.llamacppAdapter = exports.claudePtyAdapter = exports.claudeAdapter = exports.makeResult = exports.wrapLegacyStream = exports.streamHybrid = exports.logShimError = exports.isHmeShimReady = exports.postNarrative = exports.reindexFiles = exports.postTranscript = exports.auditChanges = exports.validateMessage = exports.enrichPrompt = exports.fetchHmeContext = exports.GPU_NUM_CTX = exports.streamLlamacppAgentic = exports.streamLlamacpp = exports.streamClaudePty = exports.streamClaude = void 0;
 // Re-export all functions from split modules so existing imports from "./router" keep working.
 var routerClaude_1 = require("./routers/routerClaude");
 Object.defineProperty(exports, "streamClaude", { enumerable: true, get: function () { return routerClaude_1.streamClaude; } });
@@ -24,3 +24,12 @@ Object.defineProperty(exports, "streamHybrid", { enumerable: true, get: function
 var RouterInterface_1 = require("./routers/RouterInterface");
 Object.defineProperty(exports, "wrapLegacyStream", { enumerable: true, get: function () { return RouterInterface_1.wrapLegacyStream; } });
 Object.defineProperty(exports, "makeResult", { enumerable: true, get: function () { return RouterInterface_1.makeResult; } });
+// Concrete adapters — one per backend, all normalized through the
+// RouterAdapter interface. Use getAdapterForRoute() + runAdapter().
+var adapters_1 = require("./routers/adapters");
+Object.defineProperty(exports, "claudeAdapter", { enumerable: true, get: function () { return adapters_1.claudeAdapter; } });
+Object.defineProperty(exports, "claudePtyAdapter", { enumerable: true, get: function () { return adapters_1.claudePtyAdapter; } });
+Object.defineProperty(exports, "llamacppAdapter", { enumerable: true, get: function () { return adapters_1.llamacppAdapter; } });
+Object.defineProperty(exports, "hybridAdapter", { enumerable: true, get: function () { return adapters_1.hybridAdapter; } });
+Object.defineProperty(exports, "getAdapterForRoute", { enumerable: true, get: function () { return adapters_1.getAdapterForRoute; } });
+Object.defineProperty(exports, "runAdapter", { enumerable: true, get: function () { return adapters_1.runAdapter; } });
