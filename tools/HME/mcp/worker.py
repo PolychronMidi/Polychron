@@ -73,7 +73,7 @@ def _purge_stale_server_pyc() -> None:
         if os.path.exists(src) and os.path.getmtime(src) > os.path.getmtime(pyc_path):
             try:
                 os.unlink(pyc_path)
-            except OSError:
+            except OSError:  # silent-ok: stale pyc cleanup; best-effort — worst case is one stale bytecode file that rebuilds next run
                 pass
 
 
@@ -489,7 +489,7 @@ def main():
     print(f"HME worker listening on http://{args.host}:{args.port}", flush=True)
     try:
         server.serve_forever()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # silent-ok: normal CTRL-C shutdown; no error to propagate
         pass
     finally:
         server.server_close()

@@ -403,7 +403,7 @@ def what_did_i_forget(changed_files: str) -> str:
                             break
                     if total_hunk_chars >= 1000:
                         break
-                except (OSError, ValueError):
+                except (OSError, ValueError):  # silent-ok: hunk-size counter; early break on unreadable hunk continues with next file
                     pass
             if hunk_parts:
                 hunk_context = "\nChanged file context (±10 lines around diff hunks):\n" + "\n\n".join(hunk_parts)

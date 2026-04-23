@@ -156,7 +156,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
                 if isinstance(beat_key, str) and ":" in beat_key:
                     try:
                         sec = int(beat_key.split(":")[0])
-                    except ValueError:
+                    except ValueError:  # silent-ok: beat-key format fallback; sec=-1 is the 'no section' sentinel the filter already handles
                         pass
                 if section >= 0 and sec != section:
                     continue

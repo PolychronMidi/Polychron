@@ -74,7 +74,7 @@ class RAGKnowledgeMixin:
                         _log.warning(f"KB backup written to {backup_path} ({len(df)} entries)")
                         self.knowledge_table = None  # force rebuild with new dimension
                         return
-            except Exception:
+            except Exception:  # silent-ok: empty or unreadable KB table; fallback path rebuilds with new dimension
                 pass  # empty table or read error — proceed normally
             self.knowledge_table = tbl
         except Exception:

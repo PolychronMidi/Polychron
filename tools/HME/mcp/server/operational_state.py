@@ -318,7 +318,7 @@ def _trim_synthesis_file() -> None:
         if len(lines) > 1000:
             with open(_SYNTHESIS_FILE, "w") as f:
                 f.writelines(lines[-1000:])
-    except OSError:
+    except OSError:  # silent-ok: synthesis-log trim; failure defers compaction one cycle
         pass
 
 
@@ -458,7 +458,7 @@ def load_recent_sessions(max_age_days: int = 7) -> list[dict]:
                         sessions.append(doc)
                 except json.JSONDecodeError:
                     continue
-    except OSError:
+    except OSError:  # silent-ok: sessions-file read fallback; absent/unreadable = empty session list, acceptable
         pass
     return sessions
 
@@ -472,7 +472,7 @@ def _trim_sessions_file() -> None:
         if len(lines) > 500:
             with open(_SESSIONS_FILE, "w") as f:
                 f.writelines(lines[-500:])
-    except OSError:
+    except OSError:  # silent-ok: sessions-file trim; failure defers compaction one cycle
         pass
 
 

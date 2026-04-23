@@ -66,7 +66,7 @@ def _file_list_with_signature(lang_filter: str) -> tuple[tuple, list]:
     for fp in files:
         try:
             mtime_sum += _stat(fp).st_mtime
-        except OSError:
+        except OSError:  # silent-ok: stat() for signature aggregation; missing file contributes 0 to signature, acceptable
             pass
     signature = (len(files), round(mtime_sum, 3))
     return signature, files

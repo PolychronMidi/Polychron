@@ -105,7 +105,7 @@ def main() -> None:
     def _shutdown(signum, frame):
         try:
             os.remove(PID_FILE)
-        except FileNotFoundError:
+        except FileNotFoundError:  # silent-ok: shutdown-handler PID cleanup; file may already be absent
             pass
         sys.exit(0)
 
@@ -122,13 +122,13 @@ def main() -> None:
             }
             try:
                 _append_sample(record)
-            except OSError:
+            except OSError:  # silent-ok: per-sample write at 1Hz; logging every failure would spam, next sample retries
                 pass
             sample_count += 1
             if sample_count >= 100:
                 try:
                     _trim_history()
-                except OSError:
+                except OSError:  # silent-ok: history-file trim; failure defers compaction one cycle
                     pass
                 sample_count = 0
         time.sleep(POLL_INTERVAL)
