@@ -329,6 +329,18 @@ export class BrowserPanel implements PanelHost {
         if (!ready) this._shim.start();
       });
     },
+    checkArbiterHealth: () => {
+      // Surface arbiter daemon health to the webview so the user can see
+      // whether route=auto is genuinely classifying or silently falling
+      // back to Claude because the daemon is unreachable.
+      const health = getArbiterHealth();
+      this.post({
+        type: "arbiterHealth",
+        healthy: health.healthy,
+        consecutiveFailures: health.consecutiveFailures,
+        lastOkMs: health.lastOkMs,
+      });
+    },
     setZoomLevel: (_msg) => {
       // No-op: browser uses localStorage for zoom persistence
     },
