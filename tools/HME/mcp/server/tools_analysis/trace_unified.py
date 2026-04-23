@@ -38,7 +38,21 @@ def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 
         return _budget_gate(_trace_delta(target if target and target != "auto" else ""))
 
     if not target or not target.strip():
-        return "Error: target cannot be empty. Pass a channel name, module name, or beat key (S3, 2:1:3:0, 400)."
+        return (
+            "i/trace — trace signal flow through the system.\n\n"
+            "Usage:\n"
+            "  i/trace target=<name> [mode=auto|cascade|module|causal|snapshot|impact|delta]\n\n"
+            "Target forms (auto-detected):\n"
+            "  channelName      → L0 cascade trace (3 hops deep)\n"
+            "  moduleName       → per-section module trace (regime, tension, notes, profile)\n"
+            "  S3 | 2:1:3:0     → beat snapshot (full system state at one beat)\n"
+            "  (omit target)    → this help\n\n"
+            "Modes:\n"
+            "  auto (default)   detect from target shape\n"
+            "  impact           forward-causal chain: who gets affected when you edit target\n"
+            "  delta            compare current vs previous run (pass target='' or 'auto')\n"
+            "\nExample: i/trace target=channelStateField mode=impact"
+        )
 
     target = target.strip()
 
