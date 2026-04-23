@@ -244,14 +244,18 @@ function streamClaudeMsg(ctx, msg, assistantId) {
     runStream({
         ctx, assistantId, route,
         start: (h) => {
-            const onDone = (usage) => {
+            // Claude has two backends (PTY hook-aware + pipe fallback) and
+            // unique-among-routes needs (sessionId capture, token usage
+            // validation, model-mismatch detection). The adapter handles
+            // sessionId + usage via normalized callbacks; PTY fallback to
+            // pipe still uses a direct legacy-function path because it's a
+            // mid-stream SWITCH, not a fresh launch, and goes through the
+            // PTY-specific onRawData / onPtyReady hooks that aren't in the
+            // adapter contract.
+            const onCompleted = (usage) => {
                 if (h.isAborted())
                     return;
                 ctx.updateContextTracker(h.state.text, h.state.thinking, msg.claudeModel, usage);
-                // Validate: did Claude actually run with the model we asked for?
-                // usage.modelId is the full CLI key (e.g. "claude-sonnet-4-6");
-                // claudeOpts.model is the short alias (e.g. "sonnet"). A mismatch
-                // is only real when the alias doesn't appear in the full ID at all.
                 const _modelMismatch = usage?.modelId &&
                     !usage.modelId.includes(claudeOpts.model) &&
                     !usage.modelId.startsWith(`claude-${claudeOpts.model}`);
@@ -285,10 +289,38 @@ function streamClaudeMsg(ctx, msg, assistantId) {
                 }
                 ctx.postError("claude", err);
             };
-            const startPipe = () => (0, router_1.streamClaude)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, (_cost, usage) => { onDone(usage); }, onError);
-            h.setCancel((0, router_1.streamClaudePty)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, onDone, (err) => {
-                console.log(`[HME Chat] PTY unavailable (${err}), falling back to -p mode`);
-                h.setCancel(startPipe());
+            // Start PTY via the adapter. On PTY-unavailable error, fall back
+            // to pipe mode via the pipe adapter. Both report sessionId via
+            // onSessionId — the state update is uniform.
+            const startPipeFallback = () => {
+                const pipeHandle = router_1.claudeAdapter.stream({ message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot }, {
+                    onChunk: h.onChunk,
+                    claude: claudeOpts,
+                    onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
+                    onTokenUsage: (u) => {
+                        onCompleted({
+                            inputTokens: u.input ?? 0,
+                            outputTokens: u.output ?? 0,
+                            usedPct: u.usedPct,
+                        });
+                    },
+                });
+                h.setCancel(() => pipeHandle.cancel());
+                pipeHandle.done.then((result) => {
+                    if (!result.ok)
+                        onError(result.error ?? "unknown error");
+                    // onCompleted was already called via onTokenUsage; if the
+                    // stream ended without tokens, still finalize.
+                    else if (!result.tokens)
+                        onCompleted(undefined);
+                });
+            };
+            // PTY still goes through the legacy direct call because it needs
+            // the onRawData + onPtyReady side-channels that the current
+            // adapter doesn't forward. On PTY unavailable, adapter takes over.
+            h.setCancel((0, router_1.streamClaudePty)(effectiveText, ctx.state.claudeSessionId, claudeOpts, ctx.projectRoot, h.onChunk, (sessionId) => { ctx.state.claudeSessionId = sessionId; }, onCompleted, (err) => {
+                console.log(`[HME Chat] PTY unavailable (${err}), falling back to pipe via claudeAdapter`);
+                startPipeFallback();
             }, ctx.mirrorPty ? (raw) => ctx.mirrorPty.onRawData(raw) : undefined, ctx.mirrorPty ? (fn) => ctx.mirrorPty.onPtyReady(fn) : undefined));
         },
     });
@@ -300,19 +332,26 @@ function streamLlamacppMsg(ctx, msg, assistantId) {
     runStream({
         ctx, assistantId, route: "local",
         start: (h) => {
-            const onDone = () => {
+            const handle = router_1.llamacppAdapter.stream(requestHistory, {
+                onChunk: h.onChunk,
+                llamacpp: (0, msgHelpers_1.llamacppOptsFromMsg)(msg),
+                workingDir: ctx.projectRoot,
+            });
+            h.setCancel(() => handle.cancel());
+            handle.done.then((result) => {
                 if (h.isAborted())
                     return;
+                if (!result.ok) {
+                    if (!h.isEnded()) {
+                        h.postStreamEnd();
+                        h.safeEnd();
+                    }
+                    ctx.postError("local", result.error ?? "unknown error");
+                    return;
+                }
                 finalizeStream(h, ctx, assistantId, "local", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
                 h.safeEnd();
-            };
-            h.setCancel((0, router_1.streamLlamacppAgentic)(requestHistory, (0, msgHelpers_1.llamacppOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, (err) => {
-                if (!h.isEnded()) {
-                    h.postStreamEnd();
-                    h.safeEnd();
-                }
-                ctx.postError("local", err);
-            }));
+            });
         },
     });
 }
