@@ -549,8 +549,7 @@ Everything below is implemented, tested, and wired into the pipeline. Not aspira
 --
 | `detect-doc-drift` | `hme-doc-drift.json` | Where documentation has diverged from KB knowledge |
 | `extract-generalizations` | `hme-generalizations.json` | Project-agnostic patterns from crystallized KB |
-| `synthesize-generalizations` | (updates generalizations) | Universal structural claims via reasoning cascade |
-| `render-generalizations` | `doc/hme-discoveries.md` | Human-readable intellectual output |
+| `synthesize-generalizations` | `hme-discoveries-draft.jsonl` | Structured drafts (invariant/prediction/counterexample) via API reasoning cascade. Promoted to `doc/hme-discoveries.md` only via human `learn(action='promote_discovery')`. |
 | `compute-evolution-priority` | `hme-evolution-priority.json` | Ranked list of what should change next, from 9 signal sources |
 
 ### The compounding structure
