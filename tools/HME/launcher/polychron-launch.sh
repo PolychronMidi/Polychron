@@ -208,3 +208,5 @@ echo "[launch] opening ${CHAT_URL}" >&2
 disown 2>/dev/null || true
 
 echo "[launch] stack up — PIDs logged to ${PID_FILE}" >&2
+# Mark success so the EXIT trap leaves the stack alone.
+_LAUNCH_OK=1
