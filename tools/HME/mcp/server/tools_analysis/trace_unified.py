@@ -15,7 +15,7 @@ logger = logging.getLogger("HME")
 
 @ctx.mcp.tool()
 @chained("trace")
-def trace(target: str, mode: str = "auto", section: int = -1, limit: int = 15) -> str:
+def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 15) -> str:
     """Trace signal flow through the system.
     'channelName' → L0 cascade trace (follow signal through consumers 3 hops deep).
     'moduleName' → per-section trace (regime, tension, notes, profile per section).
