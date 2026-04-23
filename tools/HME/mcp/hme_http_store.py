@@ -93,13 +93,19 @@ def _load_transcript() -> None:
             lines = f.readlines()
         recent = lines[-_MAX_TRANSCRIPT_MEMORY:] if len(lines) > _MAX_TRANSCRIPT_MEMORY else lines
         entries = []
+        malformed = 0
         for line in recent:
             line = line.strip()
             if line:
                 try:
                     entries.append(json.loads(line))
-                except Exception:
-                    pass
+                except json.JSONDecodeError:
+                    malformed += 1
+        if malformed:
+            # Narrow to JSONDecodeError so real bugs (ValueError from bad
+            # schema, etc.) propagate. Surface the count once per load so
+            # JSONL corruption is visible instead of tokens vanishing.
+            print(f"[HME] transcript load: {malformed} malformed JSONL lines skipped", file=sys.stderr, flush=True)
         with _transcript_lock:
             _transcript_entries = entries
     except Exception as e:
