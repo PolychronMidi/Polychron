@@ -318,7 +318,11 @@ class _Supervisor:
             return False
 
         now = time.time()
-        if spec.last_start > 0 and (now - spec.last_start) < self._min_restart_interval:
+        if (
+            not bypass_cooldown
+            and spec.last_start > 0
+            and (now - spec.last_start) < self._min_restart_interval
+        ):
             logger.info(
                 f"supervisor: {spec.name} restart cooldown "
                 f"({int(now - spec.last_start)}s / {int(self._min_restart_interval)}s)"
