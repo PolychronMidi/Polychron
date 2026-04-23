@@ -759,12 +759,32 @@ _reload_lock = threading.Lock()
 def reload_on_device(target_device: str) -> dict:
     """Reload all GPU embedding models on `target_device`.
 
-    Called by the daemon's indexing-mode orchestration to migrate the RAG
-    stack to a freed GPU (e.g. cuda:1 after coder is suspended) for fast
-    bulk indexing, then restore afterwards.
+    HISTORICAL note (pre-R97): this function was called by the daemon's
+    indexing-mode orchestration to migrate the RAG stack from cuda:0 to
+    cuda:1 and back every full reindex. That migration churned CUDA
+    contexts enough to trigger "illegal memory access" corruption
+    regularly, which is why the user re-implemented "model pinning" ten
+    times — each implementation was defeated by this function.
+
+    R97: embedders PIN to their boot-time device (HME_RAG_GPU). The only
+    legitimate caller is HME_ALLOW_EMBEDDER_MIGRATION=1 — an opt-in env
+    for humans who know what they're doing. Without the opt-in, any
+    migration request is refused so a regression can't silently resurrect
+    the old failure mode.
 
     target_device: "cuda:0", "cuda:1", or "restore" to go back to original.
     """
+    # Pinning enforcement. If someone explicitly sets the escape hatch,
+    # allow migration — they've acknowledged the risk. Otherwise refuse.
+    if os.environ.get("HME_ALLOW_EMBEDDER_MIGRATION") not in ("1", "true", "yes"):
+        return {
+            "error": (
+                "embedder migration refused — models are pinned to HME_RAG_GPU. "
+                "Set HME_ALLOW_EMBEDDER_MIGRATION=1 only if you know why the "
+                "pin needs to lift; every prior migration caused CUDA corruption."
+            )
+        }
+
     # Single-writer invariant: only rag_engines may mutate embedder device
     # residency. Other callers (search, index) read-only.
     try:
