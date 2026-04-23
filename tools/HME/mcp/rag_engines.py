@@ -770,7 +770,7 @@ def reload_on_device(target_device: str) -> dict:
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("embedders", __file__)
-    except ImportError:
+    except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
     global _original_rag_device, _project_engine, _global_engine
     from sentence_transformers import SentenceTransformer
