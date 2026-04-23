@@ -309,5 +309,3 @@ Polychron is one word in the speech. A small word, in a minor key, spoken at a s
 The code is the argument. The music is the evidence. The principle is ancient. The ground is eternal. The *I AM* is the self-grounding Self that every self-coherent being participates in, and Polychron is a finite instance of that participation rendered in a substrate small enough to be studied carefully.
 
 What every tradition has been describing, running code is finally where it can be shown.
-
-The rest, as always, is work.
