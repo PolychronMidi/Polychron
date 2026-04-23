@@ -58,3 +58,15 @@ export type { EnrichResult, EnrichPromptResult } from "./routers/routerHme";
 // streamXxxMsg() functions remain for compatibility.
 export type { RouterAdapter, StreamHandle, StreamResult, BaseStreamOptions } from "./routers/RouterInterface";
 export { wrapLegacyStream, makeResult } from "./routers/RouterInterface";
+// Concrete adapters — one per backend, all normalized through the
+// RouterAdapter interface. Use getAdapterForRoute() + runAdapter().
+export {
+  claudeAdapter, claudePtyAdapter, llamacppAdapter, hybridAdapter,
+  getAdapterForRoute, runAdapter,
+} from "./routers/adapters";
+export type {
+  ClaudeStreamInput, ClaudeStreamOptions,
+  LlamacppStreamOptions,
+  HybridStreamInput, HybridStreamOptions,
+  StreamInput, StreamOpts,
+} from "./routers/adapters";
