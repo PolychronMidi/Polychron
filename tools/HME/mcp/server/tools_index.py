@@ -115,9 +115,37 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
     if not os.path.isdir(target):
         return f"Error: directory not found: {target}"
 
+    # Main-tree reindex goes through the daemon's indexing-mode — SAME path
+    # clear_index uses. indexing-mode owns:
+    #   1. suspend coder (kill + disable auto-restart)
+    #   2. migrate embedders to cuda:1 in the vacuum
+    #   3. run _index_main on GPU1 with no contention
+    #   4. migrate embedders back to cuda:0
+    #   5. resume coder
+    # Previously index_codebase bypassed all of this and called _index_main
+    # directly against the worker's default device, which raced coder on
+    # GPU1 and produced CUDA-illegal-memory cascades every single reindex
+    # (logged as "WHY THE FUCK DO I HAVE TO GO OVER THIS EVERY TIME").
+    # Lib engines still take the thread-pool path — they run on CPU / shared
+    # GPU0 and don't contend with coder.
+    try:
+        from indexing_mode import request_full_reindex
+        main_result = request_full_reindex()
+    except Exception as e:
+        return f"index error: daemon request failed: {e}"
+    if main_result.get("error"):
+        return (
+            f"index error: daemon refused indexing-mode: {main_result['error']}\n"
+            f"Check log/hme-llamacpp_daemon.out for traceback. The daemon "
+            f"owns GPU allocation — do not bypass it."
+        )
+    if "total_files" not in main_result:
+        return f"index error: daemon returned unexpected shape: {main_result}"
+
+    # Lib engines in parallel (CPU/shared-GPU, no coder contention).
     futures = {}
-    with ThreadPoolExecutor(max_workers=max(1, len(ctx.lib_engines) + 1)) as pool:
-        futures["__main__"] = pool.submit(_index_main, target)
+    if ctx.lib_engines:
+        pool = ThreadPoolExecutor(max_workers=len(ctx.lib_engines))
         for lib_key, engine in ctx.lib_engines.items():
             futures[lib_key] = pool.submit(_index_lib, lib_key, engine)
 
