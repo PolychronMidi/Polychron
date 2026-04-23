@@ -360,47 +360,79 @@ class _Supervisor:
 
     def suspend(self, name: str) -> dict:
         """Suspend an instance: kill its process + prevent auto-restart.
-        Used by indexing mode to free a GPU for embedding work."""
+        Used by indexing mode to free a GPU for embedding work.
+
+        Fail-fast contract: returns {"error": ...} unless EVERY process
+        listening on spec.port has been terminated. The original failure
+        mode this guards against was a duplicate llama-server (spawned by
+        a competing supervisor) staying alive on the GPU after suspend
+        returned success — the embedder then OOM'd because the GPU it
+        thought was free was still half-occupied. We now re-scan the port
+        in a kill loop until no process holds it.
+        """
         with self._lock:
             spec = self._instances.get(name)
             if not spec:
                 return {"error": f"unknown instance: {name}"}
             spec.suspended = True
-            killed_pid = None
+            killed_pids: list[int] = []
+
             if spec.process is not None and spec.process.poll() is None:
                 spec.process.terminate()
                 try:
                     spec.process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     spec.process.kill()
-                killed_pid = spec.process.pid
-                spec.process = None
-            else:
-                # Adopted instance: no Popen, but may be running on spec.port.
-                # Find and kill it by port so we actually free the GPU.
-                pid = self._find_pid_on_port(spec.port)
-                if pid is not None:
                     try:
-                        os.kill(pid, signal.SIGTERM)
-                        # Wait for it to die
-                        for _ in range(20):
-                            time.sleep(0.5)
-                            try:
-                                os.kill(pid, 0)
-                            except ProcessLookupError:
-                                break
-                        else:
-                            os.kill(pid, signal.SIGKILL)
-                        killed_pid = pid
+                        spec.process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        return {"error": f"{name}: SIGKILL did not reap PID {spec.process.pid}"}
+                killed_pids.append(spec.process.pid)
+                spec.process = None
+
+            # Walk the port until no PID is listening. Each iteration finds
+            # one PID, sends SIGTERM, polls 10s for exit, escalates to
+            # SIGKILL. If after 5 sweeps the port is still bound, we hard
+            # fail rather than mislead the indexing-mode caller.
+            for _sweep in range(5):
+                pid = self._find_pid_on_port(spec.port)
+                if pid is None:
+                    break
+                if pid == os.getpid():
+                    return {"error": f"{name}: spec.port {spec.port} is held by the daemon itself — config bug"}
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    killed_pids.append(pid)
+                    continue
+                except PermissionError as e:
+                    return {"error": f"{name}: cannot signal PID {pid} on port {spec.port}: {e}"}
+                except OSError as e:
+                    return {"error": f"{name}: SIGTERM PID {pid} failed: {e}"}
+                for _ in range(20):
+                    time.sleep(0.5)
+                    try:
+                        os.kill(pid, 0)
                     except ProcessLookupError:
-                        killed_pid = pid  # already dead
-                    except Exception as e:
-                        logger.warning(f"supervisor: failed to kill adopted {name} pid={pid}: {e}")
-            if killed_pid is not None:
-                logger.info(f"supervisor: {name} suspended (PID {killed_pid} terminated)")
+                        break
+                else:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    except OSError as e:
+                        return {"error": f"{name}: SIGKILL PID {pid} failed: {e}"}
+                killed_pids.append(pid)
+            else:
+                # Loop exhausted without breaking — port still bound.
+                pid = self._find_pid_on_port(spec.port)
+                return {"error": f"{name}: port {spec.port} still bound by PID {pid} after 5 kill sweeps"}
+
+            if killed_pids:
+                logger.info(f"supervisor: {name} suspended (PIDs terminated: {killed_pids})")
             else:
                 logger.info(f"supervisor: {name} suspended (no process found)")
-            return {"name": name, "suspended": True, "killed_pid": killed_pid}
+            return {"name": name, "suspended": True, "killed_pids": killed_pids}
 
     def resume(self, name: str) -> dict:
         """Resume a suspended instance: clear flag + spawn immediately."""
