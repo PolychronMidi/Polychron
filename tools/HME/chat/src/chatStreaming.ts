@@ -1,9 +1,9 @@
 import * as path from "path";
 import {
   LlamacppMessage, TokenUsage,
-  streamClaude, streamClaudePty, streamLlamacppAgentic, streamHybrid,
+  streamLlamacppAgentic, streamHybrid,
   postTranscript, reindexFiles, auditChanges,
-  hybridAdapter, claudeAdapter, claudePtyAdapter, llamacppAdapter,
+  hybridAdapter, claudeAdapter, llamacppAdapter,
   RouterAdapter, StreamHandle, BaseStreamOptions,
 } from "./router";
 import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit, AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
