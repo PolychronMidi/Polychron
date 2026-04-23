@@ -101,9 +101,17 @@ _onb_step_label() {
   esac
 }
 
-# Initialize state file to 'boot' — called from sessionstart.sh
+# Initialize state file — called from sessionstart.sh. Once graduated,
+# stays graduated: the onboarding walkthrough is a first-run experience,
+# not a per-session ritual. Re-booting it every session meant users who
+# completed onboarding still saw step-1 "run hme_admin selftest" guidance
+# forever, and every tool call hauled the full AUTO-CHAIN selftest output
+# into the agent's context as spam.
 _onb_init() {
   mkdir -p "$(dirname "$_ONB_STATE_FILE")"
+  if [ -f "$_ONB_STATE_FILE" ] && [ "$(cat "$_ONB_STATE_FILE" 2>/dev/null)" = "graduated" ]; then
+    return 0
+  fi
   echo "boot" > "$_ONB_STATE_FILE"
   rm -f "$_ONB_TARGET_FILE"
 }
