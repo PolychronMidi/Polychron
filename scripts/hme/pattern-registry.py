@@ -61,15 +61,21 @@ def main(argv):
             print("\nNo patterns matched this round. Trigger conditions:")
             for _, p in _load_patterns():
                 pid = p.get("id", "?")
-                trig = p.get("trigger_when") or p.get("when") or p.get("condition")
-                if isinstance(trig, dict):
-                    trig = "; ".join(f"{k}={v}" for k, v in trig.items())[:140]
-                elif isinstance(trig, list):
-                    trig = "; ".join(str(t) for t in trig)[:140]
+                # Real pattern schema is `trigger: {kind, matches_when, ...}`
+                # — prefer the human-readable `matches_when` line, fall
+                # back to `kind` or to the legacy fields.
+                trig_obj = p.get("trigger")
+                if isinstance(trig_obj, dict):
+                    trig = trig_obj.get("matches_when") or trig_obj.get("kind") or ""
                 else:
-                    trig = (str(trig) if trig else "(no `trigger_when` declared)")
+                    trig = p.get("trigger_when") or p.get("when") or p.get("condition") or ""
+                if isinstance(trig, dict):
+                    trig = "; ".join(f"{k}={v}" for k, v in trig.items())
+                elif isinstance(trig, list):
+                    trig = "; ".join(str(t) for t in trig)
+                trig_s = str(trig).strip()[:140] if trig else "(no `trigger` declared)"
                 print(f"  [{p.get('category', '?')}] {pid}")
-                print(f"    when: {trig}")
+                print(f"    when: {trig_s}")
             print("\nInspect the full pattern with: i/pattern <id>")
             print("Compute fresh matches with: node scripts/pipeline/hme/match-patterns.js")
         return 0
