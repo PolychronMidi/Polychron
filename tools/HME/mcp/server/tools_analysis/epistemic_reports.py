@@ -171,6 +171,23 @@ def intention_gap_report() -> str:
     if isinstance(gap, (int, float)):
         lines.append(f"  gap                    {gap * 100:.0f}%")
 
+    # Explain "untrackable" — previously users saw a high count with no idea
+    # what it meant. A todo is untrackable when its text doesn't mention any
+    # expected-artifact pattern the gap-computer knows how to verify
+    # (file paths, module names, git-log tokens, etc.). They're not failures;
+    # they're just outside the current telemetry's introspection range.
+    n_untrackable = latest.get("untrackable", 0)
+    n_total = latest.get("todos_total", 0)
+    if n_untrackable and n_total:
+        lines.append("")
+        lines.append(
+            f"  note: {n_untrackable}/{n_total} todos are UNTRACKABLE — their text "
+            f"doesn't match any artifact pattern the gap-computer can verify "
+            f"(file paths, module names, commit tokens). Not failures; just "
+            f"outside introspection range. See scripts/pipeline/compute-intention-gap.js "
+            f"to extend the patterns."
+        )
+
     abandoned = latest.get("abandoned_items") or []
     if abandoned:
         lines.append("")
