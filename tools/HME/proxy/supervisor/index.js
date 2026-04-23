@@ -141,18 +141,21 @@ async function _healthLoop() {
           const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
           const sentinel = path.join(PROJECT_ROOT, 'tmp', 'hme-supervisor-abandoned');
           const msg = `[supervisor] ${spec.name} hit restart limit (${spec.maxRestarts}) — giving up`;
-          // Capture last 20 lines of child stderr so the sentinel includes the actual cause
-          // (previously the supervisor wrote the give-up line with zero diagnostic context).
+          // Tail of child stderr goes in the sentinel JSON (read by i/status),
+          // NOT into hme-errors.log — one event must not flood the LIFESAVER
+          // scanner with 20+ lines. hme-errors.log stays one-line-per-event.
           let childTail = '';
+          let childLogPath = '';
           try {
             const childLog = path.join(PROJECT_ROOT, 'log', `hme-${spec.name}.out`);
+            childLogPath = childLog;
             if (fs.existsSync(childLog)) {
-              const data = fs.readFileSync(childLog, 'utf8').split('\n').slice(-20).join('\n');
-              childTail = `\n--- last 20 lines of ${childLog} ---\n${data}\n--- end ---\n`;
+              childTail = fs.readFileSync(childLog, 'utf8').split('\n').slice(-20).join('\n');
             }
           } catch (_e) { /* best-effort */ }
           console.error(msg);
-          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}${childTail}\n`); } catch (_e) { /* best-effort */ }
+          const tailHint = childLogPath ? ` (see tail in tmp/hme-supervisor-abandoned; full log: ${childLogPath})` : '';
+          try { fs.appendFileSync(errLog, `[${new Date().toISOString()}] ${msg}${tailHint}\n`); } catch (_e) { /* best-effort */ }
           // Filesystem sentinel the i/ wrappers + statusline check for immediate surfacing.
           // Cleared on successful adoption (see the adopt path above).
           try {
