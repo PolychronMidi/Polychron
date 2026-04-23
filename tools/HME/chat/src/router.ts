@@ -56,8 +56,11 @@ export type { EnrichResult, EnrichPromptResult } from "./routers/routerHme";
 // Normalized Router interface (tonight's unification pass). New code
 // should consume routers via RouterAdapter + StreamHandle; legacy
 // streamXxxMsg() functions remain for compatibility.
-export type { RouterAdapter, StreamHandle, StreamResult, BaseStreamOptions } from "./routers/RouterInterface";
-export { wrapLegacyStream, makeResult } from "./routers/RouterInterface";
+export type {
+  RouterAdapter, StreamHandle, StreamResult, BaseStreamOptions,
+  StreamChunkEvent,
+} from "./routers/RouterInterface";
+export { wrapLegacyStream, makeResult, streamAsIterable } from "./routers/RouterInterface";
 // Concrete adapters — one per backend, all normalized through the
 // RouterAdapter interface. Use getAdapterForRoute() + runAdapter().
 export {
