@@ -16,6 +16,20 @@ if [[ "$FILE" == */README.md ]]; then
     >/dev/null 2>&1 &
 fi
 
+# Bias-registration edits trigger the jurisdiction manifest snapshot in the
+# background. `registerTrustBias` / `registerCouplingBias` / `registerJurisdictionBias`
+# write into 93 locked bias-bounds; a change to any of them must be reflected
+# in scripts/bias-bounds-manifest.json or the hypermeta-jurisdiction check
+# fails at lint time. Auto-fire the snapshot so legitimate structural changes
+# don't trip CI on the next pipeline run.
+NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
+if echo "$FILE" | grep -qE '/Polychron/src/conductor/' \
+   && echo "$NEW_STRING" | grep -qE 'conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b'; then
+  _lifesaver_bg "bias_bounds_snapshot" 60 "$PROJECT_ROOT/tmp/hme-bias-bounds-snapshot.out" \
+    node "$PROJECT_ROOT/scripts/check-hypermeta-jurisdiction.js" --snapshot-bias-bounds
+  echo "[hme] bias registration edited — snapshotting bias-bounds manifest (hme-bias-bounds-snapshot.out)" >&2
+fi
+
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy))/'; then
   MODULE=$(_extract_module "$FILE")
   HME_READ_PRIOR=false
