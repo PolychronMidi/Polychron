@@ -384,10 +384,27 @@ function classifyPtyLine(text, fullOutput) {
     if (!trimmed)
         return null;
     if (/^(?:⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏)\s/.test(trimmed)) {
-        return { chunk: trimmed.replace(/^[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*/, ""), type: "thinking" };
+        // Spinner frames are never user-visible — fullOutput still captures them
+        // for /context parsing but the chat UI doesn't render them.
+        return null;
     }
-    if (/^●\s/.test(trimmed) || /^\[.*\]/.test(trimmed)) {
-        return { chunk: trimmed, type: "tool" };
+    // CLI TUI chrome: tool-call bullets (●), tool-result branches (⎿ / └),
+    // bracketed status footers, "Running…"/"Thinking…" progress lines.
+    // These are the nested agent's trace, not ITS response — suppress from
+    // the chat. fullOutput still accumulates them so downstream PTY parsing
+    // (sessionId extraction, done-pattern detection) keeps working.
+    if (/^[●⎿└├│]/.test(trimmed))
+        return null;
+    if (/^\[.*\]$/.test(trimmed))
+        return null;
+    if (/^(?:Running|Thinking|Processing|Analyzing|Working|Searching)(?:[.…·]|\s)/i.test(trimmed))
+        return null;
+    // Tree-indent continuation lines (2+ spaces then text, following a ⎿ line)
+    // are tool-result continuations. Detect by presence of ⎿/└ in recent fullOutput tail.
+    if (/^\s{2,}/.test(text)) {
+        const recentTail = fullOutput.slice(-600);
+        if (/[⎿└]/.test(recentTail) && !/\n\n\s*$/.test(recentTail))
+            return null;
     }
     if (!PTY_DONE_PATTERNS.some((p) => p.test(fullOutput.slice(-200)))) {
         return { chunk: text, type: "text" };
