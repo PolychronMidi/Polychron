@@ -44,11 +44,24 @@ def _pick_embed_device() -> str:
             if best_idx >= 0:
                 return f"cuda:{best_idx}"
     except Exception as _cuda_err:
-        # Silent CPU-fallback here was the root of a 100× embedding
-        # slowdown nobody noticed for weeks. Log at ERROR so a CUDA
-        # regression (driver glitch, OOM on import, etc.) surfaces
-        # loudly instead of being discovered via "why is indexing slow."
-        logger.error(f"CUDA device probe FAILED — embedding dropped to CPU: {type(_cuda_err).__name__}: {_cuda_err}")
+        # Silent CPU-fallback was the root of a 100× embedding slowdown
+        # that went unnoticed for weeks. Fire a CRITICAL LIFESAVER so
+        # the next tool response surfaces the regression instead of
+        # letting it be discovered via "why is indexing slow."
+        logger.error(f"CUDA device probe FAILED: {type(_cuda_err).__name__}: {_cuda_err}")
+        try:
+            import sys as _sys
+            _mcp_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+            if _mcp_root not in _sys.path:
+                _sys.path.insert(0, _mcp_root)
+            from server import context as _ctx
+            _ctx.register_critical_failure(
+                "rag_engine.pick_embed_device",
+                f"CUDA probe failed ({type(_cuda_err).__name__}: {_cuda_err}); embedding dropped to CPU — expect 50-100× slowdown on index/search",
+                severity="CRITICAL",
+            )
+        except Exception as _life_err:
+            logger.debug(f"LIFESAVER register failed: {_life_err}")
     return "cpu"
 
 
