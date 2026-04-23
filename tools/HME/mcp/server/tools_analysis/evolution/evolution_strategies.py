@@ -651,17 +651,18 @@ def _adversarial_stress() -> str:
     else:
         results.append(("Run-history: directory exists", False, "output/metrics/run-history/ missing"))
 
-    # Probe 17: Journal exists and has rounds
+    # Probe 17: Journal archive exists and has historical rounds
+    # Journal is a deprecated archive — live round state is in the activity bridge.
     journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     try:
         with open(journal_path, encoding="utf-8") as f:
             journal = f.read()
         import re as _re2
         rounds = len(_re2.findall(r'^## R\d+', journal, _re2.MULTILINE))
-        results.append((f"Journal: {rounds} rounds documented",
+        results.append((f"Journal archive: {rounds} historical rounds (frozen)",
                         rounds >= 10, "" if rounds >= 10 else f"only {rounds} rounds"))
     except Exception as e:
-        results.append(("Journal: readable", False, str(e)))
+        results.append(("Journal archive: readable", False, str(e)))
 
     # Probe 18: Adaptive state file exists and has valid structure
     as_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "adaptive-state.json")
