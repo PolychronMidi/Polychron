@@ -256,18 +256,29 @@ class BrowserPanel {
         try {
             this._transcript = new TranscriptLogger_1.TranscriptLogger(projectRoot);
             this._transcript.setNarrativeCallback(async (entries) => {
+                // Hard timeout so a hung daemon doesn't stall the chat. Every 3 turns
+                // the narrative callback fires; a 3s ceiling keeps the chat snappy
+                // even when the synthesis backend is degraded. On timeout we return
+                // an empty string — the next attempt will try again with fresh state.
+                const NARRATIVE_TIMEOUT_MS = 3000;
+                const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(""), NARRATIVE_TIMEOUT_MS));
+                let narrative = "";
                 try {
-                    const narrative = await (0, Arbiter_1.synthesizeNarrative)(entries);
-                    if (narrative) {
-                        (0, router_1.postTranscript)([{ ts: Date.now(), type: "narrative", content: narrative }])
-                            .catch((e) => this.postError("narrative", String(e)));
-                    }
-                    return narrative;
+                    narrative = await Promise.race([(0, Arbiter_1.synthesizeNarrative)(entries), timeoutPromise]);
                 }
                 catch (e) {
                     console.error(`[HME] narrative-synthesis skipped: ${e?.message ?? e}`);
                     return "";
                 }
+                if (!narrative) {
+                    // Either timeout fired or the daemon returned empty — record so the
+                    // user can investigate if this becomes chronic, but don't block.
+                    console.error(`[HME] narrative-synthesis returned empty (timeout=${NARRATIVE_TIMEOUT_MS}ms or daemon empty)`);
+                    return "";
+                }
+                (0, router_1.postTranscript)([{ ts: Date.now(), type: "narrative", content: narrative }])
+                    .catch((e) => this.postError("narrative", String(e)));
+                return narrative;
             });
         }
         catch (e) {
@@ -468,6 +479,15 @@ class BrowserPanel {
                     text: `🔀 → ${label} (${Math.round(decision.confidence * 100)}% — ${decision.reason})`,
                 });
             }
+            else {
+                // Surface the fallback. Hidden auto-route failures erode trust in
+                // routing decisions — a user who thinks they're hitting a local
+                // model but is actually paying Claude API costs needs to know.
+                this.post({
+                    type: "notice", level: "warn",
+                    text: `⚠ Auto-route unavailable — falling back to ${decision.route}. (${decision.reason || "arbiter unreachable"})`,
+                });
+            }
         }
         else {
             resolvedRoute = msg.route;
@@ -636,9 +656,11 @@ class BrowserPanel {
         catch (e) {
             console.error(`[HME] dispose: _persistState failed: ${e?.message ?? e}`);
         }
-        const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
-        const timeout = new Promise((resolve) => setTimeout(resolve, 5000));
-        await Promise.race([narrativeWork, timeout]);
+        // Fire-and-forget the final narrative. Previously we awaited up to 5s —
+        // with the narrative callback now capped at 3s per call, there's nothing
+        // left to wait for here: the final narrative either completes within its
+        // own budget or gives up. Blocking dispose on it only delays tab close.
+        this._transcript.forceNarrative?.();
         for (const res of this._sseClients) {
             try {
                 res.end();

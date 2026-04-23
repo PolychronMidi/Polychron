@@ -57,12 +57,58 @@ const HME_HTTP_PORT = (() => {
     return n;
 })();
 const HME_HTTP_URL = `http://127.0.0.1:${HME_HTTP_PORT}`;
+// Shape-validating parsers. The shim returns JSON whose schema we depend on;
+// bare `JSON.parse` with `?? []` hides contract drift by silently filling in
+// empty values. These parsers fail loudly on shape mismatch so the caller's
+// transient-retry handles transport flakiness without swallowing schema bugs.
+function _parseEnrichResult(raw) {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+        throw new Error(`/enrich returned non-object: ${raw.slice(0, 120)}`);
+    }
+    const obj = parsed;
+    const kb = Array.isArray(obj.kb) ? obj.kb : [];
+    const warm = typeof obj.warm === "string" ? obj.warm : "";
+    return { warm, kb, kbCount: kb.length };
+}
+function _parseValidateResult(raw) {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+        throw new Error(`/validate returned non-object: ${raw.slice(0, 120)}`);
+    }
+    const obj = parsed;
+    return {
+        warnings: Array.isArray(obj.warnings) ? obj.warnings : [],
+        blocks: Array.isArray(obj.blocks) ? obj.blocks : [],
+    };
+}
+function _parseAuditResult(raw) {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+        throw new Error(`/audit returned non-object: ${raw.slice(0, 120)}`);
+    }
+    const obj = parsed;
+    return {
+        violations: Array.isArray(obj.violations) ? obj.violations : [],
+        changed_files: Array.isArray(obj.changed_files)
+            ? obj.changed_files.filter((x) => typeof x === "string")
+            : [],
+    };
+}
+function _parseReindexResult(raw) {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+        throw new Error(`/reindex returned non-object: ${raw.slice(0, 120)}`);
+    }
+    const obj = parsed;
+    const indexed = Array.isArray(obj.indexed)
+        ? obj.indexed.filter((x) => typeof x === "string")
+        : [];
+    const count = typeof obj.count === "number" ? obj.count : indexed.length;
+    return { indexed, count };
+}
 async function fetchHmeContext(query, topK = 5) {
-    return shimPost("/enrich", JSON.stringify({ query, top_k: topK }), (raw) => {
-        const parsed = JSON.parse(raw);
-        const kb = parsed.kb ?? [];
-        return { warm: parsed.warm ?? "", kb, kbCount: kb.length };
-    });
+    return shimPost("/enrich", JSON.stringify({ query, top_k: topK }), _parseEnrichResult);
 }
 function shimGet(path, parse, fallback, timeoutMs = 1000) {
     return new Promise((resolve) => {
@@ -143,16 +189,16 @@ async function enrichPrompt(prompt, frame = "") {
     return shimPost("/enrich_prompt", JSON.stringify({ prompt, frame }), (raw) => JSON.parse(raw), 200000);
 }
 async function validateMessage(message) {
-    return shimPost("/validate", JSON.stringify({ query: message }), JSON.parse);
+    return shimPost("/validate", JSON.stringify({ query: message }), _parseValidateResult);
 }
 async function auditChanges(changedFiles = "") {
-    return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), JSON.parse, 15000);
+    return shimPost("/audit", JSON.stringify({ changed_files: changedFiles }), _parseAuditResult, 15000);
 }
 async function postTranscript(entries) {
     return shimPost("/transcript", JSON.stringify({ entries }), () => undefined);
 }
 async function reindexFiles(files) {
-    return shimPost("/reindex", JSON.stringify({ files }), JSON.parse, 30000);
+    return shimPost("/reindex", JSON.stringify({ files }), _parseReindexResult, 30000);
 }
 async function postNarrative(narrative) {
     return shimPost("/narrative", JSON.stringify({ narrative }), () => undefined);
