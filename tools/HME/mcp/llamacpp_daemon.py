@@ -386,8 +386,7 @@ class _Supervisor:
         try:
             from server.lifecycle_writers import assert_writer
             assert_writer("llama-server", __file__)
-        except ImportError:
-            pass  # server.lifecycle_writers not on path — running outside full HME tree
+        except ImportError:  # silent-ok: lifecycle_writers optional when running daemon standalone
         # Defense-in-depth: never spawn a suspended instance even if a caller
         # bypasses the ensure_all_running / health_tick gates. indexing-mode
         # flips suspended=True before freeing the GPU; a spawn here would
