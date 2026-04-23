@@ -408,18 +408,51 @@ export class BrowserPanel implements PanelHost {
     }
   }
 
-  private _persistState() {
-    if (!this._state.sessionEntry) return;
+  /**
+   * Serialize writes to disk via a Promise chain so concurrent
+   * _persistState() calls (agent-mode completion + user send during
+   * chain rotation + SSE post) can't race. Each call returns a
+   * Promise that resolves after the write completes.
+   */
+  private _persistChain: Promise<void> = Promise.resolve();
+
+  private _persistState(): Promise<void> {
+    if (!this._state.sessionEntry) return this._persistChain;
+    // Snapshot state at call time — the write may happen later and
+    // we want the snapshot to reflect the moment of the call.
     const entry = {
       ...this._state.sessionEntry,
       claudeSessionId: this._state.claudeSessionId,
       updatedAt: Date.now(),
     };
     this._state.sessionEntry = entry;
-    saveSession(this._projectRoot, entry, this._state.messages, this._state.llamacppHistory, {
+    const messages = [...this._state.messages];
+    const llamacppHistory = [...this._state.llamacppHistory];
+    const opts = {
       contextTokens: this._contextMeter.pctUsed,
       chainIndex: this._state.chainIndex,
+    };
+    this._persistChain = this._persistChain.then(() => {
+      try {
+        saveSession(this._projectRoot, entry, messages, llamacppHistory, opts);
+      } catch (e: any) {
+        console.error(`[HME] saveSession failed: ${e?.message ?? e}`);
+      }
     });
+    return this._persistChain;
+  }
+
+  /**
+   * Canonical state-mutation broker. Every caller that modifies this._state
+   * SHOULD go through here so (a) mutations are visible in one place for
+   * debugging, (b) persistence is automatic, (c) concurrent callers
+   * serialize through _persistChain instead of writing in parallel.
+   * Pass persist=false when the mutation is transient (e.g. chainIndex
+   * bump that the next _persistState() will pick up anyway).
+   */
+  private _applyStateChange(mutate: (state: SessionState) => void, persist = true): void {
+    mutate(this._state);
+    if (persist) { void this._persistState(); }
   }
 
   //  Send pipeline
