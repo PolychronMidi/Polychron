@@ -190,7 +190,7 @@ def coupling_network(clusters: bool = False) -> str:
 
     for name, info in sorted(coupling.items()):
         score = trust.get(name)
-        score_str = f"{score:.2f}" if score is not None else "  ?"
+        score_str = f"{score:.2f}" if score is not None else "n/a "
         entry = (name, score or 0.0, score_str, info)
         if info["melodic"] and info["rhythm"]:
             coupled_both.append(entry)
