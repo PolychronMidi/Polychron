@@ -238,8 +238,9 @@ def module_story(module_name: str) -> str:
     except Exception as _err3:
         logger.debug(f"parts.append: {type(_err3).__name__}: {_err3}")
 
-    # Semantic neighbors
-    sim_limit = limits["similar"]
+    # Semantic neighbors — requires another embedder query (first call on
+    # cold worker can be 5-10s). Skip under fast.
+    sim_limit = 0 if _fast else limits["similar"]
     if matching and sim_limit > 0:
         try:
             with open(matching[0]["file"], encoding="utf-8", errors="ignore") as _f:
