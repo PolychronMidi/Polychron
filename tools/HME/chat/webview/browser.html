@@ -659,9 +659,24 @@ function _flushSseQueue() {
   var q = _sseQueue.splice(0);
   for (var i = 0; i < q.length; i++) _sendToServer(q[i]);
 }
-function _sendToServer(msg) {
+function _sendToServer(msg, attempt) {
+  attempt = attempt || 1;
   fetch('/api/message', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(msg) })
-    .catch(function(e) { console.error('[HME] postMessage failed:', e); });
+    .then(function(r) {
+      if (!r.ok && attempt < 3) {
+        // 4xx/5xx: retry with backoff. Without this, a single transient
+        // server hiccup silently lost the user's send.
+        setTimeout(function() { _sendToServer(msg, attempt + 1); }, attempt * 500);
+      }
+    })
+    .catch(function(e) {
+      console.error('[HME] postMessage attempt ' + attempt + ' failed:', e);
+      if (attempt < 3) {
+        setTimeout(function() { _sendToServer(msg, attempt + 1); }, attempt * 500);
+      } else {
+        console.error('[HME] postMessage gave up after 3 attempts; message LOST:', msg && msg.type);
+      }
+    });
 }
 const vscode = {
   postMessage(msg) {
