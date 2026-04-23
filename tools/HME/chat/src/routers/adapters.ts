@@ -113,9 +113,10 @@ export const llamacppAdapter: RouterAdapter<LlamacppMessage[], LlamacppStreamOpt
   );
 
 // Hybrid — llama + KB enrichment. Takes the full request as a dict shape.
+// Note: streamHybrid's positional order is (message, history, opts, ...).
 export interface HybridStreamInput {
-  messages: LlamacppMessage[];
-  userText: string;
+  message: string;
+  history: LlamacppMessage[];
   workingDir: string;
 }
 export interface HybridStreamOptions extends BaseStreamOptions {
@@ -127,19 +128,30 @@ export const hybridAdapter: RouterAdapter<HybridStreamInput, HybridStreamOptions
     "hybrid",
     "llama.cpp + KB (hybrid)",
     (input, opts, cb) => {
+      let cancelFn: (() => void) | null = null;
       let cancelled = false;
       streamHybrid(
-        input.messages,
-        input.userText,
+        input.message,
+        input.history,
         opts.llamacpp,
         input.workingDir,
         cb.chunk,
         cb.done,
         cb.error,
-      ).catch((e: any) => {
+      ).then((inner) => {
+        cancelFn = inner;
+        if (cancelled) {
+          try { inner(); } catch { /* silent-ok: inner cancel may already be past completion */ }
+        }
+      }).catch((e: any) => {
         if (!cancelled) cb.error(String(e?.message ?? e));
       });
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+        if (cancelFn) {
+          try { cancelFn(); } catch { /* silent-ok: legacy cancel may throw on already-done */ }
+        }
+      };
     },
   );
 
