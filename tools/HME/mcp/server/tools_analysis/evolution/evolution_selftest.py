@@ -151,6 +151,35 @@ def hme_hot_reload(modules: str = "") -> str:
                         except OSError as _unlink_err:
                             logger.debug(f"pycache nuke {_pyc_entry}: {type(_unlink_err).__name__}: {_unlink_err}")
         try:
+            # For packages that ship their logic across submodules (e.g.
+            # `symbols` → symbols/patterns.py + symbols/extractor.py),
+            # reloading only the top-level `__init__.py` leaves the stale
+            # submodule objects in sys.modules. Reload submodules FIRST so
+            # the package re-import below picks up the fresh versions.
+            _pkg_prefix = actual_full + "."
+            _submods = [_name for _name in list(sys.modules.keys())
+                        if _name.startswith(_pkg_prefix)]
+            for _sub_name in _submods:
+                _sub_mod = sys.modules.get(_sub_name)
+                if _sub_mod is None:
+                    continue
+                # Nuke the submodule's pycache too — stale bytecode defeats
+                # reload silently just like at the top level.
+                _sub_file = getattr(_sub_mod, "__file__", None)
+                if _sub_file:
+                    _sub_pc = os.path.join(os.path.dirname(_sub_file), "__pycache__")
+                    _sub_stem = os.path.splitext(os.path.basename(_sub_file))[0]
+                    if os.path.isdir(_sub_pc):
+                        for _pyc in os.listdir(_sub_pc):
+                            if _pyc.startswith(_sub_stem + ".") and _pyc.endswith(".pyc"):
+                                try:
+                                    os.remove(os.path.join(_sub_pc, _pyc))
+                                except OSError as _sub_unlink_err:
+                                    logger.debug(f"pycache nuke submod {_pyc}: {type(_sub_unlink_err).__name__}: {_sub_unlink_err}")
+                try:
+                    importlib.reload(_sub_mod)
+                except Exception as _sub_reload_err:
+                    logger.debug(f"submodule reload {_sub_name}: {type(_sub_reload_err).__name__}: {_sub_reload_err}")
             importlib.reload(mod)
         except Exception as e:
             # Roll back: restore the snapshot so a failed reload doesn't
