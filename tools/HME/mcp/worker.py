@@ -56,6 +56,15 @@ from hme_env import ENV  # noqa: E402
 # allocator and silently ignored the env var.
 ENV.load()
 
+# Rotate log files before we start writing to them. Without this,
+# hme.log / worker.out / daemon.out grow unbounded (hundreds of MB
+# observed in real sessions). Safe-to-call-always, never raises.
+try:
+    from log_rotation import rotate_on_boot as _rotate_logs
+    _rotate_logs(ENV.require("PROJECT_ROOT"))
+except Exception as _rot_err:
+    print(f"worker: log rotation at boot failed (non-fatal): {_rot_err}", file=sys.stderr)
+
 
 def _purge_stale_server_pyc() -> None:
     pkg_dir = os.path.join(_tool_root, "server")
