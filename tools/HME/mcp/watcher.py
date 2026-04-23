@@ -340,15 +340,23 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             logger.error(f"Auto-reindex (per-file) failed: {e}")
 
     def _do_dir_reindex():
+        # Route bulk dir reindex through the daemon's GPU-orchestrated
+        # indexing-mode so embedding doesn't compete with the arbiter on
+        # cuda:0 — calling engine.index_directory() directly here OOM'd
+        # repeatedly when the embedder shared a GPU with another model.
         try:
             logger.info(f"Auto-reindex (full) triggered for {project_root}")
-            result = engine.index_directory()
+            from indexing_mode import request_full_reindex
+            result = request_full_reindex()
             with _lock:
                 _last_reindex[0] = time.time()
-            if result["indexed"] > 0:
+            if result.get("error"):
+                logger.error(f"Auto-reindex (full) via daemon failed: {result['error']}")
+                return
+            if result.get("indexed", 0) > 0:
                 logger.info(
                     f"Auto-reindex complete: {result['indexed']} files, "
-                    f"{result['chunks_created']} chunks"
+                    f"{result.get('chunks_created', 0)} chunks"
                 )
         except Exception as e:
             logger.error(f"Auto-reindex (full) failed: {e}")
