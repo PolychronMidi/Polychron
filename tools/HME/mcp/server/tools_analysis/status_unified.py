@@ -979,6 +979,28 @@ def _trajectory_report() -> str:
         lines.append("## Recent verdict history")
         for h in recent:
             lines.append(f"  {h.get('timestamp', '?')[-19:-5]}  {h.get('verdict', '?')}")
+        # Streak detection: same verdict N+ rounds = chronic state.
+        last = history[-1].get("verdict") if history else None
+        streak = 0
+        for h in reversed(history):
+            if h.get("verdict") == last:
+                streak += 1
+            else:
+                break
+        if last and streak >= 3:
+            lines.append("")
+            lines.append(f"**{last}** has been the verdict for {streak} consecutive rounds.")
+    # Interpretation + suggested next step keyed off the verdict.
+    _GUIDANCE = {
+        "GROWING": "Composition is acquiring more variety/complexity over the window. Confirm the perceptual signal you're tracking is the one you intended to grow.",
+        "DECLINING": "Composition is losing variety/intensity. Likely causes: a recent change reduced the signal it was driving, a regime is overstaying, or a recent profile shift dampened diversity. Inspect with `i/status mode=accuracy` (which predictions failed?) and `i/review mode=regime` (which sections went monotone?).",
+        "PLATEAU": "Slope near zero — the signal is stable, not necessarily good. If you wanted growth, this means the lever is broken; if you wanted equilibrium, this is success.",
+        "OSCILLATING": "Signal is bouncing — likely a feedback loop tuning back-and-forth. Look at `i/substrate diff` to see what changed last round and `i/status mode=trust` for the destabilizing system.",
+    }
+    if verdict in _GUIDANCE:
+        lines.append("")
+        lines.append("## Interpretation")
+        lines.append(_GUIDANCE[verdict])
     return "\n".join(lines)
 
 
