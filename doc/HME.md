@@ -357,6 +357,48 @@ Use `learn(query='...')` for KB semantic search, `trace(target)` for signal flow
 
 Read pipeline output, then `evolve(focus='blast', query='<symbol>')` for dependency traces or `learn(query='<error text>')` for similar-KB-bug lookup.
 
+## Testing & Chaos
+
+HME ships three smoke-test scripts and a chaos-injection battery. Run any directly — they're self-contained bash scripts that boot the components they need and tear down on exit.
+
+| Script | What it asserts |
+|---|---|
+| `scripts/test/smoke-test-i-wrappers.sh` | Every `i/*` shell wrapper resolves + returns a non-error response |
+| `scripts/test/smoke-test-indexing-mode.sh` | Full `/indexing-mode` cycle: daemon+worker reachable → coder suspended → embedders reloaded → index runs → coder respawns healthy → selftest still READY |
+| `scripts/test/smoke-test-chat.sh` | Chat server boots → SSE subscriber attaches → POST accepted → SSE event delivered (listSessions triggers a sessionList broadcast) → all 5 assertions pass |
+| `scripts/test/test-lifecycle-writers.py` | Unit test for `server/lifecycle_writers.py` — 7 assertions covering registry load, accept/reject/unknown-domain, override rejection, idempotency |
+
+Chaos injectors live in `scripts/chaos/`:
+
+| Script | What it injects / asserts |
+|---|---|
+| `inject-silent-thread-crash.sh` | Appends a fake `Exception in thread` line to the daemon log; asserts the `daemon thread hygiene` selftest probe flips FAIL |
+| `inject-duplicate-llama-server.sh` | Spawns a decoy process matching the llama-server pgrep pattern; asserts the `llama-server count` probe catches the count exceeding topology |
+| `run-all.sh` | Runs every injector as a battery; any injector whose probe doesn't catch it is a dead probe |
+
+Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe that can't detect the fault it was written to catch is worse than no probe — it produces false confidence.
+
+## Operator Commands
+
+| Command | Purpose |
+|---|---|
+| `i/hme-admin action=selftest` | Full self-check; ~15 probes covering tool registration, docs, index, KB, llamacpp, version consistency, single-writer invariants, timeseries drift |
+| `i/hme-admin action=health` | Operator triage view: daemon PID+uptime, worker PID+uptime, llama aliases, /health states, per-GPU VRAM, recent errors, version banner, single-writer domain snapshot |
+| `i/hme-admin action=reload modules=<name>` | Hot-reload one or more tool modules without restarting the worker (runs against `tool_registry._TOOLS`) |
+| `i/hme-admin action=index` | Incremental reindex; use after batch changes when file watcher hasn't caught up |
+| `i/hme-admin action=clear_index` | Full reindex via daemon's GPU-orchestrated indexing-mode (suspends coder → moves embedders to cuda:1 → indexes → restores) |
+| `i/hme --version` | Print cli / proxy / worker versions and warn on drift |
+
+**Programmatic arbiter health** (from `Arbiter.ts`):
+
+```ts
+import { getArbiterHealth } from "./Arbiter";
+const h = getArbiterHealth();
+// { healthy: boolean, consecutiveFailures: number, lastOkMs: number }
+```
+
+Call when you need to distinguish "arbiter classified as claude" from "arbiter daemon was down, we defaulted to claude." The latter has `healthy=false` after 3 consecutive failures.
+
 ## Autonomous Evolver Loop
 
 The Stop hook implements the **ralph-loop pattern**: when `.claude/hme-evolver.local.md` exists, the Stop hook blocks session exit and injects the next evolution directive, creating an autonomous multi-round evolution cycle.
