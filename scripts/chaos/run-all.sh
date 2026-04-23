@@ -32,7 +32,12 @@ for entry in "${_injectors[@]}"; do
     continue
   fi
   echo "--- probe: $probe ← $script ---"
-  if bash "$path"; then
+  # Dispatch by extension: .sh via bash, .js via node.
+  case "$script" in
+    *.js) _run_with=node ;;
+    *)    _run_with=bash ;;
+  esac
+  if "$_run_with" "$path"; then
     _pass=$((_pass + 1))
   else
     _fail=$((_fail + 1))
