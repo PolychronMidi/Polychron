@@ -142,7 +142,12 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     logger.debug(f'silent-except review_unified.py:123: {type(_err4).__name__}: {_err4}')
         elif m == "convention":
             if not file_path:
-                parts.append("Error: convention mode requires file_path.")
+                parts.append(
+                    "i/review mode=convention — check a single file against project conventions.\n\n"
+                    "Usage: i/review mode=convention file_path=<relative/path.js>\n"
+                    "  file_path: path relative to project root (e.g. src/utils/clamps.js).\n\n"
+                    "Example: i/review mode=convention file_path=src/utils/clamps.js"
+                )
             else:
                 from .health import convention_check as _cc
                 parts.append(_cc(file_path))
