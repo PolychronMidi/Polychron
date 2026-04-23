@@ -334,12 +334,13 @@ class BrowserPanel {
             getContextPct: () => this._contextMeter.pctUsed,
             hasMeterLiveUpdate: () => this._contextMeter.hasLiveUpdate,
             rotate: (continuationMsg, newChainIndex) => {
-                this._state.messages = [];
-                this._state.claudeSessionId = null;
-                this._state.chainIndex = newChainIndex;
+                this._applyStateChange((s) => {
+                    s.messages = [];
+                    s.claudeSessionId = null;
+                    s.chainIndex = newChainIndex;
+                    s.messages.push(continuationMsg);
+                });
                 this._contextMeter.resetSilently();
-                this._state.messages.push(continuationMsg);
-                this._persistState();
             },
             postContextUpdate: () => this._contextMeter.post(this._ctxArgs()),
         };
@@ -499,8 +500,7 @@ class BrowserPanel {
         const userMsg = msg._queuedUserMsg ?? {
             id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: resolvedRoute, ts: Date.now(),
         };
-        this._state.messages.push(userMsg);
-        this._persistState();
+        this._applyStateChange((s) => { s.messages.push(userMsg); });
         if (!msg._queuedUserMsg) {
             this.post({ type: "message", message: userMsg });
         }
@@ -508,8 +508,13 @@ class BrowserPanel {
             this._transcript.logRouteSwitch(this._state.lastRoute, resolvedRoute);
         }
         const cross = (0, crossRouteHistory_1.buildCrossRouteContext)(this._state.messages, this._state.lastRoute, resolvedRoute);
-        const contextPrefix = (0, crossRouteHistory_1.applyCrossRouteContext)(this._state, cross);
-        this._state.lastRoute = resolvedRoute;
+        // applyCrossRouteContext mutates state in-place + returns the prefix.
+        // Route through the broker so the persist path is uniform.
+        let contextPrefix = "";
+        this._applyStateChange((s) => {
+            contextPrefix = (0, crossRouteHistory_1.applyCrossRouteContext)(s, cross);
+            s.lastRoute = resolvedRoute;
+        });
         const assistantId = (0, streamUtils_1.uid)();
         const streamStartExtras = resolvedRoute === "claude"
             ? { effort: resolvedCfg.cliEffort, thinking: resolvedCfg.thinking }
@@ -550,8 +555,7 @@ class BrowserPanel {
                 content: msg.text, summary: `User [agent]: ${msg.text.slice(0, 100)}`,
             }]).catch((e) => this.postError("transcript", String(e)));
         const userMsg = { id: (0, streamUtils_1.uid)(), role: "user", text: msg.text, route: "local", ts: Date.now() };
-        this._state.messages.push(userMsg);
-        this._persistState();
+        this._applyStateChange((s) => { s.messages.push(userMsg); });
         this.post({ type: "message", message: userMsg });
         this.post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
         const localId = (0, streamUtils_1.uid)();
