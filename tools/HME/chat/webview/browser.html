@@ -1128,6 +1128,32 @@ function appendMessage(msg) {
   scrollToBottom();
 }
 
+// Scroll-restore: remember where the user was looking when a session was
+// last displayed, so re-loading the same session doesn't bounce them to
+// the bottom. Keyed by the id of the last-focused message (nearest to
+// the top of the viewport at scroll time).
+const _savedScrollByMsgId = {};
+let _lastFocusedMsgId = '';
+let _scrollSaveTimer = null;
+function _recordScrollPosition() {
+  if (_scrollSaveTimer) { clearTimeout(_scrollSaveTimer); _scrollSaveTimer = null; }
+  // Debounce so every scroll wheel tick doesn't write.
+  _scrollSaveTimer = setTimeout(() => {
+    const top = messages.scrollTop;
+    // Find the first message whose top edge is below the current scroll
+    // position — that's the "last focused" reference.
+    for (const el of messages.children) {
+      if (el.id && el.id.startsWith('msg-')) {
+        if (el.offsetTop >= top) {
+          _lastFocusedMsgId = el.id;
+          _savedScrollByMsgId[_lastFocusedMsgId] = top;
+          break;
+        }
+      }
+    }
+  }, 300);
+}
+
 // Virtualization: keep at most MESSAGES_DOM_CAP nodes live, but stash
 // the pruned message *payloads* in a JS array so the user can scroll
 // back and restore them into the DOM on demand. The alternative (true
