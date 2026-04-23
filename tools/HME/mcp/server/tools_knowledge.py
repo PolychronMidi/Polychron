@@ -369,6 +369,10 @@ def knowledge_graph(query: str) -> str:
     """Search knowledge with spreading activation: matches entry A, then traverses A's relationships to find connected entries. Multi-hop discovery."""
     ctx.ensure_ready_sync()
     results = ctx.project_engine.search_knowledge(query, top_k=8)
+    # Drop cross-encoder-clamped zero-score seeds: they're not meaningfully
+    # relevant to the query and only expand noise through spreading activation.
+    # Mirrors search_knowledge's min-score filter.
+    results = [r for r in results if r.get("score", 0) > 0]
     if not results:
         return "No knowledge entries match this query."
     # Spreading activation: fetch all KB entries once, then do ID-based graph traversal
