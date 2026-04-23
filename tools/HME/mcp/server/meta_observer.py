@@ -279,7 +279,10 @@ def _meta_loop() -> None:
             if cycle % max(1, 1800 // _HEARTBEAT_INTERVAL) == 0:
                 try:
                     import log_rotation
-                    log_rotation.rotate_on_boot(project_root)
+                    # Derive project_root from a known _ms path (heartbeat_file
+                    # is tmp/hme-meta-observer.heartbeat under project_root).
+                    _pr = os.path.dirname(os.path.dirname(_ms.heartbeat_file))
+                    log_rotation.rotate_on_boot(_pr)
                 except Exception as _rot_err:
                     logger.debug(f"periodic log rotation: {type(_rot_err).__name__}: {_rot_err}")
 
