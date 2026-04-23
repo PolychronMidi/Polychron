@@ -5,6 +5,13 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
+# Mid-pipeline src edit block — if npm run main is running (run.lock exists),
+# deny writes to src/ (composition code). Same rule as pretooluse_edit.sh.
+if [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
+  _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline — the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime."
+  exit 2
+fi
+
 # Block direct writes to compiled output — edit the .ts source instead
 if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
   cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
