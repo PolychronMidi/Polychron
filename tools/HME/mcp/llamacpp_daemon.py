@@ -55,6 +55,23 @@ logger.setLevel(logging.INFO)
 PID_FILE = "/tmp/hme-llamacpp-daemon.pid"
 TRAINING_LOCK = ENV.require("HME_TRAINING_LOCK")
 
+# Single source of truth: tools/HME/config/versions.json.
+# The daemon, worker, proxy, and cli all read from here. Runtime drift
+# between components (e.g. daemon from before a protocol bump talking to
+# a post-bump worker) is caught by selftest's version-consistency probe
+# and surfaced in the health summary.
+def _load_daemon_version() -> str:
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "versions.json")
+    try:
+        with open(_p) as _f:
+            return json.load(_f).get("daemon", "unknown")
+    except Exception as _ver_err:
+        print(f"daemon: versions.json read failed: {type(_ver_err).__name__}: {_ver_err}", file=sys.stderr)
+        return "unknown"
+
+
+DAEMON_VERSION = _load_daemon_version()
+
 _DEFAULT_WALL_TIMEOUT = 45  # hard wall-clock cap for /generate proxy
 _HEALTH_INTERVAL = 60       # self-health-tick interval (s)
 
