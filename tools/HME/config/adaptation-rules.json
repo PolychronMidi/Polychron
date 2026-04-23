@@ -1,0 +1,40 @@
+{
+  "_doc": "Activity-driven adaptation rules. A lightweight analyzer reads output/metrics/hme-activity.jsonl, evaluates each rule against the recent N events, and writes exports into tmp/hme-adaptive-config.sh. Hooks source this file at fire time so behavior responds to observed patterns instead of fixed defaults.",
+  "_schema": {
+    "id": "stable identifier",
+    "window": "how many recent events to consider",
+    "trigger": "condition expression — see _eval() for allowed forms",
+    "export": "shell variable to set when rule fires",
+    "value_when_fired": "value exported when trigger is true",
+    "value_when_dormant": "value exported when trigger is false (optional — omits export when missing)"
+  },
+  "rules": [
+    {
+      "id": "auto_read_before_edit_when_unbriefed_burst",
+      "description": "If the last 20 events show 3+ coherence_violation (edit_without_brief), auto-prompt i/hme-read on the next edit in the session.",
+      "window": 20,
+      "trigger": "count_event_reason(event='coherence_violation', reason_contains='write_without_hme_read') >= 3",
+      "export": "HME_AUTO_READ_BEFORE_EDIT",
+      "value_when_fired": "1",
+      "value_when_dormant": "0"
+    },
+    {
+      "id": "relax_streak_when_turn_velocity_high",
+      "description": "When lots of productive events fire per turn, allow a slightly longer raw-tool streak before the HME-tool reminder (rewards focused work).",
+      "window": 30,
+      "trigger": "count_event(event='file_written') >= 8",
+      "export": "HME_STREAK_BLOCK_BUMP",
+      "value_when_fired": "10",
+      "value_when_dormant": "0"
+    },
+    {
+      "id": "cache_hot_modules",
+      "description": "If the same 3 modules are briefed repeatedly, extend their KB cache TTL so we don't re-enrich on every read.",
+      "window": 50,
+      "trigger": "top_k_concentration(event='brief_recorded', key='module', k=3) >= 0.6",
+      "export": "HME_HOT_MODULE_CACHE_TTL_SECONDS",
+      "value_when_fired": "600",
+      "value_when_dormant": "60"
+    }
+  ]
+}
