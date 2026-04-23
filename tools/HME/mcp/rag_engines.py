@@ -769,7 +769,7 @@ def reload_on_device(target_device: str) -> dict:
     # residency. Other callers (search, index) read-only.
     try:
         from server.lifecycle_writers import assert_writer
-        assert_writer("embedders", __name__)
+        assert_writer("embedders", __file__)
     except ImportError:
         pass
     global _original_rag_device, _project_engine, _global_engine
