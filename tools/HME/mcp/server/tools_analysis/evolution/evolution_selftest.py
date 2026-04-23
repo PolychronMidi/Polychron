@@ -805,6 +805,30 @@ def hme_selftest(verbose: bool = False) -> str:
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
+    # Temporal-coherence: append this run to the timeseries + check drift.
+    # This turns point-in-time probes into a filmstrip so slow drift and
+    # fresh regressions surface as their own signal.
+    try:
+        from server.coherence_timeseries import record_run, detect_drift
+        # Extract HCI if it was probed.
+        _hci_val = None
+        for r in results:
+            if r.startswith(("PASS: HCI", "WARN: HCI", "FAIL: HCI")) and " -- " in r:
+                import re as _re_hci
+                _m = _re_hci.search(r"(\d+)/100", r)
+                if _m:
+                    _hci_val = int(_m.group(1))
+                break
+        record_run(_project_root, _hci_val, results)
+        drift_alerts = detect_drift(_project_root, min_runs=5)
+        for alert in drift_alerts:
+            if alert.startswith("new-regression"):
+                results.append(f"FAIL: temporal drift -- {alert}")
+            elif alert.startswith("recovered"):
+                results.append(f"INFO: temporal drift -- {alert}")
+    except Exception as _ts_err:
+        results.append(f"WARN: temporal drift -- timeseries unavailable: {type(_ts_err).__name__}: {_ts_err}")
+
     passed = sum(1 for r in results if r.startswith("PASS"))
     failed = sum(1 for r in results if r.startswith("FAIL"))
     total = len(results)
