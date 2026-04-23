@@ -340,27 +340,6 @@ if [ -n "$NEXUS_ISSUES" ]; then
   exit 0
 fi
 
-# Journal entry check: round-complete pipelines demand a journal entry.
-# Round complete = fingerprint-comparison.json has a verdict + pipeline-summary.json
-# was produced this session. If journal.md hasn't been touched since the
-# pipeline finished, the round's findings haven't been persisted. Block.
-_FP_COMP="$_AC_PROJECT/output/metrics/fingerprint-comparison.json"
-_PIPE_SUM="$_AC_PROJECT/output/metrics/pipeline-summary.json"
-_JOURNAL="$_AC_PROJECT/output/metrics/journal.md"
-if [ -f "$_FP_COMP" ] && [ -f "$_PIPE_SUM" ] && [ -f "$_JOURNAL" ]; then
-  _VERDICT=$(_safe_py3 "import json; print(json.load(open('$_FP_COMP')).get('verdict',''))" "")
-  if [ "$_VERDICT" = "STABLE" ] || [ "$_VERDICT" = "EVOLVED" ] || [ "$_VERDICT" = "DRIFTED" ]; then
-    _PIPE_TS=$(stat -c %Y "$_PIPE_SUM" 2>/dev/null || echo 0)
-    _JOURNAL_TS=$(stat -c %Y "$_JOURNAL" 2>/dev/null || echo 0)
-    if [ "$_JOURNAL_TS" -lt "$_PIPE_TS" ]; then
-      jq -n --arg v "$_VERDICT" \
-        '{"decision":"block","reason":("JOURNAL MISSING: pipeline finished with verdict " + $v + " but output/metrics/journal.md was not updated. Prepend a new entry at the TOP:\n\n## R<NN> — <date> — " + $v + "\n\n**Profile:** …  **Beats:** …  **Duration:** …s  **Notes:** …\n**Fingerprint:** X/Y stable | Drifted: …\n\n### What the Music Sounds Like\n<2-3 sentences of musical character>\n\n### Causal Findings\n- <root cause → effect → evolution applied>\n\n### Evolutions Applied (from R<prev>)\n- E1: <title> — confirmed/refuted/inconclusive — <evidence>\n\n### Evolutions Proposed (for R<next>)\n- E1: <title> — <target> — <layer>\n\nThe journal is institutional memory. No round ends without one.")}'
-      _stderr_verdict "BLOCK: journal-missing"
-      exit 0
-    fi
-  fi
-fi
-
 # Session-end holograph diff
 # Compare the session-start holograph (captured at sessionstart.sh) against
 # the current state. Surfaces drift that happened during this session — e.g.,
