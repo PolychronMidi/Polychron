@@ -216,6 +216,76 @@ class _Supervisor:
             logger.warning(f"supervisor: nvidia-smi probe failed for cuda:{cuda_idx}: {_gpu_err}")
             return None
 
+    def assert_topology_ready(self) -> None:
+        """Fail-fast pre-boot assertion: refuse to start if the GPU/port
+        environment isn't what the topology declares. Raises RuntimeError
+        with a concrete remediation message on any violation.
+
+        The original failure mode this guards against: a prior daemon died
+        uncleanly, leaving its llama-server children running. A fresh
+        daemon then ran its health loop against the orphans, mis-attributed
+        their VRAM usage, and the next indexing-mode crashed on OOM when
+        the "free" GPU wasn't actually free. Catching it at boot turns a
+        mysterious mid-operation OOM into a readable startup error.
+        """
+        self.configure()
+        # Check nvidia-smi is callable at all.
+        try:
+            subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=count", "--format=csv,noheader"],
+                stderr=subprocess.PIPE, timeout=3,
+            )
+        except FileNotFoundError as e:
+            raise RuntimeError(
+                f"daemon: nvidia-smi binary not found ({e}) — cannot probe GPUs. "
+                f"Install the NVIDIA driver or adjust PATH."
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                f"daemon: nvidia-smi call failed (rc={e.returncode}): "
+                f"{e.stderr.decode(errors='replace')[:300]}"
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                "daemon: nvidia-smi timed out after 3s — driver hung?"
+            )
+
+        # For every declared instance: GPU index must resolve, VRAM must be
+        # large enough to fit the model, and the port must either be free or
+        # held by a process we adopt (llama-server that matches spec).
+        for spec in self._instances.values():
+            cuda_idx = self._vulkan_to_cuda_index(spec.device)
+            if cuda_idx is None:
+                raise RuntimeError(
+                    f"daemon: {spec.name}.device={spec.device!r} does not map to a CUDA "
+                    f"index. Supported: Vulkan1=cuda:0, Vulkan2=cuda:1."
+                )
+            free = self._gpu_free_mb(cuda_idx)
+            if free is None:
+                raise RuntimeError(
+                    f"daemon: GPU{cuda_idx} ({spec.device}) unreachable via nvidia-smi. "
+                    f"Check driver / card connectivity."
+                )
+            # Before-spawn fit check uses the same accounting as _check_gpu_fits.
+            fits, reason = self._check_gpu_fits(spec)
+            if not fits:
+                # If the port is already bound, the existing process owns the
+                # VRAM we're measuring — adoption is legitimate. Let the
+                # health loop adopt it. Otherwise this is a real conflict.
+                if not self._is_listening(spec):
+                    rogue = self._find_pid_on_port(spec.port)
+                    raise RuntimeError(
+                        f"daemon: {spec.name} cannot fit on {spec.device} ({reason}). "
+                        f"Port {spec.port} {'held by PID ' + str(rogue) if rogue else 'is free'}. "
+                        f"Free the GPU (kill orphan llama-server / stop other CUDA "
+                        f"process) then restart the daemon."
+                    )
+            logger.info(
+                f"daemon: topology OK — {spec.name} on {spec.device} "
+                f"(free={free} MB, port={spec.port}"
+                f"{', adopted' if self._is_listening(spec) else ''})"
+            )
+
     def _check_gpu_fits(self, spec: InstanceSpec) -> tuple[bool, str]:
         """Return (True, '') if model + KV cache fits in assigned GPU's free VRAM
         with headroom, else (False, reason). Conservative: model file size
