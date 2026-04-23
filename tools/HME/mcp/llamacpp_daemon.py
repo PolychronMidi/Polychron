@@ -361,6 +361,14 @@ class _Supervisor:
         crash-respawn-crash storms, not to throttle legitimate lifecycle
         operations.
         """
+        # Single-writer invariant: only llamacpp_daemon may spawn llama-server.
+        # This assertion catches the class of bug we fixed tonight where a
+        # second supervisor (in worker.py) tried to spawn the same processes.
+        try:
+            from server.lifecycle_writers import assert_writer
+            assert_writer("llama-server", __name__)
+        except ImportError:
+            pass  # server.lifecycle_writers not on path — running outside full HME tree
         # Defense-in-depth: never spawn a suspended instance even if a caller
         # bypasses the ensure_all_running / health_tick gates. indexing-mode
         # flips suspended=True before freeing the GPU; a spawn here would
