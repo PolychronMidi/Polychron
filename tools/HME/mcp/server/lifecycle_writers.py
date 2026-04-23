@@ -41,11 +41,16 @@ logger = logging.getLogger("HME")
 # substring containment against the caller's __name__ so both flat and
 # nested module layouts work (e.g. "llamacpp_daemon" matches when the
 # caller is "llamacpp_daemon" OR "tools.HME.mcp.llamacpp_daemon").
+# Keys are lifecycle-domain names; values are substrings that MUST appear
+# in the caller's `__file__` (or `__name__`) for write permission. Keep
+# values as bare module/file stems (not dotted paths) so they match both
+# path forms — `.../server/tools_analysis/todo.py` AND a hypothetical
+# `server.tools_analysis.todo` dotted import string.
 _OWNERS: dict[str, str] = {
     "llama-server":        "llamacpp_daemon",
     "embedders":           "rag_engines",
     "kb":                  "tools_knowledge",
-    "hme-todo-store":      "tools_analysis.todo",
+    "hme-todo-store":      "todo",
     "lifesaver-registry":  "failure_genealogy",
     "onboarding-state":    "onboarding_chain",
 }
