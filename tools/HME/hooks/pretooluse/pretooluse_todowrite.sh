@@ -15,7 +15,7 @@ PROJECT="$PROJECT_ROOT"
 HOOKS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HME_LOG="${PROJECT}/log/hme.log"
 
-MERGED_JSON=$(echo "$INPUT" | PROJECT_ROOT="$PROJECT" python3 "$HOOKS_DIR/_todo_merge.py" 2>>"$HME_LOG")
+MERGED_JSON=$(echo "$INPUT" | PROJECT_ROOT="$PROJECT" python3 "$HOOKS_DIR/../helpers/_todo_merge.py" 2>>"$HME_LOG")
 
 # Fallback: if merge returned empty, pass through incoming unchanged
 if [ -z "$MERGED_JSON" ] || [ "$MERGED_JSON" = "[]" ]; then
