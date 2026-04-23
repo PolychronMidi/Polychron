@@ -185,28 +185,37 @@ ENUMERATION_PHRASES = (
     # Expanded 2026-04-23 (round 2). The closing of the prior turn used
     # "Round complete... two minor UX gaps left as-is" — explicit
     # enumeration-with-deferral that the detector missed because none of
-    # those exact phrasings were members. Adding the smoking-gun closures.
+    # those exact phrasings were members. Adding the smoking-gun closures
+    # plus the "minor"/"small"/"polish" minimizers that pair with them.
     "round complete",
     "left as-is",
     "left as is",
+    "leaving as-is",
+    "leaving as is",
     "ux gap",
     "ux gaps",
     "minor gap",
     "minor gaps",
+    "minor ux",
     "noted but not",
-    "noted as observations",
     "noted as observation",
+    "noted as observations",
     "logged but not",
     "for now noted",
     "noted for now",
-    "observations",
-    "observation",
-    "leaving as-is",
-    "leaving as is",
     "won't fix",
     "wont fix",
     "skipped for",
     "skipping for",
+    "skipped — ",
+    "skipped --",
+    "out of scope for this",
+    "outside scope of this",
+    "deferred this round",
+    "next session can",
+    "future session",
+    "follow-up session",
+    "followup session",
 )
 
 
