@@ -5,9 +5,9 @@
  *
  * Callers pick an adapter via `getAdapterForRoute(route)` and drive it
  * through `runAdapter(adapter, messages, opts)` — error handling, deadline,
- * sessionId, and usage are all normalized. Per-route quirks (Claude PTY
- * mode, llama think-tags, hybrid enrichment) are hidden inside each
- * backend's legacy function; the adapter wraps them in a uniform shape.
+ * sessionId, and usage are all normalized. Per-route quirks (llama think-tags,
+ * hybrid enrichment) are hidden inside each backend's legacy function; the
+ * adapter wraps them in a uniform shape.
  */
 import {
   streamClaude,
