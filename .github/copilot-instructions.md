@@ -94,7 +94,7 @@ All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`
 
 ## Reference Pointers
 
-- Lab calibration anchors → [output/metrics/journal.md](../metrics/journal.md)
+- Calibration anchors → KB (`i/learn query=…`); universal principles → [doc/hme-discoveries.md](../doc/hme-discoveries.md); historical round archive (deprecated) → [output/metrics/journal.md](../metrics/journal.md)
 - ESLint rules (24) → `scripts/eslint-rules/` (enforced at lint time; no need to memorize)
 - Per-run diagnostics → `output/metrics/conductor-map.md`, `output/metrics/crosslayer-map.md`, `output/metrics/narrative-digest.md`, `output/metrics/trace-replay.json`, `output/metrics/runtime-snapshots.json`, `output/metrics/feedback-graph.html`
 - Cross-run state → `output/metrics/adaptive-state.json`
