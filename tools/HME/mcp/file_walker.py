@@ -189,19 +189,24 @@ def walk_code_files(
     ignore_dirs = _config["ignore_dirs"]
     rag_ignore = _config["rag_ignore"]
 
-    # LOCKED: ragIndexDirs is the ONLY source of truth for what gets indexed.
-    # The `directory` argument is BANNED — it exists only for signature compat.
-    if not _config["rag_index_dirs_abs"]:
-        logger.error("ragIndexDirs not configured in tools/HME/config/rag.json — refusing to index. Configure ragIndexDirs.")
-        return
+    # When ragIndexDirs is configured, use it as a strict allowlist.
+    # Otherwise walk PROJECT_ROOT and rely on .gitignore + ragIgnore +
+    # HME_IGNORE_DIRS basename excludes for filtering.
     roots: list[Path] = []
-    for d in _config["rag_index_dirs_abs"]:
-        p = Path(d)
-        if p.is_dir():
-            roots.append(p)
-    if not roots:
-        logger.warning("ragIndexDirs configured but no valid directories found — indexing nothing")
-        return
+    if _config["rag_index_dirs_abs"]:
+        for d in _config["rag_index_dirs_abs"]:
+            p = Path(d)
+            if p.is_dir():
+                roots.append(p)
+        if not roots:
+            logger.warning("ragIndexDirs configured but no valid directories found — indexing nothing")
+            return
+    else:
+        project_root = _config.get("project_root")
+        if not project_root:
+            logger.error("project_root not initialized — call init_config() before walking")
+            return
+        roots.append(Path(project_root))
 
     for root in roots:
       for dirpath, dirnames, filenames in os.walk(root):
