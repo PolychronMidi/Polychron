@@ -1202,6 +1202,7 @@ const MESSAGES_DOM_CAP = 400;
 const _prunedMessages = [];  // array of message objects in chronological order
 let _pruneBanner = null;
 function _enforceMessageDomCap() {
+  if (_restoring) return;
   const overflow = messages.children.length - MESSAGES_DOM_CAP;
   if (overflow <= 0) return;
   let removed = 0;
