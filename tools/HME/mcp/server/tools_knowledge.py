@@ -340,10 +340,15 @@ def memory_dream() -> str:
         parts.append(f"    -> Consider: add_knowledge related_to=\"{id_b}\" relation_type=\"similar_to\"")
         parts.append("")
 
-    # Adaptive synthesis: what do the connections mean architecturally?
-    try:
-        from server.tools_analysis import _think_local_or_claude
-        if top_pairs:
+    # Adaptive synthesis: run on a background thread with a hard timeout so
+    # the discoveries always return quickly even when the local coder model
+    # is unreachable. Previously the synchronous call blocked the entire
+    # dream output for the full 60s llama.cpp timeout when the coder was
+    # down — users waited for a result that never came.
+    if top_pairs:
+        try:
+            from server.tools_analysis import _think_local_or_claude
+            import concurrent.futures as _cf
             pairs_text = "\n".join(
                 f"  {sim:.0%}: '{a}' <-> '{b}'" for sim, a, b, _, _ in top_pairs[:6]
             )
@@ -354,12 +359,19 @@ def memory_dream() -> str:
                 "Which ones should be explicitly linked via add_knowledge? "
                 "Are any of these connections surprising given the codebase design?"
             )
-            synthesis = _think_local_or_claude(user_text)
+            with _cf.ThreadPoolExecutor(max_workers=1) as _ex:
+                _fut = _ex.submit(_think_local_or_claude, user_text)
+                try:
+                    synthesis = _fut.result(timeout=15)
+                except _cf.TimeoutError:
+                    synthesis = None
+                    parts.append("\n## Architectural Interpretation")
+                    parts.append("  (skipped — local coder model did not respond within 15s)")
             if synthesis:
-                parts.append(f"\n## Architectural Interpretation *(adaptive)*")
+                parts.append("\n## Architectural Interpretation *(adaptive)*")
                 parts.append(synthesis)
-    except Exception as e:
-        logger.warning("Architectural synthesis failed: %s", e)
+        except Exception as e:
+            logger.warning("Architectural synthesis failed: %s", e)
 
     return "\n".join(parts)
 
