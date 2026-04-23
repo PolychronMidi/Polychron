@@ -332,3 +332,67 @@ def _load_trace(trace_path: str) -> list[dict]:
     _trace_cache["mtime"] = mt
     _trace_cache["records"] = records
     return records
+
+
+# Journal archive freshness
+# `output/metrics/journal.md` is a deprecated archive — no new entries land
+# there. The activity bridge (`output/metrics/hme-activity.jsonl`) is the
+# live machine-readable per-round record. These helpers let journal-reading
+# tools annotate their output when the archive is staler than the activity
+# bridge so consumers don't mistake R<frozen> for the current round.
+def _journal_latest_archived_round() -> int | None:
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return None
+    matches = _re_budget.findall(r'^## R(\d+)\b', text, _re_budget.MULTILINE)
+    if not matches:
+        return None
+    return max(int(m) for m in matches)
+
+
+def _activity_latest_round() -> int | None:
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
+    if not os.path.isfile(path):
+        return None
+    latest = None
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                if rec.get("event") != "round_complete":
+                    continue
+                sess = rec.get("session", "")
+                m = _re_budget.match(r'^R(\d+)$', str(sess))
+                if not m:
+                    continue
+                n = int(m.group(1))
+                if latest is None or n > latest:
+                    latest = n
+    except OSError:
+        return None
+    return latest
+
+
+def _journal_freshness_banner() -> str:
+    """Return a one-line banner if the activity bridge knows about a newer
+    round than the journal archive does. Empty string if the journal is
+    current (or the activity bridge has no round data)."""
+    archived = _journal_latest_archived_round()
+    live = _activity_latest_round()
+    if archived is None or live is None:
+        return ""
+    if live > archived:
+        return (
+            f"  > NOTE: journal.md is a frozen archive (last entry R{archived}). "
+            f"Activity bridge has round_complete events through R{live} — "
+            f"the data below is HISTORICAL, not the current round.\n"
+        )
+    return ""
