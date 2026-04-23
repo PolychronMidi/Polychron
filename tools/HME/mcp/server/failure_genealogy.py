@@ -39,6 +39,11 @@ def record_failure(
     suppress duplicate log lines so the same alert doesn't spam hme.log on
     every monitor tick.
     """
+    try:
+        from server.lifecycle_writers import assert_writer
+        assert_writer("lifesaver-registry", __file__)
+    except ImportError:
+        pass
     with _failures_lock:
         now = time.time()
         # Deduplication: same source + error text within window → increment count only
