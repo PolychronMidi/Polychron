@@ -120,7 +120,12 @@ grandFinale = () => {
       // Cross-run personality: what this composition was like
       lastRunPersonality: {
         narrative: lastNarration ? lastNarration.narrative : 'balanced evolving',
-        tensionTrajectory: (tensionTraj || 0) > 0.1 ? 'rising' : (tensionTraj || 0) < -0.1 ? 'falling' : 'stable',
+        // Use Number.isFinite to distinguish real 0 / unset / NaN. `|| 0`
+        // silently swallows NaN into 'stable', hiding upstream bugs in
+        // tension tracking (NaN means tension computation crashed).
+        tensionTrajectory: Number.isFinite(tensionTraj)
+          ? (tensionTraj > 0.1 ? 'rising' : tensionTraj < -0.1 ? 'falling' : 'stable')
+          : 'unknown',
         dominantRegime: hmSnap && hmSnap.coherentShareEma > 0.4 ? 'coherent' : 'exploring'
       },
       savedAt: new Date().toISOString()
