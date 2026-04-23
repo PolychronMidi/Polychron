@@ -57,6 +57,40 @@ function _cacheKey(msg: string, cc: number, ec: number, transcriptCtx: string): 
   return `${cc}:${ec}:${transcriptCtx.length}:${_fnv1a(transcriptCtx)}:${msg.slice(0, 200)}`;
 }
 
+// Daemon health tracking — so the UI (and callers) can distinguish
+// "arbiter thought about it and chose claude" from "arbiter wasn't
+// reachable and we defaulted to claude." Without this, persistent
+// daemon outage was indistinguishable from routine claude routing,
+// and the 100% escalation rate went unnoticed.
+let _lastDaemonOk: number = 0;             // ts of last successful call
+let _consecutiveDaemonFailures: number = 0;
+const _DAEMON_UNHEALTHY_THRESHOLD = 3;     // after N fails = unhealthy
+
+export function getArbiterHealth(): { healthy: boolean; consecutiveFailures: number; lastOkMs: number } {
+  return {
+    healthy: _consecutiveDaemonFailures < _DAEMON_UNHEALTHY_THRESHOLD,
+    consecutiveFailures: _consecutiveDaemonFailures,
+    lastOkMs: _lastDaemonOk,
+  };
+}
+
+function _noteDaemonSuccess(): void {
+  if (_consecutiveDaemonFailures >= _DAEMON_UNHEALTHY_THRESHOLD) {
+    console.log(`[Arbiter] daemon recovered after ${_consecutiveDaemonFailures} failures`);
+  }
+  _consecutiveDaemonFailures = 0;
+  _lastDaemonOk = Date.now();
+}
+
+function _noteDaemonFailure(reason: string): void {
+  _consecutiveDaemonFailures++;
+  if (_consecutiveDaemonFailures === _DAEMON_UNHEALTHY_THRESHOLD) {
+    console.error(
+      `[Arbiter] daemon UNHEALTHY after ${_DAEMON_UNHEALTHY_THRESHOLD} consecutive failures: ${reason}`
+    );
+  }
+}
+
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
 
