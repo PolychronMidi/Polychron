@@ -246,16 +246,22 @@ MODES = {
 
 def main(argv):
     mode = "brief"
+    filt = ""
     for a in argv[1:]:
         if a.startswith("mode="):
             mode = a[5:]
+        elif a.startswith("filter="):
+            filt = a[7:]
         elif a in MODES:
             mode = a
     fn = MODES.get(mode)
     if not fn:
         print(f"Unknown mode '{mode}'. Available: {', '.join(sorted(MODES.keys()))}", file=sys.stderr)
         return 2
-    print(fn())
+    if mode == "invariants":
+        print(fn(filt))
+    else:
+        print(fn())
     return 0
 
 
