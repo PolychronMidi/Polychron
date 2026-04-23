@@ -1251,53 +1251,32 @@ function _updatePruneBanner() {
   _pruneBanner.textContent =
     _prunedMessages.length + ' older message(s) pruned — click to load more (oldest first)';
 }
+let _restoring = false;
 function _restoreOlderMessages() {
   if (_prunedMessages.length === 0) return;
-  // Restore in batches of 50; keeping a hard cap avoids turning the
-  // scroll-back gesture into a single 10k-message DOM explosion.
+  // Restore in batches of 50 — walking most-recently-pruned first, then
+  // reversing their order so chronological flow is preserved. Reuse
+  // appendMessage for full fidelity (thinking/tools/blocks/cost), then
+  // reparent each node to the top so it lands above the live tail.
   const batch = _prunedMessages.splice(-50).reverse();
-  for (const m of batch) {
-    // Prepend each to the top (after the prune banner).
-    const div = _buildMessageDiv(m);
-    if (div) {
-      if (_pruneBanner && _pruneBanner.parentNode === messages) {
-        messages.insertBefore(div, _pruneBanner.nextSibling);
-      } else {
-        messages.insertBefore(div, messages.firstChild);
+  // Freeze the DOM cap while we restore — otherwise _enforceMessageDomCap
+  // inside appendMessage would immediately re-prune what we just restored.
+  _restoring = true;
+  try {
+    for (const m of batch) {
+      appendMessage(m);
+      const node = document.getElementById('msg-' + m.id);
+      if (node && node.parentNode === messages) {
+        const anchor = _pruneBanner && _pruneBanner.parentNode === messages
+          ? _pruneBanner.nextSibling
+          : messages.firstChild;
+        messages.insertBefore(node, anchor);
       }
     }
+  } finally {
+    _restoring = false;
   }
   _updatePruneBanner();
-}
-// appendMessage builds the DOM; expose a pure builder so restore can
-// use the same rendering code path.
-function _buildMessageDiv(msg) {
-  // Intentionally minimal: we delegate to appendMessage via a synthetic
-  // hidden container, then steal its child. This ensures one source of
-  // truth for message rendering. Slight overhead is acceptable — this
-  // only fires on explicit "Load more" clicks.
-  const stash = document.createElement('div');
-  const origMessages = messages;
-  // Temporarily point appendMessage at the stash by swapping the
-  // `messages` reference would require const-swap, which we don't
-  // have. Instead, build the DOM inline (small duplication, but safer).
-  // For now, reuse a simplified renderer — if structure matters, build
-  // the full node via a refactored appendMessage.
-  return _simpleMessageDiv(msg);
-}
-function _simpleMessageDiv(msg) {
-  const div = document.createElement('div');
-  div.className = 'msg msg-' + (msg.role || 'user');
-  if (msg.id) div.id = 'msg-' + msg.id;
-  const hdr = document.createElement('div');
-  hdr.className = 'msg-header';
-  hdr.textContent = (msg.role || '?') + ' [' + (msg.route || '?') + ']';
-  div.appendChild(hdr);
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.textContent = String(msg.text || msg.content || '');
-  div.appendChild(body);
-  return div;
 }
 function _resetPruneBanner() {
   _prunedMessages.length = 0;
