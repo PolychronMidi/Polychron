@@ -907,6 +907,79 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: meta-invariant coverage -- probe failed: {type(_e).__name__}: {_e}")
 
+    # Probe: middleware load-order manifest covers every present file.
+    # Without this, a new middleware silently runs in alphabetical fallback
+    # position — which may break a dependency chain (lifesaver_inject must
+    # run before proxy_autocommit so a failed autocommit surfaces as a
+    # banner on the same turn). The probe is FAIL when files exist that
+    # aren't listed AND aren't accepted-as-fallback.
+    try:
+        import json as _json_mw
+        mw_dir = os.path.join(_project_root, "tools", "HME", "proxy", "middleware")
+        order_path = os.path.join(mw_dir, "order.json")
+        if not os.path.isdir(mw_dir):
+            results.append("INFO: middleware order -- proxy middleware dir absent")
+        elif not os.path.isfile(order_path):
+            results.append("WARN: middleware order -- order.json missing; loader falls back to filesystem-inode order")
+        else:
+            with open(order_path, encoding="utf-8") as _of:
+                manifest = _json_mw.load(_of).get("order", [])
+            present = sorted(
+                f for f in os.listdir(mw_dir)
+                if f.endswith(".js") and f not in ("index.js", "order.json")
+            )
+            unlisted = [f for f in present if f not in manifest]
+            stale_in_manifest = [f for f in manifest if f not in present]
+            if unlisted or stale_in_manifest:
+                bits = []
+                if unlisted:
+                    bits.append(f"{len(unlisted)} unlisted: {unlisted}")
+                if stale_in_manifest:
+                    bits.append(f"{len(stale_in_manifest)} stale entries: {stale_in_manifest}")
+                results.append(
+                    f"WARN: middleware order -- {'; '.join(bits)} "
+                    f"(unlisted run alphabetically AFTER manifest; stale entries are skipped)"
+                )
+            else:
+                results.append(
+                    f"PASS: middleware order -- {len(manifest)}/{len(present)} files declared in order.json"
+                )
+    except Exception as _e:
+        results.append(f"WARN: middleware order -- probe failed: {type(_e).__name__}: {_e}")
+
+    # Probe: log-size vs rotation cap. The log_rotation policy declares
+    # caps; if a log exceeds its cap by more than 50%, rotation is failing
+    # silently (boot rotation may not have fired, or cap is too tight).
+    try:
+        log_dir = os.path.join(_project_root, "log")
+        if os.path.isdir(log_dir):
+            from log_rotation import _POLICIES as _LOG_POLICIES
+            offenders = []
+            for fname, cap_mb, _keep_mb in _LOG_POLICIES:
+                path = os.path.join(log_dir, fname)
+                if not os.path.isfile(path):
+                    continue
+                try:
+                    size_mb = os.path.getsize(path) / (1024 * 1024)
+                except OSError:  # silent-ok: best-effort stat for size probe
+                    continue
+                if size_mb > cap_mb * 1.5:
+                    offenders.append(f"{fname}={size_mb:.1f}MB (cap {cap_mb}MB)")
+            if offenders:
+                results.append(
+                    "WARN: log size -- files >150% of rotation cap: "
+                    + "; ".join(offenders)
+                    + " (rotation may not be firing — check worker.py boot path)"
+                )
+            else:
+                results.append(f"PASS: log size -- all {len(_LOG_POLICIES)} policies within 1.5× cap")
+        else:
+            results.append("INFO: log size -- log dir absent")
+    except ImportError:
+        results.append("INFO: log size -- log_rotation module not importable")
+    except Exception as _e:
+        results.append(f"WARN: log size -- probe failed: {type(_e).__name__}: {_e}")
+
     # Probe: invariant genealogy coverage.
     # Every invariant should declare the incident/KB entry that birthed it
     # via the optional `born_from` field. Invariants without genealogy
