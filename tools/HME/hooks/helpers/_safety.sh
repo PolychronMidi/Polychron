@@ -95,9 +95,24 @@ _HME_EDIT_PATTERN='/Polychron/(src|tools|scripts|doc|lab)/'
 # next turn. Previously this fire-and-forgot with `2>/dev/null || echo ''`
 # and silent 100% failure rates masqueraded as "worker returned nothing."
 # Usage: result=$(_safe_curl "http://..." '{"key":"val"}')
-# Threshold sourced from .env (HME_STREAK_WARN=5) so bash+node components
-# share one knob. Fallback to 5 if .env load failed earlier.
-_HME_CURL_STREAK_WARN="${HME_STREAK_WARN:-5}"
+# Threshold sourced from (in order): the streak calibrator's adaptive file
+# at tmp/hme-streak-warn.txt (written by activity/streak_calibrator.py each
+# round — closes the observation→action loop), then .env's HME_STREAK_WARN,
+# then 5 as final fallback. The calibrator file overrides .env so the system
+# self-tunes without requiring a manual .env edit.
+_hme_load_streak_warn() {
+  local calibrated_file="${PROJECT_ROOT:-}/tmp/hme-streak-warn.txt"
+  if [ -n "${PROJECT_ROOT:-}" ] && [ -f "$calibrated_file" ]; then
+    local v
+    v=$(head -c 8 "$calibrated_file" 2>/dev/null | tr -cd '0-9')
+    if [ -n "$v" ] && [ "$v" -ge 1 ] && [ "$v" -le 99 ]; then
+      echo "$v"
+      return
+    fi
+  fi
+  echo "${HME_STREAK_WARN:-5}"
+}
+_HME_CURL_STREAK_WARN="$(_hme_load_streak_warn)"
 # Streak file lives under $PROJECT_ROOT/tmp/ per the "no duplicate output dirs"
 # rule in CLAUDE.md. Resolved at call time so a missing PROJECT_ROOT at source
 # time doesn't lock us into /tmp/ — the .env load at the top of this file runs
