@@ -231,8 +231,12 @@ def hme_selftest(verbose: bool = False) -> str:
                 if ln.startswith("Drift hits:"):
                     try:
                         hits = int(ln.split(":", 1)[1].strip())
-                    except ValueError:
-                        pass
+                    except ValueError as _drift_err:
+                        # Malformed verifier output means the probe CAN'T
+                        # count drift; silent swallow here hides verifier
+                        # regression. Leave hits=None; the else-branch
+                        # below reports WARN with the parse-error context.
+                        logger.warning(f"drift-hits parse failed ({_drift_err}): {ln!r}")
                     break
             if hits is None:
                 results.append("WARN: doc stale-ref scan -- could not parse verifier output")
