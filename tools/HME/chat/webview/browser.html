@@ -966,10 +966,13 @@ window.addEventListener('message', (event) => {
       appendChunk(msg.id, msg.chunkType, msg.chunk);
       break;
     case 'errorBubble':
-      appendErrorBubble(msg.source, msg.message);
+      // Suppressed in UI — errors now flow to hme-errors.log via ErrorSink,
+      // which LIFESAVER surfaces to the agent at next turn. Keeping the
+      // UI path would spam the user with diagnostics they can't act on.
+      // criticalError path below still shows an overlay for hard failures
+      // the user genuinely needs to see right now.
       break;
     case 'criticalError':
-      appendErrorBubble(msg.source, msg.message);
       showCriticalOverlay(msg.source, msg.message);
       break;
     case 'streamEnd':
