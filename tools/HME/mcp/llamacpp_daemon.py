@@ -304,7 +304,12 @@ class _Supervisor:
             return False, f"could not stat model file: {_stat_err}"
 
         kv_mb = (spec.ctx_size * 512) // 1024
-        headroom_mb = 1024
+        # Headroom covers compute buffers + worker python's ~150 MB residual
+        # CUDA context that survives indexing-mode reload cycles. 1024 MB
+        # was excessive — it left coder unable to spawn after every reindex
+        # because the residual context made `free_mb` 50-200 MB short of
+        # the inflated requirement. 256 MB is enough for compute buffers.
+        headroom_mb = 256
         needed_mb = model_mb + kv_mb + headroom_mb
 
         # Credit back the existing process's model_mb when the port is bound —
