@@ -150,18 +150,23 @@ def module_story(module_name: str) -> str:
             parts.append("")
     else:
         parts.append("## Evolution History: no KB entries mention this module\n")
-    # Callers
-    callers = _find_callers(module_name, ctx.PROJECT_ROOT)
-    callers = [r for r in callers
-               if module_name not in os.path.basename(r.get('file', ''))
-               and not r.get('file', '').endswith('.md')]
-    caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
-    caller_limit = limits["callers"]
-    parts.append(f"## Dependents ({len(caller_files)} files)")
-    for f in caller_files[:caller_limit]:
-        parts.append(f"  {f}")
-    if len(caller_files) > caller_limit:
-        parts.append(f"  ... and {len(caller_files) - caller_limit} more")
+    # Callers — grep-like scan across ~1000 files, 20-30s on cold cache.
+    # Skip under HME_READ_FAST; the raw caller count is available via
+    # `i/trace mode=impact` for humans who want the detailed list.
+    if _fast:
+        parts.append("## Dependents — SKIPPED (HME_READ_FAST=1; use `i/trace target=<name> mode=impact` for full caller list)")
+    else:
+        callers = _find_callers(module_name, ctx.PROJECT_ROOT)
+        callers = [r for r in callers
+                   if module_name not in os.path.basename(r.get('file', ''))
+                   and not r.get('file', '').endswith('.md')]
+        caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
+        caller_limit = limits["callers"]
+        parts.append(f"## Dependents ({len(caller_files)} files)")
+        for f in caller_files[:caller_limit]:
+            parts.append(f"  {f}")
+        if len(caller_files) > caller_limit:
+            parts.append(f"  ... and {len(caller_files) - caller_limit} more")
     # L0 signal I/O — channels this module reads and posts
     if matching:
         try:
