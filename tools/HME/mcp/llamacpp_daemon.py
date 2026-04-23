@@ -240,7 +240,7 @@ class _Supervisor:
         # Credit back the existing process's model_mb when the port is bound —
         # the existing loading process is occupying that VRAM, not stealing it.
         # Without this, self-respawn during model load fires a false offload
-        # invariant CRITICAL (see llamacpp_supervisor.py for the same fix).
+        # invariant CRITICAL.
         if self._is_listening(spec):
             free_mb += model_mb
 
