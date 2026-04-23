@@ -84,6 +84,63 @@ export function makeResult(partial: Partial<StreamResult>): StreamResult {
   };
 }
 
+/** Unified chunk-event shape for the AsyncIterable streaming view.
+ * Wraps what currently arrives as discrete `onChunk(text, type)` calls
+ * into a single typed event stream. Cleaner for downstream consumers
+ * that prefer `for await (...)` over callback registration. */
+export interface StreamChunkEvent {
+  type: "text" | "thinking" | "tool" | "error";
+  chunk: string;
+  ts: number;
+}
+
+/** Convert a StreamHandle into an AsyncIterable<StreamChunkEvent>. The
+ * generator yields each onChunk call in order, then yields either nothing
+ * (success) or a single `{type: "error"}` event (on failure) before
+ * terminating. The caller awaits `handle.done` separately for the final
+ * StreamResult — this iterable is for consuming intermediate chunks. */
+export function streamAsIterable(
+  handle: StreamHandle,
+  chunkSource: { onChunk: ChunkCallback },
+): AsyncIterable<StreamChunkEvent> {
+  const buffer: StreamChunkEvent[] = [];
+  let resolveNext: ((v: void) => void) | null = null;
+  let done = false;
+
+  const originalOnChunk = chunkSource.onChunk;
+  chunkSource.onChunk = (chunk: string, type: any) => {
+    originalOnChunk(chunk, type);
+    buffer.push({ type: type as StreamChunkEvent["type"], chunk, ts: Date.now() });
+    if (resolveNext) { const r = resolveNext; resolveNext = null; r(); }
+  };
+
+  handle.done.then((result) => {
+    if (!result.ok && result.error) {
+      buffer.push({ type: "error", chunk: result.error, ts: Date.now() });
+    }
+    done = true;
+    if (resolveNext) { const r = resolveNext; resolveNext = null; r(); }
+  });
+
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<StreamChunkEvent> {
+      return {
+        async next(): Promise<IteratorResult<StreamChunkEvent>> {
+          while (true) {
+            if (buffer.length > 0) {
+              return { value: buffer.shift()!, done: false };
+            }
+            if (done) {
+              return { value: undefined as any, done: true };
+            }
+            await new Promise<void>((r) => { resolveNext = r; });
+          }
+        },
+      };
+    },
+  };
+}
+
 /** Thin adapter wrapper: converts a legacy `onChunk/onDone/onError + cancel`
  * function into a RouterAdapter shape without rewriting the legacy
  * implementation. Used by routerClaude/routerLlamacpp/routerHme
