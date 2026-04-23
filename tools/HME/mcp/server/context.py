@@ -159,10 +159,36 @@ class _LoggingMCP:
         return getattr(self._inner, name)
 
 
-# Populated by main.py before tool modules load
+class _NullMCP:
+    """No-op stand-in for `mcp` in processes that import tool modules but
+    aren't MCP workers (the llamacpp_daemon imports `tools_analysis.todo`
+    to mirror LIFESAVER alerts into the todo store).
+
+    Every `@ctx.mcp.tool(...)` in a tool module evaluates at import time.
+    Before this stand-in, `mcp` was `None`, so daemon-side imports crashed
+    with `'NoneType' object has no attribute 'tool'` — fatal for the
+    LIFESAVER→todo bridge (logged on every CRITICAL alert). A _NullMCP
+    lets the decorator resolve as a no-op while the plain Python function
+    (the bridge actually uses) stays callable.
+    """
+    def tool(self, *args, **kwargs):
+        def _decorator(fn):
+            return fn
+        return _decorator
+
+    def __getattr__(self, name):
+        raise AttributeError(
+            f"_NullMCP has no attribute {name!r} — this process is not a full "
+            f"MCP worker. Only the @ctx.mcp.tool(...) decorator is stubbed."
+        )
+
+
+# Populated by main.py before tool modules load. Default is a no-op mcp so
+# any process that imports tool modules can do so without crashing at
+# decorator-evaluation time; the real FastMCP is installed by worker boot.
 PROJECT_ROOT: str = ""
 PROJECT_DB: str = ""
-mcp: _LoggingMCP = None  # type: ignore
+mcp = _NullMCP()
 project_engine = None  # RAGEngine
 global_engine = None   # RAGEngine
 shared_model = None    # SentenceTransformer
