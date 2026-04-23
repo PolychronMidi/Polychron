@@ -52,7 +52,7 @@ RELOADABLE = [
     "epistemic_reports", "negative_space", "cognitive_load", "ground_truth",
     "phase6_reports", "multi_agent",
 ]
-TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge", "llamacpp_supervisor",
+TOP_LEVEL_RELOADABLE = ["tools_search", "tools_knowledge",
                         "meta_layers", "meta_observer"]
 ROOT_RELOADABLE = ["file_walker", "lang_registry", "chunker"]
 
