@@ -25,7 +25,11 @@ def _mode_health():
 
 def _mode_coupling():
     from .coupling import coupling_intel as _ci
-    return _budget_gate(_ci(mode="full"))
+    # Status surface uses the lighter `network` view (just topology — the
+    # one sub-section users actually consume in a status check). The full
+    # 4-section view (network + antagonists + personalities + gaps) takes
+    # ~45s and belongs behind an explicit `i/hme coupling_intel mode=full`.
+    return _budget_gate(_ci(mode="network"))
 
 def _mode_trust():
     from .trust_analysis import trust_report as _tr
