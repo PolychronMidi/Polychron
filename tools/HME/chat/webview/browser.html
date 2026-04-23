@@ -611,7 +611,6 @@
   </div>
   <span id="config-pill" title="Claude config sync status" style="font-size:10px;padding:1px 6px;border-radius:3px;background:#555;color:#eee;margin-left:4px;">…</span>
 
-  <button id="mirror-btn" title="Toggle terminal mirror — show Claude PTY in a visible terminal panel" style="font-size:10px;padding:2px 6px;">BG</button>
   <span id="shim-status" title="HME KB shim status" style="font-size:10px;color:var(--subtle);margin-left:4px;">HME ○</span>
   <span id="arbiter-status" title="Auto-routing arbiter daemon health — fills when 3+ consecutive classify calls fail" style="font-size:10px;color:var(--subtle);margin-left:4px;">ARB ○</span>
   <button id="clear-btn">Clear</button>
@@ -786,28 +785,6 @@ const queueBtn    = document.getElementById('queue-btn');
 const drainBtn    = document.getElementById('drain-btn');
 const statusLine  = document.getElementById('status-line');
 const clearBtn    = document.getElementById('clear-btn');
-const mirrorBtn   = document.getElementById('mirror-btn');
-
-//  Mirror mode toggle
-let _mirrorMode = false;
-mirrorBtn?.addEventListener('click', () => {
-  _mirrorMode = !_mirrorMode;
-  vscode.postMessage({
-    type: 'setMirrorMode',
-    enabled: _mirrorMode,
-    model: claudeModel?.value || 'sonnet',
-    effort: claudeEffort?.value || 'high',
-  });
-});
-window.addEventListener('message', (event) => {
-  if (event.data?.type === 'mirrorModeChanged') {
-    _mirrorMode = event.data.enabled;
-    if (mirrorBtn) {
-      mirrorBtn.textContent = _mirrorMode ? 'MIR' : 'BG';
-      mirrorBtn.style.color = _mirrorMode ? 'var(--btn-bg)' : '';
-    }
-  }
-});
 
 //  Enrich
 const enrichBtn    = document.getElementById('enrich-btn');
@@ -1545,7 +1522,6 @@ if (zoomInBtn) {
     zoomLevel = Math.min(ZOOM_MAX, Math.round((zoomLevel + ZOOM_STEP) * 10) / 10);
     applyZoom();
     vscode.setState(Object.assign({}, vscode.getState() || {}, { zoomLevel: zoomLevel }));
-    vscode.postMessage({ type: 'setZoomLevel', level: zoomLevel });
   });
 }
 if (zoomOutBtn) {
@@ -1553,7 +1529,6 @@ if (zoomOutBtn) {
     zoomLevel = Math.max(ZOOM_MIN, Math.round((zoomLevel - ZOOM_STEP) * 10) / 10);
     applyZoom();
     vscode.setState(Object.assign({}, vscode.getState() || {}, { zoomLevel: zoomLevel }));
-    vscode.postMessage({ type: 'setZoomLevel', level: zoomLevel });
   });
 }
 applyZoom();
