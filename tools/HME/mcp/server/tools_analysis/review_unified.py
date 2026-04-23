@@ -80,8 +80,12 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                 from .section_compare import section_compare as _sc
                 parts.append(_sc(section_a, section_b))
         elif m == "audio":
-            from .perceptual import audio_analyze as _aa
-            parts.append(_aa())
+            # Read the cached perceptual report (~0ms) instead of running
+            # EnCodec+CLAP inference fresh (~12s warm, 2m cold). This is
+            # the same path status mode=perceptual takes. Users wanting
+            # live re-inference call `i/hme audio_analyze` directly.
+            from .status_unified import _mode_perceptual
+            parts.append(_mode_perceptual())
         elif m == "composition":
             from .composition import composition_events as _ce
             # drama_finder inside composition_events does a 60s LLM
