@@ -17,6 +17,7 @@ _injectors=(
   "daemon-thread-hygiene:inject-silent-thread-crash.sh"
   "llama-server-count:inject-duplicate-llama-server.sh"
   "adapter-deadline:inject-adapter-deadline.js"
+  "early-stop-detector:inject-early-stop.sh"
 )
 
 _fail=0
