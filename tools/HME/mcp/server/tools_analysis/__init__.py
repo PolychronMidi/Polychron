@@ -131,6 +131,7 @@ from . import perceptual       # noqa: E402, F401
 from . import review_unified   # noqa: E402, F401
 from . import read_unified     # noqa: E402, F401
 from . import learn_unified    # noqa: E402, F401
+from . import discovery_promote  # noqa: E402, F401
 from . import status_unified   # noqa: E402, F401
 from . import trace_unified    # noqa: E402, F401
 from . import agent_unified    # noqa: E402, F401
