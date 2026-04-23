@@ -4,6 +4,7 @@ import {
   streamClaude, streamClaudePty, streamLlamacppAgentic, streamHybrid,
   postTranscript, reindexFiles, auditChanges,
   hybridAdapter, claudeAdapter, claudePtyAdapter, llamacppAdapter,
+  RouterAdapter, StreamHandle, BaseStreamOptions,
 } from "./router";
 import { ChatCtx, StreamTracker, makeBlockAccumulator, trimHistoryToFit, AGENTIC_SYSTEM_PROMPT } from "./streamUtils";
 import { claudeOptsFromMsg, llamacppOptsFromMsg } from "./msgHelpers";
