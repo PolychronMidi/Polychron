@@ -48,7 +48,8 @@ const routerLlamacpp_1 = require("./routerLlamacpp");
 const streamUtils_1 = require("../streamUtils");
 const HME_HTTP_PORT = (() => {
     const raw = process.env.HME_PROXY_PORT;
-    if (raw == null || raw === "") return 9099;
+    if (raw == null || raw === "")
+        return 9099;
     const n = Number(raw);
     if (!Number.isInteger(n) || n < 0 || n > 65535) {
         throw new Error(`HME_PROXY_PORT="${raw}" is not a valid port (0-65535)`);
