@@ -899,6 +899,32 @@ def _run_indexing_mode_locked() -> dict:
             logger.error(f"indexing-mode: reload-engines request failed: {e}")
             return {"error": f"reload-engines request failed: {e}"}
 
+        # Defense check: confirm no rogue llama-server snuck back onto the
+        # indexing GPU during the ~10-90s reload window. The original failure
+        # mode was a competing supervisor respawning coder concurrently with
+        # the embedder reload, so the embedder's index pass OOM'd against the
+        # squatter. Now that the worker-side supervisor is removed, the only
+        # spawner is the daemon's own loops — which honor spec.suspended —
+        # but defense-in-depth: refuse to proceed if any non-embedder process
+        # holds VRAM on this GPU.
+        rogue = _supervisor_singleton._find_pid_on_port(coder_spec.port)
+        if rogue is not None:
+            return {
+                "error": (
+                    f"rogue process PID {rogue} listening on coder port {coder_spec.port} "
+                    f"during indexing-mode — abort to prevent OOM. The daemon's suspended "
+                    f"flag should have prevented respawn; investigate spawn paths."
+                )
+            }
+        free_after_reload = _supervisor_singleton._gpu_free_mb(cuda_idx)
+        if free_after_reload is not None and free_after_reload < 2000:
+            return {
+                "error": (
+                    f"GPU{cuda_idx} only {free_after_reload} MB free after embedder reload — "
+                    f"unexpected memory pressure. Aborting before index_directory OOMs."
+                )
+            }
+
         # Step 3: Tell shim to run index_directory
         try:
             index_result = _shim_post(
