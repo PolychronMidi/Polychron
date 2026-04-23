@@ -197,6 +197,7 @@ export class BrowserPanel implements PanelHost {
       getChainIndex: () => this._state.chainIndex,
       getClaudeSessionId: () => this._state.claudeSessionId,
       getContextPct: () => this._contextMeter.pctUsed,
+      getModelId: () => this._contextMeter.cliModelId,
       hasMeterLiveUpdate: () => this._contextMeter.hasLiveUpdate,
       rotate: (continuationMsg, newChainIndex) => {
         this._applyStateChange((s) => {
