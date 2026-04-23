@@ -75,8 +75,8 @@ def analyze_diff(project_root: str, ref: str = "") -> dict:
                                     "line": sym_line,
                                 })
                                 break
-                except Exception:
-                    pass
+                except Exception as _sym_err:
+                    logger.debug(f"diff.py affected-symbols probe failed for {fpath}: {type(_sym_err).__name__}: {_sym_err}")
 
         changed_files.append({
             "file": fpath,
