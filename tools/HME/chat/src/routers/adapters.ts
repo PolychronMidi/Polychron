@@ -60,44 +60,6 @@ export const claudeAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions
     },
   );
 
-// Claude PTY — same shape as pipe but routes through the PTY harness.
-// Extended options carry the PTY-specific side-channels (onRawData for
-// the mirror terminal, onPtyReady for interactive input wiring). Both
-// are optional — adapters ignore them when not supplied.
-export interface ClaudePtyStreamOptions extends ClaudeStreamOptions {
-  onRawData?: (raw: string) => void;
-  onPtyReady?: (writeFn: (data: string) => void) => void;
-}
-
-export const claudePtyAdapter: RouterAdapter<ClaudeStreamInput, ClaudePtyStreamOptions> =
-  wrapLegacyStream<ClaudeStreamInput, ClaudePtyStreamOptions>(
-    "claude",
-    "Claude (PTY)",
-    (input, opts, cb) => {
-      return streamClaudePty(
-        input.message,
-        input.sessionId,
-        opts.claude,
-        input.workingDir,
-        cb.chunk,
-        (id) => cb.sessionId?.(id),
-        (usage) => {
-          if (usage) {
-            cb.tokens?.({
-              input: usage.inputTokens,
-              output: usage.outputTokens,
-              usedPct: usage.usedPct,
-            });
-          }
-          cb.done();
-        },
-        cb.error,
-        opts.onRawData,
-        opts.onPtyReady,
-      );
-    },
-  );
-
 // llama.cpp agentic — takes pre-trimmed LlamacppMessage[].
 export interface LlamacppStreamOptions extends BaseStreamOptions {
   llamacpp: LlamacppOptions;
