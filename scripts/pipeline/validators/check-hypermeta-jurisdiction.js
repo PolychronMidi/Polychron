@@ -514,7 +514,7 @@ function main() {
       'check-hypermeta-jurisdiction: FAIL - ' + unregistered.length +
       ' unregistered manual override(s) detected in SpecialCaps: ' + details +
       '. Fix the hypermeta controller instead of adding hardcoded thresholds. ' +
-      'See metrics/hypermeta-jurisdiction.json and journal.md R5 for rationale.'
+      'See metrics/hypermeta-jurisdiction.json for rationale.'
     );
   }
 
