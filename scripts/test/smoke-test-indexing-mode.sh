@@ -90,10 +90,11 @@ _pass "coder healthy again after $((_tend - _t0))s"
 # --- Assertion 5: selftest still READY ---
 echo "[5/5] selftest reports READY"
 _selftest=$(cd "$_PROJECT_ROOT" && ./i/hme-admin action=selftest 2>&1)
-if echo "$_selftest" | grep -q "Self-Test:.* READY"; then
+# Match the verdict inside the banner: "(READY)" on success, "(N FAIL)" on failure.
+if echo "$_selftest" | grep -qE "Self-Test:.*\(READY\)"; then
   _pass "selftest READY"
-elif echo "$_selftest" | grep -qE "Self-Test:.* [0-9]+ FAIL"; then
-  _fail_count=$(echo "$_selftest" | grep -oE "[0-9]+ FAIL" | head -1)
+elif echo "$_selftest" | grep -qE "Self-Test:.*\([0-9]+ FAIL\)"; then
+  _fail_count=$(echo "$_selftest" | grep -oE "\([0-9]+ FAIL\)" | head -1)
   _fails=$(echo "$_selftest" | grep -E "^  FAIL:" | head -3)
   _fail "selftest has $_fail_count after indexing-mode cycle:
 $_fails"
