@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Chaos injector: construct a RouterAdapter whose legacy launch function
- * never calls onDone — simulating a stuck/hung backend. Assert that the
+ * never calls onDone -- simulating a stuck/hung backend. Assert that the
  * adapter's deadlineMs fires and resolves the Promise with ok=false and
  * a "wall deadline" error.
  *
@@ -51,7 +51,7 @@ function _require(rel) {
     },
   );
 
-  const deadline = 500;  // 500ms — short for a test
+  const deadline = 500;  // 500ms -- short for a test
   const t0 = Date.now();
   const handle = stuckAdapter.stream([{ role: 'user', content: 'hi' }], {
     onChunk: () => {},
@@ -74,7 +74,7 @@ function _require(rel) {
       console.log(`  PASS: ${ex.name}`);
       passed++;
     } else {
-      console.log(`  FAIL: ${ex.name} — got ${JSON.stringify(ex.actual)}, expected ${JSON.stringify(ex.expected)}`);
+      console.log(`  FAIL: ${ex.name} -- got ${JSON.stringify(ex.actual)}, expected ${JSON.stringify(ex.expected)}`);
       failed++;
     }
   }
