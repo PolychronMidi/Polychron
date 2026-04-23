@@ -276,9 +276,16 @@ class _Supervisor:
         except Exception as _life_err:
             logger.error(f"supervisor: failed to register LIFESAVER for offload violation: {_life_err}")
 
-    def _spawn(self, spec: InstanceSpec) -> bool:
+    def _spawn(self, spec: InstanceSpec, *, bypass_cooldown: bool = False) -> bool:
         """Launch spec as a detached subprocess. Returns True if the process
-        started. Health comes later via probe. Enforces full-offload invariant."""
+        started. Health comes later via probe. Enforces full-offload invariant.
+
+        bypass_cooldown=True skips the crash-loop cooldown gate. Use ONLY
+        for planned restarts (e.g. indexing-mode resume) where we just
+        intentionally killed the process — the cooldown exists to prevent
+        crash-respawn-crash storms, not to throttle legitimate lifecycle
+        operations.
+        """
         # Defense-in-depth: never spawn a suspended instance even if a caller
         # bypasses the ensure_all_running / health_tick gates. indexing-mode
         # flips suspended=True before freeing the GPU; a spawn here would
