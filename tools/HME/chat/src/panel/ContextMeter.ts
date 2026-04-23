@@ -123,8 +123,25 @@ export class ContextMeter {
         console.error(`[HME] CRITICAL: ${msg}`);
         if (this.errorSink) this.errorSink.post("ContextMeter.unpopulated", msg);
       }
+      // Surface an in-UI banner on the first stuck event so the user sees
+      // the meter isn't just "empty" — it's not receiving data. Without this,
+      // the user silently blows past compaction and loses history.
+      if (!this._stuckBannerPosted) {
+        this._stuckBannerPosted = true;
+        this.host.post({
+          type: "contextMeterStuck",
+          reason: "usedPct not arriving — meter stuck; watch chain rotations via transcript",
+          lastGoodPct: this._lastGoodPct ?? 0,
+        });
+      }
     } else {
+      if (this._consecutiveNullPct > 0 && this._stuckBannerPosted) {
+        // Recovered — let the UI dismiss the banner.
+        this.host.post({ type: "contextMeterRestored" });
+        this._stuckBannerPosted = false;
+      }
       this._consecutiveNullPct = 0;
+      this._lastGoodPct = usedPctAfterUpdate;
     }
     this._hasLiveUpdate = true;
     this.post(args);
