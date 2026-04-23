@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 631,
-      "updated_ts": 1776971642.0159342
+      "max_id": 641,
+      "updated_ts": 1776982058.3992639
     }
   },
   {
@@ -20,15 +20,15 @@
     "subs": []
   },
   {
-    "id": 623,
-    "text": "Fix broken test-routes.js (streamllama.cpp invalid identifier + wrong URLs/models)",
+    "id": 633,
+    "text": "Fix broken test-routes.js",
     "activeForm": "Fixing test-routes.js",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776971642.0158653,
+    "ts": 1776982058.3991835,
     "parent_id": 0,
     "subs": []
   },
@@ -36,8 +36,8 @@
     "id": 624,
     "text": "Fix virtualization render to preserve thinking/tools/blocks on restore",
     "activeForm": "Fixing virtualization rendering",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -49,7 +49,7 @@
     "id": 625,
     "text": "Plumb constraintCount + errorCount into arbiter classification (currently hardcoded 0)",
     "activeForm": "Plumbing constraint/error signals into arbiter",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -72,15 +72,15 @@
     "subs": []
   },
   {
-    "id": 627,
-    "text": "Remove dead _sseSweepTimer field + setMirrorMode no-op",
+    "id": 637,
+    "text": "Remove dead _sseSweepTimer field + setMirrorMode no-op + _simpleMessageDiv remnants",
     "activeForm": "Removing dead state/handlers",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776971642.015902,
+    "ts": 1776982058.3992283,
     "parent_id": 0,
     "subs": []
   },
@@ -495,14 +495,16 @@
     "id": 581,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] cuda_context_corruption: CUDA illegal memory access during reload_on_device(cuda:0) \u2014 worker auto-restart initiated",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] cuda_context_corruption: CUDA illegal memory access during reload_on_device(cuda:0) \u2014 worker auto-restart initiated",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776950203.3466702,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776982058.3991342,
+    "resolved_reason": "stale"
   },
   {
     "id": 582,
@@ -613,7 +615,7 @@
     "id": 589,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15524 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15524 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
@@ -621,6 +623,8 @@
     "ts": 1776953181.4369519,
     "parent_id": 0,
     "subs": [],
-    "recurrence_count": 13
+    "recurrence_count": 13,
+    "resolved_ts": 1776982058.3991358,
+    "resolved_reason": "stale"
   }
 ]
