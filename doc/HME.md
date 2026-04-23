@@ -872,7 +872,7 @@ Phase 4.4 of the feature mapping. `tools_analysis/self_audit.py` queries three u
 
 Data sources: `tools/HME/KB/knowledge_access.json`, `output/metrics/hme-activity.jsonl`, `output/metrics/hme-prediction-accuracy.json`. Read-only — never modifies anything, just reports.
 
-Surfaced via `status(mode='self_audit')`. This is the first step toward HME being subject to the same "structural over parametric" and "never delete — implement" laws that govern Polychron itself: when HME identifies a part of its own architecture that isn't working, that becomes an evolution candidate alongside Polychron candidates in the Evolver's Phase 3 selection.
+Surfaced via `status(mode='self_audit')`. This is the first step toward HME being subject to the same "structural over parametric" and "never delete — implement" laws that govern Polychron itself: when HME identifies a part of its own architecture that isn't working, that becomes an evolution candidate alongside Polychron candidates in Phase 3 selection.
 
 ### Adversarial Self-Probing
 
@@ -884,9 +884,9 @@ Candidates are drawn from the intersection of:
 2. **KB trust gaps** — modules with NONE or LOW trust-tier KB coverage (score multiplier ×2).
 3. **Cascade accuracy** — if the prediction-accuracy EMA is unknown or below 0.5, everything gets a ×2 multiplier because the cascade model itself is suspect.
 
-For each candidate, the probe carries a predicted cascade summary (depth-2 forward reach, direct callers, feedback loops) and a predicted_confidence tier. The Evolver runs the probe in a lab sketch (never `main`), observes the actual outcome, and feeds the delta back into HME's trust weights and cascade model.
+For each candidate, the probe carries a predicted cascade summary (depth-2 forward reach, direct callers, feedback loops) and a predicted_confidence tier. The agent runs the probe in a lab sketch (never `main`), observes the actual outcome, and feeds the delta back into HME's trust weights and cascade model.
 
-Surfaced via `status(mode='probes')`. This module never *runs* a probe — it produces candidates and lets the Evolver decide which to execute. Controlled failure is more epistemically valuable than repeated success in familiar territory; the probe mechanism gives HME a way to actively stress-test its own model rather than waiting for the Evolver to accidentally discover blind spots.
+Surfaced via `status(mode='probes')`. This module never *runs* a probe — it produces candidates and lets the agent decide which to execute. Controlled failure is more epistemically valuable than repeated success in familiar territory; the probe mechanism gives HME a way to actively stress-test its own model rather than waiting for the agent to accidentally discover blind spots.
 
 ### Compositional Trajectory
 
