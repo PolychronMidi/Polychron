@@ -385,22 +385,54 @@ def clear_onboarding_tree() -> None:
         _save_todos(meta, todos)
 
 
+# Lifesaver-critical items that haven't been touched in this many seconds
+# are considered stale and auto-resolved on the next merge. Rationale:
+# register_todo_from_lifesaver dedupes repeating errors, so a stale entry
+# means the source stopped recurring — the agent isn't going to act on an
+# alert about a transient GPU OOM from 8 days ago. Without this cleanup,
+# every TodoWrite call re-surfaces a mountain of ancient CRITICAL items.
+_LIFESAVER_STALE_SECONDS = 6 * 3600
+
+# Hard cap on how many critical items render in the merged output. Anything
+# past this is collapsed into a single "+N older critical" summary. Prevents
+# a genuine storm of alerts from drowning the agent's real todos.
+_MAX_CRITICAL_IN_MERGE = 3
+
+
+def _expire_stale_lifesavers(meta: dict, todos: list) -> int:
+    """Auto-resolve any pending lifesaver todo older than _LIFESAVER_STALE_SECONDS.
+    Dedup already prevents duplicates; age-based expiry prevents accumulation."""
+    cutoff = time.time() - _LIFESAVER_STALE_SECONDS
+    expired = 0
+    for t in todos:
+        if (t.get("source") == "lifesaver"
+                and t.get("status") == "pending"
+                and float(t.get("ts", 0)) < cutoff):
+            t["status"] = "completed"
+            t["resolved_ts"] = time.time()
+            t["resolved_reason"] = "stale"
+            expired += 1
+    return expired
+
+
 def merge_native_todowrite(incoming: list) -> list:
     """E3: merge an incoming native TodoWrite payload with the HME store.
 
     Preserves HME-only items (lifesaver, onboarding, hme_todo) that native
     TodoWrite doesn't know about and returns a MERGED list that becomes the
     updatedInput for the real TodoWrite call. Result is ordered:
-      1. critical items first (lifesaver, etc.)
+      1. critical items first (lifesaver, etc.) — capped at _MAX_CRITICAL_IN_MERGE
       2. onboarding walkthrough (flattened: parent + indented subs)
       3. agent's incoming native items
       4. other hme_todo items the agent didn't include
 
     Native items the agent IS submitting win for matching text — their status
-    updates flow through to the store.
+    updates flow through to the store. Stale lifesaver items auto-resolve
+    before merge so ancient alerts don't drown current intent.
     """
     with _todo_lock:
         meta, store = _load_todos()
+        _expire_stale_lifesavers(meta, store)
 
         # Index store items by text for matching
         by_text: dict = {}
