@@ -47,6 +47,12 @@ export class BrowserPanel implements PanelHost {
   private _restoreSessionId: string | null = null;
   private _disposed = false;
   private _sseClients: ExpressResponse[] = [];
+  // Per-client last-activity timestamp. A stuck client (laptop closed,
+  // browser frozen) otherwise lives forever — res.write queues into
+  // kernel buffers that never drain, holding the panel alive and
+  // slowing every broadcast. Clients idle > SSE_IDLE_MS are removed.
+  private _sseClientSeen = new WeakMap<ExpressResponse, number>();
+  private _sseSweepTimer?: NodeJS.Timeout;
   // Authoritative Claude config — kept in sync with the browser UI via setClaudeConfig.
   // Send/queue messages fall back to this if they omit the fields (they shouldn't, but
   // it means the server state is the source of truth, not the browser payload).
