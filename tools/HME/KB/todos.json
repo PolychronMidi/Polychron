@@ -536,40 +536,46 @@
     "id": 575,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16166 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16166 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776948731.132065,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319606,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 576,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16164 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16164 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776948937.222184,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319604,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 577,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16244 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16244 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776948945.01979,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319604,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 578,
@@ -588,27 +594,31 @@
     "id": 579,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16672 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16672 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776949534.5471158,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319602,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 580,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16512 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16512 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776949654.6879194,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319602,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 581,
@@ -627,92 +637,106 @@
     "id": 582,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15544 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15544 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776950204.0290565,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.13196,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 583,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 17464 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 17464 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776950737.1090415,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.13196,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 584,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15744 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15744 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776951336.350316,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319594,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 585,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15504 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15504 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776951885.8914714,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319592,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 586,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 9573 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 9573 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776952427.2526178,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.131959,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 587,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16987 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 16987 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776952966.6916025,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319585,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 588,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15484 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] llamacpp_offload_invariant(coder): GPU offload invariant violated: coder (qwen3-coder-30b-Q4_K_M.gguf) on Vulkan2 \u2014 won't fit on Vulkan2 (cuda:1): need 22049 MB (model 17697 + kv 4096 + headroom 256), only 15484 MB free. Each HME model OWNS its GPU. Free the assigned device and restart the daemon.",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776953086.635848,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "resolved_ts": 1776969529.1319578,
+    "resolved_reason": "collapsed-duplicate"
   },
   {
     "id": 589,
@@ -725,6 +749,7 @@
     "on_done": "",
     "ts": 1776953181.4369519,
     "parent_id": 0,
-    "subs": []
+    "subs": [],
+    "recurrence_count": 13
   }
 ]
