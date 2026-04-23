@@ -207,26 +207,33 @@ A browser chat UI at `tools/HME/chat/` that routes every message through the HME
 
 ```
 src/
-  ChatPanel.ts          Panel orchestrator + send pipeline + session management
-  chatStreaming.ts       runStream harness + route-specific stream functions
+  server.ts             Express host: SSE /api/events + POST /api/message + static browser.html
+  BrowserPanel.ts       Panel orchestrator + send pipeline + session management
+  chatStreaming.ts      runStream harness + route-specific stream functions
   Arbiter.ts            Message classifier (qwen3:4b) + narrative synthesis
+  msgHelpers.ts         Claude config validation + llamacpp opt resolution
   router.ts             Type barrel + re-exports
   routers/
-    routerClaude.ts     Claude CLI PTY mode (hook-aware) + pipe mode fallback
+    RouterInterface.ts  Normalized RouterAdapter contract + wrapLegacyStream
+    adapters.ts         Concrete adapters: claude / llamacpp / hybrid
+    routerClaude.ts     Claude CLI pipe mode + usedPct sanitization
     routerLlamacpp.ts   llama-server SSE streaming + agentic tool loop
     routerHme.ts        HME HTTP shim client + hybrid stream
   session/
     SessionStore.ts     Workspace-hashed JSON persistence (~/.config/hme-chat/)
-    TranscriptLogger.ts JSONL session transcript + narrative synthesis trigger
+    TranscriptLogger.ts JSONL session transcript + narrative signals
     chatChain.ts        Context-chain threshold + chain link creation
     crossRouteHistory.ts History portability when switching routes
   panel/
-    ShimSupervisor.ts   Spawns + restarts hme_http.py with backoff (cap: 4 restarts)
+    PanelHost.ts        Narrow post/postError surface exposed to components
+    ShimSupervisor.ts   Polls worker /health + reports status to the UI
     ContextMeter.ts     Token % tracking + chain threshold detection
     ChainPerformer.ts   Executes chain rotation (saves link, clears session)
     StreamPersister.ts  Crash-safe partial message recovery
     ErrorSink.ts        Structured error accumulator + disk fallback
-    MirrorTerminal.ts   PTY mirror terminal for raw Claude CLI output
+    webviewMessages.ts  Typed browser → server message dispatch
+webview/
+  browser.html          Single-file browser UI (CSS + DOM + SSE client)
 ```
 
 ### HME Worker HTTP
