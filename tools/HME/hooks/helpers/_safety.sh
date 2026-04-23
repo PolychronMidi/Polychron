@@ -267,8 +267,12 @@ _extract_module() { basename "$1" | sed 's/\.[^.]*$//'; }
 #   Read=5 (0.5x), Edit/Write=10 (1x), Bash=15 (1.5x), Grep=20 (2x)
 # Thresholds: warn at 50, block at 70 (equivalent to 5/7 raw calls at 1x).
 _STREAK_FILE="/tmp/hme-non-hme-streak.score"
-_STREAK_WARN=50
-_STREAK_BLOCK=70
+# Raw-tool streak thresholds. Base defaults (50/70) correspond to "raw-tool
+# usage burning context without HME enrichment." The adaptation engine can
+# nudge the warn floor via HME_STREAK_BLOCK_BUMP to reward focused work
+# that's producing file_written events (see adaptation-rules.json).
+_STREAK_WARN=$((50 + ${HME_STREAK_BLOCK_BUMP:-0}))
+_STREAK_BLOCK=$((70 + ${HME_STREAK_BLOCK_BUMP:-0}))
 
 _streak_tick() {
   local weight="${1:-10}"
