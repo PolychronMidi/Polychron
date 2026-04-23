@@ -1310,8 +1310,11 @@ def _enumerate_unprovable_claims() -> list[dict]:
                     "reason": "Optimal gate rate unknown — too high = false alarms, too low = missed phantoms",
                     "validation": "A/B_comparison",
                 })
-    except (OSError, json.JSONDecodeError):
-        pass
+    except (OSError, json.JSONDecodeError) as _pat_err:
+        # Synthesis-patterns read failure = quality-gate claim silently
+        # missing from the reflexivity report. That's a real observability
+        # regression — the report will look healthy while actually blind.
+        logger.error(f"synthesis_patterns read FAILED — quality-gate claim dropped from reflexivity: {type(_pat_err).__name__}: {_pat_err}")
     return claims
 
 
