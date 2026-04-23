@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # HME read — KB-briefed file read (KB constraints + callers + boundaries).
-# Usage: i/hme-read target=<moduleName> [mode=auto|before]
+# Usage: i/hme-read <target> [key=value ...]
+#        i/hme-read target=<moduleName> [mode=auto|before]
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
-exec node "$_HME_CLI" read "$@"
+_args=()
+_have_target=0
+for a in "$@"; do
+  case "$a" in
+    target=*|-*|*=*) _args+=("$a"); [[ "$a" == target=* ]] && _have_target=1 ;;
+    *) if [ $_have_target -eq 0 ]; then _args+=("target=$a"); _have_target=1; else _args+=("$a"); fi ;;
+  esac
+done
+exec node "$_HME_CLI" read "${_args[@]}"
