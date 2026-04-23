@@ -37,6 +37,12 @@ def hme_admin(action: str = "selftest", modules: str = "",
     _track("hme_admin")
     from ..synthesis_session import append_session_narrative
     append_session_narrative("admin", f"hme_admin({action}): {modules or 'default'}")
+    # Normalize common aliases. `restart` is the instinct-reach, but hot-reload
+    # is cheap enough that that's what users actually want — no reason to make
+    # the wrong action name fail instead of quietly doing the right thing.
+    if action == "restart":
+        action = "reload"
+
     parts = []
     if action in ("reload", "both"):
         parts.append(hme_hot_reload(modules))
