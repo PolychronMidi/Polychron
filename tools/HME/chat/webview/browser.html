@@ -1500,14 +1500,30 @@ window.addEventListener('message', (event) => {
   } else if (msg.type === 'sessionLoaded') {
     activeSessionId = msg.id;
     vscode.setState({ ...(vscode.getState() || {}), activeSessionId });
+    // Reset stream-tracking state BEFORE the DOM rebuild — otherwise an
+    // in-flight chunk addressed to a stale msg-<id> on the prior session
+    // would silently drop, or worse, append into a freshly-created
+    // homonym element. Clearing the active set + streaming flag makes
+    // the transition atomic from the dispatcher's viewpoint.
+    streaming = false;
+    activeStreams.clear();
+    streamTools.length = 0;
+    streamBodyMap.clear();
+    streamThinkingMap.clear();
     messages.innerHTML = '';
     for (const m of msg.messages) appendMessage(m);
+    _enforceMessageDomCap();
     forceScrollToBottom();
     setStatus(`Loaded: ${msg.title}`);
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'historyCleared') {
     activeSessionId = null;
     vscode.setState({ ...(vscode.getState() || {}), activeSessionId: null });
+    streaming = false;
+    activeStreams.clear();
+    streamTools.length = 0;
+    streamBodyMap.clear();
+    streamThinkingMap.clear();
     messages.innerHTML = '';
     setStatus('');
     vscode.postMessage({ type: 'listSessions' });
