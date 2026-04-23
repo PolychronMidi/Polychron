@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 580,
-      "updated_ts": 1776949654.6879206
+      "max_id": 581,
+      "updated_ts": 1776950203.3466718
     }
   },
   {
@@ -464,6 +464,19 @@
     "source": "lifesaver",
     "on_done": "",
     "ts": 1776949654.6879194,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 581,
+    "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] cuda_context_corruption: CUDA illegal memory access during reload_on_device(cuda:0) \u2014 worker auto-restart initiated",
+    "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] cuda_context_corruption: CUDA illegal memory access during reload_on_device(cuda:0) \u2014 worker auto-restart initiated",
+    "status": "pending",
+    "done": false,
+    "critical": true,
+    "source": "lifesaver",
+    "on_done": "",
+    "ts": 1776950203.3466702,
     "parent_id": 0,
     "subs": []
   }
