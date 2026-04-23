@@ -320,26 +320,42 @@ function streamHybridMsg(ctx, msg, assistantId) {
     const contextMessages = contextPrefixMessages(msg._contextPrefix);
     const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
     const history = [...contextMessages, ...trimmed];
+    // Migrated to RouterAdapter: error / cancel / done are normalized in
+    // a single Promise<StreamResult> so the harness sees one shape
+    // regardless of backend. Compare to streamClaudeMsg + streamLlamacppMsg
+    // for the legacy callback patterns those routes still use.
     runStream({
         ctx, assistantId, route: "hybrid",
         preludeChunk: "[HME] Enriching with KB context…",
         start: (h) => {
-            const onDone = () => {
+            const handle = router_1.hybridAdapter.stream({ message: msg.text, history, workingDir: ctx.projectRoot }, {
+                onChunk: h.onChunk,
+                llamacpp: (0, msgHelpers_1.llamacppOptsFromMsg)(msg),
+            });
+            h.setCancel(() => handle.cancel());
+            handle.done.then((result) => {
                 if (h.isAborted())
                     return;
+                if (!result.ok) {
+                    if (!h.isEnded()) {
+                        h.postStreamEnd();
+                        h.safeEnd();
+                    }
+                    ctx.postError("hybrid", result.error ?? "unknown error");
+                    return;
+                }
                 finalizeStream(h, ctx, assistantId, "hybrid", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
                 h.safeEnd();
-            };
-            const onError = (err) => {
-                if (h.isAborted())
-                    return;
+            }).catch((err) => {
+                // RouterAdapter contract says result.error carries failures, not
+                // a rejected promise — but defend against legacy implementations
+                // that might still throw.
                 if (!h.isEnded()) {
                     h.postStreamEnd();
                     h.safeEnd();
                 }
-                ctx.postError("hybrid", err);
-            };
-            attachPromiseCancel(h, (0, router_1.streamHybrid)(msg.text, history, (0, msgHelpers_1.llamacppOptsFromMsg)(msg), ctx.projectRoot, h.onChunk, onDone, onError), (err) => ctx.postError("hybrid", err));
+                ctx.postError("hybrid", String(err?.message ?? err));
+            });
         },
     });
 }

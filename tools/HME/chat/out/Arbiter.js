@@ -60,8 +60,25 @@ const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
 // 30s TTL prevents redundant arbiter calls for repeated/similar messages
 const _decisionCache = new Map();
 const CACHE_TTL_MS = 30000;
-function _cacheKey(msg, cc, ec) {
-    return `${cc}:${ec}:${msg.slice(0, 200)}`;
+// Tiny non-cryptographic hash for cache-key fingerprinting. The audit
+// surfaced that the prior cache key ignored transcriptContext entirely,
+// so two users sending the same prefix in different session states (one
+// with prior errors, one clean) would receive the same routing decision.
+// FNV-1a 32-bit is collision-resistant enough for this scope and runs
+// in microseconds even on multi-KB transcript strings.
+function _fnv1a(s) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return h.toString(36);
+}
+function _cacheKey(msg, cc, ec, transcriptCtx) {
+    // Include transcript fingerprint AND length-bucket so a session-state
+    // change (new errors observed, new tools fired) invalidates stale
+    // routing decisions even when the message-prefix is identical.
+    return `${cc}:${ec}:${transcriptCtx.length}:${_fnv1a(transcriptCtx)}:${msg.slice(0, 200)}`;
 }
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
@@ -113,7 +130,7 @@ function daemonPost(payload) {
  * Falls back to "claude" on any error; isError=true flags the failure downstream.
  */
 async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
-    const key = _cacheKey(message, constraintCount, errorCount);
+    const key = _cacheKey(message, constraintCount, errorCount, transcriptContext);
     const cached = _decisionCache.get(key);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS)
         return cached.decision;
