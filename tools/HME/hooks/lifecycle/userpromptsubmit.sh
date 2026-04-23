@@ -164,9 +164,9 @@ if [ -f "$LEARN_PROMPTS" ] && [ -s "$LEARN_PROMPTS" ]; then
   > "$LEARN_PROMPTS"
 fi
 
-# Detect evolution-related prompts and inject Evolver awareness
+# Detect evolution-related prompts and inject workflow reminder
 if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab|sketch'; then
-  echo 'EVOLVER CONTEXT: Remember to use before_editing before modifying files, what_did_i_forget after changes, and add_knowledge after confirmed rounds. Check metrics/journal.md for the latest round context.' >&2
+  echo 'EVOLUTION CONTEXT: `i/hme-read target=<module> mode=before` before edits, `i/review mode=forget` after changes, `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
 fi
 
 # Always: anti-abandonment reminder
