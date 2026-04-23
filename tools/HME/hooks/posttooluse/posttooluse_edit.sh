@@ -3,12 +3,20 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
 # PostToolUse: Edit — coverage classification + user-facing review reminders.
-# activity_log + nexus EDIT tracking moved to proxy middleware
-# (tools/HME/proxy/middleware/activity_log.js + nexus_tracking.js).
+# Nexus EDIT tracking lives in BOTH the proxy middleware (nexus_tracking.js)
+# and this shell hook. Middleware covers proxy-routed sessions; the shell
+# fallback below covers direct-to-API sessions (VS Code Claude Code) where
+# the middleware never sees the tool result. _nexus_add is content-keyed
+# so double-tracking is harmless.
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 PROJECT="$PROJECT_ROOT"
+
+# Mirror the middleware's EDIT-tracking gate. Same path-allowlist regex.
+if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy))/'; then
+  _nexus_add EDIT "$FILE"
+fi
 
 # Rebuild dir-intent index on README.md edits — same as posttooluse_write.sh.
 if [[ "$FILE" == */README.md ]]; then
