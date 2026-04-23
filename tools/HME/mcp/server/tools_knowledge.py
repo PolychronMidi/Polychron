@@ -520,10 +520,20 @@ def kb_health() -> str:
         else:
             healthy.append(entry_id)
     if stale:
-        parts.append(f"## Stale ({len(stale)} entries)")
+        parts.append(f"\n## Stale ({len(stale)} entries)")
         for s in stale:
             parts.append(s)
     parts.append(f"\n## Healthy: {len(healthy)} entries")
+    # Highlight the five oldest fresh entries (candidates for refresh
+    # even though they pass the staleness checks).
+    dated = sorted(
+        ((now_ts - e.get("timestamp", now_ts)) / 86400, e)
+        for e in rows if e.get("timestamp", 0) > 0 and str(e.get("id", ""))[:8] in set(healthy)
+    )
+    if dated:
+        parts.append("\n## Oldest healthy entries (refresh candidates)")
+        for age_d, e in dated[-5:][::-1]:
+            parts.append(f"  {age_d:5.1f}d  [{str(e.get('id',''))[:8]}] {str(e.get('title','')).strip()[:70]}")
     # Check global KB too
     if ctx.global_engine:
         glob_rows = ctx.global_engine.list_knowledge_full()
