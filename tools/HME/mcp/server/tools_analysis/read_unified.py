@@ -66,7 +66,7 @@ def _emit_brief_recorded(target: str, source: str = "hme_read") -> None:
 
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("read")
-def read(target: str, mode: str = "auto", fast: bool = False) -> str:
+def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
     """Smart code reader — auto-routes by target format.
     'src/path/file.js' → file_intel (structure + KB).
     'src/path/file.js:10-50' → file_lines (line range).
@@ -82,7 +82,21 @@ def read(target: str, mode: str = "auto", fast: bool = False) -> str:
         append_session_narrative("search", f"read({mode}): {target[:60]}")
     ctx.ensure_ready_sync()
     if not target or not target.strip():
-        return "Error: target cannot be empty. Pass a file path, function name, or module name."
+        return (
+            "i/hme-read — KB-briefed code reader.\n\n"
+            "Usage:\n"
+            "  i/hme-read target=<name> [mode=auto|before|story|impact|both|lines|function|structure|callers|deps] [fast=true]\n\n"
+            "Target forms (auto-detected):\n"
+            "  src/path/file.js           → file_intel (structure + KB)\n"
+            "  src/path/file.js:10-50     → file_lines (line range)\n"
+            "  functionName               → get_function_body (search all files)\n"
+            "  moduleName                 → module_intel\n\n"
+            "Modes:\n"
+            "  auto (default)             detect from target shape\n"
+            "  before                     pre-edit briefing: KB constraints, callers, risks — MANDATORY before edits\n"
+            "  fast=true                  skip slow adaptive-synthesis (~60-120s faster)\n"
+            "\nExample: i/hme-read target=harmonicIntervalGuard mode=before"
+        )
 
     # Propagate fast flag via env so deep-call-chain synthesis gates can see it
     # without threading fast= through every intermediate function signature.
