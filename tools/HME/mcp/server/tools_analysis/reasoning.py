@@ -153,6 +153,7 @@ def module_story(module_name: str) -> str:
     # Callers — grep-like scan across ~1000 files, 20-30s on cold cache.
     # Skip under HME_READ_FAST; the raw caller count is available via
     # `i/trace mode=impact` for humans who want the detailed list.
+    caller_files: list = []
     if _fast:
         parts.append("## Dependents — SKIPPED (HME_READ_FAST=1; use `i/trace target=<name> mode=impact` for full caller list)")
     else:
