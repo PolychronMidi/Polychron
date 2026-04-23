@@ -877,6 +877,19 @@ def reload_on_device(target_device: str) -> dict:
             logger.warning(f"reload_on_device: reranker failed: {e}")
             # Non-fatal — indexing doesn't use reranker
 
+        # On restore, the GPU we just vacated still holds our CUDA context
+        # (~150 MB). That's enough to push coder's spawn fit-check past its
+        # margin. Empty caches on every CUDA device so the freed VRAM is
+        # actually visible to nvidia-smi (which the daemon uses for fits).
+        if restoring and _torch.cuda.is_available():
+            for _dev_idx in range(_torch.cuda.device_count()):
+                try:
+                    with _torch.cuda.device(_dev_idx):
+                        _torch.cuda.empty_cache()
+                        _torch.cuda.ipc_collect()
+                except Exception as _cc_err:
+                    logger.debug(f"reload_on_device: cuda:{_dev_idx} empty_cache failed: {_cc_err}")
+
         return {
             "device": target_device,
             "reloaded": reloaded,
