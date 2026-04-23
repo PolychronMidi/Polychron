@@ -52,7 +52,11 @@ factoryFamilies = {
       const prevSection = safePreBoot.call(() => sectionMemory.getPrevious(), null);
       const trendBias = (prevSection && prevSection.trend && TREND_FAMILY_BIAS[prevSection.trend])
         ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] ?? 1.0) : 1.0;
-      const profileMultiplier = (Number(biasedWeights[familyName]) || 1) * trendBias;
+      // Preserve explicit 0-weights (family disabled) instead of collapsing
+      // them to 1 via `|| 1` — Number.isFinite catches undefined/NaN from
+      // a missing key but keeps a legitimate 0 intact.
+      const _biased = Number(biasedWeights[familyName]);
+      const profileMultiplier = (Number.isFinite(_biased) ? _biased : 1) * trendBias;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
         types: normalizedTypes
