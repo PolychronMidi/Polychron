@@ -805,6 +805,41 @@ def hme_selftest(verbose: bool = False) -> str:
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
+    # Probe: invariant genealogy coverage.
+    # Every invariant should declare the incident/KB entry that birthed it
+    # via the optional `born_from` field. Invariants without genealogy
+    # can't be safely retired when their originating concern is resolved
+    # — they persist as background noise forever. The first pass counts
+    # coverage; over time we raise the threshold or deprecate unclaimed
+    # invariants.
+    try:
+        import json as _json_g
+        inv_path = os.path.join(_project_root, "tools", "HME", "config", "invariants.json")
+        with open(inv_path, encoding="utf-8") as _if:
+            _inv_doc = _json_g.load(_if)
+        _inv_list = _inv_doc.get("invariants", [])
+        if _inv_list:
+            _with_born = sum(1 for i in _inv_list if i.get("born_from"))
+            _coverage_pct = int(100 * _with_born / len(_inv_list))
+            if _with_born == 0:
+                results.append(
+                    f"INFO: invariant genealogy -- 0/{len(_inv_list)} invariants "
+                    f"have `born_from` (new field; backfill incident citations over time)"
+                )
+            elif _coverage_pct < 20:
+                results.append(
+                    f"WARN: invariant genealogy -- only {_with_born}/{len(_inv_list)} "
+                    f"({_coverage_pct}%) invariants cite origin; uncited invariants "
+                    f"cannot be safely retired when their concern resolves"
+                )
+            else:
+                results.append(
+                    f"PASS: invariant genealogy -- {_with_born}/{len(_inv_list)} "
+                    f"({_coverage_pct}%) invariants cite origin"
+                )
+    except Exception as _e:
+        results.append(f"WARN: invariant genealogy -- probe failed: {type(_e).__name__}: {_e}")
+
     # Temporal-coherence: append this run to the timeseries + check drift.
     # This turns point-in-time probes into a filmstrip so slow drift and
     # fresh regressions surface as their own signal.
