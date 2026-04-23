@@ -948,11 +948,22 @@ Output: `output/metrics/hme-doc-drift.json`. v1 is deliberately noisy — checks
 
 ### Generalization Extraction
 
-Phase 6.4 of the feature mapping. `scripts/pipeline/extract-generalizations.py` separates project-specific crystallized patterns from structurally general ones by scoring each pattern on `project_specificity`: the fraction of tokens (in tags + synthesis + seed) that match a Polychron-specific vocabulary list.
+Phase 6.4 of the feature mapping, rewritten in R97 after the original pipeline produced 3063 lines of LLM-generated tautology before the user demanded a rebuild.
 
-Patterns below the threshold (default 0.3) become generalization candidates. Each gets a templated DRAFT abstraction appended to `doc/hme-discoveries.md` — the system's externalized intellectual contribution. Templates require human polish before becoming claims. Over enough rounds this becomes the most valuable artifact the project produces: a body of knowledge about emergent musical systems design that exists nowhere else.
+**Pipeline** (three steps, runs every `npm run main`):
 
-First run flagged 14 of 19 crystallized patterns as generalization candidates. Surfaced via `status(mode='generalizations')`.
+1. [`extract-generalizations.py`](../scripts/pipeline/hme/extract-generalizations.py) scores every crystallized pattern on `project_specificity`: the fraction of camelCase-split tokens in tags + synthesis that match a **dynamically-built** project vocabulary (bias-bounds manifest + L0 channel names + subsystem directory names + hand-curated seeds). Tokens like `emergentMelodicEngine` now score high where the old hardcoded-list version scored 0.00. Patterns below threshold 0.3 become candidates. Writes `metrics/hme-generalizations.json`.
+
+2. [`synthesize-generalizations.py`](../scripts/pipeline/hme/synthesize-generalizations.py) sends each candidate through the **free-tier reasoning API cascade** (Groq → Cerebras → Mistral → NVIDIA → OpenRouter → local arbiter fallback) — NOT the 4GB local arbiter that produced vague waffle. The prompt demands three structured fields: **invariant**, **falsifiable prediction for similar systems**, **counterexample that would disprove it**. Anything missing a field is rejected as tautology (`REJECT` or missing-label). Surviving drafts go to `output/metrics/hme-discoveries-draft.jsonl` (gitignored; regenerated every run).
+
+3. **Novelty + stability gates** (enforced by step 2): a new draft whose invariant matches any existing one at cosine-similarity ≥0.90 is dropped as duplicate. A draft whose text survives ≥3 consecutive runs unchanged flips `promotable=true`.
+
+**Human-curated promotion** — only the user can move a draft from jsonl into the permanent record:
+
+- `learn(action='discoveries')` — list drafts with stability + promotable flag.
+- `learn(action='promote_discovery', remove=<draft_id>, listening_notes=<optional annotation>)` — append to `doc/hme-discoveries.md` + remove from draft stream. Refuses if `promotable=false`. This keeps auto-generated sludge strictly out of the claims file.
+
+Surfaced also via `status(mode='generalizations')`.
 
 ### Multi-Agent Observability Scaffold
 
