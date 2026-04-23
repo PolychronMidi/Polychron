@@ -1177,6 +1177,97 @@ def _run_indexing_mode_locked() -> dict:
     return result_data
 
 
+def _boot_recover_stuck_indexing_state():
+    """Detect + repair embedders stuck on coder's GPU from a dead indexing session.
+
+    Failure path this fixes (observed repeatedly 2026-04-23):
+      1. Indexing-mode migrates embedders from cuda:0 → cuda:1.
+      2. Worker hits CUDA illegal memory mid-index, auto-exits.
+      3. Proxy supervisor respawns worker. Fresh worker loads embedders on
+         home GPU (cuda:0) per HME_RAG_GPU.
+      4. BUT the daemon's in-flight _run_indexing_mode finally-block runs
+         against the dying worker's `_original_rag_device` state, which is
+         now lost. Restore silently becomes a no-op.
+      5. Next time daemon's `_run_indexing_mode` fires (e.g. pipeline reindex),
+         it migrates embedders to cuda:1 again, but this time on a DIFFERENT
+         worker process. Embedders stay stuck on GPU1 even after the session
+         nominally ends. Coder can never spawn because GPU1 is full.
+      6. User has to manually POST /reload-engines {device:cuda:0} then
+         /ensure-loaded to unstick things.
+
+    This function runs on daemon boot. It waits briefly for the shim, then
+    probes GPU usage. If coder's GPU shows >1 GB used by a non-llama-server
+    process (i.e. the worker), it asks the worker to move embedders back to
+    home GPU before the supervisor tries to spawn coder.
+    """
+    # Wait up to 30s for the shim to be ready. On proxy boot the shim and
+    # this daemon start near-simultaneously; the shim loads RAG engines
+    # which takes ~10s.
+    _shim_port = ENV.optional_int("HME_SHIM_PORT", 9098)
+    _shim_url = f"http://127.0.0.1:{_shim_port}"
+    _home_gpu = ENV.optional_int("HME_RAG_GPU", 0)
+    _home_device = f"cuda:{_home_gpu}"
+
+    _ready = False
+    for _w in range(15):
+        try:
+            with urllib.request.urlopen(f"{_shim_url}/health", timeout=2) as _r:
+                _body = json.loads(_r.read())
+                if _body.get("ready"):
+                    _ready = True
+                    break
+        except Exception:
+            pass
+        time.sleep(2)
+    if not _ready:
+        logger.info("boot-recovery: shim not ready within 30s, skipping")
+        return
+
+    # Identify coder's GPU index.
+    coder_spec = None
+    for spec in _supervisor_singleton.instances():
+        if spec.name == "coder":
+            coder_spec = spec
+            break
+    if coder_spec is None:
+        return
+    cuda_idx = _supervisor_singleton._vulkan_to_cuda_index(coder_spec.device)
+    if cuda_idx is None or cuda_idx == _home_gpu:
+        # Same GPU or unknown topology — nothing to recover.
+        return
+
+    # If coder's GPU has significant memory allocated BUT no llama-server is
+    # running on its port, the occupant must be the worker's embedders.
+    # llama-server is a separate process — if coder is healthy, we skip.
+    if _supervisor_singleton._probe_health(coder_spec):
+        return  # coder is running, nothing to recover
+    free_mb = _supervisor_singleton._gpu_free_mb(cuda_idx)
+    # Coder needs ~22 GB on a 22 GB card. If free < 20 GB, something else
+    # is holding memory. That "something" is almost certainly the worker's
+    # embedders — send them home.
+    if free_mb is None or free_mb >= 20000:
+        return
+    logger.warning(
+        f"boot-recovery: GPU{cuda_idx} has only {free_mb} MB free and coder is "
+        f"not running — likely stuck-embedder state from a dead indexing-mode "
+        f"session. Asking shim to move embedders to {_home_device}."
+    )
+    try:
+        _req = urllib.request.Request(
+            f"{_shim_url}/reload-engines",
+            data=json.dumps({"device": _home_device}).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(_req, timeout=300) as _r:
+            _body = json.loads(_r.read())
+        if _body.get("error"):
+            logger.error(f"boot-recovery: reload-engines returned error: {_body['error']}")
+        else:
+            logger.info(f"boot-recovery: embedders restored to {_home_device}: {_body.get('reloaded', [])}")
+    except Exception as e:
+        logger.error(f"boot-recovery: reload-engines request failed: {e}")
+
+
 def _health_loop():
     while True:
         time.sleep(_HEALTH_INTERVAL)
