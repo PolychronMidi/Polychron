@@ -50,6 +50,9 @@ if [ "$MODE" = "forget" ]; then
         _nexus_clear_type REVIEW_CLI_FAILURE
         _nexus_clear_type REVIEW_PARSE_FAILED
         _nexus_clear_type REVIEW_ISSUES
+        _EDIT_COUNT_CLEARED=$(_nexus_count EDIT)
+        _nexus_clear_type EDIT
+        _nexus_mark REVIEW "$_EDIT_COUNT_CLEARED"
         ;;
       warnings)
         _nexus_clear_type REVIEW_CLI_FAILURE
