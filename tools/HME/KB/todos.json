@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 641,
-      "updated_ts": 1776982058.3992639
+      "max_id": 651,
+      "updated_ts": 1776982655.6807353
     }
   },
   {
@@ -46,54 +46,54 @@
     "subs": []
   },
   {
-    "id": 625,
-    "text": "Plumb constraintCount + errorCount into arbiter classification (currently hardcoded 0)",
+    "id": 645,
+    "text": "Plumb constraintCount + errorCount into arbiter classification",
     "activeForm": "Plumbing constraint/error signals into arbiter",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1776982655.680682,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 646,
+    "text": "Remove dead PTY/mirror code path",
+    "activeForm": "Removing dead PTY/mirror code",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1776982655.6806924,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 647,
+    "text": "Remove dead _sseSweepTimer + setMirrorMode + _simpleMessageDiv",
+    "activeForm": "Removing dead state/handlers",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1776982655.6807008,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 648,
+    "text": "Simplify trivial MODEL_ID_MAP identity + drop node-pty dep",
+    "activeForm": "Simplifying MODEL_ID_MAP + deps",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776971642.0158837,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 626,
-    "text": "Remove dead PTY/mirror code path (ctx.mirrorPty never set in browser-only chat)",
-    "activeForm": "Removing dead PTY/mirror code",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776971642.0158937,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 637,
-    "text": "Remove dead _sseSweepTimer field + setMirrorMode no-op + _simpleMessageDiv remnants",
-    "activeForm": "Removing dead state/handlers",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776982058.3992283,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 628,
-    "text": "Simplify trivial MODEL_ID_MAP identity",
-    "activeForm": "Simplifying MODEL_ID_MAP",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776971642.0159092,
+    "ts": 1776982655.6807082,
     "parent_id": 0,
     "subs": []
   },
