@@ -427,8 +427,8 @@ def _load_engines():
         # llama-server instances hold ~9.5 GB (arbiter, Vulkan1 = GPU0) + ~19 GB
         # (coder, Vulkan2 = GPU1) plus compute buffers. Never land a
         # sentence-transformer on a GPU that doesn't have at least _MIN_FREE_GB
-        # free AFTER those are loaded. The llamacpp_supervisor owns that
-        # allocation — see server/llamacpp_supervisor.py for the authoritative
+        # free AFTER those are loaded. llamacpp_daemon owns that allocation
+        # — see tools/HME/mcp/llamacpp_daemon.py for the authoritative
         # topology. Declared in .env (HME_RAG_MIN_FREE_GB).
         _MIN_FREE_GB = ENV.require_float("HME_RAG_MIN_FREE_GB")
         _rag_device = "cpu"
