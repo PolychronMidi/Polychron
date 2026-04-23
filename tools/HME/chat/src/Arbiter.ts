@@ -211,7 +211,7 @@ export async function classifyMessage(
       route: escalated ? "claude" : route,
       confidence, reason, escalated, isError: false,
     };
-    _decisionCache.set(key, { decision, ts: Date.now() });
+    _cacheSet(key, decision);
     return decision;
   } catch {
     return { route: "claude", confidence: 0.5, reason: `arbiter parse failed: ${contentAccum.slice(0, 80)}`, escalated: false, isError: true };
