@@ -150,6 +150,7 @@ export const hybridAdapter: RouterAdapter<HybridStreamInput, HybridStreamOptions
       // and fire the real cancellor the moment it's available — otherwise an
       // early cancel is silently dropped and the stream keeps emitting chunks
       // into a disposed consumer.
+      cb.sessionId?.(syntheticLlamaSessionId());
       let cancelFn: (() => void) | null = null;
       let cancelRequested = false;
       const fireCancelIfReady = () => {
