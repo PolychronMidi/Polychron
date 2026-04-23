@@ -99,7 +99,11 @@ def evolution_patterns() -> str:
         if count > 0:
             signal_mentions[sig] = count
 
-    out = [f"# Evolution Patterns ({total_rounds} rounds)\n"]
+    out = [f"# Evolution Patterns ({total_rounds} rounds from journal archive)\n"]
+    _banner = _journal_freshness_banner()
+    if _banner:
+        out.append(_banner.rstrip())
+        out.append("")
 
     out.append("## Verdict Distribution")
     for v, c in sorted(verdict_counts.items(), key=lambda x: -x[1]):
