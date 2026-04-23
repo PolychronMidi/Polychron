@@ -554,16 +554,41 @@ export class BrowserPanel implements PanelHost {
     this.post({ type: "streamStart", id: localId, route: "local", model: `[local] ${msg.llamacppModel}` });
     this.post({ type: "streamStart", id: hybridId, route: "hybrid", model: `[hybrid] ${msg.llamacppModel}` });
 
-    let doneCount = 0;
+    // Agent-mode runs local + hybrid in parallel. Each stream calls
+    // checkBothDone exactly once on completion. JS is single-threaded
+    // so ++doneCount is atomic per-microtask, BUT a rogue double-call
+    // from either stream (e.g. onDone + onError firing on the same
+    // abort) would trip the >= 2 gate early. A Set of seen labels
+    // makes the completion set explicit and idempotent.
+    const seenDone = new Set<"local" | "hybrid">();
     let drained = false;
+    let persisted = false;
     const cancelFns: Array<() => void> = [];
     const safeDrain = () => { if (!drained) { drained = true; this._drainQueue(); } };
-    const checkBothDone = () => { if (++doneCount >= 2) { this._persistState(); safeDrain(); } };
+    const markDone = (label: "local" | "hybrid") => {
+      if (seenDone.has(label)) return;
+      seenDone.add(label);
+      if (seenDone.size >= 2 && !persisted) {
+        persisted = true;
+        this._persistState();
+        safeDrain();
+      }
+    };
     this._cancelCurrent = () => cancelFns.forEach((fn) => fn());
 
     const ctx = this._ctx;
-    streamAgentMsg(ctx, msg, localId, "local", checkBothDone, checkBothDone, cancelFns);
-    streamAgentHybridMsg(ctx, msg, hybridId, "hybrid", checkBothDone, checkBothDone, cancelFns);
+    streamAgentMsg(
+      ctx, msg, localId, "local",
+      () => markDone("local"),
+      () => markDone("local"),
+      cancelFns,
+    );
+    streamAgentHybridMsg(
+      ctx, msg, hybridId, "hybrid",
+      () => markDone("hybrid"),
+      () => markDone("hybrid"),
+      cancelFns,
+    );
   }
 
   //  Queue & cleanup
