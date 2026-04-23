@@ -298,9 +298,33 @@ class _Supervisor:
                 # health loop adopt it. Otherwise this is a real conflict.
                 if not self._is_listening(spec):
                     rogue = self._find_pid_on_port(spec.port)
+                    # Before aborting: if the shim is reachable, the VRAM is
+                    # almost certainly held by its embedders from a dead
+                    # indexing-mode session (cross-daemon-restart path).
+                    # boot-recovery will reclaim it — let it run instead of
+                    # refusing to start. If the shim is ALSO down, there's
+                    # no remediation path and we should fail loudly.
+                    _shim_reachable = False
+                    try:
+                        _shim_port_probe = ENV.optional_int("HME_SHIM_PORT", 9098)
+                        with urllib.request.urlopen(
+                            f"http://127.0.0.1:{_shim_port_probe}/health", timeout=2
+                        ) as _r:
+                            _body = json.loads(_r.read())
+                            _shim_reachable = bool(_body.get("ready"))
+                    except Exception:
+                        _shim_reachable = False
+                    if _shim_reachable:
+                        logger.warning(
+                            f"daemon: {spec.name} cannot fit on {spec.device} yet "
+                            f"({reason}). Shim is alive — boot-recovery will attempt "
+                            f"to reclaim GPU{cuda_idx}. Proceeding without abort."
+                        )
+                        continue  # skip the "topology OK" log for this spec
                     raise RuntimeError(
                         f"daemon: {spec.name} cannot fit on {spec.device} ({reason}). "
                         f"Port {spec.port} {'held by PID ' + str(rogue) if rogue else 'is free'}. "
+                        f"Shim is unreachable — no automated remediation. "
                         f"Free the GPU (kill orphan llama-server / stop other CUDA "
                         f"process) then restart the daemon."
                     )
