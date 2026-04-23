@@ -33,7 +33,7 @@ function toNum(v, fallback) {
 }
 
 function parseBeatKey(beatKey) {
-  // Use the toNum helper above — `|| 0` swallows both NaN (non-numeric
+  // Use the toNum helper above -- `|| 0` swallows both NaN (non-numeric
   // segment) and 0 (legitimate first-segment value) into the same
   // fallback, hiding malformed beatKey strings as valid zero-beats.
   const parts = (beatKey || '').split(':').map(Number);
