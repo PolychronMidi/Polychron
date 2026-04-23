@@ -207,11 +207,20 @@ def clear_index() -> str:
         from indexing_mode import request_full_reindex
         result = request_full_reindex()
     except Exception as e:
-        logger.warning(f"Indexing mode failed ({e}), falling back to default device")
-        result = _index_main(ctx.PROJECT_ROOT)
-    if result.get("error") or "total_files" not in result:
-        logger.warning(f"GPU-dedicated reindex unavailable ({result.get('error', 'no result')}); falling back to default device")
-        result = _index_main(ctx.PROJECT_ROOT)
+        return f"clear_index error: daemon request failed: {e}"
+    if result.get("error"):
+        # Surface daemon errors explicitly — do NOT fall back to default device.
+        # A half-full GPU (arbiter or other models still loaded) would OOM
+        # on a raw _index_main call. The daemon is the only sanctioned path:
+        # fix the daemon/log-diagnosed issue and retry.
+        return (
+            f"clear_index error: daemon refused indexing-mode: {result['error']}\n"
+            f"Check log/hme-llamacpp_daemon.out for traceback. The daemon "
+            f"owns GPU allocation — do not bypass it by indexing on the "
+            f"default device (risk of OOM against loaded models)."
+        )
+    if "total_files" not in result:
+        return f"clear_index error: daemon returned unexpected shape: {result}"
     return (
         f"Index cleared and rebuilt: {result['total_files']} files, "
         f"{result['indexed']} indexed, {result['chunks_created']} chunks, "
