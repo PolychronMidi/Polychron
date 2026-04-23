@@ -106,6 +106,47 @@ def main() -> int:
                 ],
             })
 
+    # Arc V: blindspots — subsystem coverage gaps. Lifted from observation-only
+    # status surface into the action queue so "we haven't touched this subsystem
+    # in N rounds" becomes a first-class proposal the agent can see + act on.
+    # Priority is between drift (2) and consensus (3): stronger than a dissenting
+    # voter, weaker than preemptive drift.
+    bs = _load(os.path.join(METRICS_DIR, "hme-blindspots.json")) or {}
+    for gap in (bs.get("dark_subsystems") or [])[:3]:
+        sub = gap.get("subsystem") or gap.get("module") or gap.get("name")
+        if not sub:
+            continue
+        rounds = gap.get("rounds_without_writes", gap.get("rounds", "?"))
+        actions.append({
+            "priority": 2,
+            "source": "arc_v_blindspot",
+            "id": f"blindspot:subsystem:{sub}",
+            "category": "investigation",
+            "summary": f"Subsystem '{sub}' has had no file_written events in {rounds} rounds — systemic avoidance",
+            "detail": "Unseen subsystems are the darkest blindspot: we don't know what we don't know. Pick a module in this subsystem for next round's evolution.",
+            "steps": [
+                f"Read one representative module in src/{sub}/",
+                f"i/trace target='{sub} subsystem' — map current coupling & caller landscape",
+                f"Propose an evolution that exercises {sub} in the next round",
+            ],
+        })
+    for orphan in (bs.get("uncovered_modules") or [])[:3]:
+        mod = orphan.get("module") if isinstance(orphan, dict) else orphan
+        if not mod:
+            continue
+        actions.append({
+            "priority": 3,
+            "source": "arc_v_blindspot",
+            "id": f"blindspot:uncovered:{mod}",
+            "category": "investigation",
+            "summary": f"Module '{mod}' has zero KB coverage",
+            "detail": "Edits to this module can't benefit from KB constraints — the KB is blind here.",
+            "steps": [
+                f"i/hme-read target={mod} mode=before — seeds KB via the staleness pass",
+                f"i/learn title='{mod} purpose' content='...' category=architecture — capture first anchor",
+            ],
+        })
+
     # Arc IV: retirement candidates (flappy invariants accumulated without citation)
     eff = _load(os.path.join(METRICS_DIR, "hme-invariant-efficacy.json")) or {}
     for cand in eff.get("retirement_candidates", []):
