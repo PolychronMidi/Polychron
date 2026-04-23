@@ -72,9 +72,11 @@ def assert_writer(domain: str, caller: str) -> None:
     cross-module lifecycle races into loud import-time / call-time errors
     instead of silent duplicate-work bugs.
 
-    `caller` should be `__name__.split('.')[-1]` or a short recognizable
-    module name. The check is substring containment so both "llamacpp_daemon"
-    and "server.tools_analysis.todo" resolve correctly.
+    `caller` should be `__file__` (preferred — stable when a module is run
+    as a script and __name__ becomes "__main__") OR a short identifier
+    containing the owning module's name. The check is substring
+    containment so both "/.../llamacpp_daemon.py" and "server.tools_analysis.todo"
+    resolve correctly.
     """
     owner = _OWNERS.get(domain)
     if owner is None:
@@ -91,7 +93,8 @@ def assert_writer(domain: str, caller: str) -> None:
             f"the same lifecycle cause races (see tonight's duplicate "
             f"llamacpp_supervisor incident). Either route the write "
             f"through {owner!r}, or if the ownership model has truly "
-            f"changed, update _OWNERS explicitly."
+            f"changed, update _OWNERS explicitly. Tip: pass __file__ "
+            f"instead of __name__ when the caller runs as a script."
         )
 
 
