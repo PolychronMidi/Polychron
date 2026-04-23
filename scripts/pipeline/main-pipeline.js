@@ -74,7 +74,6 @@ const POST_COMPOSITION = [
   { label: 'detect-doc-drift',             cmd: 'python3 scripts/pipeline/hme/detect-doc-drift.py' },
   { label: 'extract-generalizations',      cmd: 'python3 scripts/pipeline/hme/extract-generalizations.py' },
   { label: 'synthesize-generalizations',   cmd: 'python3 scripts/pipeline/hme/synthesize-generalizations.py' },
-  { label: 'render-generalizations',       cmd: 'python3 scripts/pipeline/hme/render-generalizations.py' },
   { label: 'compute-evolution-priority',   cmd: 'node scripts/pipeline/hme/compute-evolution-priority.js' },
   { label: 'emit-legacy-override-history', cmd: 'node scripts/pipeline/hme/emit-legacy-override-history.js' },
   { label: 'compute-consensus',            cmd: 'node scripts/pipeline/hme/compute-consensus.js' },
