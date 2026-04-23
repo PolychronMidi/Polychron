@@ -201,6 +201,7 @@ ABANDON_CHECK=ok
 STOP_WORK=ok
 FABRICATION_CHECK=ok
 EARLY_STOP=ok
+EXHAUST_CHECK=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
@@ -216,6 +217,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       stop_work)     STOP_WORK="$_v" ;;
       fabrication_check) FABRICATION_CHECK="$_v" ;;
       early_stop)    EARLY_STOP="$_v" ;;
+      exhaust_check) EXHAUST_CHECK="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
