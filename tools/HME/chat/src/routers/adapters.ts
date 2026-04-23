@@ -62,6 +62,7 @@ export const claudeAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions
   );
 
 // Claude PTY — same shape as pipe but routes through the PTY harness.
+// Note: streamClaudePty's onDone takes a single `usage?` arg (no cost).
 export const claudePtyAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions> =
   wrapLegacyStream<ClaudeStreamInput, ClaudeStreamOptions>(
     "claude",
@@ -74,7 +75,7 @@ export const claudePtyAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOpti
         input.workingDir,
         cb.chunk,
         (id) => cb.sessionId?.(id),
-        (_cost, usage) => {
+        (usage) => {
           if (usage) {
             cb.tokens?.({
               input: usage.inputTokens,
