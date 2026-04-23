@@ -192,8 +192,10 @@ export type StreamOpts = ClaudeStreamOptions | LlamacppStreamOptions | HybridStr
 
 /**
  * Uniform runner: drive an adapter to completion with a consistent
- * result shape. Replaces the 3-way boilerplate in chatStreaming where
- * every route hand-rolled onDone/onError/finalize wiring.
+ * result shape. For callers that need the final StreamResult (no
+ * per-chunk handling). The chatStreaming harness uses its own
+ * runAdapterStream helper that integrates with the HarnessHandle
+ * state-tracking; this helper is for standalone consumers.
  */
 export async function runAdapter<M, O extends BaseStreamOptions>(
   adapter: RouterAdapter<M, O>,
