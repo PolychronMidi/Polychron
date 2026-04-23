@@ -44,15 +44,36 @@ def brief():
     lb = classes.get("load-bearing", 0)
     historical = classes.get("load-bearing-historical", 0)
     flappy = classes.get("flappy", 0)
+    # HCI trend arrow — compare to previous round if timeseries available.
+    hci_trend = ""
+    try:
+        rows = _load_jsonl_tail("output/metrics/hme-arc-timeseries.jsonl", n=3)
+        if len(rows) >= 2 and isinstance(hci, (int, float)):
+            prev_hci = rows[-2].get("hci")
+            if isinstance(prev_hci, (int, float)):
+                delta = hci - prev_hci
+                if delta > 0.5:
+                    hci_trend = f" ↑{delta:+.1f}"
+                elif delta < -0.5:
+                    hci_trend = f" ↓{delta:+.1f}"
+                else:
+                    hci_trend = f" →"
+    except Exception:
+        pass
     lines = [
-        f"HCI={hci}  consensus={stdev} ({div})  drift={drift} ({outliers_n} outliers)  "
+        f"HCI={hci}{hci_trend}  consensus={stdev} ({div})  drift={drift} ({outliers_n} outliers)  "
         f"invariants: lb={lb} hist={historical} flappy={flappy}",
     ]
     if n_actions > 0:
         lines.append(f"{n_actions} action(s) queued:")
         for a in (na.get("actions") or [])[:5]:
-            beyond = " DEFERRED_BEYOND_EXPECTED" if a.get("deferred_beyond_expected") else ""
+            # DEFERRED_BEYOND_EXPECTED previously appeared without explanation.
+            # It means the action has been in the queue longer than its
+            # declared expected-resolution window — surfaces as a nudge to
+            # either act on it or formally retire the recommendation.
+            beyond = " [OVERDUE]" if a.get("deferred_beyond_expected") else ""
             lines.append(f"  [p{a.get('priority')}] {a.get('id')}{beyond}")
+        lines.append("  Act: `i/evolve` to see focus options, or `i/why <invariant-id>` for context.")
     else:
         lines.append("substrate: quiescent (0 actions queued)")
     return "\n".join(lines)
