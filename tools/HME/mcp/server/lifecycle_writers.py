@@ -70,6 +70,29 @@ def register_owner(domain: str, writer: str) -> None:
     _OWNERS[domain] = writer
 
 
+def _caller_stems(caller: str) -> set[str]:
+    """Return all plausible matchable stems from a caller identifier.
+    Handles both file paths (`.../foo/bar.py`) and dotted module names
+    (`foo.bar`) — extracts each path segment's basename without extension.
+    Exact-match equality against `_OWNERS` values is stricter than
+    substring containment (which e.g. would accept "todo_helpers" as
+    matching "todo") and still works for both caller forms.
+    """
+    import os as _os
+    stems: set[str] = set()
+    # Path form: use basename sans extension.
+    base = _os.path.basename(caller)
+    if base:
+        stems.add(_os.path.splitext(base)[0])
+    # Dotted-module form: last segment is the module stem.
+    if "." in caller and "/" not in caller and "\\" not in caller:
+        stems.add(caller.rsplit(".", 1)[-1])
+    # Bare identifier form: the whole string is a stem.
+    if "/" not in caller and "\\" not in caller and "." not in caller:
+        stems.add(caller)
+    return stems
+
+
 def assert_writer(domain: str, caller: str) -> None:
     """Raise RuntimeError if `caller` is not the registered writer for `domain`.
 
@@ -77,11 +100,11 @@ def assert_writer(domain: str, caller: str) -> None:
     cross-module lifecycle races into loud import-time / call-time errors
     instead of silent duplicate-work bugs.
 
-    `caller` should be `__file__` (preferred — stable when a module is run
-    as a script and __name__ becomes "__main__") OR a short identifier
-    containing the owning module's name. The check is substring
-    containment so both "/.../llamacpp_daemon.py" and "server.tools_analysis.todo"
-    resolve correctly.
+    `caller` should be `__file__` (preferred — stable when a module is
+    run as a script and __name__ becomes "__main__") OR a dotted module
+    name like `server.tools_analysis.todo`. The matcher extracts the
+    final path/module segment and compares to the registered owner
+    exactly, so "todo.py" doesn't spuriously match "my_todo_helpers.py".
     """
     owner = _OWNERS.get(domain)
     if owner is None:
@@ -90,7 +113,7 @@ def assert_writer(domain: str, caller: str) -> None:
             f"_OWNERS before calling assert_writer. Known domains: "
             f"{sorted(_OWNERS.keys())}"
         )
-    if owner not in caller:
+    if owner not in _caller_stems(caller):
         raise RuntimeError(
             f"lifecycle_writers: {caller!r} attempted to write domain "
             f"{domain!r} but only {owner!r} may do so. This is a "
