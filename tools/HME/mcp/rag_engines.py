@@ -522,12 +522,17 @@ def _load_engines():
 
         # Code embedder (BAAI/bge-code-v1) — code_chunks table.
         # 1536-dim, Apache 2.0, Qwen2-based, 32K context. fp16 to fit in VRAM.
+        # Cap max_seq_length: a single 32K-token chunk builds an attention
+        # matrix that would request ~64 GiB FP16 — instant OOM. Code chunks
+        # in this repo top out around 1-2K tokens (MAX_CHUNK_LINES=120),
+        # so 2048 leaves headroom without exposing the killer tail.
         try:
             _shared_code_model = SentenceTransformer(
                 CODE_MODEL_NAME, trust_remote_code=True, device=_rag_device,
                 model_kwargs=_fp16_kwargs,
             )
-            logger.info(f"Code embedder: {CODE_MODEL_NAME} on {_shared_code_model.device}")
+            _shared_code_model.max_seq_length = 2048
+            logger.info(f"Code embedder: {CODE_MODEL_NAME} on {_shared_code_model.device} (max_seq=2048)")
         except Exception as e:
             logger.warning(f"Code embedder load failed ({e}), falling back to text embedder for code_chunks")
             _shared_code_model = _shared_model
