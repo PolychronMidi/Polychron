@@ -1066,15 +1066,58 @@ def _run_indexing_mode_locked() -> dict:
             result_data = {"error": f"index_directory failed: {e}"}
 
     finally:
-        # Step 4: Tell shim to restore models to original device
+        # Step 4: Tell shim to restore models to original device.
+        #
+        # If the worker died mid-indexing (CUDA illegal memory → auto-exit
+        # via reload_on_device, or any other crash), the first restore call
+        # will fail because the worker is gone. In that case we WAIT for the
+        # supervisor to respawn it (typical: 8-15s), then re-issue restore
+        # against the fresh worker — but with an explicit device target
+        # (cuda:0) instead of "restore", because the new worker has no
+        # _original_rag_device memory of where embedders were before.
+        # This is the "self-heal across worker crash" loop the user got
+        # angry about having to do manually.
+        _restore_succeeded = False
         try:
             restore_result = _shim_post("/reload-engines", {"device": "restore"}, timeout=300)
             if restore_result.get("error"):
-                logger.error(f"indexing-mode: restore returned error: {restore_result['error']}")
+                logger.warning(f"indexing-mode: restore returned error: {restore_result['error']}")
             else:
                 logger.info(f"indexing-mode: models restored: {restore_result}")
+                _restore_succeeded = True
         except Exception as e:
-            logger.error(f"indexing-mode: restore failed: {e} — models may still be on {indexing_device}")
+            logger.warning(f"indexing-mode: restore failed (likely worker dead mid-flight): {e}")
+
+        if not _restore_succeeded:
+            # Determine the home GPU explicitly — fall back to HME_RAG_GPU
+            # if env reads work; otherwise default to cuda:0.
+            try:
+                _home_gpu = ENV.optional_int("HME_RAG_GPU", 0)
+            except Exception:
+                _home_gpu = 0
+            _home_device = f"cuda:{_home_gpu}"
+            # Wait for fresh worker to be ready before re-issuing.
+            for _wait in range(30):  # ~60s budget
+                try:
+                    _h = urllib.request.urlopen(f"{_SHIM_URL}/health", timeout=2)
+                    _hb = json.loads(_h.read())
+                    if _hb.get("ready"):
+                        logger.info(f"indexing-mode: fresh worker ready (pid={_hb.get('pid')}) — retrying restore on {_home_device}")
+                        break
+                except Exception:
+                    pass
+                time.sleep(2)
+            try:
+                restore_result = _shim_post(
+                    "/reload-engines", {"device": _home_device}, timeout=300,
+                )
+                if restore_result.get("error"):
+                    logger.error(f"indexing-mode: post-respawn restore failed: {restore_result['error']}")
+                else:
+                    logger.info(f"indexing-mode: models restored to {_home_device} on fresh worker: {restore_result.get('reloaded', [])}")
+                    _restore_succeeded = True
+            except Exception as e:
+                logger.error(f"indexing-mode: post-respawn restore request failed: {e}")
 
         # Step 5: Resume coder (only if we suspended it). If the first spawn
         # attempt fails due to VRAM fits (stale CUDA context from the
