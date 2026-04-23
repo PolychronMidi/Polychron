@@ -7,6 +7,47 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 
+# Coupling-aware antagonism warning: if this edit's module and a module
+# edited earlier this turn are registered as a strong antagonist pair
+# (r <= -0.3 in hme-coupling.json), surface it. The pair probably needs
+# SEPARATE commits — antagonistic modules resist simultaneous change and
+# commingling them masks which edit is responsible for a downstream drift.
+# Observe-only warning (stderr); never blocks. Silent when no antagonists
+# are registered (data-driven dormancy).
+_TURN_EDIT_STATE="${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt"
+_MODULE_BASE=$(basename "$FILE" 2>/dev/null | sed 's/\.[^.]*$//')
+if [ -n "$_MODULE_BASE" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -f "${PROJECT_ROOT}/output/metrics/hme-coupling.json" ]; then
+  # Check against prior edits this turn
+  if [ -f "$_TURN_EDIT_STATE" ]; then
+    while IFS= read -r _prior_mod; do
+      [ -z "$_prior_mod" ] && continue
+      [ "$_prior_mod" = "$_MODULE_BASE" ] && continue
+      _AB_HIT=$(python3 - "$_MODULE_BASE" "$_prior_mod" "${PROJECT_ROOT}/output/metrics/hme-coupling.json" <<'PYEOF' 2>/dev/null
+import json, sys
+a, b, cf = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    d = json.load(open(cf))
+    for bridge in (d.get("antagonist_bridges") or []):
+        ma = bridge.get("pair_a") or bridge.get("module_a") or ""
+        mb = bridge.get("pair_b") or bridge.get("module_b") or ""
+        if {ma, mb} == {a, b}:
+            r = bridge.get("r") or bridge.get("correlation") or "?"
+            print(f"{r}")
+            break
+except Exception:
+    pass
+PYEOF
+)
+      if [ -n "$_AB_HIT" ]; then
+        echo "[hme] COUPLING WARNING: $_MODULE_BASE ↔ $_prior_mod are registered antagonists (r=$_AB_HIT). Consider separate commits — commingling antagonistic edits makes drift attribution harder." >&2
+      fi
+    done < "$_TURN_EDIT_STATE"
+  fi
+  # Record this edit for the rest of the turn
+  mkdir -p "$(dirname "$_TURN_EDIT_STATE")" 2>/dev/null
+  echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
+fi
+
 # Mid-pipeline src edit block — if npm run main is running (run.lock exists),
 # deny edits to src/ (composition code) to prevent abandoned-pipeline writes.
 # tools/HME, scripts, doc, lab remain editable — you can improve tooling while
