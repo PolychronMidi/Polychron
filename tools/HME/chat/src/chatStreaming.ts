@@ -370,25 +370,38 @@ export function streamHybridMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
   const trimmed = trimHistoryToFit(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
   const history = [...contextMessages, ...trimmed];
 
+  // Migrated to RouterAdapter: error / cancel / done are normalized in
+  // a single Promise<StreamResult> so the harness sees one shape
+  // regardless of backend. Compare to streamClaudeMsg + streamLlamacppMsg
+  // for the legacy callback patterns those routes still use.
   runStream({
     ctx, assistantId, route: "hybrid",
     preludeChunk: "[HME] Enriching with KB context…",
     start: (h) => {
-      const onDone = () => {
+      const handle = hybridAdapter.stream(
+        { message: msg.text, history, workingDir: ctx.projectRoot },
+        {
+          onChunk: h.onChunk,
+          llamacpp: llamacppOptsFromMsg(msg),
+        },
+      );
+      h.setCancel(() => handle.cancel());
+      handle.done.then((result) => {
         if (h.isAborted()) return;
+        if (!result.ok) {
+          if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
+          ctx.postError("hybrid", result.error ?? "unknown error");
+          return;
+        }
         finalizeStream(h, ctx, assistantId, "hybrid", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
         h.safeEnd();
-      };
-      const onError = (err: string) => {
-        if (h.isAborted()) return;
+      }).catch((err: any) => {
+        // RouterAdapter contract says result.error carries failures, not
+        // a rejected promise — but defend against legacy implementations
+        // that might still throw.
         if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
-        ctx.postError("hybrid", err);
-      };
-      attachPromiseCancel(
-        h,
-        streamHybrid(msg.text, history, llamacppOptsFromMsg(msg), ctx.projectRoot, h.onChunk, onDone, onError),
-        (err) => ctx.postError("hybrid", err),
-      );
+        ctx.postError("hybrid", String(err?.message ?? err));
+      });
     },
   });
 }
