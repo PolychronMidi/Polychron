@@ -129,8 +129,9 @@ def generalizations_report() -> str:
         f"Candidates below specificity {meta.get('specificity_threshold', '?')}: "
         f"{len(candidates)}",
         "",
-        "Patterns that might generalize beyond Polychron — these go into",
-        "`doc/hme-discoveries.md` as DRAFT templates requiring human polish.",
+        "Patterns that might generalize beyond Polychron — these go through",
+        "synthesize-generalizations → `hme-discoveries-draft.jsonl` → human promotion",
+        "via `learn(action='promote_discovery')` → `doc/hme-discoveries.md`.",
         "",
     ]
     for c in candidates[:15]:
