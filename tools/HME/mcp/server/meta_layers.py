@@ -686,8 +686,20 @@ def _write_counterfactual(pred: dict) -> None:
         with open(_ms.counterfactual_file, "a") as f:
             f.write(json.dumps(pred) + "\n")
         _trim_counterfactuals_file()
-    except OSError:
-        pass
+    except OSError as _cf_err:
+        # Counterfactual prediction data feeds Brier calibration scoring.
+        # Silent loss = falsely-healthy calibration. Surface via LIFESAVER
+        # so the next tool response flags the observability gap explicitly.
+        logger.error(f"counterfactual append FAILED: {type(_cf_err).__name__}: {_cf_err}")
+        try:
+            from server import context as _ctx
+            _ctx.register_critical_failure(
+                "meta_layers.counterfactual",
+                f"counterfactual prediction lost ({type(_cf_err).__name__}); Brier calibration now degraded",
+                severity="CRITICAL",
+            )
+        except Exception as _life_err:
+            logger.debug(f"LIFESAVER register failed: {_life_err}")
 
 
 def _trim_counterfactuals_file(max_lines: int = 2000) -> None:
