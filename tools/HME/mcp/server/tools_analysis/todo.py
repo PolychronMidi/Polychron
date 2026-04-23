@@ -121,7 +121,7 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
     # Single-writer invariant: only tools_analysis.todo may write the store.
     try:
         from server.lifecycle_writers import assert_writer
-        assert_writer("hme-todo-store", __name__)
+        assert_writer("hme-todo-store", __file__)
     except ImportError:
         pass
     return {
