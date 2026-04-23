@@ -153,6 +153,35 @@ ENUMERATION_PHRASES = (
     "honest, final",
     "honest list",
     "genuinely low-leverage",
+    # Expanded 2026-04-23 from the catastrophic-failure debut turn. The
+    # final text of that turn used these exact phrases without them
+    # triggering the detector — they are now load-bearing members of
+    # the list.
+    "pick any to spin",
+    "queue next",
+    "the next time",
+    "nothing to queue",
+    "each is a",
+    "minute focused task",
+    "minute task",
+    "hour focused",
+    "hour task",
+    "small effort once",
+    "medium effort",
+    "large effort",
+    "low-leverage nit",
+    "polish",
+    "worth doing but",
+    "not blocking",
+    "deferred for",
+    "deferred to",
+    "leaves room for",
+    "future round",
+    "next round could",
+    "would benefit from",
+    "could benefit from",
+    "nice-to-have",
+    "nice to have",
 )
 
 
