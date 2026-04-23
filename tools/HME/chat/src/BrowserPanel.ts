@@ -289,6 +289,16 @@ export class BrowserPanel implements PanelHost {
       this._cancelCurrent?.();
       this._cancelCurrent = undefined;
       this._messageQueue = [];
+      // Ghost-message cleanup: remove the trailing partially-streamed
+      // assistant message from state so the UI doesn't show a half-written
+      // orphan that can't be edited or continued. Persister flushed the
+      // partial earlier for crash-safety; on user cancel we drop it.
+      const last = this._state.messages[this._state.messages.length - 1];
+      if (last && last.role === "assistant" && last.id) {
+        const removedId = last.id;
+        this._state.messages.pop();
+        this.post({ type: "messageRemoved", id: removedId });
+      }
       this.post({ type: "cancelConfirmed" });
       this._isStreaming = false;
     },
