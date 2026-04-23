@@ -14,6 +14,13 @@ if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
   exit 2
 fi
 
+# Block edits to the auto-memory directory (parity with pretooluse_write.sh).
+# Memories are deprecated; HME KB (i/learn) is canonical.
+if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
+  _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
+  exit 2
+fi
+
 # Block edits to misplaced log/, metrics/, or tmp/ directories
 if echo "$FILE" | grep -qE '/(log|tmp)/'; then
   if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|tmp)/'; then
