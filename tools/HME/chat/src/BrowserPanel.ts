@@ -582,8 +582,7 @@ export class BrowserPanel implements PanelHost {
     }]).catch((e: any) => this.postError("transcript", String(e)));
 
     const userMsg: ChatMessage = { id: uid(), role: "user", text: msg.text, route: "local" as any, ts: Date.now() };
-    this._state.messages.push(userMsg);
-    this._persistState();
+    this._applyStateChange((s) => { s.messages.push(userMsg); });
     this.post({ type: "message", message: userMsg });
     this.post({ type: "notice", level: "info", text: "🤖 Agent mode: running local + hybrid in parallel…" });
 
