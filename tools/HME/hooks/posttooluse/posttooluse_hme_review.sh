@@ -57,9 +57,29 @@ if [ "$MODE" = "forget" ]; then
       warnings)
         _nexus_clear_type REVIEW_CLI_FAILURE
         _nexus_clear_type REVIEW_PARSE_FAILED
-        # Prefer the precise count when present; otherwise record "?" so the
-        # stop hook still blocks on unknown-count warnings.
-        if [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then
+        # Detect "scaffolding-only" warnings: HOOK CHANGE / DOC CHECK /
+        # SKIPPED / KB reminders are prompts-to-consider, not code defects.
+        # workflow_audit.py already filters them out of the actionable count
+        # (line 467-469). If every warning in this review is a scaffolding
+        # reminder, treat it as CLEAN for nexus purposes — otherwise the
+        # stop hook blocks forever on reviews that have nothing actionable.
+        _ACTIONABLE_COUNT=$(echo "$TOOL_RESULT" \
+          | awk '/^## Warnings \(/,/^##[^#]/' \
+          | grep -cE '^\s*- ' \
+          | head -1)
+        _SCAFFOLD_COUNT=$(echo "$TOOL_RESULT" \
+          | awk '/^## Warnings \(/,/^##[^#]/' \
+          | grep -cE '\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):' \
+          | head -1)
+        if [ "${_ACTIONABLE_COUNT:-0}" -gt 0 ] \
+           && [ "${_SCAFFOLD_COUNT:-0}" -eq "${_ACTIONABLE_COUNT:-0}" ]; then
+          # All warnings are scaffolding — treat as clean for nexus.
+          _nexus_clear_type REVIEW_ISSUES
+          _EDIT_COUNT_CLEARED=$(_nexus_count EDIT)
+          _nexus_clear_type EDIT
+          _nexus_mark REVIEW "$_EDIT_COUNT_CLEARED"
+          echo "NEXUS: review warnings are all scaffolding reminders (no actionable defects); EDIT cleared." >&2
+        elif [ -n "$ISSUES_COUNT" ] && [ "$ISSUES_COUNT" -gt 0 ] 2>/dev/null; then
           _nexus_mark REVIEW_ISSUES "$ISSUES_COUNT"
           echo "NEXUS: ${ISSUES_COUNT} review issue(s) found — fix and re-run i/review mode=forget until 0." >&2
         else
