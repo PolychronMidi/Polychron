@@ -21,7 +21,12 @@ logger = logging.getLogger("HME")
 
 def codebase_health() -> str:
     """Full codebase health sweep: architectural violations, dead code, convention checks, symbol importance, and doc sync. Replaces 5 separate health tools."""
-    from file_walker import walk_code_files
+    from file_walker import walk_code_files, get_project_root, init_config
+    # Defensive self-heal: if a reload left file_walker without an initialized
+    # project_root, walk_code_files yields nothing and the report is falsely
+    # "ALL CLEAN (0 files)". Reinitialize from ctx before walking.
+    if not get_project_root() and ctx.PROJECT_ROOT:
+        init_config(ctx.PROJECT_ROOT)
     issues_by_severity = {"CRITICAL": [], "WARN": [], "NOTE": []}
     file_count = 0
     for fpath in walk_code_files():
