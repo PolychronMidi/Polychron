@@ -709,6 +709,54 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"FAIL: single-writer registry -- probe crashed: {type(_e).__name__}: {_e}")
 
+    # Probe 5: every registered owner MUST call assert_writer in its source.
+    # A registered domain with no runtime enforcement is the exact failure
+    # mode we're defending against. This grep-based probe catches the case
+    # where a consumer's try/except ImportError quietly swallowed the
+    # import and no one noticed the invariant was off.
+    try:
+        from server.lifecycle_writers import all_domains as _all_domains
+        mcp_root = os.path.abspath(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "..", "..", "..",  # tools_analysis/evolution/ → tools_analysis/ → server/ → mcp/
+        ))
+        missing_calls = []
+        for domain, owner_stem in _all_domains().items():
+            # Find the owner's source file by walking mcp_root.
+            found_path = None
+            for root, _dirs, files in os.walk(mcp_root):
+                if owner_stem + ".py" in files:
+                    found_path = os.path.join(root, owner_stem + ".py")
+                    break
+            if found_path is None:
+                missing_calls.append(f"{domain} → source for {owner_stem!r} not found")
+                continue
+            try:
+                with open(found_path, encoding="utf-8", errors="replace") as _of:
+                    src = _of.read()
+                # Match assert_writer("domain", ...) OR assert_writer('domain', ...)
+                if f'assert_writer("{domain}"' not in src and f"assert_writer('{domain}'" not in src:
+                    missing_calls.append(f"{domain} → {owner_stem}.py has no assert_writer({domain!r}, ...) call")
+            except OSError as _ro_err:
+                missing_calls.append(f"{domain} → {found_path}: {_ro_err}")
+        if missing_calls:
+            results.append(
+                "FAIL: invariant enforcement coverage -- registered domains "
+                "without any assert_writer() call in owner source:\n"
+                + "\n".join(f"    - {m}" for m in missing_calls)
+                + "\n    (registered but unenforced invariants are worse than "
+                "not declaring them — future callers will trust the registry)"
+            )
+        else:
+            results.append(
+                f"PASS: invariant enforcement coverage -- all {len(_all_domains())} "
+                f"registered owners call assert_writer in their source"
+            )
+    except ImportError:
+        results.append("INFO: invariant enforcement coverage -- lifecycle_writers not importable, skipped")
+    except Exception as _e:
+        results.append(f"WARN: invariant enforcement coverage -- probe failed: {type(_e).__name__}: {_e}")
+
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
