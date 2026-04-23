@@ -426,7 +426,7 @@ def _run_selftest_prereq() -> str:
     effect the decorator would have performed).
     """
     try:
-        from server.tools_analysis.evolution_admin import hme_selftest
+        from server.tools_analysis.evolution.evolution_admin import hme_selftest
         result = hme_selftest(verbose=False)
         if _selftest_clean(result) and step_index(state()) <= step_index("selftest_ok"):
             set_state("selftest_ok")
