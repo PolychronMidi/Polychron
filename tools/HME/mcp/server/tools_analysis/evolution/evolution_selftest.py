@@ -732,20 +732,27 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"WARN: GPU attribution -- probe failed: {type(_e).__name__}: {_e}")
 
     # Probe 4: single-writer registry must be loadable and non-empty.
-    # A broken import or an empty _OWNERS means assert_writer is no-ops,
-    # silently removing the invariant. If the module isn't on path at all
-    # (standalone script), this is INFO; if the module IS on path but
-    # loads badly, it's a real FAIL.
+    # Adopts Witness for confidence reporting — a registry that loads
+    # but has 0 domains is structurally indistinguishable from "invariant
+    # disabled," so an explicit positive-evidence requirement matters here.
     try:
         from server.lifecycle_writers import all_domains as _all_domains
-        domains = _all_domains()
-        if not domains:
-            results.append("FAIL: single-writer registry -- _OWNERS is empty; invariants disabled")
-        else:
-            results.append(
-                f"PASS: single-writer registry -- {len(domains)} domains registered "
-                f"({', '.join(sorted(domains.keys())[:4])}{'…' if len(domains) > 4 else ''})"
-            )
+        from server.probe_witness import probe_witness
+        with probe_witness("single-writer registry") as _w:
+            domains = _all_domains()
+            _w.observed("domain_count", len(domains))
+            _w.observed("domains", sorted(domains.keys()))
+            _w.set_falsification("_OWNERS dict empty (invariants would silently no-op)")
+            if not domains:
+                _w.asserted(False)
+                results.append("FAIL: single-writer registry -- _OWNERS is empty; invariants disabled")
+            else:
+                _w.asserted(True, positive_evidence=f"{len(domains)} domains registered with non-empty owner mappings")
+                _w.caveat("registry loaded does NOT prove assert_writer is called at every protected mutation site (probe 5 covers that)")
+                results.append(
+                    f"PASS[{_w.confidence()}]: single-writer registry -- {len(domains)} domains registered "
+                    f"({', '.join(sorted(domains.keys())[:4])}{'…' if len(domains) > 4 else ''})"
+                )
     except ImportError as _imp_err:
         results.append(f"WARN: single-writer registry -- module not importable: {_imp_err}")
     except Exception as _e:
