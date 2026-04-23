@@ -552,57 +552,49 @@ def hme_selftest(verbose: bool = False) -> str:
     # any of these three means the system's own description of its health
     # is a lie and investigation is blocked.
 
-    # Probe 1: every running llama-server MUST be a child of llamacpp_daemon.
-    # Tonight's duplicate-supervisor bug: worker.py's own supervisor spawned
-    # a parallel coder, silently racing the daemon. Selftest reported READY
-    # while two coders fought for GPU 1.
+    # Probe 1: exactly ONE llamacpp_daemon may run, and the llama-server
+    # instance count must not exceed the declared topology (arbiter + coder = 2).
+    # Tonight's duplicate-supervisor bug showed up as two supervisors
+    # racing to spawn the same models; catching "more than 2 llama-servers"
+    # or "more than 1 daemon" flags that class of bug directly.
+    # (Can't check ppid because llama-server is spawned start_new_session=True,
+    # so systemd reparents it after daemon restart — legitimate behavior.)
     try:
         import subprocess as _sp_probe
-        out = _sp_probe.check_output(
-            ["pgrep", "-af", "tools/bin/llama-server"],
-            stderr=_sp_probe.DEVNULL, timeout=3,
-        ).decode(errors="replace")
-        rogue = []
-        for line in out.strip().splitlines():
-            parts = line.split(None, 1)
-            if not parts:
-                continue
-            try:
-                pid = int(parts[0])
-            except ValueError:
-                continue
-            # Look up ppid chain: llama-server's ppid should resolve to
-            # llamacpp_daemon (directly or via a supervisor/shell hop).
-            try:
-                with open(f"/proc/{pid}/status") as _st:
-                    ppid_line = next(
-                        (ln for ln in _st if ln.startswith("PPid:")),
-                        "PPid:\t0",
-                    )
-                ppid = int(ppid_line.split()[1])
-                parent_cmd = ""
-                if ppid > 0:
-                    with open(f"/proc/{ppid}/cmdline") as _cm:
-                        parent_cmd = _cm.read().replace("\0", " ")
-                if "llamacpp_daemon" not in parent_cmd:
-                    rogue.append(f"PID {pid} parent={parent_cmd[:80] or f'pid {ppid}'}")
-            except FileNotFoundError:
-                continue
-            except Exception as _rog_err:
-                logger.debug(f"selftest: rogue-probe skipped pid {pid}: {_rog_err}")
-        if rogue:
+        daemon_out = _sp_probe.run(
+            ["pgrep", "-f", "llamacpp_daemon.py"],
+            capture_output=True, text=True, timeout=3,
+        )
+        daemon_pids = [p for p in daemon_out.stdout.strip().split() if p]
+        ls_out = _sp_probe.run(
+            ["pgrep", "-f", "tools/bin/llama-server"],
+            capture_output=True, text=True, timeout=3,
+        )
+        ls_pids = [p for p in ls_out.stdout.strip().split() if p]
+
+        if len(daemon_pids) > 1:
             results.append(
-                "FAIL: spawner-ownership -- llama-server not owned by "
-                "llamacpp_daemon: " + "; ".join(rogue[:3])
-                + " (single-writer invariant violated — see tonight's incident)"
+                f"FAIL: daemon uniqueness -- {len(daemon_pids)} llamacpp_daemon "
+                f"processes running (PIDs {daemon_pids}); only one may own llama-server "
+                f"lifecycle per single-writer invariant"
+            )
+        elif len(daemon_pids) == 0:
+            results.append("WARN: daemon uniqueness -- no llamacpp_daemon running")
+        else:
+            results.append(f"PASS: daemon uniqueness -- 1 llamacpp_daemon (PID {daemon_pids[0]})")
+
+        # Declared topology is 2 (arbiter + coder). More than 2 means a
+        # rogue spawner — exactly tonight's incident signature.
+        if len(ls_pids) > 2:
+            results.append(
+                f"FAIL: llama-server count -- {len(ls_pids)} processes running "
+                f"(PIDs {ls_pids}); topology declares arbiter + coder = 2. "
+                f"A rogue spawner is active — check for duplicate supervisor modules."
             )
         else:
-            results.append("PASS: spawner-ownership -- all llama-server spawns traced to llamacpp_daemon")
+            results.append(f"PASS: llama-server count -- {len(ls_pids)}/2 expected")
     except FileNotFoundError:
         results.append("WARN: spawner-ownership -- pgrep unavailable, probe skipped")
-    except _sp_probe.CalledProcessError:
-        # pgrep returns 1 when no matches — that's valid (no llama-server up).
-        results.append("PASS: spawner-ownership -- no llama-server processes found")
     except Exception as _e:
         results.append(f"WARN: spawner-ownership -- probe failed: {type(_e).__name__}: {_e}")
 
