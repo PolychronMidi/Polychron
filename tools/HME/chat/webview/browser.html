@@ -1123,6 +1123,7 @@ function appendMessage(msg) {
   }
 
   messages.appendChild(div);
+  _cacheMessage(msg);
   _enforceMessageDomCap();
   scrollToBottom();
 }
