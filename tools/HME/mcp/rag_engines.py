@@ -832,12 +832,16 @@ def reload_on_device(target_device: str) -> dict:
             if _torch.cuda.is_available():
                 _torch.cuda.empty_cache()
 
-        # Reload code embedder
+        # Reload code embedder. Cap max_seq_length here too — fresh
+        # SentenceTransformer instances default to the model's
+        # max_position_embeddings (32K for bge-code-v1) which OOMs the
+        # attention matrix for long inputs. Match the boot-time cap.
         try:
             new_code = SentenceTransformer(
                 CODE_MODEL_NAME, trust_remote_code=True, device=target_device,
                 model_kwargs=_fp16_kwargs,
             )
+            new_code.max_seq_length = 2048
             freed = _swap_gpu_instance("code_model", new_code)
             _flush_cuda()
             reloaded.append(f"code:{CODE_MODEL_NAME}")
