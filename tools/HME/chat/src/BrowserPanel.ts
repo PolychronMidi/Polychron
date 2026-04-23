@@ -691,9 +691,11 @@ export class BrowserPanel implements PanelHost {
     BrowserPanel.current = undefined;
     this._shim.dispose();
     try { this._persistState(); } catch (e) { console.error(`[HME] dispose: _persistState failed: ${(e as any)?.message ?? e}`); }
-    const narrativeWork = Promise.resolve(this._transcript.forceNarrative?.());
-    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5000));
-    await Promise.race([narrativeWork, timeout]);
+    // Fire-and-forget the final narrative. Previously we awaited up to 5s —
+    // with the narrative callback now capped at 3s per call, there's nothing
+    // left to wait for here: the final narrative either completes within its
+    // own budget or gives up. Blocking dispose on it only delays tab close.
+    this._transcript.forceNarrative?.();
     for (const res of this._sseClients) {
       try { res.end(); } catch { /* ignore */ }
     }
