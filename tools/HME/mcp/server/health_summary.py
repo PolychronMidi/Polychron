@@ -116,12 +116,53 @@ def _recent_errors(log_path: str, minutes: int = 10) -> list[str]:
     return errors
 
 
+def _probe_versions(project_root: str) -> tuple[str, list[str]]:
+    """Probe canonical + live versions, return (banner_line, mismatch_list)."""
+    try:
+        versions_path = os.path.join(project_root, "tools", "HME", "config", "versions.json")
+        with open(versions_path) as f:
+            canonical = json.load(f)
+    except Exception as e:
+        return f"  versions: canonical file unreadable ({e})", []
+    live = {}
+    for name, url in [
+        ("daemon", "http://127.0.0.1:7735/version"),
+        ("worker", "http://127.0.0.1:9098/version"),
+    ]:
+        try:
+            with urllib.request.urlopen(url, timeout=2) as r:
+                live[name] = json.loads(r.read()).get("version", "?")
+        except Exception:
+            live[name] = "unreachable"
+    mismatches = [
+        f"{name}: live={live[name]} canonical={canonical.get(name, '?')}"
+        for name in ("daemon", "worker")
+        if live.get(name) not in ("unreachable", "?", canonical.get(name))
+    ]
+    banner = (
+        f"  versions: daemon={live.get('daemon')} worker={live.get('worker')} "
+        f"canonical={canonical.get('worker')}"
+    )
+    if mismatches:
+        banner += "  ** DRIFT **"
+    return banner, mismatches
+
+
 def health() -> str:
     """Operator health summary. One call, all signals."""
     project_root = ENV.optional("PROJECT_ROOT", "") or os.path.dirname(
         os.path.dirname(os.path.abspath(__file__))
     )
     lines: list[str] = ["## HME Health Summary", ""]
+
+    # Version consistency — surfaced top so drift is unmissable.
+    v_banner, v_mismatches = _probe_versions(project_root)
+    lines.append("### Versions")
+    lines.append(v_banner)
+    if v_mismatches:
+        for m in v_mismatches:
+            lines.append(f"    ! {m}")
+    lines.append("")
 
     # Processes
     lines.append("### Processes")
