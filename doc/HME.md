@@ -274,6 +274,23 @@ Selftest now runs these additional structural probes beyond the legacy 17:
 
 Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert the corresponding probe catches them — `run-all.sh` runs the full battery.
 
+### Stop-hook behavioral detectors
+
+Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes eight detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop.sh) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
+
+| Detector | Catches |
+|---|---|
+| `poll_count` | 2+ background-task status polls in one turn (wait-and-poll antipattern) |
+| `idle_after_bg` | Launched a pipeline in background then stopped without substantive follow-up work |
+| `psycho_stop` | (A) background job + ScheduleWakeup; (B) admit-and-stop (final text enumerates pending work, no tool calls follow); (C) survey-and-ask (asks permission after directive already granted authority) |
+| `ack_skip` | HME surfaced a CRITICAL/FAIL this turn but no Edit/Write followed |
+| `abandon_check` | Spawned an Agent for KB work instead of using HME tools directly |
+| `stop_work` | Final turn is dismissive ("no response requested", "all done") or text-only and < 200 chars |
+| `fabrication_check` | Asserted a quantitative pipeline invariant ("held steady", "stayed constant") without reading the artifact that would prove it |
+| `early_stop` | Open-ended HME round ("do all" / "anything missing" / "push further") + final text enumerated remaining gaps + no tool calls followed. KB `dae793e748f9` — the "anything missing? / do all" ceremony is formally antipattern. |
+
+Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a `main()` that prints one verdict line, (2) register in `DETECTORS` in `run_all.py`, (3) add a block branch in `stop.sh`. Pair with a fixture under `scripts/detectors/fixtures/` and a chaos injector under `scripts/chaos/` — an un-chaos-verified detector decays silently into an always-PASS.
+
 ### Chat invariants (tonight's pass added these guarantees)
 
 | Invariant | Where enforced | Failure mode it prevents |
