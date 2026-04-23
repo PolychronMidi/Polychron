@@ -280,14 +280,10 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
   runStream({
     ctx, assistantId, route,
     start: (h) => {
-      // Claude has two backends (PTY hook-aware + pipe fallback) and
-      // unique-among-routes needs (sessionId capture, token usage
-      // validation, model-mismatch detection). The adapter handles
-      // sessionId + usage via normalized callbacks; PTY fallback to
-      // pipe still uses a direct legacy-function path because it's a
-      // mid-stream SWITCH, not a fresh launch, and goes through the
-      // PTY-specific onRawData / onPtyReady hooks that aren't in the
-      // adapter contract.
+      // Pipe mode uses --output-format stream-json — discrete events only for
+      // the new turn, no TUI replay. Claude needs its own adapter-driven path
+      // (not runAdapterStream) because of sessionId capture + model-mismatch
+      // detection unique to this route.
       const onCompleted = (usage?: TokenUsage) => {
         if (h.isAborted()) return;
         ctx.updateContextTracker(h.state.text, h.state.thinking, msg.claudeModel, usage);
@@ -319,84 +315,33 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
         if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
         ctx.postError("claude", err);
       };
-      // Start PTY via the adapter. On PTY-unavailable error, fall back
-      // to pipe mode via the pipe adapter. Both report sessionId via
-      // onSessionId — the state update is uniform.
-      const startPipeFallback = () => {
-        const pipeHandle = claudeAdapter.stream(
-          { message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot },
-          {
-            onChunk: h.onChunk,
-            claude: claudeOpts,
-            // Hard wall-clock cap. Without this, runaway thinking or a
-            // hung stdio pipe can leave Claude streaming indefinitely
-            // with no user recourse beyond manual cancel. 300s is
-            // generous enough for thorough thinking, tight enough to
-            // surface stuck streams.
-            deadlineMs: 300_000,
-            onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
-            onTokenUsage: (u) => {
-              onCompleted({
-                inputTokens: u.input ?? 0,
-                outputTokens: u.output ?? 0,
-                usedPct: u.usedPct,
-              } as TokenUsage);
-            },
+      const pipeHandle = claudeAdapter.stream(
+        { message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot },
+        {
+          onChunk: h.onChunk,
+          claude: claudeOpts,
+          // Hard wall-clock cap. Without this, runaway thinking or a hung
+          // stdio pipe can leave Claude streaming indefinitely with no
+          // user recourse beyond manual cancel. 300s is generous enough
+          // for thorough thinking, tight enough to surface stuck streams.
+          deadlineMs: 300_000,
+          onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
+          onTokenUsage: (u) => {
+            onCompleted({
+              inputTokens: u.input ?? 0,
+              outputTokens: u.output ?? 0,
+              usedPct: u.usedPct,
+            } as TokenUsage);
           },
-        );
-        h.setCancel(() => pipeHandle.cancel());
-        pipeHandle.done.then((result) => {
-          if (!result.ok) onError(result.error ?? "unknown error");
-          // onCompleted was already called via onTokenUsage; if the
-          // stream ended without tokens, still finalize.
-          else if (!result.tokens) onCompleted(undefined);
-        });
-      };
-      // Pipe mode is the default. PTY mode re-renders the ENTIRE prior
-      // transcript to the terminal on every `--resume` turn, and the PTY
-      // capture treats that replay as new response content — so a one-word
-      // user message comes back as pages of prior-session transcript. Pipe
-      // mode uses --output-format stream-json, which emits discrete events
-      // ONLY for the new turn — no replay, no TUI chrome capture.
-      //
-      // PTY is still reachable for the mirror-terminal path (raw terminal
-      // passthrough for a separate debug window). Otherwise, pipe.
-      if (!ctx.mirrorPty) {
-        startPipeFallback();
-      } else {
-        let _ptyErrorFallback = false;
-        const ptyHandle = claudePtyAdapter.stream(
-          { message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot },
-          {
-            onChunk: h.onChunk,
-            claude: claudeOpts,
-            deadlineMs: 300_000,  // same hard cap as pipe — a hung PTY is worse
-            onSessionId: (sessionId) => { ctx.state.claudeSessionId = sessionId; },
-            onTokenUsage: (u) => {
-              onCompleted({
-                inputTokens: u.input ?? 0,
-                outputTokens: u.output ?? 0,
-                usedPct: u.usedPct,
-              } as TokenUsage);
-            },
-            onRawData: (raw) => ctx.mirrorPty!.onRawData(raw),
-            onPtyReady: (fn) => ctx.mirrorPty!.onPtyReady(fn),
-          },
-        );
-        h.setCancel(() => ptyHandle.cancel());
-        ptyHandle.done.then((result) => {
-          if (_ptyErrorFallback) return;
-          if (h.isAborted()) return;
-          if (!result.ok) {
-            const err = result.error ?? "unknown PTY error";
-            console.log(`[HME Chat] PTY unavailable (${err}), falling back to pipe via claudeAdapter`);
-            _ptyErrorFallback = true;
-            startPipeFallback();
-            return;
-          }
-          if (!result.tokens) onCompleted(undefined);
-        });
-      }
+        },
+      );
+      h.setCancel(() => pipeHandle.cancel());
+      pipeHandle.done.then((result) => {
+        if (!result.ok) onError(result.error ?? "unknown error");
+        // onCompleted was already called via onTokenUsage; if the stream
+        // ended without tokens, still finalize.
+        else if (!result.tokens) onCompleted(undefined);
+      });
     },
   });
 }
