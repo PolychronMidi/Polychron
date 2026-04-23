@@ -366,23 +366,18 @@ fi
 # and bypasses KB enrichment. Block and give the exact native equivalent.
 _TRIMMED=$(echo "$CMD" | sed 's/^[[:space:]]*//')
 if echo "$_TRIMMED" | grep -qE '^grep\b'; then
-  _PATTERN=$(echo "$_TRIMMED" | sed -E 's/^grep[[:space:]]+(-[^ ]+ )*//; s/[[:space:]].*//')
-  _emit_block "Use the Grep tool instead of Bash grep — it is KB-enriched and context-aware.
-  Grep pattern=\"${_PATTERN}\" [path=...] [glob=\"*.ts\"] [output_mode=content|files_with_matches|count] [-i=true] [-C=3]"
+  _emit_block "Use the Grep tool instead of Bash grep."
   exit 2
 fi
 if echo "$_TRIMMED" | grep -qE '^(cat|head|tail)\b'; then
   _FILE=$(echo "$_TRIMMED" | awk '{print $NF}')
   if echo "$_FILE" | grep -qE '\.(js|ts|sh|py|json|md)$'; then
-    _emit_block "Use the Read tool instead of Bash cat/head/tail — it is KB-enriched and context-aware.
-  Read file_path=\"${_FILE}\" [offset=N] [limit=N]"
+    _emit_block "Use the Read tool instead of Bash cat/head/tail."
     exit 2
   fi
 fi
 if echo "$_TRIMMED" | grep -qE '^ls\b'; then
-  _DIR=$(echo "$_TRIMMED" | sed -E 's/^ls[[:space:]]+((-[^ ]+ )*)?//')
-  _emit_block "Use the Glob tool instead of Bash ls.
-  Glob pattern=\"${_DIR:-.}/**\" [path=\"${_DIR:-.}\"]"
+  _emit_block "Use the Glob tool instead of Bash ls."
   exit 2
 fi
 # ANTI-STOP-ON-FAILURE: when lint/typecheck/pipeline fails, Claude must diagnose root cause and
