@@ -130,7 +130,7 @@ def _mode_perceptual():
         return f"Perceptual analysis unavailable: {e}"
 
 def _mode_introspect():
-    from ..evolution_admin import hme_introspect as _hi
+    from .evolution.evolution_admin import hme_introspect as _hi
     return _hi()
 
 
