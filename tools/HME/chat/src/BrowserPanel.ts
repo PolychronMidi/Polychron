@@ -124,8 +124,13 @@ export class BrowserPanel implements PanelHost {
 
   //  SSE client registry
 
+  // 5 minutes of no writes at all = client is almost certainly gone.
+  // The sweep runs on post() so we don't need a persistent timer.
+  private static readonly _SSE_IDLE_MS = 5 * 60 * 1000;
+
   registerSseClient(res: ExpressResponse): void {
     this._sseClients.push(res);
+    this._sseClientSeen.set(res, Date.now());
     // Send any pending restore on first connect
     if (this._restoreSessionId) {
       const id = this._restoreSessionId;
@@ -136,16 +141,38 @@ export class BrowserPanel implements PanelHost {
 
   unregisterSseClient(res: ExpressResponse): void {
     this._sseClients = this._sseClients.filter(c => c !== res);
+    this._sseClientSeen.delete(res);
   }
 
   //  PanelHost implementation
 
   public post(data: any): void {
     const payload = `data: ${JSON.stringify(data)}\n\n`;
+    const now = Date.now();
     console.log(`[HME→SSE] type=${data?.type ?? '?'} clients=${this._sseClients.length}`);
+    // Remove idle clients opportunistically so a stream of posts
+    // self-heals a client registry that accumulates orphans.
+    const stillAlive: ExpressResponse[] = [];
     for (const res of this._sseClients) {
-      try { res.write(payload); } catch (e: any) { console.error(`[HME] SSE write failed: ${e?.message ?? e}`); }
+      const lastSeen = this._sseClientSeen.get(res) ?? 0;
+      if (now - lastSeen > BrowserPanel._SSE_IDLE_MS) {
+        try { res.end(); } catch { /* silent-ok: already dead */ }
+        this._sseClientSeen.delete(res);
+        continue;
+      }
+      try {
+        res.write(payload);
+        this._sseClientSeen.set(res, now);
+        stillAlive.push(res);
+      } catch (e: any) {
+        // Write failed — client's TCP window is stuck or socket is dead.
+        // Drop it; the browser will reconnect if still interested.
+        console.error(`[HME] SSE write failed, dropping client: ${e?.message ?? e}`);
+        try { res.end(); } catch { /* silent-ok: already broken */ }
+        this._sseClientSeen.delete(res);
+      }
     }
+    this._sseClients = stillAlive;
   }
 
   public postError(source: string, message: string): void {
