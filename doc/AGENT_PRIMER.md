@@ -137,10 +137,10 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 | What patterns has HME crystallized? | `crystallized` (multi-round patterns from ≥3 members × ≥3 rounds) |
 | What does Polychron fundamentally IS? | `constitution` (positive identity claims) |
 | What KB modules are stale / missing? | `staleness` / `doc_drift` |
-| What has the Evolver structurally avoided? | `blindspots` |
+| What has HME structurally avoided? | `blindspots` |
 | Where might cascade predictions be wrong? | `probes` (adversarial candidates) |
 | What architectural gaps does topology predict? | `negative_space` |
-| What is the Evolver's cognitive load? | `cognitive_load` |
+| What is HME's cognitive load? | `cognitive_load` |
 | What's in the hypothesis registry? | `hypotheses` |
 | What activity events just fired? | `activity` |
 | Which proposals did HME propose but not execute? | `intention_gap` |
