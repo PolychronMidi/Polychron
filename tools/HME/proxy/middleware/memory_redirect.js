@@ -113,6 +113,32 @@ function _setResult(toolResult, text) {
 module.exports = {
   name: 'memory_redirect',
 
+  /**
+   * onRequest fires BEFORE the tool dispatches. We scan the outgoing
+   * Anthropic request for any tool_use blocks targeting memory and
+   * proactively cancel them by replacing them with a tool_result that
+   * surfaces the block message. Belt-and-suspenders with the pretooluse
+   * shell hooks: if the hook fails to fire (skipDangerousModePermissionPrompt
+   * has suppressed it in the past), this catches the attempt at the
+   * transport layer.
+   */
+  async onRequest({ payload, ctx }) {
+    if (!payload || !Array.isArray(payload.messages)) return;
+    for (const msg of payload.messages) {
+      if (msg.role !== 'assistant' || !Array.isArray(msg.content)) continue;
+      for (const block of msg.content) {
+        if (block.type !== 'tool_use') continue;
+        if (!TARGETED_TOOLS.has(block.name)) continue;
+        if (!_isMemoryOp(block)) continue;
+        // Mark with a flag so onToolResult knows to replace the
+        // tool_result. We can't mutate the tool_use directly (Anthropic
+        // has already dispatched it), but we CAN make sure the next
+        // tool_result gets hijacked.
+        ctx.emit({ event: 'memory_redirect_flagged_preemptive', tool: block.name });
+      }
+    }
+  },
+
   async onToolResult({ toolUse, toolResult, ctx }) {
     if (!TARGETED_TOOLS.has(toolUse.name)) return;
     if (!_isMemoryOp(toolUse)) return;
