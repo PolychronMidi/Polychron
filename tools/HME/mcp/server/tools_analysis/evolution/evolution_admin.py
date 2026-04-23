@@ -388,16 +388,32 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
 
     # Fallback chain: try local coder first (fast on a warm GPU), then the
     # ranked API reasoning cascade (better quality, free tier), then arbiter
-    # as last resort (always-on but weaker for synthesis).
+    # as last resort (always-on but weaker for synthesis). Each call is
+    # bounded by a 60s wall-clock timeout — without it, an unreachable
+    # llama-server makes the whole chain hang for 32s × 3 attempts (~96s)
+    # per call, which is the "hangs at 20s" rating bug.
+    import concurrent.futures as _cf
+    def _bounded(fn, *args, **kwargs):
+        _ex = _cf.ThreadPoolExecutor(max_workers=1)
+        try:
+            _fut = _ex.submit(fn, *args, **kwargs)
+            try:
+                return _fut.result(timeout=60)
+            except _cf.TimeoutError:
+                return None
+        finally:
+            _ex.shutdown(wait=False, cancel_futures=True)
+
     _tried: list[str] = []
     snippet = None
     if _LOCAL_MODEL in _ready_local:
         _tried.append(f"local/{_LOCAL_MODEL}")
-        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_LOCAL_MODEL)
+        snippet = _bounded(_local_think, synthesis_prompt, max_tokens=512, model=_LOCAL_MODEL)
     if not snippet and _api_reasoning_up:
         _tried.append("api/reasoning-cascade")
         try:
-            snippet = synthesis_reasoning.call(
+            snippet = _bounded(
+                synthesis_reasoning.call,
                 prompt=synthesis_prompt, max_tokens=512,
                 temperature=0.3, profile="reasoning",
             )
@@ -405,7 +421,7 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
             logger.debug(f"fix_antipattern: api reasoning cascade failed: {_api_err2}")
     if not snippet and _ARBITER_MODEL in _ready_local and _ARBITER_MODEL != _LOCAL_MODEL:
         _tried.append(f"local/{_ARBITER_MODEL}")
-        snippet = _local_think(synthesis_prompt, max_tokens=512, model=_ARBITER_MODEL)
+        snippet = _bounded(_local_think, synthesis_prompt, max_tokens=512, model=_ARBITER_MODEL)
     if not snippet:
         return (
             f"Could not synthesize snippet — tried: {', '.join(_tried) or 'nothing'}. "
