@@ -1128,31 +1128,56 @@ function appendMessage(msg) {
 
 // DOM cap: keep at most MESSAGES_DOM_CAP messages in the live tree.
 // Long sessions otherwise build a multi-thousand-node DOM that slows
-// scroll, layout, and append. Older messages are pruned (still in
-// session storage / transcript on disk — only the visible DOM shrinks).
+// scroll, layout, and append. Older messages are pruned from the DOM
+// (still in session storage / transcript on disk — only the visible
+// DOM shrinks). A persistent banner surfaces the prune count so the
+// user doesn't silently lose scroll-back.
 const MESSAGES_DOM_CAP = 400;
+let _totalPruned = 0;
+let _pruneBanner = null;
 function _enforceMessageDomCap() {
   const overflow = messages.children.length - MESSAGES_DOM_CAP;
   if (overflow <= 0) return;
-  // Remove the oldest N children. Avoid removing during a stream that
-  // might still be writing to those nodes (id-based active stream
-  // refs are checked).
   let removed = 0;
-  for (let i = 0; i < messages.children.length && removed < overflow; ) {
-    const child = messages.children[i];
+  // Skip pruning into the prune-banner itself (it's the first child once
+  // installed) by checking for the special class.
+  let idx = 0;
+  if (messages.children.length && messages.children[0].classList.contains('prune-banner')) {
+    idx = 1;
+  }
+  while (idx < messages.children.length && removed < overflow) {
+    const child = messages.children[idx];
     const childId = child.id || '';
     const streamId = childId.startsWith('msg-') ? childId.slice(4) : '';
     if (streamId && activeStreams.has(streamId)) {
-      // Skip — currently streaming into this node.
-      i++;
+      idx++;
       continue;
     }
     child.remove();
     removed++;
   }
   if (removed > 0) {
-    console.log('[HME] message DOM cap: removed ' + removed + ' old messages (cap=' + MESSAGES_DOM_CAP + ')');
+    _totalPruned += removed;
+    _updatePruneBanner();
+    console.log('[HME] message DOM cap: removed ' + removed + ' old messages (cap=' + MESSAGES_DOM_CAP + ', total pruned=' + _totalPruned + ')');
   }
+}
+function _updatePruneBanner() {
+  if (_totalPruned === 0) {
+    if (_pruneBanner) { _pruneBanner.remove(); _pruneBanner = null; }
+    return;
+  }
+  if (!_pruneBanner) {
+    _pruneBanner = document.createElement('div');
+    _pruneBanner.className = 'prune-banner';
+    _pruneBanner.style.cssText = 'padding:6px 10px;background:var(--panel-bg,#2a2a2a);color:var(--muted-fg,#999);font-size:11px;text-align:center;border-bottom:1px solid var(--btn-bg,#444);';
+    messages.insertBefore(_pruneBanner, messages.firstChild);
+  }
+  _pruneBanner.textContent = _totalPruned + ' older message(s) pruned from view — full transcript in log/session-transcript.jsonl';
+}
+function _resetPruneBanner() {
+  _totalPruned = 0;
+  if (_pruneBanner) { _pruneBanner.remove(); _pruneBanner = null; }
 }
 
 function startStream(id, route, model) {
