@@ -197,7 +197,7 @@ def _check_llamacpp_connectivity() -> None:
     """Warn if local inference models are not loaded — synthesis will fall back to templates.
 
     Probes the llama-server /health endpoints for arbiter (8080) and coder
-    (8081). These URLs are owned by llamacpp_daemon + llamacpp_supervisor.
+    (8081). These URLs are owned exclusively by llamacpp_daemon.
 
     Distinguishes three states:
       healthy     — model ready for requests
