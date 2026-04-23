@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 # HME trace — causal/impact analysis and semantic search.
-# Usage: i/trace target=<module|query> [mode=auto|impact|diagnose] [section=N] [limit=N]
+# Usage: i/trace <target> [key=value ...]
+#        i/trace target=<module|query> [mode=auto|impact|diagnose] [section=N] [limit=N]
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
-exec node "$_HME_CLI" trace "$@"
+# First non-flag, non-key=value arg becomes target=<arg>
+_args=()
+_have_target=0
+for a in "$@"; do
+  case "$a" in
+    target=*|-*|*=*) _args+=("$a"); [[ "$a" == target=* ]] && _have_target=1 ;;
+    *) if [ $_have_target -eq 0 ]; then _args+=("target=$a"); _have_target=1; else _args+=("$a"); fi ;;
+  esac
+done
+exec node "$_HME_CLI" trace "${_args[@]}"
