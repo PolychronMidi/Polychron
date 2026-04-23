@@ -15,7 +15,11 @@ for arg in "$@"; do [ "$arg" = "--verbose" ] && VERBOSE=1; done
 
 # Resolve project root from this script's location (works from anywhere).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Test was relocated from scripts/ to scripts/test/ -- PROJECT_ROOT is two
+# levels up, not one. Without this fix every relative-path check below
+# resolves under scripts/ and reports false negatives on KB / hook /
+# .env / invariants.json existence.
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 PASS=0
