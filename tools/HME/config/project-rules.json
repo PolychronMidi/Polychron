@@ -123,6 +123,8 @@
     "edit_pending",
     "edit_pending",
     "encodec_entropy_avg",
+    "exhaust_check",
+    "exhaust_violation",
     "expected_defer_rounds",
     "exploration_bonus",
     "fabrication_check",
