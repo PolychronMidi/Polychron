@@ -10,7 +10,19 @@
 # the four-arc framework. Skips LLM roundtrip when substrate has a clear
 # prescription. Falls through to LLM-planning when focus= is given.
 if [ $# -eq 0 ]; then
-  exec python3 "$(dirname "$0")/../scripts/hme/substrate-view.py" actions
+  # Show the harvester queue, then hint at the other focus paths so users
+  # don't assume this is the only thing evolve can do. The hint goes to
+  # stderr so piping `i/evolve | head` still works cleanly.
+  python3 "$(dirname "$0")/../scripts/hme/substrate-view.py" actions
+  {
+    echo
+    echo "── also try ──"
+    echo "  i/evolve focus=design        bridge-design proposals (antagonism correlations)"
+    echo "  i/evolve focus=invariants    invariant-battery path"
+    echo "  i/substrate drift            Arc III outliers driving the queue"
+    echo "  i/pattern matched            patterns gating the queue"
+  } >&2
+  exit 0
 fi
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
