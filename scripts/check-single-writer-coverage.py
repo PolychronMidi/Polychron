@@ -152,14 +152,27 @@ def _match_todo_write(node: ast.Call, src: str) -> bool:
 
 
 def _match_onboarding_write(node: ast.Call, src: str) -> bool:
-    # onboarding state is a file write; look for open(_STATE_FILE, "w")
+    """open(_STATE_FILE, 'w') — write-mode only. Read-mode open() on a
+    same-named variable in an unrelated module (operational_state has
+    its own _STATE_FILE) must not flag as a violation."""
     fn = node.func
     if not isinstance(fn, ast.Name) or fn.id != "open":
         return False
-    # Check if any arg is _STATE_FILE
-    for a in node.args:
-        if isinstance(a, ast.Name) and a.id == "_STATE_FILE":
+    # First arg must be a Name `_STATE_FILE`.
+    refs_state_file = any(
+        isinstance(a, ast.Name) and a.id == "_STATE_FILE"
+        for a in node.args
+    )
+    if not refs_state_file:
+        return False
+    # Second arg (or mode= keyword) must indicate write.
+    for a in node.args[1:]:
+        if isinstance(a, ast.Constant) and isinstance(a.value, str) and "w" in a.value:
             return True
+    for kw in node.keywords:
+        if kw.arg == "mode" and isinstance(kw.value, ast.Constant):
+            if isinstance(kw.value.value, str) and "w" in kw.value.value:
+                return True
     return False
 
 
