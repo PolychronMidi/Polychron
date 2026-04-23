@@ -247,19 +247,44 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
     alerts at the LIFESAVER log layer.
     """
     text = f"CRITICAL ERROR - LIFESAVER ALERT: [{severity}] {source}: {error}"
+    # Dedup key: (source, severity, first 80 chars of error). Text-exact
+    # dedup failed to catch near-duplicates where only a free-memory number
+    # or timestamp differed — one recurring GPU-OOM error became 15 "distinct"
+    # pending todos. Truncated-error-prefix dedup collapses all memory-variant
+    # restatements of the same underlying failure into ONE entry.
+    dedup_key = f"{severity}|{source}|{(error or '')[:80]}"
     with _todo_lock:
         meta, todos = _load_todos()
         for existing in todos:
             if (
                 existing.get("source") == "lifesaver"
-                and existing.get("text") == text
                 and not _check_main_done(existing)
             ):
-                return  # already queued — count is tracked in failure_genealogy
+                existing_err = existing.get("text", "")
+                # Extract the tail of existing_err past the `<source>: ` boundary
+                # for the 80-char prefix compare. Falls back to full-text-exact.
+                sep = f"[{severity}] {source}: "
+                if sep in existing_err:
+                    existing_err_tail = existing_err.split(sep, 1)[1][:80]
+                    if existing_err_tail == (error or "")[:80]:
+                        # Refresh the existing entry's timestamp so freshness
+                        # tracking reflects continued occurrence, but don't
+                        # create a duplicate row.
+                        existing["ts"] = time.time()
+                        existing["recurrence_count"] = int(existing.get("recurrence_count", 1)) + 1
+                        _save_todos(meta, todos)
+                        return
+                if existing.get("text") == text:
+                    existing["ts"] = time.time()
+                    existing["recurrence_count"] = int(existing.get("recurrence_count", 1)) + 1
+                    _save_todos(meta, todos)
+                    return
         entry = _write_todo_entry(
             meta, text=text, status="pending",
             critical=True, source="lifesaver",
         )
+        entry["recurrence_count"] = 1
+        entry["dedup_key"] = dedup_key
         todos.append(entry)
         _save_todos(meta, todos)
     logger.info(f"LIFESAVER→TODO #{entry['id']}: {text[:120]}")
