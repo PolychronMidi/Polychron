@@ -1536,6 +1536,7 @@ window.addEventListener('message', (event) => {
     streamBodyMap.clear();
     streamThinkingMap.clear();
     messages.innerHTML = '';
+    _resetPruneBanner();
     for (const m of msg.messages) appendMessage(m);
     _enforceMessageDomCap();
     forceScrollToBottom();
@@ -1550,6 +1551,7 @@ window.addEventListener('message', (event) => {
     streamBodyMap.clear();
     streamThinkingMap.clear();
     messages.innerHTML = '';
+    _resetPruneBanner();
     setStatus('');
     vscode.postMessage({ type: 'listSessions' });
   }
