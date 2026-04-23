@@ -1232,6 +1232,18 @@ def main():
 
     logger.info(f"llamacpp daemon starting on port {args.port} (pid={os.getpid()})")
 
+    # Pre-boot topology assertion: catch environment problems at startup
+    # instead of letting them silently propagate into mid-operation OOMs.
+    try:
+        _supervisor_singleton.assert_topology_ready()
+    except RuntimeError as _topo_err:
+        logger.error(f"daemon: topology assertion failed — refusing to start:\n  {_topo_err}")
+        try:
+            os.unlink(PID_FILE)
+        except OSError:
+            pass
+        sys.exit(2)
+
     # Wrap thread targets so any exception is logged with traceback. Bare
     # threading.Thread(target=fn) silently discards exceptions when fn
     # raises — this is exactly how the original "not started" indexing-mode
