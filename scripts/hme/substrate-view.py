@@ -194,6 +194,43 @@ def diff_view():
     return "\n".join(lines)
 
 
+def invariants_view(filt: str = ""):
+    inv_path = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "invariants.json")
+    try:
+        with open(inv_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        return f"invariants: cannot load {inv_path} ({e})"
+    invs = data.get("invariants", [])
+    eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
+    classes = eff.get("classes_by_id", {}) or {}
+
+    filt_l = filt.lower().strip()
+    if filt_l:
+        invs = [i for i in invs if filt_l in i.get("id", "").lower()
+                or filt_l in i.get("description", "").lower()
+                or filt_l in i.get("type", "").lower()]
+
+    lines = [f"Invariants registry: {len(invs)} entries"
+             + (f" matching {filt!r}" if filt_l else "")
+             + f" (from {len(data.get('invariants', []))} total)"]
+    if not invs:
+        lines.append("  (no matches)")
+        return "\n".join(lines)
+    for i in invs:
+        iid = i.get("id", "?")
+        cls = classes.get(iid, "")
+        cls_str = f" [{cls}]" if cls else ""
+        sev = i.get("severity", "error")
+        lines.append(f"  {iid}{cls_str} ({sev}/{i.get('type', '?')})")
+        desc = i.get("description", "").strip()
+        if desc:
+            lines.append(f"    {desc[:120]}")
+        if i.get("born_from"):
+            lines.append(f"    born_from: {i['born_from']}")
+    return "\n".join(lines)
+
+
 MODES = {
     "brief": brief,
     "detail": detail,
@@ -203,6 +240,7 @@ MODES = {
     "efficacy": efficacy_view,
     "patterns": patterns_view,
     "diff": diff_view,
+    "invariants": invariants_view,
 }
 
 
