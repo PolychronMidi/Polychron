@@ -1,0 +1,24 @@
+{
+  "_comment": "Explicit middleware load order — replaces filesystem-inode-dependent readdirSync order. Earlier entries run first within each phase (onRequest, onToolResult). Files not listed here are loaded AFTER the manifest, alphabetically, with a warning. Add new middleware to this list at the position that matches its dependencies.",
+  "_categories": {
+    "context-injection": "Builds the prompt before request hits Anthropic",
+    "post-tool-trace": "Records what just happened (state, KB, activity)",
+    "diagnostic": "Surfaces failures back to the agent on the next turn",
+    "lifecycle": "Boundary actions like autocommit"
+  },
+  "order": [
+    "memory_redirect.js",
+    "edit_context.js",
+    "read_context.js",
+    "grep_glob_neighborhood.js",
+    "dir_context.js",
+    "bash_enrichment.js",
+    "web_enrichment.js",
+    "nexus_tracking.js",
+    "activity_log.js",
+    "mcp_fail_scan.js",
+    "lifesaver_inject.js",
+    "hme_log_watermark.js",
+    "proxy_autocommit.js"
+  ]
+}
