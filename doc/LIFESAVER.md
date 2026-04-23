@@ -110,7 +110,6 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 
 | Hook | Trigger | Advice |
 -
-| `pretooluse_bash.sh` | `grep`/`cat`/`head`/`tail` command | Suggest HME MCP tools for KB-enriched results |
 | `pretooluse_edit.sh` | Editing src/ without prior `read(mode='before')` | NEXUS: call read() for KB constraints + callers + risks |
 | `pretooluse_edit.sh` | Module has KB entries (via HTTP shim) | Surface KB constraint titles and counts |
 | `pretooluse_grep.sh` | Any grep pattern with KB matches | Suggest `find()` for KB-enriched results |
