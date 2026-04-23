@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getArbiterHealth = getArbiterHealth;
 exports.classifyMessage = classifyMessage;
 exports.synthesizeNarrative = synthesizeNarrative;
 exports.synthesizeChainSummary = synthesizeChainSummary;
@@ -79,6 +80,34 @@ function _cacheKey(msg, cc, ec, transcriptCtx) {
     // change (new errors observed, new tools fired) invalidates stale
     // routing decisions even when the message-prefix is identical.
     return `${cc}:${ec}:${transcriptCtx.length}:${_fnv1a(transcriptCtx)}:${msg.slice(0, 200)}`;
+}
+// Daemon health tracking — so the UI (and callers) can distinguish
+// "arbiter thought about it and chose claude" from "arbiter wasn't
+// reachable and we defaulted to claude." Without this, persistent
+// daemon outage was indistinguishable from routine claude routing,
+// and the 100% escalation rate went unnoticed.
+let _lastDaemonOk = 0; // ts of last successful call
+let _consecutiveDaemonFailures = 0;
+const _DAEMON_UNHEALTHY_THRESHOLD = 3; // after N fails = unhealthy
+function getArbiterHealth() {
+    return {
+        healthy: _consecutiveDaemonFailures < _DAEMON_UNHEALTHY_THRESHOLD,
+        consecutiveFailures: _consecutiveDaemonFailures,
+        lastOkMs: _lastDaemonOk,
+    };
+}
+function _noteDaemonSuccess() {
+    if (_consecutiveDaemonFailures >= _DAEMON_UNHEALTHY_THRESHOLD) {
+        console.log(`[Arbiter] daemon recovered after ${_consecutiveDaemonFailures} failures`);
+    }
+    _consecutiveDaemonFailures = 0;
+    _lastDaemonOk = Date.now();
+}
+function _noteDaemonFailure(reason) {
+    _consecutiveDaemonFailures++;
+    if (_consecutiveDaemonFailures === _DAEMON_UNHEALTHY_THRESHOLD) {
+        console.error(`[Arbiter] daemon UNHEALTHY after ${_DAEMON_UNHEALTHY_THRESHOLD} consecutive failures: ${reason}`);
+    }
 }
 const CLASSIFY_PROMPT = `/no_think
 Route this coding assistant message to either "claude" (expensive, powerful) or "local" (free, fast).
@@ -145,12 +174,17 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
             model: ARBITER_MODEL, messages: [{ role: "user", content: prompt }],
             max_tokens: 256, temperature: 0, response_format: { type: "json_object" },
         });
+        _noteDaemonSuccess();
     }
     catch (e) {
+        _noteDaemonFailure(String(e?.message ?? e));
         const reason = e?.message?.includes("not running")
             ? "arbiter unreachable — llama.cpp not running"
             : `arbiter ${e?.message ?? e}`;
-        return { route: "claude", confidence: 0.5, reason, escalated: false, isError: true };
+        // confidence=0 (not 0.5) signals NO classification occurred. Downstream
+        // callers can check `isError` OR `confidence === 0` to distinguish a
+        // legitimate "I'm unsure" from "the daemon wasn't reachable."
+        return { route: "claude", confidence: 0, reason, escalated: false, isError: true };
     }
     try {
         const inner = JSON.parse(contentAccum);
