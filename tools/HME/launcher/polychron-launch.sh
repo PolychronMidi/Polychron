@@ -14,6 +14,23 @@
 # polychron-shutdown.sh to target precisely.
 
 set -u
+set -o pipefail
+# Not using `set -e`: per-component startup is intentionally resilient
+# (skip if port already healthy, fall back gracefully). But trap EXIT
+# to clean up orphan nohup'd children if the launcher aborts mid-flight
+# — without this, a SIGINT during proxy startup left a zombie proxy
+# process that the shutdown script couldn't always find later.
+_orphan_pids=""
+_track_orphan() { _orphan_pids="$_orphan_pids $1"; }
+_kill_orphans_on_abort() {
+  if [ -n "${_LAUNCH_OK:-}" ]; then return 0; fi
+  for _p in $_orphan_pids; do
+    if [ -n "$_p" ] && kill -0 "$_p" 2>/dev/null; then
+      kill "$_p" 2>/dev/null || true
+    fi
+  done
+}
+trap _kill_orphans_on_abort EXIT
 
 _LAUNCHER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _PROJECT_ROOT_FALLBACK="$(cd "$_LAUNCHER_DIR/../../.." && pwd)"
