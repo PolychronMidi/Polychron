@@ -43,8 +43,12 @@ def _pick_embed_device() -> str:
                     best_free, best_idx = free, i
             if best_idx >= 0:
                 return f"cuda:{best_idx}"
-    except Exception:
-        pass
+    except Exception as _cuda_err:
+        # Silent CPU-fallback here was the root of a 100× embedding
+        # slowdown nobody noticed for weeks. Log at ERROR so a CUDA
+        # regression (driver glitch, OOM on import, etc.) surfaces
+        # loudly instead of being discovered via "why is indexing slow."
+        logger.error(f"CUDA device probe FAILED — embedding dropped to CPU: {type(_cuda_err).__name__}: {_cuda_err}")
     return "cpu"
 
 
