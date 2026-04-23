@@ -311,6 +311,15 @@ export class BrowserPanel implements PanelHost {
       this.post({ type: "cancelConfirmed" });
       this._isStreaming = false;
     },
+    drainQueue: () => {
+      // Explicit user-initiated queue drain. Use this when the UI shows
+      // a queueAlert — preserves the in-flight stream but discards all
+      // queued pending messages so the user can retype from a clean state.
+      const dropped = this._messageQueue.length;
+      this._messageQueue = [];
+      this.post({ type: "queueStatus", pending: 0, limit: 10 });
+      this.post({ type: "notice", level: "info", text: `Queue drained (${dropped} message${dropped === 1 ? "" : "s"} discarded).` });
+    },
     clearHistory: () => {
       this._state = BrowserPanel._blankState();
       this._contextMeter.reset(this._ctxArgs());
