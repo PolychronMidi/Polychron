@@ -792,8 +792,10 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                 for d in arbiter_dirs[:4]:
                     if d not in directories:
                         directories.append(d)
-        except (json.JSONDecodeError, AttributeError):
-            pass
+        except (json.JSONDecodeError, AttributeError) as _plan_err:
+            # Arbiter plan malformed — we silently lose its directory
+            # suggestions. Persistent failures here mean arbiter regression.
+            logger.debug(f"arbiter plan parse failed, using fallback dirs: {type(_plan_err).__name__}: {_plan_err}")
 
     # Fall back to keyword extraction if arbiter didn't produce useful terms
     if not search_terms and not grep_patterns:
