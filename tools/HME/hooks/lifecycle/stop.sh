@@ -67,14 +67,22 @@ else
   elif ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet >"$_GIT_ERR" 2>&1; then
     # Retry once — transient lock or index contention
     sleep 1
+    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
     if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet >"$_GIT_ERR" 2>&1; then
-      # Check if the failure is "nothing to commit" (expected when no changes staged)
-      if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
-        source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+      # Check if the failure is "nothing to commit" (expected when no changes staged —
+      # a concurrent stop.sh already captured the diff). Clear the stale flag.
+      if grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
+        _nexus_clear_type COMMIT_FAILED
+        rm -f "$_GIT_ERR" 2>/dev/null
+      else
         _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist (see $_GIT_ERR)"
         _ac_log_error "commit failed twice — uncommitted changes exist: $(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')"
         echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status + $_GIT_ERR." >&2
       fi
+    else
+      # Retry succeeded after first-attempt failure — clear any stale flag.
+      _nexus_clear_type COMMIT_FAILED
+      rm -f "$_GIT_ERR" 2>/dev/null
     fi
   else
     # Clear any stale commit-failed flag from a previous failed attempt
