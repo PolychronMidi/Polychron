@@ -98,6 +98,7 @@ _EVENT_CATEGORIES = {
     "evolve": "evolve",
     "admin": "admin", "status": "admin",
     "trace": "search",
+    "hme_todo": "todo", "todo": "todo",
 }
 
 
