@@ -406,20 +406,37 @@ Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe th
 | `i/hme-admin action=index` | Incremental reindex. R97: now routes through the daemon's GPU-orchestrated `indexing-mode` (same path as `clear_index`) instead of calling `_index_main` directly — eliminates the coder-on-GPU1 race that used to corrupt CUDA context every reindex. |
 | `i/hme-admin action=clear_index` | Full reindex via daemon's GPU-orchestrated indexing-mode (suspends coder → moves embedders to cuda:1 → indexes → restores) |
 
-### Indexing-mode self-heal (R97)
+### Indexing-mode: pinned, no migration (R97)
 
-The daemon's indexing-mode is the sole GPU-coordinator for reindex. Three
-architectural safeguards keep it from requiring manual recovery:
+Prior incarnations of indexing-mode suspended coder, migrated embedders
+cuda:0 → cuda:1 for dedicated throughput, ran the index, and migrated
+them back. That migration dance repeatedly triggered "CUDA error: illegal
+memory access" because M40 Maxwell + PyTorch's caching allocator don't
+survive frequent `model.to(device)` churn. Every prior session's "implement
+model pinning" effort was quietly defeated by this function migrating
+the models anyway.
 
-1. **Worker CUDA-corruption auto-restart** — `rag_engines.reload_on_device()` detects `CUDA error: illegal memory access` + `CUDNN_STATUS_EXECUTION_FAILED`, registers a CRITICAL LIFESAVER, and calls `os._exit(98)`. The proxy supervisor respawns the worker with a fresh CUDA context. [rag_engines.py:reload_on_device](../tools/HME/mcp/rag_engines.py)
+**R97**: indexing-mode no longer migrates or suspends anything. Embedders
+stay pinned to their boot-time device (`HME_RAG_GPU=0`, cuda:0). Indexing
+runs in-place on whatever GPU they occupy. Coder stays up throughout.
 
-2. **In-flight restore retry across worker death** — when the worker dies mid-index, `_run_indexing_mode_locked`'s `finally` block detects the failed restore, waits up to 60s for the respawned worker's `/health` to go READY, then re-issues `/reload-engines {device:cuda:N}` explicitly (new worker has no `_original_rag_device` memory). [llamacpp_daemon.py:_run_indexing_mode_locked](../tools/HME/mcp/llamacpp_daemon.py)
+The ~30% embedder throughput cost from sharing cuda:0 with arbiter during
+indexing is accepted — it's orders of magnitude cheaper than the 45+
+minutes of manual recovery each migration-caused CUDA corruption used to
+cost. If cuda:0's VRAM pressure becomes a real problem in the future,
+lower `HME_CODE_EMBED_BATCH` or `max_seq_length` rather than reintroducing
+migration.
 
-3. **Daemon boot-recovery for cross-daemon-restart** — if the daemon itself died mid-session, the next daemon spawn runs `_boot_recover_stuck_indexing_state` which detects embedders squatting coder's GPU (shim alive + coder's GPU has >>2GB allocated + coder not running) and issues a corrective `/reload-engines {device:cuda:0}` before the supervisor tries to spawn coder. [llamacpp_daemon.py:_boot_recover_stuck_indexing_state](../tools/HME/mcp/llamacpp_daemon.py)
+**Enforcement**: [rag_engines.reload_on_device](../tools/HME/mcp/rag_engines.py)
+refuses migration requests unless `HME_ALLOW_EMBEDDER_MIGRATION=1` is set
+in env. The escape hatch exists for humans doing one-off experiments; no
+automated code path should set it.
 
-Topology assertion (`assert_topology_ready`) checks shim reachability before aborting on VRAM fit failure — if the shim is alive, boot-recovery will reclaim the GPU, so the daemon proceeds instead of exiting. This replaces the R96 behavior where a dead indexing session permanently prevented daemon restart until a human manually killed the worker.
-
-No documented failure mode in this chain requires human intervention. If one surfaces, that's a regression — file it against one of the three safeguards above.
+**Separately kept**: the worker CUDA-corruption auto-restart at
+[rag_engines.py:reload_on_device](../tools/HME/mcp/rag_engines.py). If
+a migration ever does happen (via the escape hatch) and corrupts CUDA,
+the worker self-exits via `os._exit(98)` and the proxy supervisor
+respawns it with a fresh CUDA context — zero manual intervention.
 | `i/hme --version` | Print cli / proxy / worker versions and warn on drift |
 
 **KB entries worth querying when working on HME internals:**
