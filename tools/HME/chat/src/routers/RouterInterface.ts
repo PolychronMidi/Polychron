@@ -87,12 +87,16 @@ export function makeResult(partial: Partial<StreamResult>): StreamResult {
 /** Thin adapter wrapper: converts a legacy `onChunk/onDone/onError + cancel`
  * function into a RouterAdapter shape without rewriting the legacy
  * implementation. Used by routerClaude/routerLlamacpp/routerHme
- * adapters until the full internals can be unified. */
-export function wrapLegacyStream<OptionsT extends BaseStreamOptions>(
+ * adapters until the full internals can be unified.
+ *
+ * The MessageT generic is independent of the launch signature — callers
+ * supply their own message-shaping (Claude takes a string, llama takes
+ * a LlamacppMessage[], hybrid takes both via its options). */
+export function wrapLegacyStream<MessageT, OptionsT extends BaseStreamOptions>(
   route: Route,
   name: string,
   launch: (
-    messages: LlamacppMessage[],
+    messages: MessageT,
     opts: OptionsT,
     cb: {
       chunk: ChunkCallback;
@@ -102,7 +106,7 @@ export function wrapLegacyStream<OptionsT extends BaseStreamOptions>(
       tokens?: (u: { input?: number; output?: number; usedPct?: number }) => void;
     },
   ) => () => void,
-): RouterAdapter<LlamacppMessage[], OptionsT> {
+): RouterAdapter<MessageT, OptionsT> {
   return {
     route,
     name,
