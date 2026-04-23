@@ -576,27 +576,61 @@ def hme_selftest(verbose: bool = False) -> str:
         )
         ls_pids = [p for p in ls_out.stdout.strip().split() if p]
 
-        if len(daemon_pids) > 1:
-            results.append(
-                f"FAIL: daemon uniqueness -- {len(daemon_pids)} llamacpp_daemon "
-                f"processes running (PIDs {daemon_pids}); only one may own llama-server "
-                f"lifecycle per single-writer invariant"
-            )
-        elif len(daemon_pids) == 0:
-            results.append("WARN: daemon uniqueness -- no llamacpp_daemon running")
-        else:
-            results.append(f"PASS: daemon uniqueness -- 1 llamacpp_daemon (PID {daemon_pids[0]})")
+        # Adopt Witness pattern: each probe declares its positive evidence
+        # AND the coincidental-pass risk it can't distinguish, so a future
+        # reader can see how strong the PASS actually is.
+        try:
+            from server.probe_witness import probe_witness
+            with probe_witness("daemon uniqueness") as _w:
+                _w.observed("daemon_pid_count", len(daemon_pids))
+                _w.observed("daemon_pids", daemon_pids)
+                _w.set_falsification("more than one llamacpp_daemon process visible to pgrep")
+                if len(daemon_pids) > 1:
+                    _w.asserted(False)
+                    results.append(
+                        f"FAIL: daemon uniqueness -- {len(daemon_pids)} llamacpp_daemon "
+                        f"processes running (PIDs {daemon_pids}); only one may own "
+                        f"llama-server lifecycle per single-writer invariant"
+                    )
+                elif len(daemon_pids) == 0:
+                    _w.asserted(False)
+                    _w.caveat("no daemon at all — pgrep returned nothing; could be ephemeral test")
+                    results.append("WARN: daemon uniqueness -- no llamacpp_daemon running")
+                else:
+                    _w.asserted(True, positive_evidence=f"exactly 1 daemon process at PID {daemon_pids[0]}")
+                    _w.caveat("pgrep matches by cmdline substring; a renamed binary would evade detection")
+                    results.append(f"PASS[{_w.confidence()}]: daemon uniqueness -- 1 llamacpp_daemon (PID {daemon_pids[0]})")
 
-        # Declared topology is 2 (arbiter + coder). More than 2 means a
-        # rogue spawner — exactly tonight's incident signature.
-        if len(ls_pids) > 2:
-            results.append(
-                f"FAIL: llama-server count -- {len(ls_pids)} processes running "
-                f"(PIDs {ls_pids}); topology declares arbiter + coder = 2. "
-                f"A rogue spawner is active — check for duplicate supervisor modules."
-            )
-        else:
-            results.append(f"PASS: llama-server count -- {len(ls_pids)}/2 expected")
+            with probe_witness("llama-server count") as _w:
+                _w.observed("llama_pid_count", len(ls_pids))
+                _w.observed("expected_count", 2)
+                _w.set_falsification("more than 2 llama-server processes (topology declares arbiter + coder)")
+                if len(ls_pids) > 2:
+                    _w.asserted(False)
+                    results.append(
+                        f"FAIL: llama-server count -- {len(ls_pids)} processes running "
+                        f"(PIDs {ls_pids}); topology declares arbiter + coder = 2. "
+                        f"A rogue spawner is active — check for duplicate supervisor modules."
+                    )
+                else:
+                    _w.asserted(True, positive_evidence=f"{len(ls_pids)} llama-server processes ≤ topology cap of 2")
+                    _w.caveat("count <2 = transient cold-boot or genuine missing instance; both look alike here")
+                    results.append(f"PASS[{_w.confidence()}]: llama-server count -- {len(ls_pids)}/2 expected")
+        except ImportError:
+            # probe_witness unavailable — fall back to plain reporting.
+            if len(daemon_pids) > 1:
+                results.append(
+                    f"FAIL: daemon uniqueness -- {len(daemon_pids)} llamacpp_daemon "
+                    f"processes running (PIDs {daemon_pids})"
+                )
+            elif len(daemon_pids) == 0:
+                results.append("WARN: daemon uniqueness -- no llamacpp_daemon running")
+            else:
+                results.append(f"PASS: daemon uniqueness -- 1 llamacpp_daemon (PID {daemon_pids[0]})")
+            if len(ls_pids) > 2:
+                results.append(f"FAIL: llama-server count -- {len(ls_pids)} processes running")
+            else:
+                results.append(f"PASS: llama-server count -- {len(ls_pids)}/2 expected")
     except FileNotFoundError:
         results.append("WARN: spawner-ownership -- pgrep unavailable, probe skipped")
     except Exception as _e:
