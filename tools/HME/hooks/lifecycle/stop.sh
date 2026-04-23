@@ -427,3 +427,12 @@ if [[ "$EXHAUST_CHECK" == "exhaust_violation" ]]; then
   }'
   exit 0
 fi
+
+# fix_antipattern: silent test exhaust check sentinel — do not commit
+if [[ "$EXHAUST_CHECK" == "exhaust_violation" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now."
+  }'
+  exit 0
+fi
