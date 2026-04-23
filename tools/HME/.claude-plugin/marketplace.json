@@ -8,7 +8,7 @@
     {
       "name": "HME",
       "source": "./",
-      "description": "Master executive for hypermeta evolutionary intelligence. Full-stack: MCP server, hooks, skills, Evolver."
+      "description": "Master executive for hypermeta evolutionary intelligence. Full-stack: MCP server, lifecycle hooks, skills."
     }
   ]
 }
