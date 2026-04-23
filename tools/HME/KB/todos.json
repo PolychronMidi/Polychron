@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 651,
-      "updated_ts": 1776982655.6807353
+      "max_id": 660,
+      "updated_ts": 1776982781.6244147
     }
   },
   {
@@ -59,41 +59,28 @@
     "subs": []
   },
   {
-    "id": 646,
-    "text": "Remove dead PTY/mirror code path",
-    "activeForm": "Removing dead PTY/mirror code",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776982655.6806924,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 647,
-    "text": "Remove dead _sseSweepTimer + setMirrorMode + _simpleMessageDiv",
-    "activeForm": "Removing dead state/handlers",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1776982655.6807008,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 648,
-    "text": "Simplify trivial MODEL_ID_MAP identity + drop node-pty dep",
-    "activeForm": "Simplifying MODEL_ID_MAP + deps",
+    "id": 656,
+    "text": "Finish PTY removal across router.ts/streamUtils/webviewMessages/browser.html/package.json",
+    "activeForm": "Finishing PTY removal across remaining files",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776982655.6807082,
+    "ts": 1776982781.6243784,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 657,
+    "text": "Simplify trivial MODEL_ID_MAP identity",
+    "activeForm": "Simplifying MODEL_ID_MAP",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1776982781.6243873,
     "parent_id": 0,
     "subs": []
   },
