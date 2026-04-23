@@ -2,34 +2,10 @@ import { spawn } from "child_process";
 import { readFileSync, appendFileSync } from "fs";
 import { ClaudeOptions, ChunkCallback, TokenUsage } from "../router";
 
-// node-pty is loaded lazily — a native module crash must never take down the extension host.
-// Set process.env.HME_NO_PTY=1 to skip PTY entirely (e.g. browser/server mode).
-let _pty: typeof import("node-pty") | null = null;
-function getPty(): typeof import("node-pty") | null {
-  if (process.env["HME_NO_PTY"]) return null;
-  if (_pty) return _pty;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    _pty = require("node-pty");
-    return _pty;
-  } catch (e) {
-    console.error(`[HME] node-pty unavailable — PTY mode disabled, falling back to -p: ${(e as any)?.message ?? e}`);
-    return null;
-  }
-}
-
-const HME_LOG = "/tmp/hme-ctx-debug.log";
-function hmeLog(msg: string) {
-  try { appendFileSync(HME_LOG, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) {
-    try { appendFileSync("/tmp/hme-log-fail.txt", String(e) + "\n"); } catch {}
-  }
-}
-
-// Env vars that the parent VS Code extension host inherits when Claude Code
-// launched it. Passing these to the spawned `claude` child causes v2.1.118
-// to detect a nested session and exit with code 0 at ~450ms with no output
-// — observed in /tmp/hme-ctx-debug.log as "finalize: fullOutput is empty".
-// Strip them so the PTY child boots as a fresh Claude Code session.
+// Env vars that a parent Claude Code session passes to its children. If we
+// pass them to the spawned `claude` child, v2.1.118 detects a nested session
+// and exits with code 0 at ~450ms with no output. Strip them so the child
+// boots as a fresh Claude Code session.
 const PARENT_CLAUDE_SESSION_VARS = new Set([
   "CLAUDECODE",
   "CLAUDE_CODE_ENTRYPOINT",
