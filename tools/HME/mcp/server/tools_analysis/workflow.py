@@ -166,11 +166,24 @@ def before_editing(file_path: str) -> str:
         kb_results = _kb_cache[_kb_key]
     else:
         from concurrent.futures import ThreadPoolExecutor as _TPE
+        import concurrent.futures as _cf
         with _TPE(max_workers=2) as _pool:
             _kb_fut = _pool.submit(ctx.project_engine.search_knowledge, module_name, limits["kb_entries"])
             _cal_fut = _pool.submit(_find_callers, module_name, ctx.PROJECT_ROOT)
-            kb_results = _kb_fut.result()
-            _all_callers = _cal_fut.result()
+            # Bounded waits: unbounded .result() would block forever if the
+            # lance query or the caller-scan hang (e.g. during GPU-busy
+            # indexing-mode contention). 30s is plenty for normal reads and
+            # a clean timeout for pathological ones.
+            try:
+                kb_results = _kb_fut.result(timeout=30)
+            except _cf.TimeoutError:
+                logger.warning(f"before_editing: search_knowledge({module_name}) >30s — empty KB fallback")
+                kb_results = []
+            try:
+                _all_callers = _cal_fut.result(timeout=30)
+            except _cf.TimeoutError:
+                logger.warning(f"before_editing: _find_callers({module_name}) >30s — empty callers fallback")
+                _all_callers = []
         _caller_cache[_caller_key] = _all_callers
         _kb_cache[_kb_key] = kb_results
         from server import context as _ctx
