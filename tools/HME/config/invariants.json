@@ -1,5 +1,5 @@
 {
-  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON \u2014 no Python changes needed.",
+  "_comment": "Declarative invariant battery for evolve(focus='invariants'). Add new checks as JSON \u2014 no Python changes needed. Every invariant SHOULD carry an optional `born_from` field citing the incident or KB-entry ID that introduced the concern (e.g. \"born_from\": \"2026-04-22 indexing-mode silent failure\" or a KB-entry hash). Invariants without genealogy cannot be safely retired when their originating concern is resolved; selftest's 'invariant genealogy' probe reports coverage.",
   "_types": {
     "files_executable": "All files matching glob (minus exclude) must be executable",
     "files_referenced": "All files matching glob must appear in reference_file. match_mode='stem' strips extension before matching",
