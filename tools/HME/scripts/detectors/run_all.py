@@ -40,6 +40,7 @@ DETECTORS = [
     ("abandon_check", "abandon_check"),
     ("stop_work", "stop_work"),
     ("fabrication_check", "fabrication_check"),
+    ("early_stop", "early_stop"),
 ]
 
 
