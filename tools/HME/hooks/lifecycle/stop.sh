@@ -280,6 +280,18 @@ if [[ "$ABANDON_CHECK" == "AGENT_FOR_KB" ]]; then
   exit 0
 fi
 
+# Early-stop on open-ended HME rounds — the "anything missing? / do all"
+# ceremony detector. Triggers when the user signalled continuous motion
+# AND your final text enumerated remaining work AND no tool calls fired
+# after that text. KB entry dae793e748f9 has the full rationale.
+if [[ "$EARLY_STOP" == "early_stop" ]]; then
+  jq -n '{
+    "decision": "block",
+    "reason": "EARLY-STOP DETECTED: This is an open-ended HME/chat/tooling round (\"do all\", \"anything missing\", \"keep going\", \"improve X\", \"push further\", or similar). Your final text enumerated remaining gaps but you stopped without executing through them. The user has explicitly asked you to skip the \"anything missing? / do all\" ceremony — KB entry dae793e748f9 documents the protocol. Continue NOW: pick the highest-leverage items from your enumerated list and land them in this same turn. Stop only when remaining items are genuinely low-leverage polish, require architectural decisions the user owns, or require machine access you don'"'"'t have. Narrow-scope user prompts (\"rename foo to bar\") explicitly override this — if you believe the user'"'"'s intent was bounded, say so explicitly in text and continue with what you can do within that bound."
+  }'
+  exit 0
+fi
+
 # Nexus lifecycle audit
 # If there are unreviewed EDITs, BLOCK and force the agent to run
 #   i/review mode=forget
