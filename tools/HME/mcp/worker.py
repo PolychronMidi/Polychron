@@ -49,6 +49,12 @@ if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
 from hme_env import ENV  # noqa: E402
+# Force .env load NOW — before any torch/SentenceTransformer import — so
+# values like PYTORCH_CUDA_ALLOC_CONF land in os.environ in time for
+# PyTorch's first CUDA initialization. Lazy load (on first ENV.require)
+# would happen too late: by then torch has already initialized its
+# allocator and silently ignored the env var.
+ENV.load()
 
 
 def _purge_stale_server_pyc() -> None:
