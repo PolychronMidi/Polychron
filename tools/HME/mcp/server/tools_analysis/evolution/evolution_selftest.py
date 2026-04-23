@@ -231,7 +231,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 if ln.startswith("Drift hits:"):
                     try:
                         hits = int(ln.split(":", 1)[1].strip())
-                    except ValueError:
+                    except ValueError:  # silent-ok: expected parse miss; validated upstream
                         pass
                     break
             if hits is None:
@@ -664,7 +664,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 tot, attr = used_by_idx.get(idx, (0, 0))
                 try:
                     used_by_idx[idx] = (tot, attr + int(parts[2]))
-                except ValueError:
+                except ValueError:  # silent-ok: expected parse miss; validated upstream
                     pass
         residuals = []
         for idx, (total, attr) in used_by_idx.items():

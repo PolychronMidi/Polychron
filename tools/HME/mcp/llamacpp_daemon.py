@@ -531,7 +531,7 @@ class _Supervisor:
                 else:
                     try:
                         os.kill(pid, signal.SIGKILL)
-                    except ProcessLookupError:
+                    except ProcessLookupError:  # silent-ok: PID already gone; nothing to terminate
                         pass
                     except OSError as e:
                         return {"error": f"{name}: SIGKILL PID {pid} failed: {e}"}
@@ -1296,7 +1296,7 @@ def main():
     def _cleanup(signum, frame):
         try:
             os.unlink(PID_FILE)
-        except OSError:
+        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
             pass
         sys.exit(0)
 
@@ -1313,7 +1313,7 @@ def main():
         logger.error(f"daemon: topology assertion failed — refusing to start:\n  {_topo_err}")
         try:
             os.unlink(PID_FILE)
-        except OSError:
+        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
             pass
         sys.exit(2)
 
@@ -1338,12 +1338,12 @@ def main():
     logger.info(f"llamacpp daemon listening on 127.0.0.1:{args.port}")
     try:
         server.serve_forever()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # silent-ok: user signalled interrupt; intentional exit
         pass
     finally:
         try:
             os.unlink(PID_FILE)
-        except OSError:
+        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
             pass
 
 

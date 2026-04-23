@@ -43,7 +43,7 @@ def _pick_embed_device() -> str:
                     best_free, best_idx = free, i
             if best_idx >= 0:
                 return f"cuda:{best_idx}"
-    except Exception:
+    except Exception:  # silent-ok: best-effort; failure is non-fatal for this call site
         pass
     return "cpu"
 
@@ -159,13 +159,13 @@ class RAGEngine(
             for path in (self.hash_cache_path, self._per_file_chunks_path):
                 try:
                     os.remove(path)
-                except OSError:
+                except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
                     pass
             self._save_hashes()
             self._save_per_file_chunks()
             for path in (self.hash_cache_path, self._per_file_chunks_path):
                 try:
                     os.remove(path)
-                except OSError:
+                except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
                     pass
             self._clearing = False

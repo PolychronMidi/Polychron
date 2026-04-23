@@ -66,7 +66,7 @@ def _file_list_with_signature(lang_filter: str) -> tuple[tuple, list]:
     for fp in files:
         try:
             mtime_sum += _stat(fp).st_mtime
-        except OSError:
+        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
             pass
     signature = (len(files), round(mtime_sum, 3))
     return signature, files
@@ -336,7 +336,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
                     continue
                 if "export" in src_lines[sym_line - 1]:
                     continue
-        except Exception:
+        except Exception:  # silent-ok: best-effort; failure is non-fatal for this call site
             pass
 
         if name not in name_pattern_cache:

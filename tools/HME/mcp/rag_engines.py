@@ -390,7 +390,7 @@ def _ensure_vram_monitor():
             _pid = int(_f.read().strip())
         os.kill(_pid, 0)
         return  # live instance already running
-    except (FileNotFoundError, ValueError, ProcessLookupError):
+    except (FileNotFoundError, ValueError, ProcessLookupError):  # silent-ok: best-effort; file absence is expected
         pass
     import subprocess
     env = os.environ.copy()  # env-ok: subprocess needs inherited env

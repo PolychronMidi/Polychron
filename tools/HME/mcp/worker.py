@@ -73,7 +73,7 @@ def _purge_stale_server_pyc() -> None:
         if os.path.exists(src) and os.path.getmtime(src) > os.path.getmtime(pyc_path):
             try:
                 os.unlink(pyc_path)
-            except OSError:
+            except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
                 pass
 
 
@@ -489,7 +489,7 @@ def main():
     print(f"HME worker listening on http://{args.host}:{args.port}", flush=True)
     try:
         server.serve_forever()
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # silent-ok: user signalled interrupt; intentional exit
         pass
     finally:
         server.server_close()

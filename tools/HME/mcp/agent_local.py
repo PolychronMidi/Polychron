@@ -792,7 +792,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                 for d in arbiter_dirs[:4]:
                     if d not in directories:
                         directories.append(d)
-        except (json.JSONDecodeError, AttributeError):
+        except (json.JSONDecodeError, AttributeError):  # silent-ok: defensive against duck-typing; caller tolerates
             pass
 
     # Fall back to keyword extraction if arbiter didn't produce useful terms

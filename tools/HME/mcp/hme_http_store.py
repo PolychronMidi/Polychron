@@ -98,7 +98,7 @@ def _load_transcript() -> None:
             if line:
                 try:
                     entries.append(json.loads(line))
-                except Exception:
+                except Exception:  # silent-ok: best-effort; failure is non-fatal for this call site
                     pass
         with _transcript_lock:
             _transcript_entries = entries

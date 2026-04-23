@@ -105,7 +105,7 @@ def main() -> None:
     def _shutdown(signum, frame):
         try:
             os.remove(PID_FILE)
-        except FileNotFoundError:
+        except FileNotFoundError:  # silent-ok: best-effort; file absence is expected
             pass
         sys.exit(0)
 
@@ -122,13 +122,13 @@ def main() -> None:
             }
             try:
                 _append_sample(record)
-            except OSError:
+            except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
                 pass
             sample_count += 1
             if sample_count >= 100:
                 try:
                     _trim_history()
-                except OSError:
+                except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
                     pass
                 sample_count = 0
         time.sleep(POLL_INTERVAL)
