@@ -75,16 +75,33 @@ def music_truth_report() -> str:
     if corr:
         lines.append("")
         lines.append("## Rolling-window correlations (Pearson r)")
+        # Split so non-degenerate correlations lead the list — they're the
+        # scientifically meaningful ones. Degenerate pairs (too few distinct
+        # values in x or y, n<3, etc.) get collapsed to a summary at the
+        # bottom. Previously a 20-pair list was 17 degenerates drowning out
+        # 3 real correlations.
+        computable = []
+        degenerate_items = []
         for k, c in corr.items():
+            if c.get("degenerate"):
+                degenerate_items.append((k, c))
+            else:
+                computable.append((k, c))
+        # Sort computable by |r| desc so strongest correlations lead.
+        computable.sort(key=lambda kc: -abs(kc[1].get("r", 0) if isinstance(kc[1].get("r"), (int, float)) else 0))
+        for k, c in computable:
             r = c.get("r")
             n = c.get("n", 0)
-            degenerate = c.get("degenerate", False)
-            reason = c.get("reason", "")
             r_s = f"{r:+.3f}" if isinstance(r, (int, float)) else "n/a"
-            tail = f"  n={n}"
-            if degenerate and reason:
-                tail += f"  (degenerate: {reason})"
-            lines.append(f"  {k:<55} r={r_s}{tail}")
+            lines.append(f"  {k:<55} r={r_s}  n={n}")
+        if degenerate_items:
+            lines.append("")
+            lines.append(f"  ── {len(degenerate_items)} degenerate pair(s) suppressed ──")
+            for k, c in degenerate_items[:3]:
+                reason = c.get("reason", "")
+                lines.append(f"     {k}  ({reason})")
+            if len(degenerate_items) > 3:
+                lines.append(f"     …and {len(degenerate_items) - 3} more")
 
     if strongest is not None:
         lines.append("")
