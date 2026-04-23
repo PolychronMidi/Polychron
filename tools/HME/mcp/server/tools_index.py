@@ -209,10 +209,13 @@ def clear_index() -> str:
     except Exception as e:
         logger.warning(f"Indexing mode failed ({e}), falling back to default device")
         result = _index_main(ctx.PROJECT_ROOT)
+    if result.get("error") or "total_files" not in result:
+        logger.warning(f"GPU-dedicated reindex unavailable ({result.get('error', 'no result')}); falling back to default device")
+        result = _index_main(ctx.PROJECT_ROOT)
     return (
         f"Index cleared and rebuilt: {result['total_files']} files, "
         f"{result['indexed']} indexed, {result['chunks_created']} chunks, "
-        f"{result['symbols_indexed']} symbols"
+        f"{result.get('symbols_indexed', 0)} symbols"
     )
 
 
