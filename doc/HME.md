@@ -926,9 +926,9 @@ Two mechanical detectors (v1 deliberately avoids semantic similarity):
 1. **Feedback loop near-misses** — for each registered feedback loop, compute the set of modules whose dependency-graph edges touch ≥⌊|loop|/2⌋ of the loop's participants but aren't themselves registered in the loop. Universal infrastructure modules (those with producer fan-out ≥30) are filtered out so `validator`/`clamps`/`index` don't dominate. Top candidate on first run: `stutterVariants → entropy-regulator` at 1.0 confidence (3/3 participants touched, not in loop).
 2. **Co-consumed orphan pairs** — module pairs imported together by ≥5 shared consumers (excluding universal modules) with no direct producer→consumer edge between them. The architecture treats them as functionally related without explicit wiring. Top result: `stutterNotes ↔ stutterVariants` (20 shared consumers).
 
-Surfaced via `status(mode='negative_space')`. These become first-class evolution candidates that the Evolver didn't have to think of — they emerge from HME's structural model of the system.
+Surfaced via `status(mode='negative_space')`. These become first-class evolution candidates that the agent didn't have to think of — they emerge from HME's structural model of the system.
 
-### Evolver Cognitive Load Modeling
+### Cognitive Load Modeling
 
 Phase 5.4 of the feature mapping. HME models Polychron's architecture and its own KB. This module adds a model of the agent running the loop.
 
