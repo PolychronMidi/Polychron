@@ -17,6 +17,14 @@ if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
   exit 2
 fi
 
+# Block reads of the deprecated memory directory. Reading (even just to
+# "see what's there") legitimizes the abstraction; if the agent needs
+# historical context it queries HME KB via i/learn.
+if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
+  _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn query=\"<what you're looking for>\". Memory files are not the source of truth for project knowledge."
+  exit 2
+fi
+
 # Normalize to a project-relative path. PROJECT_ROOT is set by Claude Code /
 # the proxy supervisor. Fall back to absolute comparison.
 REL="$FILE"
