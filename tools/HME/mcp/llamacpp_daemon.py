@@ -1159,7 +1159,11 @@ class _Handler(BaseHTTPRequestHandler):
         _qs = parse_qs(_parsed.query)
         _device = (_qs.get("device") or [None])[0]
 
-        if _path == "/health":
+        if _path == "/version":
+            # Three-way version check: clients compare their expected
+            # version against this value and warn on drift.
+            self._send_json(200, {"version": DAEMON_VERSION, "component": "daemon"})
+        elif _path == "/health":
             stats = _supervisor_singleton.stats()
             all_healthy = all(
                 s["last_health_ok"] > time.time() - _HEALTH_INTERVAL * 2
