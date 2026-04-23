@@ -84,7 +84,20 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             parts.append(_aa())
         elif m == "composition":
             from .composition import composition_events as _ce
-            parts.append(_ce(mode="full"))
+            # drama_finder inside composition_events does a 60s LLM
+            # "What the Listener Hears" call. Review is a snapshot surface,
+            # not a synthesis surface — skip the narrative here. Users
+            # wanting it can call `i/hme drama_finder` directly.
+            import os as _os
+            _prev = _os.environ.get("HME_DRAMA_NO_SYNTHESIS")
+            _os.environ["HME_DRAMA_NO_SYNTHESIS"] = "1"
+            try:
+                parts.append(_ce(mode="full"))
+            finally:
+                if _prev is None:
+                    _os.environ.pop("HME_DRAMA_NO_SYNTHESIS", None)
+                else:
+                    _os.environ["HME_DRAMA_NO_SYNTHESIS"] = _prev
         elif m == "health":
             from .health import codebase_health as _ch
             parts.append(_ch())
