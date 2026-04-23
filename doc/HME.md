@@ -723,7 +723,7 @@ Phase 2.4 of the feature mapping. `tools_analysis/blindspots.py` walks the full 
 - Modules written chronically without a prior HME read (≥2 occurrences)
 - Touched modules that have no KB coverage at all (cross-reference with the staleness index)
 
-Surfaced via `status(mode='blindspots')`. Factual coverage data, not a critique — the decision about whether to rotate attention remains the Evolver's.
+Surfaced via `status(mode='blindspots')`. Factual coverage data, not a critique — the decision about whether to rotate attention remains the agent's.
 
 ### Causal Cascade Indexing
 
