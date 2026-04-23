@@ -108,7 +108,7 @@ def set_state(s: str) -> None:
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("onboarding-state", __file__)
-    except ImportError:
+    except ImportError:  # silent-ok: lifecycle_writers optional outside full HME tree
         pass
     if s not in STATES:
         logger.warning(f"onboarding: rejected invalid state {s!r}")
