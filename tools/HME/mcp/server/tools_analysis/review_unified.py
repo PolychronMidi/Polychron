@@ -60,7 +60,12 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             parts.append(_tr(system_a=system_a, system_b=system_b))
         elif m == "sections":
             if section_a < 0 or section_b < 0:
-                parts.append("Error: sections mode requires section_a and section_b (0-indexed).")
+                parts.append(
+                    "i/review mode=sections — compare two sections side-by-side.\n\n"
+                    "Usage: i/review mode=sections section_a=<N> section_b=<M>\n"
+                    "  section_a, section_b: 0-indexed section numbers to compare.\n\n"
+                    "Example: i/review mode=sections section_a=0 section_b=3"
+                )
             else:
                 from .section_compare import section_compare as _sc
                 parts.append(_sc(section_a, section_b))
