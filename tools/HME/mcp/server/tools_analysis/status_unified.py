@@ -207,13 +207,16 @@ def status(mode: str = "all") -> str:
     append_session_narrative("status", f"status({mode})")
     ctx.ensure_ready_sync()
 
+    if mode == "list":
+        return _list_modes()
+
     handler = _STATUS_MODES.get(mode)
     if handler:
         return handler()
 
     # mode == "all" — unified overview below
     if mode != "all":
-        return f"Unknown mode '{mode}'. Available: {', '.join(sorted(_STATUS_MODES.keys()))}"
+        return f"Unknown mode '{mode}'. Available: {', '.join(sorted(_STATUS_MODES.keys()))} (or mode=list for grouped descriptions)"
 
     # mode == "all" — unified overview
     parts = []
