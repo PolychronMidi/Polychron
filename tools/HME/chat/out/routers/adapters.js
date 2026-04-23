@@ -28,8 +28,9 @@ exports.claudeAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (pipe)"
     }, cb.error);
 });
 // Claude PTY — same shape as pipe but routes through the PTY harness.
+// Note: streamClaudePty's onDone takes a single `usage?` arg (no cost).
 exports.claudePtyAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (PTY)", (input, opts, cb) => {
-    return (0, router_1.streamClaudePty)(input.message, input.sessionId, opts.claude, input.workingDir, cb.chunk, (id) => cb.sessionId?.(id), (_cost, usage) => {
+    return (0, router_1.streamClaudePty)(input.message, input.sessionId, opts.claude, input.workingDir, cb.chunk, (id) => cb.sessionId?.(id), (usage) => {
         if (usage) {
             cb.tokens?.({
                 input: usage.inputTokens,
@@ -44,12 +45,29 @@ exports.llamacppAdapter = (0, router_1.wrapLegacyStream)("local", "llama.cpp (ag
     return (0, router_1.streamLlamacppAgentic)(messages, opts.llamacpp, opts.workingDir, cb.chunk, cb.done, cb.error);
 });
 exports.hybridAdapter = (0, router_1.wrapLegacyStream)("hybrid", "llama.cpp + KB (hybrid)", (input, opts, cb) => {
+    let cancelFn = null;
     let cancelled = false;
-    (0, router_1.streamHybrid)(input.messages, input.userText, opts.llamacpp, input.workingDir, cb.chunk, cb.done, cb.error).catch((e) => {
+    (0, router_1.streamHybrid)(input.message, input.history, opts.llamacpp, input.workingDir, cb.chunk, cb.done, cb.error).then((inner) => {
+        cancelFn = inner;
+        if (cancelled) {
+            try {
+                inner();
+            }
+            catch { /* silent-ok: inner cancel may already be past completion */ }
+        }
+    }).catch((e) => {
         if (!cancelled)
             cb.error(String(e?.message ?? e));
     });
-    return () => { cancelled = true; };
+    return () => {
+        cancelled = true;
+        if (cancelFn) {
+            try {
+                cancelFn();
+            }
+            catch { /* silent-ok: legacy cancel may throw on already-done */ }
+        }
+    };
 });
 /**
  * Return the adapter appropriate for the given route. Caller is
