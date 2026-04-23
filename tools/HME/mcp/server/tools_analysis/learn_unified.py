@@ -100,6 +100,25 @@ def learn(query: str = "", title: str = "", content: str = "",
         from .crystallizer import crystallize_cli as _cc
         return _cc()
 
+    if action == "promote_discovery":
+        # Phase 6.4 (R97) — promote a synthesized discovery draft from
+        # metrics/hme-discoveries-draft.jsonl into the human-curated
+        # doc/hme-discoveries.md. Requires:
+        #   - `remove` = draft id (12-char hex)
+        #   - draft must have promotable=true (stable across ≥3 runs)
+        # Optional:
+        #   - `listening_notes` = human annotation appended to the entry
+        from .discovery_promote import promote_discovery as _pd
+        return _pd(
+            draft_id=remove,
+            annotation=listening_notes or content or "",
+        )
+
+    if action == "discoveries":
+        # List all drafts with their stability + promotable status.
+        from .discovery_promote import list_discoveries as _ld
+        return _ld()
+
     if action == "ground_truth":
         # Phase 5.5 — human ground-truth feedback. We reuse the learn()
         # parameter surface: title=section, tags[0]=moment_type,
