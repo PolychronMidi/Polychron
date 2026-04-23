@@ -179,6 +179,10 @@ _STATUS_MODES: dict[str, callable] = {
     "constitution": _mode_constitution,
     "doc_drift": _mode_doc_drift,
     "generalizations": _mode_generalizations,
+    # `priorities` and `next` are intentional aliases — the underlying signal
+    # is the same (output/metrics/evolution-priorities.json). Both names exist
+    # because users reach for either word; aliasing avoids a "wait, which one?"
+    # context-switch and is documented in the mode=list output.
     "priorities": lambda: _evolution_priority_report(),
     "next": lambda: _evolution_priority_report(),
     "reflexivity": _mode_reflexivity,
