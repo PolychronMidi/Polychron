@@ -316,7 +316,7 @@ def _init_local_models() -> str:
     """Verify llama-server instances are healthy at startup.
 
     llama-server instances (arbiter on Vulkan1, coder on Vulkan2) are spawned
-    by llamacpp_supervisor / llamacpp_daemon; this function is a health probe
+    by llamacpp_daemon (sole authority); this function is a health probe
     that does NOT touch any legacy inference API. It reports readiness to the
     shim and fires a CRITICAL LIFESAVER if an instance is unreachable.
     """
