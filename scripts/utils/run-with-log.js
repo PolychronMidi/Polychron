@@ -24,7 +24,15 @@ const fs = require('fs');
 const lockDir = 'tmp';
 const lockPath = require('path').join(lockDir, 'run.lock');
 // Support nested run-with-log invocations spawned from a root: they set RUN_WITH_LOG_OWNER to the root PID
-const owner = process.env.RUN_WITH_LOG_OWNER ? Number(process.env.RUN_WITH_LOG_OWNER) : null;
+const owner = (() => {
+  const raw = process.env.RUN_WITH_LOG_OWNER;
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new Error(`RUN_WITH_LOG_OWNER="${raw}" is not a positive integer PID`);
+  }
+  return n;
+})();
 let wroteLock = false;
 try {
   // Ensure lock directory exists
