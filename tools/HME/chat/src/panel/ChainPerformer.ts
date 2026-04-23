@@ -45,6 +45,8 @@ export interface ChainSessionBridge {
   getChainIndex(): number;
   getClaudeSessionId(): string | null;
   getContextPct(): number;
+  /** Current CLI model id, used to pick a per-model chain threshold. */
+  getModelId(): string | null;
   hasMeterLiveUpdate(): boolean;
   /**
    * Clear messages + claude session id, advance chainIndex, reset context meter
