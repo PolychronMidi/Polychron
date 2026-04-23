@@ -54,8 +54,17 @@ const CLI_VERSION = (() => {
   catch (_) { return 'unknown'; }
 })();
 
+function _envPort(name, def) {
+  const raw = process.env[name];
+  if (raw == null || raw === '') return def;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 65535) {
+    throw new Error(`${name}="${raw}" is not a valid port (0-65535)`);
+  }
+  return n;
+}
 const HOST = process.env.HME_CLI_HOST || '127.0.0.1';
-const PORT = Number(process.env.HME_MCP_PORT || 9098);
+const PORT = _envPort('HME_MCP_PORT', 9098);
 // Timeouts removed per request: handled at lower layers
 const TIMEOUT_MS = 0;
 
@@ -168,7 +177,7 @@ function _getVersion(host, port, timeoutMs) {
 }
 function getWorkerVersion(timeoutMs) { return _getVersion(HOST, PORT, timeoutMs); }
 function getProxyVersion(timeoutMs) {
-  const proxyPort = Number(process.env.HME_PROXY_PORT || 9099);
+  const proxyPort = _envPort('HME_PROXY_PORT', 9099);
   return _getVersion(HOST, proxyPort, timeoutMs);
 }
 
