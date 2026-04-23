@@ -196,10 +196,11 @@ def module_story(module_name: str) -> str:
         parts.append(f"\n## Musical Impact (last run)")
         parts.append(comp)
     # Runtime trace summary — what the module ACTUALLY DID
-    # Gate behind greedy budget: trace_query calls synthesis model (300-600s on local model).
-    # On moderate/conservative, skip entirely — Musical Impact section above covers basics.
+    # Gate behind greedy budget AND NOT fast: trace_query calls synthesis
+    # model (300-600s on local model). Even in greedy mode, fast=true means
+    # the caller wants a snapshot, not a full synthesis run.
     _trace_result = None
-    if budget == "greedy":
+    if budget == "greedy" and not _fast:
         try:
             from .evolution import trace_query as _trace_query
             _trace_result = _trace_query(module_name, limit=8)
