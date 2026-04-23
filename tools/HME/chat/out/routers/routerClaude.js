@@ -38,10 +38,27 @@ function hmeLog(msg) {
         catch { }
     }
 }
+// Env vars that the parent VS Code extension host inherits when Claude Code
+// launched it. Passing these to the spawned `claude` child causes v2.1.118
+// to detect a nested session and exit with code 0 at ~450ms with no output
+// — observed in /tmp/hme-ctx-debug.log as "finalize: fullOutput is empty".
+// Strip them so the PTY child boots as a fresh Claude Code session.
+const PARENT_CLAUDE_SESSION_VARS = new Set([
+    "CLAUDECODE",
+    "CLAUDE_CODE_ENTRYPOINT",
+    "CLAUDE_CODE_EXECPATH",
+    "CLAUDE_CODE_SSE_PORT",
+    "CLAUDE_AGENT_SDK_VERSION",
+    "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
+]);
 function buildClaudeEnv() {
     const env = {};
     for (const [k, v] of Object.entries(process.env)) {
-        if (k !== "ANTHROPIC_API_KEY" && v !== undefined)
+        if (k === "ANTHROPIC_API_KEY")
+            continue;
+        if (PARENT_CLAUDE_SESSION_VARS.has(k))
+            continue;
+        if (v !== undefined)
             env[k] = v;
     }
     if (!env["PATH"]?.includes(".local/bin")) {
