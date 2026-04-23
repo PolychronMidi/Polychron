@@ -2,7 +2,7 @@
 
 > Master executive for hypermeta evolutionary intelligence. The cognitive substrate that makes self-evolving composition possible — not a code search tool but an evolutionary nervous system. Continually evolving to remove the ceiling on coherence through intelligently managed context-efficiency.
 
-HME is five layers integrated into one executive. **7 MCP tools** (agent-facing) plus a self-coherence substrate of **38 verifiers** at weight 0-5 each, producing an aggregate HME Coherence Index (HCI) on a 0-100 scale. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Hooks enforce workflow automatically. The Evolver and lab run the evolution loop. A local-LLM subagent pipeline (Explore + Plan modes) with a domain-specialized QLoRA-fine-tuned arbiter handles code research at amateur-hardware speeds.
+HME is integrated into one executive. **7 MCP tools** (agent-facing) plus a self-coherence substrate of verifiers weighted 0-5 each, producing an aggregate HME Coherence Index (HCI) on a 0-100 scale. CLAUDE.md encodes rules and boundaries. Skills load cognitive frameworks per session. Lifecycle hooks enforce workflow automatically, including the evolution loop. A local-LLM subagent pipeline (Explore + Plan modes) with a domain-specialized QLoRA-fine-tuned arbiter handles code research at amateur-hardware speeds.
 
 No layer is optional. Removing any one collapses the executive.
 
