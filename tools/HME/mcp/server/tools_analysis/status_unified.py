@@ -896,17 +896,42 @@ def _evolution_priority_report() -> str:
         priorities = data.get("priorities", [])
         if not priorities:
             return "# Evolution Priorities\n\nNo priorities generated.\n"
+        # Compute staleness of the report — the underlying file only
+        # regenerates on pipeline runs. Without a freshness indicator the
+        # user can't tell whether w=0.65 reflects the current session
+        # or a snapshot from 8 hours ago.
+        ts_str = data["meta"].get("timestamp", "")
+        stale_note = ""
+        try:
+            from datetime import datetime, timezone
+            import re as _re_ts
+            # Handle both Z-suffixed ISO and plain strings.
+            _norm = _re_ts.sub(r"Z$", "+00:00", ts_str)
+            ts = datetime.fromisoformat(_norm)
+            age_h = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
+            if age_h > 24:
+                stale_note = f"  ⚠ STALE ({age_h:.1f}h old — re-run `npm run main` for current priorities)"
+            elif age_h > 2:
+                stale_note = f"  ({age_h:.1f}h old)"
+        except Exception:
+            pass
         lines = [
             "# HME Evolution Priorities",
             "",
             f"*{data['meta']['priorities_generated']} priorities from {data['meta']['signals_aggregated']} signal sources*",
-            f"*Generated: {data['meta']['timestamp']}*",
+            f"*Generated: {ts_str}*{stale_note}",
+            "",
+            "*Weight scale: 0.0–1.0. ≥0.60 = high-signal / act soon. "
+            "0.30–0.59 = notable but not urgent. <0.30 = background noise.*",
             "",
         ]
         for p in priorities[:10]:
             r = p.get("rationale", "")
             ev = p.get("evidence", [{}])[0]
-            lines.append(f"**#{p['rank']}** [{p['category']}] **{p['target']}** (w={p.get('weight', 0):.2f})")
+            w = p.get('weight', 0)
+            # Inline weight tier so the scale is evident per-item.
+            tier = "HIGH" if w >= 0.60 else ("MED" if w >= 0.30 else "low")
+            lines.append(f"**#{p['rank']}** [{p['category']}] **{p['target']}** (w={w:.2f} {tier})")
             if r:
                 lines.append(f"  {r}")
             lines.append(f"  evidence: {ev.get('source', '?')} → {ev.get('signal', '?')}")
