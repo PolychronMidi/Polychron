@@ -15,7 +15,7 @@ import {
   listChainLinks,
 } from "./session/SessionStore";
 import { TranscriptLogger, nullTranscript } from "./session/TranscriptLogger";
-import { synthesizeNarrative, classifyMessage } from "./Arbiter";
+import { synthesizeNarrative, classifyMessage, getArbiterHealth } from "./Arbiter";
 import {
   uid,
   SessionState, StreamTracker, ChatCtx,
