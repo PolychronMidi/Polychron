@@ -63,7 +63,10 @@ def hme_introspect() -> str:
                 if len(latest_section) > 1500:
                     cut = latest_section.rfind('\n', 0, 1500)
                     latest_section = latest_section[:cut if cut > 0 else 1500] + "\n  ... (truncated)"
-                parts.append("\n### Latest Journal Entry")
+                parts.append("\n### Latest Journal Entry (archive)")
+                _banner = _journal_freshness_banner()
+                if _banner:
+                    parts.append(_banner.rstrip())
                 parts.append(latest_section)
         except Exception as _err1:
             logger.debug(f"parts.append: {type(_err1).__name__}: {_err1}")
