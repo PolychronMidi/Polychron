@@ -1,0 +1,92 @@
+{
+  "_doc": "HME coherence registry — the claim 'no layer is optional' made testable. Each subsystem lists the artifacts it produces (for freshness checks) and what it depends on (for failure cascading). verify-coherence.sh walks this graph, reports pass/fail per subsystem, and emits a coherence_gap event when a declared capability has no backing artifact.",
+  "freshness_ceilings": {
+    "default_seconds": 86400,
+    "pipeline_seconds": 3600,
+    "session_seconds": 300
+  },
+  "subsystems": [
+    {
+      "id": "activity_bridge",
+      "description": "Per-round event stream — round_complete, file_written, brief_recorded, coherence_violation",
+      "artifacts": [{ "path": "output/metrics/hme-activity.jsonl", "freshness": "default" }],
+      "public_surfaces": ["status(mode='activity')", "status(mode='blindspots')"],
+      "depends_on": []
+    },
+    {
+      "id": "lifesaver",
+      "description": "Turn-scoped error surfacing + resolution",
+      "artifacts": [
+        { "path": "log/hme-errors.log", "freshness": "default", "allow_empty": true },
+        { "path": "tmp/hme-errors.turnstart", "freshness": "session", "allow_empty": true },
+        { "path": "tmp/hme-errors.lastread", "freshness": "session", "allow_empty": true }
+      ],
+      "public_surfaces": ["stop.sh LIFESAVER block", "userpromptsubmit.sh error banner"],
+      "depends_on": []
+    },
+    {
+      "id": "streak_calibrator",
+      "description": "Adaptive LIFESAVER threshold (observation→action feedback loop)",
+      "artifacts": [
+        { "path": "output/metrics/hme-streak-calibration.json", "freshness": "default", "allow_empty": true },
+        { "path": "tmp/hme-streak-warn.txt", "freshness": "default", "allow_empty": true }
+      ],
+      "public_surfaces": ["HME_STREAK_WARN (consumed by _safety.sh)"],
+      "depends_on": ["lifesaver", "activity_bridge"]
+    },
+    {
+      "id": "pattern_registry",
+      "description": "Declarative trigger+action patterns with auto-apply for non-destructive classes",
+      "artifacts": [
+        { "path": "output/metrics/hme-pattern-matches.json", "freshness": "pipeline", "allow_empty": true }
+      ],
+      "public_surfaces": ["status(mode='patterns')", "i/pattern"],
+      "depends_on": ["activity_bridge"]
+    },
+    {
+      "id": "invariants",
+      "description": "Born-from-bugfix tests run every pipeline, classified by efficacy",
+      "artifacts": [
+        { "path": "output/metrics/hme-invariant-history.json", "freshness": "pipeline", "allow_empty": true },
+        { "path": "output/metrics/hme-invariant-efficacy.json", "freshness": "pipeline", "allow_empty": true }
+      ],
+      "public_surfaces": ["i/why", "status(mode='invariants')"],
+      "depends_on": []
+    },
+    {
+      "id": "coupling",
+      "description": "Tool-frequency + module-correlation coupling graph with antagonist detection",
+      "artifacts": [{ "path": "output/metrics/hme-coupling.json", "freshness": "pipeline", "allow_empty": true }],
+      "public_surfaces": ["status(mode='network')", "status(mode='coupling')"],
+      "depends_on": ["activity_bridge"]
+    },
+    {
+      "id": "blindspots",
+      "description": "Subsystem coverage gaps over last N rounds",
+      "artifacts": [{ "path": "output/metrics/hme-blindspots.json", "freshness": "pipeline", "allow_empty": true }],
+      "public_surfaces": ["status(mode='blindspots')"],
+      "depends_on": ["activity_bridge"]
+    },
+    {
+      "id": "kb",
+      "description": "Lance-backed semantic knowledge base",
+      "artifacts": [{ "path": "tools/HME/KB", "freshness": null, "is_dir": true }],
+      "public_surfaces": ["i/learn", "i/trace", "i/hme-read"],
+      "depends_on": []
+    },
+    {
+      "id": "proxy",
+      "description": "Lifecycle dispatch + middleware pipeline for tool events",
+      "artifacts": [{ "path": "log/hme-proxy.out", "freshness": "session", "allow_empty": true }],
+      "public_surfaces": ["hook dispatch via _proxy_bridge.sh", "middleware: grep_glob_neighborhood, read_context, edit_context, lifesaver_inject"],
+      "depends_on": []
+    },
+    {
+      "id": "hooks_lifecycle",
+      "description": "PreToolUse/PostToolUse/Stop enforcement layer",
+      "artifacts": [{ "path": "tmp/hme-nexus.state", "freshness": "session", "allow_empty": true }],
+      "public_surfaces": ["NEXUS blocks", "mid-pipeline edit gate", "snapshot verdict gate", "register*Bias auto-snapshot"],
+      "depends_on": ["proxy"]
+    }
+  ]
+}
