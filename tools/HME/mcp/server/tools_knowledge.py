@@ -15,6 +15,11 @@ logger = logging.getLogger("HME")
 
 def add_knowledge(title: str, content: str, category: str = "general", tags: list[str] = [], scope: str = "project", related_to: str = "", relation_type: str = "", listening_notes: str = "") -> str:
     """Persist a knowledge entry to the KB. Tell the STORY, not just the fact: include WHY this matters musically, what the listener experiences when this constraint is violated, and what happened in the round that discovered it. Categories: 'architecture', 'decision', 'pattern', 'bugfix', 'general'. Use listening_notes to describe the musical effect ('coherent sections lost their sense of arrival'). Use related_to=<entry_id> with relation_type (caused_by, fixed_by, depends_on, contradicts, similar_to, supersedes) for knowledge_graph edges. Scope 'project'/'global'/'both'."""
+    try:
+        from server.lifecycle_writers import assert_writer
+        assert_writer("kb", __file__)
+    except ImportError:
+        pass
     _track("add_knowledge")
     ctx.ensure_ready_sync()
     if not title.strip():
