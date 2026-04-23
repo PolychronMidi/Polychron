@@ -20,6 +20,7 @@
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.makeResult = makeResult;
+exports.streamAsIterable = streamAsIterable;
 exports.wrapLegacyStream = wrapLegacyStream;
 /** Helper: build a resolved StreamResult with sensible defaults. */
 function makeResult(partial) {
@@ -30,6 +31,54 @@ function makeResult(partial) {
         error: partial.error,
         sessionId: partial.sessionId,
         tokens: partial.tokens,
+    };
+}
+/** Convert a StreamHandle into an AsyncIterable<StreamChunkEvent>. The
+ * generator yields each onChunk call in order, then yields either nothing
+ * (success) or a single `{type: "error"}` event (on failure) before
+ * terminating. The caller awaits `handle.done` separately for the final
+ * StreamResult — this iterable is for consuming intermediate chunks. */
+function streamAsIterable(handle, chunkSource) {
+    const buffer = [];
+    let resolveNext = null;
+    let done = false;
+    const originalOnChunk = chunkSource.onChunk;
+    chunkSource.onChunk = (chunk, type) => {
+        originalOnChunk(chunk, type);
+        buffer.push({ type: type, chunk, ts: Date.now() });
+        if (resolveNext) {
+            const r = resolveNext;
+            resolveNext = null;
+            r();
+        }
+    };
+    handle.done.then((result) => {
+        if (!result.ok && result.error) {
+            buffer.push({ type: "error", chunk: result.error, ts: Date.now() });
+        }
+        done = true;
+        if (resolveNext) {
+            const r = resolveNext;
+            resolveNext = null;
+            r();
+        }
+    });
+    return {
+        [Symbol.asyncIterator]() {
+            return {
+                async next() {
+                    while (true) {
+                        if (buffer.length > 0) {
+                            return { value: buffer.shift(), done: false };
+                        }
+                        if (done) {
+                            return { value: undefined, done: true };
+                        }
+                        await new Promise((r) => { resolveNext = r; });
+                    }
+                },
+            };
+        },
     };
 }
 /** Thin adapter wrapper: converts a legacy `onChunk/onDone/onError + cancel`

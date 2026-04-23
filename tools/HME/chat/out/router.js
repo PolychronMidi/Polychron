@@ -1,7 +1,7 @@
 "use strict";
 // Router barrel — types and re-exports from split modules.
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runAdapter = exports.getAdapterForRoute = exports.hybridAdapter = exports.llamacppAdapter = exports.claudePtyAdapter = exports.claudeAdapter = exports.makeResult = exports.wrapLegacyStream = exports.streamHybrid = exports.logShimError = exports.isHmeShimReady = exports.postNarrative = exports.reindexFiles = exports.postTranscript = exports.auditChanges = exports.validateMessage = exports.enrichPrompt = exports.fetchHmeContext = exports.GPU_NUM_CTX = exports.streamLlamacppAgentic = exports.streamLlamacpp = exports.streamClaudePty = exports.streamClaude = void 0;
+exports.runAdapter = exports.getAdapterForRoute = exports.hybridAdapter = exports.llamacppAdapter = exports.claudePtyAdapter = exports.claudeAdapter = exports.streamAsIterable = exports.makeResult = exports.wrapLegacyStream = exports.streamHybrid = exports.logShimError = exports.isHmeShimReady = exports.postNarrative = exports.reindexFiles = exports.postTranscript = exports.auditChanges = exports.validateMessage = exports.enrichPrompt = exports.fetchHmeContext = exports.GPU_NUM_CTX = exports.streamLlamacppAgentic = exports.streamLlamacpp = exports.streamClaudePty = exports.streamClaude = void 0;
 // Re-export all functions from split modules so existing imports from "./router" keep working.
 var routerClaude_1 = require("./routers/routerClaude");
 Object.defineProperty(exports, "streamClaude", { enumerable: true, get: function () { return routerClaude_1.streamClaude; } });
@@ -24,6 +24,7 @@ Object.defineProperty(exports, "streamHybrid", { enumerable: true, get: function
 var RouterInterface_1 = require("./routers/RouterInterface");
 Object.defineProperty(exports, "wrapLegacyStream", { enumerable: true, get: function () { return RouterInterface_1.wrapLegacyStream; } });
 Object.defineProperty(exports, "makeResult", { enumerable: true, get: function () { return RouterInterface_1.makeResult; } });
+Object.defineProperty(exports, "streamAsIterable", { enumerable: true, get: function () { return RouterInterface_1.streamAsIterable; } });
 // Concrete adapters — one per backend, all normalized through the
 // RouterAdapter interface. Use getAdapterForRoute() + runAdapter().
 var adapters_1 = require("./routers/adapters");
