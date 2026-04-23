@@ -124,7 +124,7 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
                     if name in ("if", "else", "for", "while", "return", "const", "let", "var"):
                         continue
                     line = _line_at(m.start())
-                    if kind == "inner_function":
+                    if kind in ("inner_function", "arrow_global"):
                         params = m.group(2).strip() if m.lastindex >= 2 else ""
                         symbols.append({
                             "name": name, "kind": "function", "line": line,
