@@ -91,8 +91,14 @@ tools/HME/               The single source of truth
     plugin.json                         Plugin metadata (name, version, description)
   mcp/                                  Python MCP server
     server/
-      main.py                           FastMCP entry point, background model loading
-      context.py                        Shared engine references (project_engine, etc.)
+      (main.py removed — worker.py is the entry point since the MCP decoupling)
+      context.py                        Shared engine references (project_engine, etc.);
+                                          holds _NullMCP default so daemon-side imports don't crash
+      lifecycle_writers.py              Single-writer registry (6 domains: llama-server, embedders,
+                                          kb, hme-todo-store, lifesaver-registry, onboarding-state)
+      probe_witness.py                  Witness/falsification structure for selftest probes
+      coherence_timeseries.py           Per-run probe history for temporal drift detection
+      health_summary.py                 Operator-facing health command (hme_admin action=health)
       helpers.py                        Budget limits, formatters; loads project-rules.json
       tools_analysis/                   Public tool surface (6 agent-callable) lives here:
         evolution_evolve.py               evolve — evolution planning hub
