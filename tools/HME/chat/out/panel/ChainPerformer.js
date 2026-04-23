@@ -34,23 +34,39 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChainPerformer = exports.CHAIN_THRESHOLD_PCT = void 0;
+exports.resolveChainThresholdPct = resolveChainThresholdPct;
 const path = __importStar(require("path"));
 const fs = __importStar(require("fs"));
 const SessionStore_1 = require("../session/SessionStore");
 const Arbiter_1 = require("../Arbiter");
 const chatChain_1 = require("../session/chatChain");
 const streamUtils_1 = require("../streamUtils");
-// Fire chain at 85% — low enough that the *chain synthesis itself* has
-// comfortable headroom to run without risking its own context overflow.
-// The old 99% threshold put the summary synthesis call inside the danger
-// zone: a context 1% from full had no room for Stage 1A+1B extract +
-// Stage 2 synthesis tokens. Lowering to 85% keeps ~15% of window (~150k
-// tokens on a 1M model) for the synthesis to complete cleanly.
-//
-// Auto-compaction by Claude Code fires at ~92-95%, so 85% also ensures
-// the chain artifact is persisted BEFORE the CLI itself starts compacting
-// the conversation, which would otherwise race.
-exports.CHAIN_THRESHOLD_PCT = 85;
+// Fire chain at a per-model percentage. Smaller models (200k context,
+// Sonnet default) need to rotate earlier because absolute headroom is
+// tiny: 15% of 200k = 30k tokens, which is the minimum for Stage 1A+1B
+// extract + Stage 2 synthesis. Larger models (1M context, Sonnet 1M or
+// Opus 1M) can rotate later because 10% of 1M = 100k tokens is plenty.
+// Auto-compaction by Claude Code fires at ~92-95%, so the threshold
+// must stay below that regardless of model size.
+exports.CHAIN_THRESHOLD_PCT = 85; // legacy constant — still exported for compatibility
+/** Resolve per-model chain-rotation threshold. Model id is the full
+ *  CLI key from token usage (e.g. "claude-sonnet-4-6", "claude-opus-4-7-1m").
+ *  Returns percentage-of-context at which rotation should fire. */
+function resolveChainThresholdPct(modelId) {
+    if (!modelId)
+        return exports.CHAIN_THRESHOLD_PCT;
+    const lower = modelId.toLowerCase();
+    // 1M-context variants: rotate later because absolute headroom is large.
+    if (lower.includes("1m") || lower.includes("-1m") || lower.includes("_1m")) {
+        return 90;
+    }
+    // Opus with default context is ~200k.
+    if (lower.includes("opus")) {
+        return 82;
+    }
+    // Sonnet default (200k) and everything else.
+    return exports.CHAIN_THRESHOLD_PCT;
+}
 class ChainPerformer {
     constructor(projectRoot, host, session, errorSink) {
         this.projectRoot = projectRoot;
@@ -84,7 +100,8 @@ class ChainPerformer {
             this.host.postError("chain", `invalid context pct=${pct} — chain suppressed`);
             return;
         }
-        if (pct < exports.CHAIN_THRESHOLD_PCT)
+        const threshold = resolveChainThresholdPct(this.session.getModelId());
+        if (pct < threshold)
             return;
         if (this._inProgress)
             return;

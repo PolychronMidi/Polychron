@@ -168,6 +168,18 @@ class BrowserPanel {
                         this._shim.start();
                 });
             },
+            checkArbiterHealth: () => {
+                // Surface arbiter daemon health to the webview so the user can see
+                // whether route=auto is genuinely classifying or silently falling
+                // back to Claude because the daemon is unreachable.
+                const health = (0, Arbiter_1.getArbiterHealth)();
+                this.post({
+                    type: "arbiterHealth",
+                    healthy: health.healthy,
+                    consecutiveFailures: health.consecutiveFailures,
+                    lastOkMs: health.lastOkMs,
+                });
+            },
             setZoomLevel: (_msg) => {
                 // No-op: browser uses localStorage for zoom persistence
             },
@@ -332,6 +344,7 @@ class BrowserPanel {
             getChainIndex: () => this._state.chainIndex,
             getClaudeSessionId: () => this._state.claudeSessionId,
             getContextPct: () => this._contextMeter.pctUsed,
+            getModelId: () => this._contextMeter.cliModelId,
             hasMeterLiveUpdate: () => this._contextMeter.hasLiveUpdate,
             rotate: (continuationMsg, newChainIndex) => {
                 this._applyStateChange((s) => {
