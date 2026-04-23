@@ -137,8 +137,19 @@ export const hybridAdapter: RouterAdapter<HybridStreamInput, HybridStreamOptions
     "hybrid",
     "llama.cpp + KB (hybrid)",
     (input, opts, cb) => {
+      // Race guard: the cancellor from streamHybrid arrives via Promise.then.
+      // If the caller cancels BEFORE .then fires, we must remember the request
+      // and fire the real cancellor the moment it's available — otherwise an
+      // early cancel is silently dropped and the stream keeps emitting chunks
+      // into a disposed consumer.
       let cancelFn: (() => void) | null = null;
-      let cancelled = false;
+      let cancelRequested = false;
+      const fireCancelIfReady = () => {
+        if (cancelRequested && cancelFn) {
+          try { cancelFn(); } catch { /* silent-ok: inner cancel may already be past completion */ }
+          cancelFn = null;
+        }
+      };
       streamHybrid(
         input.message,
         input.history,
@@ -149,17 +160,13 @@ export const hybridAdapter: RouterAdapter<HybridStreamInput, HybridStreamOptions
         cb.error,
       ).then((inner) => {
         cancelFn = inner;
-        if (cancelled) {
-          try { inner(); } catch { /* silent-ok: inner cancel may already be past completion */ }
-        }
+        fireCancelIfReady();
       }).catch((e: any) => {
-        if (!cancelled) cb.error(String(e?.message ?? e));
+        if (!cancelRequested) cb.error(String(e?.message ?? e));
       });
       return () => {
-        cancelled = true;
-        if (cancelFn) {
-          try { cancelFn(); } catch { /* silent-ok: legacy cancel may throw on already-done */ }
-        }
+        cancelRequested = true;
+        fireCancelIfReady();
       };
     },
   );
