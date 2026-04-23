@@ -239,14 +239,46 @@ def _unified_evolution_recommender() -> str:
     except Exception as _err5:
         logger.debug(f'silent-except review_unified.py:189: {type(_err5).__name__}: {_err5}')
 
-    # 2. Cascade bypass detection (direct callers >> L0 consumers)
+    # 2. Cascade bypass detection (direct callers >> L0 consumers).
+    # Originally this called _count_direct_callers(prod) for each producer,
+    # and each call walked ~500 src files. With ~40 producers that's 20k
+    # file reads per evolve call = ~4s. Batch version reads each src file
+    # once and checks all producer names in a single pass — ~500 reads
+    # total instead of 20k.
     try:
-        from .coupling_channels import _count_direct_callers
+        import re as _re_bulk
+        all_prods: set = set()
+        for _d in topo.values():
+            for _p in _d.get("producers", []):
+                all_prods.add(_p)
+        direct_counts: dict = {p: 0 for p in all_prods}
+        if all_prods:
+            src_root = os.path.join(ctx.PROJECT_ROOT, "src")
+            prod_patterns = {
+                p: _re_bulk.compile(r'\b' + _re_bulk.escape(p) + r'\b')
+                for p in all_prods
+            }
+            for dirpath, _, filenames in os.walk(src_root):
+                for fname in filenames:
+                    if not fname.endswith(".js") or fname == "index.js":
+                        continue
+                    stem = fname[:-3]
+                    fpath = os.path.join(dirpath, fname)
+                    try:
+                        with open(fpath, encoding="utf-8", errors="ignore") as f:
+                            content = f.read()
+                    except Exception:
+                        continue
+                    for p, pat in prod_patterns.items():
+                        if p == stem:
+                            continue  # skip self-reference
+                        if pat.search(content):
+                            direct_counts[p] += 1
         for ch, data in topo.items():
             prods = data.get("producers", [])
             cons = data.get("consumers", [])
             for prod in prods:
-                direct = _count_direct_callers(prod)
+                direct = direct_counts.get(prod, 0)
                 l0_count = len(cons)
                 if direct > l0_count * 2 and l0_count > 0:
                     bypass_ratio = direct / max(l0_count, 1)
