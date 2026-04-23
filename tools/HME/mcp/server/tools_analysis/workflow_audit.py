@@ -328,8 +328,12 @@ def what_did_i_forget(changed_files: str) -> str:
             with open(abs_py, encoding="utf-8", errors="ignore") as _pyf:
                 py_content = _pyf.read()
             all_warnings.extend(_scan_python_bug_patterns(rel_py, py_content))
-        except OSError:
-            pass
+        except OSError as _audit_err:
+            # Can't read a Python file we intended to audit = silent
+            # coverage gap. Surface so the audit report calls it out
+            # instead of quietly dropping the file.
+            logger.warning(f"audit skip {rel_py} (read failed): {type(_audit_err).__name__}: {_audit_err}")
+            all_warnings.append(f"{rel_py}: audit skipped — file unreadable ({type(_audit_err).__name__})")
 
     if all_warnings:
         parts.append(f"## Warnings ({len(all_warnings)})")
