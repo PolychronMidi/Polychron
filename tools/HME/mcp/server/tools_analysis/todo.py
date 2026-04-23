@@ -118,6 +118,12 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       parent_id: int = 0) -> dict:
     """Canonical entry constructor — every producer goes through this to ensure
     schema stability across LIFESAVER, native mirror, hme_todo, and onboarding."""
+    # Single-writer invariant: only tools_analysis.todo may write the store.
+    try:
+        from server.lifecycle_writers import assert_writer
+        assert_writer("hme-todo-store", __name__)
+    except ImportError:
+        pass
     return {
         "id": _allocate_id(meta),
         "text": text.strip(),
