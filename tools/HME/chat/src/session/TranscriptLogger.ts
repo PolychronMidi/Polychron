@@ -317,6 +317,7 @@ export function nullTranscript(): TranscriptLogger {
     logUser: () => {}, logAssistant: () => {}, logToolCall: () => {},
     logRouteSwitch: () => {}, logValidation: () => {}, logAudit: () => {},
     logSessionStart: () => {}, getRecentContext: () => "", getWindow: () => [],
+    getRecentActivitySignals: () => ({ constraintCount: 0, errorCount: 0 }),
     getAll: () => [], count: 0, setNarrativeCallback: () => {}, rotate: () => {},
     forceNarrative: () => Promise.resolve(),
   } as unknown as TranscriptLogger;
