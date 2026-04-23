@@ -413,3 +413,15 @@ if [[ "$STOP_WORK" == "TEXT_ONLY_SHORT" ]]; then
   }'
   exit 0
 fi
+
+# fix_antipattern: enumerating remaining items as 'noted not fixed' or 'TBD' or 'remaining tools' l
+if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
+  _EXHAUST_CHECK=$(python3 "$_DETECTORS_DIR/exhaust_check.py" "$TRANSCRIPT_PATH" 2>/dev/null || echo "ok")
+  if [[ "$_EXHAUST_CHECK" == "exhaust_violation" ]]; then
+    jq -n '{
+      "decision": "block",
+      "reason": "EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now."
+    }'
+    exit 0
+  fi
+fi
