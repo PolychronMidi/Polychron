@@ -238,6 +238,17 @@ HTTP bridge between the chat extension and the Python MCP server. Endpoints used
 
 When route is `auto`, `classifyMessage()` in `Arbiter.ts` calls qwen3:4b (port 11436, CPU-only) with the message + recent transcript context. Decisions are cached 30s to avoid redundant calls. Low-confidence local decisions (< 65%) are automatically escalated to Claude. Falls back to Claude on any arbiter error.
 
+### Chat invariants (tonight's pass added these guarantees)
+
+| Invariant | Where enforced | Failure mode it prevents |
+|---|---|---|
+| Stream-frame parse errors surface to UI | `routerLlamacpp.ts` JSON parse → `onChunk(..., "error")` | Silent token loss when API returns partial / malformed SSE frame |
+| Agent-mode `read_file`/`write_file` paths constrained to `workingDir` | `_resolveWithinWorkdir` in `routerLlamacpp.ts` | Path-traversal escape via `../` or absolute path |
+| Message queue bounded to 10 pending | `BrowserPanel.ts` send-queue gate | Unbounded growth when stream is stuck and user spams send |
+| Transcript writes serialized through write queue | `TranscriptLogger.ts` `_flushQueue` | Interleaved JSONL lines from agent-mode parallel streams |
+| Shim POST retries once on transient failure | `routerHme.ts` `shimPost` | User-facing failure during 1-2s shim restart windows |
+| ContextMeter null-pct alert decays | `ContextMeter.ts` shouldAlert ladder (1, 10, 50, 100…) | Log spam on long sessions where usedPct is structurally absent |
+
 ## Setup
 
 Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables, todos, file hashes). The worker (`tools/HME/mcp/worker.py`) spawns under the proxy (`tools/HME/proxy/hme_proxy.js`); HME tools are invoked via the shell wrappers in `i/` (`i/review`, `i/trace`, `i/learn`, etc.). Skills at `skills/`, symlinked from `~/.claude/skills/`. Load the skill before first use: `/HME`
