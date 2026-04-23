@@ -62,9 +62,16 @@ export const claudeAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions
   );
 
 // Claude PTY — same shape as pipe but routes through the PTY harness.
-// Note: streamClaudePty's onDone takes a single `usage?` arg (no cost).
-export const claudePtyAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions> =
-  wrapLegacyStream<ClaudeStreamInput, ClaudeStreamOptions>(
+// Extended options carry the PTY-specific side-channels (onRawData for
+// the mirror terminal, onPtyReady for interactive input wiring). Both
+// are optional — adapters ignore them when not supplied.
+export interface ClaudePtyStreamOptions extends ClaudeStreamOptions {
+  onRawData?: (raw: string) => void;
+  onPtyReady?: (writeFn: (data: string) => void) => void;
+}
+
+export const claudePtyAdapter: RouterAdapter<ClaudeStreamInput, ClaudePtyStreamOptions> =
+  wrapLegacyStream<ClaudeStreamInput, ClaudePtyStreamOptions>(
     "claude",
     "Claude (PTY)",
     (input, opts, cb) => {
@@ -86,6 +93,8 @@ export const claudePtyAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOpti
           cb.done();
         },
         cb.error,
+        opts.onRawData,
+        opts.onPtyReady,
       );
     },
   );
