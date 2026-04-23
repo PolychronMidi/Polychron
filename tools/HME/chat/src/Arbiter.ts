@@ -161,11 +161,16 @@ export async function classifyMessage(
       model: ARBITER_MODEL, messages: [{ role: "user", content: prompt }],
       max_tokens: 256, temperature: 0, response_format: { type: "json_object" },
     });
+    _noteDaemonSuccess();
   } catch (e: any) {
+    _noteDaemonFailure(String(e?.message ?? e));
     const reason = e?.message?.includes("not running")
       ? "arbiter unreachable — llama.cpp not running"
       : `arbiter ${e?.message ?? e}`;
-    return { route: "claude", confidence: 0.5, reason, escalated: false, isError: true };
+    // confidence=0 (not 0.5) signals NO classification occurred. Downstream
+    // callers can check `isError` OR `confidence === 0` to distinguish a
+    // legitimate "I'm unsure" from "the daemon wasn't reachable."
+    return { route: "claude", confidence: 0, reason, escalated: false, isError: true };
   }
 
   try {
