@@ -181,12 +181,12 @@ def _background_load():
             f"HME worker ready (direct RAG, shim deprecated) | "
             f"project={PROJECT_ROOT} | libs={list(ctx.lib_engines.keys())}"
         )
-        try:
-            from server import llamacpp_supervisor as _sup
-            _sup_status = _sup.ensure_all_running()
-            logger.info(f"llamacpp_supervisor: {_sup_status}")
-        except Exception as _sup_err:
-            logger.warning(f"llamacpp_supervisor startup failed: {type(_sup_err).__name__}: {_sup_err}")
+        # llama-server lifecycle (arbiter + coder) is owned exclusively by
+        # tools/HME/mcp/llamacpp_daemon.py — the worker MUST NOT spawn its
+        # own llama-server processes. A duplicate worker-side supervisor
+        # caused PID-collision races during /indexing-mode (worker spawned
+        # a coder onto the GPU the daemon was trying to use for embedding,
+        # OOM-ing the reindex). Only the daemon allocates llama-server VRAM.
         from server.startup_validator import validate_startup
         validate_startup(ctx, PROJECT_ROOT)
         _sp.set_phase(_sp.SystemPhase.READY, "startup validation passed")
