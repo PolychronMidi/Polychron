@@ -410,73 +410,53 @@ def what_did_i_forget(changed_files: str) -> str:
         except Exception as _err4:
             logger.debug(f'silent-except workflow_audit.py:308: {type(_err4).__name__}: {_err4}')
 
-    # Adaptive synthesis — language-routed bug probes. The prior single Python
-    # template was applied unconditionally and hallucinated Python-style bugs
-    # (dict.get, except chains) when the diff was shell or JS. Now we filter
-    # changed_files by extension and only run the probe set that matches.
-    # Files with no probe set (config, json, md) skip synthesis entirely.
-    _PYTHON_PROBES = (
-        "PROBE for missed bugs in Python files only. Check:\n"
-        "1. dict.get(key, non-None-default) — can the key exist with value None? If so, .get(key, X) "
-        "returns None, not X. Should use (d.get(key) or X) or an explicit `is None` check.\n"
-        "2. Exception handler gaps — does `except (OSError, json.JSONDecodeError)` miss "
-        "ValueError/TypeError from int()/float() conversions or comparison of incompatible types?\n"
-        "3. Append-only file writes — is there a corresponding trim to bound file growth?\n"
-        "4. `x or fallback` idioms after .get() — could `x` legitimately be 0.0 or False?\n"
-        "5. Path assumptions — does code assume a path is a file when it might be a directory?\n"
-        "6. Variable used before assignment — any variable defined inside an `if` guard but "
-        "referenced in an outer scope where the guard might be False?\n"
-        "7. State/type key mismatches — are dict keys used for dedup/lookup consistent with the "
-        "keys used when storing?\n"
-        "8. None-guarded arithmetic — is `time.time() - value` ever called where value could be None?\n"
-    )
-    _SHELL_PROBES = (
-        "PROBE for missed bugs in shell scripts only. Check:\n"
-        "1. Unquoted variable expansion that breaks on whitespace/empty values "
-        "(e.g. `[ $x = y ]` vs `[ \"$x\" = y ]`).\n"
-        "2. `set -e` interactions: pipelines, command substitutions, and `||`/`&&` "
-        "chains where a non-zero exit silently masks an error.\n"
-        "3. Arithmetic with `$(( ))` on potentially non-numeric input — produces a "
-        "fatal error under set -e if the expression is malformed.\n"
-        "4. Race conditions on shared tmp/ files (no flock around read-modify-write).\n"
-        "5. `grep -q` with `set -e` causing script abort on no-match without an explicit `|| true`.\n"
-        "6. Path assumptions — `cd` to a relative path that depends on cwd context.\n"
-    )
-    _JS_PROBES = (
-        "PROBE for missed bugs in JavaScript/TypeScript files only. Check:\n"
-        "1. Unhandled promise rejections — every `.then` without a matching `.catch`.\n"
-        "2. Accessing `.foo` on a value that may be `null`/`undefined` post-`?.` chain.\n"
-        "3. Race conditions in async setup — captured-variable mutations across awaits.\n"
-        "4. Implicit type coercion in `==` comparisons (use `===`).\n"
-        "5. Off-by-one in slice/splice — `splice(i, 1)` removes 1; `slice(i, 1)` returns 1 element.\n"
+    # Adaptive synthesis — language-agnostic bug probes keyed to UNIVERSAL
+    # patterns, with idiom examples across Python/JS/shell so the model can
+    # recognize each pattern in whatever language the diff contains. The
+    # prior prompt hallucinated Python-style bugs in shell diffs because
+    # every probe said "for each Python file, check…". Now probes name the
+    # concept first and give language-idiom hints second — the diff itself
+    # supplies the language context.
+    _UNIVERSAL_PROBES = (
+        "PROBE for concrete bugs using these universal defect classes. For each, "
+        "use whichever language idiom applies to the actual diff:\n"
+        "1. Empty-value masquerading as default —\n"
+        "   py: dict.get(k, D) returns None when k present-but-None; should be (d.get(k) or D).\n"
+        "   js: obj[k] ?? D vs obj[k] || D (|| treats 0/'' as falsy).\n"
+        "   sh: ${VAR:-D} fires on unset AND empty; ${VAR-D} fires only on unset.\n"
+        "2. Exception / error handling gaps — `except`/`catch`/`trap` that names specific "
+        "types and silently drops the rest, OR lacks error paths for operations that CAN fail "
+        "(int parse, JSON parse, subprocess, file I/O, HTTP).\n"
+        "3. Append-only growth — writes to a log/jsonl/history with no corresponding "
+        "size or age cap. Unbounded growth is a deferred bug.\n"
+        "4. Truthy/falsy coercion after a lookup — `x or fallback` patterns where x could "
+        "legitimately be 0 / '' / False / empty-list and the fallback silently wrongly fires.\n"
+        "5. Path/filesystem assumptions — code assumes a path is a file but it could be a dir, "
+        "symlink, or missing entirely; or assumes cwd is a particular directory.\n"
+        "6. Variable used before assignment — value set inside a conditional branch and read "
+        "in a scope where that branch may not have fired.\n"
+        "7. Key mismatch across reads/writes — dedup or lookup key constructed one way on "
+        "insert and a different way on retrieval.\n"
+        "8. Null-guarded arithmetic / comparison — arithmetic on a value that may be None/"
+        "undefined/empty, or comparison that implicitly coerces types.\n"
+        "9. Race on shared state — read-modify-write on files/memory without serialization, "
+        "or async captures mutated across awaits.\n"
+        "10. Control-flow swallowing — `set -e` + `||`/`&&` chains, uncaught promise rejections, "
+        "or try/except-pass that hide failures from the caller.\n"
     )
 
-    def _probe_set_for(files_csv: str) -> str:
-        ext_seen = set()
-        for f in files_csv.split(","):
-            f = f.strip().lower()
-            if not f:
-                continue
-            if f.endswith(".py"): ext_seen.add("py")
-            elif f.endswith(".sh") or f.endswith(".bash"): ext_seen.add("sh")
-            elif f.endswith((".js", ".ts", ".tsx", ".mjs", ".cjs")): ext_seen.add("js")
-        probes = []
-        if "py" in ext_seen: probes.append(_PYTHON_PROBES)
-        if "sh" in ext_seen: probes.append(_SHELL_PROBES)
-        if "js" in ext_seen: probes.append(_JS_PROBES)
-        return "\n".join(probes)
-
-    probes = _probe_set_for(changed_files)
+    probes = _UNIVERSAL_PROBES
     warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
     diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
     hunk_section = hunk_context if hunk_context else ""
     synthesis = None
     _synthesis_timed_out = False
-    if not probes:
-        # No language with probes — skip synthesis entirely so we don't ask the
-        # model to invent issues against config/docs/json. Fail loud about it.
-        logger.info("what_did_i_forget: no Python/shell/JS files in diff; skipping adaptive synthesis")
+    if not diff_context:
+        # Nothing concrete to probe against — refuse to synthesize. Prior
+        # behavior asked the model to speculate without evidence, which is
+        # where hallucinations came from.
+        logger.info("what_did_i_forget: empty diff context; skipping adaptive synthesis")
     else:
         user_text = (
             f"Changed files: {changed_files}\n"
@@ -487,11 +467,11 @@ def what_did_i_forget(changed_files: str) -> str:
             f"{probes}"
             "Rules:\n"
             "- Only flag issues you can cite with file:line evidence from the diff/hunks above.\n"
-            "- If a probe class doesn't apply to any file in the diff, skip that probe silently.\n"
-            "- Do NOT speculate about variables/functions/idioms not present in the diff.\n"
+            "- Every issue MUST quote the offending line or name the specific symbol FROM THE DIFF.\n"
+            "- If a probe class doesn't fit the languages present in the diff, skip it silently.\n"
+            "- Do NOT invent variables, functions, or idioms that aren't in the diff.\n"
             "- Do NOT repeat anything already listed in static audit warnings.\n"
             "- Do NOT list generic best practices (run tests, update docs, check types).\n"
-            "- List every concrete missed bug you find. No bullet limit.\n"
             "- If truly nothing concrete remains, say 'Nothing missed.'\n"
         )
         try:
