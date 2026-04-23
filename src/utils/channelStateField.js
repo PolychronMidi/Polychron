@@ -26,9 +26,34 @@ channelStateField = (() => {
   const LAYERS = ['L1', 'L2'];
 
   // CC number -> param name. Unmapped CCs are ignored by observeControl.
-  // 74 (filter/brightness) added R38 to track regimeFx's spectral writes --
-  // the EnCodec-measured dimension that prior pan/fade interventions missed.
-  const CC_TO_PARAM = { 7: 'fade', 10: 'pan', 11: 'fx', 1: 'mod', 74: 'filter' };
+  // R47: expanded from {1,7,10,11,74} to cover every CC that
+  // setBalanceAndFX's rfx path emits. Prior narrow map meant CIS was
+  // blind to ~60 CC writes per setBalanceAndFX fire (CC5, CC65-73, CC91-95)
+  // that bypassed the substrate entirely. Now every CC setBalanceAndFX
+  // writes gets its own slot dimension so the cooperation post-pass can
+  // read its own trend and nudge trend-aligned. Each CC uses a distinct
+  // param name so histories don't pollute across dimensions.
+  const CC_TO_PARAM = {
+    1:  'mod',         // modulation wheel
+    5:  'portTime',    // portamento time
+    7:  'fade',        // channel volume
+    10: 'pan',         // pan
+    11: 'fx',          // expression / velocity-scaler
+    65: 'portSwitch',  // portamento on/off
+    67: 'softPedal',   // soft pedal
+    68: 'legato',      // legato footswitch
+    69: 'hold2',       // hold 2
+    70: 'soundVar',    // sound variation (GM2 timbre)
+    71: 'resonance',   // filter resonance
+    72: 'release',     // release time
+    73: 'attack',      // attack time
+    74: 'filter',      // filter cutoff / brightness
+    91: 'reverb',      // reverb send
+    92: 'tremolo',     // tremolo depth
+    93: 'chorus',      // chorus send
+    94: 'celeste',     // celeste / detune depth
+    95: 'phaser',      // phaser depth
+  };
 
   const field = { L1: new Map(), L2: new Map() };
 
