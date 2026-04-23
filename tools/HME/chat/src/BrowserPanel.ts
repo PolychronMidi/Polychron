@@ -104,17 +104,30 @@ export class BrowserPanel implements PanelHost {
     try {
       this._transcript = new TranscriptLogger(projectRoot);
       this._transcript.setNarrativeCallback(async (entries) => {
+        // Hard timeout so a hung daemon doesn't stall the chat. Every 3 turns
+        // the narrative callback fires; a 3s ceiling keeps the chat snappy
+        // even when the synthesis backend is degraded. On timeout we return
+        // an empty string — the next attempt will try again with fresh state.
+        const NARRATIVE_TIMEOUT_MS = 3000;
+        const timeoutPromise = new Promise<string>((resolve) =>
+          setTimeout(() => resolve(""), NARRATIVE_TIMEOUT_MS),
+        );
+        let narrative = "";
         try {
-          const narrative = await synthesizeNarrative(entries);
-          if (narrative) {
-            postTranscript([{ ts: Date.now(), type: "narrative", content: narrative }])
-              .catch((e: any) => this.postError("narrative", String(e)));
-          }
-          return narrative;
+          narrative = await Promise.race([synthesizeNarrative(entries), timeoutPromise]);
         } catch (e: any) {
           console.error(`[HME] narrative-synthesis skipped: ${(e as any)?.message ?? e}`);
           return "";
         }
+        if (!narrative) {
+          // Either timeout fired or the daemon returned empty — record so the
+          // user can investigate if this becomes chronic, but don't block.
+          console.error(`[HME] narrative-synthesis returned empty (timeout=${NARRATIVE_TIMEOUT_MS}ms or daemon empty)`);
+          return "";
+        }
+        postTranscript([{ ts: Date.now(), type: "narrative", content: narrative }])
+          .catch((e: any) => this.postError("narrative", String(e)));
+        return narrative;
       });
     } catch (e) {
       console.error(`[HME] TranscriptLogger init failed — transcript disabled: ${(e as any)?.message ?? e}`);
