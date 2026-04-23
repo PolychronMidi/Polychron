@@ -467,10 +467,26 @@ def kb_health() -> str:
     """Check all KB entries for staleness: do the files/modules they mention still exist? Are line counts accurate?"""
     ctx.ensure_ready_sync()
     import re
+    from collections import Counter
     rows = ctx.project_engine.list_knowledge_full()
     if not rows:
         return "KB is empty."
-    parts = ["# KB Health Report\n"]
+    parts = ["# KB Health Report"]
+    # Category / age distribution summary — always useful even when no staleness.
+    cat_counts = Counter(e.get("category", "general") for e in rows)
+    now_ts = time.time()
+    ages = [((now_ts - e.get("timestamp", now_ts)) / 86400) for e in rows if e.get("timestamp", 0) > 0]
+    if ages:
+        parts.append(
+            f"\n**Total:** {len(rows)} project entries | "
+            f"age min={min(ages):.1f}d  median={sorted(ages)[len(ages)//2]:.1f}d  "
+            f"max={max(ages):.1f}d"
+        )
+    else:
+        parts.append(f"\n**Total:** {len(rows)} project entries")
+    parts.append("\n## Category distribution")
+    for cat, n in cat_counts.most_common():
+        parts.append(f"  {cat:<16s} {n}")
     stale = []
     healthy = []
     for entry in rows:
