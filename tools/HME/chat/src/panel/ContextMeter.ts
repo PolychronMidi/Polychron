@@ -43,6 +43,13 @@ export class ContextMeter {
     return this._hasLiveUpdate;
   }
 
+  /** The CLI-reported model id (e.g. "claude-sonnet-4-6-1m") from the last
+   *  stream. Used by the chain performer to pick a per-model rotation
+   *  threshold — 1M-context variants can rotate later than 200k ones. */
+  get cliModelId(): string | null {
+    return this._tracker.cliModelId;
+  }
+
   reset(args: ContextPostArgs, restoredPct?: number): void {
     this._tracker = ContextMeter._blank();
     this._hasLiveUpdate = false;
