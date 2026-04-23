@@ -212,6 +212,18 @@ export class BrowserPanel implements PanelHost {
     },
     queue: (msg) => {
       if (this._isStreaming) {
+        // Cap the queue depth so a stuck stream + spamming send button
+        // can't grow unbounded memory. 10 is generous for human pace and
+        // tight enough to surface "your stream is hung" instead of
+        // silently buffering 5000 messages.
+        const QUEUE_LIMIT = 10;
+        if (this._messageQueue.length >= QUEUE_LIMIT) {
+          this.postError(
+            "queue",
+            `Message queue full (${QUEUE_LIMIT} pending). The current stream may be stuck — cancel and retry.`
+          );
+          return;
+        }
         const queuedUserMsg: ChatMessage = {
           id: uid(), role: "user", text: msg.text, route: msg.route, ts: Date.now(),
         };
