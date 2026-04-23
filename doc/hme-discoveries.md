@@ -3060,3 +3060,4 @@ Generalization extractor found 14 candidate(s) (specificity < 0.3):
 - tags: trust
 - draft: [DRAFT] Pattern observed across 5 rounds (4 members) with shared traits (none). Strip project terms and rewrite as a topological claim: `<<STRUCTURE>> consistently yields <<OUTCOME>> when <<CONDITION>>`. Source seed: `trust`, rounds: R44, R45, R72, R92, R93.
 
+marker
