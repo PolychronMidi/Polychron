@@ -96,8 +96,8 @@ def get_project_summary(project_root: str, engine) -> dict:
             langs = rows.column("language").to_pylist()
             for l in langs:
                 lang_stats[l] = lang_stats.get(l, 0) + 1
-        except Exception:
-            pass
+        except Exception as _lang_err:
+            logger.debug(f"project.py lang_stats read failed: {type(_lang_err).__name__}: {_lang_err}")
 
     recent_kb = []
     if engine.knowledge_table is not None:
@@ -110,8 +110,8 @@ def get_project_summary(project_root: str, engine) -> dict:
                     "category": r["category"],
                     "tags": r["tags"],
                 })
-        except Exception:
-            pass
+        except Exception as _kb_err:
+            logger.debug(f"project.py recent_kb read failed: {type(_kb_err).__name__}: {_kb_err}")
 
     changes = get_recent_changes(project_root, count=10)
 
