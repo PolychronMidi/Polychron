@@ -176,5 +176,5 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 - [doc/ARCHITECTURE.md](./ARCHITECTURE.md) — beat lifecycle, signal flow, L1/L2 layer isolation
 - [doc/HME.md](./HME.md) — HME internals + Phase 1-6 per-subsystem narrative
 - [doc/openshell_features_to_mimic.md](./openshell_features_to_mimic.md) — design doc that spawned Phases 1-6
-- [doc/hme-discoveries.md](./hme-discoveries.md) — externalized generalizations (v1 DRAFT templates)
+- [doc/hme-discoveries.md](./hme-discoveries.md) — human-curated universal principles promoted from HME's generalization drafts (R97)
 - [output/metrics/journal.md](../metrics/journal.md) — listening verdicts and calibration anchors
