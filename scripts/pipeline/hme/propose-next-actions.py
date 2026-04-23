@@ -227,7 +227,8 @@ def main() -> int:
 
     # Build a terse one-line summary for console output.
     bucket_counts = {"arc_ii_pattern": 0, "arc_iii_drift": 0,
-                     "arc_i_consensus": 0, "arc_iv_retirement": 0}
+                     "arc_i_consensus": 0, "arc_iv_retirement": 0,
+                     "arc_v_blindspot": 0}
     for a in actions:
         bucket_counts[a["source"]] = bucket_counts.get(a["source"], 0) + 1
 
