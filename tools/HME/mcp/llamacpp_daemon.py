@@ -446,13 +446,20 @@ class _Supervisor:
             return {"name": name, "suspended": True, "killed_pids": killed_pids}
 
     def resume(self, name: str) -> dict:
-        """Resume a suspended instance: clear flag + spawn immediately."""
+        """Resume a suspended instance: clear flag + spawn immediately.
+
+        bypass_cooldown=True on the spawn: suspend+resume is always a
+        planned operation (indexing-mode orchestration), not a crash.
+        Honoring the crash-loop cooldown here leaves the instance down
+        for HME_LLAMA_RESTART_COOLDOWN seconds after every reindex, which
+        is a correctness bug masquerading as a safety check.
+        """
         with self._lock:
             spec = self._instances.get(name)
             if not spec:
                 return {"error": f"unknown instance: {name}"}
             spec.suspended = False
-            ok = self._spawn(spec)
+            ok = self._spawn(spec, bypass_cooldown=True)
             logger.info(f"supervisor: {name} resumed (spawned={ok})")
             return {"name": name, "suspended": False, "spawned": ok}
 
