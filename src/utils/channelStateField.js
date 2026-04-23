@@ -26,33 +26,22 @@ channelStateField = (() => {
   const LAYERS = ['L1', 'L2'];
 
   // CC number -> param name. Unmapped CCs are ignored by observeControl.
-  // R47: expanded from {1,7,10,11,74} to cover every CC that
-  // setBalanceAndFX's rfx path emits. Prior narrow map meant CIS was
-  // blind to ~60 CC writes per setBalanceAndFX fire (CC5, CC65-73, CC91-95)
-  // that bypassed the substrate entirely. Now every CC setBalanceAndFX
-  // writes gets its own slot dimension so the cooperation post-pass can
-  // read its own trend and nudge trend-aligned. Each CC uses a distinct
-  // param name so histories don't pollute across dimensions.
+  // R49 audit: the R47 expansion covered every rfx-emitted CC, but 11 of
+  // those CCs (5, 65, 67, 68, 69, 70, 72, 73, 92, 94, 95) are inert in
+  // fluidsynth + SGM-v2.01 soundfont -- no audible output. Tracking them
+  // polluted meanCooperation with single-writer rfx-random auto-correlation
+  // patterns (values of -0.68 to -0.75) that saturated CIM's coordination
+  // bias at its +0.06 cap without reflecting any real musical dynamics.
+  // Pruned to the 8 CCs that fluidsynth + SGM actually respond to.
   const CC_TO_PARAM = {
-    1:  'mod',         // modulation wheel
-    5:  'portTime',    // portamento time
-    7:  'fade',        // channel volume
-    10: 'pan',         // pan
-    11: 'fx',          // expression / velocity-scaler
-    65: 'portSwitch',  // portamento on/off
-    67: 'softPedal',   // soft pedal
-    68: 'legato',      // legato footswitch
-    69: 'hold2',       // hold 2
-    70: 'soundVar',    // sound variation (GM2 timbre)
-    71: 'resonance',   // filter resonance
-    72: 'release',     // release time
-    73: 'attack',      // attack time
-    74: 'filter',      // filter cutoff / brightness
-    91: 'reverb',      // reverb send
-    92: 'tremolo',     // tremolo depth
-    93: 'chorus',      // chorus send
-    94: 'celeste',     // celeste / detune depth
-    95: 'phaser',      // phaser depth
+    1:  'mod',        // modulation wheel -- GM1 universal
+    7:  'fade',       // channel volume -- GM1 universal
+    10: 'pan',        // pan -- GM1 universal
+    11: 'fx',         // expression -- GM1 universal
+    71: 'resonance',  // filter resonance -- SF2 modulator, SGM supports
+    74: 'filter',     // filter cutoff -- SF2 universal
+    91: 'reverb',     // reverb send -- fluidsynth built-in reverb
+    93: 'chorus',     // chorus send -- fluidsynth built-in chorus
   };
 
   const field = { L1: new Map(), L2: new Map() };
