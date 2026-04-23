@@ -4,9 +4,18 @@
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 
-const MCP_PORT = parseInt(process.env.HME_MCP_PORT || '9098', 10);
+function _envPort(name, def) {
+  const raw = process.env[name];
+  if (raw == null || raw === '') return def;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 0 || n > 65535) {
+    throw new Error(`${name}="${raw}" is not a valid port (0-65535)`);
+  }
+  return n;
+}
+const MCP_PORT = _envPort('HME_MCP_PORT', 9098);
 const SHIM_PORT = MCP_PORT;  // legacy alias
-const LLAMACPP_DAEMON_PORT = parseInt(process.env.HME_LLAMACPP_DAEMON_PORT || '7735', 10);
+const LLAMACPP_DAEMON_PORT = _envPort('HME_LLAMACPP_DAEMON_PORT', 7735);
 
 const PYTHONPATH = process.env.PYTHONPATH || '';
 const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/mcp');
