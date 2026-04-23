@@ -199,12 +199,13 @@ export class BrowserPanel implements PanelHost {
       getContextPct: () => this._contextMeter.pctUsed,
       hasMeterLiveUpdate: () => this._contextMeter.hasLiveUpdate,
       rotate: (continuationMsg, newChainIndex) => {
-        this._state.messages = [];
-        this._state.claudeSessionId = null;
-        this._state.chainIndex = newChainIndex;
+        this._applyStateChange((s) => {
+          s.messages = [];
+          s.claudeSessionId = null;
+          s.chainIndex = newChainIndex;
+          s.messages.push(continuationMsg);
+        });
         this._contextMeter.resetSilently();
-        this._state.messages.push(continuationMsg);
-        this._persistState();
       },
       postContextUpdate: () => this._contextMeter.post(this._ctxArgs()),
     };
