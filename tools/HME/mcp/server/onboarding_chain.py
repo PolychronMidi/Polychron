@@ -417,10 +417,14 @@ def _run_selftest_prereq() -> str:
     Calls the undecorated hme_selftest directly — going through the
     @chained hme_admin dispatcher would append another status_line, which
     the outer tool's chain_exit also appends, causing a duplicate banner.
+    Advances state to 'selftest_ok' manually on clean pass (the side
+    effect the decorator would have performed).
     """
     try:
         from server.tools_analysis.evolution_admin import hme_selftest
         result = hme_selftest(verbose=False)
+        if _selftest_clean(result) and step_index(state()) <= step_index("selftest_ok"):
+            set_state("selftest_ok")
         header = (
             "[AUTO-CHAIN] Onboarding step 1/8: ran selftest as prerequisite.\n"
             " selftest output "
