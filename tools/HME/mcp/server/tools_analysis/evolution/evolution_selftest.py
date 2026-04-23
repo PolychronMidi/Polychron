@@ -668,8 +668,12 @@ def hme_selftest(verbose: bool = False) -> str:
                 tot, attr = used_by_idx.get(idx, (0, 0))
                 try:
                     used_by_idx[idx] = (tot, attr + int(parts[2]))
-                except ValueError:
-                    pass
+                except ValueError as _attr_err:
+                    # nvidia-smi emitted non-integer memory — the probe's
+                    # unattributed-VRAM computation is corrupted. Log so
+                    # a silent "GPU attribution always PASSes" is visible
+                    # as a probe regression instead of a real green light.
+                    logger.warning(f"GPU attribution parse failed for {parts}: {_attr_err}")
         residuals = []
         for idx, (total, attr) in used_by_idx.items():
             unattributed = total - attr
