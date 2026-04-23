@@ -48,24 +48,25 @@ def prediction_accuracy_report() -> str:
         lines.append("No rounds reconciled yet. Issue cascade predictions first.")
         return "\n".join(lines)
 
-    # Show the last 10 rounds
+    # Show the last 10 rounds. Fixed-width text table matches the
+    # trust-leaderboard style; markdown pipe tables read worse in plain
+    # terminal output and the row-of-pipes-and-dashes is filler noise.
     lines.append("## Recent rounds")
     lines.append("")
-    lines.append("| Round | Acc | EMA | Predicted | Confirmed | Refuted | Missed |")
-    lines.append("|---|---|---|---|---|---|---|")
+    lines.append(f"  {'Round':<14}  {'Acc':>4}  {'EMA':>4}  {'Pred':>5}  {'Conf':>5}  {'Refu':>5}  {'Miss':>5}")
     for r in rounds[-10:]:
         acc = r.get("accuracy")
         acc_s = f"{acc * 100:.0f}%" if isinstance(acc, (int, float)) else "n/a"
         ema_r = r.get("ema_after")
         ema_rs = f"{ema_r * 100:.0f}%" if isinstance(ema_r, (int, float)) else "n/a"
         ts = r.get("timestamp", "?")
-        tail = ts[-19:-5] if isinstance(ts, str) and len(ts) >= 19 else ts
+        tail = ts[-19:-5] if isinstance(ts, str) and len(ts) >= 19 else str(ts)
         lines.append(
-            f"| {tail} | {acc_s} | {ema_rs} | "
-            f"{len(r.get('predicted_modules') or [])} | "
-            f"{len(r.get('confirmed') or [])} | "
-            f"{len(r.get('refuted') or [])} | "
-            f"{len(r.get('missed') or [])} |"
+            f"  {tail:<14}  {acc_s:>4}  {ema_rs:>4}  "
+            f"{len(r.get('predicted_modules') or []):>5}  "
+            f"{len(r.get('confirmed') or []):>5}  "
+            f"{len(r.get('refuted') or []):>5}  "
+            f"{len(r.get('missed') or []):>5}"
         )
 
     # Most recent round — show specifics
