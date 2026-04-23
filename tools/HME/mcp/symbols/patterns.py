@@ -55,6 +55,15 @@ JS_IIFE_PATTERNS = {
         r'^\s+function\s+(\w+)\s*\(([^)]*)\)',
         re.MULTILINE,
     ),
+    # Top-level bare arrow-function assignment: `name=(args)=>{...}` or
+    # `name = (args) => { ... }`. Used by modules like src/utils/clamps.js
+    # where helpers are registered to the parent IIFE scope via bare
+    # assignment rather than IIFE wrappers. Previously unrecognized — the
+    # file showed "Symbols: none (data file or unsupported pattern)".
+    "arrow_global": re.compile(
+        r'^(\w+)\s*=\s*(?:async\s+)?\(([^)]*)\)\s*=>\s*[\{\(]',
+        re.MULTILINE,
+    ),
 }
 
 RUST_PATTERNS = {
