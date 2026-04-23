@@ -1348,8 +1348,9 @@ Both are critical. A `(non-fatal)` pipeline step that exits 0 is NOT the same as
 cd tools/HME/chat && npm install && npm run compile
 ln -s /home/jah/Polychron/tools/HME/chat ~/.vscode/extensions/hme-chat
 # Reload VS Code, then Ctrl+Shift+H to open
-# Start the HTTP shim for hybrid/local KB enrichment:
-PROJECT_ROOT=/home/jah/Polychron python3 tools/HME/mcp/hme_http.py &
+# The worker serves the KB-enrichment endpoints (/enrich, /validate, /audit,
+# /transcript, /health). It's launched by the proxy supervisor — no manual
+# step required.
 ```
 
 ## Maintenance
