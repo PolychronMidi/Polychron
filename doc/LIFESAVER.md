@@ -427,12 +427,12 @@ stop.sh blocks exit if unfixed errors remain
 Watermark advances only after fix confirmed
 ```
 
-### userpromptsubmit.sh — turn-start error surface + Evolver context
+### userpromptsubmit.sh — turn-start error surface + evolution context
 
 Runs at the start of every user turn. Three responsibilities:
 
 1. **LIFESAVER error surface** — reads `log/hme-errors.log`, compares against `tmp/hme-errors.lastread` watermark. If new errors exist, emits a loud banner with the error text. Records line count to `tmp/hme-errors.turnstart` for the Stop hook to compare against.
-2. **Evolver context injection** — if the prompt matches evolution-related keywords (evolve, pipeline, lab, sketch), injects a reminder to use `before_editing`, `what_did_i_forget`, and `add_knowledge`.
+2. **Evolution context injection** — if the prompt matches evolution-related keywords (evolve, pipeline, lab, sketch), injects a reminder to use `before_editing`, `what_did_i_forget`, and `add_knowledge`.
 3. **Plan discipline reminder** — unconditionally appends anti-abandonment reminder every turn.
 
 ### precompact.sh — pre-compaction state surface
