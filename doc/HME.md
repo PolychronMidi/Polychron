@@ -276,7 +276,7 @@ Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert 
 
 ### Stop-hook behavioral detectors
 
-Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes eight detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop.sh) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
+Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes nine detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop.sh) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
 
 | Detector | Catches |
 |---|---|
@@ -288,6 +288,7 @@ Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py),
 | `stop_work` | Final turn is dismissive ("no response requested", "all done") or text-only and < 200 chars |
 | `fabrication_check` | Asserted a quantitative pipeline invariant ("held steady", "stayed constant") without reading the artifact that would prove it |
 | `early_stop` | Open-ended HME round ("do all" / "anything missing" / "push further") + final text enumerated remaining gaps + no tool calls followed. KB `dae793e748f9` — the "anything missing? / do all" ceremony is formally antipattern. |
+| `exhaust_check` | Unconditional sister of `early_stop`: ANY final text with a deferral phrase (`noted not fixed`, `remaining tools`, `TBD:`, `not yet fixed`, `for a future turn`, 30+ phrases) followed by 3+ bullet lines. Doesn't gate on user prompt — enumeration-of-deferred-work is always a violation. Born 2026-04-23 when `early_stop`'s phrase list missed the "Round complete... two minor UX gaps left as-is" closing pattern. |
 
 Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a `main()` that prints one verdict line, (2) register in `DETECTORS` in `run_all.py`, (3) add a block branch in `stop.sh`. Pair with a fixture under `scripts/detectors/fixtures/` and a chaos injector under `scripts/chaos/` — an un-chaos-verified detector decays silently into an always-PASS.
 
