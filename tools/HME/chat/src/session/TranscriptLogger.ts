@@ -227,6 +227,39 @@ export class TranscriptLogger {
     return this._entries.filter((e) => e.ts >= cutoff);
   }
 
+  /**
+   * Routing-signal summary derived from the recent transcript window.
+   * Callers (Arbiter auto-route) use this to inject session health into
+   * classification — high error/constraint density → prefer claude even
+   * for messages that would otherwise classify as local.
+   *
+   * - `constraintCount`: validation events in the last 15 min that surfaced
+   *   warnings or blocks (⚠ or ⛔ in summary).
+   * - `errorCount`: audit violations + validation blocks + tool errors in
+   *   the last 15 min — "this session is struggling" signal.
+   */
+  getRecentActivitySignals(minutes = 15): { constraintCount: number; errorCount: number } {
+    const window = this.getWindow(minutes);
+    let constraintCount = 0;
+    let errorCount = 0;
+    for (const e of window) {
+      const summary = e.summary ?? "";
+      if (e.type === "validation") {
+        if (summary.includes("⚠") || summary.includes("⛔")) constraintCount++;
+        if (summary.includes("⛔")) errorCount++;
+      } else if (e.type === "audit") {
+        if (summary.includes("⛔")) errorCount++;
+      } else if (e.type === "tool_call") {
+        // Rough heuristic — tool outputs starting with "Error:" or containing
+        // "failed" suggest the agentic loop hit a real failure.
+        if (/^\s*\[?Error\b/i.test(e.content) || /\bfailed\b/i.test(summary)) {
+          errorCount++;
+        }
+      }
+    }
+    return { constraintCount, errorCount };
+  }
+
   /** Get all entries as raw array. */
   getAll(): TranscriptEntry[] {
     return [...this._entries];
