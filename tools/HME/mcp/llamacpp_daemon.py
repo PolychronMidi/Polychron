@@ -1238,12 +1238,6 @@ def main():
                 logger.error(f"daemon thread {name!r} crashed:\n{traceback.format_exc()}")
         return threading.Thread(target=_wrapped, daemon=True, name=name)
 
-    # Boot-time recovery: if the daemon died mid-indexing-mode and is now
-    # respawning into a stack where embedders are stuck on coder's GPU
-    # (leftover from the dead session), signal the worker to restore them
-    # to the home GPU BEFORE trying to spawn coder — otherwise spawn always
-    # fails for VRAM reasons and the user has to manually force-move models.
-    _logged_thread("boot-recovery", _boot_recover_stuck_indexing_state).start()
     _logged_thread("supervisor-init", _supervisor_singleton.ensure_all_running).start()
     _logged_thread("supervisor-health", _health_loop).start()
 
