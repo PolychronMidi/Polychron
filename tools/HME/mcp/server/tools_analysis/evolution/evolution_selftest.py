@@ -805,6 +805,32 @@ def hme_selftest(verbose: bool = False) -> str:
     # MCP symlink check removed in the MCP decoupling — HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
+    # Probe: HME dogfooding — HME's own Python must obey the rules HME
+    # enforces on Polychron (no silent catch-all, no bare except, etc.).
+    # Reports count as WARN; the timeseries drift detector turns any
+    # INCREASE into a new-regression FAIL.
+    try:
+        import subprocess as _sp_df
+        df_script = os.path.join(_project_root, "scripts", "check-hme-dogfooding.py")
+        if os.path.isfile(df_script):
+            _dr = _sp_df.run(["python3", df_script], capture_output=True, text=True, timeout=30)
+            if _dr.returncode == 0:
+                results.append("PASS: HME dogfooding -- HME's Python obeys the rules it enforces")
+            else:
+                _vcount = 0
+                _first = (_dr.stdout or "").splitlines()[0] if _dr.stdout else ""
+                import re as _re_df
+                _m = _re_df.search(r"(\d+) violation", _first)
+                if _m:
+                    _vcount = int(_m.group(1))
+                results.append(
+                    f"WARN: HME dogfooding -- {_vcount} violation(s) — HME enforces "
+                    f"anti-silent-failure rules on Polychron but has {_vcount} open "
+                    f"violations in its own Python. Fix or mark with `# silent-ok: <reason>`."
+                )
+    except Exception as _e:
+        results.append(f"WARN: HME dogfooding -- probe failed: {type(_e).__name__}: {_e}")
+
     # Probe: meta-invariant — no module outside the registered owner
     # calls protected mutations. Runs the static analyzer as a subprocess
     # so analyzer crashes don't break selftest; rc=0 clean, rc=1 violations.
