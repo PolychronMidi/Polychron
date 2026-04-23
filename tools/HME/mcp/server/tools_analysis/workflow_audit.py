@@ -410,18 +410,13 @@ def what_did_i_forget(changed_files: str) -> str:
         except Exception as _err4:
             logger.debug(f'silent-except workflow_audit.py:308: {type(_err4).__name__}: {_err4}')
 
-    # Adaptive synthesis — thorough bug probe, no artificial bullet limit, no default "Nothing missed"
-    warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
-    docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
-    diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
-    hunk_section = hunk_context if hunk_context else ""
-    user_text = (
-        f"Changed files: {changed_files}\n"
-        f"Static audit warnings already found: {warnings_text}\n"
-        f"Docs flagged: {docs_text}\n"
-        f"{diff_section}"
-        f"{hunk_section}\n"
-        "PROBE for missed bugs systematically. For each changed Python file, check:\n"
+    # Adaptive synthesis — language-routed bug probes. The prior single Python
+    # template was applied unconditionally and hallucinated Python-style bugs
+    # (dict.get, except chains) when the diff was shell or JS. Now we filter
+    # changed_files by extension and only run the probe set that matches.
+    # Files with no probe set (config, json, md) skip synthesis entirely.
+    _PYTHON_PROBES = (
+        "PROBE for missed bugs in Python files only. Check:\n"
         "1. dict.get(key, non-None-default) — can the key exist with value None? If so, .get(key, X) "
         "returns None, not X. Should use (d.get(key) or X) or an explicit `is None` check.\n"
         "2. Exception handler gaps — does `except (OSError, json.JSONDecodeError)` miss "
@@ -434,26 +429,82 @@ def what_did_i_forget(changed_files: str) -> str:
         "7. State/type key mismatches — are dict keys used for dedup/lookup consistent with the "
         "keys used when storing?\n"
         "8. None-guarded arithmetic — is `time.time() - value` ever called where value could be None?\n"
-        "Rules:\n"
-        "- Name the exact file, function, and the specific line-level issue.\n"
-        "- Do NOT repeat anything already listed in static audit warnings.\n"
-        "- Do NOT list generic best practices (run tests, update docs, check types).\n"
-        "- List every concrete missed bug you find. No bullet limit.\n"
-        "- If truly nothing concrete remains, say 'Nothing missed.'\n"
     )
+    _SHELL_PROBES = (
+        "PROBE for missed bugs in shell scripts only. Check:\n"
+        "1. Unquoted variable expansion that breaks on whitespace/empty values "
+        "(e.g. `[ $x = y ]` vs `[ \"$x\" = y ]`).\n"
+        "2. `set -e` interactions: pipelines, command substitutions, and `||`/`&&` "
+        "chains where a non-zero exit silently masks an error.\n"
+        "3. Arithmetic with `$(( ))` on potentially non-numeric input — produces a "
+        "fatal error under set -e if the expression is malformed.\n"
+        "4. Race conditions on shared tmp/ files (no flock around read-modify-write).\n"
+        "5. `grep -q` with `set -e` causing script abort on no-match without an explicit `|| true`.\n"
+        "6. Path assumptions — `cd` to a relative path that depends on cwd context.\n"
+    )
+    _JS_PROBES = (
+        "PROBE for missed bugs in JavaScript/TypeScript files only. Check:\n"
+        "1. Unhandled promise rejections — every `.then` without a matching `.catch`.\n"
+        "2. Accessing `.foo` on a value that may be `null`/`undefined` post-`?.` chain.\n"
+        "3. Race conditions in async setup — captured-variable mutations across awaits.\n"
+        "4. Implicit type coercion in `==` comparisons (use `===`).\n"
+        "5. Off-by-one in slice/splice — `splice(i, 1)` removes 1; `slice(i, 1)` returns 1 element.\n"
+    )
+
+    def _probe_set_for(files_csv: str) -> str:
+        ext_seen = set()
+        for f in files_csv.split(","):
+            f = f.strip().lower()
+            if not f:
+                continue
+            if f.endswith(".py"): ext_seen.add("py")
+            elif f.endswith(".sh") or f.endswith(".bash"): ext_seen.add("sh")
+            elif f.endswith((".js", ".ts", ".tsx", ".mjs", ".cjs")): ext_seen.add("js")
+        probes = []
+        if "py" in ext_seen: probes.append(_PYTHON_PROBES)
+        if "sh" in ext_seen: probes.append(_SHELL_PROBES)
+        if "js" in ext_seen: probes.append(_JS_PROBES)
+        return "\n".join(probes)
+
+    probes = _probe_set_for(changed_files)
+    warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
+    docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
+    diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
+    hunk_section = hunk_context if hunk_context else ""
     synthesis = None
     _synthesis_timed_out = False
-    try:
-        result = _reasoning_think("/no_think\n" + user_text, max_tokens=400,
-                                  system=_THINK_SYSTEM)
-        if result:
-            from .synthesis.synthesis_inference import compress_for_claude
-            synthesis = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")
-        elif result is None:
+    if not probes:
+        # No language with probes — skip synthesis entirely so we don't ask the
+        # model to invent issues against config/docs/json. Fail loud about it.
+        logger.info("what_did_i_forget: no Python/shell/JS files in diff; skipping adaptive synthesis")
+    else:
+        user_text = (
+            f"Changed files: {changed_files}\n"
+            f"Static audit warnings already found: {warnings_text}\n"
+            f"Docs flagged: {docs_text}\n"
+            f"{diff_section}"
+            f"{hunk_section}\n"
+            f"{probes}"
+            "Rules:\n"
+            "- Only flag issues you can cite with file:line evidence from the diff/hunks above.\n"
+            "- If a probe class doesn't apply to any file in the diff, skip that probe silently.\n"
+            "- Do NOT speculate about variables/functions/idioms not present in the diff.\n"
+            "- Do NOT repeat anything already listed in static audit warnings.\n"
+            "- Do NOT list generic best practices (run tests, update docs, check types).\n"
+            "- List every concrete missed bug you find. No bullet limit.\n"
+            "- If truly nothing concrete remains, say 'Nothing missed.'\n"
+        )
+        try:
+            result = _reasoning_think("/no_think\n" + user_text, max_tokens=400,
+                                      system=_THINK_SYSTEM)
+            if result:
+                from .synthesis.synthesis_inference import compress_for_claude
+                synthesis = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")
+            elif result is None:
+                _synthesis_timed_out = True
+        except Exception as _e:
+            logger.warning(f"what_did_i_forget: synthesis error: {_e}")
             _synthesis_timed_out = True
-    except Exception as _e:
-        logger.warning(f"what_did_i_forget: synthesis error: {_e}")
-        _synthesis_timed_out = True
 
     if synthesis:
         parts.append(f"\n## What You May Have Missed *(adaptive)*")
