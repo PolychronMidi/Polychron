@@ -873,7 +873,7 @@ def _run_indexing_mode_locked() -> dict:
     finally:
         # Step 4: Tell shim to restore models to original device
         try:
-            restore_result = _shim_post("/reload-engines", {"device": "restore"}, timeout=120)
+            restore_result = _shim_post("/reload-engines", {"device": "restore"}, timeout=300)
             if restore_result.get("error"):
                 logger.error(f"indexing-mode: restore returned error: {restore_result['error']}")
             else:
