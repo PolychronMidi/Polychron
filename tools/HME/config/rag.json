@@ -1,5 +1,4 @@
 {
-  "_comment": "HME RAG configuration. Fields: ragIndexDirs (explicit allowlist, ONLY these dirs are indexed), ragIgnore (pathspec glob list for path-specific exclusions like doc/theory/**), ragLibs (external library configs). Basename exclusions → HME_IGNORE_DIRS in .env. File exclusions → HME_IGNORE_FILES in .env. Size limit → HME_RAG_MAX_FILE_SIZE_KB in .env.",
-  "ragIndexDirs": ["src", "scripts", "tools/HME", "doc"],
+  "_comment": "HME RAG configuration. Fields: ragIgnore (pathspec glob list for path-specific exclusions like doc/theory/**), ragLibs (external library configs). Walker root = PROJECT_ROOT, with .gitignore + ragIgnore + HME_IGNORE_DIRS basename excludes filtering. Size limit → HME_RAG_MAX_FILE_SIZE_KB in .env.",
   "ragIgnore": ["doc/theory/**", "tools/csv_maestro/**", "src/types/**"]
 }
