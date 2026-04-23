@@ -159,12 +159,12 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
     proj_results = ctx.project_engine.search_knowledge(query, top_k=top_k, category=cat)
     glob_results = ctx.global_engine.search_knowledge(query, top_k=top_k, category=cat)
 
-    # Drop zero-score noise: when fewer than top_k entries match the query
-    # meaningfully, the engine pads with cross-encoder-clamped 0% entries
-    # that pollute the result list. Mirrors format_knowledge_results' filter.
-    _MIN_SCORE = 0.01
-    proj_results = [r for r in proj_results if r.get("score", 0) >= _MIN_SCORE]
-    glob_results = [r for r in glob_results if r.get("score", 0) >= _MIN_SCORE]
+    # Drop hard-zero scores: cross-encoder rerank clamps negatives to 0,
+    # meaning the entry is irrelevant. Sub-1% entries with non-zero raw
+    # scores are kept — display rounds them to 0% but they're statistically
+    # distinct from clamped noise. Mirrors helpers.format_knowledge_results.
+    proj_results = [r for r in proj_results if r.get("score", 0) > 0]
+    glob_results = [r for r in glob_results if r.get("score", 0) > 0]
 
     if not proj_results and not glob_results:
         return "No knowledge entries found. Use add_knowledge to build the knowledge base."
