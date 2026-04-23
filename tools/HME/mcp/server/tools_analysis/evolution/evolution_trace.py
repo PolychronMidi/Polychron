@@ -156,7 +156,7 @@ def trace_query(module: str, section: int = -1, limit: int = 15, mode: str = "mo
                 if isinstance(beat_key, str) and ":" in beat_key:
                     try:
                         sec = int(beat_key.split(":")[0])
-                    except ValueError:  # silent-ok: expected parse miss; validated upstream
+                    except ValueError:
                         pass
                 if section >= 0 and sec != section:
                     continue

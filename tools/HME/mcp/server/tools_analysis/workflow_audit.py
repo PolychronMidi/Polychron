@@ -328,7 +328,7 @@ def what_did_i_forget(changed_files: str) -> str:
             with open(abs_py, encoding="utf-8", errors="ignore") as _pyf:
                 py_content = _pyf.read()
             all_warnings.extend(_scan_python_bug_patterns(rel_py, py_content))
-        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+        except OSError:
             pass
 
     if all_warnings:
@@ -399,7 +399,7 @@ def what_did_i_forget(changed_files: str) -> str:
                             break
                     if total_hunk_chars >= 1000:
                         break
-                except (OSError, ValueError):  # silent-ok: best-effort file/stat; downstream already handles absence
+                except (OSError, ValueError):
                     pass
             if hunk_parts:
                 hunk_context = "\nChanged file context (±10 lines around diff hunks):\n" + "\n\n".join(hunk_parts)

@@ -335,7 +335,7 @@ def collect_all_symbols(project_root: str) -> list[dict]:
     for fp in files:
         try:
             mtime_sum += _stat(fp).st_mtime
-        except OSError:  # silent-ok: best-effort file/stat; downstream already handles absence
+        except OSError:
             pass
     signature = (len(files), round(mtime_sum, 3))
     cached = _ALL_SYMBOLS_CACHE.get(signature)
