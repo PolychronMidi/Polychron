@@ -412,10 +412,15 @@ def force_state(s: str) -> bool:
 
 
 def _run_selftest_prereq() -> str:
-    """Run hme_admin(action='selftest') in-process and format its output."""
+    """Run selftest in-process and format its output.
+
+    Calls the undecorated hme_selftest directly — going through the
+    @chained hme_admin dispatcher would append another status_line, which
+    the outer tool's chain_exit also appends, causing a duplicate banner.
+    """
     try:
-        from server.tools_analysis.evolution_admin import hme_admin
-        result = hme_admin(action="selftest")
+        from server.tools_analysis.evolution_admin import hme_selftest
+        result = hme_selftest(verbose=False)
         header = (
             "[AUTO-CHAIN] Onboarding step 1/8: ran selftest as prerequisite.\n"
             " selftest output "
