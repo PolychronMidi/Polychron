@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Iterator, Optional
 
+from hme_env import ENV
 from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES, ext_to_lang
 
 logger = logging.getLogger(__name__)
@@ -78,11 +79,9 @@ _BUILTIN_MAX_FILE_SIZE_KB = 256
 
 
 def _max_file_size_from_env() -> int:
-    raw = os.environ.get("HME_RAG_MAX_FILE_SIZE_KB", "")
-    try:
-        return int(raw) * 1024 if raw.strip() else _BUILTIN_MAX_FILE_SIZE_KB * 1024
-    except ValueError:
-        return _BUILTIN_MAX_FILE_SIZE_KB * 1024
+    # ENV.optional_int raises on garbage so a typo in .env surfaces immediately
+    # instead of silently using the default.
+    return ENV.optional_int("HME_RAG_MAX_FILE_SIZE_KB", _BUILTIN_MAX_FILE_SIZE_KB) * 1024
 
 
 _config: dict = {
