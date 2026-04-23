@@ -364,18 +364,22 @@ function streamClaudeMsg(ctx, msg, assistantId) {
         },
     });
 }
-function streamLlamacppMsg(ctx, msg, assistantId) {
-    const contextMessages = contextPrefixMessages(msg._contextPrefix);
-    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
-    const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user", content: msg.text }];
+/**
+ * Generic adapter-driven runner: handle the common harness + finalize +
+ * error-propagation pattern for any adapter-based route. Claude still
+ * needs its own path because PTY-vs-pipe fallback + model-mismatch
+ * detection are unique to it; llamacpp and hybrid are fully covered here.
+ */
+function runAdapterStream(args) {
+    const { ctx, assistantId, route, adapter, buildInput, finalize, preludeChunk } = args;
     runStream({
-        ctx, assistantId, route: "local",
+        ctx, assistantId, route, preludeChunk,
         start: (h) => {
-            const handle = router_1.llamacppAdapter.stream(requestHistory, {
-                onChunk: h.onChunk,
-                llamacpp: (0, msgHelpers_1.llamacppOptsFromMsg)(msg),
-                workingDir: ctx.projectRoot,
-            });
+            const { messages, opts } = buildInput(ctx.postError);
+            // Force the harness's onChunk into the adapter options so both
+            // the UI (via post) and the finalize bookkeeping see every chunk.
+            const fullOpts = { ...opts, onChunk: h.onChunk };
+            const handle = adapter.stream(messages, fullOpts);
             h.setCancel(() => handle.cancel());
             handle.done.then((result) => {
                 if (h.isAborted())
@@ -385,56 +389,47 @@ function streamLlamacppMsg(ctx, msg, assistantId) {
                         h.postStreamEnd();
                         h.safeEnd();
                     }
-                    ctx.postError("local", result.error ?? "unknown error");
+                    ctx.postError(route, result.error ?? "unknown error");
                     return;
                 }
-                finalizeStream(h, ctx, assistantId, "local", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
+                finalizeStream(h, ctx, assistantId, route, finalize);
                 h.safeEnd();
             });
         },
+    });
+}
+function streamLlamacppMsg(ctx, msg, assistantId) {
+    const contextMessages = contextPrefixMessages(msg._contextPrefix);
+    const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
+    const requestHistory = [AGENTIC_SYSTEM, ...contextMessages, ...trimmed, { role: "user", content: msg.text }];
+    runAdapterStream({
+        ctx, assistantId, route: "local", adapter: router_1.llamacppAdapter,
+        buildInput: () => ({
+            messages: requestHistory,
+            opts: {
+                onChunk: () => { }, // overwritten by runAdapterStream
+                llamacpp: (0, msgHelpers_1.llamacppOptsFromMsg)(msg),
+                workingDir: ctx.projectRoot,
+            },
+        }),
+        finalize: { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel },
     });
 }
 function streamHybridMsg(ctx, msg, assistantId) {
     const contextMessages = contextPrefixMessages(msg._contextPrefix);
     const trimmed = (0, streamUtils_1.trimHistoryToFit)(ctx.state.llamacppHistory, msg.text, [AGENTIC_SYSTEM, ...contextMessages]);
     const history = [...contextMessages, ...trimmed];
-    // Migrated to RouterAdapter: error / cancel / done are normalized in
-    // a single Promise<StreamResult> so the harness sees one shape
-    // regardless of backend. Compare to streamClaudeMsg + streamLlamacppMsg
-    // for the legacy callback patterns those routes still use.
-    runStream({
-        ctx, assistantId, route: "hybrid",
+    runAdapterStream({
+        ctx, assistantId, route: "hybrid", adapter: router_1.hybridAdapter,
         preludeChunk: "[HME] Enriching with KB context…",
-        start: (h) => {
-            const handle = router_1.hybridAdapter.stream({ message: msg.text, history, workingDir: ctx.projectRoot }, {
-                onChunk: h.onChunk,
+        buildInput: () => ({
+            messages: { message: msg.text, history, workingDir: ctx.projectRoot },
+            opts: {
+                onChunk: () => { }, // overwritten by runAdapterStream
                 llamacpp: (0, msgHelpers_1.llamacppOptsFromMsg)(msg),
-            });
-            h.setCancel(() => handle.cancel());
-            handle.done.then((result) => {
-                if (h.isAborted())
-                    return;
-                if (!result.ok) {
-                    if (!h.isEnded()) {
-                        h.postStreamEnd();
-                        h.safeEnd();
-                    }
-                    ctx.postError("hybrid", result.error ?? "unknown error");
-                    return;
-                }
-                finalizeStream(h, ctx, assistantId, "hybrid", { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel });
-                h.safeEnd();
-            }).catch((err) => {
-                // RouterAdapter contract says result.error carries failures, not
-                // a rejected promise — but defend against legacy implementations
-                // that might still throw.
-                if (!h.isEnded()) {
-                    h.postStreamEnd();
-                    h.safeEnd();
-                }
-                ctx.postError("hybrid", String(err?.message ?? err));
-            });
-        },
+            },
+        }),
+        finalize: { pushLlamacpp: true, userText: msg.text, model: msg.llamacppModel },
     });
 }
 function streamAgentMsg(ctx, msg, assistantId, label, onBothDone, onForceDrain, cancelFns) {

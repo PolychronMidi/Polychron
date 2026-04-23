@@ -58,9 +58,36 @@ const http = __importStar(require("http"));
 const DAEMON_PORT = parseInt(process.env.HME_LLAMACPP_DAEMON_PORT || "7735", 10);
 const ARBITER_MODEL = "qwen3:4b";
 const CHAIN_SUMMARY_MODEL = "qwen3:30b-a3b";
-// 30s TTL prevents redundant arbiter calls for repeated/similar messages
+// 30s TTL + LRU cap. TTL prevents redundant calls for repeated messages;
+// the cap prevents unbounded growth when every message is unique (a long
+// session with distinct queries would otherwise hoard one entry per
+// turn forever until process exit). Map iteration order is insertion
+// order, so a size-gated delete of the oldest entry is simple LRU.
 const _decisionCache = new Map();
 const CACHE_TTL_MS = 30000;
+const CACHE_CAPACITY = 256;
+function _cacheGet(key) {
+    const entry = _decisionCache.get(key);
+    if (!entry)
+        return null;
+    if (Date.now() - entry.ts >= CACHE_TTL_MS) {
+        _decisionCache.delete(key);
+        return null;
+    }
+    // LRU touch: delete + re-insert so this key is now most-recent.
+    _decisionCache.delete(key);
+    _decisionCache.set(key, entry);
+    return entry.decision;
+}
+function _cacheSet(key, decision) {
+    _decisionCache.set(key, { decision, ts: Date.now() });
+    while (_decisionCache.size > CACHE_CAPACITY) {
+        const oldest = _decisionCache.keys().next().value;
+        if (oldest === undefined)
+            break;
+        _decisionCache.delete(oldest);
+    }
+}
 // Tiny non-cryptographic hash for cache-key fingerprinting. The audit
 // surfaced that the prior cache key ignored transcriptContext entirely,
 // so two users sending the same prefix in different session states (one
@@ -160,9 +187,9 @@ function daemonPost(payload) {
  */
 async function classifyMessage(message, transcriptContext, constraintCount, errorCount = 0) {
     const key = _cacheKey(message, constraintCount, errorCount, transcriptContext);
-    const cached = _decisionCache.get(key);
-    if (cached && Date.now() - cached.ts < CACHE_TTL_MS)
-        return cached.decision;
+    const cached = _cacheGet(key);
+    if (cached)
+        return cached;
     const prompt = CLASSIFY_PROMPT
         .replace("{message}", message.slice(0, 1000))
         .replace("{transcript}", transcriptContext.slice(0, 1500))
@@ -197,7 +224,7 @@ async function classifyMessage(message, transcriptContext, constraintCount, erro
             route: escalated ? "claude" : route,
             confidence, reason, escalated, isError: false,
         };
-        _decisionCache.set(key, { decision, ts: Date.now() });
+        _cacheSet(key, decision);
         return decision;
     }
     catch {
