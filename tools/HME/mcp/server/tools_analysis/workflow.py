@@ -366,6 +366,12 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
     """Build and return the Edit Risks synthesis text. Shared by before_editing and warm_pre_edit_cache.
     Interactive calls use two-stage pipeline (extract→reason) for better grounding.
     Background/warm-cache calls use single-stage to avoid competing with interactive work."""
+    # Honor fast=true on read(): skip the 30-90s synthesis entirely when
+    # the caller set HME_READ_FAST=1. Previously the flag only gated the
+    # "Key Constraints" synthesis in reasoning.py, so `i/hme-read fast=true`
+    # still took 62s here — the flag was effectively a lie for this path.
+    if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):
+        return "(Edit Risks synthesis skipped — HME_READ_FAST=1)"
     callers_summary = ", ".join(caller_files[:8]) if caller_files else "none"
     kb_summary = "\n".join(
         f"  [{k['category']}] {k['title']}: {k['content'][:200]}"
