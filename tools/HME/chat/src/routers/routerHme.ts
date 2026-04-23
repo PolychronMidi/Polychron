@@ -22,15 +22,65 @@ export interface EnrichResult {
   kbCount: number;
 }
 
+// Shape-validating parsers. The shim returns JSON whose schema we depend on;
+// bare `JSON.parse` with `?? []` hides contract drift by silently filling in
+// empty values. These parsers fail loudly on shape mismatch so the caller's
+// transient-retry handles transport flakiness without swallowing schema bugs.
+function _parseEnrichResult(raw: string): EnrichResult {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error(`/enrich returned non-object: ${raw.slice(0, 120)}`);
+  }
+  const obj = parsed as Record<string, unknown>;
+  const kb = Array.isArray(obj.kb) ? (obj.kb as EnrichResult["kb"]) : [];
+  const warm = typeof obj.warm === "string" ? obj.warm : "";
+  return { warm, kb, kbCount: kb.length };
+}
+
+function _parseValidateResult(raw: string): { warnings: any[]; blocks: any[] } {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error(`/validate returned non-object: ${raw.slice(0, 120)}`);
+  }
+  const obj = parsed as Record<string, unknown>;
+  return {
+    warnings: Array.isArray(obj.warnings) ? obj.warnings : [],
+    blocks: Array.isArray(obj.blocks) ? obj.blocks : [],
+  };
+}
+
+function _parseAuditResult(raw: string): { violations: any[]; changed_files: string[] } {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error(`/audit returned non-object: ${raw.slice(0, 120)}`);
+  }
+  const obj = parsed as Record<string, unknown>;
+  return {
+    violations: Array.isArray(obj.violations) ? obj.violations : [],
+    changed_files: Array.isArray(obj.changed_files)
+      ? (obj.changed_files as string[]).filter((x) => typeof x === "string")
+      : [],
+  };
+}
+
+function _parseReindexResult(raw: string): { indexed: string[]; count: number } {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error(`/reindex returned non-object: ${raw.slice(0, 120)}`);
+  }
+  const obj = parsed as Record<string, unknown>;
+  const indexed = Array.isArray(obj.indexed)
+    ? (obj.indexed as string[]).filter((x) => typeof x === "string")
+    : [];
+  const count = typeof obj.count === "number" ? obj.count : indexed.length;
+  return { indexed, count };
+}
+
 export async function fetchHmeContext(query: string, topK: number = 5): Promise<EnrichResult> {
   return shimPost<EnrichResult>(
     "/enrich",
     JSON.stringify({ query, top_k: topK }),
-    (raw) => {
-      const parsed = JSON.parse(raw);
-      const kb = parsed.kb ?? [];
-      return { warm: parsed.warm ?? "", kb, kbCount: kb.length };
-    },
+    _parseEnrichResult,
   );
 }
 
