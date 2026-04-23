@@ -214,6 +214,49 @@ def _mode_introspect():
     return _hi()
 
 
+def _mode_signals() -> str:
+    """Tail the unified signal bus — the one-file truth of hook + middleware
+    + lifecycle events for the current and recent sessions."""
+    import json as _json
+    path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-signals.jsonl")
+    if not os.path.isfile(path):
+        return (
+            "# HME Signal Bus\n\n"
+            "output/metrics/hme-signals.jsonl not yet produced. Hooks emit to it "
+            "via _signal_emit (sourced by helpers/_signals.sh). Trigger a few "
+            "tool calls and re-check."
+        )
+    try:
+        with open(path, encoding="utf-8") as _f:
+            raw = _f.readlines()[-40:]
+    except OSError as _e:
+        return f"# HME Signal Bus\n\nCould not read: {type(_e).__name__}: {_e}"
+    parsed = []
+    for ln in raw:
+        try:
+            parsed.append(_json.loads(ln))
+        except (ValueError, TypeError):
+            continue
+    if not parsed:
+        return "# HME Signal Bus\n\nNo parseable entries yet."
+    from collections import Counter as _Counter
+    counts = _Counter(e.get("event", "?") for e in parsed)
+    lines = [
+        "# HME Signal Bus",
+        "",
+        f"Tailing last {len(parsed)} entries from output/metrics/hme-signals.jsonl.",
+        "",
+        "## Event frequency (this tail)",
+    ]
+    for ev, n in counts.most_common():
+        lines.append(f"  {ev:<30} {n}")
+    lines.append("")
+    lines.append("## Most recent 10")
+    for e in parsed[-10:]:
+        lines.append(f"  [{e.get('source', '?'):<20}] {e.get('event', '?'):<22} scope={e.get('scope', '?')}")
+    return "\n".join(lines)
+
+
 # Mode registry
 _STATUS_MODES: dict[str, callable] = {
     "resume": lambda: _resume_briefing(),
