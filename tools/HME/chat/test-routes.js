@@ -1,17 +1,24 @@
 /**
  * Route tester — fires local, hybrid, and arbiter routes through compiled router.
  * Reports every error, chunk, and completion event to stdout.
+ *
+ * Prereqs:
+ *   - llama-server running at HME_LLAMACPP_ARBITER_URL (default http://127.0.0.1:8080)
+ *   - HME worker serving /chat/* at HME_PROXY_PORT (default 9099)
+ *   - `npm run compile` in tools/HME/chat/ first
+ *
  * Run: node tools/HME/chat/test-routes.js
  */
 const path = require("path");
 const {
-  streamllama.cpp, streamLlamacppAgentic, streamHybrid,
-  fetchHmeContext, validateMessage, auditChanges,
-  postTranscript, reindexFiles, postNarrative, isHmeShimReady,
+  streamLlamacpp, streamLlamacppAgentic, streamHybrid,
+  fetchHmeContext, validateMessage, postTranscript, reindexFiles, isHmeShimReady,
 } = require("./out/router");
 const { classifyMessage, synthesizeNarrative } = require("./out/Arbiter");
 
-const OPTS = { model: "qwen3-coder:30b", url: "http://localhost:11434" };
+const LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL || "http://127.0.0.1:8080";
+const LLAMACPP_MODEL = process.env.HME_CHAT_TEST_MODEL || "qwen3-coder:30b";
+const OPTS = { model: LLAMACPP_MODEL, url: LLAMACPP_URL };
 const PROJECT = path.resolve(__dirname, "../../..");
 
 function testRoute(name, fn) {
@@ -34,7 +41,7 @@ function testRoute(name, fn) {
         done({ ok: false, err });
       }
     );
-    setTimeout(() => { cancel(); done({ ok: false, err: "4min hard cancel" }); }, 240000);
+    setTimeout(() => { try { cancel?.(); } catch {} done({ ok: false, err: "4min hard cancel" }); }, 240000);
   });
 }
 
@@ -60,7 +67,7 @@ async function expectError(name, fn) {
         done({ ok: true });
       }
     );
-    setTimeout(() => { cancel?.(); done({ ok: false, err: "30s timeout — error not detected" }); }, 30000);
+    setTimeout(() => { try { cancel?.(); } catch {} done({ ok: false, err: "30s timeout — error not detected" }); }, 30000);
   });
 }
 
@@ -103,7 +110,9 @@ async function run() {
   t0 = Date.now();
   try {
     const fakeEntries = Array.from({ length: 6 }, (_, i) => ({
-      role: "assistant", content: `Step ${i + 1}: Modified crossLayerRegistry, fixed coupling bug, updated KB.`, summary: ""
+      ts: Date.now(), type: "assistant",
+      content: `Step ${i + 1}: Modified crossLayerRegistry, fixed coupling bug, updated KB.`,
+      summary: "",
     }));
     const narrative = await synthesizeNarrative(fakeEntries);
     console.log(`[NARRATIVE] OK in ${((Date.now() - t0) / 1000).toFixed(1)}s: ${narrative.slice(0, 120)}`);
@@ -133,7 +142,7 @@ async function run() {
     console.log(`[SHIM] validateMessage: w=${val.warnings.length} b=${val.blocks.length}`);
   } catch (e) { shimOk = false; shimErrs.push(`validate: ${e}`); }
   try {
-    await postTranscript([{ role: "user", content: "test entry", summary: "" }]);
+    await postTranscript([{ ts: Date.now(), type: "user", content: "test entry", summary: "" }]);
     console.log(`[SHIM] postTranscript: OK`);
   } catch (e) { shimOk = false; shimErrs.push(`transcript: ${e}`); }
   try {
@@ -144,27 +153,33 @@ async function run() {
   else console.log(`[SHIM] all OK`);
   results["shim-utils"] = shimOk;
 
-  // 1e. streamllama.cpp (basic)
-  const r1 = await testRoute("STREAM_OLLAMA", (c, d, e) => streamllama.cpp(MSG, OPTS, c, d, e));
+  // 1e. streamLlamacpp (SSE streaming, basic)
+  const r1 = await testRoute("STREAM_LLAMACPP", (c, d, e) => streamLlamacpp(MSG, OPTS, c, d, e));
   results["stream-llamacpp"] = r1.ok;
 
-  // 1f. streamLlamacppAgentic
-  const r2 = await testRoute("LOCAL", (c, d, e) => streamLlamacppAgentic(MSG, OPTS, PROJECT, c, d, e));
+  // 1f. streamLlamacppAgentic (tool loop)
+  const r2 = await testRoute("LOCAL_AGENTIC", (c, d, e) => streamLlamacppAgentic(MSG, OPTS, PROJECT, c, d, e));
   results["local-agentic"] = r2.ok;
 
-  // 1g. streamHybrid
+  // 1g. streamHybrid (KB-enriched)
   const r3 = await new Promise(async (resolve) => {
     console.log("\n=== HYBRID START ===");
     const t0 = Date.now();
     const timer = setTimeout(() => { resolve({ ok: false, err: "4min hard cancel" }); }, 240000);
-    await streamHybrid("Reply with exactly: ROUTE_OK", [], OPTS, PROJECT,
-      (chunk, type) => {
-        if (type === "error") console.error(`[HYBRID] ERROR: ${chunk}`);
-        else process.stdout.write(`[HYBRID][${type}] ${chunk.slice(0, 80)}\n`);
-      },
-      () => { clearTimeout(timer); console.log(`[HYBRID] DONE in ${((Date.now() - t0) / 1000).toFixed(1)}s`); resolve({ ok: true }); },
-      (err) => { clearTimeout(timer); console.error(`[HYBRID] ERROR: ${err}`); resolve({ ok: false, err }); }
-    );
+    try {
+      await streamHybrid("Reply with exactly: ROUTE_OK", [], OPTS, PROJECT,
+        (chunk, type) => {
+          if (type === "error") console.error(`[HYBRID] ERROR: ${chunk}`);
+          else process.stdout.write(`[HYBRID][${type}] ${chunk.slice(0, 80)}\n`);
+        },
+        () => { clearTimeout(timer); console.log(`[HYBRID] DONE in ${((Date.now() - t0) / 1000).toFixed(1)}s`); resolve({ ok: true }); },
+        (err) => { clearTimeout(timer); console.error(`[HYBRID] ERROR: ${err}`); resolve({ ok: false, err }); }
+      );
+    } catch (e) {
+      clearTimeout(timer);
+      console.error(`[HYBRID] THREW: ${e}`);
+      resolve({ ok: false, err: String(e) });
+    }
   });
   results["hybrid"] = r3.ok;
 
@@ -172,52 +187,48 @@ async function run() {
   // SECTION 2: STRESS — error paths must surface, never hang
   // ═══════════════════════════════════════════════════════════════
 
-  // 2a. streamllama.cpp to dead port — must fire onError with CRITICAL, not hang
-  const s1 = await expectError("DEAD_OLLAMA", (c, d, e) =>
-    streamllama.cpp(MSG, { model: "qwen3-coder:30b", url: "http://localhost:19999" }, c, d, e)
-  );
+  const DEAD = { model: LLAMACPP_MODEL, url: "http://127.0.0.1:19999" };
+
+  // 2a. streamLlamacpp to dead port — must fire onError with CRITICAL, not hang
+  const s1 = await expectError("DEAD_LLAMACPP", (c, d, e) => streamLlamacpp(MSG, DEAD, c, d, e));
   results["stress-dead-llamacpp"] = s1.ok;
 
   // 2b. streamLlamacppAgentic to dead port
-  const s2 = await expectError("DEAD_OLLAMA_AGENTIC", (c, d, e) =>
-    streamLlamacppAgentic(MSG, { model: "qwen3-coder:30b", url: "http://localhost:19999" }, PROJECT, c, d, e)
+  const s2 = await expectError("DEAD_LLAMACPP_AGENTIC", (c, d, e) =>
+    streamLlamacppAgentic(MSG, DEAD, PROJECT, c, d, e)
   );
   results["stress-dead-agentic"] = s2.ok;
 
-  // 2c. streamllama.cpp with bogus model name — llama.cpp should return 404
+  // 2c. streamLlamacpp with bogus model name — llama-server should return 4xx
   const s3 = await expectError("BOGUS_MODEL", (c, d, e) =>
-    streamllama.cpp(MSG, { model: "THIS_MODEL_DOES_NOT_EXIST_12345", url: "http://localhost:11434" }, c, d, e)
+    streamLlamacpp(MSG, { model: "THIS_MODEL_DOES_NOT_EXIST_12345", url: LLAMACPP_URL }, c, d, e)
   );
   results["stress-bogus-model"] = s3.ok;
 
-  // 2d. Arbiter classify with dead llama.cpp — must return isError:true, not hang
-  console.log("\n=== STRESS: ARBITER_DEAD_OLLAMA ===");
+  // 2d. Arbiter classify with empty message — should still succeed (empty is valid input)
+  console.log("\n=== STRESS: ARBITER_EMPTY ===");
   t0 = Date.now();
-  // Temporarily test against a dead port by modifying OLLAMA_URL... we can't do this
-  // without modifying the module, so test with empty message (should still succeed)
   const emptyDecision = await classifyMessage("", "", 0);
   console.log(`  [ARBITER_EMPTY] route=${emptyDecision.route} err=${emptyDecision.isError} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
-  results["stress-arbiter-empty"] = !emptyDecision.isError;  // empty is valid input, should work
+  results["stress-arbiter-empty"] = !emptyDecision.isError;
 
-  // 2e. fetchHmeContext with dead shim — must reject, not hang
-  console.log("\n=== STRESS: DEAD_SHIM_CONTEXT ===");
+  // 2e. fetchHmeContext — shim is (presumed) running, should succeed;
+  //     if shim is down, rejection is also correct behavior.
+  console.log("\n=== STRESS: SHIM_CONTEXT_LIVE ===");
   t0 = Date.now();
   try {
-    // The shim IS running, so this should succeed. If it fails, that's a real bug.
     const ctx = await fetchHmeContext("test query", 1);
     const ctxLen = typeof ctx === "string" ? ctx.length : (ctx.warm?.length ?? 0);
-    console.log(`  [DEAD_SHIM] Actually succeeded (shim is running): ${ctxLen} chars (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+    console.log(`  [SHIM_CTX] OK: ${ctxLen} chars (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
     results["stress-shim-context"] = true;
   } catch (e) {
-    console.log(`  [DEAD_SHIM] Rejected as expected: ${String(e).slice(0, 80)} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
-    results["stress-shim-context"] = true;  // rejection = correct behavior if shim is down
+    console.log(`  [SHIM_CTX] Rejected (shim down?): ${String(e).slice(0, 80)} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+    results["stress-shim-context"] = true;
   }
 
-  // 2f. streamllama.cpp with empty messages array
-  const s6 = await testRoute("EMPTY_MESSAGES", (c, d, e) =>
-    streamllama.cpp([], OPTS, c, d, e)
-  );
-  results["stress-empty-msgs"] = s6.ok;  // llama.cpp handles empty messages
+  // 2f. streamLlamacpp with empty messages array — llama-server tolerates empty
+  const s6 = await testRoute("EMPTY_MESSAGES", (c, d, e) => streamLlamacpp([], OPTS, c, d, e));
+  results["stress-empty-msgs"] = s6.ok;
 
   // ═══════════════════════════════════════════════════════════════
   // SUMMARY
