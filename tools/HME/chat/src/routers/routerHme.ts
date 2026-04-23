@@ -47,7 +47,8 @@ function shimGet<T>(path: string, parse: (raw: string) => T, fallback: T, timeou
   });
 }
 
-function shimPost<T>(path: string, body: string, parse: (raw: string) => T, timeoutMs: number = 5000): Promise<T> {
+/** Single attempt — pure transport. Used inside _shimPostWithRetry. */
+function _shimPostOnce<T>(path: string, body: string, parse: (raw: string) => T, timeoutMs: number): Promise<T> {
   return new Promise((resolve, reject) => {
     let done = false;
     const fail = (msg: string) => { if (!done) { done = true; req.destroy(); reject(new Error(msg)); } };
@@ -72,6 +73,25 @@ function shimPost<T>(path: string, body: string, parse: (raw: string) => T, time
     req.on("error", (e: any) => { clearTimeout(timer); fail(`HME shim ${path} unreachable: ${e?.message ?? e}`); });
     req.write(body);
     req.end();
+  });
+}
+
+/** Shim POST with one transparent retry on transient failure (ECONNREFUSED,
+ * ETIMEDOUT, parse error). The shim restarts during updates; a single-
+ * shot call would surface the restart as a user-facing failure even when
+ * a 1s wait would have succeeded. Parse errors do not retry — they
+ * indicate a contract mismatch, not transport flakiness. */
+function shimPost<T>(path: string, body: string, parse: (raw: string) => T, timeoutMs: number = 5000): Promise<T> {
+  return _shimPostOnce(path, body, parse, timeoutMs).catch((err: any) => {
+    const msg = String(err?.message ?? err);
+    const transient = /unreachable|timeout|ECONNREFUSED|ETIMEDOUT|ECONNRESET|EPIPE/i.test(msg);
+    if (!transient) throw err;
+    console.error(`[HME] shim ${path} retrying after transient: ${msg.slice(0, 120)}`);
+    return new Promise<T>((resolve, reject) => {
+      setTimeout(() => {
+        _shimPostOnce(path, body, parse, timeoutMs).then(resolve, reject);
+      }, 1000);
+    });
   });
 }
 
