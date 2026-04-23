@@ -1585,6 +1585,12 @@ window.addEventListener('message', (event) => {
     vscode.setState({ ...(vscode.getState() || {}), activeSessionId });
     vscode.postMessage({ type: 'listSessions' });
   } else if (msg.type === 'sessionLoaded') {
+    // Capture scroll position BEFORE we clear the DOM so a repeat
+    // sessionLoaded (same id) can land back where the user was. A
+    // different session id resets the remembered position.
+    const prevScroll = (activeSessionId === msg.id)
+      ? _savedScrollByMsgId[_lastFocusedMsgId] ?? null
+      : null;
     activeSessionId = msg.id;
     vscode.setState({ ...(vscode.getState() || {}), activeSessionId });
     // Reset stream-tracking state BEFORE the DOM rebuild — otherwise an
