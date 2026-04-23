@@ -50,12 +50,15 @@ regimeFade = (() => {
   };
   let lastFireTime = -Infinity;
 
+  // Fade writes MUST NOT land on binaural-reserved channels. setBinaural
+  // owns CC7 on flipBinF2 + flipBinT2 (the non-center spatial channels)
+  // for imperceptible 8-12Hz neurostimulation. regimeFade's regime-biased
+  // volume nudges would corrupt the binaural signal if emitted there.
+  // Restrict regimeFade to the center / drum channels only: cCH1, cCH2,
+  // drumCH, cCH3. This also happens to be where stutterFade writes, so
+  // multi-writer fade dynamics still emerge on those channels.
   function _allFadeChannels() {
-    const out = [];
-    if (Array.isArray(source2)) for (let i = 0; i < source2.length; i++) out.push(source2[i]);
-    if (Array.isArray(reflection)) for (let i = 0; i < reflection.length; i++) out.push(reflection[i]);
-    if (Array.isArray(bass)) for (let i = 0; i < bass.length; i++) out.push(bass[i]);
-    return out;
+    return [cCH1, cCH2, drumCH, cCH3];
   }
 
   function tick(unit) {

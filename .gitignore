@@ -40,7 +40,7 @@ deepwiki.config.json
 /tools/models
 /tools/bin
 /tools/HME/warm-context-cache/
-/tools/HME/KB
+/tools/HME/KB/
 *.bak
 log/
 
