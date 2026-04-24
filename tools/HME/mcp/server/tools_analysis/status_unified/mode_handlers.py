@@ -42,7 +42,7 @@ def _mode_trust():
     return _tr("", "")
 
 def _mode_hme():
-    from .evolution.evolution_admin import hme_selftest as _st
+    from ..evolution.evolution_admin import hme_selftest as _st
     return _st()
 
 def _mode_activity():
@@ -361,7 +361,7 @@ def _mode_perceptual():
             "`i/hme audio_analyze`) to generate.")
 
 def _mode_introspect():
-    from .evolution.evolution_admin import hme_introspect as _hi
+    from ..evolution.evolution_admin import hme_introspect as _hi
     return _hi()
 
 
