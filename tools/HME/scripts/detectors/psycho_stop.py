@@ -215,10 +215,14 @@ def _emit_stats(pattern: str, detail: str) -> None:
             if len(lines) > 5000:
                 with open(out_path, "w", encoding="utf-8") as f:
                     f.writelines(lines[-5000:])
-        except Exception:
-            pass
-    except Exception:
-        pass
+        except OSError as _trim_err:
+            import sys as _sys
+            print(f"[psycho_stop] stats trim failed: "
+                  f"{type(_trim_err).__name__}: {_trim_err}", file=_sys.stderr)
+    except (OSError, TypeError, ValueError) as _emit_err:
+        import sys as _sys
+        print(f"[psycho_stop] stats emit failed: "
+              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
 
 
 def main() -> int:
