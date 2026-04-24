@@ -84,7 +84,8 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
     except Exception as _err:
         logger.debug(f"unnamed-except tools_knowledge.py:79: {type(_err).__name__}: {_err}")
         return ""
-    candidates = [e for e in related if 0.3 < e.get("score", 0) < 0.9]
+    candidates = [e for e in related
+                  if (_s := e.get("score")) is not None and 0.3 < _s < 0.9]
     if not candidates:
         return ""
 
@@ -163,8 +164,10 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
     # meaning the entry is irrelevant. Sub-1% entries with non-zero raw
     # scores are kept — display rounds them to 0% but they're statistically
     # distinct from clamped noise. Mirrors helpers.format_knowledge_results.
-    proj_results = [r for r in proj_results if r.get("score", 0) > 0]
-    glob_results = [r for r in glob_results if r.get("score", 0) > 0]
+    proj_results = [r for r in proj_results
+                    if (_s := r.get("score")) is not None and _s > 0]
+    glob_results = [r for r in glob_results
+                    if (_s := r.get("score")) is not None and _s > 0]
 
     if not proj_results and not glob_results:
         return "No knowledge entries found. Use add_knowledge to build the knowledge base."
@@ -393,7 +396,8 @@ def knowledge_graph(query: str) -> str:
     # Drop cross-encoder-clamped zero-score seeds: they're not meaningfully
     # relevant to the query and only expand noise through spreading activation.
     # Mirrors search_knowledge's min-score filter.
-    results = [r for r in results if r.get("score", 0) > 0]
+    results = [r for r in results
+               if (_s := r.get("score")) is not None and _s > 0]
     if not results:
         return "No knowledge entries match this query."
     # Spreading activation: fetch all KB entries once, then do ID-based graph traversal
@@ -503,7 +507,8 @@ def kb_health() -> str:
     # Category / age distribution summary — always useful even when no staleness.
     cat_counts = Counter(e.get("category", "general") for e in rows)
     now_ts = time.time()
-    ages = [((now_ts - e.get("timestamp", now_ts)) / 86400) for e in rows if e.get("timestamp", 0) > 0]
+    ages = [((now_ts - _ts) / 86400) for e in rows
+            if (_ts := e.get("timestamp")) is not None and _ts > 0]
     if ages:
         parts.append(
             f"\n**Total:** {len(rows)} project entries | "
@@ -555,8 +560,10 @@ def kb_health() -> str:
     # Highlight the five oldest fresh entries (candidates for refresh
     # even though they pass the staleness checks).
     dated = sorted(
-        ((now_ts - e.get("timestamp", now_ts)) / 86400, e)
-        for e in rows if e.get("timestamp", 0) > 0 and str(e.get("id", ""))[:8] in set(healthy)
+        ((now_ts - _ts) / 86400, e)
+        for e in rows
+        if (_ts := e.get("timestamp")) is not None and _ts > 0
+        and str(e.get("id") or "")[:8] in set(healthy)
     )
     if dated:
         parts.append("\n## Oldest healthy entries (refresh candidates)")
