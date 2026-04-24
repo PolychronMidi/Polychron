@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 676,
-      "updated_ts": 1776994884.9127462
+      "max_id": 692,
+      "updated_ts": 1776995038.7821484
     }
   },
   {
@@ -49,8 +49,8 @@
     "id": 664,
     "text": "Harden proxy_autocommit.js with 4-channel treatment",
     "activeForm": "Hardening proxy_autocommit.js",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -62,8 +62,8 @@
     "id": 665,
     "text": "Build PluginCacheParityVerifier (cache vs repo drift)",
     "activeForm": "Building cache parity verifier",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -75,8 +75,8 @@
     "id": 666,
     "text": "Build HookCommandExistenceVerifier (settings.json validation)",
     "activeForm": "Building hook-command verifier",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -88,7 +88,7 @@
     "id": 667,
     "text": "Add proxy-recovery signal on first good response",
     "activeForm": "Adding recovery signal",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
