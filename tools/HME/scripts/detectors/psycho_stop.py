@@ -135,7 +135,7 @@ _IDEATION_MARKERS = (
     # Question stems that signal "tell me / show me, don't do"
     "what would", "what could", "what should we", "what do you think",
     "what are some", "what's worth", "what does this", "what does it",
-    "what if we", "what if i", "how else", "how could we",
+    "what if ", "how else", "how could we", "how would we",
     "any ideas", "any suggestions", "any thoughts",
     "thoughts?", "ideas?", "suggestions?", "opinions?",
     # Comparison / explanation prompts
@@ -143,17 +143,26 @@ _IDEATION_MARKERS = (
     # Capability / design discussions
     "worth integrating", "worth adopting", "could integrate",
     "drive you to", "frenzied ecstasy",
+    # Reaction-and-pivot patterns: "nah, what if..." / "i don't like..."
+    # signal the user is steering a discussion, not directing an action.
+    "i don't like", "i dont like", "i don't think", "i dont think",
+    "rather than that",
 )
 
 # Directive markers — when these appear (even alongside a question),
 # the user IS giving an action directive and survey-and-ask is defer.
+# Removed words (too broad in normal prose): "run " (false-positives on
+# "those run on", "we run a pipeline"), "apply " (false-positives on
+# "apply this rule mentally"), "remove " (false-positives on "remove
+# the noise from the prose"), "create " (false-positives on "what
+# would create the bug?"). Kept words are unambiguous imperative verbs.
 _DIRECTIVE_MARKERS = (
     "fix ", "fix the", "fix this", "fix that",
     " do all", "do all ", "do it", "do that",
-    "implement ", "build ", "ship ", "wire ", "write ", "create ",
+    "implement ", "build ", "ship ", "wire it", "wire up",
     "make sure ", "ensure ", "verify that ",
-    "audit ", "refactor ", "rename ", "remove ", "delete ",
-    "execute ", "run ", "apply ", "commit ",
+    "audit ", "refactor ", "rename ",
+    "execute ", "commit ",
 )
 
 
@@ -365,27 +374,29 @@ def main() -> int:
     stripped = _re_psy.sub(r'"[^"\n]*"', " ", stripped)
     stripped = _re_psy.sub(r"'[^'\n]*'", " ", stripped)
     final_text = stripped.lower()
+    # Compute ideation gate ONCE — used by both Pattern B and Pattern C.
+    # When the user's prompt asks for ideas / opinions / comparisons /
+    # discussion (no directive verbs), the agent legitimately uses
+    # ADMIT-phrase-like language to describe options ("their approach
+    # writes to next session, yours is better"). Without this gate,
+    # comparison talk gets flagged as deferral. Directive markers in the
+    # user prompt still override — "fix this" + admit-phrase still psycho.
+    events_with_user = load_full_turn_with_user(sys.argv[1])
+    user_text = _last_user_text(events_with_user)
+    user_is_ideating = _is_ideation_prompt(user_text)
     if final_text:
-        for phrase in ADMIT_PHRASES:
-            if phrase in final_text:
-                if not _has_tool_call_after_last_text(events):
-                    _emit_stats("psycho", f"pattern_B: admit_phrase={phrase!r}")
-                    print("psycho")
-                    return 0
+        if not user_is_ideating:
+            for phrase in ADMIT_PHRASES:
+                if phrase in final_text:
+                    if not _has_tool_call_after_last_text(events):
+                        _emit_stats("psycho", f"pattern_B: admit_phrase={phrase!r}")
+                        print("psycho")
+                        return 0
 
-        # Pattern C: survey-and-ask — soliciting permission after surveying
-        # rather than executing. Same "no tool calls after final text" guard,
-        # PLUS an ideation gate: when the user's last message asks for ideas
-        # / opinions / comparisons (no directive verbs), survey-and-ask is a
-        # legitimate collaborative response, not defer. Without this gate,
-        # psycho_stop fired on "what would you suggest?" → "here are
-        # options, which?" turns — pushing the agent to implement when the
-        # user only wanted brainstorming. The triggering user message lives
-        # OUTSIDE `events` (load_turn_events strips it as the boundary), so
-        # we pull it via the with-user variant for the gate decision only.
-        events_with_user = load_full_turn_with_user(sys.argv[1])
-        user_text = _last_user_text(events_with_user)
-        if _is_ideation_prompt(user_text):
+        # Pattern C: survey-and-ask — same ideation gate as Pattern B above.
+        # When the user's prompt is ideation/discussion, survey-and-ask is
+        # collaborative (here are 3 options, which fits?), not defer.
+        if user_is_ideating:
             _emit_stats("ok", "ideation_prompt_skipped_pattern_C")
         else:
             for phrase in PERMISSION_ASK_PHRASES:
