@@ -13,6 +13,12 @@
 # marker) clears EDITs.
 source "${_HME_HELPERS_DIR}/_nexus.sh"
 
+# Prune net-zero edits (edited then reverted in the same/prior turn) so
+# the block decision reflects true divergence from HEAD, not raw Edit
+# tool call counts. Without this, an implement+revert sequence wedges
+# NEXUS into demanding reviews of changes that no longer exist.
+_nexus_prune_clean_edits
+
 _MCP_PORT="${HME_MCP_PORT:-9098}"
 _EDIT_COUNT=$(_nexus_count EDIT)
 if [ "$_EDIT_COUNT" -gt 0 ]; then

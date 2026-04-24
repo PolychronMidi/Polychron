@@ -66,6 +66,43 @@ _nexus_list() {
   grep "^${type}:" "$_NEXUS_FILE" 2>/dev/null | cut -d: -f3-
 }
 
+# Drop EDIT entries whose file currently matches git HEAD (net-zero
+# change — typically from an edit-then-revert sequence within one turn).
+# Without this, NEXUS flagged "N unreviewed edits" even when the working
+# tree was clean relative to HEAD, forcing the agent to run review on
+# phantom changes. The metric now reflects actual divergence, not the
+# count of Edit tool invocations.
+_nexus_prune_clean_edits() {
+  _nexus_ensure
+  [ -z "${PROJECT_ROOT:-}" ] && return 0
+  command -v git >/dev/null 2>&1 || return 0
+  [ -d "$PROJECT_ROOT/.git" ] || return 0
+  local tmp_out="${_NEXUS_FILE}.tmp"
+  : > "$tmp_out"
+  local kept_any=0
+  while IFS= read -r _line; do
+    [ -z "$_line" ] && continue
+    if [[ "$_line" == EDIT:* ]]; then
+      # EDIT:TIMESTAMP:PAYLOAD — payload is the file path
+      local _fp
+      _fp="$(printf '%s' "$_line" | cut -d: -f3-)"
+      if [ -n "$_fp" ] && [ -e "$_fp" ]; then
+        if git -C "$PROJECT_ROOT" diff --quiet HEAD -- "$_fp" 2>/dev/null; then
+          # File matches HEAD — drop this EDIT entry (net zero change)
+          continue
+        fi
+      fi
+    fi
+    echo "$_line" >> "$tmp_out"
+    kept_any=1
+  done < "$_NEXUS_FILE"
+  if [ "$kept_any" -eq 0 ] && [ ! -s "$tmp_out" ]; then
+    : > "$_NEXUS_FILE"
+  else
+    mv "$tmp_out" "$_NEXUS_FILE"
+  fi
+}
+
 _nexus_pending() {
   _nexus_ensure
   local issues=""
