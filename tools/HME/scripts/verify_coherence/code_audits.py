@@ -171,6 +171,35 @@ class ShellHookAuditVerifier(Verifier):
                        detail[:20])
 
 
+class ClaudeSettingsJsonVerifier(Verifier):
+    """Validates ~/.claude/settings.json parses as JSON + every hook command
+    path resolves. Catches the exact bug class that silently disabled every
+    PreToolUse/PostToolUse/Stop hook for 40+ minutes this session: a single
+    trailing comma made Claude Code discard the whole hook config. Symptoms
+    (NEXUS stopped tracking, auto-completeness stopped firing, thinking mode
+    stopped engaging) are far removed from the cause; a static verifier
+    catches it in seconds."""
+    name = "claude-settings-json"
+    category = "code"
+    weight = 3.0   # load-bearing: invalid settings.json silently breaks everything
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-claude-settings.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        count = payload.get("violation_count", 0)
+        if count == 0:
+            return _result(PASS, 1.0, f"{payload.get('settings_path')}: valid + resolvable")
+        return _result(FAIL, 0.0,
+                       f"{count} issue(s) in {payload.get('settings_path')}",
+                       payload.get("violations", [])[:10])
+
+
 class ShellUndefinedVarsVerifier(Verifier):
     """Delegates to scripts/audit-shell-undefined-vars.py, which statically
     scans tools/HME/hooks/**/*.sh for `$VAR` references that have no
