@@ -308,12 +308,24 @@ def main() -> int:
         print("ok")
         return 0
     events = load_full_turn_with_user(sys.argv[1])
-    text = _last_assistant_text(events)
-    if not text:
+    raw_text = _last_assistant_text(events)
+    if not raw_text:
         _emit_stats("ok", "no_final_text")
         print("ok")
         return 0
 
+    # Strip quoted / code-fenced content before phrase-matching. Without
+    # this, a response that quoted user prompts or test fixtures
+    # (e.g. `Directive markers still dominate — "fix"/"implement"/"do all"`)
+    # tripped the `still ... fix|implement|do` regex even though the verbs
+    # were inside quotes describing behavior, not the agent's own deferral.
+    # Strip targets: ```fenced```, `inline`, "double" and 'single' quoted
+    # spans on a single line.
+    stripped_text = re.sub(r"```.*?```", " ", raw_text, flags=re.DOTALL)
+    stripped_text = re.sub(r"`[^`\n]*`", " ", stripped_text)
+    stripped_text = re.sub(r'"[^"\n]*"', " ", stripped_text)
+    stripped_text = re.sub(r"'[^'\n]*'", " ", stripped_text)
+    text = stripped_text
     text_l = text.lower()
 
     # Phase 1: substring phrase list.
