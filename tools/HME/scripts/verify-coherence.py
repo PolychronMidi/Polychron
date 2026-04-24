@@ -102,10 +102,16 @@ class Verifier:
         return result
 
 
-def _run_subprocess(script: str, timeout: int = 30) -> tuple:
-    """Run a verifier subprocess, return (returncode, stdout, stderr)."""
+def _run_subprocess(script, timeout: int = 30) -> tuple:
+    """Run a verifier subprocess, return (returncode, stdout, stderr).
+    `script` is either a path string or a [path, *args] list. When a list
+    is passed, args are appended to the python3 invocation unchanged."""
+    if isinstance(script, list):
+        argv = ["python3", *script]
+    else:
+        argv = ["python3", script]
     rc = subprocess.run(
-        ["python3", script],
+        argv,
         capture_output=True, text=True, timeout=timeout,
         env={**os.environ, "PROJECT_ROOT": _PROJECT},
     )
@@ -141,6 +147,153 @@ class DocDriftVerifier(Verifier):
         score = max(0.0, 1.0 - hits / 20.0)  # 20 hits = score 0
         return _result(FAIL, score, f"{hits} legacy tool reference(s)",
                        out.splitlines()[:30])
+
+
+class AutocommitHealthVerifier(Verifier):
+    """Autocommit must succeed every attempt. Catastrophic silent failure
+    has been observed — autocommits dying without a single LIFESAVER
+    alert, because the original failure path depended on the very
+    environment that was broken.
+
+    The _autocommit.sh helper now records every failure to four
+    independent channels (sticky fail flag, hme-errors.log, stderr,
+    activity bridge). This verifier checks the most durable of those —
+    the sticky fail flag and the attempt counter under tmp/ — which are
+    independent of PROJECT_ROOT, .env loading, log-dir writability, and
+    _proxy_bridge stderr filtering. FAILs at weight 5.0 (same tier as
+    LifesaverIntegrity) because autocommit going silent is the exact
+    structural-dampening failure mode that weight exists for."""
+    name = "autocommit-health"
+    category = "state"
+    weight = 5.0
+
+    def run(self) -> VerdictResult:
+        import datetime
+        state_dir = os.path.join(_PROJECT, "tmp")
+        fail_flag = os.path.join(state_dir, "hme-autocommit.fail")
+        counter_file = os.path.join(state_dir, "hme-autocommit.counter")
+        last_ok_file = os.path.join(state_dir, "hme-autocommit.last-success")
+
+        issues = []
+
+        # 1. Sticky fail flag — exists iff last autocommit failed.
+        if os.path.isfile(fail_flag):
+            try:
+                with open(fail_flag) as f:
+                    issues.append(f"fail flag set: {f.read().strip()[:240]}")
+            except Exception as e:
+                issues.append(f"fail flag exists but unreadable: {e}")
+
+        # 2. Attempt counter — monotonic increment on every attempt, reset
+        # on success. 3+ attempts without a reset = wedged state.
+        if os.path.isfile(counter_file):
+            try:
+                with open(counter_file) as f:
+                    n = int((f.read().strip() or "0"))
+                if n >= 3:
+                    issues.append(f"attempt counter at {n} (≥3 attempts without success)")
+            except Exception:
+                issues.append("counter file exists but unparseable")
+
+        # 3. Last-success freshness — if the repo has a .git and history
+        # of autocommits, the last-success file should not be far older
+        # than a day in active use. Missing entirely is tolerated (fresh
+        # clone, pre-first-commit state).
+        if os.path.isfile(last_ok_file):
+            try:
+                with open(last_ok_file) as f:
+                    ts_str = f.read().strip()
+                ts = datetime.datetime.fromisoformat(
+                    ts_str.rstrip("Z")
+                ).replace(tzinfo=datetime.timezone.utc)
+                age_h = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds() / 3600
+                if age_h > 48:
+                    issues.append(f"last successful autocommit {age_h:.0f}h ago (>48h)")
+            except Exception as e:
+                issues.append(f"last-success timestamp unparseable: {e}")
+
+        if not issues:
+            return _result(PASS, 1.0, "autocommit operational")
+        # FAIL with score 0: weight 5.0 means any failure here hits the
+        # HCI hard, same tier as LifesaverIntegrity. That's the contract.
+        return _result(FAIL, 0.0,
+                       f"autocommit unhealthy ({len(issues)} issue(s))",
+                       issues)
+
+
+class CorePrinciplesAuditVerifier(Verifier):
+    """Delegates to scripts/audit-core-principles.py, which surveys src/
+    against the five core principles declared in CLAUDE.md. FAILs only on
+    CRITICAL-level violations — files exceeding 400 LOC or subsystems with
+    ≥1 .js file but no index.js. WARN-level findings (files over the 200-
+    line soft target but under 400) are informational; the 200-line target
+    is aspirational and most of the codebase brushes it occasionally."""
+    name = "core-principles-audit"
+    category = "code"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-core-principles.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        crit = payload.get("critical_count", 0)
+        warn = payload.get("warn_count", 0)
+        p1 = payload.get("p1_count", 0)
+        failfast = payload.get("failfast_hits", 0)
+        detail = [f"{warn} WARN-level oversize file(s)",
+                  f"{failfast} P2 indicator hit(s)"]
+        for s in payload.get("subsystems", []):
+            for rel, n in s.get("oversize_critical", []):
+                detail.append(f"CRITICAL oversize: {rel} ({n} LOC)")
+            for item in s["violations"]["P1"]:
+                detail.append(f"P1 ({s['name']}): {item}")
+        if crit == 0 and p1 == 0:
+            return _result(PASS, 1.0,
+                           f"no critical violations ({warn} warn-level, {failfast} P2 indicators)",
+                           detail[:20])
+        # Each critical violation drops the score by 0.25; floor at 0.
+        score = max(0.0, 1.0 - 0.25 * (crit + p1))
+        return _result(FAIL, score,
+                       f"{crit} CRITICAL oversize file(s), {p1} P1 violation(s)",
+                       detail[:20])
+
+
+class NumericClaimDriftVerifier(Verifier):
+    """Markdown docs that state specific counts (e.g. `19 hypermeta
+    controllers`, `12 CIM dials`, `38 verifiers`) must match the live
+    codebase count. Delegates to verify-numeric-drift.py, which owns the
+    claims manifest and the ground-truth counters."""
+    name = "numeric-claim-drift"
+    category = "doc"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_SCRIPTS_DIR, "verify-numeric-drift.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "verifier script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse verifier output", [err[:500]])
+        drift_count = payload.get("drift_count", 0)
+        if drift_count == 0:
+            return _result(PASS, 1.0,
+                           f"all numeric claims match code (truth: {payload.get('truth', {})})")
+        # 10 drifts = score 0. The threshold is tight — each drift is a
+        # specific doc claim that now misleads readers.
+        score = max(0.0, 1.0 - drift_count / 10.0)
+        examples = [f"{d['file']}:{d['line']} {d['claim']} stated={d['stated']} actual={d['actual']}"
+                    for d in payload.get("drifts", [])[:20]]
+        return _result(FAIL, score,
+                       f"{drift_count} numeric drift(s) across "
+                       f"{len(set(d['claim'] for d in payload.get('drifts', [])))} claim(s)",
+                       examples)
 
 
 class DocstringPresenceVerifier(Verifier):
@@ -1795,6 +1948,9 @@ class OnboardingChainImportVerifier(Verifier):
 
 REGISTRY = [
     DocDriftVerifier(),
+    NumericClaimDriftVerifier(),
+    AutocommitHealthVerifier(),
+    CorePrinciplesAuditVerifier(),
     DocstringPresenceVerifier(),
     PythonSyntaxVerifier(),
     ShellSyntaxVerifier(),
