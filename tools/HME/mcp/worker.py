@@ -218,6 +218,77 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HME-worker-startup").start()
 
 
+# Phase-B watchdog — reliable-under-GIL-contention brute-force timeout.
+#
+# _active_tools maps tool-thread-id → {"name", "start_ts", "hard_kill_s"}.
+# _post_tool registers each tool-thread it spawns and deregisters on
+# completion. A dedicated watchdog thread polls every 5s; if any
+# registered tool has been running longer than its hard_kill_s budget,
+# the watchdog sends SIGTERM to os.getpid() — the entire worker process
+# exits and the supervisor respawns it. Brute, but OS-signal-driven and
+# independent of the GIL, so it fires EVEN WHEN Python's Thread.join
+# timeout mechanism is starved.
+#
+# Why this is necessary: during heavy reasoning synthesis (many threads
+# contending for GIL), the HTTP-handler thread that invoked .join(timeout)
+# may not get scheduled to check the clock, causing the graceful 504
+# path in _post_tool to sleep past deadline indefinitely. Phase-B runs
+# in its own thread that does time.sleep(5) (releases GIL and always
+# wakes) so it reliably catches stuck tools and breaks out via signal.
+_active_tools: dict = {}
+_active_tools_lock = threading.Lock()
+
+
+def _active_tool_register(thread_obj, name: str, start_ts: float, hard_kill_s: float) -> None:
+    with _active_tools_lock:
+        _active_tools[thread_obj.ident or id(thread_obj)] = {
+            "name": name, "start_ts": start_ts, "hard_kill_s": hard_kill_s,
+            "thread": thread_obj,
+        }
+
+
+def _active_tool_unregister(thread_obj) -> None:
+    with _active_tools_lock:
+        _active_tools.pop(thread_obj.ident or id(thread_obj), None)
+
+
+def _watchdog_loop():
+    """Poll every 5s. If any tool has been running longer than its
+    hard_kill_s budget, SIGTERM self so the supervisor respawns."""
+    import signal
+    while True:
+        try:
+            time.sleep(5)
+            now = time.time()
+            with _active_tools_lock:
+                expired = [
+                    (tid, entry) for tid, entry in _active_tools.items()
+                    if (now - entry["start_ts"]) > entry["hard_kill_s"]
+                ]
+            if expired:
+                for tid, entry in expired:
+                    elapsed = now - entry["start_ts"]
+                    logger.critical(
+                        f"watchdog PHASE B: tool {entry['name']!r} (tid={tid}) has been "
+                        f"running {elapsed:.0f}s > hard_kill {entry['hard_kill_s']:.0f}s. "
+                        f"Self-terminating worker — supervisor will respawn. "
+                        f"Phase A graceful-504 did not fire, likely GIL-starved."
+                    )
+                # Flush logger before signaling ourselves.
+                try:
+                    for h in logger.handlers:
+                        h.flush()
+                except Exception as _flush_err:  # silent-ok: best-effort log flush before self-kill
+                    pass
+                os.kill(os.getpid(), signal.SIGTERM)
+                return
+        except Exception as _wd_err:
+            logger.warning(f"watchdog loop error: {type(_wd_err).__name__}: {_wd_err}")
+
+
+threading.Thread(target=_watchdog_loop, daemon=True, name="HME-worker-watchdog").start()
+
+
 # HTTP server
 class _ThreadingServer(ThreadingHTTPServer):
     daemon_threads = True
@@ -309,11 +380,6 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post_tool(self, name: str, args: dict):
         # One INFO line per incoming tool call so hme.log has a trail.
-        # Previously nothing at all was logged for /tool/* dispatches —
-        # a review could come in, hang, and leave zero log evidence
-        # that it had ever been invoked. Truncate args preview so a
-        # huge payload (e.g. Edit with multi-kB new_string) doesn't
-        # dominate the log line.
         try:
             _args_preview = json.dumps(args)[:200] if args else ""
         except Exception as _log_err:  # silent-ok: log-line formatting; tool call itself must not fail from log prep
@@ -321,21 +387,30 @@ class _Handler(BaseHTTPRequestHandler):
         logger.info(f"/tool/{name} dispatching  args={_args_preview}")
         _tool_t0 = time.time()
 
-        # LAYER 3 WATCHDOG: per-request wall-clock cap so a deadlocked
-        # tool pipeline can't silently hold the worker forever. Default
-        # 120s — shorter than the CLI's 150s HTTP timeout and the
-        # wrapper's 180s outer timeout, so the watchdog fires first and
-        # produces a 504 with a concrete message rather than letting
-        # layers 1 or 2 abort on a blank result.
+        # LAYER 3 WATCHDOG — two-phase, reliable-under-GIL-contention.
         #
-        # Python threads can't be forcibly terminated, so a timed-out
-        # tool keeps running in the background after we return 504.
-        # The worker supervisor will eventually restart us if the
-        # thread accumulation becomes problematic, but in practice
-        # the leaked threads finish soon after — the watchdog exists
-        # to unblock the CALLER, not to preempt the tool's own work.
+        # Phase A (graceful, Thread.join): spawn the tool in a daemon
+        # thread and join with timeout_s. If it finishes in time, return
+        # normally. If join returns with is_alive()=True, send 504.
+        #
+        # Phase B (brute, self-SIGTERM): register this thread with the
+        # module-level active-tool table. A dedicated watchdog-thread
+        # (started at worker boot, see _watchdog_loop) polls every 5s
+        # and, if any active tool has exceeded HARD_KILL_SECONDS (default
+        # 240s), fires `os.kill(os.getpid(), SIGTERM)` to self-terminate.
+        # The supervisor respawns the worker. This exists because Phase A
+        # can't actually fire when this handler thread is GIL-starved —
+        # `Thread.join(timeout)` relies on the handler thread getting
+        # scheduled to check the clock, which doesn't happen reliably
+        # when other threads saturate CPU (e.g. during a heavy reasoning
+        # synthesis). The watchdog thread runs `time.sleep(5)` which
+        # releases the GIL and wakes reliably regardless of other threads'
+        # CPU use. OS-level signal delivery is kernel-managed — not
+        # blocked by Python's GIL.
         import threading as _th
+        import signal as _sig
         timeout_s = float(os.environ.get("HME_TOOL_WATCHDOG_S", "120"))
+        hard_kill_s = float(os.environ.get("HME_TOOL_HARDKILL_S", "240"))
         result_box: list = [None, None]  # [value, exception]
 
         def _runner():
@@ -345,34 +420,40 @@ class _Handler(BaseHTTPRequestHandler):
                 result_box[1] = e
 
         t = _th.Thread(target=_runner, daemon=True, name=f"tool-{name}")
-        t.start()
-        t.join(timeout=timeout_s)
-        if t.is_alive():
-            logger.error(
-                f"tool {name!r} watchdog: exceeded {timeout_s:.0f}s; returning 504. "
-                f"Thread is leaked and will finish in background. args keys="
-                f"{list(args.keys()) if isinstance(args, dict) else '?'}"
-            )
-            self._json(504, {
-                "ok": False,
-                "error": f"tool {name!r} exceeded {timeout_s:.0f}s wall clock",
-                "watchdog_timeout": True,
-            })
-            return
-        ex = result_box[1]
-        _elapsed_ms = (time.time() - _tool_t0) * 1000
-        if isinstance(ex, KeyError):
-            logger.warning(f"/tool/{name} unknown-tool {_elapsed_ms:.0f}ms")
-            self._json(404, {"ok": False, "error": str(ex)})
-        elif ex is not None:
-            import traceback
-            tb = "".join(traceback.format_exception(type(ex), ex, ex.__traceback__))
-            logger.warning(f"/tool/{name} FAILED {_elapsed_ms:.0f}ms: {type(ex).__name__}: {ex}")
-            self._json(500, {"ok": False, "error": f"{type(ex).__name__}: {ex}",
-                             "trace": tb[-2000:]})
-        else:
-            logger.info(f"/tool/{name} OK {_elapsed_ms:.0f}ms")
-            self._json(200, {"ok": True, "result": result_box[0]})
+        # Register BEFORE starting so the watchdog sees it immediately.
+        _active_tool_register(t, name, _tool_t0, hard_kill_s)
+        try:
+            t.start()
+            t.join(timeout=timeout_s)
+            if t.is_alive():
+                logger.error(
+                    f"tool {name!r} watchdog (phase A, graceful): exceeded {timeout_s:.0f}s; "
+                    f"returning 504. Thread leaked; watchdog thread will force-kill worker at "
+                    f"{hard_kill_s:.0f}s total if tool still running. args keys="
+                    f"{list(args.keys()) if isinstance(args, dict) else '?'}"
+                )
+                self._json(504, {
+                    "ok": False,
+                    "error": f"tool {name!r} exceeded {timeout_s:.0f}s wall clock",
+                    "watchdog_timeout": True,
+                })
+                return
+            ex = result_box[1]
+            _elapsed_ms = (time.time() - _tool_t0) * 1000
+            if isinstance(ex, KeyError):
+                logger.warning(f"/tool/{name} unknown-tool {_elapsed_ms:.0f}ms")
+                self._json(404, {"ok": False, "error": str(ex)})
+            elif ex is not None:
+                import traceback
+                tb = "".join(traceback.format_exception(type(ex), ex, ex.__traceback__))
+                logger.warning(f"/tool/{name} FAILED {_elapsed_ms:.0f}ms: {type(ex).__name__}: {ex}")
+                self._json(500, {"ok": False, "error": f"{type(ex).__name__}: {ex}",
+                                 "trace": tb[-2000:]})
+            else:
+                logger.info(f"/tool/{name} OK {_elapsed_ms:.0f}ms")
+                self._json(200, {"ok": True, "result": result_box[0]})
+        finally:
+            _active_tool_unregister(t)
 
     def _post_rag_dispatch(self, body: dict):
         """Generic engine method dispatch. Mirrors hme_http.py's _handle_rag_dispatch."""

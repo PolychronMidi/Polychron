@@ -22,15 +22,15 @@ logger = logging.getLogger("HME")
 
 
 def _mode_pipeline():
-    from .digest import check_pipeline as _cp
+    from ..digest import check_pipeline as _cp
     return _cp()
 
 def _mode_health():
-    from .health import codebase_health as _ch
+    from ..health import codebase_health as _ch
     return _ch()
 
 def _mode_coupling():
-    from .coupling import coupling_intel as _ci
+    from ..coupling import coupling_intel as _ci
     # Status surface uses the lighter `network` view (just topology — the
     # one sub-section users actually consume in a status check). The full
     # 4-section view (network + antagonists + personalities + gaps) takes
@@ -38,7 +38,7 @@ def _mode_coupling():
     return _budget_gate(_ci(mode="network"))
 
 def _mode_trust():
-    from .trust_analysis import trust_report as _tr
+    from ..trust_analysis import trust_report as _tr
     return _tr("", "")
 
 def _mode_hme():
@@ -46,59 +46,59 @@ def _mode_hme():
     return _st()
 
 def _mode_activity():
-    from .activity_digest import activity_digest as _ad
+    from ..activity_digest import activity_digest as _ad
     return _ad(window="round")
 
 def _mode_blindspots():
-    from .blindspots import blindspots as _bs
+    from ..blindspots import blindspots as _bs
     return _bs()
 
 def _mode_hypotheses():
-    from .hypothesis_registry import hypotheses_report as _hr
+    from ..hypothesis_registry import hypotheses_report as _hr
     return _hr()
 
 def _mode_drift():
-    from .semantic_drift_report import semantic_drift_report as _sd
+    from ..semantic_drift_report import semantic_drift_report as _sd
     return _sd()
 
 def _mode_accuracy():
-    from .prediction_accuracy import prediction_accuracy_report as _pa
+    from ..prediction_accuracy import prediction_accuracy_report as _pa
     return _pa()
 
 def _mode_crystallized():
-    from .crystallizer import crystallized_report as _cr
+    from ..crystallizer import crystallized_report as _cr
     return _cr()
 
 def _mode_music_truth():
-    from .epistemic_reports import music_truth_report as _mt
+    from ..epistemic_reports import music_truth_report as _mt
     return _mt()
 
 def _mode_kb_trust():
-    from .epistemic_reports import kb_trust_report as _kt
+    from ..epistemic_reports import kb_trust_report as _kt
     return _kt()
 
 def _mode_intention_gap():
-    from .epistemic_reports import intention_gap_report as _ig
+    from ..epistemic_reports import intention_gap_report as _ig
     return _ig()
 
 def _mode_self_audit():
-    from .self_audit import self_audit_report as _sa
+    from ..self_audit import self_audit_report as _sa
     return _sa()
 
 def _mode_probes():
-    from .probe import probes_report as _pr
+    from ..probe import probes_report as _pr
     return _pr()
 
 def _mode_negative_space():
-    from .negative_space import negative_space_report as _ns
+    from ..negative_space import negative_space_report as _ns
     return _ns()
 
 def _mode_cognitive_load():
-    from .cognitive_load import cognitive_load_report as _cl
+    from ..cognitive_load import cognitive_load_report as _cl
     return _cl()
 
 def _mode_ground_truth():
-    from .ground_truth import ground_truth_report as _gt
+    from ..ground_truth import ground_truth_report as _gt
     return _gt()
 
 def _mode_constitution():
@@ -118,7 +118,7 @@ def _mode_reflexivity():
     return _rr()
 
 def _mode_multi_agent():
-    from .multi_agent import multi_agent_report as _ma
+    from ..multi_agent import multi_agent_report as _ma
     return _ma()
 
 def _list_modes():
