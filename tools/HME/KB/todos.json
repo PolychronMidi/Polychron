@@ -2,16 +2,29 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1097,
-      "updated_ts": 1777045423.0095053
+      "max_id": 1102,
+      "updated_ts": 1777046422.459185
     }
+  },
+  {
+    "id": 1098,
+    "text": "Fix meta_observer daemon crashloop: add missing `import shutil` then restart server",
+    "activeForm": "Fixing meta_observer shutil NameError",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777046422.4591327,
+    "parent_id": 0,
+    "subs": []
   },
   {
     "id": 1094,
     "text": "Split stop.sh (464 LOC)",
     "activeForm": "Splitting stop.sh",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -23,7 +36,7 @@
     "id": 1095,
     "text": "Split pretooluse_bash.sh (448 LOC)",
     "activeForm": "Splitting pretooluse_bash.sh",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
@@ -48,7 +61,7 @@
   {
     "id": 1097,
     "text": "Verify all hooks still fire correctly after splits",
-    "activeForm": "Verifying hook integrity",
+    "activeForm": "Verifying hook integrity post-split",
     "status": "pending",
     "done": false,
     "critical": false,
