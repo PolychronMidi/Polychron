@@ -13,6 +13,7 @@
     "grep_glob_neighborhood.js",
     "dir_context.js",
     "background_dominance.js",
+    "subagent_bridge.js",
     "bash_enrichment.js",
     "web_enrichment.js",
     "nexus_tracking.js",
