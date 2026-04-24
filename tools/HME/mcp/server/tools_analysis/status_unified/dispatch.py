@@ -291,7 +291,7 @@ def status(mode: str = "all") -> str:
 
     # Pipeline status
     try:
-        from .digest import check_pipeline as _cp
+        from ..digest import check_pipeline as _cp
         pipeline = _cp()
         parts.append(f"## Pipeline\n  {pipeline}")
     except Exception as e:
@@ -299,7 +299,7 @@ def status(mode: str = "all") -> str:
 
     # System health (selftest)
     try:
-        from .evolution_admin import hme_selftest as _st
+        from ..evolution.evolution_admin import hme_selftest as _st
         selftest = _st()
         parts.append(selftest)
     except Exception as e:
@@ -307,7 +307,7 @@ def status(mode: str = "all") -> str:
 
     # Auto-warm if stale contexts detected
     try:
-        from .synthesis import warm_context_status
+        from ..synthesis import warm_context_status
         wcs = warm_context_status()
         stale_models = []
         unprimed_models = []
@@ -329,7 +329,7 @@ def status(mode: str = "all") -> str:
             parts.append(f"\n## Auto-Warm\n  Contexts need priming ({'; '.join(label)})")
             parts.append("  Kicking background warm prime...")
             try:
-                from .synthesis_warm import _prime_all_gpus
+                from ..synthesis.synthesis_warm import _prime_all_gpus
                 import threading
                 t = threading.Thread(target=_prime_all_gpus, daemon=True)
                 t.start()
@@ -342,7 +342,7 @@ def status(mode: str = "all") -> str:
     # Reasoning tier cascade — global quality ranking across all providers
     try:
         lines = ["## Reasoning Cascade (absolute quality order)"]
-        from .synthesis_reasoning import get_status as _rank_status
+        from ..synthesis.synthesis_reasoning import get_status as _rank_status
         ranking = _rank_status()
         any_up = False
         for entry in ranking:
@@ -355,7 +355,7 @@ def status(mode: str = "all") -> str:
         lines.append("")
         lines.append("  Provider quotas:")
         try:
-            from .synthesis_gemini import get_quota_status as _gs
+            from ..synthesis.synthesis_gemini import get_quota_status as _gs
             g = _gs()
             used = sum(t["tokens_used"] for t in g["tiers"])
             total = sum(t["daily_limit"] for t in g["tiers"])
@@ -363,7 +363,7 @@ def status(mode: str = "all") -> str:
         except Exception as _qe:
             lines.append(f"    gemini:     quota unavailable ({type(_qe).__name__})")
         try:
-            from .synthesis_groq import get_quota_status as _grs
+            from ..synthesis.synthesis_groq import get_quota_status as _grs
             gr = _grs()
             used = sum(t["requests_today"] for t in gr["tiers"])
             total = sum(t["rpd_limit"] for t in gr["tiers"])
@@ -371,7 +371,7 @@ def status(mode: str = "all") -> str:
         except Exception as _qe:
             lines.append(f"    groq:       quota unavailable ({type(_qe).__name__})")
         try:
-            from .synthesis_openrouter import get_quota_status as _ors
+            from ..synthesis.synthesis_openrouter import get_quota_status as _ors
             o = _ors()
             lines.append(f"    openrouter: {o['requests_today']}/{o['rpd_limit']} req today (shared)")
         except Exception as _qe:
