@@ -597,6 +597,23 @@ class _Handler(BaseHTTPRequestHandler):
         _log_error(source, message, body.get("detail", ""))
         self._json(200, {"logged": True})
 
+    def _post_clear_errors(self, body: dict):
+        """Clear in-memory recent_errors. Used by LIFESAVER-resolved flows to
+        prevent stale entries from re-firing at the next SessionStart.
+        Optional `older_than_ms` keeps recent entries; default clears all."""
+        import hme_http_store as _store
+        older_than_ms = body.get("older_than_ms")
+        cleared = 0
+        with _store._error_lock:
+            before = len(_store._error_log)
+            if older_than_ms is None:
+                _store._error_log = []
+            else:
+                cutoff = int(time.time() * 1000) - int(older_than_ms)
+                _store._error_log = [e for e in _store._error_log if e.get("ts", 0) >= cutoff]
+            cleared = before - len(_store._error_log)
+        self._json(200, {"cleared": cleared, "remaining": len(_store._error_log)})
+
     def do_POST(self):
         try:
             body = self._read_body()
@@ -618,6 +635,7 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/transcript":     return self._post_transcript(body)
         if self.path == "/narrative":      return self._post_narrative(body)
         if self.path == "/error":          return self._post_error(body)
+        if self.path == "/clear-errors":   return self._post_clear_errors(body)
         self._json(404, {"error": f"no POST route: {self.path}"})
 
     def do_OPTIONS(self):
