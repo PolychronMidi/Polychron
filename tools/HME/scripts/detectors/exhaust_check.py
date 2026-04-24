@@ -228,6 +228,16 @@ _ANY_HANDOFF_MARKER = re.compile(
 
 
 def _is_assistant(event: dict) -> bool:
+    """Real Claude Code transcripts use `type="assistant"` at the top level
+    with the message payload nested under `.message` — NOT `role="assistant"`
+    at the top level (that shape never appears in practice). The old check
+    returned False on every real event, which meant the detector silently
+    emitted "ok" on every turn regardless of closing text content. Caught
+    Apr 2026 while auditing why exhaust_check never fired on clear evasions.
+    """
+    if event.get("type") == "assistant":
+        return True
+    # Back-compat: some synthetic test fixtures use `role` at top level.
     return event.get("role") == "assistant" and bool(event.get("content"))
 
 
@@ -238,8 +248,21 @@ def _last_assistant_text(events: list) -> str:
             last = ev
     if last is None:
         return ""
+    # Content lives in one of two places depending on transcript shape:
+    #   Real Claude Code: event.message.content = [{type:"text",text:"..."}]
+    #   Test fixtures  : event.content = [{type:"text",text:"..."}]
+    content = []
+    msg = last.get("message")
+    if isinstance(msg, dict):
+        maybe = msg.get("content")
+        if isinstance(maybe, list):
+            content = maybe
+    if not content:
+        maybe = last.get("content")
+        if isinstance(maybe, list):
+            content = maybe
     parts = []
-    for block in last.get("content", []) or []:
+    for block in content:
         if isinstance(block, dict) and block.get("type") == "text":
             t = block.get("text", "")
             if isinstance(t, str):
