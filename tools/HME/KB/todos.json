@@ -2,46 +2,59 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1093,
-      "updated_ts": 1777045295.810094
+      "max_id": 1097,
+      "updated_ts": 1777045423.0095053
     }
   },
   {
-    "id": 1087,
-    "text": "Delete dead cache files",
-    "activeForm": "Cleaning plugin cache",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777044583.2701302,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1092,
-    "text": "Run HME exploration tools + patch split regressions",
-    "activeForm": "Patching split regressions",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777045295.8100743,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1086,
-    "text": "Research: identify worst .sh LOC offenders + plan splitting pattern",
-    "activeForm": "Researching shell-script splitting",
+    "id": 1094,
+    "text": "Split stop.sh (464 LOC)",
+    "activeForm": "Splitting stop.sh",
     "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777044544.332945,
+    "ts": 1777045423.009469,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1095,
+    "text": "Split pretooluse_bash.sh (448 LOC)",
+    "activeForm": "Splitting pretooluse_bash.sh",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777045423.009483,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1096,
+    "text": "Split _safety.sh (397 LOC)",
+    "activeForm": "Splitting _safety.sh",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777045423.0094929,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1097,
+    "text": "Verify all hooks still fire correctly after splits",
+    "activeForm": "Verifying hook integrity",
+    "status": "pending",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777045423.0095012,
     "parent_id": 0,
     "subs": []
   },
