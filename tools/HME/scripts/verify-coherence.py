@@ -989,9 +989,14 @@ class ErrorLogVerifier(Verifier):
         if os.path.isfile(watermark):
             try:
                 with open(watermark) as f:
-                    last = int(f.read().strip() or 0)
-            except Exception:
-                pass
+                    raw = f.read().strip()
+                if raw:
+                    last = int(raw)
+            except (OSError, ValueError, TypeError):
+                # Unreadable watermark, non-numeric content, or a bizarre
+                # non-string from a mocked read() — treat as unset.
+                # Narrow catch so MemoryError / KeyboardInterrupt surface.
+                last = 0
         unread = max(0, len(lines) - last)
         if unread == 0:
             return _result(PASS, 1.0, f"all {len(lines)} historical errors acknowledged")
@@ -1344,7 +1349,10 @@ class ContextBudgetVerifier(Verifier):
         if os.path.isfile(link_latest) or os.path.islink(link_latest):
             try:
                 link_age_s = time.time() - os.path.getmtime(link_latest)
-            except Exception:
+            except OSError:
+                # Broken symlink or race with deletion — leave link_age_s
+                # at its pre-check value. Narrow catch so unexpected
+                # errors propagate.
                 pass
 
         # Policy:
@@ -1394,7 +1402,11 @@ class PredictiveHCIVerifier(Verifier):
                     ["python3", script], capture_output=True, timeout=10,
                     env={**os.environ, "PROJECT_ROOT": _PROJECT},
                 )
-            except Exception:
+            except (subprocess.SubprocessError, OSError):
+                # Subprocess failed (timeout, missing interpreter, etc.)
+                # — forecast data stays as-is; the next SKIP branch
+                # handles absence. Narrow catch so unexpected errors
+                # propagate visibly.
                 pass
         if not os.path.isfile(forecast_path):
             return _result(SKIP, 1.0, "no forecast data")
@@ -1489,7 +1501,9 @@ def _trigger_warm_reprime() -> None:
             os.makedirs(os.path.dirname(sentinel), exist_ok=True)
             with open(sentinel, "w") as f:
                 f.write(str(time.time()))
-        except Exception:
+        except OSError:
+            # tmp/ unwritable — the background re-prime request is a
+            # best-effort nudge. Narrow catch; unexpected errors propagate.
             pass
     threading.Thread(target=_bg, daemon=True).start()
 
@@ -1924,7 +1938,11 @@ class ToolResponseLatencyVerifier(Verifier):
             os.makedirs(os.path.dirname(history_file), exist_ok=True)
             with open(history_file, "w") as hf:
                 json.dump(new_history, hf)
-        except Exception:
+        except (OSError, TypeError):
+            # Unwritable tmp/ (OSError) or unserializable entry
+            # (TypeError) — history persistence is best-effort; the
+            # current run's score doesn't depend on it. Narrow catch so
+            # unexpected errors propagate.
             pass
 
         # Score based on history
@@ -1986,9 +2004,14 @@ class TrajectoryTrendVerifier(Verifier):
         try:
             with open(data_path) as f:
                 data = json.load(f)
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-        if data.get("holograph_count", 0) < 2:
+        # Explicit None check — a missing key is SKIP (insufficient
+        # history), not silently treated as 0 < 2 = True.
+        holo_count = data.get("holograph_count")
+        if holo_count is None:
+            return _result(SKIP, 1.0, "trajectory data missing holograph_count field")
+        if holo_count < 2:
             return _result(SKIP, 1.0, "need 2+ holographs for trend analysis")
         trend = data.get("trend", {})
         pred = data.get("prediction") or {}
