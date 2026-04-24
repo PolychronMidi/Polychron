@@ -129,16 +129,25 @@ function coerce(v) {
 function postTool(name, args) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(args);
+    // Client-side wall-clock timeout. Historical default was NONE, which
+    // allowed a deadlocked worker to silently hang this CLI process
+    // (and its wrapper `i/review`) indefinitely. HME_CLI_TIMEOUT_MS makes
+    // the timeout configurable; default 150s covers typical review /
+    // agent latency on warm GPUs with headroom, while staying shorter
+    // than the outer `timeout 180` on the i/review shell wrapper so the
+    // HTTP abort happens first and produces a clean error message rather
+    // than the shell-level SIGTERM's blank exit=124.
+    const timeoutMs = Number(process.env.HME_CLI_TIMEOUT_MS) || 150_000;
     const req = http.request({
       host: HOST,
       port: PORT,
       path: '/tool/' + encodeURIComponent(name),
       method: 'POST',
+      timeout: timeoutMs,
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
       },
-      // No client-side timeout: handled by worker/network stack
     }, (res) => {
       let chunks = '';
       res.on('data', (c) => { chunks += c; });
@@ -152,7 +161,10 @@ function postTool(name, args) {
       });
     });
     req.on('error', reject);
-    // Client-side timeout disabled entirely
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`hme-cli: request '${name}' exceeded ${timeoutMs}ms — worker hung or slow`));
+    });
     req.write(body);
     req.end();
   });

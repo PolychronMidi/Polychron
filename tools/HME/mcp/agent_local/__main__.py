@@ -1,8 +1,11 @@
 """agent_local entry point — argparse + mode routing."""
 from __future__ import annotations
 
+import json
 import sys
 
+from . import _base as _base_module
+from ._base import PROJECT_ROOT
 from .research import run_agent
 
 

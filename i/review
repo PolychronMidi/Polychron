@@ -1,6 +1,34 @@
 #!/usr/bin/env bash
 # HME review — invokes scripts/hme-cli.js against the worker (127.0.0.1:9098).
 # Usage: i/review [mode=digest|forget|changes] [section_a=N] [section_b=N] [critique=true] ...
+#
+# LAYER 1 WATCHDOG: wrap node with `timeout 180` so a deadlocked worker
+# can't silently hang the review indefinitely. Historical precedent: a
+# hung worker left this wrapper and `hme-cli.js` waiting 10+ minutes with
+# zero output to any log, no LIFESAVER alert, no audible failure. Three
+# safety nets now guard against that class (this wrapper, hme-cli's HTTP
+# timeout, and the worker's per-request watchdog) — any one firing is
+# enough to break the silence.
+#
+# On timeout: exit code 124, plus one line appended to hme-errors.log so
+# the LIFESAVER scan picks it up on next UserPromptSubmit.
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
-exec node "$_HME_CLI" review "$@"
+
+_REVIEW_TIMEOUT="${HME_REVIEW_TIMEOUT:-180}"
+_REPO_ROOT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+
+timeout "$_REVIEW_TIMEOUT" node "$_HME_CLI" review "$@"
+_rc=$?
+
+if [ "$_rc" = "124" ]; then
+  _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+  _msg="[$_ts] [i/review] wall-clock timeout after ${_REVIEW_TIMEOUT}s — worker deadlock? See hme-worker.out for stack. Args: $*"
+  # Write to stderr (user visible) AND hme-errors.log (LIFESAVER scans it).
+  echo "$_msg" >&2
+  if [ -d "$_REPO_ROOT/log" ]; then
+    echo "$_msg" >> "$_REPO_ROOT/log/hme-errors.log" 2>/dev/null || true
+  fi
+fi
+
+exit "$_rc"
