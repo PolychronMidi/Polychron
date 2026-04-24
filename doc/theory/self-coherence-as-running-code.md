@@ -28,7 +28,7 @@ This is where the work psychology has done on coherence meets a substrate that c
 
 ## III. The HCI — sense of coherence, operationalized
 
-The HME Coherence Index is a 0-100 score computed by `verify-coherence.py` from 44 weighted verifiers across six categories: doc, code, state, coverage, runtime, topology. Each verifier returns a `VerdictResult` — status (PASS/WARN/FAIL/SKIP/ERROR), a 0-1 score, a summary, and details. The aggregate is a weighted mean times 100. The threshold is 80; below that, exit code 1, and the pipeline fails.
+The HME Coherence Index is a 0-100 score computed by `verify-coherence.py` from 44 weighted verifiers across six categories: <!-- drift-exempt --> doc, code, state, coverage, runtime, topology. Each verifier returns a `VerdictResult` — status (PASS/WARN/FAIL/SKIP/ERROR), a 0-1 score, a summary, and details. The aggregate is a weighted mean times 100. The threshold is 80; below that, exit code 1, and the pipeline fails.
 
 Compare this to SOC-13. Antonovsky's scale asks a human being thirteen Likert questions about their own experienced comprehensibility, manageability, and meaningfulness. It is retrospective, self-report, once-per-administration. It is one of the best-validated instruments in the salutogenic literature — and it cannot tell you anything about what coherence is doing in a system at 3 a.m. on a Tuesday between beats 1204 and 1205.
 
@@ -191,7 +191,7 @@ With all of the above on the table, the sentence in the original prompt — "how
 
 The divide, as it is usually posed, assumes that computation is a domain of rule-following and symbol-shuffling, and that psychology is a domain of felt continuity and meaning-making, and that the two are, ontologically, different kinds of thing. HME does not bridge this divide by translating between the two. It reveals that the divide was, in large part, an artifact of which discipline happened to get to which problem first.
 
-The sense of coherence was named by a medical sociologist and measured with a Likert scale. HME names it the HCI and runs forty-four verifiers on every pipeline invocation. Antonovsky's concept becomes an engineering target, and the engineering target answers back — because HME's instrumentation of coherence is not merely *like* Antonovsky's concept, it is *doing the same job*, on a different substrate, with tools that Antonovsky did not have but would have recognized.
+The sense of coherence was named by a medical sociologist and measured with a Likert scale. HME names it the HCI and runs forty-four verifiers on every pipeline invocation. <!-- drift-exempt --> Antonovsky's concept becomes an engineering target, and the engineering target answers back — because HME's instrumentation of coherence is not merely *like* Antonovsky's concept, it is *doing the same job*, on a different substrate, with tools that Antonovsky did not have but would have recognized.
 
 The symptom-coherence principle was a clinical observation. HME's LIFESAVER no-dilution rule is the same principle with structural enforcement: weight-5.0 verifier scans, explicit patterns forbidden, the architecture committed at its foundations to treating its own alarms as information rather than noise.
 

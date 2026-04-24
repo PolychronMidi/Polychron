@@ -257,6 +257,12 @@ def what_did_i_forget(changed_files: str) -> str:
     parts = [f"# Post-Change Audit (context: {budget})\n"]
     all_warnings = []
     doc_updates_needed = set()
+    # Per-review dedup set for scaffolding reminders (HOOK CHANGE, DOC
+    # CHECK). Seeing the same reminder repeated N times for N edits of
+    # the same file in one session adds noise without new signal — once
+    # the operator has acknowledged "hook changed, check siblings",
+    # the second and third repeats are friction.
+    _emitted_scaffold = set()
     for file_path in files:
         abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
         if abs_path is None:
@@ -265,16 +271,26 @@ def what_did_i_forget(changed_files: str) -> str:
         rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
         module_name = (os.path.basename(abs_path)
                        .replace(".js", "").replace(".ts", "").replace(".sh", "").replace(".py", ""))
-        # Hook files: KB search won't find relevant entries by filename — emit structural reminders instead
+        # Hook files: KB search won't find relevant entries by filename — emit structural reminders instead.
+        # Dedup HOOK CHANGE and DOC CHECK — repeat edits to the same hook in
+        # one session produce identical reminders, which pile up in the
+        # review output for no signal. `_emitted_scaffold` tracks which
+        # (prefix, rel_path) pairs have already fired this run.
         if rel_path.endswith(".sh") and "/hooks/" in rel_path:
-            all_warnings.append(
-                f"[{rel_path}] HOOK CHANGE: check other hooks in tools/HME/hooks/ for the same issue, "
-                "and verify tools/HME/hooks/hooks.json still references this hook correctly."
-            )
-            if "sessionstart" in rel_path or "pretooluse" in rel_path or "posttooluse" in rel_path:
+            _scaffold_key = ("HOOK CHANGE", rel_path)
+            if _scaffold_key not in _emitted_scaffold:
+                _emitted_scaffold.add(_scaffold_key)
                 all_warnings.append(
-                    f"[{rel_path}] DOC CHECK: update doc/HME.md hook descriptions if behavior changed."
+                    f"[{rel_path}] HOOK CHANGE: check other hooks in tools/HME/hooks/ for the same issue, "
+                    "and verify tools/HME/hooks/hooks.json still references this hook correctly."
                 )
+            if "sessionstart" in rel_path or "pretooluse" in rel_path or "posttooluse" in rel_path:
+                _doc_key = ("DOC CHECK", rel_path)
+                if _doc_key not in _emitted_scaffold:
+                    _emitted_scaffold.add(_doc_key)
+                    all_warnings.append(
+                        f"[{rel_path}] DOC CHECK: update doc/HME.md hook descriptions if behavior changed."
+                    )
         elif rel_path.startswith(("tools/", "scripts/", "lab/")):
             # KB constraints are for the composition system (src/). Tooling files (chat
             # plugin, MCP server, scripts) have different semantics and produce spurious

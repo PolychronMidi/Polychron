@@ -108,6 +108,22 @@ _sv_spawn_and_verify() {
   return 1
 }
 
+_sv_tail_proxy_log() {
+  # Return the last N non-blank lines from hme-proxy.out, filtered to the
+  # most recent spawn's failure trace. The proxy crash cause — e.g. the
+  # ReferenceError that killed it for an entire session earlier — is
+  # almost always in those last lines. Surfacing them in the supervisor
+  # log and the LIFESAVER banner cuts diagnosis from "tail a file and
+  # guess" to "read the banner".
+  local proxy_log="$_SV_ROOT/log/hme-proxy.out"
+  local n="${1:-20}"
+  if [ ! -f "$proxy_log" ]; then
+    echo "(no proxy log at $proxy_log)"
+    return 0
+  fi
+  tail -n "$n" "$proxy_log" 2>/dev/null | sed 's/^/  /' || echo "(proxy log unreadable)"
+}
+
 _sv_fire_crashloop_lifesaver() {
   local fails="$1"
   local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
@@ -115,10 +131,21 @@ _sv_fire_crashloop_lifesaver() {
   # Channel 1: error log for LIFESAVER pickup.
   mkdir -p "$(dirname "$_SV_ERROR_LOG")" 2>/dev/null
   echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null
-  # Channel 2: lifecycle log for operator audit trail.
+  # Channel 2: lifecycle log for operator audit trail, plus a tail of the
+  # proxy log so the crash trace lives alongside the "I gave up" marker.
   _sv_log "CRASH LOOP: $fails consecutive spawn failures — backing off"
+  _sv_log "last 20 lines of hme-proxy.out at the time of failure:"
+  {
+    local line
+    _sv_tail_proxy_log 20 | while IFS= read -r line; do
+      echo "[$ts] [proxy-supervisor]   $line" >> "$_SV_LIFECYCLE_LOG" 2>/dev/null
+    done
+  }
   # Channel 3: stderr for local terminal visibility.
   echo "$msg" >&2
+  echo "--- last 20 lines of hme-proxy.out ---" >&2
+  _sv_tail_proxy_log 20 >&2
+  echo "--- end proxy log tail ---" >&2
 }
 
 _sv_loop() {

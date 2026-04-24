@@ -96,7 +96,7 @@ The Shaker tradition condensed the principle into a working maxim: *Put your han
 
 The ecstatic principle in Polychron's documentation is the same tradition, applied to software. The field has largely forgotten it, because software emerged inside industrial labor's alienated model and inherited the model's defaults. But the discipline is recoverable, and the recovery does not require abandoning the technical sophistication of the current field. It requires adding a target — the quality that a tool's user feels in the tool's use — that the current field has mostly stopped including in its optimization.
 
-Polychron shows, at modest scale, what happens when the target is included. The architecture is still technically sophisticated. The HCI still runs its forty-four verifiers. The CIM still negotiates its twelve dials. What is added is a commitment that the whole apparatus is in service of the felt quality of the tool's use — and the felt quality shows, in the compositions the engine produces and in the experience of working on the engine itself.
+Polychron shows, at modest scale, what happens when the target is included. The architecture is still technically sophisticated. The HCI still runs its forty-four verifiers. <!-- drift-exempt --> The CIM still negotiates its twelve dials. What is added is a commitment that the whole apparatus is in service of the felt quality of the tool's use — and the felt quality shows, in the compositions the engine produces and in the experience of working on the engine itself.
 
 ## VIII. What the whole collection has been for
 
