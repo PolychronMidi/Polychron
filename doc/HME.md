@@ -694,7 +694,9 @@ The bridge is additive: no state is kept outside the JSONL itself, and `activity
 
 Phase 2 of the feature mapping. `tools/HME/proxy/hme_proxy.js` is a Node.js HTTP chokepoint between Claude Code and the Anthropic API. Point Claude Code at it by setting `ANTHROPIC_BASE_URL=http://127.0.0.1:9099` and launching `node tools/HME/proxy/hme_proxy.js`.
 
-Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks, HME read calls (Bash `i/hme-read`, plus legacy `mcp__HME__read` in historical transcripts) are compared against write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`). Every call emits one `inference_call` event into `output/metrics/hme-activity.jsonl`; write-intent without a prior read adds a `coherence_violation` event with `source=proxy` and the offending tool name.
+Every request is scanned stateless-ly: the full `messages` array is walked for `tool_use` blocks and write-bearing tool calls (`Edit`, `Write`, `NotebookEdit`). Every call emits one `inference_call` event into `output/metrics/hme-activity.jsonl`.
+
+The legacy `write_without_hme_read` / `inference_write_without_hme_read` detection was retired (Apr 2026). It enforced a legacy-MCP contract ("did the agent explicitly invoke `HME_read` before Edit?") that no longer maps to the architecture — HME read now happens via `Bash(i/hme-read …)` shell wrappers AND every `Edit` / `Read` tool_result is auto-enriched with KB context by the `edit_context.js` / `read_context.js` / `dir_context.js` middleware. The detector was firing false positives on 100% of edits; check-hme-coherence was aborting the pipeline over 200+ false violations per round.
 
 Streaming SSE responses pipe through verbatim — no buffering, no latency penalty. The proxy never modifies request bodies in v1 (observability only). System-prompt injection is deliberately deferred to a future phase so the observation signal can be validated in isolation.
 
@@ -702,11 +704,11 @@ Test mode: `node tools/HME/proxy/hme_proxy.js --test < payload.json` prints the 
 
 ### Pipeline Policy Gate
 
-Phase 3 of the feature mapping. `scripts/pipeline/check-hme-coherence.js` runs as a PRE_COMPOSITION step in `main-pipeline.js` (after `check-registration-coherence`, before `check-safe-preboot-audit`). It reads the activity stream, slices to the current round (events since the last `round_complete`), and fails the pipeline with exit code 1 if any `coherence_violation` events fired.
+Phase 3 of the feature mapping. `scripts/pipeline/check-hme-coherence.js` runs as a PRE_COMPOSITION step in `main-pipeline.js` (after `check-registration-coherence`, before `check-safe-preboot-audit`). It reads the activity stream, slices to the current round (events since the last `round_complete`), and fails the pipeline if any `coherence_violation` events fired.
+
+As of Apr 2026, the `write_without_hme_read` variant of `coherence_violation` is no longer emitted (see "Inference Proxy" above for rationale). `productive_incoherence` events still fire for exploratory writes into KB-uncovered modules — those are suggestion signal, not violations, and do not fail the pipeline.
 
 Output: `output/metrics/hme-violations.json` — a full audit record with meta (window size, write coverage %), violations array (split by hook vs proxy source), and ISO timestamps. Picked up by `posttooluse_bash.sh`'s LIFESAVER scanner when the pipeline completes.
-
-Because `coherence_violation` emission in `posttooluse_edit.sh` is gated on `_onb_is_graduated`, pre-graduation sessions never trip this check — the gate ramps in naturally once the agent has gone through one full onboarding loop.
 
 ### KB Staleness Index
 
@@ -789,10 +791,11 @@ The proxy loads OPEN hypotheses at request time and injects them for any write t
 
 ### Productive Incoherence Detection
 
-Phase 3.2 of the feature mapping. The coherence score previously penalized every write-without-HME-read equally. `posttooluse_edit.sh` now cross-references the KB staleness index at emit time and splits the event stream:
+Phase 3.2 of the feature mapping. The coherence score previously penalized every write-without-HME-read equally. `posttooluse_edit.sh` cross-references the KB staleness index at emit time and emits:
 
-- **Lazy violation** — module has FRESH KB coverage but the agent skipped `read(mode='before')`. Emits `coherence_violation` (penalized).
 - **Productive incoherence** — module has MISSING KB coverage, so there was nothing meaningful to read first. Emits `productive_incoherence` (rewarded) plus a `learn_suggested` hint for the Evolver to capture findings afterward.
+
+The companion "lazy violation" branch (FRESH-coverage + no read-before) was retired with the rest of the `write_without_hme_read` detector — auto-enrichment middleware covers that case without needing a manual read. `productive_incoherence` survives because the MISSING-coverage signal is genuinely useful (suggests `learn()`) rather than a false-alarm source.
 
 `compute-coherence-score.js` gains an `exploration_bonus` term:
 
