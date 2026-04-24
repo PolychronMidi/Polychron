@@ -98,21 +98,9 @@ def _log_error(source: str, message: str, detail: str = "") -> None:
     """
     global _error_log
     _transient_sources = {"reindex", "enrich", "audit"}
-    # source="claude" = the chat panel's claude-CLI watchdog firing because
-    # the CLI went silent for its (UI-configured) inactivity window. These
-    # are ROUTINE retry signals — slow API responses, large tool_use frames,
-    # transient shim back-pressure — NOT code defects. They belong in the
-    # in-memory ring for debugging but must NOT hit hme-errors.log, which
-    # escalates to LIFESAVER and blocks the NEXT agent turn. Before this
-    # filter every slow Anthropic stream caused a CRITICAL alert loop.
-    _claude_watchdog = (
-        source == "claude"
-        and ("no stdout for" in message.lower() or "cli hung" in message.lower())
-    )
     _transient = (
         (source in _transient_sources and "timeout" in message.lower())
         or "unreachable" in message.lower()
-        or _claude_watchdog
     )
     entry = {
         "ts": int(time.time() * 1000),
