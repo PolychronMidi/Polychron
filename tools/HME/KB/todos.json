@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 708,
-      "updated_ts": 1776997501.986854
+      "max_id": 713,
+      "updated_ts": 1776997525.8309982
     }
   },
   {
@@ -62,8 +62,8 @@
     "id": 708,
     "text": "Commit all fail-fast fixes",
     "activeForm": "Committing fixes",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
