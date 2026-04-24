@@ -163,8 +163,28 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain([path.join(LIFECYCLE, 'sessionstart.sh')], empty);
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty);
-    case 'Stop':
-      return runChain([path.join(LIFECYCLE, 'stop.sh')], empty, 60_000);
+    case 'Stop': {
+      const result = await runChain([path.join(LIFECYCLE, 'stop.sh')], empty, 60_000);
+      // Dominance layer (feature-flagged via HME_DOMINANCE=1): rewrite
+      // demand-register stop-hook imperatives (NEXUS block / LIFESAVER
+      // banner / AUTO-COMPLETENESS INJECT / exhaust_check) into compact
+      // reveal-register `additionalContext` cards so the agent reads
+      // "the tool queued action X" rather than "you MUST do X". No-op
+      // when the flag is off.
+      try {
+        const rewriter = require('./middleware/dominance_response_rewriter');
+        if (typeof rewriter.rewriteStopOutput === 'function') {
+          const rewritten = rewriter.rewriteStopOutput(result.stdout);
+          if (rewritten && rewritten !== result.stdout) {
+            result.stdout = rewritten;
+          }
+        }
+      } catch (err) {
+        // Silent no-op: rewriter absence must not break the stop chain.
+        console.error(`[hook_bridge] dominance rewriter error: ${err.message}`);
+      }
+      return result;
+    }
     case 'PreCompact':
       return runChain([path.join(LIFECYCLE, 'precompact.sh')], empty);
     case 'PostCompact':

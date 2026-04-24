@@ -15,7 +15,7 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 # Mirrors the same guard in lifecycle/stop.sh — see the auto-completeness
 # post-mortem (Apr 2026) for why this class of silent failure must not
 # recur: one undefined var caused months of invisible hook breakage.
-for _part in hme_dispatch cwd_rewrite gates blackbox_guards reader_guards polling_redirects snapshot_gate pipeline_antiwait failfast polling_counter; do
+for _part in hme_dispatch cwd_rewrite intent_rewrite gates blackbox_guards reader_guards polling_redirects snapshot_gate pipeline_antiwait failfast polling_counter; do
   set +u +e
   source "${SCRIPT_DIR}/bash/${_part}.sh"
   _rc=$?
