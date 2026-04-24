@@ -1191,8 +1191,15 @@ def _coherence_report() -> str:
     # Display labels use *_score (higher=better, 100=perfect) so the "penalty"
     # word doesn't conflict with the header. Underlying JSON keys are kept as
     # *_penalty for backward-compat with downstream parsers.
-    _v_count = comps.get('violation_detail', {}).get('count', 0)
+    _rcd = comps.get('read_coverage_detail') if isinstance(comps.get('read_coverage_detail'), dict) else {}
+    _vd = comps.get('violation_detail') if isinstance(comps.get('violation_detail'), dict) else {}
+    _sd = comps.get('staleness_detail') if isinstance(comps.get('staleness_detail'), dict) else {}
+    _v_count = _vd['count'] if 'count' in _vd else 0
     _v_saturated = " — SATURATED, >=10 violations indistinguishable" if _v_count >= 10 else ""
+    _rc_prior = _rcd['writes_with_prior_read'] if 'writes_with_prior_read' in _rcd else 0
+    _rc_total = _rcd['total_writes'] if 'total_writes' in _rcd else 0
+    _st_touched = _sd['touches_on_stale_or_missing'] if 'touches_on_stale_or_missing' in _sd else 0
+    _st_withinfo = _sd['touches_with_index_info'] if 'touches_with_index_info' in _sd else 0
     lines = [
         "# Round Coherence Score",
         "",
@@ -1200,13 +1207,11 @@ def _coherence_report() -> str:
         "",
         "## Components  (100 = perfect; lower is worse)",
         f"  read_coverage   {_pct(comps.get('read_coverage'))}   "
-        f"({comps.get('read_coverage_detail', {}).get('writes_with_prior_read', 0)}"
-        f"/{comps.get('read_coverage_detail', {}).get('total_writes', 0)} writes had prior HME read)",
+        f"({_rc_prior}/{_rc_total} writes had prior HME read)",
         f"  boundary_score  {_pct(comps.get('violation_penalty'))}   "
         f"({_v_count} boundary violations this round{_v_saturated})",
         f"  kb_freshness    {_pct(comps.get('staleness_penalty'))}   "
-        f"({comps.get('staleness_detail', {}).get('touches_on_stale_or_missing', 0)}"
-        f"/{comps.get('staleness_detail', {}).get('touches_with_index_info', 0)} writes touched stale/missing-KB modules)",
+        f"({_st_touched}/{_st_withinfo} writes touched stale/missing-KB modules)",
     ]
     # Gentle interpretation line — helps users who aren't steeped in the scoring.
     if isinstance(score, (int, float)):
