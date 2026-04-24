@@ -120,16 +120,14 @@ if [ -f "$ERROR_LOG" ]; then
     # so the proxy bridge relays it back into Claude's turn context. Stderr-only
     # was the old path; the proxy bridge drops stderr entirely (see _proxy_bridge.sh),
     # which meant every LIFESAVER alert since plugin mode was silently discarded.
+    # Minimal banner — CLAUDE.md already mandates the 1-2-3 diagnose-fix-
+    # verify response to errors. Re-emitting that boilerplate every turn is
+    # context tax; the unread error list alone is the load-bearing signal.
     echo "" >&2
-    echo "LIFESAVER - ERRORS DETECTED - FIX BEFORE ANYTHING ELSE" >&2
+    echo "LIFESAVER — unresolved errors in hme-errors.log:" >&2
     echo "$NEW_ERRORS" >&2
-    BANNER="LIFESAVER - ERRORS DETECTED - FIX BEFORE ANYTHING ELSE
-Acknowledging an error without fixing it is a CRITICAL VIOLATION.
-You MUST: 1) diagnose root cause  2) implement fix  3) verify fix
-
-${NEW_ERRORS}
-
-DO NOT proceed with any other task until every error above is FIXED."
+    BANNER="LIFESAVER — unresolved errors in hme-errors.log, fix root-cause before proceeding:
+${NEW_ERRORS}"
     # Block ONLY if the supervisor-abandoned sentinel currently exists
     # (live catastrophic state, not historical log entry). Otherwise
     # allow-with-context so the LIFESAVER is surfaced without blocking
@@ -189,51 +187,31 @@ if echo "$PROMPT" | grep -qiE 'evolve|evolution|next round|run main|pipeline|lab
   echo 'EVOLUTION CONTEXT: `i/hme-read target=<module> mode=before` before edits, `i/review mode=forget` after changes, `i/learn title="..." content="..." category=pattern` after confirmed rounds. Past round context lives in KB (query via `i/learn query=...`); the journal.md archive is historical only.' >&2
 fi
 
-# Always: anti-abandonment reminder
-echo 'PLAN DISCIPLINE: Finish the current atomic unit before pivoting. Clarify BEFORE starting, not after. Never leave code/tools in a broken intermediate state while switching approach. If user feedback changes direction: finish current unit, explicitly name what was left undone, get confirmation.' >&2
+# Context-aware reminders — ONLY fire when there's a real behavior signal
+# this turn. The previous path emitted an unconditional "PLAN DISCIPLINE"
+# boilerplate + a rotating reminder-of-the-day every turn; both duplicate
+# CLAUDE.md and added ~500 chars/turn of context tax. Silent is the default;
+# signal only when nexus or prior-turn state says an override is warranted.
+NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
+OVERRIDE_REMINDER=""
 
-# Context-aware rotating reminders
-# Normally cycles through reminders.txt. But if nexus signals specific behavior
-# patterns this turn, override with the most relevant reminder instead.
-REMINDERS_FILE="$(dirname "${BASH_SOURCE[0]}")/../reminders.txt"
-if [ -f "$REMINDERS_FILE" ]; then
-  TOTAL_REMINDERS=$(grep -c . "$REMINDERS_FILE" 2>/dev/null || echo 0)
-  if [ "$TOTAL_REMINDERS" -gt 0 ]; then
-    IDX_FILE="$PROJECT_ROOT/tmp/hme-reminder-idx"
-    mkdir -p "$PROJECT_ROOT/tmp"
+# Many edits but no REVIEW marker → nudge toward i/review
+_EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" 2>/dev/null || echo 0)
+_REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" 2>/dev/null || echo 0)
+if [ "$_EDIT_CT" -gt 3 ] && [ "$_REVIEW_CT" -eq 0 ]; then
+  OVERRIDE_REMINDER="$_EDIT_CT unreviewed edits — run \`i/review mode=forget\` before stopping."
+fi
 
-    # Behavior-specific override: check nexus + last turn signals
-    OVERRIDE_REMINDER=""
-    NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
-
-    # Many edits but no REVIEW marker → nudge toward i/review
-    _EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" 2>/dev/null || echo 0)
-    _REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" 2>/dev/null || echo 0)
-    if [ "$_EDIT_CT" -gt 3 ] && [ "$_REVIEW_CT" -eq 0 ]; then
-      OVERRIDE_REMINDER="Polite reminder: You have $_EDIT_CT unreviewed edits — run \`i/review mode=forget\` before stopping to catch KB constraint violations."
-    fi
-
-    # High bash call streak from prior turn (poll counter left behind) → agent reminder
-    if [ -z "$OVERRIDE_REMINDER" ] && [ -f "/tmp/polychron-bash-call-count" ]; then
-      _BASH_CT=$(cat /tmp/polychron-bash-call-count 2>/dev/null || echo 0)
-      if [ "$_BASH_CT" -gt 8 ]; then
-        OVERRIDE_REMINDER="Polite reminder: Explore agents are preferred over serial Bash chains — spawn one for multi-file research and get a concise report back."
-      fi
-    fi
-
-    if [ -n "$OVERRIDE_REMINDER" ]; then
-      echo "<system-reminder>${OVERRIDE_REMINDER}</system-reminder>" >&2
-    else
-      # Default: rotate through the list
-      IDX=$(cat "$IDX_FILE" 2>/dev/null || echo 0)
-      IDX=$((IDX % TOTAL_REMINDERS))
-      REMINDER=$(sed -n "$((IDX + 1))p" "$REMINDERS_FILE")
-      echo $((IDX + 1)) > "$IDX_FILE"
-      if [ -n "$REMINDER" ]; then
-        echo "<system-reminder>${REMINDER}</system-reminder>" >&2
-      fi
-    fi
+# High bash call streak from prior turn (poll counter left behind)
+if [ -z "$OVERRIDE_REMINDER" ] && [ -f "/tmp/polychron-bash-call-count" ]; then
+  _BASH_CT=$(cat /tmp/polychron-bash-call-count 2>/dev/null || echo 0)
+  if [ "$_BASH_CT" -gt 8 ]; then
+    OVERRIDE_REMINDER="Prior turn had $_BASH_CT+ bash calls — prefer an Explore agent for multi-file research."
   fi
+fi
+
+if [ -n "$OVERRIDE_REMINDER" ]; then
+  echo "<system-reminder>${OVERRIDE_REMINDER}</system-reminder>" >&2
 fi
 
 # R30 #2: auto-append ground-truth when user message contains
