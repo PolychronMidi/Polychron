@@ -374,6 +374,9 @@ def memory_dream() -> str:
             finally:
                 _ex.shutdown(wait=False, cancel_futures=True)
             if synthesis:
+                from server.tools_analysis.synthesis.synthesis_inference import ground_synthesis
+                synthesis = ground_synthesis(synthesis, user_text,
+                                             log_label="architectural_interpretation")
                 parts.append("\n## Architectural Interpretation *(adaptive)*")
                 parts.append(synthesis)
         except Exception as e:
@@ -476,6 +479,9 @@ def knowledge_graph(query: str) -> str:
             )
             synthesis = _think_local_or_claude(user_text)
             if synthesis:
+                from server.tools_analysis.synthesis.synthesis_inference import ground_synthesis
+                synthesis = ground_synthesis(synthesis, user_text,
+                                             log_label="cluster_analysis")
                 parts.append(f"\n## Cluster Analysis *(adaptive)*")
                 parts.append(synthesis)
     except Exception as e:

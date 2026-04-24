@@ -352,8 +352,12 @@ def module_story(module_name: str) -> str:
         synthesis = _reasoning_think(user_text, max_tokens=800, system=_THINK_SYSTEM)
         _elapsed = _time_mod.time() - _t0
         if synthesis:
-            from .synthesis.synthesis_inference import compress_for_claude
+            from .synthesis.synthesis_inference import compress_for_claude, ground_synthesis
             synthesis = compress_for_claude(synthesis, max_chars=800, hint=f"key constraints for {module_name}")
+            # Ground against the user_text (module source + KB + callers)
+            # so cited identifiers must exist in the actual module body.
+            synthesis = ground_synthesis(synthesis, user_text,
+                                         log_label=f"module_story({module_name})")
             parts.append(f"\n## Key Constraints *(adaptive, {_elapsed:.0f}s)*")
             parts.append(synthesis)
         else:
