@@ -9,7 +9,7 @@ from server.helpers import (
     KNOWN_L0_CHANNELS, DOC_UPDATE_TRIGGERS,
 )
 from symbols import find_callers as _find_callers
-from .synthesis import _reasoning_think, _THINK_SYSTEM
+from .synthesis import _reasoning_think, _THINK_SYSTEM, _REVIEW_SYSTEM
 from .synthesis_session import append_session_narrative
 from .tool_cache import cached_kb_search, cached_find_callers
 from . import _track
@@ -483,42 +483,50 @@ def what_did_i_forget(changed_files: str) -> str:
         except Exception as _err4:
             logger.debug(f'silent-except workflow_audit.py:308: {type(_err4).__name__}: {_err4}')
 
-    # Adaptive synthesis — language-agnostic bug probes keyed to UNIVERSAL
-    # patterns, with idiom examples across Python/JS/shell so the model can
-    # recognize each pattern in whatever language the diff contains. The
-    # prior prompt hallucinated Python-style bugs in shell diffs because
-    # every probe said "for each Python file, check…". Now probes name the
-    # concept first and give language-idiom hints second — the diff itself
-    # supplies the language context.
-    _UNIVERSAL_PROBES = (
-        "PROBE for concrete bugs using these universal defect classes. For each, "
-        "use whichever language idiom applies to the actual diff:\n"
-        "1. Empty-value masquerading as default —\n"
-        "   py: dict.get(k, D) returns None when k present-but-None; should be (d.get(k) or D).\n"
-        "   js: obj[k] ?? D vs obj[k] || D (|| treats 0/'' as falsy).\n"
-        "   sh: ${VAR:-D} fires on unset AND empty; ${VAR-D} fires only on unset.\n"
-        "2. Exception / error handling gaps — `except`/`catch`/`trap` that names specific "
-        "types and silently drops the rest, OR lacks error paths for operations that CAN fail "
-        "(int parse, JSON parse, subprocess, file I/O, HTTP).\n"
-        "3. Append-only growth — writes to a log/jsonl/history with no corresponding "
-        "size or age cap. Unbounded growth is a deferred bug.\n"
-        "4. Truthy/falsy coercion after a lookup — `x or fallback` patterns where x could "
-        "legitimately be 0 / '' / False / empty-list and the fallback silently wrongly fires.\n"
-        "5. Path/filesystem assumptions — code assumes a path is a file but it could be a dir, "
-        "symlink, or missing entirely; or assumes cwd is a particular directory.\n"
-        "6. Variable used before assignment — value set inside a conditional branch and read "
-        "in a scope where that branch may not have fired.\n"
-        "7. Key mismatch across reads/writes — dedup or lookup key constructed one way on "
-        "insert and a different way on retrieval.\n"
-        "8. Null-guarded arithmetic / comparison — arithmetic on a value that may be None/"
-        "undefined/empty, or comparison that implicitly coerces types.\n"
-        "9. Race on shared state — read-modify-write on files/memory without serialization, "
-        "or async captures mutated across awaits.\n"
-        "10. Control-flow swallowing — `set -e` + `||`/`&&` chains, uncaught promise rejections, "
-        "or try/except-pass that hide failures from the caller.\n"
-    )
+    # Bug-probe classes. Each class is one line; language-specific idiom
+    # hints are appended only if the diff actually touches that language.
+    # Prior iteration shipped py/js/sh examples for every class regardless
+    # of the diff's language, bloating the prompt with ~30 irrelevant lines
+    # on single-language reviews.
+    _PROBE_CLASSES = [
+        ("Empty-value masquerading as default",
+         {"py": "dict.get(k, D) returns None when k present-but-None — prefer (d.get(k) or D)",
+          "js": "obj[k] ?? D vs obj[k] || D — || treats 0/'' as falsy",
+          "sh": "${VAR:-D} fires on unset AND empty; ${VAR-D} fires only on unset"}),
+        ("Exception / error handling gaps — narrow except/catch/trap that silently drops unnamed types, or missing error paths for parse/subprocess/IO/HTTP", {}),
+        ("Append-only growth — writes to a log/jsonl/history without a size or age cap", {}),
+        ("Truthy/falsy coercion after a lookup — `x or fallback` where 0/''/False/[] could legitimately match", {}),
+        ("Path/filesystem assumptions — assumes a path is a file when it could be dir/symlink/missing, or assumes a particular cwd", {}),
+        ("Variable used before assignment — set inside a conditional branch and read where that branch may not fire", {}),
+        ("Key mismatch across reads/writes — dedup/lookup key constructed one way on insert and another on retrieval", {}),
+        ("Null-guarded arithmetic / comparison — arithmetic on possibly-None/undefined, or implicit-coercion comparison", {}),
+        ("Race on shared state — read-modify-write without serialization, or async captures mutated across awaits", {}),
+        ("Control-flow swallowing —",
+         {"py": "try/except-pass that hides failures",
+          "js": "uncaught promise rejections",
+          "sh": "`set -e` + `||`/`&&` chains that mask failing commands"}),
+    ]
 
-    probes = _UNIVERSAL_PROBES
+    def _detect_languages(diff: str, files: str) -> set:
+        langs = set()
+        for ext, lang in (('.py', 'py'), ('.js', 'js'), ('.ts', 'js'),
+                         ('.sh', 'sh'), ('.bash', 'sh')):
+            if ext in (diff or '') or ext in (files or ''):
+                langs.add(lang)
+        return langs or {'py', 'js', 'sh'}  # fall back to all when ambiguous
+
+    _diff_langs = _detect_languages(diff_context, changed_files)
+
+    def _render_probes() -> str:
+        lines = ["PROBE for concrete bugs. Flag only what you can cite with file:line from the diff below.\n"]
+        for i, (desc, lang_hints) in enumerate(_PROBE_CLASSES, 1):
+            lines.append(f"{i}. {desc}")
+            for lang in ('py', 'js', 'sh'):
+                if lang in lang_hints and lang in _diff_langs:
+                    lines.append(f"   [{lang}] {lang_hints[lang]}")
+        return "\n".join(lines) + "\n"
+
+    probes = _render_probes()
     warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
     diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
@@ -555,13 +563,14 @@ def what_did_i_forget(changed_files: str) -> str:
         if symbol_whitelist:
             _ws = sorted(symbol_whitelist)[:120]
             allowed_block = (
-                "\nAllowed symbols (every backticked identifier in your "
-                "output MUST appear in this list verbatim — anything else "
-                "is invention and will be dropped by a post-filter):\n"
+                "\nAllowed symbols (backticked identifiers in your output "
+                "must come from this list; others are dropped by post-filter):\n"
                 + ", ".join(_ws) + "\n"
             )
+            _symbols_rule = " Backticked identifiers must come from the Allowed-symbols list."
         else:
             allowed_block = ""
+            _symbols_rule = ""
 
         user_text = (
             f"Changed files: {changed_files}\n"
@@ -571,20 +580,13 @@ def what_did_i_forget(changed_files: str) -> str:
             f"{hunk_section}\n"
             f"{allowed_block}"
             f"{probes}"
-            "Rules:\n"
-            "- Only flag issues you can cite with file:line evidence from the diff/hunks above.\n"
-            "- Every issue MUST quote the offending line or name the specific symbol FROM THE DIFF.\n"
-            "- Every backticked identifier MUST be in the Allowed-symbols list above — no exceptions.\n"
-            "- If a probe class doesn't fit the languages present in the diff, skip it silently.\n"
-            "- Do NOT invent variables, functions, or idioms that aren't in the diff.\n"
-            "- Do NOT misrepresent what a diff line does — if unsure of a symbol's meaning, skip the bullet.\n"
-            "- Do NOT repeat anything already listed in static audit warnings.\n"
-            "- Do NOT list generic best practices (run tests, update docs, check types).\n"
-            "- If truly nothing concrete remains, say 'Nothing missed.'\n"
+            f"Rules: cite file:line from the diff for every issue.{_symbols_rule} "
+            "Skip probes that don't fit. No generic advice. Say 'Nothing missed.' "
+            "if clean.\n"
         )
         try:
             result = _reasoning_think("/no_think\n" + user_text, max_tokens=400,
-                                      system=_THINK_SYSTEM)
+                                      system=_REVIEW_SYSTEM)
             if result:
                 from .synthesis.synthesis_inference import compress_for_claude
                 synthesis = compress_for_claude(result, max_chars=1200, hint="post-change audit missed bugs")

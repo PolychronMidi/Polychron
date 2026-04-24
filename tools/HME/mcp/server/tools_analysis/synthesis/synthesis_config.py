@@ -40,6 +40,18 @@ def _build_think_system() -> str:
 
 _THINK_SYSTEM = _build_think_system()
 
+# Focused system prompt for diff/code-review paths. The generic
+# _THINK_SYSTEM above is project-marketing boilerplate (19 hypermeta
+# controllers, antagonism bridges, xenolinguistic texture) — useful
+# context for architectural-synthesis tools but pure bloat for a
+# "scan this diff for bugs" path. Reviewers get this stripped version
+# instead.
+_REVIEW_SYSTEM = (
+    "You are a code reviewer. Flag concrete bugs in the given diff. "
+    "Cite file:line for every claim. No generic advice, no preamble, "
+    "no architectural commentary. Max 4 items."
+)
+
 
 # Single ceiling for local model generation. qwen3-coder:30b fully GPU-resident
 # on the M40 can handle 8K output without VRAM pressure (context window is the
