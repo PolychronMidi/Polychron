@@ -3,7 +3,7 @@
 # the chat UI in Chromium.
 #
 # Start order:
-#   1. HME proxy (supervises worker.py + llamacpp_daemon.py automatically)
+#   1. HME proxy (supervises worker.py + llamacpp_daemon/ package automatically)
 #   2. llama-server instances (arbiter :8080, coder :8081) — if HME_AUTOLAUNCH_LLAMA=1
 #   3. HME chat server (out/server.js on HME_CHAT_PORT, default 3131)
 #   4. Health check — waits for proxy + chat to be ready

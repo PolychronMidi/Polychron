@@ -166,7 +166,7 @@ def health() -> str:
 
     # Processes
     lines.append("### Processes")
-    daemon_pids = _pgrep("llamacpp_daemon.py")
+    daemon_pids = _pgrep("llamacpp_daemon")
     worker_pids = _pgrep("worker.py")
     ls_pids = _pgrep("tools/bin/llama-server")
     if len(daemon_pids) == 1:

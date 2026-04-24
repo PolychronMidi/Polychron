@@ -16,7 +16,7 @@ Usage:
 
 Registered domains:
 
-  llama-server       → llamacpp_daemon         (tools/HME/mcp/llamacpp_daemon.py)
+  llama-server       → llamacpp_daemon         (tools/HME/mcp/llamacpp_daemon/)
   embedders          → rag_engines             (tools/HME/mcp/rag_engines.py)
   kb                 → tools_knowledge         (tools/HME/mcp/server/tools_knowledge.py)
   conductor-state    → conductor subsystem     (src/conductor/*)

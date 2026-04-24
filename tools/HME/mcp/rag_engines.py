@@ -355,8 +355,11 @@ def _ensure_llamacpp_daemon():
     routing, and the generation proxy for legacy callers.
     """
     import urllib.request as _urlreq
-    _daemon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "llamacpp_daemon.py")
-    if not os.path.exists(_daemon_path):
+    # Post-R98 split: daemon is a package at mcp/llamacpp_daemon/ rather
+    # than a single .py file. Presence check points at the package dir.
+    _mcp_dir = os.path.dirname(os.path.abspath(__file__))
+    _daemon_pkg = os.path.join(_mcp_dir, "llamacpp_daemon")
+    if not os.path.isdir(_daemon_pkg):
         return
     try:
         with _urlreq.urlopen(_urlreq.Request("http://127.0.0.1:7735/health"), timeout=1) as _r:
@@ -369,7 +372,8 @@ def _ensure_llamacpp_daemon():
     env["PROJECT_ROOT"] = PROJECT_ROOT
     try:
         subprocess.Popen(
-            ["python3", _daemon_path],
+            ["python3", "-m", "llamacpp_daemon"],
+            cwd=_mcp_dir,
             env=env, start_new_session=True,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
