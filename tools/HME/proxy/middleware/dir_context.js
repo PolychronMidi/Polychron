@@ -14,7 +14,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const { PROJECT_ROOT } = require('../shared');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
 
 const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
 const REFRESH_MS = 60_000;
