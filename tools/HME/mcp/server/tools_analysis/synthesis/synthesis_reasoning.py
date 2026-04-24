@@ -298,8 +298,13 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
     _floor = _OVERDRIVE_THINK_BUDGET + _OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
 
+    # Model: claude-opus-4-7 is the current-generation Opus. Plain
+    # "opus" returns 404 from the Anthropic API; the dated/versioned
+    # claude-opus-4-* family resolves correctly. Kept as a string
+    # constant rather than an env var so there's one unambiguous spot
+    # to bump when a new Opus generation is the latest.
     payload = {
-        "model": "opus",
+        "model": "claude-opus-4-7",
         "max_tokens": resolved_max,
         "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
         "thinking": {"type": "enabled", "budget_tokens": _OVERDRIVE_THINK_BUDGET},

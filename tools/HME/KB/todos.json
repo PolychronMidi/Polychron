@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 932,
-      "updated_ts": 1777001395.4446588
+      "max_id": 939,
+      "updated_ts": 1777001556.9175313
     }
   },
   {
@@ -20,15 +20,15 @@
     "subs": []
   },
   {
-    "id": 920,
-    "text": "Change model to 'opus'",
-    "activeForm": "Changing model to opus",
+    "id": 934,
+    "text": "Change model to 'opus' (fallback: claude-opus-4-7 since 'opus' 404s)",
+    "activeForm": "Using claude-opus-4-7",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777001290.0309463,
+    "ts": 1777001556.9174783,
     "parent_id": 0,
     "subs": []
   },
@@ -62,8 +62,8 @@
     "id": 921,
     "text": "Re-baseline .env.sha256",
     "activeForm": "Re-baselining .env.sha256",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -75,8 +75,8 @@
     "id": 924,
     "text": "Live end-to-end test with OVERDRIVE_MODE=1",
     "activeForm": "Running live end-to-end test",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -88,7 +88,7 @@
     "id": 882,
     "text": "Commit",
     "activeForm": "Committing",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
