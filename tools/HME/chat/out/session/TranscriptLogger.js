@@ -55,6 +55,7 @@ class TranscriptLogger {
         this._entries = [];
         this._turnCount = 0;
         this._sessionId = "";
+        this._errorSink = null;
         // Write queue + flush flag — appendFileSync is technically blocking, but
         // concurrent log() calls from agent-mode parallel streams or rapid
         // user spam can interleave their effects on the in-memory _entries
@@ -69,25 +70,44 @@ class TranscriptLogger {
         // Load existing entries from file (tail — last MAX_ENTRIES_IN_MEMORY lines)
         this._loadExisting();
     }
+    /** Wire a sink AFTER construction — BrowserPanel can't pass it in because
+     *  the ErrorSink depends on `logShimError` which depends on the shim port
+     *  which is already initialized by the time the logger exists. */
+    setErrorSink(sink) {
+        this._errorSink = sink;
+    }
+    _reportFailure(source, message) {
+        // Always log. Always route to sink if we have one so LIFESAVER picks it up.
+        console.error(`[TranscriptLogger] ${source}: ${message}`);
+        if (this._errorSink)
+            this._errorSink.post(source, message);
+    }
     _loadExisting() {
+        if (!fs.existsSync(this._logPath))
+            return;
+        let content;
         try {
-            if (!fs.existsSync(this._logPath))
-                return;
-            const content = fs.readFileSync(this._logPath, "utf8");
-            const lines = content.trim().split("\n").filter((l) => l.trim());
-            // Only keep last MAX_ENTRIES_IN_MEMORY
-            const recent = lines.slice(-MAX_ENTRIES_IN_MEMORY);
-            for (const line of recent) {
-                try {
-                    this._entries.push(JSON.parse(line));
-                }
-                catch (e) {
-                    console.error(`[TranscriptLogger] Malformed JSONL line: ${line.slice(0, 80)}`);
-                }
-            }
+            content = fs.readFileSync(this._logPath, "utf8");
         }
         catch (e) {
-            console.error(`[TranscriptLogger] Failed to load existing transcript: ${e?.message ?? e}`);
+            // Failing to read an existing transcript file is a real failure
+            // (permission revoked, disk error) — don't silently start fresh and
+            // lose access to the user's prior session history.
+            this._reportFailure("_loadExisting", `transcript file unreadable at ${this._logPath}: ${e?.message ?? e}`);
+            throw new Error(`TranscriptLogger._loadExisting: ${e?.message ?? e}`);
+        }
+        const lines = content.trim().split("\n").filter((l) => l.trim());
+        const recent = lines.slice(-MAX_ENTRIES_IN_MEMORY);
+        // Per-line JSON parse failures are tolerated (old entry could be
+        // half-written before a prior crash) but still reported so the user
+        // knows there was real corruption in the log.
+        for (const line of recent) {
+            try {
+                this._entries.push(JSON.parse(line));
+            }
+            catch (e) {
+                this._reportFailure("_loadExisting", `malformed JSONL line (skipped): ${line.slice(0, 80)}`);
+            }
         }
     }
     /** Set the active session ID — stamped on all subsequent entries. */
@@ -120,7 +140,10 @@ class TranscriptLogger {
             fs.appendFileSync(this._logPath, batch, "utf8");
         }
         catch (err) {
-            console.error(`[TranscriptLogger] Disk write failed: ${err?.message ?? err}`);
+            // Disk-write failures vanishing to console are the classic "why did
+            // my LIFESAVER stop catching things" failure mode — route through
+            // the sink so the next turn's banner surfaces the broken logger.
+            this._reportFailure("_flushQueue", `disk write failed: ${err?.message ?? err}`);
         }
         finally {
             this._flushing = false;
@@ -242,6 +265,43 @@ class TranscriptLogger {
         const cutoff = Date.now() - minutes * 60000;
         return this._entries.filter((e) => e.ts >= cutoff);
     }
+    /**
+     * Routing-signal summary derived from the recent transcript window.
+     * Callers (Arbiter auto-route) use this to inject session health into
+     * classification — high error/constraint density → prefer claude even
+     * for messages that would otherwise classify as local.
+     *
+     * - `constraintCount`: validation events in the last 15 min that surfaced
+     *   warnings or blocks (⚠ or ⛔ in summary).
+     * - `errorCount`: audit violations + validation blocks + tool errors in
+     *   the last 15 min — "this session is struggling" signal.
+     */
+    getRecentActivitySignals(minutes = 15) {
+        const window = this.getWindow(minutes);
+        let constraintCount = 0;
+        let errorCount = 0;
+        for (const e of window) {
+            const summary = e.summary ?? "";
+            if (e.type === "validation") {
+                if (summary.includes("⚠") || summary.includes("⛔"))
+                    constraintCount++;
+                if (summary.includes("⛔"))
+                    errorCount++;
+            }
+            else if (e.type === "audit") {
+                if (summary.includes("⛔"))
+                    errorCount++;
+            }
+            else if (e.type === "tool_call") {
+                // Rough heuristic — tool outputs starting with "Error:" or containing
+                // "failed" suggest the agentic loop hit a real failure.
+                if (/^\s*\[?Error\b/i.test(e.content) || /\bfailed\b/i.test(summary)) {
+                    errorCount++;
+                }
+            }
+        }
+        return { constraintCount, errorCount };
+    }
     /** Get all entries as raw array. */
     getAll() {
         return [...this._entries];
@@ -275,7 +335,7 @@ class TranscriptLogger {
             }
         }
         catch (e) {
-            console.error(`[TranscriptLogger] Narrative synthesis failed: ${e?.message ?? e}`);
+            this._reportFailure("_synthesizeNarrative", `narrative callback threw: ${e?.message ?? e}`);
         }
     }
     /** Rotate log file if it exceeds maxSize bytes. Keeps tail. */
@@ -291,7 +351,9 @@ class TranscriptLogger {
             fs.writeFileSync(this._logPath, keepLines.join("\n") + "\n", "utf8");
         }
         catch (e) {
-            console.error(`[TranscriptLogger] Rotation failed: ${e?.message ?? e}`);
+            // Rotation failure leaves the log growing unbounded — surface to the
+            // user-visible error path so it gets noticed before disk fills.
+            this._reportFailure("rotate", `rotation failed: ${e?.message ?? e}`);
         }
     }
 }
@@ -299,10 +361,11 @@ exports.TranscriptLogger = TranscriptLogger;
 /** No-op TranscriptLogger for use when initialization fails. */
 function nullTranscript() {
     return {
-        log: () => { }, setSessionId: () => { },
+        log: () => { }, setSessionId: () => { }, setErrorSink: () => { },
         logUser: () => { }, logAssistant: () => { }, logToolCall: () => { },
         logRouteSwitch: () => { }, logValidation: () => { }, logAudit: () => { },
         logSessionStart: () => { }, getRecentContext: () => "", getWindow: () => [],
+        getRecentActivitySignals: () => ({ constraintCount: 0, errorCount: 0 }),
         getAll: () => [], count: 0, setNarrativeCallback: () => { }, rotate: () => { },
         forceNarrative: () => Promise.resolve(),
     };

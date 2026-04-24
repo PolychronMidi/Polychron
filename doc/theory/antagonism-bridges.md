@@ -6,7 +6,7 @@
 
 ## I. The pattern
 
-Every pipeline run, Polychron's crystallizer scans its knowledge base for multi-round patterns — clusters of KB entries that share substantive tags and appear across at least three rounds. The first run promoted nineteen such patterns from 116 entries. One of them, at six members across seven rounds, is named `antagonism-bridge`.
+Every pipeline run, Polychron's crystallizer scans its knowledge base for multi-round patterns — clusters of KB entries that share substantive tags and appear across at least three rounds. The first qualifying run promoted a set of standing patterns from the KB at the time, one of which — at six members across seven rounds — was named `antagonism-bridge`. The crystallizer's parameters have since tightened and its current output is smaller; the pattern counts, names, and thresholds drift as the system evolves. What this essay takes from the crystallizer is not the particular snapshot but the fact that the principle recurred often enough to become standing knowledge rather than local observation.
 
 The principle it encodes is a single sentence. *When two modules are structurally antagonistic, couple both sides of the pair.*
 
@@ -36,7 +36,7 @@ The engineering instinct when two modules are antagonistic is to decide which on
 
 It fails for a simple reason that becomes obvious once stated: silencing an antagonist does not eliminate the force that antagonist was channeling. It only removes the system's means of responding to that force. The force reasserts itself, often disguised, usually harder to diagnose because the module that used to address it has been deprecated.
 
-A company that resolves the efficiency-versus-resilience antagonism by always choosing efficiency does not become more efficient. It becomes brittle. The need for resilience does not go away because the resilience department got disbanded; it accumulates as unresponded-to fragility until the system snaps under a shock it had no architectural capacity to absorb. The shock reveals the failure, but because the resilience function has been gone for years, nobody on the current leadership team remembers what it was or why it existed, and the post-mortem attributes the collapse to bad luck.
+A company that resolves the efficiency-versus-resilience antagonism by always choosing efficiency does not become more efficient. It becomes brittle. The need for resilience does not go away because the resilience department got disbanded; it accumulates as unresponded-to fragility until the system snaps under a shock it had no architectural capacity to absorb. The shock reveals the failure, but because the resilience function has been gone for years, nobody on the current leadership team remembers what it was or why it existed, and the post-mortem attributes the collapse to bad luck. Boeing's slow resolution of the engineering-versus-finance antagonism toward finance through the 1990s and 2000s, culminating in the 737 MAX, is a textbook version of this pattern — each decision to defer the engineering voice was locally rational, the cumulative silencing of that voice produced a specific class of failure whose root cause was invisible to the leadership who had inherited the silenced structure.
 
 A psychotherapy that resolves the spontaneity-versus-caution antagonism by always encouraging caution — and several clinical traditions have done exactly this at various times — does not produce well-regulated patients. It produces patients whose spontaneity has gone underground and resurfaces as symptom: compulsion, eruption, dissociation, the return of the repressed. Bruce Ecker's entire case for coherence therapy and memory reconsolidation begins from the observation that silenced parts do not stay silent; they continue to express themselves, because they encode real learning that has nowhere else to go.
 
@@ -77,6 +77,8 @@ In a team, alignment is not constant coordination, and it is not permanent siloi
 In a political system, governance is not the suppression of either the liberty tradition or the welfare tradition, and it is not their averaging. Governance is a set of coordination mechanisms through which each tradition can respond to the signals the other tradition is sending — so the liberty impulse modulates in response to evidence of welfare collapse, and the welfare impulse modulates in response to evidence of liberty collapse, without either tradition abandoning its commitments. Most functional democracies have actually run this way for stretches, during periods when their coordination institutions were healthy. Most dysfunctional democracies are dysfunctional because those coordination institutions have decayed.
 
 The pattern is the same everywhere it appears. Neither pole wins. Neither pole averages. Both poles remain themselves, and the coupling between them is the structural resource that generates what neither could generate alone.
+
+A fourth move deserves a paragraph, because it is the one the three-way distinction in Section II was set up to rule out. It is the move of *dissolving* the antagonism by re-examining whether what looked like antagonism was actually antagonism in the first place. If the conflict is noise, the right response is to stop amplifying it. If the conflict is disagreement, the right response is to settle it by whatever means settlement admits — evidence, persuasion, decision. The dissolve move is legitimate, sometimes urgently so, and a system that cannot distinguish it from genuine antagonism ends up coupling things that should simply be named correctly and set aside. The antagonism-bridge principle does not say *couple everything that looks like opposition*. It says *when the opposition is structural, couple rather than resolve*. The first discipline is still classification: is what I am facing noise, disagreement, or antagonism? Only once the third has been established does coupling become the appropriate move.
 
 ## VI. What the coupling requires
 
@@ -121,3 +123,7 @@ Polychron's discovery, made mechanical by running a generative music engine for 
 The invitation the pattern extends is specific. The next time you encounter a structural antagonism — in yourself, in a relationship, in a team, in a political question — notice which of the three usual moves you are about to make. Notice whether the antagonism is actually noise, or disagreement, or genuine structural opposition. If it is the third, consider, before resolving it, whether the right move is instead to couple both sides and let the tension keep doing its work.
 
 Most of what matters in a life, in an institution, in a culture is produced by antagonisms that were not resolved. The coupling is where the music is.
+
+---
+
+Next theory essay: [On Meta Without Terminus](./on-meta-without-terminus.md)

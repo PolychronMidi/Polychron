@@ -280,10 +280,10 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
   runStream({
     ctx, assistantId, route,
     start: (h) => {
-      // Pipe mode uses --output-format stream-json — discrete events only for
-      // the new turn, no TUI replay. Claude needs its own adapter-driven path
-      // (not runAdapterStream) because of sessionId capture + model-mismatch
-      // detection unique to this route.
+      // Claude uses a long-lived process pool keyed on chat-session id
+      // (claudeProcessPool) — turn 1 hydrates, turn 2+ hits prompt cache.
+      // It needs its own adapter-driven path rather than runAdapterStream
+      // because of model-mismatch detection + per-turn session_id re-emit.
       const onCompleted = (usage?: TokenUsage) => {
         if (h.isAborted()) return;
         ctx.updateContextTracker(h.state.text, h.state.thinking, msg.claudeModel, usage);
@@ -315,8 +315,17 @@ export function streamClaudeMsg(ctx: ChatCtx, msg: ResolvedMsg, assistantId: str
         if (!h.isEnded()) { h.postStreamEnd(); h.safeEnd(); }
         ctx.postError("claude", err);
       };
+      // chatSessionId keys the process pool. A chat without a persisted
+      // session entry still gets a transient pool key via assistantId so a
+      // single turn at least benefits from the long-lived infrastructure.
+      const chatSessionId = ctx.state.sessionEntry?.id ?? `transient-${assistantId}`;
       const pipeHandle = claudeAdapter.stream(
-        { message: effectiveText, sessionId: ctx.state.claudeSessionId, workingDir: ctx.projectRoot },
+        {
+          chatSessionId,
+          message: effectiveText,
+          sessionId: ctx.state.claudeSessionId,
+          workingDir: ctx.projectRoot,
+        },
         {
           onChunk: h.onChunk,
           claude: claudeOpts,

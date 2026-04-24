@@ -28,6 +28,7 @@ import { buildCrossRouteContext, applyCrossRouteContext } from "./session/crossR
 import { PanelHost } from "./panel/PanelHost";
 import { ErrorSink } from "./panel/ErrorSink";
 import { setSanitizerErrorSink, setTurnNumberProvider } from "./routers/routerClaude";
+import { killClaudeProcess, killAllClaudeProcesses, reapIdleClaudeProcesses } from "./routers/claudeProcessPool";
 import { ShimSupervisor } from "./panel/ShimSupervisor";
 import { ContextMeter, ContextPostArgs } from "./panel/ContextMeter";
 import { ChainPerformer, ChainSessionBridge } from "./panel/ChainPerformer";
@@ -102,6 +103,9 @@ export class BrowserPanel implements PanelHost {
 
     try {
       this._transcript = new TranscriptLogger(projectRoot);
+      // Route transcript disk failures through the same sink that carries
+      // every other error to hme-errors.log + next-turn LIFESAVER banner.
+      this._transcript.setErrorSink(this._errorSink);
       this._transcript.setNarrativeCallback(async (entries) => {
         // Hard timeout so a hung daemon doesn't stall the chat. Every 3 turns
         // the narrative callback fires; a 3s ceiling keeps the chat snappy
@@ -227,6 +231,7 @@ export class BrowserPanel implements PanelHost {
   public static createOrShow(projectRoot: string): BrowserPanel {
     if (BrowserPanel.current) return BrowserPanel.current;
     BrowserPanel.current = new BrowserPanel(projectRoot);
+    BrowserPanel.current.startPoolReaper();
     return BrowserPanel.current;
   }
 
@@ -237,8 +242,18 @@ export class BrowserPanel implements PanelHost {
     try {
       dispatchWebviewMessage(msg, this._messageHandlers);
     } catch (e: any) {
-      console.error(`[HME] handleMessage threw: ${e?.message ?? e}\n${e?.stack}`);
-      this.post({ type: "errorBubble", source: "dispatch", message: String(e?.message ?? e) });
+      // errorBubble alone is invisible in the UI (suppressed at browser.html
+      // by design). Route through postError so the ErrorSink → hme-errors.log
+      // → LIFESAVER chain catches it, AND surface to the user as a notice
+      // so they know their action didn't land.
+      this.postError(
+        `dispatch:${msg?.type ?? "?"}`,
+        `${e?.message ?? e}\n${e?.stack ?? ""}`,
+      );
+      this.post({
+        type: "notice", level: "warn",
+        text: `⚠ Action ${msg?.type ?? "?"} failed: ${e?.message ?? e}`,
+      });
     }
   }
 
@@ -334,6 +349,10 @@ export class BrowserPanel implements PanelHost {
     },
     loadSession: (msg) => this._loadSession(msg.id),
     deleteSession: (msg) => {
+      // Kill any pool-backed claude process for this chat session BEFORE
+      // we forget the session id. Otherwise the process stays resident
+      // and keeps burning RSS until the idle reaper catches it.
+      killClaudeProcess(msg.id);
       deleteSession(this._projectRoot, msg.id);
       if (this._state.sessionEntry?.id === msg.id) {
         this._state = BrowserPanel._blankState();
@@ -388,8 +407,17 @@ export class BrowserPanel implements PanelHost {
           effort: msg.claudeEffort,
           thinking: msg.claudeThinking,
         });
+        const prevKey = `${this._claudeConfig.model}|${this._claudeConfig.effort}|${this._claudeConfig.thinking}`;
+        const newKey = `${validated.model}|${validated.effort}|${validated.thinking}`;
         this._claudeConfig = validated;
         const resolved = resolveClaudeConfig(validated);
+        // Model/effort/thinking are CLI args — a running pool process can't
+        // change them mid-flight. Kill the current session's process so the
+        // next turn respawns with the new config (inheriting conversation
+        // state via --resume).
+        if (prevKey !== newKey && this._state.sessionEntry?.id) {
+          killClaudeProcess(this._state.sessionEntry.id);
+        }
         this.post({
           type: "claudeConfigApplied",
           alias: resolved.alias,
@@ -430,9 +458,33 @@ export class BrowserPanel implements PanelHost {
   }
 
   private _loadSession(id: string) {
-    const persisted = loadSession(this._projectRoot, id);
+    // SessionStore.loadSession now throws on corrupt files — catch at the
+    // panel boundary so one bad session doesn't crash the whole server,
+    // but surface loudly so the user can delete-and-recreate. The session
+    // file is still on disk; we just can't present it.
+    let persisted;
+    try {
+      persisted = loadSession(this._projectRoot, id);
+    } catch (e: any) {
+      this._errorSink.post("loadSession", `session ${id} unreadable: ${e?.message ?? e}`);
+      this.post({
+        type: "notice", level: "block",
+        text: `⛔ Session ${id} is corrupt and cannot be loaded: ${e?.message ?? e}`,
+      });
+      return;
+    }
     if (!persisted) return;
-    const chainLinks = listChainLinks(this._projectRoot, id);
+    let chainLinks: number[];
+    try {
+      chainLinks = listChainLinks(this._projectRoot, id);
+    } catch (e: any) {
+      this._errorSink.post("listChainLinks", `session ${id}: ${e?.message ?? e}`);
+      this.post({
+        type: "notice", level: "warn",
+        text: `⚠ Chain links unreadable for session ${id} — treating as zero (${e?.message ?? e})`,
+      });
+      chainLinks = [];
+    }
     const chainIndex = chainLinks.length > 0 ? Math.max(...chainLinks) + 1 : (persisted.chainIndex ?? 0);
     this._state = {
       messages: persisted.messages,
@@ -484,7 +536,15 @@ export class BrowserPanel implements PanelHost {
       try {
         saveSession(this._projectRoot, entry, messages, llamacppHistory, opts);
       } catch (e: any) {
-        console.error(`[HME] saveSession failed: ${e?.message ?? e}`);
+        // Persistence failure = future message loss on server restart.
+        // Console-only logging hid this from LIFESAVER; route through the
+        // error sink so the next turn's banner surfaces it. Also post to
+        // the UI as a notice so the user knows writes are failing.
+        this._errorSink.post("saveSession", `session ${entry.id}: ${e?.message ?? e}`);
+        this.post({
+          type: "notice", level: "warn",
+          text: `⚠ Session save failed — your messages may not survive a restart (${e?.message ?? e})`,
+        });
       }
     });
     return this._persistChain;
@@ -716,6 +776,11 @@ export class BrowserPanel implements PanelHost {
     this._isStreaming = false;
     BrowserPanel.current = undefined;
     this._shim.dispose();
+    if (this._poolReaperTimer) { clearInterval(this._poolReaperTimer); this._poolReaperTimer = undefined; }
+    // Tear down every long-lived `claude` process — otherwise they linger
+    // until parent exit, continuing to hold VRAM/RSS for the idle reaper
+    // interval after the server has shut down its listeners.
+    killAllClaudeProcesses();
     try { this._persistState(); } catch (e) { console.error(`[HME] dispose: _persistState failed: ${(e as any)?.message ?? e}`); }
     // Fire-and-forget the final narrative. Previously we awaited up to 5s —
     // with the narrative callback now capped at 3s per call, there's nothing
@@ -726,5 +791,19 @@ export class BrowserPanel implements PanelHost {
       try { res.end(); } catch { /* ignore */ }
     }
     this._sseClients = [];
+  }
+
+  // Idle-reaper for the claude process pool. A long-lived process hoards
+  // RSS + fds; typical chat sessions sit idle for hours between bursts.
+  // Reaper runs every 5 min, killing processes idle > 30 min.
+  private _poolReaperTimer?: NodeJS.Timeout;
+  public startPoolReaper(): void {
+    if (this._poolReaperTimer) return;
+    this._poolReaperTimer = setInterval(() => {
+      const reaped = reapIdleClaudeProcesses();
+      if (reaped > 0) console.log(`[HME] pool reaper: killed ${reaped} idle claude process(es)`);
+    }, 5 * 60_000);
+    // Don't keep the process alive solely for the reaper.
+    if (this._poolReaperTimer.unref) this._poolReaperTimer.unref();
   }
 }

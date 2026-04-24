@@ -98,10 +98,30 @@ export function streamLlamacpp(
             }
             try {
               const obj = JSON.parse(payload);
-              const choices = obj?.choices ?? [];
-              if (!choices.length) continue;
-              const delta = choices[0]?.delta ?? {};
-              const content: string = delta.content ?? "";
+              // OpenAI-compat SSE contract: every non-[DONE] frame must have
+              // `choices` (an array). Some providers emit a leading empty-
+              // choices frame for role assignment — tolerate that. But a
+              // frame missing `choices` entirely is a contract violation
+              // worth surfacing — don't silently drop tokens.
+              if (!Array.isArray(obj?.choices)) {
+                onChunk(`[contract-drift] frame has no .choices array: ${payload.slice(0, 120)}`, "error");
+                continue;
+              }
+              if (obj.choices.length === 0) continue;
+              const delta = obj.choices[0]?.delta;
+              if (!delta || typeof delta !== "object") {
+                onChunk(`[contract-drift] frame .choices[0].delta missing: ${payload.slice(0, 120)}`, "error");
+                continue;
+              }
+              // `content` can legitimately be absent when the frame carries
+              // only a role assignment or finish_reason. Tolerate those by
+              // continuing; only fail on malformed non-string content.
+              if (delta.content === undefined || delta.content === null) continue;
+              if (typeof delta.content !== "string") {
+                onChunk(`[contract-drift] delta.content not a string: ${JSON.stringify(delta).slice(0, 120)}`, "error");
+                continue;
+              }
+              const content: string = delta.content;
               if (!content) continue;
 
               if (content.includes("<think>")) {
@@ -256,17 +276,27 @@ function llamacppChatOnce(
             catch { reject(new Error(`llama-server HTTP ${res.statusCode}: ${raw.slice(0, 200)}`)); }
             return;
           }
-          try {
-            const parsed = JSON.parse(raw);
-            // Translate OpenAI envelope → llamacpp-ish message shape the caller expects.
-            const choice = parsed?.choices?.[0] ?? {};
-            const msg = choice.message ?? {};
-            if (typeof msg.content === "string") {
-              msg.content = stripThinkTags(msg.content);
-            }
-            resolve({ message: msg, _raw: parsed });
+          let parsed: any;
+          try { parsed = JSON.parse(raw); }
+          catch (e) { reject(new Error(`llama-server parse error: ${raw.slice(0, 200)}`)); return; }
+          // OpenAI envelope contract: choices[0].message must exist. An
+          // empty `{}` fallback would propagate to the agentic loop which
+          // would then see no tool_calls + empty content and think the
+          // model finished — a false termination on contract drift.
+          const choice = parsed?.choices?.[0];
+          if (!choice || typeof choice !== "object") {
+            reject(new Error(`llama-server envelope missing choices[0]: ${raw.slice(0, 200)}`));
+            return;
           }
-          catch (e) { reject(new Error(`llama-server parse error: ${raw.slice(0, 200)}`)); }
+          const msg = choice.message;
+          if (!msg || typeof msg !== "object") {
+            reject(new Error(`llama-server envelope missing choices[0].message: ${raw.slice(0, 200)}`));
+            return;
+          }
+          if (typeof msg.content === "string") {
+            msg.content = stripThinkTags(msg.content);
+          }
+          resolve({ message: msg, _raw: parsed });
         });
         res.on("error", (e) => { if (hardTimer) clearTimeout(hardTimer); reject(e); });
       }
@@ -369,25 +399,44 @@ export function streamLlamacppAgentic(
       }
       if (aborted) return;
 
-      const msg = response?.message ?? {};
-      let toolCalls: any[] = msg.tool_calls ?? [];
+      // llamacppChatOnce now throws on missing message, so this is a real
+      // message object — but the content/tool_calls fields may still be
+      // absent depending on the model's response.
+      const msg = response.message;
+      let toolCalls: any[] = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+      const rawContent: string = typeof msg.content === "string" ? msg.content : "";
 
-      if (toolCalls.length === 0 && (msg.content ?? "").includes("<function=")) {
-        toolCalls = parseXmlFunctionCalls(msg.content ?? "");
+      if (toolCalls.length === 0 && rawContent.includes("<function=")) {
+        toolCalls = parseXmlFunctionCalls(rawContent);
       }
 
       if (toolCalls.length === 0) {
-        const text = stripThinkTags(msg.content ?? "");
-        if (text) onChunk(text, "text");
-        onDone();
+        const text = stripThinkTags(rawContent);
+        if (text) {
+          onChunk(text, "text");
+          onDone();
+          return;
+        }
+        // No tool calls AND no text — the model said nothing at all. Silent
+        // onDone here produces a blank assistant bubble, leaving the user
+        // to wonder what broke. Fail loud so the UI surfaces the empty
+        // response as an error instead.
+        onError(`llama-server returned empty response (no tool_calls, no content) on iteration ${iterations}`);
         return;
       }
 
-      current.push({ role: "assistant", content: msg.content ?? "", tool_calls: toolCalls });
+      current.push({ role: "assistant", content: rawContent, tool_calls: toolCalls });
 
       for (const tc of toolCalls) {
         if (aborted) return;
-        const fnName: string = tc.function?.name ?? "";
+        const fnName: string = typeof tc.function?.name === "string" ? tc.function.name : "";
+        if (!fnName) {
+          // An unnamed tool call loops forever: the model emits a malformed
+          // call, we execute "Unknown tool: ", append result, model emits
+          // another malformed call, etc. Terminate the loop loudly instead.
+          onError(`llama-server emitted tool_call with no function name: ${JSON.stringify(tc).slice(0, 200)}`);
+          return;
+        }
         let args: any = {};
         try {
           args = typeof tc.function?.arguments === "string"

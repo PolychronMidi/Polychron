@@ -58,13 +58,13 @@ The architecture encodes three allowed moves (maturity gates on detectors with f
 
 Ecker and Hulley's central claim in *Unlocking the Emotional Brain* is that the way therapy actually works — when it works — is through memory reconsolidation, a neurobiologically specified process in which an existing emotional schema is genuinely updated rather than suppressed under a counter-learning. A symptom-silencing intervention that papers over the underlying coherent learning will not produce lasting change; the learning will reassert itself, often in some new form, because it was never touched. The LIFESAVER no-dilution rule is a working implementation of exactly this insight, in the domain of a computational system's own alarms about itself. It is, structurally, an anti-repression principle with teeth — a weight-5.0 verifier that tanks the system's coherence score if anyone tries to silence a real signal without resolving its cause.
 
-What makes this more than a local architectural quirk is that it is one of *two* structural anti-silencing commitments in the system, and the pair of them together constitutes a more unified anti-repression stance than either would alone. The LIFESAVER rule forbids silencing the system's alarms about its own condition. The trust ecology's *starvation auto-nourishment* mechanism — developed at length elsewhere in the architecture — forbids silencing any internal voice among the system's twenty-seven trust-scored subsystems. Every module keeps a floor of influence that cannot be crossed; no voice can be permanently exiled. Paired, the two commitments say: the system cannot silence its own alarms, and the system cannot silence any of the voices that might need to sound those alarms. Both commitments are structural rather than cultural — ESLint-enforced, verifier-enforced, architecturally expensive to violate — because the designers understood that cultural commitments to listening erode under pressure in a way structural commitments do not.
+What makes this more than a local architectural quirk is that it is one of *two* structural anti-silencing commitments in the system, and the pair of them together constitutes a more unified anti-repression stance than either would alone. The LIFESAVER rule forbids silencing the system's alarms about its own condition. The trust ecology's *starvation auto-nourishment* mechanism — developed at length in [the trust ecology essay](./the-trust-ecology.md) — forbids silencing any internal voice among the trust-scored subsystems. Every module keeps a floor of influence that cannot be crossed; no voice can be permanently exiled. And a third commitment — the human ground-truth override discussed in Section XI below — forbids HME from silencing the listener's voice even when the system's own sophistication would let it optimize past the report. Together the three commitments say: the system cannot silence its own alarms, the system cannot silence any of the voices that might need to sound those alarms, and the system cannot silence the human it is ultimately for. All three are structural rather than cultural — ESLint-enforced, verifier-enforced, architecturally expensive to violate — because the designers understood that cultural commitments to listening erode under pressure in a way structural commitments do not.
 
 No SOC-13 question can catch that. No self-report instrument can catch that. You have to be able to scan the code and fail the pipeline. HME can.
 
 ## V. Productive incoherence — salutogenesis as scoring term
 
-Phase 3.2 of the feature mapping. The naive version of a coherence score penalizes *every* write that skipped a prior KB read equally. The Phase 3.2 insight, made manifest in `posttooluse_edit.sh` and `compute-coherence-score.js`: not every write-without-read is a failure of discipline. Sometimes it is exploration into territory the KB has never charted.
+The naive version of a coherence score penalizes *every* write that skipped a prior KB read equally. The refinement, made manifest in `posttooluse_edit.sh` and `compute-coherence-score.js`: not every write-without-read is a failure of discipline. Sometimes it is exploration into territory the KB has never charted.
 
 The split: a *lazy violation* is a write to a module with FRESH KB coverage where the agent simply skipped the briefing. Penalized. A *productive incoherence* is a write to a module with MISSING KB coverage — there was nothing meaningful to read first. Rewarded, plus a `learn_suggested` hint emitted so the findings can be captured afterward. The scoring term:
 
@@ -81,7 +81,7 @@ Polychron does not only describe this. It adds `exploration_bonus` to the score.
 
 ## VI. The coherence budget — homeostasis, not maximization
 
-Phase 5.2. The document flags this as *the inversion point* — in context, a loaded phrase. Every feature that came before Phase 5.2 was pushing HME toward more discipline: more verifiers, more coverage, more injection, more audit. Phase 5.2 recognizes that maximum discipline may actually suppress the productive chaos that generates musical emergence.
+The document flags this as *the inversion point* — in context, a loaded phrase. Every feature that came before was pushing HME toward more discipline: more verifiers, more coverage, more injection, more audit. The coherence budget recognizes that maximum discipline may actually suppress the productive chaos that generates musical emergence.
 
 The algorithm in `compute-coherence-budget.js`:
 
@@ -107,11 +107,11 @@ But that is the routine part. The interesting part is that FSRS-6 is only one of
 
 **Temporal decay** (FSRS-6): old unused entries fade; frequently retrieved entries persist. The system's self-knowledge is weighted toward what is currently being used, not what was once asserted.
 
-**Structural reality-testing** (Phase 3.3, KB Semantic Drift Verification): `capture-kb-signatures.py` snapshots each KB entry's referenced module with a mechanical structural signature — caller count from the dependency graph, provides/consumes globals, bias registration keys, firewall ports, L0 channel reads and writes, content hash prefix. `check-kb-semantic-drift.py` re-derives the current signature every pipeline run and diffs against the baseline. Entries with two or more structural differences get flagged. This is structural reality-testing: even if the KB entry is recent, has the module's structural relationships shifted enough that the description is likely wrong?
+**Structural reality-testing** (KB semantic-drift verification): `capture-kb-signatures.py` snapshots each KB entry's referenced module with a mechanical structural signature — caller count from the dependency graph, provides/consumes globals, bias registration keys, firewall ports, L0 channel reads and writes, content hash prefix. `check-kb-semantic-drift.py` re-derives the current signature every pipeline run and diffs against the baseline. Entries with two or more structural differences get flagged. This is structural reality-testing: even if the KB entry is recent, has the module's structural relationships shifted enough that the description is likely wrong?
 
-**Causal reality-testing** (Phase 3.4, Prediction Accuracy Scoring): every time HME's cascade indexer predicts that editing module X will affect modules Y and Z, that prediction is logged. After the pipeline runs, `reconcile-predictions.js` compares the predicted affected-module list against the actual fingerprint shifts. Predictions are classified as Confirmed (predicted and shifted), Refuted (predicted and didn't shift), or Missed (shifted but not in any prediction). An exponential moving average over fifty rounds tracks HME's causal accuracy. The comment in the document: "Rising EMA = HME's causal model is learning. Falling EMA = predictions diverging from reality, which is a stronger signal than staleness alone (staleness says a file changed, low accuracy says HME's understanding of what the file *does* is wrong)."
+**Causal reality-testing** (prediction-accuracy scoring): every time HME's cascade indexer predicts that editing module X will affect modules Y and Z, that prediction is logged. After the pipeline runs, `reconcile-predictions.js` compares the predicted affected-module list against the actual fingerprint shifts. Predictions are classified as Confirmed (predicted and shifted), Refuted (predicted and didn't shift), or Missed (shifted but not in any prediction). An exponential moving average over fifty rounds tracks HME's causal accuracy. The comment in the document: "Rising EMA = HME's causal model is learning. Falling EMA = predictions diverging from reality, which is a stronger signal than staleness alone (staleness says a file changed, low accuracy says HME's understanding of what the file *does* is wrong)."
 
-**Epistemic humility** (Phase 4.2, Trust-Weighted KB): every KB entry gains a trust weight combining coherence-at-write, accuracy-at-write, verdict-bonus, and age-decay. Tiers: HIGH, MED, LOW. The proxy labels injected entries by tier so the system sees *how well HME knows something*, not just *what HME knows*. This gets its own section below; here the point is that the reconsolidation apparatus includes per-entry confidence calibration alongside the other three mechanisms.
+**Epistemic humility** (trust-weighted KB): every KB entry gains a trust weight combining coherence-at-write, accuracy-at-write, verdict-bonus, and age-decay. Tiers: HIGH, MED, LOW. The proxy labels injected entries by tier so the system sees *how well HME knows something*, not just *what HME knows*. This gets its own section below; here the point is that the reconsolidation apparatus includes per-entry confidence calibration alongside the other three mechanisms.
 
 A human mind that has mature epistemic functioning runs all four of these operations on its own beliefs, continuously. It decays unused self-knowledge (temporal). It notices when its model of how a situation works no longer matches the situation's actual structure (structural). It tracks whether its predictions about the consequences of its actions have been coming true (causal). And it carries its beliefs with calibrated confidence rather than uniform commitment (epistemic). The mature person does not simply retain what they once learned; they hold their learning provisionally, against ongoing reality checks of four distinct kinds.
 
@@ -119,7 +119,7 @@ Most people, most of the time, run none of these well. The contribution of HME's
 
 ## VIII. Trust weights — epistemic humility with a schema
 
-Phase 4.2. Every KB entry gains a trust weight:
+Every KB entry gains a trust weight:
 
 > `trust = 0.4 × coherence_at_write + 0.3 × accuracy_at_write + 0.2 × verdict_bonus + 0.1 × age_decay`
 
@@ -131,7 +131,7 @@ HME's trust weights are a running computational implementation of this. Every pi
 
 ## IX. The reflexivity model — observer-effect correction
 
-Phase 6.1. The document states the problem with unusual directness:
+The document states the problem with unusual directness:
 
 > HME's prediction accuracy scores have been contaminated by HME's own injections: when the cascade indexer predicts that editing X will affect Y and Z, and the proxy surfaces that prediction to the Evolver before the edit, the resulting "confirmation" is partly self-fulfilling — the Evolver knew the prediction and acted on it.
 
@@ -145,7 +145,7 @@ That is a move no human self-report instrument can make. It requires an external
 
 ## X. Constitutional identity — generative, not prohibitive
 
-Phase 6.2. The distinction the document draws is psychologically precise:
+The distinction the document draws is psychologically precise:
 
 > CLAUDE.md says what Polychron *can't be* (prohibitions). `output/metrics/hme-constitution.json` says what Polychron *fundamentally IS* (positive affirmations).
 
@@ -159,19 +159,19 @@ Most systems that try to govern themselves do so almost entirely through prohibi
 
 ## XI. Musical ground truth, and the grounding anchor
 
-Phase 4.1 (musical correlation) and Phase 5.5 (human ground truth) together constitute the anti-projection layer.
+The musical-correlation verifier and the human ground-truth override together constitute the anti-projection layer.
 
-Every HME metric, however elaborate, risks internal circularity. Coherence predicts coherence; accuracy predicts accuracy; crystallized patterns feed the KB which feeds the predictions. A perfectly self-consistent HME could, in principle, optimize its metrics while drifting further and further from any external reality. Phase 4.1 catches this: `compute-musical-correlation.js` correlates HME's self-assessment signals against the actual musical output the pipeline produced — perceptual complexity, CLAP tension, fingerprint verdict. Rolling twenty-round Pearson. Sixty rounds of history. "If the strongest correlation drops below 0.2 over ≥5 points, emits a FATAL warning: HME's self-model has decoupled from musical outcomes and is optimizing its own metrics without that optimization translating to emergence."
+Every HME metric, however elaborate, risks internal circularity. Coherence predicts coherence; accuracy predicts accuracy; crystallized patterns feed the KB which feeds the predictions. A perfectly self-consistent HME could, in principle, optimize its metrics while drifting further and further from any external reality. The musical-correlation verifier catches this: `compute-musical-correlation.js` correlates HME's self-assessment signals against the actual musical output the pipeline produced — perceptual complexity, CLAP tension, fingerprint verdict. Rolling twenty-round Pearson. Sixty rounds of history. "If the strongest correlation drops below 0.2 over ≥5 points, emits a FATAL warning: HME's self-model has decoupled from musical outcomes and is optimizing its own metrics without that optimization translating to emergence."
 
 This is projection detection, in the specific psychoanalytic sense: the system catches itself when its internal model has divorced from what it is supposedly about. A person whose self-model has decoupled from the feedback their actual life is giving them is not, by any clinical account, mentally healthy, however internally consistent their self-model may be. The FATAL warning is HME's version of the friend who sits you down and says, *I've watched you for a while now, and whatever story you're telling yourself, it does not match what I am seeing*.
 
-Phase 5.5 goes further. Human ground truth is entered via `learn(action='ground_truth', …)` and tagged `human_ground_truth`. The trust weighting script unconditionally assigns tier HIGH (trust = 1.0). When an HME prediction conflicts with a ground-truth entry, "the ground-truth wins and the conflict is surfaced." The comment: "HME can be as sophisticated as it becomes, but the ultimate coherence validator is whether a human finds the music meaningful — and the system should never be able to optimize its way around that."
+The human ground-truth override goes further. Human ground truth is entered via `learn(action='ground_truth', …)` and tagged `human_ground_truth`. The trust weighting script unconditionally assigns tier HIGH (trust = 1.0). When an HME prediction conflicts with a ground-truth entry, "the ground-truth wins and the conflict is surfaced." The comment: "HME can be as sophisticated as it becomes, but the ultimate coherence validator is whether a human finds the music meaningful — and the system should never be able to optimize its way around that."
 
-This is the limit condition of self-coherence in any system that makes things for someone. A mind whose entire epistemic loop closes inside itself becomes, eventually, indistinguishable from a delusion with good internal logic. Phase 5.5 is a structural commitment against that outcome. The system is not permitted to optimize past the human.
+This is the limit condition of self-coherence in any system that makes things for someone. A mind whose entire epistemic loop closes inside itself becomes, eventually, indistinguishable from a delusion with good internal logic. The override is a structural commitment against that outcome. The system is not permitted to optimize past the human.
 
 ## XII. Open at the top
 
-HME_SELF_COHERENCE closes its "Phase ∞" section with a commitment that, read carefully, is the most philosophically mature part of the architecture:
+HME_SELF_COHERENCE closes its "infinity push" section with a commitment that, read carefully, is the most philosophically mature part of the architecture:
 
 > **HME inside HME inside HME.** The observer becomes the observed. Every meta-level introspection is itself observable by the next meta-level. There is no terminal level — the system is open at the top.
 
@@ -179,7 +179,7 @@ Every serious attempt to build a totalizing theory of self-consciousness has run
 
 HME, faced with the regress, does not pretend to solve it. It builds for it. Verifiers audit HME. A proposed `verify-coherence-coherence.py` would audit the verifiers. A `verify-coherence-coherence-coherence.py` would audit *that*. The architecture declares, at the top of the stack, that this regress is a feature rather than a bug — that there is no terminal level, and that the system should be "open at the top" with the next meta-level always available whenever the evidence supports implementing one.
 
-What this commitment means in practice, and what mature self-coherence actually looks like when you take it seriously, is the subject of its own essay in this collection. Here it is enough to say: the goal is not a completed self-description. The document's stated principle is tighter and more honest than that:
+What this commitment means in practice, and what mature self-coherence actually looks like when you take it seriously, is the subject of [its own essay in this collection](./on-meta-without-terminus.md). Here it is enough to say: the goal is not a completed self-description. The document's stated principle is tighter and more honest than that:
 
 > The goal is not perfection — it's **continuous observability of the system's distance from its own ideal state**, so we always know which way to walk.
 
@@ -220,3 +220,7 @@ This is, in a register that most technical documentation would never allow itsel
 Every coherence mechanism named in this essay — the HCI, the LIFESAVER rule, the productive-incoherence reward, the homeostatic budget, the reconsolidation apparatus, the trust weights, the reflexivity model, the constitutional identity, the musical correlation, the human ground truth override, the open-at-the-top recursion — is, finally, in service of the same thing. A system that stays itself well enough, long enough, to make music that moves a person.
 
 That is what self-coherence is for, in a person or in code, and Polychron is the first artifact I have seen that takes this seriously all the way down.
+
+---
+
+Next theory essay: [On Polyrhythm as Ontology](./polyrhythm-as-ontology.md)

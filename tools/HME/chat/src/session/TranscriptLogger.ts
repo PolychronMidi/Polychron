@@ -28,12 +28,20 @@ export interface TranscriptEntry {
 const MAX_ENTRIES_IN_MEMORY = 500;
 const NARRATIVE_INTERVAL = 3; // Synthesize narrative every N turns
 
+/** Sink for disk-level failures (writes, rotation). Injected by BrowserPanel
+ *  so transcript outages route through hme-errors.log → LIFESAVER banner
+ *  instead of silently vanishing to console.error. */
+export interface TranscriptErrorSink {
+  post(source: string, message: string): void;
+}
+
 export class TranscriptLogger {
   private _logPath: string;
   private _entries: TranscriptEntry[] = [];
   private _turnCount = 0;
   private _sessionId = "";
   private _narrativeCallback?: (entries: TranscriptEntry[]) => Promise<string>;
+  private _errorSink: TranscriptErrorSink | null = null;
   // Write queue + flush flag — appendFileSync is technically blocking, but
   // concurrent log() calls from agent-mode parallel streams or rapid
   // user spam can interleave their effects on the in-memory _entries
@@ -52,19 +60,42 @@ export class TranscriptLogger {
     this._loadExisting();
   }
 
+  /** Wire a sink AFTER construction — BrowserPanel can't pass it in because
+   *  the ErrorSink depends on `logShimError` which depends on the shim port
+   *  which is already initialized by the time the logger exists. */
+  setErrorSink(sink: TranscriptErrorSink): void {
+    this._errorSink = sink;
+  }
+
+  private _reportFailure(source: string, message: string): void {
+    // Always log. Always route to sink if we have one so LIFESAVER picks it up.
+    console.error(`[TranscriptLogger] ${source}: ${message}`);
+    if (this._errorSink) this._errorSink.post(source, message);
+  }
+
   private _loadExisting() {
+    if (!fs.existsSync(this._logPath)) return;
+    let content: string;
     try {
-      if (!fs.existsSync(this._logPath)) return;
-      const content = fs.readFileSync(this._logPath, "utf8");
-      const lines = content.trim().split("\n").filter((l) => l.trim());
-      // Only keep last MAX_ENTRIES_IN_MEMORY
-      const recent = lines.slice(-MAX_ENTRIES_IN_MEMORY);
-      for (const line of recent) {
-        try {
-          this._entries.push(JSON.parse(line));
-        } catch (e) { console.error(`[TranscriptLogger] Malformed JSONL line: ${line.slice(0, 80)}`); }
+      content = fs.readFileSync(this._logPath, "utf8");
+    } catch (e: any) {
+      // Failing to read an existing transcript file is a real failure
+      // (permission revoked, disk error) — don't silently start fresh and
+      // lose access to the user's prior session history.
+      this._reportFailure("_loadExisting", `transcript file unreadable at ${this._logPath}: ${e?.message ?? e}`);
+      throw new Error(`TranscriptLogger._loadExisting: ${e?.message ?? e}`);
+    }
+    const lines = content.trim().split("\n").filter((l) => l.trim());
+    const recent = lines.slice(-MAX_ENTRIES_IN_MEMORY);
+    // Per-line JSON parse failures are tolerated (old entry could be
+    // half-written before a prior crash) but still reported so the user
+    // knows there was real corruption in the log.
+    for (const line of recent) {
+      try { this._entries.push(JSON.parse(line)); }
+      catch (e: any) {
+        this._reportFailure("_loadExisting", `malformed JSONL line (skipped): ${line.slice(0, 80)}`);
       }
-    } catch (e: any) { console.error(`[TranscriptLogger] Failed to load existing transcript: ${e?.message ?? e}`); }
+    }
   }
 
   /** Set the active session ID — stamped on all subsequent entries. */
@@ -96,7 +127,10 @@ export class TranscriptLogger {
       this._writeQueue = [];
       fs.appendFileSync(this._logPath, batch, "utf8");
     } catch (err: any) {
-      console.error(`[TranscriptLogger] Disk write failed: ${err?.message ?? err}`);
+      // Disk-write failures vanishing to console are the classic "why did
+      // my LIFESAVER stop catching things" failure mode — route through
+      // the sink so the next turn's banner surfaces the broken logger.
+      this._reportFailure("_flushQueue", `disk write failed: ${err?.message ?? err}`);
     } finally {
       this._flushing = false;
       // Anything queued during the flush — drain again synchronously.
@@ -293,7 +327,9 @@ export class TranscriptLogger {
           summary: `📋 ${narrative.slice(0, 100)}`,
         });
       }
-    } catch (e: any) { console.error(`[TranscriptLogger] Narrative synthesis failed: ${e?.message ?? e}`); }
+    } catch (e: any) {
+      this._reportFailure("_synthesizeNarrative", `narrative callback threw: ${e?.message ?? e}`);
+    }
   }
 
   /** Rotate log file if it exceeds maxSize bytes. Keeps tail. */
@@ -306,14 +342,18 @@ export class TranscriptLogger {
       const lines = content.trim().split("\n");
       const keepLines = lines.slice(Math.floor(lines.length / 2));
       fs.writeFileSync(this._logPath, keepLines.join("\n") + "\n", "utf8");
-    } catch (e: any) { console.error(`[TranscriptLogger] Rotation failed: ${e?.message ?? e}`); }
+    } catch (e: any) {
+      // Rotation failure leaves the log growing unbounded — surface to the
+      // user-visible error path so it gets noticed before disk fills.
+      this._reportFailure("rotate", `rotation failed: ${e?.message ?? e}`);
+    }
   }
 }
 
 /** No-op TranscriptLogger for use when initialization fails. */
 export function nullTranscript(): TranscriptLogger {
   return {
-    log: () => {}, setSessionId: () => {},
+    log: () => {}, setSessionId: () => {}, setErrorSink: () => {},
     logUser: () => {}, logAssistant: () => {}, logToolCall: () => {},
     logRouteSwitch: () => {}, logValidation: () => {}, logAudit: () => {},
     logSessionStart: () => {}, getRecentContext: () => "", getWindow: () => [],
