@@ -226,18 +226,45 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
 
 # Overdrive budget and timeout tuning.
 #
-# _OVERDRIVE_THINK_BUDGET: extended-thinking reasoning budget. Anthropic
-#   caps this well above 32k; 32k is the sweet spot for thorough analysis
-#   without gratuitous spend.
-# _OVERDRIVE_MAX_TOKENS_SLACK: max_tokens MUST exceed thinking.budget_tokens
-#   (Anthropic API constraint). We set max_tokens = budget + slack so the
-#   model has room to both think and answer.
-# _OVERDRIVE_TIMEOUT: 180s is a balance — long enough for genuine deep
-#   reasoning, short enough that a stuck request doesn't stack with the
-#   cascade wall ceiling (45s) to produce a 345s dead turn.
-_OVERDRIVE_THINK_BUDGET = 32000
+# Defaults are "max effort" — 64k thinking, 240s wall clock — because
+# that's what OVERDRIVE_MODE exists for. Callers who want true
+# ceiling-level reasoning (up to 128k budget) can bump both knobs in
+# .env without code changes. The two are coupled: Opus generates
+# thinking at ~500 tok/s, so a budget/timeout combo that under-budgets
+# time produces spurious 504/timeout failures mid-thought.
+#
+# Rough timing math for capacity planning:
+#   32k budget → ~64s   → fits well under 180s
+#   64k budget → ~128s  → default; fits under 240s with headroom
+#   96k budget → ~192s  → needs timeout ≥ 240s
+#   128k budget → ~256s → needs timeout ≥ 300s (Anthropic ceiling)
+#
+# Env vars:
+#   OVERDRIVE_THINK_BUDGET  — int, thinking budget in tokens (default 64000)
+#   OVERDRIVE_TIMEOUT       — int, wall-clock seconds per model call (default 240)
+#
+# _OVERDRIVE_MAX_TOKENS_SLACK is a code constant (not env-tunable): Anthropic
+# requires max_tokens > thinking.budget_tokens, so the effective max_tokens
+# is always budget+slack. Slack of 4096 gives the answer itself ~4k headroom
+# beyond the thinking phase, which is plenty for the structured outputs
+# agentic workloads produce.
 _OVERDRIVE_MAX_TOKENS_SLACK = 4096
-_OVERDRIVE_TIMEOUT = 180
+
+
+def _overdrive_think_budget() -> int:
+    from hme_env import ENV as _ENV
+    try:
+        return _ENV.optional_int("OVERDRIVE_THINK_BUDGET", 64000)
+    except Exception:
+        return 64000
+
+
+def _overdrive_timeout() -> int:
+    from hme_env import ENV as _ENV
+    try:
+        return _ENV.optional_int("OVERDRIVE_TIMEOUT", 240)
+    except Exception:
+        return 240
 
 # Source-of-last-answer tracking. synthesis_reasoning.call() writes this
 # on every non-None return. Callers that care (e.g. agent_local.py's
@@ -294,16 +321,22 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
+    # Read env-tunable knobs fresh per call so .env changes take effect
+    # without restarting the worker. The hme_env cache already handles
+    # refresh policy; these helpers are thin wrappers.
+    budget = _overdrive_think_budget()
+    timeout_secs = _overdrive_timeout()
+
     # max_tokens MUST exceed thinking.budget_tokens. Raise the caller's
     # value to budget+slack when it's too low.
-    _floor = _OVERDRIVE_THINK_BUDGET + _OVERDRIVE_MAX_TOKENS_SLACK
+    _floor = budget + _OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
 
     payload = {
         "model": model_id,
         "max_tokens": resolved_max,
         "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
-        "thinking": {"type": "enabled", "budget_tokens": _OVERDRIVE_THINK_BUDGET},
+        "thinking": {"type": "enabled", "budget_tokens": budget},
         "messages": [{"role": "user", "content": prompt}],
     }
     if system:
@@ -318,7 +351,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
                 "anthropic-version": "2023-06-01",
             },
         )
-        with _req.urlopen(request, timeout=_OVERDRIVE_TIMEOUT) as resp:
+        with _req.urlopen(request, timeout=timeout_secs) as resp:
             data = _json.loads(resp.read())
     except _urllib_error.HTTPError as e:
         # 429 = rate limit — try next model in the chain.
