@@ -73,6 +73,8 @@ async function _startChild(spec) {
         lastHealthy: Date.now(),
         healthy: true,
         gaveUp: false,
+        degradedSince: null,
+        termSent: false,
       });
       emit({ event: 'child_adopted', child: spec.name });
       return;
@@ -88,6 +90,8 @@ async function _startChild(spec) {
     lastHealthy: 0,
     healthy: false,
     gaveUp: false,
+    degradedSince: null,
+    termSent: false,
   });
   emit({ event: 'child_started', child: spec.name, pid: proc.pid });
 }
@@ -199,11 +203,37 @@ async function _healthLoop() {
     state.lastHealthy = healthy ? Date.now() : state.lastHealthy;
 
     if (!healthy && state.healthy) {
-      // Was healthy, now isn't — log degradation
+      // Was healthy, now isn't — log degradation + mark degradation start.
       console.warn(`[supervisor] ${spec.name} health degraded`);
       emit({ event: 'child_unhealthy', child: spec.name });
+      state.degradedSince = Date.now();
     }
     state.healthy = healthy;
+    if (healthy) {
+      state.degradedSince = null;
+    } else if (state.degradedSince) {
+      // Escalate: a process that's alive but unresponsive for HANG_KILL_MS
+      // is GIL-saturated / deadlocked. The default probe loop only marks
+      // unhealthy and waits — which means a stuck worker stays stuck
+      // forever (observed 48 min of 99.9% CPU on a single thread with
+      // all HTTP handlers starved). Kill SIGTERM so the exit path fires
+      // and the next loop spawn gets a fresh process. Phase-B SIGKILL
+      // follows if SIGTERM doesn't take the process down.
+      const HANG_KILL_MS = spec.hangKillMs || 60_000;
+      const HANG_FORCE_MS = HANG_KILL_MS * 2;
+      const degradedFor = Date.now() - state.degradedSince;
+      if (degradedFor >= HANG_FORCE_MS && state.proc) {
+        console.error(`[supervisor] ${spec.name} hung ${Math.round(degradedFor/1000)}s — SIGKILL`);
+        emit({ event: 'child_force_killed', child: spec.name, degradedMs: degradedFor });
+        try { process.kill(state.proc.pid, 'SIGKILL'); } catch (_e) { /* exit handler clears state */ }
+        state.degradedSince = null;
+      } else if (degradedFor >= HANG_KILL_MS && !state.termSent && state.proc) {
+        console.error(`[supervisor] ${spec.name} hung ${Math.round(degradedFor/1000)}s — SIGTERM`);
+        emit({ event: 'child_hang_killed', child: spec.name, degradedMs: degradedFor });
+        try { process.kill(state.proc.pid, 'SIGTERM'); } catch (_e) { /* exit handler clears state */ }
+        state.termSent = true;
+      }
+    }
   }
 }
 
