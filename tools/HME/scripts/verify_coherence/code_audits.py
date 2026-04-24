@@ -171,6 +171,40 @@ class ShellHookAuditVerifier(Verifier):
                        detail[:20])
 
 
+class InterControllerCoherenceVerifier(Verifier):
+    """L∞∞∞ — observes the observation apparatus. Delegates to
+    scripts/audit-intercontroller-coherence.py which scans per-controller
+    per-axis effects and surfaces pairs working at cross-purposes
+    (cancellation). Silent no-data is PASS — no false alarms while the
+    snapshot pipeline hasn't populated effect fields yet."""
+    name = "intercontroller-coherence"
+    category = "code"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-intercontroller-coherence.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        if payload.get("status") == "no_data":
+            return _result(PASS, 1.0, "no controller-effect data yet (fresh setup)")
+        cancelling = payload.get("cancelling_pairs", [])
+        if not cancelling:
+            return _result(PASS, 1.0, f"{payload.get('controllers_observed')} controllers, no cancellation detected")
+        top = cancelling[0]
+        detail = [f"{'/'.join(p['controllers'])} score={p['cancellation_score']}" for p in cancelling[:5]]
+        # Cancellation isn't a FAIL — it's signal. Controllers may legitimately
+        # oppose on some axes. Score accumulates as more pairs oppose.
+        score = max(0.5, 1.0 - 0.1 * len(cancelling))
+        return _result(PASS, score,
+                       f"{len(cancelling)} controller pair(s) with mutual cancellation; top={top['cancellation_score']}",
+                       detail)
+
+
 class ClaudeSettingsJsonVerifier(Verifier):
     """Validates ~/.claude/settings.json parses as JSON + every hook command
     path resolves. Catches the exact bug class that silently disabled every

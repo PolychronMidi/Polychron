@@ -17,6 +17,7 @@
     "bash_enrichment.js",
     "web_enrichment.js",
     "nexus_tracking.js",
+    "context_budget.js",
     "activity_log.js",
     "mcp_fail_scan.js",
     "lifesaver_inject.js",
