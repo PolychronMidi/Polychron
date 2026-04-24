@@ -28,7 +28,10 @@ const composerCtx = {
    * @returns {string|null} family name or null for default weighted random
    */
   selectPhraseFamily({ availableFamilies }) {
-    if (!Array.isArray(availableFamilies) || availableFamilies.length === 0) return null;
+    if (!Array.isArray(availableFamilies)) {
+      throw new Error('main.selectPhraseFamily: availableFamilies must be an array');
+    }
+    if (availableFamilies.length === 0) return null;
     const phase = mainBootstrap.requireNonEmptyString('conductorState.sectionPhase', conductorState.getField('sectionPhase'));
 
     // Phase-based family affinity - centrally tunable via MAIN_LOOP_CONTROLS.phraseFamilyBias.phaseAffinity

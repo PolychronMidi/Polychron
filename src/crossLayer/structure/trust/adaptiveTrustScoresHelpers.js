@@ -218,7 +218,7 @@ adaptiveTrustScoresHelpers = (() => {
     }
 
     let trustHotspotPressure = 0;
-    const trustCouplingPressures = (pipelineCouplingManager.getCouplingPressures()) || {};
+    const trustCouplingPressures = pipelineCouplingManager.getCouplingPressures();
     {
       const trustPairs = ['density-trust', 'flicker-trust', 'tension-trust', 'entropy-trust'];
       let maxTrustCorrelation = 0;

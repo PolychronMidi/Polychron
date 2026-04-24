@@ -1,6 +1,9 @@
 // controllerConfig.js -- Loads externalized meta-controller constants from
-// metrics/controller-config.json. Controllers read their section at boot.
-// Falls back to hardcoded defaults if file is missing or malformed.
+// output/metrics/controller-config.json (a pipeline-run artifact). Controllers
+// read their section at boot; each call passes its own per-key fallback.
+// Missing file -> empty config (first-run or fresh-clone case; callers supply
+// defaults). Malformed JSON -> throw (corruption is not a graceful-degradation
+// case per CLAUDE.md P2).
 
 controllerConfig = (() => {
   const _fs = require('fs');

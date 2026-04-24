@@ -1188,18 +1188,23 @@ def _coherence_report() -> str:
         headline = f"**N/A** — score unavailable ({window_events} events in window)"
         if null_reason:
             headline += f"\nReason: {null_reason}"
+    # Display labels use *_score (higher=better, 100=perfect) so the "penalty"
+    # word doesn't conflict with the header. Underlying JSON keys are kept as
+    # *_penalty for backward-compat with downstream parsers.
+    _v_count = comps.get('violation_detail', {}).get('count', 0)
+    _v_saturated = " — SATURATED, >=10 violations indistinguishable" if _v_count >= 10 else ""
     lines = [
         "# Round Coherence Score",
         "",
         headline,
         "",
         "## Components  (100 = perfect; lower is worse)",
-        f"  read_coverage      {_pct(comps.get('read_coverage'))}   "
+        f"  read_coverage   {_pct(comps.get('read_coverage'))}   "
         f"({comps.get('read_coverage_detail', {}).get('writes_with_prior_read', 0)}"
         f"/{comps.get('read_coverage_detail', {}).get('total_writes', 0)} writes had prior HME read)",
-        f"  violation_penalty  {_pct(comps.get('violation_penalty'))}   "
-        f"({comps.get('violation_detail', {}).get('count', 0)} boundary violations this round)",
-        f"  staleness_penalty  {_pct(comps.get('staleness_penalty'))}   "
+        f"  boundary_score  {_pct(comps.get('violation_penalty'))}   "
+        f"({_v_count} boundary violations this round{_v_saturated})",
+        f"  kb_freshness    {_pct(comps.get('staleness_penalty'))}   "
         f"({comps.get('staleness_detail', {}).get('touches_on_stale_or_missing', 0)}"
         f"/{comps.get('staleness_detail', {}).get('touches_with_index_info', 0)} writes touched stale/missing-KB modules)",
     ]
