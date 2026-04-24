@@ -5,19 +5,21 @@ Sister of early_stop.py. early_stop is *gated* on an open-ended user prompt
 ("do all", "anything missing", etc.) — it catches the historical pattern
 where the agent enumerates work and then stops in response to those prompts.
 
-This detector is *unconditional*: ANY final assistant text that ends with an
-explicit "remaining items / not fixed / TBD / noted" list is flagged,
-regardless of how the user phrased the request. Born from the failure where
-the user asked an open-ended question, the agent produced ten fixes, then
-closed with `## Remaining non-ecstatic tools (noted, not yet fixed)` and
-five bullets — early_stop's enumeration list missed those exact phrasings.
+This detector is *unconditional*: ANY final assistant text that punts work
+with a deferral phrase — substring OR structural — gets flagged.
 
-Trigger: assistant's FINAL text contains BOTH:
-  (a) any DEFERRAL phrase (e.g. "noted, not yet fixed", "TBD",
-      "remaining tools", "not yet implemented"), AND
-  (b) an enumerated bullet list (3+ markdown bullets `- ` or `* ` after the
-      deferral phrase) — proves the deferral wasn't a passing mention but
-      a literal hand-off of work.
+Trigger: assistant's FINAL text contains a deferral signal from *either*:
+  (a) DEFERRAL_PHRASES — exact substring match, or
+  (b) DEFERRAL_REGEXES — structural patterns like "Remaining <X> gap/work",
+      "still haven't fix...", bold-header "## Backlog", "worth another pass",
+      etc. (catches phrasings the substring list misses).
+AND either:
+  (x) ≥1 list marker (bullet or numbered) follows the deferral — even one
+      is a literal handoff; the pre-patch threshold of 3+ let single-item
+      punts slip through, which was the exact evasion motivating this patch,
+      or
+  (y) the deferral is in the last 40% of the text (≥200 chars total) —
+      closing-summary handoffs don't need bullets to count as a punt.
 
 Usage: exhaust_check.py <transcript_path>
 Output: "exhaust_violation" or "ok"
@@ -72,10 +74,106 @@ DEFERRAL_PHRASES = (
     "needs follow-up",
     "for next session",
     "future work:",
+    # Added after the "flagging for the backlog" evasion slipped through:
+    # the user asked for all fixes; agent punted two items with these phrasings.
+    "flagging for the backlog",
+    "flag for the backlog",
+    "flag for backlog",
+    "for the backlog",
+    "add to the backlog",
+    "rather than attempting now",
+    "rather than attempt now",
+    "not attempting now",
+    "not attempting here",
+    "worth a separate",
+    "separate follow-up",
+    "separate followup",
+    "worth a follow-up",
+    "worth an i/",        # e.g. "worth an i/status follow-up"
+    "worth an hme",
+    "non-trivial change",
+    "non-trivial; flagging",
+    "out of scope for this",
+    "outside this session",
+    "outside the scope of this",
+    "another session",
+    "next session could",
+    "leaving for the backlog",
+    "leaving for later",
+    "leaving to later",
+    "parking this",
+    "parked for later",
+    "skip for now",
+    "skipping for now",
+    "defer for now",
+    "deferring for now",
+    "won't fix this round",
+    "won't fix this session",
+    "didn't fix this round",
+    "didn't fix this session",
+    "didn't fix in this",
+    "not fix in this session",
+    "left undone",
+    "left unfinished",
+    "not covered here",
+    "not covered in this session",
+    "scope creep",
+    "separate investigation",
+    "a separate pass",
+    "a later pass",
+    "not this turn",
+    "another turn",
 )
 
-# A run of 3+ bullet lines = a literal enumeration handed off.
+# Regex-based deferral catchers — patterns that carry a handoff even when the
+# specific wording escapes the substring list above.
+#   - "Remaining Part A gap"/"Remaining X work"/"Remaining Y fix" etc.
+#   - "Still [word] for"/"Still [word] to"
+#   - Bold-header sections named "Remaining" / "Deferred" / "Backlog" /
+#     "Follow-up" / "Known gaps" / "Future" / "TODO"
+DEFERRAL_REGEXES = (
+    re.compile(
+        r"\bremaining\b[^\n]{0,60}?\b("
+        r"gap|item|work|issue|bug|task|piece|thing|fix|tool|edit|change|"
+        r"finding|opportunit|investigation|cleanup|todo|chore|debt|followup|follow-up"
+        r")s?\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(still|not yet|haven'?t|didn'?t|won'?t|can'?t)\b[^\n]{0,40}?"
+        r"\b(fix|address|implement|handle|cover|tackle|complete|finish|land|ship|do)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"^\s*#{1,6}\s*(remaining|deferred|backlog|follow-?up|future|known gaps?|"
+        r"todo|punt|next session|later|out of scope|outstanding)\b",
+        re.IGNORECASE | re.MULTILINE,
+    ),
+    re.compile(
+        r"\*\*\s*(remaining|deferred|backlog|follow-?up|future|known gaps?|"
+        r"todo|punt|next session|later|out of scope|outstanding)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bworth\s+(a|an|another|more)\b[^\n]{0,40}?"
+        r"\b(pass|review|look|investigation|run|follow-?up|round|session)\b",
+        re.IGNORECASE,
+    ),
+)
+
+# A bullet line. The count threshold is intentionally low: even a single
+# deferred item is a handoff. The *original* detector required 3+ bullets as
+# "proof of enumeration"; in practice that gated the check wide open for
+# one- or two-item punts (the exact pattern this detector was born to catch).
 _BULLET_LINE = re.compile(r"^\s*[-*•]\s+\S", re.MULTILINE)
+# Any list-ish marker after the deferral — bullets, numbered items, OR
+# bold-header paragraphs like "**Remaining X:** ..." which are structurally
+# equivalent to a bullet in a closing-summary handoff. A one-line punt does
+# NOT need markdown list syntax to count.
+_ANY_HANDOFF_MARKER = re.compile(
+    r"^\s*(?:[-*•]\s+\S|\d+[.)]\s+\S|\*\*[A-Z][^*]*\*\*\s*[:—\-])",
+    re.MULTILINE,
+)
 
 
 def _is_assistant(event: dict) -> bool:
@@ -139,8 +237,7 @@ def main() -> int:
 
     text_l = text.lower()
 
-    # Find any deferral phrase. Record the EARLIEST position so we can
-    # check whether bullets follow it (proving enumeration of deferred work).
+    # Phase 1: substring phrase list.
     matched_phrase = None
     matched_pos = -1
     for phrase in DEFERRAL_PHRASES:
@@ -148,23 +245,69 @@ def main() -> int:
         if idx != -1 and (matched_pos == -1 or idx < matched_pos):
             matched_phrase = phrase
             matched_pos = idx
-    if matched_phrase is None:
+
+    # Phase 2: regex patterns catch the structural cases the phrase list
+    # misses (e.g. "Remaining Part A gap I didn't fix" — the word between
+    # "Remaining" and "gap" defeats substring matching).
+    regex_match_label = None
+    regex_match_pos = -1
+    for pat in DEFERRAL_REGEXES:
+        m = pat.search(text)
+        if m is None:
+            continue
+        if regex_match_pos == -1 or m.start() < regex_match_pos:
+            regex_match_label = f"regex:{pat.pattern[:40]}…"
+            regex_match_pos = m.start()
+
+    # Take the earliest of the two signals as the effective deferral point.
+    # If neither fires, nothing to flag.
+    candidates = [
+        (matched_pos, matched_phrase) if matched_pos != -1 else None,
+        (regex_match_pos, regex_match_label) if regex_match_pos != -1 else None,
+    ]
+    candidates = [c for c in candidates if c is not None]
+    if not candidates:
         _emit_stats("ok", "no_deferral_phrase")
         print("ok")
         return 0
+    candidates.sort(key=lambda c: c[0])
+    deferral_pos, deferral_label = candidates[0]
 
-    # Count bullet lines AFTER the first deferral phrase. 3+ = real
-    # enumeration; <3 = passing mention worth letting through.
-    after = text[matched_pos:]
+    # Position check: a deferral appearing in the *closing* portion of the
+    # text is almost certainly a handoff-summary, even without a bullet list.
+    # Two overlapping heuristics:
+    #   (a) last 40% of text (was 60% → tightened to 60% prefix / 40% suffix),
+    #   (b) within the last 400 chars regardless of ratio — catches "closing
+    #       paragraph" handoffs in shorter messages where 40% would exclude.
+    # Mid-text passing mentions ("previously TBD but I just fixed it") need
+    # to survive BOTH checks to escape, which requires them to appear in the
+    # first 60% AND more than 400 chars from the end.
+    text_len = len(text)
+    in_closing = text_len > 200 and (
+        deferral_pos >= int(text_len * 0.60)
+        or (text_len - deferral_pos) <= 400
+    )
+
+    # Count ANY handoff markers after the deferral point. Bullets (`- `,
+    # `* `) or numbered items (`1.`). Even one is enough to prove a literal
+    # enumerated punt — the old 3+ threshold made single-item deferrals
+    # invisible, which was the exact evasion that motivated this patch.
+    after = text[deferral_pos:]
     bullet_count = sum(1 for _ in _BULLET_LINE.finditer(after))
-    if bullet_count < 3:
-        _emit_stats("ok", f"deferral={matched_phrase!r} but only {bullet_count} bullets after it")
-        print("ok")
+    handoff_count = sum(1 for _ in _ANY_HANDOFF_MARKER.finditer(after))
+
+    if handoff_count >= 1 or in_closing:
+        reason = (
+            f"deferral={deferral_label!r} bullets_after={bullet_count} "
+            f"handoff_markers={handoff_count} in_closing={in_closing} "
+            f"pos={deferral_pos}/{text_len}"
+        )
+        _emit_stats("exhaust_violation", reason)
+        print("exhaust_violation")
         return 0
 
-    _emit_stats("exhaust_violation",
-                f"deferral={matched_phrase!r} bullets_after={bullet_count}")
-    print("exhaust_violation")
+    _emit_stats("ok", f"deferral={deferral_label!r} but no handoff markers and not in closing")
+    print("ok")
     return 0
 
 
