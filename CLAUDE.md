@@ -99,3 +99,5 @@ All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`
 - Per-run diagnostics → `output/metrics/conductor-map.md`, `output/metrics/crosslayer-map.md`, `output/metrics/narrative-digest.md`, `output/metrics/trace-replay.json`, `output/metrics/runtime-snapshots.json`, `output/metrics/feedback-graph.html`
 - Cross-run state → `output/metrics/adaptive-state.json`
 - Feedback loop topology → [output/metrics/feedback_graph.json](../metrics/feedback_graph.json)
+- Doc-drift on counted architectural claims → `python3 tools/HME/scripts/verify-numeric-drift.py` (surfaced via the `numeric-claim-drift` HCI verifier; catches stale "N hypermeta controllers" / "K verifiers" / "M feedback loops" claims across every `.md` when the code count shifts)
+- Core-principles survey of `src/` → `python3 scripts/audit-core-principles.py` (surfaced via the `core-principles-audit` HCI verifier; per-subsystem LOC, manager coverage, WARN/CRITICAL oversize files)

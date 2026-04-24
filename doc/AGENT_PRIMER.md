@@ -1,6 +1,14 @@
 # Agent Primer
 
-Self-evolving algorithmic composition. 482 JS files produce MIDI → WAV → neural analysis. HME (6 MCP tools) is the evolutionary nervous system. The music and HME co-evolve: improving one improves the other.
+Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MIDI → WAV → neural analysis. HME (six MCP tools, exposed through the `i/` wrappers) is the evolutionary nervous system. The music and HME co-evolve: improving one improves the other.
+
+**Where this primer sits in the agent's context surface.** Three documents share the load, and they are not redundant:
+
+- [CLAUDE.md](../CLAUDE.md) — the **rules**. Load order, firewalls, hypermeta-first discipline, hard rules. Loaded into every prompt. Authoritative.
+- This primer — the **behavior**. What you do in your first session, in what order, with what redirects. Injected once per session by `pretooluse_hme_primer.sh` on your first HME tool call.
+- [HME.md](./HME.md) — the **reference**. Full HME narrative, tool surface, Phase 1-6 subsystem detail. Read on demand when the primer points you at something specific.
+
+If you see a rule claim here that contradicts CLAUDE.md, CLAUDE.md wins — this primer should not be restating rules, only describing behavior.
 
 ## How the walkthrough works
 
@@ -10,7 +18,7 @@ Every new session starts in onboarding state `boot`. The chain decider — livin
 - Make one tool call per step. Prerequisites run silently and prepend their output to the result.
 - When a hook blocks you with "call X instead," X is the next correct move. No retry dance — just call X and the state advances.
 - While editing composition code, also watch HME itself. Any stale KB entry, wrong constraint, missing hook coverage, broken enforcement — note it, report it at step 7 in your `learn()` content under an `## HME observations` section.
-- **LIFESAVER is meant to be painful.** If a LIFESAVER alert fires, do not add a cooldown/throttle/dedup to silence it. Either fix the condition (so it stops firing naturally) or fix the detector (so it correctly distinguishes real from false). Dampening alerts is a structural violation caught by the `LifesaverIntegrityVerifier` at weight 5.0.
+- **LIFESAVER is meant to be painful.** If a LIFESAVER alert fires, do not add a cooldown/throttle/dedup to silence it. Either fix the condition (so it stops firing naturally) or fix the detector (so it correctly distinguishes real from false). Dampening alerts is a structural violation caught by the `LifesaverIntegrityVerifier` at weight 5.0. Full specification including the calibration-vs-dampening distinction and allowed/forbidden moves: [doc/LIFESAVER.md](./LIFESAVER.md).
 - **No psychopathic polling.** When waiting for a long-running background task, do NOT repeatedly `tail`/`wc`/`cat` its output, `nvidia-smi`, or `ps | grep`. The background task fires a completion notification automatically. Do parallel work (unrelated to the running task) until then. The `pretooluse_bash.sh` hook blocks the 3rd polling-style bash call in a turn.
 
 ## The loop (one session, one evolution)
@@ -28,6 +36,8 @@ Every new session starts in onboarding state `boot`. The chain decider — livin
 ```
 
 You never call `read(mode='before')` explicitly — the briefing is woven into every Edit on a `/src/` file automatically by the pretooluse hook. Each step either advances state automatically or gets blocked with a one-line redirect telling you the exact next call. If a call gets denied, the reason is the lesson.
+
+**If you lose the thread mid-session**, run `i/status mode=all` — it reports the current onboarding state, which step is in progress, what the rolling metrics look like, and what the most recent pipeline verdict was. From that output the correct next call is almost always obvious. `i/status mode=hme` is the narrower version when you only need the onboarding state.
 
 ## Other HME tools (use when needed)
 
@@ -62,33 +72,13 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 - **Cross-session persistence.** Open items from the previous session surface at `SessionStart` with a diff view. Completed items live in the store history until `clear` is called.
 - **Live mermaid graph.** The store writes a live rendering to [output/metrics/todo-graph.md](../metrics/todo-graph.md) on every change. Use this to see the work tree as a diagram.
 
-## Guardrails
+## Rules and boundaries — authoritative source
 
-**Load order** (strict): `utils → conductor → rhythm → time → composers → fx → crossLayer → writer → play`
+[CLAUDE.md](../CLAUDE.md) is loaded in every prompt and is the single source of truth for coding rules, load order, architectural firewalls, hypermeta-first discipline, and hard rules (binaural range, `tmp/run.lock` untouchable, plan-abandonment discipline, etc.). This primer does not restate those — read CLAUDE.md and treat its rules as always-on constraints. The handful of onboarding-critical rules the walkthrough section above lists (LIFESAVER no-dilution, no psychopathic polling, one tool call per step) are the ones this primer surfaces because they are mostly relevant *during the first-session walkthrough itself*.
 
-**Firewalls** (ESLint-enforced):
-- conductor cannot write crossLayer state (read-only via `conductorSignalBridge`)
-- crossLayer cannot register with conductor (only local `playProb`/`stutterProb` mods)
-- inter-module communication via L0 channels only (`L0_CHANNELS.xxx` constants, never bare strings)
-- coupling matrix reads only inside `src/conductor/signal/balancing/`, `meta/`, profiler, diagnostics
+## Phase 1-6 HME infrastructure
 
-**Ownership:** 19 meta-controllers own all coupling constants. Never hand-tune what a controller manages. `check-hypermeta-jurisdiction.js` enforces across 4 phases. Modify controller logic instead.
-
-**New feedback loops:** register with `feedbackRegistry` + declare in `output/metrics/feedback_graph.json`.
-
-## Hard Rules
-
-- **Binaural 8-12Hz only.** Never experiment with frequency. `setBinaural` from `grandFinale` post-loop ONLY.
-- **Never remove `tmp/run.lock`.** Pipeline running or abandoned — never your problem to delete.
-- **Never abandon a plan mid-execution.** Finish the atomic unit before pivoting.
-- **Fail fast.** `validator.create('ModuleName')` for all checks. No `|| 0`, no silent returns.
-- **Globals via `require()` side-effects** in `index.js` files. Never `global.`/`globalThis.`.
-- **Comments terse.** One-line inline where logic is not self-evident. No essays.
-- **Auto-commit** after verified STABLE/EVOLVED runs. Never commit DRIFTED/FAILED.
-
-## Phase 1-6 HME infrastructure (landed 2026-04-15)
-
-30 features across 6 phases. All wired into `main-pipeline.js` POST_COMPOSITION — every `npm run main` refreshes them. Surfaced through new `status(mode=...)` branches. You don't need to remember the internals; just the per-round workflow below and which mode answers which question.
+A set of post-composition instrumentation features — musical correlation, coherence budget, trajectory, prediction accuracy, trust weights, crystallization, constitution, and related — all wired into `main-pipeline.js` POST_COMPOSITION and refreshed by every `npm run main`. Surfaced through the `status(mode=...)` branches. You don't need to remember the internals; just the per-round workflow below and which mode answers which question. For the full subsystem narrative, see [HME.md](./HME.md).
 
 ### Per-round workflow when the user reports a listening verdict
 
@@ -104,7 +94,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
    Normal KB calibration anchor.
 
 3. python3 tools/HME/activity/emit.py --event=round_complete \
-       --session=R96 --verdict=STABLE
+       --session=RNN --verdict=STABLE
    CRITICAL: your edits before the user ran the pipeline are still in
    the activity window. The coherence score will report 0 until you
    emit round_complete to close that window. Do this BEFORE rebuilding
@@ -128,7 +118,7 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 
 
 | Question | Mode |
-
+| --- | --- |
 | Did the pipeline produce good music? | `music_truth` (hme_coherence vs perceptual correlation) |
 | Is coherence in the sweet spot? | `budget` (homeostatic band, state BELOW/OPTIMAL/ABOVE) |
 | Is the music evolving or plateauing? | `trajectory` (GROWING/PLATEAU/DECLINING over N rounds) |
@@ -151,17 +141,19 @@ Native `TodoWrite` works as usual. The HME layer adds the following transparentl
 | Ground-truth entries recorded? | `ground_truth` |
 | Multi-agent inter-role coherence (if split)? | `multi_agent` |
 
-### History depth requirements (as of R96 landing)
+### History depth requirements
 
-Most derived metrics need history to become meaningful:
+Most derived metrics need rolling history to become meaningful. Until the threshold is met, the metric reports an explicit not-ready state rather than a misleadingly confident value.
 
-| metric | needs | current | gap |
--
-| trajectory verdict | ≥5 rounds | 3 | 2 more rounds |
-| coherence budget derived band | ≥8 rounds | 3 | 5 more (uses prior [0.55, 0.85] until then) |
-| prediction-accuracy EMA | ≥10 rounds + cascade calls logged | 0 | invoke `trace(target, mode='impact')` to seed |
-| crystallizer patterns | ≥3 members × ≥3 rounds | ✓ 19 promoted | done |
-| musical-correlation r | ≥3 aligned pairs | borderline | 1-2 more rounds |
+| Metric | Threshold | Until then |
+| --- | --- | --- |
+| trajectory verdict | ≥5 rounds | status returns `INSUFFICIENT` |
+| coherence budget derived band | ≥8 rounds | uses prior `[0.55, 0.85]` |
+| prediction-accuracy EMA | ≥10 rounds with cascade calls logged | seed via `trace(target, mode='impact')` |
+| crystallizer patterns | ≥3 members × ≥3 rounds | none promoted until threshold |
+| musical-correlation *r* | ≥3 aligned pairs | correlation not reported |
+
+Exact "current" counts drift every round; query `status(mode='trajectory')` or `status(mode='budget')` to see where the rolling window sits right now rather than treating any number in this table as live.
 
 **DO NOT edit `src/` while accumulating the baseline.** Keep composition frozen for 5-8 runs so Phase 4-6 metrics calibrate on a stable codebase. After that, every evolution has a real signal on whether it moved the system inside/outside the productive coherence band.
 
@@ -171,9 +163,12 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 
 ## Reference (consult as needed)
 
-- [doc/HME_ONBOARDING_FLOW.md](./HME_ONBOARDING_FLOW.md) — state machine spec (read this if the chain surprises you)
-- [CLAUDE.md](../CLAUDE.md) — complete rule set, loaded every prompt
-- [doc/ARCHITECTURE.md](./ARCHITECTURE.md) — beat lifecycle, signal flow, L1/L2 layer isolation
-- [doc/HME.md](./HME.md) — HME internals + Phase 1-6 per-subsystem narrative
-- [doc/hme-discoveries.md](./hme-discoveries.md) — human-curated universal principles promoted from HME's generalization drafts
+- [CLAUDE.md](../CLAUDE.md) — authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
+- [doc/HME_ONBOARDING_FLOW.md](./HME_ONBOARDING_FLOW.md) — state machine spec. Read this if the chain surprises you.
+- [doc/HME.md](./HME.md) — HME internals, tool surface, Phase 1-6 per-subsystem narrative.
+- [doc/ARCHITECTURE.md](./ARCHITECTURE.md) — beat lifecycle, signal flow, L1/L2 layer isolation.
+- [doc/hme-discoveries.md](./hme-discoveries.md) — human-curated universal principles promoted from HME's generalization drafts.
+- [doc/theory/](./theory/) — long-form arguments for the architecture's commitments. Read when the *why* behind a rule is needed.
+- `python3 tools/HME/scripts/verify-numeric-drift.py` — audit counted claims ("N hypermeta controllers" / "K verifiers" / etc.) across all markdown against live code counts. Fires via the `numeric-claim-drift` HCI verifier every pipeline run.
+- `python3 scripts/audit-core-principles.py` — survey `src/` against the five core principles. Fires via the `core-principles-audit` HCI verifier every pipeline run. Critical violations (files >400 LOC, subsystems without `index.js`) drop HCI; 200-line warnings are informational.
 - Calibration anchors live in KB (`i/learn query=…`). The historical `output/metrics/journal.md` is a retired archive.

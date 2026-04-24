@@ -10,41 +10,13 @@ rm -f "${PROJECT_ROOT:-}/tmp/hme-turn-edits.txt" 2>/dev/null || true
 
 _signal_emit turn_start userpromptsubmit turn '{}'
 
-# Auto-commit snapshot
-# Commit any uncommitted changes before Claude processes the message.
-# Timestamps only — no description. Runs unconditionally; pipeline state
-# does not gate commits. Mid-pipeline file states get committed at
-# whatever bytes are on disk; the next autocommit captures the final
-# state. One extra "in-progress" commit is the cost; persistent
-# uncommitted work during long pipeline runs is the bug we're avoiding.
-# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to stdin.cwd /
-# $(pwd) — tool cwd may be a subtree and git -C would commit against the wrong
-# root. If PROJECT_ROOT is invalid, skip.
-_AC_PROJECT="${PROJECT_ROOT:-}"
-if [ -n "$_AC_PROJECT" ] && [ -d "$_AC_PROJECT/.git" ] && [ -d "$_AC_PROJECT/src" ]; then
-  _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
-  mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
-  git -C "$_AC_PROJECT" add -A >"$_GIT_ERR" 2>&1
-  # "nothing to commit" on a clean tree is expected; any other error is surfaced.
-  # Capture BOTH stdout and stderr (>FILE 2>&1) — git writes "nothing to commit"
-  # to stdout, not stderr, so a stderr-only redirect leaves an empty err file
-  # and the grep below misclassifies clean-tree as failure.
-  if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet >"$_GIT_ERR" 2>&1; then
-    if ! grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
-      # R46 LIFESAVER FIX: autocommit failures previously wrote only to
-      # stderr (dropped by _proxy_bridge) and to tmp/hme-autocommit.err
-      # (not monitored). LIFESAVER never saw them. Route the same failure
-      # to hme-errors.log so the next userpromptsubmit LIFESAVER scan
-      # surfaces it as a decision-blocking alert.
-      _AC_ERR_SUMMARY=$(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')
-      _AC_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-      echo "[$_AC_TS] [autocommit] userpromptsubmit git commit failed: $_AC_ERR_SUMMARY" >> "$_AC_PROJECT/log/hme-errors.log"
-      echo "WARNING: userpromptsubmit auto-commit failed — see $_GIT_ERR" >&2
-    fi
-  else
-    rm -f "$_GIT_ERR" 2>/dev/null
-  fi
-fi
+# Auto-commit snapshot (fail-fast-hardened — see _autocommit.sh).
+# The helper records failures to four independent channels and owns the
+# sticky fail flag + attempt counter that survives hook restarts. We must
+# NOT die on its return code; the LIFESAVER scan below and the
+# AutocommitHealthVerifier will surface any failure.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
+_ac_do_commit userpromptsubmit.sh || true
 
 # Reset the psychopathic-polling counter at turn start — the counter
 # accumulates within a turn and would never reset without this. The
@@ -76,6 +48,48 @@ with open('$_CORRECTION_FILE', 'a') as f:
     f.write(json.dumps(entry) + '\n')
 " "$PROMPT" 2>/dev/null || true
   fi
+fi
+
+# LIFESAVER — autocommit fail-flag check (runs FIRST, unconditional).
+# The general error-log scan below picks up NEW lines in hme-errors.log,
+# but the autocommit can silently die in ways that leave the log
+# unchanged — .env unloadable, log/ dir missing, _proxy_bridge dropping
+# stderr. The sticky fail-flag from _autocommit.sh is independent of all
+# of those: it lives under tmp/ which is always writable, and its mere
+# existence means the last autocommit failed and has NOT yet been
+# resolved. Fire a banner every UserPromptSubmit until the flag clears.
+# _AC_FAIL_FLAG is defined by _autocommit.sh (sourced above during the
+# autocommit call). Fall back to its canonical path if unset for any
+# reason (the helper's path derivation cannot fail, but we guard anyway).
+_AC_FLAG_CHECK="${_AC_FAIL_FLAG:-${PROJECT_ROOT}/tmp/hme-autocommit.fail}"
+if [ -f "$_AC_FLAG_CHECK" ]; then
+  _AC_FLAG_BODY=$(cat "$_AC_FLAG_CHECK" 2>/dev/null)
+  _AC_BANNER="🚨 LIFESAVER - AUTOCOMMIT FAILED - FIX BEFORE ANYTHING ELSE
+
+$_AC_FLAG_BODY
+
+The autocommit helper left this flag behind. Last attempt did not
+succeed, which means working-tree changes have NOT been committed.
+Diagnose: check git status in the project root; read log/hme-errors.log;
+inspect tmp/hme-autocommit.err if present; verify .env loaded PROJECT_ROOT.
+Fix the root cause. Do not silence the alert — the flag clears automatically
+on the next successful autocommit. Dampening the detector is a structural
+violation caught by the LifesaverIntegrityVerifier at weight 5.0."
+  echo "" >&2
+  echo "$_AC_BANNER" >&2
+  python3 -c "
+import json, sys
+banner = sys.stdin.read()
+payload = {
+    'hookSpecificOutput': {
+        'hookEventName': 'UserPromptSubmit',
+        'additionalContext': banner
+    },
+    'decision': 'allow',
+    'reason': 'LIFESAVER: autocommit failed; see $_AC_FLAG_CHECK.'
+}
+print(json.dumps(payload))
+" <<< "$_AC_BANNER"
 fi
 
 # LIFESAVER — HME Error Log Monitor

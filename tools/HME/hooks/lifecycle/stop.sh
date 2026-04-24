@@ -22,77 +22,20 @@ if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null || true
 fi
 
-# Auto-commit snapshot
-# Commit any uncommitted changes before lifecycle checks run.
-# Timestamps only — no description. Skipped during pipeline runs (run.lock present).
-# After commit, the nexus EDIT backlog triggers review(mode='forget') automatically.
-#
-# PROJECT_ROOT comes from .env via _safety.sh. Never fall back to stdin.cwd /
-# $(pwd) — the tool's working directory can be any subtree (e.g. tools/HME/chat)
-# and git -C <subtree> would commit to whatever .git it walks up to. If
-# PROJECT_ROOT is invalid, skip loudly instead of fabricating a target.
-_AC_PROJECT="${PROJECT_ROOT:-}"
-# R46 LIFESAVER FIX: autocommit failures previously wrote only to stderr
-# (dropped by _proxy_bridge) and to tmp/hme-autocommit.err (not monitored).
-# LIFESAVER never saw them. Three distinct failure paths below each route
-# to hme-errors.log so the next userpromptsubmit LIFESAVER scan surfaces
-# them as decision-blocking alerts.
-_ac_log_error() {
-  if [ -n "${_AC_PROJECT:-}" ] && [ -d "$_AC_PROJECT/log" ]; then
-    local _ts; _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    echo "[$_ts] [autocommit:stop] $*" >> "$_AC_PROJECT/log/hme-errors.log"
-  fi
-}
-if [ -z "$_AC_PROJECT" ] || [ ! -d "$_AC_PROJECT/.git" ] || [ ! -d "$_AC_PROJECT/src" ]; then
-  _ac_log_error "PROJECT_ROOT unset or invalid ('$_AC_PROJECT') — uncommitted work at turn end"
-  echo "WARNING: stop.sh auto-commit skipped — PROJECT_ROOT unset or invalid ('$_AC_PROJECT')" >&2
-else
-  # Autocommit runs unconditionally; pipeline state (run.lock) does not
-  # gate commits. Mid-pipeline files commit at whatever bytes are on disk
-  # at this instant; subsequent autocommits capture final states.
-  # Capture git errors to a log so failures are visible, not hidden behind 2>/dev/null
-  _GIT_ERR="$_AC_PROJECT/tmp/hme-autocommit.err"
-  mkdir -p "$(dirname "$_GIT_ERR")" 2>/dev/null
-  # Serialize against concurrent stop.sh invocations and pipeline git ops.
-  # Observed: rapid Stop events fire overlapping hooks that race on .git/index.lock,
-  # producing "Another git process seems to be running" errors every turn.
-  # flock on an advisory lockfile (not .git/index.lock itself) bounds waiting
-  # to 30s — after that the caller proceeds and reports the actual git error.
-  _AC_LOCK="$_AC_PROJECT/tmp/hme-autocommit.lock"
-  exec 9>"$_AC_LOCK"
-  flock -w 30 9 || _ac_log_error "autocommit flock timeout (30s) — proceeding anyway"
-  if ! git -C "$_AC_PROJECT" add -A 2>"$_GIT_ERR"; then
-    _ac_log_error "git add failed: $(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')"
-    echo "WARNING: stop.sh auto-commit: git add failed — see $_GIT_ERR" >&2
-  elif ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)" --quiet >"$_GIT_ERR" 2>&1; then
-    # Retry once — transient lock or index contention
-    sleep 1
-    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-    if ! git -C "$_AC_PROJECT" commit -m "$(date +%Y-%m-%dT%H:%M:%S)-retry" --quiet >"$_GIT_ERR" 2>&1; then
-      # Check if the failure is "nothing to commit" (expected when no changes staged —
-      # a concurrent stop.sh already captured the diff). Clear the stale flag.
-      if grep -q "nothing to commit" "$_GIT_ERR" 2>/dev/null; then
-        _nexus_clear_type COMMIT_FAILED
-        rm -f "$_GIT_ERR" 2>/dev/null
-      else
-        _nexus_mark COMMIT_FAILED "auto-commit failed twice — uncommitted changes may exist (see $_GIT_ERR)"
-        _ac_log_error "commit failed twice — uncommitted changes exist: $(head -c 300 "$_GIT_ERR" 2>/dev/null | tr '\n' ' ')"
-        echo "WARNING: auto-commit failed twice. Changes NOT committed. Check git status + $_GIT_ERR." >&2
-      fi
-    else
-      # Retry succeeded after first-attempt failure — clear any stale flag.
-      _nexus_clear_type COMMIT_FAILED
-      rm -f "$_GIT_ERR" 2>/dev/null
-    fi
-  else
-    # Clear any stale commit-failed flag from a previous failed attempt
-    source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
-    _nexus_clear_type COMMIT_FAILED
-    # Clean up empty err log on success
-    rm -f "$_GIT_ERR" 2>/dev/null
-  fi
-  # Release the autocommit flock so the next Stop invocation can proceed.
-  exec 9>&-
+# Auto-commit snapshot (fail-fast-hardened — see _autocommit.sh).
+# The helper owns all bookkeeping: four-channel failure logging, sticky
+# fail flag, attempt counter, derivation of the project root independent
+# of $PROJECT_ROOT. We must NOT die on its return code; remaining
+# lifecycle work still needs to run and the helper has already recorded
+# the failure to every channel it could reach.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_autocommit.sh"
+_ac_do_commit stop.sh || true
+# Clear the nexus COMMIT_FAILED marker on success. The helper already
+# wrote one on failure (see _autocommit.sh); this side clears on success
+# so a recovered state doesn't keep nagging.
+if [ ! -f "$_AC_FAIL_FLAG" ]; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+  _nexus_clear_type COMMIT_FAILED 2>/dev/null || true
 fi
 
 # LIFESAVER — mid-turn error detection
