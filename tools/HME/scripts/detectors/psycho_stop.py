@@ -24,7 +24,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import (  # noqa: E402
-    iter_tool_uses, load_turn_events, is_assistant, event_content,
+    iter_tool_uses, load_turn_events, load_full_turn_with_user,
+    is_assistant, is_user, event_content,
 )
 
 BG_KEYWORDS = (
@@ -122,6 +123,93 @@ PERMISSION_ASK_PHRASES = (
 
 def _is_assistant_event(event: dict) -> bool:
     return is_assistant(event)
+
+
+# Ideation markers — when the user's last message asks for ideas /
+# opinions / comparisons / explanations rather than giving a directive,
+# Pattern C ("survey-and-ask") becomes a legitimate collaborative
+# response, not deferral. Without this gate, psycho_stop fires on every
+# "what would you suggest" → "here are options, which?" turn — exactly
+# the wrong incentive for a brainstorming exchange.
+_IDEATION_MARKERS = (
+    # Question stems that signal "tell me / show me, don't do"
+    "what would", "what could", "what should we", "what do you think",
+    "what are some", "what's worth", "what does this", "what does it",
+    "what if we", "what if i", "how else", "how could we",
+    "any ideas", "any suggestions", "any thoughts",
+    "thoughts?", "ideas?", "suggestions?", "opinions?",
+    # Comparison / explanation prompts
+    "describe ", "explain ", "compare ", "how does ", "why does ",
+    # Capability / design discussions
+    "worth integrating", "worth adopting", "could integrate",
+    "drive you to", "frenzied ecstasy",
+)
+
+# Directive markers — when these appear (even alongside a question),
+# the user IS giving an action directive and survey-and-ask is defer.
+_DIRECTIVE_MARKERS = (
+    "fix ", "fix the", "fix this", "fix that",
+    " do all", "do all ", "do it", "do that",
+    "implement ", "build ", "ship ", "wire ", "write ", "create ",
+    "make sure ", "ensure ", "verify that ",
+    "audit ", "refactor ", "rename ", "remove ", "delete ",
+    "execute ", "run ", "apply ", "commit ",
+)
+
+
+def _last_user_text(events: list) -> str:
+    """Concatenate all text blocks from the LAST user event in the turn."""
+    last_user = None
+    for ev in events:
+        if is_user(ev):
+            last_user = ev
+    if last_user is None:
+        return ""
+    parts = []
+    for block in event_content(last_user):
+        if isinstance(block, dict) and block.get("type") == "text":
+            t = block.get("text", "")
+            if isinstance(t, str):
+                parts.append(t)
+        elif isinstance(block, str):
+            parts.append(block)
+    return "\n".join(parts)
+
+
+def _is_ideation_prompt(user_text: str) -> bool:
+    """User's last message reads as a request for ideas / opinions /
+    explanations rather than an action directive. When this returns True,
+    Pattern C ("survey-and-ask") should be suppressed: the agent
+    legitimately surveys options and asks which to prioritize.
+
+    Logic: directive markers DOMINATE — if the user said "fix it" they
+    want action, even if they also asked "what's the best approach?".
+    Otherwise, ideation markers gate the suppression. Hook-injected
+    system reminders are stripped before classification (they often
+    contain directive language unrelated to the user's actual request).
+    """
+    if not user_text:
+        return False
+    # Strip system-reminder envelopes — those carry hook language, not
+    # user intent. The actual user prompt sits between/around them.
+    import re as _re
+    cleaned = _re.sub(
+        r"<system-reminder>.*?</system-reminder>",
+        " ",
+        user_text,
+        flags=_re.DOTALL,
+    )
+    low = cleaned.lower()
+    # Directive markers win — agent must act regardless of any "what's best"
+    # framing the user appended.
+    for marker in _DIRECTIVE_MARKERS:
+        if marker in low:
+            return False
+    # No directive — does the prompt read as ideation?
+    for marker in _IDEATION_MARKERS:
+        if marker in low:
+            return True
+    return False
 
 
 def _last_assistant_text(events: list) -> str:
@@ -274,13 +362,26 @@ def main() -> int:
                     return 0
 
         # Pattern C: survey-and-ask — soliciting permission after surveying
-        # rather than executing. Same "no tool calls after final text" guard.
-        for phrase in PERMISSION_ASK_PHRASES:
-            if phrase in final_text:
-                if not _has_tool_call_after_last_text(events):
-                    _emit_stats("psycho", f"pattern_C: ask_phrase={phrase!r}")
-                    print("psycho")
-                    return 0
+        # rather than executing. Same "no tool calls after final text" guard,
+        # PLUS an ideation gate: when the user's last message asks for ideas
+        # / opinions / comparisons (no directive verbs), survey-and-ask is a
+        # legitimate collaborative response, not defer. Without this gate,
+        # psycho_stop fired on "what would you suggest?" → "here are
+        # options, which?" turns — pushing the agent to implement when the
+        # user only wanted brainstorming. The triggering user message lives
+        # OUTSIDE `events` (load_turn_events strips it as the boundary), so
+        # we pull it via the with-user variant for the gate decision only.
+        events_with_user = load_full_turn_with_user(sys.argv[1])
+        user_text = _last_user_text(events_with_user)
+        if _is_ideation_prompt(user_text):
+            _emit_stats("ok", "ideation_prompt_skipped_pattern_C")
+        else:
+            for phrase in PERMISSION_ASK_PHRASES:
+                if phrase in final_text:
+                    if not _has_tool_call_after_last_text(events):
+                        _emit_stats("psycho", f"pattern_C: ask_phrase={phrase!r}")
+                        print("psycho")
+                        return 0
 
     _emit_stats("ok", "")
     print("ok")
