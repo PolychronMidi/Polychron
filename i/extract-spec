@@ -21,4 +21,10 @@ if [ ! -f "$_SPEC_PY" ]; then
   echo "i/extract-spec: $_SPEC_PY missing" >&2
   exit 2
 fi
+# Activity emission so spec extractions surface in coverage telemetry.
+if [ -x "$_REPO_ROOT/tools/HME/activity/emit.py" ]; then
+  _ARGS_JOINED=$(printf '%s ' "$@" | sed 's/ $//')
+  PROJECT_ROOT="$_REPO_ROOT" python3 "$_REPO_ROOT/tools/HME/activity/emit.py" \
+    --event=extract_spec_invoked --args="$_ARGS_JOINED" >/dev/null &
+fi
 PROJECT_ROOT="$_REPO_ROOT" exec python3 "$_SPEC_PY" "$@"
