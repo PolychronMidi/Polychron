@@ -134,6 +134,18 @@ const ctx = {
     }
     toolResult.content = text;
   },
+  // Replace the tool_result content entirely. For when a middleware has
+  // authoritative real output (e.g. background-task resolution) and the
+  // native stub should be dropped, not appended-to. Preserves the outer
+  // shape (string-vs-array) so downstream consumers see the form they
+  // expect.
+  replaceResult: (toolResult, text) => {
+    if (Array.isArray(toolResult.content)) {
+      toolResult.content = [{ type: 'text', text }];
+    } else {
+      toolResult.content = text;
+    }
+  },
 };
 
 //  Registration
