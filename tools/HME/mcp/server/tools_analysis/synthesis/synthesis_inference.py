@@ -420,3 +420,91 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
 
 
+def extract_diff_symbols(diff_context: str, hunk_context: str = "",
+                         changed_files: str = "") -> set[str]:
+    """Use the arbiter to enumerate identifiers that ACTUALLY appear in a
+    diff, producing an authoritative whitelist for downstream grounding.
+
+    Motivation: the reasoning model occasionally confabulates plausible-but-
+    absent symbols inside a correctly-cited file (e.g. claims a Python
+    script "uses pathlib.Path.glob()" when it actually uses os.walk, or
+    calls `output_tokens` an "environment variable" when it's a JSON field).
+    A path-citation filter alone can't catch these because the FILE path
+    is real. Solving this by (a) asking the arbiter for a constrained
+    extraction pass first, then (b) passing the whitelist into the reasoning
+    prompt as a grounding constraint AND into the post-synthesis filter.
+
+    Returns a lowercased set of candidate identifiers (function names,
+    variable names, quoted strings, backticked tokens). Conservative: if
+    the arbiter is unavailable or the output is unparseable, falls back to
+    regex-based extraction over the raw diff so the downstream filter still
+    has something to check against.
+    """
+    source = "\n".join([changed_files or "", diff_context or "", hunk_context or ""])
+    if not source.strip():
+        return set()
+
+    # Regex-based fallback — always produced, merged with arbiter output.
+    # Catches most identifiers without a model round-trip, so the filter
+    # keeps working even if the daemon is down.
+    fallback: set[str] = set()
+    import re as _re_sx
+    # identifiers (snake_case, camelCase, dotted.access), 3+ chars
+    for tok in _re_sx.findall(r'\b[A-Za-z_][A-Za-z0-9_.]{2,}\b', source):
+        fallback.add(tok.lower())
+    # quoted strings (single, double, backtick)
+    for tok in _re_sx.findall(r'"([^"\n]{2,80})"|\'([^\'\n]{2,80})\'|`([^`\n]{2,80})`', source):
+        for grp in tok:
+            if grp:
+                fallback.add(grp.strip().lower())
+    # file paths (a/b/c.ext)
+    for tok in _re_sx.findall(r'[\w./-]+\.(?:js|ts|py|md|json|sh|yml|yaml|html)', source):
+        fallback.add(tok.lower())
+
+    # Arbiter pass — augment with model-extracted symbols. Bounded prompt
+    # size + temperature=0 keeps latency low and output deterministic.
+    prompt = (
+        "Extract every identifier that APPEARS VERBATIM in the following "
+        "diff. Include: function names, variable names, file paths, quoted "
+        "string literals, backticked tokens, config keys. One per line, no "
+        "bullets, no prose, no explanation. Do NOT invent or normalize — "
+        "only tokens you can point to in the diff text. Cap output at 200 "
+        "lines.\n\nDIFF:\n" + source[:6000]
+    )
+    payload = {
+        "model": _ARBITER_MODEL, "prompt": prompt, "stream": False,
+        "keep_alive": _KEEP_ALIVE,
+        "options": {"temperature": 0.0, "num_predict": 600, "num_ctx": _NUM_CTX_4B},
+    }
+    arbiter_ctx = None
+    try:
+        from .synthesis_warm import _warm_ctx, _warm_ctx_kb_ver
+        arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
+        if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
+            payload["context"] = arbiter_ctx
+    except Exception as _wmerr:
+        logging.getLogger("HME").debug(
+            f"extract_diff_symbols: warm-ctx lookup skipped: {type(_wmerr).__name__}: {_wmerr}"
+        )
+    _cb = _get_circuit_breaker(_ARBITER_MODEL)
+    if not _cb.allow():
+        return fallback
+    daemon_result = _daemon_generate(payload, wall_timeout=8)
+    if not daemon_result:
+        return fallback
+    from .synthesis_config import clean_model_output
+    raw = clean_model_output(daemon_result.get("response", "")) or ""
+    _cb.record_success()
+    extracted: set[str] = set()
+    for ln in raw.splitlines():
+        tok = ln.strip().strip("-*• \t`\"'")
+        if not tok or len(tok) < 3:
+            continue
+        # Reject obvious prose-like outputs — tokens with spaces are almost
+        # always fabrications ("a Python script", "the diff").
+        if " " in tok and len(tok) > 40:
+            continue
+        extracted.add(tok.lower())
+    return fallback | extracted
+
+
