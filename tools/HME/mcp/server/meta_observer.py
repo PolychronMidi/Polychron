@@ -75,8 +75,11 @@ def start(project_root: str) -> None:
     os.makedirs(os.path.dirname(_ms.heartbeat_file), exist_ok=True)
     os.makedirs(os.path.dirname(_ms.narrative_file), exist_ok=True)
 
-    # Wire shared state into meta_layers BEFORE calling any layer functions
-    meta_layers._ms = _ms
+    # Wire shared state into meta_layers BEFORE calling any layer functions.
+    # Post-R100 split: direct `meta_layers._ms = _ms` only sets the package
+    # attribute; submodule functions read `_shared._ms`. set_ms() forwards
+    # the assignment into _shared so every submodule sees the live value.
+    meta_layers.set_ms(_ms)
 
     gap = meta_layers._detect_observation_gap()
     if gap:

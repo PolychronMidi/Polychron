@@ -50,7 +50,11 @@ const CHILDREN = [
   {
     name: 'llamacpp_daemon',
     cmd: 'python3',
-    args: [path.join(MCP_DIR, 'llamacpp_daemon.py'), '--port', String(LLAMACPP_DAEMON_PORT)],
+    // Post-R98 split: the daemon is a package at mcp/llamacpp_daemon/.
+    // Invoke via -m so Python's import machinery picks up the package;
+    // cwd points at mcp/ so the relative module resolves.
+    cwd: MCP_DIR,
+    args: ['-m', 'llamacpp_daemon', '--port', String(LLAMACPP_DAEMON_PORT)],
     env: mcpEnv,
     healthUrl: `http://127.0.0.1:${LLAMACPP_DAEMON_PORT}/health`,
     startupMs: 5_000,

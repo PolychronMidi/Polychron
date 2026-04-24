@@ -53,7 +53,7 @@ fi
 _PATTERNS=(
   "hme_proxy.js"
   "worker.py"
-  "llamacpp_daemon.py"
+  "llamacpp_daemon"
   "hme-chat"
   "out/server.js"
   "llama-server.*8080"
