@@ -71,6 +71,23 @@ _DATA_SUFFIXES = (
 )
 
 
+# Explicit per-file exemptions from the P5 (≤200 lines) rule. These files
+# are architecturally required to be single-file and bigger than the rule
+# would target — splitting them would create a worse problem than the
+# length.
+#   fullBootstrap.js  — the single entry point orchestrating the boot
+#                       sequence; helpers are declared here so the order
+#                       is read top-to-bottom in one file.
+#   config.js         — conductor configuration surface; extracting
+#                       sections would scatter one coherent map across
+#                       multiple files for no readability gain.
+# Paths are project-relative, same form as the audit's output.
+_P5_EXEMPT = {
+    "src/play/fullBootstrap.js",
+    "src/conductor/config.js",
+}
+
+
 def _is_data_file(path):
     name = os.path.basename(path)
     return name.endswith(_DATA_SUFFIXES)
@@ -182,8 +199,10 @@ def audit_subsystem(subsystem_dir):
     # large ones are still visible to a reader.
     code_sizes = [(p, n) for p, n in sizes if not _is_data_file(p)]
     data_files = [(_rel(p), n) for p, n in sizes if _is_data_file(p)]
-    oversize_warn = [(_rel(p), n) for p, n in code_sizes if _LOC_WARN < n <= _LOC_CRITICAL]
-    oversize_critical = [(_rel(p), n) for p, n in code_sizes if n > _LOC_CRITICAL]
+    oversize_warn = [(_rel(p), n) for p, n in code_sizes
+                     if _LOC_WARN < n <= _LOC_CRITICAL and _rel(p) not in _P5_EXEMPT]
+    oversize_critical = [(_rel(p), n) for p, n in code_sizes
+                         if n > _LOC_CRITICAL and _rel(p) not in _P5_EXEMPT]
 
     index_path = os.path.join(subsystem_dir, "index.js")
     has_index = os.path.isfile(index_path)
