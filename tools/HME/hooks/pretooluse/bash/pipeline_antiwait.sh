@@ -7,8 +7,11 @@ if echo "$TRIMMED_CMD" | grep -qE '^(npm run (main|snapshot)|node lab/run)'; the
     _emit_block "ANTI-WAIT: npm run main must use run_in_background=true. Re-issue this Bash call with run_in_background: true, then CONTINUE with parallel work (HME indexing, doc updates, src/ improvements). Stopping to wait for the pipeline is the antipattern."
     exit 2
   fi
-  # Emit pipeline_start to activity bridge
-  _emit_activity pipeline_start --session="$SESSION_ID"
+  # Emit pipeline_start to activity bridge. Extract session_id from INPUT —
+  # SESSION_ID was previously referenced unset, which under `set -u` would
+  # have crashed the hook at pipeline launch; caught by audit-shell-undefined-vars.
+  _SESSION_ID_PIPE=$(_safe_jq "$INPUT" '.session_id' 'unknown')
+  _emit_activity pipeline_start --session="$_SESSION_ID_PIPE"
   # Block double-backgrounding: run_in_background=true AND & in command = premature exit code 0.
   # The & makes the shell return immediately, firing a false "completed" notification while npm still runs.
   # This is the root cause of check_pipeline polling loops.

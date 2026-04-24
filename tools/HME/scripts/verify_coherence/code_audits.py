@@ -171,6 +171,47 @@ class ShellHookAuditVerifier(Verifier):
                        detail[:20])
 
 
+class ShellUndefinedVarsVerifier(Verifier):
+    """Delegates to scripts/audit-shell-undefined-vars.py, which statically
+    scans tools/HME/hooks/**/*.sh for `$VAR` references that have no
+    matching definition anywhere in scope (the file, any file it sources,
+    or the dispatcher chain that sources it). Catches the exact bug class
+    that silenced auto-completeness-inject for months: `$_AC_PROJECT`
+    referenced in holograph.sh had never been defined anywhere, and under
+    `set -u` in _safety.sh, stop.sh crashed before the completeness gate
+    ever ran. ShellSyntaxVerifier only checks grammar; this verifier
+    catches grammar-valid code that explodes at runtime."""
+    name = "shell-undefined-vars"
+    category = "code"
+    weight = 2.0  # any violation is silent-disable class, rank high
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-shell-undefined-vars.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        count = payload.get("violation_count", 0)
+        files_scanned = payload.get("files_scanned", 0)
+        detail = []
+        for fileinfo in payload.get("files", []):
+            for finding in fileinfo.get("findings", []):
+                detail.append(
+                    f"{fileinfo['file']}:{finding['line']} ${finding['var']} — {finding['snippet'][:100]}"
+                )
+        if count == 0:
+            return _result(PASS, 1.0, f"no undefined-variable references across {files_scanned} hook(s)")
+        # Each undefined ref drops score by 0.25; floor at 0. Any violation
+        # is FAIL — even a single one can silently kill an entire hook chain.
+        score = max(0.0, 1.0 - 0.25 * count)
+        return _result(FAIL, score,
+                       f"{count} undefined-variable reference(s) — silent set-u crash risk",
+                       detail[:20])
+
+
 class PythonSyntaxVerifier(Verifier):
     name = "python-syntax"
     category = "code"
