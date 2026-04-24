@@ -24,7 +24,11 @@ _provider = OpenAIProvider(
         ("T7", ENV.optional("NVIDIA_MODEL_T7", "qwen/qwen3.5-397b-a17b")),
         ("T8", ENV.optional("NVIDIA_MODEL_T8", "meta/llama-3.3-70b-instruct")),
     ],
-    timeout=90,
+    # NVIDIA thinking models (deepseek-v3.2 notably) legitimately take
+    # 30-90s to return a reasoning pass. 90s was cutting it close; 120s
+    # gives headroom. The outer HME_REASONING_WALL_SECS is the final
+    # deadline, so bumping per-call can't break anything downstream.
+    timeout=120,
     default_daily=200_000,
     default_rpm=10,
 )

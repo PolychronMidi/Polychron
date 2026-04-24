@@ -488,6 +488,62 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     return (None, False)
 
 
+def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int) -> tuple[str, str] | None:
+    """OVERDRIVE_VIA_SUBAGENT path — queue the prompt for Claude to dispatch
+    via its own Agent tool rather than hitting api.anthropic.com directly.
+
+    Writes prompt + system to tmp/hme-subagent-queue/<uuid>.json. Returns a
+    sentinel string that appears in the reasoning output; the proxy
+    middleware `subagent_bridge.js` scans for the sentinel in outgoing
+    API requests and injects an instruction into the system message telling
+    Claude to invoke Agent(...) with the queued prompt. Agent runs inside
+    Claude Code's session-budget path, NOT the per-minute raw-API RPM
+    bucket that OVERDRIVE's direct calls hit. The user confirmed session
+    budget has headroom when RPM is exhausted.
+
+    Returns (sentinel, 'overdrive/subagent') — the sentinel IS the
+    synthesis result from HME's perspective; Claude will fulfill it on
+    its next turn."""
+    import json as _json
+    import os as _os
+    import uuid as _uuid
+    from server import context as _ctx
+    req_id = _uuid.uuid4().hex[:12]
+    queue_dir = _os.path.join(_ctx.PROJECT_ROOT, "tmp", "hme-subagent-queue")
+    _os.makedirs(queue_dir, exist_ok=True)
+    payload = {
+        "req_id": req_id,
+        "prompt": prompt,
+        "system": system,
+        "max_tokens": max_tokens,
+        "created_at": _time_mod.time() if '_time_mod' in globals() else None,
+    }
+    try:
+        import time as _t
+        payload["created_at"] = _t.time()
+    except Exception as _err:
+        logger.debug(f"subagent queue: ts stamp skipped: {type(_err).__name__}: {_err}")
+    prompt_file = _os.path.join(queue_dir, f"{req_id}.json")
+    try:
+        with open(prompt_file, "w") as f:
+            _json.dump(payload, f)
+    except Exception as e:
+        logger.warning(f"OVERDRIVE_VIA_SUBAGENT: queue write failed: {e}")
+        return None
+    # Sentinel format parsed by subagent_bridge.js middleware.
+    sentinel = (
+        f"\n\n[[HME_AGENT_TASK req_id={req_id} "
+        f"prompt_file=tmp/hme-subagent-queue/{req_id}.json]]\n"
+        "HME has queued a reasoning task. The proxy middleware will "
+        "instruct the assistant to dispatch it via the Agent tool on "
+        "the next turn; the Agent result replaces this sentinel as the "
+        "authoritative reasoning output."
+    )
+    logger.info(f"OVERDRIVE_VIA_SUBAGENT: queued req_id={req_id} "
+                f"(prompt={len(prompt)}c, system={len(system)}c)")
+    return (sentinel, "overdrive/subagent")
+
+
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str, str] | None:
     """OVERDRIVE_MODE path — Opus-then-Sonnet chain with max extended thinking.
 
@@ -497,6 +553,10 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
     current model, advances to the next; on any other failure (proxy down,
     timeout, empty content, malformed response), returns None so the caller
     falls through to the free cascade.
+
+    OVERDRIVE_VIA_SUBAGENT=1 short-circuits direct API calls and routes
+    through Claude Code's Agent tool instead (different rate-limit bucket —
+    session budget, not per-minute RPM). See _dispatch_via_subagent.
 
     Returns (text, source_label) on success where source_label is e.g.
     'overdrive/opus' or 'overdrive/sonnet'. Returns None when every model in
@@ -509,6 +569,9 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
     ~/.claude/.credentials.json. Same credential Claude Code's live
     session uses — your subscription covers both paths identically.
     The user configures nothing; auth is ambient."""
+    from hme_env import ENV as _ENV_OD
+    if _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
+        return _dispatch_via_subagent(prompt, system, max_tokens)
     chain = _resolve_overdrive_chain()
     for model_id, source_label in chain:
         result, rate_limited = _try_overdrive_model(model_id, prompt, system, max_tokens)
@@ -534,14 +597,28 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     Returns None only when every ranked slot is exhausted OR the wall-clock
     ceiling is hit — caller falls back to local qwen3-coder:30b-a3b.
 
-    Wall-clock ceiling (HME_REASONING_WALL_SECS, default 45s) protects against
-    cascade pathologies where multiple slots each burn their 60s per-call
-    timeout serially. Without a ceiling, one hung cascade can freeze a worker
-    thread for minutes and every request after it queues up behind the burn.
+    Wall-clock ceiling (HME_REASONING_WALL_SECS, default 300s). Protects
+    against cascade pathologies where multiple slots hang and each burns
+    its per-call timeout serially. INVARIANT: wall_secs must be at least
+    3× the longest per-provider timeout, or the cascade can't actually
+    try multiple providers — we'd time out inside the first provider's
+    thinking pass. NVIDIA's per-call timeout is 120s (thinking models
+    legitimately take 30-90s), so 300s gives 2–3 fair attempts. Raising
+    the default from the legacy 45s after the user reported cascade
+    exhaustion with Anthropic rate-limited: 45s wasn't enough for even
+    one NVIDIA deepseek-v3.2 call to finish.
+
+    HME_REASONING_OFFLINE=1 skips the external cascade entirely and returns
+    None immediately — caller falls straight to local fallback. Useful when
+    Anthropic is having an outage, when rate-limited, or for offline dev.
 
     OVERDRIVE_MODE=1 in .env short-circuits this walk and calls Claude Opus
     with max extended thinking instead. On any failure of the overdrive path
     we fall through to the normal cascade so an API blip doesn't block work.
+    OVERDRIVE_VIA_SUBAGENT=1 additionally routes the Claude calls through a
+    Claude-Code Agent subagent (via proxy's subagent_bridge middleware)
+    instead of hitting api.anthropic.com directly — moves reasoning cost
+    off raw per-minute RPM onto session-budget, which has far more headroom.
     """
     import time as _time
     from hme_env import ENV as _ENV
@@ -549,6 +626,11 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
 
     global _last_source
     _last_source = None  # reset per-call; caller can read last_source() after
+
+    # Offline mode: skip the whole external cascade.
+    if _ENV.optional("HME_REASONING_OFFLINE", "0") == "1":
+        logger.info("reasoning: HME_REASONING_OFFLINE=1 — skipping external cascade")
+        return None
 
     # OVERDRIVE_MODE: spend Anthropic credits for highest-quality output.
     # Single-branch intercept. When OVERDRIVE_MODE is anything other than
@@ -569,7 +651,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.warning(f"reasoning dispatcher: provider load failed: {e}")
         return None
 
-    wall_secs = _ENV.optional_float("HME_REASONING_WALL_SECS", 45.0)
+    wall_secs = _ENV.optional_float("HME_REASONING_WALL_SECS", 300.0)
     deadline = _time.monotonic() + wall_secs
     ranking = _RANKINGS.get(profile, _RANKING_REASONING)
     for provider_key, model in ranking:
