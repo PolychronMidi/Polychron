@@ -286,20 +286,106 @@ def last_source() -> str | None:
     return _last_source
 
 
-# Overdrive model chain. Opus is tried first; on rate-limit (or other
-# model-specific 429s), the call falls over to Sonnet at the same
-# extended-thinking budget rather than straight to the free cascade —
-# Sonnet is still dramatically stronger than the free-tier slots for the
-# agentic workloads overdrive exists to serve. Only when BOTH Anthropic
-# models rate-limit does the caller fall through to the free cascade.
+# Overdrive model chain — env-tunable via OVERDRIVE_CHAIN.
 #
-# Strings kept as a tuple so a future 'haiku' or opus-generation bump is
-# one-line to add. claude-opus-4-7 and claude-sonnet-4-6 are the current
-# generation's dated aliases (bare "opus"/"sonnet" return 404).
-_OVERDRIVE_MODEL_CHAIN = (
-    ("claude-opus-4-7",   "overdrive/opus"),
-    ("claude-sonnet-4-6", "overdrive/sonnet"),
+# Default chain: Opus first (max quality on user's subscription), Sonnet on
+# Opus rate-limit (still Anthropic, still extended thinking). Only when every
+# Anthropic model in the chain rate-limits does the caller fall through to
+# the free cascade. claude-opus-4-7 and claude-sonnet-4-6 are the current-
+# generation dated aliases; bare "opus"/"sonnet" return 404 from the API.
+#
+# Override via .env:
+#   OVERDRIVE_CHAIN=claude-opus-4-7,claude-sonnet-4-6,claude-haiku-4-5-20251001
+# One comma-separated list of model IDs. Source labels are auto-generated
+# from the model name so last_source() reports meaningfully.
+_OVERDRIVE_CHAIN_DEFAULT = (
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
 )
+
+
+def _label_for_model(model_id: str) -> str:
+    """Turn 'claude-opus-4-7' → 'overdrive/opus', 'claude-sonnet-4-6' →
+    'overdrive/sonnet', 'claude-haiku-4-5-20251001' → 'overdrive/haiku'.
+    Falls back to the full model id when the slug isn't recognizable."""
+    for slug in ("opus", "sonnet", "haiku"):
+        if slug in model_id.lower():
+            return f"overdrive/{slug}"
+    return f"overdrive/{model_id}"
+
+
+def _resolve_overdrive_chain() -> tuple[tuple[str, str], ...]:
+    """Read OVERDRIVE_CHAIN from .env if set, else use the default. Returns
+    a tuple of (model_id, source_label) pairs."""
+    from hme_env import ENV as _ENV
+    raw = _ENV.optional("OVERDRIVE_CHAIN", "").strip()
+    models = [m.strip() for m in raw.split(",") if m.strip()] if raw else list(_OVERDRIVE_CHAIN_DEFAULT)
+    return tuple((m, _label_for_model(m)) for m in models)
+
+
+# Circuit-breaker state. When a model rate-limits, record the wall-clock
+# monotonic time at which it should be retried. Subsequent overdrive calls
+# short-circuit that model's slot until the window passes — avoids the
+# N×2 retry tax during sustained rate-limit windows.
+#
+# Cooldown tunable via OVERDRIVE_RATE_LIMIT_COOLDOWN (seconds, default 60).
+# Not thread-safe (module-global dict) — acceptable because the MCP server
+# is single-process and the overdrive path is called serially per request.
+_model_cooldown_until: dict[str, float] = {}
+
+
+def _circuit_cooldown_secs() -> int:
+    from hme_env import ENV as _ENV
+    try:
+        return _ENV.optional_int("OVERDRIVE_RATE_LIMIT_COOLDOWN", 60)
+    except Exception:
+        return 60
+
+
+def _circuit_open(model_id: str) -> bool:
+    """Return True if the model is currently in cooldown (skip it)."""
+    import time as _time
+    deadline = _model_cooldown_until.get(model_id, 0.0)
+    return _time.monotonic() < deadline
+
+
+def _circuit_trip(model_id: str) -> None:
+    """Mark a model as rate-limited; block calls to it for the cooldown window."""
+    import time as _time
+    cooldown = _circuit_cooldown_secs()
+    _model_cooldown_until[model_id] = _time.monotonic() + cooldown
+    logger.info(f"OVERDRIVE circuit: {model_id} cooldown for {cooldown}s")
+
+
+def _emit_overdrive_activity(source_label: str, model_id: str,
+                              budget: int, char_count: int) -> None:
+    """Append an inference_call event to hme-activity.jsonl so overdrive
+    rounds show up in the same per-round analytics as cascade slots.
+    Best-effort: any failure is swallowed — activity logging must never
+    block or fail the inference call."""
+    try:
+        import json as _json
+        import os as _os
+        import time as _time
+        path = _os.environ.get("METRICS_DIR")
+        if not path:
+            root = _os.environ.get("PROJECT_ROOT", "")
+            if not root:
+                return
+            path = _os.path.join(root, "output", "metrics")
+        _os.makedirs(path, exist_ok=True)
+        entry = {
+            "ts": int(_time.time()),
+            "event": "inference_call",
+            "source": source_label,
+            "model": model_id,
+            "thinking_budget": budget,
+            "response_chars": char_count,
+        }
+        with open(_os.path.join(path, "hme-activity.jsonl"), "a") as f:
+            f.write(_json.dumps(entry) + "\n")
+    except Exception as _e:
+        logger.debug(f"overdrive activity emit failed ({type(_e).__name__}: {_e})")
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
@@ -308,8 +394,9 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
     Returns (text_or_None, rate_limited). `rate_limited` is True iff the
     upstream returned HTTP 429 OR the JSON body is an `error` object with
-    type `rate_limit_error` — the caller uses that flag to decide whether
-    to try the next model in the chain or give up on overdrive entirely.
+    type `rate_limit_error` OR the circuit breaker is tripped for this
+    model — the caller uses that flag to decide whether to try the next
+    model in the chain or give up on overdrive entirely.
 
     Non-429 failures (proxy down, timeout, 5xx, malformed JSON, empty
     content) return (None, False) — not worth retrying another model, the
@@ -318,6 +405,13 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     import os as _os
     import urllib.error as _urllib_error
     import urllib.request as _req
+
+    # Circuit breaker: if this model rate-limited recently, short-circuit
+    # without hitting the network. Returns "rate_limited=True" so the
+    # chain advances to the next model immediately.
+    if _circuit_open(model_id):
+        logger.info(f"OVERDRIVE {model_id} in cooldown — skipping")
+        return (None, True)
 
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
@@ -356,13 +450,13 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     except _urllib_error.HTTPError as e:
         # 429 = rate limit — try next model in the chain.
         is_rate = (e.code == 429)
-        # Some proxies return the rate_limit as a 200 with an error body;
-        # we'd catch that below. HTTPError here is a real transport 4xx/5xx.
         try:
             body = e.read().decode(errors="replace")[:200]
         except Exception:
             body = ""
         logger.warning(f"OVERDRIVE {model_id} HTTP {e.code}: {body}")
+        if is_rate:
+            _circuit_trip(model_id)
         return (None, is_rate)
     except Exception as e:
         logger.warning(f"OVERDRIVE {model_id} call failed ({type(e).__name__}: {e})")
@@ -375,6 +469,8 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         err = data.get("error", {}) or {}
         is_rate = err.get("type") == "rate_limit_error"
         logger.warning(f"OVERDRIVE {model_id} error-body: {err.get('type', '?')} — {err.get('message', '?')[:120]}")
+        if is_rate:
+            _circuit_trip(model_id)
         return (None, is_rate)
 
     # Extended-thinking response has alternating `thinking` and `text` blocks.
@@ -386,6 +482,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     result = "\n".join(p for p in text_parts if p)
     if result:
         logger.info(f"OVERDRIVE: {model_id} returned {len(result)}c")
+        _emit_overdrive_activity(_label_for_model(model_id), model_id, budget, len(result))
         return (result, False)
     logger.warning(f"OVERDRIVE {model_id} returned empty content")
     return (None, False)
@@ -412,7 +509,8 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
     ~/.claude/.credentials.json. Same credential Claude Code's live
     session uses — your subscription covers both paths identically.
     The user configures nothing; auth is ambient."""
-    for model_id, source_label in _OVERDRIVE_MODEL_CHAIN:
+    chain = _resolve_overdrive_chain()
+    for model_id, source_label in chain:
         result, rate_limited = _try_overdrive_model(model_id, prompt, system, max_tokens)
         if result:
             return (result, source_label)
@@ -420,8 +518,8 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
             # Non-rate-limit failure — the problem is not model-specific.
             # Don't bother the next model; fall through to cascade.
             return None
-        # Rate-limited: move to the next model in the chain.
-    # Every model in the chain rate-limited.
+        # Rate-limited (or circuit-open): move to the next model in the chain.
+    # Every model in the chain rate-limited or was in cooldown.
     logger.warning("OVERDRIVE: every model in chain rate-limited — falling through to cascade")
     return None
 
