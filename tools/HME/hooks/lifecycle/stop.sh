@@ -27,10 +27,16 @@ INPUT=$(cat)
 # whole chain. Any non-zero exit from the source is logged to hme-errors.log
 # so LIFESAVER surfaces the broken gate next turn — silent fail=1 is gone.
 for _part in _preamble autocommit lifesaver evolver detectors anti_patterns nexus_audit work_checks holograph post_hooks; do
-  set +u
+  # Defence against ALL chain-killing failure modes inherited from _safety.sh:
+  #   set -u → unbound-var crash (the _AC_PROJECT regression that silenced
+  #            auto-completeness for months)
+  #   set -e → non-zero command aborts the whole shell mid-sub-file
+  # A sub-file that INTENDS to terminate the chain still does so via
+  # `exit 0` (shell-level exit bypasses all guards).
+  set +u +e
   source "${_STOP_DIR}/stop/${_part}.sh"
   _rc=$?
-  set -u
+  set -u -e
   if [ "$_rc" -ne 0 ]; then
     _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
     _log="${PROJECT_ROOT:-/tmp}/log/hme-errors.log"
