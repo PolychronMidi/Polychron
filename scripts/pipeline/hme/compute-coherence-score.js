@@ -195,7 +195,28 @@ function main() {
   // Component 2: violation penalty (lazy violations only).
   // productive_incoherence events do NOT count here -- they feed the
   // exploration bonus below.
-  const hookViolations = idx.get('coherence_violation') || [];
+  //
+  // Filter: exclude coherence_violation events on MISSING-KB modules, for the
+  // same reason the staleness probe excludes MISSING (see below). A module
+  // with no KB entry at all is exploratory territory, not a workflow defect;
+  // counting it here would saturate boundary_score whenever the user touches
+  // tooling/config files. STALE or FRESH modules still count -- those are
+  // real "write without prior HME read" events the workflow is designed to
+  // catch. The staleness index is loaded below for Component 3; we
+  // pre-load it here so both components share a single read.
+  const stalenessIdxEarly = loadJson(STALENESS);
+  const _statusByModuleEarly = new Map();
+  if (stalenessIdxEarly && Array.isArray(stalenessIdxEarly.modules)) {
+    for (const m of stalenessIdxEarly.modules) {
+      _statusByModuleEarly.set(m.module, m.status);
+    }
+  }
+  const hookViolationsRaw = idx.get('coherence_violation') || [];
+  const hookViolations = hookViolationsRaw.filter(ev => {
+    if (!ev || !ev.module) return true;
+    const status = _statusByModuleEarly.get(ev.module);
+    return status !== 'MISSING';
+  });
   const violationsFromFile = loadJson(VIOLATIONS);
   const lazyViolationCount = hookViolations.length +
     (violationsFromFile && Array.isArray(violationsFromFile.violations)
