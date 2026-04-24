@@ -22,6 +22,56 @@ _MAX_TRANSCRIPT_MEMORY = 500
 _transcript_entries: list[dict] = []
 _latest_narrative: str = ""
 
+# Append-write bound. Every N appends to a JSONL/log file we check its
+# line count and keep only the tail half if it has exceeded the cap.
+# The sparse sampling (1/_TRIM_CHECK_EVERY) keeps the hot path cheap —
+# O(1) counter increment + rare stat() — while still bounding growth.
+_TRIM_CHECK_EVERY = 200
+_ERRORS_MAX_LINES = 20_000
+_TRANSCRIPT_MAX_LINES = 50_000
+_append_counters: dict[str, int] = {}
+_trim_lock = threading.Lock()
+
+
+def _maybe_trim_append(path: str, max_lines: int) -> None:
+    """Periodically bound an append-only file. Checks size every
+    _TRIM_CHECK_EVERY writes; when line count exceeds max_lines, keeps
+    the tail half. Atomic rename — never leaves a partial file behind."""
+    with _trim_lock:
+        n = _append_counters.get(path, 0) + 1
+        _append_counters[path] = n
+        if n % _TRIM_CHECK_EVERY != 0:
+            return
+    try:
+        with open(path, "rb") as f:
+            # Fast line count via buffered read; avoids loading file fully
+            # into memory for very large logs.
+            total = sum(buf.count(b"\n") for buf in iter(lambda: f.read(65536), b""))
+    except OSError:
+        return
+    if total <= max_lines:
+        return
+    keep = max_lines // 2
+    tmp_path = path + ".trim.tmp"
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as src, \
+             open(tmp_path, "w", encoding="utf-8") as dst:
+            # Stream last `keep` lines via a rolling buffer.
+            buf: list[str] = []
+            for line in src:
+                buf.append(line)
+                if len(buf) > keep:
+                    buf.pop(0)
+            dst.writelines(buf)
+        os.replace(tmp_path, path)
+    except OSError as e:
+        print(f"[HME FAILFAST] append trim for {path} failed: {e}",
+              file=sys.stderr, flush=True)
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
 
 def init_store(project_root: str) -> None:
     """Set paths derived from PROJECT_ROOT. Call once at startup."""
@@ -146,7 +196,8 @@ def _get_transcript(minutes: int = 30, max_entries: int = 50) -> list[dict]:
     """Get recent transcript entries within time window."""
     cutoff = (time.time() - minutes * 60) * 1000  # ms
     with _transcript_lock:
-        filtered = [e for e in _transcript_entries if e.get("ts", 0) >= cutoff]
+        # Every entry has "ts" via _append_transcript's setdefault.
+        filtered = [e for e in _transcript_entries if e["ts"] >= cutoff]
         return filtered[-max_entries:]
 
 
