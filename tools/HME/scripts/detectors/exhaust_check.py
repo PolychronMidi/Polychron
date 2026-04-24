@@ -123,6 +123,41 @@ DEFERRAL_PHRASES = (
     "a later pass",
     "not this turn",
     "another turn",
+    # "Banked / waiting-on-user-action" register. Added after a session where
+    # the agent closed with "Still banked (not actionable right now): supervisor
+    # fix — takes effect on next proxy restart" and "chat-panel fix — next
+    # extension-host reload". Those ARE handoffs, but they wore technical
+    # garb and slipped every deferral pattern above. This register catches
+    # the "I did my part, waiting on you" frame.
+    "still banked",
+    "banked for",
+    "banked until",
+    "takes effect on next",
+    "takes effect when",
+    "will take effect",
+    "on next proxy restart",
+    "on next extension",
+    "on next session",
+    "on next reload",
+    "next extension reload",
+    "next extension-host reload",
+    "requires a restart",
+    "requires restart",
+    "requires reload",
+    "requires a reload",
+    "user-initiated",
+    "user action required",
+    "user action needed",
+    "waiting on a restart",
+    "waiting on reload",
+    "needs a restart",
+    "needs a reload",
+    "only takes effect",
+    "once the proxy restarts",
+    "once chat restarts",
+    "once the user reloads",
+    "when you restart",
+    "when you reload",
 )
 
 # Regex-based deferral catchers — patterns that carry a handoff even when the
@@ -157,6 +192,22 @@ DEFERRAL_REGEXES = (
     re.compile(
         r"\bworth\s+(a|an|another|more)\b[^\n]{0,40}?"
         r"\b(pass|review|look|investigation|run|follow-?up|round|session)\b",
+        re.IGNORECASE,
+    ),
+    # "Takes effect on next …" / "requires a restart" handoffs — the "I did
+    # my part, waiting on you" frame. Structural because the specific
+    # wording varies (next proxy restart / next reload / next session / etc.).
+    re.compile(
+        r"\b(takes|will take)\s+effect\s+(on|when|after)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(requires|needs|waiting\s+on|pending)\s+(a\s+|an\s+)?"
+        r"(restart|reload|user\s+action|session\s+restart|extension\s+(host\s+)?reload)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bonce\s+(you\s+|the\s+)?(restart|reload|proxy|chat|panel|session|user)\b",
         re.IGNORECASE,
     ),
 )
