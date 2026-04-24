@@ -54,7 +54,7 @@ _log_counter = {"n": 0}
 
 
 def _trim_error_log() -> None:
-    """Bound hme-errors.log to _ERROR_LOG_MAX_LINES — keeps tail half when
+    r"""Bound hme-errors.log to _ERROR_LOG_MAX_LINES — keeps tail half when
     exceeded. Called every _ERROR_LOG_TRIM_EVERY appends. Named with the
     _trim_ prefix so workflow_audit's pattern detector recognizes this
     as a legitimate bound (it greps `_trim_\w+`). Mirrors common.bounded_log
