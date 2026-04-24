@@ -154,11 +154,20 @@ if echo "$FILE" | grep -qE '/Polychron/src/' && ! _onb_is_graduated; then
   fi
 fi
 
-# Unbriefed-edit detection: if the Edit target is under an allow-listed
-# source tree and hasn't been BRIEFed yet, emit an activity event
-# (edit_without_brief) that makes this visible without falsifying the
-# coherence metric. Auto-BRIEFing here would defeat the metric's purpose
-# (it measures "did agent read before edit?" — auto-BRIEF on edit lies).
+# Unbriefed-edit detection + auto-brief injection.
+#
+# Prior design observed unbriefed edits (edit_without_brief event) but
+# deliberately did NOT auto-fetch the brief — auto-BRIEFing was thought
+# to defeat the read_coverage metric (which measures "did agent read
+# before edit?"). The split below preserves the metric AND auto-injects:
+#   - read_coverage / _nexus_has BRIEF: still ONLY incremented by an
+#     explicit i/hme-read or equivalent. We do NOT call _brief_add here.
+#   - auto-brief: fires when an unbriefed edit lands on a tracked path,
+#     fetches a short module brief, and injects it as additionalContext
+#     for Claude's next-turn context. Tracked separately as the
+#     auto_brief_injected event (distinct from brief_recorded).
+# Disable: HME_AUTO_BRIEF_ON_EDIT=0
+_AUTO_BRIEF_JSON=""
 if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy|config))/'; then
   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
   _auto_module=$(_extract_module "$FILE")
@@ -171,9 +180,47 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
         --session="$(whoami 2>/dev/null || echo shell)" \
         >/dev/null 2>&1 &
     fi
+    if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ]; then
+      # Fast path: /enrich (~70ms) for KB hits + head of target file for
+      # docstring/imports. Stays under the PreToolUse latency budget that
+      # i/hme-read (15s LLM synthesis) blew. Brief is compact (<2 KB).
+      _kb_hits=$(curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
+        --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
+        "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" 2>/dev/null \
+        | python3 -c "
+import json, sys
+try:
+  d = json.load(sys.stdin)
+  for e in (d.get('kb') or [])[:3]:
+    cat = str(e.get('category','?'))
+    title = str(e.get('title',''))[:120]
+    if title: print(f'  [{cat}] {title}')
+except Exception: pass
+" 2>/dev/null)
+      _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)
+      if [ -n "$_kb_hits" ] || [ -n "$_file_head" ]; then
+        _brief="module: ${_auto_module}"
+        [ -n "$_kb_hits" ] && _brief="${_brief}
+KB:
+${_kb_hits}"
+        [ -n "$_file_head" ] && _brief="${_brief}
+file head:
+${_file_head}"
+        _AUTO_BRIEF_JSON=$(jq -nR --arg b "$_brief" --arg m "$_auto_module" \
+          '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)
+        if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
+          python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
+            --event=auto_brief_injected \
+            --file="$FILE" \
+            --module="$_auto_module" \
+            >/dev/null 2>&1 &
+        fi
+      fi
+    fi
   fi
 fi
 
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
+[ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
 exit 0
