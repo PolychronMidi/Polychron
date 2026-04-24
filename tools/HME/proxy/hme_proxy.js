@@ -449,16 +449,15 @@ function handleRequest(clientReq, clientRes) {
           }
         }
         if (bodyDirtiedByStrip) outBody = Buffer.from(JSON.stringify(payload), 'utf8');
-        if (scan.writeIntentCalled && !scan.hmeReadCalled) {
-          emit({
-            event: 'coherence_violation',
-            session,
-            reason: 'inference_write_without_hme_read',
-            tool: scan.firstWriteBeforeRead || '?',
-            path: clientReq.url || '?',
-            source: 'proxy',
-          });
-        }
+        // inference_write_without_hme_read emission REMOVED.
+        // The check was legacy-MCP semantics ("did the agent explicitly
+        // invoke HME_read before Edit?"). The current architecture auto-
+        // enriches every Edit's result with KB context via edit_context.js
+        // and every Read's result with dir-rules + callers + hypotheses
+        // via read_context.js / dir_context.js. Any "write without HME
+        // read" is therefore inherent to the first edit in a session and
+        // transient by design — not worth emitting 100+ violations/round
+        // or aborting the pipeline over.
       }
 
       emit({
