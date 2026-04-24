@@ -48,12 +48,52 @@ def _load_config() -> dict:
         return json.load(f)
 
 
+_ERROR_LOG_MAX_LINES = 20_000
+_ERROR_LOG_TRIM_EVERY = 200
+_log_counter = {"n": 0}
+
+
+def _trim_error_log() -> None:
+    """Bound hme-errors.log to _ERROR_LOG_MAX_LINES — keeps tail half when
+    exceeded. Called every _ERROR_LOG_TRIM_EVERY appends. Named with the
+    _trim_ prefix so workflow_audit's pattern detector recognizes this
+    as a legitimate bound (it greps `_trim_\w+`). Mirrors common.bounded_log
+    but inlined — pulse runs as a standalone process outside the MCP
+    worker's Python path."""
+    try:
+        with open(ERROR_LOG, "rb") as f:
+            total = sum(buf.count(b"\n") for buf in iter(lambda: f.read(65536), b""))
+    except OSError:
+        return
+    if total <= _ERROR_LOG_MAX_LINES:
+        return
+    keep = _ERROR_LOG_MAX_LINES // 2
+    tmp = str(ERROR_LOG) + ".trim.tmp"
+    try:
+        with open(ERROR_LOG, "r", encoding="utf-8", errors="replace") as src, \
+             open(tmp, "w", encoding="utf-8") as dst:
+            buf: list[str] = []
+            for ln in src:
+                buf.append(ln)
+                if len(buf) > keep:
+                    buf.pop(0)
+            dst.writelines(buf)
+        os.replace(tmp, str(ERROR_LOG))
+    except OSError:
+        try: os.unlink(tmp)
+        except OSError: pass
+
+
 def _log_error(line: str) -> None:
-    """Append one line to hme-errors.log. Same format LIFESAVER scans."""
+    """Append one line to hme-errors.log. Same format LIFESAVER scans.
+    Bounded via _trim_error_log() every _ERROR_LOG_TRIM_EVERY writes."""
     ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
     ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     with open(ERROR_LOG, "a") as f:
         f.write(f"[{ts}] {line}\n")
+    _log_counter["n"] += 1
+    if _log_counter["n"] % _ERROR_LOG_TRIM_EVERY == 0:
+        _trim_error_log()
 
 
 def _write_heartbeat(path: Path, targets_ok: int, targets_bad: int) -> None:
