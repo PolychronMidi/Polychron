@@ -23,7 +23,7 @@ from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, BUDGET_LIMITS, SUBSYSTEM_NAMES
 from symbols import find_callers as _find_callers
 from ..synthesis import (
-    _local_think, _THINK_MODEL,
+    _local_think, _reasoning_think, _THINK_MODEL,
     _get_max_tokens, _get_effort, _get_tool_budget,
 )
 from .. import _get_compositional_context, _track, _usage_stats
@@ -206,7 +206,10 @@ def kb_seed(top_n: int = 15) -> str:
                 "Format: `## module_name\\nContent`\n\n"
                 + "\n\n".join(source_snippets)
             )
-            result = _local_think(prompt, max_tokens=384)
+            # KB entries become long-lived architectural documentation. Write
+            # quality (clear sentences, accurate constraint statements) matters
+            # more than throughput. Escalate to OVERDRIVE cascade.
+            result = _reasoning_think(prompt, max_tokens=384)
             if result:
                 from ..synthesis.synthesis_inference import compress_for_claude
                 result = compress_for_claude(result, max_chars=800, hint="KB entry generation per module")
