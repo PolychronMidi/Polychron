@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { emit, PROJECT_ROOT } = require('./shared');
-const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metrics');
+const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
 
 const INJECT = (process.env.HME_PROXY_INJECT ?? '1') !== '0';
 const REFRESH_INTERVAL_MS = 60_000;
