@@ -23,7 +23,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import iter_tool_uses, load_turn_events  # noqa: E402
+from _transcript import (  # noqa: E402
+    iter_tool_uses, load_turn_events, is_assistant, event_content,
+)
 
 BG_KEYWORDS = (
     "train", "pip install", "pip3 install", "nohup", "accelerate", "axolotl",
@@ -119,9 +121,7 @@ PERMISSION_ASK_PHRASES = (
 
 
 def _is_assistant_event(event: dict) -> bool:
-    if event.get("role") != "assistant":
-        return False
-    return bool(event.get("content"))
+    return is_assistant(event)
 
 
 def _last_assistant_text(events: list) -> str:
@@ -133,7 +133,7 @@ def _last_assistant_text(events: list) -> str:
     if last_asst is None:
         return ""
     parts = []
-    for block in last_asst.get("content", []) or []:
+    for block in event_content(last_asst):
         if isinstance(block, dict) and block.get("type") == "text":
             t = block.get("text", "")
             if isinstance(t, str):
@@ -157,7 +157,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
     for i, ev in enumerate(events):
         if not _is_assistant_event(ev):
             continue
-        content = ev.get("content", []) or []
+        content = event_content(ev)
         for bi, block in enumerate(content):
             if isinstance(block, dict) and block.get("type") == "text":
                 last_text_event_idx = i
@@ -167,7 +167,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
 
     # Case 1: interleaved in same event — check blocks after last_text_block_idx
     last_ev = events[last_text_event_idx]
-    content = last_ev.get("content", []) or []
+    content = event_content(last_ev)
     for bi in range(last_text_block_idx + 1, len(content)):
         block = content[bi]
         if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name"):

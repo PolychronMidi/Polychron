@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import last_assistant_event  # noqa: E402
+from _transcript import last_assistant_event, event_content  # noqa: E402
 
 DISMISSIVE_PHRASES = (
     "no response requested",
@@ -37,7 +37,7 @@ def main() -> int:
     if not event:
         print("ok")
         return 0
-    blocks = event.get("content", []) or []
+    blocks = event_content(event)
     has_tool_use = any(
         isinstance(b, dict) and b.get("type") == "tool_use" for b in blocks
     )

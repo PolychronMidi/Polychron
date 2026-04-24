@@ -32,7 +32,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import load_turn_events  # noqa: E402
+from _transcript import (  # noqa: E402
+    load_turn_events, is_assistant, event_content,
+)
 
 # Lowercased substring matches. Extend when new verbal forms surface; the
 # detector is a floor, not a ceiling.
@@ -100,12 +102,12 @@ VERIFICATION_MARKERS = (
 def _last_assistant_text(events: list) -> str:
     last_asst = None
     for ev in events:
-        if ev.get("role") == "assistant" and ev.get("content"):
+        if is_assistant(ev):
             last_asst = ev
     if last_asst is None:
         return ""
     parts = []
-    for block in last_asst.get("content", []) or []:
+    for block in event_content(last_asst):
         if isinstance(block, dict) and block.get("type") == "text":
             t = block.get("text", "")
             if isinstance(t, str):

@@ -32,6 +32,43 @@ from typing import Iterable, Iterator
 _PARSE_CACHE: dict[str, list[dict]] = {}
 
 
+def is_assistant(event: dict) -> bool:
+    """Works against both real Claude Code transcripts and test fixtures.
+
+    Real shape       : {"type":"assistant", "message":{"role":"assistant",...}}
+    Test-fixture shape: {"role":"assistant", "content":[...]}
+
+    Historical bug: detectors checked only the fixture shape (`role="assistant"`
+    at top level). Every real event has `role=None` at top level and
+    `type="assistant"` instead, so the check returned False on 100% of real
+    events — silently disabling exhaust_check / early_stop / fabrication_check
+    / anyone else that used the same test. Caught April 2026.
+    """
+    if event.get("type") == "assistant":
+        return True
+    return event.get("role") == "assistant" and bool(event.get("content"))
+
+
+def is_user(event: dict) -> bool:
+    """Same dual-shape tolerance for user events."""
+    if event.get("type") == "user":
+        return True
+    return event.get("role") == "user"
+
+
+def event_content(event: dict) -> list:
+    """Return the content blocks for an event, regardless of shape."""
+    msg = event.get("message")
+    if isinstance(msg, dict):
+        maybe = msg.get("content")
+        if isinstance(maybe, list):
+            return maybe
+    maybe = event.get("content")
+    if isinstance(maybe, list):
+        return maybe
+    return []
+
+
 def _parse_all(transcript_path: str | Path) -> list[dict]:
     key = str(transcript_path)
     if key in _PARSE_CACHE:
@@ -68,7 +105,7 @@ def load_turn_events(transcript_path: str | Path) -> list[dict]:
     # Find the last user message; turn is everything after it.
     last_user_idx = -1
     for i, obj in enumerate(events):
-        if obj.get("role") == "user":
+        if is_user(obj):
             last_user_idx = i
     if last_user_idx == -1:
         return events
@@ -85,7 +122,7 @@ def load_full_turn_with_user(transcript_path: str | Path) -> list[dict]:
     events = _parse_all(transcript_path)
     last_user_idx = -1
     for i, obj in enumerate(events):
-        if obj.get("role") == "user":
+        if is_user(obj):
             last_user_idx = i
     if last_user_idx == -1:
         return events
@@ -95,7 +132,7 @@ def load_full_turn_with_user(transcript_path: str | Path) -> list[dict]:
 def iter_tool_uses(event: dict) -> Iterator[dict]:
     """Yield each tool_use content block inside an event, with fields
     ``name`` / ``input`` / ``id`` filled in (missing fields default empty)."""
-    for block in event.get("content", []) or []:
+    for block in event_content(event):
         if not isinstance(block, dict):
             continue
         if block.get("type") != "tool_use":
@@ -110,7 +147,7 @@ def iter_tool_uses(event: dict) -> Iterator[dict]:
 def iter_tool_results(event: dict) -> Iterator[dict]:
     """Yield each tool_result content block with a ``text`` field that
     concatenates any text payloads (so callers can grep over it)."""
-    for block in event.get("content", []) or []:
+    for block in event_content(event):
         if not isinstance(block, dict):
             continue
         if block.get("type") != "tool_result":
@@ -150,8 +187,8 @@ def last_assistant_event(transcript_path: str | Path) -> dict | None:
             obj = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if obj.get("role") == "user" and last_assistant is not None:
+        if is_user(obj) and last_assistant is not None:
             return last_assistant
-        if obj.get("role") == "assistant":
+        if is_assistant(obj):
             last_assistant = obj
     return last_assistant

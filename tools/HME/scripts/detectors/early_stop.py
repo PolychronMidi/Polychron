@@ -33,7 +33,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import iter_tool_uses, load_full_turn_with_user  # noqa: E402
+from _transcript import (  # noqa: E402
+    iter_tool_uses, load_full_turn_with_user,
+    is_assistant, is_user, event_content,
+)
 
 
 # ─── Signal 1: user prompt signals open-ended continuation ───
@@ -220,26 +223,28 @@ ENUMERATION_PHRASES = (
 
 
 def _is_assistant(event: dict) -> bool:
-    return event.get("role") == "assistant" and bool(event.get("content"))
+    return is_assistant(event)
 
 
 def _last_user_text(events: list) -> str:
     """The triggering user message text (first user event in turn-with-user)."""
     for ev in events:
-        if ev.get("role") != "user":
+        if not is_user(ev):
             continue
-        content = ev.get("content", [])
-        if isinstance(content, str):
-            return content.lower()
-        if isinstance(content, list):
-            parts = []
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "text":
-                    parts.append(block.get("text", ""))
-                elif isinstance(block, str):
-                    parts.append(block)
-            return "\n".join(parts).lower()
-        return ""
+        content = event_content(ev)
+        if not content:
+            # `content` may be a raw string on user messages (not a list).
+            raw = ev.get("message", {}).get("content") if isinstance(ev.get("message"), dict) else ev.get("content")
+            if isinstance(raw, str):
+                return raw.lower()
+            return ""
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+            elif isinstance(block, str):
+                parts.append(block)
+        return "\n".join(parts).lower()
     return ""
 
 
@@ -251,7 +256,7 @@ def _last_assistant_text(events: list) -> str:
     if last is None:
         return ""
     parts = []
-    for block in last.get("content", []) or []:
+    for block in event_content(last):
         if isinstance(block, dict) and block.get("type") == "text":
             t = block.get("text", "")
             if isinstance(t, str):
@@ -268,7 +273,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
     for i, ev in enumerate(events):
         if not _is_assistant(ev):
             continue
-        content = ev.get("content", []) or []
+        content = event_content(ev)
         for bi, block in enumerate(content):
             if isinstance(block, dict) and block.get("type") == "text":
                 last_text_event_idx = i
@@ -276,7 +281,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
     if last_text_event_idx < 0:
         return False
     last_ev = events[last_text_event_idx]
-    content = last_ev.get("content", []) or []
+    content = event_content(last_ev)
     for bi in range(last_text_block_idx + 1, len(content)):
         block = content[bi]
         if isinstance(block, dict) and block.get("type") == "tool_use" and block.get("name"):
