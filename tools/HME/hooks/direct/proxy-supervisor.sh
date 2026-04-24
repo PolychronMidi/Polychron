@@ -37,6 +37,33 @@ if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d
 fi
 [ -z "$_SV_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _SV_ROOT="/home/jah/Polychron"
 
+# Absolute path to THIS script — used by the `start` subcommand's
+# `source '$_SV_SELF' _loop` fork-to-daemon line. Was previously
+# undefined, which meant the spawn executed `source '' _loop` and
+# silently failed with "bash: line 1: : No such file or directory",
+# leaving no supervisor and no proxy. Resolved via BASH_SOURCE[0] now
+# that we're past the cache-trap-unsafe zone above (the prior lines
+# established _SV_ROOT; BASH_SOURCE still resolves correctly whether
+# invoked from repo or cache because both paths reach the same file
+# via the hook wiring). Fallback to the in-repo canonical path if
+# BASH_SOURCE somehow ends up empty.
+_SV_SELF="${BASH_SOURCE[0]:-$_SV_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh}"
+if [ ! -f "$_SV_SELF" ]; then
+  _SV_SELF="$_SV_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
+fi
+
+# Load project .env so spawned proxy (and its worker/daemon children)
+# inherit HME feature flags. Without this, supervisors started from a
+# shell that didn't source .env silently lose HME_DOMINANCE,
+# HME_OVERDRIVE_*, etc., and the dominance layer becomes dead code.
+# Export every assignment so node child inherits. Quiet on absence.
+if [ -f "$_SV_ROOT/.env" ]; then
+  set -a
+  # shellcheck disable=SC1090,SC1091
+  source "$_SV_ROOT/.env" 2>/dev/null || true
+  set +a
+fi
+
 _SV_PORT="${HME_PROXY_PORT:-9099}"
 _SV_URL="http://127.0.0.1:${_SV_PORT}/health"
 _SV_PID_FILE="$_SV_ROOT/tmp/hme-proxy-supervisor.pid"
