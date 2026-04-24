@@ -383,9 +383,12 @@ if [[ "$STOP_WORK" == "TEXT_ONLY_SHORT" ]]; then
 fi
 
 # EXHAUST_CHECK: sister of early_stop but unconditional — matches any final
-# text that ends with a "TBD/noted/remaining" list + 3+ bullets, regardless
-# of whether the user prompt was open-ended. Verdict captured above in the
-# run_all.py batch; here we just act on it.
+# text with a deferral phrase (substring OR structural regex) followed by
+# ANY handoff marker (bullet, numbered, or bold-header paragraph) OR
+# positioned in the closing 40% / last 400 chars of the message. The old
+# "3+ bullets" threshold let single-item punts slip through — tightened
+# after a `## Remaining X gap I didn't fix`-style evasion passed the gate.
+# Verdict captured above in the run_all.py batch; here we just act on it.
 if [[ "$EXHAUST_CHECK" == "exhaust_violation" ]]; then
   jq -n '{
     "decision": "block",
