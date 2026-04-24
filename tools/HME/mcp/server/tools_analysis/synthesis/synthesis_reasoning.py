@@ -224,28 +224,6 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
-def _get_claude_code_oauth_token() -> str | None:
-    """Read the Claude Code OAuth access token from ~/.claude/.credentials.json.
-
-    Claude Code (VS Code / desktop) stores its Anthropic auth as an OAuth
-    access token under claudeAiOauth.accessToken — the user's subscription
-    credits are authorized through this token. The overdrive path reuses
-    the user's existing auth rather than requiring a separate API key.
-    Returns None if the file is missing, unreadable, or has no token."""
-    import json as _json
-    import os as _os
-    path = _os.path.expanduser("~/.claude/.credentials.json")
-    try:
-        with open(path) as f:
-            data = _json.load(f)
-    except (OSError, _json.JSONDecodeError):
-        return None
-    token = data.get("claudeAiOauth", {}).get("accessToken")
-    if token and isinstance(token, str):
-        return token
-    return None
-
-
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | None:
     """OVERDRIVE_MODE path — call Claude Opus with maximum extended thinking.
 
@@ -255,25 +233,30 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
     _call_synthesizer) and every other cascade caller — they all funnel
     through call() below.
 
-    Auth: reuses the Claude Code OAuth access token from
-    ~/.claude/.credentials.json. No separate ANTHROPIC_API_KEY required;
-    the user's existing Claude Code auth is what pays for the call.
+    Route: POSTs to the local HME proxy at ANTHROPIC_BASE_URL (default
+    http://127.0.0.1:9099). The proxy forwards to api.anthropic.com and,
+    because loopback out-of-band requests arrive with no Authorization
+    header, auto-injects the Claude Code OAuth token from
+    ~/.claude/.credentials.json. Same credential Claude Code's live
+    session uses — your subscription covers both paths identically.
+    The user configures nothing; auth is ambient.
 
-    Returns None on ANY failure (no auth token, network error, API error,
-    empty response). Caller falls through to the normal cascade so a
+    Returns None on ANY failure (proxy down, upstream 4xx/5xx, empty
+    response). Caller falls through to the normal cascade so a
     configuration gap or transient outage doesn't block the agent.
 
-    Model: claude-opus-4-7 (Opus 4.7) with thinking.budget_tokens=32000
-    — max realistic reasoning budget for a single call. max_tokens is
-    bumped to max(caller_value, 16384) so the model has room to both
-    think and respond without truncation."""
+    Model: claude-opus-4-7 with thinking.budget_tokens=32000 — max
+    realistic reasoning budget for a single call. max_tokens is bumped
+    to max(caller_value, 16384) so the model has room to both think and
+    respond without truncation."""
     import json as _json
+    import os as _os
     import urllib.request as _req
 
-    token = _get_claude_code_oauth_token()
-    if not token:
-        logger.warning("OVERDRIVE_MODE=1 but no Claude Code OAuth token at ~/.claude/.credentials.json — falling through to cascade")
-        return None
+    # Route through the local proxy. It handles auth injection for
+    # loopback out-of-band requests, so this call ships with no auth
+    # headers attached — the proxy adds them.
+    base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
     payload = {
         "model": "claude-opus-4-7",
@@ -287,13 +270,11 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
 
     try:
         request = _req.Request(
-            "https://api.anthropic.com/v1/messages",
+            f"{base_url}/v1/messages",
             data=_json.dumps(payload).encode(),
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}",
                 "anthropic-version": "2023-06-01",
-                "anthropic-beta": "oauth-2025-04-20",
             },
         )
         with _req.urlopen(request, timeout=300) as resp:
