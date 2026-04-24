@@ -1,6 +1,6 @@
 # Metaprofiles
 
-Coordinated initial conditions for the relationship layer. Conductor profiles set per-beat parameters. Composer profiles select which composers are active. Metaprofiles configure the *meta-layer* — the 19 hypermeta controllers, coupling topology, trust ecology bias, and regime targets — so the system self-calibrates toward a specific musical character.
+Coordinated initial conditions for the relationship layer. Conductor profiles set per-beat parameters. Composer profiles select which composers are active. Metaprofiles configure the *meta-layer* — the 18 hypermeta controllers, coupling topology, trust ecology bias, and regime targets — so the system self-calibrates toward a specific musical character.
 
 Metaprofiles don't override controllers. They set targets that controllers self-calibrate toward. The regime self-balancer already has a target distribution; a metaprofile changes what that target is. The coupling gain escalation already has a ceiling; a metaprofile raises or lowers it.
 

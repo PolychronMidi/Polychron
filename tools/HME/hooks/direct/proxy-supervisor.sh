@@ -37,9 +37,21 @@ _SV_URL="http://127.0.0.1:${_SV_PORT}/health"
 _SV_PID_FILE="$_SV_ROOT/tmp/hme-proxy-supervisor.pid"
 _SV_MAINT_FLAG="$_SV_ROOT/tmp/hme-proxy-maintenance.flag"
 _SV_LIFECYCLE_LOG="$_SV_ROOT/log/hme-proxy-lifecycle.log"
+_SV_ERROR_LOG="$_SV_ROOT/log/hme-errors.log"
 _SV_PROXY_SCRIPT="$_SV_ROOT/tools/HME/proxy/hme_proxy.js"
 _SV_POLL_INTERVAL=10
 _SV_MISS_THRESHOLD=3
+
+# Crash-loop detection. If the proxy fails to become healthy within
+# _SV_SPAWN_HEALTH_TIMEOUT seconds after a spawn attempt, we count that
+# as a consecutive failure. After _SV_CRASH_LOOP_THRESHOLD failures in a
+# row, back off exponentially AND fire a LIFESAVER alert to the error
+# log so the agent sees the loop rather than the supervisor silently
+# burning CPU on a broken proxy. Success resets the counter.
+_SV_SPAWN_HEALTH_TIMEOUT=8
+_SV_CRASH_LOOP_THRESHOLD=3
+_SV_BACKOFF_INITIAL=30    # seconds after first crash-loop detection
+_SV_BACKOFF_MAX=600       # cap at 10 minutes
 
 _sv_log() {
   mkdir -p "$(dirname "$_SV_LIFECYCLE_LOG")" 2>/dev/null
@@ -76,20 +88,90 @@ _sv_spawn_proxy() {
   local pid=$!
   disown 2>/dev/null
   _sv_log "proxy spawn attempted (pid=$pid)"
+  # Return success for caller; health probe after spawn determines
+  # whether the spawned process actually came up.
+  return 0
+}
+
+_sv_spawn_and_verify() {
+  # Wrapper: spawn the proxy, wait up to _SV_SPAWN_HEALTH_TIMEOUT
+  # seconds for /health to respond, return 0 on success, 1 on failure.
+  _sv_spawn_proxy
+  local waited=0
+  while [ "$waited" -lt "$_SV_SPAWN_HEALTH_TIMEOUT" ]; do
+    if curl -sf --max-time 1 "$_SV_URL" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 1
+}
+
+_sv_fire_crashloop_lifesaver() {
+  local fails="$1"
+  local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+  local msg="[$ts] [proxy-supervisor] CRASH LOOP DETECTED — proxy failed to start $fails times in a row. Respawn backing off. Root cause is likely in hme_proxy.js or its environment (.env, context.js, node modules). Fix the proxy startup before expecting recovery."
+  # Channel 1: error log for LIFESAVER pickup.
+  mkdir -p "$(dirname "$_SV_ERROR_LOG")" 2>/dev/null
+  echo "$msg" >> "$_SV_ERROR_LOG" 2>/dev/null
+  # Channel 2: lifecycle log for operator audit trail.
+  _sv_log "CRASH LOOP: $fails consecutive spawn failures — backing off"
+  # Channel 3: stderr for local terminal visibility.
+  echo "$msg" >&2
 }
 
 _sv_loop() {
   _sv_log "supervisor loop started (pid=$$)"
   echo $$ > "$_SV_PID_FILE"
-  trap '_sv_log "supervisor exiting (pid=$$)"; rm -f "$_SV_PID_FILE" 2>/dev/null; exit 0' INT TERM
+  # Only remove the pid file if it still contains OUR pid. Stop+start
+  # races produce a window where the incoming supervisor has already
+  # written its pid but the outgoing one hasn't finished its trap. If
+  # the outgoing trap blindly removed the file, the new supervisor
+  # would appear "not running" until its next poll rewrote it.
+  trap '
+    _sv_log "supervisor exiting (pid=$$)"
+    if [ "$(cat "$_SV_PID_FILE" 2>/dev/null)" = "$$" ]; then
+      rm -f "$_SV_PID_FILE" 2>/dev/null
+    fi
+    exit 0
+  ' INT TERM
 
   local misses=0
+  local consecutive_spawn_fails=0
+  local backoff_secs=0
   while true; do
+    # Exponential backoff after crash loop: skip health polling during
+    # the backoff window so the system doesn't thrash spawning a broken
+    # proxy every 10 seconds. The LIFESAVER fired when we entered the
+    # backoff; it stays in the error log for the next UserPromptSubmit.
+    if [ "$backoff_secs" -gt 0 ]; then
+      sleep "$backoff_secs"
+      # After the backoff, give the spawn one more shot. If it STILL
+      # fails, the fails counter grows and backoff doubles (capped).
+      if _sv_spawn_and_verify; then
+        _sv_log "proxy recovered from crash-loop backoff after ${consecutive_spawn_fails} fails"
+        consecutive_spawn_fails=0
+        backoff_secs=0
+        misses=0
+      else
+        consecutive_spawn_fails=$((consecutive_spawn_fails + 1))
+        backoff_secs=$((backoff_secs * 2))
+        if [ "$backoff_secs" -gt "$_SV_BACKOFF_MAX" ]; then
+          backoff_secs=$_SV_BACKOFF_MAX
+        fi
+        _sv_fire_crashloop_lifesaver "$consecutive_spawn_fails"
+        _sv_log "backoff extended to ${backoff_secs}s"
+      fi
+      continue
+    fi
+
     if curl -sf --max-time 3 "$_SV_URL" >/dev/null 2>&1; then
       if [ "$misses" -gt 0 ]; then
         _sv_log "proxy healthy again after $misses miss(es)"
       fi
       misses=0
+      consecutive_spawn_fails=0
     else
       misses=$((misses + 1))
       if _sv_is_maintenance_active; then
@@ -99,9 +181,18 @@ _sv_loop() {
         misses=0
       elif [ "$misses" -ge "$_SV_MISS_THRESHOLD" ]; then
         _sv_log "proxy down for $misses polls — respawning"
-        _sv_spawn_proxy
-        # Give the spawn time to bind the port before the next poll.
-        sleep 4
+        if _sv_spawn_and_verify; then
+          _sv_log "spawn verified healthy"
+          consecutive_spawn_fails=0
+        else
+          consecutive_spawn_fails=$((consecutive_spawn_fails + 1))
+          _sv_log "spawn failed to become healthy within ${_SV_SPAWN_HEALTH_TIMEOUT}s (consecutive_fails=$consecutive_spawn_fails)"
+          if [ "$consecutive_spawn_fails" -ge "$_SV_CRASH_LOOP_THRESHOLD" ]; then
+            _sv_fire_crashloop_lifesaver "$consecutive_spawn_fails"
+            backoff_secs=$_SV_BACKOFF_INITIAL
+            _sv_log "entering crash-loop backoff: ${backoff_secs}s"
+          fi
+        fi
         misses=0
       fi
     fi

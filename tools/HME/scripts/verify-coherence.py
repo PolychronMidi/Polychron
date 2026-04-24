@@ -149,6 +149,64 @@ class DocDriftVerifier(Verifier):
                        out.splitlines()[:30])
 
 
+class LogSizeVerifier(Verifier):
+    """The key HME logs (hme-proxy.out, hme-errors.log,
+    hme-proxy-lifecycle.log, hme-activity.jsonl) are all append-only
+    and never rotate. Left unchecked they fill disk — at which point
+    every log-writing hook silently fails (another silent-failure
+    class the autocommit hardening was meant to close).
+
+    WARN above 50MB per file, FAIL above 200MB. The thresholds are
+    generous — noisy proxies can produce tens of MB per day, so an
+    unattended run hits 50MB in a few weeks and 200MB only after
+    months of neglect. Action on FAIL: truncate or rotate. A simple
+    `: > log/hme-proxy.out` is safe; the proxy reopens in append mode
+    next write."""
+    name = "log-size"
+    category = "state"
+    weight = 1.0
+
+    WARN_BYTES = 50 * 1024 * 1024       # 50 MB
+    FAIL_BYTES = 200 * 1024 * 1024      # 200 MB
+
+    _WATCHED = (
+        "log/hme-proxy.out",
+        "log/hme-errors.log",
+        "log/hme-proxy-lifecycle.log",
+        "output/metrics/hme-activity.jsonl",
+    )
+
+    def run(self) -> VerdictResult:
+        warn_hits = []
+        fail_hits = []
+        for rel in self._WATCHED:
+            path = os.path.join(_PROJECT, rel)
+            if not os.path.isfile(path):
+                continue
+            try:
+                size = os.path.getsize(path)
+            except OSError as e:
+                # Unreadable — still signals a problem worth surfacing,
+                # not silently skipping. Narrow catch.
+                warn_hits.append(f"{rel}: stat failed ({e})")
+                continue
+            mb = size / (1024 * 1024)
+            if size >= self.FAIL_BYTES:
+                fail_hits.append(f"{rel}: {mb:.1f} MB (≥200 MB)")
+            elif size >= self.WARN_BYTES:
+                warn_hits.append(f"{rel}: {mb:.1f} MB (≥50 MB)")
+
+        if fail_hits:
+            return _result(FAIL, 0.0,
+                           f"{len(fail_hits)} log file(s) over 200 MB",
+                           fail_hits + warn_hits)
+        if warn_hits:
+            return _result(WARN, 0.75,
+                           f"{len(warn_hits)} log file(s) over 50 MB",
+                           warn_hits)
+        return _result(PASS, 1.0, "all watched logs under 50 MB")
+
+
 class EnvLoadVerifier(Verifier):
     """The .env file at the project root is the single source of
     PROJECT_ROOT, METRICS_DIR, HME_PROXY_PORT, and every other *HME_*
@@ -2256,6 +2314,7 @@ REGISTRY = [
     NumericClaimDriftVerifier(),
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
+    LogSizeVerifier(),
     PluginCacheParityVerifier(),
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),

@@ -46,6 +46,33 @@ done
 # Fallback: Polychron's known checkout location on this host.
 [ -z "$_PB_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _PB_ROOT="/home/jah/Polychron"
 
+# Meta-watchdog: every hook invocation cheaply verifies the
+# proxy-supervisor is still alive. If the supervisor's pid file is
+# missing OR the pid is not alive, respawn it detached. This resurrects
+# the supervisor itself when it dies (OOM, SIGKILL, bash bug), using
+# the existing per-event hook traffic as the heartbeat. The cost is one
+# kill -0 + one stat per hook fire; the benefit is that the supervisor
+# can no longer stay dead for a whole session just because the first
+# watchdog at SessionStart didn't notice.
+if [ -n "$_PB_ROOT" ]; then
+  _PB_SUPERVISOR_SCRIPT="$_PB_ROOT/tools/HME/hooks/direct/proxy-supervisor.sh"
+  _PB_SUPERVISOR_PID_FILE="$_PB_ROOT/tmp/hme-proxy-supervisor.pid"
+  _PB_SV_ALIVE=0
+  if [ -f "$_PB_SUPERVISOR_PID_FILE" ]; then
+    _PB_SV_PID=$(cat "$_PB_SUPERVISOR_PID_FILE" 2>/dev/null)
+    if [ -n "$_PB_SV_PID" ] && kill -0 "$_PB_SV_PID" 2>/dev/null; then
+      _PB_SV_ALIVE=1
+    fi
+  fi
+  if [ "$_PB_SV_ALIVE" = "0" ] && [ -x "$_PB_SUPERVISOR_SCRIPT" ]; then
+    # Detached start. The supervisor's own start path is idempotent —
+    # if it WAS already running we just haven't updated the pid file,
+    # the second start will no-op. This never waits.
+    bash "$_PB_SUPERVISOR_SCRIPT" start >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+  fi
+fi
+
 # POST to proxy. --max-time 60s accommodates stop.sh's longer chain
 # (auto-commit + lifecycle checks).
 RESP=$(curl -sf --max-time 60 -X POST \

@@ -19,7 +19,7 @@ Layer 1: PreToolUse hooks     — intercept before execution (block, correct, or
 Layer 2: PostToolUse hooks    — react after execution (track state, surface errors)
 Layer 3: Stop hook            — prevent premature exit (8 blocking checks)
 Layer 4: Declarative invariants — config/invariants.json (45+ checks, no code changes needed)
-Layer 5: ESLint rules         — 22 custom rules enforcing fail-fast + architectural boundaries
+Layer 5: ESLint rules         — 24 custom rules enforcing fail-fast + architectural boundaries
 Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
 ```
 
@@ -284,7 +284,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 - LIFESAVER FAIL scan present in log-tool-call.sh (`patterns_all_in_file`)
 - All _safety.sh helpers present (`patterns_all_in_file`)
 - All 7 lifecycle events registered in settings (`patterns_all_in_file`)
-- Minimum 22 ESLint rules (`glob_count_gte`)
+- Minimum 24 ESLint rules (`glob_count_gte`)
 - Minimum 25 L0 channel constants (`pattern_count_gte`)
 - All 27 trust system pairs (`pattern_count_gte`)
 - 19 stutter variants self-registered (`pattern_count_gte`)
