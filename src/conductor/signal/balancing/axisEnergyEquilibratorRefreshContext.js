@@ -32,15 +32,9 @@ axisEnergyEquilibratorRefreshContext = (() => {
     // At Gini 0.10: old 1.14, new 1.36. At Gini 0.15: old 1.31, new 1.65.
     const giniMult = 1.0 + clamp((axisGini - 0.04) / 0.16, 0, 1) * 0.95;
     const homeostasisState = safePreBoot.call(() => couplingHomeostasis.getState(), null);
-    const recoveryAxisHandOffPressure = homeostasisState && typeof homeostasisState.recoveryAxisHandOffPressure === 'number'
-      ? homeostasisState.recoveryAxisHandOffPressure
-      : 0;
-    const shortRunRecoveryBias = homeostasisState && typeof homeostasisState.shortRunRecoveryBias === 'number'
-      ? homeostasisState.shortRunRecoveryBias
-      : 0;
-    const nonNudgeableTailPressure = homeostasisState && typeof homeostasisState.nonNudgeableTailPressure === 'number'
-      ? homeostasisState.nonNudgeableTailPressure
-      : 0;
+    const recoveryAxisHandOffPressure = V.optionalFinite(homeostasisState && homeostasisState.recoveryAxisHandOffPressure, 0);
+    const shortRunRecoveryBias = V.optionalFinite(homeostasisState && homeostasisState.shortRunRecoveryBias, 0);
+    const nonNudgeableTailPressure = V.optionalFinite(homeostasisState && homeostasisState.nonNudgeableTailPressure, 0);
     const nonNudgeableTailPair = homeostasisState && typeof homeostasisState.nonNudgeableTailPair === 'string'
       ? homeostasisState.nonNudgeableTailPair
       : '';

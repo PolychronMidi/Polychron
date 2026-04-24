@@ -233,7 +233,7 @@ MotifComposer = class MotifComposer {
           const selected = VC.pickNotesForBeat(targetLayer, avail, 1, scorer, voiceOpts);
           chosen = (Array.isArray(selected) && selected.length > 0) ? selected[0] : avail[ri(avail.length - 1)];
         } else {
-          try { chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[ri(avail.length - 1)]; } catch { chosen = avail[ri(avail.length - 1)]; }
+          chosen = mc.selectNoteWithLeading ? mc.selectNoteWithLeading(avail) : avail[ri(avail.length - 1)];
         }
       } else if (this.VoiceLeadingScore && this.useVoiceLeading) {
         const avail = Array.from(new Set(candidates)).sort((a, b) => a - b);

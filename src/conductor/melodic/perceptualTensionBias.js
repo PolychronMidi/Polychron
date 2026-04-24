@@ -19,7 +19,10 @@ perceptualTensionBias = (() => {
       if (cb0Values.length === 0) return null;
       const meanCb0 = cb0Values.reduce((a, b) => a + b, 0) / cb0Values.length;
       return { secs, meanCb0, confidence: rep.confidence ?? 0 };
-    } catch { return null; }
+    } catch (e) {
+      if (e && e.code === 'ENOENT') return null;
+      throw e;
+    }
   })();
 
   conductorIntelligence.registerTensionBias('perceptualTensionBias', () => {

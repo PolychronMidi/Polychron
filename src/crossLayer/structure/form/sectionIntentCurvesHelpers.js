@@ -18,7 +18,10 @@ sectionIntentCurvesHelpers = (() => {
         if (v && v.clap) guide[k] = v.clap;
       }
       return Object.keys(guide).length > 0 ? { guide, confidence } : null;
-    } catch { return null; }
+    } catch (e) {
+      if (e && e.code === 'ENOENT') return null;
+      throw e;
+    }
   })();
 
   /**

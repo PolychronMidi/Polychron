@@ -393,7 +393,12 @@ def what_did_i_forget(changed_files: str) -> str:
     parts.append("  - hme_admin(action='index') after batch changes (file watcher handles individual saves)")
     parts.append("  - add_knowledge for any new calibration anchors or decisions")
 
-    # Collect git diff for synthesis context (bounded to 4000 chars)
+    # Collect git diff for synthesis context (bounded to 4000 chars).
+    # This project runs a direct-autocommit hook that commits edits before the
+    # review fires, so `git diff HEAD` is often empty. When that happens, fall
+    # back to `HEAD~1..HEAD` so the reviewer has the just-committed diff to
+    # ground its adaptive synthesis against — otherwise the LLM has no source
+    # material and confabulates phantom files.
     diff_context = ""
     try:
         import subprocess as _sp_diff
@@ -402,6 +407,12 @@ def what_did_i_forget(changed_files: str) -> str:
             capture_output=True, text=True, timeout=3,
         )
         diff_context = _diff_result.stdout[:4000]
+        if not diff_context.strip():
+            _diff_prev = _sp_diff.run(
+                ["git", "-C", ctx.PROJECT_ROOT, "diff", "HEAD~1..HEAD"],
+                capture_output=True, text=True, timeout=3,
+            )
+            diff_context = _diff_prev.stdout[:4000]
     except Exception as _err3:
         logger.debug(f'silent-except workflow_audit.py:259: {type(_err3).__name__}: {_err3}')
 
