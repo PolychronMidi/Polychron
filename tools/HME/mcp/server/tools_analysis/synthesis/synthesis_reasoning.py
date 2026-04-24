@@ -568,17 +568,35 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # Compact self-instructing sentinel — single line. The tag contains
     # all fields the proxy middleware needs to route the result back;
     # the trailing call-form is a dispatch hint the agent can execute
-    # directly without needing a separate system-message. Previous
-    # 2-line format was called out as visual noise every time a tool
-    # that queues reasoning (i/review, i/trace, etc.) surfaced it.
-    sentinel = (
-        f"\n[[HME_AGENT_TASK req_id={req_id} "
-        f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
-        f"subagent_type={subagent_type}]] → "
-        f"Agent(subagent_type='{subagent_type}', "
-        f"description='HME reasoning for {req_id}', "
-        f"prompt=<Read {prompt_file}>)"
-    )
+    # directly without needing a separate system-message.
+    #
+    # Routing switch: when `tmp/hme-thread.sid` exists, the user has
+    # initialized a persistent subagent thread via `i/thread init`. All
+    # subsequent reasoning dispatches go through that thread instead of
+    # spawning ephemeral Agent calls — context accumulates across tasks.
+    # When the sid file is absent, behavior is identical to pre-thread
+    # (ephemeral Agent dispatch with middleware-side result capture).
+    project_root = _os.environ.get("PROJECT_ROOT", "")
+    thread_sid_file = _os.path.join(project_root, "tmp", "hme-thread.sid") \
+        if project_root else ""
+    thread_active = bool(thread_sid_file) and _os.path.exists(thread_sid_file)
+    if thread_active:
+        sentinel = (
+            f"\n[[HME_AGENT_TASK req_id={req_id} "
+            f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
+            f"subagent_type={subagent_type} mode=thread]] → "
+            f"Bash(command='i/thread send tmp/hme-subagent-queue/{req_id}.json', "
+            f"description='HME reasoning for {req_id} via thread')"
+        )
+    else:
+        sentinel = (
+            f"\n[[HME_AGENT_TASK req_id={req_id} "
+            f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
+            f"subagent_type={subagent_type}]] → "
+            f"Agent(subagent_type='{subagent_type}', "
+            f"description='HME reasoning for {req_id}', "
+            f"prompt=<Read {prompt_file}>)"
+        )
     logger.info(f"OVERDRIVE_VIA_SUBAGENT: queued req_id={req_id} "
                 f"(prompt={len(prompt)}c, system={len(system)}c)")
     return (sentinel, "overdrive/subagent")
