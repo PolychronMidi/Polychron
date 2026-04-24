@@ -182,6 +182,7 @@ class PluginCacheParityVerifier(Verifier):
 
         def hash_tree(root):
             out = {}
+            skipped = []
             for dirpath, _dirs, files in os.walk(root):
                 for f in files:
                     if f.startswith("."):
@@ -191,12 +192,16 @@ class PluginCacheParityVerifier(Verifier):
                     try:
                         with open(full, "rb") as fp:
                             out[rel] = hashlib.sha256(fp.read()).hexdigest()
-                    except Exception:
-                        pass
-            return out
+                    except (OSError, PermissionError) as e:
+                        # Skip files unreadable at walk time (broken
+                        # symlinks, permissions). Narrow except — we want
+                        # ANY other exception (e.g. MemoryError) to
+                        # propagate and fail the verifier visibly.
+                        skipped.append(f"{rel}: {e.__class__.__name__}")
+            return out, skipped
 
-        repo = hash_tree(repo_hooks)
-        cache = hash_tree(cache_hooks)
+        repo, repo_skipped = hash_tree(repo_hooks)
+        cache, cache_skipped = hash_tree(cache_hooks)
         diverged = [r for r in repo if r in cache and repo[r] != cache[r]]
         repo_only = sorted(set(repo) - set(cache))
         cache_only = sorted(set(cache) - set(repo))
@@ -211,6 +216,10 @@ class PluginCacheParityVerifier(Verifier):
             issues.append(f"repo-only: {r}")
         for r in cache_only[:6]:
             issues.append(f"cache-only: {r}")
+        # Surface skipped files so a permission failure silently dropping
+        # from the parity check doesn't masquerade as PASS.
+        for s in (repo_skipped + cache_skipped)[:4]:
+            issues.append(f"skipped (unreadable): {s}")
 
         if not diverged and not cache_only:
             return _result(PASS, 1.0,
@@ -245,19 +254,41 @@ class HookCommandExistenceVerifier(Verifier):
         try:
             with open(settings_path) as f:
                 settings = json.load(f)
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             return _result(ERROR, 0.0, f"settings.json unreadable: {e}")
-        hooks = settings.get("hooks", {})
+
+        # Explicit key check — fail-fast if the schema diverges rather
+        # than silently defaulting to an empty dict.
+        hooks = settings.get("hooks")
+        if hooks is None:
+            return _result(SKIP, 1.0, "no 'hooks' key in settings.json")
         if not hooks:
             return _result(SKIP, 1.0, "no hooks declared in settings.json")
+        if not isinstance(hooks, dict):
+            return _result(ERROR, 0.0,
+                           f"settings.json 'hooks' is {type(hooks).__name__}, expected dict")
 
         checked = 0
         missing = []
         not_executable = []
         for event, groups in hooks.items():
-            for group in groups or []:
-                for h in group.get("hooks", []) or []:
-                    cmd = (h.get("command") or "").strip()
+            # Claude Code schema: groups is a list. If not, that's a real
+            # configuration error, not something to silently paper over.
+            if not isinstance(groups, list):
+                return _result(ERROR, 0.0,
+                               f"settings.json hooks[{event!r}] is {type(groups).__name__}, expected list")
+            for group in groups:
+                group_hooks = group.get("hooks")
+                if group_hooks is None:
+                    continue
+                if not isinstance(group_hooks, list):
+                    return _result(ERROR, 0.0,
+                                   f"settings.json hooks[{event!r}][].hooks is {type(group_hooks).__name__}, expected list")
+                for h in group_hooks:
+                    cmd_raw = h.get("command")
+                    if cmd_raw is None:
+                        continue
+                    cmd = cmd_raw.strip()
                     if not cmd:
                         continue
                     # Match the `bash <script> <args>` pattern.
@@ -320,7 +351,7 @@ class AutocommitHealthVerifier(Verifier):
             try:
                 with open(fail_flag) as f:
                     issues.append(f"fail flag set: {f.read().strip()[:240]}")
-            except Exception as e:
+            except OSError as e:
                 issues.append(f"fail flag exists but unreadable: {e}")
 
         # 2. Attempt counter — monotonic increment on every attempt, reset
@@ -328,11 +359,23 @@ class AutocommitHealthVerifier(Verifier):
         if os.path.isfile(counter_file):
             try:
                 with open(counter_file) as f:
-                    n = int((f.read().strip() or "0"))
-                if n >= 3:
-                    issues.append(f"attempt counter at {n} (≥3 attempts without success)")
-            except Exception:
-                issues.append("counter file exists but unparseable")
+                    raw = f.read().strip()
+            except OSError as e:
+                issues.append(f"counter file unreadable: {e}")
+            else:
+                # Empty-file and non-numeric content are separate real
+                # states, not the same "0". Treat empty as "never written"
+                # (benign, skip) and non-numeric as a hard parse error.
+                if not raw:
+                    pass
+                else:
+                    try:
+                        n = int(raw)
+                    except ValueError:
+                        issues.append(f"counter file has non-numeric content: {raw[:40]!r}")
+                    else:
+                        if n >= 3:
+                            issues.append(f"attempt counter at {n} (≥3 attempts without success)")
 
         # 3. Last-success freshness — if the repo has a .git and history
         # of autocommits, the last-success file should not be far older
@@ -342,14 +385,19 @@ class AutocommitHealthVerifier(Verifier):
             try:
                 with open(last_ok_file) as f:
                     ts_str = f.read().strip()
-                ts = datetime.datetime.fromisoformat(
-                    ts_str.rstrip("Z")
-                ).replace(tzinfo=datetime.timezone.utc)
-                age_h = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds() / 3600
-                if age_h > 48:
-                    issues.append(f"last successful autocommit {age_h:.0f}h ago (>48h)")
-            except Exception as e:
-                issues.append(f"last-success timestamp unparseable: {e}")
+            except OSError as e:
+                issues.append(f"last-success timestamp unreadable: {e}")
+            else:
+                try:
+                    ts = datetime.datetime.fromisoformat(
+                        ts_str.rstrip("Z")
+                    ).replace(tzinfo=datetime.timezone.utc)
+                except ValueError as e:
+                    issues.append(f"last-success timestamp unparseable: {e}")
+                else:
+                    age_h = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds() / 3600
+                    if age_h > 48:
+                        issues.append(f"last successful autocommit {age_h:.0f}h ago (>48h)")
 
         if not issues:
             return _result(PASS, 1.0, "autocommit operational")
