@@ -257,7 +257,15 @@ def _call_synthesizer(prompt: str, system: str = "", max_tokens: int = 4096,
                 temperature=0.3, profile=profile,
             )
             if cascade_out:
-                return _strip_think(cascade_out), f"cascade/{profile}"
+                # Prefer the fine-grained source the dispatcher now exposes
+                # — distinguishes 'overdrive/opus' from '<provider>/<model>'
+                # slots. Falls back to the generic cascade/<profile> label
+                # when last_source() isn't implemented (older module).
+                try:
+                    src = _cascade_mod.last_source() or f"cascade/{profile}"
+                except AttributeError:
+                    src = f"cascade/{profile}"
+                return _strip_think(cascade_out), src
         except Exception as _e:
             logger.warning(f"cascade dispatcher failed ({type(_e).__name__}: {_e}) — falling back to local")
     response = _call_model(prompt, model, port, system=system,
