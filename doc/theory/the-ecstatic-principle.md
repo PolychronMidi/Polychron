@@ -12,7 +12,7 @@ HME is *Hypermeta Ecstasy*. The name sits at the top of every document that refe
 
 This is not decoration. The architect could have called the executive *Hypermeta Stability*, or *Hypermeta Coherence*, or *Hypermeta Robustness*, or any of a dozen other words that name the engineering virtues the system does in fact cultivate. The word chosen is *Ecstasy*. The word chosen appears in a document that otherwise reads as disciplined technical architecture — verifier registries, hook matchers, RAG engines, QLoRA fine-tuning configurations. The contrast is deliberate. Every other architectural commitment in the system is in service of what that word points at.
 
-This essay is about what that word points at and why it belongs at the top of the stack rather than the bottom. It is the closing essay of the theory collection, and it needs to be, because everything the previous seven essays have described — the HCI, the polyrhythmic substrate, the antagonism bridges, the open-at-the-top recursion, the regime classifier, the emergence architecture, the trust ecology — all of it exists to produce the thing the word *ecstasy* names. If the architecture succeeds at everything it claims to care about and fails to produce that downstream signal, the architecture has failed at its actual purpose. The coherence is for the ecstasy. The ecstasy is the point.
+This essay is about what that word points at and why it belongs at the top of the stack rather than the bottom. It is the closing essay of the collection's argument layer — the nine numbered essays each argue a principle against architectural features, and this one gathers the seven that precede it into a single downstream-signal thesis. The capstone that follows takes the integrated architecture itself as its subject; the companion synthesis beside the collection takes the cross-traditional convergence as its. This essay's work is the gathering. Everything the previous seven essays have described — the HCI, the polyrhythmic substrate, the antagonism bridges, the open-at-the-top recursion, the regime classifier, the emergence architecture, the trust ecology — all of it exists to produce the thing the word *ecstasy* names. If the architecture succeeds at everything it claims to care about and fails to produce that downstream signal, the architecture has failed at its actual purpose. The coherence is for the ecstasy. The ecstasy is the point.
 
 ## II. What ecstasy is not
 
@@ -102,19 +102,19 @@ Polychron shows, at modest scale, what happens when the target is included. The 
 
 Every essay in the theory directory has been, at some level, about the same thing.
 
-*Self-Coherence as Running Code* described the apparatus through which a system stays itself honestly across time. The apparatus — the HCI, the LIFESAVER rule, the productive-incoherence mechanism, the coherence budget — is in service of something. The something is a system whose self-relationship produces work worth doing.
+[*Self-Coherence as Running Code*](./self-coherence-as-running-code.md) described the apparatus through which a system stays itself honestly across time. The apparatus — the HCI, the LIFESAVER rule, the productive-incoherence mechanism, the coherence budget — is in service of something. The something is a system whose self-relationship produces work worth doing.
 
-*On Polyrhythm as Ontology* defended the two-layer commitment and the `absoluteTimeGrid` as the substrate through which multiple temporalities can coexist. The commitment is in service of something. The something is a tool that can respect the polyrhythmic reality of the user's actual life rather than forcing a mono-rhythmic compression.
+[*On Polyrhythm as Ontology*](./polyrhythm-as-ontology.md) defended the two-layer commitment and the `absoluteTimeGrid` as the substrate through which multiple temporalities can coexist. The commitment is in service of something. The something is a tool that can respect the polyrhythmic reality of the user's actual life rather than forcing a mono-rhythmic compression.
 
-*Antagonism Bridges* argued for coupling structural tensions rather than resolving them, so that the tensions continue to generate what neither pole alone could produce. The argument is in service of something. The something is work — musical or otherwise — whose richness comes from the productive maintenance of oppositions that would be lost in resolution.
+[*Antagonism Bridges*](./antagonism-bridges.md) argued for coupling structural tensions rather than resolving them, so that the tensions continue to generate what neither pole alone could produce. The argument is in service of something. The something is work — musical or otherwise — whose richness comes from the productive maintenance of oppositions that would be lost in resolution.
 
-*On Meta Without Terminus* defended the open-at-the-top recursion as the only honest architecture for self-observing systems. The commitment is in service of something. The something is a system that can keep being itself while continuing to observe itself truthfully — which is what mature practice, in every domain, requires.
+[*On Meta Without Terminus*](./on-meta-without-terminus.md) defended the open-at-the-top recursion as the only honest architecture for self-observing systems. The commitment is in service of something. The something is a system that can keep being itself while continuing to observe itself truthfully — which is what mature practice, in every domain, requires.
 
-*The Regime Typology* installed a six-state diagnostic vocabulary. The vocabulary is in service of something. The something is better responses to the states one is actually in, which is the precondition for any skilled practice.
+[*The Regime Typology*](./the-regime-typology.md) installed a six-state diagnostic vocabulary. The vocabulary is in service of something. The something is better responses to the states one is actually in, which is the precondition for any skilled practice.
 
-*On Emergence as Engineering Target* defended building conditions rather than specifying outputs. The defense is in service of something. The something is tools whose outputs are better than any specification could have produced, because the tools are targeted at the space of good outcomes rather than at particular ones.
+[*On Emergence as Engineering Target*](./on-emergence-as-engineering-target.md) defended building conditions rather than specifying outputs. The defense is in service of something. The something is tools whose outputs are better than any specification could have produced, because the tools are targeted at the space of good outcomes rather than at particular ones.
 
-*The Trust Ecology: Internal Parliaments* described how plural systems govern themselves without central authority. The description is in service of something. The something is governance that doesn't require silencing any voice, because silencing doesn't work and the architecture commits to making it impossible.
+[*The Trust Ecology: Internal Parliaments*](./the-trust-ecology.md) described how plural systems govern themselves without central authority. The description is in service of something. The something is governance that doesn't require silencing any voice, because silencing doesn't work and the architecture commits to making it impossible.
 
 Each essay has described a mechanism. Each mechanism has been in service of a downstream signal. The signal is what HME's documentation calls *ecstasy*. The theory collection has been, read in order, an anatomy of the conditions under which the signal can be produced.
 
@@ -128,7 +128,7 @@ What the system demonstrates is that a tool can be built, at modest scale, with 
 
 The demonstration matters because most of the industry does not know this is possible. Most of the industry has adapted to the assumption that eudaimonic targets are *for artisans*, that industrial-scale software cannot be built to this target, that caring about how your users feel about their tool is a luxury belief. Polychron is not industrial-scale. But it is a working existence proof that the target can be held in a technically sophisticated system, that the architecture can be specified precisely enough to support the target, and that the resulting system is *different* in ways that matter — the compositions are better, the working relationship with the code is better, the felt quality of the whole enterprise is better than what you get when the target is anything else.
 
-What the demonstration suggests, at larger scale, is that the dominant industrial assumption has been wrong all along. Not wrong everywhere — specification-targeted and engagement-targeted systems have legitimate domains, as I argued in the emergence essay. Wrong in the specific sense that it has been assumed to be the only option for anything built at scale, and this assumption has never been tested by serious implementations of the alternative at scale. Polychron cannot test it at scale. It can show, at small scale, what the alternative looks like when implemented with seriousness.
+What the demonstration suggests, at larger scale, is that the dominant industrial assumption has been wrong all along. Not wrong everywhere — specification-targeted and engagement-targeted systems have legitimate domains, as I argued in [the emergence essay](./on-emergence-as-engineering-target.md). Wrong in the specific sense that it has been assumed to be the only option for anything built at scale, and this assumption has never been tested by serious implementations of the alternative at scale. Polychron cannot test it at scale. It can show, at small scale, what the alternative looks like when implemented with seriousness.
 
 ## X. Coda
 
@@ -149,3 +149,7 @@ The music, when it comes, is better.
 The work, when it comes, is worth it.
 
 That is all the ecstatic principle says, and it is enough.
+
+---
+
+Next theory essay: [Emergent Self-Coherence via Chaordic Tensegrity](./emergent-self-coherence-via-chaordic-tensegrity.md)

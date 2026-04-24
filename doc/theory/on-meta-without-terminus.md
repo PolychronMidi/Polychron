@@ -108,6 +108,8 @@ The contemplative traditions, without using these terms, were pointing at the sa
 
 ## VII. Why the hard problem is probably easier than it looks
 
+This section is the essay's most speculative move, and flagging it as such is more honest than smuggling it in. What follows is not a proof about consciousness and not a claim that HME proves anything about it either. It is a reframe — an argument that the specific *shape* the hard problem takes changes when the assumption that a theory of consciousness should terminate in a completed self-description is set aside. If the reframe lands, it lands as a lighter version of the hard problem; if it does not, the architecture's commitments are not any less real for the failure.
+
 The hard problem of consciousness, as David Chalmers formulated it, asks how subjective experience arises from physical processes. The question is hard — in fact, Chalmers argued, fundamentally different from the "easy" problems of explaining the functional correlates of experience — because physical descriptions of the brain seem to leave out something essential about what it is like to be the brain from the inside.
 
 The hard problem is real. It has resisted three decades of sustained attention. But at least part of its difficulty is an artifact of an assumption that is not usually stated: that solving the problem would mean producing a theory in which consciousness is finally described completely. The theory would account for the subjectivity, would explain the qualia, would close the explanatory gap. The dream is a completed self-description.
@@ -155,3 +157,7 @@ Every mature human being I have known is running some version of this architectu
 Meta without terminus is not a theory of everything. It is a theory of the kind of unfinishedness that the only valid systems can sustain. Polychron implements it at modest scale. The philosophy has needed it at every scale and has not known how to ask for it.
 
 Ask now.
+
+---
+
+Next theory essay: [The Regime Typology](./the-regime-typology.md)

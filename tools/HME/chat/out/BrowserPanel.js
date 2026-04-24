@@ -44,6 +44,7 @@ const chatStreaming_1 = require("./chatStreaming");
 const crossRouteHistory_1 = require("./session/crossRouteHistory");
 const ErrorSink_1 = require("./panel/ErrorSink");
 const routerClaude_1 = require("./routers/routerClaude");
+const claudeProcessPool_1 = require("./routers/claudeProcessPool");
 const ShimSupervisor_1 = require("./panel/ShimSupervisor");
 const ContextMeter_1 = require("./panel/ContextMeter");
 const ChainPerformer_1 = require("./panel/ChainPerformer");
@@ -160,6 +161,10 @@ class BrowserPanel {
             },
             loadSession: (msg) => this._loadSession(msg.id),
             deleteSession: (msg) => {
+                // Kill any pool-backed claude process for this chat session BEFORE
+                // we forget the session id. Otherwise the process stays resident
+                // and keeps burning RSS until the idle reaper catches it.
+                (0, claudeProcessPool_1.killClaudeProcess)(msg.id);
                 (0, SessionStore_1.deleteSession)(this._projectRoot, msg.id);
                 if (this._state.sessionEntry?.id === msg.id) {
                     this._state = BrowserPanel._blankState();
@@ -208,12 +213,6 @@ class BrowserPanel {
                     lastOkMs: health.lastOkMs,
                 });
             },
-            setZoomLevel: (_msg) => {
-                // No-op: browser uses localStorage for zoom persistence
-            },
-            setMirrorMode: (_msg) => {
-                // No-op: mirror terminal not available in browser mode
-            },
             setClaudeConfig: (msg) => {
                 try {
                     const validated = (0, msgHelpers_1.validateClaudeConfig)({
@@ -221,8 +220,17 @@ class BrowserPanel {
                         effort: msg.claudeEffort,
                         thinking: msg.claudeThinking,
                     });
+                    const prevKey = `${this._claudeConfig.model}|${this._claudeConfig.effort}|${this._claudeConfig.thinking}`;
+                    const newKey = `${validated.model}|${validated.effort}|${validated.thinking}`;
                     this._claudeConfig = validated;
                     const resolved = (0, msgHelpers_1.resolveClaudeConfig)(validated);
+                    // Model/effort/thinking are CLI args — a running pool process can't
+                    // change them mid-flight. Kill the current session's process so the
+                    // next turn respawns with the new config (inheriting conversation
+                    // state via --resume).
+                    if (prevKey !== newKey && this._state.sessionEntry?.id) {
+                        (0, claudeProcessPool_1.killClaudeProcess)(this._state.sessionEntry.id);
+                    }
                     this.post({
                         type: "claudeConfigApplied",
                         alias: resolved.alias,
@@ -283,6 +291,9 @@ class BrowserPanel {
         };
         try {
             this._transcript = new TranscriptLogger_1.TranscriptLogger(projectRoot);
+            // Route transcript disk failures through the same sink that carries
+            // every other error to hme-errors.log + next-turn LIFESAVER banner.
+            this._transcript.setErrorSink(this._errorSink);
             this._transcript.setNarrativeCallback(async (entries) => {
                 // Hard timeout so a hung daemon doesn't stall the chat. Every 3 turns
                 // the narrative callback fires; a 3s ceiling keeps the chat snappy
@@ -401,6 +412,7 @@ class BrowserPanel {
         if (BrowserPanel.current)
             return BrowserPanel.current;
         BrowserPanel.current = new BrowserPanel(projectRoot);
+        BrowserPanel.current.startPoolReaper();
         return BrowserPanel.current;
     }
     //  Incoming message dispatch (from Express POST /api/message)
@@ -410,8 +422,15 @@ class BrowserPanel {
             (0, webviewMessages_1.dispatchWebviewMessage)(msg, this._messageHandlers);
         }
         catch (e) {
-            console.error(`[HME] handleMessage threw: ${e?.message ?? e}\n${e?.stack}`);
-            this.post({ type: "errorBubble", source: "dispatch", message: String(e?.message ?? e) });
+            // errorBubble alone is invisible in the UI (suppressed at browser.html
+            // by design). Route through postError so the ErrorSink → hme-errors.log
+            // → LIFESAVER chain catches it, AND surface to the user as a notice
+            // so they know their action didn't land.
+            this.postError(`dispatch:${msg?.type ?? "?"}`, `${e?.message ?? e}\n${e?.stack ?? ""}`);
+            this.post({
+                type: "notice", level: "warn",
+                text: `⚠ Action ${msg?.type ?? "?"} failed: ${e?.message ?? e}`,
+            });
         }
     }
     _displayMessages() {
@@ -421,10 +440,36 @@ class BrowserPanel {
         return this._streamPersister.track(assistantId, route, this._state.messages, () => this._persistState());
     }
     _loadSession(id) {
-        const persisted = (0, SessionStore_1.loadSession)(this._projectRoot, id);
+        // SessionStore.loadSession now throws on corrupt files — catch at the
+        // panel boundary so one bad session doesn't crash the whole server,
+        // but surface loudly so the user can delete-and-recreate. The session
+        // file is still on disk; we just can't present it.
+        let persisted;
+        try {
+            persisted = (0, SessionStore_1.loadSession)(this._projectRoot, id);
+        }
+        catch (e) {
+            this._errorSink.post("loadSession", `session ${id} unreadable: ${e?.message ?? e}`);
+            this.post({
+                type: "notice", level: "block",
+                text: `⛔ Session ${id} is corrupt and cannot be loaded: ${e?.message ?? e}`,
+            });
+            return;
+        }
         if (!persisted)
             return;
-        const chainLinks = (0, SessionStore_1.listChainLinks)(this._projectRoot, id);
+        let chainLinks;
+        try {
+            chainLinks = (0, SessionStore_1.listChainLinks)(this._projectRoot, id);
+        }
+        catch (e) {
+            this._errorSink.post("listChainLinks", `session ${id}: ${e?.message ?? e}`);
+            this.post({
+                type: "notice", level: "warn",
+                text: `⚠ Chain links unreadable for session ${id} — treating as zero (${e?.message ?? e})`,
+            });
+            chainLinks = [];
+        }
         const chainIndex = chainLinks.length > 0 ? Math.max(...chainLinks) + 1 : (persisted.chainIndex ?? 0);
         this._state = {
             messages: persisted.messages,
@@ -469,7 +514,15 @@ class BrowserPanel {
                 (0, SessionStore_1.saveSession)(this._projectRoot, entry, messages, llamacppHistory, opts);
             }
             catch (e) {
-                console.error(`[HME] saveSession failed: ${e?.message ?? e}`);
+                // Persistence failure = future message loss on server restart.
+                // Console-only logging hid this from LIFESAVER; route through the
+                // error sink so the next turn's banner surfaces it. Also post to
+                // the UI as a notice so the user knows writes are failing.
+                this._errorSink.post("saveSession", `session ${entry.id}: ${e?.message ?? e}`);
+                this.post({
+                    type: "notice", level: "warn",
+                    text: `⚠ Session save failed — your messages may not survive a restart (${e?.message ?? e})`,
+                });
             }
         });
         return this._persistChain;
@@ -498,7 +551,12 @@ class BrowserPanel {
             this.post({ type: "notice", level: "info", text: "🔀 Auto-routing…" });
             const transcriptContext = this._state.messages.slice(-6)
                 .map((m) => `${m.role}: ${m.text.slice(0, 100)}`).join("\n");
-            const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptContext, 0);
+            // Recent-window signals: high constraint density or recent errors
+            // steer the arbiter toward claude even for messages that look simple.
+            // Without these, route=auto only ever saw "message text + context" —
+            // no sense of whether the session was struggling.
+            const { constraintCount, errorCount } = this._transcript.getRecentActivitySignals();
+            const decision = await (0, Arbiter_1.classifyMessage)(msg.text, transcriptContext, constraintCount, errorCount);
             resolvedRoute = decision.route;
             if (!decision.isError) {
                 const label = decision.escalated ? `⬆ escalated to ${decision.route}` : decision.route;
@@ -678,6 +736,14 @@ class BrowserPanel {
         this._isStreaming = false;
         BrowserPanel.current = undefined;
         this._shim.dispose();
+        if (this._poolReaperTimer) {
+            clearInterval(this._poolReaperTimer);
+            this._poolReaperTimer = undefined;
+        }
+        // Tear down every long-lived `claude` process — otherwise they linger
+        // until parent exit, continuing to hold VRAM/RSS for the idle reaper
+        // interval after the server has shut down its listeners.
+        (0, claudeProcessPool_1.killAllClaudeProcesses)();
         try {
             this._persistState();
         }
@@ -696,6 +762,18 @@ class BrowserPanel {
             catch { /* ignore */ }
         }
         this._sseClients = [];
+    }
+    startPoolReaper() {
+        if (this._poolReaperTimer)
+            return;
+        this._poolReaperTimer = setInterval(() => {
+            const reaped = (0, claudeProcessPool_1.reapIdleClaudeProcesses)();
+            if (reaped > 0)
+                console.log(`[HME] pool reaper: killed ${reaped} idle claude process(es)`);
+        }, 5 * 60000);
+        // Don't keep the process alive solely for the reaper.
+        if (this._poolReaperTimer.unref)
+            this._poolReaperTimer.unref();
     }
 }
 exports.BrowserPanel = BrowserPanel;

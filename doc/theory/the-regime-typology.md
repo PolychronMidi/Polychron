@@ -12,6 +12,8 @@ This is a problem of vocabulary, and it is unusually tractable. Most people oper
 
 Polychron needs more than two or three states because its music engine has to behave differently in different states. A system steering tension and release across the six dimensions of density, tension, flicker, entropy, trust, and phase cannot get away with "things are going well" versus "things are going badly." It needs finer distinctions that map to real dynamical regimes in that phase space, and it needs the distinctions to be precise enough that the Conductor's response can be tuned to the state. `systemDynamicsProfiler` classifies the system's 6D trajectory into six regimes with 5-beat hysteresis. Each one has a distinct signature. Each one calls for a different response. Each one, it turns out, has direct recognizable analogues in human systems at every scale.
 
+A methodological note before the field guide. The six regimes were not chosen from a prior theoretical taxonomy and then validated against the engine; they were extracted from what the engine's 6D trajectory actually did, and the names were chosen to be the smallest vocabulary that supported differentiated Conductor responses. The claim this essay makes — that the same six show up in human systems — is therefore an empirical bet rather than a guarantee. The bet has held up in practice, in the use the vocabulary has been put to by the author and by close readers, but it is falsifiable: a human system whose dynamics clearly fall into a seventh regime, recurring often enough to be named, would force the taxonomy open. No such regime has surfaced yet. The vocabulary is the best the project has, not the final word.
+
 This essay is the field guide. Learn the six names, learn what distinguishes them, learn what each one calls for, and almost every dysfunction you see in yourself and others becomes legible in a way it was not before.
 
 ## II. The six regimes
@@ -126,7 +128,27 @@ The structural lesson is not the specific number but the principle: classificati
 
 The question to ask of any self-classification — your own, a team's, a relationship's — is not *what regime are we in* but *how long have we been in the regime we currently think we are in, and is the classification holding because the system is stable or because the hold period is too long*.
 
-## IV. The equilibrator
+Concretely: emotional-state classification at timescales shorter than a few hours usually reads as chatter — anyone who has sat with themselves for an afternoon knows that the first classification of a mood is often wrong and the second is better. A project's state at timescales shorter than a few days is pre-signal; stand-up meetings that label the project every morning mostly observe noise. A relationship's state at timescales shorter than a few weeks treats a single rough patch as if it were a pattern, and the treatment itself can produce the pattern it predicted. A culture's state at timescales shorter than a few years is read through the prior decade's expectations — the *this is definitely the decline* headlines of any given year look reliably premature ten years later, and the actual cultural transitions that did matter were slower and more continuous than their contemporaries perceived. In each case, the hysteresis window is the span over which the signal has to persist before the classification should move.
+
+## IV. The transition sequences
+
+The current regime is less diagnostic than the sequence of regimes. Two systems that read *coherent* this afternoon can be telling very different stories about what just happened and what is about to happen, and the story is in the path.
+
+A small set of transition sequences recur often enough to be worth naming.
+
+**Exploring → evolving → coherent.** The healthy creative arc. The team, the person, the project begins in exploration — many candidate framings, low correlation, high variance. A direction emerges; exploration narrows into evolution along that direction; the evolution settles into a coherent phase in which the architecture of the thing being made is stable enough to support further work on top of it. This is the sequence most creative practice aspires to, and it is what a skilled teacher, therapist, or manager is often trying to support.
+
+**Coherent → drifting → fragmented.** The slow-decline sequence. Nothing dramatic. The coherent phase starts to lose correlation; the drift continues for a long time because each step looks small; eventually the accumulated drift has moved the system far enough that the coherence it once had is no longer recoverable at the current load. The crisis that finally names the fragmentation is usually retrospectively obvious. The cost of not naming the drift earlier is that by the time the name is available, the remedy is much larger.
+
+**Coherent → oscillating → coherent.** The digestion sequence. Something the coherent phase could not metabolize on the first pass becomes a repetition — the same argument, the same bottleneck, the same emotional loop. The oscillation is not failure; it is the system doing the work it could not do in one pass. If a perturbation eventually breaks the loop and the system re-coheres around what the oscillation surfaced, the sequence is complete. If the oscillation never breaks, the system eventually moves to fragmented instead.
+
+**Exploring → fragmented.** The overloaded-exploration sequence. The exploration took on too many dimensions at once, none of them converged, and the system cracked under the undifferentiated load. This is the classic failure of ambitious early-stage projects, ambitious early therapy, ambitious early-stage relationships that try to relearn everything at once.
+
+**Evolving → arrested-evolving → drifting.** The premature-canonization sequence. The evolution was healthy; someone named the current state as the destination before the state had finished evolving; the naming stopped the evolution; the stopped system, no longer moving, begins to drift from what it had been becoming into what it is no longer really being. This is the quietest of the bad sequences because the arrested state looks, from the outside, like stable coherence.
+
+The diagnostic payoff of the sequences is specific. A coherent state reached through *exploring → evolving → coherent* is usually robust; the same state reached via *drifting → coherent* is often denial with better lighting. The same vocabulary in the same moment can mean very different things depending on what produced it. Sequences, more than snapshots, carry the diagnostic load.
+
+## V. The equilibrator
 
 Every regime has a failure mode, and the failure mode is always the same shape: chronic dominance by that regime. No single regime, including the good ones, should run indefinitely.
 
@@ -138,7 +160,7 @@ For human systems, this translates to: chronic dominance by *any* state is itsel
 
 The lesson is not that you should engineer your life to cycle through all six regimes on a schedule. The lesson is that if you notice any regime dominating your recent life — over a sixty-four-day equivalent, or whatever the appropriate hysteresis is — the dominance is itself a diagnostic signal, independent of whether the dominant regime is one you like. Healthy human systems cycle. So do healthy teams. So do healthy relationships. The cycling is not a failure to settle; the cycling is the evidence that the settling would be the failure.
 
-## V. Using the vocabulary
+## VI. Using the vocabulary
 
 The vocabulary is a tool only if it is applied with discipline. Three disciplines make the difference.
 
@@ -150,7 +172,7 @@ The vocabulary is a tool only if it is applied with discipline. Three discipline
 
 Most of what therapy, coaching, and good management do is install the habits of accurate regime recognition in someone who did not previously have them. The techniques vary. The underlying skill is the same. Learn to distinguish the six states. Learn to watch their sequence. Learn which response each one calls for. Apply the response without fighting the diagnosis.
 
-## VI. Coda
+## VII. Coda
 
 The six regimes are not exhaustive. Real dynamical systems occupy positions in a continuous phase space, and the six are categorical bins imposed on that continuity for the sake of actionable classification. Finer vocabularies exist. Clinical psychology has dozens of state descriptors. Organizational theory has its own. The six are the minimum vocabulary that distinguishes states that call for distinguishable responses — the smallest set Polychron could get away with while still generating music that sounded like music.
 
@@ -163,3 +185,7 @@ The names are available for use outside the architecture. They cost nothing to i
 Notice which regime you are in right now. Notice which regime the last important conversation you had was in. Notice which regime your team has been dominated by over the last month. The act of classification, even before the response, changes what is visible. What is visible then changes what is possible.
 
 The vocabulary is the cheapest tool in the kit, and one of the most powerful.
+
+---
+
+Next theory essay: [On Emergence as Engineering Target](./on-emergence-as-engineering-target.md)

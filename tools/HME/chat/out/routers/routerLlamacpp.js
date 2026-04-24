@@ -129,11 +129,32 @@ function streamLlamacpp(messages, opts, onChunk, onDone, onError) {
                     }
                     try {
                         const obj = JSON.parse(payload);
-                        const choices = obj?.choices ?? [];
-                        if (!choices.length)
+                        // OpenAI-compat SSE contract: every non-[DONE] frame must have
+                        // `choices` (an array). Some providers emit a leading empty-
+                        // choices frame for role assignment — tolerate that. But a
+                        // frame missing `choices` entirely is a contract violation
+                        // worth surfacing — don't silently drop tokens.
+                        if (!Array.isArray(obj?.choices)) {
+                            onChunk(`[contract-drift] frame has no .choices array: ${payload.slice(0, 120)}`, "error");
                             continue;
-                        const delta = choices[0]?.delta ?? {};
-                        const content = delta.content ?? "";
+                        }
+                        if (obj.choices.length === 0)
+                            continue;
+                        const delta = obj.choices[0]?.delta;
+                        if (!delta || typeof delta !== "object") {
+                            onChunk(`[contract-drift] frame .choices[0].delta missing: ${payload.slice(0, 120)}`, "error");
+                            continue;
+                        }
+                        // `content` can legitimately be absent when the frame carries
+                        // only a role assignment or finish_reason. Tolerate those by
+                        // continuing; only fail on malformed non-string content.
+                        if (delta.content === undefined || delta.content === null)
+                            continue;
+                        if (typeof delta.content !== "string") {
+                            onChunk(`[contract-drift] delta.content not a string: ${JSON.stringify(delta).slice(0, 120)}`, "error");
+                            continue;
+                        }
+                        const content = delta.content;
                         if (!content)
                             continue;
                         if (content.includes("<think>")) {
@@ -281,19 +302,32 @@ function llamacppChatOnce(messages, tools, opts) {
                     }
                     return;
                 }
+                let parsed;
                 try {
-                    const parsed = JSON.parse(raw);
-                    // Translate OpenAI envelope → llamacpp-ish message shape the caller expects.
-                    const choice = parsed?.choices?.[0] ?? {};
-                    const msg = choice.message ?? {};
-                    if (typeof msg.content === "string") {
-                        msg.content = stripThinkTags(msg.content);
-                    }
-                    resolve({ message: msg, _raw: parsed });
+                    parsed = JSON.parse(raw);
                 }
                 catch (e) {
                     reject(new Error(`llama-server parse error: ${raw.slice(0, 200)}`));
+                    return;
                 }
+                // OpenAI envelope contract: choices[0].message must exist. An
+                // empty `{}` fallback would propagate to the agentic loop which
+                // would then see no tool_calls + empty content and think the
+                // model finished — a false termination on contract drift.
+                const choice = parsed?.choices?.[0];
+                if (!choice || typeof choice !== "object") {
+                    reject(new Error(`llama-server envelope missing choices[0]: ${raw.slice(0, 200)}`));
+                    return;
+                }
+                const msg = choice.message;
+                if (!msg || typeof msg !== "object") {
+                    reject(new Error(`llama-server envelope missing choices[0].message: ${raw.slice(0, 200)}`));
+                    return;
+                }
+                if (typeof msg.content === "string") {
+                    msg.content = stripThinkTags(msg.content);
+                }
+                resolve({ message: msg, _raw: parsed });
             });
             res.on("error", (e) => { if (hardTimer)
                 clearTimeout(hardTimer); reject(e); });
@@ -392,23 +426,41 @@ function streamLlamacppAgentic(messages, opts, workingDir, onChunk, onDone, onEr
             }
             if (aborted)
                 return;
-            const msg = response?.message ?? {};
-            let toolCalls = msg.tool_calls ?? [];
-            if (toolCalls.length === 0 && (msg.content ?? "").includes("<function=")) {
-                toolCalls = parseXmlFunctionCalls(msg.content ?? "");
+            // llamacppChatOnce now throws on missing message, so this is a real
+            // message object — but the content/tool_calls fields may still be
+            // absent depending on the model's response.
+            const msg = response.message;
+            let toolCalls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+            const rawContent = typeof msg.content === "string" ? msg.content : "";
+            if (toolCalls.length === 0 && rawContent.includes("<function=")) {
+                toolCalls = parseXmlFunctionCalls(rawContent);
             }
             if (toolCalls.length === 0) {
-                const text = stripThinkTags(msg.content ?? "");
-                if (text)
+                const text = stripThinkTags(rawContent);
+                if (text) {
                     onChunk(text, "text");
-                onDone();
+                    onDone();
+                    return;
+                }
+                // No tool calls AND no text — the model said nothing at all. Silent
+                // onDone here produces a blank assistant bubble, leaving the user
+                // to wonder what broke. Fail loud so the UI surfaces the empty
+                // response as an error instead.
+                onError(`llama-server returned empty response (no tool_calls, no content) on iteration ${iterations}`);
                 return;
             }
-            current.push({ role: "assistant", content: msg.content ?? "", tool_calls: toolCalls });
+            current.push({ role: "assistant", content: rawContent, tool_calls: toolCalls });
             for (const tc of toolCalls) {
                 if (aborted)
                     return;
-                const fnName = tc.function?.name ?? "";
+                const fnName = typeof tc.function?.name === "string" ? tc.function.name : "";
+                if (!fnName) {
+                    // An unnamed tool call loops forever: the model emits a malformed
+                    // call, we execute "Unknown tool: ", append result, model emits
+                    // another malformed call, etc. Terminate the loop loudly instead.
+                    onError(`llama-server emitted tool_call with no function name: ${JSON.stringify(tc).slice(0, 200)}`);
+                    return;
+                }
                 let args = {};
                 try {
                     args = typeof tc.function?.arguments === "string"
@@ -423,11 +475,31 @@ function streamLlamacppAgentic(messages, opts, workingDir, onChunk, onDone, onEr
                 let result = "";
                 try {
                     if (fnName === "bash") {
-                        result = (0, child_process_1.execSync)(String(args.command ?? ""), {
-                            cwd: workingDir,
-                            timeout: 30000,
-                            encoding: "utf8",
-                        });
+                        // Cap output size — a runaway command (large `find /`, streaming log
+                        // tail, etc.) otherwise balloons RSS and can take the server down
+                        // or trivially blow through the model's context budget on the next
+                        // tool turn. 256 KiB is generous for legitimate output and tight
+                        // enough to cut pathological cases. `maxBuffer` raises ERR_CHILD_
+                        // PROCESS_STDIO_MAXBUFFER which we catch and surface as a clear
+                        // message, preserving any output captured before the limit.
+                        const BASH_MAX_BYTES = 256 * 1024;
+                        try {
+                            result = (0, child_process_1.execSync)(String(args.command ?? ""), {
+                                cwd: workingDir,
+                                timeout: 30000,
+                                encoding: "utf8",
+                                maxBuffer: BASH_MAX_BYTES,
+                            });
+                        }
+                        catch (execErr) {
+                            const partial = typeof execErr?.stdout === "string" ? execErr.stdout : "";
+                            if (execErr?.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
+                                result = `${partial}\n[bash: output truncated — exceeded ${BASH_MAX_BYTES} bytes; narrow the command]`;
+                            }
+                            else {
+                                throw execErr;
+                            }
+                        }
                         result = result.trim() || "(no output)";
                     }
                     else if (fnName === "read_file") {

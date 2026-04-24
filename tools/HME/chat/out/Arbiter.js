@@ -160,17 +160,27 @@ function daemonPost(payload) {
             let raw = "";
             res.on("data", (c) => { raw += c.toString("utf8"); });
             res.on("end", () => {
+                let parsed;
                 try {
-                    const parsed = JSON.parse(raw);
-                    if (parsed.error) {
-                        reject(new Error(parsed.error));
-                        return;
-                    }
-                    resolve(parsed.response ?? "");
+                    parsed = JSON.parse(raw);
                 }
                 catch (e) {
                     reject(new Error(`daemon parse error: ${e?.message ?? e}`));
+                    return;
                 }
+                if (parsed.error) {
+                    reject(new Error(parsed.error));
+                    return;
+                }
+                // `response` missing is a daemon contract break — reject loudly.
+                // Resolving `""` would pass through to the arbiter's JSON parser
+                // which would then report "arbiter parse failed" and the real
+                // problem (empty daemon response) would never be diagnosed.
+                if (typeof parsed.response !== "string") {
+                    reject(new Error(`daemon response missing or non-string: ${raw.slice(0, 160)}`));
+                    return;
+                }
+                resolve(parsed.response);
             });
         });
         req.on("error", (e) => {

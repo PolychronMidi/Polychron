@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hybridAdapter = exports.llamacppAdapter = exports.claudePtyAdapter = exports.claudeAdapter = void 0;
+exports.hybridAdapter = exports.llamacppAdapter = exports.claudeAdapter = void 0;
 exports.getAdapterForRoute = getAdapterForRoute;
 exports.runAdapter = runAdapter;
 /**
@@ -10,13 +10,13 @@ exports.runAdapter = runAdapter;
  *
  * Callers pick an adapter via `getAdapterForRoute(route)` and drive it
  * through `runAdapter(adapter, messages, opts)` — error handling, deadline,
- * sessionId, and usage are all normalized. Per-route quirks (Claude PTY
- * mode, llama think-tags, hybrid enrichment) are hidden inside each
- * backend's legacy function; the adapter wraps them in a uniform shape.
+ * sessionId, and usage are all normalized. Per-route quirks (llama think-tags,
+ * hybrid enrichment) are hidden inside each backend's legacy function; the
+ * adapter wraps them in a uniform shape.
  */
 const router_1 = require("../router");
-exports.claudeAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (pipe)", (input, opts, cb) => {
-    return (0, router_1.streamClaude)(input.message, input.sessionId, opts.claude, input.workingDir, cb.chunk, (id) => cb.sessionId?.(id), (_cost, usage) => {
+exports.claudeAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (stream-json pool)", (input, opts, cb) => {
+    return (0, router_1.streamClaude)(input.chatSessionId, input.message, input.sessionId, opts.claude, input.workingDir, cb.chunk, (id) => cb.sessionId?.(id), (_cost, usage) => {
         if (usage) {
             cb.tokens?.({
                 input: usage.inputTokens,
@@ -26,18 +26,6 @@ exports.claudeAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (pipe)"
         }
         cb.done();
     }, cb.error);
-});
-exports.claudePtyAdapter = (0, router_1.wrapLegacyStream)("claude", "Claude (PTY)", (input, opts, cb) => {
-    return (0, router_1.streamClaudePty)(input.message, input.sessionId, opts.claude, input.workingDir, cb.chunk, (id) => cb.sessionId?.(id), (usage) => {
-        if (usage) {
-            cb.tokens?.({
-                input: usage.inputTokens,
-                output: usage.outputTokens,
-                usedPct: usage.usedPct,
-            });
-        }
-        cb.done();
-    }, cb.error, opts.onRawData, opts.onPtyReady);
 });
 // llama.cpp / hybrid backends don't carry API session ids. A synthetic id
 // keeps the RouterInterface contract uniform — session-resumption code sees
@@ -83,10 +71,10 @@ exports.hybridAdapter = (0, router_1.wrapLegacyStream)("hybrid", "llama.cpp + KB
  * Return the adapter appropriate for the given route. Caller is
  * responsible for supplying the right input shape per adapter.
  */
-function getAdapterForRoute(route, opts) {
+function getAdapterForRoute(route) {
     switch (route) {
         case "claude":
-            return opts?.claudePty ? exports.claudePtyAdapter : exports.claudeAdapter;
+            return exports.claudeAdapter;
         case "local":
             return exports.llamacppAdapter;
         case "hybrid":

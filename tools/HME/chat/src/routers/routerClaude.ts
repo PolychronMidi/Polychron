@@ -1,4 +1,3 @@
-import { spawn } from "child_process";
 import { readFileSync, appendFileSync } from "fs";
 import { ClaudeOptions, ChunkCallback, TokenUsage } from "../router";
 
@@ -15,7 +14,7 @@ const PARENT_CLAUDE_SESSION_VARS = new Set([
   "CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING",
 ]);
 
-function buildClaudeEnv(): Record<string, string> {
+export function buildClaudeEnv(): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (k === "ANTHROPIC_API_KEY") continue;
@@ -30,7 +29,7 @@ function buildClaudeEnv(): Record<string, string> {
 
 //  Shared CLI arg builder
 
-function buildClaudeArgs(
+export function buildClaudeArgs(
   opts: ClaudeOptions,
   sessionId: string | null,
   prefix: string[],
@@ -47,9 +46,16 @@ function buildClaudeArgs(
   return args;
 }
 
-//  Claude CLI (pipe mode)
+//  Claude CLI — pool-backed long-lived process
+//
+// Each chat session gets ONE persistent `claude` process from
+// claudeProcessPool. Turn 1 builds the prompt cache; turn 2+ hits it — the
+// 10x-context / 10x-latency regression versus VS Code was caused by the
+// former per-message spawn + --resume hydration, not by anything the proxy
+// does. Subscription billing is preserved because we still use the CLI.
 
 export function streamClaude(
+  chatSessionId: string,
   message: string,
   sessionId: string | null,
   opts: ClaudeOptions,
@@ -59,129 +65,37 @@ export function streamClaude(
   onDone: (cost?: number, usage?: TokenUsage) => void,
   onError: (msg: string) => void
 ): () => void {
-  // opts.thinking: Extended thinking blocks come through natively in stream-json --verbose.
-  const args = buildClaudeArgs(opts, sessionId, ["-p", "--output-format", "stream-json", "--verbose"]);
+  // Lazy-imported to avoid the circular dep (pool imports from this module).
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { getOrSpawnProcess } = require("./claudeProcessPool") as typeof import("./claudeProcessPool");
+  const proc = getOrSpawnProcess(chatSessionId, sessionId, opts, workingDir);
 
-  const env = buildClaudeEnv();
-  // The statusline hook always writes to /tmp/claude-context.json in Claude Code's
-  // environment — setting HME_CTX_FILE on the subprocess env has no effect on the
-  // hook. Read the fixed path directly.
-  const ctxFile = `/tmp/claude-context.json`;
-
-  const proc = spawn("claude", args, {
-    cwd: workingDir,
-    env,
-    stdio: ["pipe", "pipe", "pipe"],
-  });
-
-  proc.stdin.write(message);
-  proc.stdin.end();
-
-  const _readCtxFile = (): Partial<TokenUsage> => {
-    try {
-      const d = JSON.parse(readFileSync(ctxFile, "utf8"));
-      const usedPct = sanitizeUsedPct(d.used_pct, `streamClaude:ctxFile:${ctxFile}`);
-      return {
-        ...(usedPct != null ? { usedPct } : {}),
-        ...(d.model_id ? { modelId: d.model_id } : {}),
-        ...(d.model_name ? { modelName: d.model_name } : {}),
-      };
-    } catch {
-      return {};
-    }
-  };
-
-  let buf = "";
-  let doneFired = false;
-  // Store result-event data; emit after close so the Stop hook has already
-  // written the real API used_pct to ctxFile before we read it.
-  let pendingCost: number | undefined;
-  let pendingUsage: TokenUsage | undefined;
-  let resultReceived = false;
-
-  const storeResult = (cost?: number, usage?: TokenUsage) => {
-    resultReceived = true;
-    pendingCost = cost;
-    pendingUsage = usage;
-  };
-
-  const finalize = (code: number | null) => {
-    if (doneFired) return;
-    doneFired = true;
-    // Read used_pct from statusline-raw — the statusline hook writes this for
-    // every Claude Code session. used_percentage is the direct API value, no math.
-    let ctxOverride: Partial<TokenUsage> = {};
-    try {
-      const raw = JSON.parse(readFileSync("/tmp/claude-statusline-raw.json", "utf8"));
-      const usedPct = sanitizeUsedPct(raw?.context_window?.used_percentage, "streamClaude:statusline-raw");
-      if (usedPct != null) {
-        ctxOverride = {
-          usedPct,
-          modelId: raw?.model?.id || undefined,
-          modelName: raw?.model?.display_name || undefined,
-        };
-      }
-    } catch {}
-    if (ctxOverride.usedPct == null) ctxOverride = _readCtxFile();
-    const base = resultReceived ? pendingUsage : undefined;
-    const merged: TokenUsage | undefined = base
-      ? { ...base, ...ctxOverride }
-      : (ctxOverride.usedPct != null ? { inputTokens: 0, outputTokens: 0, ...ctxOverride } as TokenUsage : undefined);
-    onDone(pendingCost, merged);
-  };
-
-  const INACTIVITY_MS = 30000;
-  let inactivityTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-    if (!doneFired) {
-      doneFired = true;
-      try { proc.kill(); } catch {}
-      onError(`CRITICAL: Claude CLI produced no output for ${INACTIVITY_MS / 1000}s — API may be down or rate-limited`);
-    }
-  }, INACTIVITY_MS);
-  const resetInactivity = () => {
-    if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
-  };
-
-  proc.stdout.on("data", (data: Buffer) => {
-    resetInactivity();
-    buf += data.toString("utf8");
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-
-    for (const line of lines) {
-      if (!line.trim()) continue;
+  // Merge the statusline-raw fallback onto usage — the result event already
+  // has the authoritative usedPct via computeTurnUsage, but the fallback
+  // catches regressions (e.g. if Anthropic ships a CLI that stops emitting
+  // modelUsage.contextWindow, the meter keeps working).
+  const wrappedOnDone = (cost?: number, usage?: TokenUsage) => {
+    let merged = usage;
+    if (!merged || merged.usedPct == null) {
       try {
-        const evt = JSON.parse(line);
-        handleStreamEvent(evt, opts.model, onChunk, onSessionId, storeResult);
-      } catch (e) {
-        console.error(`[HME] stream JSON parse failed: ${(e as any)?.message ?? e} | line: ${line.slice(0, 120)}`);
-        if (line.trim()) onChunk(line.trim(), "error");
-      }
+        const raw = JSON.parse(readFileSync("/tmp/claude-statusline-raw.json", "utf8"));
+        const usedPct = sanitizeUsedPct(raw?.context_window?.used_percentage, "streamClaude:statusline-raw");
+        if (usedPct != null) {
+          merged = {
+            ...(merged ?? { inputTokens: 0, outputTokens: 0 }),
+            usedPct,
+            modelId: raw?.model?.id || merged?.modelId,
+            modelName: raw?.model?.display_name || merged?.modelName,
+          };
+        }
+      } catch { /* silent-ok: statusline file absent, keep merged as-is */ }
     }
-  });
+    onDone(cost, merged);
+  };
 
-  proc.stderr.on("data", (data: Buffer) => {
-    resetInactivity();
-    const text = data.toString("utf8").trim();
-    if (text) onError(text);
+  return proc.startTurn(message, {
+    onChunk, onSessionId, onDone: wrappedOnDone, onError,
   });
-
-  proc.on("close", (code) => {
-    resetInactivity();
-    if (buf.trim()) {
-      try {
-        const evt = JSON.parse(buf.trim());
-        handleStreamEvent(evt, opts.model, onChunk, onSessionId, storeResult);
-      } catch (e) {
-        console.error(`[HME] close-buf JSON parse failed: ${(e as any)?.message ?? e} | buf: ${buf.slice(0, 120)}`);
-        onChunk(buf.trim(), "error");
-      }
-    }
-    if (code !== 0) { onError(`Claude CLI exited with code ${code}`); return; }
-    finalize(code);
-  });
-
-  return () => { try { proc.kill(); } catch {} };
 }
 
 // Sanity bounds for a reported/computed usedPct.
@@ -285,7 +199,7 @@ export function sanitizeUsedPct(
   return Math.round(raw * 10) / 10;
 }
 
-function computeTurnUsage(
+export function computeTurnUsage(
   evt: any,
   uiModelAlias: string,
   inputTokens: number | undefined,
@@ -339,36 +253,7 @@ function computeTurnUsage(
   };
 }
 
-function handleStreamEvent(
-  evt: any,
-  uiModelAlias: string,
-  onChunk: ChunkCallback,
-  onSessionId: (id: string) => void,
-  onDone: (cost?: number, usage?: TokenUsage) => void
-) {
-  if (evt.type === "system" && evt.subtype === "init" && evt.session_id) {
-    onSessionId(evt.session_id);
-    return;
-  }
-
-  if (evt.type === "assistant" && evt.message?.content) {
-    for (const block of evt.message.content) {
-      if (block.type === "thinking" && block.thinking) {
-        onChunk(block.thinking, "thinking");
-      } else if (block.type === "text" && block.text) {
-        onChunk(block.text, "text");
-      } else if (block.type === "tool_use") {
-        onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}, null, 2)}`, "tool");
-      }
-    }
-    return;
-  }
-
-  if (evt.type === "result") {
-    const inputTokens: number | undefined = evt.usage?.input_tokens;
-    const outputTokens: number | undefined = evt.usage?.output_tokens;
-    const usage = computeTurnUsage(evt, uiModelAlias, inputTokens, outputTokens);
-    onDone(evt.total_cost_usd ?? evt.cost_usd ?? undefined, usage);
-    return;
-  }
-}
+// handleStreamEvent was the per-message stream-json parser for the former
+// fire-and-forget streamClaude. The pool now owns event parsing inline
+// (claudeProcessPool.ts _handleEvent) because it needs to distinguish "first
+// init event of a long-lived process" from "per-turn event."

@@ -23,8 +23,12 @@ import {
   wrapLegacyStream,
 } from "../router";
 
-// Claude (pipe mode) — takes a single message string + sessionId.
+// Claude (pool-backed) — pool keys on `chatSessionId`, so identical turns on
+// the same chat session reuse the same long-lived claude process (prompt
+// cache hits from turn 2 onward). `sessionId` is the Claude-native id used
+// for --resume on respawn after death or config change.
 export interface ClaudeStreamInput {
+  chatSessionId: string;
   message: string;
   sessionId: string | null;
   workingDir: string;
@@ -36,9 +40,10 @@ export interface ClaudeStreamOptions extends BaseStreamOptions {
 export const claudeAdapter: RouterAdapter<ClaudeStreamInput, ClaudeStreamOptions> =
   wrapLegacyStream<ClaudeStreamInput, ClaudeStreamOptions>(
     "claude",
-    "Claude (pipe)",
+    "Claude (stream-json pool)",
     (input, opts, cb) => {
       return streamClaude(
+        input.chatSessionId,
         input.message,
         input.sessionId,
         opts.claude,

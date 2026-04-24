@@ -18,11 +18,6 @@ exports.LLAMACPP_URL = process.env.HME_LLAMACPP_ARBITER_URL ?? "http://127.0.0.1
 // at any effort level. We do not munge effort based on the thinking state.
 const VALID_MODEL_ALIASES = new Set(["opus", "sonnet", "haiku"]);
 const VALID_EFFORTS = new Set(["low", "medium", "high", "max"]);
-const MODEL_ID_MAP = {
-    opus: "opus",
-    sonnet: "sonnet",
-    haiku: "haiku",
-};
 /** Throws on invalid config. Haiku has no effort/thinking controls in the UI. */
 function validateClaudeConfig(cfg) {
     if (!cfg.model || !VALID_MODEL_ALIASES.has(cfg.model)) {
@@ -41,10 +36,11 @@ function validateClaudeConfig(cfg) {
     return { model: cfg.model, effort: cfg.effort, thinking: cfg.thinking };
 }
 function resolveClaudeConfig(cfg) {
-    const modelId = MODEL_ID_MAP[cfg.model];
-    if (!modelId)
-        throw new Error(`Unmapped model alias: ${cfg.model}`);
-    return { alias: cfg.model, modelId, cliEffort: cfg.effort, thinking: cfg.thinking };
+    // `cfg.model` is already the CLI alias (opus/sonnet/haiku), which the Claude
+    // CLI accepts directly as --model. No aliasing table needed — the alias *is*
+    // the id the CLI wants. Earlier versions carried a full MODEL_ID_MAP for
+    // long-form ids; the CLI deprecated those in favor of the short aliases.
+    return { alias: cfg.model, modelId: cfg.model, cliEffort: cfg.effort, thinking: cfg.thinking };
 }
 function claudeOptsFromConfig(resolved) {
     return {

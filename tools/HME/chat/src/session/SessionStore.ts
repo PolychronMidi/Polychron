@@ -59,12 +59,19 @@ function readJson<T>(filePath: string, fallback: T): T {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
   } catch (e: any) {
-    if (e?.code !== "ENOENT") console.error(`[SessionStore] readJson failed for ${filePath}: ${e?.message ?? e}`);
-    return fallback;
+    // ENOENT (file doesn't exist yet) is legitimately "use the fallback."
+    // Any other failure — JSON corruption, permission denied, disk error —
+    // is a real problem: silently falling back to `[]` would wipe a user's
+    // session list or message history. Throw so callers surface it and the
+    // user can investigate before losing more data.
+    if (e?.code === "ENOENT") return fallback;
+    throw new Error(`SessionStore.readJson failed for ${filePath}: ${e?.message ?? e}`);
   }
 }
 
 function writeJson(filePath: string, data: unknown): void {
+  // Callers do not wrap this in try/catch — disk full, permission denied,
+  // or stale tmp file should propagate. Data-loss failures must be loud.
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
   const tmp = `${filePath}.tmp`;
@@ -95,10 +102,20 @@ export function loadSession(projectRoot: string, id: string): PersistedSession |
     null
   );
   if (!data) return null;
+  // Session files are written atomically (tmp + rename) — a loaded object
+  // that's missing `messages` or `llamacppHistory` means the schema drifted
+  // or the file was hand-edited. Fail loud so the user sees the mismatch
+  // instead of opening a session that silently dropped their conversation.
+  if (!Array.isArray(data.messages)) {
+    throw new Error(`SessionStore.loadSession: session ${id} missing messages array — file may be corrupt`);
+  }
+  if (!Array.isArray(data.llamacppHistory)) {
+    throw new Error(`SessionStore.loadSession: session ${id} missing llamacppHistory array — file may be corrupt`);
+  }
   return {
     entry,
-    messages: data.messages ?? [],
-    llamacppHistory: data.llamacppHistory ?? [],
+    messages: data.messages,
+    llamacppHistory: data.llamacppHistory,
     contextTokens: data.contextTokens,
     chainIndex: data.chainIndex,
   };
@@ -138,11 +155,16 @@ export function saveSession(
 }
 
 export function deleteSession(projectRoot: string, id: string): void {
-  // Delete file first — if it fails the index stays consistent; file-before-index prevents orphaned entries
+  // Delete file first — if it fails the index stays consistent; file-before-index prevents orphaned entries.
+  // Any failure except "already gone" (ENOENT) propagates: leaving a file
+  // behind while removing the index entry creates an orphan on disk that
+  // nobody knows about.
   try {
     fs.unlinkSync(sessionPath(projectRoot, id));
   } catch (e: any) {
-    if (e?.code !== "ENOENT") console.error(`[SessionStore] Delete failed: ${e?.message ?? e}`);
+    if (e?.code !== "ENOENT") {
+      throw new Error(`SessionStore.deleteSession: unlink ${sessionPath(projectRoot, id)} failed: ${e?.message ?? e}`);
+    }
   }
   const store = indexStore(projectRoot);
   store.write(store.read().filter((s) => s.id !== id));
@@ -191,8 +213,11 @@ export function listChainLinks(projectRoot: string, sessionId: string): number[]
       .filter((n) => !isNaN(n))
       .sort((a, b) => a - b);
   } catch (e: any) {
-    if (e?.code !== "ENOENT") console.error(`[SessionStore] listChainLinks failed for ${sessionId}: ${e?.message ?? e}`);
-    return [];
+    // No chain dir yet — legitimately empty. Any other readdir failure
+    // (permission, I/O) is a real problem that would make ChainPerformer
+    // think there are zero prior links and trigger a spurious rotation.
+    if (e?.code === "ENOENT") return [];
+    throw new Error(`SessionStore.listChainLinks failed for ${sessionId}: ${e?.message ?? e}`);
   }
 }
 
