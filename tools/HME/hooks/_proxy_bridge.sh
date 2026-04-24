@@ -1,58 +1,115 @@
 #!/usr/bin/env bash
-# The ONLY Claude-Code-side hook. Stateless forwarder: POSTs stdin to the
-# proxy's /hme/lifecycle endpoint with ?event=<EventName>, relays ONLY
-# actionable output back to Claude Code.
+# Claude-Code-side hook forwarder. POSTs stdin to the proxy's /hme/lifecycle
+# endpoint with ?event=<EventName>, relays the JSON response {stdout,
+# stderr, exit_code} back to Claude Code.
 #
-# Filtering rules (context-burn avoidance):
-#   - Hook stdout is relayed only when it's a valid decision JSON
-#     ({"decision":...} or {"permissionDecision":...}). Routine text
-#     output (git status, banners, etc.) stays local to the proxy log.
-#   - Hook stderr is dropped entirely. Hooks emit verbose stderr for
-#     operator observability; that belongs in hme-proxy.out, NOT in
-#     Claude's per-turn context. Showing it every turn burns tokens on
-#     redundant banners.
-#   - Exit code is preserved so blocking semantics still work.
+# CRITICAL CHANGE (fail-LOUD, not fail-open):
+# ------------------------------------------
+# The old code exited 0 silently when the proxy was unreachable. That was
+# the single largest silent-failure mode in the HME stack — proxy dies,
+# every hook silently succeeds, LIFESAVER never fires (LIFESAVER itself
+# lives inside the proxy), autocommits stop happening, KB briefings stop
+# injecting, and the user is none the wiser. This recurred 20+ times.
 #
-# If the proxy is unreachable, fail open (exit 0, empty output) so
-# Claude Code never wedges on proxy downtime.
+# The fix: when the proxy is unreachable, emit a LIFESAVER banner as the
+# hook's stdout JSON. Claude Code's plugin machinery surfaces this to the
+# user on the very next turn. We also route the same banner through
+# hme-errors.log (the existing LIFESAVER text-scan channel) so downstream
+# monitors and the direct-autocommit hook pick it up too.
 #
-# Usage (from hooks.json): bash _proxy_bridge.sh <EventName>
+# We still never BLOCK Claude Code on proxy downtime (exit 0 is preserved)
+# because wedging the whole agent on a proxy crash is worse than losing
+# one turn of hook logic. The difference is: loud instead of silent.
 
 EVENT="${1:-unknown}"
 PORT="${HME_PROXY_PORT:-9099}"
 
+# Capture stdin (the Claude Code hook payload).
 BODY=$(cat)
 
+# Derive Polychron project root from THIS script's own path. If a plugin
+# cache copy is being invoked, the path math still lands inside the cache
+# tree; if that fails we fall back to a hardcoded Polychron root so the
+# error logging path never dies for lack of a writable directory.
+_PB_SELF="${BASH_SOURCE[0]}"
+_PB_ROOT=""
+# Cached copy lives at ~/.claude/plugins/cache/polychron-local/HME/1.0.0/hooks/;
+# repo copy lives at <repo>/tools/HME/hooks/. Walk up to find a .git next to src/.
+_pb_try="$(cd "$(dirname "$_PB_SELF")" 2>/dev/null && pwd)"
+while [ -n "$_pb_try" ] && [ "$_pb_try" != "/" ]; do
+  if [ -d "$_pb_try/.git" ] && [ -d "$_pb_try/src" ]; then
+    _PB_ROOT="$_pb_try"
+    break
+  fi
+  _pb_try="$(dirname "$_pb_try")"
+done
+# Fallback: Polychron's known checkout location on this host.
+[ -z "$_PB_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _PB_ROOT="/home/jah/Polychron"
+
+# POST to proxy. --max-time 60s accommodates stop.sh's longer chain
+# (auto-commit + lifecycle checks).
 RESP=$(curl -sf --max-time 60 -X POST \
   -H 'Content-Type: application/json' \
   --data-binary "$BODY" \
   "http://127.0.0.1:${PORT}/hme/lifecycle?event=${EVENT}" 2>/dev/null)
 
 if [ -z "$RESP" ]; then
+  # Proxy unreachable. FAIL LOUD, NOT FAIL OPEN.
+  _PB_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+  _PB_MSG="[$_PB_TS] [proxy-bridge] HME proxy unreachable on 127.0.0.1:${PORT} (event=${EVENT}). No LIFESAVER, no KB briefing, no hook logic for this turn."
+
+  # Channel A: hme-errors.log for LIFESAVER text-scan pickup.
+  if [ -n "$_PB_ROOT" ]; then
+    mkdir -p "$_PB_ROOT/log" 2>/dev/null
+    echo "$_PB_MSG" >> "$_PB_ROOT/log/hme-errors.log" 2>/dev/null
+    # Channel B: sticky proxy-down flag — separate from autocommit flag.
+    mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
+    echo "$_PB_MSG" > "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
+  fi
+
+  # Channel C: stderr. Even when plugin machinery swallows stderr, the
+  # local proxy log catches it.
+  echo "$_PB_MSG" >&2
+
+  # Channel D: stdout as a Claude-Code-visible JSON banner on UserPromptSubmit
+  # and SessionStart. These events accept additionalContext in their
+  # hookSpecificOutput and relay it to the agent's next turn. For Stop /
+  # PreToolUse / PostToolUse / PreCompact / PostCompact, emitting a JSON
+  # block here would wedge the turn, so we keep them silent on stdout —
+  # the other three channels carry the signal.
+  case "$EVENT" in
+    UserPromptSubmit|SessionStart)
+      _PB_BANNER="🚨 LIFESAVER - HME PROXY OFFLINE - ALL HOOK LOGIC SILENTLY DISABLED
+
+The HME proxy on 127.0.0.1:${PORT} is not responding. This means:
+  - No LIFESAVER alerts will fire from the proxy path this turn
+  - No KB briefings will inject before Edit calls
+  - No jurisdiction rules apply
+  - No onboarding walkthrough will advance
+
+The direct autocommit hook (wired in parallel) is still running, so the
+working tree will not be stranded. But every other HME feature is dead
+until the proxy is restarted.
+
+Restart: cd /home/jah/Polychron && node tools/HME/proxy/hme_proxy.js &
+Check:   curl -sf http://127.0.0.1:${PORT}/health"
+      jq -n --arg banner "$_PB_BANNER" --arg event "$EVENT" \
+        '{"hookSpecificOutput":{"hookEventName":$event,"additionalContext":$banner},"systemMessage":$banner}'
+      ;;
+  esac
+
   exit 0
 fi
 
+# Proxy responded — clear the sticky down-flag.
+[ -n "$_PB_ROOT" ] && rm -f "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
+
+# Parse response and relay. jq is available in every Claude Code environment;
+# this is the simplest way to pull structured fields from the JSON.
 STDOUT=$(echo "$RESP" | jq -r '.stdout // ""' 2>/dev/null)
+STDERR=$(echo "$RESP" | jq -r '.stderr // ""' 2>/dev/null)
 EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>/dev/null)
 
-# Only relay stdout that is a structured decision JSON. Everything else
-# (git status output, KB draft hints, routine banners) stays in proxy
-# log and out of Claude's per-turn context.
-IS_DECISION=0
-if [ -n "$STDOUT" ]; then
-  IS_DECISION=$(printf '%s' "$STDOUT" | jq -e 'has("decision") or has("permissionDecision")' >/dev/null 2>&1 && echo 1 || echo 0)
-  if [ "$IS_DECISION" = "1" ]; then
-    printf '%s' "$STDOUT"
-  fi
-fi
-
-# Exit-code policy: honor the hook's non-zero exit ONLY when it actually
-# produced a decision JSON to block with. Hook scripts that return non-zero
-# for internal reasons (e.g., _safety.sh trap verdicts, transient jq
-# failures) would otherwise be misread by Claude Code as blocks. In the
-# forwarder path non-decision exits map to 0, keeping the tool flowing.
-if [ "$IS_DECISION" = "1" ]; then
-  exit "${EXIT_CODE:-0}"
-else
-  exit 0
-fi
+[ -n "$STDOUT" ] && printf '%s' "$STDOUT"
+[ -n "$STDERR" ] && printf '%s' "$STDERR" >&2
+exit "${EXIT_CODE:-0}"
