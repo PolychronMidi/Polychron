@@ -24,6 +24,19 @@
 EVENT="${1:-unknown}"
 PORT="${HME_PROXY_PORT:-9099}"
 
+# Recursion guard: when this hook fires inside a `claude -p` subprocess
+# spawned BY the persistent subagent thread (i/thread), we skip the
+# proxy bounce entirely. Without this, every `i/thread send` spawns a
+# claude session that inherits ~/.claude/settings.json hooks, which
+# would then invoke this script, which would invoke the proxy, which
+# would route to stop.sh, which would emit AUTO-COMPLETENESS INJECT
+# back into the subagent — burning tokens on a recursive auto-loop the
+# subagent didn't ask for. The thread sets HME_THREAD_CHILD=1 before
+# spawning claude; we honor it here by exiting clean.
+if [ "${HME_THREAD_CHILD:-}" = "1" ]; then
+  exit 0
+fi
+
 # Capture stdin (the Claude Code hook payload).
 BODY=$(cat)
 
