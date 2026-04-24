@@ -129,13 +129,18 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
   _auto_module=$(_extract_module "$FILE")
   if [ -n "$_auto_module" ] && ! _nexus_has BRIEF "$_auto_module"; then
-    # Per-turn dedup (same scheme as pretooluse_edit.sh). Skip when
-    # the module's already had a brief emitted this turn.
-    _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT:-}/tmp/hme-turn-briefs.txt"
-    if [ -f "$_AUTO_BRIEF_TURN_FILE" ] && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
+    # Per-turn dedup (same scheme as pretooluse_edit.sh). Tracker is
+    # cleared at turn start by userpromptsubmit.sh. Skip entirely when
+    # PROJECT_ROOT is unset so dedup state never lands in /tmp/ outside
+    # any project.
+    _AUTO_BRIEF_TURN_FILE=""
+    [ -n "${PROJECT_ROOT:-}" ] && _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/tmp/hme-turn-briefs.txt"
+    if [ -n "$_AUTO_BRIEF_TURN_FILE" ] && [ -f "$_AUTO_BRIEF_TURN_FILE" ] \
+        && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
       _AUTO_BRIEF_SKIP=1
     fi
-    if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ]; then
+    if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ] \
+        && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
       # Fast path via /enrich (~70ms) + file head — same budget as
       # pretooluse_edit.sh. Write may target a new file (head empty);
       # KB hits alone are still useful in that case.
