@@ -6,7 +6,9 @@ import os
 
 from server import context as ctx
 from ... import _track
-from ._shared import RELOADABLE
+from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE, ENV
+from .hot_reload import hme_hot_reload
+from ...synthesis import _local_think
 
 logger = logging.getLogger("HME")
 
@@ -17,7 +19,11 @@ def hme_selftest(verbose: bool = False) -> str:
     results = []
 
     tool_count = 0
-    server_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Walk the mcp/server/ root (not the selftest package we're inside).
+    # __file__ = .../mcp/server/tools_analysis/evolution/evolution_selftest/selftest.py
+    # dirname × 4 = .../mcp/server/
+    server_root = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
     for root, dirs, files in os.walk(server_root):
         for f in files:
             if f.endswith(".py"):
@@ -32,7 +38,7 @@ def hme_selftest(verbose: bool = False) -> str:
     results.append(f"{'PASS' if tool_count >= 6 else 'FAIL'}: {tool_count} tools registered")
 
     try:
-        from ..health import doc_sync_check
+        from ...health import doc_sync_check
         sync = doc_sync_check("doc/HME.md")
         is_sync = "IN SYNC" in sync
         # Don't truncate the sync report — identifier names can be long and
@@ -238,7 +244,7 @@ def hme_selftest(verbose: bool = False) -> str:
     # selftest time past reasonable bounds. The full smoke test runs from the
     # dedicated selftest script: scripts/selftest-fix-antipattern.py
     try:
-        from .evolution_admin import _daemon_health_snapshot
+        from ..evolution_admin import _daemon_health_snapshot
         _snap = _daemon_health_snapshot()
         if _snap.get("ready_aliases"):
             results.append(f"PASS: fix_antipattern preflight -- daemon reports {len(_snap['ready_aliases'])} model(s) ready")
@@ -252,8 +258,8 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"FAIL: fix_antipattern preflight -- {type(_fa_outer).__name__}: {_fa_outer}")
 
     try:
-        from ..synthesis import warm_context_status
-        from . import synthesis_llamacpp as _so
+        from ...synthesis import warm_context_status
+        from ...synthesis import synthesis_llamacpp as _so
         _so._refresh_arbiter()
         _ARBITER_MODEL = _so._ARBITER_MODEL
         wcs = warm_context_status()
@@ -288,9 +294,12 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as e:
         results.append(f"FAIL: KB -- {e}")
 
-    # RELOADABLE completeness: every .py module in tools_analysis/ must be in the reload list
+    # RELOADABLE completeness: every .py module in tools_analysis/ must be
+    # in the reload list. Post-split selftest.py sits in
+    # tools_analysis/evolution/evolution_selftest/; walk 3 dirnames up to
+    # get the tools_analysis root instead of the package subdir we live in.
     try:
-        _ta_dir = os.path.dirname(os.path.abspath(__file__))
+        _ta_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         _all_modules = {
             f[:-3] for f in os.listdir(_ta_dir)
             if f.endswith(".py") and f != "__init__.py" and not f.startswith("_")
@@ -307,7 +316,7 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"WARN: hot-reload coverage -- check failed: {e}")
 
     try:
-        from . import synthesis_llamacpp as _so
+        from ...synthesis import synthesis_llamacpp as _so
         if _so._last_think_failure == "timeout":
             import time as _ts_time
             _cooldown_remaining = max(0, _so._TIMEOUT_COOLDOWN_S - (_ts_time.monotonic() - _so._last_think_failure_ts))
@@ -598,29 +607,46 @@ def hme_selftest(verbose: bool = False) -> str:
     # import and no one noticed the invariant was off.
     try:
         from server.lifecycle_writers import all_domains as _all_domains
+        # Post-split selftest.py sits one level deeper (inside
+        # evolution_selftest/), so four `..` to reach mcp/.
         mcp_root = os.path.abspath(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "..", "..", "..",  # tools_analysis/evolution/ → tools_analysis/ → server/ → mcp/
+            "..", "..", "..", "..",
+            # evolution_selftest/ → evolution/ → tools_analysis/ → server/ → mcp/
         ))
         missing_calls = []
         for domain, owner_stem in _all_domains().items():
-            # Find the owner's source file by walking mcp_root.
-            found_path = None
-            for root, _dirs, files in os.walk(mcp_root):
+            # Find the owner's source. Post-split, owners may be EITHER a
+            # single `<stem>.py` file OR a package `<stem>/` containing
+            # the symbol. Aggregate source from every .py inside a package
+            # so assert_writer() calls in any submodule count.
+            sources: list[str] = []
+            for root, dirs, files in os.walk(mcp_root):
                 if owner_stem + ".py" in files:
-                    found_path = os.path.join(root, owner_stem + ".py")
-                    break
-            if found_path is None:
+                    sources.append(os.path.join(root, owner_stem + ".py"))
+                if owner_stem in dirs:
+                    pkg_dir = os.path.join(root, owner_stem)
+                    for sub_root, _sd, sub_files in os.walk(pkg_dir):
+                        sources.extend(os.path.join(sub_root, f)
+                                       for f in sub_files if f.endswith(".py"))
+            if not sources:
                 missing_calls.append(f"{domain} → source for {owner_stem!r} not found")
                 continue
+            combined = ""
             try:
-                with open(found_path, encoding="utf-8", errors="replace") as _of:
-                    src = _of.read()
-                # Match assert_writer("domain", ...) OR assert_writer('domain', ...)
-                if f'assert_writer("{domain}"' not in src and f"assert_writer('{domain}'" not in src:
-                    missing_calls.append(f"{domain} → {owner_stem}.py has no assert_writer({domain!r}, ...) call")
+                for path in sources:
+                    with open(path, encoding="utf-8", errors="replace") as _of:
+                        combined += _of.read() + "\n"
             except OSError as _ro_err:
-                missing_calls.append(f"{domain} → {found_path}: {_ro_err}")
+                missing_calls.append(f"{domain} → {path}: {_ro_err}")
+                continue
+            # Match assert_writer("domain", ...) OR assert_writer('domain', ...)
+            if (f'assert_writer("{domain}"' not in combined
+                and f"assert_writer('{domain}'" not in combined):
+                missing_calls.append(
+                    f"{domain} → {owner_stem} (checked {len(sources)} file(s)) "
+                    f"has no assert_writer({domain!r}, ...) call"
+                )
         if missing_calls:
             results.append(
                 "FAIL: invariant enforcement coverage -- registered domains "

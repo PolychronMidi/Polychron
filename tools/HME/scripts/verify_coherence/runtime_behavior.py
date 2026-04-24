@@ -8,6 +8,8 @@ import subprocess
 import sys
 import time
 
+import threading
+
 from ._base import (
     Verifier, VerdictResult, _result, _run_subprocess,
     PASS, WARN, FAIL, SKIP, ERROR,

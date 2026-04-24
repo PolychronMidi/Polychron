@@ -12,7 +12,7 @@ No layer is optional. Removing any one collapses the executive.
 
 | Layer | Location | What It Does |
 --
-| **MCP Server** | `tools/HME/` | 7 tools: evolve / review / read / learn / trace / hme_admin / agent |
+| **MCP Server** | `tools/HME/` | 12 tools: evolve / review / read / learn / trace / status / hme_admin / hme_todo / agent / grep / glob_search / edit |
 | **CLAUDE.md** | `CLAUDE.md` | Rules, boundaries, mandatory workflow, hard constraints |
 | **Hooks** | `tools/HME/hooks/` + `~/.claude/settings.json` | Automated workflow enforcement + evolution loop driver (pre/post tool use, session lifecycle) |
 | **Lab** | `lab/` | Experimental harness for isolated prototyping |
