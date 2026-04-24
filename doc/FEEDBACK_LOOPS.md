@@ -1,6 +1,6 @@
 # Feedback Loops
 
-11 registered closed-loop feedback controllers, a correlation shuffler for pathological pattern detection, and the feedbackOscillator for cross-layer energy exchange.
+7 registered closed-loop feedback controllers, a correlation shuffler for pathological pattern detection, and the feedbackOscillator for cross-layer energy exchange.
 
 ## Registered Loops
 

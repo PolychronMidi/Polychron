@@ -1,8 +1,8 @@
 # Polychron
 
-Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 64 cross-layer modules, governed by 27 trust-scored systems and 19 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
+Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 64 cross-layer modules, governed by 27 trust-scored systems and 18 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
 
-487 source files | 66K LOC | 11 feedback loops | 19 stutter variants | 12 CIM coordination dials
+487 source files | 66K LOC | 7 feedback loops | 19 stutter variants | 12 CIM coordination dials
 
 ## Quick Start
 
@@ -24,7 +24,7 @@ node lab/run.js sketch-name        # run specific sketch
 
 The system has three interacting layers:
 
-**Conductor** (196 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 19 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
+**Conductor** (196 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 18 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
 
 **Cross-Layer** (64 files) -- 45 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 12 module-pair dials.
 
@@ -71,7 +71,7 @@ Details: [doc/HYPERMETA.md](doc/HYPERMETA.md)
 Details: [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md)
 
 ### Feedback Loops
-11 registered closed-loop feedback controllers with resonance dampening. Correlation shuffler detects pathological correlations (reinforcement spirals, tug-of-war, stasis) and applies graduated perturbations. FeedbackOscillator creates multi-round-trip cross-layer energy loops with pitch class memory.
+7 registered closed-loop feedback controllers with resonance dampening. Correlation shuffler detects pathological correlations (reinforcement spirals, tug-of-war, stasis) and applies graduated perturbations. FeedbackOscillator creates multi-round-trip cross-layer energy loops with pitch class memory.
 
 Details: [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md)
 
@@ -114,7 +114,7 @@ Generated per-run in `output/metrics/`:
 | `narrative-digest.md` | Prose composition story |
 | `runtime-snapshots.json` | CIM dials, stutter variant counts, shuffler state |
 | `adaptive-state.json` | Cross-run warm-start EMAs |
-| `feedback_graph.json` | 11 feedback loop topology |
+| `feedback_graph.json` | 7 feedback loop topology |
 | `conductor-map.md` | Conductor intelligence map |
 | `crosslayer-map.md` | Cross-layer topology |
 
@@ -126,7 +126,7 @@ Generated per-run in `output/metrics/`:
 | [doc/HME.md](doc/HME.md) | Local semantic RAG + HME tool reference (invoked via `i/<tool>` shell wrappers) |
 | [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) | Beat lifecycle, signal flow, layer isolation |
 | [doc/TUNING_MAP.md](doc/TUNING_MAP.md) | Feedback loop constants, cross-constant invariants |
-| [doc/HYPERMETA.md](doc/HYPERMETA.md) | 19 self-calibrating controllers |
+| [doc/HYPERMETA.md](doc/HYPERMETA.md) | 18 self-calibrating controllers |
 | [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md) | 19 variants, selection, gating |
 | [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md) | CIM 12 dials |
 | [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) | 11 loops, correlation shuffler |

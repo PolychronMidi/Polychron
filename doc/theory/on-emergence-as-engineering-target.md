@@ -82,7 +82,7 @@ For any human system — team decision-making, political deliberation, instituti
 
 ## VI. The hypermeta controllers
 
-Seventeen hypermeta self-calibrating controllers, at the current count, auto-tune constants that previously required manual adjustment. A meta-controller watchdog detects and resolves inter-controller conflicts. Whole-system coupling homeostasis and two-layer axis energy equilibration eliminate the specific failure mode the architects memorably called *coupling energy whack-a-mole*.
+Eighteen hypermeta self-calibrating controllers, at the current count, auto-tune constants that previously required manual adjustment. A meta-controller watchdog detects and resolves inter-controller conflicts. Whole-system coupling homeostasis and two-layer axis energy equilibration eliminate the specific failure mode the architects memorably called *coupling energy whack-a-mole*.
 
 What these controllers do is simple to state and hard to overstate in importance: they remove the designer from the loop at the level of parameter tuning.
 

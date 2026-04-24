@@ -10,7 +10,7 @@ This document describes the substrate that makes that possible — the **HME Coh
 
 ### The HME Coherence Index (HCI)
 
-The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **38 weighted verifiers** across 6 categories:
+The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **44 weighted verifiers** across 6 categories:
 
 | Category | Verifiers (partial list — 38 total) | What it measures |
 --

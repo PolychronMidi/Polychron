@@ -42,7 +42,7 @@ Each subsystem `index.js`: helpers first, manager/orchestrator last.
 
 ### Hypermeta-First (no whack-a-mole overrides)
 
-The 19 hypermeta self-calibrating controllers manage all 6 axes and own coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, axis equilibration, phase energy floor, per-pair gain ceilings, section-0 warmup ramps, and `coherentThresholdScale`.
+The 18 hypermeta self-calibrating controllers manage all 6 axes and own coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, axis equilibration, phase energy floor, per-pair gain ceilings, section-0 warmup ramps, and `coherentThresholdScale`.
 
 - **Never hand-tune meta-controller constants.** Modify the controller logic instead.
 - **Never set `coherentThresholdScale` per-profile** — the regime self-balancer owns it.
