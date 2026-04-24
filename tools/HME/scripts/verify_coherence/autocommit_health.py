@@ -8,6 +8,9 @@ import subprocess
 import sys
 import time
 
+import datetime
+import urllib.request
+
 from ._base import (
     Verifier, VerdictResult, _result, _run_subprocess,
     PASS, WARN, FAIL, SKIP, ERROR,

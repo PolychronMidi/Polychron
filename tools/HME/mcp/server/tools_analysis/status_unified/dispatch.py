@@ -17,6 +17,7 @@ from .mode_handlers import _STATUS_MODES, _list_modes
 from .resource_reports import _vram_report, _freshness_report, _budget_report
 from .lifecycle_reports import _resume_briefing, _evolution_priority_report, _trajectory_report
 from .metric_reports import _staleness_report, _coherence_report
+import threading
 
 logger = logging.getLogger("HME")
 

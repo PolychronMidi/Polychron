@@ -8,6 +8,7 @@ import os
 from server import context as ctx
 from .. import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from ..synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
+import datetime
 
 logger = logging.getLogger("HME")
 
