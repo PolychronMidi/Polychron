@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# HME specification extractor — emits a JSON (or --md) spec describing a
+# subsystem's public API surface: per-file imports, classes (with methods),
+# top-level functions, exports.
+#
+# Intended use: spec-driven refactor. Snapshot the current spec, propose
+# changes to the spec, regenerate or review against it to detect drift.
+#
+# Usage:
+#   i/extract-spec <dir>          → JSON on stdout
+#   i/extract-spec <dir> --md     → markdown summary on stdout
+#
+# Examples:
+#   i/extract-spec src/conductor
+#   i/extract-spec src/crossLayer --md
+#
+# Exit: 0 on success, 2 on usage error.
+_REPO_ROOT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+_SPEC_PY="$_REPO_ROOT/scripts/hme/extract-spec.py"
+if [ ! -f "$_SPEC_PY" ]; then
+  echo "i/extract-spec: $_SPEC_PY missing" >&2
+  exit 2
+fi
+PROJECT_ROOT="$_REPO_ROOT" exec python3 "$_SPEC_PY" "$@"
