@@ -497,6 +497,19 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
 
 def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
+    # Feature-flagged direct path: if OVERDRIVE_DIRECT_AGENT=1, spawn a
+    # claude subprocess synchronously instead of bouncing through a
+    # sentinel. Gives HME the reasoning result with no agent-visible
+    # tool_result noise. Falls back to sentinel-bounce if the direct
+    # call returns None (claude not on PATH, timeout, etc.).
+    try:
+        from .agent_direct import dispatch_direct as _direct
+        direct_result = _direct(prompt, system, max_tokens, subagent_type=subagent_type)
+        if direct_result:
+            return (direct_result, "overdrive/direct-agent")
+    except Exception as _dir_err:
+        logger.debug(f"agent_direct path errored: {type(_dir_err).__name__}: {_dir_err}")
+
     """OVERDRIVE_VIA_SUBAGENT path — queue the prompt for Claude to dispatch
     via its own Agent tool rather than hitting api.anthropic.com directly.
 

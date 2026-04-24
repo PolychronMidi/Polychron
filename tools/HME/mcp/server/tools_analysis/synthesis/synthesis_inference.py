@@ -321,16 +321,64 @@ def _local_chat(messages: list[dict], model: str | None = None,
 # short enough that the local reasoner can answer them in ≤ ~2s on a warm
 # GPU, while the cloud cascade adds ≥10s of slot-walking latency. For
 # short requests we RACE both — fire them in parallel and take whichever
-# returns first. Long requests (synthesis of full contexts, architectural
-# writes) keep the cloud-first path because the quality gap matters more
-# than the latency cost.
+# returns first. Long requests keep the cloud-first path for quality.
 _RACE_MAX_TOKENS = 800
-# Race-mode local head-start. Both paths fire simultaneously, but the
-# local reasoner is almost always ≤2s while cloud is ≥10s; without this
-# delay on cloud kickoff, cloud work is wasted ~95% of the time. Delay
-# the cloud call by this many seconds — local usually finishes first and
-# we skip cloud entirely. Cloud only kicks in if local stalls.
-_RACE_CLOUD_DELAY_SEC = 2.5
+_RACE_CLOUD_DELAY_DEFAULT_SEC = 2.5
+_RACE_CLOUD_DELAY_MIN = 1.0
+_RACE_CLOUD_DELAY_MAX = 6.0
+
+
+def _adaptive_cloud_delay() -> float:
+    """Read recent race outcomes and adapt cloud-delay to observed local p50.
+
+    Heuristic: cloud should fire ~0.5s AFTER local's typical finish time.
+    That gives local a clean shot to win when healthy; cloud only kicks
+    in when local genuinely stalls. If local p50 (last 100 races) is
+    1.8s, delay = 2.3s. Clamped to [_MIN, _MAX] so pathological logs
+    can't push the delay to 0 or 60s.
+
+    Falls back to _RACE_CLOUD_DELAY_DEFAULT_SEC when no history exists."""
+    try:
+        import json as _json
+        import os as _os
+        from server import context as _ctx
+        path = _os.path.join(
+            _os.environ.get("METRICS_DIR") or _os.path.join(
+                getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics"),
+            "hme-race-outcomes.jsonl")
+        if not _os.path.isfile(path):
+            return _RACE_CLOUD_DELAY_DEFAULT_SEC
+        size = _os.path.getsize(path)
+        read_from = max(0, size - 64 * 1024)
+        with open(path, "rb") as f:
+            if read_from:
+                f.seek(read_from)
+                f.readline()
+            data = f.read().decode("utf-8", errors="replace")
+        local_latencies: list[float] = []
+        for line in data.splitlines():
+            if not line.strip():
+                continue
+            try:
+                e = _json.loads(line)
+            except _json.JSONDecodeError:
+                continue
+            lm = e.get("local_ms")
+            if isinstance(lm, (int, float)) and lm > 0:
+                local_latencies.append(float(lm) / 1000.0)
+        if len(local_latencies) < 10:
+            return _RACE_CLOUD_DELAY_DEFAULT_SEC
+        local_latencies.sort()
+        p50 = local_latencies[len(local_latencies) // 2]
+        # +0.5s head-start gives local a reliable win when healthy.
+        candidate = p50 + 0.5
+        return max(_RACE_CLOUD_DELAY_MIN, min(_RACE_CLOUD_DELAY_MAX, candidate))
+    except Exception:
+        return _RACE_CLOUD_DELAY_DEFAULT_SEC
+
+
+# Legacy constant name — now defers to _adaptive_cloud_delay() at call site.
+_RACE_CLOUD_DELAY_SEC = _RACE_CLOUD_DELAY_DEFAULT_SEC
 
 
 def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
@@ -407,9 +455,11 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
             q.put(("local", None))
             logger.debug(f"race local worker error: {type(e).__name__}: {e}")
 
+    _delay = _adaptive_cloud_delay()
+
     def _cloud_worker() -> None:
-        # Head-start delay: give local a clean shot at finishing first.
-        _t.sleep(_RACE_CLOUD_DELAY_SEC)
+        # Head-start delay: adaptive per observed local p50 + buffer.
+        _t.sleep(_delay)
         try:
             from .synthesis_reasoning import call as _ranked_call
             r = _ranked_call(prompt, system=system, max_tokens=max_tokens,
