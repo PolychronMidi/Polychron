@@ -282,6 +282,62 @@ class LogSizeVerifier(Verifier):
         return _result(PASS, 1.0, "all watched logs under 50 MB")
 
 
+class OAuthTokenExpiryVerifier(Verifier):
+    """~/.claude/.credentials.json holds the Claude Code OAuth token
+    that the proxy's auth injection uses for OVERDRIVE_MODE and any
+    other out-of-band Anthropic call. The token has an expiresAt field;
+    when it's past, api.anthropic.com returns 401 and overdrive silently
+    falls through to the free cascade with a logged warning.
+
+    Claude Code itself refreshes the token while it's running, but if
+    an MCP-server overdrive call fires while Claude Code happens to be
+    between sessions (cold start, between rounds), the stale token
+    causes a silent degradation. This verifier surfaces that class
+    before it happens.
+
+    Thresholds:
+      - expired / absent      → FAIL (overdrive is dead)
+      - <1h remaining         → WARN (refresh soon)
+      - ≥1h remaining         → PASS
+
+    Weight 1.0 — the degradation is graceful (cascade fallback), so
+    this is informational, not catastrophic."""
+    name = "oauth-token-expiry"
+    category = "state"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        import time
+        path = os.path.expanduser("~/.claude/.credentials.json")
+        if not os.path.isfile(path):
+            return _result(SKIP, 1.0,
+                           "~/.claude/.credentials.json not present — overdrive disabled")
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            return _result(FAIL, 0.0, f"credentials.json unreadable: {e}")
+        oauth = data.get("claudeAiOauth") or {}
+        expires_at = oauth.get("expiresAt")
+        if not isinstance(expires_at, (int, float)):
+            return _result(WARN, 0.5,
+                           "claudeAiOauth.expiresAt missing/non-numeric — cannot verify",
+                           [f"keys: {sorted(oauth.keys())}"])
+        # expiresAt is milliseconds since epoch per Claude Code's format.
+        now_ms = time.time() * 1000
+        remaining_ms = expires_at - now_ms
+        remaining_h = remaining_ms / 3_600_000
+        if remaining_h <= 0:
+            return _result(FAIL, 0.0,
+                           f"OAuth token expired {-remaining_h:.1f}h ago — overdrive dead",
+                           ["start Claude Code to trigger token refresh"])
+        if remaining_h < 1:
+            return _result(WARN, 0.5,
+                           f"OAuth token expires in {remaining_h:.1f}h — refresh soon",
+                           [f"remaining_ms={int(remaining_ms)}"])
+        return _result(PASS, 1.0, f"OAuth token valid for {remaining_h:.1f}h")
+
+
 class EnvTamperVerifier(Verifier):
     """Companion to EnvLoadVerifier. Compares the current .env contents
     against a stored SHA-256 checkpoint at .env.sha256. The first run
@@ -2482,6 +2538,7 @@ REGISTRY = [
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
     EnvTamperVerifier(),
+    OAuthTokenExpiryVerifier(),
     SettingsJsonVerifier(),
     LogSizeVerifier(),
     PluginCacheParityVerifier(),
