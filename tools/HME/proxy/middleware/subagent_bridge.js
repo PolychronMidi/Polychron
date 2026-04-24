@@ -65,7 +65,6 @@ module.exports = {
     const queuePath = path.join(QUEUE_DIR, `${reqId}.json`);
     const donePath = path.join(DONE_DIR, `${reqId}.json`);
     try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* ok if absent */ }
-    _dispatched.add(reqId);
     ctx.emit({
       event: 'subagent_bridge_result_captured',
       req_id: reqId,
