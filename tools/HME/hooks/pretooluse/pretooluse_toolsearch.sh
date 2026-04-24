@@ -17,7 +17,9 @@ case "$QUERY" in
 
   select:TodoWrite*)
     _emit_block "TodoWrite — Overwrite the entire todo list atomically.
-  todos: array of {id:string, content:string, status:'pending'|'in_progress'|'completed', priority:'high'|'medium'|'low'}
+  todos: array of {content:string, status:'pending'|'in_progress'|'completed', activeForm:string}
+    - content: imperative form (e.g. 'Run tests')
+    - activeForm: present-continuous form (e.g. 'Running tests') — REQUIRED
   Always include ALL todos (pending + completed) — partial writes delete missing entries.
   Use for: tracking multi-step work, marking tasks done mid-execution."
     exit 2 ;;
@@ -139,7 +141,7 @@ NATIVE (always available):
                    Plan: design/architecture decisions before implementation — returns step-by-step plan
                    general-purpose: multi-step tasks that write code or need broad tool access
                    claude-code-guide: questions about Claude Code CLI, API, SDK, hooks, MCP
-  TodoWrite      todos=[{id,content,status,priority}]            — write ALL todos, not just new ones
+  TodoWrite      todos=[{content,status,activeForm}]             — write ALL todos; activeForm is REQUIRED (present-continuous)
 
 HME (via Bash):
   i/review       [mode=digest|forget|changes]           — KB constraint check after edits
