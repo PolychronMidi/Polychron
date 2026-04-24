@@ -250,61 +250,57 @@ _last_source: str | None = None
 def last_source() -> str | None:
     """Return a short string identifying which path produced the most
     recent non-None result from synthesis_reasoning.call(). Values:
-        'overdrive/opus'                 — OVERDRIVE_MODE fired
-        '<provider>/<model>'             — cascade slot fired
+        'overdrive/opus'                 — Opus answered under OVERDRIVE_MODE
+        'overdrive/sonnet'               — Opus rate-limited, Sonnet took over
+        '<provider>/<model>'             — free-cascade slot fired
         None                             — last call returned None OR
                                            no call made yet this process
     """
     return _last_source
 
 
-def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | None:
-    """OVERDRIVE_MODE path — call Claude Opus with maximum extended thinking.
+# Overdrive model chain. Opus is tried first; on rate-limit (or other
+# model-specific 429s), the call falls over to Sonnet at the same
+# extended-thinking budget rather than straight to the free cascade —
+# Sonnet is still dramatically stronger than the free-tier slots for the
+# agentic workloads overdrive exists to serve. Only when BOTH Anthropic
+# models rate-limit does the caller fall through to the free cascade.
+#
+# Strings kept as a tuple so a future 'haiku' or opus-generation bump is
+# one-line to add. claude-opus-4-7 and claude-sonnet-4-6 are the current
+# generation's dated aliases (bare "opus"/"sonnet" return 404).
+_OVERDRIVE_MODEL_CHAIN = (
+    ("claude-opus-4-7",   "overdrive/opus"),
+    ("claude-sonnet-4-6", "overdrive/sonnet"),
+)
 
-    Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
-    entirely and spends Claude Code subscription credits for highest-quality
-    output. Used for both the subagent replacement (agent_local.py →
-    _call_synthesizer) and every other cascade caller — they all funnel
-    through call() below.
 
-    Route: POSTs to the local HME proxy at ANTHROPIC_BASE_URL (default
-    http://127.0.0.1:9099). The proxy forwards to api.anthropic.com and,
-    because loopback out-of-band requests arrive with no Authorization
-    header, auto-injects the Claude Code OAuth token from
-    ~/.claude/.credentials.json. Same credential Claude Code's live
-    session uses — your subscription covers both paths identically.
-    The user configures nothing; auth is ambient.
+def _try_overdrive_model(model_id: str, prompt: str, system: str,
+                         max_tokens: int) -> tuple[str | None, bool]:
+    """POST a single-model overdrive call through the proxy.
 
-    Returns None on ANY failure (proxy down, upstream 4xx/5xx, empty
-    response, timeout). Caller falls through to the normal cascade so a
-    configuration gap or transient outage doesn't block the agent.
+    Returns (text_or_None, rate_limited). `rate_limited` is True iff the
+    upstream returned HTTP 429 OR the JSON body is an `error` object with
+    type `rate_limit_error` — the caller uses that flag to decide whether
+    to try the next model in the chain or give up on overdrive entirely.
 
-    Model: 'opus' (floating alias — always resolves to the current Opus
-    generation) with thinking.budget_tokens=_OVERDRIVE_THINK_BUDGET.
-    max_tokens is bumped to budget+slack so the Anthropic constraint
-    max_tokens > thinking.budget_tokens always holds."""
+    Non-429 failures (proxy down, timeout, 5xx, malformed JSON, empty
+    content) return (None, False) — not worth retrying another model, the
+    problem is structural. Caller falls through to the free cascade."""
     import json as _json
     import os as _os
+    import urllib.error as _urllib_error
     import urllib.request as _req
 
-    # Route through the local proxy. It handles auth injection for
-    # loopback out-of-band requests, so this call ships with no auth
-    # headers attached — the proxy adds them.
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
-    # max_tokens MUST exceed thinking.budget_tokens. The caller's
-    # requested max_tokens is a floor; we raise it to budget+slack when
-    # the caller's value is too low for the thinking budget.
+    # max_tokens MUST exceed thinking.budget_tokens. Raise the caller's
+    # value to budget+slack when it's too low.
     _floor = _OVERDRIVE_THINK_BUDGET + _OVERDRIVE_MAX_TOKENS_SLACK
     resolved_max = max(max_tokens, _floor)
 
-    # Model: claude-opus-4-7 is the current-generation Opus. Plain
-    # "opus" returns 404 from the Anthropic API; the dated/versioned
-    # claude-opus-4-* family resolves correctly. Kept as a string
-    # constant rather than an env var so there's one unambiguous spot
-    # to bump when a new Opus generation is the latest.
     payload = {
-        "model": "claude-opus-4-7",
+        "model": model_id,
         "max_tokens": resolved_max,
         "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
         "thinking": {"type": "enabled", "budget_tokens": _OVERDRIVE_THINK_BUDGET},
@@ -324,9 +320,29 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
         )
         with _req.urlopen(request, timeout=_OVERDRIVE_TIMEOUT) as resp:
             data = _json.loads(resp.read())
+    except _urllib_error.HTTPError as e:
+        # 429 = rate limit — try next model in the chain.
+        is_rate = (e.code == 429)
+        # Some proxies return the rate_limit as a 200 with an error body;
+        # we'd catch that below. HTTPError here is a real transport 4xx/5xx.
+        try:
+            body = e.read().decode(errors="replace")[:200]
+        except Exception:
+            body = ""
+        logger.warning(f"OVERDRIVE {model_id} HTTP {e.code}: {body}")
+        return (None, is_rate)
     except Exception as e:
-        logger.warning(f"OVERDRIVE Opus call failed ({type(e).__name__}: {e}) — falling through to cascade")
-        return None
+        logger.warning(f"OVERDRIVE {model_id} call failed ({type(e).__name__}: {e})")
+        return (None, False)
+
+    # Some upstreams (including the current proxy when upstream 429s)
+    # wrap the rate-limit as a normal 200 with {"type":"error",...}.
+    # Treat that identically to an HTTP 429.
+    if isinstance(data, dict) and data.get("type") == "error":
+        err = data.get("error", {}) or {}
+        is_rate = err.get("type") == "rate_limit_error"
+        logger.warning(f"OVERDRIVE {model_id} error-body: {err.get('type', '?')} — {err.get('message', '?')[:120]}")
+        return (None, is_rate)
 
     # Extended-thinking response has alternating `thinking` and `text` blocks.
     # Caller wants the final text answer; skip the thinking traces.
@@ -336,9 +352,44 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
             text_parts.append(block.get("text", ""))
     result = "\n".join(p for p in text_parts if p)
     if result:
-        logger.info(f"OVERDRIVE: opus returned {len(result)}c")
-        return result
-    logger.warning("OVERDRIVE Opus returned empty content — falling through to cascade")
+        logger.info(f"OVERDRIVE: {model_id} returned {len(result)}c")
+        return (result, False)
+    logger.warning(f"OVERDRIVE {model_id} returned empty content")
+    return (None, False)
+
+
+def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str, str] | None:
+    """OVERDRIVE_MODE path — Opus-then-Sonnet chain with max extended thinking.
+
+    Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
+    and spends Claude Code subscription credits for highest-quality output.
+    Walks the model chain (Opus, Sonnet) in order: on rate-limit for the
+    current model, advances to the next; on any other failure (proxy down,
+    timeout, empty content, malformed response), returns None so the caller
+    falls through to the free cascade.
+
+    Returns (text, source_label) on success where source_label is e.g.
+    'overdrive/opus' or 'overdrive/sonnet'. Returns None when every model in
+    the chain failed.
+
+    Route: POSTs to the local HME proxy at ANTHROPIC_BASE_URL (default
+    http://127.0.0.1:9099). The proxy forwards to api.anthropic.com and,
+    because loopback out-of-band requests arrive with no Authorization
+    header, auto-injects the Claude Code OAuth token from
+    ~/.claude/.credentials.json. Same credential Claude Code's live
+    session uses — your subscription covers both paths identically.
+    The user configures nothing; auth is ambient."""
+    for model_id, source_label in _OVERDRIVE_MODEL_CHAIN:
+        result, rate_limited = _try_overdrive_model(model_id, prompt, system, max_tokens)
+        if result:
+            return (result, source_label)
+        if not rate_limited:
+            # Non-rate-limit failure — the problem is not model-specific.
+            # Don't bother the next model; fall through to cascade.
+            return None
+        # Rate-limited: move to the next model in the chain.
+    # Every model in the chain rate-limited.
+    logger.warning("OVERDRIVE: every model in chain rate-limited — falling through to cascade")
     return None
 
 
@@ -377,8 +428,9 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     if _ENV.optional("OVERDRIVE_MODE", "0") == "1":
         _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
         if _overdrive_result:
-            _last_source = "overdrive/opus"
-            return _overdrive_result
+            _text, _source = _overdrive_result
+            _last_source = _source
+            return _text
 
     try:
         providers = _load_providers()
