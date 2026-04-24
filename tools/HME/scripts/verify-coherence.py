@@ -788,6 +788,46 @@ class CorePrinciplesAuditVerifier(Verifier):
                        detail[:20])
 
 
+class ShellHookAuditVerifier(Verifier):
+    """Delegates to scripts/audit-shell-hooks.py, which statically scans
+    tools/HME/hooks/**/*.sh for cache-trap patterns — most notably
+    BASH_SOURCE-relative path ascents that resolve INTO the plugin cache
+    tree when Claude Code invokes a hook from there. Closes the blind
+    spot that let _safety.sh, _autocommit.sh, stop.sh, and every file in
+    hooks/direct/ silently run with PROJECT_ROOT unset / .env missing
+    for months. ESLint covers .js; _scan_python_bug_patterns covers .py;
+    this verifier covers .sh."""
+    name = "shell-hook-audit"
+    category = "code"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-shell-hooks.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        count = payload.get("violation_count", 0)
+        detail = []
+        for fileinfo in payload.get("files", []):
+            for finding in fileinfo.get("findings", []):
+                detail.append(
+                    f"{fileinfo['file']}:{finding['line']} [{finding['rule']}] {finding['reason']}"
+                )
+        if count == 0:
+            return _result(PASS, 1.0, "no shell-hook cache-trap violations", [])
+        # Each violation drops score by 0.2; floor at 0. Any violation at
+        # all is FAIL — the bugs these rules catch are silent-disable
+        # class, not ergonomic nits.
+        score = max(0.0, 1.0 - 0.2 * count)
+        return _result(FAIL, score,
+                       f"{count} shell-hook violation(s) — BASH_SOURCE cache-trap risk",
+                       detail[:20])
+
+
 class NumericClaimDriftVerifier(Verifier):
     """Markdown docs that state specific counts (e.g. `19 hypermeta
     controllers`, `12 CIM dials`, `38 verifiers`) must match the live
@@ -2544,6 +2584,7 @@ REGISTRY = [
     PluginCacheParityVerifier(),
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
+    ShellHookAuditVerifier(),
     DocstringPresenceVerifier(),
     PythonSyntaxVerifier(),
     ShellSyntaxVerifier(),

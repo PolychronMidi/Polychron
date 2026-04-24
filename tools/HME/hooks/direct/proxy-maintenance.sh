@@ -16,8 +16,13 @@
 
 set +e
 
-_MAINT_SELF="${BASH_SOURCE[0]}"
-_MAINT_ROOT="$(cd "$(dirname "$_MAINT_SELF")/../../../.." 2>/dev/null && pwd)"
+# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE from the
+# plugin-cache path (lands in ~/.claude/plugins/cache/). Prefer
+# CLAUDE_PROJECT_DIR, then hardcoded fallback.
+_MAINT_ROOT=""
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+  _MAINT_ROOT="$CLAUDE_PROJECT_DIR"
+fi
 [ -z "$_MAINT_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _MAINT_ROOT="/home/jah/Polychron"
 _MAINT_FLAG="$_MAINT_ROOT/tmp/hme-proxy-maintenance.flag"
 
