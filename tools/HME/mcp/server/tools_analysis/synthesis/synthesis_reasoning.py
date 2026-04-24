@@ -224,6 +224,40 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
+# Overdrive budget and timeout tuning.
+#
+# _OVERDRIVE_THINK_BUDGET: extended-thinking reasoning budget. Anthropic
+#   caps this well above 32k; 32k is the sweet spot for thorough analysis
+#   without gratuitous spend.
+# _OVERDRIVE_MAX_TOKENS_SLACK: max_tokens MUST exceed thinking.budget_tokens
+#   (Anthropic API constraint). We set max_tokens = budget + slack so the
+#   model has room to both think and answer.
+# _OVERDRIVE_TIMEOUT: 180s is a balance — long enough for genuine deep
+#   reasoning, short enough that a stuck request doesn't stack with the
+#   cascade wall ceiling (45s) to produce a 345s dead turn.
+_OVERDRIVE_THINK_BUDGET = 32000
+_OVERDRIVE_MAX_TOKENS_SLACK = 4096
+_OVERDRIVE_TIMEOUT = 180
+
+# Source-of-last-answer tracking. synthesis_reasoning.call() writes this
+# on every non-None return. Callers that care (e.g. agent_local.py's
+# _call_synthesizer, which reports a per-call source tag upstream) can
+# read last_source() after the call. Not thread-safe — one-shot per
+# caller context.
+_last_source: str | None = None
+
+
+def last_source() -> str | None:
+    """Return a short string identifying which path produced the most
+    recent non-None result from synthesis_reasoning.call(). Values:
+        'overdrive/opus'                 — OVERDRIVE_MODE fired
+        '<provider>/<model>'             — cascade slot fired
+        None                             — last call returned None OR
+                                           no call made yet this process
+    """
+    return _last_source
+
+
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | None:
     """OVERDRIVE_MODE path — call Claude Opus with maximum extended thinking.
 
@@ -242,13 +276,13 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
     The user configures nothing; auth is ambient.
 
     Returns None on ANY failure (proxy down, upstream 4xx/5xx, empty
-    response). Caller falls through to the normal cascade so a
+    response, timeout). Caller falls through to the normal cascade so a
     configuration gap or transient outage doesn't block the agent.
 
-    Model: claude-opus-4-7 with thinking.budget_tokens=32000 — max
-    realistic reasoning budget for a single call. max_tokens is bumped
-    to max(caller_value, 16384) so the model has room to both think and
-    respond without truncation."""
+    Model: 'opus' (floating alias — always resolves to the current Opus
+    generation) with thinking.budget_tokens=_OVERDRIVE_THINK_BUDGET.
+    max_tokens is bumped to budget+slack so the Anthropic constraint
+    max_tokens > thinking.budget_tokens always holds."""
     import json as _json
     import os as _os
     import urllib.request as _req
@@ -258,11 +292,17 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
     # headers attached — the proxy adds them.
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
 
+    # max_tokens MUST exceed thinking.budget_tokens. The caller's
+    # requested max_tokens is a floor; we raise it to budget+slack when
+    # the caller's value is too low for the thinking budget.
+    _floor = _OVERDRIVE_THINK_BUDGET + _OVERDRIVE_MAX_TOKENS_SLACK
+    resolved_max = max(max_tokens, _floor)
+
     payload = {
-        "model": "claude-opus-4-7",
-        "max_tokens": max(max_tokens, 16384),
+        "model": "opus",
+        "max_tokens": resolved_max,
         "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
-        "thinking": {"type": "enabled", "budget_tokens": 32000},
+        "thinking": {"type": "enabled", "budget_tokens": _OVERDRIVE_THINK_BUDGET},
         "messages": [{"role": "user", "content": prompt}],
     }
     if system:
@@ -277,7 +317,7 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
                 "anthropic-version": "2023-06-01",
             },
         )
-        with _req.urlopen(request, timeout=300) as resp:
+        with _req.urlopen(request, timeout=_OVERDRIVE_TIMEOUT) as resp:
             data = _json.loads(resp.read())
     except Exception as e:
         logger.warning(f"OVERDRIVE Opus call failed ({type(e).__name__}: {e}) — falling through to cascade")
@@ -320,6 +360,9 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     from hme_env import ENV as _ENV
     _refresh_env()
 
+    global _last_source
+    _last_source = None  # reset per-call; caller can read last_source() after
+
     # OVERDRIVE_MODE: spend Anthropic credits for highest-quality output.
     # Single-branch intercept. When OVERDRIVE_MODE is anything other than
     # "1", this block is a no-op and the function behaves exactly as
@@ -329,6 +372,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     if _ENV.optional("OVERDRIVE_MODE", "0") == "1":
         _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
         if _overdrive_result:
+            _last_source = "overdrive/opus"
             return _overdrive_result
 
     try:
@@ -355,6 +399,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         result = _call_specific(mod, provider_key, model, prompt, system, max_tokens, temperature)
         if result:
             logger.info(f"{profile}: {provider_key}/{model} ({len(result)}c)")
+            _last_source = f"{provider_key}/{model}"
             return result
 
     return None
