@@ -24,18 +24,21 @@
 EVENT="${1:-unknown}"
 PORT="${HME_PROXY_PORT:-9099}"
 
-# Recursion guard: when this hook fires inside a `claude -p` subprocess
-# spawned BY the persistent subagent thread (i/thread), we skip the
-# proxy bounce entirely. Without this, every `i/thread send` spawns a
-# claude session that inherits ~/.claude/settings.json hooks, which
-# would then invoke this script, which would invoke the proxy, which
-# would route to stop.sh, which would emit AUTO-COMPLETENESS INJECT
-# back into the subagent — burning tokens on a recursive auto-loop the
-# subagent didn't ask for. The thread sets HME_THREAD_CHILD=1 before
-# spawning claude; we honor it here by exiting clean.
-if [ "${HME_THREAD_CHILD:-}" = "1" ]; then
-  exit 0
-fi
+# Recursion guard for thread children — narrow to events that would
+# cause an auto-loop or pointless work. Original cut bypassed every
+# event, which silently disabled PreToolUse safety (run.lock guard,
+# secret detection, etc.) in the child session. Per CLAUDE.md the
+# run.lock guard is "Enforced by PreToolUse hook + deny rule" — losing
+# that half is real risk if the persistent subagent ever gains tool
+# access. Keep PreToolUse / PostToolUse running; bypass only the
+# loop-shaped lifecycle events.
+case "$EVENT" in
+  Stop|UserPromptSubmit|SessionStart|PreCompact|PostCompact)
+    if [ "${HME_THREAD_CHILD:-}" = "1" ]; then
+      exit 0
+    fi
+    ;;
+esac
 
 # Capture stdin (the Claude Code hook payload).
 BODY=$(cat)

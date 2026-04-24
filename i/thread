@@ -60,18 +60,23 @@ try:
                 if sid:
                     print(sid)
                     sys.exit(0)
-        # Fall back: any element with session_id
         for ev in data:
             if isinstance(ev, dict) and ev.get('session_id'):
                 print(ev['session_id'])
                 sys.exit(0)
+        # Array parsed cleanly but no init event AND no session_id key
+        # found. Diagnose specifically so caller distinguishes from a
+        # parse error vs an empty/missing-field array.
+        print('NO_SESSION_ID: parsed list of '
+              + str(len(data)) + ' events with no init/session_id',
+              file=sys.stderr)
     elif isinstance(data, dict):
         print(data.get('session_id', ''))
 except Exception as e:
     print(f'PARSE_ERROR: {type(e).__name__}: {e}', file=sys.stderr)
-")
-    if [ -z "$_sid" ] || [[ "$_sid" == PARSE_ERROR* ]]; then
-      echo "failed to extract session_id from claude:" >&2
+" 2>&1)
+    if [ -z "$_sid" ] || [[ "$_sid" == PARSE_ERROR* ]] || [[ "$_sid" == NO_SESSION_ID* ]]; then
+      echo "failed to extract session_id ($_sid):" >&2
       echo "$_out" >&2
       exit 1
     fi
