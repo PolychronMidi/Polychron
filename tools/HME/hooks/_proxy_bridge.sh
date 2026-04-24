@@ -105,20 +105,21 @@ fi
 # recovery banner if the flag was set (meaning the proxy WAS down before
 # this call). The recovery banner parallels the fail-LOUD banner so the
 # user knows normal service resumed.
+#
+# CRITICAL: the recovery note goes to stderr + a dedicated lifecycle log,
+# NOT to hme-errors.log. The userpromptsubmit LIFESAVER scan text-matches
+# every line in hme-errors.log as an error; routing a "recovered"
+# message through it would fire a spurious LIFESAVER ERRORS banner on
+# every successful recovery. Errors and recoveries are semantically
+# different events and live in different files.
 if [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tmp/hme-proxy-down.flag" ]; then
   _PB_RECOVERY_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   rm -f "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
   mkdir -p "$_PB_ROOT/log" 2>/dev/null
+  # Audit trail for recoveries — a separate file from the error log.
   echo "[$_PB_RECOVERY_TS] [proxy-bridge] HME proxy recovered on 127.0.0.1:${PORT} (event=${EVENT})" \
-    >> "$_PB_ROOT/log/hme-errors.log" 2>/dev/null
+    >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
   echo "[proxy-bridge RECOVERED $_PB_RECOVERY_TS] HME proxy on 127.0.0.1:${PORT} responding again" >&2
-  # Emit a one-shot banner into the agent's next turn on user-visible
-  # events. The proxy's own hook response goes to stdout below; we only
-  # surface the recovery note on UserPromptSubmit/SessionStart events so
-  # we don't mangle Stop-hook decision JSON.
-  # (Intentionally NOT emitted on stdout for non-user-visible events —
-  # the log + stderr channels carry the recovery signal for those.)
-  :
 fi
 unset _PB_RECOVERY_TS 2>/dev/null
 
