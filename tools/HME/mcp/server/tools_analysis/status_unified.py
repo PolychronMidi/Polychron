@@ -338,7 +338,8 @@ def status(mode: str = "all") -> str:
         if os.path.isfile(_na_path):
             with open(_na_path) as _nf:
                 _na = _json_na.load(_nf)
-            if _na.get("total_actions", 0) > 0:
+            _na_total = _na.get("total_actions")
+            if _na_total is not None and _na_total > 0:
                 _bits = [f"## Next Actions ({_na['total_actions']} queued)"]
                 for _a in (_na.get("actions") or [])[:5]:
                     _bits.append(f"  [p{_a.get('priority')}] {_a.get('id')}: {_a.get('summary', '')[:120]}")
@@ -359,7 +360,9 @@ def status(mode: str = "all") -> str:
             with open(_drift_path) as _df:
                 _drift = _json_drift.load(_df)
             _status = _drift.get("status")
-            _n = _drift.get("envelope_n") or 0
+            _n = _drift.get("envelope_n")
+            if _n is None:
+                _n = 0
             _score = _drift.get("drift_score")
             if _status == "drift_detected":
                 _outs = ", ".join(
@@ -958,8 +961,8 @@ def _evolution_priority_report() -> str:
                 stale_note = f"  ⚠ STALE ({age_h:.1f}h old — re-run `npm run main` for current priorities)"
             elif age_h > 2:
                 stale_note = f"  ({age_h:.1f}h old)"
-        except Exception:
-            pass
+        except Exception as _ts_err:
+            logger.debug(f"status_unified: ts staleness calc skipped: {type(_ts_err).__name__}: {_ts_err}")
         lines = [
             "# HME Evolution Priorities",
             "",
@@ -1113,7 +1116,10 @@ def _staleness_report() -> str:
     modules = data.get("modules", [])
     by_status = meta.get("by_status", {})
     stale = [m for m in modules if m.get("status") == "STALE"]
-    stale.sort(key=lambda m: m.get("staleness_days") or 0, reverse=True)
+    def _stale_key(m):
+        _sd = m.get("staleness_days")
+        return 0 if _sd is None else _sd
+    stale.sort(key=_stale_key, reverse=True)
     missing = [m for m in modules if m.get("status") == "MISSING"]
     lines = [
         "# KB Staleness Index",
