@@ -269,6 +269,16 @@ def scan():
         with open(path) as f:
             text = f.read()
         for line_no, line in enumerate(text.splitlines(), start=1):
+            # Line-level exemption. An author can mark a specific line as
+            # deliberately-imprecise by appending the HTML-comment marker
+            # `<!-- drift-exempt -->`. The whole line is then skipped.
+            # Useful in literary essays where a specific count is the
+            # current-snapshot anchor of an argument and the author
+            # accepts that it will drift. The marker is visible in the
+            # rendered output only to HTML readers; markdown renderers
+            # typically hide it.
+            if "<!-- drift-exempt -->" in line:
+                continue
             for claim in CLAIMS:
                 for pattern in claim["patterns"]:
                     for m in pattern.finditer(line):

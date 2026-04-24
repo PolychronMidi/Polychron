@@ -127,7 +127,7 @@ tools/HME/               The single source of truth
   agents/
     Evolver.agent.md                    7-phase evolution loop agent
   scripts/                              Verifier engine, stress tests, analyzers:
-    verify-coherence.py                   Unified HCI engine (44 verifiers, 0-100 score)
+    verify-coherence.py                   Unified HCI engine (46 verifiers, 0-100 score)
     verify-doc-sync.py                    Stale tool name drift detector
     verify-onboarding-flow.py             18-test dry run of onboarding state machine
     verify-states-sync.py                 Python↔shell STATES list diff

@@ -149,6 +149,81 @@ class DocDriftVerifier(Verifier):
                        out.splitlines()[:30])
 
 
+class SettingsJsonVerifier(Verifier):
+    """~/.claude/settings.json is the entry point for every Claude Code
+    hook. A malformed JSON edit breaks hook dispatch entirely on next
+    session start — but the breakage is silent during the current
+    session (hooks already registered stay registered). This verifier
+    parses the file fresh on every HCI run and confirms the top-level
+    shape matches what the hook stack depends on.
+
+    Weight 2.0 — a broken settings.json silently disables every hook
+    the next time Claude Code reads it."""
+    name = "settings-json"
+    category = "state"
+    weight = 2.0
+
+    _REQUIRED_HOOK_EVENTS = {
+        "SessionStart", "UserPromptSubmit", "PreToolUse",
+        "PostToolUse", "Stop",
+    }
+
+    def run(self) -> VerdictResult:
+        path = os.path.expanduser("~/.claude/settings.json")
+        if not os.path.isfile(path):
+            return _result(SKIP, 1.0, "no ~/.claude/settings.json")
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            return _result(FAIL, 0.0,
+                           f"settings.json is MALFORMED JSON: {e}",
+                           [f"path: {path}",
+                            "every hook is silently disabled on next session start"])
+        except OSError as e:
+            return _result(ERROR, 0.0, f"settings.json unreadable: {e}")
+
+        issues = []
+
+        if not isinstance(data, dict):
+            return _result(FAIL, 0.0,
+                           f"settings.json root is {type(data).__name__}, expected object")
+
+        hooks = data.get("hooks")
+        if hooks is None:
+            issues.append("no 'hooks' key — all hooks are effectively disabled")
+        elif not isinstance(hooks, dict):
+            issues.append(f"'hooks' is {type(hooks).__name__}, expected object")
+        else:
+            missing_events = self._REQUIRED_HOOK_EVENTS - set(hooks.keys())
+            if missing_events:
+                issues.append(
+                    f"missing lifecycle events: {sorted(missing_events)}"
+                )
+            # Every declared event must be a list of groups.
+            for event, groups in hooks.items():
+                if not isinstance(groups, list):
+                    issues.append(f"hooks[{event!r}] is {type(groups).__name__}, expected list")
+                    continue
+                for i, group in enumerate(groups):
+                    if not isinstance(group, dict):
+                        issues.append(f"hooks[{event!r}][{i}] is {type(group).__name__}, expected object")
+                        continue
+                    ghooks = group.get("hooks")
+                    if ghooks is None:
+                        issues.append(f"hooks[{event!r}][{i}] missing 'hooks' key")
+                        continue
+                    if not isinstance(ghooks, list):
+                        issues.append(f"hooks[{event!r}][{i}].hooks is {type(ghooks).__name__}, expected list")
+
+        if issues:
+            return _result(FAIL, 0.0,
+                           f"{len(issues)} settings.json issue(s)",
+                           issues)
+        return _result(PASS, 1.0,
+                       f"settings.json parses cleanly ({len(data.get('hooks', {}))} hook events declared)")
+
+
 class LogSizeVerifier(Verifier):
     """The key HME logs (hme-proxy.out, hme-errors.log,
     hme-proxy-lifecycle.log, hme-activity.jsonl) are all append-only
@@ -205,6 +280,60 @@ class LogSizeVerifier(Verifier):
                            f"{len(warn_hits)} log file(s) over 50 MB",
                            warn_hits)
         return _result(PASS, 1.0, "all watched logs under 50 MB")
+
+
+class EnvTamperVerifier(Verifier):
+    """Companion to EnvLoadVerifier. Compares the current .env contents
+    against a stored SHA-256 checkpoint at .env.sha256. The first run
+    writes the checkpoint; every subsequent run diffs against it and
+    flags any change. The operator confirms legitimate changes by
+    re-running `python3 tools/HME/scripts/verify-coherence.py
+    --snapshot-env-sha` (or simply deleting .env.sha256 before the next
+    run); unplanned drift surfaces as a FAIL.
+
+    Weight 2.0 — silent .env mutation (rogue process, sloppy .env
+    editor, merge conflict resolution) is a whole class of hard-to-
+    debug failures. The verifier isn't cryptographic integrity — it's
+    change-detection for ops confidence.
+    """
+    name = "env-tamper"
+    category = "state"
+    weight = 2.0
+
+    def run(self) -> VerdictResult:
+        import hashlib
+        env_path = os.path.join(_PROJECT, ".env")
+        sha_path = os.path.join(_PROJECT, ".env.sha256")
+        if not os.path.isfile(env_path):
+            return _result(SKIP, 1.0, ".env missing — EnvLoadVerifier flags this")
+        try:
+            with open(env_path, "rb") as f:
+                current = hashlib.sha256(f.read()).hexdigest()
+        except OSError as e:
+            return _result(ERROR, 0.0, f".env unreadable: {e}")
+        if not os.path.isfile(sha_path):
+            # First run — establish baseline.
+            try:
+                with open(sha_path, "w") as f:
+                    f.write(current + "\n")
+            except OSError as e:
+                return _result(WARN, 0.8,
+                               f".env.sha256 could not be written: {e}",
+                               [f"tamper detection inactive until {sha_path} exists"])
+            return _result(PASS, 1.0,
+                           f".env.sha256 baseline established ({current[:16]}...)")
+        try:
+            with open(sha_path) as f:
+                stored = f.read().strip()
+        except OSError as e:
+            return _result(ERROR, 0.0, f".env.sha256 unreadable: {e}")
+        if stored == current:
+            return _result(PASS, 1.0, ".env matches baseline")
+        return _result(FAIL, 0.0,
+                       ".env content changed since last baseline",
+                       [f"baseline: {stored[:16]}...",
+                        f"current:  {current[:16]}...",
+                        f"if intentional, `rm {sha_path}` and rerun to re-baseline"])
 
 
 class EnvLoadVerifier(Verifier):
@@ -982,7 +1111,14 @@ class HookMatcherValidityVerifier(Verifier):
 
     # Wrappers that have no posttooluse side-effect by design. Claude just
     # reads the response; there's no nexus state to update.
-    _NO_POSTHOOK_OK = {"status", "trace", "evolve", "hme-admin", "todo", "hme"}
+    #   help / why       — static / rationale-lookup; read-only
+    #   freeze           — flips a flag file; posttooluse doesn't need to know
+    #   pattern          — pattern-file reader; read-only
+    #   substrate        — four-arc status; read-only
+    _NO_POSTHOOK_OK = {
+        "status", "trace", "evolve", "hme-admin", "todo", "hme",
+        "help", "why", "freeze", "pattern", "substrate",
+    }
 
     def run(self) -> VerdictResult:
         import re
@@ -1662,17 +1798,47 @@ def _trigger_warm_reprime() -> None:
 
 
 class HookLatencyVerifier(Verifier):
-    """H3: flag hooks whose p95 wall-time exceeds a budget.
+    """H3: flag hooks whose p95 wall-time exceeds a per-hook budget.
 
     Hook latency is silent tax — every tool call pays it. A hook that
     regresses from 50ms to 500ms adds half a second to every Edit, which
-    compounds across a session. This verifier reads log/hme-hook-latency.jsonl
-    (populated by hooks themselves via the _timestamp_hook helper) and
-    flags hooks exceeding 500ms p95.
+    compounds across a session. This verifier reads
+    log/hme-hook-latency.jsonl (populated by hooks themselves via the
+    _timestamp_hook helper) and flags hooks exceeding their budget.
+
+    Per-hook budgets calibrated to legitimate workload:
+      - stop:            4000ms — runs detector chain, autocommit, nexus
+                          audit, holograph diff, activity bridge, plus
+                          proxy lifecycle dispatch
+      - sessionstart:    2500ms — proxy watchdog (up to 8s on cold spawn,
+                          but p50 under 2s), supervisor kickoff, proxy
+                          primer flag, holograph snapshot
+      - precompact:      2000ms — chain snapshot + warm-context flush
+      - default (else):   500ms — every other hook should be fast
     """
     name = "hook-latency"
     category = "runtime"
     weight = 1.0
+
+    # Per-hook budget table. Keys are prefix-matched: any hook whose
+    # name starts with a key uses that budget. Calibrated against
+    # observed p50 and with headroom for legitimate variance.
+    _BUDGETS = {
+        "stop":         4000,
+        "sessionstart": 2500,
+        "precompact":   2000,
+    }
+    _DEFAULT_BUDGET = 500
+
+    def _budget_for(self, hook_name):
+        # Exact match first.
+        if hook_name in self._BUDGETS:
+            return self._BUDGETS[hook_name]
+        # Prefix match (some hooks embed a subcommand in the name).
+        for key, budget in self._BUDGETS.items():
+            if hook_name.startswith(key):
+                return budget
+        return self._DEFAULT_BUDGET
 
     def run(self) -> VerdictResult:
         log_path = os.path.join(_PROJECT, "log", "hme-hook-latency.jsonl")
@@ -1692,11 +1858,11 @@ class HookLatencyVerifier(Verifier):
                     by_hook.setdefault(entry.get("hook", "?"), []).append(
                         float(entry.get("duration_ms", 0))
                     )
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return _result(ERROR, 0.0, f"read error: {e}")
         if not by_hook:
             return _result(SKIP, 1.0, "log exists but empty")
-        # Compute p95 per hook
+        # Compute p95 per hook, compare against per-hook budget.
         slow = []
         total = 0
         for hook_name, durations in by_hook.items():
@@ -1707,14 +1873,15 @@ class HookLatencyVerifier(Verifier):
                 p95 = durations_sorted[int(n * 0.95)]
             else:
                 p95 = durations_sorted[-1]
-            if p95 > 500:
-                slow.append(f"{hook_name}: p95={p95:.0f}ms (n={n})")
+            budget = self._budget_for(hook_name)
+            if p95 > budget:
+                slow.append(f"{hook_name}: p95={p95:.0f}ms (n={n}, budget={budget}ms)")
         if not slow:
-            return _result(PASS, 1.0, f"{total} hooks all under 500ms p95")
+            return _result(PASS, 1.0, f"{total} hooks all within per-hook budget")
         score = max(0.0, 1.0 - len(slow) / total)
         return _result(
             WARN if len(slow) < 3 else FAIL, score,
-            f"{len(slow)}/{total} hooks exceed 500ms p95 budget", slow,
+            f"{len(slow)}/{total} hooks exceed their p95 budget", slow,
         )
 
 
@@ -2314,6 +2481,8 @@ REGISTRY = [
     NumericClaimDriftVerifier(),
     AutocommitHealthVerifier(),
     EnvLoadVerifier(),
+    EnvTamperVerifier(),
+    SettingsJsonVerifier(),
     LogSizeVerifier(),
     PluginCacheParityVerifier(),
     HookCommandExistenceVerifier(),
