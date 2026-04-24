@@ -58,6 +58,12 @@ if [ -n "$_COMPL_TRANSCRIPT" ] && [ -f "$_COMPL_TRANSCRIPT" ]; then
   # tool_result "user" messages have array with {type:"tool_result"}
   # blocks. Filter for text-only content so our turn-key tracks the
   # user's actual prompt, not post-tool plumbing.
+  # Skip our OWN hook-injected messages when picking the last real user
+  # prompt. Claude Code records every stop-hook block decision in the
+  # transcript as a "user" event (the injection bounces back as the next
+  # user turn). Without this filter, the turn-hash keeps flipping between
+  # "Stop hook feedback:…" / "AUTO-COMPLETENESS INJECT …" / real-prompt
+  # variants — counter never advances past 1, inject fires forever.
   _COMPL_LAST_USER=$(jq -r '
     select((.type // .role) == "user")
     | (.message.content // .content)
@@ -65,7 +71,10 @@ if [ -n "$_COMPL_TRANSCRIPT" ] && [ -f "$_COMPL_TRANSCRIPT" ]; then
       elif type == "array" then ([.[] | select(.type == "text") | .text] | join(" "))
       else ""
       end
-  ' "$_COMPL_TRANSCRIPT" 2>/dev/null | grep -v '^$' | tail -1)
+  ' "$_COMPL_TRANSCRIPT" 2>/dev/null \
+    | grep -v '^$' \
+    | grep -vE '^(Stop hook feedback:|AUTO-COMPLETENESS INJECT|🚨 LIFESAVER|NEXUS —|\[\[HME_AGENT_TASK|PreToolUse:|PostToolUse:)' \
+    | tail -1)
   _COMPL_TURN_KEY=$(printf '%s' "$_COMPL_LAST_USER" | sha256sum | head -c 16)
   if [ -n "$_COMPL_TURN_KEY" ]; then
     _COMPL_FLAG="$_COMPL_DIR/$_COMPL_TURN_KEY"
