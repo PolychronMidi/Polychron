@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 692,
-      "updated_ts": 1776995038.7821484
+      "max_id": 700,
+      "updated_ts": 1776995142.5784054
     }
   },
   {
@@ -88,8 +88,8 @@
     "id": 667,
     "text": "Add proxy-recovery signal on first good response",
     "activeForm": "Adding recovery signal",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -101,8 +101,8 @@
     "id": 668,
     "text": "Commit hardening round 2",
     "activeForm": "Committing round 2",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
