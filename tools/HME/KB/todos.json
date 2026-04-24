@@ -2,16 +2,16 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 720,
-      "updated_ts": 1776997737.9315858
+      "max_id": 734,
+      "updated_ts": 1776997846.7430296
     }
   },
   {
     "id": 714,
     "text": "Symlink plugin cache hooks \u2192 repo hooks (closes drift)",
     "activeForm": "Symlinking cache \u2192 repo",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -23,8 +23,8 @@
     "id": 715,
     "text": "Update PluginCacheParityVerifier to handle symlink case",
     "activeForm": "Updating parity verifier",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -36,8 +36,8 @@
     "id": 716,
     "text": "Build EnvLoadVerifier (.env presence + parseability)",
     "activeForm": "Building EnvLoadVerifier",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -49,7 +49,7 @@
     "id": 717,
     "text": "Add proxy-maintenance flag for planned restarts",
     "activeForm": "Adding maintenance flag",
-    "status": "pending",
+    "status": "in_progress",
     "done": false,
     "critical": false,
     "source": "native",
