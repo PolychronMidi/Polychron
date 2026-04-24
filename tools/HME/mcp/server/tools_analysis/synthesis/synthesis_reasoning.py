@@ -224,6 +224,71 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
+def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | None:
+    """OVERDRIVE_MODE path — call Claude Opus with maximum extended thinking.
+
+    Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
+    entirely and spends Anthropic credits for highest-quality output. Used
+    for both the subagent replacement (agent_local.py → _call_synthesizer)
+    and every other cascade caller — they all funnel through call() below.
+
+    Returns None on ANY failure (missing key, network error, API error,
+    empty response). Caller falls through to the normal cascade so a
+    configuration gap or transient outage doesn't block the agent.
+
+    Model: claude-opus-4-7 (Opus 4.7) with thinking.budget_tokens=32000
+    — max realistic reasoning budget for a single call. max_tokens is
+    bumped to max(caller_value, 16384) so the model has room to both
+    think and respond without truncation."""
+    import json as _json
+    import urllib.request as _req
+    from hme_env import ENV as _ENV
+
+    api_key = _ENV.optional("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        logger.warning("OVERDRIVE_MODE=1 but ANTHROPIC_API_KEY is empty — falling through to cascade")
+        return None
+
+    payload = {
+        "model": "claude-opus-4-7",
+        "max_tokens": max(max_tokens, 16384),
+        "temperature": 1.0,  # Anthropic requires temperature=1.0 with thinking
+        "thinking": {"type": "enabled", "budget_tokens": 32000},
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if system:
+        payload["system"] = system
+
+    try:
+        request = _req.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=_json.dumps(payload).encode(),
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+        )
+        with _req.urlopen(request, timeout=300) as resp:
+            data = _json.loads(resp.read())
+    except Exception as e:
+        logger.warning(f"OVERDRIVE Opus call failed ({type(e).__name__}: {e}) — falling through to cascade")
+        return None
+
+    # Extended-thinking response has alternating `thinking` and `text` blocks.
+    # Caller wants the final text answer; skip the thinking traces.
+    text_parts = []
+    for block in data.get("content", []):
+        if block.get("type") == "text":
+            text_parts.append(block.get("text", ""))
+    result = "\n".join(p for p in text_parts if p)
+    if result:
+        logger.info(f"OVERDRIVE: opus returned {len(result)}c")
+        return result
+    logger.warning("OVERDRIVE Opus returned empty content — falling through to cascade")
+    return None
+
+
 def call(prompt: str, system: str = "", max_tokens: int = 2048,
          temperature: float = 0.3, profile: str = "reasoning") -> str | None:
     """Walk the ranking for the given profile best→worst, returning the first success.
@@ -238,10 +303,26 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     cascade pathologies where multiple slots each burn their 60s per-call
     timeout serially. Without a ceiling, one hung cascade can freeze a worker
     thread for minutes and every request after it queues up behind the burn.
+
+    OVERDRIVE_MODE=1 in .env short-circuits this walk and calls Claude Opus
+    with max extended thinking instead. On any failure of the overdrive path
+    we fall through to the normal cascade so an API blip doesn't block work.
     """
     import time as _time
     from hme_env import ENV as _ENV
     _refresh_env()
+
+    # OVERDRIVE_MODE: spend Anthropic credits for highest-quality output.
+    # Single-branch intercept. When OVERDRIVE_MODE is anything other than
+    # "1", this block is a no-op and the function behaves exactly as
+    # before. When =1 and the call succeeds, return immediately; on any
+    # failure, fall through to the cascade so the agent never blocks on
+    # a transient API issue.
+    if _ENV.optional("OVERDRIVE_MODE", "0") == "1":
+        _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
+        if _overdrive_result:
+            return _overdrive_result
+
     try:
         providers = _load_providers()
     except Exception as e:
