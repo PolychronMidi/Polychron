@@ -42,15 +42,34 @@ case "$cmd" in
       exit 1
     fi
     mkdir -p "$(dirname "$_SID_FILE")"
-    _out=$(claude -p --output-format json "$_init_prompt")
+    # HME_THREAD_CHILD=1 prevents the spawned claude from re-entering
+    # our own stop hooks — it'd otherwise auto-loop on AUTO-COMPLETENESS
+    # INJECT and burn tokens on synthetic stop-hook traffic.
+    _out=$(HME_THREAD_CHILD=1 claude -p --output-format json "$_init_prompt")
+    # `claude --output-format json` emits a JSON ARRAY of message events,
+    # not a single object. Find the system/init event and read its
+    # session_id field.
     _sid=$(printf '%s' "$_out" | python3 -c "
 import sys, json
 try:
-    d = json.load(sys.stdin)
-    print(d.get('session_id', ''))
+    data = json.loads(sys.stdin.read())
+    if isinstance(data, list):
+        for ev in data:
+            if isinstance(ev, dict) and ev.get('type') == 'system' and ev.get('subtype') == 'init':
+                sid = ev.get('session_id', '')
+                if sid:
+                    print(sid)
+                    sys.exit(0)
+        # Fall back: any element with session_id
+        for ev in data:
+            if isinstance(ev, dict) and ev.get('session_id'):
+                print(ev['session_id'])
+                sys.exit(0)
+    elif isinstance(data, dict):
+        print(data.get('session_id', ''))
 except Exception as e:
     print(f'PARSE_ERROR: {type(e).__name__}: {e}', file=sys.stderr)
-" 2>&1)
+")
     if [ -z "$_sid" ] || [[ "$_sid" == PARSE_ERROR* ]]; then
       echo "failed to extract session_id from claude:" >&2
       echo "$_out" >&2
@@ -90,7 +109,9 @@ except Exception as e:
 
     # Route through persistent session. Output streams directly to the
     # main agent's tool_result so it reads like any Bash response.
-    _out=$(claude --resume "$_sid" -p "$_prompt")
+    # HME_THREAD_CHILD=1 prevents recursive stop-hook firing inside the
+    # spawned claude session.
+    _out=$(HME_THREAD_CHILD=1 claude --resume "$_sid" -p "$_prompt")
     _rc=$?
     if [ $_rc -ne 0 ]; then
       echo "claude --resume exited $_rc" >&2
