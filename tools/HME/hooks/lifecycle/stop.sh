@@ -33,15 +33,27 @@ for _part in _preamble autocommit lifesaver evolver detectors anti_patterns nexu
   #   set -e → non-zero command aborts the whole shell mid-sub-file
   # A sub-file that INTENDS to terminate the chain still does so via
   # `exit 0` (shell-level exit bypasses all guards).
+  #
+  # Capture stderr into a temp file so a crashing sub-file's error message
+  # is recorded in hme-errors.log — the previous `rc=N` alone said "X
+  # broke" without telling us WHY. A silent bash error (like unbound
+  # $_AC_PROJECT) took 40+ min to trace because the actual message was
+  # lost to a /dev/null redirect. Tee the stderr so it both reaches
+  # Claude Code's hook stderr AND survives in _stderr_capture for us.
+  _stderr_capture=$(mktemp 2>/dev/null || echo "/tmp/stop-${_part}-stderr.$$")
   set +u +e
-  source "${_STOP_DIR}/stop/${_part}.sh"
+  source "${_STOP_DIR}/stop/${_part}.sh" 2> >(tee -a "$_stderr_capture" >&2)
   _rc=$?
   set -u -e
   if [ "$_rc" -ne 0 ]; then
     _ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
     _log="${PROJECT_ROOT:-/tmp}/log/hme-errors.log"
     mkdir -p "$(dirname "$_log")" 2>/dev/null
-    printf '[%s] [stop.sh] sub-file %s exited rc=%d — downstream gates may have been skipped; investigate\n' \
-      "$_ts" "$_part" "$_rc" >> "$_log" 2>/dev/null
+    # Capture last 2 lines of stderr — usually the actual error message
+    # plus any bash frame info. More than that would spam LIFESAVER.
+    _stderr_tail=$(tail -2 "$_stderr_capture" 2>/dev/null | tr '\n' ' | ' | cut -c1-300)
+    printf '[%s] [stop.sh] sub-file %s exited rc=%d — stderr-tail: %s\n' \
+      "$_ts" "$_part" "$_rc" "${_stderr_tail:-(empty)}" >> "$_log" 2>/dev/null
   fi
+  rm -f "$_stderr_capture" 2>/dev/null
 done
