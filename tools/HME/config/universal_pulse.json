@@ -1,0 +1,57 @@
+{
+  "_comment": "Universal pulse: active probes of every critical HME element. Failure writes one-line entry to log/hme-errors.log via LIFESAVER so the next turn sees it immediately — not 48 minutes later. Streak-based to suppress transient flakes.",
+  "interval_sec": 30,
+  "miss_streak_alert": 3,
+  "cooldown_sec": 600,
+  "http_probes": [
+    {
+      "name": "proxy",
+      "url": "http://127.0.0.1:9099/health",
+      "timeout_sec": 3,
+      "required": true
+    },
+    {
+      "name": "worker",
+      "url": "http://127.0.0.1:9098/health",
+      "timeout_sec": 3,
+      "required": true
+    },
+    {
+      "name": "llamacpp_daemon",
+      "url": "http://127.0.0.1:7735/health",
+      "timeout_sec": 3,
+      "required": false
+    }
+  ],
+  "process_probes": [
+    {
+      "name": "worker",
+      "cmd_pattern": "worker\\.py --port 9098",
+      "cpu_saturation_pct": 90,
+      "cpu_saturation_secs": 90,
+      "_why": "48-min GIL hang was invisible because worker stayed ALIVE while one thread pegged CPU. Kill the invisibility: alert when a tracked process holds >=90% CPU for >=90s."
+    },
+    {
+      "name": "proxy",
+      "cmd_pattern": "hme_proxy\\.js",
+      "cpu_saturation_pct": 90,
+      "cpu_saturation_secs": 120,
+      "_why": "Proxy is node; a runaway event loop (or middleware stuck in a tight sync loop) shows as sustained high CPU."
+    }
+  ],
+  "file_freshness_probes": [
+    {
+      "name": "hook_latency_log",
+      "path": "log/hme-hook-latency.jsonl",
+      "max_stale_sec": 900,
+      "_why": "Every hook writes to this log on exit via _safety.sh's EXIT trap. If it hasn't been touched in 15 minutes during an active session, hooks aren't firing — something upstream (hook JSON, plugin cache, _proxy_bridge) is broken."
+    },
+    {
+      "name": "hme_activity",
+      "path": "output/metrics/hme-activity.jsonl",
+      "max_stale_sec": 1800,
+      "_why": "Activity bridge writes here on every turn_complete. Stale-for-30min means turn-end hooks stopped firing."
+    }
+  ],
+  "heartbeat_file": "tmp/hme-universal-pulse.heartbeat"
+}
