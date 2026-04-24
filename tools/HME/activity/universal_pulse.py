@@ -98,23 +98,18 @@ def _probe_http(url: str, timeout_sec: float) -> tuple[bool, str]:
         return False, f"{type(e).__name__}: {str(e)[:80]}"
 
 
-def _ps_cpu_samples(cmd_pattern: str, duration_sec: float, sample_every: float = 5.0) -> list[float]:
-    """Sample CPU% of processes matching cmd_pattern every `sample_every` s
-    for `duration_sec`. Returns the list of MAX CPU% across matching PIDs
-    per sample (one PID typically, but if several match we alert on the
-    hottest)."""
+def _ps_cpu_instant(cmd_pattern: str) -> float:
+    """Return MAX CPU% across processes whose args match cmd_pattern,
+    measured via a ~1s sample (the second `ps` reading is what we use —
+    first reading is cumulative since process start, which is useless)."""
     regex = re.compile(cmd_pattern)
-    samples: list[float] = []
-    deadline = time.monotonic() + duration_sec
-    while time.monotonic() < deadline and not _shutdown:
+    def _snapshot() -> float:
         try:
             out = subprocess.check_output(
                 ["ps", "-eo", "pid,pcpu,args", "--no-headers"],
                 text=True, timeout=3)
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, OSError):
-            samples.append(0.0)
-            time.sleep(sample_every)
-            continue
+            return 0.0
         best = 0.0
         for line in out.splitlines():
             parts = line.strip().split(None, 2)
@@ -128,9 +123,40 @@ def _ps_cpu_samples(cmd_pattern: str, duration_sec: float, sample_every: float =
                     continue
                 if pcpu > best:
                     best = pcpu
-        samples.append(best)
-        time.sleep(sample_every)
-    return samples
+        return best
+    # Single call: `ps` reports CPU% as cpu-time / wall-time since process
+    # start by default. That's fine for sustained-saturation detection —
+    # a thread that has been at 99% for 48 minutes will be near 99% in
+    # this reading too. Rolling-buffer math below filters transient spikes.
+    return _snapshot()
+
+
+class _CpuRollingBuffer:
+    """Tracks recent CPU% samples per process, returns True when all samples
+    in the last `window_sec` are at/above threshold (sustained saturation)."""
+    def __init__(self):
+        self._samples: dict[str, list[tuple[float, float]]] = {}  # name -> [(ts, pct)]
+
+    def record(self, name: str, pct: float, now: float, window_sec: float) -> None:
+        arr = self._samples.setdefault(name, [])
+        arr.append((now, pct))
+        cutoff = now - window_sec
+        while arr and arr[0][0] < cutoff:
+            arr.pop(0)
+
+    def saturated(self, name: str, threshold: float, window_sec: float, now: float) -> tuple[bool, float]:
+        arr = self._samples.get(name, [])
+        cutoff = now - window_sec
+        relevant = [p for ts, p in arr if ts >= cutoff]
+        # Need at least 3 samples covering the window to declare saturation —
+        # prevents false-alert on first tick after fresh start.
+        if len(relevant) < 3:
+            return False, 0.0
+        avg = sum(relevant) / len(relevant)
+        return (all(p >= threshold for p in relevant), avg)
+
+
+_cpu_buf = _CpuRollingBuffer()
 
 
 class _StreakTracker:
@@ -201,24 +227,23 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
                     f"{tracker.threshold * cfg.get('interval_sec', 30)}s"
                 )
 
-    # Process-level CPU saturation — runs in-band so it blocks interval; window
-    # is short (<= sum of cpu_saturation_secs across process_probes). For the
-    # worker probe (90s window at 5s cadence) this is the whole interval and
-    # is load-bearing: catches GIL-saturation at the exact resolution needed.
+    # Process-level CPU saturation — each tick takes ONE instantaneous sample
+    # per tracked process and feeds a rolling buffer. Sustained saturation is
+    # declared when every sample within the saturation window is at/above
+    # threshold. This keeps the tick bounded (~1 ps call per process) while
+    # still catching the 48-min GIL-hang case at window resolution.
     for pp in cfg.get("process_probes", []):
         name = pp["name"]
         pattern = pp["cmd_pattern"]
         thresh = float(pp.get("cpu_saturation_pct", 90))
         window_s = float(pp.get("cpu_saturation_secs", 90))
-        samples = _ps_cpu_samples(pattern, window_s, sample_every=5.0)
-        if not samples:
-            continue
-        # Sustained saturation: every sample in the window at or above threshold.
-        saturated = all(s >= thresh for s in samples)
+        pct = _ps_cpu_instant(pattern)
+        # Keep rolling buffer twice the window so saturated() has coverage.
+        _cpu_buf.record(name, pct, now, window_s * 2)
+        saturated, avg = _cpu_buf.saturated(name, thresh, window_s, now)
         key = f"cpu:{name}"
         alert = tracker.record(key, not saturated, now)
         if saturated and alert:
-            avg = sum(samples) / len(samples)
             _log_error(
                 f"[universal_pulse] CRITICAL {name} CPU-saturated "
                 f"(avg={avg:.0f}% over {int(window_s)}s, threshold={int(thresh)}%) "

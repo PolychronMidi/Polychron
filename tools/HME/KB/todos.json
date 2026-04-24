@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1115,
-      "updated_ts": 1777048625.1541102
+      "max_id": 1118,
+      "updated_ts": 1777049056.9868608
     }
   },
   {
@@ -33,15 +33,15 @@
     "subs": []
   },
   {
-    "id": 1115,
-    "text": "Run i/review mode=forget on pending edits",
-    "activeForm": "Running review",
+    "id": 1118,
+    "text": "Add UNIVERSAL_PULSE: active probes of proxy/worker/llamacpp/CPU-saturation/file-freshness \u2014 LIFESAVER-surfaced alerts",
+    "activeForm": "Adding universal_pulse active-probe layer",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777048625.1541033,
+    "ts": 1777049056.986856,
     "parent_id": 0,
     "subs": []
   },
