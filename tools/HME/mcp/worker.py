@@ -610,7 +610,9 @@ class _Handler(BaseHTTPRequestHandler):
                 _store._error_log = []
             else:
                 cutoff = int(time.time() * 1000) - int(older_than_ms)
-                _store._error_log = [e for e in _store._error_log if e.get("ts", 0) >= cutoff]
+                # Every entry in _error_log has "ts" (set by _log_error on
+                # creation). Use [] not .get() — malformed entries throw.
+                _store._error_log = [e for e in _store._error_log if e["ts"] >= cutoff]
             cleared = before - len(_store._error_log)
         self._json(200, {"cleared": cleared, "remaining": len(_store._error_log)})
 
