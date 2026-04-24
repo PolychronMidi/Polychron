@@ -186,16 +186,30 @@ _hme_maintenance_active() {
 }
 
 _safe_curl() {
-  local url="$1" body="${2:-}"
-  local out rc streak_file
+  local url="$1" body="${2:-}" explicit_timeout="${3:-}"
+  local out rc streak_file max_time
   streak_file="$(_hme_curl_streak_path)"
-  # --max-time 5 (was 2): /transcript under load can take 2-3s legitimately;
-  # 2s was triggering spurious timeouts during normal heavy worker activity.
+  # Per-URL timeout: /reindex has a 180s budget on the worker side (slow
+  # bge-code-v1 embedding, up to 20 files). /transcript is fast per call
+  # (~ms) but serializes on _transcript_lock and can exceed a tight
+  # timeout when the session is firing many rapid tool calls. Match the
+  # timeout to the endpoint's real cost instead of defaulting to a
+  # too-tight universal value.
+  if [ -n "$explicit_timeout" ]; then
+    max_time="$explicit_timeout"
+  else
+    case "$url" in
+      */reindex)     max_time=60 ;;   # substantial headroom short of 180s budget
+      */transcript)  max_time=15 ;;   # lock contention under burst load
+      */indexing-mode) max_time=600 ;; # full reindex, long-running
+      *)             max_time=10 ;;   # default (was 5, bumped after sustained /transcript timeout spam)
+    esac
+  fi
   if [ -n "$body" ]; then
-    out=$(curl -s --max-time 5 -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
+    out=$(curl -s --max-time "$max_time" -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
     rc=$?
   else
-    out=$(curl -s --max-time 5 "$url" 2>/dev/null)
+    out=$(curl -s --max-time "$max_time" "$url" 2>/dev/null)
     rc=$?
   fi
   if [ $rc -ne 0 ]; then
