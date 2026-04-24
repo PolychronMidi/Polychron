@@ -488,7 +488,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     return (None, False)
 
 
-def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int) -> tuple[str, str] | None:
+def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
     """OVERDRIVE_VIA_SUBAGENT path — queue the prompt for Claude to dispatch
     via its own Agent tool rather than hitting api.anthropic.com directly.
 
@@ -511,11 +511,25 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int) -> tuple[s
     req_id = _uuid.uuid4().hex[:12]
     queue_dir = _os.path.join(_ctx.PROJECT_ROOT, "tmp", "hme-subagent-queue")
     _os.makedirs(queue_dir, exist_ok=True)
+    # Known-valid Claude Code subagent_types. The middleware validates against
+    # this list before instructing the agent, so an unknown type silently
+    # falls back to general-purpose (fail-safe default).
+    _VALID_TYPES = {
+        "general-purpose", "Explore", "Plan",
+        "statusline-setup", "claude-code-guide",
+    }
+    if subagent_type not in _VALID_TYPES:
+        logger.warning(
+            f"OVERDRIVE_VIA_SUBAGENT: subagent_type={subagent_type!r} not in "
+            f"known set; falling back to general-purpose"
+        )
+        subagent_type = "general-purpose"
     payload = {
         "req_id": req_id,
         "prompt": prompt,
         "system": system,
         "max_tokens": max_tokens,
+        "subagent_type": subagent_type,
         "created_at": _time_mod.time() if '_time_mod' in globals() else None,
     }
     try:
