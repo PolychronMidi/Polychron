@@ -17,41 +17,13 @@ if [ "$MODE" = "forget" ]; then
   # path here, EDIT entries accumulated indefinitely and stop.sh blocked
   # forever. _nexus_clear_type is idempotent — double-clear is safe when both
   # paths fire.
+  # Note: parent posttooluse_bash.sh already resolved any background-task
+  # stub via _resolve_bg_stub.sh before dispatching here, so .tool_response
+  # contains the real review output whenever the task finished within the
+  # parent's wait window (10s by default). Slow cases still reach the
+  # REVIEW_PARSE_FAILED branch; the proxy middleware background_dominance.js
+  # handles those on the API-stream side for the model's next turn.
   TOOL_RESULT=$(_safe_jq "$INPUT" '.tool_response' '')
-  # Background-stub resolution: when Bash auto-backgrounds a long-running
-  # command, TOOL_RESULT is the synthetic "Command running in background
-  # with ID: XXX" stub — not the real review output. Without this, the
-  # verdict marker is never found, the parse-failed branch runs, and EDIT
-  # entries accumulate indefinitely.
-  #
-  # Strategy: if the stub names a task-id AND its output file already
-  # contains the HME_REVIEW_VERDICT marker (quick review finished before
-  # the hook fired), USE that file's content. Otherwise poll for up to
-  # 10s (enough for most arbiter+reasoning reviews on warm GPUs; misses
-  # cold-boot cases). If still unresolved, fall through to existing
-  # REVIEW_PARSE_FAILED behavior — the proxy middleware
-  # (background_dominance.js) covers the slow case on the API stream.
-  _BG_TASK_ID=$(echo "$TOOL_RESULT" | grep -oE 'Command running in background with ID:[[:space:]]*[a-z0-9]+' | head -1 | grep -oE '[a-z0-9]+$')
-  if [ -n "$_BG_TASK_ID" ]; then
-    _BG_OUTPUT=""
-    _BG_WAIT=0
-    _BG_MAX=10
-    while [ "$_BG_WAIT" -lt "$_BG_MAX" ]; do
-      _BG_CAND=$(find /tmp -maxdepth 5 -name "${_BG_TASK_ID}.output" 2>/dev/null | head -1)
-      if [ -n "$_BG_CAND" ] && grep -q 'HME_REVIEW_VERDICT' "$_BG_CAND" 2>/dev/null; then
-        _BG_OUTPUT=$(cat "$_BG_CAND" 2>/dev/null)
-        break
-      fi
-      sleep 1
-      _BG_WAIT=$((_BG_WAIT + 1))
-    done
-    if [ -n "$_BG_OUTPUT" ]; then
-      TOOL_RESULT="$_BG_OUTPUT"
-      echo "NEXUS: resolved background task $_BG_TASK_ID into real review output after ${_BG_WAIT}s" >&2
-    else
-      echo "NEXUS: background task $_BG_TASK_ID did not complete within ${_BG_MAX}s — proxy middleware will resolve on next turn" >&2
-    fi
-  fi
   # Fail-fast on CLI transport errors — `hme-cli: request failed ...` means
   # the worker was down or the request timed out. Never interpret that as
   # "review passed with zero issues"; mark CLI_FAILURE in nexus so stop.sh

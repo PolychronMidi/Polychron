@@ -13,6 +13,16 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 [[ -n "$BG_FILE" ]] && _append_file_to_tab "$BG_FILE"
 
+# Background-stub resolution: if Bash auto-backgrounded this command, swap
+# the "Command running in background with ID: X" stub in .tool_response
+# for the real task-output content (short synchronous wait). Every
+# sub-hook dispatched below inherits the resolved INPUT, so review /
+# hme_read / learn / etc. see real output instead of the stub. The proxy
+# middleware background_dominance.js handles the same resolution on the
+# API-stream side for the model — two complementary layers.
+_RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
+[ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
+
 # Dispatch HME shell-wrapper post-processors. These used to be triggered via
 # hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
 # MCP server; now HME tools run as Bash(i/<tool>) shell wrappers and the

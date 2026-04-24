@@ -16,11 +16,22 @@
  *       Fired on every Anthropic request after strip + scan, before inject.
  *
  * ctx exposes:
- *   - emit(fields)              — activity event via emit.py
- *   - nexusAdd(type, payload)   — append to tmp/hme-nexus.state
- *   - nexusClearType(type)      — remove all entries of a type
- *   - nexusMark(type, payload)  — replace-one-of-type
- *   - warn(msg)                 — log to stderr with [middleware] prefix
+ *   - emit(fields)                        — activity event via emit.py
+ *   - nexusAdd/Mark/ClearType/Has/Count   — tmp/hme-nexus.state operations
+ *   - warn(msg)                           — log to stderr with [middleware] prefix
+ *   - markDirty()                         — signal payload needs re-serialize
+ *   - hasHmeFooter(result, marker)        — idempotency guard for enrichment
+ *   - appendToResult(result, text)        — append text to tool_result (any shape)
+ *   - replaceResult(result, text)         — REPLACE tool_result content entirely
+ *                                           (use when authoritative real output
+ *                                           supersedes a stub, e.g. background
+ *                                           task resolution)
+ *   - retryNextTurn(toolUseId)            — remove dedup so middleware re-enters
+ *                                           on a future turn; bounded by
+ *                                           _MAX_RETRIES to avoid infinite loops
+ *   - retryAttempt(toolUseId)             — how many retries so far (0 = first)
+ *   - retriesRemaining(toolUseId)         — remaining budget before permanent
+ *                                           pass-through
  */
 
 const fs = require('fs');
@@ -93,6 +104,13 @@ let _pipelineDirty = false;
 // shared HME prefix — so multiple middleware can enrich the same result
 // without blocking each other, while still preventing self-restacking.
 
+// Retry-count map for middleware that need to re-enter on future turns
+// (e.g. background_dominance when a task hasn't finished within the
+// current turn's wait window). Bounded per tool_use.id so a permanently
+// stuck task doesn't retry forever.
+const _retryCount = new Map(); // tool_use.id → attempts
+const _MAX_RETRIES = 3;
+
 function _toolResultText(toolResult) {
   const c = toolResult && toolResult.content;
   if (typeof c === 'string') return c;
@@ -145,6 +163,28 @@ const ctx = {
     } else {
       toolResult.content = text;
     }
+  },
+  // Tell the pipeline to allow this tool_use.id to re-enter on a future
+  // turn — used by middleware whose work is unfinished (e.g. background
+  // task still running). Bounded by _MAX_RETRIES so a stuck task
+  // doesn't retry forever. Returns the attempt count AFTER the call so
+  // callers can log or short-circuit.
+  retryNextTurn: (toolUseId) => {
+    if (!toolUseId) return 0;
+    const n = (_retryCount.get(toolUseId) || 0) + 1;
+    _retryCount.set(toolUseId, n);
+    if (n < _MAX_RETRIES) {
+      _processed.delete(toolUseId);
+    }
+    return n;
+  },
+  // How many times this tool_use.id has requested a retry. 0 = first
+  // time middleware has seen it.
+  retryAttempt: (toolUseId) => _retryCount.get(toolUseId) || 0,
+  // Whether further retries are still allowed.
+  retriesRemaining: (toolUseId) => {
+    const n = _retryCount.get(toolUseId) || 0;
+    return Math.max(0, _MAX_RETRIES - n);
   },
 };
 
