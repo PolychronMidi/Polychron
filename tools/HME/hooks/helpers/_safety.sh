@@ -164,18 +164,47 @@ _hme_curl_streak_path() {
     echo "/tmp/hme-curl-fail.streak"
   fi
 }
+# During a planned proxy/worker restart (proxy-maintenance.sh start), the
+# fail-LOUD path in _proxy_bridge.sh is suppressed. _safe_curl must honor
+# the SAME flag — otherwise its streak counter ticks up during legitimate
+# restart windows and LIFESAVER fires spurious errors (rc=7/rc=28) that
+# are actually "caller intentionally cycled the worker", not a real
+# outage. Returns 0 if flag present AND within its declared TTL.
+_hme_maintenance_active() {
+  local flag="${PROJECT_ROOT:-}/tmp/hme-proxy-maintenance.flag"
+  [ -z "${PROJECT_ROOT:-}" ] && return 1
+  [ ! -f "$flag" ] && return 1
+  local ts ttl start_epoch now
+  ts=$(sed -n '1p' "$flag" 2>/dev/null)
+  ttl=$(sed -n '2p' "$flag" 2>/dev/null)
+  case "$ttl" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  start_epoch=$(date -d "$ts" +%s 2>/dev/null || echo 0)
+  now=$(date +%s 2>/dev/null || echo 0)
+  [ "$start_epoch" -gt 0 ] && [ $((now - start_epoch)) -lt "$ttl" ]
+}
+
 _safe_curl() {
   local url="$1" body="${2:-}"
   local out rc streak_file
   streak_file="$(_hme_curl_streak_path)"
+  # --max-time 5 (was 2): /transcript under load can take 2-3s legitimately;
+  # 2s was triggering spurious timeouts during normal heavy worker activity.
   if [ -n "$body" ]; then
-    out=$(curl -s --max-time 2 -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
+    out=$(curl -s --max-time 5 -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
     rc=$?
   else
-    out=$(curl -s --max-time 2 "$url" 2>/dev/null)
+    out=$(curl -s --max-time 5 "$url" 2>/dev/null)
     rc=$?
   fi
   if [ $rc -ne 0 ]; then
+    # Planned maintenance — don't log, don't increment streak. The operator
+    # already announced the window via proxy-maintenance.sh.
+    if _hme_maintenance_active; then
+      echo ''
+      return 0
+    fi
     local streak
     streak=$(_safe_int "$(cat "$streak_file" 2>/dev/null)")
     streak=$((streak + 1))
