@@ -163,7 +163,7 @@ function postTool(name, args) {
     req.on('error', reject);
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error(`hme-cli: request '${name}' exceeded ${timeoutMs}ms — worker hung or slow`));
+      reject(new Error(`hme-cli: request '${name}' exceeded ${timeoutMs}ms -- worker hung or slow`));
     });
     req.write(body);
     req.end();
