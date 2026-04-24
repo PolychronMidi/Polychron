@@ -17,10 +17,11 @@
       "id": "lifesaver",
       "description": "Turn-scoped error surfacing + resolution",
       "artifacts": [
-        { "path": "log/hme-errors.log", "freshness": "default", "allow_empty": true },
-        { "path": "tmp/hme-errors.turnstart", "freshness": "session", "allow_empty": true },
-        { "path": "tmp/hme-errors.lastread", "freshness": "session", "allow_empty": true }
+        { "path": "log/hme-errors.log", "freshness": null, "allow_empty": true },
+        { "path": "tmp/hme-errors.turnstart", "freshness": null, "allow_empty": true },
+        { "path": "tmp/hme-errors.lastread", "freshness": null, "allow_empty": true }
       ],
+      "_freshness_note": "These files update ON ACTIVITY (turn start, error surfacing, watermark advance) — NOT on a periodic heartbeat. A quiet session with no errors legitimately keeps these unchanged for hours; the previous 'session' (300s) ceiling flagged that quiet state as unhealthy, inverting the semantics. Staleness check is now disabled (null); existence-and-not-empty-unless-allow_empty is the only guard.",
       "public_surfaces": ["stop.sh LIFESAVER block", "userpromptsubmit.sh error banner"],
       "depends_on": []
     },
@@ -77,14 +78,16 @@
     {
       "id": "proxy",
       "description": "Lifecycle dispatch + middleware pipeline for tool events",
-      "artifacts": [{ "path": "log/hme-proxy.out", "freshness": "session", "allow_empty": true }],
+      "artifacts": [{ "path": "log/hme-proxy.out", "freshness": null, "allow_empty": true }],
+      "_freshness_note": "Proxy log appends only on lifecycle events (tool_use, tool_result, errors). 5+ min of agent idleness legitimately keeps it quiet; the previous 'session' ceiling flagged idleness as ill-health. Liveness is better verified by universal_pulse's /health probe of port 9099, not log-mtime.",
       "public_surfaces": ["hook dispatch via _proxy_bridge.sh", "middleware: grep_glob_neighborhood, read_context, edit_context, lifesaver_inject"],
       "depends_on": []
     },
     {
       "id": "hooks_lifecycle",
       "description": "PreToolUse/PostToolUse/Stop enforcement layer",
-      "artifacts": [{ "path": "tmp/hme-nexus.state", "freshness": "session", "allow_empty": true }],
+      "artifacts": [{ "path": "tmp/hme-nexus.state", "freshness": null, "allow_empty": true }],
+      "_freshness_note": "nexus.state updates on Edit events only. Quiet span ≠ broken hooks. Periodic-heartbeat semantics would require a synthetic touch, which adds no real signal.",
       "public_surfaces": ["NEXUS blocks", "mid-pipeline edit gate", "snapshot verdict gate", "register*Bias auto-snapshot"],
       "depends_on": ["proxy"]
     }
