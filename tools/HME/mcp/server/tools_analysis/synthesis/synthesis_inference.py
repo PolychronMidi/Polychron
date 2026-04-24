@@ -523,8 +523,11 @@ def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
             "max_tokens": max_tokens,
             "winner": winner or "unknown",
             "had_result": had_result,
-            "local_ms": int(latencies.get("local", 0) * 1000) if "local" in latencies else None,
-            "cloud_ms": int(latencies.get("cloud", 0) * 1000) if "cloud" in latencies else None,
+            # Presence-first then index — avoids the .get-with-default pattern
+            # that hides a missing key as 0 (would be indistinguishable from
+            # a legitimate ~0ms latency).
+            "local_ms": int(latencies["local"] * 1000) if "local" in latencies else None,
+            "cloud_ms": int(latencies["cloud"] * 1000) if "cloud" in latencies else None,
         }
         with open(out, "a") as f:
             f.write(_json.dumps(entry) + "\n")
