@@ -142,9 +142,26 @@ module.exports = {
       const preview = data.prompt.length > 600
         ? data.prompt.slice(0, 600) + '…'
         : data.prompt;
+      // Subagent type: honor the queue payload's hint (any of Claude Code's
+      // valid types — general-purpose, Explore, Plan, statusline-setup,
+      // claude-code-guide). Default general-purpose so legacy queue files
+      // without the field still work. This is the "all possible subagent
+      // types" fix — previously the middleware hardcoded general-purpose
+      // which effectively made Explore/Plan/etc. unreachable for HME
+      // reasoning even when they'd be the right fit (e.g. research-heavy
+      // synthesis calls benefit from Explore's parallel-file-reading).
+      const KNOWN_TYPES = new Set([
+        'general-purpose', 'Explore', 'Plan',
+        'statusline-setup', 'claude-code-guide',
+      ]);
+      let subagentType = data.subagent_type || 'general-purpose';
+      if (!KNOWN_TYPES.has(subagentType)) {
+        subagentType = 'general-purpose';
+      }
       blocks.push(
         `  - req_id=${reqId}\n` +
         `    prompt_file: ${promptFile}\n` +
+        `    subagent_type: ${subagentType}\n` +
         `    system: ${(data.system || '').slice(0, 200)}\n` +
         `    max_tokens: ${data.max_tokens || 2048}\n` +
         `    prompt_preview: ${preview.replace(/\n/g, ' ')}`,
@@ -162,7 +179,9 @@ module.exports = {
       'API RPM.',
       '',
       'For EACH pending task below, invoke Agent exactly once:',
-      '  - subagent_type: general-purpose',
+      '  - subagent_type: as listed per-task below (honor the field; each task',
+      '    picks the type best suited to its nature — general-purpose for most,',
+      '    Explore for research-heavy prompts, Plan for design questions, etc.)',
       "  - description: 'HME reasoning for <req_id>' (verbatim; the bridge uses this to route the result)",
       '  - prompt: read the full prompt from prompt_file (Bash `cat` or Read), then pass as-is',
       '',
