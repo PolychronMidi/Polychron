@@ -559,11 +559,15 @@ def kb_health() -> str:
     parts.append(f"\n## Healthy: {len(healthy)} entries")
     # Highlight the five oldest fresh entries (candidates for refresh
     # even though they pass the staleness checks).
+    _healthy_set = set(healthy)
+    def _id_prefix(entry):
+        _i = entry.get("id")
+        return "" if _i is None else str(_i)[:8]
     dated = sorted(
         ((now_ts - _ts) / 86400, e)
         for e in rows
         if (_ts := e.get("timestamp")) is not None and _ts > 0
-        and str(e.get("id") or "")[:8] in set(healthy)
+        and _id_prefix(e) in _healthy_set
     )
     if dated:
         parts.append("\n## Oldest healthy entries (refresh candidates)")
