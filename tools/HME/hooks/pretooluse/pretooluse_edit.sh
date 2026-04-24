@@ -182,14 +182,18 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
     fi
     # Per-turn dedup: re-firing the brief on every Edit to the same
     # module would re-issue /enrich + emit duplicate auto_brief_injected
-    # events on each successive edit. The turn-edits state file already
-    # records modules touched this turn (used for coupling warnings); we
-    # piggyback on it to skip auto-brief when the module's been seen.
-    _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT:-}/tmp/hme-turn-briefs.txt"
-    if [ -f "$_AUTO_BRIEF_TURN_FILE" ] && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
+    # events on each successive edit. The tracker is cleared at turn
+    # start by userpromptsubmit.sh. Skip auto-brief entirely when
+    # PROJECT_ROOT is unset (avoids leaking state to /tmp/ outside
+    # any project).
+    _AUTO_BRIEF_TURN_FILE=""
+    [ -n "${PROJECT_ROOT:-}" ] && _AUTO_BRIEF_TURN_FILE="${PROJECT_ROOT}/tmp/hme-turn-briefs.txt"
+    if [ -n "$_AUTO_BRIEF_TURN_FILE" ] && [ -f "$_AUTO_BRIEF_TURN_FILE" ] \
+        && grep -qFx "$_auto_module" "$_AUTO_BRIEF_TURN_FILE" 2>/dev/null; then
       _AUTO_BRIEF_SKIP=1
     fi
-    if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ]; then
+    if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ] && [ -z "${_AUTO_BRIEF_SKIP:-}" ] \
+        && [ -n "$_AUTO_BRIEF_TURN_FILE" ]; then
       # Fast path: /enrich (~70ms) for KB hits + head of target file for
       # docstring/imports. Stays under the PreToolUse latency budget that
       # i/hme-read (15s LLM synthesis) blew. Brief is compact (<2 KB).
