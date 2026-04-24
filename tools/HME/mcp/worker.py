@@ -308,15 +308,54 @@ class _Handler(BaseHTTPRequestHandler):
         return json.loads(raw)
 
     def _post_tool(self, name: str, args: dict):
-        try:
-            result = tool_call(name, args)
-            self._json(200, {"ok": True, "result": result})
-        except KeyError as ke:
-            self._json(404, {"ok": False, "error": str(ke)})
-        except Exception as ex:
+        # LAYER 3 WATCHDOG: per-request wall-clock cap so a deadlocked
+        # tool pipeline can't silently hold the worker forever. Default
+        # 120s — shorter than the CLI's 150s HTTP timeout and the
+        # wrapper's 180s outer timeout, so the watchdog fires first and
+        # produces a 504 with a concrete message rather than letting
+        # layers 1 or 2 abort on a blank result.
+        #
+        # Python threads can't be forcibly terminated, so a timed-out
+        # tool keeps running in the background after we return 504.
+        # The worker supervisor will eventually restart us if the
+        # thread accumulation becomes problematic, but in practice
+        # the leaked threads finish soon after — the watchdog exists
+        # to unblock the CALLER, not to preempt the tool's own work.
+        import threading as _th
+        timeout_s = float(os.environ.get("HME_TOOL_WATCHDOG_S", "120"))
+        result_box: list = [None, None]  # [value, exception]
+
+        def _runner():
+            try:
+                result_box[0] = tool_call(name, args)
+            except Exception as e:
+                result_box[1] = e
+
+        t = _th.Thread(target=_runner, daemon=True, name=f"tool-{name}")
+        t.start()
+        t.join(timeout=timeout_s)
+        if t.is_alive():
+            logger.error(
+                f"tool {name!r} watchdog: exceeded {timeout_s:.0f}s; returning 504. "
+                f"Thread is leaked and will finish in background. args keys="
+                f"{list(args.keys()) if isinstance(args, dict) else '?'}"
+            )
+            self._json(504, {
+                "ok": False,
+                "error": f"tool {name!r} exceeded {timeout_s:.0f}s wall clock",
+                "watchdog_timeout": True,
+            })
+            return
+        ex = result_box[1]
+        if isinstance(ex, KeyError):
+            self._json(404, {"ok": False, "error": str(ex)})
+        elif ex is not None:
             import traceback
+            tb = "".join(traceback.format_exception(type(ex), ex, ex.__traceback__))
             self._json(500, {"ok": False, "error": f"{type(ex).__name__}: {ex}",
-                             "trace": traceback.format_exc()[-2000:]})
+                             "trace": tb[-2000:]})
+        else:
+            self._json(200, {"ok": True, "result": result_box[0]})
 
     def _post_rag_dispatch(self, body: dict):
         """Generic engine method dispatch. Mirrors hme_http.py's _handle_rag_dispatch."""
