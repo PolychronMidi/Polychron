@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 755,
-      "updated_ts": 1776998081.1026447
+      "max_id": 762,
+      "updated_ts": 1776998121.059264
     }
   },
   {
@@ -88,8 +88,8 @@
     "id": 720,
     "text": "Commit round 3",
     "activeForm": "Committing round 3",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
