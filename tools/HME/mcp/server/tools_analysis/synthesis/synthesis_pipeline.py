@@ -112,9 +112,15 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
 
 def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
                                arbiter_report: str, question: str) -> str | None:
-    """Stage 1.75: resolve COMPLEX arbiter conflict via the reasoning model."""
-    from .synthesis_inference import _local_think
-    from .synthesis_llamacpp import _REASONING_MODEL
+    """Stage 1.75: resolve COMPLEX arbiter conflict — escalate to OVERDRIVE.
+
+    Arbitration between two competing analyses is frontier-class reasoning
+    (which model hallucinated a module name? which missed a signal?). The
+    local reasoner can't reliably distinguish its own blind spots from the
+    extractor's. _reasoning_think cascades through ranked cloud providers
+    and only falls back to local if every slot is exhausted.
+    """
+    from .synthesis_inference import _reasoning_think
     from .synthesis_session import append_session_narrative
 
     resolve_prompt = (
@@ -128,8 +134,8 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
         "signal fields; discard hallucinated module names from the reasoner. "
         "Output a CORRECTED brief (max 300 words) for Stage 2."
     )
-    resolved = _local_think(resolve_prompt, max_tokens=512, model=_REASONING_MODEL,
-                            system=_THINK_SYSTEM, temperature=0.15)
+    resolved = _reasoning_think(resolve_prompt, max_tokens=512,
+                                system=_THINK_SYSTEM, temperature=0.15)
     if resolved:
         logger.info(f"Stage 1.75: conflict resolved ({len(resolved)} chars)")
         append_session_narrative("arbiter_resolved",
@@ -139,9 +145,15 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
 
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
                      answer_format: str | None = None) -> str | None:
-    """Sequential two-stage synthesis: extract → gap-fill → reason. Fallback for _parallel_two_stage_think."""
-    from .synthesis_inference import _local_think
-    from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL
+    """Sequential two-stage synthesis: extract → gap-fill → reason. Fallback for _parallel_two_stage_think.
+
+    Extraction + gap-analysis stages stay local (qwen3-coder excels at the
+    pattern-matching these require). The reasoning/synthesis stages now
+    escalate to OVERDRIVE — answer quality is user-facing and the local
+    reasoner's synthesis ceiling was the bottleneck.
+    """
+    from .synthesis_inference import _local_think, _reasoning_think
+    from .synthesis_llamacpp import _LOCAL_MODEL
 
     _STAGE1_SYSTEM = (
         "You are a code extraction assistant for the Polychron music synthesis project. "
@@ -164,13 +176,17 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
     stage1_kv_ctx = frame_result[1] if isinstance(frame_result, tuple) else []
 
     if not frame or len(frame) < 40 or "src/" not in frame:
-        return _local_think(raw_context[:6000] + "\n\n" + question,
-                            max_tokens=max_tokens, model=_REASONING_MODEL, system=_THINK_SYSTEM)
+        # No-brief fallback: Stage 1 extraction failed, we're doing full
+        # synthesis from raw context. Answer quality is fully exposed —
+        # escalate to OVERDRIVE cascade.
+        return _reasoning_think(raw_context[:6000] + "\n\n" + question,
+                                max_tokens=max_tokens, system=_THINK_SYSTEM)
 
+    # Gap-detection is lightweight pattern enumeration; local reasoner is fine.
     gaps = _local_think(
         "/no_think Brief:\n\n" + frame + "\n\nQuestion: " + question + "\n\n"
         "What SPECIFIC facts are MISSING? List as: NEED: <what>. If nothing, respond: NO GAPS\nMax 5 gaps.",
-        max_tokens=800, model=_REASONING_MODEL, temperature=0.2, system=_THINK_SYSTEM
+        max_tokens=800, temperature=0.2, system=_THINK_SYSTEM
     )
     if gaps and "NO GAP" not in gaps.upper() and "NEED:" in gaps:
         supplement = _local_think(
@@ -185,10 +201,13 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
         "Answer using ONLY modules, files, signals named in the brief. Do NOT invent names.\n"
         "Format: FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence. Max 4 items."
     )
-    return _local_think(
+    # Final synthesis stage — user-facing answer. Escalate to OVERDRIVE; the
+    # brief and gap-fill stages have already bounded the context, so cloud
+    # latency is the only tradeoff and quality gain is substantial.
+    return _reasoning_think(
         "/no_think Brief:\n\n" + frame + "\n\nContext:\n" + raw_context[:4000] +
         "\n\nQuestion: " + question + "\n\n" + _fmt,
-        max_tokens=max_tokens, model=_REASONING_MODEL, system=_THINK_SYSTEM
+        max_tokens=max_tokens, system=_THINK_SYSTEM
     )
 
 
@@ -204,7 +223,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     from .synthesis_llamacpp import (
         _LOCAL_MODEL, _REASONING_MODEL, _interactive_event,
     )
-    from .synthesis_inference import _local_think, _local_chat
+    from .synthesis_inference import _local_think, _local_chat, _reasoning_think
     from .synthesis_session import get_session_narrative
 
     _q_lower = question.lower()
@@ -311,9 +330,11 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     ]
     result = _local_chat(chat_messages, model=_REASONING_MODEL, max_tokens=max_tokens, temperature=0.15)
     if not result:
+        # Local chat path failed — escalate the final synthesis to OVERDRIVE
+        # instead of retrying the same local reasoner with different phrasing.
         fallback_prompt = ("Based on this analysis:\n\n" + merged + "\n\nAnswer: " + question +
-                           "\n\n" + _fmt_instruction + "\nMax 4 items. /no_think")
-        result = _local_think(fallback_prompt, max_tokens=max_tokens, model=_REASONING_MODEL)
+                           "\n\n" + _fmt_instruction + "\nMax 4 items.")
+        result = _reasoning_think(fallback_prompt, max_tokens=max_tokens, system=_THINK_SYSTEM)
 
     _arbiter_class = arbiter_result["severity"].upper() if arbiter_result else "ALIGNED"
     _resolved = "Conflict Resolution" in merged if _arbiter_class == "COMPLEX" else False

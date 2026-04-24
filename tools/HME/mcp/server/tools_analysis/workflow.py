@@ -15,7 +15,7 @@ from symbols import collect_all_symbols, find_callers as _find_callers
 from structure import file_summary as _file_summary
 from analysis import find_similar_code as _find_similar
 from .synthesis import (
-    _local_think, compress_for_claude,
+    _local_think, _reasoning_think, compress_for_claude,
     _THINK_MODEL, _LOCAL_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
     _THINK_SYSTEM, route_model,
 )
@@ -445,8 +445,13 @@ def _build_edit_risks(rel_path: str, caller_files: list, relevant_kb: list,
         "- If this file has 0 dependents and no KB constraints, respond: 'Low risk — leaf module.'\n"
         "- Format: '1. [risk] because [specific caller/constraint].'\n"
     )
-    synthesis = _local_think(user_text, max_tokens=800, model=route_model(user_text),
-                             system=_THINK_SYSTEM, priority=priority)
+    # Risk analysis = multi-hop reasoning about caller/constraint impact.
+    # Local reasoner's ceiling was the quality bottleneck here; escalate to
+    # OVERDRIVE cascade, which falls back to local if every cloud slot is
+    # exhausted. (The old `priority=` param was a local-scheduling hint —
+    # cloud latency is independent of GPU queue state, so we drop it.)
+    synthesis = _reasoning_think(user_text, max_tokens=800,
+                                 system=_THINK_SYSTEM)
     return synthesis
 
 
