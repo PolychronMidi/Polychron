@@ -2,22 +2,9 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1102,
-      "updated_ts": 1777046422.459185
+      "max_id": 1107,
+      "updated_ts": 1777047622.418086
     }
-  },
-  {
-    "id": 1098,
-    "text": "Fix meta_observer daemon crashloop: add missing `import shutil` then restart server",
-    "activeForm": "Fixing meta_observer shutil NameError",
-    "status": "pending",
-    "done": false,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777046422.4591327,
-    "parent_id": 0,
-    "subs": []
   },
   {
     "id": 1094,
@@ -36,8 +23,8 @@
     "id": 1095,
     "text": "Split pretooluse_bash.sh (448 LOC)",
     "activeForm": "Splitting pretooluse_bash.sh",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -49,8 +36,8 @@
     "id": 1096,
     "text": "Split _safety.sh (397 LOC)",
     "activeForm": "Splitting _safety.sh",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -59,15 +46,28 @@
     "subs": []
   },
   {
-    "id": 1097,
-    "text": "Verify all hooks still fire correctly after splits",
+    "id": 1106,
+    "text": "Verify all split hooks fire correctly via hook-driven smoke tests",
     "activeForm": "Verifying hook integrity post-split",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777047622.4180713,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1107,
+    "text": "Audit LOC distribution of all new split files \u2014 ensure within 150-250 LOC target",
+    "activeForm": "Auditing split-file LOC distribution",
     "status": "pending",
     "done": false,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777045423.0095012,
+    "ts": 1777047622.418082,
     "parent_id": 0,
     "subs": []
   },
