@@ -23,6 +23,44 @@ from .synthesis_llamacpp import (  # noqa: F401
 
 logger = logging.getLogger("HME")
 
+# English prose + language-keyword stop-words used by extract_diff_symbols
+# to drop plain lowercase regex hits that have no identifier structure.
+# Without this filter, docstring prose words ("the / its / own / across /
+# whether / why") and Python keywords ("import / not / from") were landing
+# in the "Allowed symbols" whitelist and polluting the reviewer prompt.
+_PROSE_AND_KEYWORD_STOPWORDS = frozenset({
+    # articles, conjunctions, prepositions, pronouns
+    "the", "and", "but", "for", "nor", "yet", "not", "its", "our", "out",
+    "own", "any", "all", "are", "was", "were", "been", "has", "had",
+    "have", "from", "into", "onto", "upon", "with", "without", "about",
+    "above", "across", "after", "again", "against", "along", "among",
+    "around", "before", "behind", "below", "beneath", "beside", "between",
+    "beyond", "during", "except", "inside", "outside", "over", "through",
+    "throughout", "under", "until", "within", "this", "that", "these",
+    "those", "there", "here", "where", "when", "which", "what", "whose",
+    "whether", "while", "why", "how", "who", "whom", "than", "then",
+    "because", "though", "although", "since", "unless", "until", "whenever",
+    "wherever", "whereas", "whoever", "whatever", "both", "each", "every",
+    "either", "neither", "some", "many", "most", "much", "few", "fewer",
+    "none", "just", "also", "only", "such", "very", "quite",
+    # generic verbs/adjectives commonly in docstrings
+    "adapts", "actually", "applies", "applied", "awareness", "building",
+    "causal", "changed", "checkpoints", "coherence", "compaction",
+    "context", "conversation", "counterfactual", "diff", "effectiveness",
+    "entanglement", "environmental", "extrospective", "facing", "hunks",
+    "interventions", "layers", "lines", "load", "memory", "model",
+    "narrator", "outcomes", "outward", "persists", "predicted",
+    "prescriptive", "prevented", "reasoning", "relevant", "restarts",
+    "self", "space", "state", "survives", "synthesizes", "system",
+    "tracks", "file", "lib", "disk", "host",
+    # Python keywords + common stdlib names we'd rather drop from the
+    # whitelist unless the model genuinely uses them as identifiers
+    "import", "from", "def", "return", "pass", "raise", "yield", "async",
+    "await", "class", "global", "nonlocal", "lambda",
+    # misc words we saw dirty the whitelist in production reviews
+    "python", "index", "git", "gpu", "home", "jah",
+})
+
 
 def _cancellable_urlopen(req_data, url, timeout, cancel_event):
     """Streaming urlopen that aborts when cancel_event fires.
@@ -727,7 +765,11 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     regex-based extraction over the raw diff so the downstream filter still
     has something to check against.
     """
-    source = "\n".join([changed_files or "", diff_context or "", hunk_context or ""])
+    # Only extract from the actual diff + filenames. hunk_context is
+    # prose-heavy (docstrings, comments) and would otherwise pull every
+    # English word of 3+ letters into the whitelist, polluting the prompt
+    # with tokens like "the / its / own / across / whether / why".
+    source = "\n".join([changed_files or "", diff_context or ""])
     if not source.strip():
         return set()
 
@@ -736,9 +778,27 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     # keeps working even if the daemon is down.
     fallback: set[str] = set()
     import re as _re_sx
+
+    def _looks_identifier(tok: str) -> bool:
+        # Keep tokens that carry identifier-structure signal AND aren't
+        # English prose. Docstring sentences capitalize "The", "Why",
+        # "GPU", so an uppercase-letter check alone isn't enough —
+        # reject stop-words first regardless of casing, then allow
+        # remaining tokens with structural identifier hints.
+        if tok.lower() in _PROSE_AND_KEYWORD_STOPWORDS:
+            return False
+        if '_' in tok or '.' in tok:
+            return True
+        if any(c.isupper() for c in tok):
+            return True
+        if any(c.isdigit() for c in tok):
+            return True
+        return True
+
     # identifiers (snake_case, camelCase, dotted.access), 3+ chars
     for tok in _re_sx.findall(r'\b[A-Za-z_][A-Za-z0-9_.]{2,}\b', source):
-        fallback.add(tok.lower())
+        if _looks_identifier(tok):
+            fallback.add(tok.lower())
     # quoted strings (single, double, backtick)
     for tok in _re_sx.findall(r'"([^"\n]{2,80})"|\'([^\'\n]{2,80})\'|`([^`\n]{2,80})`', source):
         for grp in tok:
