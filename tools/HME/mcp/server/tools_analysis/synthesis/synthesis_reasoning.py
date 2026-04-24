@@ -544,14 +544,20 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     except Exception as e:
         logger.warning(f"OVERDRIVE_VIA_SUBAGENT: queue write failed: {e}")
         return None
-    # Sentinel format parsed by subagent_bridge.js middleware.
+    # Self-instructing sentinel. Everything the agent needs is in this
+    # block — no system-message injection needed, no context bloat. The
+    # proxy middleware still captures the Agent's result on return
+    # (matches by description), but the dispatch itself is prompted by
+    # the sentinel text alone.
     sentinel = (
         f"\n\n[[HME_AGENT_TASK req_id={req_id} "
-        f"prompt_file=tmp/hme-subagent-queue/{req_id}.json]]\n"
-        "HME has queued a reasoning task. The proxy middleware will "
-        "instruct the assistant to dispatch it via the Agent tool on "
-        "the next turn; the Agent result replaces this sentinel as the "
-        "authoritative reasoning output."
+        f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
+        f"subagent_type={subagent_type}]]\n"
+        f"HME queued a reasoning task — dispatch via `Agent("
+        f"subagent_type='{subagent_type}', "
+        f"description='HME reasoning for {req_id}', "
+        f"prompt=<contents of {prompt_file}>)`. "
+        f"Surface the Agent's output verbatim in your reply."
     )
     logger.info(f"OVERDRIVE_VIA_SUBAGENT: queued req_id={req_id} "
                 f"(prompt={len(prompt)}c, system={len(system)}c)")
