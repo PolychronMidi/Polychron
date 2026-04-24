@@ -488,6 +488,41 @@ function handleRequest(clientReq, clientRes) {
     upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
+    // Out-of-band auth injection. Loopback callers (e.g. the MCP
+    // server's overdrive path) POST to the proxy without auth — they
+    // can't forward Claude Code's ambient Authorization header because
+    // they aren't in the Claude-Code→proxy request chain. When the
+    // incoming request has no auth AND comes from localhost AND the
+    // upstream is Anthropic, read the Claude Code OAuth token from
+    // ~/.claude/.credentials.json and inject it. Same credential the
+    // live Claude Code session uses, same subscription charged. Any
+    // other request (non-localhost, non-Anthropic, or already carrying
+    // auth) is passed through unchanged.
+    if (isAnthropic
+        && !upstreamHeaders['authorization']
+        && !upstreamHeaders['x-api-key']) {
+      const remoteAddr = (clientReq.socket && clientReq.socket.remoteAddress) || '';
+      const isLoopback = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+      if (isLoopback) {
+        try {
+          const credsPath = require('path').join(require('os').homedir(), '.claude/.credentials.json');
+          const creds = JSON.parse(require('fs').readFileSync(credsPath, 'utf8'));
+          const token = creds && creds.claudeAiOauth && creds.claudeAiOauth.accessToken;
+          if (token) {
+            upstreamHeaders['authorization'] = `Bearer ${token}`;
+            if (!upstreamHeaders['anthropic-beta']) {
+              upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+            }
+            console.error(`[hme-proxy] injected OAuth token for loopback out-of-band request (path=${clientReq.url})`);
+          }
+        } catch (_err) {
+          // Credentials unreadable — fall through with no auth, upstream
+          // will 401 and the caller sees the error. Not silent.
+          console.error(`[hme-proxy] auth injection failed: ${_err.message}`);
+        }
+      }
+    }
+
     const upstreamPath = (upstream.basePath || '') + clientReq.url;
     const upstreamOpts = {
       hostname: upstream.host,
