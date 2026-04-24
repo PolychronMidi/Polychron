@@ -56,6 +56,46 @@ RESP=$(curl -sf --max-time 60 -X POST \
 if [ -z "$RESP" ]; then
   # Proxy unreachable. FAIL LOUD, NOT FAIL OPEN.
   _PB_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+
+  # Maintenance-flag check: if tmp/hme-proxy-maintenance.flag exists and
+  # is younger than its declared TTL, a caller has announced a planned
+  # restart. Suppress the fail-LOUD banner for this single invocation;
+  # still emit a short stderr trace so the gap is audit-trailable, but
+  # do NOT write to hme-errors.log (would trigger LIFESAVER) and do NOT
+  # set the sticky fail flag.
+  #
+  # Flag format: two lines.
+  #   line 1: ISO8601 timestamp the maintenance window started
+  #   line 2: integer TTL seconds
+  # Malformed or expired flag is ignored — we fail-LOUD as normal.
+  _PB_MAINT_FLAG="$_PB_ROOT/tmp/hme-proxy-maintenance.flag"
+  _PB_MAINT_ACTIVE=0
+  if [ -n "$_PB_ROOT" ] && [ -f "$_PB_MAINT_FLAG" ]; then
+    _PB_MAINT_START=$(sed -n '1p' "$_PB_MAINT_FLAG" 2>/dev/null)
+    _PB_MAINT_TTL=$(sed -n '2p' "$_PB_MAINT_FLAG" 2>/dev/null)
+    case "$_PB_MAINT_TTL" in
+      ''|*[!0-9]*) ;;  # malformed — fall through to fail-LOUD
+      *)
+        _PB_MAINT_EPOCH=$(date -d "$_PB_MAINT_START" +%s 2>/dev/null || echo 0)
+        _PB_NOW_EPOCH=$(date +%s 2>/dev/null || echo 0)
+        if [ "$_PB_MAINT_EPOCH" -gt 0 ] \
+            && [ $((_PB_NOW_EPOCH - _PB_MAINT_EPOCH)) -lt "$_PB_MAINT_TTL" ]; then
+          _PB_MAINT_ACTIVE=1
+        fi
+        ;;
+    esac
+  fi
+
+  if [ "$_PB_MAINT_ACTIVE" = "1" ]; then
+    # Planned restart window. Drop one audit line to the lifecycle log,
+    # skip every fail-LOUD channel.
+    mkdir -p "$_PB_ROOT/log" 2>/dev/null
+    echo "[$_PB_TS] [proxy-bridge] unreachable during planned maintenance window (event=${EVENT})" \
+      >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+    echo "[proxy-bridge MAINTENANCE $_PB_TS] proxy down during maintenance window (event=${EVENT})" >&2
+    exit 0
+  fi
+
   _PB_MSG="[$_PB_TS] [proxy-bridge] HME proxy unreachable on 127.0.0.1:${PORT} (event=${EVENT}). No LIFESAVER, no KB briefing, no hook logic for this turn."
 
   # Channel A: hme-errors.log for LIFESAVER text-scan pickup.

@@ -149,6 +149,84 @@ class DocDriftVerifier(Verifier):
                        out.splitlines()[:30])
 
 
+class EnvLoadVerifier(Verifier):
+    """The .env file at the project root is the single source of
+    PROJECT_ROOT, METRICS_DIR, HME_PROXY_PORT, and every other *HME_*
+    setting the hook stack depends on. When .env fails to load,
+    `_safety.sh` logs to stderr and _proxy_bridge drops stderr, and every
+    hook downstream silently runs with PROJECT_ROOT="".
+
+    This verifier catches that silent-failure class at its source:
+    - .env must exist at $PROJECT/.env
+    - PROJECT_ROOT must be declared and equal the detected project root
+    - The file must be parseable by `set -a; source .env`
+
+    Weight 3.0 — a broken .env makes every other verifier's diagnosis
+    untrustworthy, so the score hit should be substantial."""
+    name = "env-load"
+    category = "state"
+    weight = 3.0
+
+    def run(self) -> VerdictResult:
+        env_path = os.path.join(_PROJECT, ".env")
+        if not os.path.isfile(env_path):
+            return _result(FAIL, 0.0,
+                           f".env missing at {env_path}",
+                           [f"every downstream hook runs without PROJECT_ROOT — "
+                            f"silent failure class"])
+
+        # Parse the .env file manually — no `source` subshell, no shell
+        # injection surface. KEY=VALUE per line, comments start with #,
+        # blank lines ignored. Quoted values are accepted but the quotes
+        # are not stripped (verifier is checking for the KEY's presence,
+        # not value fidelity).
+        declared = {}
+        unparseable = []
+        try:
+            with open(env_path) as f:
+                for line_no, line in enumerate(f, 1):
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        unparseable.append(f"line {line_no}: {line[:80]!r}")
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    if not key.replace("_", "").isalnum():
+                        unparseable.append(f"line {line_no}: invalid key {key!r}")
+                        continue
+                    declared[key] = value.strip()
+        except OSError as e:
+            return _result(ERROR, 0.0, f".env unreadable: {e}")
+
+        issues = []
+        if unparseable:
+            issues.extend(f"unparseable: {u}" for u in unparseable[:4])
+
+        # Required keys the hook stack explicitly consults.
+        required = ["PROJECT_ROOT"]
+        for key in required:
+            if key not in declared:
+                issues.append(f"required key missing: {key}")
+
+        # PROJECT_ROOT must reference the actual project root. The literal
+        # string might use ${VAR} expansion; accept that but compare the
+        # unquoted value's expected head.
+        declared_root = declared.get("PROJECT_ROOT", "").strip('"').strip("'")
+        if declared_root and declared_root != _PROJECT:
+            issues.append(
+                f"PROJECT_ROOT={declared_root!r} disagrees with detected root {_PROJECT!r}"
+            )
+
+        if issues:
+            return _result(FAIL, 0.0,
+                           f"{len(issues)} .env issue(s) — silent-failure class",
+                           issues)
+        return _result(PASS, 1.0,
+                       f".env loads cleanly ({len(declared)} keys)")
+
+
 class PluginCacheParityVerifier(Verifier):
     """The HME plugin cache at ~/.claude/plugins/cache/polychron-local/
     HME/1.0.0/hooks/ is a frozen copy populated at plugin install time.
@@ -171,7 +249,7 @@ class PluginCacheParityVerifier(Verifier):
         cache_hooks = os.path.expanduser(
             "~/.claude/plugins/cache/polychron-local/HME/1.0.0/hooks"
         )
-        if not os.path.isdir(cache_hooks):
+        if not os.path.isdir(cache_hooks) and not os.path.islink(cache_hooks):
             return _result(SKIP, 1.0,
                            "plugin cache not installed — no parity to check",
                            [f"expected at {cache_hooks}"])
@@ -179,6 +257,23 @@ class PluginCacheParityVerifier(Verifier):
             return _result(ERROR, 0.0,
                            "repo hooks dir missing",
                            [f"expected at {repo_hooks}"])
+
+        # Fast path: cache is a symlink that resolves to the repo hooks.
+        # Parity is tautological — skip the expensive walk and PASS
+        # immediately. Keep the structural cache path in settings.json
+        # working while eliminating the drift problem entirely.
+        if os.path.islink(cache_hooks):
+            resolved = os.path.realpath(cache_hooks)
+            repo_real = os.path.realpath(repo_hooks)
+            if resolved == repo_real:
+                return _result(PASS, 1.0,
+                               "plugin cache is a symlink to repo hooks (drift structurally impossible)",
+                               [f"{cache_hooks} -> {resolved}"])
+            # Symlinked somewhere ELSE — the link target is not the repo.
+            # That's a real misconfiguration worth surfacing, not silent PASS.
+            return _result(FAIL, 0.0,
+                           f"plugin cache symlink points outside repo: {resolved}",
+                           [f"expected target: {repo_real}"])
 
         def hash_tree(root):
             out = {}
@@ -2160,6 +2255,7 @@ REGISTRY = [
     DocDriftVerifier(),
     NumericClaimDriftVerifier(),
     AutocommitHealthVerifier(),
+    EnvLoadVerifier(),
     PluginCacheParityVerifier(),
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
