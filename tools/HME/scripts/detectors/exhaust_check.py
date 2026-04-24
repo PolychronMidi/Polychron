@@ -294,8 +294,13 @@ def _emit_stats(verdict: str, detail: str) -> None:
                 "verdict": verdict,
                 "detail": detail,
             }) + "\n")
-    except Exception:  # silent-ok: telemetry only, never block hook
-        pass
+    except (OSError, TypeError, ValueError) as _emit_err:
+        # Telemetry only, never block hook — but narrow the catch so real
+        # bugs (NameError from missing imports, AttributeError from schema
+        # drift) propagate to stderr instead of silently hiding for months.
+        import sys as _sys
+        print(f"[exhaust_check] stats emit failed: "
+              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
 
 
 def main() -> int:

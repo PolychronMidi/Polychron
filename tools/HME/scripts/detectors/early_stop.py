@@ -315,8 +315,12 @@ def _emit_stats(pattern: str, detail: str) -> None:
                 "ts": _time.time(), "detector": "early_stop",
                 "verdict": pattern, "detail": detail,
             }) + "\n")
-    except Exception:  # silent-ok: observability-only, never block
-        pass
+    except (OSError, TypeError, ValueError) as _emit_err:
+        # Observability only, never block — but narrowed so real bugs
+        # surface to stderr instead of vanishing into a bare except.
+        import sys as _sys
+        print(f"[early_stop] stats emit failed: "
+              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
 
 
 def main() -> int:
