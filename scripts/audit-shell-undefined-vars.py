@@ -46,6 +46,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
 ENV_FILE = REPO_ROOT / ".env"
 
+# Additional shell-script trees that run under the same `set -u` risk
+# class as hooks/. Launcher scripts, proxy test scripts, and one-shot
+# setup scripts all use the same bash + may also use `set -euo pipefail`
+# — an undefined variable there crashes the same way and is equally
+# undetected until runtime. Scope expanded April 2026 after observing
+# that the _AC_PROJECT-class bug isn't hooks-specific.
+EXTRA_SCAN_DIRS = [
+    REPO_ROOT / "tools" / "HME" / "launcher",
+    REPO_ROOT / "tools" / "HME" / "proxy",   # test-proxy*.sh etc.
+    REPO_ROOT / "tools" / "HME" / "chat",    # start-browser.sh
+    REPO_ROOT / "tools" / "HME" / "scripts", # setup_*.sh
+]
+
 # Bash specials / positional args / standard env never to flag.
 _BUILTIN_VARS = {
     # Positional and special
@@ -385,7 +398,16 @@ def main() -> int:
     args = ap.parse_args()
 
     env_vars = _load_env_vars(ENV_FILE)
-    files = sorted(HOOKS_DIR.rglob("*.sh"))
+    files = list(HOOKS_DIR.rglob("*.sh"))
+    for extra_dir in EXTRA_SCAN_DIRS:
+        if extra_dir.is_dir():
+            # Shallow + one-level deep, not recursive — avoid grabbing node_modules,
+            # venvs, or output/ files that happen to be named .sh.
+            files.extend(extra_dir.glob("*.sh"))
+            for sub in extra_dir.iterdir():
+                if sub.is_dir() and sub.name not in {"node_modules", "dist", "out", ".git"}:
+                    files.extend(sub.glob("*.sh"))
+    files = sorted(set(files))
     results = []
     total_viol = 0
     for f in files:

@@ -13,6 +13,7 @@ from ...synthesis import _local_think
 logger = logging.getLogger("HME")
 
 
+@ctx.mcp.tool(meta={"hidden": True})
 def hme_selftest(verbose: bool = False) -> str:
     """Verify HME's own health: tool registration, doc sync, index integrity, llama.cpp, KB."""
     _track("hme_selftest")

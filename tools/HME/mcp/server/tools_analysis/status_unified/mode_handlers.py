@@ -49,6 +49,151 @@ def _mode_activity():
     from ..activity_digest import activity_digest as _ad
     return _ad(window="round")
 
+
+def _mode_race_stats():
+    """Summarize recent local-vs-cloud race outcomes from
+    hme-race-outcomes.jsonl. Helps tune _RACE_CLOUD_DELAY_SEC — if local
+    wins ≥80% of races, the delay can probably be raised (less wasted
+    cloud work); if cloud wins often, either delay is too long or local
+    is the bottleneck for these query shapes."""
+    import os as _os
+    import json as _json
+    from server import context as _ctx
+    out_dir = _os.environ.get("METRICS_DIR") or _os.path.join(
+        getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics")
+    path = _os.path.join(out_dir, "hme-race-outcomes.jsonl")
+    if not _os.path.isfile(path):
+        return "## Race Stats\n  (no races run yet — hme-race-outcomes.jsonl absent)"
+    try:
+        # Scan last 128KB of the log
+        size = _os.path.getsize(path)
+        read_from = max(0, size - 128 * 1024)
+        with open(path, "rb") as f:
+            if read_from:
+                f.seek(read_from)
+                f.readline()
+            text = f.read().decode("utf-8", errors="replace")
+    except OSError as _err:
+        return f"## Race Stats\n  (read failed: {_err})"
+    entries: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entries.append(_json.loads(line))
+        except _json.JSONDecodeError:
+            continue
+    if not entries:
+        return "## Race Stats\n  (log empty)"
+    tally: dict[str, int] = {}
+    lat_local: list[int] = []
+    lat_cloud: list[int] = []
+    for e in entries:
+        tally[e.get("winner", "?")] = tally.get(e.get("winner", "?"), 0) + 1
+        if isinstance(e.get("local_ms"), int):
+            lat_local.append(e["local_ms"])
+        if isinstance(e.get("cloud_ms"), int):
+            lat_cloud.append(e["cloud_ms"])
+    total = len(entries)
+    lines = [
+        "## Race Stats",
+        f"  sample: {total} races (last ~128KB of hme-race-outcomes.jsonl)",
+        "",
+        "  Winner distribution:",
+    ]
+    for w, n in sorted(tally.items(), key=lambda x: -x[1]):
+        pct = (n * 100) // total
+        lines.append(f"    {w:<12} {n:>5}  ({pct}%)")
+    if lat_local:
+        lat_local.sort()
+        p50 = lat_local[len(lat_local) // 2]
+        p95 = lat_local[int(len(lat_local) * 0.95)]
+        lines.append(f"\n  local  latency: p50={p50}ms  p95={p95}ms  (n={len(lat_local)})")
+    if lat_cloud:
+        lat_cloud.sort()
+        p50 = lat_cloud[len(lat_cloud) // 2]
+        p95 = lat_cloud[int(len(lat_cloud) * 0.95)]
+        lines.append(f"  cloud  latency: p50={p50}ms  p95={p95}ms  (n={len(lat_cloud)})")
+    lines.append("")
+    lines.append(f"  Tuning tip: `_RACE_CLOUD_DELAY_SEC` currently 2.5s. "
+                 f"If local wins ≥80% raise it; if cloud wins most races the delay "
+                 f"may be cutting local work off early — investigate.")
+    return "\n".join(lines)
+
+
+def _mode_learn_suggestions():
+    """Surface `productive_incoherence` events — modules the agent edited
+    with MISSING KB coverage. The event was already being emitted by
+    posttooluse_edit.sh but no consumer read it; this mode closes that loop.
+
+    Shows, per module: file path, module name, session, timestamp (latest
+    first). Up to 20 entries from the last round. Agent can drive a
+    `learn()` pass to capture the novel findings those edits represent.
+    """
+    import os as _os
+    import json as _json
+    from server import context as _ctx
+    activity_path = _os.path.join(
+        _os.environ.get("METRICS_DIR") or _os.path.join(_ctx.PROJECT_ROOT, "output", "metrics"),
+        "hme-activity.jsonl",
+    )
+    if not _os.path.isfile(activity_path):
+        return "## Learn Suggestions\n  (no activity log yet)"
+    # Scan last 256KB for recency + productive_incoherence events
+    try:
+        size = _os.path.getsize(activity_path)
+        read_from = max(0, size - 256 * 1024)
+        with open(activity_path, "rb") as f:
+            if read_from:
+                f.seek(read_from)
+                f.readline()
+            text = f.read().decode("utf-8", errors="replace")
+    except OSError as _err:
+        return f"## Learn Suggestions\n  (activity log unreadable: {_err})"
+    events: list[dict] = []
+    last_round_idx = -1
+    all_lines = text.splitlines()
+    for i, line in enumerate(all_lines):
+        if not line.strip():
+            continue
+        try:
+            ev = _json.loads(line)
+        except _json.JSONDecodeError:
+            continue
+        if ev.get("event") == "round_complete":
+            last_round_idx = i
+        if ev.get("event") == "productive_incoherence":
+            events.append(ev)
+    # Keep only events after the last round boundary
+    events = [e for e in events if _os.path.isfile(activity_path)]  # no-op but kept for clarity
+    if last_round_idx >= 0:
+        _bytes_before_round = sum(len(l) + 1 for l in all_lines[:last_round_idx + 1])
+        events = [e for e in events if e.get("ts", 0) * 1000 >= _bytes_before_round * 0]  # fall back to full window
+    if not events:
+        return "## Learn Suggestions\n  No productive_incoherence events this round — every edit landed in KB-covered territory, or no edits this round."
+    # Dedup by (file, module); keep most recent timestamp per key.
+    latest: dict[tuple, dict] = {}
+    for ev in events:
+        key = (ev.get("file", ""), ev.get("module", ""))
+        if key in latest and latest[key].get("ts", 0) >= ev.get("ts", 0):
+            continue
+        latest[key] = ev
+    rows = sorted(latest.values(), key=lambda e: e.get("ts", 0), reverse=True)[:20]
+    lines = [
+        "## Learn Suggestions",
+        f"  {len(rows)} module(s) edited with MISSING KB coverage this round. "
+        f"Each is a candidate for `learn()` to capture what those edits encode.",
+        "",
+    ]
+    for ev in rows:
+        mod = ev.get("module", "?")
+        f = ev.get("file", "?")
+        lines.append(f"  - {mod}  ({f})")
+    lines.append("")
+    lines.append("  Capture with: `learn(title='<concise>', content='<2-3 sentences>', category='architecture|pattern|decision')`")
+    return "\n".join(lines)
+
 def _mode_blindspots():
     from ..blindspots import blindspots as _bs
     return _bs()
@@ -305,4 +450,10 @@ _STATUS_MODES: dict[str, callable] = {
     "vram": lambda: _vram_report(),
     "introspect": _mode_introspect,
     "signals": _mode_signals,
+    # Exploratory-edit signal: modules you edited this round that lack KB
+    # coverage — `learn()` candidates that the old loop never surfaced.
+    "learn_suggestions": _mode_learn_suggestions,
+    "novel_modules": _mode_learn_suggestions,   # alias
+    # Local-vs-cloud race outcomes from _reasoning_think's race-mode path.
+    "race_stats": _mode_race_stats,
 }

@@ -13,6 +13,7 @@ from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE
 logger = logging.getLogger("HME")
 
 
+@ctx.mcp.tool(meta={"hidden": True})
 def hme_hot_reload(modules: str = "") -> str:
     """Hot-reload HME tool modules without restarting the server.
 

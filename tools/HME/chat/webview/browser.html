@@ -1032,6 +1032,16 @@ window.addEventListener('message', (event) => {
       _configLastApplied = {
         alias: msg.alias, modelId: msg.modelId, effort: msg.effort, thinking: msg.thinking,
       };
+      // Sync UI controls to the server-side config. On initial connect the
+      // server has already read ~/.claude/settings.json's alwaysThinkingEnabled
+      // — reflect it in the checkbox so the user sees thinking is ON if
+      // their settings file says so, instead of the checkbox staying
+      // unchecked and their next send silently disabling thinking.
+      if (thinkingChk && typeof msg.thinking === 'boolean' && thinkingChk.checked !== msg.thinking) {
+        thinkingChk.checked = msg.thinking;
+        // Persist so vscode.getState() round-trips the server-sourced default.
+        vscode.setState(Object.assign({}, vscode.getState() || {}, { thinkingEnabled: msg.thinking }));
+      }
       renderConfigPill();
       if (msg.rejected) setStatus('Config rejected — reverted to server state');
       break;

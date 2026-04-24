@@ -53,5 +53,15 @@
       "_why": "Activity bridge writes here on every turn_complete. Stale-for-30min means turn-end hooks stopped firing."
     }
   ],
+  "hook_latency_probes": [
+    {
+      "name": "all_hooks_p95",
+      "path": "log/hme-hook-latency.jsonl",
+      "window_sec": 600,
+      "max_p95_ms": 500,
+      "sample_min": 10,
+      "_why": "Every hook self-logs wall-time to this JSONL on exit (via _safety.sh EXIT trap). p95 > 500ms over the last 10 min (min 10 samples) means turn-end and tool-call flow is visibly slowing. Previously captured but never alerted on."
+    }
+  ],
   "heartbeat_file": "tmp/hme-universal-pulse.heartbeat"
 }

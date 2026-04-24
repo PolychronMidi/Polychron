@@ -14,46 +14,12 @@ logger = logging.getLogger("HME")
 _ARBITER_LOG = None
 _TRACE_LOG = None
 
-# Bounded-growth trim. Both JSONL sinks below are append-only telemetry
-# sinks; without a cap they grow without bound. Check line count every N
-# writes; when over cap, keep the tail half. O(1) hot-path overhead.
-_TRIM_CHECK_EVERY = 200
-_MAX_LOG_LINES = 20_000
-_append_counters: dict = {}
+# Shared bounded-log helper — single source of truth across the worker.
+from common.bounded_log import maybe_trim_append as _maybe_trim_log  # noqa: E402
 
 
 def _log_dir() -> str:
     return _os.path.join(getattr(ctx, "PROJECT_ROOT", "."), "log")
-
-
-def _maybe_trim_log(path: str) -> None:
-    n = _append_counters.get(path, 0) + 1
-    _append_counters[path] = n
-    if n % _TRIM_CHECK_EVERY != 0:
-        return
-    try:
-        with open(path, "rb") as f:
-            total = sum(buf.count(b"\n") for buf in iter(lambda: f.read(65536), b""))
-    except OSError:
-        return
-    if total <= _MAX_LOG_LINES:
-        return
-    keep = _MAX_LOG_LINES // 2
-    tmp_path = path + ".trim.tmp"
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as src, \
-             open(tmp_path, "w", encoding="utf-8") as dst:
-            buf: list = []
-            for line in src:
-                buf.append(line)
-                if len(buf) > keep:
-                    buf.pop(0)
-            dst.writelines(buf)
-        _os.replace(tmp_path, path)
-    except OSError as _trim_err:
-        logger.debug(f"synthesis log trim failed: {type(_trim_err).__name__}: {_trim_err}")
-        try: _os.unlink(tmp_path)
-        except OSError: pass
 
 
 def _log_arbiter_decision(tool: str, question: str, classification: str,
