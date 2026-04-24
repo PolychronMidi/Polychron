@@ -317,23 +317,56 @@ def _local_chat(messages: list[dict], model: str | None = None,
     return text if text else None
 
 
+# Race-mode threshold. Requests asking for ≤ RACE_MAX_TOKENS tokens are
+# short enough that the local reasoner can answer them in ≤ ~2s on a warm
+# GPU, while the cloud cascade adds ≥10s of slot-walking latency. For
+# short requests we RACE both — fire them in parallel and take whichever
+# returns first. Long requests (synthesis of full contexts, architectural
+# writes) keep the cloud-first path because the quality gap matters more
+# than the latency cost.
+_RACE_MAX_TOKENS = 800
+# Race-mode local head-start. Both paths fire simultaneously, but the
+# local reasoner is almost always ≤2s while cloud is ≥10s; without this
+# delay on cloud kickoff, cloud work is wasted ~95% of the time. Delay
+# the cloud call by this many seconds — local usually finishes first and
+# we skip cloud entirely. Cloud only kicks in if local stalls.
+_RACE_CLOUD_DELAY_SEC = 2.5
+
+
 def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
                      temperature: float = 0.2, profile: str = "reasoning",
+                     race_short: bool = True,
                      **kwargs) -> str | None:
-    """Cloud cascade — quality-ranked fallback across free providers.
+    """Cloud cascade — quality-ranked fallback across free providers, with
+    optional race-mode for short requests.
 
     profile='reasoning' (default): deep think, architecture, analysis.
         Local fallback: qwen3:30b-a3b (reasoner, GPU1 slot).
     profile='coder': structural code extraction, verified facts, file-aware.
         Local fallback: qwen3-coder:30b (coder, GPU0).
 
-    Delegates to synthesis_reasoning.call(profile=...) which walks the matching
-    ranked list. Each slot checks its own quota/RPM/circuit. Falls back to the
-    local model for the profile when every ranked slot is exhausted.
+    Default path (long requests / race_short=False):
+        Delegates to synthesis_reasoning.call(profile=...) which walks the
+        ranked cloud list. Falls back to local when every cloud slot is
+        exhausted. Pays cloud latency (10-15s) but gets frontier quality.
+
+    Race path (race_short=True AND max_tokens ≤ _RACE_MAX_TOKENS):
+        Fires local + cloud in parallel with a cloud head-start delay.
+        Returns whichever finishes first; cancellation of the loser is
+        best-effort (the winner's thread completes its response, the
+        loser's may continue running but its result is discarded).
+        Recovers local's <2s floor when cloud would have overpaid.
     """
     from .synthesis_config import _THINK_SYSTEM
     _sys = system or _THINK_SYSTEM
+    _fallback_model = _LOCAL_MODEL if profile == "coder" else _REASONING_MODEL
 
+    # Race-mode eligibility: small token budget + caller opted in.
+    if race_short and max_tokens <= _RACE_MAX_TOKENS:
+        return _race_local_vs_cloud(prompt, _sys, max_tokens, temperature,
+                                     profile, _fallback_model, **kwargs)
+
+    # Default: cloud cascade first, local fallback.
     try:
         from .synthesis_reasoning import call as _ranked_call
         result = _ranked_call(prompt, system=_sys, max_tokens=max_tokens,
@@ -343,9 +376,111 @@ def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
     except Exception as e:
         logger.warning(f"_reasoning_think ({profile}) dispatcher error: {type(e).__name__}: {e}")
 
-    _fallback_model = _LOCAL_MODEL if profile == "coder" else _REASONING_MODEL
     return _local_think(prompt, max_tokens=max_tokens, model=_fallback_model,
                         system=_sys, temperature=temperature, **kwargs)
+
+
+def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
+                          temperature: float, profile: str,
+                          fallback_model: str, **kwargs) -> str | None:
+    """Fire local + cloud in parallel. Local runs immediately; cloud is
+    delayed by _RACE_CLOUD_DELAY_SEC so it only kicks in when local
+    genuinely stalls. Returns the first non-empty result. Emits a
+    telemetry line to hme-race-outcomes.jsonl so the 2.5s cloud-delay
+    tuning is visible over time — previously we fired races blind."""
+    import threading
+    import queue
+    import time as _t
+    q: queue.Queue = queue.Queue(maxsize=2)
+    t0 = _t.monotonic()
+    latencies: dict[str, float] = {}
+
+    def _local_worker() -> None:
+        try:
+            r = _local_think(prompt, max_tokens=max_tokens,
+                             model=fallback_model, system=system,
+                             temperature=temperature, **kwargs)
+            latencies["local"] = _t.monotonic() - t0
+            q.put(("local", r))
+        except Exception as e:
+            latencies["local"] = _t.monotonic() - t0
+            q.put(("local", None))
+            logger.debug(f"race local worker error: {type(e).__name__}: {e}")
+
+    def _cloud_worker() -> None:
+        # Head-start delay: give local a clean shot at finishing first.
+        _t.sleep(_RACE_CLOUD_DELAY_SEC)
+        try:
+            from .synthesis_reasoning import call as _ranked_call
+            r = _ranked_call(prompt, system=system, max_tokens=max_tokens,
+                             temperature=temperature, profile=profile)
+            latencies["cloud"] = _t.monotonic() - t0
+            q.put(("cloud", r))
+        except Exception as e:
+            latencies["cloud"] = _t.monotonic() - t0
+            q.put(("cloud", None))
+            logger.debug(f"race cloud worker error: {type(e).__name__}: {e}")
+
+    t_local = threading.Thread(target=_local_worker, daemon=True, name="race-local")
+    t_cloud = threading.Thread(target=_cloud_worker, daemon=True, name="race-cloud")
+    t_local.start()
+    t_cloud.start()
+
+    # Collect up to 2 results. Return the first non-empty; if first is
+    # empty, wait for the other (it might succeed where the first didn't).
+    winner_source: str | None = None
+    winner_result: str | None = None
+    for _ in range(2):
+        try:
+            source, result = q.get(timeout=60.0)
+        except Exception:
+            break
+        if result:
+            winner_source = source
+            winner_result = result
+            break
+        # Empty result from this racer — keep waiting for the other.
+    if winner_result:
+        logger.info(f"race winner: {winner_source} ({len(winner_result)}c, profile={profile})")
+        _emit_race_outcome(profile, max_tokens, winner_source, latencies, bool(winner_result))
+        return winner_result
+    # Both racers returned empty — final safety-net local call (no delay,
+    # no parallel fire, direct path). Fires if both workers returned None.
+    logger.warning(f"race both-empty fallback (profile={profile})")
+    _emit_race_outcome(profile, max_tokens, "both_empty", latencies, False)
+    return _local_think(prompt, max_tokens=max_tokens, model=fallback_model,
+                        system=system, temperature=temperature, **kwargs)
+
+
+def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
+                       latencies: dict, had_result: bool) -> None:
+    """Append one JSONL line to output/metrics/hme-race-outcomes.jsonl so
+    `status mode=race_stats` can summarize local-vs-cloud win rates over
+    time. Bounded-logged via common.bounded_log."""
+    import json as _json
+    import os as _os
+    import time as _time
+    try:
+        from common.bounded_log import maybe_trim_append
+        from server import context as _ctx
+        out_dir = _os.environ.get("METRICS_DIR") or _os.path.join(
+            getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics")
+        _os.makedirs(out_dir, exist_ok=True)
+        out = _os.path.join(out_dir, "hme-race-outcomes.jsonl")
+        entry = {
+            "ts": _time.time(),
+            "profile": profile,
+            "max_tokens": max_tokens,
+            "winner": winner or "unknown",
+            "had_result": had_result,
+            "local_ms": int(latencies.get("local", 0) * 1000) if "local" in latencies else None,
+            "cloud_ms": int(latencies.get("cloud", 0) * 1000) if "cloud" in latencies else None,
+        }
+        with open(out, "a") as f:
+            f.write(_json.dumps(entry) + "\n")
+        maybe_trim_append(out, max_lines=10_000)
+    except Exception as _err:
+        logger.debug(f"race outcome emit failed: {type(_err).__name__}: {_err}")
 
 
 def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,

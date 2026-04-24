@@ -73,6 +73,7 @@ _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
+from common.bounded_log import maybe_trim_append as _maybe_trim_activity_log  # noqa: E402
 
 logger = logging.getLogger("HME.reasoning")
 
@@ -392,34 +393,7 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
         logger.debug(f"overdrive activity emit failed ({type(_e).__name__}: {_e})")
 
 
-_ACTIVITY_COUNTER = {"n": 0}
-_ACTIVITY_TRIM_EVERY = 200
-_ACTIVITY_MAX_LINES = 20_000
-
-
-def _maybe_trim_activity_log(path: str) -> None:
-    _ACTIVITY_COUNTER["n"] += 1
-    if _ACTIVITY_COUNTER["n"] % _ACTIVITY_TRIM_EVERY != 0:
-        return
-    try:
-        import os as _os
-        with open(path, "rb") as f:
-            total = sum(buf.count(b"\n") for buf in iter(lambda: f.read(65536), b""))
-        if total <= _ACTIVITY_MAX_LINES:
-            return
-        keep = _ACTIVITY_MAX_LINES // 2
-        tmp = path + ".trim.tmp"
-        with open(path, "r", encoding="utf-8", errors="replace") as src, \
-             open(tmp, "w", encoding="utf-8") as dst:
-            buf = []
-            for line in src:
-                buf.append(line)
-                if len(buf) > keep:
-                    buf.pop(0)
-            dst.writelines(buf)
-        _os.replace(tmp, path)
-    except OSError as _trim_err:
-        logger.debug(f"activity log trim failed: {type(_trim_err).__name__}: {_trim_err}")
+# (bounded_log import moved to module top alongside other imports)
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
@@ -578,20 +552,19 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     except Exception as e:
         logger.warning(f"OVERDRIVE_VIA_SUBAGENT: queue write failed: {e}")
         return None
-    # Self-instructing sentinel. Everything the agent needs is in this
-    # block — no system-message injection needed, no context bloat. The
-    # proxy middleware still captures the Agent's result on return
-    # (matches by description), but the dispatch itself is prompted by
-    # the sentinel text alone.
+    # Compact self-instructing sentinel — single line. The tag contains
+    # all fields the proxy middleware needs to route the result back;
+    # the trailing call-form is a dispatch hint the agent can execute
+    # directly without needing a separate system-message. Previous
+    # 2-line format was called out as visual noise every time a tool
+    # that queues reasoning (i/review, i/trace, etc.) surfaced it.
     sentinel = (
-        f"\n\n[[HME_AGENT_TASK req_id={req_id} "
+        f"\n[[HME_AGENT_TASK req_id={req_id} "
         f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
-        f"subagent_type={subagent_type}]]\n"
-        f"HME queued a reasoning task — dispatch via `Agent("
-        f"subagent_type='{subagent_type}', "
+        f"subagent_type={subagent_type}]] → "
+        f"Agent(subagent_type='{subagent_type}', "
         f"description='HME reasoning for {req_id}', "
-        f"prompt=<contents of {prompt_file}>)`. "
-        f"Surface the Agent's output verbatim in your reply."
+        f"prompt=<Read {prompt_file}>)"
     )
     logger.info(f"OVERDRIVE_VIA_SUBAGENT: queued req_id={req_id} "
                 f"(prompt={len(prompt)}c, system={len(system)}c)")

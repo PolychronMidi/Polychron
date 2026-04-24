@@ -275,7 +275,83 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
         elif not stale:
             ok_count += 1
 
+    # Hook-latency probes — watch log/hme-hook-latency.jsonl for hooks whose
+    # recent p95 exceeds `max_p95_ms`. Only fires when the log has ≥ sample_min
+    # entries in the window; empty log (fresh session) is silently ok.
+    for lp in cfg.get("hook_latency_probes", []):
+        name = lp["name"]
+        log_path = PROJECT_ROOT / lp["path"]
+        window_sec = float(lp.get("window_sec", 600))
+        max_p95 = float(lp.get("max_p95_ms", 500))
+        sample_min = int(lp.get("sample_min", 10))
+        hook_filter = lp.get("hook")  # optional: specific hook name
+        p95_ms, sample_count, sample_hook = _hook_latency_p95(
+            log_path, window_sec, now, hook_filter)
+        key = f"hook_lat:{name}"
+        if sample_count < sample_min:
+            # Not enough data — treat as OK (no false alarms on quiet systems).
+            tracker.record(key, True, now)
+            continue
+        healthy = p95_ms <= max_p95
+        alert = tracker.record(key, healthy, now)
+        if not healthy and alert:
+            _log_error(
+                f"[universal_pulse] WARN hook latency {name} p95={p95_ms:.0f}ms "
+                f"> {int(max_p95)}ms (samples={sample_count} in last {int(window_sec)}s"
+                + (f", hook={sample_hook}" if sample_hook else "") + ")"
+            )
+            bad_count += 1
+        elif healthy:
+            ok_count += 1
+
     return ok_count, bad_count
+
+
+def _hook_latency_p95(log_path: Path, window_sec: float, now: float,
+                      hook_filter: str | None) -> tuple[float, int, str | None]:
+    """Scan the last ~256KB of hme-hook-latency.jsonl for entries within the
+    window and return (p95_ms, sample_count, representative_hook)."""
+    if not log_path.is_file():
+        return 0.0, 0, None
+    try:
+        size = log_path.stat().st_size
+        read_from = max(0, size - 256 * 1024)
+        with open(log_path, "rb") as f:
+            if read_from:
+                f.seek(read_from)
+                f.readline()  # drop partial first line
+            data = f.read().decode("utf-8", errors="replace")
+    except OSError:
+        return 0.0, 0, None
+    cutoff = now - window_sec
+    durations: list[float] = []
+    representative: str | None = None
+    for line in data.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        ts = entry.get("ts")
+        if not isinstance(ts, (int, float)) or ts < cutoff:
+            continue
+        if hook_filter and entry.get("hook") != hook_filter:
+            continue
+        dur = entry.get("duration_ms")
+        if not isinstance(dur, (int, float)):
+            continue
+        durations.append(float(dur))
+        if representative is None:
+            representative = entry.get("hook")
+    if not durations:
+        return 0.0, 0, None
+    durations.sort()
+    p95_idx = int(len(durations) * 0.95)
+    if p95_idx >= len(durations):
+        p95_idx = len(durations) - 1
+    return durations[p95_idx], len(durations), representative
 
 
 def _main() -> int:
