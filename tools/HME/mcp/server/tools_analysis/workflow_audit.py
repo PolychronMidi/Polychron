@@ -55,19 +55,47 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
 
     # 2. int()/float() conversion inside a try block that only catches OSError-family.
     # ValueError from bad string conversion won't be caught.
-    if re.search(r'\bint\(|\bfloat\(', content):
-        for block_match in re.finditer(
-            r'except\s+\(([^)]+)\)', content
-        ):
-            exc_types = block_match.group(1)
-            if ("OSError" in exc_types or "JSONDecodeError" in exc_types) \
-                    and "ValueError" not in exc_types and "TypeError" not in exc_types:
-                warnings.append(
-                    f"[{rel_path}] PYTHON: `except ({exc_types.strip()})` — "
-                    "int()/float() conversions present but ValueError/TypeError not caught; "
-                    "malformed values will escape to the outer exception handler."
-                )
-                break  # one warning per file is enough
+    #
+    # Implementation: walk every `try:` in the file, find its matching
+    # `except` (the FIRST one at the same indent — NOT a later `except
+    # (...)` that belongs to a different try block), check whether that
+    # except is narrow and whether the try body does int()/float().
+    # Previously a regex that required parenthesized excepts would skip
+    # over bare `except Exception:` and match a `except (...)` from a
+    # completely unrelated try block further down the file, conflating
+    # their bodies and producing false positives.
+    for try_match in re.finditer(r'^(\s*)try:\s*$', content, flags=re.MULTILINE):
+        indent = try_match.group(1)
+        start = try_match.end()
+        # Find the FIRST except at exactly the same indent as the try:.
+        # Matching any except-clause form — bare, `except Name`, `except
+        # Name as e`, `except (A, B)`, `except (A, B) as e`. The regex
+        # must reach the trailing colon so it cannot accidentally stop
+        # partway through a clause like `except Exception as e:`.
+        except_re = re.compile(
+            rf'^{re.escape(indent)}except([^\n:]*):\s*$',
+            flags=re.MULTILINE,
+        )
+        em = except_re.search(content, start)
+        if em is None:
+            continue
+        try_body = content[start:em.start()]
+        if not re.search(r'\bint\(|\bfloat\(', try_body):
+            continue
+        # exc_types = whatever is between `except` and `:`. Bare except
+        # leaves it empty; `except Exception as e` yields "Exception as e"
+        # (OSError/JSONDecodeError/ValueError/TypeError checks below still
+        # work on substring matches).
+        exc_types = em.group(1).strip()
+        has_os = "OSError" in exc_types or "JSONDecodeError" in exc_types
+        has_value_or_type = "ValueError" in exc_types or "TypeError" in exc_types
+        if has_os and not has_value_or_type:
+            warnings.append(
+                f"[{rel_path}] PYTHON: `except {exc_types}` around int()/float() "
+                "conversion — ValueError/TypeError not caught; "
+                "malformed values will escape to the outer exception handler."
+            )
+            break  # one warning per file is enough
 
     # 3. Append-only file write without a corresponding trim/truncate.
     append_opens = re.findall(r'open\([^,)]+,\s*["\']a["\']\)', content)

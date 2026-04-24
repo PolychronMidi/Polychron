@@ -2,14 +2,14 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 703,
-      "updated_ts": 1776995766.0095983
+      "max_id": 708,
+      "updated_ts": 1776997501.986854
     }
   },
   {
     "id": 701,
     "text": "Respond to NEXUS review-forget block",
-    "activeForm": "Responding to review-forget block",
+    "activeForm": "Responding to NEXUS block",
     "status": "completed",
     "done": true,
     "critical": false,
@@ -20,28 +20,54 @@
     "subs": []
   },
   {
-    "id": 702,
-    "text": "Fix fail-fast anti-patterns review surfaced",
+    "id": 705,
+    "text": "Fix fail-fast anti-patterns in my additions",
     "activeForm": "Fixing fail-fast anti-patterns",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776995766.0095835,
+    "ts": 1776997501.9868188,
     "parent_id": 0,
     "subs": []
   },
   {
-    "id": 703,
-    "text": "Commit the fail-fast fixes",
-    "activeForm": "Committing fail-fast fixes",
+    "id": 706,
+    "text": "Fix pre-existing silent fallbacks that blocked review",
+    "activeForm": "Fixing pre-existing fallbacks",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1776995766.0095935,
+    "ts": 1776997501.986831,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 707,
+    "text": "Fix workflow_audit.py false-positive heuristic",
+    "activeForm": "Fixing linter heuristic",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1776997501.9868395,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 708,
+    "text": "Commit all fail-fast fixes",
+    "activeForm": "Committing fixes",
+    "status": "in_progress",
+    "done": false,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1776997501.9868498,
     "parent_id": 0,
     "subs": []
   },
