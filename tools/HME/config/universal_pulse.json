@@ -60,7 +60,13 @@
       "window_sec": 600,
       "max_p95_ms": 500,
       "sample_min": 10,
-      "_why": "Every hook self-logs wall-time to this JSONL on exit (via _safety.sh EXIT trap). p95 > 500ms over the last 10 min (min 10 samples) means turn-end and tool-call flow is visibly slowing. Previously captured but never alerted on."
+      "_why": "Every hook self-logs wall-time to this JSONL on exit (via _safety.sh EXIT trap). p95 > 500ms over the last 10 min (min 10 samples) means turn-end and tool-call flow is visibly slowing. Previously captured but never alerted on.",
+      "hook_thresholds": {
+        "stop": 900,
+        "sessionstart": 2500,
+        "userpromptsubmit": 700
+      },
+      "_threshold_notes": "Per-hook overrides — `stop` legitimately runs ~600-700ms (autocommit + detectors run_all + /audit curl + lifesaver scan); 900ms allows normal variance without false alarms. sessionstart includes RAG-engine cold-start context-meter + holograph snapshot; 2.5s budget is realistic. userpromptsubmit includes LIFESAVER scan + onboarding checks; 700ms."
     }
   ],
   "heartbeat_file": "tmp/hme-universal-pulse.heartbeat"

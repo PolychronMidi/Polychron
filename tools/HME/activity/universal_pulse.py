@@ -83,6 +83,23 @@ def _maintenance_active() -> bool:
         return False
 
 
+# Remember when maintenance flag was most recently seen active, so we can
+# grant a grace period after it clears (torch checkpoint loading during a
+# fresh worker boot pegs CPU for 60-90s, which legitimately spikes
+# process-CPU but isn't a GIL hang).
+_last_maintenance_seen: dict = {"ts": 0.0}
+
+
+def _in_startup_grace(now: float, grace_sec: float = 120.0) -> bool:
+    """True if we're within grace_sec of the most recent maintenance
+    window — skip CPU saturation checks during this window so cold-boot
+    work (checkpoint load, model warmup) doesn't trip the hang-alarm."""
+    if _maintenance_active():
+        _last_maintenance_seen["ts"] = now
+        return True
+    return (now - _last_maintenance_seen["ts"]) < grace_sec
+
+
 def _probe_http(url: str, timeout_sec: float) -> tuple[bool, str]:
     """Return (ok, reason). ok=True on any 2xx. Reason is empty on ok."""
     try:
@@ -232,7 +249,23 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
     # declared when every sample within the saturation window is at/above
     # threshold. This keeps the tick bounded (~1 ps call per process) while
     # still catching the 48-min GIL-hang case at window resolution.
+    #
+    # Startup grace: during and up to grace_sec AFTER any maintenance flag,
+    # skip CPU saturation checks. Cold-boot legitimately spikes CPU while
+    # torch loads checkpoints / GPU warms up (60-90s typical). The grace
+    # window prevents false CRITICAL alerts during these known-costly phases.
+    # Real GIL hangs resume being caught as soon as the grace ends.
+    _in_grace = _in_startup_grace(now)
+    if _in_grace:
+        # Clear any rolling-buffer samples collected during grace so a
+        # long startup doesn't leave saturated entries that would
+        # trigger alerts once grace ends.
+        for pp in cfg.get("process_probes", []):
+            _cpu_buf._samples.pop(pp.get("name", ""), None)
+            tracker.record(f"cpu:{pp.get('name','')}", True, now)
     for pp in cfg.get("process_probes", []):
+        if _in_grace:
+            break
         name = pp["name"]
         pattern = pp["cmd_pattern"]
         thresh = float(pp.get("cpu_saturation_pct", 90))
@@ -275,36 +308,85 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
         elif not stale:
             ok_count += 1
 
-    # Hook-latency probes — watch log/hme-hook-latency.jsonl for hooks whose
-    # recent p95 exceeds `max_p95_ms`. Only fires when the log has ≥ sample_min
-    # entries in the window; empty log (fresh session) is silently ok.
+    # Hook-latency probes — per-hook p95 grouped by hook name. The first
+    # iteration aggregated across ALL hooks which obscured which specific
+    # hook was slow (the alert named a random "sample_hook" that often
+    # wasn't the real offender — e.g. reported pretooluse_bash at 50ms
+    # while the actual culprit was stop at 676ms). Now we compute p95
+    # per hook and fire per-hook alerts, each with an accurate name.
+    # Per-hook thresholds overridable via cfg[hook_thresholds][<hook>].
     for lp in cfg.get("hook_latency_probes", []):
         name = lp["name"]
         log_path = PROJECT_ROOT / lp["path"]
         window_sec = float(lp.get("window_sec", 600))
-        max_p95 = float(lp.get("max_p95_ms", 500))
+        default_max_p95 = float(lp.get("max_p95_ms", 500))
         sample_min = int(lp.get("sample_min", 10))
-        hook_filter = lp.get("hook")  # optional: specific hook name
-        p95_ms, sample_count, sample_hook = _hook_latency_p95(
-            log_path, window_sec, now, hook_filter)
-        key = f"hook_lat:{name}"
-        if sample_count < sample_min:
-            # Not enough data — treat as OK (no false alarms on quiet systems).
-            tracker.record(key, True, now)
+        thresholds = lp.get("hook_thresholds", {})  # per-hook overrides
+        per_hook = _hook_latency_per_hook(log_path, window_sec, now)
+        if not per_hook:
+            tracker.record(f"hook_lat:{name}", True, now)
             continue
-        healthy = p95_ms <= max_p95
-        alert = tracker.record(key, healthy, now)
-        if not healthy and alert:
-            _log_error(
-                f"[universal_pulse] WARN hook latency {name} p95={p95_ms:.0f}ms "
-                f"> {int(max_p95)}ms (samples={sample_count} in last {int(window_sec)}s"
-                + (f", hook={sample_hook}" if sample_hook else "") + ")"
-            )
+        any_slow = False
+        for hook_name, durs in per_hook.items():
+            if len(durs) < sample_min:
+                continue
+            durs_sorted = sorted(durs)
+            p95_idx = min(len(durs_sorted) - 1, int(len(durs_sorted) * 0.95))
+            p95_ms = durs_sorted[p95_idx]
+            max_p95 = float(thresholds.get(hook_name, default_max_p95))
+            key = f"hook_lat:{name}:{hook_name}"
+            healthy = p95_ms <= max_p95
+            alert = tracker.record(key, healthy, now)
+            if not healthy and alert:
+                _log_error(
+                    f"[universal_pulse] WARN hook latency {hook_name} "
+                    f"p95={p95_ms:.0f}ms > {int(max_p95)}ms "
+                    f"(n={len(durs)} in last {int(window_sec)}s)"
+                )
+                any_slow = True
+        if any_slow:
             bad_count += 1
-        elif healthy:
+        else:
             ok_count += 1
 
     return ok_count, bad_count
+
+
+def _hook_latency_per_hook(log_path: Path, window_sec: float, now: float) -> dict[str, list[float]]:
+    """Scan the last ~256KB of hme-hook-latency.jsonl within the window and
+    return {hook_name: [durations_ms, …]}. Grouped so we can compute per-hook
+    p95 rather than an aggregate that hides which hook is actually slow."""
+    if not log_path.is_file():
+        return {}
+    try:
+        size = log_path.stat().st_size
+        read_from = max(0, size - 256 * 1024)
+        with open(log_path, "rb") as f:
+            if read_from:
+                f.seek(read_from)
+                f.readline()
+            data = f.read().decode("utf-8", errors="replace")
+    except OSError:
+        return {}
+    cutoff = now - window_sec
+    out: dict[str, list[float]] = {}
+    for line in data.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        ts = entry.get("ts")
+        if not isinstance(ts, (int, float)) or ts < cutoff:
+            continue
+        dur = entry.get("duration_ms")
+        hook = entry.get("hook")
+        if not isinstance(dur, (int, float)) or not isinstance(hook, str):
+            continue
+        out.setdefault(hook, []).append(float(dur))
+    return out
 
 
 def _hook_latency_p95(log_path: Path, window_sec: float, now: float,

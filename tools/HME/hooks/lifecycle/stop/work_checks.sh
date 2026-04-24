@@ -48,8 +48,7 @@ fi
 # The agent is always asked "what's missing?" once, regardless of how
 # complete the response looks. If nothing's missing, responding
 # 'Nothing missed' ends the loop at the next stop.
-_COMPL_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-completeness-injected"
-mkdir -p "$_COMPL_DIR"
+_COMPL_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-completeness-injected.json"
 _COMPL_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 _COMPL_MAX=2
 if [ -n "$_COMPL_TRANSCRIPT" ] && [ -f "$_COMPL_TRANSCRIPT" ]; then
@@ -77,15 +76,31 @@ if [ -n "$_COMPL_TRANSCRIPT" ] && [ -f "$_COMPL_TRANSCRIPT" ]; then
     | tail -1)
   _COMPL_TURN_KEY=$(printf '%s' "$_COMPL_LAST_USER" | sha256sum | head -c 16)
   if [ -n "$_COMPL_TURN_KEY" ]; then
-    _COMPL_FLAG="$_COMPL_DIR/$_COMPL_TURN_KEY"
-    _COMPL_COUNT=0
-    [ -f "$_COMPL_FLAG" ] && _COMPL_COUNT=$(cat "$_COMPL_FLAG" 2>/dev/null || echo 0)
+    # Single-file counter store. Previously one file per turn-hash (up to
+    # 50 retained); now a single JSON dict keyed by hash, 50-entry cap
+    # enforced in-line. Simpler ls, one inode, no dir churn.
+    mkdir -p "$(dirname "$_COMPL_FILE")"
+    _COMPL_COUNT=$(python3 -c "
+import json, sys
+try: d = json.load(open('$_COMPL_FILE'))
+except Exception: d = {}
+print(d.get('$_COMPL_TURN_KEY', 0))
+" 2>/dev/null)
     case "$_COMPL_COUNT" in ''|*[!0-9]*) _COMPL_COUNT=0 ;; esac
     if [ "$_COMPL_COUNT" -lt "$_COMPL_MAX" ]; then
       _COMPL_NEXT=$((_COMPL_COUNT + 1))
-      echo "$_COMPL_NEXT" > "$_COMPL_FLAG"
-      # Prune old flags to keep the directory small (retain last 50 turns).
-      (cd "$_COMPL_DIR" && ls -1t | tail -n +51 | xargs -r rm -f) 2>/dev/null || true
+      python3 -c "
+import json, os
+try: d = json.load(open('$_COMPL_FILE'))
+except Exception: d = {}
+d['$_COMPL_TURN_KEY'] = $_COMPL_NEXT
+# Cap at 50 entries — drop oldest by insertion order (dict is ordered).
+if len(d) > 50:
+    for k in list(d.keys())[:len(d)-50]: del d[k]
+tmp = '$_COMPL_FILE.tmp'
+open(tmp, 'w').write(json.dumps(d))
+os.replace(tmp, '$_COMPL_FILE')
+" 2>/dev/null
       # Distinct prompts per round so the model treats the second as a
       # genuine safety-net rather than a repeat of round 1.
       if [ "$_COMPL_NEXT" = "1" ]; then
