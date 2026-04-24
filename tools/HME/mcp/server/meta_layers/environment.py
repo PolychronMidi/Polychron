@@ -174,7 +174,12 @@ def _checkpoint_entanglement() -> None:
             except Exception as _life_err:
                 logger.debug(f"LIFESAVER register failed: {_life_err}")
 
-        # Last narrative (the system's own interpretation)
+        # Last narrative (the system's own interpretation). Lazy imports
+        # from sibling submodules — explicit cross-submodule imports here
+        # would create a circular graph when every module initializes at
+        # the same time.
+        from .narrative import _read_last_narrative
+        from .predictions import _compute_effectiveness
         last_narr = _read_last_narrative()
         if last_narr:
             state["last_narrative"] = last_narr.get("narrative", "")[:300]

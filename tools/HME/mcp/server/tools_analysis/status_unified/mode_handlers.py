@@ -9,6 +9,15 @@ from server import context as ctx
 from .. import _track, get_session_intent, _budget_gate, _budget_section, _git_run, BUDGET_COMPOUND, BUDGET_TOOL, BUDGET_SECTION
 from ..synthesis_session import append_session_narrative, get_session_narrative, get_think_history_context
 
+# Cross-submodule report-function imports used by the _STATUS_MODES registry
+# lambdas below. These functions live in the report modules; the lambdas
+# invoke them by bare name, so they must be importable here at module scope.
+from .resource_reports import _vram_report, _freshness_report, _budget_report
+from .lifecycle_reports import (
+    _resume_briefing, _evolution_priority_report, _trajectory_report,
+)
+from .metric_reports import _staleness_report, _coherence_report
+
 logger = logging.getLogger("HME")
 
 

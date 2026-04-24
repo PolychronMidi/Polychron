@@ -9,12 +9,19 @@ import time
 import urllib.request
 
 from . import _base as _base_module  # for live PROJECT_ROOT reads after mutation
-from ._base import _SHIM_PORT, _TOTAL_TIMEOUT, _MAX_TOOL_OUTPUT, PROJECT_ROOT  # noqa: F401
-from .models import (
-    _route_model, _call_model, _call_arbiter, _call_synthesizer,
-    _get_rag_context, _strip_think, _dedup_output,
+from ._base import (
+    _SHIM_PORT, _TOTAL_TIMEOUT, _MAX_TOOL_OUTPUT, PROJECT_ROOT,  # noqa: F401
+    _ARBITER_MODEL, _CODER_MODEL, _REASONER_MODEL,
+    _ARBITER_PORT, _CODER_PORT, _REASONER_PORT,
+    _ARBITER_TIMEOUT, _REASONER_TIMEOUT,
 )
-from .tools import _parse_tool_calls, _execute_tool
+from .models import (
+    _route_model, _infer_directories, _call_model, _call_arbiter,
+    _call_synthesizer, _get_rag_context, _strip_think, _dedup_output,
+)
+from .tools import (
+    _parse_tool_calls, _execute_tool, _exec_grep, _exec_glob, _exec_read,
+)
 
 logger = logging.getLogger("HME.agent")
 

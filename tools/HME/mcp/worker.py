@@ -308,6 +308,19 @@ class _Handler(BaseHTTPRequestHandler):
         return json.loads(raw)
 
     def _post_tool(self, name: str, args: dict):
+        # One INFO line per incoming tool call so hme.log has a trail.
+        # Previously nothing at all was logged for /tool/* dispatches —
+        # a review could come in, hang, and leave zero log evidence
+        # that it had ever been invoked. Truncate args preview so a
+        # huge payload (e.g. Edit with multi-kB new_string) doesn't
+        # dominate the log line.
+        try:
+            _args_preview = json.dumps(args)[:200] if args else ""
+        except Exception as _log_err:  # silent-ok: log-line formatting; tool call itself must not fail from log prep
+            _args_preview = f"<unserializable: {type(_log_err).__name__}>"
+        logger.info(f"/tool/{name} dispatching  args={_args_preview}")
+        _tool_t0 = time.time()
+
         # LAYER 3 WATCHDOG: per-request wall-clock cap so a deadlocked
         # tool pipeline can't silently hold the worker forever. Default
         # 120s — shorter than the CLI's 150s HTTP timeout and the
@@ -347,14 +360,18 @@ class _Handler(BaseHTTPRequestHandler):
             })
             return
         ex = result_box[1]
+        _elapsed_ms = (time.time() - _tool_t0) * 1000
         if isinstance(ex, KeyError):
+            logger.warning(f"/tool/{name} unknown-tool {_elapsed_ms:.0f}ms")
             self._json(404, {"ok": False, "error": str(ex)})
         elif ex is not None:
             import traceback
             tb = "".join(traceback.format_exception(type(ex), ex, ex.__traceback__))
+            logger.warning(f"/tool/{name} FAILED {_elapsed_ms:.0f}ms: {type(ex).__name__}: {ex}")
             self._json(500, {"ok": False, "error": f"{type(ex).__name__}: {ex}",
                              "trace": tb[-2000:]})
         else:
+            logger.info(f"/tool/{name} OK {_elapsed_ms:.0f}ms")
             self._json(200, {"ok": True, "result": result_box[0]})
 
     def _post_rag_dispatch(self, body: dict):
