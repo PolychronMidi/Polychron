@@ -57,6 +57,7 @@ from .hook_layout import (  # noqa: F401
 from .code_audits import (  # noqa: F401
     CorePrinciplesAuditVerifier, ProxyMiddlewareRegistryVerifier,
     ShellHookAuditVerifier, ShellUndefinedVarsVerifier,
+    ClaudeSettingsJsonVerifier,
     PythonSyntaxVerifier, ShellSyntaxVerifier,
 )
 from .autocommit_health import (  # noqa: F401
@@ -108,6 +109,7 @@ REGISTRY = [
     CorePrinciplesAuditVerifier(),
     ShellHookAuditVerifier(),
     ShellUndefinedVarsVerifier(),
+    ClaudeSettingsJsonVerifier(),
     ProxyMiddlewareRegistryVerifier(),
     DocstringPresenceVerifier(),
     PythonSyntaxVerifier(),
