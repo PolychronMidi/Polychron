@@ -291,7 +291,13 @@ function loadAll() {
   } catch (err) {
     console.error(`[middleware] order.json read failed (using alphabetical): ${err.message}`);
   }
-  const allFiles = fs.readdirSync(dir).filter(f => f !== 'index.js' && f !== 'order.json' && f.endsWith('.js'));
+  const allFiles = fs.readdirSync(dir).filter(f => (
+    f !== 'index.js' && f !== 'order.json' && f.endsWith('.js')
+    // Exclude test files: `test_*.js`, `*.test.js`, `*_test.js`. Tests live
+    // next to the code they exercise (cohesive, easy to find) but are not
+    // middleware themselves and must not be register()'d.
+    && !f.startsWith('test_') && !f.endsWith('.test.js') && !f.endsWith('_test.js')
+  ));
   const inManifest = manifest.filter(name => allFiles.includes(name));
   const unlisted = allFiles.filter(name => !manifest.includes(name)).sort();
   if (unlisted.length > 0 && manifest.length > 0) {
