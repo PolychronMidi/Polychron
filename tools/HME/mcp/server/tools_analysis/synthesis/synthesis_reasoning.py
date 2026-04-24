@@ -382,10 +382,44 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
             "thinking_budget": budget,
             "response_chars": char_count,
         }
-        with open(_os.path.join(path, "hme-activity.jsonl"), "a") as f:
+        _activity_path = _os.path.join(path, "hme-activity.jsonl")
+        with open(_activity_path, "a") as f:
             f.write(_json.dumps(entry) + "\n")
+        # Bounded growth: fires more often now that OVERDRIVE is the default
+        # for synthesis/reasoning call sites. Tail-half trim every 200 writes.
+        _maybe_trim_activity_log(_activity_path)
     except Exception as _e:
         logger.debug(f"overdrive activity emit failed ({type(_e).__name__}: {_e})")
+
+
+_ACTIVITY_COUNTER = {"n": 0}
+_ACTIVITY_TRIM_EVERY = 200
+_ACTIVITY_MAX_LINES = 20_000
+
+
+def _maybe_trim_activity_log(path: str) -> None:
+    _ACTIVITY_COUNTER["n"] += 1
+    if _ACTIVITY_COUNTER["n"] % _ACTIVITY_TRIM_EVERY != 0:
+        return
+    try:
+        import os as _os
+        with open(path, "rb") as f:
+            total = sum(buf.count(b"\n") for buf in iter(lambda: f.read(65536), b""))
+        if total <= _ACTIVITY_MAX_LINES:
+            return
+        keep = _ACTIVITY_MAX_LINES // 2
+        tmp = path + ".trim.tmp"
+        with open(path, "r", encoding="utf-8", errors="replace") as src, \
+             open(tmp, "w", encoding="utf-8") as dst:
+            buf = []
+            for line in src:
+                buf.append(line)
+                if len(buf) > keep:
+                    buf.pop(0)
+            dst.writelines(buf)
+        _os.replace(tmp, path)
+    except OSError as _trim_err:
+        logger.debug(f"activity log trim failed: {type(_trim_err).__name__}: {_trim_err}")
 
 
 def _try_overdrive_model(model_id: str, prompt: str, system: str,
