@@ -2,14 +2,27 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1127,
-      "updated_ts": 1777050628.66484
+      "max_id": 1134,
+      "updated_ts": 1777063747.9809437
     }
+  },
+  {
+    "id": 1128,
+    "text": "Fix meta_observer shutil NameError and clean up unused import",
+    "activeForm": "Fixing meta_observer shutil NameError",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777063747.980876,
+    "parent_id": 0,
+    "subs": []
   },
   {
     "id": 1119,
     "text": "Split stop.sh, pretooluse_bash.sh, _safety.sh into sub-files",
-    "activeForm": "Splitting top-3 .sh offenders",
+    "activeForm": "Splitting stop.sh, pretooluse_bash.sh, _safety.sh into sub-files",
     "status": "completed",
     "done": true,
     "critical": false,
@@ -20,22 +33,22 @@
     "subs": []
   },
   {
-    "id": 1120,
-    "text": "Fix browser chat HME KB shim FAILED \u2014 GIL-saturated worker + supervisor hang-escalation",
-    "activeForm": "Fixing chat shim",
+    "id": 1130,
+    "text": "Fix browser chat HME KB shim FAILED - GIL-saturated worker + supervisor hang-escalation",
+    "activeForm": "Fixing browser chat HME KB shim",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777049312.9916775,
+    "ts": 1777063747.9809017,
     "parent_id": 0,
     "subs": []
   },
   {
     "id": 1121,
     "text": "Add UNIVERSAL_PULSE active-probe layer for proxy/worker/llamacpp/CPU/file-freshness",
-    "activeForm": "Adding universal_pulse",
+    "activeForm": "Adding UNIVERSAL_PULSE active-probe layer",
     "status": "completed",
     "done": true,
     "critical": false,
@@ -48,7 +61,7 @@
   {
     "id": 1126,
     "text": "Close silent-failure paths in claudeProcessPool: productivity watchdog + schema-drift logging + /clear-errors endpoint + sessionstart auto-prune",
-    "activeForm": "Closing chat-panel silent-failure paths",
+    "activeForm": "Closing silent-failure paths in claudeProcessPool",
     "status": "completed",
     "done": true,
     "critical": false,
@@ -61,13 +74,26 @@
   {
     "id": 1127,
     "text": "Always-rewrite fix for bare i/<tool> calls (removed cwd-guessing)",
-    "activeForm": "Fixing i/ rewriter",
+    "activeForm": "Applying always-rewrite fix for bare i/<tool> calls",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
     "ts": 1777050628.6648352,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1134,
+    "text": "Propagate HME_DOMINANCE=1 to supervisor/proxy/worker via .env sourcing in proxy-supervisor.sh",
+    "activeForm": "Propagating HME_DOMINANCE=1 through supervisor chain",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777063747.9809391,
     "parent_id": 0,
     "subs": []
   },
@@ -566,7 +592,7 @@
     "id": 1061,
     "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] meta_observer: daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed, fix the underlying bug and restart server",
     "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] meta_observer: daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed, fix the underlying bug and restart server",
-    "status": "pending",
+    "status": "completed",
     "done": false,
     "critical": true,
     "source": "lifesaver",
@@ -575,6 +601,8 @@
     "parent_id": 0,
     "subs": [],
     "recurrence_count": 2,
-    "dedup_key": "CRITICAL|meta_observer|daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed,"
+    "dedup_key": "CRITICAL|meta_observer|daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed,",
+    "resolved_ts": 1777063747.980845,
+    "resolved_reason": "stale"
   }
 ]
