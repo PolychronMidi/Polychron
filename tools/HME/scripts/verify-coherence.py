@@ -805,10 +805,17 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         order_path = os.path.join(mw_dir, "order.json")
         if not os.path.isdir(mw_dir):
             return _result(SKIP, 1.0, "middleware dir not present", [mw_dir])
-        files = sorted(
-            f for f in os.listdir(mw_dir)
-            if f.endswith(".js") and f not in ("index.js",)
-        )
+        # Mirror the exclusion rules in middleware/index.js loadAll(): skip
+        # index.js itself, the manifest, and test files (test_*.js,
+        # *.test.js, *_test.js). Tests live beside the code they exercise
+        # but aren't middleware and don't need registration.
+        def _is_middleware(f: str) -> bool:
+            if not f.endswith(".js") or f == "index.js":
+                return False
+            if f.startswith("test_") or f.endswith(".test.js") or f.endswith("_test.js"):
+                return False
+            return True
+        files = sorted(f for f in os.listdir(mw_dir) if _is_middleware(f))
         try:
             with open(order_path) as f:
                 order = json.load(f).get("order", [])
