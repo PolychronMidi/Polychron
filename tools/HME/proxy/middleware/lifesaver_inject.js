@@ -64,18 +64,17 @@ module.exports = {
     const unread = lines.slice(lastSeen);
     if (unread.length === 0) return;
 
-    // Build the LIFESAVER banner. Matches the hook-side banner format so
-    // downstream expectations (Claude's training + CLAUDE.md conventions)
-    // treat it identically.
+    // Minimal LIFESAVER banner. Core info is the unread error list and
+    // the directive to fix them. Boilerplate ("Acknowledging is a
+    // CRITICAL VIOLATION / You MUST 1-2-3 diagnose-fix-verify") is in
+    // CLAUDE.md already — repeating it every turn is context-tax with
+    // zero marginal value. Meta-narration about which mechanism fired
+    // (was "proxy-side injection via lifesaver_inject middleware…")
+    // removed for the same reason — agent doesn't need delivery-channel
+    // trivia.
     const banner =
-      'LIFESAVER - ERRORS DETECTED - FIX BEFORE ANYTHING ELSE\n' +
-      'Acknowledging an error without fixing it is a CRITICAL VIOLATION.\n' +
-      'You MUST: 1) diagnose root cause  2) implement fix  3) verify fix\n\n' +
-      unread.join('\n') + '\n\n' +
-      'DO NOT proceed with any other task until every error above is FIXED.\n' +
-      '(proxy-side injection via lifesaver_inject middleware; the hook-based ' +
-      'LIFESAVER path is unreliable in this environment, so this runs on ' +
-      'every Anthropic API request instead of per-user-prompt.)';
+      'LIFESAVER — unresolved errors in hme-errors.log, fix root-cause before proceeding:\n' +
+      unread.join('\n');
 
     // Inject as a system-level block. Anthropic's system field accepts
     // either a string or an array of { type:'text', text, cache_control? }
