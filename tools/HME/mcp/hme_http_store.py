@@ -133,6 +133,7 @@ def _log_error(source: str, message: str, detail: str = "") -> None:
                 if detail:
                     f.write(f" | {detail}")
                 f.write("\n")
+            _maybe_trim_append(_ERRORS_PATH, _ERRORS_MAX_LINES)
         except Exception as e:
             print(f"[HME FAILFAST] Error log disk write failed: {e}", file=sys.stderr, flush=True)
 
@@ -189,6 +190,7 @@ def _append_transcript(entries: list[dict]) -> int:
                 count += 1
         if len(_transcript_entries) > _MAX_TRANSCRIPT_MEMORY:
             _transcript_entries = _transcript_entries[-_MAX_TRANSCRIPT_MEMORY:]
+    _maybe_trim_append(_TRANSCRIPT_PATH, _TRANSCRIPT_MAX_LINES)
     return count
 
 
