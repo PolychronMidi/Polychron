@@ -6,7 +6,13 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 # prints a status token. This hook captures tokens and dispatches.
 # (`_stderr_verdict` / auto-summary-on-EXIT provided by _safety.sh.)
 INPUT=$(cat)
-_DETECTORS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../scripts/detectors"
+# Resolve detectors to the REPO, not relative to $BASH_SOURCE[0]. When
+# Claude Code invokes this hook via the plugin-cache path, the relative
+# ascent lands in ~/.claude/plugins/cache/.../scripts/detectors — which
+# the install mechanism populates lazily (and bit-rots as new detectors
+# land in the repo). Using $PROJECT_ROOT keeps the running copy in sync
+# with git HEAD automatically.
+_DETECTORS_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tools/HME/scripts/detectors"
 
 # Context meter: merge token counts into existing statusLine data
 # StatusLine writes authoritative used_pct/remaining_pct/size from the API.
