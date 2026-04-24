@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 939,
-      "updated_ts": 1777001556.9175313
+      "max_id": 946,
+      "updated_ts": 1777001585.5890517
     }
   },
   {
@@ -88,8 +88,8 @@
     "id": 882,
     "text": "Commit",
     "activeForm": "Committing",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
