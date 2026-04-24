@@ -119,6 +119,58 @@ $WARN_TITLES"
     exit 0
   fi
 fi
+# Auto-brief on Write (mirror of pretooluse_edit.sh): inject hme-read
+# brief as additionalContext when target lives under a tracked tree and
+# hasn't been BRIEFed yet. Does NOT mark BRIEF — preserves read_coverage
+# metric semantics. Emits auto_brief_injected for separate tracking.
+# Disable: HME_AUTO_BRIEF_ON_EDIT=0
+_AUTO_BRIEF_JSON=""
+if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|proxy|config))/'; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_nexus.sh"
+  _auto_module=$(_extract_module "$FILE")
+  if [ -n "$_auto_module" ] && ! _nexus_has BRIEF "$_auto_module"; then
+    if [ "${HME_AUTO_BRIEF_ON_EDIT:-1}" != "0" ]; then
+      # Fast path via /enrich (~70ms) + file head — same budget as
+      # pretooluse_edit.sh. Write may target a new file (head empty);
+      # KB hits alone are still useful in that case.
+      _kb_hits=$(curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
+        --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
+        "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" 2>/dev/null \
+        | python3 -c "
+import json, sys
+try:
+  d = json.load(sys.stdin)
+  for e in (d.get('kb') or [])[:3]:
+    cat = str(e.get('category','?'))
+    title = str(e.get('title',''))[:120]
+    if title: print(f'  [{cat}] {title}')
+except Exception: pass
+" 2>/dev/null)
+      _file_head=""
+      [ -f "$FILE" ] && _file_head=$(head -n 30 "$FILE" 2>/dev/null | head -c 1200)
+      if [ -n "$_kb_hits" ] || [ -n "$_file_head" ]; then
+        _brief="module: ${_auto_module}"
+        [ -n "$_kb_hits" ] && _brief="${_brief}
+KB:
+${_kb_hits}"
+        [ -n "$_file_head" ] && _brief="${_brief}
+file head:
+${_file_head}"
+        _AUTO_BRIEF_JSON=$(jq -nR --arg b "$_brief" --arg m "$_auto_module" \
+          '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)
+        if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
+          python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
+            --event=auto_brief_injected \
+            --file="$FILE" \
+            --module="$_auto_module" \
+            >/dev/null 2>&1 &
+        fi
+      fi
+    fi
+  fi
+fi
+
 _streak_tick 10
 if ! _streak_check; then exit 1; fi
+[ -n "$_AUTO_BRIEF_JSON" ] && printf '%s\n' "$_AUTO_BRIEF_JSON"
 exit 0
