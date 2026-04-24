@@ -20,4 +20,12 @@ if [ ! -f "$_PROVE_PY" ]; then
   echo "i/prove: $_PROVE_PY missing" >&2
   exit 2
 fi
+# Background activity emission so tool use shows up in blindspots/coverage
+# metrics alongside i/review, i/hme-read, etc. Args are comma-joined into
+# one field so the event log stays schema-friendly.
+if [ -x "$_REPO_ROOT/tools/HME/activity/emit.py" ]; then
+  _ARGS_JOINED=$(printf '%s ' "$@" | sed 's/ $//')
+  PROJECT_ROOT="$_REPO_ROOT" python3 "$_REPO_ROOT/tools/HME/activity/emit.py" \
+    --event=prove_invoked --args="$_ARGS_JOINED" >/dev/null &
+fi
 PROJECT_ROOT="$_REPO_ROOT" exec python3 "$_PROVE_PY" "$@"
