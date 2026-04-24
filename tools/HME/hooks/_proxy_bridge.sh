@@ -102,6 +102,21 @@ RESP=$(curl -sf --max-time 60 -X POST \
   --data-binary "$BODY" \
   "http://127.0.0.1:${PORT}/hme/lifecycle?event=${EVENT}" 2>/dev/null)
 
+# One-shot retry after 500ms if the first POST failed. Covers the narrow
+# window where the proxy has just finished a restart — /health may be
+# returning 200 while /hme/lifecycle is still warming its route handler
+# by ~100-400ms. Without the retry, ANY hook firing during that window
+# logs "proxy unreachable" even though maintenance flag was set seconds
+# earlier. The retry is a 500ms delay + single re-attempt — cheap for
+# the happy path (instant skip), buys silent recovery on transient.
+if [ -z "$RESP" ]; then
+  sleep 0.5
+  RESP=$(curl -sf --max-time 60 -X POST \
+    -H 'Content-Type: application/json' \
+    --data-binary "$BODY" \
+    "http://127.0.0.1:${PORT}/hme/lifecycle?event=${EVENT}" 2>/dev/null)
+fi
+
 if [ -z "$RESP" ]; then
   # Proxy unreachable. FAIL LOUD, NOT FAIL OPEN.
   _PB_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
