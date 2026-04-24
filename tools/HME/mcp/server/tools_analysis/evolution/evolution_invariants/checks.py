@@ -9,7 +9,7 @@ import re
 
 from server import context as ctx
 
-from ._base import METRICS_DIR, _resolve, _excluded, _is_regex
+from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex
 
 def _check_files_executable(inv: dict) -> tuple[bool, str]:
     pattern = os.path.join(ctx.PROJECT_ROOT, inv["glob"])

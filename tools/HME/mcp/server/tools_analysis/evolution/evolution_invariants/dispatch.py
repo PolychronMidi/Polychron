@@ -7,7 +7,19 @@ import os
 from server import context as ctx
 
 from ._base import METRICS_DIR, _load_invariants
-from . import checks
+from .checks import (
+    _check_files_executable, _check_files_referenced, _check_file_exists,
+    _check_symlink_valid, _check_json_valid, _check_glob_count_gte,
+    _check_pattern_in_file, _check_patterns_all_in_file, _check_pattern_count_gte,
+    _check_symbols_used, _check_symbols_have_kb, _check_files_mtime_window,
+    _check_kb_content_no_pattern, _check_kb_freshness,
+    _check_metric_has_variance, _check_metric_threshold, _check_correlation_direction,
+    _check_activity_events_balanced, _check_activity_field_sanity,
+    _check_same_commit_determinism, _check_invariant_chronically_failing,
+    _check_public_functions_reachable, _check_shell_output_empty,
+    _check_eslint_concordance_complete,
+)
+
 
 def _eval(inv: dict) -> tuple[bool, str]:
     checkers = {

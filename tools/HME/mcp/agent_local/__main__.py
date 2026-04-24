@@ -6,7 +6,7 @@ import sys
 
 from . import _base as _base_module
 from ._base import PROJECT_ROOT
-from .research import run_agent
+from .research import run_agent, _MODE_CONFIGS
 
 
 def main():
