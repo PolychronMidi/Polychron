@@ -34,7 +34,7 @@ NEW_STRING=$(_safe_jq "$INPUT" '.tool_input.new_string' '')
 if echo "$FILE" | grep -qE '/Polychron/src/conductor/' \
    && echo "$NEW_STRING" | grep -qE 'conductorIntelligence\.register(Trust|Coupling|Jurisdiction)Bias\b'; then
   _lifesaver_bg "bias_bounds_snapshot" 60 "$PROJECT_ROOT/tmp/hme-bias-bounds-snapshot.out" \
-    node "$PROJECT_ROOT/scripts/check-hypermeta-jurisdiction.js" --snapshot-bias-bounds
+    node "$PROJECT_ROOT/scripts/pipeline/validators/check-hypermeta-jurisdiction.js" --snapshot-bias-bounds
   echo "[hme] bias registration edited — snapshotting bias-bounds manifest (hme-bias-bounds-snapshot.out)" >&2
 fi
 

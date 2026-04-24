@@ -1,4 +1,4 @@
-// scripts/check-hypermeta-jurisdiction.js
+// scripts/pipeline/validators/check-hypermeta-jurisdiction.js
 // Pipeline check: detects manual axis floor/cap overrides that bypass the
 // hypermeta self-calibrating controller infrastructure.
 //
@@ -17,7 +17,7 @@
 //   it widens the module's system-level influence instead of fixing the
 //   controller chain that manages overall balance. Pipeline FAILS on any mismatch.
 //   Manifest: scripts/bias-bounds-manifest.json
-//   Update: node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds
+//   Update: node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds
 //
 // Phase 4: Controller-jurisdiction constant lock. Verifies specific module
 //   constants that have been empirically identified as whack-a-mole targets
@@ -25,7 +25,7 @@
 //   change when the responsible controller's logic is restructured.
 //   Pipeline FAILS if any watched constant drifts from its locked value.
 //
-// Run: node scripts/check-hypermeta-jurisdiction.js
+// Run: node scripts/pipeline/validators/check-hypermeta-jurisdiction.js
 // Integrated into `npm run main` pipeline.
 
 'use strict';
@@ -273,7 +273,7 @@ function snapshotBiasManifest() {
     meta: {
       generated: new Date().toISOString(),
       description: 'Locked bias registration bounds. Any change causes pipeline failure.',
-      updateCommand: 'node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
+      updateCommand: 'node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds',
       registrationCount: regs.length
     },
     registrations: manifest
@@ -532,7 +532,7 @@ function main() {
   if (biasResult.noManifest) {
     console.warn(
       'check-hypermeta-jurisdiction: WARNING - no bias-bounds manifest found. ' +
-      'Run: node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds'
+      'Run: node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds'
     );
   } else {
     if (biasResult.violations.length > 0) {
@@ -544,7 +544,7 @@ function main() {
         ' bias registration bound(s) changed: ' + details +
         '. Changing bias bounds is a whack-a-mole anti-pattern. Fix the controller chain instead. ' +
         'If this is a legitimate structural change, update the manifest: ' +
-        'node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds'
+        'node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds'
       );
     }
     if (biasResult.added.length > 0) {
@@ -552,7 +552,7 @@ function main() {
       throw new Error(
         'check-hypermeta-jurisdiction: FAIL - ' + biasResult.added.length +
         ' new bias registration(s) not in manifest: ' + details +
-        '. Add to manifest: node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds'
+        '. Add to manifest: node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds'
       );
     }
     if (biasResult.missing.length > 0) {
