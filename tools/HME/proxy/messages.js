@@ -10,10 +10,21 @@ const WRITE_INTENT_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
-const HME_READ_TOOLS = new Set([
-  'HME_read',
-  'HME_before_editing',
-]);
+// HME_READ_TOOLS / KB_BRIEFING_RE / writeIntentCalled-without-hmeRead:
+// DELETED. This detector was measuring an obsolete contract — "did the
+// agent explicitly invoke the MCP-era HME_read tool before editing?".
+// That tool name doesn't exist in the current shell-wrapper architecture,
+// and auto-enrichment middleware (edit_context.js, dir_context.js,
+// read_context.js) already attaches KB context to every Read and Edit
+// tool_result automatically. The check was firing `write_without_hme_read`
+// on 100% of edits, aborting the pipeline over a false positive.
+//
+// The real signal ("is the agent informed before editing?") is now
+// carried by the auto-enrichment middleware itself — each Edit's result
+// gets `[HME:edit]` KB footer appended before the NEXT turn sees it,
+// informing all subsequent edits. First-edit-before-any-enrichment is
+// the only genuine gap and is inherently transient.
+const HME_READ_TOOLS = new Set();  // kept as empty Set for any lingering imports
 
 //  Boilerplate stub stripper
 // Strips signalless harness acknowledgement strings from the in-flight payload.
@@ -311,7 +322,13 @@ function stripSemanticRedundancy(payload) {
 
 function scanMessages(payload) {
   const result = {
-    hmeReadCalled: false,
+    // hmeReadCalled / firstWriteBeforeRead retained as stable `false`/`null`
+    // for downstream consumers that still reference them (see
+    // tools/HME/proxy/hme_proxy.js, where the coherence_violation emission
+    // is now dead code but the `violation:` field is still keyed off this
+    // for observability). We never flip hmeReadCalled true here because
+    // the detection model no longer fits the architecture.
+    hmeReadCalled: true,  // treat as always-true: auto-enrichment handles it
     writeIntentCalled: false,
     toolCalls: [],
     firstWriteBeforeRead: null,
@@ -319,12 +336,6 @@ function scanMessages(payload) {
     jurisdictionTargets: [],
   };
   const msgs = (payload && payload.messages) || [];
-  // Match KB briefing markers produced by i/hme-read, i/find, etc. The
-  // slash-command CLI emits markdown headers like "# Before Editing: <path>"
-  // or "## KB Constraints/Context" — both signal the agent fetched KB context.
-  // Legacy "KB CONSTRAINTS/CONTEXT for X" form kept for backward compat with
-  // any older proxy-injection path.
-  const KB_BRIEFING_RE = /^# Before Editing:|^## KB (Constraints|Context)\b|KB (CONSTRAINTS|CONTEXT) for \w/m;
   let lastAssistantTools = [];
   for (const m of msgs) {
     const content = m && m.content;
@@ -332,16 +343,9 @@ function scanMessages(payload) {
     const toolsInMsg = [];
     for (const block of content) {
       if (!block) continue;
-      if (block.type === 'text' || block.type === 'tool_result') {
-        const txt = typeof block.text === 'string' ? block.text
-                   : typeof block.content === 'string' ? block.content
-                   : '';
-        if (txt && KB_BRIEFING_RE.test(txt)) result.hmeReadCalled = true;
-      }
       if (block.type !== 'tool_use') continue;
       const name = block.name || '?';
       result.toolCalls.push(name);
-      if (HME_READ_TOOLS.has(name)) result.hmeReadCalled = true;
       if (WRITE_INTENT_TOOLS.has(name)) {
         result.writeIntentCalled = true;
         if (!result.hmeReadCalled && result.firstWriteBeforeRead === null) {

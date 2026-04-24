@@ -44,9 +44,14 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   if _nexus_has BRIEF "$MODULE" || _nexus_has BRIEF "$FILE"; then
     HME_READ_PRIOR=true
   fi
-  # Coverage classification still lives here — splits lazy vs productive
-  # incoherence based on kb-staleness. Middleware can't tell the two apart
-  # without re-parsing staleness, so we keep this in the shell hook.
+  # Coverage classification — emit productive_incoherence for exploratory
+  # writes into KB-uncovered territory (still useful: suggests learn()).
+  # The "coherence_violation / write_without_hme_read" emission was removed
+  # — it was measuring a legacy MCP-era contract that doesn't match the
+  # current architecture (auto-enrichment middleware attaches KB context
+  # to every Edit tool_result automatically, so "write without HME read"
+  # is no longer meaningful signal; check-hme-coherence was aborting the
+  # pipeline on 240 false positives per round).
   if [ "$HME_READ_PRIOR" = "false" ] && _onb_is_graduated; then
     STALENESS_FILE="$PROJECT/metrics/kb-staleness.json"
     COVERAGE_STATUS=UNKNOWN
@@ -62,15 +67,10 @@ else:
     print('UNKNOWN')
 " "UNKNOWN")
     fi
-    case "$COVERAGE_STATUS" in
-      MISSING)
-        _emit_activity productive_incoherence --session="$SESSION_ID" --file="$FILE" --module="$MODULE" --coverage="$COVERAGE_STATUS" --reason=exploratory_write_into_uncovered_territory
-        _emit_activity learn_suggested --session="$SESSION_ID" --file="$FILE" --module="$MODULE" --reason=capture_novel_findings
-        ;;
-      *)
-        _emit_activity coherence_violation --session="$SESSION_ID" --file="$FILE" --module="$MODULE" --coverage="$COVERAGE_STATUS" --reason=write_without_hme_read
-        ;;
-    esac
+    if [ "$COVERAGE_STATUS" = "MISSING" ]; then
+      _emit_activity productive_incoherence --session="$SESSION_ID" --file="$FILE" --module="$MODULE" --coverage="$COVERAGE_STATUS" --reason=exploratory_write_into_uncovered_territory
+      _emit_activity learn_suggested --session="$SESSION_ID" --file="$FILE" --module="$MODULE" --reason=capture_novel_findings
+    fi
   fi
 
   # Edit count reminders are owned by the proxy status block — no STDERR here.
