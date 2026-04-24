@@ -23,9 +23,13 @@
 set +e
 cat >/dev/null 2>&1
 
-_WD_SELF="${BASH_SOURCE[0]}"
-_WD_ROOT="$(cd "$(dirname "$_WD_SELF")/../../../.." 2>/dev/null && pwd)"
-# Fallback to known location if BASH_SOURCE math fails.
+# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE from the
+# plugin-cache path (lands in ~/.claude/plugins/cache/). Prefer
+# CLAUDE_PROJECT_DIR, then hardcoded fallback.
+_WD_ROOT=""
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+  _WD_ROOT="$CLAUDE_PROJECT_DIR"
+fi
 [ -z "$_WD_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _WD_ROOT="/home/jah/Polychron"
 
 _WD_PORT="${HME_PROXY_PORT:-9099}"

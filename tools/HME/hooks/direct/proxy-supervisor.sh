@@ -28,8 +28,13 @@
 
 set +e
 
-_SV_SELF="${BASH_SOURCE[0]}"
-_SV_ROOT="$(cd "$(dirname "$_SV_SELF")/../../../.." 2>/dev/null && pwd)"
+# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE from the
+# plugin-cache path (lands in ~/.claude/plugins/cache/). Prefer
+# CLAUDE_PROJECT_DIR, then hardcoded fallback.
+_SV_ROOT=""
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+  _SV_ROOT="$CLAUDE_PROJECT_DIR"
+fi
 [ -z "$_SV_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _SV_ROOT="/home/jah/Polychron"
 
 _SV_PORT="${HME_PROXY_PORT:-9099}"

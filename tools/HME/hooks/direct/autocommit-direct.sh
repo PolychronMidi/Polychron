@@ -29,9 +29,15 @@
 
 set +e  # explicitly NOT fail-fast — we own our bookkeeping
 
-# Derive path WITHOUT env dependency, same technique as _autocommit.sh.
-_DIRECT_SELF="${BASH_SOURCE[0]}"
-_DIRECT_ROOT="$(cd "$(dirname "$_DIRECT_SELF")/../../../.." 2>/dev/null && pwd)"
+# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE here because
+# Claude Code invokes this hook via the plugin-cache path, where the
+# ascent lands inside ~/.claude/plugins/cache/. Prefer CLAUDE_PROJECT_DIR
+# (set by Claude Code on every hook invocation), then hardcoded fallback.
+_DIRECT_ROOT=""
+if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+  _DIRECT_ROOT="$CLAUDE_PROJECT_DIR"
+fi
+[ -z "$_DIRECT_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _DIRECT_ROOT="/home/jah/Polychron"
 
 # Consume stdin (Claude Code hook payload) so the caller doesn't block.
 cat >/dev/null 2>&1
