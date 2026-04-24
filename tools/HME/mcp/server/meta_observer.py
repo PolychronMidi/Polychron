@@ -16,7 +16,6 @@ Layers 16-18: Extrospective self-coherence (outward-facing)
 import json
 import logging
 import os
-import shutil
 import subprocess
 import sys
 import threading
