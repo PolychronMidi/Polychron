@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# HME invariant prover — cross-file architectural invariant checker.
+# Complements per-file ESLint rules with global/dataflow questions.
+#
+# Usage:
+#   i/prove sole-writer target=<SYMBOL> allowed='<GLOB>'
+#   i/prove no-import   from=<MODULE>  in='<GLOB>'
+#   i/prove sole-caller function=<NAME> allowed='<GLOB>'
+#
+# Examples:
+#   i/prove sole-writer target=couplingMatrix allowed='conductor/**'
+#   i/prove no-import from=conductorIntelligence in='crossLayer/**'
+#   i/prove sole-caller function=setBinaural allowed='play/grandFinale.js'
+#
+# Exit code: 0 if PROVEN, 1 if VIOLATED, 2 on usage error. Output is JSON
+# on stdout with counterexamples when violated.
+_REPO_ROOT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+_PROVE_PY="$_REPO_ROOT/scripts/hme/prove.py"
+if [ ! -f "$_PROVE_PY" ]; then
+  echo "i/prove: $_PROVE_PY missing" >&2
+  exit 2
+fi
+PROJECT_ROOT="$_REPO_ROOT" exec python3 "$_PROVE_PY" "$@"
