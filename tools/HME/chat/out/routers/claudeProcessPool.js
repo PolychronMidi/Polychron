@@ -42,7 +42,14 @@ function _optsKey(o) {
 // needs them MORE than the old per-spawn path, because a stuck turn holds
 // the whole session hostage (no next-turn can start). Numbers mirror the
 // prior behavior so we don't silently weaken the existing guarantees.
-const TURN_INACTIVITY_MS = 30000; // no stdout for 30s → kill + retry next turn
+// 30s was too aggressive: legitimate slow-thinking API responses and large
+// tool_use blocks can easily pause streaming for 30–60s, firing the kill
+// watchdog falsely. 90s is long enough to cover real inference pauses while
+// still catching genuine hangs (a Claude CLI that truly hangs is dead for
+// minutes, not seconds). Observed April 2026: false-fires logged after a
+// worker respawn caused HME-shim-dependent calls to retry; chat panel's
+// claude CLI sat idle during retry and falsely tripped the 30s gate.
+const TURN_INACTIVITY_MS = 90000; // no stdout for 90s → kill + retry next turn
 const TURN_DEADLINE_MS = 300000; // hard wall-clock cap per turn
 class ClaudeProcess {
     constructor(chatSessionId, resumeSessionId, opts, workingDir) {

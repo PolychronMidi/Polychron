@@ -2,46 +2,59 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1118,
-      "updated_ts": 1777049056.9868608
+      "max_id": 1122,
+      "updated_ts": 1777049312.9917006
     }
   },
   {
-    "id": 1113,
-    "text": "Split stop.sh, pretooluse_bash.sh, _safety.sh into sub-files with dispatcher pattern",
+    "id": 1119,
+    "text": "Split stop.sh, pretooluse_bash.sh, _safety.sh into sub-files",
     "activeForm": "Splitting top-3 .sh offenders",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777048625.1540725,
+    "ts": 1777049312.9916625,
     "parent_id": 0,
     "subs": []
   },
   {
-    "id": 1114,
-    "text": "Fix browser chat \"HME KB shim: FAILED\" \u2014 GIL-saturated worker + supervisor hang escalation",
+    "id": 1120,
+    "text": "Fix browser chat HME KB shim FAILED \u2014 GIL-saturated worker + supervisor hang-escalation",
     "activeForm": "Fixing chat shim",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777048625.1540906,
+    "ts": 1777049312.9916775,
     "parent_id": 0,
     "subs": []
   },
   {
-    "id": 1118,
-    "text": "Add UNIVERSAL_PULSE: active probes of proxy/worker/llamacpp/CPU-saturation/file-freshness \u2014 LIFESAVER-surfaced alerts",
-    "activeForm": "Adding universal_pulse active-probe layer",
+    "id": 1121,
+    "text": "Add UNIVERSAL_PULSE active-probe layer for proxy/worker/llamacpp/CPU/file-freshness",
+    "activeForm": "Adding universal_pulse",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777049056.986856,
+    "ts": 1777049312.9916875,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1122,
+    "text": "Clear stale worker recent_errors + raise claudeProcessPool 30s\u219290s false-fire gate + /clear-errors endpoint",
+    "activeForm": "Clearing stale errors + relaxing pool watchdog",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777049312.9916964,
     "parent_id": 0,
     "subs": []
   },
