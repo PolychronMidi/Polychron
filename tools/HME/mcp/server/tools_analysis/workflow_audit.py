@@ -20,99 +20,19 @@ logger = logging.getLogger("HME")
 def _drop_hallucinated_bullets(synthesis: str, changed_files: str,
                                diff_context: str, hunk_context: str,
                                symbol_whitelist: set | None = None) -> str:
-    """Filter LLM synthesis: drop bullets whose cited identifiers are not
-    grounded in the diff.
-
-    Two layers of grounding:
-      1. FILE PATHS — must appear in changed_files / diff_context verbatim.
-         A bullet citing a file that was never touched is a hallucination
-         regardless of what it says about that file.
-      2. BACKTICKED IDENTIFIERS — every backticked token must appear EITHER
-         in the raw source_blob OR in symbol_whitelist (arbiter-extracted
-         set of identifiers actually present in the diff). If ANY
-         backticked token fails both checks, the bullet is dropped even
-         when the file path is real. This catches the "correctly-cites-
-         file, invents-symbol" class — e.g. claiming a Python file "uses
-         pathlib.Path.glob()" when it uses os.walk, or calling
-         `output_tokens` an environment variable.
-
-    Bullets with zero refs (pure prose advice) are kept. Safe default on
-    any parse error: return synthesis unchanged.
-    """
-    if not synthesis:
-        return synthesis
-    try:
-        import re
-        source_blob = "\n".join([
-            changed_files or "", diff_context or "", hunk_context or ""
-        ]).lower()
-        whitelist = {s.lower() for s in (symbol_whitelist or set())}
-        # Split on bullet boundaries.
-        lines = synthesis.split("\n")
-        bullets: list[list[str]] = []
-        current: list[str] = []
-        bullet_head = re.compile(
-            r'^(?:\s*\*\*\d+\.|\s*\d+\.|\s*[-*]\s|\s*\*\*[A-Z][^*]*\*\*)'
-        )
-        for ln in lines:
-            if bullet_head.match(ln) and current:
-                bullets.append(current)
-                current = [ln]
-            else:
-                current.append(ln)
-        if current:
-            bullets.append(current)
-
-        path_re = re.compile(r'[\w./-]+\.(?:js|ts|py|md|json|sh|yml|yaml|html)')
-        tick_re = re.compile(r'`([^`\n]{3,120})`')
-        kept: list[str] = []
-        for b in bullets:
-            text = "\n".join(b)
-            paths = [p.strip().lower() for p in path_re.findall(text) if p.strip()]
-            ticks = [s.strip().lower() for s in tick_re.findall(text) if s.strip()]
-
-            # Layer 1: every cited PATH must be in source material.
-            bad_paths = [p for p in paths if p not in source_blob]
-            if bad_paths:
-                logger.info(
-                    f"what_did_i_forget: dropped bullet, unreferenced path(s) "
-                    f"{bad_paths[:3]}"
-                )
-                continue
-
-            # Layer 2: every BACKTICKED IDENTIFIER must be in source OR
-            # in the arbiter-extracted whitelist. If the whitelist is
-            # empty (arbiter unavailable AND regex fallback empty), skip
-            # layer 2 to avoid false positives from a degraded upstream.
-            if ticks and (whitelist or source_blob.strip()):
-                ungrounded = []
-                for t in ticks:
-                    # tokens ending in common noise-suffix get stripped
-                    bare = t.rstrip("()[]{},.;:!?")
-                    if bare in source_blob:
-                        continue
-                    if bare in whitelist:
-                        continue
-                    # component-wise check for dotted tokens ("foo.bar.baz")
-                    parts = [p for p in bare.split(".") if len(p) >= 3]
-                    if parts and all(
-                        (p in source_blob) or (p in whitelist) for p in parts
-                    ):
-                        continue
-                    ungrounded.append(bare)
-                if ungrounded:
-                    logger.info(
-                        f"what_did_i_forget: dropped bullet, ungrounded "
-                        f"identifier(s) {ungrounded[:3]}"
-                    )
-                    continue
-
-            kept.extend(b)
-        filtered = "\n".join(kept).strip()
-        return filtered if filtered else synthesis
-    except Exception as _fe:
-        logger.debug(f"_drop_hallucinated_bullets: filter skipped: {type(_fe).__name__}: {_fe}")
-        return synthesis
+    """Backward-compat thin wrapper around the shared
+    filter_ungrounded_bullets helper in synthesis_inference. Joins the
+    three per-section source strings into one blob and delegates.
+    Prefer calling ground_synthesis() directly at new sites."""
+    from .synthesis.synthesis_inference import filter_ungrounded_bullets
+    source_text = "\n".join([
+        changed_files or "", diff_context or "", hunk_context or ""
+    ])
+    return filter_ungrounded_bullets(
+        synthesis, source_text,
+        symbol_whitelist=symbol_whitelist,
+        log_label="what_did_i_forget",
+    )
 
 
 def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
@@ -818,8 +738,13 @@ def diagnose_error(error_text: str) -> str:
                 max_tokens=800, system=_THINK_SYSTEM
             )
         if synthesis:
-            from .synthesis.synthesis_inference import compress_for_claude
+            from .synthesis.synthesis_inference import compress_for_claude, ground_synthesis
             synthesis = compress_for_claude(synthesis, max_chars=800, hint="error fix steps")
+            # Ground: drop any bullet citing paths/symbols not in the source
+            # (error_text + KB entries). Catches the same "correctly-cites-
+            # file, invents-symbol" hallucination class as what_did_i_forget.
+            synthesis = ground_synthesis(synthesis, raw_context,
+                                         log_label="diagnose_error")
     except Exception as _e:
         logger.warning(f"diagnose_error: synthesis error: {_e}")
 

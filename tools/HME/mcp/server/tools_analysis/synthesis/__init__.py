@@ -39,6 +39,21 @@ def _local_think(*args, **kwargs):
 
 def compress_for_claude(*args, **kwargs):
     return _so_inf.compress_for_claude(*args, **kwargs)
+
+
+def ground_synthesis(*args, **kwargs):
+    """Late-bound re-export of synthesis_inference.ground_synthesis."""
+    return _so_inf.ground_synthesis(*args, **kwargs)
+
+
+def filter_ungrounded_bullets(*args, **kwargs):
+    """Late-bound re-export of synthesis_inference.filter_ungrounded_bullets."""
+    return _so_inf.filter_ungrounded_bullets(*args, **kwargs)
+
+
+def extract_diff_symbols(*args, **kwargs):
+    """Late-bound re-export of synthesis_inference.extract_diff_symbols."""
+    return _so_inf.extract_diff_symbols(*args, **kwargs)
 # _last_think_failure is a mutable module-level sentinel in synthesis_llamacpp.
 # Must be read via module reference (not re-exported) to get the live value after mutation.
 from . import synthesis_llamacpp as _synthesis_llamacpp_mod  # noqa: F401

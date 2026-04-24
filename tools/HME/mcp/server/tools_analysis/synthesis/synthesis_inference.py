@@ -420,6 +420,105 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
 
 
+def filter_ungrounded_bullets(synthesis: str, source_text: str,
+                              symbol_whitelist: set | None = None,
+                              log_label: str = "synthesis") -> str:
+    """Drop LLM synthesis bullets whose cited identifiers are not grounded
+    in the source material. Generalization of workflow_audit's
+    _drop_hallucinated_bullets — any adaptive-synthesis call site can
+    pipe its output through this filter to suppress the "correctly-cites-
+    file, invents-symbol" hallucination class.
+
+    Two layers:
+      1. FILE PATHS — must appear in source_text verbatim. Citing a file
+         that isn't in the source is pure invention.
+      2. BACKTICKED IDENTIFIERS — each backticked token must appear in
+         source_text OR in symbol_whitelist (arbiter-extracted set from
+         extract_diff_symbols). Supports dotted-access component-wise
+         check for `foo.bar.baz`.
+
+    Bullets with zero refs (pure prose) pass. On parse error: return
+    synthesis unchanged (fail-open, never make synthesis WORSE).
+    """
+    if not synthesis:
+        return synthesis
+    try:
+        import re as _re
+        source_blob = (source_text or "").lower()
+        whitelist = {s.lower() for s in (symbol_whitelist or set())}
+        lines = synthesis.split("\n")
+        bullets: list[list[str]] = []
+        current: list[str] = []
+        bullet_head = _re.compile(
+            r'^(?:\s*\*\*\d+\.|\s*\d+\.|\s*[-*]\s|\s*\*\*[A-Z][^*]*\*\*)'
+        )
+        for ln in lines:
+            if bullet_head.match(ln) and current:
+                bullets.append(current)
+                current = [ln]
+            else:
+                current.append(ln)
+        if current:
+            bullets.append(current)
+
+        path_re = _re.compile(r'[\w./-]+\.(?:js|ts|py|md|json|sh|yml|yaml|html)')
+        tick_re = _re.compile(r'`([^`\n]{3,120})`')
+        _log = logging.getLogger("HME")
+        kept: list[str] = []
+        for b in bullets:
+            text = "\n".join(b)
+            paths = [p.strip().lower() for p in path_re.findall(text) if p.strip()]
+            ticks = [s.strip().lower() for s in tick_re.findall(text) if s.strip()]
+
+            bad_paths = [p for p in paths if p not in source_blob]
+            if bad_paths:
+                _log.info(f"{log_label}: dropped bullet, unreferenced path(s) {bad_paths[:3]}")
+                continue
+
+            if ticks and (whitelist or source_blob.strip()):
+                ungrounded = []
+                for t in ticks:
+                    bare = t.rstrip("()[]{},.;:!?")
+                    if bare in source_blob or bare in whitelist:
+                        continue
+                    parts = [p for p in bare.split(".") if len(p) >= 3]
+                    if parts and all(
+                        (p in source_blob) or (p in whitelist) for p in parts
+                    ):
+                        continue
+                    ungrounded.append(bare)
+                if ungrounded:
+                    _log.info(f"{log_label}: dropped bullet, ungrounded identifier(s) {ungrounded[:3]}")
+                    continue
+            kept.extend(b)
+        filtered = "\n".join(kept).strip()
+        return filtered if filtered else synthesis
+    except Exception as _fe:
+        logging.getLogger("HME").debug(
+            f"filter_ungrounded_bullets: filter skipped: {type(_fe).__name__}: {_fe}"
+        )
+        return synthesis
+
+
+def ground_synthesis(synthesis: str, source_text: str,
+                     log_label: str = "synthesis") -> str:
+    """One-shot convenience: extract symbols from source_text via arbiter
+    (with regex fallback), then filter synthesis bullets against that
+    whitelist + raw source. Use this at any adaptive-synthesis site that
+    can hallucinate identifiers — e.g. `diagnose_error`, `module_story`,
+    `tools_knowledge` cluster analysis, `drama_map`, etc.
+
+    Call shape: `synthesis = ground_synthesis(synthesis, source_text,
+    log_label="diagnose_error")`.
+    """
+    if not synthesis or not source_text:
+        return synthesis
+    whitelist = extract_diff_symbols(source_text, "", "")
+    return filter_ungrounded_bullets(synthesis, source_text,
+                                     symbol_whitelist=whitelist,
+                                     log_label=log_label)
+
+
 def extract_diff_symbols(diff_context: str, hunk_context: str = "",
                          changed_files: str = "") -> set[str]:
     """Use the arbiter to enumerate identifiers that ACTUALLY appear in a
