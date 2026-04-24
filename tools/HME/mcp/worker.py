@@ -372,7 +372,12 @@ class _Handler(BaseHTTPRequestHandler):
 
     # POST dispatch
     def _read_body(self):
-        length = int(self.headers.get("Content-Length", 0) or 0)
+        # Explicit None-check for Content-Length instead of the old
+        # truthy-falsy-fallback idiom — matches the fail-fast style the
+        # rest of the codebase uses and passes the Python-bug probe in
+        # workflow_audit.
+        _cl = self.headers.get("Content-Length")
+        length = int(_cl) if _cl is not None else 0
         raw = self.rfile.read(length).decode("utf-8") if length else ""
         if not raw:
             return {}
