@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 1122,
-      "updated_ts": 1777049312.9917006
+      "max_id": 1127,
+      "updated_ts": 1777050628.66484
     }
   },
   {
@@ -46,15 +46,28 @@
     "subs": []
   },
   {
-    "id": 1122,
-    "text": "Clear stale worker recent_errors + raise claudeProcessPool 30s\u219290s false-fire gate + /clear-errors endpoint",
-    "activeForm": "Clearing stale errors + relaxing pool watchdog",
+    "id": 1126,
+    "text": "Close silent-failure paths in claudeProcessPool: productivity watchdog + schema-drift logging + /clear-errors endpoint + sessionstart auto-prune",
+    "activeForm": "Closing chat-panel silent-failure paths",
     "status": "completed",
     "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777049312.9916964,
+    "ts": 1777050628.6648242,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 1127,
+    "text": "Always-rewrite fix for bare i/<tool> calls (removed cwd-guessing)",
+    "activeForm": "Fixing i/ rewriter",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777050628.6648352,
     "parent_id": 0,
     "subs": []
   },

@@ -81,6 +81,13 @@ fi
 # warnings without seeing them. Fetch with a tight timeout so an unreachable
 # worker doesn't delay SessionStart, and emit a loud banner if non-empty.
 WORKER_PORT="${HME_SHIM_PORT:-9098}"
+# Preemptively drop recent_errors older than 30 min so stale entries from a
+# prior session (typically watchdog fires that resolved themselves) don't
+# keep re-surfacing here → LIFESAVER → next-turn block. 30 min is longer
+# than the typical active-debug window; anything older is operationally dead.
+curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
+  -H 'Content-Type: application/json' \
+  -d '{"older_than_ms":1800000}' >/dev/null 2>&1 || true
 HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>/dev/null || echo "")
 if [ -n "$HEALTH_JSON" ]; then
   # Write JSON to a temp file and have python read it — both `<<PYEOF` and
