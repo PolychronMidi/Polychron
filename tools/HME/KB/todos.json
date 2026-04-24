@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 956,
-      "updated_ts": 1777002876.9331434
+      "max_id": 961,
+      "updated_ts": 1777002985.570562
     }
   },
   {
@@ -49,8 +49,8 @@
     "id": 948,
     "text": "OAuth expiry verifier",
     "activeForm": "Building OAuth expiry verifier",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -62,8 +62,8 @@
     "id": 882,
     "text": "Commit",
     "activeForm": "Committing",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
