@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 973,
-      "updated_ts": 1777004290.4261293
+      "max_id": 980,
+      "updated_ts": 1777004872.736237
     }
   },
   {
@@ -72,15 +72,28 @@
     "subs": []
   },
   {
-    "id": 967,
-    "text": "Compile findings and propose hardening edits",
-    "activeForm": "Compiling findings for user review",
-    "status": "in_progress",
-    "done": false,
+    "id": 979,
+    "text": "Apply Part B fail-fast hardening edits",
+    "activeForm": "Applying Part B hardening edits",
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
-    "ts": 1777003953.8790982,
+    "ts": 1777004872.7362251,
+    "parent_id": 0,
+    "subs": []
+  },
+  {
+    "id": 980,
+    "text": "Apply Part A HME tool fixes",
+    "activeForm": "Applying Part A HME tool fixes",
+    "status": "completed",
+    "done": true,
+    "critical": false,
+    "source": "native",
+    "on_done": "",
+    "ts": 1777004872.7362328,
     "parent_id": 0,
     "subs": []
   },
