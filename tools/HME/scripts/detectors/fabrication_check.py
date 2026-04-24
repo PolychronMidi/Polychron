@@ -137,8 +137,13 @@ def _emit_stats(verdict: str, detail: str) -> None:
                 "verdict": verdict,
                 "detail": detail,
             }) + "\n")
-    except Exception:
-        pass
+    except (OSError, TypeError, ValueError) as _emit_err:
+        # Telemetry only — can't bubble (detector writes to stdout),
+        # but narrow the type so real bugs (import errors, schema drift)
+        # still propagate instead of being swallowed.
+        import sys as _sys
+        print(f"[fabrication_check] stats emit failed: "
+              f"{type(_emit_err).__name__}: {_emit_err}", file=_sys.stderr)
 
 
 def main() -> int:
