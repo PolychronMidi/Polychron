@@ -56,9 +56,11 @@ _PROSE_AND_KEYWORD_STOPWORDS = frozenset({
     # Python keywords + common stdlib names we'd rather drop from the
     # whitelist unless the model genuinely uses them as identifiers
     "import", "from", "def", "return", "pass", "raise", "yield", "async",
-    "await", "class", "global", "nonlocal", "lambda",
+    "await", "class", "global", "nonlocal", "lambda", "continue", "break",
+    "true", "false", "none", "null",
     # misc words we saw dirty the whitelist in production reviews
-    "python", "index", "git", "gpu", "home", "jah",
+    "python", "index", "git", "gpu", "home", "jah", "binary", "newline",
+    "marker", "raw", "body", "source", "str", "tok", "keep",
 })
 
 
@@ -765,11 +767,41 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     regex-based extraction over the raw diff so the downstream filter still
     has something to check against.
     """
-    # Only extract from the actual diff + filenames. hunk_context is
-    # prose-heavy (docstrings, comments) and would otherwise pull every
-    # English word of 3+ letters into the whitelist, polluting the prompt
-    # with tokens like "the / its / own / across / whether / why".
-    source = "\n".join([changed_files or "", diff_context or ""])
+    # Strip diff metadata BEFORE extraction so git noise doesn't pollute
+    # the whitelist. The noise that landed in production reviews:
+    #   - diff --git a/... b/...     (path headers with a/, b/ prefixes)
+    #   - index 7c169164..fdd82f1d   (SHA hashes leak through the digit filter)
+    #   - --- a/file / +++ b/file    (file markers)
+    #   - @@ -N,M +N,M @@            (hunk headers)
+    # Only lines that represent actual code changes (+/-) or filenames
+    # contribute tokens. Context lines (leading space) skipped too: they
+    # are prose-heavy (docstrings around the hunk) and not part of the
+    # change itself.
+    import re as _re_sx
+
+    def _strip_diff_noise(raw: str) -> str:
+        kept = []
+        for ln in (raw or "").splitlines():
+            if not ln:
+                continue
+            if ln.startswith(('diff --git', 'index ', '--- ', '+++ ',
+                              '@@', 'Binary files', '\\ No newline')):
+                continue
+            if ln.startswith(('+', '-')):
+                body = ln[1:]  # strip the +/- marker
+                # Drop comment lines — they're prose-heavy and would
+                # pollute the whitelist with every English word in the
+                # author's explanation ("accept", "actual", "covers",
+                # "production", "reviews"…). Language-agnostic heuristic:
+                # a line whose first non-space chars are a comment prefix.
+                stripped = body.lstrip()
+                if stripped.startswith(('#', '//', '/*', '*', '--')):
+                    continue
+                kept.append(body)
+        return "\n".join(kept)
+
+    diff_code_only = _strip_diff_noise(diff_context or "")
+    source = "\n".join([changed_files or "", diff_code_only])
     if not source.strip():
         return set()
 
@@ -777,36 +809,43 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     # Catches most identifiers without a model round-trip, so the filter
     # keeps working even if the daemon is down.
     fallback: set[str] = set()
-    import re as _re_sx
 
     def _looks_identifier(tok: str) -> bool:
-        # Keep tokens that carry identifier-structure signal AND aren't
-        # English prose. Docstring sentences capitalize "The", "Why",
-        # "GPU", so an uppercase-letter check alone isn't enough —
-        # reject stop-words first regardless of casing, then allow
-        # remaining tokens with structural identifier hints.
+        # Reject stop-words + language keywords (English prose,
+        # "import/the/why/across"). Accept plain lowercase single words
+        # too: `json`, `shutil`, `os`, `sys`, `threading` etc. are real
+        # module names. The stop-word list is the primary filter here;
+        # structural hints (underscore/dot/case/digit) are secondary.
         if tok.lower() in _PROSE_AND_KEYWORD_STOPWORDS:
             return False
-        if '_' in tok or '.' in tok:
-            return True
-        if any(c.isupper() for c in tok):
-            return True
-        if any(c.isdigit() for c in tok):
-            return True
+        # Drop regex-fragment / metadata noise: anything containing
+        # obvious non-identifier characters is garbage from the source.
+        # `@` rejects git hunk markers like `@@`. Do NOT reject on `/` —
+        # real file paths (tools/HME/foo.py) must pass this filter.
+        if any(c in tok for c in '\\[](){}<>^$|?*+=@'):
+            return False
+        # Drop pure-hex-looking git SHA fragments (7-40 hex chars, no
+        # non-hex letters). Covers `fdd82f1d`, `7c169164`, `61c94716`.
+        if 6 <= len(tok) <= 40 and all(c in '0123456789abcdef' for c in tok.lower()):
+            return False
         return True
 
     # identifiers (snake_case, camelCase, dotted.access), 3+ chars
     for tok in _re_sx.findall(r'\b[A-Za-z_][A-Za-z0-9_.]{2,}\b', source):
         if _looks_identifier(tok):
             fallback.add(tok.lower())
-    # quoted strings (single, double, backtick)
-    for tok in _re_sx.findall(r'"([^"\n]{2,80})"|\'([^\'\n]{2,80})\'|`([^`\n]{2,80})`', source):
+    # code-shaped quoted strings only: reject anything containing a space
+    # (those are prose sentences, not code literals like "utf-8" or ".env")
+    for tok in _re_sx.findall(r'"([^"\n]{2,40})"|\'([^\'\n]{2,40})\'|`([^`\n]{2,40})`', source):
         for grp in tok:
-            if grp:
+            if grp and ' ' not in grp and _looks_identifier(grp.strip()):
                 fallback.add(grp.strip().lower())
-    # file paths (a/b/c.ext)
+    # file paths (a/b/c.ext) — strip git a/ b/ prefixes that survive
+    # because changed_files and diff headers reference them.
     for tok in _re_sx.findall(r'[\w./-]+\.(?:js|ts|py|md|json|sh|yml|yaml|html)', source):
-        fallback.add(tok.lower())
+        _path = _re_sx.sub(r'^[ab]/', '', tok.lower())
+        if _looks_identifier(_path):
+            fallback.add(_path)
 
     # Arbiter pass — augment with model-extracted symbols. Bounded prompt
     # size + temperature=0 keeps latency low and output deterministic.
@@ -835,10 +874,10 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         )
     _cb = _get_circuit_breaker(_ARBITER_MODEL)
     if not _cb.allow():
-        return fallback
+        return {t for t in fallback if _looks_identifier(t)}
     daemon_result = _daemon_generate(payload, wall_timeout=8)
     if not daemon_result:
-        return fallback
+        return {t for t in fallback if _looks_identifier(t)}
     from .synthesis_config import clean_model_output
     raw = clean_model_output(daemon_result.get("response", "")) or ""
     _cb.record_success()
@@ -847,11 +886,21 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         tok = ln.strip().strip("-*• \t`\"'")
         if not tok or len(tok) < 3:
             continue
-        # Reject obvious prose-like outputs — tokens with spaces are almost
-        # always fabrications ("a Python script", "the diff").
-        if " " in tok and len(tok) > 40:
+        # Reject outputs with spaces — those are fabricated prose
+        # ("a Python script", "the diff"), not identifiers.
+        if " " in tok:
+            continue
+        # Apply the same structural filter as the fallback path. Without
+        # this, the LLM arbiter was shoving `import`, `file`, `the`, `why`,
+        # git SHAs like `fdd82f1d`, regex fragments, and hunk markers into
+        # the whitelist — all the junk the post-filter is supposed to
+        # reject for the reasoning model's output.
+        if not _looks_identifier(tok):
             continue
         extracted.add(tok.lower())
-    return fallback | extracted
+    # Final sweep: post-filter the UNION too, in case _looks_identifier
+    # changes later or the fallback regex somehow accepted a stop-word.
+    merged = {t for t in (fallback | extracted) if _looks_identifier(t)}
+    return merged
 
 

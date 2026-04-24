@@ -508,12 +508,23 @@ def what_did_i_forget(changed_files: str) -> str:
     ]
 
     def _detect_languages(diff: str, files: str) -> set:
+        # Parse language from file headers in the diff (+++ b/path.ext)
+        # and the changed_files list, not substring scans over the whole
+        # diff body — a prose mention of `.py` inside a docstring was
+        # falsely marking Python as present.
+        import re as _re_lang
         langs = set()
-        for ext, lang in (('.py', 'py'), ('.js', 'js'), ('.ts', 'js'),
-                         ('.sh', 'sh'), ('.bash', 'sh')):
-            if ext in (diff or '') or ext in (files or ''):
-                langs.add(lang)
-        return langs or {'py', 'js', 'sh'}  # fall back to all when ambiguous
+        ext_lang = {'.py': 'py', '.js': 'js', '.ts': 'js', '.jsx': 'js',
+                    '.tsx': 'js', '.mjs': 'js', '.cjs': 'js',
+                    '.sh': 'sh', '.bash': 'sh'}
+        for src in (diff or '', files or ''):
+            # `+++ b/file.ext` or bare `file.ext` in the comma-separated list
+            for path in _re_lang.findall(r'(?:^\+\+\+ b/)?([\w./-]+\.\w+)',
+                                         src, _re_lang.MULTILINE):
+                for ext, lang in ext_lang.items():
+                    if path.endswith(ext):
+                        langs.add(lang)
+        return langs  # empty set → probes render without lang-hint blocks
 
     _diff_langs = _detect_languages(diff_context, changed_files)
 
