@@ -224,15 +224,42 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
         return None
 
 
+def _get_claude_code_oauth_token() -> str | None:
+    """Read the Claude Code OAuth access token from ~/.claude/.credentials.json.
+
+    Claude Code (VS Code / desktop) stores its Anthropic auth as an OAuth
+    access token under claudeAiOauth.accessToken — the user's subscription
+    credits are authorized through this token. The overdrive path reuses
+    the user's existing auth rather than requiring a separate API key.
+    Returns None if the file is missing, unreadable, or has no token."""
+    import json as _json
+    import os as _os
+    path = _os.path.expanduser("~/.claude/.credentials.json")
+    try:
+        with open(path) as f:
+            data = _json.load(f)
+    except (OSError, _json.JSONDecodeError):
+        return None
+    token = data.get("claudeAiOauth", {}).get("accessToken")
+    if token and isinstance(token, str):
+        return token
+    return None
+
+
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | None:
     """OVERDRIVE_MODE path — call Claude Opus with maximum extended thinking.
 
     Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
-    entirely and spends Anthropic credits for highest-quality output. Used
-    for both the subagent replacement (agent_local.py → _call_synthesizer)
-    and every other cascade caller — they all funnel through call() below.
+    entirely and spends Claude Code subscription credits for highest-quality
+    output. Used for both the subagent replacement (agent_local.py →
+    _call_synthesizer) and every other cascade caller — they all funnel
+    through call() below.
 
-    Returns None on ANY failure (missing key, network error, API error,
+    Auth: reuses the Claude Code OAuth access token from
+    ~/.claude/.credentials.json. No separate ANTHROPIC_API_KEY required;
+    the user's existing Claude Code auth is what pays for the call.
+
+    Returns None on ANY failure (no auth token, network error, API error,
     empty response). Caller falls through to the normal cascade so a
     configuration gap or transient outage doesn't block the agent.
 
@@ -242,11 +269,10 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
     think and respond without truncation."""
     import json as _json
     import urllib.request as _req
-    from hme_env import ENV as _ENV
 
-    api_key = _ENV.optional("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        logger.warning("OVERDRIVE_MODE=1 but ANTHROPIC_API_KEY is empty — falling through to cascade")
+    token = _get_claude_code_oauth_token()
+    if not token:
+        logger.warning("OVERDRIVE_MODE=1 but no Claude Code OAuth token at ~/.claude/.credentials.json — falling through to cascade")
         return None
 
     payload = {
@@ -265,8 +291,9 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> str | Non
             data=_json.dumps(payload).encode(),
             headers={
                 "Content-Type": "application/json",
-                "x-api-key": api_key,
+                "Authorization": f"Bearer {token}",
                 "anthropic-version": "2023-06-01",
+                "anthropic-beta": "oauth-2025-04-20",
             },
         )
         with _req.urlopen(request, timeout=300) as resp:
