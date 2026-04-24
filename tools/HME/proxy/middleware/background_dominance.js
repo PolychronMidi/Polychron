@@ -42,13 +42,25 @@ const BG_STUB_RE = /Command running in background with ID:\s*([a-zA-Z0-9]+)/;
 
 // Allowlist of command patterns whose real output we should resolve.
 // Kept intentionally narrow — generic commands pass through unchanged.
-const DOMINATE_CMD_RE = /(\bi\/\w+\b|\bnpm run \w+\b|\bpython3\s+\S*scripts\/\S+\.py\b|\bnode\s+\S*scripts\/\S+\.js\b)/;
+// Includes: `i/<tool>` (HME shell wrappers, with or without `./` prefix),
+// `npm run X` / `yarn X`, `make X`, `python3 scripts/*.py`, `node
+// scripts/*.js`, `bash scripts/*.sh`.
+const DOMINATE_CMD_RE = /(\.?\/?\bi\/\w+\b|\bnpm run \w+|\byarn (run )?\w+|\bmake \w+|\bpython3\s+\S*scripts\/\S+\.py\b|\bnode\s+\S*scripts\/\S+\.js\b|\bbash\s+\S*scripts\/\S+\.sh\b)/;
 
-const POLL_TIMEOUT_MS = 60_000;
-const POLL_INTERVAL_MS = 1_000;
-// Wait this long for a file's size to stabilize before declaring the
-// task finished. 2 consecutive identical non-zero reads = done writing.
-const STABLE_READS_REQUIRED = 2;
+// Env overrides exist for tests. Defaults match production expectations:
+// 60s is the empirical p99 for HME commands on warm GPUs, 1s poll is fine-
+// grained enough to catch short-running commands without thrashing the fs.
+const POLL_TIMEOUT_MS = Number(process.env.HME_BG_DOMINANCE_TIMEOUT_MS) || 60_000;
+const POLL_INTERVAL_MS = Number(process.env.HME_BG_DOMINANCE_POLL_MS) || 1_000;
+// Completion detection: require BOTH size-stable-across-reads AND mtime
+// quiescent (file hasn't been written to recently). Size-alone fires
+// false positives when the command is mid-inference and pauses output
+// for a few seconds; mtime-quiescent shuts that case down because any
+// incoming write bumps mtime forward. 3 reads + 2.5s mtime-quiescent
+// gives a 4-second floor on completion detection — empirically the
+// shortest real HME command returns in ~5s so we don't miss completions.
+const STABLE_READS_REQUIRED = 3;
+const MTIME_QUIESCENT_MS = 2_500;
 
 function _textOf(toolResult) {
   const c = toolResult && toolResult.content;
@@ -84,7 +96,10 @@ async function _sleep(ms) {
 }
 
 // Returns the completed output file path once writes have stabilized,
-// or null on timeout.
+// or null on timeout. Completion = size stable across STABLE_READS_REQUIRED
+// consecutive 1s polls AND file mtime is at least MTIME_QUIESCENT_MS old.
+// Size-alone false-positived on commands that pause mid-inference; mtime
+// guards that case because any downstream write bumps mtime forward.
 async function _awaitCompletion(taskId, timeoutMs) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
@@ -93,11 +108,15 @@ async function _awaitCompletion(taskId, timeoutMs) {
       let prev = -1;
       let stable = 0;
       while (Date.now() - start < timeoutMs) {
-        let size;
-        try { size = fs.statSync(filePath).size; } catch (_e) { break; }
+        let stat;
+        try { stat = fs.statSync(filePath); } catch (_e) { break; }
+        const size = stat.size;
+        const mtimeAge = Date.now() - stat.mtimeMs;
         if (size > 0 && size === prev) {
           stable += 1;
-          if (stable >= STABLE_READS_REQUIRED) return filePath;
+          if (stable >= STABLE_READS_REQUIRED && mtimeAge >= MTIME_QUIESCENT_MS) {
+            return filePath;
+          }
         } else {
           stable = 0;
           prev = size;
@@ -134,12 +153,21 @@ module.exports = {
 
     const filePath = await _awaitCompletion(taskId, POLL_TIMEOUT_MS);
     if (!filePath) {
+      // Task still unfinished. Request a retry on the next turn rather
+      // than accepting the stub forever — ctx.retryNextTurn removes the
+      // dedup for this tool_use.id so the middleware re-enters (bounded
+      // by MAX_RETRIES so a stuck task doesn't loop forever).
+      const attempt = ctx.retryNextTurn(toolUse.id);
+      const remaining = ctx.retriesRemaining(toolUse.id);
       ctx.appendToResult(
         toolResult,
-        `\n[hme bg-dominance] task ${taskId} did not complete within ${POLL_TIMEOUT_MS / 1000}s; stub preserved`,
+        `\n[hme bg-dominance] task ${taskId} unresolved (attempt ${attempt}, ${remaining} retries remaining); will retry on next turn`,
       );
       ctx.markDirty();
-      ctx.emit({ event: 'bg_dominance_timeout', task: taskId, command: cmd.slice(0, 120) });
+      ctx.emit({
+        event: 'bg_dominance_timeout', task: taskId,
+        command: cmd.slice(0, 120), attempt,
+      });
       return;
     }
     let realOutput;
@@ -152,12 +180,18 @@ module.exports = {
     }
     // Cap to a reasonable size. The stub carried no useful content, so
     // replacing with the full real output (up to some cap) is the win.
-    // 32 KB is generous for structured HME output; longer streams get
-    // tail-truncated with a marker.
+    // 32 KB total: keep HEAD (16 KB) for structured-output prefaces (JSON
+    // opening braces, YAML headers, markdown titles) AND TAIL (16 KB) for
+    // verdicts/markers/summaries that live at the end. Middle elision
+    // preserves both ends so parsers and markers both survive.
     const CAP = 32_000;
+    const SIDE = 16_000;
     let payload = realOutput;
     if (payload.length > CAP) {
-      payload = payload.slice(-CAP) + `\n…(+${realOutput.length - CAP} chars truncated by hme bg-dominance)`;
+      const head = realOutput.slice(0, SIDE);
+      const tail = realOutput.slice(-SIDE);
+      const elided = realOutput.length - head.length - tail.length;
+      payload = head + `\n…(middle ${elided} chars elided by hme bg-dominance)…\n` + tail;
     }
     ctx.replaceResult(
       toolResult,

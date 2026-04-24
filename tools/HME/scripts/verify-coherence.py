@@ -788,6 +788,73 @@ class CorePrinciplesAuditVerifier(Verifier):
                        detail[:20])
 
 
+class ProxyMiddlewareRegistryVerifier(Verifier):
+    """Every file in tools/HME/proxy/middleware/*.js must (a) be listed in
+    order.json OR load cleanly unlisted, AND (b) not throw at require()
+    time. Born from the dir_context.js silent failure: an undefined-ROOT
+    ReferenceError caused the middleware to silently not register for
+    who-knows-how-long, removing dir-intent enrichment from every turn.
+    Surface this class of failure immediately."""
+    name = "proxy-middleware-registry"
+    category = "code"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        import subprocess
+        mw_dir = os.path.join(_PROJECT, "tools", "HME", "proxy", "middleware")
+        order_path = os.path.join(mw_dir, "order.json")
+        if not os.path.isdir(mw_dir):
+            return _result(SKIP, 1.0, "middleware dir not present", [mw_dir])
+        files = sorted(
+            f for f in os.listdir(mw_dir)
+            if f.endswith(".js") and f not in ("index.js",)
+        )
+        try:
+            with open(order_path) as f:
+                order = json.load(f).get("order", [])
+        except Exception as _e:
+            return _result(ERROR, 0.0, f"could not read order.json: {_e}", [order_path])
+        unlisted = [f for f in files if f not in order]
+        missing_in_fs = [f for f in order if f not in files]
+        # Attempt to require() each middleware in a fresh Node subprocess.
+        # The proxy logs only show the LAST load attempt; this verifier
+        # independently confirms every file can be loaded. Using subprocess
+        # directly because _run_subprocess prepends python3 — we need node.
+        import subprocess as _sp_mr
+        load_failures = []
+        for fname in files:
+            abs_path = os.path.join(mw_dir, fname)
+            try:
+                rc = _sp_mr.run(
+                    ["node", "-e", f"require('{abs_path}')"],
+                    capture_output=True, text=True, timeout=5,
+                    env={**os.environ, "PROJECT_ROOT": _PROJECT},
+                )
+                if rc.returncode != 0:
+                    msg = (rc.stderr or rc.stdout or "").strip().splitlines()
+                    load_failures.append(f"{fname}: {msg[-1] if msg else 'rc=' + str(rc.returncode)}")
+            except Exception as _e:
+                load_failures.append(f"{fname}: {type(_e).__name__}: {_e}")
+        issues = []
+        if load_failures:
+            issues.extend(f"LOAD FAIL: {x}" for x in load_failures)
+        if missing_in_fs:
+            issues.append(f"order.json references missing files: {', '.join(missing_in_fs)}")
+        if unlisted:
+            issues.append(f"files not in order.json (will load alphabetically AFTER manifest): {', '.join(unlisted)}")
+        if not issues:
+            return _result(PASS, 1.0,
+                           f"{len(files)} middleware loadable, {len(order)} in manifest",
+                           [])
+        score = 0.0 if load_failures else 0.6
+        verdict = FAIL if load_failures else WARN
+        return _result(verdict, score,
+                       f"{len(load_failures)} load failure(s), "
+                       f"{len(missing_in_fs)} manifest gap(s), "
+                       f"{len(unlisted)} unlisted file(s)",
+                       issues[:10])
+
+
 class ShellHookAuditVerifier(Verifier):
     """Delegates to scripts/audit-shell-hooks.py, which statically scans
     tools/HME/hooks/**/*.sh for cache-trap patterns — most notably
@@ -2585,6 +2652,7 @@ REGISTRY = [
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     ShellHookAuditVerifier(),
+    ProxyMiddlewareRegistryVerifier(),
     DocstringPresenceVerifier(),
     PythonSyntaxVerifier(),
     ShellSyntaxVerifier(),
