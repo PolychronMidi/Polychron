@@ -2,8 +2,8 @@
   {
     "id": 0,
     "_meta": {
-      "max_id": 914,
-      "updated_ts": 1777001008.7111583
+      "max_id": 918,
+      "updated_ts": 1777001078.645667
     }
   },
   {
@@ -36,8 +36,8 @@
     "id": 909,
     "text": "Restart proxy, re-test both MODE=0 and MODE=1 paths",
     "activeForm": "Restarting + retesting",
-    "status": "in_progress",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
@@ -49,8 +49,8 @@
     "id": 882,
     "text": "Commit",
     "activeForm": "Committing",
-    "status": "pending",
-    "done": false,
+    "status": "completed",
+    "done": true,
     "critical": false,
     "source": "native",
     "on_done": "",
