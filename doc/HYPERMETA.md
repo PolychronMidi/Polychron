@@ -79,7 +79,7 @@ Per-beat energy proxy (density+tension deviation) at alpha=0.22 (~4-beat time co
 3. **Bias registration bounds lock** -- 93 registrations locked against `scripts/bias-bounds-manifest.json`
 4. **Watched constants** -- 5 controller-managed constants must not be manually set
 
-To update bounds after structural changes: `node scripts/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
+To update bounds after structural changes: `node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`
 
 ## Interaction Topology
 

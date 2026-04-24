@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated": "2026-04-05T23:39:51.820Z",
+    "generated": "2026-04-24T18:18:38.328Z",
     "description": "Locked bias registration bounds. Any change causes pipeline failure.",
     "updateCommand": "node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds",
     "registrationCount": 93
