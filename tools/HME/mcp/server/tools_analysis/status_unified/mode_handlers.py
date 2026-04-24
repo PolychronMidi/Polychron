@@ -165,21 +165,23 @@ def _mode_learn_suggestions():
             last_round_idx = i
         if ev.get("event") == "productive_incoherence":
             events.append(ev)
-    # Keep only events after the last round boundary
-    events = [e for e in events if _os.path.isfile(activity_path)]  # no-op but kept for clarity
-    if last_round_idx >= 0:
-        _bytes_before_round = sum(len(l) + 1 for l in all_lines[:last_round_idx + 1])
-        events = [e for e in events if e.get("ts", 0) * 1000 >= _bytes_before_round * 0]  # fall back to full window
     if not events:
         return "## Learn Suggestions\n  No productive_incoherence events this round — every edit landed in KB-covered territory, or no edits this round."
     # Dedup by (file, module); keep most recent timestamp per key.
+    # Activity events are emitted by tools/HME/activity/emit.py which always
+    # sets `ts` — direct index is safe. Historic entries without ts are
+    # filtered earlier by `ev.get("event")` which returns a non-event mark
+    # for malformed lines.
+    def _ts(ev: dict) -> float:
+        t = ev.get("ts")
+        return t if isinstance(t, (int, float)) else 0.0
     latest: dict[tuple, dict] = {}
     for ev in events:
         key = (ev.get("file", ""), ev.get("module", ""))
-        if key in latest and latest[key].get("ts", 0) >= ev.get("ts", 0):
+        if key in latest and _ts(latest[key]) >= _ts(ev):
             continue
         latest[key] = ev
-    rows = sorted(latest.values(), key=lambda e: e.get("ts", 0), reverse=True)[:20]
+    rows = sorted(latest.values(), key=_ts, reverse=True)[:20]
     lines = [
         "## Learn Suggestions",
         f"  {len(rows)} module(s) edited with MISSING KB coverage this round. "
