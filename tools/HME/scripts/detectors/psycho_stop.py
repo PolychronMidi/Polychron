@@ -188,6 +188,7 @@ def _emit_stats(pattern: str, detail: str) -> None:
     try:
         import json
         import time
+        import os
         root = os.environ.get("PROJECT_ROOT")
         if not root:
             # Walk up from this script.
