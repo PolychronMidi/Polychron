@@ -13,14 +13,15 @@ if echo "$CMD" | grep -q "tools/HME/chat/out"; then
   exit 2
 fi
 
-# Block mkdir of misplaced log/, metrics/, or tmp/ directories
-if echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/(log|tmp)($|/)'; then
+# Block mkdir of misplaced log/, metrics/, or tmp/ directories.
+# JS counterparts: block-mkdir-misplaced-log-tmp + block-mkdir-misplaced-metrics.
+if _policy_enabled block-mkdir-misplaced-log-tmp && echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/(log|tmp)($|/)'; then
   if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT}"'/(log|tmp)'; then
     _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not mkdir subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
     exit 2
   fi
 fi
-if echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/metrics($|/)'; then
+if _policy_enabled block-mkdir-misplaced-metrics && echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/metrics($|/)'; then
   if ! echo "$CMD" | grep -qE '"?'"${PROJECT_ROOT}"'/output/metrics'; then
     _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not mkdir any other metrics/ directory."
     exit 2
