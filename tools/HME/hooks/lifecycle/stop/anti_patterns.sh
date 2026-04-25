@@ -1,4 +1,15 @@
 # Anti-pattern blockers — all consume verdict vars set by detectors.sh.
+# Stage runs in a subshell now (see stop.sh subshell-isolation refactor),
+# so vars no longer inherit from the parent. Source the persisted file.
+_DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-detector-verdicts.env"
+[ -f "$_DETECTOR_VERDICTS_FILE" ] && source "$_DETECTOR_VERDICTS_FILE"
+POLL_COUNT="${POLL_COUNT:-0}"
+IDLE_AFTER_BG="${IDLE_AFTER_BG:-ok}"
+PSYCHO_STOP="${PSYCHO_STOP:-ok}"
+ACK_SKIP="${ACK_SKIP:-ok}"
+ABANDON_CHECK="${ABANDON_CHECK:-ok}"
+FABRICATION_CHECK="${FABRICATION_CHECK:-ok}"
+EARLY_STOP="${EARLY_STOP:-ok}"
 
 # Background task polling detection
 if [[ "$POLL_COUNT" -ge 2 ]]; then
