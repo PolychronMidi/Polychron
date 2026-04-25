@@ -471,15 +471,20 @@ lengths of `worker.py` (670+), `synthesis_inference.py`,
 `hme_proxy.js` (717+) that an aesthetic reviewer would have flagged
 as ugly-suggesting-broken before any specific bug.
 
-**Status:** `_PARTNER_SYSTEM` system prompt added to
-`tools/HME/mcp/server/tools_analysis/synthesis/synthesis_config.py`.
-Performs the six register-operations the forensic methodology can't
-(mark beauty, name cultural artifacts, hold puzzlement, ask "should
-this exist", future-maintainer empathy, aesthetic gestalt). Available
-for use by future review-mode that opts in. Routing path TODO: a
-separate `i/review mode=partner` or a dedicated middleware so
-partner-review output doesn't compete with forensic findings in the
-same channel.
+**Status:** WIRED and invokable. `_PARTNER_SYSTEM` system prompt
+added to `tools/HME/mcp/server/tools_analysis/synthesis/synthesis_config.py`
+(performs the six register-operations the forensic methodology
+can't: mark beauty, name cultural artifacts, hold puzzlement, ask
+"should this exist", future-maintainer empathy, aesthetic gestalt).
+Routing path: `i/review mode=partner [changed_files=...]` —
+implementation in `review_unified.py`'s `partner` mode arm.
+Reads the diff via git, invokes `_reasoning_think` with
+`_PARTNER_SYSTEM`, returns a partner-letter rather than tier-1
+findings. Output is in its own `# Partner Review` section so it
+doesn't compete with forensic mode='forget' output. Smoke-tested
+end-to-end; produces correctly-shaped partner-register output
+(first-person, marks beauty, holds puzzlement, names cultural
+artifacts).
 
 ### 2. Counterfactual replay
 
