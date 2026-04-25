@@ -10,6 +10,7 @@
     "memory_redirect.js",
     "dominance_prefetch.js",
     "edit_context.js",
+    "cascade_prediction.js",
     "read_context.js",
     "grep_glob_neighborhood.js",
     "dir_context.js",

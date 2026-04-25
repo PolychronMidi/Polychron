@@ -359,7 +359,7 @@ class _Handler(BaseHTTPRequestHandler):
         self._json(200, {
             "endpoints": [
                 "/rag", "/enrich", "/enrich_prompt", "/validate", "/audit",
-                "/reindex", "/transcript", "/health", "/narrative",
+                "/cascade_predict", "/reindex", "/transcript", "/health", "/narrative",
                 "/rag/lib-list", "/capabilities", "/tools/list", "/tool/<name>",
             ],
             "rag_ready": rag_engines._engine_ready.is_set() and rag_engines._project_engine is not None,
@@ -547,6 +547,64 @@ class _Handler(BaseHTTPRequestHandler):
             logger.error(f"/enrich_prompt unhandled: {e}")
             self._json(200, {"enriched": prompt, "original": prompt, "error": str(e)})
 
+    def _post_cascade_predict(self, body: dict):
+        """Phase 6.1 injection arm — wired per peer-review iter 145.
+
+        Middleware calls this on PreToolUse Edit/Write to get a cascade
+        prediction for the target file BEFORE the agent makes the edit.
+        Records the prediction with `injected=True` so the post-pipeline
+        reconciler can distinguish "middleware-surfaced predictions"
+        from "agent-queried predictions" when scoring accuracy.
+
+        Body: {"target_file": "<absolute or repo-relative path>"}
+        Returns: {"target": <stem>, "predicted": [<stem>, ...], "logged": true}
+                 or {"error": "..."} if the file isn't analyzable.
+        """
+        target = body.get("target_file", "")
+        if not target:
+            self._json(400, {"error": "target_file required"})
+            return
+        try:
+            from tools_analysis.cascade_analysis import (
+                _load_dep_graph, _load_feedback_graph, _log_prediction,
+            )
+            import os.path as _osp
+            # Compute the affected modules deterministically without
+            # round-tripping through the full cascade_intel surface.
+            stem = _osp.splitext(_osp.basename(target))[0]
+            if not stem:
+                self._json(400, {"error": "could not derive module stem from target_file"})
+                return
+            dep = _load_dep_graph()
+            fb = _load_feedback_graph()
+            affected: list[str] = []
+            # Forward callers from dep graph (1 hop)
+            for node, info in (dep.get("nodes") or {}).items():
+                if not isinstance(info, dict):
+                    continue
+                # Match either bare stem or path containing stem
+                node_stem = _osp.splitext(_osp.basename(node))[0]
+                if stem in (info.get("imports") or []) or stem == node_stem:
+                    if node_stem and node_stem != stem and node_stem not in affected:
+                        affected.append(node_stem)
+            # Feedback-loop members
+            for loop in (fb.get("loops") or []):
+                members = loop.get("members") or []
+                if stem in members:
+                    for m in members:
+                        if m != stem and m not in affected:
+                            affected.append(m)
+            # Cap to keep injection footer reasonable
+            affected = affected[:12]
+            _log_prediction(target_module=stem,
+                           affected_modules=affected,
+                           injected=True)
+            self._json(200, {"target": stem, "predicted": affected, "logged": True})
+        except Exception as e:
+            logger.warning(f"/cascade_predict failed: {type(e).__name__}: {e}")
+            self._json(200, {"target": "", "predicted": [], "logged": False,
+                             "error": f"{type(e).__name__}: {e}"})
+
     def _post_validate(self, body: dict):
         # _validate is imported lazily inside _bounded_validate now — keeps
         # the handler hot-path free of the import cycle cost.
@@ -661,6 +719,7 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/rag":            return self._post_rag_dispatch(body)
         if self.path == "/enrich":         return self._post_enrich(body)
         if self.path == "/enrich_prompt":  return self._post_enrich_prompt(body)
+        if self.path == "/cascade_predict": return self._post_cascade_predict(body)
         if self.path == "/validate":       return self._post_validate(body)
         if self.path == "/audit":          return self._post_audit(body)
         if self.path == "/reindex":        return self._post_reindex(body)
