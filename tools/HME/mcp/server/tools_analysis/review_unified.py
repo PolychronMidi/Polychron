@@ -171,8 +171,16 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                                 ln for ln in warnings_section.group(1).splitlines()
                                 if ln.strip().startswith("-")
                             ]
+                            # Single-space after ] to match the regex in
+                            # posttooluse_hme_review.sh and the tuple in
+                            # workflow_audit.py — the three consumers of
+                            # this scaffold convention previously used
+                            # \s+ here, exact-string prefixes elsewhere,
+                            # which made a two-space producer emission
+                            # scaffold-only on THIS side but actionable
+                            # on the others. Peer-review iter 111.
                             scaffold_re = _re_vw.compile(
-                                r'\]\s+(HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
+                                r'\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
                             )
                             if bullets and all(scaffold_re.search(b) for b in bullets):
                                 verdict = "clean"
