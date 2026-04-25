@@ -28,6 +28,15 @@ fi
 # `BASE=run; rm tmp/$BASE.lock`) still require runtime evaluation to detect
 # and are out of scope. The guard is paired with a settings.json deny rule
 # (Bash(rm*run.lock*)) — defense in depth.
+# Block curl|sh and wget|sh — supply-chain attack vector. The pattern catches
+# curl/wget piped into a shell interpreter (sh, bash, zsh, ksh) regardless of
+# spacing, flag order, or which way the pipe is written. FailproofAI calls this
+# out as a primary class of LLM-agent compromise.
+if echo "$CMD" | grep -qE '\b(curl|wget|fetch)\b[^|]*\|[[:space:]]*(\.[[:space:]]+|sudo[[:space:]]+|exec[[:space:]]+)?(sh|bash|zsh|ksh|dash)\b'; then
+  _emit_block "BLOCKED: piping a remote download into a shell interpreter (curl|sh, wget|bash, etc.) is a primary supply-chain attack pattern. Download to a file, inspect it, then execute deliberately if needed."
+  exit 2
+fi
+
 if echo "$CMD" | grep -q 'run\.lock'; then
   _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>/dev/null <<'PY'
 import shlex, sys, re

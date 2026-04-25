@@ -42,6 +42,19 @@ if echo "$FILE" | grep -qE '/metrics/'; then
   fi
 fi
 
+# Block writes to credential filenames. Filename-based check catches
+# attempts to write `.pem`, `.key`, `id_rsa`, `id_ed25519`, `*.pfx`,
+# `*.p12`, `credentials`, `service-account*.json`, `.npmrc` (auth tokens),
+# `.pypirc` (auth tokens) regardless of the content. FailproofAI's
+# `block-secrets-write` covers this; we extend our content-pattern detector
+# below with filename detection so an `id_rsa` write attempt fails before
+# any content inspection.
+_BASENAME="$(basename "$FILE" 2>/dev/null)"
+if echo "$_BASENAME" | grep -qiE '^(id_rsa|id_ed25519|id_ecdsa|id_dsa)(\.pub)?$|\.(pem|key|pfx|p12|jks)$|^credentials(\.json)?$|^service[-_]account.*\.json$|^\.npmrc$|^\.pypirc$|^\.netrc$'; then
+  _emit_block "BLOCKED: writing to a credential filename ($_BASENAME). Polychron does not store keys, certs, or auth tokens in the repo. If this is a test fixture, name it with a non-credential prefix (e.g. fixture-*.pem); if it's an accidental real key, do NOT proceed."
+  exit 2
+fi
+
 # Detect secret patterns in content (API keys, tokens, passwords)
 if echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9+/]{20,}'; then
   _emit_block "BLOCKED: Potential secret/credential detected in write content. Review before writing."
