@@ -164,7 +164,16 @@ async function dispatchEvent(eventName, stdinJson) {
     case 'UserPromptSubmit':
       return runChain([path.join(LIFECYCLE, 'userpromptsubmit.sh')], empty);
     case 'Stop': {
-      const result = await runChain([path.join(LIFECYCLE, 'stop.sh')], empty, 60_000);
+      // Stop chain runs via the proxy-native policy evaluator (stop_chain/).
+      // Each stage is a JS module returning {decision, reason}; the
+      // evaluator aggregates with first-deny-wins + instruct-accumulate
+      // semantics. Bash stages are wrapped via shell_policy so an `exit 0`
+      // from a child process cannot bypass the chain (the failure mode that
+      // killed the previous chain mid-flight). Pure JS for the gates that
+      // emit blocks; transitional shell wrappers for the side-effect-heavy
+      // stages until they get ported.
+      const stopChain = require('./stop_chain');
+      const result = await stopChain.runStopChain(empty);
       // Dominance layer (feature-flagged via HME_DOMINANCE=1): rewrite
       // demand-register stop-hook imperatives (NEXUS block / LIFESAVER
       // banner / AUTO-COMPLETENESS INJECT / exhaust_check) into compact
