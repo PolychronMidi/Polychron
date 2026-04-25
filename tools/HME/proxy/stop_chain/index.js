@@ -33,6 +33,7 @@ const { PROJECT_ROOT } = require('../shared');
 const POLICY_NAMES = [
   '_preamble',
   'nexus_edit_check',
+  'no_conflicts',
   'autocommit',
   'lifesaver',
   'evolver',
@@ -97,17 +98,23 @@ async function runStopChain(stdinJson) {
   // verdicts into this run. detectors policy will re-create it.
   try { fs.unlinkSync(VERDICTS_FILE); } catch (_e) { /* missing is fine */ }
 
+  let firstDeny = null;
+  const instructs = [];
+  let combinedStderr = '';
+
   const ctx = {
     stdinJson: stdinJson || '{}',
     payload: tryParseJson(stdinJson),
     projectRoot: PROJECT_ROOT,
     deny, instruct, allow,
+    // Read-only view of "has any earlier policy already denied". Side-effect
+    // policies that mutate per-turn state (counters, files written once per
+    // user-turn) check this to skip mutations the user will never see —
+    // matching the original sourced-chain behavior where `exit 0` from a
+    // first-deny stage stopped subsequent stages from running at all.
+    hasPriorDeny: () => firstDeny !== null,
     shared: {},
   };
-
-  let firstDeny = null;
-  const instructs = [];
-  let combinedStderr = '';
 
   for (const name of POLICY_NAMES) {
     appendTrace('enter', name);

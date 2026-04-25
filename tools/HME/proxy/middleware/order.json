@@ -9,6 +9,7 @@
   "order": [
     "memory_redirect.js",
     "dominance_prefetch.js",
+    "secret_sanitizer.js",
     "edit_context.js",
     "cascade_prediction.js",
     "read_context.js",

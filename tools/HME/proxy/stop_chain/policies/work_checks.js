@@ -119,6 +119,13 @@ module.exports = {
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);
 
     // Auto-completeness inject — fires up to COMPL_MAX times per user-turn.
+    // Skip entirely when an earlier policy already captured a deny: under
+    // first-deny-wins, the user will never see this prompt, so bumping the
+    // turn-counter would silently advance to "round 2" without ever showing
+    // round 1. Mirrors the original sourced-bash chain where `exit 0` from
+    // an earlier stage stopped this code from running.
+    if (ctx.hasPriorDeny()) return ctx.allow();
+
     const transcriptPath = ctx.payload && ctx.payload.transcript_path;
     if (!transcriptPath) return ctx.allow();
     const lastUser = lastRealUserPrompt(transcriptPath);
