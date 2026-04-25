@@ -128,15 +128,15 @@ metaProfiles = (() => {
   }
 
   // Resolve an envelope value at a specific progress in [0, 1]. Curves:
-  //   linear      → from + (to - from) * progress
-  //   ascending   → same as linear (alias for declarative readability)
-  //   descending  → reverse: from at progress=1, to at progress=0
-  //   arch        → sine peak at midpoint, ends at min(from, to)
+  //   linear      -> from + (to - from) * progress
+  //   ascending   -> same as linear (alias for declarative readability)
+  //   descending  -> reverse: from at progress=1, to at progress=0
+  //   arch        -> sine peak at midpoint, ends at min(from, to)
   function _resolveEnvelope(env, progress) {
     const t = Math.max(0, Math.min(1, progress));
     const curve = env.curve || 'linear';
     if (Array.isArray(env.from)) {
-      // Pair envelope — interpolate each component.
+      // Pair envelope -- interpolate each component.
       const f = env.from, g = env.to;
       const ratio = _curveRatio(curve, t);
       return [f[0] + (g[0] - f[0]) * ratio, f[1] + (g[1] - f[1]) * ratio];
@@ -215,7 +215,7 @@ metaProfiles = (() => {
 
   // Evaluate reactive triggers against a runtime signal snapshot. Returns
   // the highest-priority `{ profile, priority }` whose `enter` condition
-  // matches, or null if none. Does NOT auto-activate — callers (e.g.
+  // matches, or null if none. Does NOT auto-activate -- callers (e.g.
   // main.js's section rotation) decide whether to honor it vs section
   // affinity and dwell. Single-pass, no sustained-for-N-beats yet.
   function evaluateTriggers(snapshot) {

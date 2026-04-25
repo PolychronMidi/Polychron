@@ -88,7 +88,7 @@ metaProfileDefinitions = (() => {
       // metaProfiles.evaluateTriggers(snapshot). Signal name matches a real
       // top-level field on systemDynamicsProfiler.getSnapshot() so rotators
       // can pass that snapshot directly. The rotator (main.js) does not
-      // auto-honor it yet — this declaration is the schema-validated
+      // auto-honor it yet -- this declaration is the schema-validated
       // foothold that downstream rotation logic can opt into.
       triggers: {
         enter: [
@@ -125,7 +125,7 @@ metaProfileDefinitions = (() => {
 
     elegiac: {
       name: 'elegiac',
-      description: 'Coherent, low-density, descending tension — release / denouement / coda',
+      description: 'Coherent, low-density, descending tension -- release / denouement / coda',
       regime: { coherent: 0.65, evolving: 0.30, exploring: 0.05 },
       coupling: { strength: [0.3, 0.6], density: 0.20, antagonismThreshold: -0.30 },
       trust: { concentration: 0.75, dominantCap: 1.85, starvationFloor: 0.85 },
@@ -138,7 +138,7 @@ metaProfileDefinitions = (() => {
 
     anthemic: {
       name: 'anthemic',
-      description: 'High coherent + high coupling, ascending arch — locked-step shared peak',
+      description: 'High coherent + high coupling, ascending arch -- locked-step shared peak',
       regime: { coherent: 0.50, evolving: 0.40, exploring: 0.10 },
       coupling: { strength: [0.6, 0.9], density: 0.40, antagonismThreshold: -0.20 },
       trust: { concentration: 0.6, dominantCap: 1.7, starvationFloor: 0.7 },
@@ -149,7 +149,7 @@ metaProfileDefinitions = (() => {
       minDwellSections: 2,
     },
 
-    // ── Sample subvariants demonstrating inheritance + composition ───────
+    // ?unknown-ascii-character??unknown-ascii-character? Sample subvariants demonstrating inheritance + composition ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
     // Inheritance: copy parent's axes, override only what's different.
     atmospheric_warm: {
       name: 'atmospheric_warm',
@@ -163,7 +163,7 @@ metaProfileDefinitions = (() => {
     // Per-axis composition: pull each axis from a different parent.
     meditative_climax: {
       name: 'meditative_climax',
-      description: 'Meditative regime + anthemic coupling/tension — restrained crescendo',
+      description: 'Meditative regime + anthemic coupling/tension -- restrained crescendo',
       compose: {
         regime: 'meditative',
         coupling: 'anthemic',
@@ -180,7 +180,7 @@ metaProfileDefinitions = (() => {
   // Inheritance + per-axis composition resolver. Walks parent + compose
   // pointers to materialize a fully-specified profile from a sparse
   // declaration. Single-level only (parents must themselves be already
-  // resolved at the time the child is processed) — runs in declaration
+  // resolved at the time the child is processed) -- runs in declaration
   // order, so authors must define parents before children.
   //
   // Resolution rules:
@@ -232,7 +232,7 @@ metaProfileDefinitions = (() => {
           throw new Error(`metaProfileDefinitions: profile "${name}" compose.${axis} references "${sourceName}" which is not yet defined`);
         }
         if (!source[axis]) {
-          throw new Error(`metaProfileDefinitions: profile "${name}" compose.${axis} from "${sourceName}" — source profile lacks "${axis}" axis`);
+          throw new Error(`metaProfileDefinitions: profile "${name}" compose.${axis} from "${sourceName}" -- source profile lacks "${axis}" axis`);
         }
         out[axis] = _deepCopyAxis(source[axis]);
       }
@@ -248,14 +248,14 @@ metaProfileDefinitions = (() => {
         }
       }
     }
-    // Step 4: meta fields — never inherited, must be on the child.
+    // Step 4: meta fields -- never inherited, must be on the child.
     if (raw.sectionAffinity !== undefined) out.sectionAffinity = raw.sectionAffinity.slice();
     else if (resolvedSoFar[raw.inherits]) out.sectionAffinity = resolvedSoFar[raw.inherits].sectionAffinity.slice();
     else out.sectionAffinity = [];
     if (raw.minDwellSections !== undefined) out.minDwellSections = raw.minDwellSections;
     else if (resolvedSoFar[raw.inherits]) out.minDwellSections = resolvedSoFar[raw.inherits].minDwellSections;
     else out.minDwellSections = 1;
-    // Reactive triggers — optional. Inherited from parent if not declared.
+    // Reactive triggers -- optional. Inherited from parent if not declared.
     if (raw.triggers !== undefined) out.triggers = raw.triggers;
     else if (resolvedSoFar[raw.inherits] && resolvedSoFar[raw.inherits].triggers) out.triggers = resolvedSoFar[raw.inherits].triggers;
     return out;
@@ -267,7 +267,7 @@ metaProfileDefinitions = (() => {
   //     enter: [{ if: '<signal> <op> <value>', priority?: number }, ...],
   //     exit:  [{ if: '<signal> <op> <value>', goto: '<profileName>' }, ...],
   //   }
-  // op ∈ {>, <, >=, <=, ==}. Signal is any key in the snapshot passed to
+  // op ?unknown-ascii-character? {>, <, >=, <=, ==}. Signal is any key in the snapshot passed to
   // evaluateTriggers. Priority is a non-negative integer (default 50).
   function _validateTriggers(name, triggers) {
     if (!triggers) return;
@@ -303,7 +303,7 @@ metaProfileDefinitions = (() => {
     }
   }
 
-  // Parse `<signal> <op> <value>` → {signal, op, value}. Returns null on
+  // Parse `<signal> <op> <value>` -> {signal, op, value}. Returns null on
   // syntax error. Accepts ops: > >= < <= == != . Value may be number or
   // 'true'/'false'.
   const _OPS = ['>=', '<=', '!=', '==', '>', '<'];
@@ -448,7 +448,7 @@ metaProfileDefinitions = (() => {
       throw new Error(`metaProfileDefinitions: profile "${name}" minDwellSections (${dwell}) must be >= 1`);
     }
 
-    // Reactive triggers — optional. Validates schema if present.
+    // Reactive triggers -- optional. Validates schema if present.
     _validateTriggers(name, profile.triggers);
 
     // Derived: coupling midpoint -- precomputed so scaleFactor('coupling','midpoint') is uniform.
@@ -484,7 +484,7 @@ metaProfileDefinitions = (() => {
 
   // Three-scope custom-profile loader. Reads project + global directories,
   // resolves inheritance/composition (parent must already exist in
-  // `profiles` — built-ins or earlier-loaded customs), validates, registers.
+  // `profiles` -- built-ins or earlier-loaded customs), validates, registers.
   // Conflict resolution: project beats global; built-ins are baseline (a
   // custom profile with the same name overrides the built-in). Returns
   // an array of newly-registered names.
@@ -519,7 +519,7 @@ metaProfileDefinitions = (() => {
         const list = Array.isArray(raw) ? raw : [raw];
         for (const decl of list) {
           if (!decl || typeof decl !== 'object' || !decl.name) {
-            console.error(`metaProfileDefinitions: ${fpath} entry missing 'name' field — skipped`);
+            console.error(`metaProfileDefinitions: ${fpath} entry missing 'name' field -- skipped`);
             continue;
           }
           try {
@@ -548,7 +548,7 @@ metaProfileDefinitions = (() => {
     },
     bySection,
     loadCustomProfiles,
-    // Surface for metaProfiles.evaluateTriggers — internal helpers, not
+    // Surface for metaProfiles.evaluateTriggers -- internal helpers, not
     // intended for general consumption.
     _parseTriggerExpr,
     _evalTriggerExpr,
