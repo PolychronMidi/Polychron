@@ -121,11 +121,50 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   if (!ACTIVE_META_PROFILE) {
     const sectionTypeKey = currentSectionType || 'exposition';
     const prevProfile = metaProfiles.getActiveName();
-    let candidates = metaProfiles.bySection(sectionTypeKey);
-    if (candidates.length === 0) candidates = ['tense', 'chaotic'];
-    const filtered = candidates.filter((p) => p !== prevProfile && metaProfiles.canSwitch(sectionIndex, p));
-    const pool = filtered.length > 0 ? filtered : candidates;
-    metaProfiles.setActive(pool[ri(0, pool.length - 1)], sectionIndex);
+
+    // Step 1: reactive triggers. Build a snapshot from systemDynamicsProfiler
+    // and let any profile whose `triggers.enter` condition matches
+    // pre-empt the affinity-based pick (subject to dwell). Profile with the
+    // highest priority wins. Snapshot fields match real top-level
+    // properties on getSnapshot() so trigger declarations like
+    // `couplingStrength > 0.7` resolve directly.
+    const sysDyn = systemDynamicsProfiler.getSnapshot();
+    const trigSnapshot = {
+      couplingStrength: sysDyn ? sysDyn.couplingStrength : 0,
+      effectiveDimensionality: sysDyn ? sysDyn.effectiveDimensionality : 0,
+      velocity: sysDyn ? sysDyn.velocity : 0,
+      curvature: sysDyn ? sysDyn.curvature : 0,
+      entropyAmplification: sysDyn ? sysDyn.entropyAmplification : 0,
+    };
+    const triggered = metaProfiles.evaluateTriggers(trigSnapshot);
+    let chosen = null;
+    if (triggered && triggered.profile !== prevProfile && metaProfiles.canSwitch(sectionIndex, triggered.profile)) {
+      chosen = triggered.profile;
+    }
+
+    // Step 2: section-affinity pool with nearest-neighbor preference.
+    // Falls back when no trigger fired. When a previous profile exists,
+    // prefer candidates that are similar in axis-vector space -- smoother
+    // sonic transitions than random pivots between distant profiles.
+    if (!chosen) {
+      let candidates = metaProfiles.bySection(sectionTypeKey);
+      if (candidates.length === 0) candidates = ['tense', 'chaotic'];
+      const filtered = candidates.filter((p) => p !== prevProfile && metaProfiles.canSwitch(sectionIndex, p));
+      let pool = filtered.length > 0 ? filtered : candidates;
+      if (prevProfile && pool.length > 1) {
+        // Sort pool by distance to prev; pick from nearest 3 to keep
+        // some randomness while biasing toward neighbor.
+        const ranked = metaProfileDefinitions.nearest(prevProfile, metaProfileDefinitions.list().length);
+        const distMap = new Map();
+        for (const r of ranked) distMap.set(r.name, r.distance);
+        pool = pool
+          .slice()
+          .sort((a, b) => (distMap.get(a) || 99) - (distMap.get(b) || 99))
+          .slice(0, m.min(3, pool.length));
+      }
+      chosen = pool[ri(0, pool.length - 1)];
+    }
+    metaProfiles.setActive(chosen, sectionIndex);
   }
 
   phrasesPerSection = ri(sectionPhraseRange.min, sectionPhraseRange.max);

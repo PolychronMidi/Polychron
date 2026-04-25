@@ -227,20 +227,49 @@ metaProfiles = (() => {
   // metaprofile is active / axis disabled / key missing. Controllers multiply
   // their _BASE constants by this -- the "default" profile is the single
   // source of truth for the scaling neutral point.
+  function _collapseToScalar(v) {
+    if (_looksLikeEnvelope(v)) return _resolveEnvelope(v, 0.5);
+    if (_looksLikeDistribution(v)) return v.mean;
+    if (Array.isArray(v)) return (v[0] + v[1]) / 2;
+    return v;
+  }
+
   function scaleFactor(axis, key) {
     const defAxis = /** @type {Record<string, any>} */ (_defaultProfile)[axis];
     if (!defAxis || !(key in defAxis)) {
       throw new Error(`metaProfiles.scaleFactor: default profile lacks "${axis}.${key}"`);
     }
-    // Schema validation guarantees defAxis[key] is finite. The 0-divisor case
-    // would only arise if a future axis legitimately defaults to 0; guard here.
-    const defVal = defAxis[key];
+    // default profile uses scalars only; collapse defensively.
+    const defVal = _collapseToScalar(defAxis[key]);
     if (defVal === 0) {
       throw new Error(`metaProfiles.scaleFactor: default "${axis}.${key}" is 0 (no scaleFactor reference); use getAxisValue + additive bias instead`);
     }
     const active = getAxis(axis);
     if (!active || !(key in active)) return 1.0;
-    return active[key] / defVal;
+    // Active value can be scalar / pair / envelope / distribution; collapse
+    // to a representative scalar so scaleFactor stays deterministic. Stochastic
+    // call sites use sampledScaleFactor instead.
+    return _collapseToScalar(active[key]) / defVal;
+  }
+
+  // Stochastic counterpart: returns a fresh ratio per call when the active
+  // value is a distribution; otherwise behaves like scaleFactor. Use this
+  // in controllers that want per-tick organic variation in their _BASE
+  // multiplier without changing the surrounding _BASE * scaleFactor pattern.
+  function sampledScaleFactor(axis, key) {
+    const defAxis = /** @type {Record<string, any>} */ (_defaultProfile)[axis];
+    if (!defAxis || !(key in defAxis)) {
+      throw new Error(`metaProfiles.sampledScaleFactor: default profile lacks "${axis}.${key}"`);
+    }
+    const defVal = _collapseToScalar(defAxis[key]);
+    if (defVal === 0) {
+      throw new Error(`metaProfiles.sampledScaleFactor: default "${axis}.${key}" is 0`);
+    }
+    const active = getAxis(axis);
+    if (!active || !(key in active)) return 1.0;
+    const v = active[key];
+    if (_looksLikeDistribution(v)) return _sampleDistribution(v) / defVal;
+    return _collapseToScalar(v) / defVal;
   }
 
   // Record an outcome attribution: which profile was active during a
@@ -345,6 +374,7 @@ metaProfiles = (() => {
     isActive,
     canSwitch,
     scaleFactor,
+    sampledScaleFactor,
     getRegimeTargets,
     getCouplingRange,
     getTensionArc,
