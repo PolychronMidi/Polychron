@@ -12,8 +12,13 @@ metaProfiles = (() => {
   const V = validator.create('metaProfiles');
   const _fs = require('fs');
   const _path = require('path');
-  const _activeFile  = _path.join(METRICS_DIR, 'metaprofile-active.json');
-  const _historyFile = _path.join(METRICS_DIR, 'metaprofile-history.jsonl');
+  const _activeFile      = _path.join(METRICS_DIR, 'metaprofile-active.json');
+  const _historyFile     = _path.join(METRICS_DIR, 'metaprofile-history.jsonl');
+  // Empirical tuning loop: attribute per-section outcomes to the profile
+  // that was active. Append-only JSONL; aggregator scripts later compute
+  // per-profile mean scores + sensitivity. Schema:
+  //   {profile, section, sectionType?, score?, hci?, ts}
+  const _attributionFile = _path.join(METRICS_DIR, 'metaprofile-attribution.jsonl');
 
   /** @type {Object|null} */
   let activeProfile = null;
@@ -27,6 +32,15 @@ metaProfiles = (() => {
   const _defaultProfile = metaProfileDefinitions.get('default');
   if (!_defaultProfile) {
     throw new Error('metaProfiles: metaProfileDefinitions must define a "default" profile (scaleFactor neutral point)');
+  }
+
+  // Load three-scope custom profiles from .hme/metaprofiles/. Project
+  // overrides global; built-ins are baseline. New names register; same
+  // names override (lets a project tweak a built-in's axis values
+  // without forking the codebase).
+  if (typeof metaProfileDefinitions.loadCustomProfiles === 'function') {
+    try { metaProfileDefinitions.loadCustomProfiles(); }
+    catch (err) { console.error(`metaProfiles: loadCustomProfiles failed: ${err.message}`); }
   }
 
   // Clear stale history at module load (once per pipeline run).
@@ -104,7 +118,53 @@ metaProfiles = (() => {
   function getAxisValue(axis, key, fallback) {
     const section = getAxis(axis);
     if (!section || !(key in section)) return fallback;
-    return section[key];
+    const v = section[key];
+    // Envelope shape: collapse to mid-activation value (progress=0.5).
+    // Callers that want time-varying behavior use getAxisValueAt instead.
+    if (v && typeof v === 'object' && !Array.isArray(v) && 'from' in v && 'to' in v) {
+      return _resolveEnvelope(v, 0.5);
+    }
+    return v;
+  }
+
+  // Resolve an envelope value at a specific progress in [0, 1]. Curves:
+  //   linear      → from + (to - from) * progress
+  //   ascending   → same as linear (alias for declarative readability)
+  //   descending  → reverse: from at progress=1, to at progress=0
+  //   arch        → sine peak at midpoint, ends at min(from, to)
+  function _resolveEnvelope(env, progress) {
+    const t = Math.max(0, Math.min(1, progress));
+    const curve = env.curve || 'linear';
+    if (Array.isArray(env.from)) {
+      // Pair envelope — interpolate each component.
+      const f = env.from, g = env.to;
+      const ratio = _curveRatio(curve, t);
+      return [f[0] + (g[0] - f[0]) * ratio, f[1] + (g[1] - f[1]) * ratio];
+    }
+    const ratio = _curveRatio(curve, t);
+    return env.from + (env.to - env.from) * ratio;
+  }
+
+  function _curveRatio(curve, t) {
+    switch (curve) {
+      case 'descending': return 1 - t;
+      case 'arch':       return Math.sin(t * Math.PI);
+      case 'ascending':
+      case 'linear':
+      default:           return t;
+    }
+  }
+
+  // Time-varying axis-value accessor. Same shape as getAxisValue but
+  // resolves envelope values at the given progress instead of mid-point.
+  function getAxisValueAt(axis, key, fallback, progress) {
+    const section = getAxis(axis);
+    if (!section || !(key in section)) return fallback;
+    const v = section[key];
+    if (v && typeof v === 'object' && !Array.isArray(v) && 'from' in v && 'to' in v) {
+      return _resolveEnvelope(v, progress);
+    }
+    return v;
   }
 
   // scaleFactor(axis, key) = activeValue / defaultValue, or 1.0 when no
@@ -125,6 +185,56 @@ metaProfiles = (() => {
     const active = getAxis(axis);
     if (!active || !(key in active)) return 1.0;
     return active[key] / defVal;
+  }
+
+  // Record an outcome attribution: which profile was active during a
+  // section + the section's score / HCI / arbitrary metadata. Append-
+  // only JSONL at output/metrics/metaprofile-attribution.jsonl. Caller
+  // (typically main.js per-section close-out, or post-pipeline analysis
+  // script) supplies the score signals it can attribute.
+  //
+  // Aggregation is deferred to a separate analysis script (built in a
+  // later round). This entry is the data-collection foothold; without
+  // it, no future tuning loop has anything to consume.
+  function recordAttribution(fields) {
+    if (!fields || typeof fields !== 'object') return;
+    const entry = {
+      profile: activeProfileName,
+      section: typeof fields.section === 'number' ? fields.section : null,
+      sectionType: fields.sectionType || null,
+      score: Number.isFinite(fields.score) ? fields.score : null,
+      hci: Number.isFinite(fields.hci) ? fields.hci : null,
+      ts: Date.now(),
+      ...fields,
+    };
+    try {
+      _fs.mkdirSync(_path.dirname(_attributionFile), { recursive: true });
+      _fs.appendFileSync(_attributionFile, JSON.stringify(entry) + '\n');
+    } catch (_e) { /* best-effort */ }
+  }
+
+  // Evaluate reactive triggers against a runtime signal snapshot. Returns
+  // the highest-priority `{ profile, priority }` whose `enter` condition
+  // matches, or null if none. Does NOT auto-activate — callers (e.g.
+  // main.js's section rotation) decide whether to honor it vs section
+  // affinity and dwell. Single-pass, no sustained-for-N-beats yet.
+  function evaluateTriggers(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') return null;
+    let best = null;
+    const all = metaProfileDefinitions.all();
+    for (const [name, profile] of Object.entries(all)) {
+      if (!profile.triggers || !Array.isArray(profile.triggers.enter)) continue;
+      for (const t of profile.triggers.enter) {
+        const parsed = metaProfileDefinitions._parseTriggerExpr ? metaProfileDefinitions._parseTriggerExpr(t.if) : null;
+        if (!parsed) continue;
+        if (!metaProfileDefinitions._evalTriggerExpr(parsed, snapshot)) continue;
+        const priority = Number.isFinite(t.priority) ? t.priority : 50;
+        if (!best || priority > best.priority) {
+          best = { profile: name, priority, condition: t.if };
+        }
+      }
+    }
+    return best;
   }
 
   function disableAxis(axisId) { _disabled[axisId] = true; }
@@ -171,6 +281,9 @@ metaProfiles = (() => {
     getActiveSinceSection,
     getAxis,
     getAxisValue,
+    getAxisValueAt,
+    evaluateTriggers,
+    recordAttribution,
     isActive,
     canSwitch,
     scaleFactor,
