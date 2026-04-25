@@ -498,6 +498,35 @@ test('getComposerFamilyWeightForLayer: layer variants produce different family b
   mp.setActive(null);
 });
 
+test('layerVariants: child profile inherits parent layerVariants when not declared', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customFile = path.join(customDir, '_test_inherit_layer.json');
+  fs.mkdirSync(customDir, { recursive: true });
+  // Inherits polyrhythmic_split which has layerVariants. Child doesn't
+  // redeclare them -- must inherit from parent.
+  fs.writeFileSync(customFile, JSON.stringify({
+    name: 'test_inherit_layer',
+    description: 'Inherits polyrhythmic_split layerVariants',
+    inherits: 'polyrhythmic_split',
+    sectionAffinity: ['climax'],
+    minDwellSections: 2,
+  }));
+  try {
+    defs.loadCustomProfiles();
+    const p = defs.get('test_inherit_layer');
+    assert.ok(p, 'child registered');
+    assert.deepStrictEqual(p.layerVariants, { L1: 'anthemic', L2: 'elegiac' },
+      'inherited layerVariants from polyrhythmic_split parent');
+  } finally {
+    fs.unlinkSync(customFile);
+    try { fs.rmdirSync(customDir); } catch (_e) {}
+    try { fs.rmdirSync(path.dirname(customDir)); } catch (_e) {}
+  }
+});
+
 test('layerVariants: schema accepts L1/L2 keys, rejects others', () => {
   const fs = require('fs');
   const path = require('path');
