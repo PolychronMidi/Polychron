@@ -325,17 +325,30 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
 
     seen: set = set()
     antagonists: list = []
+    # Load metaprofile-active.json once outside the loop. Two substrate-level
+    # signals are consumed:
+    #   - antagonismThreshold: per-profile correlation cutoff (stricter or looser)
+    #   - disableControllers: when 'antagonism_bridges' is listed, skip ALL
+    #     bridge proposals -- the active metaprofile (e.g. meditative) silences
+    #     the entire subsystem, not just damps it.
+    _antag_thresh = -0.30
+    _antag_disabled = False
+    try:
+        from ...synthesis.synthesis_config import load_json
+        _mp = load_json(os.path.join(METRICS_DIR, "metaprofile-active.json"))
+        if _mp:
+            if "coupling" in _mp:
+                _antag_thresh = _mp["coupling"].get("antagonismThreshold", -0.30)
+            _disabled_list = _mp.get("disableControllers")
+            if isinstance(_disabled_list, list) and "antagonism_bridges" in _disabled_list:
+                _antag_disabled = True
+    except Exception as _mp_err:
+        logger.debug(f"metaprofile load: {type(_mp_err).__name__}: {_mp_err}")
+    if _antag_disabled:
+        logger.info("antagonism_bridges disabled by active metaprofile -- skipping bridge proposals")
+        return "antagonism_bridges disabled by active metaprofile (no bridges proposed)"
     for (a, b), r in corr.items():
         key = tuple(sorted([a, b]))
-        # Metaprofile antagonism threshold: atmospheric=-0.35 (stricter), chaotic=-0.15 (looser)
-        _antag_thresh = -0.30
-        try:
-            from ...synthesis.synthesis_config import load_json
-            _mp = load_json(os.path.join(METRICS_DIR, "metaprofile-active.json"))
-            if _mp and "coupling" in _mp:
-                _antag_thresh = _mp["coupling"].get("antagonismThreshold", -0.30)
-        except Exception as _mp_err:
-            logger.debug(f"metaprofile antag threshold load: {type(_mp_err).__name__}: {_mp_err}")
         if key not in seen and r < _antag_thresh:
             seen.add(key)
             antagonists.append((a, b, r))
