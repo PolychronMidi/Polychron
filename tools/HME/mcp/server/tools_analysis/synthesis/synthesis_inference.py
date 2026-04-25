@@ -43,16 +43,19 @@ _PROSE_AND_KEYWORD_STOPWORDS = frozenset({
     "wherever", "whereas", "whoever", "whatever", "both", "each", "every",
     "either", "neither", "some", "many", "most", "much", "few", "fewer",
     "none", "just", "also", "only", "such", "very", "quite",
-    # generic verbs/adjectives commonly in docstrings
-    "adapts", "actually", "applies", "applied", "awareness", "building",
-    "causal", "changed", "checkpoints", "coherence", "compaction",
-    "context", "conversation", "counterfactual", "diff", "effectiveness",
-    "entanglement", "environmental", "extrospective", "facing", "hunks",
-    "interventions", "layers", "lines", "load", "memory", "model",
-    "narrator", "outcomes", "outward", "persists", "predicted",
-    "prescriptive", "prevented", "reasoning", "relevant", "restarts",
-    "self", "space", "state", "survives", "synthesizes", "system",
-    "tracks", "file", "lib", "disk", "host",
+    # generic verbs/adjectives commonly in docstrings — pruned hard
+    # after peer-review iter 118 caught that the prior list dropped
+    # legitimate identifiers (`context`, `state`, `model`, `file`,
+    # `system`, etc. all appear as parameter / attribute names in
+    # this codebase). Conservative principle: false-positives in the
+    # whitelist are tolerable; false-negatives (real identifiers
+    # dropped) starve the post-filter and let prose through. Keep
+    # only words that are pure docstring filler — never identifiers.
+    "actually", "awareness", "checkpoints", "coherence",
+    "counterfactual", "effectiveness", "entanglement",
+    "extrospective", "interventions", "outcomes", "outward",
+    "persists", "predicted", "prescriptive", "prevented",
+    "survives", "synthesizes",
     # Python keywords + common stdlib names we'd rather drop from the
     # whitelist unless the model genuinely uses them as identifiers
     "import", "from", "def", "return", "pass", "raise", "yield", "async",
