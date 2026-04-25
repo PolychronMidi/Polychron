@@ -389,7 +389,13 @@ metaProfileDefinitions = (() => {
     for (const axis of Object.keys(_AXIS_SCHEMAS)) {
       const section = V.assertPlainObject(profile[axis], `${name}.${axis}`);
       const schema = _AXIS_SCHEMAS[axis];
+      // Derived keys are added BY the validator after schema check (e.g.
+      // coupling.midpoint), so they survive inheritance copies. Skip them
+      // in the unknown-key sanity check; the schema is still the authority
+      // for what authors must declare.
+      const _DERIVED_KEYS = new Set(['midpoint']);
       for (const declaredKey of Object.keys(section)) {
+        if (_DERIVED_KEYS.has(declaredKey)) continue;
         if (!(declaredKey in schema)) {
           throw new Error(`metaProfileDefinitions: profile "${name}" axis "${axis}" has unknown key "${declaredKey}"`);
         }

@@ -1412,6 +1412,9 @@ declare var metaProfileDefinitions: {
   list(): string[];
   all(): Record<string, Record<string, any>>;
   bySection(sectionType: string): string[];
+  loadCustomProfiles(): string[];
+  _parseTriggerExpr(expr: string): { signal: string; op: string; value: any } | null;
+  _evalTriggerExpr(parsed: { signal: string; op: string; value: any }, snapshot: Record<string, any>): boolean;
 };
 declare var ACTIVE_META_PROFILE: string | null;
 declare var controllerConfig: {
@@ -1431,6 +1434,9 @@ declare var metaProfiles: {
   getActiveSinceSection(): number | null;
   getAxis(axis: string): Record<string, any> | null;
   getAxisValue(axis: string, key: string, fallback: any): any;
+  getAxisValueAt(axis: string, key: string, fallback: any, progress: number): any;
+  evaluateTriggers(snapshot: Record<string, any>): { profile: string; priority: number; condition: string } | null;
+  recordAttribution(fields: Record<string, any>): void;
   isActive(): boolean;
   canSwitch(currentSection: number, candidateName: string): boolean;
   scaleFactor(axis: string, key: string): number;
