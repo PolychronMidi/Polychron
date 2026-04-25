@@ -253,6 +253,40 @@ function _pairToolResults(payload) {
   return events;
 }
 
+//  Single-event entry — universal middleware runner. Any caller can apply
+//  the middleware pipeline to a SINGLE tool-result event without going
+//  through the request-shaped runPipeline path. Same architectural shape
+//  as stop_chain/cli.js: any process can invoke the pipeline without
+//  needing the long-running proxy daemon.
+//
+//  Usage:
+//    const middleware = require('./middleware');
+//    middleware.loadAll();  // idempotent
+//    const dirty = await middleware.runOnToolResult(toolUse, toolResult, { filter });
+//
+//  The `filter` option (Set<string>) restricts execution to a named
+//  subset — e.g. `new Set(['secret_sanitizer'])` for sanitization-only.
+//  No filter = run every registered middleware.
+//
+//  Skips the dedup _processed map so re-running the same toolUse.id is
+//  permitted (the dedup is request-pipeline-specific; single-event
+//  callers want determinism).
+async function runOnToolResult(toolUse, toolResult, opts = {}) {
+  _pipelineDirty = false;
+  const filter = opts.filter || null;
+  const session = opts.session || null;
+  for (const mod of _modules) {
+    if (typeof mod.onToolResult !== 'function') continue;
+    if (filter && !filter.has(mod.name)) continue;
+    try {
+      await mod.onToolResult({ toolUse, toolResult, session, ctx });
+    } catch (err) {
+      console.error(`[middleware] ${mod.name}.onToolResult threw: ${err.message}`);
+    }
+  }
+  return _pipelineDirty;
+}
+
 //  Main pipeline entry
 // Async so middleware can do HTTP calls (e.g., KB lookups) in their handlers.
 // Synchronous handlers still work — `await` on a non-promise is a no-op.
@@ -307,6 +341,12 @@ function loadAll() {
     // next to the code they exercise (cohesive, easy to find) but are not
     // middleware themselves and must not be register()'d.
     && !f.startsWith('test_') && !f.endsWith('.test.js') && !f.endsWith('_test.js')
+    // Underscore-prefixed files are shared utilities (mirrors the
+    // hooks/helpers/_*.sh convention). They export functions for other
+    // middleware to consume but are not themselves registered as
+    // middleware. Skip the strict-name validation that would log a
+    // spurious warning every time loadAll() runs.
+    && !f.startsWith('_')
   ));
   const inManifest = manifest.filter(name => allFiles.includes(name));
   const unlisted = allFiles.filter(name => !manifest.includes(name)).sort();
@@ -325,4 +365,4 @@ function loadAll() {
   return _modules.map((m) => m.name);
 }
 
-module.exports = { register, runPipeline, loadAll, ctx, _modules };
+module.exports = { register, runPipeline, runOnToolResult, loadAll, ctx, _modules };

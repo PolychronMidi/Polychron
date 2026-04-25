@@ -748,6 +748,22 @@ def main():
     server = _ThreadingServer((args.host, args.port), _Handler)
     logger.info(f"HME worker listening on http://{args.host}:{args.port}")
     print(f"HME worker listening on http://{args.host}:{args.port}", flush=True)
+
+    # Filesystem-IPC queue watcher — accepts jobs via tmp/hme-worker-queue/
+    # in parallel with the HTTP path. Decouples callers from worker
+    # liveness at request time: caller drops a job file, polls for the
+    # result, gracefully degrades on timeout. Daemon thread, idempotent
+    # start, exits cleanly on process termination.
+    try:
+        import worker_queue
+        worker_queue.start()
+    except ImportError:
+        # silent-ok: queue watcher is opt-in capability; HTTP path remains
+        # primary if the module isn't on the import path for some reason.
+        logger.warning("worker_queue module not loadable; queue path disabled")
+    except Exception as e:
+        logger.warning(f"worker_queue.start failed: {e}; queue path disabled")
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:  # silent-ok: normal CTRL-C shutdown; no error to propagate
