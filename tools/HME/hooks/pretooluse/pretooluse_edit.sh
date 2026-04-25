@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_onboarding.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
 # PreToolUse: Edit — ellipsis-stub block (true pre-execution reject) + onboarding
 # warn. Activity emission, BRIEF check, and KB enrichment moved to proxy middleware.
 INPUT=$(cat)
@@ -48,17 +49,15 @@ PYEOF
   echo "$_MODULE_BASE" >> "$_TURN_EDIT_STATE"
 fi
 
-# Mid-pipeline src edit block — if npm run main is running (run.lock exists),
-# deny edits to src/ (composition code) to prevent abandoned-pipeline writes.
-# tools/HME, scripts, doc, lab remain editable — you can improve tooling while
-# the pipeline runs, just not composition code whose behavior is being measured.
-if [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
+# Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
+if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
   _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT edit src/ code mid-pipeline — the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools (i/learn, i/review, i/trace) or edit tooling/docs in the meantime."
   exit 2
 fi
 
-# Block direct edits to compiled output — edit the .ts source instead
-if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
+# Block direct edits to compiled output — edit the .ts source instead.
+# JS counterpart: block-out-dir-writes.
+if _policy_enabled block-out-dir-writes && echo "$FILE" | grep -q "tools/HME/chat/out/"; then
   cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
   _emit_block "BLOCKED: Do NOT edit files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
   exit 2

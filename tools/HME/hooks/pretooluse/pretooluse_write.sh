@@ -6,9 +6,8 @@ INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
 CONTENT=$(_safe_jq "$INPUT" '.tool_input.content' '')
 
-# Mid-pipeline src edit block — if npm run main is running (run.lock exists),
-# deny writes to src/ (composition code). Same rule as pretooluse_edit.sh.
-if [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
+# Mid-pipeline src edit block. JS counterpart: block-mid-pipeline-write.
+if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/src/'; then
   _emit_block "ABANDONED PIPELINE: npm run main is running (tmp/run.lock present). Do NOT write src/ code mid-pipeline — the pipeline's behavior is being measured against the code state at launch. Wait for completion; use HME tools or edit tooling/docs in the meantime."
   exit 2
 fi
@@ -50,19 +49,21 @@ if _policy_enabled block-secrets-write && echo "$_BASENAME" | grep -qiE '^(id_rs
   exit 2
 fi
 
-# Detect secret patterns in content (API keys, tokens, passwords)
-if echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9+/]{20,}'; then
+# Detect secret patterns in content (API keys, tokens, passwords).
+# JS counterpart: block-secret-content-pattern.
+if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9+/]{20,}'; then
   _emit_block "BLOCKED: Potential secret/credential detected in write content. Review before writing."
   exit 2
 fi
 
-# Block stub/placeholder writes — LLM-generated code with comment-ellipsis elision patterns
-# destroys files by replacing real content with placeholder references.
-if echo "$CONTENT" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
+# Block stub/placeholder writes — LLM-generated code with comment-ellipsis
+# elision patterns destroys files by replacing real content with placeholder
+# references. JS counterpart: block-comment-ellipsis-stub.
+if _policy_enabled block-comment-ellipsis-stub && echo "$CONTENT" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(existing|rest of|previous)[[:space:]]+(code|file|implementation|content|functions?)[[:space:]]*(\.\.\.)?'; then
   _emit_block "BLOCKED: Write contains comment-ellipsis stub placeholder. This destroys files. Write the COMPLETE file content or use Edit for partial changes."
   exit 2
 fi
-if echo "$CONTENT" | grep -qE '\.\.\. rest of (file|implementation|code)'; then
+if _policy_enabled block-comment-ellipsis-stub && echo "$CONTENT" | grep -qE '\.\.\. rest of (file|implementation|code)'; then
   _emit_block "BLOCKED: Write contains ellipsis-rest-of stub placeholder. Write complete content or use Edit."
   exit 2
 fi
