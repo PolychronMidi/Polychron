@@ -71,17 +71,21 @@ test('bySection includes the new profiles in their declared sections', () => {
 test('scaleFactor against new profiles: tension ceiling ratio', () => {
   const mp = global.metaProfiles;
   // Default tension.ceiling is 0.80. Elegiac is 0.55. anthemic is 0.85.
+  // Reset before each setActive to bypass dwell guard (both new profiles
+  // have minDwellSections=2, so direct switching at the same section
+  // would silently no-op).
+  mp.setActive(null);
   mp.setActive('elegiac', 0);
   const elegiacRatio = mp.scaleFactor('tension', 'ceiling');
   assert.ok(Math.abs(elegiacRatio - 0.55 / 0.80) < 1e-6,
     `elegiac tension scale ${elegiacRatio} != 0.55/0.80`);
 
+  mp.setActive(null);
   mp.setActive('anthemic', 0);
   const anthemicRatio = mp.scaleFactor('tension', 'ceiling');
   assert.ok(Math.abs(anthemicRatio - 0.85 / 0.80) < 1e-6,
     `anthemic tension scale ${anthemicRatio} != 0.85/0.80`);
 
-  // Reset to no profile so other tests aren't polluted.
   mp.setActive(null);
 });
 
