@@ -82,12 +82,16 @@ module.exports = {
     });
 
     const footerLines = [];
-    if (locks.length > 0) {
-      const src = touched.length > 0 ? touched : locks;
-      const shown = src.slice(0, 3).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(' ');
-      const tail = src.length > 3 ? ` +${src.length - 3}` : '';
-      const tag = touched.length > 0 ? '⚠ bias-touch' : 'bias-bounds';
-      footerLines.push(`${tag}: ${shown}${tail} — snapshot:${SNAPSHOT_CMD}`);
+    // Peer-review iter 133: only surface when the edit ACTUALLY touches
+    // a locked key. The previous unconditional `locks.length > 0` branch
+    // emitted `bias-bounds: ...` on every edit to a file that merely
+    // contains locked params, even when the edit didn't graze them —
+    // pure noise the agent already had via CLAUDE.md's static rule.
+    // The `bias-touch` variant (touched > 0) is the actionable case.
+    if (touched.length > 0) {
+      const shown = touched.slice(0, 3).map((l) => `${l.key}=[${l.lo},${l.hi}]`).join(' ');
+      const tail = touched.length > 3 ? ` +${touched.length - 3}` : '';
+      footerLines.push(`⚠ bias-touch: ${shown}${tail} — snapshot:${SNAPSHOT_CMD}`);
     }
     for (const line of semanticLines) footerLines.push(line);
 
