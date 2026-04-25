@@ -89,7 +89,7 @@ All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`
 
 - **After implementing changes:** `i/review mode=forget` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
 - **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `output/metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
-- **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The `stop.sh` hook does this at turn end automatically; do it manually mid-turn.
+- **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The Stop chain does this at turn end automatically (post_hooks stage in the JS evaluator at `tools/HME/proxy/stop_chain/`); do it manually mid-turn.
 - **When pipeline fails:** read pipeline output, fix root cause. `i/hme-read target=<moduleName> mode=before` on the failing file.
 
 ## Reference Pointers
