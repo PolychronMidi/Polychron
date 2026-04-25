@@ -75,7 +75,12 @@ metaProfileDefinitions = (() => {
       energy: { densityTarget: 0.55, flickerRange: [0.05, 0.15] },
       phase: { lockBias: 0.4, layerIndependence: 0.5 },
       sectionAffinity: ['exposition', 'development', 'resolution'],
-      minDwellSections: 1,
+      // dwell=2 (was 1) so the tension.ceiling envelope actually traverses
+      // its from->to range across the activation. With dwell=1 the
+      // envelope was functionally dormant (progress always ~0). Holding
+      // for 2 sections gives audible build: section 0 of activation
+      // ceiling=0.70, section 1 ceiling=0.90.
+      minDwellSections: 2,
     },
 
     chaotic: {
