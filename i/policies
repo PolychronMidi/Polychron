@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# i/policies — discover and configure unified hook-time policies.
+# Thin wrapper around tools/HME/policies/cli.js. See `i/policies help`.
+_REPO_ROOT="${CLAUDE_PROJECT_DIR:-/home/jah/Polychron}"
+exec node "$_REPO_ROOT/tools/HME/policies/cli.js" "$@"
