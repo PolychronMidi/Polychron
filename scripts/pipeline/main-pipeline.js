@@ -464,28 +464,45 @@ function main() {
   var bgEnv = Object.assign({}, process.env, {
     PROJECT_ROOT: path.join(__dirname, '..', '..'),
   });
+  // Pipe stderr (not 'ignore') to a per-script log file so silent failures
+  // surface for diagnosis. Verified failure mode: hme-coupling.json + hme-
+  // invariant-history.json + holograph-snapshots.json + hci-trajectory.json
+  // were missing/days-stale because their bg-spawn errors were being swallowed
+  // by stdio: 'ignore'. Now each script's stderr lands at log/hme-bg-<name>.err
+  // (truncated each round so it reflects the latest run only).
+  var bgLogDir = path.join(__dirname, '..', '..', 'log');
+  try { fs.mkdirSync(bgLogDir, { recursive: true }); } catch (_e) { /* best-effort */ }
+  function _spawnBg(scriptPath, scriptArgs, label) {
+    try {
+      var errFile = path.join(bgLogDir, 'hme-bg-' + label + '.err');
+      // Truncate + open synchronously so the FD exists when spawn inherits it.
+      var fd = fs.openSync(errFile, 'w');
+      cp.spawn('python3', scriptArgs, {
+        stdio: ['ignore', 'ignore', fd],
+        detached: true,
+        env: bgEnv,
+        cwd: path.join(__dirname, '..', '..'),
+      }).unref();
+      fs.closeSync(fd);  // child has its own ref via inheritance
+    } catch (_e) { /* best-effort -- don't block pipeline on analytics spawn */ }
+  }
   for (var k = 0; k < bgScripts.length; k++) {
     var script = path.join(hmeScripts, bgScripts[k]);
     if (!fs.existsSync(script)) continue;
     var scriptArgs = [script];
     if (bgScripts[k] === 'chain-snapshot.py') scriptArgs.push('--eager');
-    try {
-      cp.spawn('python3', scriptArgs, {
-        stdio: 'ignore', detached: true, env: bgEnv,
-        cwd: path.join(__dirname, '..', '..'),
-      }).unref();
-    } catch (_e) { /* best-effort -- don't block pipeline on analytics spawn */ }
+    var label = bgScripts[k].replace(/\.py$/, '');
+    _spawnBg(script, scriptArgs, label);
   }
   // Invariant battery runs the declarative checks in config/invariants.json and
   // writes to metrics/hme-invariant-history.json so chronic streaks clear every
   // round. Lives under scripts/pipeline/hme/ (not HME scripts/) so it spawns
   // separately from the hmeScripts loop above.
-  try {
-    cp.spawn('python3', [path.join(__dirname, 'hme', 'run-invariant-battery.py')], {
-      stdio: 'ignore', detached: true, env: bgEnv,
-      cwd: path.join(__dirname, '..', '..'),
-    }).unref();
-  } catch (_e) { /* best-effort */ }
+  _spawnBg(
+    path.join(__dirname, 'hme', 'run-invariant-battery.py'),
+    [path.join(__dirname, 'hme', 'run-invariant-battery.py')],
+    'run-invariant-battery'
+  );
 
   // Warm-context reprime: touch sentinel so the HME server picks up stale KV
   // contexts on next tick. verify-coherence.py only triggers this inside the

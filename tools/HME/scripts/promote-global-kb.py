@@ -33,6 +33,7 @@ import urllib.request
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
+METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-global-kb-promotions.json")
 _SHIM_URL = "http://127.0.0.1:9098/rag"
 
