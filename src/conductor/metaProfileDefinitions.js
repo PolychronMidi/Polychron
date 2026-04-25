@@ -141,13 +141,15 @@ metaProfileDefinitions = (() => {
       sectionAffinity: ['intro', 'conclusion', 'coda'],
       minDwellSections: 3,
       // Substrate-level: bias toward harmonic motion and diatonic core;
-      // dampen rhythmic-drive and development. Disable antagonism bridges
-      // (no conflict-driven pair formation). Conductor pairing favors
-      // ambient profiles.
+      // dampen rhythmic-drive and development. Freeze pair-gain ceilings
+      // (`pair_gain_ceiling`) so coupling can't escalate during the
+      // calmest profile. Also nominally disables `antagonism_bridges`
+      // (Python-side; consumed via metaprofile-active.json). Conductor
+      // pairing favors ambient profiles.
       composerFamilies: { harmonicMotion: 1.4, diatonicCore: 1.3, tonalExploration: 1.0, development: 0.6, rhythmicDrive: 0.5 },
       conductorAffinity: ['atmospheric', 'meditative'],
       conductorAntipathy: ['chaotic', 'varied'],
-      disableControllers: ['antagonism_bridges'],
+      disableControllers: ['antagonism_bridges', 'pair_gain_ceiling'],
     },
 
     volatile: {
