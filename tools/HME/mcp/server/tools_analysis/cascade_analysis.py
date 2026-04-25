@@ -39,22 +39,20 @@ PREDICTIONS_LOG_REL = os.path.join("output", "metrics", "hme-predictions.jsonl")
 _CACHE: dict[str, Any] = {}
 
 
-def _log_prediction(target_module: str, affected_modules: list[str]) -> None:
+def _log_prediction(target_module: str, affected_modules: list[str], injected: bool = False) -> None:
     """Phase 3.4 — append one prediction record to hme-predictions.jsonl so
     the post-pipeline reconciler can later compare against fingerprint shifts.
     Best-effort; never raises.
 
-    Removed the `injected` parameter (peer-review iter 145): the original
-    Phase 6.1 design called for a proxy-injection path that surfaced
-    predictions to the Evolver BEFORE the edit was made. That arm was
-    never wired up — every call site passed the default False, no
-    middleware mutated it. The parameter and the `"injected": False`
-    schema field were pure documentation debt for a feature that
-    didn't exist. Iter 145 named this exact pattern (the asymmetry
-    between agent-policing detectors and human-side unwired remediation
-    arms). Honest move: delete the dead surface so its absence is
-    visible. If the injection path is built later, add the field back
-    to the record at that time and update consumers in the same commit.
+    `injected=True` means the prediction was surfaced to the agent BEFORE
+    the edit (via the `cascade_prediction` middleware footer at PreToolUse
+    Edit/Write). `injected=False` means the agent queried the cascade
+    explicitly via the before_editing tool. Reconciler interprets the two
+    classes differently when scoring accuracy: an injected prediction
+    that turns out to match a real fingerprint shift is evidence the
+    middleware's prediction-quality is high; a non-injected (queried)
+    prediction is evidence the agent reached for the cascade tool at
+    a useful point. Mixing them would conflate the two signals.
     """
     try:
         import json as _json
@@ -66,6 +64,7 @@ def _log_prediction(target_module: str, affected_modules: list[str]) -> None:
             "event": "cascade_prediction",
             "target": target_module,
             "predicted": affected_modules,
+            "injected": bool(injected),
         }
         with open(path, "a", encoding="utf-8") as f:
             f.write(_json.dumps(record, separators=(",", ":")) + "\n")
