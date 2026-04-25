@@ -158,3 +158,66 @@ class LifesaverRateVerifier(Verifier):
         return _result(PASS, score, summary + " (no acute activity)")
 
 
+class PipelineBgScriptHealthVerifier(Verifier):
+    """Surfaces silent failures from main-pipeline.js's bg-spawn analytics.
+
+    Each background script (snapshot-holograph, analyze-tool-effectiveness,
+    etc.) writes its stderr to log/hme-bg-<name>.err — truncated each round.
+    A non-empty file means the script crashed during the most recent pipeline
+    run. Until this verifier existed those errors went unread; the loop was
+    visible only as days-stale metrics that nobody traced back to the
+    originating spawn (the bug class fixed in the METRICS_DIR-undefined
+    sweep). This verifier closes that loop.
+
+    PASS:  no .err files OR all empty
+    WARN:  1-2 scripts with non-empty stderr (transient)
+    FAIL:  3+ scripts failing (substrate-wide regression)
+    """
+    name = "pipeline-bg-script-health"
+    category = "state"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        log_dir = os.path.join(_PROJECT, "log")
+        if not os.path.isdir(log_dir):
+            return _result(SKIP, 1.0, "log/ dir missing")
+        try:
+            err_files = [
+                f for f in os.listdir(log_dir)
+                if f.startswith("hme-bg-") and f.endswith(".err")
+            ]
+        except OSError as e:
+            return _result(ERROR, 0.0, f"listdir failed: {e}")
+        if not err_files:
+            return _result(SKIP, 1.0, "no hme-bg-*.err files yet — pipeline hasn't run since hardening")
+        failing = []
+        for name in sorted(err_files):
+            path = os.path.join(log_dir, name)
+            try:
+                size = os.path.getsize(path)
+            except OSError:
+                continue
+            if size == 0:
+                continue
+            # Read first ~400 bytes for a snippet.
+            snippet = ""
+            try:
+                with open(path) as f:
+                    snippet = f.read(400).strip().replace("\n", " | ")
+            except OSError:
+                pass
+            script = name[len("hme-bg-"):-len(".err")]
+            failing.append((script, size, snippet))
+        total = len(err_files)
+        if not failing:
+            return _result(PASS, 1.0, f"{total}/{total} bg scripts ran clean")
+        score = max(0.0, 1.0 - len(failing) / max(total, 1))
+        details = [f"{s} ({sz}B): {snip[:160]}" for s, sz, snip in failing]
+        verdict = FAIL if len(failing) >= 3 else WARN
+        return _result(
+            verdict, score,
+            f"{len(failing)}/{total} bg scripts failed last pipeline run",
+            details,
+        )
+
+
