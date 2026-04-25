@@ -234,6 +234,49 @@ class ClaudeSettingsJsonVerifier(Verifier):
                        payload.get("violations", [])[:10])
 
 
+class HumanDeferredAuditVerifier(Verifier):
+    """Delegates to scripts/audit-human-deferred.py — the human-side
+    parallel of the agent-policing detector chain. Pattern surfaced by
+    peer-review iter 145: HME has nine detectors for agent failure
+    modes (psycho_stop / exhaust_check / abandon_check / etc.) and
+    zero detectors for human-side parallel patterns (unwired
+    remediation arms, MVP-scope admissions left for months, "Phase N"
+    deferrals where phase N never arrived).
+
+    Same cognitive pattern, scored only on one side until this verifier
+    existed. Advisory weight (0.5): goal is monotonic decrease over
+    time, not zero. New entries should ideally come with a deadline
+    or tracking issue. PASS regardless of count — the signal is the
+    DELTA across runs, surfaced via verifier history.
+    """
+    name = "human-deferred"
+    category = "code"
+    weight = 0.5
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-human-deferred.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script])
+        # Parse the count from the header line
+        import re as _re_hd
+        m = _re_hd.search(r"(\d+) deferral marker\(s\) across (\d+) categor", out)
+        if not m:
+            return _result(WARN, 0.5, "could not parse audit output",
+                           [out[:200], err[:200]])
+        total = int(m.group(1))
+        cats = int(m.group(2))
+        # Always PASS — this is observability, not a gate. Score reflects
+        # the count for trending purposes but doesn't fail.
+        score = max(0.0, 1.0 - total / 1000.0)
+        sample_lines = [l for l in out.splitlines()
+                        if l.strip().startswith("[") and "]" in l[:8]][:8]
+        return _result(PASS, score,
+                       f"{total} human-side deferral marker(s) across {cats} categories — "
+                       "advisory; trend across runs is the signal",
+                       sample_lines)
+
+
 class StateFileOwnershipVerifier(Verifier):
     """Delegates to scripts/audit-state-file-ownership.py, which checks
     that every grep-detectable writer of a shared state file is declared

@@ -1,30 +1,38 @@
 'use strict';
 /**
- * Context-budget meta-controller.
+ * Context-budget enricher-fire log.
  *
- * Per-turn, measures (injection-bytes-added / acted-upon-in-next-N-turns).
- * When an enricher's acted-upon rate is below threshold across a rolling
- * window, its priority is demoted (emit only on strong-match cases); when
- * an enricher's rate is high, it's promoted (fire more liberally).
+ * Records that an enricher's marker appeared in a tool_result. Writes
+ * to output/metrics/hme-enricher-efficacy.jsonl as a flat append-only
+ * fire-event log.
  *
- * MVP scope: record per-enricher injection + whether the agent's next
- * tool call in the turn references any identifier the enricher supplied.
- * Writes to output/metrics/hme-enricher-efficacy.jsonl. Fully adaptive
- * pruning is a follow-up — this is the measurement substrate the
- * pruning logic will read.
+ * IMPORTANT — what this is NOT (peer-review iter 145 honesty pass):
  *
- * Enrichers currently in scope:
- *   - dir_context.js         appends [HME dir:<name>] footer
- *   - edit_context.js        appends [HME:edit] footer
- *   - read_context.js        appends [HME:read] footer
- *   - grep_glob_neighborhood.js  appends neighborhood file hints
- *   - bash_enrichment.js     appends [err] <snippet>
+ * The earlier docstring described a closed-loop adaptive controller
+ * that would (a) measure acted-upon rate per enricher across a rolling
+ * window, (b) demote low-acted-upon enrichers and promote high ones,
+ * and (c) tune injection priority adaptively. That controller does
+ * NOT exist in this file. Only the fire-event WRITE side is
+ * implemented. The "sibling pass" mentioned in the original docstring
+ * — the consumer that scans the next assistant turn's tool_uses for
+ * references to enricher-supplied identifiers — was never built.
  *
- * This middleware runs AFTER all the enrichers, scans the tool_result
- * content for their markers, and records that the enrichment fired.
- * A sibling pass later can scan the NEXT assistant turn's tool_uses
- * for references to the identifiers each enricher injected — the
- * closed-loop efficacy signal.
+ * The rolling-window pruning, the priority demotion/promotion, the
+ * "fully adaptive" framing — all of it was aspirational design copy
+ * that lived in the file as if it were describing the implementation.
+ * Iter 145 named exactly this pattern (the human-side parallel of
+ * agent exhaust_violation: documenting load-bearing infrastructure
+ * that's actually unwired). Honest re-description: this is a fire log.
+ *
+ * If the closed-loop controller is built later, this docstring should
+ * grow to describe the consumer at that time, not before.
+ *
+ * Enrichers whose markers this currently logs:
+ *   - dir_context.js         [HME dir:<name>] footer
+ *   - edit_context.js        [HME:edit] footer
+ *   - read_context.js        [HME:read] footer
+ *   - grep_glob_neighborhood.js  [HME neighborhood] footer
+ *   - bash_enrichment.js     [err] snippet
  */
 
 const fs = require('fs');
