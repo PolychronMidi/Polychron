@@ -96,9 +96,19 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   if (sectionIndex > 0) sectionMemory.snapshot();
   crossLayerLifecycleManager.resetSection();
   stutterVariants.resetSection();
-  // Select section type from SECTION_TYPES based on position
+  // Select section type from SECTION_TYPES based on position.
+  // Substrate-level override: when the active metaprofile declares
+  // sectionArc and its length matches totalSections, the metaprofile
+  // owns the structural sequence -- this section's type is read from
+  // sectionArc[sectionIndex]. Otherwise fall through to default logic
+  // (intro / coda anchored at the ends, weighted-random in between).
   let activeSectionType = null;
-  if (Array.isArray(SECTION_TYPES) && SECTION_TYPES.length > 0) {
+  const _arcOverride = metaProfiles.getSectionArcOverride();
+  if (_arcOverride && _arcOverride.length === totalSections && Array.isArray(SECTION_TYPES) && SECTION_TYPES.length > 0) {
+    const _arcType = _arcOverride[sectionIndex];
+    activeSectionType = SECTION_TYPES.find((t) => t.type === _arcType) || null;
+  }
+  if (!activeSectionType && Array.isArray(SECTION_TYPES) && SECTION_TYPES.length > 0) {
     if (sectionIndex === 0) activeSectionType = SECTION_TYPES.find(t => t.type === 'intro') || SECTION_TYPES[0];
     else if (sectionIndex === totalSections - 1) activeSectionType = SECTION_TYPES.find(t => t.type === 'coda') || SECTION_TYPES[SECTION_TYPES.length - 1];
     else if (sectionIndex >= totalSections - 2) activeSectionType = SECTION_TYPES.find(t => t.type === 'conclusion') || null;

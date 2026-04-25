@@ -29,7 +29,6 @@ metaProfileDefinitions = (() => {
   // weight by composerFamilies[familyName] (default 1.0). Lets a
   // metaprofile actively bias which composers play, not just how loud --
   // the substrate-level move that pushes metaprofiles past decoration.
-  const _COMPOSER_FAMILIES_KEY = 'composerFamilies';
 
   const _TENSION_SHAPES = ['flat', 'ascending', 'descending', 'arch', 'sawtooth', 'erratic'];
   const _SECTION_TYPES  = ['intro', 'opening', 'exposition', 'development', 'climax', 'resolution', 'conclusion', 'coda'];
