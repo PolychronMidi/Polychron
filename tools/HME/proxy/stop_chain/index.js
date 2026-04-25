@@ -30,6 +30,29 @@ const fs = require('fs');
 const path = require('path');
 const { PROJECT_ROOT } = require('../shared');
 
+// Unified policy registry — used as a configuration overlay so any stop-
+// chain policy that ALSO has a unified-registry entry can be enabled/
+// disabled via `i/policies disable <name>`. Stop policies whose unified
+// names follow the convention <kebab-case> (e.g. nexus-edit-check) map
+// to internal names <snake_case> (nexus_edit_check). Mapping is opt-in:
+// missing unified entries default to enabled (the prior behavior).
+let _unifiedConfig = null;
+function _loadUnifiedConfig() {
+  if (_unifiedConfig !== null) return _unifiedConfig;
+  try {
+    _unifiedConfig = require(path.resolve(PROJECT_ROOT, 'tools/HME/policies/config'));
+  } catch (_e) {
+    _unifiedConfig = false; // sentinel: registry not available
+  }
+  return _unifiedConfig;
+}
+function _kebab(name) { return String(name).replace(/_/g, '-'); }
+function _isPolicyEnabled(internalName, defaultEnabled = true) {
+  const cfg = _loadUnifiedConfig();
+  if (!cfg) return defaultEnabled;
+  return cfg.isEnabled(_kebab(internalName), defaultEnabled);
+}
+
 const POLICY_NAMES = [
   '_preamble',
   'nexus_edit_check',
@@ -118,6 +141,15 @@ async function runStopChain(stdinJson) {
 
   for (const name of POLICY_NAMES) {
     appendTrace('enter', name);
+
+    // Honor unified-registry disable: if the user has opted out of this
+    // policy via `i/policies disable <kebab-name>`, skip evaluation but
+    // record the skip in the trace so the chain audit stays complete.
+    if (!_isPolicyEnabled(name, true)) {
+      appendTrace('exit', `${name} skipped_disabled`);
+      continue;
+    }
+
     let result = null;
     let policyMod;
     try {
