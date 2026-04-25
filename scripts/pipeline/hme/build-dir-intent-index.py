@@ -318,8 +318,17 @@ def build() -> dict:
     }
 
     os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
-    with open(OUTPUT, "w") as f:
+    # Atomic write: a SIGTERM/SIGKILL mid-rewrite (parent hook exits and
+    # supervisor reaps the orphaned subprocess; or Ctrl-C from the user)
+    # used to leave a half-written hme-dir-intent.json that dir_context.js
+    # would then read as corrupted JSON for its 60s cache window. Write
+    # to .tmp, fsync, then atomic rename.
+    tmp_path = OUTPUT + ".tmp"
+    with open(tmp_path, "w") as f:
         json.dump(index, f, indent=2, sort_keys=True)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, OUTPUT)
     _save_signatures_cache(new_sig_cache)
     return index
 
