@@ -136,7 +136,235 @@ metaProfileDefinitions = (() => {
       sectionAffinity: ['climax', 'resolution'],
       minDwellSections: 2,
     },
+
+    // ── Sample subvariants demonstrating inheritance + composition ───────
+    // Inheritance: copy parent's axes, override only what's different.
+    atmospheric_warm: {
+      name: 'atmospheric_warm',
+      description: 'Atmospheric with warmer trust ecology (higher dominant cap)',
+      inherits: 'atmospheric',
+      trust: { concentration: 0.7, dominantCap: 1.95, starvationFloor: 0.85 },
+      sectionAffinity: ['intro', 'exposition'],
+      minDwellSections: 2,
+    },
+
+    // Per-axis composition: pull each axis from a different parent.
+    meditative_climax: {
+      name: 'meditative_climax',
+      description: 'Meditative regime + anthemic coupling/tension — restrained crescendo',
+      compose: {
+        regime: 'meditative',
+        coupling: 'anthemic',
+        trust: 'meditative',
+        tension: 'anthemic',
+        energy: 'anthemic',
+        phase: 'meditative',
+      },
+      sectionAffinity: ['climax'],
+      minDwellSections: 2,
+    },
   };
+
+  // Inheritance + per-axis composition resolver. Walks parent + compose
+  // pointers to materialize a fully-specified profile from a sparse
+  // declaration. Single-level only (parents must themselves be already
+  // resolved at the time the child is processed) — runs in declaration
+  // order, so authors must define parents before children.
+  //
+  // Resolution rules:
+  //   1. If `inherits: 'name'` set, start with deep-copy of that profile's axes.
+  //   2. If `compose: { axisName: 'sourceProfile' }` set, replace each named
+  //      axis with the source profile's axis values.
+  //   3. Apply this profile's directly-declared axis values as final overrides.
+  //   4. Copy meta fields (name, description, sectionAffinity, minDwellSections)
+  //      from the raw profile; never inherit those.
+  //
+  // Cycle detection: a profile cannot inherit from or compose itself.
+  // Forward reference detection: parent must already be resolved.
+  const _AXES = Object.keys(_AXIS_SCHEMAS);
+  function _deepCopyAxis(value) {
+    if (Array.isArray(value)) return value.slice();
+    if (value && typeof value === 'object') {
+      const out = {};
+      for (const [k, v] of Object.entries(value)) out[k] = Array.isArray(v) ? v.slice() : v;
+      return out;
+    }
+    return value;
+  }
+  function _resolveProfile(name, raw, resolvedSoFar) {
+    const out = { name: raw.name || name, description: raw.description || '' };
+    // Step 1: inherit base axes.
+    if (raw.inherits) {
+      if (raw.inherits === name) {
+        throw new Error(`metaProfileDefinitions: profile "${name}" cannot inherit from itself`);
+      }
+      const parent = resolvedSoFar[raw.inherits];
+      if (!parent) {
+        throw new Error(`metaProfileDefinitions: profile "${name}" inherits from "${raw.inherits}" which is not yet defined (declare parents before children)`);
+      }
+      for (const axis of _AXES) {
+        if (parent[axis]) out[axis] = _deepCopyAxis(parent[axis]);
+      }
+    }
+    // Step 2: per-axis composition.
+    if (raw.compose && typeof raw.compose === 'object') {
+      for (const [axis, sourceName] of Object.entries(raw.compose)) {
+        if (!_AXIS_SCHEMAS[axis]) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" compose has unknown axis "${axis}"`);
+        }
+        if (sourceName === name) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" compose.${axis} cannot reference itself`);
+        }
+        const source = resolvedSoFar[sourceName];
+        if (!source) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" compose.${axis} references "${sourceName}" which is not yet defined`);
+        }
+        if (!source[axis]) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" compose.${axis} from "${sourceName}" — source profile lacks "${axis}" axis`);
+        }
+        out[axis] = _deepCopyAxis(source[axis]);
+      }
+    }
+    // Step 3: direct axis overrides from the raw profile.
+    for (const axis of _AXES) {
+      if (raw[axis] !== undefined) {
+        if (out[axis]) {
+          // Merge: child keys win, parent keys preserved for unspecified.
+          out[axis] = { ..._deepCopyAxis(out[axis]), ..._deepCopyAxis(raw[axis]) };
+        } else {
+          out[axis] = _deepCopyAxis(raw[axis]);
+        }
+      }
+    }
+    // Step 4: meta fields — never inherited, must be on the child.
+    if (raw.sectionAffinity !== undefined) out.sectionAffinity = raw.sectionAffinity.slice();
+    else if (resolvedSoFar[raw.inherits]) out.sectionAffinity = resolvedSoFar[raw.inherits].sectionAffinity.slice();
+    else out.sectionAffinity = [];
+    if (raw.minDwellSections !== undefined) out.minDwellSections = raw.minDwellSections;
+    else if (resolvedSoFar[raw.inherits]) out.minDwellSections = resolvedSoFar[raw.inherits].minDwellSections;
+    else out.minDwellSections = 1;
+    // Reactive triggers — optional. Inherited from parent if not declared.
+    if (raw.triggers !== undefined) out.triggers = raw.triggers;
+    else if (resolvedSoFar[raw.inherits] && resolvedSoFar[raw.inherits].triggers) out.triggers = resolvedSoFar[raw.inherits].triggers;
+    return out;
+  }
+
+  // Validate reactive-trigger declarations. Optional; profile without triggers
+  // remains valid. Trigger schema:
+  //   triggers: {
+  //     enter: [{ if: '<signal> <op> <value>', priority?: number }, ...],
+  //     exit:  [{ if: '<signal> <op> <value>', goto: '<profileName>' }, ...],
+  //   }
+  // op ∈ {>, <, >=, <=, ==}. Signal is any key in the snapshot passed to
+  // evaluateTriggers. Priority is a non-negative integer (default 50).
+  function _validateTriggers(name, triggers) {
+    if (!triggers) return;
+    if (typeof triggers !== 'object' || Array.isArray(triggers)) {
+      throw new Error(`metaProfileDefinitions: profile "${name}" triggers must be an object`);
+    }
+    for (const lifecycle of ['enter', 'exit']) {
+      const arr = triggers[lifecycle];
+      if (arr === undefined) continue;
+      if (!Array.isArray(arr)) {
+        throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle} must be an array`);
+      }
+      for (let i = 0; i < arr.length; i++) {
+        const t = arr[i];
+        if (!t || typeof t !== 'object') {
+          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] must be an object`);
+        }
+        if (typeof t.if !== 'string' || !t.if.trim()) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] missing 'if' string`);
+        }
+        // Parse and reject obviously malformed expressions early.
+        const parsed = _parseTriggerExpr(t.if);
+        if (!parsed) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] expression "${t.if}" not parseable (expected '<signal> <op> <value>')`);
+        }
+        if (lifecycle === 'enter' && t.priority !== undefined) {
+          V.assertFinite(t.priority, `${name}.triggers.enter[${i}].priority`);
+        }
+        if (lifecycle === 'exit' && t.goto !== undefined && typeof t.goto !== 'string') {
+          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.exit[${i}].goto must be a string`);
+        }
+      }
+    }
+  }
+
+  // Parse `<signal> <op> <value>` → {signal, op, value}. Returns null on
+  // syntax error. Accepts ops: > >= < <= == != . Value may be number or
+  // 'true'/'false'.
+  const _OPS = ['>=', '<=', '!=', '==', '>', '<'];
+  function _parseTriggerExpr(expr) {
+    const s = String(expr).trim();
+    for (const op of _OPS) {
+      const idx = s.indexOf(op);
+      if (idx < 0) continue;
+      const signal = s.slice(0, idx).trim();
+      const valueStr = s.slice(idx + op.length).trim();
+      if (!signal || !valueStr) return null;
+      let value;
+      if (valueStr === 'true') value = true;
+      else if (valueStr === 'false') value = false;
+      else {
+        const n = Number(valueStr);
+        if (!Number.isFinite(n)) return null;
+        value = n;
+      }
+      return { signal, op, value };
+    }
+    return null;
+  }
+
+  function _evalTriggerExpr(parsed, snapshot) {
+    const v = snapshot ? snapshot[parsed.signal] : undefined;
+    if (v === undefined) return false;
+    switch (parsed.op) {
+      case '>':  return v >  parsed.value;
+      case '<':  return v <  parsed.value;
+      case '>=': return v >= parsed.value;
+      case '<=': return v <= parsed.value;
+      case '==': return v === parsed.value;
+      case '!=': return v !== parsed.value;
+    }
+    return false;
+  }
+
+  // Time-varying axis values: an envelope `{from, to, curve?}` interpolates
+  // across the profile's activation. Curve is one of: 'linear' (default),
+  // 'arch', 'ascending', 'descending'. Schema validator accepts either the
+  // raw scalar/pair OR an envelope of the corresponding shape.
+  function _isEnvelope(v) {
+    return v && typeof v === 'object' && !Array.isArray(v)
+      && Object.prototype.hasOwnProperty.call(v, 'from')
+      && Object.prototype.hasOwnProperty.call(v, 'to');
+  }
+
+  function _validateNumberOrEnvelope(profileName, axis, key, value) {
+    if (_isEnvelope(value)) {
+      V.assertFinite(value.from, `${profileName}.${axis}.${key}.from`);
+      V.assertFinite(value.to, `${profileName}.${axis}.${key}.to`);
+      if (value.curve !== undefined) {
+        V.assertInSet(value.curve, new Set(['linear', 'arch', 'ascending', 'descending']),
+          `${profileName}.${axis}.${key}.curve`);
+      }
+      return;
+    }
+    V.assertFinite(value, `${profileName}.${axis}.${key}`);
+  }
+
+  function _validatePairOrEnvelope(profileName, axis, key, value) {
+    if (_isEnvelope(value)) {
+      _validatePair(profileName, axis, `${key}.from`, value.from);
+      _validatePair(profileName, axis, `${key}.to`, value.to);
+      if (value.curve !== undefined) {
+        V.assertInSet(value.curve, new Set(['linear', 'arch', 'ascending', 'descending']),
+          `${profileName}.${axis}.${key}.curve`);
+      }
+      return;
+    }
+    _validatePair(profileName, axis, key, value);
+  }
 
   function _validatePair(profileName, axis, key, value) {
     const arr = V.assertArray(value, `${profileName}.${axis}.${key}`);
@@ -171,9 +399,9 @@ metaProfileDefinitions = (() => {
         const label = `${name}.${axis}.${k}`;
         const v = section[k];
         if (expectedType === 'pair') {
-          _validatePair(name, axis, k, v);
+          _validatePairOrEnvelope(name, axis, k, v);
         } else if (expectedType === 'number') {
-          V.assertFinite(v, label);
+          _validateNumberOrEnvelope(name, axis, k, v);
         } else if (expectedType === 'string') {
           V.assertNonEmptyString(v, label);
         }
@@ -202,8 +430,26 @@ metaProfileDefinitions = (() => {
       throw new Error(`metaProfileDefinitions: profile "${name}" minDwellSections (${dwell}) must be >= 1`);
     }
 
+    // Reactive triggers — optional. Validates schema if present.
+    _validateTriggers(name, profile.triggers);
+
     // Derived: coupling midpoint -- precomputed so scaleFactor('coupling','midpoint') is uniform.
-    profile.coupling.midpoint = (profile.coupling.strength[0] + profile.coupling.strength[1]) / 2;
+    // Skip when strength is an envelope (non-array shape); in that case
+    // scaleFactor('coupling','midpoint') falls back to envelope-resolution
+    // via the runtime accessors.
+    if (Array.isArray(profile.coupling.strength)) {
+      profile.coupling.midpoint = (profile.coupling.strength[0] + profile.coupling.strength[1]) / 2;
+    }
+  }
+
+  // Resolution pass: materialize sparse declarations (those using
+  // `inherits` and/or `compose`) into fully-specified profiles BEFORE
+  // schema validation runs. Iteration is in declaration order; a child
+  // referencing a not-yet-resolved parent throws.
+  const _resolved = {};
+  for (const [name, raw] of Object.entries(profiles)) {
+    _resolved[name] = _resolveProfile(name, raw, _resolved);
+    profiles[name] = _resolved[name];
   }
 
   for (const [name, profile] of Object.entries(profiles)) {
@@ -218,6 +464,60 @@ metaProfileDefinitions = (() => {
     return matches;
   }
 
+  // Three-scope custom-profile loader. Reads project + global directories,
+  // resolves inheritance/composition (parent must already exist in
+  // `profiles` — built-ins or earlier-loaded customs), validates, registers.
+  // Conflict resolution: project beats global; built-ins are baseline (a
+  // custom profile with the same name overrides the built-in). Returns
+  // an array of newly-registered names.
+  //
+  // File layout:
+  //   <project>/.hme/metaprofiles/*.json    (project scope; commit this)
+  //   ~/.hme/metaprofiles/*.json            (user-global)
+  // Each file is either a single profile object, or an array of them.
+  function loadCustomProfiles() {
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    const projectRoot = (typeof PROJECT_ROOT !== 'undefined' && PROJECT_ROOT) || process.env.PROJECT_ROOT || '/home/jah/Polychron';
+    const dirs = [
+      path.join(os.homedir(), '.hme', 'metaprofiles'),  // global
+      path.join(projectRoot, '.hme', 'metaprofiles'),    // project (overrides global)
+    ];
+    const registered = [];
+    for (const dir of dirs) {
+      if (!fs.existsSync(dir)) continue;
+      let files;
+      try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort(); }
+      catch (_e) { continue; }
+      for (const f of files) {
+        const fpath = path.join(dir, f);
+        let raw;
+        try { raw = JSON.parse(fs.readFileSync(fpath, 'utf8')); }
+        catch (err) {
+          console.error(`metaProfileDefinitions: ${fpath} parse failed: ${err.message}`);
+          continue;
+        }
+        const list = Array.isArray(raw) ? raw : [raw];
+        for (const decl of list) {
+          if (!decl || typeof decl !== 'object' || !decl.name) {
+            console.error(`metaProfileDefinitions: ${fpath} entry missing 'name' field — skipped`);
+            continue;
+          }
+          try {
+            const resolved = _resolveProfile(decl.name, decl, profiles);
+            _validateProfile(decl.name, resolved);
+            profiles[decl.name] = resolved;
+            registered.push(decl.name);
+          } catch (err) {
+            console.error(`metaProfileDefinitions: ${fpath} profile "${decl.name}" rejected: ${err.message}`);
+          }
+        }
+      }
+    }
+    return registered;
+  }
+
   return {
     get(name) {
       return profiles[name] || null;
@@ -229,5 +529,10 @@ metaProfileDefinitions = (() => {
       return { ...profiles };
     },
     bySection,
+    loadCustomProfiles,
+    // Surface for metaProfiles.evaluateTriggers — internal helpers, not
+    // intended for general consumption.
+    _parseTriggerExpr,
+    _evalTriggerExpr,
   };
 })();
