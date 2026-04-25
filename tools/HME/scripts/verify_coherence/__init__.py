@@ -46,6 +46,7 @@ from .env_settings import (  # noqa: F401
 )
 from .logs import (  # noqa: F401
     LogSizeVerifier, ErrorLogVerifier, LifesaverRateVerifier,
+    PipelineBgScriptHealthVerifier,
 )
 from .plugin_cache import (  # noqa: F401
     PluginCacheParityVerifier, HookCommandExistenceVerifier,
