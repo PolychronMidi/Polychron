@@ -529,12 +529,33 @@ def what_did_i_forget(changed_files: str) -> str:
     _diff_langs = _detect_languages(diff_context, changed_files)
 
     def _render_probes() -> str:
-        lines = ["PROBE for concrete bugs. Flag only what you can cite with file:line from the hunks below (run `git diff` if you need the raw unified diff).\n"]
+        # The probe classes are FRAMING REFERENCES, not a checklist to satisfy.
+        # The empirically-strongest framing during the 100-iter sweep was
+        # promise-vs-delivers (compare what the docstring/name implies vs
+        # what the code does); probe classes are a fallback grammar for
+        # describing what KIND of divergence you found, not "find one of
+        # these." Without this nuance the model invents findings to match
+        # template categories — caught repeatedly during the sweep.
+        lines = [
+            "REVIEW LENS (in priority order):",
+            "  A. PROMISE-VS-DELIVERS — does the file's docstring/comments/name "
+            "imply behavior that the code does NOT actually deliver? Strongest tier-1 signal.",
+            "  B. CALLER-CONTRACT — does any change break what an existing caller "
+            "assumes (return shape, exception type, side effect order)?",
+            "  C. SAFETY-BELT VS TELEMETRY — is a broad-except / silent fallback "
+            "swallowing a signal a load-bearing check needed to surface?",
+            "",
+            "If you find no tier-1 issue against any lens, say 'no tier-1 issues' "
+            "— that is the calibrated answer. Do NOT invent a finding to match "
+            "the categories below; they are descriptive grammar, not a checklist.",
+            "",
+            "Categories (use as VOCABULARY when describing a real divergence):",
+        ]
         for i, (desc, lang_hints) in enumerate(_PROBE_CLASSES, 1):
-            lines.append(f"{i}. {desc}")
+            lines.append(f"  {i}. {desc}")
             for lang in ('py', 'js', 'sh'):
                 if lang in lang_hints and lang in _diff_langs:
-                    lines.append(f"   [{lang}] {lang_hints[lang]}")
+                    lines.append(f"     [{lang}] {lang_hints[lang]}")
         return "\n".join(lines) + "\n"
 
     probes = _render_probes()
@@ -601,9 +622,14 @@ def what_did_i_forget(changed_files: str) -> str:
             f"{hunk_section}\n"
             f"{allowed_block}"
             f"{probes}"
-            f"Rules: cite file:line from the hunks above (or run `git diff` yourself) for every issue.{_symbols_rule} "
-            "Skip probes that don't fit. No generic advice. Say 'Nothing missed.' "
-            "if clean.\n"
+            "OUTPUT FORMAT — for each tier-1 issue:\n"
+            "  • Quote the offending line(s) verbatim from the hunks above (or `git diff`).\n"
+            "  • State the divergence: what the surroundings imply vs what the line does.\n"
+            "  • Cite file:line.\n"
+            f"{_symbols_rule.strip() or ''}\n"
+            "If no tier-1 issue holds at ≥95% confidence, say 'no tier-1 issues' "
+            "and stop — calibrated empty findings are a respected answer. Do NOT "
+            "invent a tier-1 to fill space.\n"
         )
         try:
             result = _reasoning_think("/no_think\n" + user_text, max_tokens=400,
