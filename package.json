@@ -29,6 +29,7 @@
     "lint": "node scripts/utils/run-with-log.js lint.log npm run lint:raw",
     "tc": "node scripts/utils/run-with-log.js tc.log tsc -p . --noEmit",
     "test": "node scripts/test/regimeReactiveDampingCore.test.js",
+    "test:hme": "node tools/HME/tests/run.js",
     "audit": "npm audit",
     "deps:check": "depcheck",
     "deps:audit": "npm audit && depcheck"

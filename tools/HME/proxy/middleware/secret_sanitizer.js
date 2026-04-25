@@ -85,7 +85,12 @@ function _textOf(toolResult) {
   const c = toolResult.content;
   if (typeof c === 'string') return c;
   if (Array.isArray(c)) {
-    return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('');
+    // Join with '\n' so word boundaries are preserved across blocks. Joining
+    // with '' caused regexes anchored on \b to silently miss secrets that
+    // happened to be in their own block (verified by tests/specs/
+    // secret_sanitizer.test.js — `before` block + key block + `after`
+    // block became `beforeKEYafter`, killing the leading `\b`).
+    return c.filter((x) => x && x.type === 'text').map((x) => x.text || '').join('\n');
   }
   return '';
 }

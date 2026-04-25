@@ -43,6 +43,7 @@
 
 const http = require('http');
 const fs = require('fs');
+const { spawn } = require('child_process');
 const path = require('path');
 
 // Single source of truth: tools/HME/config/versions.json.
@@ -193,6 +194,56 @@ function getProxyVersion(timeoutMs) {
   return _getVersion(HOST, proxyPort, timeoutMs);
 }
 
+/**
+ * Direct-lance fallback for read-only KB tools. Spawns
+ * `python3 tools/HME/mcp/direct_lance.py` with the appropriate subcommand
+ * and parses the JSON output. Returns null when:
+ *   - the tool is not a read-only KB query (mutating tools require the worker)
+ *   - lancedb is not installed (Python ImportError surfaces as empty output)
+ *   - the lance shard doesn't exist
+ *
+ * Caller treats null as "fallback unavailable" and surfaces the original
+ * worker-down error.
+ */
+function _tryDirectLance(tool, args) {
+  return new Promise((resolve) => {
+    const projectRoot = path.resolve(__dirname, '..');
+    const directLance = path.join(projectRoot, 'tools/HME/mcp/direct_lance.py');
+    if (!fs.existsSync(directLance)) return resolve(null);
+
+    let scriptArgs;
+    if (tool === 'list_knowledge' || tool === 'knowledge_list') {
+      scriptArgs = ['list', '--limit', String((args && args.limit) || 20)];
+      if (args && args.category) scriptArgs.push('--category', String(args.category));
+    } else if (tool === 'knowledge_count') {
+      scriptArgs = ['count'];
+    } else if (tool === 'knowledge_lookup_id' || tool === 'knowledge_get') {
+      const id = args && (args.knowledge_id || args.id);
+      if (!id) return resolve(null);
+      scriptArgs = ['lookup', String(id)];
+    } else {
+      return resolve(null); // tool not in the read-only fallback set
+    }
+
+    const child = spawn('python3', [directLance, ...scriptArgs], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, PROJECT_ROOT: projectRoot },
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => { try { child.kill('SIGTERM'); } catch (_) {} resolve(null); }, 15_000);
+    child.stdout.on('data', (c) => { stdout += c.toString('utf8'); });
+    child.stderr.on('data', (c) => { stderr += c.toString('utf8'); });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0 || !stdout.trim()) return resolve(null);
+      try { resolve(JSON.parse(stdout)); }
+      catch (_e) { resolve(null); }
+    });
+    child.on('error', () => { clearTimeout(timer); resolve(null); });
+  });
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const tool = argv[0];
@@ -240,10 +291,20 @@ async function main() {
           console.error(`hme-cli: HTTP failed (${e.message}) — fell back to queue path, succeeded`);
           res = { status: queueRes.ok ? 200 : 500, body: queueRes };
         } else {
-          console.error(`hme-cli: HTTP failed (${e.message}) and queue path timed out after ${queueTimeoutMs}ms`);
-          console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
-          console.error(`  is the worker process alive? \`ps -ef | grep worker.py\``);
-          process.exit(1);
+          // Queue timed out → try direct-lance fallback for read-only KB tools.
+          // This is the third tier: HTTP → queue → direct-lance. Direct-lance
+          // covers list_knowledge / knowledge_count / knowledge_lookup_id
+          // without needing the worker process at all.
+          const directRes = await _tryDirectLance(tool, args);
+          if (directRes !== null) {
+            console.error(`hme-cli: HTTP+queue failed; direct-lance fallback succeeded for read-only ${tool}`);
+            res = { status: 200, body: { ok: true, result: directRes } };
+          } else {
+            console.error(`hme-cli: HTTP failed (${e.message}); queue path timed out after ${queueTimeoutMs}ms; direct-lance not available for ${tool}`);
+            console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+            console.error(`  is the worker process alive? \`ps -ef | grep worker.py\``);
+            process.exit(1);
+          }
         }
       } catch (qErr) {
         console.error(`hme-cli: HTTP failed (${e.message}); queue fallback errored: ${qErr.message}`);

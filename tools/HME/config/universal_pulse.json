@@ -44,7 +44,8 @@
       "name": "hook_latency_log",
       "path": "log/hme-hook-latency.jsonl",
       "max_stale_sec": 900,
-      "_why": "Every hook writes to this log on exit via _safety.sh's EXIT trap. If it hasn't been touched in 15 minutes during an active session, hooks aren't firing — something upstream (hook JSON, plugin cache, _proxy_bridge) is broken."
+      "paired_path": "log/session-transcript.jsonl",
+      "_why": "Every hook writes to this log on exit via _safety.sh's EXIT trap. paired_path gates the alert: if BOTH path AND paired_path are equally stale, the session is just idle (not broken). The probe fires only when paired_path was updated within max_stale_sec but path was NOT — that signals tool calls happening without hooks logging, which is the genuine 'hooks aren't firing' failure mode."
     },
     {
       "name": "hme_activity",
