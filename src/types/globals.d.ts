@@ -142,6 +142,7 @@ interface ValidatorInstance {
   requireFinite(value: unknown, label: string): number;
   optionalFinite(value: unknown): number | undefined;
   optionalFinite(value: unknown, fallback: number): number;
+  optionalFinite<T>(value: unknown, fallback: T): number | T;
   optionalType(value: unknown, type: 'number'): number | undefined;
   optionalType(value: unknown, type: 'string'): string | undefined;
   optionalType(value: unknown, type: 'boolean'): boolean | undefined;
@@ -1410,6 +1411,7 @@ declare var metaProfileDefinitions: {
   get(name: string): Record<string, any> | null;
   list(): string[];
   all(): Record<string, Record<string, any>>;
+  bySection(sectionType: string): string[];
 };
 declare var ACTIVE_META_PROFILE: string | null;
 declare var controllerConfig: {
@@ -1423,17 +1425,24 @@ declare var regimeReactiveDampingCore: {
   scaleByTarget(base: number, target: number, referenceTarget: number): number;
 };
 declare var metaProfiles: {
-  setActive(name: string | null): void;
+  setActive(name: string | null, currentSection?: number): boolean;
   getActive(): Record<string, any> | null;
   getActiveName(): string | null;
+  getActiveSinceSection(): number | null;
   getAxis(axis: string): Record<string, any> | null;
   getAxisValue(axis: string, key: string, fallback: any): any;
   isActive(): boolean;
+  canSwitch(currentSection: number, candidateName: string): boolean;
+  scaleFactor(axis: string, key: string): number;
   list(): string[];
-  getRegimeTargets(): { coherent: number; evolving: number; exploring: number };
-  getCouplingRange(): { lo: number; hi: number; density: number; antagonismThreshold: number };
-  getTensionArc(): { shape: string; floor: number; ceiling: number };
-  getEnergyEnvelope(): { densityTarget: number; flickerLo: number; flickerHi: number };
+  bySection(sectionType: string): string[];
+  getRegimeTargets(): { coherent: number; evolving: number; exploring: number } | null;
+  getCouplingRange(): { lo: number; hi: number; density: number; antagonismThreshold: number; midpoint: number } | null;
+  getTensionArc(): { shape: string; floor: number; ceiling: number } | null;
+  getEnergyEnvelope(): { densityTarget: number; flickerLo: number; flickerHi: number } | null;
+  disableAxis(axisId: string): void;
+  enableAxis(axisId: string): void;
+  isAxisDisabled(axisId: string): boolean;
 };
 declare var globalConductor: GlobalConductorAPI;
 declare var melodicContourTracker: MelodicContourTrackerAPI;

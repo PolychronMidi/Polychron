@@ -15,21 +15,13 @@ adaptiveTrustScores = (() => {
   // more influence - more positive outcomes - higher trust).
   const _BASE_TRUST_CEILING = V.optionalFinite(_atsc.baseTrustCeiling, 0.75);
 
-  // Metaprofile trust axis: dominantCap scales the ceiling, starvationFloor scales the floor.
-  // Default cap 1.8 -> ceiling 0.75. Meditative cap 1.9 -> ceiling ~0.79. Chaotic cap 1.4 -> ceiling ~0.58.
+  // Metaprofile trust axis: scaleFactor divides active by default profile's
+  // dominantCap (1.8) / starvationFloor (0.8). Inactive -> 1.0x.
   function _getTrustCeiling() {
-    if (metaProfiles.isActive()) {
-      const cap = metaProfiles.getAxisValue('trust', 'dominantCap', 1.8);
-      return _BASE_TRUST_CEILING * (cap / 1.8);
-    }
-    return _BASE_TRUST_CEILING;
+    return _BASE_TRUST_CEILING * metaProfiles.scaleFactor('trust', 'dominantCap');
   }
   function _getDecayFloor() {
-    if (metaProfiles.isActive()) {
-      const floor = metaProfiles.getAxisValue('trust', 'starvationFloor', 0.8);
-      return _BASE_DECAY_FLOOR * (floor / 0.8);
-    }
-    return _BASE_DECAY_FLOOR;
+    return _BASE_DECAY_FLOOR * metaProfiles.scaleFactor('trust', 'starvationFloor');
   }
 
   const _BASE_EMA_DECAY = V.optionalFinite(_atsc.baseEmaDecay, 0.85);
@@ -43,14 +35,13 @@ adaptiveTrustScores = (() => {
   }
 
   // Metaprofile trust concentration: scales learning rate.
-  // High concentration (0.7+) = slower learning -> incumbents dominate.
-  // Low concentration (0.3-) = faster learning -> more competition.
+  // Inverse relationship: higher concentration -> slower learning (incumbents
+  // dominate), lower -> faster (more competition). conc 0.3 -> ~1.12x faster,
+  // conc 0.7 -> ~0.88x slower at default sensitivity.
+  const _CONCENTRATION_SENSITIVITY = V.optionalFinite(_atsc.concentrationLearningSensitivity, 0.3);
   function _getConcentrationScale() {
-    if (metaProfiles.isActive()) {
-      const conc = metaProfiles.getAxisValue('trust', 'concentration', 0.5);
-      return 1.0 + (0.5 - conc) * 0.6; // conc 0.3->1.12x faster, conc 0.7->0.88x slower
-    }
-    return 1.0;
+    const factor = metaProfiles.scaleFactor('trust', 'concentration');
+    return 1.0 - (factor - 1.0) * _CONCENTRATION_SENSITIVITY;
   }
   const BASE_EMA_NEW = _BASE_EMA_NEW;
   const EMA_NEW_REGIME = _BASE_EMA_NEW_REGIME;

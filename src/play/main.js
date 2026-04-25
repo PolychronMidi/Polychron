@@ -116,23 +116,16 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
   // targets / coupling density / tension envelope / energy envelope -> different
   // composition character -> more differentiated EnCodec tokens per section.
   // Respects ACTIVE_META_PROFILE pin: rotation only fires when user has NOT
-  // pinned a single profile.
+  // pinned a single profile. Candidate set is data-driven from each profile's
+  // sectionAffinity. Dwell guard skips switches before minDwellSections elapses.
   if (!ACTIVE_META_PROFILE) {
-    const SECTION_PROFILE_MAP = {
-      intro:       ['atmospheric', 'meditative'],
-      exposition:  ['tense', 'atmospheric'],
-      development: ['tense', 'chaotic', 'volatile'],
-      climax:      ['chaotic', 'volatile'],
-      resolution:  ['tense', 'atmospheric'],
-      conclusion:  ['meditative', 'atmospheric'],
-      coda:        ['meditative', 'atmospheric'],
-    };
-    const prevProfile = metaProfiles.getActiveName();
     const sectionTypeKey = currentSectionType || 'exposition';
-    const candidates = SECTION_PROFILE_MAP[sectionTypeKey] || ['tense', 'chaotic'];
-    const filtered = candidates.filter((p) => p !== prevProfile);
+    const prevProfile = metaProfiles.getActiveName();
+    let candidates = metaProfiles.bySection(sectionTypeKey);
+    if (candidates.length === 0) candidates = ['tense', 'chaotic'];
+    const filtered = candidates.filter((p) => p !== prevProfile && metaProfiles.canSwitch(sectionIndex, p));
     const pool = filtered.length > 0 ? filtered : candidates;
-    metaProfiles.setActive(pool[ri(0, pool.length - 1)]);
+    metaProfiles.setActive(pool[ri(0, pool.length - 1)], sectionIndex);
   }
 
   phrasesPerSection = ri(sectionPhraseRange.min, sectionPhraseRange.max);
