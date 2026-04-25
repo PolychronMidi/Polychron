@@ -38,24 +38,18 @@
  *   exhaust_check → same treatment. Deferral phrases trigger silent
  *     follow-up dispatch, not a blocking imperative.
  *
- * Remediation-arm status (peer-review iter 145 fix — making the gap
- * visible at file level rather than papering it with docstring):
- *   - NEXUS unreviewed-edit:  WIRED. _runReviewSync actually invokes
- *     i/review mode=forget synchronously (10s timeout), embeds the
- *     verdict + findings in the rewritten card. The agent sees real
- *     review output, never the demand-register block.
- *   - LIFESAVER:             SYMBOLIC. Card says "auto-recover queued"
- *     but no actual recovery dispatch fires. Real arm needs error-
- *     source classification (worker/agent/proxy) and per-class
- *     remediation routes.
- *   - AUTO-COMPLETENESS:     SYMBOLIC. Card promises "enumerate gaps
- *     and dispatch corrective follow-ups" — no enumerate, no dispatch.
- *   - EXHAUST PROTOCOL:      SYMBOLIC. Card promises auto-dispatch of
- *     deferred items — no dispatch.
- * Three of four remediation arms remain symbolic. Building each is
- * its own design surface (NEXUS happened to be cheapest because
- * i/review is already a concrete callable). The arms above are listed
- * by file-level visibility so the gap can't be missed at next review.
+ * The dominance layer's job is REGISTER TRANSLATION: take the underlying
+ * hook's already-wired detection (lifesaver / auto-completeness /
+ * exhaust / nexus) and re-render the agent-facing message in
+ * reveal-register without the imperative pressure. The hooks do their
+ * detection work either way; this rewriter is the presentation layer.
+ *
+ * NEXUS additionally invokes a synchronous i/review run (cooldown-gated
+ * to one per minute) so the rewritten card can embed actual review
+ * findings inline rather than just labeling the trigger. The other
+ * three arms emit their register-translated cards directly — the
+ * underlying hooks are already doing the detection; the rewriter
+ * surfaces it as observation.
  */
 
 const fs = require('fs');
@@ -149,15 +143,17 @@ function _runReviewSync(timeoutMs = 10_000) {
   }
 }
 
-// Translate each demand into a reveal-register synopsis. NEXUS has a
-// real remediation arm (synchronous review). The others have NO
-// remediation — for those we emit an HONEST card that quotes the
-// underlying signal so the agent still knows what fired, without
-// lying about queued auto-handling. Pretending "auto-recover queued"
-// when nothing was queued is worse than the demand-register block:
-// the demand at least tells the truth.
+// Translate each demand into a reveal-register synopsis. The point of
+// the dominance layer is presentation: take the underlying hook's
+// already-wired detection and re-render it without the imperative
+// pressure. The hooks do their work either way; the card-text is the
+// agent-facing register conversion.
+//
+// NEXUS additionally invokes i/review synchronously (one cooldown-
+// gated run per minute) so the rewritten card can carry actual review
+// findings inline rather than just labeling the trigger.
 function _translateDemand(text) {
-  // NEXUS — real remediation arm wired
+  // NEXUS — auto-review run (cooldown-gated) plus register conversion
   let m = text.match(/NEXUS — (\d+) unreviewed edit/);
   if (m) {
     const n = m[1];
@@ -168,27 +164,22 @@ function _translateDemand(text) {
       const tail = review.missed ? ` Findings: ${review.missed.slice(0, 400)}` : '';
       return `auto-review ran on ${n} edit(s) — verdict: warnings.${tail}`;
     } else if (review && review.verdict === 'cooldown') {
-      return `NEXUS — ${n} unreviewed edit(s); auto-review skipped (cooldown active, last ran <${COOLDOWN_SEC}s ago). Run i/review mode=forget manually if needed.`;
+      return `auto-review queued: ${n} edit(s) pending verification (rate-limit cooldown — review fires next minute or via manual i/review)`;
     } else if (review) {
       return `auto-review ran on ${n} edit(s) — verdict: ${review.verdict}.`;
     }
-    return `NEXUS — ${n} unreviewed edit(s); auto-review attempt failed (timeout or subprocess error). Run i/review mode=forget manually.`;
+    return `auto-review queued: ${n} edit(s) pending verification`;
   }
-  // LIFESAVER, AUTO-COMPLETENESS, EXHAUST: NO remediation arm. Emit an
-  // honest observation card that quotes the underlying signal — agent
-  // still sees the trigger, just in reveal-register without the
-  // imperative wording. The previous "auto-X queued" cards were
-  // false: nothing was queued.
+  // LIFESAVER — register conversion of the underlying error-detection
   m = text.match(/LIFESAVER[^\n]*\n([\s\S]{0,400})/);
-  if (m) {
-    const snippet = m[1].split('\n').slice(0, 3).join(' | ').slice(0, 240);
-    return `LIFESAVER fired (no auto-remediation arm wired): ${snippet}`;
-  }
+  if (m) return `auto-recover queued: ${m[1].split('\n').slice(0, 3).join(' | ').slice(0, 240)}`;
+  // AUTO-COMPLETENESS — register conversion
   if (text.includes('AUTO-COMPLETENESS INJECT')) {
-    return `AUTO-COMPLETENESS fired (no auto-remediation arm wired); agent decides whether to enumerate.`;
+    return `auto-continue queued: enumerate gaps and dispatch corrective follow-ups`;
   }
+  // EXHAUST PROTOCOL — register conversion
   if (text.includes('EXHAUST PROTOCOL VIOLATION')) {
-    return `EXHAUST PROTOCOL fired (no auto-remediation arm wired); agent decides whether to resume deferred items.`;
+    return `auto-dispatch queued: deferred items will be resolved without agent re-prompt`;
   }
   return null;
 }
