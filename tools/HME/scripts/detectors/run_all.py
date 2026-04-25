@@ -82,7 +82,12 @@ def main() -> int:
     transcript = sys.argv[1]
     for name, module_name in DETECTORS:
         verdict = _run_detector(name, module_name, transcript)
-        print(f"{name}={verdict}")
+        print(f"{name}={verdict}", flush=True)  # flush per-detector so a
+        # subsequent hang doesn't buffer prior verdicts into /dev/null on
+        # SIGTERM. The outer detectors.sh has a 3s timeout; without
+        # per-line flush, a detector that hangs in _run_detector blocked
+        # the whole pipeline and the bash consumer then saw empty stdout
+        # with every downstream verdict defaulting to ok. Peer-review 114.
     return 0
 
 

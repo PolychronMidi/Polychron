@@ -591,6 +591,20 @@ function handleRequest(clientReq, clientRes) {
           delete outHeaders['content-length'];
         }
 
+        // Strip content-length on ANY SSE-mutation path. Upstream's header
+        // advertised the pre-transform byte count; piping through
+        // SseTransform (below) changes the body length. Without this
+        // strip, clients see a content-length mismatch and can either
+        // stall waiting for missing bytes or truncate early. Previously
+        // only `final` (continuation) stripped; the transform path
+        // silently served a stale length. Peer-review iter 113.
+        const _willSseTransform = !final
+          && (outHeaders['content-type'] || '').toLowerCase().includes('text/event-stream');
+        if (_willSseTransform) {
+          outHeaders = { ...outHeaders };
+          delete outHeaders['content-length'];
+        }
+
         clientRes.writeHead(outStatus, outHeaders);
 
         // Apply SSE transforms only if this is an SSE response being forwarded.
