@@ -450,21 +450,47 @@ guard, secret detection).
 
 ## Forward evolution
 
-Open work surfaces, ranked by likely impact:
+Open work surfaces, ranked by buddy's iter-146 leverage analysis (highest
+impact first). The first item already has a starter implementation
+shipped this turn — `_PARTNER_SYSTEM` in `synthesis_config.py` — to
+move the work from "documented future direction" to "available
+register, in use to be measured."
 
-### 1. Cross-session continuity
+### 1. Partner-review register (HIGHEST LEVERAGE — starter shipped)
 
-The buddy is currently per-session. A persistent KB anchor of "what
-the buddy named across sessions" would let the next session's buddy
-inherit some of the prior buddy's calibration. Implementation:
-buddy writes summary findings to KB at session end (PreCompact?);
-next session's init prompt references the most recent K entries.
+The doc itself names methodology coldness as a structural blindspot:
+forensic peer-review can't perform aesthetic judgment, future-
+maintainer empathy, sustained puzzlement, suspicion of design intent,
+or affection for elegant code. That blindspot already produces
+concrete misses observable in this codebase: `psycho_stop.py`'s naming
+(adversarial vocabulary in a permanent artifact), `dominance_response_rewriter.js`'s
+"auto-recover queued" cards (aesthetic-judgment failure where
+forensic review oscillated between "lie" and "register conversion"
+because it had no aesthetic register to settle the question), file
+lengths of `worker.py` (670+), `synthesis_inference.py`,
+`hme_proxy.js` (717+) that an aesthetic reviewer would have flagged
+as ugly-suggesting-broken before any specific bug.
 
-Risk: cross-session identity is metaphysically thin; the
-specialization comes from accumulated commitments, not summarized
-findings. May be cargo-cult continuity rather than real continuity.
+**Status:** `_PARTNER_SYSTEM` system prompt added to
+`tools/HME/mcp/server/tools_analysis/synthesis/synthesis_config.py`.
+Performs the six register-operations the forensic methodology can't
+(mark beauty, name cultural artifacts, hold puzzlement, ask "should
+this exist", future-maintainer empathy, aesthetic gestalt). Available
+for use by future review-mode that opts in. Routing path TODO: a
+separate `i/review mode=partner` or a dedicated middleware so
+partner-review output doesn't compete with forensic findings in the
+same channel.
 
-### 2. Multi-buddy roles
+### 2. Counterfactual replay
+
+The buddy reasons about cascade predictions but cannot test them.
+Replay-style infrastructure (run a compressed pipeline slice with
+buddy-suggested change vs without) would close the prediction-vs-
+reality loop. The cascade `injected=true` arm is wired (write side);
+the read side — reconciler scoring predictions against fingerprint
+shifts — is still unbuilt.
+
+### 3. Multi-buddy roles
 
 The TandemKit-derived discussion proposed: observer / devil's-advocate
 / toolmaster / continuity-keeper. Currently one buddy plays all
@@ -474,14 +500,6 @@ critique in the persona's domain.
 Risk: more buddies = more subprocess cost. Pick one persona at
 session start (or rotate per phase) rather than running multiple
 in parallel.
-
-### 3. Partner-review register
-
-Add a complementary methodology that performs the operations the
-forensic register can't: marking beauty, holding puzzlement,
-identifying cultural artifacts. Would require its own system
-prompt and probably a separate routing path so partner-review
-output doesn't compete with forensic findings in the same channel.
 
 ### 4. Auto-rotation of system prompts
 
@@ -494,14 +512,23 @@ Risk: optimizes for short-term hit rate at expense of breadth.
 Lock against pure metric gaming with periodic full-context
 self-audit.
 
-### 5. Counterfactual replay
+### 5. Cross-session continuity (LEAST LEVERAGE per buddy iter 146)
 
-The buddy reasons about cascade predictions but cannot test them.
-Replay-style infrastructure (run a compressed pipeline slice with
-buddy-suggested change vs without) would close the prediction-vs-
-reality loop. The cascade `injected=true` arm is the write side; the
-read side (reconciler scoring predictions against fingerprint shifts)
-is still unwired.
+The buddy is currently per-session. A persistent KB anchor of "what
+the buddy named across sessions" would let the next session's buddy
+inherit some of the prior buddy's calibration. Implementation:
+buddy writes summary findings to KB at session end (PreCompact?);
+next session's init prompt references the most recent K entries.
+
+**Why low-leverage:** cross-session identity is metaphysically thin;
+the specialization comes from accumulated commitments produced
+through the trajectory of the session under time pressure, not from
+summarized findings. A new session reading prior summaries is
+reconstructing, not continuing. May produce cargo-cult continuity
+rather than real continuity. Listed last because the buddy's own
+self-reference work (iter 143) made the structural argument that
+the buddy's specialization doesn't survive the session boundary
+in a way that summaries can carry.
 
 ---
 

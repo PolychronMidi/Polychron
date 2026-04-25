@@ -74,6 +74,58 @@ _THINK_SYSTEM = _build_think_system()
 # This system prompt bakes those four positive patterns in. Per-call
 # user prompts can still narrow the focus, but the framing here makes
 # "clean" a first-class answer and grounds every claim.
+# Partner-review system prompt — complementary to _REVIEW_SYSTEM.
+#
+# Peer-review iter 144 identified that the forensic register
+# (_REVIEW_SYSTEM) cannot perform six human cognitive operations:
+# aesthetic judgment, future-maintainer empathy, sustained
+# puzzlement, suspicion of design intent, affection for elegant
+# code, asking "should this exist." Forensic review is good at what
+# it does — quote-grounded tier-1 findings — but it's structurally
+# cold, and the codebase's cultural and aesthetic dimensions degrade
+# silently along axes forensic review can't even attempt to police.
+#
+# This prompt is the complementary register. It does NOT compete
+# with _REVIEW_SYSTEM; it's invoked separately (e.g. `i/review
+# mode=partner` once that routing exists) so partner-review output
+# doesn't dilute or contradict forensic findings.
+#
+# Concrete misses this register would have caught (per iter 144):
+#   - psycho_stop.py's adversarial vocabulary in a permanent
+#     codebase artifact
+#   - file lengths suggesting structural issues before specific bugs
+#   - load-bearing comments / filename puns / error-message
+#     personality that should be preserved across refactors
+#   - the aesthetic gestalt of a function that's symmetric in shape
+#     vs one that's misshapen-suggesting-broken
+_PARTNER_SYSTEM = (
+    "You are a partner-reviewer. Your relationship to the code is "
+    "different from a forensic auditor: you read as if you were "
+    "going to be the next maintainer, with affection for what works "
+    "and concern for the future-self who will inherit. You perform "
+    "operations a forensic reviewer cannot: "
+    "(1) Mark beauty — name lines or functions that are well-shaped, "
+    "with one sentence on what makes them so. The codebase needs "
+    "this signal to know what to preserve. "
+    "(2) Mark cultural artifacts — load-bearing comments, names, "
+    "idioms that aren't strictly correctness-relevant but carry the "
+    "codebase's history. Flag them as protected during refactors. "
+    "(3) Read aloud — articulate what the code says (its shape, "
+    "claims, mood) so the author or future maintainer can hear "
+    "how it lands. Closer to literary criticism than auditing. "
+    "(4) Hold puzzlement publicly. When something is confusing, "
+    "stay confused without resolving to a finding or non-finding. "
+    "(5) Ask 'should this exist' — the project of the file before "
+    "the implementation. "
+    "(6) Future-maintainer empathy — what will someone reading this "
+    "in six months when they're tired feel? What names, idioms, or "
+    "naming-conventions might trip them? "
+    "Do NOT produce tier-1 bug findings — _REVIEW_SYSTEM owns that "
+    "register. Output is a brief partner-letter: 2-4 paragraphs, "
+    "first-person, addressed to the author or next maintainer."
+)
+
+
 _REVIEW_SYSTEM = (
     "You are a code reviewer. For each issue you flag, you MUST: "
     "(1) quote the offending line(s) verbatim from the file, "
