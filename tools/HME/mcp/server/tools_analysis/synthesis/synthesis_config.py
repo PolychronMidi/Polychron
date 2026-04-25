@@ -40,16 +40,53 @@ def _build_think_system() -> str:
 
 _THINK_SYSTEM = _build_think_system()
 
-# Focused system prompt for diff/code-review paths. The generic
-# _THINK_SYSTEM above is project-marketing boilerplate (19 hypermeta
-# controllers, antagonism bridges, xenolinguistic texture) — useful
-# context for architectural-synthesis tools but pure bloat for a
-# "scan this diff for bugs" path. Reviewers get this stripped version
-# instead.
+# Code-review system prompt — calibrated against patterns that produced
+# real-bug signal vs hallucination during the 100-iteration sweep across
+# the HME codebase.
+#
+# Empirical findings on what extracts useful signal from the persistent
+# Opus thread (and likely from any sufficiently-capable reviewer LLM):
+#
+#   - PERMISSION TO CLEAR: prompts that explicitly allow "clean" / "no
+#     tier-1 issues" / "95%+ confidence only" produced calibrated honest
+#     answers. Prompts that read as "find the worst..." returned
+#     finding-shaped text regardless of whether bugs existed.
+#
+#   - QUOTE-GROUND: requiring the reviewer to QUOTE the suspicious line
+#     verbatim before reasoning about it dramatically reduces line-number
+#     hallucination. "Cite file:line" alone wasn't enough — the reviewer
+#     would invent the line content. "Quote the line + explain why" works.
+#
+#   - PROMISE-VS-DELIVERS: the strongest single framing was "compare the
+#     file's docstring/comments to its actual behavior — find divergence."
+#     Three real divergences in cascade_analysis.py, two in
+#     posttooluse_hme_review.sh, all confirmed.
+#
+#   - TIER-GATED: "Tier-1 (confirmed bug) only" produced honest "no tier-1
+#     issues found" responses on clean files. Without the tier gate, every
+#     prompt produced a vector regardless of code quality.
+#
+#   - LEADING PROMPTS POISON SIGNAL: "Find the worst non-obvious failure
+#     mode" or "Find code that's clever enough to obscure a subtle bug"
+#     consistently produced low-confidence inventions. The reviewer
+#     pattern-matches the framing, not the code.
+#
+# This system prompt bakes those four positive patterns in. Per-call
+# user prompts can still narrow the focus, but the framing here makes
+# "clean" a first-class answer and grounds every claim.
 _REVIEW_SYSTEM = (
-    "You are a code reviewer. Flag concrete bugs in the given diff. "
-    "Cite file:line for every claim. No generic advice, no preamble, "
-    "no architectural commentary. Max 4 items."
+    "You are a code reviewer. For each issue you flag, you MUST: "
+    "(1) quote the offending line(s) verbatim from the file, "
+    "(2) explain why what the code does diverges from what its name/"
+    "docstring/comments imply or what a calling site assumes, "
+    "(3) cite file:line. "
+    "Use a tier system: TIER-1 = confirmed bug or contract violation; "
+    "skip TIER-2/TIER-3 entirely. "
+    "If you cannot quote-justify with confidence ≥ 95%, say "
+    "'no tier-1 issues' and stop — that is a valid and respected answer. "
+    "No generic advice. No preamble. No architectural commentary unless "
+    "the prompt asks for it. Max 4 items. Empty findings (no tier-1) "
+    "are signal, not failure."
 )
 
 
