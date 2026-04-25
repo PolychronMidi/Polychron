@@ -24,6 +24,8 @@ What the regime self-balancer steers toward. The most audible dimension — dete
 | chaotic | 15% | 35% | 50% |
 | meditative | 75% | 20% | 5% |
 | volatile | 10% | 30% | 60% |
+| elegiac | 65% | 30% | 5% |
+| anthemic | 50% | 40% | 10% |
 
 ### Coupling topology bias
 How aggressively cross-layer modules couple. Sparse coupling = independent voices. Dense coupling = fused texture.
@@ -39,6 +41,8 @@ How aggressively cross-layer modules couple. Sparse coupling = independent voice
 | chaotic | [0.7, 1.0] | 0.50 | -0.15 |
 | meditative | [0.1, 0.4] | 0.10 | -0.40 |
 | volatile | [0.6, 0.9] | 0.40 | -0.10 |
+| elegiac | [0.3, 0.6] | 0.20 | -0.30 |
+| anthemic | [0.6, 0.9] | 0.40 | -0.20 |
 
 ### Trust ecology shape
 How many trust systems dominate and how competitive the landscape is.
@@ -54,11 +58,13 @@ How many trust systems dominate and how competitive the landscape is.
 | chaotic | low (0.3) | 1.4 | 0.4 |
 | meditative | very high (0.8) | 1.9 | 0.9 |
 | volatile | very low (0.2) | 1.3 | 0.3 |
+| elegiac | high (0.75) | 1.85 | 0.85 |
+| anthemic | medium-high (0.6) | 1.7 | 0.7 |
 
 ### Tension arc shape
 How tension builds across sections. Defines the target tension curve that the tension controller follows.
 
-- **shape**: named curve (flat, ascending, arch, sawtooth, erratic)
+- **shape**: named curve (flat, ascending, descending, arch, sawtooth, erratic)
 - **floor**: minimum tension (0-1)
 - **ceiling**: maximum tension (0-1)
 
@@ -69,6 +75,8 @@ How tension builds across sections. Defines the target tension curve that the te
 | chaotic | erratic | 0.20 | 0.95 |
 | meditative | flat | 0.05 | 0.30 |
 | volatile | sawtooth | 0.10 | 0.85 |
+| elegiac | descending | 0.20 | 0.55 |
+| anthemic | arch | 0.35 | 0.85 |
 
 ### Energy envelope
 Density and flicker range — overall energy level and rhythmic volatility.
@@ -83,6 +91,8 @@ Density and flicker range — overall energy level and rhythmic volatility.
 | chaotic | 0.75 | [0.10, 0.30] |
 | meditative | 0.25 | [0.01, 0.05] |
 | volatile | 0.60 | [0.08, 0.25] |
+| elegiac | 0.30 | [0.03, 0.10] |
+| anthemic | 0.65 | [0.05, 0.18] |
 
 ### Phase energy
 How the polyrhythmic layers interact — locked, drifting, or repelling.
@@ -97,6 +107,8 @@ How the polyrhythmic layers interact — locked, drifting, or repelling.
 | chaotic | 0.2 | 0.8 |
 | meditative | 0.8 | 0.2 |
 | volatile | 0.1 | 0.9 |
+| elegiac | 0.7 | 0.3 |
+| anthemic | 0.7 | 0.3 |
 
 ## Implementation
 
@@ -175,6 +187,7 @@ The `tension.shape` field drives a per-section tension modulation curve:
 
 - **flat** — constant 0.5 across all sections (ambient, no arc)
 - **ascending** — linear 0→1 across sections (building to climax)
+- **descending** — linear 1→0 across sections (release / denouement)
 - **arch** — sine curve peaking at mid-piece (default, classic arc)
 - **sawtooth** — repeating 0→1 ramp with resets (pulsing tension)
 - **erratic** — quasi-random multi-frequency oscillation (chaotic texture)
@@ -214,11 +227,13 @@ Orthogonal. Conductor profiles set what happens *within each beat* (composers, v
 
 ### Lab sketches
 
-Three test sketches in `lab/sketches.js`:
+Test sketches in `lab/sketches.js`:
 
 - **metaprofile-atmospheric-to-chaotic** — A/B test: atmospheric for sections 0-2, hot-switch to chaotic at section 3. Validates pivot behavior.
 - **metaprofile-meditative** — full run with meditative profile. Validates high coherence, low density, tight flicker.
 - **metaprofile-volatile** — full run with volatile. Validates maximum exploring, independent layers.
+- **metaprofile-elegiac** — full run with elegiac. Validates the descending tension shape (release / denouement arc).
+- **metaprofile-anthemic** — full run with anthemic. Validates locked-step shared peak (high coupling + arch tension + locked phases).
 
 You can combine any conductor profile with any metaprofile:
 - `atmospheric` conductor + `atmospheric` meta = maximally ambient
