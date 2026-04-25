@@ -26,7 +26,16 @@ const SEMANTIC_HINT_CATEGORIES = new Set(['architecture', 'decision', 'pattern',
 
 const MAX_CALLERS_SHOWN = 4;
 const CALLER_SCAN_DIRS = ['src', 'tools/HME'];
-const _callerCache = new Map(); // file path → caller list (per-process)
+
+// Per-file caller list cache. Persisted so a proxy restart doesn't cold-
+// start the cache and force re-scanning every file's call sites on the
+// first ~50 reads. Each lookup costs ~30-100ms (recursive grep across
+// src + tools/HME); warm-start saves that cost on bounce. Persistence
+// abstraction: see middleware/_persistent_map.js. Caches are perf-only,
+// not correctness-critical (mismatched cache → fresh grep computes the
+// truth anyway).
+const PersistentMap = require('./_persistent_map');
+const _callerCache = new PersistentMap('tmp/hme-mw-cache-callers.jsonl', { cap: 5000 });
 
 function _stemOf(fp) {
   return path.basename(fp, path.extname(fp));
