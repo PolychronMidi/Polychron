@@ -18,22 +18,30 @@ const { PROJECT_ROOT, mtimeCache } = require('../shared');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
 
 const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
-const REFRESH_MS = 60_000;
 const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;
 
-// Use the shared mtime-checked cache primitive (replaces the per-file
-// clock-only TTL caches that served stale data after aggregator rewrites).
-const _intentCache = mtimeCache({ ttlMs: REFRESH_MS });
+// Mtime-only cache — pure Pattern C fix. The previous 60s clock TTL was
+// the exact staleness-source removing Pattern C was supposed to eliminate;
+// mtimeCache with ttlMs=0 means "serve cached until the file actually
+// changes on disk." Peer-review (iter 103) caught the contradiction.
+const _intentCache = mtimeCache({ ttlMs: 0 });
 let _index = {};
 let _indexEmpty = true;
 let _trackedPaths = []; // sorted by depth desc so longest match wins
 let _trackedPathsBuiltFrom = null; // index identity that produced _trackedPaths
 
 function _loadIndex(_projectRoot) {
-  const indexPair = _intentCache.get(INTENT_PATH, () => {
-    if (!fs.existsSync(INTENT_PATH)) return { index: {}, empty: true };
-    try {
+  let indexPair;
+  try {
+    indexPair = _intentCache.get(INTENT_PATH, () => {
+      if (!fs.existsSync(INTENT_PATH)) return { index: {}, empty: true };
+      // Let parse/read errors PROPAGATE out of the loader — mtimeCache
+      // will not store on throw. Prior behavior caught the error and
+      // cached the empty sentinel against the real mtime, which then
+      // served empty permanently (until next file rewrite bumped mtime)
+      // even after a transient permission-flap recovered. Now a read
+      // failure simply skips cache-store; the next call retries.
       const raw = fs.readFileSync(INTENT_PATH, 'utf8');
       const data = JSON.parse(raw);
       const dirs = (data && typeof data.dirs === 'object') ? data.dirs : {};
@@ -42,10 +50,12 @@ function _loadIndex(_projectRoot) {
         index[k] = { rules: v.rules, drifted: v.drifted };
       }
       return { index, empty: Object.keys(index).length === 0 };
-    } catch (_e) {
-      return { index: {}, empty: true };
-    }
-  });
+    });
+  } catch (_loadErr) {
+    // Transient IO/parse failure: serve last-known state if we have
+    // any, otherwise empty. Do not poison-cache.
+    indexPair = _trackedPathsBuiltFrom || { index: {}, empty: true };
+  }
   // Sync module-level state with the cached pair only when the cached
   // identity changed (avoids re-sorting on every cache hit).
   if (_trackedPathsBuiltFrom !== indexPair) {

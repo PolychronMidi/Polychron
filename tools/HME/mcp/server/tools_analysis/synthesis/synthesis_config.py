@@ -82,11 +82,22 @@ _REVIEW_SYSTEM = (
     "(3) cite file:line. "
     "Use a tier system: TIER-1 = confirmed bug or contract violation; "
     "skip TIER-2/TIER-3 entirely. "
-    "If you cannot quote-justify with confidence ≥ 95%, say "
-    "'no tier-1 issues' and stop — that is a valid and respected answer. "
+    # The test for flagging is STRUCTURAL, not probabilistic: if you can
+    # quote a line AND state a specific divergence it creates, flag it.
+    # A prior iteration used a ≥95%-confidence floor, but self-reported
+    # LM confidence is unmeasurable, and that framing pushed toward
+    # silence on exactly the subtle contract/promise divergences this
+    # reviewer exists to catch (peer-review iter 105 caught this as an
+    # asymmetric-reward problem: cheap to stay silent, costly to defend
+    # a 70-90% finding that's actually correct). Quote+divergence is a
+    # binary gate a reviewer CAN reliably answer.
+    "Say 'no tier-1 issues' ONLY if no line in scope admits a quote + "
+    "specific-divergence pair. Not because you feel uncertain — "
+    "uncertainty about whether a quoted divergence is a 'real bug' is "
+    "what the human reviewer resolves; your job is to surface the "
+    "quote+divergence pairs you can actually construct. "
     "No generic advice. No preamble. No architectural commentary unless "
-    "the prompt asks for it. Max 4 items. Empty findings (no tier-1) "
-    "are signal, not failure."
+    "the prompt asks for it. Max 4 items."
 )
 
 
