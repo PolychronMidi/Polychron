@@ -320,6 +320,134 @@ test('nearest: excludes self and default; sorted ascending by distance', () => {
   }
 });
 
+// -- substrate-level fields (composer families / conductor pairing /
+// per-layer / section arc / controller disable / coupling pairs) ----
+test('composerFamilies: chaotic biases development high, diatonicCore low', () => {
+  const p = defs.get('chaotic');
+  assert.ok(p.composerFamilies, 'chaotic should declare composerFamilies');
+  assert.ok(p.composerFamilies.development > 1.0, 'development bias > 1');
+  assert.ok(p.composerFamilies.diatonicCore < 1.0, 'diatonicCore damped');
+});
+
+test('getComposerFamilyWeight: returns active profile bias or 1.0 default', () => {
+  mp.setActive(null);
+  assert.strictEqual(mp.getComposerFamilyWeight('development'), 1.0,
+    'no active profile -> 1.0');
+  mp.setActive('chaotic', 0);
+  assert.ok(mp.getComposerFamilyWeight('development') > 1.0);
+  assert.strictEqual(mp.getComposerFamilyWeight('nonexistentFamily'), 1.0,
+    'undeclared family -> 1.0');
+  mp.setActive(null);
+});
+
+test('conductor pairing: meditative prefers atmospheric, avoids chaotic', () => {
+  mp.setActive(null);
+  mp.setActive('meditative', 0);
+  assert.strictEqual(mp.preferConductorProfile('atmospheric'), true);
+  assert.strictEqual(mp.preferConductorProfile('meditative'), true);
+  assert.strictEqual(mp.preferConductorProfile('chaotic'), false);
+  assert.strictEqual(mp.avoidConductorProfile('chaotic'), true);
+  assert.strictEqual(mp.avoidConductorProfile('atmospheric'), false);
+  mp.setActive(null);
+});
+
+test('disableControllers: meditative silences antagonism_bridges', () => {
+  mp.setActive(null);
+  mp.setActive('meditative', 0);
+  assert.strictEqual(mp.isControllerDisabled('antagonism_bridges'), true);
+  assert.strictEqual(mp.isControllerDisabled('phase_lock'), false,
+    'undeclared -> not disabled');
+  mp.setActive(null);
+  assert.strictEqual(mp.isControllerDisabled('antagonism_bridges'), false,
+    'no active -> not disabled');
+});
+
+test('couplingPairs: chaotic prescribes density-entropy, anthemic density-tension', () => {
+  mp.setActive(null);
+  mp.setActive('chaotic', 0);
+  const chaoticPairs = mp.getCouplingPairsHint();
+  assert.ok(Array.isArray(chaoticPairs));
+  assert.ok(chaoticPairs.some((p) => p[0] === 'density' && p[1] === 'entropy'));
+  mp.setActive(null);
+  mp.setActive('anthemic', 0);
+  const anthemicPairs = mp.getCouplingPairsHint();
+  assert.ok(anthemicPairs.some((p) => p[0] === 'density' && p[1] === 'tension'));
+  mp.setActive(null);
+});
+
+test('substrate fields: schema rejects malformed declarations', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customFile = path.join(customDir, '_test_bad_substrate.json');
+  fs.mkdirSync(customDir, { recursive: true });
+  // Negative composer family weight should be rejected.
+  fs.writeFileSync(customFile, JSON.stringify({
+    name: 'test_bad_substrate',
+    description: 'bad: negative family weight',
+    inherits: 'atmospheric',
+    composerFamilies: { development: -1.0 },
+    sectionAffinity: ['exposition'],
+    minDwellSections: 1,
+  }));
+  try {
+    assert.throws(() => defs.loadCustomProfiles(), /must be >= 0/);
+  } finally {
+    fs.unlinkSync(customFile);
+    try { fs.rmdirSync(customDir); } catch (_e) {}
+    try { fs.rmdirSync(path.dirname(customDir)); } catch (_e) {}
+  }
+});
+
+test('sectionArc: schema rejects unknown section types', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customFile = path.join(customDir, '_test_bad_arc.json');
+  fs.mkdirSync(customDir, { recursive: true });
+  fs.writeFileSync(customFile, JSON.stringify({
+    name: 'test_bad_arc',
+    description: 'bad: unknown section type',
+    inherits: 'atmospheric',
+    sectionArc: ['intro', 'middle_blast'],
+    sectionAffinity: ['exposition'],
+    minDwellSections: 1,
+  }));
+  try {
+    assert.throws(() => defs.loadCustomProfiles(), /sectionArc/);
+  } finally {
+    fs.unlinkSync(customFile);
+    try { fs.rmdirSync(customDir); } catch (_e) {}
+    try { fs.rmdirSync(path.dirname(customDir)); } catch (_e) {}
+  }
+});
+
+test('layerVariants: schema accepts L1/L2 keys, rejects others', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customFile = path.join(customDir, '_test_bad_layer.json');
+  fs.mkdirSync(customDir, { recursive: true });
+  fs.writeFileSync(customFile, JSON.stringify({
+    name: 'test_bad_layer',
+    description: 'bad: unknown layer key',
+    inherits: 'atmospheric',
+    layerVariants: { L3: 'atmospheric' },
+    sectionAffinity: ['exposition'],
+    minDwellSections: 1,
+  }));
+  try {
+    assert.throws(() => defs.loadCustomProfiles(), /layerVariants/);
+  } finally {
+    fs.unlinkSync(customFile);
+    try { fs.rmdirSync(customDir); } catch (_e) {}
+    try { fs.rmdirSync(path.dirname(customDir)); } catch (_e) {}
+  }
+});
+
 test('loadCustomProfiles: project file overrides built-in axis values', () => {
   const fs = require('fs');
   const path = require('path');
