@@ -65,7 +65,13 @@ metaProfileDefinitions = (() => {
       regime: { coherent: 0.30, evolving: 0.50, exploring: 0.20 },
       coupling: { strength: [0.5, 0.8], density: 0.30, antagonismThreshold: -0.25 },
       trust: { concentration: 0.5, dominantCap: 1.6, starvationFloor: 0.6 },
-      tension: { shape: 'ascending', floor: 0.40, ceiling: 0.90 },
+      // Tension ceiling itself ascends across the activation: 0.70 -> 0.90.
+      // Combined with `shape: 'ascending'` (the per-section curve), the
+      // effective ceiling rises during the section AND across sections,
+      // doubling the "building pressure" character. Controllers wanting
+      // mid-progress resolution call metaProfiles.getAxisValueAt('tension',
+      // 'ceiling', fallback, progress).
+      tension: { shape: 'ascending', floor: 0.40, ceiling: { from: 0.70, to: 0.90, curve: 'ascending' } },
       energy: { densityTarget: 0.55, flickerRange: [0.05, 0.15] },
       phase: { lockBias: 0.4, layerIndependence: 0.5 },
       sectionAffinity: ['exposition', 'development', 'resolution'],
@@ -79,7 +85,12 @@ metaProfileDefinitions = (() => {
       coupling: { strength: [0.7, 1.0], density: 0.50, antagonismThreshold: -0.15 },
       trust: { concentration: 0.3, dominantCap: 1.4, starvationFloor: 0.4 },
       tension: { shape: 'erratic', floor: 0.20, ceiling: 0.95 },
-      energy: { densityTarget: 0.75, flickerRange: [0.10, 0.30] },
+      // Density target as a stochastic distribution -- per-tick samples
+      // give organic micro-jitter without manual flicker code. cv ~0.08 =
+      // moderate variance; controllers wanting samples call
+      // metaProfiles.sampledScaleFactor('energy','densityTarget') instead
+      // of scaleFactor (which collapses to mean for determinism).
+      energy: { densityTarget: { mean: 0.75, std: 0.06 }, flickerRange: [0.10, 0.30] },
       phase: { lockBias: 0.2, layerIndependence: 0.8 },
       sectionAffinity: ['development', 'climax'],
       minDwellSections: 1,

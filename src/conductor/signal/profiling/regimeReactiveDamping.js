@@ -60,8 +60,13 @@ regimeReactiveDamping = (() => {
   function _getMaxTension() {
     return _BASE_MAX_TENSION * metaProfiles.scaleFactor('tension', 'ceiling');
   }
+  // Density target uses sampledScaleFactor so distribution-typed values
+  // (e.g. chaotic.energy.densityTarget = {mean, std}) draw a fresh sample
+  // each call -- organic per-tick density variation without manual
+  // flicker. Scalar values short-circuit to deterministic ratio (no
+  // perturbation), so non-distribution profiles see no behavioral change.
   function _getMaxDensity() {
-    return _BASE_MAX_DENSITY * metaProfiles.scaleFactor('energy', 'densityTarget');
+    return _BASE_MAX_DENSITY * metaProfiles.sampledScaleFactor('energy', 'densityTarget');
   }
   const MAX_FLICKER = _BASE_MAX_FLICKER;
 
