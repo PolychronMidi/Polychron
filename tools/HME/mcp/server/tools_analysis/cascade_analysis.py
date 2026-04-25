@@ -109,13 +109,28 @@ def _load_dep_graph() -> dict:
         return _CACHE["dep"]
     if not os.path.exists(path):
         _CACHE["dep"] = {"nodes": {}, "edges": []}
+        # Record a sentinel mtime for missing-file so the next call's
+        # mtime check serves the cached empty rather than re-stat-ing.
+        # 0.0 is unique vs any real mtime (real mtimes are positive
+        # epoch seconds).
+        _CACHE["dep:_mtime"] = 0.0
         return _CACHE["dep"]
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         _CACHE["dep:_mtime"] = os.path.getmtime(path)
     except (OSError, json.JSONDecodeError):
+        # Peer-review iter 125: prior code didn't set the mtime cache
+        # key on parse failure, so every subsequent call re-read AND
+        # re-parsed AND re-failed forever — repeated CPU + IO on every
+        # invocation while serving the same cached empty. Now: cache
+        # both data AND the corrupting file's mtime, so we re-attempt
+        # only when the file is actually rewritten.
         data = {"nodes": {}, "edges": []}
+        try:
+            _CACHE["dep:_mtime"] = os.path.getmtime(path)
+        except OSError:
+            _CACHE["dep:_mtime"] = 0.0
     _CACHE["dep"] = data
     return data
 
@@ -126,13 +141,20 @@ def _load_feedback_graph() -> dict:
         return _CACHE["fb"]
     if not os.path.exists(path):
         _CACHE["fb"] = {}
+        _CACHE["fb:_mtime"] = 0.0
         return _CACHE["fb"]
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
         _CACHE["fb:_mtime"] = os.path.getmtime(path)
     except (OSError, json.JSONDecodeError):
+        # Same parse-failure cache hole as _load_dep_graph above —
+        # iter 125 fix applied symmetrically.
         data = {}
+        try:
+            _CACHE["fb:_mtime"] = os.path.getmtime(path)
+        except OSError:
+            _CACHE["fb:_mtime"] = 0.0
     _CACHE["fb"] = data
     return data
 
