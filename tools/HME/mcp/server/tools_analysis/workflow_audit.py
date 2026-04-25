@@ -540,7 +540,26 @@ def what_did_i_forget(changed_files: str) -> str:
     probes = _render_probes()
     warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
-    diff_section = f"\nCode diff (first 4000 chars):\n```\n{diff_context}\n```\n" if diff_context else ""
+
+    # Diff section is redundant with hunk_section (which provides ±10
+    # surrounding lines WITH line numbers — strictly more useful for
+    # bug reasoning than raw unified diff). When a persistent subagent
+    # thread is active (tmp/hme-thread.sid), every review call appends
+    # to the same session's context, so compressing the diff in half
+    # saves ~2KB per review from accumulating indefinitely. We keep
+    # just the first ~800 chars so the subagent can still see the
+    # actual change shape; the hunks provide the context for reasoning.
+    _thread_active = os.path.exists(os.path.join(
+        os.environ.get("PROJECT_ROOT", ""), "tmp", "hme-thread.sid"))
+    _diff_cap = 800 if _thread_active else 4000
+    if diff_context and _thread_active:
+        diff_section = (f"\nDiff summary (first {_diff_cap} chars; hunks "
+                        f"below give surrounding context):\n```\n"
+                        f"{diff_context[:_diff_cap]}\n```\n")
+    elif diff_context:
+        diff_section = f"\nCode diff (first {_diff_cap} chars):\n```\n{diff_context[:_diff_cap]}\n```\n"
+    else:
+        diff_section = ""
     hunk_section = hunk_context if hunk_context else ""
     synthesis = None
     _synthesis_timed_out = False
