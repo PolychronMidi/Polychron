@@ -1,4 +1,12 @@
-# Block any bash access to compiled output — out/ is a black box
+# Source the policy-enabled helper. Each gate that has a JS counterpart
+# in tools/HME/policies/builtin/ guards itself with `_policy_enabled` so
+# `i/policies disable <name>` works uniformly across both layers (the
+# disable-doesn't-fully-disable wart documented in policies/README.md).
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../helpers/_policy_enabled.sh" 2>/dev/null || true
+
+# Block any bash access to compiled output — out/ is a black box.
+# (No JS counterpart yet — `block-out-dir-writes` covers Edit/Write but
+# this also blocks Bash commands that touch out/, which is broader.)
 if echo "$CMD" | grep -q "tools/HME/chat/out"; then
   cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
   _emit_block "BLOCKED: tools/HME/chat/out/ is a black box. Work with the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
@@ -32,12 +40,12 @@ fi
 # curl/wget piped into a shell interpreter (sh, bash, zsh, ksh) regardless of
 # spacing, flag order, or which way the pipe is written. FailproofAI calls this
 # out as a primary class of LLM-agent compromise.
-if echo "$CMD" | grep -qE '\b(curl|wget|fetch)\b[^|]*\|[[:space:]]*(\.[[:space:]]+|sudo[[:space:]]+|exec[[:space:]]+)?(sh|bash|zsh|ksh|dash)\b'; then
+if _policy_enabled block-curl-pipe-sh && echo "$CMD" | grep -qE '\b(curl|wget|fetch)\b[^|]*\|[[:space:]]*(\.[[:space:]]+|sudo[[:space:]]+|exec[[:space:]]+)?(sh|bash|zsh|ksh|dash)\b'; then
   _emit_block "BLOCKED: piping a remote download into a shell interpreter (curl|sh, wget|bash, etc.) is a primary supply-chain attack pattern. Download to a file, inspect it, then execute deliberately if needed."
   exit 2
 fi
 
-if echo "$CMD" | grep -q 'run\.lock'; then
+if _policy_enabled block-runlock-deletion && echo "$CMD" | grep -q 'run\.lock'; then
   _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>/dev/null <<'PY'
 import shlex, sys, re
 cmd = sys.argv[1] if len(sys.argv) > 1 else ""

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_safety.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../helpers/_policy_enabled.sh" 2>/dev/null || true
 # HME PreToolUse: Write — enforce lab rules, block memory saves, detect secrets
 INPUT=$(cat)
 FILE=$(_safe_jq "$INPUT" '.tool_input.file_path' '')
@@ -12,45 +13,39 @@ if [ -f "${PROJECT_ROOT}/tmp/run.lock" ] && echo "$FILE" | grep -qE '/Polychron/
   exit 2
 fi
 
-# Block direct writes to compiled output — edit the .ts source instead
-if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
+# Block direct writes to compiled output — edit the .ts source instead.
+# JS counterpart: block-out-dir-writes (PreToolUse Write/Edit/MultiEdit).
+if _policy_enabled block-out-dir-writes && echo "$FILE" | grep -q "tools/HME/chat/out/"; then
   cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
   _emit_block "BLOCKED: Do NOT write files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
   exit 2
 fi
 
 # Block writes to the auto-memory directory — HME KB is the canonical
-# place for cross-session knowledge. Memory writes here are an
-# antipattern: they're invisible to the rest of the system, can't be
-# semantically searched, and accumulate without retirement.
-if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
+# place for cross-session knowledge. JS counterpart: block-memory-dir-writes.
+if _policy_enabled block-memory-dir-writes && echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then
   _emit_block "BLOCKED: The .claude/projects memory directory is deprecated. Use HME KB instead: i/learn title=\"...\" content=\"...\" category=\"feedback\". Memories that point at behavioral rules belong in CLAUDE.md, not memory/."
   exit 2
 fi
 
-# Block writes to misplaced log/, metrics/, or tmp/ directories
-if echo "$FILE" | grep -qE '/(log|tmp)/'; then
+# Block writes to misplaced log/, metrics/, or tmp/ directories.
+# JS counterparts: block-misplaced-log-tmp + block-misplaced-metrics.
+if _policy_enabled block-misplaced-log-tmp && echo "$FILE" | grep -qE '/(log|tmp)/'; then
   if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/(log|tmp)/'; then
     _emit_block "BLOCKED: log/ and tmp/ only exist at project root. Do not write files inside subdirectory variants. Route output through \$PROJECT_ROOT/{log,tmp}/."
     exit 2
   fi
 fi
-if echo "$FILE" | grep -qE '/metrics/'; then
+if _policy_enabled block-misplaced-metrics && echo "$FILE" | grep -qE '/metrics/'; then
   if ! echo "$FILE" | grep -qE '^'"${PROJECT_ROOT}"'/output/metrics/'; then
     _emit_block "BLOCKED: metrics/ only exists at output/metrics/. Do not write files in any other metrics/ directory."
     exit 2
   fi
 fi
 
-# Block writes to credential filenames. Filename-based check catches
-# attempts to write `.pem`, `.key`, `id_rsa`, `id_ed25519`, `*.pfx`,
-# `*.p12`, `credentials`, `service-account*.json`, `.npmrc` (auth tokens),
-# `.pypirc` (auth tokens) regardless of the content. FailproofAI's
-# `block-secrets-write` covers this; we extend our content-pattern detector
-# below with filename detection so an `id_rsa` write attempt fails before
-# any content inspection.
+# Block writes to credential filenames. JS counterpart: block-secrets-write.
 _BASENAME="$(basename "$FILE" 2>/dev/null)"
-if echo "$_BASENAME" | grep -qiE '^(id_rsa|id_ed25519|id_ecdsa|id_dsa)(\.pub)?$|\.(pem|key|pfx|p12|jks)$|^credentials(\.json)?$|^service[-_]account.*\.json$|^\.npmrc$|^\.pypirc$|^\.netrc$'; then
+if _policy_enabled block-secrets-write && echo "$_BASENAME" | grep -qiE '^(id_rsa|id_ed25519|id_ecdsa|id_dsa)(\.pub)?$|\.(pem|key|pfx|p12|jks)$|^credentials(\.json)?$|^service[-_]account.*\.json$|^\.npmrc$|^\.pypirc$|^\.netrc$'; then
   _emit_block "BLOCKED: writing to a credential filename ($_BASENAME). Polychron does not store keys, certs, or auth tokens in the repo. If this is a test fixture, name it with a non-credential prefix (e.g. fixture-*.pem); if it's an accidental real key, do NOT proceed."
   exit 2
 fi
