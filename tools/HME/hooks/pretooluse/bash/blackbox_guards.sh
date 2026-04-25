@@ -19,8 +19,62 @@ if echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/metrics($|/)';
   fi
 fi
 
-# Block run.lock deletion (hard rule)
-if echo "$CMD" | grep -q 'run\.lock' && echo "$CMD" | grep -q 'rm'; then
-  _emit_block "BLOCKED: Never delete run.lock"
-  exit 2
+# Block run.lock deletion (hard rule). Argv-tokenized matching via shlex —
+# the previous `grep run.lock && grep rm` check missed deletion-class verbs
+# that aren't `rm`: mv, unlink, find -delete, shred, truncate, >run.lock
+# (redirect-truncate). FailproofAI's architecture doc names argv tokenization
+# as the concrete defense against shell-operator-injection bypasses; we apply
+# the same idea here. Best-effort: variable-expanded paths (e.g.
+# `BASE=run; rm tmp/$BASE.lock`) still require runtime evaluation to detect
+# and are out of scope. The guard is paired with a settings.json deny rule
+# (Bash(rm*run.lock*)) — defense in depth.
+if echo "$CMD" | grep -q 'run\.lock'; then
+  _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>/dev/null <<'PY'
+import shlex, sys, re
+cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+DELETION_VERBS = {"rm", "unlink", "shred", "truncate"}
+def has_runlock(tok):
+    return "run.lock" in tok
+try:
+    tokens = shlex.split(cmd, posix=True, comments=False)
+except ValueError:
+    # Mismatched quotes: fall back to substring presence checks.
+    tokens = re.split(r"\s+", cmd)
+joined = " ".join(tokens)
+verbs_in_cmd = {t for t in tokens if t in DELETION_VERBS}
+runlock_tokens = [t for t in tokens if has_runlock(t)]
+# Direct deletion verb operating on a run.lock token.
+if verbs_in_cmd and runlock_tokens:
+    print("BLOCK:deletion_verb")
+    sys.exit(0)
+# `find ... run.lock ... -delete` — find with -delete is deletion.
+if "find" in tokens and runlock_tokens and any(t == "-delete" for t in tokens):
+    print("BLOCK:find_delete")
+    sys.exit(0)
+# `mv` with run.lock as the source argument moves it out of the way —
+# functionally equivalent to deletion as far as the lock contract goes.
+if "mv" in tokens:
+    mv_idx = tokens.index("mv")
+    args = [t for t in tokens[mv_idx+1:] if not t.startswith("-")]
+    if args and has_runlock(args[0]):
+        print("BLOCK:mv_lock")
+        sys.exit(0)
+# Redirect-truncation: `> tmp/run.lock` or `>tmp/run.lock`.
+if re.search(r">\s*[^|&;\s]*run\.lock\b", cmd):
+    print("BLOCK:redirect_truncate")
+    sys.exit(0)
+# Python/Node/Perl that calls os.remove / fs.unlinkSync / unlink against
+# run.lock — string-presence inside the script body counts. Crude but
+# catches the obvious scripted-bypass.
+if any(t in tokens for t in ("python3", "python", "node", "perl", "ruby")):
+    if re.search(r"(os\.remove|os\.unlink|unlink(Sync)?|shutil\.move|Path[^\)]*\.unlink)", cmd) and runlock_tokens:
+        print("BLOCK:scripted_unlink")
+        sys.exit(0)
+print("ALLOW")
+PY
+)
+  if [ "${_RUNLOCK_VERDICT:-}" != "ALLOW" ] && [ -n "${_RUNLOCK_VERDICT:-}" ]; then
+    _emit_block "BLOCKED: Never delete run.lock (matched: ${_RUNLOCK_VERDICT})"
+    exit 2
+  fi
 fi
