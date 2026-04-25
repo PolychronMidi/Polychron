@@ -69,8 +69,19 @@ const POLICY_NAMES = [
 ];
 
 const TRACE_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-chain.trace');
-const ERROR_LOG = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
 const VERDICTS_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-stop-detector-verdicts.env');
+
+// Consolidated telemetry surface — single record() entry that fan-outs
+// to the right files based on category. Replaces the ad-hoc fs.append-
+// FileSync to log/hme-errors.log; keeps category=error so LIFESAVER's
+// text-scan picks up policy crashes the same as before.
+let _telemetry = null;
+function _getTelemetry() {
+  if (_telemetry !== null) return _telemetry;
+  try { _telemetry = require('../../telemetry'); }
+  catch (_e) { _telemetry = false; }
+  return _telemetry;
+}
 
 function nowIso() { return new Date().toISOString(); }
 
@@ -88,10 +99,21 @@ function resetTrace() {
 }
 
 function logError(policyName, message) {
+  // Route through the consolidated telemetry module if available; falls
+  // back to direct file append if the module isn't loadable. Replaces
+  // the prior ad-hoc fs.appendFileSync — keeps the same on-disk shape
+  // so LIFESAVER's text-scan still picks up policy crashes.
+  const t = _getTelemetry();
+  if (t) {
+    t.error('stop_chain_policy_error', { policy: policyName, message, ts: nowIso() });
+    return;
+  }
+  // Fallback when telemetry module is missing — preserves prior behavior.
   try {
-    fs.mkdirSync(path.dirname(ERROR_LOG), { recursive: true });
+    const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+    fs.mkdirSync(path.dirname(errLog), { recursive: true });
     fs.appendFileSync(
-      ERROR_LOG,
+      errLog,
       `[${nowIso()}] [stop_chain] policy ${policyName}: ${message}\n`
     );
   } catch (_e) { /* error-log write failure is never fatal */ }
