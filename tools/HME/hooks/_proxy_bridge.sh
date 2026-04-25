@@ -134,8 +134,42 @@ if [ -z "$RESP" ]; then
 fi
 
 if [ -z "$RESP" ]; then
-  # Proxy unreachable. FAIL LOUD, NOT FAIL OPEN.
+  # Proxy unreachable. Direct-mode fallback — implements the filesystem-IPC
+  # architectural lesson: the proxy is an accelerator, not a single point
+  # of failure. For events that have a daemon-less Node CLI (currently:
+  # Stop), shell out to the CLI directly so the chain still fires.
+  # Other events fall through to the existing fail-LOUD banner path below.
+  #
+  # When direct-mode succeeds we DO NOT fire the LIFESAVER banner (which
+  # would mislead the next turn into thinking hooks were skipped) but we
+  # DO record the fallback in the lifecycle log so an outage is audit-
+  # trailable. The sticky proxy-down flag IS still set so the recovery
+  # banner fires when the proxy comes back.
   _PB_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+
+  if [ "$EVENT" = "Stop" ] && [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tools/HME/proxy/stop_chain/cli.js" ]; then
+    # Direct-mode invocation. The CLI reads stdin, runs the chain in-process,
+    # writes decision JSON to stdout + informational text to stderr, exits 0.
+    _PB_DIRECT_ERR=$(mktemp 2>/dev/null || echo "/tmp/stop_direct_$$.err")
+    _PB_DIRECT_STDOUT=$(printf '%s' "$BODY" | node "$_PB_ROOT/tools/HME/proxy/stop_chain/cli.js" 2>"$_PB_DIRECT_ERR")
+    _PB_DIRECT_RC=$?
+    [ -n "$_PB_DIRECT_STDOUT" ] && printf '%s' "$_PB_DIRECT_STDOUT"
+    [ -s "$_PB_DIRECT_ERR" ] && cat "$_PB_DIRECT_ERR" >&2
+    rm -f "$_PB_DIRECT_ERR" 2>/dev/null
+    # Lifecycle audit (NOT hme-errors.log — direct-mode is a degraded but
+    # functional state, not an error that LIFESAVER should surface).
+    if [ -n "$_PB_ROOT" ]; then
+      mkdir -p "$_PB_ROOT/log" 2>/dev/null
+      echo "[$_PB_TS] [proxy-bridge] Stop chain ran in direct-mode (proxy down) — exit_code=${_PB_DIRECT_RC}" \
+        >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+      # Sticky proxy-down flag still set so the recovery banner fires
+      # when the proxy comes back up (next successful POST).
+      mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
+      echo "[$_PB_TS] [proxy-bridge] proxy unreachable; Stop ran in direct-mode" \
+        > "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
+    fi
+    exit "${_PB_DIRECT_RC:-0}"
+  fi
 
   # Maintenance-flag check: if tmp/hme-proxy-maintenance.flag exists and
   # is younger than its declared TTL, a caller has announced a planned
