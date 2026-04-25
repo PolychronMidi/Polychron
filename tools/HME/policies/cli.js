@@ -40,6 +40,37 @@ function _statusOf(p) {
   return p.defaultEnabled ? 'default-on' : 'default-off';
 }
 
+function cmdAll() {
+  const meta = require('./meta_registry');
+  const rules = meta.listAll();
+  // Group by layer.
+  const byLayer = new Map();
+  for (const r of rules) {
+    if (!byLayer.has(r.layer)) byLayer.set(r.layer, []);
+    byLayer.get(r.layer).push(r);
+  }
+  const layers = Array.from(byLayer.keys()).sort();
+  const pad = (s, n) => (String(s) + ' '.repeat(n)).slice(0, n);
+  for (const layer of layers) {
+    console.log(`\n[${layer}]  (${byLayer.get(layer).length})`);
+    for (const r of byLayer.get(layer).sort((a, b) => a.name.localeCompare(b.name))) {
+      console.log(`  ${pad(r.name, 32)} ${pad(r.status || '-', 8)} ${pad(r.file || '', 48)} ${(r.description || '').slice(0, 60)}`);
+    }
+  }
+  console.log(`\ntotal: ${rules.length} rules across ${layers.length} layers`);
+  return 0;
+}
+
+function cmdSummary() {
+  const meta = require('./meta_registry');
+  const s = meta.summary();
+  console.log(`total: ${s.total}`);
+  for (const [layer, n] of Object.entries(s.byLayer).sort()) {
+    console.log(`  ${layer.padEnd(12)} ${n}`);
+  }
+  return 0;
+}
+
 function cmdList() {
   _initRegistry();
   const policies = registry.list();
@@ -184,6 +215,8 @@ async function main() {
 
   let rc = 0;
   switch (cmd) {
+    case 'all':     rc = cmdAll(); break;
+    case 'summary': rc = cmdSummary(); break;
     case 'list':    rc = cmdList(); break;
     case 'show':    rc = cmdShow(positional[0]); break;
     case 'enable':  rc = cmdEnable(positional[0], scope); break;

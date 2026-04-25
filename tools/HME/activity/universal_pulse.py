@@ -362,6 +362,12 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
         name = ff["name"]
         path = PROJECT_ROOT / ff["path"]
         max_stale = float(ff.get("max_stale_sec", 900))
+        # Optional paired_path: only flag stale when the paired writer is
+        # FRESH but the target is stale. Both stale = idle session, not
+        # broken. Closes the false-positive class where idle-time gaps
+        # between turns generated spurious LIFESAVER alerts.
+        paired_rel = ff.get("paired_path")
+        paired_path = PROJECT_ROOT / paired_rel if paired_rel else None
         stale = True
         try:
             mtime = path.stat().st_mtime
@@ -370,6 +376,17 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
             stale = True
         except OSError:
             stale = True
+        # Paired-staleness gating: if both files are equally stale (or the
+        # pair is staler), suppress the alert — the session is idle.
+        if stale and paired_path is not None:
+            try:
+                paired_mtime = paired_path.stat().st_mtime
+                paired_stale = (now - paired_mtime) > max_stale
+                if paired_stale:
+                    stale = False  # both stale → idle, not broken
+            except (FileNotFoundError, OSError):
+                # Paired file missing — fall through to flag the original.
+                pass
         key = f"fresh:{name}"
         alert = tracker.record(key, not stale, now)
         if stale and alert:
