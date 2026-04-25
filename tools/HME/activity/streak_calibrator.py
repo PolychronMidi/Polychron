@@ -156,13 +156,20 @@ def main() -> None:
 
     if args.record:
         HISTORY.parent.mkdir(parents=True, exist_ok=True)
+        # fsync after append so a crash mid-write doesn't truncate the
+        # JSON record. _load_history's per-line JSONDecodeError swallow
+        # would otherwise drop the corrupted line silently and the
+        # calibrator would run on an under-counted window indefinitely.
+        line = json.dumps({
+            "ts": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "turnstart_lines": turnstart_lines,
+            "watermark_at_turn_end": watermark_lines,
+            "turn_end_lines": total_lines,
+        }) + "\n"
         with open(HISTORY, "a") as f:
-            f.write(json.dumps({
-                "ts": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
-                "turnstart_lines": turnstart_lines,
-                "watermark_at_turn_end": watermark_lines,
-                "turn_end_lines": total_lines,
-            }) + "\n")
+            f.write(line)
+            f.flush()
+            os.fsync(f.fileno())
 
     history = _load_history(args.window)
     velocity = compute_resolution_velocity(history)
