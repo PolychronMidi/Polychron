@@ -9,7 +9,10 @@ CMD=$(_safe_jq "$INPUT" '.tool_input.command' '')
 echo "$CMD" | grep -q 'npm run main' || exit 0
 
 PROJECT="$PROJECT_ROOT"
-SUMMARY="$PROJECT/metrics/trace-summary.json"
+# All metrics live under output/metrics/ since the Apr 2026 bulk migration —
+# the previous `$PROJECT/metrics/...` path silently no-op'd on every
+# `npm run main` completion (file never existed at the old location).
+SUMMARY="${METRICS_DIR:-$PROJECT/output/metrics}/trace-summary.json"
 [ -f "$SUMMARY" ] || exit 0
 
 # Extract key metrics and format as a reminder to persist to KB
