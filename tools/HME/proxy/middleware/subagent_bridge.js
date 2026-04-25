@@ -42,11 +42,11 @@ module.exports = {
   onToolResult({ toolUse, toolResult, ctx }) {
     if (!toolUse || toolUse.name !== 'Agent') return;
     const desc = (toolUse.input && toolUse.input.description) || '';
-    // Anchor reqId match to the hex-pattern synthesis_reasoning emits
-    // (12+ lowercase hex chars, word-boundary-terminated). The previous
-    // `[a-zA-Z0-9]+` greedy alnum could match unrelated descriptions and
-    // silently clobber legitimate captures.
-    const match = /HME reasoning for ([a-f0-9]{12,})\b/.exec(desc);
+    // Use the central markers registry so producer (synthesis_reasoning.py
+    // emitting `HME reasoning for <reqId>`) and consumer (this regex) share
+    // a single source of truth. See _markers.js for cross-component refs.
+    const { MARKERS } = require('./_markers');
+    const match = MARKERS.HME_AGENT_TASK.reqIdRegex.exec(desc);
     if (!match) return;
     const reqId = match[1];
     // Capture Agent's text output and write it to the results dir so

@@ -95,8 +95,19 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
         lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     except OSError:
         return issues
+    # Idiomatic 2>/dev/null patterns that aren't a safety concern: directory
+    # bookkeeping (mkdir -p), liveness probes (kill -0), best-effort helpers
+    # (rm -f, sed -n, cat for default fallback, date for timestamp, disown),
+    # logger appends (>> log), source guards. These are the noise that made
+    # the broad audit non-actionable.
+    BENIGN = re.compile(
+        r"\b(mkdir\s+-p|kill\s+-0|rm\s+-f|sed\s+-n|disown|source\s+|cat\s+\"\$"
+        r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log|\|\|\s*echo|\|\|\s*true)\b"
+    )
     for i, line in enumerate(lines, 1):
         if "2>/dev/null" not in line:
+            continue
+        if BENIGN.search(line):
             continue
         # Allow if the same line or surrounding has silent-ok or _safe_*
         # helpers (which are themselves audited).

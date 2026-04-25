@@ -14,7 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PROJECT_ROOT } = require('../shared');
+const { PROJECT_ROOT, mtimeCache } = require('../shared');
 const METRICS_DIR = process.env.METRICS_DIR || path.join(PROJECT_ROOT, 'output', 'metrics');
 
 const INTENT_PATH = path.join(METRICS_DIR, 'hme-dir-intent.json');
@@ -22,41 +22,41 @@ const REFRESH_MS = 60_000;
 const MAX_RULES_INJECTED = 2;
 const MAX_FOOTER_CHARS = 180;
 
-let _index = null;
+// Use the shared mtime-checked cache primitive (replaces the per-file
+// clock-only TTL caches that served stale data after aggregator rewrites).
+const _intentCache = mtimeCache({ ttlMs: REFRESH_MS });
+let _index = {};
 let _indexEmpty = true;
-let _loadedAt = 0;
 let _trackedPaths = []; // sorted by depth desc so longest match wins
+let _trackedPathsBuiltFrom = null; // index identity that produced _trackedPaths
 
-function _loadIndex(projectRoot) {
-  const now = Date.now();
-  // Refresh on either clock OR file mtime — when the aggregator rewrites
-  // hme-dir-intent.json mid-window, clock-only would serve stale rules
-  // for up to 60s after the rotation.
-  let mtime = 0;
-  try { mtime = fs.statSync(INTENT_PATH).mtimeMs; } catch (_) { /* file may not exist yet */ }
-  if (_index !== null && now - _loadedAt < REFRESH_MS && mtime <= _loadedAt) return _index;
-  try {
-    // INTENT_PATH is already absolute (joined with absolute METRICS_DIR
-    // upstream). path.join with another absolute prefix doesn't discard
-    // the leading one — `path.join('/a', '/b')` → `/a/b`, not `/b`. The
-    // previous join produced a doubled path that never existed; the
-    // catch silently set _index = {} and the middleware never fired.
-    const raw = fs.readFileSync(INTENT_PATH, 'utf8');
-    const data = JSON.parse(raw);
-    const dirs = (data && typeof data.dirs === 'object') ? data.dirs : {};
-    // Project out intro — never used at injection time, saves memory on 4000-char fields.
-    _index = {};
-    for (const [k, v] of Object.entries(dirs)) {
-      _index[k] = { rules: v.rules, drifted: v.drifted };
+function _loadIndex(_projectRoot) {
+  const indexPair = _intentCache.get(INTENT_PATH, () => {
+    if (!fs.existsSync(INTENT_PATH)) return { index: {}, empty: true };
+    try {
+      const raw = fs.readFileSync(INTENT_PATH, 'utf8');
+      const data = JSON.parse(raw);
+      const dirs = (data && typeof data.dirs === 'object') ? data.dirs : {};
+      const index = {};
+      for (const [k, v] of Object.entries(dirs)) {
+        index[k] = { rules: v.rules, drifted: v.drifted };
+      }
+      return { index, empty: Object.keys(index).length === 0 };
+    } catch (_e) {
+      return { index: {}, empty: true };
     }
-  } catch (_e) {
-    _index = {}; // no index yet — aggregator hasn't run
+  });
+  // Sync module-level state with the cached pair only when the cached
+  // identity changed (avoids re-sorting on every cache hit).
+  if (_trackedPathsBuiltFrom !== indexPair) {
+    _index = indexPair.index;
+    _indexEmpty = indexPair.empty;
+    _trackedPaths = Object.keys(_index).sort((a, b) => b.length - a.length);
+    _trackedPathsBuiltFrom = indexPair;
   }
-  _trackedPaths = Object.keys(_index).sort((a, b) => b.length - a.length);
-  _indexEmpty = _trackedPaths.length === 0;
-  _loadedAt = now;
   return _index;
 }
+
 
 function _relToProject(fp, projectRoot) {
   if (!fp) return '';
