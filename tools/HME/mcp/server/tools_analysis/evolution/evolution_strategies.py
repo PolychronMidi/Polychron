@@ -497,7 +497,9 @@ def _adversarial_stress() -> str:
     # Probe 7: All critical hook scripts exist and are executable.
     # Post-migration layout: LIFESAVER moved to proxy middleware (no more
     # pretooluse_lifesaver.sh), posttooluse_read.sh renamed to
-    # posttooluse_read_kb.sh, log-tool-call.sh is a stub (logic in proxy).
+    # posttooluse_read_kb.sh, log-tool-call.sh fully implemented
+    # (sources _safety.sh, posts to /transcript, triggers /reindex —
+    # the prior "stub" comment was stale).
     critical_hooks = [
         "stop.sh", "sessionstart.sh", "userpromptsubmit.sh",
         "log-tool-call.sh",

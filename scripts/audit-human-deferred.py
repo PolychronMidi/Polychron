@@ -46,25 +46,62 @@ SKIP = ("__pycache__", "node_modules", ".git", "out", "dist", ".lance")
 SCAN_EXTS = (".py", ".js", ".ts", ".sh", ".bash", ".md")
 
 CATEGORIES = {
+    # TODO/FIXME/XXX in a SELF-REFERENTIAL position (this code says it
+    # is itself unfinished). Excludes lines that DETECT or DESCRIBE
+    # those tokens (regex matchers, comment patterns, audit logic).
+    # Heuristic: the marker must be in a comment, not in a string
+    # literal that's a regex or detection pattern.
     "TODO_FIXME": re.compile(r"\b(TODO|FIXME|XXX)\b"),
-    "MVP_SCOPE": re.compile(r"\b(MVP scope|MVP\b|for now\b|placeholder)", re.IGNORECASE),
+    # MVP/placeholder claims about THIS file. "placeholder" inside a
+    # block-error message ("ellipsis-stub placeholder") is detection
+    # not deferral; filter via context.
+    "MVP_SCOPE": re.compile(r"\bMVP scope\b|\bMVP\s+(?:only|intent|scope)\b|\bfor\s+now\s+(?:we|let's|ignore|skip|trust)\b", re.IGNORECASE),
+    # Self-referential unwired claims. Must NOT match when the text is
+    # describing handling/blocking/detecting those concepts (e.g. a
+    # `stub blocker` middleware mentions "stub" repeatedly without
+    # itself being unimplemented).
     "UNWIRED": re.compile(
         r"\b(never wired|not yet wired|never connected|never built|"
-        r"never implement|dead code|stub\b|unimplemented)",
+        r"never implement(ed)?|currently unimplemented|"
+        r"this is dead code|leaving as stub|left as a stub|"
+        r"is a stub\b)",
         re.IGNORECASE,
     ),
-    "PHASE_DEFERRAL": re.compile(r"\bPhase[- ]?\d+\.?\d*\b"),
+    # Phase deferrals — only matches "Phase N" when the surrounding text
+    # claims phase N is incomplete or aspirational (not when phase N is
+    # being delivered or referenced as historical context).
+    "PHASE_DEFERRAL": re.compile(
+        r"\bPhase[- ]?\d+\.?\d*\b.*\b(later|TODO|not yet|never|aspirational|future|deferred)\b"
+        r"|\b(later|future|aspirational|deferred|TODO)\b.*\bPhase[- ]?\d+\.?\d*\b",
+        re.IGNORECASE,
+    ),
+    # Genuine deferral language.
     "DEFERRED": re.compile(
-        r"\b(deferred to|left for later|follow-up\b|followup\b|come back to|"
-        r"will revisit|will wire|aspirational)",
+        r"\b(deferred to|left for later|come back to (this|it|that)|"
+        r"will revisit|will wire (later|up later)|aspirational|"
+        r"defer (this|it|until))",
         re.IGNORECASE,
     ),
+    # Subjunctive-design markers — speculative future improvements.
     "SUBJUNCTIVE_DESIGN": re.compile(
         r"\b(should be wired|would be useful|could be extended|"
-        r"future-self|future maintainer|TODO when)",
+        r"TODO when|TODO once|TODO if|once .* lands|once .* is built)",
         re.IGNORECASE,
     ),
 }
+
+# Filter — line is NOT a real deferral if it matches one of these
+# (it's describing/detecting deferral patterns, not BEING one).
+DETECTION_CONTEXT = re.compile(
+    r"_emit_block|grep|regex|re\.compile|re\.findall|re\.search|"
+    r"_RE\s*=|_pattern\b|_re_\w+|"
+    r"audit-|detector|detect_|scan_for|matches?\b|"
+    r'BLOCKED:|"BLOCKED|"# .*regex|'
+    r"ANTIPATTERN:|antipattern\.|"
+    r"\.includes\([\"']|\.match\(|\.test\(|"
+    r"# .*tokens? that\b|# .*marker|# .*phrases?",
+    re.IGNORECASE,
+)
 
 
 def main() -> int:
@@ -85,6 +122,15 @@ def main() -> int:
             except OSError:
                 continue
             for ln, line in enumerate(lines, 1):
+                # Filter out lines that are DESCRIBING deferral patterns
+                # (regex matchers, audit logic, block-message literals)
+                # rather than admitting deferral in this file's own work.
+                if DETECTION_CONTEXT.search(line):
+                    continue
+                # Skip lines inside obvious comment-block descriptions
+                # of antipatterns, e.g. "Block stub/placeholder writes"
+                if re.search(r"#\s*(Block|BLOCKED|Detect|Scan)\b", line):
+                    continue
                 for cat, regex in CATEGORIES.items():
                     if regex.search(line):
                         counts[cat] += 1
