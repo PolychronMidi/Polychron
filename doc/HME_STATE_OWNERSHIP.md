@@ -31,7 +31,6 @@ The fix surface this document represents:
 | `tmp/hme-non-hme-streak.score` | `_safety.sh` (`_streak_tick`) | `_safety.sh` (`_streak_check`) |
 | `tmp/hme-streak-warn.txt` | `streak_calibrator.py` | `_safety.sh` |
 | `tmp/hme-onboarding.state` | `_onboarding.sh` helpers | onboarding hook chain |
-| `tmp/hme-tab.txt` | `_append_file_to_tab` (multiple hooks) | `precompact.sh`, `postcompact.sh` |
 | `tmp/hme-log-errors.watermark` | `hme_log_watermark.js` | `hme_log_watermark.js` |
 | `tmp/hme-supervisor-abandoned` | `proxy-supervisor.sh` (sentinel write) | `userpromptsubmit.sh` |
 | `output/metrics/detector-stats.jsonl` | each detector's `_emit_stats` | `audit-detector-stats.py` |
@@ -58,6 +57,10 @@ These are the structural risk. Each row needs an explicit strategy.
 - `tools/HME/hooks/helpers/safety/curl.sh` — `_safe_curl` failure entries
 - `tools/HME/hooks/helpers/safety/misc_safe.sh` — `_safe_*` helper failures
 - `tools/HME/hooks/lifecycle/sessionstart.sh` — broken-hook detection at boot
+- `tools/HME/hooks/_proxy_bridge.sh` — proxy-down LIFESAVER banner (fail-loud channel)
+- `tools/HME/hooks/direct/autocommit-direct.sh` — fail-loud channel for direct autocommit
+- `tools/HME/hooks/direct/proxy-watchdog.sh` — supervisor-abandoned sentinel
+- `tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh` — pipeline-status fail entries
 
 **Reader:** `tools/HME/hooks/lifecycle/stop/lifesaver.sh` (and `userpromptsubmit.sh` mid-turn)
 
@@ -72,11 +75,24 @@ These are the structural risk. Each row needs an explicit strategy.
 - `tools/HME/hooks/posttooluse/posttooluse_hme_review.sh` — clears EDIT, marks REVIEW
 - `tools/HME/hooks/lifecycle/stop/nexus_audit.sh` — periodic audit/prune
 - `tools/HME/hooks/lifecycle/userpromptsubmit.sh` — turnstart context
+- `tools/HME/hooks/lifecycle/sessionstart.sh` — boot reconciliation
 
 **Coordination strategy:**
 - Append-only writes
 - Periodic prune to bounded line count (`_nexus_prune_clean_edits`)
 - ⚠ **Risk**: `nexus_audit.sh` rewrites the file (truncate + re-write) which can collide with a concurrent middleware append. No `flock` currently. **Open work item**.
+
+### `tmp/hme-tab.txt`
+
+**Writers:**
+- `tools/HME/hooks/posttooluse/posttooluse_write.sh` — file-path append via `_append_file_to_tab` helper
+- `tools/HME/hooks/posttooluse/posttooluse_addknowledge.sh` — KB anchor pending entries
+- `tools/HME/hooks/lifecycle/sessionstart.sh` — boot-time reconciliation
+- (other posttooluse hooks calling `_append_file_to_tab`)
+
+**Reader:** `precompact.sh`, `postcompact.sh` for compaction-time context
+
+**Coordination strategy:** append-only single-line writes; periodic prune via `posttooluse_addknowledge.sh:50-52` (`sed -i '/^KB:/d'`). The sed-rewrite is the one non-append operation; it can race with concurrent appends but the impact is bounded (lost KB-tab line, recoverable on next anchor).
 
 ### `tmp/hme-errors.turnstart` and `tmp/hme-errors.lastread`
 
