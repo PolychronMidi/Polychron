@@ -226,10 +226,36 @@ async function main() {
   try {
     res = await postTool(tool, args);
   } catch (e) {
-    console.error(`hme-cli: request failed -- ${e.message}`);
-    console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
-    console.error(`  is the proxy running? \`curl http://${HOST}:${PORT}/health\` should return status:ready`);
-    process.exit(1);
+    // HTTP failed — fall back to filesystem-IPC queue. The queue path
+    // doesn't require the worker's HTTP server to be responsive, only
+    // the worker process to be alive enough to drain the queue (a
+    // CPU-saturated or GIL-hung worker can still eventually drain when
+    // load lets up). Set HME_CLI_DISABLE_QUEUE=1 to opt out.
+    if (process.env.HME_CLI_DISABLE_QUEUE !== '1') {
+      try {
+        const wq = require(path.join(__dirname, '..', 'tools/HME/proxy/worker_queue'));
+        const queueTimeoutMs = Number(process.env.HME_CLI_QUEUE_TIMEOUT_MS) || 60_000;
+        const queueRes = await wq.call('tool', { name: tool, args }, { timeoutMs: queueTimeoutMs });
+        if (queueRes !== null) {
+          console.error(`hme-cli: HTTP failed (${e.message}) — fell back to queue path, succeeded`);
+          res = { status: queueRes.ok ? 200 : 500, body: queueRes };
+        } else {
+          console.error(`hme-cli: HTTP failed (${e.message}) and queue path timed out after ${queueTimeoutMs}ms`);
+          console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+          console.error(`  is the worker process alive? \`ps -ef | grep worker.py\``);
+          process.exit(1);
+        }
+      } catch (qErr) {
+        console.error(`hme-cli: HTTP failed (${e.message}); queue fallback errored: ${qErr.message}`);
+        console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+        process.exit(1);
+      }
+    } else {
+      console.error(`hme-cli: request failed -- ${e.message}`);
+      console.error(`  worker: http://${HOST}:${PORT}  (HME_MCP_PORT=${PORT})`);
+      console.error(`  is the proxy running? \`curl http://${HOST}:${PORT}/health\` should return status:ready`);
+      process.exit(1);
+    }
   }
 
   if (res.status !== 200 || res.body.ok === false) {
