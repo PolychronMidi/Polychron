@@ -59,6 +59,7 @@ from .code_audits import (  # noqa: F401
     ShellHookAuditVerifier, ShellUndefinedVarsVerifier,
     ClaudeSettingsJsonVerifier, InterControllerCoherenceVerifier,
     PythonSyntaxVerifier, ShellSyntaxVerifier,
+    SilentFailureClassVerifier,
 )
 from .autocommit_health import (  # noqa: F401
     AutocommitHealthVerifier, ShimHealthVerifier,
@@ -109,6 +110,7 @@ REGISTRY = [
     CorePrinciplesAuditVerifier(),
     ShellHookAuditVerifier(),
     ShellUndefinedVarsVerifier(),
+    SilentFailureClassVerifier(),
     ClaudeSettingsJsonVerifier(),
     InterControllerCoherenceVerifier(),
     ProxyMiddlewareRegistryVerifier(),

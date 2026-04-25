@@ -93,6 +93,30 @@ const MARKERS = {
     consumers: ['(read by agent next-turn additionalContext)'],
     sentinel: '[hme auto-brief: <module>]',
   },
+
+  // Scaffolding-warning prefix — the "detect scaffolding-only warnings
+  // and treat verdict as clean" convention. Three sites used subtly
+  // different regexes; iter 111 peer-review caught the drift. All
+  // three now use the alternation `(HOOK CHANGE|DOC CHECK|SKIPPED|KB):`
+  // Needle is `SKIPPED` — short, unique-ish, present on all three sides.
+  HME_SCAFFOLD_PREFIX: {
+    producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
+    consumers: [
+      'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
+      'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
+    ],
+    sentinel: 'SKIPPED',  // one token from the alternation
+  },
+
+  // Detector verdict names — produced by run_all.py's per-detector
+  // printout, consumed by detectors.sh's case statement. Rename of
+  // any one side silently defaults downstream gates to "ok". Needle
+  // `psycho_stop=` uniquely identifies the verdict-print format.
+  DETECTOR_VERDICTS: {
+    producer: 'tools/HME/scripts/detectors/run_all.py',
+    consumers: ['tools/HME/hooks/lifecycle/stop/detectors.sh'],
+    sentinel: 'psycho_stop',
+  },
 };
 
 module.exports = { MARKERS };

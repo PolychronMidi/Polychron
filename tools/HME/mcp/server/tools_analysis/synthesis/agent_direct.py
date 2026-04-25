@@ -36,12 +36,68 @@ logger = logging.getLogger("HME")
 # Per-process call counter + cap for the thread dispatch path. Every
 # dispatched call spawns a `claude --resume` subprocess that bills the
 # user's account silently; unlike the sentinel path (naturally throttled
-# by agent turn cadence) there's no organic budget choke. The cap is
-# advisory — env-configurable, defaults generous — but returning None
-# past the ceiling forces callers through the fallback/sentinel path
-# so a runaway loop doesn't quietly burn a subscription.
+# by agent turn cadence) there's no organic budget choke.
+#
+# Peer-review "anything missing?" (iter 115) flagged that a module-level
+# counter resets on proxy/worker restart — a restart during a burst
+# silently re-opens the whole budget. The counter is now mirrored to
+# tmp/hme-thread-call-count (atomic rewrite + fsync) so a restart sees
+# the accumulated count. Stale counts auto-expire after 24h so one
+# runaway session doesn't permanently wedge the dispatcher.
 _DISPATCH_THREAD_CALL_COUNT = 0
 _DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))
+_DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
+
+
+def _count_file() -> str | None:
+    root = os.environ.get("PROJECT_ROOT", "")
+    return os.path.join(root, "tmp", "hme-thread-call-count") if root else None
+
+
+def _hydrate_call_count() -> None:
+    """Read persisted counter on module load so restarts don't reset budget.
+    Ignores stale files past TTL (assume runaway session ended)."""
+    global _DISPATCH_THREAD_CALL_COUNT
+    path = _count_file()
+    if not path or not os.path.isfile(path):
+        return
+    try:
+        with open(path, "r") as f:
+            raw = f.read().strip()
+        parts = raw.split(":")
+        if len(parts) == 2:
+            saved_ts = float(parts[0])
+            saved_n = int(parts[1])
+            if (time.time() - saved_ts) < _DISPATCH_THREAD_COUNT_TTL_SEC:
+                _DISPATCH_THREAD_CALL_COUNT = saved_n
+                logger.info(
+                    f"dispatch_thread: hydrated call count from {path} "
+                    f"(n={saved_n})"
+                )
+    except (OSError, ValueError) as e:
+        logger.warning(f"dispatch_thread: count hydrate failed: "
+                       f"{type(e).__name__}: {e}")
+
+
+def _persist_call_count() -> None:
+    """Atomic-rewrite the persisted counter. Called after each increment.
+    Best-effort — write failure is logged but does not block dispatch."""
+    path = _count_file()
+    if not path:
+        return
+    try:
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(f"{time.time()}:{_DISPATCH_THREAD_CALL_COUNT}")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except OSError as e:
+        logger.warning(f"dispatch_thread: count persist failed: "
+                       f"{type(e).__name__}: {e}")
+
+
+_hydrate_call_count()
 
 
 def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
@@ -103,6 +159,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
     # subscription tokens already streamed) bypassed the counter.
     # The cap now bounds subprocess spawns, which matches the docstring.
     _DISPATCH_THREAD_CALL_COUNT += 1
+    _persist_call_count()
     try:
         t0 = time.monotonic()
         result = subprocess.run(
