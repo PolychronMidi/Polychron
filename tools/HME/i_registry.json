@@ -127,6 +127,12 @@
     "help": {
       "description": "List all i/ tools grouped by category, with descriptions and usage.",
       "category": "meta"
+    },
+    "sensitivity": {
+      "description": "Metaprofile attribution aggregator — per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
+      "category": "diagnostic",
+      "usage": "i/sensitivity",
+      "examples": ["i/sensitivity"]
     }
   }
 }

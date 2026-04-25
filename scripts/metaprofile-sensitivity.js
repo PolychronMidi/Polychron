@@ -118,12 +118,31 @@ function aggregate(entries) {
     .filter((p) => profiles[p].score.mean !== null)
     .sort((a, b) => profiles[b].score.mean - profiles[a].score.mean);
 
+  // Coefficient of variation (std / |mean|) flags unstable profiles
+  // -- those whose outcome varies wildly relative to their average.
+  // Stable profile: cv < 0.15. Volatile: cv > 0.35. Below uses absolute
+  // mean to handle near-zero / negative score scales.
+  const stability = {};
+  for (const name of Object.keys(profiles)) {
+    const s = profiles[name].score;
+    if (s.n < 2 || s.mean === null || s.mean === 0) {
+      stability[name] = { cv: null, label: 'insufficient' };
+      continue;
+    }
+    const cv = round(s.std / Math.abs(s.mean), 4);
+    let label = 'stable';
+    if (cv > 0.35) label = 'volatile';
+    else if (cv > 0.15) label = 'moderate';
+    stability[name] = { cv, label };
+  }
+
   return {
     totalEntries: entries.length,
     profileCount: byProfile.size,
     profiles,
     bySection: profileSection,
     rankingByMeanScore: ranking,
+    stability,
   };
 }
 
@@ -155,7 +174,9 @@ function markdown(report) {
   for (let i = 0; i < report.rankingByMeanScore.length; i++) {
     const name = report.rankingByMeanScore[i];
     const meanScore = report.profiles[name].score.mean;
-    lines.push(`${i + 1}. **${name}** (mean score = ${meanScore})`);
+    const stab = report.stability[name];
+    const stabTag = stab && stab.cv !== null ? ` _[${stab.label}, cv=${stab.cv}]_` : '';
+    lines.push(`${i + 1}. **${name}** (mean score = ${meanScore})${stabTag}`);
   }
   return lines.join('\n');
 }

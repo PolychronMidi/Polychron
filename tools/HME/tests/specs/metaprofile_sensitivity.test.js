@@ -116,3 +116,30 @@ test('markdown: renders a complete report', () => {
   assert.ok(md.includes('| p |'));
   assert.ok(md.includes('Ranking'));
 });
+
+test('aggregate: stability classifies stable / moderate / volatile profiles', () => {
+  const entries = [
+    // stable: low variance around 0.8 (cv ~0.025)
+    { profile: 'stab', score: 0.80 }, { profile: 'stab', score: 0.81 },
+    { profile: 'stab', score: 0.79 }, { profile: 'stab', score: 0.82 },
+    // volatile: huge spread around 0.5 (cv > 0.35)
+    { profile: 'vol', score: 0.10 }, { profile: 'vol', score: 0.90 },
+    { profile: 'vol', score: 0.20 }, { profile: 'vol', score: 0.80 },
+    // single sample: insufficient
+    { profile: 'one', score: 0.6 },
+  ];
+  const r = aggregate(entries);
+  assert.strictEqual(r.stability.stab.label, 'stable');
+  assert.strictEqual(r.stability.vol.label, 'volatile');
+  assert.strictEqual(r.stability.one.label, 'insufficient');
+  assert.strictEqual(r.stability.one.cv, null);
+});
+
+test('aggregate: stability cv math is std/|mean|', () => {
+  const entries = [
+    { profile: 'p', score: 0.4 }, { profile: 'p', score: 0.5 }, { profile: 'p', score: 0.6 },
+  ];
+  const r = aggregate(entries);
+  // mean=0.5, std=sqrt((0.01+0+0.01)/3)=sqrt(2/300)~0.0816, cv ~0.1633
+  assert.ok(Math.abs(r.stability.p.cv - 0.1633) < 0.01);
+});
