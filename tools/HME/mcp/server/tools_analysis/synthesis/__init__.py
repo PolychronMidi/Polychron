@@ -16,6 +16,7 @@ logger = logging.getLogger("HME")
 
 from .synthesis_config import (  # noqa: F401
     _THINK_MODEL, _DEEP_MODEL, _build_think_system, _THINK_SYSTEM, _REVIEW_SYSTEM,
+    _PARTNER_SYSTEM,
     _BUDGET_TOKENS, _BUDGET_EFFORT, _BUDGET_TOOL_CALLS, _KB_CATEGORY_ORDER,
     _get_max_tokens, _get_effort, _get_tool_budget,
 )
