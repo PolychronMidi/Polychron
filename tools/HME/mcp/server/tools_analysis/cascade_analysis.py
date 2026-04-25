@@ -39,21 +39,22 @@ PREDICTIONS_LOG_REL = os.path.join("output", "metrics", "hme-predictions.jsonl")
 _CACHE: dict[str, Any] = {}
 
 
-def _log_prediction(target_module: str, affected_modules: list[str], injected: bool = False) -> None:
+def _log_prediction(target_module: str, affected_modules: list[str]) -> None:
     """Phase 3.4 — append one prediction record to hme-predictions.jsonl so
     the post-pipeline reconciler can later compare against fingerprint shifts.
     Best-effort; never raises.
 
-    NOTE on `injected` flag: the original design (Phase 6.1) called for a
-    proxy-injection path that surfaced predictions to the Evolver BEFORE
-    the edit was made, with the `injected` bucket separating influence
-    from accuracy. That injection path was never wired up in this codebase
-    — every call site below passes the default `injected=False`, and no
-    middleware mutates the flag. The parameter is preserved so the schema
-    of hme-predictions.jsonl stays compatible if injection lands later,
-    but readers of the predictions log should NOT interpret the absence
-    of `injected=True` records as evidence of low-influence reasoning;
-    interpret it as "injection feature unwired."
+    Removed the `injected` parameter (peer-review iter 145): the original
+    Phase 6.1 design called for a proxy-injection path that surfaced
+    predictions to the Evolver BEFORE the edit was made. That arm was
+    never wired up — every call site passed the default False, no
+    middleware mutated it. The parameter and the `"injected": False`
+    schema field were pure documentation debt for a feature that
+    didn't exist. Iter 145 named this exact pattern (the asymmetry
+    between agent-policing detectors and human-side unwired remediation
+    arms). Honest move: delete the dead surface so its absence is
+    visible. If the injection path is built later, add the field back
+    to the record at that time and update consumers in the same commit.
     """
     try:
         import json as _json
@@ -65,7 +66,6 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
             "event": "cascade_prediction",
             "target": target_module,
             "predicted": affected_modules,
-            "injected": bool(injected),
         }
         with open(path, "a", encoding="utf-8") as f:
             f.write(_json.dumps(record, separators=(",", ":")) + "\n")
