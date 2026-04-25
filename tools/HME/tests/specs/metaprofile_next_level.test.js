@@ -83,10 +83,22 @@ test('triggers: evalTriggerExpr applies op to snapshot', () => {
 });
 
 test('triggers: evaluateTriggers returns highest-priority match', () => {
-  // No built-in profiles declare triggers yet, so this should return null
-  // for an arbitrary snapshot. The infrastructure is verified above.
-  const r = mp.evaluateTriggers({ entropy: 0.9, density: 0.5 });
-  assert.ok(r === null || (typeof r === 'object' && typeof r.profile === 'string'));
+  // chaotic declares { if: 'couplingStrength > 0.7', priority: 80 }.
+  // Snapshot field name matches systemDynamicsProfiler.getSnapshot()'s
+  // top-level field so a real rotator can pass the snapshot directly.
+  const fired = mp.evaluateTriggers({ couplingStrength: 0.85 });
+  assert.ok(fired && typeof fired === 'object', 'should return a match object');
+  assert.strictEqual(fired.profile, 'chaotic');
+  assert.strictEqual(fired.priority, 80);
+  assert.strictEqual(fired.condition, 'couplingStrength > 0.7');
+
+  // Below threshold → no match.
+  const quiet = mp.evaluateTriggers({ couplingStrength: 0.4 });
+  assert.strictEqual(quiet, null);
+
+  // Empty snapshot → no match.
+  const empty = mp.evaluateTriggers({});
+  assert.strictEqual(empty, null);
 });
 
 // ── #4 empirical tuning ─────────────────────────────────────────────
