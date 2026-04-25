@@ -151,6 +151,26 @@ Any scalar or pair axis value can be replaced with an envelope `{from, to, curve
 
 Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution call `metaProfiles.getAxisValueAt(axis, key, fallback, progress)`.
 
+### Stochastic axes (distributions)
+
+Scalar axis values can also be replaced with a distribution descriptor `{mean, std, skew?}` — controllers calling `metaProfiles.sampleAxisValue(axis, key, fallback)` draw a fresh Box-Muller-Gaussian sample per tick, biased by `skew` (cubic warp on the standardized variate). Adds organic micro-variation without manual jitter:
+
+```json
+{ "tension": { "shape": "flat", "floor": 0.10, "ceiling": { "mean": 0.55, "std": 0.05, "skew": -0.3 } } }
+```
+
+`getAxisValue` collapses distributions to mean (the deterministic stand-in); `sampleAxisValue` samples. Schema rejects negative `std`.
+
+### Profile embedding (vector space)
+
+`metaProfileDefinitions.axisVector(profile)` flattens every axis-key into a fixed-length numeric vector (distributions → mean, envelopes → midpoint, pairs → both endpoints, categorical `tension.shape` → ordinal). `distance(a, b)` returns cosine distance in that space; `nearest(name, k)` returns the top-k closest profiles (excluding self and `default`). Lets rotators prefer smooth pivots between similar profiles, and unlocks downstream interpolation / latent-space exploration of the registry.
+
+```js
+metaProfileDefinitions.distance('chaotic', 'volatile');     // smaller — both high-exploring
+metaProfileDefinitions.distance('chaotic', 'meditative');   // larger  — opposite poles
+metaProfileDefinitions.nearest('atmospheric', 3);           // 3 profiles closest to atmospheric
+```
+
 ### Reactive triggers
 
 Profiles can declare entry conditions over runtime signals:
