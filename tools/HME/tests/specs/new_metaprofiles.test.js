@@ -89,10 +89,13 @@ test('scaleFactor against new profiles: tension ceiling ratio', () => {
   mp.setActive(null);
 });
 
-test('total profile count is now 8 (default + 7 named)', () => {
+test('built-in profiles include all expected names (no missing)', () => {
   const list = defs.list();
-  assert.strictEqual(list.length, 8);
   for (const expected of ['default', 'atmospheric', 'tense', 'chaotic', 'meditative', 'volatile', 'elegiac', 'anthemic']) {
     assert.ok(list.includes(expected), `missing: ${expected}`);
+  }
+  // Subvariants are also registered (inheritance + composition).
+  for (const expected of ['atmospheric_warm', 'meditative_climax']) {
+    assert.ok(list.includes(expected), `subvariant missing: ${expected}`);
   }
 });
