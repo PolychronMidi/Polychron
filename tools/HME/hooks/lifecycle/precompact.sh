@@ -33,7 +33,11 @@ if [[ -n "$FOUND" ]]; then
   # Filter out files already tracked in tab
   UNTRACKED=""
   while IFS= read -r f; do
-    grep -qF "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'
+    # Match whole line, not substring. Previously a path like
+    # `tmp/note.md` was suppressed because a tracked path
+    # `tmp/note.md.bak` contained it as a prefix — falsely treating
+    # legitimately-untracked files as tracked.
+    grep -qFx "$f" "$TAB" 2>/dev/null || UNTRACKED+="  $f"$'\n'
   done <<< "$FOUND"
   if [[ -n "$UNTRACKED" ]]; then
     PARTS+=("UNTRACKED SESSION FILES in tmp/:")

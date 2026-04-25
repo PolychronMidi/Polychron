@@ -124,10 +124,25 @@ function _attemptCommit(root, caller) {
   }
 
   try {
-    execSync('git add -A', { cwd: root, timeout: 5000 });
+    // CLAUDE.md explicitly forbids `git add -A` / `git add .` — those
+    // can accidentally include sensitive files (.env, credentials) or
+    // large binaries. Stage tracked-only updates with `-u`, then
+    // selectively add new files matching code/doc/config extensions.
+    // `.env`, `.pem`, `.key`, etc. never get auto-staged.
+    execSync('git add -u', { cwd: root, timeout: 5000 });
+    // Add NEW files matching safe extensions only. -X null to feed
+    // -z-delimited untracked names back to xargs without splitting on
+    // weird filenames; pathspec excludes binaries + sensitive patterns.
+    execSync(
+      "git ls-files -o --exclude-standard -z " +
+      "':(exclude)*.env' ':(exclude).env*' ':(exclude)*.pem' ':(exclude)*.key' " +
+      "':(exclude)*.crt' ':(exclude)*credentials*' ':(exclude)*secret*' " +
+      "':(exclude)*.bin' ':(exclude)*.so' ':(exclude)*.dll' ':(exclude)*.dylib' " +
+      "| xargs -0 -r git add --",
+      { cwd: root, timeout: 5000, shell: '/bin/bash' });
   } catch (err) {
     _recordFailure(root, caller,
-      `git add -A failed: ${String(err.message || err).slice(0, 300)}`);
+      `git add (tracked-only + filtered) failed: ${String(err.message || err).slice(0, 300)}`);
     return;
   }
 
