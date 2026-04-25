@@ -131,6 +131,115 @@ test('loadCustomProfiles: API exists and returns array', () => {
   assert.ok(Array.isArray(result));
 });
 
+// -- #6 stochastic axis distributions ----------------------------------
+test('distributions: getAxisValue collapses {mean, std} to mean', () => {
+  // Inject a synthetic profile with a distribution-typed axis value via
+  // loadCustomProfiles to avoid mutating built-ins. Use the project-scope
+  // dir so the test is hermetic.
+  const fs = require('fs');
+  const path = require('path');
+  const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customFile = path.join(customDir, '_test_dist.json');
+  fs.mkdirSync(customDir, { recursive: true });
+  fs.writeFileSync(customFile, JSON.stringify({
+    name: 'test_dist',
+    description: 'Test fixture for distribution-typed axis',
+    inherits: 'atmospheric',
+    tension: { shape: 'flat', floor: 0.10, ceiling: { mean: 0.55, std: 0.05 } },
+    sectionAffinity: ['exposition'],
+    minDwellSections: 1,
+  }));
+  try {
+    defs.loadCustomProfiles();
+    mp.setActive(null);
+    mp.setActive('test_dist', 0);
+    // Mean-collapse on getAxisValue.
+    assert.strictEqual(mp.getAxisValue('tension', 'ceiling', 0.80), 0.55);
+
+    // sampleAxisValue draws around the mean. Run 200 draws; sample mean
+    // should be within 3*std/sqrt(n) ~ 0.0106 of the true mean (0.55).
+    let sum = 0;
+    const n = 200;
+    for (let i = 0; i < n; i++) sum += mp.sampleAxisValue('tension', 'ceiling', 0.80);
+    const sampleMean = sum / n;
+    assert.ok(Math.abs(sampleMean - 0.55) < 0.05,
+      `sample mean ${sampleMean} too far from population mean 0.55`);
+  } finally {
+    mp.setActive(null);
+    fs.unlinkSync(customFile);
+    try { fs.rmdirSync(customDir); } catch (_e) {}
+    try { fs.rmdirSync(path.dirname(customDir)); } catch (_e) {}
+  }
+});
+
+test('distributions: schema rejects negative std', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customFile = path.join(customDir, '_test_bad_dist.json');
+  fs.mkdirSync(customDir, { recursive: true });
+  fs.writeFileSync(customFile, JSON.stringify({
+    name: 'test_bad_dist',
+    description: 'Should reject negative std',
+    inherits: 'atmospheric',
+    tension: { shape: 'flat', floor: 0.10, ceiling: { mean: 0.55, std: -0.01 } },
+    sectionAffinity: ['exposition'],
+    minDwellSections: 1,
+  }));
+  try {
+    assert.throws(() => defs.loadCustomProfiles(), /std must be >= 0/);
+  } finally {
+    fs.unlinkSync(customFile);
+    try { fs.rmdirSync(customDir); } catch (_e) {}
+    try { fs.rmdirSync(path.dirname(customDir)); } catch (_e) {}
+  }
+});
+
+// -- #7 profile embedding (axisVector / distance / nearest) -------------
+test('axisVector: produces consistent-length vector for every profile', () => {
+  const names = defs.list();
+  const dim = defs.axisVector(names[0]).length;
+  for (const name of names) {
+    const v = defs.axisVector(name);
+    assert.strictEqual(v.length, dim, `${name} has dim ${v.length}, expected ${dim}`);
+    for (let i = 0; i < v.length; i++) {
+      assert.ok(Number.isFinite(v[i]), `${name}[${i}] not finite: ${v[i]}`);
+    }
+  }
+});
+
+test('distance: identical profile to itself is 0', () => {
+  for (const name of defs.list()) {
+    const d = defs.distance(name, name);
+    assert.ok(d < 1e-9, `self-distance for ${name} should be 0, got ${d}`);
+  }
+});
+
+test('distance: chaotic and meditative are farther apart than chaotic and volatile', () => {
+  // chaotic + volatile share high exploring / low coherent; meditative is the
+  // polar opposite. So d(chaotic, volatile) < d(chaotic, meditative).
+  const dCV = defs.distance('chaotic', 'volatile');
+  const dCM = defs.distance('chaotic', 'meditative');
+  assert.ok(dCV < dCM,
+    `expected d(chaotic,volatile)=${dCV} < d(chaotic,meditative)=${dCM}`);
+});
+
+test('nearest: excludes self and default; sorted ascending by distance', () => {
+  const ranked = defs.nearest('atmospheric', 4);
+  assert.ok(Array.isArray(ranked));
+  assert.ok(ranked.length <= 4);
+  for (const entry of ranked) {
+    assert.notStrictEqual(entry.name, 'atmospheric');
+    assert.notStrictEqual(entry.name, 'default');
+  }
+  for (let i = 1; i < ranked.length; i++) {
+    assert.ok(ranked[i].distance >= ranked[i - 1].distance,
+      `ranked[${i}] distance ${ranked[i].distance} should be >= ranked[${i-1}] ${ranked[i-1].distance}`);
+  }
+});
+
 test('loadCustomProfiles: project file overrides built-in axis values', () => {
   const fs = require('fs');
   const path = require('path');
