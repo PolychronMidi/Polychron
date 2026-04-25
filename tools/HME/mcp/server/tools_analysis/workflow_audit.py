@@ -656,7 +656,13 @@ def what_did_i_forget(changed_files: str) -> str:
         # warnings (PYTHON bug patterns, BOUNDARY violations, NEW L0 CHANNEL,
         # RHYTHM COUPLING, UNKNOWN RHYTHM FIELDS, etc.) plus adaptive synthesis
         # bullets.
-        _scaffold_prefixes = ("] HOOK CHANGE:", "] DOC CHECK:", "] SKIPPED:", "] KB:")
+        # "audit skipped" is added because file-move/rename in a session
+        # leaves the static-audit referencing paths that no longer exist
+        # at audit time (resolved on next commit). Those warnings are
+        # transient and not actionable — same scaffolding-class as the
+        # existing prefixes.
+        _scaffold_prefixes = ("] HOOK CHANGE:", "] DOC CHECK:", "] SKIPPED:", "] KB:",
+                              "audit skipped —", "audit skipped:")
         _actionable = [w for w in all_warnings if not any(p in w for p in _scaffold_prefixes)]
         total_issues = len(_actionable) + synthesis.count("\n- ") + synthesis.count("\n* ")
         if total_issues >= 4:
