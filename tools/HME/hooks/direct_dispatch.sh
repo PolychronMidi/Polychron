@@ -69,39 +69,49 @@ _run_chain() {
   printf '%s' "$out_all"
 }
 
+# Exit code propagation: PreToolUse hooks use `exit 2` to signal block via
+# Claude Code's exit-code-based blocking protocol (stderr-as-reason).
+# JSON-decision blocking via stdout (permissionDecision/decision keys) is
+# the alternate path. We propagate whichever the underlying script chose.
+_EXIT=0
 case "$EVENT" in
   Stop)
     # Stop chain has a JS evaluator with policy semantics; delegate to its CLI.
     printf '%s' "$BODY" | node "$PROJECT_ROOT/tools/HME/proxy/stop_chain/cli.js"
+    _EXIT=$?
     ;;
 
   SessionStart)
     _run "$LIFECYCLE_DIR/sessionstart.sh"
+    _EXIT=$?
     ;;
 
   UserPromptSubmit)
     _run "$LIFECYCLE_DIR/userpromptsubmit.sh"
+    _EXIT=$?
     ;;
 
   PreCompact)
     _run "$LIFECYCLE_DIR/precompact.sh"
+    _EXIT=$?
     ;;
 
   PostCompact)
     _run "$LIFECYCLE_DIR/postcompact.sh"
+    _EXIT=$?
     ;;
 
   PreToolUse)
     TOOL_NAME=$(echo "$BODY" | jq -r '.tool_name // ""' 2>/dev/null)
     case "$TOOL_NAME" in
-      Edit|MultiEdit) _run "$PRETOOLUSE_DIR/pretooluse_edit.sh" ;;
-      Write)          _run "$PRETOOLUSE_DIR/pretooluse_write.sh" ;;
-      Bash)           _run "$PRETOOLUSE_DIR/pretooluse_bash.sh" ;;
-      Read)           _run "$PRETOOLUSE_DIR/pretooluse_read.sh" ;;
-      Grep)           _run "$PRETOOLUSE_DIR/pretooluse_grep.sh" ;;
-      Glob)           _run "$PRETOOLUSE_DIR/pretooluse_glob.sh" ;;
-      TodoWrite)      _run "$PRETOOLUSE_DIR/pretooluse_todowrite.sh" ;;
-      ToolSearch)     _run "$PRETOOLUSE_DIR/pretooluse_toolsearch.sh" ;;
+      Edit|MultiEdit) _run "$PRETOOLUSE_DIR/pretooluse_edit.sh"; _EXIT=$? ;;
+      Write)          _run "$PRETOOLUSE_DIR/pretooluse_write.sh"; _EXIT=$? ;;
+      Bash)           _run "$PRETOOLUSE_DIR/pretooluse_bash.sh"; _EXIT=$? ;;
+      Read)           _run "$PRETOOLUSE_DIR/pretooluse_read.sh"; _EXIT=$? ;;
+      Grep)           _run "$PRETOOLUSE_DIR/pretooluse_grep.sh"; _EXIT=$? ;;
+      Glob)           _run "$PRETOOLUSE_DIR/pretooluse_glob.sh"; _EXIT=$? ;;
+      TodoWrite)      _run "$PRETOOLUSE_DIR/pretooluse_todowrite.sh"; _EXIT=$? ;;
+      ToolSearch)     _run "$PRETOOLUSE_DIR/pretooluse_toolsearch.sh"; _EXIT=$? ;;
       *)              : ;;  # no pretool hook for this tool
     esac
     ;;
@@ -126,6 +136,7 @@ case "$EVENT" in
         ;;
     esac
     _run_chain "${SCRIPTS[@]}"
+    _EXIT=$?
     ;;
 
   *)
@@ -133,4 +144,4 @@ case "$EVENT" in
     ;;
 esac
 
-exit 0
+exit "$_EXIT"
