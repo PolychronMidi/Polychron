@@ -1,13 +1,16 @@
 """HME causal chain indexing — Phase 2.5 of openshell_features_to_mimic.md.
 
 Forward-causal traversal: given a module, predict the impact chain of
-changing it. Merges three topology sources:
+changing it. Merges two topology sources:
 
   1. metrics/dependency-graph.json — global producer→consumer edges
      between files
   2. metrics/feedback_graph.json   — declared feedback loops + firewall ports
-  3. metrics/conductor-map.md (optional) — L0 channel producer/consumer
-     registry; parsed loosely since the JSON form is not guaranteed
+
+(A previous version of this docstring listed metrics/conductor-map.md as
+a third source. There is no _load_conductor_map function and no md
+parsing in this file; that line was aspirational. Removed to stop
+misleading readers about the cascade report's dimensions.)
 
 Consumed via `trace(target=..., mode='impact')` or directly through
 `cascade_report(target, depth=3)`.

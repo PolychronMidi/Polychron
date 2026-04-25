@@ -76,7 +76,14 @@ def activity_digest(window: str = "round") -> str:
             if events[i].get("event") == "round_complete":
                 last_round_idx = i
                 break
-        if last_round_idx is not None and last_round_idx < len(events) - 1:
+        if last_round_idx is not None:
+            # Always slice when a boundary was found, even if round_complete
+            # IS the final event (yielding []). The previous guard
+            # `last_round_idx < len(events) - 1` silently fell through to
+            # the FULL events list — mixing prior-round data into the
+            # current-round window, the opposite of what window='round'
+            # promises. An empty post-boundary slice is the honest answer:
+            # "no events yet this round."
             events = events[last_round_idx + 1 :]
 
     first_ts = events[0].get("ts")
