@@ -226,19 +226,49 @@ or specific-architectural-question).
 
 ## Architectural patterns the buddy surfaced
 
-Across 145 iterations the buddy named four recurring patterns. Each
-has a verifier, a doc, or a primitive in the codebase now:
+Across 145 iterations the buddy named four recurring patterns —
+**but a follow-up review (iter 146) collapsed A and D into a single
+underlying shape:** "two parties depend on a name agreeing across
+files; agreement isn't enforced." That meta-pattern is the real
+architectural risk, manifesting in marker strings (Pattern A's
+original framing), cache-validity attributes (Pattern D's),
+filesystem path conventions, env-var names, sentinel return codes,
+regex literals reused across runtimes. The split into A and D
+treated them as different patterns when they share structure.
 
-### Pattern A — Cross-layer convention drift
+The unified framing matters because the **mitigation surfaces
+should generalize**: the marker registry currently only covers
+regex/text markers in tool output; it should extend to file paths,
+sentinel constants, and any cross-component agreed name. Without
+that widening, the very class Pattern A names (rename drift)
+recurs in scopes the verifier doesn't police — confirmed by the
+buddy iter 146 catching the `tmp/hme-thread.sid` → `tmp/hme-buddy.sid`
+rename leaving stale references in `agent_direct.py`'s docstring
+and error messages, exactly because path strings weren't in the
+markers registry's scope.
 
-Bash hooks ↔ Python worker ↔ JS proxy middleware coordinate via
-string convention (markers, regex patterns, JSON shapes). A rename
-on either side silently breaks the pair.
+### Pattern A+D (unified) — Cross-component agreed-upon names without enforcement
 
-**Mitigation:** `tools/HME/proxy/middleware/_markers.js` registry +
-`scripts/audit-marker-registry.py` verifier. Each marker entry
-declares producer + consumer files; verifier grep-checks the marker
-literal appears in each.
+Multiple layers (bash hooks ↔ Python worker ↔ JS proxy middleware,
+or producer ↔ consumer within one runtime) depend on a literal
+agreeing across files. A rename on either side silently breaks the
+pair. The literal can be a regex marker, a file path, a sentinel
+return code, an env-var name, a JSON field name, or a cache-validity
+attribute.
+
+**Mitigation surfaces (each covers one slice of the pattern):**
+- `tools/HME/proxy/middleware/_markers.js` registry +
+  `scripts/audit-marker-registry.py` verifier — covers regex/text
+  markers in tool output. Should extend to file paths and sentinels.
+- `_warm_ctx_fresh_p()` in `synthesis_warm.py` — replaces shared-
+  attribute `_kb_version` cache-validity gate with file-mtime check;
+  consolidates 6 readers through one helper.
+
+**Open extension:** widen the markers registry to include filesystem
+paths (e.g. `tmp/hme-buddy.sid`), env-var names (`BUDDY_SYSTEM`,
+`HME_THREAD_CHILD`), and sentinel constants used across files. The
+verifier becomes a general agreement-enforcer rather than only a
+text-marker checker.
 
 ### Pattern B — Silent-on-failure mis-applied
 
@@ -259,15 +289,6 @@ mutate; cache serves stale until clock expires.
 Pre-stat tests cache validity; post-stat pins cache to the version
 the loader actually saw. `dir_context.js` migrated; sibling
 middlewares can follow.
-
-### Pattern D — Shared mutable cache-validity attribute
-
-`ctx._kb_version` was the cross-component freshness key. No fencing,
-no monotonic-advance guarantee, reset-to-0 silently re-keys every
-warm cache as fresh.
-
-**Mitigation:** `_warm_ctx_fresh_p()` in `synthesis_warm.py` —
-file-mtime check against KB Lance stores; all six readers consolidated.
 
 ---
 

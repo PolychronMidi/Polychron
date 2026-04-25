@@ -101,14 +101,17 @@ _hydrate_call_count()
 
 
 def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
-    """Synchronously route a reasoning prompt through the persistent
-    subagent session whose sid is recorded in tmp/hme-thread.sid.
+    """Synchronously route a reasoning prompt through the buddy session
+    whose sid is recorded in tmp/hme-buddy.sid (legacy: tmp/hme-thread.sid,
+    one-time fallback during the rename window — see code below).
 
-    Used by synthesis_reasoning when a user has run `i/thread init` —
-    every reasoning call (review reflection, OVERDRIVE cascade, etc.)
-    flows into the same long-lived claude session so context
-    accumulates across calls. The persistent session is observable
-    via VSCode's Claude Code extension by resuming its sid.
+    Used by synthesis_reasoning when the buddy system is active
+    (.env BUDDY_SYSTEM=1, default). Sessionstart auto-inits the buddy
+    via tools/HME/hooks/helpers/buddy_init.sh; every reasoning call
+    (review reflection, OVERDRIVE cascade, suggest_evolution) flows
+    into the same long-lived claude session so context accumulates
+    across calls. The session is observable via VSCode's Claude Code
+    extension by resuming its sid. See doc/BUDDY_SYSTEM.md.
 
     Returns the assistant's text reply (possibly empty) on success, or
     None if the thread path is unavailable / failed. Empty replies are
@@ -145,12 +148,14 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
         logger.warning(f"dispatch_thread: read sid failed: {e}")
         return None
     if not sid:
-        # Empty sid file is a silent-fall-through footgun — the user
-        # ran `i/thread init` (or tried to) but the file is empty, so
-        # every reasoning call looks like "no thread configured" with
-        # no diagnostic. Warn once per occurrence.
+        # Empty sid file is a silent-fall-through footgun. The buddy
+        # system auto-inits via sessionstart.sh; if the file is here
+        # but empty, init likely failed mid-write or the user
+        # cleared it. Recovery: delete the file (next sessionstart
+        # re-inits) or set .env BUDDY_SYSTEM=0 to disable.
         logger.warning(f"dispatch_thread: sid file {sid_file} exists but is empty "
-                       "— run `i/thread init` to recreate, or `i/thread stop` to clear")
+                       "— rm the file (next sessionstart re-inits) or set "
+                       ".env BUDDY_SYSTEM=0 to disable the buddy")
         return None
 
     # Budget cap — returning None past the ceiling forces fallback.
