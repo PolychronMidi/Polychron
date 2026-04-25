@@ -867,10 +867,38 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     }
     arbiter_ctx = None
     try:
-        from .synthesis_warm import _warm_ctx, _warm_ctx_kb_ver
+        from .synthesis_warm import _warm_ctx, _warm_ctx_kb_ver, _warm_ctx_ts
         arbiter_ctx = _warm_ctx.get(_ARBITER_MODEL)
-        if arbiter_ctx and _warm_ctx_kb_ver.get(_ARBITER_MODEL) == getattr(ctx, "_kb_version", 0):
-            payload["context"] = arbiter_ctx
+        if arbiter_ctx:
+            # Pattern D fix (peer-review iter 131): file-mtime check
+            # against the actual KB persistence files instead of the
+            # ctx._kb_version shared mutable attribute. The attribute
+            # had no fencing / monotonicity / atomic-read guarantee
+            # across writers, so a reload-engines reset to 0 silently
+            # re-keyed every warm cache as "fresh." Stat-checking the
+            # KB Lance store catches drift the attribute can miss.
+            kb_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "KB")
+            kb_paths = [os.path.join(kb_root, p) for p in
+                        ("knowledge.lance", "code_chunks.lance", "symbols.lance")]
+            kb_max_mtime = 0.0
+            for p in kb_paths:
+                try:
+                    mt = os.path.getmtime(p) if os.path.exists(p) else 0.0
+                    if mt > kb_max_mtime:
+                        kb_max_mtime = mt
+                except OSError:
+                    pass
+            ctx_warm_ts = _warm_ctx_ts.get(_ARBITER_MODEL, 0.0)
+            # Cache is fresh if the warm-context was last touched AFTER
+            # the most recent KB rewrite. Falls back to the kb_ver attr
+            # check when mtime is unavailable (kb_max_mtime == 0).
+            if kb_max_mtime == 0.0:
+                cache_fresh = (_warm_ctx_kb_ver.get(_ARBITER_MODEL)
+                               == getattr(ctx, "_kb_version", 0))
+            else:
+                cache_fresh = ctx_warm_ts >= kb_max_mtime
+            if cache_fresh:
+                payload["context"] = arbiter_ctx
     except Exception as _wmerr:
         logging.getLogger("HME").debug(
             f"extract_diff_symbols: warm-ctx lookup skipped: {type(_wmerr).__name__}: {_wmerr}"

@@ -47,32 +47,27 @@ BG_KEYWORDS = (
 
 
 # Pattern B: "admit-and-stop" — final assistant text enumerates pending /
-# remaining / cant-do-mid-turn work but no tool calls follow it. Matches
-# phrases that announce future intent the agent refused to act on.
+# remaining / cant-do-mid-turn work but no tool calls follow it.
+#
+# Sourced from _phrase_lists.py to align with sibling detectors
+# (exhaust_check, early_stop) — peer-review iter 135 caught that 9
+# detectors measuring the same "deferral" signal had drift-prone
+# private phrase lists. ADMIT_PHRASES = future-tense + flag-for-later
+# + ack-no-fix + cant-do, which together cover what this detector
+# measures. PERMISSION_ASK_PHRASES below uses SURVEY_PERMISSION_ASK
+# from the same module.
+from _phrase_lists import (  # noqa: E402
+    DEFERRAL_FUTURE_TENSE,
+    DEFERRAL_FLAG_FOR_LATER,
+    DEFERRAL_ACK_NO_FIX,
+    DEFERRAL_CANT_DO,
+    SURVEY_PERMISSION_ASK,
+)
 ADMIT_PHRASES = (
-    "pending work",
-    "still pending",
-    "remaining work",
-    "still need to",
-    "will activate on next",
-    "will pick up on next",
-    "activates on next session",
-    "activates on next restart",
-    "can't do from within",
-    "cant do from within",
-    "can't do mid-turn",
-    "cant do mid-turn",
-    "session-level",
-    "session level",
-    "follow-up task",
-    "followup task",
-    "will happen on next",
-    "won't do",
-    "wont do",
-    "deferring",
-    "deferred to",
-    "next session",
-    "on next session",
+    DEFERRAL_FUTURE_TENSE
+    + DEFERRAL_FLAG_FOR_LATER
+    + DEFERRAL_ACK_NO_FIX
+    + DEFERRAL_CANT_DO
 )
 
 
@@ -83,41 +78,14 @@ ADMIT_PHRASES = (
 # contains any of these permission-solicitation phrases AND no tool calls
 # follow. Distinct from ADMIT_PHRASES: those announce the agent won't do the
 # work; these pretend the agent is helpfully checking in.
+# Migrated to shared phrase lists per peer-review iter 135. Pattern C
+# = soliciting permission OR enumerating "didn't fix yet" surveys —
+# the union of SURVEY_PERMISSION_ASK + the survey-shape subset of
+# DEFERRAL_ACK_NO_FIX + DEFERRAL_FLAG_FOR_LATER captures both.
 PERMISSION_ASK_PHRASES = (
-    "want me to",
-    "would you like me to",
-    "do you want me to",
-    "should i fix",
-    "should i proceed",
-    "should i run",
-    "should i start",
-    "shall i",
-    "before any edits",
-    "before i make any edits",
-    "before i start editing",
-    "before i begin",
-    "before i touch",
-    "survey more files before",
-    "survey first",
-    "surveyed, not modified",
-    "surveyed but not modified",
-    "surveyed, not fixed",
-    "didn't modify",
-    "did not modify",
-    "i didn't touch",
-    "i didn't edit",
-    "haven't modified",
-    "not yet modified",
-    "not yet fixed",
-    "not yet applied",
-    "flagging for later",
-    "flag for later",
-    "out of scope for this session",
-    "not in scope for this session",
-    "want me to continue",
-    "want me to keep going",
-    "confirm before",
-    "confirm first",
+    SURVEY_PERMISSION_ASK
+    + DEFERRAL_ACK_NO_FIX
+    + DEFERRAL_FLAG_FOR_LATER
 )
 
 
