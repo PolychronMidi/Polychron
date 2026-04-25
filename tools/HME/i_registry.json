@@ -1,0 +1,129 @@
+{
+  "_comment": "Metadata registry for the i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Adding a new command: drop the script in i/, register it here, done. Schema per command: {description, usage?, examples?, category, modes?}. Fields beyond description are optional — i/help degrades gracefully when missing.",
+  "commands": {
+    "review": {
+      "description": "Post-change audit: KB constraints, boundary rules, doc drift, review verdicts.",
+      "category": "review-discipline",
+      "usage": "i/review [mode=digest|forget|...] [section_a=N] [section_b=N] [critique=true]",
+      "modes": ["digest", "regime", "trust", "sections", "audio", "composition", "health", "forget", "convention", "symbols", "docs", "evolve", "full"],
+      "examples": [
+        "i/review",
+        "i/review mode=forget",
+        "i/review mode=regime section_a=3 section_b=5"
+      ]
+    },
+    "learn": {
+      "description": "HME knowledge base: add, search, list, compact, export, dream, hypothesize.",
+      "category": "knowledge",
+      "usage": "i/learn [query=<q>|action=search|add|remove|list|compact|export|graph|dream|health|hypothesize|hypotheses|ground_truth|discoveries|promote_discovery]",
+      "modes": ["search", "add", "remove", "list", "compact", "export", "graph", "dream", "health", "hypothesize", "hypotheses", "ground_truth", "discoveries", "promote_discovery"],
+      "examples": [
+        "i/learn query=\"regime self-balancer\"",
+        "i/learn action=add title=\"...\" content=\"...\" category=pattern",
+        "i/learn action=ground_truth title=R98 tags=[stable] content=\"verdict\""
+      ]
+    },
+    "trace": {
+      "description": "Replay tracer: cascade / module / causal / impact analysis on signals or beats.",
+      "category": "diagnostic",
+      "usage": "i/trace target=<channel|module|beat-key> [mode=auto|cascade|module|causal|snapshot|impact|delta]",
+      "modes": ["auto", "cascade", "module", "causal", "snapshot", "impact", "delta"],
+      "examples": [
+        "i/trace target=density",
+        "i/trace target=adaptiveTrustScores mode=cascade"
+      ]
+    },
+    "status": {
+      "description": "Status modes: budget, coherence, trajectory, resume, list, plus ~35 others.",
+      "category": "diagnostic",
+      "usage": "i/status [mode=<mode-name>]",
+      "examples": [
+        "i/status mode=list",
+        "i/status mode=resume",
+        "i/status mode=budget"
+      ]
+    },
+    "evolve": {
+      "description": "Evolution recommendations: what to change next round, plus selftest.",
+      "category": "evolution",
+      "usage": "i/evolve [mode=...]",
+      "examples": ["i/evolve"]
+    },
+    "hme-read": {
+      "description": "Pre-edit briefing: read a target with KB context, callers, structure.",
+      "category": "review-discipline",
+      "usage": "i/hme-read target=<path|module|function> [mode=before|story|impact|both|lines|function|structure|callers|deps] [fast=true]",
+      "modes": ["before", "story", "impact", "both", "lines", "function", "structure", "callers", "deps"],
+      "examples": [
+        "i/hme-read target=adaptiveTrustScores",
+        "i/hme-read target=src/conductor/conductorState.js mode=structure"
+      ]
+    },
+    "hme-admin": {
+      "description": "Admin: selftest, reload, restart, index/clear_index, warm, introspect, validate, fix_antipattern, health.",
+      "category": "infra",
+      "usage": "i/hme-admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both>",
+      "modes": ["selftest", "reload", "restart", "index", "clear_index", "warm", "introspect", "validate", "fix_antipattern", "health", "both"],
+      "examples": [
+        "i/hme-admin action=health",
+        "i/hme-admin action=index"
+      ]
+    },
+    "hme": {
+      "description": "Convenience wrapper that dispatches to other i/* tools by subcommand.",
+      "category": "meta"
+    },
+    "freeze": {
+      "description": "Check a query string against the forbidden-pattern (frozen-state) list.",
+      "category": "review-discipline",
+      "usage": "i/freeze [query-string]",
+      "examples": [
+        "i/freeze \"never disable trust ceiling\""
+      ]
+    },
+    "pattern": {
+      "description": "Pattern catalogue: list, matched, or fetch by id.",
+      "category": "knowledge",
+      "usage": "i/pattern [list|matched|<id>]"
+    },
+    "why": {
+      "description": "Explain an invariant by id — full provenance + rationale.",
+      "category": "review-discipline",
+      "usage": "i/why <invariant-id>"
+    },
+    "todo": {
+      "description": "HME todo list — surface deferred items per session/round.",
+      "category": "review-discipline"
+    },
+    "substrate": {
+      "description": "Substrate browser: brief, detail, actions, drift, consensus, efficacy, patterns, diff, invariants.",
+      "category": "diagnostic",
+      "usage": "i/substrate [mode=brief|detail|actions|drift|consensus|efficacy|patterns|diff|invariants] [filter=<substring>]",
+      "modes": ["brief", "detail", "actions", "drift", "consensus", "efficacy", "patterns", "diff", "invariants"]
+    },
+    "policies": {
+      "description": "Unified hook-time policy registry — list/show/enable/disable/reset/paths/eval.",
+      "category": "policy-config",
+      "usage": "i/policies <list|all|summary|show|enable|disable|reset|paths|eval> [args] [--scope=local|project|global]",
+      "modes": ["list", "all", "summary", "show", "enable", "disable", "reset", "paths", "eval"],
+      "examples": [
+        "i/policies list",
+        "i/policies all",
+        "i/policies summary",
+        "i/policies disable block-curl-pipe-sh"
+      ]
+    },
+    "extract-spec": {
+      "description": "Extract a structured spec for a target module/feature for evolution planning.",
+      "category": "evolution"
+    },
+    "prove": {
+      "description": "Prove or disprove a hypothesis against the run-history dataset.",
+      "category": "knowledge"
+    },
+    "help": {
+      "description": "List all i/ tools grouped by category, with descriptions and usage.",
+      "category": "meta"
+    }
+  }
+}
