@@ -41,12 +41,21 @@ def main() -> int:
     surfaced_at = -1
     edit_after = False
     for i, event in enumerate(events):
-        for tr in iter_tool_results(event):
-            if _is_surface(tr["text"]) and surfaced_at == -1:
-                surfaced_at = i
+        # Once a surface has been observed, _is_surface (which does
+        # `text.upper()` on multi-KB tool_result bodies) is wasted work
+        # — short-circuit to skip the allocation. Combined with the
+        # early-break below, scan stops at first edit-after-surface.
+        if surfaced_at == -1:
+            for tr in iter_tool_results(event):
+                if _is_surface(tr["text"]):
+                    surfaced_at = i
+                    break
         for tu in iter_tool_uses(event):
             if surfaced_at >= 0 and i > surfaced_at and tu["name"] in EDIT_TOOLS:
                 edit_after = True
+                break
+        if edit_after:
+            break  # verdict decided — remaining events can't change it
     print("ack_skip" if surfaced_at >= 0 and not edit_after else "ok")
     return 0
 

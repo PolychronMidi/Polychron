@@ -66,9 +66,19 @@ def main() -> int:
                 bg_output_path = m.group(1)
         for tu in iter_tool_uses(event):
             inp = tu["input"]
+            # Coerce run_in_background to a real boolean: the field can
+            # arrive as True/False (bool) OR as "true"/"false" strings
+            # (jq's _safe_jq path returns string). The previous truthy
+            # check treated the literal string "false" as truthy — a
+            # foreground call was misread as background, flipping the
+            # detector to "idle" on short turns.
+            _rib = inp.get("run_in_background")
+            _rib_truthy = (_rib is True) or (
+                isinstance(_rib, str) and _rib.lower() in ("true", "1", "yes")
+            )
             if (
                 tu["name"] == "Bash"
-                and inp.get("run_in_background")
+                and _rib_truthy
                 and _is_bg_launch(inp.get("command", ""))
             ):
                 found_bg = True
