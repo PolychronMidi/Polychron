@@ -110,15 +110,85 @@ How the polyrhythmic layers interact — locked, drifting, or repelling.
 | elegiac | 0.7 | 0.3 |
 | anthemic | 0.7 | 0.3 |
 
+## Beyond scaffolding (next-level features)
+
+Five orthogonal extensions sit on top of the static-profile foundation. Each is opt-in: built-in profiles ignore them unless they declare the relevant key.
+
+### Inheritance + per-axis composition
+
+Subvariants reuse a parent's axes and selectively override:
+
+```json
+{
+  "name": "atmospheric_warm",
+  "inherits": "atmospheric",
+  "trust": { "concentration": 0.7, "dominantCap": 1.95, "starvationFloor": 0.85 }
+}
+```
+
+For finer mixing, `compose` pulls each axis from a different parent:
+
+```json
+{
+  "name": "meditative_climax",
+  "compose": {
+    "regime": "meditative", "coupling": "anthemic",
+    "trust": "meditative", "tension": "anthemic",
+    "energy": "anthemic", "phase": "meditative"
+  }
+}
+```
+
+Resolution runs once at module load before validation. The resolver deep-copies parent axes, then applies the child's overrides. Derived keys like `coupling.midpoint` are skipped during unknown-key checks.
+
+### Time-varying axes (envelopes)
+
+Any scalar or pair axis value can be replaced with an envelope `{from, to, curve?}` — the value evolves across the profile's activation:
+
+```json
+{ "tension": { "shape": "arch", "floor": 0.20, "ceiling": { "from": 0.45, "to": 0.85, "curve": "ascending" } } }
+```
+
+Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution call `metaProfiles.getAxisValueAt(axis, key, fallback, progress)`.
+
+### Reactive triggers
+
+Profiles can declare entry conditions over runtime signals:
+
+```json
+{
+  "triggers": {
+    "enter": [{ "if": "entropy > 0.7", "priority": 80 }]
+  }
+}
+```
+
+Expressions parse as `<signal> <op> <value>` where op ∈ `> >= < <= == !=` and value is numeric or `true`/`false`. `metaProfiles.evaluateTriggers(snapshot)` walks every registered profile's `enter` list and returns the highest-priority match `{profile, priority, condition}` or `null`. The rotator does **not** auto-honor triggers yet — wiring is a per-pipeline opt-in (snapshot source + dwell-vs-priority policy is a deliberate design choice).
+
+### Empirical-tuning attribution
+
+`metaProfiles.recordAttribution(fields)` appends a JSONL entry to `output/metrics/metaprofile-attribution.jsonl`. `main.js` writes one entry per section with `{profile, section, sectionType, score, ts}` (score = section composite intensity). A separate aggregator script can later compute per-profile mean scores + sensitivity to drive evolution suggestions.
+
+### Three-scope custom registries
+
+`metaProfileDefinitions.loadCustomProfiles()` reads `*.json` from `.hme/metaprofiles/` (project-local) at module load. Custom profiles register new names or override built-in axis values without forking the codebase. Each file is a single profile object using the same schema (including `inherits` / `compose`).
+
+```bash
+mkdir -p .hme/metaprofiles
+echo '{"name":"my_drift","inherits":"atmospheric","tension":{"shape":"flat","floor":0.10,"ceiling":0.50}}' > .hme/metaprofiles/my_drift.json
+```
+
 ## Implementation
 
 ### File structure
 
 ```
-src/conductor/metaProfiles.js              — registry, loader, scaleFactor, dwell
-src/conductor/metaProfileDefinitions.js    — built-in definitions + schema validator
-output/metrics/metaprofile-active.json     — current active profile (atomic write)
-output/metrics/metaprofile-history.jsonl   — every transition this run, append-only
+src/conductor/metaProfiles.js                  — registry, loader, scaleFactor, dwell, envelope/trigger/attribution
+src/conductor/metaProfileDefinitions.js        — built-in definitions + schema validator + resolver
+.hme/metaprofiles/*.json                       — project-local custom profiles (loaded at boot)
+output/metrics/metaprofile-active.json         — current active profile (atomic write)
+output/metrics/metaprofile-history.jsonl       — every transition this run, append-only
+output/metrics/metaprofile-attribution.jsonl   — per-section attribution (profile + score) for empirical tuning
 ```
 
 ### Section rotation, dwell, env-var disable
