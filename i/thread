@@ -108,6 +108,10 @@ except Exception as e:
       exit 1
     fi
     _sid=$(cat "$_SID_FILE")
+    if [ -z "$_sid" ]; then
+      echo "empty sid — stale sid file. Run: i/thread init" >&2
+      exit 1
+    fi
     _req_id=$(basename "$_prompt_file" .json)
     _prompt=$(jq -r '.prompt' "$_prompt_file")
     if [ -z "$_prompt" ] || [ "$_prompt" = "null" ]; then
@@ -126,6 +130,18 @@ except Exception as e:
     # never renders. Disabling thinking for thread dispatches gives
     # one clean event with text content. The user's global setting is
     # untouched; this override applies only to thread-routed calls.
+    #
+    # Race guard: re-stat the sid file immediately before invoking
+    # claude. If a concurrent `i/thread stop` removed or changed it
+    # between lines 110 and here, abort rather than dispatch to a
+    # session the user explicitly stopped. Does not close the TOCTOU
+    # between this check and the claude subprocess spawn, but shrinks
+    # the window from "seconds of prompt-read work" to "bash-statement
+    # latency."
+    if [ ! -f "$_SID_FILE" ] || [ "$(cat "$_SID_FILE" 2>/dev/null)" != "$_sid" ]; then
+      echo "sid file changed since read — aborting dispatch (race with stop?)" >&2
+      exit 1
+    fi
     _out=$(HME_THREAD_CHILD=1 claude --resume "$_sid" \
       --settings '{"alwaysThinkingEnabled":false}' \
       -p "$_prompt")
