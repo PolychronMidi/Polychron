@@ -234,6 +234,42 @@ class ClaudeSettingsJsonVerifier(Verifier):
                        payload.get("violations", [])[:10])
 
 
+class StateFileOwnershipVerifier(Verifier):
+    """Delegates to scripts/audit-state-file-ownership.py, which checks
+    that every grep-detectable writer of a shared state file is declared
+    in `doc/HME_STATE_OWNERSHIP.md`. Pattern surfaced by peer-review
+    iter 136 as the most-impactful unwatched architectural contract:
+    HME spans 4+ runtimes that all touch shared filesystem state, and
+    until this verifier existed nothing automated guarded against an
+    unregistered writer.
+
+    Weight 1.5 — gating: a new writer of `hme-errors.log` or
+    `hme-nexus.state` without coordination is a real risk class
+    (concurrent append/truncate, source-tag confusion). FAIL on any
+    detected drift; the doc is the authoritative registry.
+    """
+    name = "state-file-ownership"
+    category = "code"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-state-file-ownership.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script])
+        if rc == 0:
+            return _result(PASS, 1.0,
+                           out.splitlines()[-1] if out else "all writers declared")
+        # Drift detected — failed verifier. Surface the drift lines.
+        drift_lines = [l for l in out.splitlines()
+                       if "drift" in l or " — writer not declared" in l
+                       or "writes detected but not in registry" in l]
+        return _result(FAIL,
+                       max(0.0, 1.0 - 0.1 * len(drift_lines)),
+                       f"{len(drift_lines)} undeclared writer(s) of shared state",
+                       drift_lines[:15])
+
+
 class SilentFailureClassVerifier(Verifier):
     """Delegates to scripts/audit-silent-failure-class.py, which surfaces
     broad-except / catch-and-swallow sites that lack a `silent-ok:`
