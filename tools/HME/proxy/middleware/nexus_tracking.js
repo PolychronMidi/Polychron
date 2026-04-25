@@ -57,7 +57,12 @@ module.exports = {
     // block indefinitely after each edit.
     if (name === 'Bash') {
       const cmd = String(input.command || '');
-      if (/\bi\/review\b/.test(cmd)) {
+      // Anchor to a real-invocation context (start, after `;` `&` `|` or
+      // whitespace, optional `./` prefix, then `i/review`, then a word
+      // boundary). The previous `\bi\/review\b` matched literal mentions
+      // inside echo / grep / git log strings, clearing the EDIT NEXUS as
+      // if a real review ran and hiding genuinely unreviewed edits.
+      if (/(?:^|[;&|\s])(?:\.\/)?i\/review(?:\s|$)/.test(cmd)) {
         const count = ctx.nexusCount('EDIT');
         ctx.nexusClearType('EDIT');
         ctx.nexusMark('REVIEW', String(count));
