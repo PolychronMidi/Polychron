@@ -39,8 +39,7 @@ metaProfiles = (() => {
   // names override (lets a project tweak a built-in's axis values
   // without forking the codebase).
   if (typeof metaProfileDefinitions.loadCustomProfiles === 'function') {
-    try { metaProfileDefinitions.loadCustomProfiles(); }
-    catch (err) { console.error(`metaProfiles: loadCustomProfiles failed: ${err.message}`); }
+    metaProfileDefinitions.loadCustomProfiles();
   }
 
   // Clear stale history at module load (once per pipeline run).
@@ -115,13 +114,22 @@ metaProfiles = (() => {
     return activeProfile[axis] || null;
   }
 
+  function _looksLikeEnvelope(v) {
+    if (v === null || v === undefined) return false;
+    if (Array.isArray(v)) return false;
+    if (typeof v === 'object') {
+      return 'from' in v && 'to' in v;
+    }
+    return false;
+  }
+
   function getAxisValue(axis, key, fallback) {
     const section = getAxis(axis);
     if (!section || !(key in section)) return fallback;
     const v = section[key];
     // Envelope shape: collapse to mid-activation value (progress=0.5).
     // Callers that want time-varying behavior use getAxisValueAt instead.
-    if (v && typeof v === 'object' && !Array.isArray(v) && 'from' in v && 'to' in v) {
+    if (_looksLikeEnvelope(v)) {
       return _resolveEnvelope(v, 0.5);
     }
     return v;
@@ -133,7 +141,7 @@ metaProfiles = (() => {
   //   descending  -> reverse: from at progress=1, to at progress=0
   //   arch        -> sine peak at midpoint, ends at min(from, to)
   function _resolveEnvelope(env, progress) {
-    const t = Math.max(0, Math.min(1, progress));
+    const t = m.max(0, m.min(1, progress));
     const curve = env.curve || 'linear';
     if (Array.isArray(env.from)) {
       // Pair envelope -- interpolate each component.
@@ -148,7 +156,7 @@ metaProfiles = (() => {
   function _curveRatio(curve, t) {
     switch (curve) {
       case 'descending': return 1 - t;
-      case 'arch':       return Math.sin(t * Math.PI);
+      case 'arch':       return m.sin(t * m.PI);
       case 'ascending':
       case 'linear':
       default:           return t;
@@ -161,7 +169,7 @@ metaProfiles = (() => {
     const section = getAxis(axis);
     if (!section || !(key in section)) return fallback;
     const v = section[key];
-    if (v && typeof v === 'object' && !Array.isArray(v) && 'from' in v && 'to' in v) {
+    if (_looksLikeEnvelope(v)) {
       return _resolveEnvelope(v, progress);
     }
     return v;
@@ -197,20 +205,18 @@ metaProfiles = (() => {
   // later round). This entry is the data-collection foothold; without
   // it, no future tuning loop has anything to consume.
   function recordAttribution(fields) {
-    if (!fields || typeof fields !== 'object') return;
+    V.assertPlainObject(fields, 'metaProfiles.recordAttribution.fields');
     const entry = {
-      profile: activeProfileName,
-      section: typeof fields.section === 'number' ? fields.section : null,
-      sectionType: fields.sectionType || null,
-      score: Number.isFinite(fields.score) ? fields.score : null,
-      hci: Number.isFinite(fields.hci) ? fields.hci : null,
-      ts: Date.now(),
       ...fields,
+      profile: activeProfileName,
+      section: V.optionalFinite(fields.section, null),
+      sectionType: fields.sectionType || null,
+      score: V.optionalFinite(fields.score, null),
+      hci: V.optionalFinite(fields.hci, null),
+      ts: Date.now(),
     };
-    try {
-      _fs.mkdirSync(_path.dirname(_attributionFile), { recursive: true });
-      _fs.appendFileSync(_attributionFile, JSON.stringify(entry) + '\n');
-    } catch (_e) { /* best-effort */ }
+    _fs.mkdirSync(_path.dirname(_attributionFile), { recursive: true });
+    _fs.appendFileSync(_attributionFile, JSON.stringify(entry) + '\n');
   }
 
   // Evaluate reactive triggers against a runtime signal snapshot. Returns
@@ -219,18 +225,21 @@ metaProfiles = (() => {
   // main.js's section rotation) decide whether to honor it vs section
   // affinity and dwell. Single-pass, no sustained-for-N-beats yet.
   function evaluateTriggers(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') return null;
+    V.assertPlainObject(snapshot, 'metaProfiles.evaluateTriggers.snapshot');
     let best = null;
     const all = metaProfileDefinitions.all();
     for (const [name, profile] of Object.entries(all)) {
-      if (!profile.triggers || !Array.isArray(profile.triggers.enter)) continue;
-      for (const t of profile.triggers.enter) {
-        const parsed = metaProfileDefinitions._parseTriggerExpr ? metaProfileDefinitions._parseTriggerExpr(t.if) : null;
+      if (!profile.triggers) continue;
+      // _validateTriggers guarantees `enter` is an array when defined.
+      const enterList = profile.triggers.enter;
+      if (!enterList) continue;
+      for (const trig of enterList) {
+        const parsed = metaProfileDefinitions._parseTriggerExpr(trig.if);
         if (!parsed) continue;
         if (!metaProfileDefinitions._evalTriggerExpr(parsed, snapshot)) continue;
-        const priority = Number.isFinite(t.priority) ? t.priority : 50;
+        const priority = V.optionalFinite(trig.priority, 50);
         if (!best || priority > best.priority) {
-          best = { profile: name, priority, condition: t.if };
+          best = { profile: name, priority, condition: trig.if };
         }
       }
     }
