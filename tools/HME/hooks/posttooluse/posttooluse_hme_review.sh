@@ -75,7 +75,7 @@ if [ "$MODE" = "forget" ]; then
           | head -1)
         _SCAFFOLD_COUNT=$(echo "$TOOL_RESULT" \
           | awk '/^## Warnings \(/,/^##[^#]/' \
-          | grep -cE '\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):' \
+          | grep -cE '\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):|audit skipped\s*[:—]' \
           | head -1)
         if [ "${_ACTIONABLE_COUNT:-0}" -gt 0 ] \
            && [ "${_SCAFFOLD_COUNT:-0}" -eq "${_ACTIONABLE_COUNT:-0}" ]; then

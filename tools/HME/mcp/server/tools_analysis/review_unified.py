@@ -179,8 +179,13 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             # which made a two-space producer emission
                             # scaffold-only on THIS side but actionable
                             # on the others. Peer-review iter 111.
+                            # "audit skipped" added — same scaffolding
+                            # class, surfaces on file-move artifacts
+                            # where static audit references a path that
+                            # was renamed mid-session.
                             scaffold_re = _re_vw.compile(
                                 r'\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
+                                r'|audit skipped\s*[:—]'
                             )
                             if not bullets:
                                 # "## Warnings (N)" matched but no dash-
