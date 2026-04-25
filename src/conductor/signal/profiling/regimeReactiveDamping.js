@@ -57,8 +57,13 @@ regimeReactiveDamping = (() => {
 
   // Metaprofile-scaled maxima via scaleFactor (active/default profile ratio).
   // No active profile / disabled axis -> 1.0x -> _BASE constant unchanged.
+  // Tension ceiling uses progressedScaleFactor so envelope-typed values
+  // (e.g. tense.tension.ceiling = {from:0.70,to:0.90,curve:'ascending'})
+  // resolve at the current activation progress -- ceiling rises as the
+  // profile holds across sections. Scalar values short-circuit to the
+  // unchanged ratio.
   function _getMaxTension() {
-    return _BASE_MAX_TENSION * metaProfiles.scaleFactor('tension', 'ceiling');
+    return _BASE_MAX_TENSION * metaProfiles.progressedScaleFactor('tension', 'ceiling');
   }
   // Density target uses sampledScaleFactor so distribution-typed values
   // (e.g. chaotic.energy.densityTarget = {mean, std}) draw a fresh sample

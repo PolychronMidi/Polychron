@@ -167,6 +167,24 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     metaProfiles.setActive(chosen, sectionIndex);
   }
 
+  // Activation progress for time-varying envelope axes: how far the
+  // currently-active profile has held relative to its minDwellSections.
+  // 0.0 = just activated, 1.0 = at-or-past dwell minimum. Controllers
+  // calling progressedScaleFactor read this to resolve envelopes.
+  // Computed AFTER setActive (above) so progress reflects this section's
+  // newly-chosen profile, not the previous one.
+  {
+    const activeProfileObj = metaProfiles.getActive();
+    const since = metaProfiles.getActiveSinceSection();
+    if (activeProfileObj && since !== null) {
+      const dwell = activeProfileObj.minDwellSections || 1;
+      const elapsed = sectionIndex - since;
+      metaProfiles.setActivationProgress(elapsed / m.max(1, dwell));
+    } else {
+      metaProfiles.setActivationProgress(0.5);
+    }
+  }
+
   phrasesPerSection = ri(sectionPhraseRange.min, sectionPhraseRange.max);
   mainBootstrap.requireFiniteNumber('phrasesPerSection', phrasesPerSection);
   if (phrasesPerSection <= 0) {
