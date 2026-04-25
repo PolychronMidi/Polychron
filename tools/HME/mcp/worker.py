@@ -18,6 +18,7 @@ CLI: python3 worker.py [--port 9098]
 """
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import logging
 import os
@@ -25,6 +26,32 @@ import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# Shared thread pool for /validate requests. Previous implementation
+# spawned a fresh ThreadPoolExecutor per request with cancel_futures=True,
+# but Python threads can't be interrupted — on timeout, the running
+# _validate kept executing past the 3s deadline and leaked an engine-
+# bound thread. With a bounded shared pool + semaphore, concurrent
+# validates are capped, so overload cycles can't accumulate runaway
+# workers. Pool size deliberately small; the validate path is inference-
+# bound and serialization is fine.
+_VALIDATE_POOL_SIZE = 2
+_VALIDATE_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+    max_workers=_VALIDATE_POOL_SIZE, thread_name_prefix="hme-validate")
+_VALIDATE_SEMAPHORE = threading.BoundedSemaphore(value=_VALIDATE_POOL_SIZE)
+
+
+def _bounded_validate(query: str) -> dict:
+    """Gate _validate calls through a semaphore so concurrent timeouts
+    can't pile up more in-flight engine calls than pool slots."""
+    from hme_http_handlers import _validate as _inner
+    if not _VALIDATE_SEMAPHORE.acquire(timeout=2.5):
+        return {"warnings": [], "blocks": [],
+                "deferred": "validate semaphore exhausted — engine saturated"}
+    try:
+        return _inner(query)
+    finally:
+        _VALIDATE_SEMAPHORE.release()
 
 # Single source of truth: tools/HME/config/versions.json.
 # Bump that file to move the three components (cli/proxy/worker) together.
@@ -521,23 +548,27 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(200, {"enriched": prompt, "original": prompt, "error": str(e)})
 
     def _post_validate(self, body: dict):
-        from hme_http_handlers import _validate
-        import concurrent.futures
+        # _validate is imported lazily inside _bounded_validate now — keeps
+        # the handler hot-path free of the import cycle cost.
         query = body.get("query", "")
         if not query:
             self._json(400, {"error": "query required"})
             return
         # Stay under the 5s client timeout: if search takes >3s, return
         # a deferred response rather than letting the client time out.
-        # Use cancel_futures=True so shutdown doesn't block on the running thread.
-        _exec = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        _fut = _exec.submit(_validate, query)
+        # Previously spawned a fresh ThreadPoolExecutor per request with
+        # cancel_futures=True — but Python threads cannot be interrupted,
+        # so the running _validate kept executing past the 3s timeout
+        # and each overload cycle leaked one engine-bound thread
+        # holding model/lock state, compounding GIL contention. Now:
+        # shared module-level executor (threads are reused not
+        # respawned) + semaphore that caps concurrent in-flight
+        # validates so timeout pile-ups can't accumulate runaway workers.
+        _fut = _VALIDATE_EXECUTOR.submit(_bounded_validate, query)
         try:
             result = _fut.result(timeout=3.0)
         except concurrent.futures.TimeoutError:
             result = {"warnings": [], "blocks": [], "deferred": "search timeout — engine under load"}
-        finally:
-            _exec.shutdown(wait=False, cancel_futures=True)
         self._json(200, result)
 
     def _post_audit(self, body: dict):
