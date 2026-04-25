@@ -42,6 +42,7 @@ if [ -f "$FLAG" ]; then
     if [ -f "$COUPLING_FILE" ]; then
       COUPLING_HINT=$(python3 <<'PYEOF' 2>/dev/null
 import json
+import os
 try:
     d = json.load(open(os.environ.get("METRICS_DIR", os.path.join(os.environ.get("PROJECT_ROOT","."), "output", "metrics")) + "/hme-coupling.json"))
     matrix = d.get('matrix', {})
