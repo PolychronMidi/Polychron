@@ -497,11 +497,23 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
 
 
 def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_type: str = "general-purpose") -> tuple[str, str] | None:
-    # Feature-flagged direct path: if OVERDRIVE_DIRECT_AGENT=1, spawn a
-    # claude subprocess synchronously instead of bouncing through a
-    # sentinel. Gives HME the reasoning result with no agent-visible
-    # tool_result noise. Falls back to sentinel-bounce if the direct
-    # call returns None (claude not on PATH, timeout, etc.).
+    # PRIORITY 1: persistent thread. If user has run `i/thread init`,
+    # tmp/hme-thread.sid exists; every reasoning call flows synchronously
+    # through that one long-lived claude session so context accumulates
+    # across review/OVERDRIVE/suggest_evolution dispatches. The result
+    # comes back inline as a normal reasoning response — no sentinel,
+    # no separate dispatch step on the agent side. Falls through to
+    # direct/sentinel paths if the thread dispatch fails or no sid.
+    try:
+        from .agent_direct import dispatch_thread as _thread
+        thread_result = _thread(prompt)
+        if thread_result:
+            return (thread_result, "overdrive/thread")
+    except Exception as _thr_err:
+        logger.debug(f"thread dispatch errored: {type(_thr_err).__name__}: {_thr_err}")
+
+    # PRIORITY 2: feature-flagged ephemeral direct path (OVERDRIVE_DIRECT_AGENT=1)
+    # — spawns a fresh claude subprocess per call. No context accumulation.
     try:
         from .agent_direct import dispatch_direct as _direct
         direct_result = _direct(prompt, system, max_tokens, subagent_type=subagent_type)

@@ -33,6 +33,64 @@ import time
 logger = logging.getLogger("HME")
 
 
+def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
+    """Synchronously route a reasoning prompt through the persistent
+    subagent session whose sid is recorded in tmp/hme-thread.sid.
+
+    Used by synthesis_reasoning when a user has run `i/thread init` —
+    every reasoning call (review reflection, OVERDRIVE cascade, etc.)
+    flows into the same long-lived claude session so context
+    accumulates across calls. The persistent session is observable
+    via VSCode's Claude Code extension by resuming its sid.
+
+    Returns the assistant's text reply, or None on any failure
+    (caller falls back to sentinel-bounce or direct ephemeral
+    dispatch). HME_THREAD_CHILD=1 prevents the spawned subprocess
+    from re-entering our own stop hooks. alwaysThinkingEnabled=false
+    keeps the response in a single transcript event so VSCode
+    renders it correctly (with thinking on, response writes as two
+    events sharing one msg_id and VSCode dedupes the second).
+    """
+    project_root = os.environ.get("PROJECT_ROOT", "")
+    if not project_root:
+        return None
+    sid_file = os.path.join(project_root, "tmp", "hme-thread.sid")
+    if not os.path.isfile(sid_file):
+        return None
+    try:
+        with open(sid_file, "r") as f:
+            sid = f.read().strip()
+    except OSError as e:
+        logger.warning(f"dispatch_thread: read sid failed: {e}")
+        return None
+    if not sid:
+        return None
+
+    env = dict(os.environ)
+    env["HME_THREAD_CHILD"] = "1"
+    try:
+        t0 = time.monotonic()
+        result = subprocess.run(
+            ["claude", "--resume", sid,
+             "--settings", '{"alwaysThinkingEnabled":false}',
+             "-p", prompt[:32000]],
+            capture_output=True, text=True, timeout=timeout_sec, env=env,
+        )
+        elapsed = time.monotonic() - t0
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError) as e:
+        logger.warning(f"dispatch_thread: failed: {type(e).__name__}: {e}")
+        return None
+    if result.returncode != 0:
+        logger.warning(f"dispatch_thread: claude exited {result.returncode}: "
+                       f"{(result.stderr or '')[:200]}")
+        return None
+    out = (result.stdout or "").strip()
+    if not out:
+        return None
+    logger.info(f"dispatch_thread: succeeded ({len(out)}c in {elapsed:.1f}s, sid={sid[:8]})")
+    return out
+
+
 def dispatch_direct(prompt: str, system: str, max_tokens: int,
                     subagent_type: str = "general-purpose",
                     timeout_sec: float = 90.0) -> str | None:
