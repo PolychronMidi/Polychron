@@ -17,6 +17,17 @@ _hme_log_hook_latency() {
   if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
     return 0
   fi
+  # Drop entries whose hook name didn't resolve. _HME_HOOK_NAME falls back
+  # to "unknown" in _safety.sh when BASH_SOURCE[1] is unset (e.g. when
+  # _safety.sh is invoked from an unusual context such as background
+  # subshell or eval). universal_pulse.py groups latencies by hook name
+  # and per-bucket p95 — an "unknown" bucket aggregates entries from
+  # ANY caller, which both false-alarms ("unknown hook is slow!") and
+  # provides no actionable signal (we don't know WHICH hook). Drop here
+  # rather than emit and filter later: keeps the log honest.
+  if [ -z "${_HME_HOOK_NAME:-}" ] || [ "${_HME_HOOK_NAME}" = "unknown" ]; then
+    return 0
+  fi
   local log_file="$PROJECT_ROOT/log/hme-hook-latency.jsonl"
   mkdir -p "$(dirname "$log_file")" 2>/dev/null
   printf '{"hook":"%s","duration_ms":%d,"ts":%s}\n' \
