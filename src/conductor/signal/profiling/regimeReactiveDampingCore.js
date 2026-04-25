@@ -12,11 +12,12 @@ regimeReactiveDampingCore = (() => {
    */
   function tensionShapeCurve(shape, progress) {
     switch (shape) {
-      case 'flat':      return 0.5;
-      case 'ascending': return progress;
-      case 'sawtooth':  return (progress * 3) % 1.0;
-      case 'erratic':   return 0.5 + m.sin(progress * 17.3) * 0.4 + m.cos(progress * 7.1) * 0.3;
-      default:          return m.sin(progress * m.PI); // arch
+      case 'flat':       return 0.5;
+      case 'ascending':  return progress;
+      case 'descending': return 1.0 - progress;
+      case 'sawtooth':   return (progress * 3) % 1.0;
+      case 'erratic':    return 0.5 + m.sin(progress * 17.3) * 0.4 + m.cos(progress * 7.1) * 0.3;
+      default:           return m.sin(progress * m.PI); // arch
     }
   }
 
