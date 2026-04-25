@@ -504,11 +504,22 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # comes back inline as a normal reasoning response — no sentinel,
     # no separate dispatch step on the agent side. Falls through to
     # direct/sentinel paths if the thread dispatch fails or no sid.
+    #
+    # ImportError / AttributeError are logged at WARNING — they signal
+    # the thread-dispatch module is structurally unreachable (misnamed
+    # symbol, refactor breakage, etc.) which must not silently demote
+    # to debug. Runtime failures (timeouts, subprocess errors) are
+    # handled inside dispatch_thread; anything leaking out is unexpected.
+    # Accept empty string as a valid result (explicit `is not None`) so
+    # a legitimate empty reply doesn't cause fallback double-dispatch.
     try:
         from .agent_direct import dispatch_thread as _thread
         thread_result = _thread(prompt)
-        if thread_result:
+        if thread_result is not None:
             return (thread_result, "overdrive/thread")
+    except (ImportError, AttributeError) as _thr_struct:
+        logger.warning(f"thread dispatch structurally unreachable: "
+                       f"{type(_thr_struct).__name__}: {_thr_struct}")
     except Exception as _thr_err:
         logger.debug(f"thread dispatch errored: {type(_thr_err).__name__}: {_thr_err}")
 
