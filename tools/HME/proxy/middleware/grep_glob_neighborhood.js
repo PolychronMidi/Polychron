@@ -85,11 +85,19 @@ function _extractPaths(text) {
 }
 
 function _firstDocLine(filePath) {
+  let fd;
   try {
-    const fd = fs.openSync(filePath, 'r');
+    fd = fs.openSync(filePath, 'r');
     const buf = Buffer.alloc(600);
-    const n = fs.readSync(fd, buf, 0, 600, 0);
-    fs.closeSync(fd);
+    let n = 0;
+    try {
+      n = fs.readSync(fd, buf, 0, 600, 0);
+    } finally {
+      // Always close — readSync can throw on raced symlinks / EIO and
+      // the previous code leaked the fd in that path. Across thousands
+      // of grep enrichments this exhausts the proxy's fd budget.
+      try { fs.closeSync(fd); } catch (_) { /* ignore close-after-read errors */ }
+    }
     const head = buf.toString('utf8', 0, n);
     // Python triple-quoted docstring at top
     const pyDoc = head.match(/^"""([\s\S]*?)(?:"""|$)/m);
