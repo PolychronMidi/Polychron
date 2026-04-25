@@ -28,23 +28,44 @@ if [ -f "$ERROR_LOG" ]; then
   # an off-by-N gap the next turn's "watermark not caught up" branch
   # fails to detect (that branch compares WATERMARK_LINE < TURN_START_LINE,
   # not against current wc -l).
-  # Block on NEW errors fired this turn (mid-turn)
+  # Block on NEW errors fired this turn (mid-turn).
+  #
+  # Source-classification (peer-review iter 130 fix): the error log is
+  # written by multiple actors. Self-origin entries (worker GIL hangs,
+  # daemon crashloops, supervisor child-exit failures) cannot be fixed
+  # from inside an agent turn — surfacing them as "you MUST fix" causes
+  # the agent to attempt remediation it has no causal access to.
+  # Classify by source-tag prefix; agent-origin → demand-register block,
+  # self-origin → reveal-register observation passed through (no block).
+  # Self-origin patterns are documented in writers' source: `[universal_pulse]`,
+  # `[supervisor]`, `[hme-proxy] inline`, `meta_observer`, `daemon crashloop`,
+  # `claude-arbiter CPU`, `worker self-terminated`.
+  _SELF_ORIGIN_RE='\[universal_pulse\]|\[supervisor\]|\[hme-proxy\]|meta_observer|daemon crashloop|claude-arbiter CPU|worker self-terminated|llamacpp_daemon'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
-    # Strip ISO timestamps before dedup so identical messages with different
-    # timestamps collapse to one line instead of spamming N copies.
-    NEW_ERRORS=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" \
-      | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
-    # Re-read line count AFTER the awk consumed its snapshot so the
-    # watermark matches what we actually reported (no drift).
+    NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
+    AGENT_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_SELF_ORIGIN_RE" || true)
+    SELF_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -E "$_SELF_ORIGIN_RE" || true)
+    # Re-read line count AFTER the awk consumed its snapshot so watermark matches.
     TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
     TOTAL=${TOTAL:-0}
     echo "$TOTAL" > "$WATERMARK"
     echo "$TOTAL" > "$TURNSTART"
-    jq -n \
-      --arg errors "$NEW_ERRORS" \
-      '{"decision":"block","reason":("🚨 LIFESAVER — ERRORS FIRED DURING THIS TURN:\n" + $errors + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
-    _stderr_verdict "BLOCK: lifesaver $((TOTAL - TURN_START_LINE))err"
-    exit 0
+    if [ -n "$AGENT_ERRORS" ]; then
+      jq -n \
+        --arg errors "$AGENT_ERRORS" \
+        --arg self "$SELF_ERRORS" \
+        '{"decision":"block","reason":("🚨 LIFESAVER — AGENT-ORIGIN ERRORS FIRED THIS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor — informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nYou MUST: 1) diagnose root cause  2) implement fix  3) verify fix.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+      _stderr_verdict "BLOCK: lifesaver $((TOTAL - TURN_START_LINE))err"
+      exit 0
+    elif [ -n "$SELF_ERRORS" ]; then
+      # Self-origin only — surface as observation, do not block. The
+      # operator/supervisor handles these; the agent has no causal path.
+      jq -n \
+        --arg self "$SELF_ERRORS" \
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[hme self-health] " + $self + "\n(observability only — supervisor/operator concern, not agent action)")}}'
+      _stderr_verdict "PASS: lifesaver self-only"
+      exit 0
+    fi
   fi
 
   # Block on UNADDRESSED errors from before this turn (watermark not caught up)
