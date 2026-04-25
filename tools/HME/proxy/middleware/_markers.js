@@ -136,6 +136,30 @@ const MARKERS = {
     consumers: ['tools/HME/hooks/lifecycle/stop/detectors.sh'],
     sentinel: 'psycho_stop',
   },
+
+  // Self-origin error tags — added per peer-review iter 130's
+  // observation that hme-errors.log mixes worker/daemon/supervisor
+  // failures with agent failures. lifesaver.sh now classifies by
+  // these tags to demote self-origin entries to reveal-register
+  // (no block). If a writer changes its tag without updating the
+  // classifier, the agent gets demand-register blocks for self-
+  // health issues again. Verifier checks each tag appears in BOTH
+  // its emitter and the lifesaver classifier.
+  HME_SELFORIGIN_PULSE: {
+    producer: 'tools/HME/activity/universal_pulse.py',
+    consumers: ['tools/HME/hooks/lifecycle/stop/lifesaver.sh'],
+    sentinel: '[universal_pulse]',
+  },
+  HME_SELFORIGIN_SUPERVISOR: {
+    producer: 'tools/HME/proxy/supervisor/index.js',
+    consumers: ['tools/HME/hooks/lifecycle/stop/lifesaver.sh'],
+    sentinel: '[supervisor]',
+  },
+  HME_SELFORIGIN_LLAMACPP: {
+    producer: 'tools/HME/proxy/supervisor/index.js',
+    consumers: ['tools/HME/hooks/lifecycle/stop/lifesaver.sh'],
+    sentinel: 'llamacpp_daemon',
+  },
 };
 
 module.exports = { MARKERS };
