@@ -167,7 +167,15 @@ Expressions parse as `<signal> <op> <value>` where op ∈ `> >= < <= == !=` and 
 
 ### Empirical-tuning attribution
 
-`metaProfiles.recordAttribution(fields)` appends a JSONL entry to `output/metrics/metaprofile-attribution.jsonl`. `main.js` writes one entry per section with `{profile, section, sectionType, score, ts}` (score = section composite intensity). A separate aggregator script can later compute per-profile mean scores + sensitivity to drive evolution suggestions.
+`metaProfiles.recordAttribution(fields)` appends a JSONL entry to `output/metrics/metaprofile-attribution.jsonl`. `main.js` writes one entry per section with `{profile, section, sectionType, score, ts}` (score = section composite intensity).
+
+The closing piece is `scripts/metaprofile-sensitivity.js`:
+
+```bash
+node scripts/metaprofile-sensitivity.js
+```
+
+Reads the JSONL log, emits a per-profile score distribution (n, mean, std, p10/p50/p90, min/max), per-(profile, sectionType) breakdown, and a ranking by mean score. Writes machine-readable JSON to `output/metrics/metaprofile-sensitivity.json` and a Markdown summary to stdout. Evolution priority can later consume this to recommend profile changes when a low-ranked profile dominates the rotation.
 
 ### Three-scope custom registries
 
