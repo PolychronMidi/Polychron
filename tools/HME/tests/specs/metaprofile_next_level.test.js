@@ -173,6 +173,55 @@ test('distributions: getAxisValue collapses {mean, std} to mean', () => {
   }
 });
 
+test('scaleFactor: handles envelope-shape values via collapse', () => {
+  // tense now declares tension.ceiling as envelope {from:0.70, to:0.90, curve:'ascending'}.
+  // scaleFactor must collapse it to midpoint (0.5 progress) = 0.80.
+  // default tension.ceiling = 0.80, so tense ratio = 0.80/0.80 = 1.0 exactly.
+  mp.setActive(null);
+  mp.setActive('tense', 0);
+  const ratio = mp.scaleFactor('tension', 'ceiling');
+  assert.ok(Math.abs(ratio - 1.0) < 1e-6,
+    `tense envelope-collapsed scaleFactor ${ratio} != 1.0 (0.80/0.80)`);
+  mp.setActive(null);
+});
+
+test('scaleFactor: handles distribution-shape values via collapse to mean', () => {
+  // chaotic now declares energy.densityTarget as {mean:0.75, std:0.06}.
+  // scaleFactor must collapse it to 0.75.
+  // default densityTarget = 0.50, so chaotic ratio = 0.75/0.50 = 1.5.
+  mp.setActive(null);
+  mp.setActive('chaotic', 0);
+  const ratio = mp.scaleFactor('energy', 'densityTarget');
+  assert.ok(Math.abs(ratio - 1.5) < 1e-6,
+    `chaotic distribution-collapsed scaleFactor ${ratio} != 1.5 (0.75/0.50)`);
+  mp.setActive(null);
+});
+
+test('sampledScaleFactor: returns ratios distributed around scaleFactor mean', () => {
+  // chaotic energy.densityTarget = {mean:0.75, std:0.06} / default 0.50 = ratio mean 1.5.
+  mp.setActive(null);
+  mp.setActive('chaotic', 0);
+  let sum = 0;
+  const n = 300;
+  for (let i = 0; i < n; i++) sum += mp.sampledScaleFactor('energy', 'densityTarget');
+  const meanRatio = sum / n;
+  // Population mean 1.5, std 0.06/0.50 = 0.12. n=300 -> sample mean within 3*0.12/sqrt(300) ~ 0.021.
+  assert.ok(Math.abs(meanRatio - 1.5) < 0.06,
+    `sampledScaleFactor mean ${meanRatio} too far from population 1.5`);
+  mp.setActive(null);
+});
+
+test('sampledScaleFactor: scalar values short-circuit to deterministic ratio', () => {
+  // atmospheric energy.densityTarget = 0.35 (scalar). All draws should equal 0.35/0.50 = 0.70.
+  mp.setActive(null);
+  mp.setActive('atmospheric', 0);
+  for (let i = 0; i < 5; i++) {
+    const r = mp.sampledScaleFactor('energy', 'densityTarget');
+    assert.ok(Math.abs(r - 0.70) < 1e-9, `non-distribution draw ${r} != 0.70`);
+  }
+  mp.setActive(null);
+});
+
 test('distributions: schema rejects negative std', () => {
   const fs = require('fs');
   const path = require('path');
