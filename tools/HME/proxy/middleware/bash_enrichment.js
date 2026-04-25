@@ -8,7 +8,12 @@
  * command they ran, and per-file KB state is never agent-actionable.
  */
 
-const ERROR_RE = /(\bTraceback\b|\bERROR\b|\bFAIL(?:ED)?\b|Segmentation fault|core dumped|OutOfMemory|OOMKilled)/;
+// Anchor to log-line conventions (start-of-line marker + colon or
+// dedicated-phrase) so benign mentions like `"no errors found"`,
+// `set -o errexit`, or grep output containing the literal word don't
+// produce misleading [err] footers. Free-floating word-boundary
+// matching previously caused the agent to chase non-issues.
+const ERROR_LINE_RE = /^\s*(?:Traceback \(most recent call last\)|ERROR:|FAIL(?:ED)?:|Segmentation fault|core dumped|OutOfMemory(?:Error)?|OOMKilled|fatal:|panic:)/;
 
 function _textOf(toolResult) {
   const c = toolResult.content;
@@ -20,8 +25,18 @@ function _textOf(toolResult) {
 }
 
 function _firstErrorSnippet(text) {
-  for (const line of text.split('\n')) {
-    if (ERROR_RE.test(line)) return line.trim().slice(0, 120);
+  // Return the matching line PLUS up to 2 trailing context lines, capped
+  // by total bytes — long Python tracebacks routinely exceed 120 chars
+  // before reaching the salient phrase (e.g. `OutOfMemoryError: CUDA
+  // out of memory. Tried to allocate …`). Slicing to per-line 120
+  // chars used to crop to a path prefix and drop the diagnosis.
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (ERROR_LINE_RE.test(lines[i])) {
+      const snippet = lines.slice(i, Math.min(i + 3, lines.length))
+        .map((l) => l.trim()).filter(Boolean).join(' | ');
+      return snippet.slice(0, 320);
+    }
   }
   return '';
 }

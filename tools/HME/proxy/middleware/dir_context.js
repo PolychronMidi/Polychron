@@ -29,9 +29,19 @@ let _trackedPaths = []; // sorted by depth desc so longest match wins
 
 function _loadIndex(projectRoot) {
   const now = Date.now();
-  if (_index !== null && now - _loadedAt < REFRESH_MS) return _index;
+  // Refresh on either clock OR file mtime — when the aggregator rewrites
+  // hme-dir-intent.json mid-window, clock-only would serve stale rules
+  // for up to 60s after the rotation.
+  let mtime = 0;
+  try { mtime = fs.statSync(INTENT_PATH).mtimeMs; } catch (_) { /* file may not exist yet */ }
+  if (_index !== null && now - _loadedAt < REFRESH_MS && mtime <= _loadedAt) return _index;
   try {
-    const raw = fs.readFileSync(path.join(projectRoot, INTENT_PATH), 'utf8');
+    // INTENT_PATH is already absolute (joined with absolute METRICS_DIR
+    // upstream). path.join with another absolute prefix doesn't discard
+    // the leading one — `path.join('/a', '/b')` → `/a/b`, not `/b`. The
+    // previous join produced a doubled path that never existed; the
+    // catch silently set _index = {} and the middleware never fired.
+    const raw = fs.readFileSync(INTENT_PATH, 'utf8');
     const data = JSON.parse(raw);
     const dirs = (data && typeof data.dirs === 'object') ? data.dirs : {};
     // Project out intro — never used at injection time, saves memory on 4000-char fields.
