@@ -14,16 +14,19 @@
 #   3. No-op error callbacks: onError: () => {}, reject: () => {}, onFail = () => {}
 #   4. Fallback values masquerading as success (e.g. "no reason given" where "timeout" is needed)
 #   5. Build/compile stderr suppressed: tsc/npm/node 2>/dev/null hides errors that must surface
+# Use printf instead of echo — `echo "$CMD"` mis-parses commands starting
+# with `-n`, `-e`, or `-E` as flags (classic shell footgun), which made
+# this gate silently pass on benign-looking but flag-prefixed commands.
 # Skip code-pattern checks when the command includes git commit — message text is not
 # source code and legitimately describes patterns being removed (false-positive otherwise).
-if echo "$CMD" | grep -q 'git commit'; then
+if printf '%s\n' "$CMD" | grep -q 'git commit'; then
   exit 0
 fi
-if echo "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]]*\}' \
-   || echo "$CMD" | grep -qE '\.catch\([[:space:]]*(function[[:space:]]*\(\)|(\([^)]*\))[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}\)' \
-   || echo "$CMD" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
-   || echo "$CMD" | grep -q 'parseArbiterResponse.*no reason given' \
-   || echo "$CMD" | grep -qE '(tsc|npm run|node scripts/|eslint)[^|;&]*2>/dev/null'; then
+if printf '%s\n' "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]]*\}' \
+   || printf '%s\n' "$CMD" | grep -qE '\.catch\([[:space:]]*(function[[:space:]]*\(\)|(\([^)]*\))[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}\)' \
+   || printf '%s\n' "$CMD" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
+   || printf '%s\n' "$CMD" | grep -q 'parseArbiterResponse.*no reason given' \
+   || printf '%s\n' "$CMD" | grep -qE '(tsc|npm run|node scripts/|eslint)[^|;&]*2>/dev/null'; then
   _emit_block "FAIL FAST VIOLATION — silent error suppression detected. No empty catch blocks, no-op onError/reject handlers, fallback values masking failures, or suppressed build stderr. Every error MUST bubble immediately: throw it, call onError(), call _postError(), reject the promise. Log to hme-errors.log. Surface in UI. No silent failures. Assume life-saving criticality."
   exit 2
 fi
