@@ -72,14 +72,31 @@ function spawnStage(stageName, stdinJson, timeoutMs) {
     // Under subprocess isolation each stage runs in its own shell, so we
     // export the alias from the wrapper. Catches the broken cross-stage
     // dependency the audit-shell-undefined-vars verifier surfaced.
+    // Set _HME_HOOK_NAME explicitly to the stage name BEFORE sourcing
+    // _safety.sh -- _safety.sh's name resolution does
+    // `_HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"`,
+    // and BASH_SOURCE[1] is unset inside a `bash -c` body (no parent
+    // script). Without the explicit assign, every stage's EXIT-trap
+    // latency entry recorded `hook=unknown`, which universal_pulse
+    // bucketed and false-alarmed on. _safety.sh respects an existing
+    // value because `_HME_HOOK_NAME=...` only fires once at top of
+    // _safety.sh; we set it before sourcing so the assignment there
+    // overwrites it -- this ALSO fixes the BASH_SOURCE fallback path.
+    // Both work together: explicit name AND _safety.sh assignment land
+    // on the same value (stage name).
     const wrapper = `
 set +u +e
 PROJECT="${PROJECT_ROOT}"
 _HME_HELPERS_DIR="${HELPERS_DIR}"
 _STOP_DIR="${path.dirname(STAGE_DIR)}"
 _DETECTORS_DIR="${DETECTORS_DIR}"
-export PROJECT _HME_HELPERS_DIR _STOP_DIR _DETECTORS_DIR
+_HME_STAGE_NAME="stop_chain:${stageName}"
+export PROJECT _HME_HELPERS_DIR _STOP_DIR _DETECTORS_DIR _HME_STAGE_NAME
 source "${HELPERS_DIR}/_safety.sh" 2>/dev/null
+# _safety.sh's BASH_SOURCE[1] resolution sets _HME_HOOK_NAME to "unknown"
+# inside bash -c. Override AFTER sourcing so the latency trap reports
+# the actual stage name (post_hooks / holograph / evolver / etc).
+_HME_HOOK_NAME="$_HME_STAGE_NAME"
 INPUT=$(cat)
 source "${path.join(STAGE_DIR, stageName + '.sh')}"
 `;
