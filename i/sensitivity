@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# i/sensitivity — aggregate output/metrics/metaprofile-attribution.jsonl
+# into per-profile score distributions, per-(profile, sectionType)
+# breakdowns, and a ranking. Writes machine-readable JSON to
+# output/metrics/metaprofile-sensitivity.json and a Markdown summary
+# to stdout. Closes the empirical-tuning loop that
+# metaProfiles.recordAttribution opened.
+#
+# Usage:
+#   i/sensitivity        # run the aggregator, print Markdown
+exec node "$(dirname "$0")/../scripts/metaprofile-sensitivity.js" "$@"
