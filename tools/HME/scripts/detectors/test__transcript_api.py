@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _transcript import (
     is_assistant, is_user, event_content,
     load_turn_events, load_full_turn_with_user,
-    iter_tool_uses,
+    iter_tool_uses, last_assistant_event,
 )
 
 
@@ -149,6 +149,64 @@ class LoadFullTurnContract(unittest.TestCase):
             self.assertEqual(len(events), 2)
             self.assertTrue(is_user(events[0]))
             self.assertTrue(is_assistant(events[1]))
+        finally:
+            os.unlink(path)
+
+
+class LastAssistantEventContract(unittest.TestCase):
+    """last_assistant_event returns the most recent assistant event.
+
+    Peer-review iter 110 caught that the prior implementation early-
+    returned on the first user-after-assistant, returning the OLDEST
+    completed assistant in a multi-turn transcript rather than the most
+    recent — silently evaluating the wrong turn in stop_work detection.
+    These tests pin the fix so a future "cleanup" can't silently
+    regress the semantic.
+    """
+
+    def test_returns_newest_assistant_across_multiple_turns(self):
+        path = _write_jsonl([
+            _fixture_user("turn 1 prompt"),
+            _fixture_assistant("turn 1 reply"),
+            _fixture_user("turn 2 prompt"),
+            _fixture_assistant("turn 2 reply"),
+        ])
+        try:
+            ev = last_assistant_event(path)
+            self.assertIsNotNone(ev)
+            content = ev.get("message", {}).get("content", [])
+            text = content[0].get("text", "") if content else ""
+            self.assertEqual(text, "turn 2 reply",
+                             "must return the MOST RECENT assistant, "
+                             "not the first completed turn")
+        finally:
+            os.unlink(path)
+
+    def test_returns_none_on_empty_transcript(self):
+        path = _write_jsonl([])
+        try:
+            self.assertIsNone(last_assistant_event(path))
+        finally:
+            os.unlink(path)
+
+    def test_returns_none_when_no_assistant_events(self):
+        path = _write_jsonl([_fixture_user("prompt only")])
+        try:
+            self.assertIsNone(last_assistant_event(path))
+        finally:
+            os.unlink(path)
+
+    def test_handles_trailing_user_without_response(self):
+        # Transcript captured mid-turn: [user, asst, user] (next reply
+        # hasn't arrived). Should return asst, not None.
+        path = _write_jsonl([
+            _fixture_user("prompt 1"),
+            _fixture_assistant("reply 1"),
+            _fixture_user("prompt 2"),
+        ])
+        try:
+            ev = last_assistant_event(path)
+            self.assertIsNotNone(ev)
         finally:
             os.unlink(path)
 

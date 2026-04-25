@@ -173,6 +173,15 @@ def last_assistant_event(transcript_path: str | Path) -> dict | None:
 
     Used by stop-work detection which only needs the very last assistant
     message's shape.
+
+    Prior implementation contained a promise-vs-delivers bug: it early-
+    returned on the first user-after-assistant, which meant given a
+    transcript of [user1, asst1, user2, asst2], it returned asst1
+    instead of asst2 — the OLDEST completed assistant, not the most
+    recent. stop_work.py consumes this and was evaluating the previous
+    turn's message in any session where the transcript contains more
+    than one completed turn. Fixed to walk the full event stream and
+    track the latest assistant. Peer-review iter 110.
     """
     try:
         data = Path(transcript_path).read_text(encoding="utf-8", errors="ignore")
@@ -187,8 +196,6 @@ def last_assistant_event(transcript_path: str | Path) -> dict | None:
             obj = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if is_user(obj) and last_assistant is not None:
-            return last_assistant
         if is_assistant(obj):
             last_assistant = obj
     return last_assistant
