@@ -361,7 +361,7 @@ metaProfiles = (() => {
   function enableAxis(axisId)  { delete _disabled[axisId]; }
   function isAxisDisabled(axisId) { return Boolean(_disabled[axisId]); }
 
-  // ── Substrate-level accessors ──────────────────────────────────────
+  // -- Substrate-level accessors --
   // These let consumers read the optional substrate fields the metaprofile
   // may declare. Each returns a sensible default (no bias / no override)
   // when the field is absent or no profile is active. Centralizing the
@@ -379,12 +379,14 @@ metaProfiles = (() => {
   // explicitly favors / dispreferes the given conductor profile name.
   // Default false for both -- absence of opinion doesn't mean opposition.
   function preferConductorProfile(name) {
-    if (!activeProfile || !Array.isArray(activeProfile.conductorAffinity)) return false;
-    return activeProfile.conductorAffinity.includes(name);
+    if (!activeProfile) return false;
+    const aff = activeProfile.conductorAffinity;
+    return Array.isArray(aff) && aff.includes(name);
   }
   function avoidConductorProfile(name) {
-    if (!activeProfile || !Array.isArray(activeProfile.conductorAntipathy)) return false;
-    return activeProfile.conductorAntipathy.includes(name);
+    if (!activeProfile) return false;
+    const ant = activeProfile.conductorAntipathy;
+    return Array.isArray(ant) && ant.includes(name);
   }
 
   // Per-layer metaprofile variant. When the active profile declares
@@ -400,23 +402,26 @@ metaProfiles = (() => {
   // Section arc override: when declared, replaces the structural section
   // sequence for this metaprofile's activation span.
   function getSectionArcOverride() {
-    if (!activeProfile || !Array.isArray(activeProfile.sectionArc)) return null;
-    return activeProfile.sectionArc.slice();
+    if (!activeProfile) return null;
+    const arc = activeProfile.sectionArc;
+    return Array.isArray(arc) ? arc.slice() : null;
   }
 
   // Controller enablement. Returns true when the active profile lists
   // the given controller name in disableControllers.
   function isControllerDisabled(controllerName) {
-    if (!activeProfile || !Array.isArray(activeProfile.disableControllers)) return false;
-    return activeProfile.disableControllers.includes(controllerName);
+    if (!activeProfile) return false;
+    const disabled = activeProfile.disableControllers;
+    return Array.isArray(disabled) && disabled.includes(controllerName);
   }
 
   // Coupling-topology hint: prescribed pairs the active profile wants
   // present, regardless of runtime correlation. Coupling controllers can
   // augment / override their candidate set with these.
   function getCouplingPairsHint() {
-    if (!activeProfile || !Array.isArray(activeProfile.couplingPairs)) return null;
-    return activeProfile.couplingPairs.map((p) => p.slice());
+    if (!activeProfile) return null;
+    const pairs = activeProfile.couplingPairs;
+    return Array.isArray(pairs) ? pairs.map((p) => p.slice()) : null;
   }
 
   // canSwitch(currentSection, candidateName) -- true when dwell allows a

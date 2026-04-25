@@ -170,6 +170,31 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
         : (outgoingName === 'explosive' && restrainedHint < 0.45 ? 'explosive' : profileName);
     }
 
+    // Metaprofile/conductor pairing: when the active metaprofile expresses
+    // an explicit affinity / antipathy for conductor profiles, honor it.
+    // Affinity beats default phase mapping; antipathy redirects to a
+    // preferred fallback. Closes the orthogonality gap that made meta and
+    // conductor profiles each touch only half the system.
+    const metaPreferred = safePreBoot.call(() => {
+      const meta = metaProfiles.getActive();
+      if (!meta) return null;
+      const aff = meta.conductorAffinity;
+      return Array.isArray(aff) && aff.length > 0 ? aff[0] : null;
+    }, null);
+    const metaAvoid = safePreBoot.call(
+      () => metaProfiles.avoidConductorProfile(profileName),
+      false
+    );
+    const metaPrefersCurrent = safePreBoot.call(
+      () => metaProfiles.preferConductorProfile(profileName),
+      true
+    );
+    if (metaAvoid && metaPreferred) {
+      profileName = metaPreferred;
+    } else if (metaPreferred && !metaPrefersCurrent) {
+      profileName = metaPreferred;
+    }
+
     setActiveProfile(profileName);
 
     if (outgoingName !== profileName) {
