@@ -116,7 +116,16 @@ except Exception as e:
     # main agent's tool_result so it reads like any Bash response.
     # HME_THREAD_CHILD=1 prevents recursive stop-hook firing inside the
     # spawned claude session.
-    _out=$(HME_THREAD_CHILD=1 claude --resume "$_sid" -p "$_prompt")
+    # alwaysThinkingEnabled=false: with thinking on, claude --resume -p
+    # writes responses as TWO transcript events sharing the same
+    # message.id (thinking first, text second). VSCode dedupes by id
+    # and shows only the first (thinking-only, collapsed) — the text
+    # never renders. Disabling thinking for thread dispatches gives
+    # one clean event with text content. The user's global setting is
+    # untouched; this override applies only to thread-routed calls.
+    _out=$(HME_THREAD_CHILD=1 claude --resume "$_sid" \
+      --settings '{"alwaysThinkingEnabled":false}' \
+      -p "$_prompt")
     _rc=$?
     if [ $_rc -ne 0 ]; then
       echo "claude --resume exited $_rc" >&2
