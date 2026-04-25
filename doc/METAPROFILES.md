@@ -143,27 +143,25 @@ Resolution runs once at module load before validation. The resolver deep-copies 
 
 ### Time-varying axes (envelopes)
 
-Any scalar or pair axis value can be replaced with an envelope `{from, to, curve?}` — the value evolves across the profile's activation:
+Any scalar or pair axis value can be replaced with an envelope `{from, to, curve?}` — the value evolves across the profile's activation.
 
-```json
-{ "tension": { "shape": "arch", "floor": 0.20, "ceiling": { "from": 0.45, "to": 0.85, "curve": "ascending" } } }
-```
+**Live**: `tense.tension.ceiling` = `{from: 0.70, to: 0.90, curve: 'ascending'}`. Combined with `tense`'s existing `tension.shape: 'ascending'` (per-section curve), the effective ceiling now rises BOTH within an activation AND across sections — doubling the "building pressure" character.
 
 Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution call `metaProfiles.getAxisValueAt(axis, key, fallback, progress)`.
 
 ### Stochastic axes (distributions)
 
-Scalar axis values can also be replaced with a distribution descriptor `{mean, std, skew?}` — controllers calling `metaProfiles.sampleAxisValue(axis, key, fallback)` draw a fresh Box-Muller-Gaussian sample per tick, biased by `skew` (cubic warp on the standardized variate). Adds organic micro-variation without manual jitter:
+Scalar axis values can also be replaced with a distribution descriptor `{mean, std, skew?}` — controllers calling `metaProfiles.sampleAxisValue` or `metaProfiles.sampledScaleFactor` draw a fresh Box-Muller-Gaussian sample per tick, biased by `skew` (cubic warp on the standardized variate). Adds organic micro-variation without manual jitter.
 
-```json
-{ "tension": { "shape": "flat", "floor": 0.10, "ceiling": { "mean": 0.55, "std": 0.05, "skew": -0.3 } } }
-```
+**Live**: `chaotic.energy.densityTarget` = `{mean: 0.75, std: 0.06}`. `regimeReactiveDamping._getMaxDensity` uses `sampledScaleFactor` so density jitters around the mean each tick when chaotic is active — built-in flicker behavior with no manual feedback loop.
 
-`getAxisValue` collapses distributions to mean (the deterministic stand-in); `sampleAxisValue` samples. Schema rejects negative `std`.
+`getAxisValue` collapses distributions to mean (the deterministic stand-in); `sampleAxisValue` / `sampledScaleFactor` sample. Schema rejects negative `std`. `scaleFactor` collapses to mean for backwards-compatible callers.
 
 ### Profile embedding (vector space)
 
-`metaProfileDefinitions.axisVector(profile)` flattens every axis-key into a fixed-length numeric vector (distributions → mean, envelopes → midpoint, pairs → both endpoints, categorical `tension.shape` → ordinal). `distance(a, b)` returns cosine distance in that space; `nearest(name, k)` returns the top-k closest profiles (excluding self and `default`). Lets rotators prefer smooth pivots between similar profiles, and unlocks downstream interpolation / latent-space exploration of the registry.
+`metaProfileDefinitions.axisVector(profile)` flattens every axis-key into a fixed-length numeric vector (distributions → mean, envelopes → midpoint, pairs → both endpoints, categorical `tension.shape` → ordinal). `distance(a, b)` returns cosine distance in that space; `nearest(name, k)` returns the top-k closest profiles (excluding self and `default`).
+
+**Live**: when no trigger fires, `main.js` rotation sorts the section-affinity candidate pool by axisVector distance to the previously-active profile and randomly picks from the nearest 3. Smoother sonic transitions — adjacent sections feel related rather than randomly different.
 
 ```js
 metaProfileDefinitions.distance('chaotic', 'volatile');     // smaller — both high-exploring
@@ -183,7 +181,9 @@ Profiles can declare entry conditions over runtime signals:
 }
 ```
 
-Expressions parse as `<signal> <op> <value>` where op ∈ `> >= < <= == !=` and value is numeric or `true`/`false`. `metaProfiles.evaluateTriggers(snapshot)` walks every registered profile's `enter` list and returns the highest-priority match `{profile, priority, condition}` or `null`. The rotator does **not** auto-honor triggers yet — wiring is a per-pipeline opt-in (snapshot source + dwell-vs-priority policy is a deliberate design choice).
+Expressions parse as `<signal> <op> <value>` where op ∈ `> >= < <= == !=` and value is numeric or `true`/`false`. `metaProfiles.evaluateTriggers(snapshot)` walks every registered profile's `enter` list and returns the highest-priority match `{profile, priority, condition}` or `null`.
+
+**Live**: `chaotic` declares `couplingStrength > 0.7`. `main.js` builds a snapshot from `systemDynamicsProfiler.getSnapshot()` (couplingStrength, effectiveDimensionality, velocity, curvature, entropyAmplification) and calls `evaluateTriggers` at every section boundary. Triggered profiles pre-empt section-affinity rotation, subject to dwell-guard and `canSwitch`. So when coupling spikes mid-piece, chaotic surfaces regardless of section type.
 
 ### Empirical-tuning attribution
 
