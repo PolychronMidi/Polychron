@@ -72,6 +72,23 @@ module.exports = {
     // (was "proxy-side injection via lifesaver_inject middleware…")
     // removed for the same reason — agent doesn't need delivery-channel
     // trivia.
+    // Advance watermark BEFORE injection. Peer-review iter 119: if
+    // the watermark write throws (disk full, permission flap, tmpfs
+    // evicted), the banner injection at lines below would have
+    // completed but the watermark stayed stale — causing every
+    // subsequent request to re-inject the exact same banner forever.
+    // Idempotent re-skip is preferable to perpetual re-spam: write
+    // first, surface failure loudly so the operator can fix the FS
+    // issue rather than silently consuming system-context tokens.
+    try {
+      fs.writeFileSync(wmPath, String(totalLines));
+    } catch (err) {
+      console.warn(
+        `Acceptable warning: [middleware] lifesaver_inject: watermark write failed (${err.message}); skipping injection to avoid perpetual re-fire — fix the FS issue and re-append to hme-errors.log to retrigger`
+      );
+      return;
+    }
+
     const banner =
       'LIFESAVER — unresolved errors in hme-errors.log, fix root-cause before proceeding:\n' +
       unread.join('\n');
@@ -88,11 +105,6 @@ module.exports = {
       payload.system = [systemBlock];
     }
     ctx.markDirty();
-
-    // Advance watermark so we don't re-inject the same lines on every
-    // subsequent request. If the model fails to act on the alert, the user
-    // can re-append to hme-errors.log to retrigger.
-    try { fs.writeFileSync(wmPath, String(totalLines)); } catch (_e) { /* ignore */ }
 
     console.warn(
       `Acceptable warning: [middleware] lifesaver_inject: injected ${unread.length} unread error(s) into system context`
