@@ -145,9 +145,9 @@ Resolution runs once at module load before validation. The resolver deep-copies 
 
 Any scalar or pair axis value can be replaced with an envelope `{from, to, curve?}` — the value evolves across the profile's activation.
 
-**Live**: `tense.tension.ceiling` = `{from: 0.70, to: 0.90, curve: 'ascending'}`. Combined with `tense`'s existing `tension.shape: 'ascending'` (per-section curve), the effective ceiling now rises BOTH within an activation AND across sections — doubling the "building pressure" character.
+**Live**: `tense.tension.ceiling` = `{from: 0.70, to: 0.90, curve: 'ascending'}` with `minDwellSections: 2`. `regimeReactiveDamping._getMaxTension` calls `metaProfiles.progressedScaleFactor('tension', 'ceiling')`, and `main.js` updates `metaProfiles.setActivationProgress(elapsed / minDwellSections)` per section. So when tense is active for its 2-section hold, the tension ceiling rises 0.70 → 0.80 → 0.90 across the activation, on top of the existing per-section ascending tension shape — building pressure realized in two dimensions.
 
-Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution call `metaProfiles.getAxisValueAt(axis, key, fallback, progress)`.
+Curves: `linear` (default), `ascending` (alias), `descending` (reverse), `arch` (sine peak at midpoint). `getAxisValue` collapses envelopes to mid-progress (0.5) for simple consumers; controllers wanting time resolution use either `getAxisValueAt(axis, key, fallback, progress)` (explicit progress) or `progressedScaleFactor(axis, key)` (reads internal `_activationProgress` set by main.js — the `_BASE * factor` pattern).
 
 ### Stochastic axes (distributions)
 
