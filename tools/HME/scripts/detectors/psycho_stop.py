@@ -299,24 +299,34 @@ def _emit_stats(pattern: str, detail: str) -> None:
             return
         out_path = os.path.join(root, "output", "metrics", "detector-stats.jsonl")
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        # Append + trim under fcntl.flock so concurrent detector runs
+        # don't lose lines. Previously two concurrent invocations could
+        # both decide len(lines) > 5000 and both truncate-write, dropping
+        # the second's appended line. flock serializes.
+        import fcntl as _fcntl
         with open(out_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps({
-                "ts": time.time(),
-                "detector": "psycho_stop",
-                "verdict": pattern,
-                "detail": detail,
-            }) + "\n")
-        # Trim to last 5000 lines (no-op if smaller).
-        try:
-            with open(out_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            if len(lines) > 5000:
-                with open(out_path, "w", encoding="utf-8") as f:
-                    f.writelines(lines[-5000:])
-        except OSError as _trim_err:
-            import sys as _sys
-            print(f"[psycho_stop] stats trim failed: "
-                  f"{type(_trim_err).__name__}: {_trim_err}", file=_sys.stderr)
+            _fcntl.flock(f.fileno(), _fcntl.LOCK_EX)
+            try:
+                f.write(json.dumps({
+                    "ts": time.time(),
+                    "detector": "psycho_stop",
+                    "verdict": pattern,
+                    "detail": detail,
+                }) + "\n")
+                f.flush()
+                # Trim to last 5000 lines while still holding the lock.
+                try:
+                    with open(out_path, "r", encoding="utf-8") as rf:
+                        lines = rf.readlines()
+                    if len(lines) > 5000:
+                        with open(out_path, "w", encoding="utf-8") as wf:
+                            wf.writelines(lines[-5000:])
+                except OSError as _trim_err:
+                    import sys as _sys
+                    print(f"[psycho_stop] stats trim failed: "
+                          f"{type(_trim_err).__name__}: {_trim_err}", file=_sys.stderr)
+            finally:
+                _fcntl.flock(f.fileno(), _fcntl.LOCK_UN)
     except (OSError, TypeError, ValueError) as _emit_err:
         import sys as _sys
         print(f"[psycho_stop] stats emit failed: "
@@ -327,7 +337,20 @@ def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
-    events = load_turn_events(sys.argv[1])
+    # Read the transcript once into both views so later Pattern-C ideation
+    # gate and earlier Pattern-B tool-call check see the SAME snapshot.
+    # Previously `load_turn_events` and `load_full_turn_with_user` were
+    # called separately — if the transcript file was appended between
+    # reads (active session), the views diverged and a directive turn
+    # could ideation-pass on a stale read while the tool-call guard
+    # inspected a newer view. Caught by thread-routed self-review.
+    events_with_user = load_full_turn_with_user(sys.argv[1])
+    # Derive the post-last-user slice from the same snapshot.
+    _user_idx = -1
+    for i, _ev in enumerate(events_with_user):
+        if is_user(_ev):
+            _user_idx = i
+    events = events_with_user[_user_idx + 1:] if _user_idx >= 0 else events_with_user
 
     # Pattern A: schedule-and-run
     saw_bg = False
@@ -381,7 +404,9 @@ def main() -> int:
     # writes to next session, yours is better"). Without this gate,
     # comparison talk gets flagged as deferral. Directive markers in the
     # user prompt still override — "fix this" + admit-phrase still psycho.
-    events_with_user = load_full_turn_with_user(sys.argv[1])
+    # Use events_with_user captured at the top of main — re-reading the
+    # transcript here would create a race where the slice and this view
+    # could diverge if the file was appended between reads.
     user_text = _last_user_text(events_with_user)
     user_is_ideating = _is_ideation_prompt(user_text)
     if final_text:

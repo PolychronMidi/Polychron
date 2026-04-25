@@ -8,16 +8,34 @@ TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
 WATERMARK="$PROJECT/tmp/hme-errors.lastread"
 
 if [ -f "$ERROR_LOG" ]; then
-  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null || echo 0)
-  TURN_START_LINE=$(cat "$TURNSTART" 2>/dev/null || echo 0)
-  WATERMARK_LINE=$(cat "$WATERMARK" 2>/dev/null || echo 0)
+  # Strip whitespace + default to 0 on empty/missing files. `wc -l` on
+  # some builds emits leading whitespace (`   123`), and an existing-but-
+  # empty TURNSTART/WATERMARK makes `cat` succeed with "", which breaks
+  # every downstream integer test ([ "" -gt N ] → "integer expression
+  # expected", silently aborting the block). The `${VAR:-0}` pattern
+  # after capture + `tr` to strip whitespace handles both classes.
+  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
+  TOTAL=${TOTAL:-0}
+  TURN_START_LINE=$(cat "$TURNSTART" 2>/dev/null | tr -d ' \t\n' || echo 0)
+  TURN_START_LINE=${TURN_START_LINE:-0}
+  WATERMARK_LINE=$(cat "$WATERMARK" 2>/dev/null | tr -d ' \t\n' || echo 0)
+  WATERMARK_LINE=${WATERMARK_LINE:-0}
 
+  # Recompute TOTAL right before using it for the watermark write so an
+  # error appended between initial wc and the awk below doesn't create
+  # an off-by-N gap the next turn's "watermark not caught up" branch
+  # fails to detect (that branch compares WATERMARK_LINE < TURN_START_LINE,
+  # not against current wc -l).
   # Block on NEW errors fired this turn (mid-turn)
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     # Strip ISO timestamps before dedup so identical messages with different
     # timestamps collapse to one line instead of spamming N copies.
     NEW_ERRORS=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" \
       | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
+    # Re-read line count AFTER the awk consumed its snapshot so the
+    # watermark matches what we actually reported (no drift).
+    TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
+    TOTAL=${TOTAL:-0}
     echo "$TOTAL" > "$WATERMARK"
     echo "$TOTAL" > "$TURNSTART"
     jq -n \
