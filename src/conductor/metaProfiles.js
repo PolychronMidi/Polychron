@@ -108,6 +108,19 @@ metaProfiles = (() => {
   function getActiveSinceSection() { return activeSinceSection; }
   function isActive() { return activeProfile !== null; }
 
+  // Activation progress in [0, 1] -- how far the active profile has held
+  // relative to its minDwellSections. Set by main.js per-section via
+  // setActivationProgress, so controllers can read time-varying envelope
+  // values without each one having to compute progress independently.
+  // Default 0.5 when nothing is set: matches getAxisValue's mid-progress
+  // collapse, so behavior is unchanged for callers that don't care.
+  let _activationProgress = 0.5;
+  function setActivationProgress(p) {
+    const v = V.optionalFinite(p, 0.5);
+    _activationProgress = m.max(0, m.min(1, v));
+  }
+  function getActivationProgress() { return _activationProgress; }
+
   function getAxis(axis) {
     if (!activeProfile) return null;
     if (isAxisDisabled(axis)) return null;
@@ -252,6 +265,27 @@ metaProfiles = (() => {
     return _collapseToScalar(active[key]) / defVal;
   }
 
+  // Progress-aware ratio: when the active value is an envelope, resolves
+  // it at _activationProgress (set per-section by main.js). Otherwise
+  // behaves like scaleFactor. Lets controllers honor envelope shape
+  // without each one tracking section index. _BASE * progressedScaleFactor
+  // pattern mirrors _BASE * scaleFactor for backwards compatibility.
+  function progressedScaleFactor(axis, key) {
+    const defAxis = /** @type {Record<string, any>} */ (_defaultProfile)[axis];
+    if (!defAxis || !(key in defAxis)) {
+      throw new Error(`metaProfiles.progressedScaleFactor: default profile lacks "${axis}.${key}"`);
+    }
+    const defVal = _collapseToScalar(defAxis[key]);
+    if (defVal === 0) {
+      throw new Error(`metaProfiles.progressedScaleFactor: default "${axis}.${key}" is 0`);
+    }
+    const active = getAxis(axis);
+    if (!active || !(key in active)) return 1.0;
+    const v = active[key];
+    if (_looksLikeEnvelope(v)) return _resolveEnvelope(v, _activationProgress) / defVal;
+    return _collapseToScalar(v) / defVal;
+  }
+
   // Stochastic counterpart: returns a fresh ratio per call when the active
   // value is a distribution; otherwise behaves like scaleFactor. Use this
   // in controllers that want per-tick organic variation in their _BASE
@@ -375,6 +409,9 @@ metaProfiles = (() => {
     canSwitch,
     scaleFactor,
     sampledScaleFactor,
+    progressedScaleFactor,
+    setActivationProgress,
+    getActivationProgress,
     getRegimeTargets,
     getCouplingRange,
     getTensionArc,

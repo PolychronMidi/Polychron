@@ -1445,6 +1445,9 @@ declare var metaProfiles: {
   canSwitch(currentSection: number, candidateName: string): boolean;
   scaleFactor(axis: string, key: string): number;
   sampledScaleFactor(axis: string, key: string): number;
+  progressedScaleFactor(axis: string, key: string): number;
+  setActivationProgress(p: number): void;
+  getActivationProgress(): number;
   list(): string[];
   bySection(sectionType: string): string[];
   getRegimeTargets(): { coherent: number; evolving: number; exploring: number } | null;

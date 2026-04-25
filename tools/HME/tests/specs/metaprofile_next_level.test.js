@@ -211,6 +211,37 @@ test('sampledScaleFactor: returns ratios distributed around scaleFactor mean', (
   mp.setActive(null);
 });
 
+test('progressedScaleFactor: resolves envelope at active progress', () => {
+  // tense.tension.ceiling = {from:0.70, to:0.90, curve:'ascending'}.
+  // default tension.ceiling = 0.80. At progress=0 -> 0.70/0.80 = 0.875,
+  // progress=1 -> 0.90/0.80 = 1.125, progress=0.5 -> 0.80/0.80 = 1.0.
+  mp.setActive(null);
+  mp.setActive('tense', 0);
+  mp.setActivationProgress(0);
+  const r0 = mp.progressedScaleFactor('tension', 'ceiling');
+  assert.ok(Math.abs(r0 - 0.70 / 0.80) < 1e-6, `progress=0 ratio ${r0}`);
+  mp.setActivationProgress(1);
+  const r1 = mp.progressedScaleFactor('tension', 'ceiling');
+  assert.ok(Math.abs(r1 - 0.90 / 0.80) < 1e-6, `progress=1 ratio ${r1}`);
+  mp.setActivationProgress(0.5);
+  const rmid = mp.progressedScaleFactor('tension', 'ceiling');
+  assert.ok(Math.abs(rmid - 1.0) < 1e-6, `progress=0.5 ratio ${rmid}`);
+  mp.setActive(null);
+});
+
+test('progressedScaleFactor: scalar values short-circuit to deterministic ratio', () => {
+  // atmospheric tension.ceiling = 0.45 (scalar). Progress shouldn't matter.
+  mp.setActive(null);
+  mp.setActive('atmospheric', 0);
+  for (const p of [0, 0.3, 0.7, 1.0]) {
+    mp.setActivationProgress(p);
+    const r = mp.progressedScaleFactor('tension', 'ceiling');
+    assert.ok(Math.abs(r - 0.45 / 0.80) < 1e-9,
+      `progress=${p} non-envelope ratio ${r} != 0.5625`);
+  }
+  mp.setActive(null);
+});
+
 test('sampledScaleFactor: scalar values short-circuit to deterministic ratio', () => {
   // atmospheric energy.densityTarget = 0.35 (scalar). All draws should equal 0.35/0.50 = 0.70.
   mp.setActive(null);
