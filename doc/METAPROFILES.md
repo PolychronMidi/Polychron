@@ -6,9 +6,11 @@ Metaprofiles don't override controllers. They set targets that controllers self-
 
 ## How it works
 
-At boot, `hyperMetaManager.initialize()` reads the active metaprofile from `conductor.getActiveMetaProfile()`. Each meta-controller checks the profile for its axis and adjusts its target/ceiling/floor. If no metaprofile is set, controllers use their current hardcoded defaults — backward compatible.
+A metaprofile is a JSON object declaring six axes (regime, coupling, trust, tension, energy, phase) plus orchestration metadata (`sectionAffinity`, `minDwellSections`). Controllers read the active profile every tick, so mid-run switches propagate immediately.
 
-A metaprofile is a JSON object with per-axis overrides. Controllers that aren't mentioned keep their defaults. This means a minimal metaprofile can tweak just regime targets and leave everything else alone, or a maximal one can configure every axis.
+The `default` metaprofile encodes the implicit baseline that every other profile is normalized against. Controllers call `metaProfiles.scaleFactor(axis, key)` — which returns `activeProfile[axis][key] / defaultProfile[axis][key]` — and multiply their `_BASE` constants by that factor. When no metaprofile is active or the axis is disabled, `scaleFactor` returns 1.0 and controllers fall through to their unmodified `_BASE` value.
+
+Schema validation runs once at module load: every profile must declare every axis key with the correct type, regime targets must sum to 1.0, tension floor must be below ceiling, and `sectionAffinity` entries must be known section types. Malformed profiles fail fast with a named error.
 
 ## Profile dimensions
 
@@ -42,10 +44,10 @@ How aggressively cross-layer modules couple. Sparse coupling = independent voice
 How many trust systems dominate and how competitive the landscape is.
 
 - **concentration**: how sharply trust is distributed (low = many competitors, high = few dominants)
-- **dominant_cap**: maximum trust weight for any single system (prevents monopoly)
-- **starvation_floor**: minimum trust weight (prevents total suppression)
+- **dominantCap**: maximum trust weight for any single system (prevents monopoly)
+- **starvationFloor**: minimum trust weight (prevents total suppression)
 
-| Profile | concentration | dominant_cap | starvation_floor |
+| Profile | concentration | dominantCap | starvationFloor |
 -
 | atmospheric | high (0.7) | 1.8 | 0.8 |
 | tense | medium (0.5) | 1.6 | 0.6 |
@@ -71,10 +73,10 @@ How tension builds across sections. Defines the target tension curve that the te
 ### Energy envelope
 Density and flicker range — overall energy level and rhythmic volatility.
 
-- **density_target**: target density mean (0-1)
-- **flicker_range**: [lo, hi] for per-beat flicker
+- **densityTarget**: target density mean (0-1)
+- **flickerRange**: [lo, hi] for per-beat flicker
 
-| Profile | density_target | flicker_range |
+| Profile | densityTarget | flickerRange |
 --
 | atmospheric | 0.35 | [0.02, 0.08] |
 | tense | 0.55 | [0.05, 0.15] |
@@ -85,10 +87,10 @@ Density and flicker range — overall energy level and rhythmic volatility.
 ### Phase energy
 How the polyrhythmic layers interact — locked, drifting, or repelling.
 
-- **lock_bias**: tendency toward phase-locked behavior (0 = free, 1 = locked)
-- **layer_independence**: CIM base level (0 = fully coordinated, 1 = fully independent)
+- **lockBias**: tendency toward phase-locked behavior (0 = free, 1 = locked)
+- **layerIndependence**: CIM base level (0 = fully coordinated, 1 = fully independent)
 
-| Profile | lock_bias | layer_independence |
+| Profile | lockBias | layerIndependence |
 --
 | atmospheric | 0.6 | 0.3 |
 | tense | 0.4 | 0.5 |
@@ -101,10 +103,17 @@ How the polyrhythmic layers interact — locked, drifting, or repelling.
 ### File structure
 
 ```
-src/conductor/metaProfiles.js          — profile registry + loader
-src/conductor/metaProfileDefinitions.js — built-in profile definitions
-output/metrics/metaprofile-active.json         — current active profile (set by conductor config)
+src/conductor/metaProfiles.js              — registry, loader, scaleFactor, dwell
+src/conductor/metaProfileDefinitions.js    — built-in definitions + schema validator
+output/metrics/metaprofile-active.json     — current active profile (atomic write)
+output/metrics/metaprofile-history.jsonl   — every transition this run, append-only
 ```
+
+### Section rotation, dwell, env-var disable
+
+When `ACTIVE_META_PROFILE` is null, `main.js` rotates profiles per section using each profile's `sectionAffinity`. The dwell guard skips a switch attempt if the active profile has not held for `minDwellSections` yet — controllers get time to converge toward the current targets before the next pivot.
+
+For A/B debugging, set `METAPROFILE_DISABLE_AXES=tension,coupling` to suppress specific axes. Suppressed axes are read as null and controllers fall back to their `_BASE` constants — so you can isolate which axis is responsible for an observed behavioural change.
 
 ### Profile schema
 
@@ -120,12 +129,12 @@ output/metrics/metaprofile-active.json         — current active profile (set b
   "coupling": {
     "strength": [0.2, 0.5],
     "density": 0.15,
-    "antagonism_threshold": -0.35
+    "antagonismThreshold": -0.35
   },
   "trust": {
     "concentration": 0.7,
-    "dominant_cap": 1.8,
-    "starvation_floor": 0.8
+    "dominantCap": 1.8,
+    "starvationFloor": 0.8
   },
   "tension": {
     "shape": "flat",
@@ -133,13 +142,15 @@ output/metrics/metaprofile-active.json         — current active profile (set b
     "ceiling": 0.45
   },
   "energy": {
-    "density_target": 0.35,
-    "flicker_range": [0.02, 0.08]
+    "densityTarget": 0.35,
+    "flickerRange": [0.02, 0.08]
   },
   "phase": {
-    "lock_bias": 0.6,
-    "layer_independence": 0.3
-  }
+    "lockBias": 0.6,
+    "layerIndependence": 0.3
+  },
+  "sectionAffinity": ["intro", "exposition", "resolution", "conclusion", "coda"],
+  "minDwellSections": 2
 }
 ```
 

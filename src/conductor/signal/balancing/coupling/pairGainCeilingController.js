@@ -37,15 +37,11 @@ pairGainCeilingController = (() => {
     'density-phase':   { baseCeiling: 0.16, minCeiling: 0.06, maxCeiling: 0.45, p95Sensitivity: 0.76, exceedanceSensitivity: 0.06 },
   };
 
-  // Metaprofile coupling strength scales all ceiling values.
-  // Default strength midpoint is 0.50; atmospheric (0.35) = 0.70x, chaotic (0.85) = 1.70x.
+  // Metaprofile coupling strength scales all ceiling values via scaleFactor
+  // on the precomputed strength midpoint. Default midpoint 0.50 -> 1.0x;
+  // atmospheric (0.35) -> 0.70x; chaotic (0.85) -> 1.70x.
   function _couplingScale() {
-    if (metaProfiles.isActive()) {
-      const range = metaProfiles.getCouplingRange();
-      const midpoint = (range.lo + range.hi) / 2;
-      return midpoint / 0.50;
-    }
-    return 1.0;
+    return metaProfiles.scaleFactor('coupling', 'midpoint');
   }
 
   function getPairState(pair) {

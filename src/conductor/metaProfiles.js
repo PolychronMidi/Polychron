@@ -1,48 +1,103 @@
 // metaProfiles.js -- Metaprofile registry, loader, and accessor.
 // Sets coordinated initial conditions for the relationship layer.
-// Meta-controllers read their axis from the active metaprofile at boot.
+// Meta-controllers read their axis from the active metaprofile every tick.
+//
+// scaleFactor(axis, key) is the canonical multiplier API: it divides the
+// active profile's value by the `default` profile's value, returning 1.0 when
+// no profile is active or when the active profile lacks the key. Controllers
+// multiply their _BASE constants by scaleFactor() instead of dividing by
+// hardcoded baselines -- the implicit "default profile" lives in one place.
 
 metaProfiles = (() => {
   const V = validator.create('metaProfiles');
+  const _fs = require('fs');
+  const _path = require('path');
+  const _activeFile  = _path.join(METRICS_DIR, 'metaprofile-active.json');
+  const _historyFile = _path.join(METRICS_DIR, 'metaprofile-history.jsonl');
 
   /** @type {Object|null} */
   let activeProfile = null;
-
   /** @type {string|null} */
   let activeProfileName = null;
+  /** @type {number|null} */
+  let activeSinceSection = null;
 
-  function setActive(name) {
-    const _fs = require('fs');
-    const _path = require('path');
-    const _out = _path.join(METRICS_DIR, 'metaprofile-active.json');
+  // Default profile is the scaleFactor neutral point. Looked up once at module
+  // load so accessors stay hot-path-cheap.
+  const _defaultProfile = metaProfileDefinitions.get('default');
+  if (!_defaultProfile) {
+    throw new Error('metaProfiles: metaProfileDefinitions must define a "default" profile (scaleFactor neutral point)');
+  }
+
+  // Clear stale history at module load (once per pipeline run).
+  if (_fs.existsSync(_historyFile)) _fs.unlinkSync(_historyFile);
+
+  // Per-influence-point disable toggles. Set via METAPROFILE_DISABLE_AXES env
+  // var (comma-separated) or programmatically. When disabled, accessors return
+  // null for that axis -- controllers fall back to their own _BASE defaults.
+  const _disabled = {};
+  const _disableEnv = process.env.METAPROFILE_DISABLE_AXES;
+  if (_disableEnv) {
+    for (const axisId of _disableEnv.split(',').map(s => s.trim()).filter(Boolean)) {
+      _disabled[axisId] = true;
+    }
+  }
+
+  function _atomicWriteJson(file, obj) {
+    const tmp = file + '.tmp';
+    _fs.writeFileSync(tmp, JSON.stringify(obj, null, 2));
+    _fs.renameSync(tmp, file);
+  }
+
+  function _appendHistory(entry) {
+    _fs.appendFileSync(_historyFile, JSON.stringify(entry) + '\n');
+  }
+
+  function setActive(name, currentSection) {
     if (name === null || name === undefined) {
       activeProfile = null;
       activeProfileName = null;
-      if (_fs.existsSync(_out)) _fs.unlinkSync(_out);
-      // Explicit no-op return: null/undefined = clear active profile, no further setup needed.
-      return;  // eslint-disable-line local/no-silent-early-return
+      activeSinceSection = null;
+      if (_fs.existsSync(_activeFile)) _fs.unlinkSync(_activeFile);
+      return true;
     }
     V.assertNonEmptyString(name, 'metaProfiles.setActive.name');
     const profile = metaProfileDefinitions.get(name);
     if (!profile) {
       throw new Error(`metaProfiles.setActive: unknown profile "${name}". Available: ${metaProfileDefinitions.list().join(', ')}`);
     }
+
+    const sec = V.optionalFinite(currentSection, null);
+
+    // Dwell guard: skip switch if active profile has not held its minimum
+    // section span yet. Only applies when currentSection is provided AND we
+    // already have an active profile AND the names differ.
+    if (sec !== null && activeProfile !== null && activeProfileName !== name && activeSinceSection !== null) {
+      const dwell = activeProfile.minDwellSections;
+      const elapsed = sec - activeSinceSection;
+      if (elapsed < dwell) return false;
+    }
+
     activeProfile = profile;
     activeProfileName = name;
-    // Persist to metrics/ so HME Python tools can read the active profile
-    _fs.writeFileSync(_out, JSON.stringify(profile, null, 2));
+    activeSinceSection = sec;
+    _atomicWriteJson(_activeFile, profile);
+    _appendHistory({
+      name,
+      section: activeSinceSection,
+      ts: Date.now(),
+    });
+    return true;
   }
 
-  function getActive() {
-    return activeProfile;
-  }
-
-  function getActiveName() {
-    return activeProfileName;
-  }
+  function getActive() { return activeProfile; }
+  function getActiveName() { return activeProfileName; }
+  function getActiveSinceSection() { return activeSinceSection; }
+  function isActive() { return activeProfile !== null; }
 
   function getAxis(axis) {
     if (!activeProfile) return null;
+    if (isAxisDisabled(axis)) return null;
     return activeProfile[axis] || null;
   }
 
@@ -52,73 +107,73 @@ metaProfiles = (() => {
     return section[key];
   }
 
-  // Per-influence-point disable toggles. Set to true to suppress specific axes
-  // while keeping the rest of the metaprofile active. For debugging "which axis
-  // caused this behavioral change?"
-  const _disabled = {};
-
-  function disableAxis(axisId) {
-    _disabled[axisId] = true;
+  // scaleFactor(axis, key) = activeValue / defaultValue, or 1.0 when no
+  // metaprofile is active / axis disabled / key missing. Controllers multiply
+  // their _BASE constants by this -- the "default" profile is the single
+  // source of truth for the scaling neutral point.
+  function scaleFactor(axis, key) {
+    const defAxis = /** @type {Record<string, any>} */ (_defaultProfile)[axis];
+    if (!defAxis || !(key in defAxis)) {
+      throw new Error(`metaProfiles.scaleFactor: default profile lacks "${axis}.${key}"`);
+    }
+    // Schema validation guarantees defAxis[key] is finite. The 0-divisor case
+    // would only arise if a future axis legitimately defaults to 0; guard here.
+    const defVal = defAxis[key];
+    if (defVal === 0) {
+      throw new Error(`metaProfiles.scaleFactor: default "${axis}.${key}" is 0 (no scaleFactor reference); use getAxisValue + additive bias instead`);
+    }
+    const active = getAxis(axis);
+    if (!active || !(key in active)) return 1.0;
+    return active[key] / defVal;
   }
 
-  function enableAxis(axisId) {
-    delete _disabled[axisId];
+  function disableAxis(axisId) { _disabled[axisId] = true; }
+  function enableAxis(axisId)  { delete _disabled[axisId]; }
+  function isAxisDisabled(axisId) { return Boolean(_disabled[axisId]); }
+
+  // canSwitch(currentSection, candidateName) -- true when dwell allows a
+  // switch to candidateName. Used by the section rotator before setActive.
+  function canSwitch(currentSection, candidateName) {
+    if (activeProfile === null || activeSinceSection === null) return true;
+    if (activeProfileName === candidateName) return true;
+    const sec = V.optionalFinite(currentSection, null);
+    if (sec === null) return true;
+    return (sec - activeSinceSection) >= activeProfile.minDwellSections;
   }
 
-  function isAxisDisabled(axisId) {
-    return Boolean(_disabled[axisId]);
-  }
-
-  function isActive() {
-    return activeProfile !== null;
-  }
-
-  // Convenience accessors -- each checks isAxisDisabled() and returns defaults when suppressed.
+  // Convenience accessors. Return null when no profile active or axis
+  // disabled, so callers can cleanly fall back to their own _BASE defaults
+  // instead of using a duplicated baseline.
   function getRegimeTargets() {
-    if (isAxisDisabled('regime-budget')) return { coherent: 0.333, evolving: 0.333, exploring: 0.333 };
-    const regime = getAxis('regime');
-    return {
-      coherent:  regime ? regime.coherent  : 0.333,
-      evolving:  regime ? regime.evolving  : 0.333,
-      exploring: regime ? regime.exploring : 0.333,
-    };
+    const r = getAxis('regime');
+    return r ? { coherent: r.coherent, evolving: r.evolving, exploring: r.exploring } : null;
   }
 
   function getCouplingRange() {
-    if (isAxisDisabled('coupling-ceiling-scale')) return { lo: 0.3, hi: 0.7, density: 0.25, antagonismThreshold: -0.25 };
-    return {
-      lo: getAxisValue('coupling', 'strength', [0.3, 0.7])[0],
-      hi: getAxisValue('coupling', 'strength', [0.3, 0.7])[1],
-      density: getAxisValue('coupling', 'density', 0.25),
-      antagonismThreshold: getAxisValue('coupling', 'antagonismThreshold', -0.25),
-    };
+    const c = getAxis('coupling');
+    return c ? { lo: c.strength[0], hi: c.strength[1], density: c.density, antagonismThreshold: c.antagonismThreshold, midpoint: c.midpoint } : null;
   }
 
   function getTensionArc() {
-    if (isAxisDisabled('tension-amplitude') && isAxisDisabled('tension-shape')) return { shape: 'arch', floor: 0.20, ceiling: 0.80 };
-    return {
-      shape: isAxisDisabled('tension-shape') ? 'arch' : getAxisValue('tension', 'shape', 'arch'),
-      floor: getAxisValue('tension', 'floor', 0.20),
-      ceiling: isAxisDisabled('tension-amplitude') ? 0.80 : getAxisValue('tension', 'ceiling', 0.80),
-    };
+    const t = getAxis('tension');
+    return t ? { shape: t.shape, floor: t.floor, ceiling: t.ceiling } : null;
   }
 
   function getEnergyEnvelope() {
-    if (isAxisDisabled('density-amplitude')) return { densityTarget: 0.50, flickerLo: 0.04, flickerHi: 0.15 };
-    return {
-      densityTarget: getAxisValue('energy', 'densityTarget', 0.50),
-      flickerLo: getAxisValue('energy', 'flickerRange', [0.04, 0.15])[0],
-      flickerHi: getAxisValue('energy', 'flickerRange', [0.04, 0.15])[1],
-    };
+    const e = getAxis('energy');
+    return e ? { densityTarget: e.densityTarget, flickerLo: e.flickerRange[0], flickerHi: e.flickerRange[1] } : null;
   }
 
   return {
     setActive,
     getActive,
     getActiveName,
+    getActiveSinceSection,
     getAxis,
     getAxisValue,
     isActive,
+    canSwitch,
+    scaleFactor,
     getRegimeTargets,
     getCouplingRange,
     getTensionArc,
@@ -127,5 +182,6 @@ metaProfiles = (() => {
     enableAxis,
     isAxisDisabled,
     list: metaProfileDefinitions.list,
+    bySection: metaProfileDefinitions.bySection,
   };
 })();

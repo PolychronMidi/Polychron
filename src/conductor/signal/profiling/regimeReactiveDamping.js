@@ -55,21 +55,13 @@ regimeReactiveDamping = (() => {
   const _TENSION_RANGE = V.optionalType(_cc.tensionRange, 'array', [0.88, 1.22]);
   const _FLICKER_RANGE = V.optionalType(_cc.flickerRange, 'array', [0.83, 1.19]);
 
-  // Metaprofile-scaled maxima. Tension ceiling 0.80 (default) = 1.0x scale.
-  // Atmospheric (0.45) = 0.56x, chaotic (0.95) = 1.19x.
+  // Metaprofile-scaled maxima via scaleFactor (active/default profile ratio).
+  // No active profile / disabled axis -> 1.0x -> _BASE constant unchanged.
   function _getMaxTension() {
-    if (metaProfiles.isActive()) {
-      const arc = metaProfiles.getTensionArc();
-      return _BASE_MAX_TENSION * (arc.ceiling / 0.80);
-    }
-    return _BASE_MAX_TENSION;
+    return _BASE_MAX_TENSION * metaProfiles.scaleFactor('tension', 'ceiling');
   }
   function _getMaxDensity() {
-    if (metaProfiles.isActive()) {
-      const env = metaProfiles.getEnergyEnvelope();
-      return _BASE_MAX_DENSITY * (env.densityTarget / 0.50);
-    }
-    return _BASE_MAX_DENSITY;
+    return _BASE_MAX_DENSITY * metaProfiles.scaleFactor('energy', 'densityTarget');
   }
   const MAX_FLICKER = _BASE_MAX_FLICKER;
 
@@ -103,19 +95,17 @@ regimeReactiveDamping = (() => {
   // take effect on the next tick. Minor regimes (stagnant, fragmented, etc.)
   // keep their fixed budget -- metaprofiles only configure the big three.
   function _getRegimeBudget() {
-    if (metaProfiles.isActive()) {
-      const targets = metaProfiles.getRegimeTargets();
-      return {
-        exploring:   targets.exploring,
-        coherent:    targets.coherent,
-        evolving:    targets.evolving,
-        stagnant:    _DEFAULT_REGIME_BUDGET.stagnant,
-        fragmented:  _DEFAULT_REGIME_BUDGET.fragmented,
-        oscillating: _DEFAULT_REGIME_BUDGET.oscillating,
-        drifting:    _DEFAULT_REGIME_BUDGET.drifting,
-      };
-    }
-    return _DEFAULT_REGIME_BUDGET;
+    const targets = metaProfiles.getRegimeTargets();
+    if (!targets) return _DEFAULT_REGIME_BUDGET;
+    return {
+      exploring:   targets.exploring,
+      coherent:    targets.coherent,
+      evolving:    targets.evolving,
+      stagnant:    _DEFAULT_REGIME_BUDGET.stagnant,
+      fragmented:  _DEFAULT_REGIME_BUDGET.fragmented,
+      oscillating: _DEFAULT_REGIME_BUDGET.oscillating,
+      drifting:    _DEFAULT_REGIME_BUDGET.drifting,
+    };
   }
   const _EQUILIB_STRENGTH = V.optionalFinite(_cc.equilibStrength, 0.28);
   let regimeReactiveDampingEqCorrD = 0;
@@ -283,7 +273,8 @@ regimeReactiveDamping = (() => {
 
     const sectionProgress = clamp(sectionIndex / m.max(1, totalSections - 1), 0, 1);
     // Metaprofile tension shape via pure function (testable independently)
-    const _tensionShape = metaProfiles.isActive() ? metaProfiles.getTensionArc().shape : 'arch';
+    const _arc = metaProfiles.getTensionArc();
+    const _tensionShape = _arc ? _arc.shape : 'arch';
     const sectionTensionNudge = clamp(regimeReactiveDampingCore.tensionShapeCurve(_tensionShape, sectionProgress), 0, 1) * 0.045;
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
     const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
