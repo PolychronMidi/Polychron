@@ -391,12 +391,46 @@ metaProfiles = (() => {
 
   // Per-layer metaprofile variant. When the active profile declares
   // layerVariants: { L1: name, L2: name }, this returns the variant name
-  // for the given layer (or null if not declared). Layer-aware controllers
-  // can resolve a layer-specific axis value via this -- the smaller-
-  // footprint version of full per-layer profile activation.
+  // for the given layer (or null if not declared).
   function getLayerVariant(layer) {
     if (!activeProfile || !activeProfile.layerVariants) return null;
     return activeProfile.layerVariants[layer] || null;
+  }
+
+  // Returns the metaprofile object that should be consulted for the given
+  // layer. When the active profile declares a layerVariant for that layer,
+  // resolves to that variant's profile object; otherwise returns the
+  // active profile itself. Lets layer-aware accessors do per-layer
+  // resolution without each call site re-implementing the lookup.
+  function getActiveForLayer(layer) {
+    if (!activeProfile) return null;
+    const variantName = activeProfile.layerVariants ? activeProfile.layerVariants[layer] : null;
+    if (variantName) {
+      const variant = metaProfileDefinitions.get(variantName);
+      if (variant) return variant;
+    }
+    return activeProfile;
+  }
+
+  // Layer-aware axis accessor: same as getAxis but resolves per-layer
+  // variant when declared. Layer-aware controllers (anything that knows
+  // LM.activeLayer) read via this to get layer-specific axis values.
+  function getAxisForLayer(axis, layer) {
+    const profile = getActiveForLayer(layer);
+    if (!profile) return null;
+    if (isAxisDisabled(axis)) return null;
+    return profile[axis] || null;
+  }
+
+  // Layer-aware composer-family weight: factoryFamilies reads via this so
+  // L1 and L2 see different composer-pool biases when the active profile
+  // declares layerVariants. Same default as the singleton accessor:
+  // returns 1.0 when no variant / no bias declared.
+  function getComposerFamilyWeightForLayer(familyName, layer) {
+    const profile = getActiveForLayer(layer);
+    if (!profile || !profile.composerFamilies) return 1.0;
+    const v = profile.composerFamilies[familyName];
+    return Number.isFinite(v) ? v : 1.0;
   }
 
   // Section arc override: when declared, replaces the structural section
@@ -476,6 +510,9 @@ metaProfiles = (() => {
     setActivationProgress,
     getActivationProgress,
     getComposerFamilyWeight,
+    getComposerFamilyWeightForLayer,
+    getActiveForLayer,
+    getAxisForLayer,
     preferConductorProfile,
     avoidConductorProfile,
     getLayerVariant,

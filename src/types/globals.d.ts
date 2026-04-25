@@ -1449,6 +1449,9 @@ declare var metaProfiles: {
   setActivationProgress(p: number): void;
   getActivationProgress(): number;
   getComposerFamilyWeight(familyName: string): number;
+  getComposerFamilyWeightForLayer(familyName: string, layer: string | null): number;
+  getActiveForLayer(layer: string | null): Record<string, any> | null;
+  getAxisForLayer(axis: string, layer: string | null): Record<string, any> | null;
   preferConductorProfile(name: string): boolean;
   avoidConductorProfile(name: string): boolean;
   getLayerVariant(layer: 'L1' | 'L2'): string | null;
