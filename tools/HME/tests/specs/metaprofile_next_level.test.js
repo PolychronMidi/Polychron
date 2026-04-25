@@ -451,6 +451,53 @@ test('sectionArc: schema rejects unknown section types', () => {
   }
 });
 
+test('layerVariants: built-in polyrhythmic_split is registered', () => {
+  const p = defs.get('polyrhythmic_split');
+  assert.ok(p, 'polyrhythmic_split should be registered');
+  assert.deepStrictEqual(p.layerVariants, { L1: 'anthemic', L2: 'elegiac' });
+});
+
+test('getActiveForLayer: resolves to layer variant when declared', () => {
+  mp.setActive(null);
+  mp.setActive('polyrhythmic_split', 0);
+  const l1 = mp.getActiveForLayer('L1');
+  const l2 = mp.getActiveForLayer('L2');
+  assert.strictEqual(l1.name, 'anthemic', 'L1 resolves to anthemic variant');
+  assert.strictEqual(l2.name, 'elegiac', 'L2 resolves to elegiac variant');
+  // Falls back to active profile when no variant for that layer.
+  mp.setActive(null);
+  mp.setActive('atmospheric', 0);
+  assert.strictEqual(mp.getActiveForLayer('L1').name, 'atmospheric');
+  assert.strictEqual(mp.getActiveForLayer('L2').name, 'atmospheric');
+  mp.setActive(null);
+  // Returns null when no profile active.
+  assert.strictEqual(mp.getActiveForLayer('L1'), null);
+});
+
+test('getAxisForLayer: returns layer variant axis values', () => {
+  mp.setActive(null);
+  mp.setActive('polyrhythmic_split', 0);
+  // L1 = anthemic. anthemic tension.ceiling = 0.85.
+  // L2 = elegiac.  elegiac  tension.ceiling = 0.55.
+  assert.strictEqual(mp.getAxisForLayer('tension', 'L1').ceiling, 0.85);
+  assert.strictEqual(mp.getAxisForLayer('tension', 'L2').ceiling, 0.55);
+  mp.setActive(null);
+});
+
+test('getComposerFamilyWeightForLayer: layer variants produce different family biases', () => {
+  mp.setActive(null);
+  mp.setActive('polyrhythmic_split', 0);
+  // L1 = anthemic: harmonicMotion=1.5, rhythmicDrive=1.2
+  // L2 = elegiac:  harmonicMotion=1.4, rhythmicDrive=0.5
+  const l1Rhythm = mp.getComposerFamilyWeightForLayer('rhythmicDrive', 'L1');
+  const l2Rhythm = mp.getComposerFamilyWeightForLayer('rhythmicDrive', 'L2');
+  assert.ok(Math.abs(l1Rhythm - 1.2) < 1e-9, `L1 rhythmicDrive ${l1Rhythm} != 1.2`);
+  assert.ok(Math.abs(l2Rhythm - 0.5) < 1e-9, `L2 rhythmicDrive ${l2Rhythm} != 0.5`);
+  // Per-layer weights diverge -- this is the substrate-level effect.
+  assert.ok(l1Rhythm > l2Rhythm, 'L1 should drive more than L2 when split');
+  mp.setActive(null);
+});
+
 test('layerVariants: schema accepts L1/L2 keys, rejects others', () => {
   const fs = require('fs');
   const path = require('path');

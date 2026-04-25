@@ -176,6 +176,11 @@ metaProfileDefinitions = (() => {
       phase: { lockBias: 0.7, layerIndependence: 0.3 },
       sectionAffinity: ['resolution', 'conclusion', 'coda'],
       minDwellSections: 2,
+      // Substrate: bias toward harmonicMotion + tonalExploration for the
+      // descending-release character. Dampen rhythmic-drive and
+      // development -- elegy is reflective, not propulsive.
+      composerFamilies: { harmonicMotion: 1.4, tonalExploration: 1.3, diatonicCore: 1.1, development: 0.7, rhythmicDrive: 0.5 },
+      conductorAffinity: ['atmospheric'],
     },
 
     anthemic: {
@@ -207,6 +212,30 @@ metaProfileDefinitions = (() => {
       trust: { concentration: 0.7, dominantCap: 1.95, starvationFloor: 0.85 },
       sectionAffinity: ['intro', 'exposition'],
       minDwellSections: 2,
+    },
+
+    // Per-layer split: L1 carries anthemic character (locked-step build),
+    // L2 carries elegiac character (descending release). The two
+    // polyrhythmic layers run different metaprofile axes simultaneously
+    // -- L1's composer pool, axes, and trust ecology come from anthemic;
+    // L2's from elegiac. Substrate-level demonstration of layerVariants:
+    // factoryFamilies.getComposerFamiliesOrFail consults
+    // metaProfiles.getComposerFamilyWeightForLayer using LM.activeLayer
+    // to resolve the correct variant per layer.
+    polyrhythmic_split: {
+      name: 'polyrhythmic_split',
+      description: 'L1 builds (anthemic) while L2 releases (elegiac) -- truly polyrhythmic emotional layers',
+      compose: {
+        regime: 'anthemic',
+        coupling: 'anthemic',
+        trust: 'anthemic',
+        tension: 'anthemic',
+        energy: 'anthemic',
+        phase: 'anthemic',
+      },
+      sectionAffinity: ['climax', 'resolution'],
+      minDwellSections: 2,
+      layerVariants: { L1: 'anthemic', L2: 'elegiac' },
     },
 
     // Per-axis composition: pull each axis from a different parent.

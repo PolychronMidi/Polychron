@@ -56,15 +56,17 @@ factoryFamilies = {
       // them to 1 via `|| 1` -- Number.isFinite catches undefined/NaN from
       // a missing key but keeps a legitimate 0 intact.
       const _biased = Number(biasedWeights[familyName]);
-      // Metaprofile composer-family bias: substrate-level move that
-      // moves metaprofiles past pure decoration. When the active
-      // metaprofile declares composerFamilies[familyName], that value
-      // multiplies the family's effective weight. Default 1.0 when
-      // absent. Lets a metaprofile actively choose what's playing.
-      const _meta = safePreBoot.call(() => metaProfiles.getActive(), null);
-      const _metaFamilyWeight = (_meta && _meta.composerFamilies
-        && Number.isFinite(_meta.composerFamilies[familyName]))
-        ? _meta.composerFamilies[familyName] : 1.0;
+      // Metaprofile composer-family bias: substrate-level move that pushes
+      // metaprofiles past pure decoration. Layer-aware -- when the active
+      // profile declares layerVariants: { L1: 'a', L2: 'b' }, the L1 and L2
+      // composer pools get DIFFERENT family weights, drawn from each
+      // variant's composerFamilies. Default to the active profile's
+      // weights when no layerVariant for the current layer.
+      const _layerForWeight = safePreBoot.call(() => LM.activeLayer, null);
+      const _metaFamilyWeight = safePreBoot.call(
+        () => metaProfiles.getComposerFamilyWeightForLayer(familyName, _layerForWeight),
+        1.0
+      );
       const profileMultiplier = (Number.isFinite(_biased) ? _biased : 1) * trendBias * _metaFamilyWeight;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
