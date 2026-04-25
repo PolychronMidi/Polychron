@@ -1,26 +1,104 @@
 #!/usr/bin/env bash
-# i/help — list all i/ tools with one-line descriptions.
-# Generated from each tool's header comment (line 2).
+# i/help — list every i/* tool grouped by category, with descriptions
+# and usage strings. Reads tools/HME/i_registry.json for structured
+# metadata; falls back to the line-2 header comment for any script not
+# yet in the registry (drop-in convention preserved).
+#
+# Usage:
+#   i/help                  list every command grouped by category
+#   i/help <name>           detailed view of one command
+#   i/help --json           dump the full metadata registry (machine-readable)
+
 cd "$(dirname "$0")"
-printf "HME tool surface (i/):\n\n"
-for tool in $(ls | grep -v '^help$' | sort); do
-  # Extract the first non-shebang comment line from each tool
-  desc=$(head -3 "$tool" 2>/dev/null | grep -m1 '^# ' | sed 's/^# *//')
-  printf "  %-12s  %s\n" "i/$tool" "$desc"
-done
-printf "\nCommon modes:\n"
-printf "  i/substrate [mode=brief|detail|actions|drift|consensus|efficacy|patterns|diff|invariants]\n"
-printf "  i/substrate mode=invariants [filter=<substring>]   # browse the 169-entry registry\n"
-printf "  i/pattern [list|matched|<id>]\n"
-printf "  i/why <invariant-id>\n"
-printf "  i/freeze [query-string-to-check-against-forbidden-list]\n"
-printf "  i/hme-read target=<path|module|function> [mode=before|story|impact|both|lines|function|structure|callers|deps] [fast=true]\n"
-printf "  i/trace target=<channel|module|beat-key> [mode=auto|cascade|module|causal|snapshot|impact|delta]\n"
-printf "  i/status mode=list          # grouped catalogue of all 35+ status modes\n"
-printf "  i/status mode=resume        # session briefing (git + pipeline + narrative)\n"
-printf "  i/review [mode=digest|regime|trust|sections|audio|composition|health|forget|convention|symbols|docs|evolve|full]\n"
-printf "  i/hme-admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both>\n"
-printf "  i/learn [query=<q>|action=search|add|remove|list|compact|export|graph|dream|health|hypothesize|hypotheses|ground_truth|discoveries|promote_discovery]\n"
-printf "  i/learn action=discoveries                       # list discovery drafts (R97)\n"
-printf "  i/learn action=promote_discovery remove=<id>     # promote a stable draft to doc/hme-discoveries.md\n"
-printf "\nSee doc/HME.md for full reference.\n"
+REPO_ROOT="${CLAUDE_PROJECT_DIR:-$(cd .. && pwd)}"
+REGISTRY="$REPO_ROOT/tools/HME/i_registry.json"
+
+if [ "$1" = "--json" ]; then
+  cat "$REGISTRY"
+  exit 0
+fi
+
+# Single-command detail view: `i/help review`
+if [ -n "$1" ] && [ "$1" != "--all" ]; then
+  python3 - "$REGISTRY" "$1" <<'PY'
+import json, sys
+reg_path, name = sys.argv[1], sys.argv[2]
+with open(reg_path) as f:
+    reg = json.load(f)
+entry = reg.get("commands", {}).get(name)
+if not entry:
+    print(f"i/help: no registry entry for '{name}'", file=sys.stderr)
+    sys.exit(1)
+print(f"i/{name}")
+print(f"  {entry.get('description', '(no description)')}")
+print(f"  category: {entry.get('category', 'uncategorized')}")
+if 'usage' in entry:
+    print()
+    print(f"  usage: {entry['usage']}")
+if 'modes' in entry and entry['modes']:
+    print()
+    print(f"  modes: {', '.join(entry['modes'])}")
+if 'examples' in entry and entry['examples']:
+    print()
+    print("  examples:")
+    for ex in entry['examples']:
+        print(f"    {ex}")
+PY
+  exit $?
+fi
+
+# Top-level: list every script grouped by registry category. Scripts not
+# in the registry get listed under [unregistered] with their line-2
+# header comment as the description (the legacy fallback).
+python3 - "$REGISTRY" "$(pwd)" <<'PY'
+import json, os, sys
+reg_path, i_dir = sys.argv[1], sys.argv[2]
+with open(reg_path) as f:
+    reg = json.load(f)
+commands = reg.get("commands", {})
+
+scripts = sorted(f for f in os.listdir(i_dir)
+                 if os.path.isfile(os.path.join(i_dir, f)) and not f.startswith('.'))
+
+groups = {}  # category → [(name, description), ...]
+for script in scripts:
+    entry = commands.get(script)
+    if entry:
+        cat = entry.get("category", "uncategorized")
+        desc = entry.get("description", "")
+    else:
+        cat = "unregistered"
+        # Fallback: extract first non-shebang comment from the script.
+        desc = ""
+        try:
+            with open(os.path.join(i_dir, script)) as f:
+                for i, line in enumerate(f):
+                    if i >= 5: break
+                    s = line.strip()
+                    if s.startswith("#") and not s.startswith("#!"):
+                        desc = s.lstrip("#").strip()
+                        break
+        except OSError:
+            pass
+    groups.setdefault(cat, []).append((script, desc))
+
+print("HME tool surface (i/):  use `i/help <name>` for detail")
+print()
+
+# Stable category order — known categories first, unregistered last.
+cat_order = [
+    "review-discipline", "knowledge", "diagnostic", "evolution",
+    "policy-config", "infra", "meta", "uncategorized", "unregistered",
+]
+seen = set()
+for cat in cat_order + sorted(groups.keys()):
+    if cat in seen or cat not in groups: continue
+    seen.add(cat)
+    print(f"[{cat}]")
+    for name, desc in groups[cat]:
+        print(f"  {('i/' + name).ljust(16)}  {desc}")
+    print()
+
+print("See doc/HME.md for full reference.")
+print("Tip: `i/help --json` dumps the full metadata for tab-completion / tooling.")
+PY
