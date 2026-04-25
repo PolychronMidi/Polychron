@@ -191,15 +191,28 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             else:
                                 verdict = "warnings"
                         else:
-                            # No "## Warnings (N)" section in the review
-                            # output at all — nothing to act on, that IS
-                            # clean. The previous default was "warnings"
-                            # which flipped every empty-output review into
-                            # a verdict that NEXUS-clear couldn't process
-                            # (actionable_count=0 disqualifies the all-
-                            # scaffolding path, review_issues marked "?",
-                            # EDIT never cleared, stop blocks forever).
-                            verdict = "clean"
+                            # Outer guard saw "warning" in output but the
+                            # `## Warnings (N)` regex didn't match. Two
+                            # cases distinguish:
+                            #   (a) Output is "## Warnings: none found" or
+                            #       "## Warnings: 0 (clean)" — a clean-shape
+                            #       header where the regex fails because it
+                            #       requires `(N)` with paren+digit.
+                            #   (b) Format drift — workflow_audit.py changed
+                            #       its emission shape, regex is now stale,
+                            #       all reviews silently fall here.
+                            # Distinguish by checking for a header line
+                            # mentioning warnings explicitly. If we see a
+                            # warnings-header at all (case a), clean is
+                            # right; if we don't (case b), it's parse
+                            # failure and we mark "warnings" so the hook
+                            # surfaces a re-run prompt rather than silently
+                            # clearing EDIT against unverified state.
+                            if _re_vw.search(r'^##\s+Warnings\b', _wdif_out,
+                                             _re_vw.MULTILINE):
+                                verdict = "clean"
+                            else:
+                                verdict = "warnings"
                     else:
                         verdict = "clean"  # No explicit warnings → treat as clean
                     parts.append(emit_review_verdict_marker(verdict))
