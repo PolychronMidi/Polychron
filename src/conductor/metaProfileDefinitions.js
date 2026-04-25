@@ -485,7 +485,7 @@ metaProfileDefinitions = (() => {
     const fs = require('fs');
     const path = require('path');
     const os = require('os');
-    const projectRoot = (typeof PROJECT_ROOT !== 'undefined' && PROJECT_ROOT) || process.env.PROJECT_ROOT || '/home/jah/Polychron';
+    const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
     const dirs = [
       path.join(os.homedir(), '.hme', 'metaprofiles'),  // global
       path.join(projectRoot, '.hme', 'metaprofiles'),    // project (overrides global)
