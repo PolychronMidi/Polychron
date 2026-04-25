@@ -147,27 +147,29 @@ if [ -z "$RESP" ]; then
   # banner fires when the proxy comes back.
   _PB_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
 
-  if [ "$EVENT" = "Stop" ] && [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tools/HME/proxy/stop_chain/cli.js" ]; then
-    # Direct-mode invocation. The CLI reads stdin, runs the chain in-process,
-    # writes decision JSON to stdout + informational text to stderr, exits 0.
-    _PB_DIRECT_ERR=$(mktemp 2>/dev/null || echo "/tmp/stop_direct_$$.err")
-    _PB_DIRECT_STDOUT=$(printf '%s' "$BODY" | node "$_PB_ROOT/tools/HME/proxy/stop_chain/cli.js" 2>"$_PB_DIRECT_ERR")
+  _PB_DIRECT_DISPATCH="$_PB_ROOT/tools/HME/hooks/direct_dispatch.sh"
+  if [ -n "$_PB_ROOT" ] && [ -x "$_PB_DIRECT_DISPATCH" ]; then
+    # General direct-mode dispatch — runs the appropriate hook chain for
+    # the current event without the proxy. Mirrors hook_bridge.js routing.
+    # Stop has a JS policy evaluator (with explicit decision contract);
+    # other events use bash hooks. Either way, the architectural property
+    # holds: the proxy is an accelerator, not a SPOC.
+    _PB_DIRECT_ERR=$(mktemp 2>/dev/null || echo "/tmp/direct_${EVENT}_$$.err")
+    _PB_DIRECT_STDOUT=$(printf '%s' "$BODY" | bash "$_PB_DIRECT_DISPATCH" "$EVENT" 2>"$_PB_DIRECT_ERR")
     _PB_DIRECT_RC=$?
     [ -n "$_PB_DIRECT_STDOUT" ] && printf '%s' "$_PB_DIRECT_STDOUT"
     [ -s "$_PB_DIRECT_ERR" ] && cat "$_PB_DIRECT_ERR" >&2
     rm -f "$_PB_DIRECT_ERR" 2>/dev/null
     # Lifecycle audit (NOT hme-errors.log — direct-mode is a degraded but
     # functional state, not an error that LIFESAVER should surface).
-    if [ -n "$_PB_ROOT" ]; then
-      mkdir -p "$_PB_ROOT/log" 2>/dev/null
-      echo "[$_PB_TS] [proxy-bridge] Stop chain ran in direct-mode (proxy down) — exit_code=${_PB_DIRECT_RC}" \
-        >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
-      # Sticky proxy-down flag still set so the recovery banner fires
-      # when the proxy comes back up (next successful POST).
-      mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
-      echo "[$_PB_TS] [proxy-bridge] proxy unreachable; Stop ran in direct-mode" \
-        > "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
-    fi
+    mkdir -p "$_PB_ROOT/log" 2>/dev/null
+    echo "[$_PB_TS] [proxy-bridge] ${EVENT} ran in direct-mode (proxy down) — exit_code=${_PB_DIRECT_RC}" \
+      >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+    # Sticky proxy-down flag still set so the recovery banner fires
+    # when the proxy comes back up (next successful POST).
+    mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
+    echo "[$_PB_TS] [proxy-bridge] proxy unreachable; ${EVENT} ran in direct-mode" \
+      > "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
     exit "${_PB_DIRECT_RC:-0}"
   fi
 
