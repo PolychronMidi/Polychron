@@ -140,6 +140,79 @@ async function runChain(scripts, stdinJson, timeoutMs = 30_000) {
 }
 
 /**
+ * Unified policy registry adapter. Loads the registry lazily so a missing
+ * policies/ directory or syntax error in a builtin can never break the
+ * proxy's request path. Returns { stdout, stderr, exit_code } in the same
+ * shape as runChain so callers can treat both paths identically; returns
+ * null when no policy fired a deny (caller falls through to bash chain).
+ *
+ * First-deny-wins: aggregated decision is whichever JS policy fired first.
+ * Subsequent policies still run for side effects (matches stop_chain).
+ */
+async function _runUnifiedPolicies(eventName, toolName, stdinJson) {
+  let registry, config;
+  try {
+    registry = require('../policies/registry');
+    config = require('../policies/config');
+  } catch (_e) {
+    return null; // policies/ missing or broken — skip silently, bash gates still run
+  }
+  try {
+    registry.loadBuiltins();
+    const cfg = config.get();
+    if (cfg.customPoliciesPath) {
+      const customPath = path.isAbsolute(cfg.customPoliciesPath)
+        ? cfg.customPoliciesPath
+        : path.join(PROJECT_ROOT, cfg.customPoliciesPath);
+      registry.loadCustom(customPath);
+    }
+    const policies = registry.matchingFor(eventName, toolName, config);
+    if (policies.length === 0) return null;
+    let payload;
+    try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { payload = {}; }
+    const ctx = {
+      toolInput: payload.tool_input || {},
+      toolName: payload.tool_name || toolName,
+      sessionId: payload.session_id || '',
+      payload,
+      deny: registry.deny,
+      instruct: registry.instruct,
+      allow: registry.allow,
+      params: {},
+    };
+    const { firstDeny, instructs, errors } = await registry.runChain(policies, ctx);
+    let combinedStderr = '';
+    for (const e of errors) combinedStderr += `[unified-policies] ${e.policy}: ${e.error}\n`;
+    if (firstDeny) {
+      // PreToolUse uses Claude Code's permissionDecision shape; PostToolUse uses additionalContext.
+      let stdout;
+      if (eventName === 'PreToolUse') {
+        stdout = JSON.stringify({
+          hookSpecificOutput: {
+            permissionDecision: 'deny',
+            permissionDecisionReason: firstDeny.reason,
+          },
+        });
+      } else {
+        stdout = JSON.stringify({
+          hookSpecificOutput: { additionalContext: firstDeny.reason },
+        });
+      }
+      return { stdout, stderr: combinedStderr, exit_code: 0 };
+    }
+    if (instructs.length) {
+      const stdout = JSON.stringify({
+        hookSpecificOutput: { additionalContext: instructs.map((i) => i.message).join('\n\n') },
+      });
+      return { stdout, stderr: combinedStderr, exit_code: 0 };
+    }
+    return null;
+  } catch (err) {
+    return { stdout: '', stderr: `[unified-policies] crash: ${err.message}\n`, exit_code: 0 };
+  }
+}
+
+/**
  * Parse tool_name from a pretooluse/posttooluse payload. Claude Code passes
  * `{tool_name: "Edit", tool_input: {...}}` for pretooluse and a similar shape
  * with `tool_response` added for posttooluse. Fall back to '' on parse error.
@@ -200,6 +273,13 @@ async function dispatchEvent(eventName, stdinJson) {
       return runChain([path.join(LIFECYCLE, 'postcompact.sh')], empty);
     case 'PreToolUse': {
       const tool = _toolName(empty);
+      // Unified registry: run any JS-implemented PreToolUse policies that
+      // match this tool BEFORE shelling to bash gates. First deny short-
+      // circuits the bash chain too — saves a subprocess spawn when the
+      // JS layer already blocks. Disabled policies are skipped via the
+      // three-scope config (i/policies disable <name>).
+      const unifiedRes = await _runUnifiedPolicies('PreToolUse', tool, empty);
+      if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = PRETOOL_SCRIPTS[tool] || [];
       // HME primer runs before first HME_* tool each session — always chain it
       // for any HME_-prefixed tool, the primer self-guards against re-fire.
@@ -211,6 +291,11 @@ async function dispatchEvent(eventName, stdinJson) {
     }
     case 'PostToolUse': {
       const tool = _toolName(empty);
+      // Run unified registry's PostToolUse policies first (currently a
+      // small set; will grow as bash trackers migrate). Block decisions
+      // short-circuit the bash chain.
+      const unifiedRes = await _runUnifiedPolicies('PostToolUse', tool, empty);
+      if (unifiedRes && unifiedRes.stdout) return unifiedRes;
       const scripts = [...UNIVERSAL_POSTTOOL, ...(POSTTOOL_SCRIPTS[tool] || [])];
       return runChain(scripts, empty);
     }
