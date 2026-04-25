@@ -36,7 +36,7 @@ fi
 # so used_pct here is still the pre-compact reading — the delta between this and the next
 # statusline update shows how much context was freed.
 CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
-LOG="$PROJECT/metrics/compact-log.jsonl"
+LOG="$PROJECT/output/metrics/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
   USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")

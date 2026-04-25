@@ -31,7 +31,7 @@ Opposing responses. Same signal. Classic antagonism bridge.
 This script:
   - Reads tmp/hme-errors.* state to compute resolution_velocity
   - Emits a recommended HME_STREAK_WARN value based on recent history
-  - Writes metrics/hme-streak-calibration.json for audit
+  - Writes output/metrics/hme-streak-calibration.json for audit
   - Does NOT auto-apply changes; sessionstart.sh can optionally source the
     recommendation. OBSERVE-ONLY first run — the user confirms whether the
     recommendations track reality before we wire in auto-application.
@@ -203,7 +203,7 @@ def main() -> None:
     # at hook-fire time; having the calibrator write a tmp/ file and
     # having _safety.sh prefer that file over the env value turns the
     # calibrator from observation-only into an active feedback loop.
-    # Records the decision to metrics/hme-calibration-decisions.jsonl for audit.
+    # Records the decision to output/metrics/hme-calibration-decisions.jsonl for audit.
     decisions_log = PROJECT_ROOT / "output" / "metrics" / "hme-calibration-decisions.jsonl"
     streak_file = PROJECT_ROOT / "tmp" / "hme-streak-warn.txt"
     try:

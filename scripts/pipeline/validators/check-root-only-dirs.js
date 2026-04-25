@@ -51,34 +51,39 @@ function getStagedDeletions() {
   }
 }
 
-// A directory is safe if:
-//   (a) it has no untracked+non-ignored content (git ls-files --others --exclude-standard), AND
-//   (b) any tracked content inside it is only deletion-staged (fix in progress)
+// A directory is safe ONLY IF it is physically empty (or contains only
+// gitignored AND zero-content). Previously this function treated any
+// gitignored content as safe, which let .gitignore become a silencer:
+// add `/metrics` to .gitignore -> verifier counts it as "safe gitignored"
+// -> writers keep accumulating files there indefinitely. The invariant
+// is about PATH CORRECTNESS, not about git accounting. So we now check
+// for actual files on disk: any non-empty file inside a misplaced log/
+// tmp/ metrics/ directory IS a violation regardless of git status. Only
+// staged-for-deletion files (fix in progress) are exempt.
 function isSafe(absPath, stagedDeletions) {
   const rel = path.relative(ROOT, absPath);
 
-  // Untracked, non-ignored files inside the dir -> not safe
-  try {
-    const untracked = execSync(`git ls-files --others --exclude-standard "${rel}/"`, { cwd: ROOT, stdio: 'pipe' }).toString().trim();
-    if (untracked) return false;
-  } catch {
-    // If git command fails, assume safe -- don't block on git errors
-    return true;
-  }
-
-  // Tracked files inside the dir -> only safe if all are staged for deletion
-  try {
-    const tracked = execSync(`git ls-files "${rel}/"`, { cwd: ROOT, stdio: 'pipe' }).toString().trim();
-    if (tracked) {
-      const files = tracked.split('\n').filter(Boolean);
-      const allPendingDeletion = files.every(f => stagedDeletions.has(f));
-      if (!allPendingDeletion) return false;
+  // Walk the directory contents directly. Any file that exists on disk
+  // and isn't currently staged for deletion is evidence of an active
+  // path bug. Directory existence with files -> violation.
+  function hasLiveFiles(dir) {
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+    catch { return false; }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (hasLiveFiles(full)) return true;
+        continue;
+      }
+      const fileRel = path.relative(ROOT, full);
+      if (stagedDeletions.has(fileRel)) continue;
+      return true;
     }
-  } catch {
-    return true;
+    return false;
   }
 
-  return true;
+  return !hasLiveFiles(absPath);
 }
 
 function main() {
@@ -111,10 +116,10 @@ function main() {
     );
   }
 
-  const gitignored = violations.length - unsafe.length;
+  const empty = violations.length - unsafe.length;
   console.log(
-    'check-root-only-dirs: PASS (' + violations.length + ' found, ' +
-    gitignored + ' gitignored/pending-delete, 0 violations)'
+    'check-root-only-dirs: PASS (' + violations.length + ' misplaced dir(s) found, ' +
+    empty + ' empty/pending-delete, 0 with live files)'
   );
 }
 
