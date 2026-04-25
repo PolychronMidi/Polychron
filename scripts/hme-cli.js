@@ -277,7 +277,7 @@ async function main() {
   try {
     res = await postTool(tool, args);
   } catch (e) {
-    // HTTP failed — fall back to filesystem-IPC queue. The queue path
+    // HTTP failed -- fall back to filesystem-IPC queue. The queue path
     // doesn't require the worker's HTTP server to be responsive, only
     // the worker process to be alive enough to drain the queue (a
     // CPU-saturated or GIL-hung worker can still eventually drain when
@@ -288,11 +288,11 @@ async function main() {
         const queueTimeoutMs = Number(process.env.HME_CLI_QUEUE_TIMEOUT_MS) || 60_000;
         const queueRes = await wq.call('tool', { name: tool, args }, { timeoutMs: queueTimeoutMs });
         if (queueRes !== null) {
-          console.error(`hme-cli: HTTP failed (${e.message}) — fell back to queue path, succeeded`);
+          console.error(`hme-cli: HTTP failed (${e.message}) -- fell back to queue path, succeeded`);
           res = { status: queueRes.ok ? 200 : 500, body: queueRes };
         } else {
-          // Queue timed out → try direct-lance fallback for read-only KB tools.
-          // This is the third tier: HTTP → queue → direct-lance. Direct-lance
+          // Queue timed out -> try direct-lance fallback for read-only KB tools.
+          // This is the third tier: HTTP -> queue -> direct-lance. Direct-lance
           // covers list_knowledge / knowledge_count / knowledge_lookup_id
           // without needing the worker process at all.
           const directRes = await _tryDirectLance(tool, args);
