@@ -149,7 +149,7 @@ metaProfileDefinitions = (() => {
       minDwellSections: 2,
     },
 
-    // ?unknown-ascii-character??unknown-ascii-character? Sample subvariants demonstrating inheritance + composition ?unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character??unknown-ascii-character?
+    // == Sample subvariants demonstrating inheritance + composition ==
     // Inheritance: copy parent's axes, override only what's different.
     atmospheric_warm: {
       name: 'atmospheric_warm',
@@ -267,37 +267,29 @@ metaProfileDefinitions = (() => {
   //     enter: [{ if: '<signal> <op> <value>', priority?: number }, ...],
   //     exit:  [{ if: '<signal> <op> <value>', goto: '<profileName>' }, ...],
   //   }
-  // op ?unknown-ascii-character? {>, <, >=, <=, ==}. Signal is any key in the snapshot passed to
+  // op in {>, <, >=, <=, ==}. Signal is any key in the snapshot passed to
   // evaluateTriggers. Priority is a non-negative integer (default 50).
   function _validateTriggers(name, triggers) {
-    if (!triggers) return;
-    if (typeof triggers !== 'object' || Array.isArray(triggers)) {
-      throw new Error(`metaProfileDefinitions: profile "${name}" triggers must be an object`);
-    }
+    if (triggers === undefined || triggers === null) return;
+    V.assertPlainObject(triggers, `${name}.triggers`);
     for (const lifecycle of ['enter', 'exit']) {
       const arr = triggers[lifecycle];
       if (arr === undefined) continue;
-      if (!Array.isArray(arr)) {
-        throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle} must be an array`);
-      }
+      V.assertArray(arr, `${name}.triggers.${lifecycle}`);
       for (let i = 0; i < arr.length; i++) {
-        const t = arr[i];
-        if (!t || typeof t !== 'object') {
-          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] must be an object`);
-        }
-        if (typeof t.if !== 'string' || !t.if.trim()) {
-          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] missing 'if' string`);
-        }
+        const trig = arr[i];
+        V.assertPlainObject(trig, `${name}.triggers.${lifecycle}[${i}]`);
+        V.assertNonEmptyString(trig.if, `${name}.triggers.${lifecycle}[${i}].if`);
         // Parse and reject obviously malformed expressions early.
-        const parsed = _parseTriggerExpr(t.if);
+        const parsed = _parseTriggerExpr(trig.if);
         if (!parsed) {
-          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] expression "${t.if}" not parseable (expected '<signal> <op> <value>')`);
+          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.${lifecycle}[${i}] expression "${trig.if}" not parseable (expected '<signal> <op> <value>')`);
         }
-        if (lifecycle === 'enter' && t.priority !== undefined) {
-          V.assertFinite(t.priority, `${name}.triggers.enter[${i}].priority`);
+        if (lifecycle === 'enter' && trig.priority !== undefined) {
+          V.assertFinite(trig.priority, `${name}.triggers.enter[${i}].priority`);
         }
-        if (lifecycle === 'exit' && t.goto !== undefined && typeof t.goto !== 'string') {
-          throw new Error(`metaProfileDefinitions: profile "${name}" triggers.exit[${i}].goto must be a string`);
+        if (lifecycle === 'exit' && trig.goto !== undefined) {
+          V.assertNonEmptyString(trig.goto, `${name}.triggers.exit[${i}].goto`);
         }
       }
     }
@@ -320,8 +312,11 @@ metaProfileDefinitions = (() => {
       else if (valueStr === 'false') value = false;
       else {
         const n = Number(valueStr);
-        if (!Number.isFinite(n)) return null;
-        value = n;
+        if (Number.isFinite(n)) {
+          value = n;
+        } else {
+          return null;
+        }
       }
       return { signal, op, value };
     }
@@ -347,8 +342,11 @@ metaProfileDefinitions = (() => {
   // 'arch', 'ascending', 'descending'. Schema validator accepts either the
   // raw scalar/pair OR an envelope of the corresponding shape.
   function _isEnvelope(v) {
-    return v && typeof v === 'object' && !Array.isArray(v)
-      && Object.prototype.hasOwnProperty.call(v, 'from')
+    if (v === null || v === undefined) return false;
+    if (Array.isArray(v)) return false;
+    // Plain-object envelope shape probe -- not validated input, just a tag check.
+    if (Object.getPrototypeOf(v) !== Object.prototype && Object.getPrototypeOf(v) !== null) return false;
+    return Object.prototype.hasOwnProperty.call(v, 'from')
       && Object.prototype.hasOwnProperty.call(v, 'to');
   }
 
@@ -360,9 +358,9 @@ metaProfileDefinitions = (() => {
         V.assertInSet(value.curve, new Set(['linear', 'arch', 'ascending', 'descending']),
           `${profileName}.${axis}.${key}.curve`);
       }
-      return;
+    } else {
+      V.assertFinite(value, `${profileName}.${axis}.${key}`);
     }
-    V.assertFinite(value, `${profileName}.${axis}.${key}`);
   }
 
   function _validatePairOrEnvelope(profileName, axis, key, value) {
@@ -373,9 +371,9 @@ metaProfileDefinitions = (() => {
         V.assertInSet(value.curve, new Set(['linear', 'arch', 'ascending', 'descending']),
           `${profileName}.${axis}.${key}.curve`);
       }
-      return;
+    } else {
+      _validatePair(profileName, axis, key, value);
     }
-    _validatePair(profileName, axis, key, value);
   }
 
   function _validatePair(profileName, axis, key, value) {
@@ -498,38 +496,31 @@ metaProfileDefinitions = (() => {
     const path = require('path');
     const os = require('os');
     const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+    // User-scope (~/.hme) loaded first; project-scope (.hme/) loaded second
+    // and overrides user-scope on name collision. Built-ins are baseline.
     const dirs = [
-      path.join(os.homedir(), '.hme', 'metaprofiles'),  // global
-      path.join(projectRoot, '.hme', 'metaprofiles'),    // project (overrides global)
+      path.join(os.homedir(), '.hme', 'metaprofiles'),
+      path.join(projectRoot, '.hme', 'metaprofiles'),
     ];
     const registered = [];
     for (const dir of dirs) {
       if (!fs.existsSync(dir)) continue;
-      let files;
-      try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort(); }
-      catch (_e) { continue; }
+      const files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort();
       for (const f of files) {
         const fpath = path.join(dir, f);
         let raw;
         try { raw = JSON.parse(fs.readFileSync(fpath, 'utf8')); }
         catch (err) {
-          console.error(`metaProfileDefinitions: ${fpath} parse failed: ${err.message}`);
-          continue;
+          throw new Error(`metaProfileDefinitions: custom profile ${fpath} parse failed: ${err.message}`);
         }
         const list = Array.isArray(raw) ? raw : [raw];
         for (const decl of list) {
-          if (!decl || typeof decl !== 'object' || !decl.name) {
-            console.error(`metaProfileDefinitions: ${fpath} entry missing 'name' field -- skipped`);
-            continue;
-          }
-          try {
-            const resolved = _resolveProfile(decl.name, decl, profiles);
-            _validateProfile(decl.name, resolved);
-            profiles[decl.name] = resolved;
-            registered.push(decl.name);
-          } catch (err) {
-            console.error(`metaProfileDefinitions: ${fpath} profile "${decl.name}" rejected: ${err.message}`);
-          }
+          V.assertPlainObject(decl, `customProfile@${fpath}`);
+          V.assertNonEmptyString(decl.name, `customProfile@${fpath}.name`);
+          const resolved = _resolveProfile(decl.name, decl, profiles);
+          _validateProfile(decl.name, resolved);
+          profiles[decl.name] = resolved;
+          registered.push(decl.name);
         }
       }
     }
