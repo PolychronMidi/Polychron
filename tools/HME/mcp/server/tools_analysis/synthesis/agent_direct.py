@@ -96,6 +96,13 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
 
     env = dict(os.environ)
     env["HME_THREAD_CHILD"] = "1"
+    # Count the call BEFORE the subprocess — the cap's job is to bound
+    # "claude --resume subprocesses spawned," which is what bills the
+    # user's account. Previous placement (after success) meant the
+    # most expensive failure mode (TimeoutExpired — full 120s consumed,
+    # subscription tokens already streamed) bypassed the counter.
+    # The cap now bounds subprocess spawns, which matches the docstring.
+    _DISPATCH_THREAD_CALL_COUNT += 1
     try:
         t0 = time.monotonic()
         result = subprocess.run(
@@ -105,7 +112,6 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
             capture_output=True, text=True, timeout=timeout_sec, env=env,
         )
         elapsed = time.monotonic() - t0
-        _DISPATCH_THREAD_CALL_COUNT += 1
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError) as e:
         logger.warning(f"dispatch_thread: failed: {type(e).__name__}: {e}")
         return None
