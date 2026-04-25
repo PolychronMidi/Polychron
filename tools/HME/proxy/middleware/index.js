@@ -207,25 +207,100 @@ function register(mod) {
 }
 
 //  Tool-result deduplication
-// Each tool_use.id fires onToolResult exactly once per proxy lifetime.
-// Map preserves insertion order; touch-on-access makes this LRU-ish (entries
-// seen recently move to the back and survive eviction longer than stale ones).
+// Each tool_use.id fires onToolResult exactly once across THE LIFETIME OF
+// THE CONVERSATION. The map persists to disk so a proxy restart mid-
+// conversation doesn't re-fire onToolResult on every historical event —
+// a real failure mode that wiped nexus EDIT tracking when middleware like
+// `nexus_tracking` re-cleared state on historical Bash i/review calls.
+//
+// Persistence layer: tmp/hme-middleware-processed.jsonl. Append-only,
+// best-effort. Loaded on first access, lazily. LRU eviction in memory;
+// the file may exceed the in-memory cap but trim-on-load handles that.
 const _processed = new Map(); // id → insertion timestamp
 const _PROCESSED_CAP = 50_000;
+const _PROCESSED_FILE = path.join(PROJECT_ROOT, 'tmp', 'hme-middleware-processed.jsonl');
+let _processedLoaded = false;
+
+function _loadProcessed() {
+  if (_processedLoaded) return;
+  _processedLoaded = true;
+  try {
+    if (!fs.existsSync(_PROCESSED_FILE)) return;
+    const lines = fs.readFileSync(_PROCESSED_FILE, 'utf8').split('\n');
+    // Each line is a JSON {id, ts}. Latest-wins for repeated ids (LRU touch).
+    for (const line of lines) {
+      if (!line) continue;
+      try {
+        const entry = JSON.parse(line);
+        if (entry && entry.id) {
+          if (_processed.has(entry.id)) _processed.delete(entry.id);
+          _processed.set(entry.id, entry.ts || Date.now());
+        }
+      } catch (_e) { /* skip malformed line */ }
+    }
+    // Cap to LRU-most-recent _PROCESSED_CAP — keys() iterates insertion order.
+    if (_processed.size > _PROCESSED_CAP) {
+      const excess = _processed.size - _PROCESSED_CAP;
+      let i = 0;
+      for (const k of _processed.keys()) {
+        if (i++ >= excess) break;
+        _processed.delete(k);
+      }
+    }
+  } catch (err) {
+    console.error(`[middleware] failed to load _processed from disk: ${err.message}`);
+  }
+}
+
+function _persistProcessedEntry(id, ts) {
+  try {
+    fs.mkdirSync(path.dirname(_PROCESSED_FILE), { recursive: true });
+    fs.appendFileSync(_PROCESSED_FILE, JSON.stringify({ id, ts }) + '\n');
+  } catch (_e) { /* best-effort — never block hot path */ }
+}
 
 function _markProcessed(id) {
+  _loadProcessed();
   // LRU touch: delete + re-insert moves the key to the end.
   if (_processed.has(id)) {
     _processed.delete(id);
   }
-  _processed.set(id, Date.now());
+  const now = Date.now();
+  _processed.set(id, now);
+  _persistProcessedEntry(id, now);
   if (_processed.size > _PROCESSED_CAP) {
     const oldest = _processed.keys().next().value;
     _processed.delete(oldest);
   }
+  _maybeCompact();
+}
+
+// Periodic compaction — file is append-only so it grows even when the
+// in-memory cap evicts. Compact when file > 8MB by rewriting from the
+// current in-memory state. Called opportunistically from _markProcessed
+// to avoid a startup blocker.
+let _lastCompactCheck = 0;
+function _maybeCompact() {
+  const now = Date.now();
+  if (now - _lastCompactCheck < 60_000) return; // throttle
+  _lastCompactCheck = now;
+  try {
+    const stat = fs.statSync(_PROCESSED_FILE);
+    if (stat.size < 8 * 1024 * 1024) return;
+    const tmp = _PROCESSED_FILE + '.compact';
+    const lines = [];
+    for (const [id, ts] of _processed) {
+      lines.push(JSON.stringify({ id, ts }));
+    }
+    fs.writeFileSync(tmp, lines.join('\n') + (lines.length ? '\n' : ''));
+    fs.renameSync(tmp, _PROCESSED_FILE);
+  } catch (_e) { /* best-effort */ }
 }
 
 function _pairToolResults(payload) {
+  // Load persisted dedup so a proxy restart doesn't re-fire onToolResult
+  // on every historical tool_result. Idempotent; first call only.
+  _loadProcessed();
   const msgs = (payload && payload.messages) || [];
   const toolUseById = new Map();
   const events = []; // {toolUse, toolResult}
