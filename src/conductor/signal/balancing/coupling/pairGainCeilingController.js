@@ -44,14 +44,48 @@ pairGainCeilingController = (() => {
     return metaProfiles.scaleFactor('coupling', 'midpoint');
   }
 
+  // Substrate-level: when the active metaprofile lists this controller in
+  // disableControllers, we short-circuit further adaptation -- ceilings
+  // stay at their initial baseCeiling*scale baseline. Subtractive
+  // silencing, not just damping. Pair state is still seeded so downstream
+  // readers get a well-formed snapshot.
+  function _isDisabled() {
+    return metaProfiles.isControllerDisabled('pair_gain_ceiling');
+  }
+
+  // Metaprofile-prescribed coupling pairs: when the active profile declares
+  // couplingPairs, we boost the prescribed pairs' baseCeiling toward the
+  // upper end (lerp 50% to maxCeiling) so the topology hint produces
+  // observable preference, not just metadata. Pairs not listed remain at
+  // their _PAIR_PROFILES defaults.
+  function _isPairPrescribed(pair) {
+    const hint = metaProfiles.getCouplingPairsHint();
+    if (!hint) return false;
+    // Match either ordering: 'a-b' from ['a','b'] or ['b','a'].
+    for (const p of hint) {
+      if (`${p[0]}-${p[1]}` === pair) return true;
+      if (`${p[1]}-${p[0]}` === pair) return true;
+    }
+    return false;
+  }
+
   function getPairState(pair) {
     if (!pairGainCeilingControllerPairState[pair]) {
       const profile = _PAIR_PROFILES[pair];
       const scale = _couplingScale();
+      // Topology hint: pairs the metaprofile prescribes start at a higher
+      // ceiling -- midway between baseCeiling*scale and maxCeiling*scale.
+      // Encodes the prescribed-pair preference without overriding the
+      // adaptive controller's exceedance / sensitivity logic.
+      let initialCeiling = profile ? profile.baseCeiling * scale : 1.2;
+      if (profile && _isPairPrescribed(pair)) {
+        const upper = profile.maxCeiling * scale;
+        initialCeiling = initialCeiling + (upper - initialCeiling) * 0.5;
+      }
       pairGainCeilingControllerPairState[pair] = {
         p95Ema: 0.5,
         exceedanceEma: 0,
-        ceiling: profile ? profile.baseCeiling * scale : 1.2,
+        ceiling: initialCeiling,
         activeBeats: 0,
         severityEma: 0
       };
@@ -70,6 +104,12 @@ pairGainCeilingController = (() => {
   function updatePair(pair, p95, hotspotRate, severeRate) {
     const profile = _PAIR_PROFILES[pair];
     if (!profile) return; // only manage pairs with profiles
+
+    // Substrate-level disable: when the active metaprofile lists this
+    // controller, freeze ceilings at their seeded baseline. Pair state
+    // stays well-formed so downstream readers see a coherent snapshot,
+    // but no adaptation happens.
+    if (_isDisabled()) return;
 
     const ps = getPairState(pair);
     ps.activeBeats++;
