@@ -43,9 +43,34 @@ def _install_signal_handlers() -> None:
     signal.signal(signal.SIGINT, _handler)
 
 
+_LAST_GOOD_CONFIG: dict | None = None
+
+
 def _load_config() -> dict:
-    with open(CONFIG_PATH) as f:
-        return json.load(f)
+    """Load universal_pulse.json with fallback to last-known-good cache.
+
+    A corrupted config mid-admin-edit used to raise uncaught in _main,
+    crashing the daemon; supervisor respawns, supervisor respawns, loop.
+    We now keep the most recent successful parse and fall back to it
+    (or an empty dict on first-boot failure) so one bad write doesn't
+    crashloop the whole pulse layer.
+    """
+    global _LAST_GOOD_CONFIG
+    try:
+        with open(CONFIG_PATH) as f:
+            cfg = json.load(f)
+        _LAST_GOOD_CONFIG = cfg
+        return cfg
+    except (OSError, json.JSONDecodeError) as err:
+        if _LAST_GOOD_CONFIG is not None:
+            sys.stderr.write(
+                f"[universal_pulse] config load failed ({type(err).__name__}: "
+                f"{err}); using last-known-good\n")
+            return _LAST_GOOD_CONFIG
+        sys.stderr.write(
+            f"[universal_pulse] config load failed at boot "
+            f"({type(err).__name__}: {err}); using defaults\n")
+        return {}
 
 
 _ERROR_LOG_MAX_LINES = 20_000
@@ -104,7 +129,15 @@ def _write_heartbeat(path: Path, targets_ok: int, targets_bad: int) -> None:
         "bad": targets_bad,
     }
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload))
+    # Write + fsync the tmp file before atomic rename. Without fsync a
+    # power-cut between write and rename can leave a 0-byte heartbeat
+    # that downstream _get_health reads as fresh-but-empty, masking
+    # real liveness state. The fsync forces the payload to durable
+    # storage before the rename commits.
+    with open(tmp, "w") as f:
+        f.write(json.dumps(payload))
+        f.flush()
+        os.fsync(f.fileno())
     tmp.replace(path)
 
 

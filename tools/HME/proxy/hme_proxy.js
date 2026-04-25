@@ -103,8 +103,18 @@ function _lifecycleInactive(event) {
 async function _runInlineFallback(event, stdinJson) {
   try {
     const r = await hookBridge.dispatchEvent(event, stdinJson);
-    if (r.stderr && r.stderr.length > 0) process.stderr.write(r.stderr);
-    if (r.stdout && r.stdout.length > 0) console.error(`[hme-proxy] inline ${event} stdout: ${r.stdout.slice(0, 200)}`);
+    // Parity with /hme/lifecycle: both paths surface full stdout/stderr
+    // to the proxy's stderr so any banners (LIFESAVER, NEXUS,
+    // AUTO-COMPLETENESS) land in the same place regardless of which
+    // path fired. Previously the inline path truncated stdout to 200
+    // chars — banners that grew past that limit vanished for inline
+    // fires while remaining visible for /hme/lifecycle fires.
+    if (r.stderr && r.stderr.length > 0) {
+      process.stderr.write(`[hme-proxy] inline ${event} stderr:\n${r.stderr}\n`);
+    }
+    if (r.stdout && r.stdout.length > 0) {
+      process.stderr.write(`[hme-proxy] inline ${event} stdout:\n${r.stdout}\n`);
+    }
   } catch (err) {
     console.error(`[hme-proxy] inline ${event} failed: ${err.message}`);
   }
@@ -607,7 +617,37 @@ function handleRequest(clientReq, clientRes) {
         // /hme/lifecycle endpoint. Runs AFTER the response has been sent
         // to the client so commit latency doesn't affect user-visible
         // turn end. No-op if a recent /hme/lifecycle Stop hit was received.
-        if (isAnthropic && _lifecycleInactive('Stop')) {
+        //
+        // Turn-end heuristic: a single user turn can issue many upstream
+        // completions (tool-use continuation loops, subagent dispatches).
+        // Without this check the Stop fallback fires on EVERY completion
+        // whose response lands ≥30s after the last Stop hit, re-running
+        // auto-commit + LIFESAVER + psycho_stop mid-turn. We only fire
+        // when the final assistant message contains no tool_use blocks
+        // (i.e. the model is not about to call another tool) — that
+        // approximates "real turn end" without needing stream-end
+        // signaling from Claude Code.
+        const _hasToolUse = (() => {
+          try {
+            // For non-streaming responses outBuf is a JSON message with
+            // .content (array of blocks). SSE streams collect deltas
+            // upstream into `final`; we don't need this path for those
+            // because streaming tool-use completions typically route
+            // through the continuation loop. Safe default on parse
+            // failure: treat as no-tool-use so the fallback still fires
+            // when we genuinely can't tell (rare).
+            const outStr = (outBuf && typeof outBuf.toString === 'function')
+              ? outBuf.toString('utf8') : '';
+            if (!outStr || !outStr.trimStart().startsWith('{')) return false;
+            const parsed = JSON.parse(outStr);
+            if (!parsed || !Array.isArray(parsed.content)) return false;
+            for (const b of parsed.content) {
+              if (b && b.type === 'tool_use') return true;
+            }
+            return false;
+          } catch (_) { return false; }
+        })();
+        if (isAnthropic && !_hasToolUse && _lifecycleInactive('Stop')) {
           try {
             const stopSession = payload ? sessionKey(payload) : 'unknown';
             const stdin = JSON.stringify({ session_id: stopSession, transcript_path: '' });

@@ -27,7 +27,16 @@
 const http = require('http');
 
 const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
-const WORKER_PORT = Number(process.env.HME_MCP_PORT || 9098);
+// `||` treats the string '0' as truthy (non-empty), so HME_MCP_PORT='0'
+// would pass through as Number('0') → 0, making http.request route to
+// "any free port" — every prefetch then silently 404s/errors and the
+// on('error') handler swallows it. Validate explicitly: accept only
+// 1-65535, fall back to 9098 otherwise.
+const _PORT_RAW = process.env.HME_MCP_PORT;
+const _PORT_NUM = Number(_PORT_RAW);
+const WORKER_PORT = (Number.isInteger(_PORT_NUM) && _PORT_NUM >= 1 && _PORT_NUM <= 65535)
+  ? _PORT_NUM
+  : 9098;
 const CACHE_TTL_MS = 60_000;
 const MAX_CACHE_ENTRIES = 32;
 
@@ -60,7 +69,17 @@ function _post(pathName, payload, timeoutMs = 3000) {
     }, (res) => {
       let raw = '';
       res.on('data', (c) => { raw += c.toString('utf8'); });
-      res.on('end', () => resolve(raw));
+      res.on('end', () => {
+        // Only cache 2xx responses. A worker 4xx/5xx (or an HTML error
+        // page from a misrouted port) would otherwise be cached for
+        // 60s and served as a "hit" to sibling middleware, poisoning
+        // every downstream consumer for the TTL.
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(raw);
+        } else {
+          resolve(null);
+        }
+      });
     });
     req.on('error', () => resolve(null));
     req.on('timeout', () => { req.destroy(); resolve(null); });
