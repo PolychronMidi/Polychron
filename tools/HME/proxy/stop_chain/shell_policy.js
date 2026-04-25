@@ -66,12 +66,19 @@ function defaultParseDecision(stdout, ctx) {
 
 function spawnStage(stageName, stdinJson, timeoutMs) {
   return new Promise((resolve) => {
+    // PROJECT is the legacy alias for PROJECT_ROOT used by lifesaver.sh and
+    // post_hooks.sh. Under the original sourced-chain bash dispatcher,
+    // lifesaver.sh set PROJECT in its scope and post_hooks.sh inherited it.
+    // Under subprocess isolation each stage runs in its own shell, so we
+    // export the alias from the wrapper. Catches the broken cross-stage
+    // dependency the audit-shell-undefined-vars verifier surfaced.
     const wrapper = `
 set +u +e
+PROJECT="${PROJECT_ROOT}"
 _HME_HELPERS_DIR="${HELPERS_DIR}"
 _STOP_DIR="${path.dirname(STAGE_DIR)}"
 _DETECTORS_DIR="${DETECTORS_DIR}"
-export _HME_HELPERS_DIR _STOP_DIR _DETECTORS_DIR
+export PROJECT _HME_HELPERS_DIR _STOP_DIR _DETECTORS_DIR
 source "${HELPERS_DIR}/_safety.sh" 2>/dev/null
 INPUT=$(cat)
 source "${path.join(STAGE_DIR, stageName + '.sh')}"
