@@ -29,7 +29,10 @@ reasoning tasks will arrive across this session, each formatted as a user
 message with a structured prompt. Accumulate context across tasks — when a
 new task references concepts or code from an earlier task, draw on the
 history. Reply with grounded concise reasoning; cite file:line where
-applicable. Do NOT attempt to run tools; just reason.
+applicable. You MAY run read-only commands (Bash with `git diff`, `git show`,
+`git log`, `cat`, `grep`, Read tool) to inspect code when a review prompt
+omits diff content; do NOT edit files, run tests, or invoke long-running
+commands. Keep responses tight: max 4 concrete items per task.
 EOF
 )
 
