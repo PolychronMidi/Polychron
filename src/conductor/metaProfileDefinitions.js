@@ -83,6 +83,15 @@ metaProfileDefinitions = (() => {
       phase: { lockBias: 0.2, layerIndependence: 0.8 },
       sectionAffinity: ['development', 'climax'],
       minDwellSections: 1,
+      // Reactive trigger: when runtime entropy spikes, surface chaotic as the
+      // recommended profile via metaProfiles.evaluateTriggers(snapshot). The
+      // rotator (main.js) does not auto-honor it yet — this declaration is the
+      // schema-validated foothold that downstream rotation logic can opt into.
+      triggers: {
+        enter: [
+          { if: 'entropy > 0.7', priority: 80 },
+        ],
+      },
     },
 
     meditative: {

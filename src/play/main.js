@@ -328,6 +328,18 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     });
   }
 
+  // Empirical-tuning attribution: log which metaprofile owned this section
+  // and the section's composite intensity as a coarse outcome score. JSONL
+  // append, no-op when no profile is active. Aggregator (separate script)
+  // computes per-profile mean scores + sensitivity in a later round.
+  if (metaProfiles.getActiveName()) {
+    metaProfiles.recordAttribution({
+      section: sectionIndex,
+      sectionType: currentSectionType,
+      score: sEnergy,
+    });
+  }
+
   LM.advance('L1', 'section');
 
   LM.advance('L2', 'section');
