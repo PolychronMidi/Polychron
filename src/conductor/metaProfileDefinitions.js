@@ -22,7 +22,7 @@ metaProfileDefinitions = (() => {
     phase:    { lockBias: 'number', layerIndependence: 'number' },
   };
 
-  const _TENSION_SHAPES = ['flat', 'ascending', 'arch', 'sawtooth', 'erratic'];
+  const _TENSION_SHAPES = ['flat', 'ascending', 'descending', 'arch', 'sawtooth', 'erratic'];
   const _SECTION_TYPES  = ['intro', 'opening', 'exposition', 'development', 'climax', 'resolution', 'conclusion', 'coda'];
 
   const profiles = {
@@ -109,6 +109,32 @@ metaProfileDefinitions = (() => {
       phase: { lockBias: 0.1, layerIndependence: 0.9 },
       sectionAffinity: ['climax'],
       minDwellSections: 1,
+    },
+
+    elegiac: {
+      name: 'elegiac',
+      description: 'Coherent, low-density, descending tension — release / denouement / coda',
+      regime: { coherent: 0.65, evolving: 0.30, exploring: 0.05 },
+      coupling: { strength: [0.3, 0.6], density: 0.20, antagonismThreshold: -0.30 },
+      trust: { concentration: 0.75, dominantCap: 1.85, starvationFloor: 0.85 },
+      tension: { shape: 'descending', floor: 0.20, ceiling: 0.55 },
+      energy: { densityTarget: 0.30, flickerRange: [0.03, 0.10] },
+      phase: { lockBias: 0.7, layerIndependence: 0.3 },
+      sectionAffinity: ['resolution', 'conclusion', 'coda'],
+      minDwellSections: 2,
+    },
+
+    anthemic: {
+      name: 'anthemic',
+      description: 'High coherent + high coupling, ascending arch — locked-step shared peak',
+      regime: { coherent: 0.50, evolving: 0.40, exploring: 0.10 },
+      coupling: { strength: [0.6, 0.9], density: 0.40, antagonismThreshold: -0.20 },
+      trust: { concentration: 0.6, dominantCap: 1.7, starvationFloor: 0.7 },
+      tension: { shape: 'arch', floor: 0.35, ceiling: 0.85 },
+      energy: { densityTarget: 0.65, flickerRange: [0.05, 0.18] },
+      phase: { lockBias: 0.7, layerIndependence: 0.3 },
+      sectionAffinity: ['climax', 'resolution'],
+      minDwellSections: 2,
     },
   };
 
