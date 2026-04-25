@@ -32,7 +32,7 @@ const PRE_COMPOSITION = [
   { label: 'validate-feedback-graph',      cmd: 'node scripts/pipeline/validate-feedback-graph.js' },
   { label: 'check-registration-coherence', cmd: 'node scripts/pipeline/validators/check-registration-coherence.js' },
   // check-hme-coherence removed (Apr 2026). The `write_without_hme_read`
-  // emitter it policed was retired — the check ran as a permanent no-op.
+  // emitter it policed was retired -- the check ran as a permanent no-op.
   // Auto-enrichment middleware (edit_context.js, read_context.js,
   // dir_context.js) now attaches KB context to every Edit/Read tool_result,
   // so the legacy "did the agent explicitly invoke HME_read?" contract no
