@@ -24,7 +24,7 @@
       ]
     },
     "trace": {
-      "description": "Replay tracer: cascade / module / causal / impact analysis on signals or beats.",
+      "description": "Causal/impact analysis and semantic search across signals, modules, beats.",
       "category": "diagnostic",
       "usage": "i/trace target=<channel|module|beat-key> [mode=auto|cascade|module|causal|snapshot|impact|delta]",
       "modes": ["auto", "cascade", "module", "causal", "snapshot", "impact", "delta"],
@@ -74,10 +74,11 @@
       "category": "meta"
     },
     "freeze": {
-      "description": "Check a query string against the forbidden-pattern (frozen-state) list.",
+      "description": "Show arc-freeze marker; optionally check a query against the forbidden-pattern list.",
       "category": "review-discipline",
       "usage": "i/freeze [query-string]",
       "examples": [
+        "i/freeze",
         "i/freeze \"never disable trust ceiling\""
       ]
     },
@@ -92,8 +93,10 @@
       "usage": "i/why <invariant-id>"
     },
     "todo": {
-      "description": "HME todo list — surface deferred items per session/round.",
-      "category": "review-discipline"
+      "description": "Hierarchical todo store with criticality + on-done triggers.",
+      "category": "review-discipline",
+      "usage": "i/todo action=list|add|done|... [text=…] [parent_id=N] [criticality=normal|critical]",
+      "modes": ["list", "add", "done", "show", "update"]
     },
     "substrate": {
       "description": "Substrate browser: brief, detail, actions, drift, consensus, efficacy, patterns, diff, invariants.",
@@ -118,8 +121,8 @@
       "category": "evolution"
     },
     "prove": {
-      "description": "Prove or disprove a hypothesis against the run-history dataset.",
-      "category": "knowledge"
+      "description": "Cross-file architectural invariant prover. Complements per-file ESLint rules with global/dataflow questions.",
+      "category": "review-discipline"
     },
     "help": {
       "description": "List all i/ tools grouped by category, with descriptions and usage.",
