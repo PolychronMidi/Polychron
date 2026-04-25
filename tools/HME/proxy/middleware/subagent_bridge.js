@@ -42,31 +42,47 @@ module.exports = {
   onToolResult({ toolUse, toolResult, ctx }) {
     if (!toolUse || toolUse.name !== 'Agent') return;
     const desc = (toolUse.input && toolUse.input.description) || '';
-    const match = /HME reasoning for ([a-zA-Z0-9]+)/.exec(desc);
+    // Anchor reqId match to the hex-pattern synthesis_reasoning emits
+    // (12+ lowercase hex chars, word-boundary-terminated). The previous
+    // `[a-zA-Z0-9]+` greedy alnum could match unrelated descriptions and
+    // silently clobber legitimate captures.
+    const match = /HME reasoning for ([a-f0-9]{12,})\b/.exec(desc);
     if (!match) return;
     const reqId = match[1];
     // Capture Agent's text output and write it to the results dir so
     // future HME callers can synchronously consume it.
     const text = _textOf(toolResult);
-    if (!text) return;
     _ensureDir(RESULTS_DIR);
     const outPath = path.join(RESULTS_DIR, `${reqId}.json`);
     try {
+      // Use 'wx' flag so a duplicate capture for the same reqId is
+      // rejected at the filesystem layer with EEXIST instead of
+      // silently clobbering the first result. Agent retries + regex
+      // false-positives were both caught by this before the anchor
+      // tightening above; defense-in-depth.
       fs.writeFileSync(outPath, JSON.stringify({
         req_id: reqId,
         text,
+        empty: !text,
         captured_at: Date.now(),
-      }));
+      }), { flag: 'wx' });
     } catch (err) {
+      if (err && err.code === 'EEXIST') {
+        ctx.warn(`subagent_bridge: duplicate capture for ${reqId} rejected (already in ${outPath})`);
+        return;
+      }
       ctx.warn(`subagent_bridge: result write failed for ${reqId}: ${err.message}`);
       return;
     }
-    // Move the queue entry to done/ for audit trail.
+    // Move the queue entry to done/ for audit trail — ALWAYS, even on
+    // empty-text captures. Previously an empty Agent reply early-returned
+    // before this rename, stranding the queue entry forever and making
+    // the caller poll indefinitely with no diagnostic.
     const queuePath = path.join(QUEUE_DIR, `${reqId}.json`);
     const donePath = path.join(DONE_DIR, `${reqId}.json`);
     try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* ok if absent */ }
     ctx.emit({
-      event: 'subagent_bridge_result_captured',
+      event: text ? 'subagent_bridge_result_captured' : 'subagent_bridge_empty_result',
       req_id: reqId,
       bytes: text.length,
     });
