@@ -30,6 +30,9 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     mode='symbols': symbol audit (dead code + importance).
     mode='docs': doc sync check.
     mode='evolve': unified evolution recommender (dead-ends + bypasses + gaps + bridges + trust).
+    mode='partner': partner-review register — aesthetic / cultural / future-maintainer
+        empathy on changed files. Complementary to mode='forget' (forensic register).
+        Outputs a brief partner-letter, not tier-1 findings.
     mode='full': digest + regime + trust in one call."""
     _track("review")
     if mode != "forget":
@@ -249,8 +252,58 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             parts.append(_ds())
         elif m == "evolve":
             parts.append(_unified_evolution_recommender())
+        elif m == "partner":
+            # Partner-review register — complementary to 'forget' (forensic).
+            # Uses _PARTNER_SYSTEM instead of _REVIEW_SYSTEM. Reads the diff
+            # of changed files and produces a partner-letter (aesthetic /
+            # cultural / future-maintainer empathy) rather than tier-1 bug
+            # findings. The two registers don't compete — partner output
+            # is intended for cultural feedback, not correctness.
+            from .synthesis import _reasoning_think, _PARTNER_SYSTEM
+            _cf = changed_files
+            if not _cf:
+                try:
+                    import subprocess as _sp
+                    _git = _sp.run(
+                        ["git", "-C", ctx.PROJECT_ROOT, "diff", "--name-only", "HEAD"],
+                        capture_output=True, text=True, timeout=2
+                    )
+                    _cf = ",".join(f.strip() for f in _git.stdout.strip().splitlines() if f.strip())
+                except Exception as _ge:
+                    logger.debug(f"partner: git diff names failed: {_ge}")
+            if not _cf:
+                parts.append("# Partner Review\n\nNo changed files detected. "
+                             "Pass changed_files='path1,path2' explicitly or make some changes first.")
+            else:
+                _files_list = [f.strip() for f in _cf.split(",") if f.strip()][:5]
+                _diff_excerpt = ""
+                try:
+                    import subprocess as _sp2
+                    _gd = _sp2.run(
+                        ["git", "-C", ctx.PROJECT_ROOT, "diff", "HEAD", "--"] + _files_list,
+                        capture_output=True, text=True, timeout=3
+                    )
+                    _diff_excerpt = _gd.stdout[:6000]
+                except Exception as _ge2:
+                    logger.debug(f"partner: git diff failed: {_ge2}")
+                _user_text = (
+                    f"Files in this change: {', '.join(_files_list)}\n\n"
+                    f"Diff (first 6KB):\n```\n{_diff_excerpt}\n```\n\n"
+                    "Write a partner-letter addressed to the author. Mark "
+                    "what's well-shaped, identify cultural artifacts worth "
+                    "preserving, name where future-self might trip, hold "
+                    "puzzlement publicly if anything is genuinely confusing. "
+                    "2-4 paragraphs. First-person. Not a bug list."
+                )
+                try:
+                    _pr = _reasoning_think("/no_think\n" + _user_text,
+                                           max_tokens=600,
+                                           system=_PARTNER_SYSTEM)
+                    parts.append("# Partner Review\n\n" + (_pr or "(no response)"))
+                except Exception as _pe:
+                    parts.append(f"# Partner Review\n\nerror: {type(_pe).__name__}: {_pe}")
         else:
-            parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, evolve, full.")
+            parts.append(f"Unknown mode '{m}'. Use: digest, regime, trust, sections, audio, composition, health, forget, convention, symbols, docs, evolve, partner, full.")
 
     # Apply per-section budgets for compound modes, single budget otherwise
     if len(parts) > 1:
