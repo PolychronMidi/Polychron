@@ -172,7 +172,11 @@ module.exports = {
     }
     let realOutput;
     try {
-      realOutput = fs.readFileSync(filePath, 'utf8');
+      // Async read so the proxy event loop yields. Synchronous readFileSync
+      // here previously blocked every other in-flight inference response
+      // while reading multi-MB task outputs (i/status long-form, full
+      // reindex log, etc.).
+      realOutput = await fs.promises.readFile(filePath, 'utf8');
     } catch (err) {
       ctx.appendToResult(toolResult, `\n[hme bg-dominance] read failed: ${err.message}`);
       ctx.markDirty();

@@ -16,14 +16,17 @@ module.exports = {
     const name = toolUse.name || '?';
     const input = toolUse.input || {};
     const filePath = input.file_path || input.path || '';
-    const module = _extractModule(filePath);
+    // Renamed from `module` because that shadows the CommonJS-injected
+    // per-file `module` binding — silent footgun if a future edit ever
+    // reaches for `module.exports` or any reflection inside this scope.
+    const moduleName = _extractModule(filePath);
 
     // Universal: log every tool call
     ctx.emit({
       event: 'tool_call',
       session,
       tool: name.replace(/[,=\s]/g, '_'),
-      module: module || '',
+      module: moduleName || '',
       file: filePath || '',
     });
 
@@ -37,14 +40,14 @@ module.exports = {
       // coherence-score read_coverage is always 0/N — the root cause of
       // the cascade of zero-valued Phase 2-6 metrics.
       const hmeReadPrior = (ctx.nexusHas && (
-        (module && ctx.nexusHas('BRIEF', module)) ||
+        (moduleName && ctx.nexusHas('BRIEF', moduleName)) ||
         (filePath && ctx.nexusHas('BRIEF', filePath))
       )) === true;
       ctx.emit({
         event: 'file_written',
         session,
         file: filePath,
-        module,
+        module: moduleName,
         hme_read_prior: hmeReadPrior,
         source: 'proxy_tool',  // Distinguishes agent Edit/Write from fs_watcher + pipeline_script
       });
