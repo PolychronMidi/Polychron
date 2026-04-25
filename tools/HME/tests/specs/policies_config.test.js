@@ -24,7 +24,11 @@ function _withSandbox(fn) {
       const cfg = require('../../policies/config');
       await fn(sandbox, cfg);
     } finally {
-      process.env.PROJECT_ROOT = originalRoot;
+      // process.env.PROJECT_ROOT = undefined sets the literal string
+      // 'undefined' — corrupts any later test that uses `||` fallback.
+      // Delete the key when original was unset.
+      if (originalRoot === undefined) delete process.env.PROJECT_ROOT;
+      else process.env.PROJECT_ROOT = originalRoot;
       delete require.cache[require.resolve('../../policies/config')];
       try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
     }
