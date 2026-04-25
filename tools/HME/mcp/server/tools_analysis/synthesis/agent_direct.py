@@ -33,6 +33,17 @@ import time
 logger = logging.getLogger("HME")
 
 
+# Per-process call counter + cap for the thread dispatch path. Every
+# dispatched call spawns a `claude --resume` subprocess that bills the
+# user's account silently; unlike the sentinel path (naturally throttled
+# by agent turn cadence) there's no organic budget choke. The cap is
+# advisory — env-configurable, defaults generous — but returning None
+# past the ceiling forces callers through the fallback/sentinel path
+# so a runaway loop doesn't quietly burn a subscription.
+_DISPATCH_THREAD_CALL_COUNT = 0
+_DISPATCH_THREAD_CALL_CAP = int(os.environ.get("HME_THREAD_CALL_CAP", "50"))
+
+
 def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
     """Synchronously route a reasoning prompt through the persistent
     subagent session whose sid is recorded in tmp/hme-thread.sid.
@@ -43,14 +54,18 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
     accumulates across calls. The persistent session is observable
     via VSCode's Claude Code extension by resuming its sid.
 
-    Returns the assistant's text reply, or None on any failure
-    (caller falls back to sentinel-bounce or direct ephemeral
-    dispatch). HME_THREAD_CHILD=1 prevents the spawned subprocess
-    from re-entering our own stop hooks. alwaysThinkingEnabled=false
-    keeps the response in a single transcript event so VSCode
-    renders it correctly (with thinking on, response writes as two
-    events sharing one msg_id and VSCode dedupes the second).
+    Returns the assistant's text reply (possibly empty) on success, or
+    None if the thread path is unavailable / failed. Empty replies are
+    a valid result — we return the empty string, NOT None — so callers
+    don't re-bill by falling through to the ephemeral dispatch when the
+    thread legitimately returned nothing. HME_THREAD_CHILD=1 prevents
+    the spawned subprocess from re-entering our own stop hooks.
+    alwaysThinkingEnabled=false keeps the response in a single
+    transcript event so VSCode renders it correctly (with thinking on,
+    response writes as two events sharing one msg_id and VSCode
+    dedupes the second).
     """
+    global _DISPATCH_THREAD_CALL_COUNT
     project_root = os.environ.get("PROJECT_ROOT", "")
     if not project_root:
         return None
@@ -64,6 +79,19 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
         logger.warning(f"dispatch_thread: read sid failed: {e}")
         return None
     if not sid:
+        # Empty sid file is a silent-fall-through footgun — the user
+        # ran `i/thread init` (or tried to) but the file is empty, so
+        # every reasoning call looks like "no thread configured" with
+        # no diagnostic. Warn once per occurrence.
+        logger.warning(f"dispatch_thread: sid file {sid_file} exists but is empty "
+                       "— run `i/thread init` to recreate, or `i/thread stop` to clear")
+        return None
+
+    # Budget cap — returning None past the ceiling forces fallback.
+    if _DISPATCH_THREAD_CALL_COUNT >= _DISPATCH_THREAD_CALL_CAP:
+        logger.warning(f"dispatch_thread: per-process cap reached "
+                       f"({_DISPATCH_THREAD_CALL_COUNT}/{_DISPATCH_THREAD_CALL_CAP}) "
+                       f"— falling through. Raise HME_THREAD_CALL_CAP to extend.")
         return None
 
     env = dict(os.environ)
@@ -77,6 +105,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
             capture_output=True, text=True, timeout=timeout_sec, env=env,
         )
         elapsed = time.monotonic() - t0
+        _DISPATCH_THREAD_CALL_COUNT += 1
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError) as e:
         logger.warning(f"dispatch_thread: failed: {type(e).__name__}: {e}")
         return None
@@ -84,10 +113,13 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
         logger.warning(f"dispatch_thread: claude exited {result.returncode}: "
                        f"{(result.stderr or '')[:200]}")
         return None
-    out = (result.stdout or "").strip()
-    if not out:
-        return None
-    logger.info(f"dispatch_thread: succeeded ({len(out)}c in {elapsed:.1f}s, sid={sid[:8]})")
+    # Empty stdout on returncode=0 is a valid (if odd) result — e.g.
+    # post-filter drop or the session replying with nothing. Preserve
+    # it as-is so callers don't fall through and re-bill. Prior
+    # behavior returned None on empty, which caused double-dispatch.
+    out = (result.stdout or "").rstrip()
+    logger.info(f"dispatch_thread: succeeded ({len(out)}c in {elapsed:.1f}s, "
+                f"sid={sid[:8]}, call {_DISPATCH_THREAD_CALL_COUNT}/{_DISPATCH_THREAD_CALL_CAP})")
     return out
 
 
