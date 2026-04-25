@@ -94,18 +94,37 @@ const MARKERS = {
     sentinel: '[hme auto-brief: <module>]',
   },
 
-  // Scaffolding-warning prefix — the "detect scaffolding-only warnings
-  // and treat verdict as clean" convention. Three sites used subtly
-  // different regexes; iter 111 peer-review caught the drift. All
-  // three now use the alternation `(HOOK CHANGE|DOC CHECK|SKIPPED|KB):`
-  // Needle is `SKIPPED` — short, unique-ish, present on all three sides.
-  HME_SCAFFOLD_PREFIX: {
+  // Scaffolding-warning prefixes — the "detect scaffolding-only warnings
+  // and treat verdict as clean" convention. Three sites use the same
+  // alternation `(HOOK CHANGE|DOC CHECK|SKIPPED|KB):`. Iter 120 peer-
+  // review noted that a single-needle registry entry would miss a drop
+  // (e.g. one site removes SKIPPED but the registry only checks for it).
+  // Per-term entries force the verifier to confirm ALL FOUR alternation
+  // members survive in ALL THREE sites — drop one anywhere, verifier
+  // breaks.
+  HME_SCAFFOLD_HOOK_CHANGE: {
     producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
     consumers: [
       'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
       'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
     ],
-    sentinel: 'SKIPPED',  // one token from the alternation
+    sentinel: 'HOOK CHANGE',
+  },
+  HME_SCAFFOLD_DOC_CHECK: {
+    producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
+    consumers: [
+      'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
+      'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
+    ],
+    sentinel: 'DOC CHECK',
+  },
+  HME_SCAFFOLD_SKIPPED: {
+    producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
+    consumers: [
+      'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
+      'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
+    ],
+    sentinel: 'SKIPPED',
   },
 
   // Detector verdict names — produced by run_all.py's per-detector
