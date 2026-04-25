@@ -16,7 +16,8 @@ function _withSandbox(fn) {
       const t = require('../../telemetry');
       await fn(sandbox, t);
     } finally {
-      process.env.PROJECT_ROOT = original;
+      if (original === undefined) delete process.env.PROJECT_ROOT;
+      else process.env.PROJECT_ROOT = original;
       delete require.cache[require.resolve('../../telemetry')];
       try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
     }

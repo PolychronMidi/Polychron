@@ -29,7 +29,8 @@ test('mid-pipeline: deny when run.lock exists + path is in src/', async () => {
     const r = await midPipeline.fn(_ctx({ toolInput: { file_path: '/anywhere/Polychron/src/foo.js' } }));
     assert.strictEqual(r.decision, 'deny');
   } finally {
-    process.env.PROJECT_ROOT = original;
+    if (original === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = original;
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
@@ -42,7 +43,8 @@ test('mid-pipeline: allow when run.lock missing', async () => {
     const r = await midPipeline.fn(_ctx({ toolInput: { file_path: '/anywhere/Polychron/src/foo.js' } }));
     assert.strictEqual(r.decision, 'allow');
   } finally {
-    process.env.PROJECT_ROOT = original;
+    if (original === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = original;
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
@@ -57,7 +59,8 @@ test('mid-pipeline: allow non-src path even with run.lock present', async () => 
     const r = await midPipeline.fn(_ctx({ toolInput: { file_path: '/anywhere/Polychron/doc/foo.md' } }));
     assert.strictEqual(r.decision, 'allow', 'doc/ edits permitted mid-pipeline');
   } finally {
-    process.env.PROJECT_ROOT = original;
+    if (original === undefined) delete process.env.PROJECT_ROOT;
+    else process.env.PROJECT_ROOT = original;
     fs.rmSync(sandbox, { recursive: true, force: true });
   }
 });
