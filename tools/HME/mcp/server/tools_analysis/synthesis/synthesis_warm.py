@@ -140,10 +140,22 @@ def _flush_pending_entries():
             _active_models.insert(1, _REASONING_MODEL)
 
         updated = 0
+        skipped_uninitialized = 0
         for model in _active_models:
-            # Advance the KB version marker so warm_context_status reports
-            # fresh. The actual KV cache reflow happens on the next real call
-            # via llama-server's cache_prompt behavior.
+            # Peer-review iter 122: only advance the KB marker for
+            # models that actually have a warm_ctx entry. Previous
+            # behavior advanced the marker for every active model
+            # regardless of whether priming had populated _warm_ctx[model]
+            # — so a model that was never primed (or whose cache was
+            # evicted / never loaded from disk) now claimed to be at
+            # the new KB version despite holding no KV state. Downstream
+            # `warm_context_status` then reported "fresh at kb_ver=N"
+            # against an empty cache. Track skipped count separately so
+            # the priming pipeline can detect models that need a cold
+            # warm rather than silently treating them as live.
+            if model not in _warm_ctx:
+                skipped_uninitialized += 1
+                continue
             _warm_ctx_kb_ver[model] = new_kb_ver
             _warm_ctx_ts[model] = _time.time()
             _warm_ctx_append_count[model] = _warm_ctx_append_count.get(model, 0) + len(entries)
@@ -152,6 +164,10 @@ def _flush_pending_entries():
             except Exception as _save_err:
                 logger.debug(f"_save_warm_cache({model}): {type(_save_err).__name__}: {_save_err}")
             updated += 1
+        if skipped_uninitialized:
+            logger.info(
+                f"incr KB marker: skipped {skipped_uninitialized} uninitialized "
+                f"model(s) — they need a cold warm before claiming kb_ver={new_kb_ver}")
 
         if updated > 0:
             try:
