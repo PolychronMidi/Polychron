@@ -31,6 +31,7 @@ exports.reapIdleClaudeProcesses = reapIdleClaudeProcesses;
 exports.listActiveChatSessions = listActiveChatSessions;
 const child_process_1 = require("child_process");
 const routerClaude_1 = require("./routerClaude");
+const routerHme_1 = require("./routerHme");
 /** Hashes options for cache-keying — two processes match only when every
  * CLI-affecting option (model/effort/thinking/permissionMode) is identical.
  * Changes invalidate the cached process and force a respawn on next turn. */
@@ -51,6 +52,15 @@ function _optsKey(o) {
 // claude CLI sat idle during retry and falsely tripped the 30s gate.
 const TURN_INACTIVITY_MS = 90000; // no stdout for 90s → kill + retry next turn
 const TURN_DEADLINE_MS = 300000; // hard wall-clock cap per turn
+// Productivity watchdog: resets only on useful output (assistant/thinking/
+// tool chunks pushed to onChunk). The byte-level TURN_INACTIVITY_MS watchdog
+// above resets on ANY stdout — including hook_started / rate_limit_event /
+// partial-frame lifecycle noise that the CLI emits continuously. Without this
+// second timer, a session that's streaming only noise-events for minutes
+// would never trip the inactivity guard, leaving the user with a spinner and
+// no response. 120s is generous enough for slow thinking blocks (which DO
+// call onChunk with thinking type) but catches "streaming noise, no content".
+const TURN_NO_CONTENT_MS = 120000;
 class ClaudeProcess {
     constructor(chatSessionId, resumeSessionId, opts, workingDir) {
         this.chatSessionId = chatSessionId;
@@ -64,6 +74,7 @@ class ClaudeProcess {
         this._lastActivity = Date.now();
         this._turnDeadline = null;
         this._turnInactivity = null;
+        this._turnNoContent = null;
         this._optsKey = _optsKey(opts);
         const args = (0, routerClaude_1.buildClaudeArgs)(opts, resumeSessionId, [
             "-p",
@@ -128,6 +139,7 @@ class ClaudeProcess {
         this._clearTurnWatchdogs();
         this._turnDeadline = setTimeout(() => this._failTurn(`turn exceeded wall-clock deadline (${TURN_DEADLINE_MS / 1000}s) — killing process`), TURN_DEADLINE_MS);
         this._turnInactivity = setTimeout(() => this._failTurn(`no stdout for ${TURN_INACTIVITY_MS / 1000}s — API may be down or CLI hung`), TURN_INACTIVITY_MS);
+        this._turnNoContent = setTimeout(() => this._failTurn(`no content chunks for ${TURN_NO_CONTENT_MS / 1000}s — CLI streaming lifecycle noise but no assistant output (likely upstream stall or stream-json event-shape drift)`), TURN_NO_CONTENT_MS);
     }
     _clearTurnWatchdogs() {
         if (this._turnDeadline) {
@@ -137,6 +149,10 @@ class ClaudeProcess {
         if (this._turnInactivity) {
             clearTimeout(this._turnInactivity);
             this._turnInactivity = null;
+        }
+        if (this._turnNoContent) {
+            clearTimeout(this._turnNoContent);
+            this._turnNoContent = null;
         }
     }
     /** Kill + surface the error on the current turn. Respawn happens lazily
@@ -190,7 +206,12 @@ class ClaudeProcess {
                 evt = JSON.parse(trimmed);
             }
             catch (e) {
+                // Parse failure = upstream CLI emitted malformed stream-json (or a
+                // partial flush mid-chunk that we didn't buffer correctly). Route to
+                // LIFESAVER so the agent sees the drift next turn — console.error
+                // alone disappears into the extension-host log nobody reads.
                 console.error(`[HME] claude stream-json parse failed: ${trimmed.slice(0, 120)}`);
+                (0, routerHme_1.logShimError)("claude", `stream-json parse failed — upstream CLI may have shipped a schema change`, trimmed.slice(0, 400)).catch(() => { });
                 continue;
             }
             this._handleEvent(evt);
@@ -216,16 +237,27 @@ class ClaudeProcess {
             const turn = this._currentTurn;
             if (!turn)
                 return;
+            let emittedAny = false;
             for (const block of evt.message.content) {
                 if (block.type === "thinking" && block.thinking) {
                     turn.onChunk(block.thinking, "thinking");
+                    emittedAny = true;
                 }
                 else if (block.type === "text" && block.text) {
                     turn.onChunk(block.text, "text");
+                    emittedAny = true;
                 }
                 else if (block.type === "tool_use") {
                     turn.onChunk(`[${block.name}] ${JSON.stringify(block.input ?? {}, null, 2)}`, "tool");
+                    emittedAny = true;
                 }
+            }
+            // Reset the productivity watchdog only when something actually reached
+            // the user — the byte-level inactivity timer already resets on any
+            // stdout, including noise events.
+            if (emittedAny && this._turnNoContent) {
+                clearTimeout(this._turnNoContent);
+                this._turnNoContent = setTimeout(() => this._failTurn(`no content chunks for ${TURN_NO_CONTENT_MS / 1000}s — CLI streaming lifecycle noise but no assistant output (likely upstream stall or stream-json event-shape drift)`), TURN_NO_CONTENT_MS);
             }
             return;
         }
@@ -242,8 +274,18 @@ class ClaudeProcess {
             turn.onDone(cost, usage);
             return;
         }
-        // Silently ignore: rate_limit_event, hook_started, hook_response, partial
-        // assistant frames (we already consume full assistant frames above), etc.
+        // Previously silent-ignored: rate_limit_event, hook_started, hook_response,
+        // partial assistant frames. These ARE routine and shouldn't spam stderr,
+        // but a persistent unknown event type is a real signal — log unrecognised
+        // top-level types to the extension-host console so drift is at least
+        // traceable. Known-benign types are allow-listed.
+        const KNOWN_BENIGN = new Set([
+            "system", "rate_limit_event", "hook_started", "hook_response",
+            "partial_assistant", "user", "tool_result",
+        ]);
+        if (evt.type && !KNOWN_BENIGN.has(evt.type)) {
+            console.error(`[HME] claude stream-json: unhandled event type '${evt.type}' — this may indicate CLI schema drift. Keys: ${Object.keys(evt).join(",")}`);
+        }
     }
     _onExit(code, err) {
         if (this._dead)

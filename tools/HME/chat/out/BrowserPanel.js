@@ -52,6 +52,30 @@ const StreamPersister_1 = require("./panel/StreamPersister");
 const webviewMessages_1 = require("./panel/webviewMessages");
 const msgHelpers_1 = require("./msgHelpers");
 class BrowserPanel {
+    /** Read the user's ~/.claude/settings.json and return its
+     * `alwaysThinkingEnabled` (if set to boolean). Defaults to false only when
+     * the setting is absent or malformed — which preserves the prior behavior
+     * for users who haven't opted in. */
+    static _readThinkingDefault() {
+        try {
+            const homeDir = process.env.HOME || process.env.USERPROFILE;
+            if (!homeDir)
+                return false;
+            const fs = require("fs");
+            const path = require("path");
+            const settingsPath = path.join(homeDir, ".claude", "settings.json");
+            if (!fs.existsSync(settingsPath))
+                return false;
+            const raw = fs.readFileSync(settingsPath, "utf8");
+            const parsed = JSON.parse(raw);
+            return parsed.alwaysThinkingEnabled === true;
+        }
+        catch {
+            // settings.json unreadable, malformed, or fs unavailable — default off.
+            // Never throw; a broken settings file must not break panel init.
+            return false;
+        }
+    }
     static _blankState() {
         return { messages: [], claudeSessionId: null, llamacppHistory: [], lastRoute: null, sessionEntry: null, chainIndex: 0 };
     }
@@ -70,7 +94,16 @@ class BrowserPanel {
         // Authoritative Claude config — kept in sync with the browser UI via setClaudeConfig.
         // Send/queue messages fall back to this if they omit the fields (they shouldn't, but
         // it means the server state is the source of truth, not the browser payload).
-        this._claudeConfig = { model: "sonnet", effort: "high", thinking: false };
+        // `thinking` default is read from ~/.claude/settings.json at construct time
+        // so `alwaysThinkingEnabled: true` there actually takes effect (it was
+        // previously hardcoded false, and claudeProcessPool passes our value as
+        // inline `--settings` JSON that MERGES OVER the file — so the hardcoded
+        // false was silently cancelling the user's setting every single spawn).
+        this._claudeConfig = {
+            model: "sonnet",
+            effort: "high",
+            thinking: BrowserPanel._readThinkingDefault(),
+        };
         this._messageHandlers = {
             send: (msg) => {
                 if (this._isStreaming) {
@@ -328,6 +361,21 @@ class BrowserPanel {
     registerSseClient(res) {
         this._sseClients.push(res);
         this._sseClientSeen.set(res, Date.now());
+        // Broadcast current Claude config so the webview checkbox reflects the
+        // server-side default (which was read from ~/.claude/settings.json at
+        // panel init). Without this, `alwaysThinkingEnabled: true` from the
+        // user's settings is silently ignored because the browser's checkbox
+        // starts unchecked.
+        setImmediate(() => {
+            const resolved = (0, msgHelpers_1.resolveClaudeConfig)(this._claudeConfig);
+            this.post({
+                type: "claudeConfigApplied",
+                alias: resolved.alias,
+                modelId: resolved.modelId,
+                effort: resolved.cliEffort,
+                thinking: resolved.thinking,
+            });
+        });
         // Send any pending restore on first connect
         if (this._restoreSessionId) {
             const id = this._restoreSessionId;
