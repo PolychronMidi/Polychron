@@ -84,8 +84,18 @@ function nexusHas(type, payload) {
     if (!fs.existsSync(NEXUS_FILE)) return false;
     const lines = fs.readFileSync(NEXUS_FILE, 'utf8').split('\n');
     if (payload) {
+      // Parse `${type}:${ts}:${payload}` explicitly — the previous
+      // `endsWith(:payload)` heuristic could match unrelated lines whose
+      // timestamp suffix coincidentally ended with the literal needle,
+      // and broke entirely on payloads that themselves contain a colon.
       const needle = `${type}:`;
-      return lines.some((l) => l.startsWith(needle) && l.endsWith(`:${payload}`));
+      return lines.some((l) => {
+        if (!l.startsWith(needle)) return false;
+        const rest = l.slice(needle.length); // ts:payload
+        const colonIdx = rest.indexOf(':');
+        if (colonIdx < 0) return false;
+        return rest.slice(colonIdx + 1) === payload;
+      });
     }
     return lines.some((l) => l.startsWith(`${type}:`));
   } catch (_e) {

@@ -68,8 +68,12 @@ module.exports = {
     if (locks.length === 0 && semanticLines.length === 0) return;
 
     // Detect whether the edit directly touches any of the locked keys.
-    const oldStr = (toolUse.input && toolUse.input.old_string) || '';
-    const newStr = (toolUse.input && toolUse.input.new_string) || (toolUse.input && toolUse.input.content) || '';
+    // Coerce to string defensively — a malformed agent payload (or a
+    // future tool variant) could deliver an array/object here, which
+    // would make `String.prototype.includes` throw and the whole
+    // onToolResult would silently reject.
+    const oldStr = String((toolUse.input && toolUse.input.old_string) ?? '');
+    const newStr = String((toolUse.input && (toolUse.input.new_string ?? toolUse.input.content)) ?? '');
     const touched = locks.filter((l) => {
       // Match the key literal or the short suffix after the colon
       const short = l.key.includes(':') ? l.key.split(':').pop() : l.key;
