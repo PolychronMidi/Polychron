@@ -36,3 +36,20 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # Sanity: poll_count must be numeric for the -ge test below.
   [[ "$POLL_COUNT" =~ ^[0-9]+$ ]] || POLL_COUNT=0
 fi
+
+# Persist verdicts for downstream consumers (anti_patterns.sh, work_checks.sh).
+# The chain runs each stage in a subshell now, so consumers can no longer
+# rely on inherited bash variables — they source this file at the top.
+_DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-detector-verdicts.env"
+mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
+{
+  echo "POLL_COUNT=$POLL_COUNT"
+  echo "IDLE_AFTER_BG=$IDLE_AFTER_BG"
+  echo "PSYCHO_STOP=$PSYCHO_STOP"
+  echo "ACK_SKIP=$ACK_SKIP"
+  echo "ABANDON_CHECK=$ABANDON_CHECK"
+  echo "STOP_WORK=$STOP_WORK"
+  echo "FABRICATION_CHECK=$FABRICATION_CHECK"
+  echo "EARLY_STOP=$EARLY_STOP"
+  echo "EXHAUST_CHECK=$EXHAUST_CHECK"
+} > "$_DETECTOR_VERDICTS_FILE"

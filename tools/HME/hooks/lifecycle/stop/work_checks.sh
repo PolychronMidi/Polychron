@@ -1,3 +1,12 @@
+# work_checks runs in a subshell now (see stop.sh subshell-isolation
+# refactor), so detector verdict vars no longer inherit from the parent.
+# Source the persisted file. Defaults preserve original behavior when
+# detectors.sh didn't run or the file is missing.
+_DETECTOR_VERDICTS_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-detector-verdicts.env"
+[ -f "$_DETECTOR_VERDICTS_FILE" ] && source "$_DETECTOR_VERDICTS_FILE"
+STOP_WORK="${STOP_WORK:-ok}"
+EXHAUST_CHECK="${EXHAUST_CHECK:-ok}"
+
 # Default enforcement reminder
 echo 'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.' >&2
 # STOP_WORK was captured earlier via run_all.py.
