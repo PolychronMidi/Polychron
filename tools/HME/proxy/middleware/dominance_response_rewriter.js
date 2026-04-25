@@ -89,12 +89,48 @@ const DEMAND_MARKERS = [
 // NEXUS auto-review remediation arm — wired per peer-review iter 145.
 // When the rewriter sees an unreviewed-edit NEXUS, it doesn't just label
 // the demand as "auto-review queued" — it ACTUALLY RUNS the review
-// synchronously and embeds the result inline. The agent sees the review
-// findings as observation, never the demand-register block. Bounded
-// timeout (10s) so a stuck review can't wedge the Stop hook indefinitely.
+// synchronously and embeds the result inline. Bounded timeout (10s) so
+// a stuck review can't wedge the Stop hook indefinitely.
+//
+// Rate-limit: one auto-review per COOLDOWN_SEC across all Stop hooks.
+// Without this guard, every Stop hook with NEXUS fires a subprocess
+// that itself spawns a claude --resume subprocess (via dispatch_thread)
+// — potentially every turn, costing real subscription tokens. The
+// cooldown is read/written via tmp/hme-dominance-review-cooldown so
+// across-process invocations share state.
 const { execSync } = require('child_process');
 
+const COOLDOWN_SEC = 60;
+
+function _cooldownPath() {
+  const root = process.env.PROJECT_ROOT || '/home/jah/Polychron';
+  return path.join(root, 'tmp', 'hme-dominance-review-cooldown');
+}
+
+function _withinCooldown() {
+  try {
+    const txt = fs.readFileSync(_cooldownPath(), 'utf8').trim();
+    const last = Number(txt);
+    if (!Number.isFinite(last)) return false;
+    return (Date.now() / 1000) - last < COOLDOWN_SEC;
+  } catch (_e) {
+    return false;  // no cooldown file = first run
+  }
+}
+
+function _markCooldown() {
+  try {
+    const p = _cooldownPath();
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, String(Math.floor(Date.now() / 1000)));
+  } catch (_e) { /* silent-ok: cooldown is best-effort, not safety-critical */ }
+}
+
 function _runReviewSync(timeoutMs = 10_000) {
+  if (_withinCooldown()) {
+    return { verdict: 'cooldown', missed: '' };
+  }
+  _markCooldown();  // mark BEFORE running so a hung review still cools down
   try {
     const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
     const out = execSync(`${projectRoot}/i/review mode=forget`, {
@@ -103,7 +139,6 @@ function _runReviewSync(timeoutMs = 10_000) {
       maxBuffer: 256 * 1024,
       env: { ...process.env, HME_THREAD_CHILD: '1' },
     });
-    // Extract the verdict + the "What You May Have Missed" body if present.
     const verdictMatch = out.match(/HME_REVIEW_VERDICT:\s*(\w+)/);
     const verdict = verdictMatch ? verdictMatch[1] : 'unknown';
     const missedMatch = out.match(/## What You May Have Missed[^\n]*\n([\s\S]+?)(?=\n##|\n<!--|$)/);
@@ -114,13 +149,15 @@ function _runReviewSync(timeoutMs = 10_000) {
   }
 }
 
-// Translate each demand into a reveal-register synopsis. NEXUS gets
-// actual remediation (synchronous review run); other demands get
-// queued-acknowledgment cards (the queueing is symbolic until those
-// remediation arms are also wired — named honestly so the gap is
-// visible at file level, not buried in a docstring).
+// Translate each demand into a reveal-register synopsis. NEXUS has a
+// real remediation arm (synchronous review). The others have NO
+// remediation — for those we emit an HONEST card that quotes the
+// underlying signal so the agent still knows what fired, without
+// lying about queued auto-handling. Pretending "auto-recover queued"
+// when nothing was queued is worse than the demand-register block:
+// the demand at least tells the truth.
 function _translateDemand(text) {
-  // NEXUS — REAL REMEDIATION ARM
+  // NEXUS — real remediation arm wired
   let m = text.match(/NEXUS — (\d+) unreviewed edit/);
   if (m) {
     const n = m[1];
@@ -130,23 +167,28 @@ function _translateDemand(text) {
     } else if (review && review.verdict === 'warnings') {
       const tail = review.missed ? ` Findings: ${review.missed.slice(0, 400)}` : '';
       return `auto-review ran on ${n} edit(s) — verdict: warnings.${tail}`;
+    } else if (review && review.verdict === 'cooldown') {
+      return `NEXUS — ${n} unreviewed edit(s); auto-review skipped (cooldown active, last ran <${COOLDOWN_SEC}s ago). Run i/review mode=forget manually if needed.`;
     } else if (review) {
       return `auto-review ran on ${n} edit(s) — verdict: ${review.verdict}.`;
     }
-    // Review failed/timed out — fall back to symbolic queueing
-    return `auto-review attempted on ${n} edit(s) — sync invocation failed; agent should run i/review mode=forget manually`;
+    return `NEXUS — ${n} unreviewed edit(s); auto-review attempt failed (timeout or subprocess error). Run i/review mode=forget manually.`;
   }
-  // LIFESAVER — symbolic for now (real arm: classify error origin and
-  // route fixes to specific subsystems; significant build, deferred)
+  // LIFESAVER, AUTO-COMPLETENESS, EXHAUST: NO remediation arm. Emit an
+  // honest observation card that quotes the underlying signal — agent
+  // still sees the trigger, just in reveal-register without the
+  // imperative wording. The previous "auto-X queued" cards were
+  // false: nothing was queued.
   m = text.match(/LIFESAVER[^\n]*\n([\s\S]{0,400})/);
-  if (m) return `auto-recover queued: ${m[1].split('\n').slice(0, 3).join(' | ').slice(0, 240)}`;
-  // auto-completeness — symbolic
-  if (text.includes('AUTO-COMPLETENESS INJECT')) {
-    return `auto-continue queued: enumerate gaps and dispatch corrective follow-ups`;
+  if (m) {
+    const snippet = m[1].split('\n').slice(0, 3).join(' | ').slice(0, 240);
+    return `LIFESAVER fired (no auto-remediation arm wired): ${snippet}`;
   }
-  // exhaust_check — symbolic
+  if (text.includes('AUTO-COMPLETENESS INJECT')) {
+    return `AUTO-COMPLETENESS fired (no auto-remediation arm wired); agent decides whether to enumerate.`;
+  }
   if (text.includes('EXHAUST PROTOCOL VIOLATION')) {
-    return `auto-dispatch queued: deferred items will be resolved without agent re-prompt`;
+    return `EXHAUST PROTOCOL fired (no auto-remediation arm wired); agent decides whether to resume deferred items.`;
   }
   return null;
 }
