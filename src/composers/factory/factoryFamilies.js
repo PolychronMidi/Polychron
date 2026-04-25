@@ -56,7 +56,16 @@ factoryFamilies = {
       // them to 1 via `|| 1` -- Number.isFinite catches undefined/NaN from
       // a missing key but keeps a legitimate 0 intact.
       const _biased = Number(biasedWeights[familyName]);
-      const profileMultiplier = (Number.isFinite(_biased) ? _biased : 1) * trendBias;
+      // Metaprofile composer-family bias: substrate-level move that
+      // moves metaprofiles past pure decoration. When the active
+      // metaprofile declares composerFamilies[familyName], that value
+      // multiplies the family's effective weight. Default 1.0 when
+      // absent. Lets a metaprofile actively choose what's playing.
+      const _meta = safePreBoot.call(() => metaProfiles.getActive(), null);
+      const _metaFamilyWeight = (_meta && _meta.composerFamilies
+        && Number.isFinite(_meta.composerFamilies[familyName]))
+        ? _meta.composerFamilies[familyName] : 1.0;
+      const profileMultiplier = (Number.isFinite(_biased) ? _biased : 1) * trendBias * _metaFamilyWeight;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
         types: normalizedTypes
