@@ -197,6 +197,19 @@ i/sensitivity
 
 Reads the JSONL log, emits a per-profile score distribution (n, mean, std, p10/p50/p90, min/max), per-(profile, sectionType) breakdown, ranking by mean score, and a stability classification per profile (stable / moderate / volatile / insufficient — based on coefficient of variation `std/|mean|`). Writes machine-readable JSON to `output/metrics/metaprofile-sensitivity.json` and a Markdown summary to stdout. Evolution priority can later consume this to recommend profile changes when a low-ranked profile dominates the rotation, or when a top-ranked profile is volatile (high score but unstable).
 
+### Substrate-level fields
+
+The 6 axes (regime / coupling / trust / tension / energy / phase) are scaling layer — they multiply existing controllers. The substrate-level optional fields below let a metaprofile actively *choose what's playing*, not just *how loud each dial is*. All optional; profiles without them remain valid.
+
+| Field | Schema | Live consumer | Effect |
+|---|---|---|---|
+| `composerFamilies` | `{ familyName: weight }` | `factoryFamilies.getComposerFamiliesOrFail` multiplies its computed weight by `metaProfiles.getComposerFamilyWeight(name)` | Biases the composer pool. `chaotic` favors development+rhythmicDrive; `meditative` favors harmonicMotion+diatonicCore. The composition's **emission strategy** changes with the metaprofile, not just its parameters. |
+| `conductorAffinity` / `conductorAntipathy` | `string[]` | `conductorConfigDynamics.applyPhaseProfile` honors via `metaProfiles.preferConductorProfile` / `avoidConductorProfile` | Closes the orthogonality gap between meta and conductor profiles. `meditative` prefers `atmospheric`/`meditative` conductors; avoids `chaotic`. |
+| `sectionArc` | `string[]` (one per section) | `main.js` section selection consults `metaProfiles.getSectionArcOverride()` | Profile owns the structural sequence when length matches `totalSections`, otherwise falls through to weighted-random. |
+| `layerVariants` | `{ L1: name, L2: name }` | Accessor `metaProfiles.getLayerVariant(layer)` available; layer-aware controllers can resolve per-layer subprofile | Per-layer metaprofile assignment. Smaller-footprint version of full per-layer activation. |
+| `disableControllers` | `string[]` | Accessor `metaProfiles.isControllerDisabled(name)` available; controllers consult to gate themselves. `meditative` lists `antagonism_bridges`. | Subtractive — silences entire subsystems instead of just damping them. |
+| `couplingPairs` | `[[axisA, axisB], ...]` | Persisted in `output/metrics/metaprofile-active.json`; `coupling_bridges.py` and JS coupling controllers can consult `metaProfiles.getCouplingPairsHint()` | Prescribes coupling topology directly instead of letting it emerge from runtime correlation. |
+
 ### Three-scope custom registries
 
 `metaProfileDefinitions.loadCustomProfiles()` reads `*.json` from `.hme/metaprofiles/` (project-local) at module load. Custom profiles register new names or override built-in axis values without forking the codebase. Each file is a single profile object using the same schema (including `inherits` / `compose`).
