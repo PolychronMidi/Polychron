@@ -100,9 +100,15 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
     # (rm -f, sed -n, cat for default fallback, date for timestamp, disown),
     # logger appends (>> log), source guards. These are the noise that made
     # the broad audit non-actionable.
+    # Note: `\|\|\s*echo` was deliberately DROPPED from BENIGN after peer
+    # review caught that `cat FILE 2>/dev/null || echo 0` is the exact
+    # safety-belt-as-default pattern the audit exists to surface — a
+    # transient read failure converts silently to the default value.
+    # If a specific site is truly benign, it should carry an explicit
+    # `silent-ok: <reason>` annotation, not be silently suppressed here.
     BENIGN = re.compile(
         r"\b(mkdir\s+-p|kill\s+-0|rm\s+-f|sed\s+-n|disown|source\s+|cat\s+\"\$"
-        r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log|\|\|\s*echo|\|\|\s*true)\b"
+        r"|date\s+-u|>>\s*[\"']?[\w/.-]+\.log|\|\|\s*true)\b"
     )
     for i, line in enumerate(lines, 1):
         if "2>/dev/null" not in line:
