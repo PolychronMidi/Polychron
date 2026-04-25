@@ -51,7 +51,7 @@ _DISPATCH_THREAD_COUNT_TTL_SEC = 24 * 3600
 
 def _count_file() -> str | None:
     root = os.environ.get("PROJECT_ROOT", "")
-    return os.path.join(root, "tmp", "hme-thread-call-count") if root else None
+    return os.path.join(root, "tmp", "hme-buddy-call-count") if root else None
 
 
 def _hydrate_call_count() -> None:
@@ -125,9 +125,19 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
     project_root = os.environ.get("PROJECT_ROOT", "")
     if not project_root:
         return None
-    sid_file = os.path.join(project_root, "tmp", "hme-thread.sid")
-    if not os.path.isfile(sid_file):
+    # BUDDY_SYSTEM gate (default on). When .env sets BUDDY_SYSTEM=0 the
+    # buddy is intentionally disabled even if a stale sid file exists.
+    if os.environ.get("BUDDY_SYSTEM", "1") == "0":
         return None
+    sid_file = os.path.join(project_root, "tmp", "hme-buddy.sid")
+    # Back-compat: read the legacy hme-thread.sid path if present and
+    # the new path isn't (one-time fallback during the rename window).
+    if not os.path.isfile(sid_file):
+        legacy = os.path.join(project_root, "tmp", "hme-thread.sid")
+        if os.path.isfile(legacy):
+            sid_file = legacy
+        else:
+            return None
     try:
         with open(sid_file, "r") as f:
             sid = f.read().strip()
