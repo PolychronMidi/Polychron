@@ -8,12 +8,14 @@ TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
 WATERMARK="$PROJECT/tmp/hme-errors.lastread"
 
 if [ -f "$ERROR_LOG" ]; then
-  # Strip whitespace + default to 0 on empty/missing files. `wc -l` on
-  # some builds emits leading whitespace (`   123`), and an existing-but-
-  # empty TURNSTART/WATERMARK makes `cat` succeed with "", which breaks
-  # every downstream integer test ([ "" -gt N ] → "integer expression
-  # expected", silently aborting the block). The `${VAR:-0}` pattern
-  # after capture + `tr` to strip whitespace handles both classes.
+  # silent-ok: default-on-missing is load-bearing and documented. The
+  # turnstart/watermark state files may legitimately not be present on
+  # first run or after a manual state wipe; defaulting to 0 produces
+  # correct behavior (first error this turn counts as "new"). A
+  # permission-flap on a populated state file is rare and would
+  # re-surface on the next turn via the watermark-lag branch below.
+  # `wc -l` variant-whitespace stripped via tr; empty-string case
+  # handled by the ${VAR:-0} fallback after capture.
   TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
   TOTAL=${TOTAL:-0}
   TURN_START_LINE=$(cat "$TURNSTART" 2>/dev/null | tr -d ' \t\n' || echo 0)
