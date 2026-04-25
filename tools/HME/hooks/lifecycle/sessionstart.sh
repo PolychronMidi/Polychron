@@ -8,8 +8,12 @@ source "$HOOKS_DIR/../helpers/_nexus.sh"
 
 PROJECT="$PROJECT_ROOT"
 
-# Failfast: verify all hook scripts are executable before any run
+# Failfast: verify all hook scripts are executable before any run.
+# Derive the project-relative path of HOOKS_DIR so the chmod hint points
+# at the actual file location, not a hardcoded `tools/HME/hooks/` (which
+# is wrong when HOOKS_DIR resolves to lifecycle/, pretooluse/, etc.).
 ERROR_LOG="${PROJECT}/log/hme-errors.log"
+HOOKS_DIR_REL="${HOOKS_DIR#${PROJECT}/}"
 BROKEN_HOOKS=()
 for hook in "$HOOKS_DIR"/*.sh; do
   name="$(basename "$hook")"
@@ -20,7 +24,7 @@ if [[ "${#BROKEN_HOOKS[@]}" -gt 0 ]]; then
   TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   mkdir -p "$(dirname "$ERROR_LOG")"
   for name in "${BROKEN_HOOKS[@]}"; do
-    echo "[$TS] [hooks] FAIL: $name not executable — run: chmod +x tools/HME/hooks/$name" >> "$ERROR_LOG"
+    echo "[$TS] [hooks] FAIL: $name not executable — run: chmod +x ${HOOKS_DIR_REL}/$name" >> "$ERROR_LOG"
   done
   echo "🚨 LIFESAVER: ${#BROKEN_HOOKS[@]} hook(s) not executable: ${BROKEN_HOOKS[*]} — logged to hme-errors.log" >&2
 fi
