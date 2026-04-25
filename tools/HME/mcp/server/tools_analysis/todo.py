@@ -51,7 +51,7 @@ _TODO_FILE = os.path.join(
     ENV.require("PROJECT_ROOT"), "tools", "HME", "KB", "todos.json"
 )
 _GRAPH_FILE = os.path.join(
-    ENV.require("PROJECT_ROOT"), "metrics", "todo-graph.md"
+    ENV.require("PROJECT_ROOT"), "output", "metrics", "todo-graph.md"
 )
 _todo_lock = threading.RLock()
 
@@ -220,7 +220,7 @@ def _format_todos_mermaid(todos: list) -> str:
 
 
 def _write_graph_file(todos: list) -> None:
-    """E8: render the mermaid graph to metrics/todo-graph.md on every save.
+    """E8: render the mermaid graph to output/metrics/todo-graph.md on every save.
     Gives the human a live view of the agent's current work tree."""
     graph = _format_todos_mermaid(todos)
     os.makedirs(os.path.dirname(_GRAPH_FILE), exist_ok=True)
