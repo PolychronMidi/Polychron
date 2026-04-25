@@ -54,12 +54,38 @@ const MARKERS = {
 
   // Footer markers added by enrichment middleware. context_budget.js
   // tracks which fired by regex-matching these in tool result content.
-  HME_DIR: { producer: 'dir_context.js', sentinel: '[HME dir:' },
-  HME_READ: { producer: 'read_context.js', sentinel: '[HME:read]' },
-  HME_EDIT: { producer: 'edit_context.js', sentinel: '[HME:edit]' },
-  HME_NEIGHBORHOOD: { producer: 'grep_glob_neighborhood.js', sentinel: '[HME neighborhood' },
-  HME_BG_DOMINANCE: { producer: 'background_dominance.js', sentinel: '[hme bg-dominance]' },
-  ERR_FOOTER: { producer: 'bash_enrichment.js', sentinel: '[err]' },
+  // Full repo-relative paths are required so audit-marker-registry.py
+  // can grep-check the sentinel literal against each producer source.
+  HME_DIR: {
+    producer: 'tools/HME/proxy/middleware/dir_context.js',
+    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    sentinel: '[HME dir:',
+  },
+  HME_READ: {
+    producer: 'tools/HME/proxy/middleware/read_context.js',
+    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    sentinel: '[HME:read]',
+  },
+  HME_EDIT: {
+    producer: 'tools/HME/proxy/middleware/edit_context.js',
+    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    sentinel: '[HME:edit]',
+  },
+  HME_NEIGHBORHOOD: {
+    producer: 'tools/HME/proxy/middleware/grep_glob_neighborhood.js',
+    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    sentinel: '[HME neighborhood',
+  },
+  HME_BG_DOMINANCE: {
+    producer: 'tools/HME/proxy/middleware/background_dominance.js',
+    consumers: [],
+    sentinel: '[hme bg-dominance]',
+  },
+  ERR_FOOTER: {
+    producer: 'tools/HME/proxy/middleware/bash_enrichment.js',
+    consumers: ['tools/HME/proxy/middleware/context_budget.js'],
+    sentinel: '[err]',
+  },
 
   // Auto-brief from PreToolUse Edit/Write hook
   HME_AUTO_BRIEF: {

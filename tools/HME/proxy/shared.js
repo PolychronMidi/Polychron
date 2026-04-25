@@ -63,18 +63,31 @@ function mtimeCache({ ttlMs = 0 } = {}) {
   const _entries = new Map();
   return {
     get(absPath, loader) {
-      let curMtime = 0;
-      try { curMtime = fsForCache.statSync(absPath).mtimeMs; }
+      // Pre-stat: only used to detect whether the cached entry is stale,
+      // not as the mtime we STORE. Storing a pre-loader mtime created a
+      // TOCTOU hole — if the file was rewritten between the stat and the
+      // loader's read, cache would record an old mtime against new
+      // content. Post-stat below pins to the version the loader saw.
+      let preMtime = 0;
+      try { preMtime = fsForCache.statSync(absPath).mtimeMs; }
       catch (_) { /* file may not exist; loader will handle */ }
       const now = Date.now();
       const e = _entries.get(absPath);
       if (e
-          && e.mtime === curMtime
+          && e.mtime === preMtime
+          && preMtime !== 0 // never trust a missing-file stat as a cache match
           && (ttlMs === 0 || now - e.loadedAt < ttlMs)) {
         return e.value;
       }
       const value = loader();
-      _entries.set(absPath, { value, mtime: curMtime, loadedAt: now });
+      // Post-stat: capture mtime AFTER loader has finished reading. If
+      // the file is rewritten between loader-read and this stat, the
+      // cache will briefly under-serve (next get re-loads), which is
+      // the safe direction vs serving known-stale content.
+      let postMtime = 0;
+      try { postMtime = fsForCache.statSync(absPath).mtimeMs; }
+      catch (_) { /* file may have been deleted; store 0 so next get re-loads */ }
+      _entries.set(absPath, { value, mtime: postMtime, loadedAt: now });
       return value;
     },
     invalidate(absPath) { _entries.delete(absPath); },
