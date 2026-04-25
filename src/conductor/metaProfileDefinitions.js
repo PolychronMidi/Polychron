@@ -22,6 +22,15 @@ metaProfileDefinitions = (() => {
     phase:    { lockBias: 'number', layerIndependence: 'number' },
   };
 
+  // Optional axis: composerFamilies is a free-form map of family-name to
+  // weight multiplier. NOT in _AXIS_SCHEMAS because its keys are dynamic
+  // (any family declared in COMPOSER_FAMILIES is valid). When present,
+  // factoryFamilies.getComposerFamiliesOrFail multiplies its computed
+  // weight by composerFamilies[familyName] (default 1.0). Lets a
+  // metaprofile actively bias which composers play, not just how loud --
+  // the substrate-level move that pushes metaprofiles past decoration.
+  const _COMPOSER_FAMILIES_KEY = 'composerFamilies';
+
   const _TENSION_SHAPES = ['flat', 'ascending', 'descending', 'arch', 'sawtooth', 'erratic'];
   const _SECTION_TYPES  = ['intro', 'opening', 'exposition', 'development', 'climax', 'resolution', 'conclusion', 'coda'];
 
@@ -90,6 +99,14 @@ metaProfileDefinitions = (() => {
       coupling: { strength: [0.7, 1.0], density: 0.50, antagonismThreshold: -0.15 },
       trust: { concentration: 0.3, dominantCap: 1.4, starvationFloor: 0.4 },
       tension: { shape: 'erratic', floor: 0.20, ceiling: 0.95 },
+      // Substrate-level: bias the composer pool toward developmental and
+      // rhythmic-drive families; dampen diatonicCore. Pair with conductor
+      // profiles that match the chaotic character; antipathic to settled
+      // ones. Coupling-topology hint: chaotic favors entropy-bearing pairs.
+      composerFamilies: { development: 1.6, rhythmicDrive: 1.4, tonalExploration: 1.2, harmonicMotion: 0.9, diatonicCore: 0.6 },
+      conductorAffinity: ['varied', 'chaotic'],
+      conductorAntipathy: ['atmospheric', 'meditative'],
+      couplingPairs: [['density', 'entropy'], ['flicker', 'entropy'], ['tension', 'flicker']],
       // Density target as a stochastic distribution -- per-tick samples
       // give organic micro-jitter without manual flicker code. cv ~0.08 =
       // moderate variance; controllers wanting samples call
@@ -124,6 +141,14 @@ metaProfileDefinitions = (() => {
       phase: { lockBias: 0.8, layerIndependence: 0.2 },
       sectionAffinity: ['intro', 'conclusion', 'coda'],
       minDwellSections: 3,
+      // Substrate-level: bias toward harmonic motion and diatonic core;
+      // dampen rhythmic-drive and development. Disable antagonism bridges
+      // (no conflict-driven pair formation). Conductor pairing favors
+      // ambient profiles.
+      composerFamilies: { harmonicMotion: 1.4, diatonicCore: 1.3, tonalExploration: 1.0, development: 0.6, rhythmicDrive: 0.5 },
+      conductorAffinity: ['atmospheric', 'meditative'],
+      conductorAntipathy: ['chaotic', 'varied'],
+      disableControllers: ['antagonism_bridges'],
     },
 
     volatile: {
@@ -161,6 +186,13 @@ metaProfileDefinitions = (() => {
       tension: { shape: 'arch', floor: 0.35, ceiling: 0.85 },
       energy: { densityTarget: 0.65, flickerRange: [0.05, 0.18] },
       phase: { lockBias: 0.7, layerIndependence: 0.3 },
+      // Substrate-level: anthemic biases harmonic motion and diatonic core
+      // for the locked-step shared peak character. Pairs with structurally
+      // strong conductor profiles. Coupling pairs favor density-tension and
+      // tension-flicker for a coordinated build.
+      composerFamilies: { harmonicMotion: 1.5, diatonicCore: 1.4, rhythmicDrive: 1.2, development: 0.9, tonalExploration: 0.8 },
+      conductorAffinity: ['varied', 'atmospheric'],
+      couplingPairs: [['density', 'tension'], ['tension', 'flicker']],
       sectionAffinity: ['climax', 'resolution'],
       minDwellSections: 2,
     },
@@ -274,6 +306,12 @@ metaProfileDefinitions = (() => {
     // Reactive triggers -- optional. Inherited from parent if not declared.
     if (raw.triggers !== undefined) out.triggers = raw.triggers;
     else if (resolvedSoFar[raw.inherits] && resolvedSoFar[raw.inherits].triggers) out.triggers = resolvedSoFar[raw.inherits].triggers;
+    // Substrate-level optional fields -- same inheritance semantics as
+    // triggers (use child if declared, parent otherwise).
+    for (const k of ['composerFamilies', 'conductorAffinity', 'conductorAntipathy', 'layerVariants', 'sectionArc', 'disableControllers', 'couplingPairs']) {
+      if (raw[k] !== undefined) out[k] = raw[k];
+      else if (resolvedSoFar[raw.inherits] && resolvedSoFar[raw.inherits][k] !== undefined) out[k] = resolvedSoFar[raw.inherits][k];
+    }
     return out;
   }
 
@@ -285,6 +323,72 @@ metaProfileDefinitions = (() => {
   //   }
   // op in {>, <, >=, <=, ==}. Signal is any key in the snapshot passed to
   // evaluateTriggers. Priority is a non-negative integer (default 50).
+  // Validate the optional substrate-level fields. Each one is independently
+  // optional; profile remains valid if all are absent.
+  function _validateOptionalSubstrate(name, profile) {
+    // composerFamilies: { familyName: weightMultiplier } -- biases composer
+    // pool selection.
+    if (profile.composerFamilies !== undefined) {
+      V.assertPlainObject(profile.composerFamilies, `${name}.composerFamilies`);
+      for (const [k, v] of Object.entries(profile.composerFamilies)) {
+        V.assertNonEmptyString(k, `${name}.composerFamilies key`);
+        V.assertFinite(v, `${name}.composerFamilies.${k}`);
+        if (v < 0) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" composerFamilies.${k} must be >= 0`);
+        }
+      }
+    }
+    // conductorAffinity / conductorAntipathy: string[] -- preferred / avoided
+    // conductor profile names.
+    for (const k of ['conductorAffinity', 'conductorAntipathy']) {
+      if (profile[k] !== undefined) {
+        V.assertArray(profile[k], `${name}.${k}`);
+        for (let i = 0; i < profile[k].length; i++) {
+          V.assertNonEmptyString(profile[k][i], `${name}.${k}[${i}]`);
+        }
+      }
+    }
+    // layerVariants: { L1: profileName, L2: profileName } -- per-layer
+    // metaprofile assignment when this profile activates.
+    if (profile.layerVariants !== undefined) {
+      V.assertPlainObject(profile.layerVariants, `${name}.layerVariants`);
+      for (const [layer, variant] of Object.entries(profile.layerVariants)) {
+        if (layer !== 'L1' && layer !== 'L2') {
+          throw new Error(`metaProfileDefinitions: profile "${name}" layerVariants key "${layer}" must be 'L1' or 'L2'`);
+        }
+        V.assertNonEmptyString(variant, `${name}.layerVariants.${layer}`);
+      }
+    }
+    // sectionArc: string[] -- override the structural section sequence.
+    if (profile.sectionArc !== undefined) {
+      V.assertArray(profile.sectionArc, `${name}.sectionArc`);
+      const known = new Set(_SECTION_TYPES);
+      for (let i = 0; i < profile.sectionArc.length; i++) {
+        V.assertInSet(profile.sectionArc[i], known, `${name}.sectionArc[${i}]`);
+      }
+    }
+    // disableControllers: string[] -- subtractive subsystem silencing.
+    if (profile.disableControllers !== undefined) {
+      V.assertArray(profile.disableControllers, `${name}.disableControllers`);
+      for (let i = 0; i < profile.disableControllers.length; i++) {
+        V.assertNonEmptyString(profile.disableControllers[i], `${name}.disableControllers[${i}]`);
+      }
+    }
+    // couplingPairs: [[axisA, axisB], ...] -- prescribed coupling topology.
+    if (profile.couplingPairs !== undefined) {
+      V.assertArray(profile.couplingPairs, `${name}.couplingPairs`);
+      for (let i = 0; i < profile.couplingPairs.length; i++) {
+        const pair = profile.couplingPairs[i];
+        V.assertArray(pair, `${name}.couplingPairs[${i}]`);
+        if (pair.length !== 2) {
+          throw new Error(`metaProfileDefinitions: profile "${name}" couplingPairs[${i}] must have length 2, got ${pair.length}`);
+        }
+        V.assertNonEmptyString(pair[0], `${name}.couplingPairs[${i}][0]`);
+        V.assertNonEmptyString(pair[1], `${name}.couplingPairs[${i}][1]`);
+      }
+    }
+  }
+
   function _validateTriggers(name, triggers) {
     if (triggers === undefined || triggers === null) return;
     V.assertPlainObject(triggers, `${name}.triggers`);
@@ -485,6 +589,11 @@ metaProfileDefinitions = (() => {
 
     // Reactive triggers -- optional. Validates schema if present.
     _validateTriggers(name, profile.triggers);
+
+    // Substrate-level optional fields. Each one moves metaprofiles from
+    // "scaling layer" toward "structural layer" by declaring something
+    // the controllers actively consult, not just multiply.
+    _validateOptionalSubstrate(name, profile);
 
     // Derived: coupling midpoint -- precomputed so scaleFactor('coupling','midpoint') is uniform.
     // Skip when strength is an envelope (non-array shape); in that case

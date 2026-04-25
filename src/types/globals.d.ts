@@ -1448,6 +1448,13 @@ declare var metaProfiles: {
   progressedScaleFactor(axis: string, key: string): number;
   setActivationProgress(p: number): void;
   getActivationProgress(): number;
+  getComposerFamilyWeight(familyName: string): number;
+  preferConductorProfile(name: string): boolean;
+  avoidConductorProfile(name: string): boolean;
+  getLayerVariant(layer: 'L1' | 'L2'): string | null;
+  getSectionArcOverride(): string[] | null;
+  isControllerDisabled(controllerName: string): boolean;
+  getCouplingPairsHint(): string[][] | null;
   list(): string[];
   bySection(sectionType: string): string[];
   getRegimeTargets(): { coherent: number; evolving: number; exploring: number } | null;

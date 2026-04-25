@@ -361,6 +361,64 @@ metaProfiles = (() => {
   function enableAxis(axisId)  { delete _disabled[axisId]; }
   function isAxisDisabled(axisId) { return Boolean(_disabled[axisId]); }
 
+  // ── Substrate-level accessors ──────────────────────────────────────
+  // These let consumers read the optional substrate fields the metaprofile
+  // may declare. Each returns a sensible default (no bias / no override)
+  // when the field is absent or no profile is active. Centralizing the
+  // safe-read here keeps consumer code simple.
+
+  // Composer family weight bias. Returns 1.0 when no profile active,
+  // no composerFamilies declared, or family not specifically biased.
+  function getComposerFamilyWeight(familyName) {
+    if (!activeProfile || !activeProfile.composerFamilies) return 1.0;
+    const v = activeProfile.composerFamilies[familyName];
+    return Number.isFinite(v) ? v : 1.0;
+  }
+
+  // Conductor profile affinity: returns true when the active profile
+  // explicitly favors / dispreferes the given conductor profile name.
+  // Default false for both -- absence of opinion doesn't mean opposition.
+  function preferConductorProfile(name) {
+    if (!activeProfile || !Array.isArray(activeProfile.conductorAffinity)) return false;
+    return activeProfile.conductorAffinity.includes(name);
+  }
+  function avoidConductorProfile(name) {
+    if (!activeProfile || !Array.isArray(activeProfile.conductorAntipathy)) return false;
+    return activeProfile.conductorAntipathy.includes(name);
+  }
+
+  // Per-layer metaprofile variant. When the active profile declares
+  // layerVariants: { L1: name, L2: name }, this returns the variant name
+  // for the given layer (or null if not declared). Layer-aware controllers
+  // can resolve a layer-specific axis value via this -- the smaller-
+  // footprint version of full per-layer profile activation.
+  function getLayerVariant(layer) {
+    if (!activeProfile || !activeProfile.layerVariants) return null;
+    return activeProfile.layerVariants[layer] || null;
+  }
+
+  // Section arc override: when declared, replaces the structural section
+  // sequence for this metaprofile's activation span.
+  function getSectionArcOverride() {
+    if (!activeProfile || !Array.isArray(activeProfile.sectionArc)) return null;
+    return activeProfile.sectionArc.slice();
+  }
+
+  // Controller enablement. Returns true when the active profile lists
+  // the given controller name in disableControllers.
+  function isControllerDisabled(controllerName) {
+    if (!activeProfile || !Array.isArray(activeProfile.disableControllers)) return false;
+    return activeProfile.disableControllers.includes(controllerName);
+  }
+
+  // Coupling-topology hint: prescribed pairs the active profile wants
+  // present, regardless of runtime correlation. Coupling controllers can
+  // augment / override their candidate set with these.
+  function getCouplingPairsHint() {
+    if (!activeProfile || !Array.isArray(activeProfile.couplingPairs)) return null;
+    return activeProfile.couplingPairs.map((p) => p.slice());
+  }
+
   // canSwitch(currentSection, candidateName) -- true when dwell allows a
   // switch to candidateName. Used by the section rotator before setActive.
   function canSwitch(currentSection, candidateName) {
@@ -412,6 +470,13 @@ metaProfiles = (() => {
     progressedScaleFactor,
     setActivationProgress,
     getActivationProgress,
+    getComposerFamilyWeight,
+    preferConductorProfile,
+    avoidConductorProfile,
+    getLayerVariant,
+    getSectionArcOverride,
+    isControllerDisabled,
+    getCouplingPairsHint,
     getRegimeTargets,
     getCouplingRange,
     getTensionArc,
