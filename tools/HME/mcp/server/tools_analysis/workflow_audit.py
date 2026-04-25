@@ -529,27 +529,24 @@ def what_did_i_forget(changed_files: str) -> str:
     _diff_langs = _detect_languages(diff_context, changed_files)
 
     def _render_probes() -> str:
-        # The probe classes are FRAMING REFERENCES, not a checklist to satisfy.
-        # The empirically-strongest framing during the 100-iter sweep was
-        # promise-vs-delivers (compare what the docstring/name implies vs
-        # what the code does); probe classes are a fallback grammar for
-        # describing what KIND of divergence you found, not "find one of
-        # these." Without this nuance the model invents findings to match
-        # template categories — caught repeatedly during the sweep.
+        # Peer-review (iter 109) caught that lettering the lenses + adding
+        # "in priority order" + "Strongest tier-1 signal" superlatives
+        # reconstituted the exact checklist shape the comment was trying
+        # to dissolve. Reviewers felt obligated to open/close each lens
+        # even when only one applied. Collapsed to one inline sentence
+        # naming the lens kinds WITHOUT ordering or gates; categories
+        # below continue as vocabulary. Principle: vocabulary describes,
+        # gates enumerate — keep them distinct.
         lines = [
-            "REVIEW LENS (in priority order):",
-            "  A. PROMISE-VS-DELIVERS — does the file's docstring/comments/name "
-            "imply behavior that the code does NOT actually deliver? Strongest tier-1 signal.",
-            "  B. CALLER-CONTRACT — does any change break what an existing caller "
-            "assumes (return shape, exception type, side effect order)?",
-            "  C. SAFETY-BELT VS TELEMETRY — is a broad-except / silent fallback "
-            "swallowing a signal a load-bearing check needed to surface?",
+            "A tier-1 finding is a quote+divergence pair. The divergence is "
+            "typically one of: a promise the docstring/name makes that the "
+            "code doesn't deliver; a caller-contract the change breaks; or "
+            "a silent fallback that swallows a load-bearing signal. If you "
+            "find no quote+divergence pair, say 'no tier-1 issues' — that "
+            "is the calibrated answer. Do NOT invent one to match the "
+            "categories below; they are descriptive grammar.",
             "",
-            "If you find no tier-1 issue against any lens, say 'no tier-1 issues' "
-            "— that is the calibrated answer. Do NOT invent a finding to match "
-            "the categories below; they are descriptive grammar, not a checklist.",
-            "",
-            "Categories (use as VOCABULARY when describing a real divergence):",
+            "Categories (vocabulary for describing a real divergence):",
         ]
         for i, (desc, lang_hints) in enumerate(_PROBE_CLASSES, 1):
             lines.append(f"  {i}. {desc}")
