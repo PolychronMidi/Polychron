@@ -24,6 +24,40 @@ from ..warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
 
 logger = logging.getLogger("HME")
 
+
+# Pattern D fix (peer-review iter 131): the prior "is this warm cache
+# fresh" check compared `_warm_ctx_kb_ver.get(model)` against the
+# shared mutable attribute `ctx._kb_version`. The attribute had no
+# fencing, no monotonic-advance guarantee, and a `reload-engines` reset
+# to 0 silently re-keyed every cache as "fresh." Replace with a
+# file-mtime check against the actual KB Lance store so freshness is
+# anchored to filesystem truth rather than a process-local int.
+def _warm_ctx_fresh_p(model: str) -> bool:
+    """True if model's warm cache is fresh against the KB stores on disk.
+
+    Compares `_warm_ctx_ts[model]` (when the cache was last touched)
+    to the max mtime of the KB Lance files. Cache is fresh iff it was
+    touched at or after the most recent KB write. Falls back to the
+    legacy `_kb_version` attribute when KB files are unavailable.
+    """
+    if model not in _warm_ctx:
+        return False
+    kb_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "KB")
+    kb_max_mtime = 0.0
+    for name in ("knowledge.lance", "code_chunks.lance", "symbols.lance"):
+        p = os.path.join(kb_root, name)
+        try:
+            if os.path.exists(p):
+                mt = os.path.getmtime(p)
+                if mt > kb_max_mtime:
+                    kb_max_mtime = mt
+        except OSError:
+            pass
+    if kb_max_mtime == 0.0:
+        # Fallback: legacy attr check when KB files unavailable
+        return _warm_ctx_kb_ver.get(model) == getattr(ctx, "_kb_version", 0)
+    return _warm_ctx_ts.get(model, 0.0) >= kb_max_mtime
+
 _lazy_prime_attempted = False
 _priming_in_progress = _threading.Event()
 
@@ -237,7 +271,10 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
     from .synthesis_inference import _local_think
     kb_ver = getattr(ctx, "_kb_version", 0)
     if not force:
-        if _warm_ctx_kb_ver.get(model) == kb_ver and model in _warm_ctx:
+        # Pattern D: file-mtime check rather than kb_ver attribute
+        # equality. Catches drift the attribute can miss (engine
+        # reload, attribute reset).
+        if _warm_ctx_fresh_p(model):
             logger.debug(f"warm ctx already fresh: {model} (kb_ver={kb_ver})")
             return True
         if _load_warm_cache(model):
@@ -422,7 +459,7 @@ def _prime_all_gpus() -> str:
         for model in active_models:
             results[model] = _prime_warm_context(model)
         elapsed = _time.time() - t0
-        cached = sum(1 for m in results if m in _warm_ctx and _warm_ctx_kb_ver.get(m) == getattr(ctx, "_kb_version", 0))
+        cached = sum(1 for m in results if _warm_ctx_fresh_p(m))
         parts = [f"Warm context priming ({elapsed:.1f}s, {restored} cached / {cached} fresh):"]
         for model, ok in results.items():
             ctx_len = len(_warm_ctx.get(model, []))
@@ -457,7 +494,7 @@ def warm_context_status() -> dict:
             status[model] = {
                 "primed": True, "tokens": current,
                 "age_s": round(now - _warm_ctx_ts.get(model, 0), 1),
-                "kb_fresh": _warm_ctx_kb_ver.get(model) == getattr(ctx, "_kb_version", 0),
+                "kb_fresh": _warm_ctx_fresh_p(model),
                 "disk_cached": os.path.exists(cache_file),
                 "checkpoint": os.path.exists(ckpt_file),
                 "cache_backend": "tmpfs" if any(os.path.ismount(tp) for tp in _TMPFS_PATHS) else "disk",
