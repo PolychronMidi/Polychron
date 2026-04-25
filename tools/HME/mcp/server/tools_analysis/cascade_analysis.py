@@ -44,11 +44,16 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
     the post-pipeline reconciler can later compare against fingerprint shifts.
     Best-effort; never raises.
 
-    Phase 6.1 addition: `injected` flag marks whether this prediction was
-    surfaced to the Evolver via proxy injection BEFORE the edit was made.
-    Injected predictions are *influence*, not *accuracy* — the Evolver
-    acted knowing the prediction, so confirmation is partly self-fulfilling.
-    The reconciler splits these into separate buckets.
+    NOTE on `injected` flag: the original design (Phase 6.1) called for a
+    proxy-injection path that surfaced predictions to the Evolver BEFORE
+    the edit was made, with the `injected` bucket separating influence
+    from accuracy. That injection path was never wired up in this codebase
+    — every call site below passes the default `injected=False`, and no
+    middleware mutates the flag. The parameter is preserved so the schema
+    of hme-predictions.jsonl stays compatible if injection lands later,
+    but readers of the predictions log should NOT interpret the absence
+    of `injected=True` records as evidence of low-influence reasoning;
+    interpret it as "injection feature unwired."
     """
     try:
         import json as _json
@@ -81,16 +86,34 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
             logger.debug(f"LIFESAVER register failed: {_life_err}")
 
 
+def _stale_or_missing(cache_key: str, path: str) -> bool:
+    """Return True if the cached entry is missing OR the source file's
+    mtime is newer than what we last loaded. Replaces the
+    invalidate_cache() pattern that had no actual subscribers — relying
+    on someone to call invalidate meant the cache served stale graphs
+    indefinitely from first load until process restart.
+    """
+    if cache_key not in _CACHE:
+        return True
+    try:
+        cur_mtime = os.path.getmtime(path)
+    except OSError:
+        return False  # file gone — keep last-known-good
+    cached_mtime = _CACHE.get(cache_key + ":_mtime", 0)
+    return cur_mtime > cached_mtime
+
+
 def _load_dep_graph() -> dict:
-    if "dep" in _CACHE:
-        return _CACHE["dep"]
     path = os.path.join(ctx.PROJECT_ROOT, DEP_GRAPH_REL)
+    if not _stale_or_missing("dep", path):
+        return _CACHE["dep"]
     if not os.path.exists(path):
         _CACHE["dep"] = {"nodes": {}, "edges": []}
         return _CACHE["dep"]
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
+        _CACHE["dep:_mtime"] = os.path.getmtime(path)
     except (OSError, json.JSONDecodeError):
         data = {"nodes": {}, "edges": []}
     _CACHE["dep"] = data
@@ -98,15 +121,16 @@ def _load_dep_graph() -> dict:
 
 
 def _load_feedback_graph() -> dict:
-    if "fb" in _CACHE:
-        return _CACHE["fb"]
     path = os.path.join(ctx.PROJECT_ROOT, FEEDBACK_GRAPH_REL)
+    if not _stale_or_missing("fb", path):
+        return _CACHE["fb"]
     if not os.path.exists(path):
         _CACHE["fb"] = {}
         return _CACHE["fb"]
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
+        _CACHE["fb:_mtime"] = os.path.getmtime(path)
     except (OSError, json.JSONDecodeError):
         data = {}
     _CACHE["fb"] = data
@@ -114,8 +138,10 @@ def _load_feedback_graph() -> dict:
 
 
 def invalidate_cache() -> None:
-    """Force reloads of the graphs on next access. Called by the file
-    watcher when dependency-graph.json rebuilds."""
+    """Force reloads of the graphs on next access. Retained for
+    callers that explicitly know they invalidated upstream state, but
+    no longer load-bearing — _stale_or_missing() now self-invalidates
+    via mtime so absent subscribers don't strand stale data."""
     _CACHE.clear()
 
 
