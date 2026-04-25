@@ -26,7 +26,7 @@ const RESULTS_DIR = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-results');
 const DONE_DIR = path.join(QUEUE_DIR, 'done');
 
 function _ensureDir(p) {
-  try { fs.mkdirSync(p, { recursive: true }); } catch (_e) { /* ignore */ }
+  try { fs.mkdirSync(p, { recursive: true }); } catch (_e) { /* silent-ok: mkdir recursive — a failure here surfaces loudly on the next fs.writeFileSync in RESULTS_DIR */ }
 }
 
 function _textOf(toolResult) {
@@ -80,7 +80,7 @@ module.exports = {
     // the caller poll indefinitely with no diagnostic.
     const queuePath = path.join(QUEUE_DIR, `${reqId}.json`);
     const donePath = path.join(DONE_DIR, `${reqId}.json`);
-    try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* ok if absent */ }
+    try { _ensureDir(DONE_DIR); fs.renameSync(queuePath, donePath); } catch (_e) { /* silent-ok: queue entry may legitimately be absent (already moved by a duplicate capture, or the result was synthesized without a queue entry) — the result file write at line 60 is the authoritative state */ }
     ctx.emit({
       event: text ? 'subagent_bridge_result_captured' : 'subagent_bridge_empty_result',
       req_id: reqId,

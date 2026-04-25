@@ -96,7 +96,7 @@ function _firstDocLine(filePath) {
       // Always close — readSync can throw on raced symlinks / EIO and
       // the previous code leaked the fd in that path. Across thousands
       // of grep enrichments this exhausts the proxy's fd budget.
-      try { fs.closeSync(fd); } catch (_) { /* ignore close-after-read errors */ }
+      try { fs.closeSync(fd); } catch (_) { /* silent-ok: close-after-read — fd was successfully opened, so close is bookkeeping; the read result is already in `buf`. A close failure here (rare: ENOSPC on metadata update) can't corrupt the already-read buffer */ }
     }
     const head = buf.toString('utf8', 0, n);
     // Python triple-quoted docstring at top
@@ -118,6 +118,10 @@ function _firstDocLine(filePath) {
     }
     return '';
   } catch (_e) {
+    /* silent-ok: best-effort enrichment — _firstDocLine is a footer
+       detail; if the file can't be opened/read, returning '' just
+       means this one enrichment hint is missing, not that the
+       middleware failed. Caller renders the footer either way. */
     return '';
   }
 }
@@ -127,6 +131,9 @@ function _buildDirSummary(absDir, budgetBytes) {
   try {
     entries = fs.readdirSync(absDir, { withFileTypes: true });
   } catch (_e) {
+    /* silent-ok: best-effort enrichment — missing dir / permission
+       flap on a stat path returns null, caller skips the dir
+       summary. No safety contract depends on this. */
     return null;
   }
   const files = entries

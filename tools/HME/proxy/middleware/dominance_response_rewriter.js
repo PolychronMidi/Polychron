@@ -58,12 +58,19 @@ const DOMINANCE_ENABLED = process.env.HME_DOMINANCE === '1';
 // Demand-register markers the gates emit. When seen in a Stop hook
 // response, the dominance layer replaces the block with a compact
 // observation card instead of passing the imperative through.
+// stop.sh output is JSON-encoded (`{"decision":"block","reason":"NEXUS — …"}`),
+// so marker phrases live INSIDE a quoted string, not at line-start.
+// Previous `^...` multi-line anchors never matched against real stop.sh
+// output — four of the five demand patterns were effectively dead code,
+// letting demand-register imperatives pass through to the agent
+// unchanged despite HME_DOMINANCE=1. Caught by contract test + peer
+// review. Drop the line-start anchors; phrases are distinctive enough.
 const DEMAND_MARKERS = [
   /🚨 LIFESAVER/,
-  /^NEXUS — \d+ unreviewed edit/m,
-  /^AUTO-COMPLETENESS INJECT/m,
-  /^EXHAUST PROTOCOL VIOLATION/m,
-  /^STOP\. Re-read CLAUDE\.md/m,
+  /NEXUS — \d+ unreviewed edit/,
+  /AUTO-COMPLETENESS INJECT/,
+  /EXHAUST PROTOCOL VIOLATION/,
+  /STOP\. Re-read CLAUDE\.md/,
 ];
 
 // Translate each demand into a reveal-register synopsis. Keeps the
