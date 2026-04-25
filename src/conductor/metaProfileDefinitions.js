@@ -350,6 +350,25 @@ metaProfileDefinitions = (() => {
       && Object.prototype.hasOwnProperty.call(v, 'to');
   }
 
+  function _isDistribution(v) {
+    if (v === null || v === undefined) return false;
+    if (Array.isArray(v)) return false;
+    if (Object.getPrototypeOf(v) !== Object.prototype && Object.getPrototypeOf(v) !== null) return false;
+    return Object.prototype.hasOwnProperty.call(v, 'mean')
+      && Object.prototype.hasOwnProperty.call(v, 'std');
+  }
+
+  function _validateDistribution(profileName, axis, key, value) {
+    V.assertFinite(value.mean, `${profileName}.${axis}.${key}.mean`);
+    V.assertFinite(value.std, `${profileName}.${axis}.${key}.std`);
+    if (value.std < 0) {
+      throw new Error(`metaProfileDefinitions: profile "${profileName}" axis "${axis}.${key}" std must be >= 0, got ${value.std}`);
+    }
+    if (value.skew !== undefined) {
+      V.assertFinite(value.skew, `${profileName}.${axis}.${key}.skew`);
+    }
+  }
+
   function _validateNumberOrEnvelope(profileName, axis, key, value) {
     if (_isEnvelope(value)) {
       V.assertFinite(value.from, `${profileName}.${axis}.${key}.from`);
@@ -358,6 +377,8 @@ metaProfileDefinitions = (() => {
         V.assertInSet(value.curve, new Set(['linear', 'arch', 'ascending', 'descending']),
           `${profileName}.${axis}.${key}.curve`);
       }
+    } else if (_isDistribution(value)) {
+      _validateDistribution(profileName, axis, key, value);
     } else {
       V.assertFinite(value, `${profileName}.${axis}.${key}`);
     }
@@ -527,6 +548,104 @@ metaProfileDefinitions = (() => {
     return registered;
   }
 
+  // Embedding: turn a profile into a flat numeric vector spanning every
+  // axis-key. Distributions collapse to mean; envelopes to (from+to)/2;
+  // pair-typed keys contribute both endpoints. Strings (tension.shape)
+  // map through a fixed lookup so categorical info still participates.
+  // Used by distance() / nearest() to do vector-space reasoning over
+  // the profile registry. Excludes 'default' (it's the scaling neutral
+  // point, not a profile to compare against in normal operation).
+  const _SHAPE_INDEX = { flat: 0, ascending: 1, descending: 2, arch: 3, sawtooth: 4, erratic: 5 };
+  function _scalar(v) {
+    if (Array.isArray(v)) return (v[0] + v[1]) / 2;
+    if (v && typeof v === 'object') {
+      if ('mean' in v) return v.mean;
+      if ('from' in v && 'to' in v) {
+        const a = Array.isArray(v.from) ? (v.from[0] + v.from[1]) / 2 : v.from;
+        const b = Array.isArray(v.to)   ? (v.to[0]   + v.to[1])   / 2 : v.to;
+        return (a + b) / 2;
+      }
+    }
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      // Categorical -> ordinal. Currently only tension.shape uses this.
+      return _SHAPE_INDEX[v] !== undefined ? _SHAPE_INDEX[v] : 0;
+    }
+    return 0;
+  }
+
+  function axisVector(profileNameOrObject) {
+    const profile = typeof profileNameOrObject === 'string'
+      ? profiles[profileNameOrObject]
+      : profileNameOrObject;
+    if (!profile) {
+      throw new Error(`metaProfileDefinitions.axisVector: profile "${profileNameOrObject}" not found`);
+    }
+    const out = [];
+    for (const axis of Object.keys(_AXIS_SCHEMAS)) {
+      const section = profile[axis];
+      if (!section) {
+        for (const k of Object.keys(_AXIS_SCHEMAS[axis])) {
+          // missing axis still produces zero-padded entries to keep dims aligned
+          if (_AXIS_SCHEMAS[axis][k] === 'pair') { out.push(0); out.push(0); }
+          else { out.push(0); }
+        }
+        continue;
+      }
+      for (const k of Object.keys(_AXIS_SCHEMAS[axis])) {
+        const v = section[k];
+        if (_AXIS_SCHEMAS[axis][k] === 'pair') {
+          if (Array.isArray(v)) { out.push(v[0]); out.push(v[1]); }
+          else if (v && typeof v === 'object' && 'from' in v) {
+            const a = Array.isArray(v.from) ? v.from[0] : v.from;
+            const b = Array.isArray(v.to)   ? v.to[0]   : v.to;
+            out.push((a + (Array.isArray(v.from) ? v.from[1] : v.from)) / 2);
+            out.push((b + (Array.isArray(v.to)   ? v.to[1]   : v.to)) / 2);
+          } else { out.push(0); out.push(0); }
+        } else {
+          out.push(_scalar(v));
+        }
+      }
+    }
+    return out;
+  }
+
+  // Cosine distance in axis-vector space. 0 = identical direction,
+  // 2 = opposite. Both inputs accepted as profile name or vector.
+  function distance(a, b) {
+    const va = Array.isArray(a) ? a : axisVector(a);
+    const vb = Array.isArray(b) ? b : axisVector(b);
+    if (va.length !== vb.length) {
+      throw new Error(`metaProfileDefinitions.distance: vector length mismatch ${va.length} vs ${vb.length}`);
+    }
+    let dot = 0, na = 0, nb = 0;
+    for (let i = 0; i < va.length; i++) {
+      dot += va[i] * vb[i];
+      na  += va[i] * va[i];
+      nb  += vb[i] * vb[i];
+    }
+    if (na === 0 || nb === 0) return 1;
+    return 1 - dot / (m.sqrt(na) * m.sqrt(nb));
+  }
+
+  // Top-k nearest profiles to the named one, sorted ascending by cosine
+  // distance. Excludes self and 'default'. Used by rotators that prefer
+  // smooth transitions between similar profiles over random pivots.
+  function nearest(name, k) {
+    if (!profiles[name]) {
+      throw new Error(`metaProfileDefinitions.nearest: profile "${name}" not found`);
+    }
+    const target = axisVector(name);
+    const ranked = [];
+    for (const other of Object.keys(profiles)) {
+      if (other === name || other === 'default') continue;
+      ranked.push({ name: other, distance: distance(target, axisVector(other)) });
+    }
+    ranked.sort((a, b) => a.distance - b.distance);
+    const limit = V.optionalFinite(k, ranked.length);
+    return ranked.slice(0, limit);
+  }
+
   return {
     get(name) {
       return profiles[name] || null;
@@ -539,6 +658,9 @@ metaProfileDefinitions = (() => {
     },
     bySection,
     loadCustomProfiles,
+    axisVector,
+    distance,
+    nearest,
     // Surface for metaProfiles.evaluateTriggers -- internal helpers, not
     // intended for general consumption.
     _parseTriggerExpr,

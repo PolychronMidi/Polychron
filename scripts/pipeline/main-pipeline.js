@@ -59,6 +59,7 @@ const POST_COMPOSITION = [
   { label: 'golden-fingerprint',           cmd: 'node scripts/pipeline/golden-fingerprint.js' },
   { label: 'narrative-digest',             cmd: 'node scripts/pipeline/narrative-digest.js' },
   { label: 'compare-runs',                 cmd: 'node scripts/pipeline/compare-runs.js --against baseline' },
+  { label: 'metaprofile-sensitivity',      cmd: 'node scripts/metaprofile-sensitivity.js' },
   { label: 'diff-compositions',            cmd: 'node scripts/pipeline/diff-compositions.js --against baseline' },
   { label: 'visualize-feedback-graph',     cmd: 'node scripts/pipeline/visualize-feedback-graph.js' },
   { label: 'render-lite',                  cmd: 'bash scripts/render-lite.sh' },

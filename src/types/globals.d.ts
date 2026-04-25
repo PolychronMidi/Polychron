@@ -1413,6 +1413,9 @@ declare var metaProfileDefinitions: {
   all(): Record<string, Record<string, any>>;
   bySection(sectionType: string): string[];
   loadCustomProfiles(): string[];
+  axisVector(profileNameOrObject: string | Record<string, any>): number[];
+  distance(a: string | number[], b: string | number[]): number;
+  nearest(name: string, k?: number): Array<{ name: string; distance: number }>;
   _parseTriggerExpr(expr: string): { signal: string; op: string; value: any } | null;
   _evalTriggerExpr(parsed: { signal: string; op: string; value: any }, snapshot: Record<string, any>): boolean;
 };
@@ -1435,6 +1438,7 @@ declare var metaProfiles: {
   getAxis(axis: string): Record<string, any> | null;
   getAxisValue(axis: string, key: string, fallback: any): any;
   getAxisValueAt(axis: string, key: string, fallback: any, progress: number): any;
+  sampleAxisValue(axis: string, key: string, fallback: any): any;
   evaluateTriggers(snapshot: Record<string, any>): { profile: string; priority: number; condition: string } | null;
   recordAttribution(fields: Record<string, any>): void;
   isActive(): boolean;

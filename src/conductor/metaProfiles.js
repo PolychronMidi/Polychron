@@ -123,6 +123,33 @@ metaProfiles = (() => {
     return false;
   }
 
+  function _looksLikeDistribution(v) {
+    if (v === null || v === undefined) return false;
+    if (Array.isArray(v)) return false;
+    if (typeof v === 'object') {
+      return 'mean' in v && 'std' in v;
+    }
+    return false;
+  }
+
+  // Sample from a stochastic distribution descriptor {mean, std, skew?}.
+  // Box-Muller transform for the gaussian; skew applied as a cubic warp on
+  // the standardized variate so callers can bias higher (skew > 0) or lower
+  // (skew < 0) without a heavy gamma/lognormal dependency. Pure aside from
+  // m.random; deterministic samplers can be wired later via a seed hook.
+  function _sampleDistribution(dist) {
+    const mean = V.assertFinite(dist.mean, '_sampleDistribution.mean');
+    const std = V.assertFinite(dist.std, '_sampleDistribution.std');
+    const skew = V.optionalFinite(dist.skew, 0);
+    const u1 = m.max(1e-12, m.random());
+    const u2 = m.random();
+    let z = m.sqrt(-2 * m.log(u1)) * m.cos(2 * m.PI * u2);
+    if (skew !== 0) {
+      z = z + skew * (z * z - 1) / 6;
+    }
+    return mean + std * z;
+  }
+
   function getAxisValue(axis, key, fallback) {
     const section = getAxis(axis);
     if (!section || !(key in section)) return fallback;
@@ -132,6 +159,24 @@ metaProfiles = (() => {
     if (_looksLikeEnvelope(v)) {
       return _resolveEnvelope(v, 0.5);
     }
+    // Distribution shape: collapse to mean. Stochastic callers use
+    // sampleAxisValue to draw from the distribution per-tick instead.
+    if (_looksLikeDistribution(v)) {
+      return v.mean;
+    }
+    return v;
+  }
+
+  // Stochastic accessor. Returns a fresh sample if the axis value is a
+  // distribution; otherwise behaves like getAxisValue (returns the
+  // scalar / envelope-collapsed value). Callers wanting per-tick
+  // micro-variation use this instead of getAxisValue.
+  function sampleAxisValue(axis, key, fallback) {
+    const section = getAxis(axis);
+    if (!section || !(key in section)) return fallback;
+    const v = section[key];
+    if (_looksLikeDistribution(v)) return _sampleDistribution(v);
+    if (_looksLikeEnvelope(v))     return _resolveEnvelope(v, 0.5);
     return v;
   }
 
@@ -171,6 +216,9 @@ metaProfiles = (() => {
     const v = section[key];
     if (_looksLikeEnvelope(v)) {
       return _resolveEnvelope(v, progress);
+    }
+    if (_looksLikeDistribution(v)) {
+      return v.mean;
     }
     return v;
   }
@@ -291,6 +339,7 @@ metaProfiles = (() => {
     getAxis,
     getAxisValue,
     getAxisValueAt,
+    sampleAxisValue,
     evaluateTriggers,
     recordAttribution,
     isActive,
