@@ -156,7 +156,7 @@ const MARKERS = {
     sentinel: '[supervisor]',
   },
   HME_SELFORIGIN_LLAMACPP: {
-    producer: 'tools/HME/proxy/supervisor/index.js',
+    producer: 'tools/HME/proxy/supervisor/children.js',
     consumers: ['tools/HME/hooks/lifecycle/stop/lifesaver.sh'],
     sentinel: 'llamacpp_daemon',
   },
