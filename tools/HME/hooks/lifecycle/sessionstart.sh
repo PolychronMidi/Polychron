@@ -286,4 +286,12 @@ print('\\n'.join(bits))
 " 2>/dev/null)
 [ -n "$SUBSTRATE_BRIEF" ] && echo -e "\n$SUBSTRATE_BRIEF" >&2
 
+# Buddy system — auto-init the persistent peer subagent for this session
+# when .env BUDDY_SYSTEM=1 (default). The helper backgrounds itself so
+# SessionStart returns immediately; sid file appears once init completes
+# (~10-20s). Reasoning calls before then fall through to ephemeral
+# dispatch. Idempotent — no-op if a buddy is already active.
+_BUDDY_INIT="$PROJECT_ROOT/tools/HME/hooks/helpers/buddy_init.sh"
+[ -x "$_BUDDY_INIT" ] && bash "$_BUDDY_INIT" >/dev/null 2>&1 || true
+
 exit 0

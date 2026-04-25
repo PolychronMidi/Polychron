@@ -23,8 +23,8 @@ The fix surface this document represents:
 
 | File | Owner | Read-only consumers |
 |---|---|---|
-| `tmp/hme-thread.sid` | `i/thread init/stop` | `agent_direct.dispatch_thread`, `i/thread send/status` |
-| `tmp/hme-thread-call-count` | `agent_direct.dispatch_thread` | (none) |
+| `tmp/hme-buddy.sid` | `tools/HME/hooks/helpers/buddy_init.sh` (called by sessionstart.sh) | `agent_direct.dispatch_thread` |
+| `tmp/hme-buddy-call-count` | `agent_direct.dispatch_thread` | (none) |
 | `tmp/hme-proxy-supervisor.pid` | `proxy-supervisor.sh` | shell ops, monitoring |
 | `tmp/hme-proxy-maintenance.flag` | `proxy-maintenance.sh` | `proxy-supervisor.sh` |
 | `tmp/hme-universal-pulse.heartbeat` | `universal_pulse.py` | `validate_startup.py` |
