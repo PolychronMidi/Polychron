@@ -627,8 +627,11 @@ def what_did_i_forget(changed_files: str) -> str:
             "  • State the divergence: what the surroundings imply vs what the line does.\n"
             "  • Cite file:line.\n"
             f"{_symbols_rule.strip() or ''}\n"
-            "If no tier-1 issue holds at ≥95% confidence, say 'no tier-1 issues' "
-            "and stop — calibrated empty findings are a respected answer. Do NOT "
+            "Say 'no tier-1 issues' ONLY if no line in scope admits a quote "
+            "+ specific-divergence pair. Not because you're uncertain — "
+            "uncertainty about whether a quoted divergence is a 'real bug' "
+            "is what the human reviewer resolves. Your job is to surface "
+            "quote+divergence pairs you can actually construct. Do NOT "
             "invent a tier-1 to fill space.\n"
         )
         try:
