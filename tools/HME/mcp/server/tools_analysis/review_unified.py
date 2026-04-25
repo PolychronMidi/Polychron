@@ -182,12 +182,24 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             scaffold_re = _re_vw.compile(
                                 r'\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
                             )
-                            if bullets and all(scaffold_re.search(b) for b in bullets):
+                            if not bullets:
+                                # "## Warnings (N)" matched but no dash-
+                                # bullets extracted — empty list is clean.
+                                verdict = "clean"
+                            elif all(scaffold_re.search(b) for b in bullets):
                                 verdict = "clean"
                             else:
                                 verdict = "warnings"
                         else:
-                            verdict = "warnings"
+                            # No "## Warnings (N)" section in the review
+                            # output at all — nothing to act on, that IS
+                            # clean. The previous default was "warnings"
+                            # which flipped every empty-output review into
+                            # a verdict that NEXUS-clear couldn't process
+                            # (actionable_count=0 disqualifies the all-
+                            # scaffolding path, review_issues marked "?",
+                            # EDIT never cleared, stop blocks forever).
+                            verdict = "clean"
                     else:
                         verdict = "clean"  # No explicit warnings → treat as clean
                     parts.append(emit_review_verdict_marker(verdict))
