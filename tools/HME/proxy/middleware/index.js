@@ -52,15 +52,87 @@ function nexusAdd(type, payload) {
   }
 }
 
+// Audit instrumentation: every nexusClearType call records its
+// before-count, the caller's module (best-effort via stack trace), and
+// whether the proxy was recently restarted (which is the signature of
+// the silent-EDIT-clear bug class). Emits to the activity stream
+// unconditionally, and to hme-errors.log when the heuristic flags a
+// suspicious clear (>0 entries removed within 60s of proxy startup).
+//
+// The observability gap that motivated this: nexus_tracking middleware
+// was re-clearing EDIT entries every proxy restart by re-firing on
+// historical Bash i/review events. The clearing was "successful" so
+// LIFESAVER never saw it; the only symptom was downstream "review hook
+// didn't fire" complaints. With this instrumentation every EDIT-state
+// change is auditable in the activity stream.
+const _PROCESS_BOOT_TS = Date.now();
+const _RESTART_SUSPICION_WINDOW_MS = 60_000;
+
+function _callerModule() {
+  // Walk the stack until we find a frame inside middleware/<mod>.js. Best-
+  // effort; the captured stack format varies across Node versions but the
+  // common shape `at fn (.../middleware/foo.js:NN)` parses reliably.
+  const err = new Error();
+  const stack = err.stack || '';
+  const re = /\/middleware\/([A-Za-z_][A-Za-z0-9_]*)\.js[:\)]/g;
+  let match;
+  let last = 'unknown';
+  while ((match = re.exec(stack)) !== null) {
+    if (match[1] !== 'index') last = match[1];
+  }
+  return last;
+}
+
 function nexusClearType(type) {
   _ensureDir(NEXUS_FILE);
+  let removed = 0;
+  let beforeCount = 0;
   try {
     if (!fs.existsSync(NEXUS_FILE)) return;
     const lines = fs.readFileSync(NEXUS_FILE, 'utf8').split('\n');
+    beforeCount = lines.filter((l) => l && l.startsWith(`${type}:`)).length;
     const kept = lines.filter((l) => l && !l.startsWith(`${type}:`));
+    removed = beforeCount;
     fs.writeFileSync(NEXUS_FILE, kept.join('\n') + (kept.length ? '\n' : ''));
   } catch (err) {
     console.error(`[middleware] nexusClearType ${type} failed: ${err.message}`);
+    return;
+  }
+  if (removed === 0) return;  // no audit event for no-op clears
+
+  const caller = _callerModule();
+  const sinceBootMs = Date.now() - _PROCESS_BOOT_TS;
+  const isSuspicious = sinceBootMs < _RESTART_SUSPICION_WINDOW_MS;
+  // Activity stream: always emit so the audit trail is complete.
+  try {
+    emit({
+      event: 'nexus_cleared',
+      type,
+      removed,
+      caller,
+      since_boot_ms: sinceBootMs,
+      suspicious: isSuspicious,
+    });
+  } catch (_e) { /* best-effort */ }
+
+  // LIFESAVER channel: only when the heuristic flags a clear inside the
+  // restart-suspicion window AND removed >0 entries from a state-tracking
+  // type (EDIT is the canonical user-visible one). Tunable via env var
+  // for noise-suppression in known-clean operations.
+  if (
+    isSuspicious
+    && type === 'EDIT'
+    && process.env.HME_NEXUS_AUDIT_SILENCE !== '1'
+  ) {
+    try {
+      const errLog = path.join(PROJECT_ROOT, 'log', 'hme-errors.log');
+      _ensureDir(errLog);
+      const ts = new Date().toISOString();
+      fs.appendFileSync(
+        errLog,
+        `[${ts}] [nexus-audit] suspicious clear: ${type} removed=${removed} caller=${caller} since_boot_ms=${sinceBootMs} (proxy restarted within ${_RESTART_SUSPICION_WINDOW_MS}ms — possible historical-event re-fire; verify with tmp/hme-middleware-processed.jsonl)\n`
+      );
+    } catch (_e) { /* never fail */ }
   }
 }
 
