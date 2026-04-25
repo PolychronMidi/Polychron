@@ -150,6 +150,27 @@ def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
         return 0
+    # Path containment: transcript_path is supplied via Claude Code's hook
+    # payload, which is in principle attacker-influenced. A crafted
+    # session state could point at /etc/shadow / ~/.ssh/id_rsa / etc.,
+    # the detector would read it, regex-match against FABRICATION_PHRASES,
+    # and log matched-phrase snippets to detector-stats.jsonl — leaking
+    # secret excerpts into a metrics file. Allow only paths under either
+    # ~/.claude/projects/ or $PROJECT_ROOT/tmp/.
+    import os.path as _osp
+    _tp_abs = _osp.abspath(sys.argv[1])
+    _allowed_roots = []
+    _home = os.environ.get("HOME", "")
+    if _home:
+        _allowed_roots.append(_osp.abspath(_osp.join(_home, ".claude", "projects")))
+    _proot = os.environ.get("PROJECT_ROOT", "")
+    if _proot:
+        _allowed_roots.append(_osp.abspath(_osp.join(_proot, "tmp")))
+    if _allowed_roots and not any(
+        _tp_abs == r or _tp_abs.startswith(r + os.sep) for r in _allowed_roots
+    ):
+        print("ok")  # silently no-op rather than scan an unauthorized path
+        return 0
     events = load_turn_events(sys.argv[1])
     final_text = _last_assistant_text(events).lower()
     if not final_text:
