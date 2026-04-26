@@ -72,7 +72,8 @@ if [ -f "$ERROR_LOG" ]; then
     _CANARY_LINES=$(printf '%s\n' "$NEW_RAW" | grep -E "$_CANARY_RE" || true)
     if [ -n "$_CANARY_LINES" ]; then
       while IFS= read -r line; do
-        cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1)
+        # Strip "CANARY-" prefix to match pending-tracker bare-id format.
+        cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
         [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
       done <<< "$_CANARY_LINES"
     fi

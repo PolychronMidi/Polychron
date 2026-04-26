@@ -61,11 +61,14 @@ _hme_check_errors_inline() {
   AGENT_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
   SELF_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
   # Mark each consumed canary in the pending tracker so the Stop-hook
-  # watchdog knows the inline-check actually saw it.
+  # watchdog knows the inline-check actually saw it. Strip the "CANARY-"
+  # prefix to match the bare ID format the producer (canary.sh) writes
+  # to the pending tracker -- consumed-vs-pending must use IDENTICAL ID
+  # forms or the watchdog reports false-positive stale alarms.
   if [ -n "$CANARY_LINES" ]; then
     while IFS= read -r line; do
       local cid
-      cid=$(printf '%s' "$line" | /usr/bin/grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1)
+      cid=$(printf '%s' "$line" | /usr/bin/grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
       [ -n "$cid" ] && echo "$cid|consumed-by-inline|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
     done <<< "$CANARY_LINES"
   fi
