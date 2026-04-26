@@ -119,22 +119,25 @@ test('initializeAll: deps resolved before dependent init() runs', () => {
 
 test('initializeAll: detects circular declared deps', () => {
   withFreshRegistry(() => {
+    // Eager instantiation can't progress on a cycle (each defers waiting on
+    // the other). initializeAll's topo-sort surfaces the cycle explicitly.
     ML.declare({ name: 'cyc_a', deps: ['cyc_b'], provides: ['cyc_a'], init: () => ({}) });
     ML.declare({ name: 'cyc_b', deps: ['cyc_a'], provides: ['cyc_b'], init: () => ({}) });
     assert.throws(() => ML.initializeAll(), /Circular/);
   });
 });
 
-test('initializeAll: undeclared dep that ALSO does not exist as global -> error at instantiation', () => {
+test('initializeAll: undeclared dep that ALSO does not exist as global -> error at finalization', () => {
   withFreshRegistry(() => {
+    // Eager declare with unresolvable deps defers (no instantiation).
+    // initializeAll's final pending check surfaces the unresolved manifest.
     ML.declare({
       name: 'orphan_consumer',
       deps: ['nonexistent_global_xyz_' + Date.now()],
       provides: ['orphan_consumer'],
       init: () => ({}),
     });
-    assert.throws(() => ML.initializeAll(),
-      /neither a declared module, an override, nor an existing global/);
+    assert.throws(() => ML.initializeAll(), /failed to instantiate/);
   });
 });
 
@@ -197,48 +200,55 @@ test('override: dependents see the mock instance', () => {
   });
 });
 
-test('override: rejected after boot completes', () => {
+test('override: rejected after module is already instantiated', () => {
+  withFreshRegistry(() => {
+    // Eager declare instantiates immediately; subsequent override is too late.
+    ML.declare({
+      name: 'already_instantiated',
+      deps: [],
+      provides: ['already_instantiated'],
+      init: () => ({ source: 'real' }),
+    });
+    assert.ok(global.already_instantiated, 'eager declare should bind global immediately');
+    assert.throws(() => ML.override('already_instantiated', {}),
+      /cannot override .* after instantiation/);
+    delete global.already_instantiated;
+  });
+});
+
+test('declare: ALLOWED after initializeAll (idempotent re-drain)', () => {
   withFreshRegistry(() => {
     ML.declare({
-      name: 'post_boot_target',
+      name: 'before_init_all',
       deps: [],
-      provides: ['post_boot_target'],
+      provides: ['before_init_all'],
       init: () => ({}),
     });
     ML.initializeAll();
-    assert.throws(() => ML.override('post_boot_target', {}),
-      /cannot override .* after boot/);
-    delete global.post_boot_target;
-  });
-});
-
-test('declare: rejected after boot completes', () => {
-  withFreshRegistry(() => {
-    ML.declare({
-      name: 'before_boot',
+    // Eager-instantiation model: declare-after-init is fine; the new manifest
+    // just instantiates through the same flow.
+    assert.doesNotThrow(() => ML.declare({
+      name: 'after_init_all',
       deps: [],
-      provides: ['before_boot'],
-      init: () => ({}),
-    });
-    ML.initializeAll();
-    assert.throws(() => ML.declare({
-      name: 'after_boot',
-      deps: [],
-      provides: ['after_boot'],
-      init: () => ({}),
-    }), /after boot/);
-    delete global.before_boot;
+      provides: ['after_init_all'],
+      init: () => ({ ok: true }),
+    }));
+    assert.ok(global.after_init_all);
+    delete global.before_init_all;
+    delete global.after_init_all;
   });
 });
 
-test('initializeAll: rejected on second call without reset', () => {
+test('initializeAll: idempotent (drain-and-verify; second call is a no-op)', () => {
   withFreshRegistry(() => {
+    ML.declare({ name: 'idem_test', deps: [], provides: ['idem_test'], init: () => ({}) });
     ML.initializeAll();
-    assert.throws(() => ML.initializeAll(), /already booted/);
+    assert.doesNotThrow(() => ML.initializeAll(), 'second initializeAll should be a no-op');
+    delete global.idem_test;
   });
 });
 
-test('getDeclared / getInstance: post-boot diagnostics', () => {
+test('getDeclared / getInstance: diagnostics on eagerly-instantiated modules', () => {
   withFreshRegistry(() => {
     ML.declare({
       name: 'diag_a',
@@ -252,11 +262,10 @@ test('getDeclared / getInstance: post-boot diagnostics', () => {
       provides: ['diag_b'],
       init: (deps) => ({ kind: 'b', a: deps.diag_a.kind }),
     });
-    const declaredBeforeBoot = ML.getDeclared();
-    assert.ok(declaredBeforeBoot.includes('diag_a'));
-    assert.ok(declaredBeforeBoot.includes('diag_b'));
-    assert.strictEqual(ML.getInstance('diag_a'), null, 'no instance pre-boot');
-    ML.initializeAll();
+    const declared = ML.getDeclared();
+    assert.ok(declared.includes('diag_a'));
+    assert.ok(declared.includes('diag_b'));
+    // Eager instantiation: instances are available immediately after declare.
     const instA = ML.getInstance('diag_a');
     const instB = ML.getInstance('diag_b');
     assert.ok(instA && instA.kind === 'a');

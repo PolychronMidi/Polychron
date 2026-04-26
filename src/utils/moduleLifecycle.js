@@ -111,7 +111,6 @@ moduleLifecycle = (() => {
   const _instances = new Map();
   /** @type {Map<string, any>} */
   const _overrides = new Map();
-  let _bootState = 'pending'; // 'pending' | 'booting' | 'booted'
 
   function _validateManifest(m) {
     V.assertPlainObject(m, 'declare.manifest');
@@ -140,15 +139,21 @@ moduleLifecycle = (() => {
   }
 
   /**
-   * Declare a module manifest. The init() function will be called with
-   * resolved dependencies during initializeAll(); its return value is
-   * bound to globalThis under each name in `provides`.
+   * Declare a module manifest. If all dependencies are resolvable NOW
+   * (other declared instances, overrides, or already-loaded namespace
+   * values), init() runs IMMEDIATELY and the return value is bound to
+   * each name in `provides`. Otherwise the manifest is deferred to a
+   * pending list and instantiated by _drain() once its deps become
+   * available (typically when another declare or initializeAll resolves
+   * them).
+   *
+   * Eager instantiation matters because `mainBootstrap.assertBootstrapGlobals`
+   * runs in main.js BEFORE moduleLifecycle.initializeAll() -- migrated
+   * modules' namespaces must already be populated by the time the
+   * bootstrap validator scans them.
    */
   function declare(manifest) {
     _validateManifest(manifest);
-    if (_bootState === 'booted') {
-      throw new Error(`moduleLifecycle.declare: cannot declare "${manifest.name}" after boot completed`);
-    }
     if (_manifests.has(manifest.name)) {
       throw new Error(`moduleLifecycle.declare: duplicate manifest for "${manifest.name}"`);
     }
@@ -156,18 +161,20 @@ moduleLifecycle = (() => {
       throw new Error(`moduleLifecycle.declare: "${manifest.name}" already registered via registerInitializer; use one or the other, not both`);
     }
     _manifests.set(manifest.name, manifest);
+    // Try to instantiate this manifest (and any pending dependents).
+    _drain();
   }
 
   /**
-   * Override a module instance for testing. Must be called BEFORE
-   * initializeAll(). The override's identity becomes the resolved
-   * instance during boot (init() is NOT called for overridden modules).
-   * The value is also bound to globalThis under each `provides` name.
+   * Override a module instance for testing. Must be called BEFORE the
+   * module declares (otherwise the module already instantiated with the
+   * real init). The override's identity becomes the resolved instance and
+   * is bound to each `provides` name -- init() is NOT called.
    */
   function override(name, instance) {
     V.assertNonEmptyString(name, 'override.name');
-    if (_bootState === 'booted') {
-      throw new Error(`moduleLifecycle.override: cannot override "${name}" after boot completed`);
+    if (_instances.has(name)) {
+      throw new Error(`moduleLifecycle.override: cannot override "${name}" after instantiation; override BEFORE declare()`);
     }
     _overrides.set(name, instance);
   }
@@ -188,7 +195,6 @@ moduleLifecycle = (() => {
     _instances.clear();
     _overrides.clear();
     initializers.clear();
-    _bootState = 'pending';
   }
 
   // Dynamic namespace lookup. The project's general convention is "naked
@@ -214,6 +220,42 @@ moduleLifecycle = (() => {
     if (_overrides.has(name)) return _overrides.get(name);
     if (_instances.has(name)) return _instances.get(name);
     return _readNamespace(name);
+  }
+
+  function _canResolveDeps(manifest) {
+    for (const depName of manifest.deps) {
+      if (_overrides.has(depName)) continue;
+      if (_instances.has(depName)) continue;
+      // Legacy namespace lookup -- accept if already populated.
+      if (_readNamespace(depName) !== undefined) continue;
+      // If the dep is a yet-to-instantiate manifest, it MIGHT become available
+      // later but isn't NOW. Defer this manifest.
+      if (_manifests.has(depName)) return false;
+      // Same for legacy registerInitializer entries: they haven't run yet, so
+      // their sentinel isn't in _instances. Defer.
+      if (initializers.has(depName)) return false;
+      // Otherwise the dep is genuinely undefined. We let _drain skip it for
+      // now; initializeAll's final pass will surface a clear error if it
+      // remains unresolvable.
+      return false;
+    }
+    return true;
+  }
+
+  // Try to instantiate every pending manifest whose deps are now resolvable.
+  // Idempotent and re-entrant -- called after declare(), after each legacy
+  // initializer runs, and from initializeAll. Stops when no progress is made.
+  function _drain() {
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
+      for (const [name, m] of _manifests.entries()) {
+        if (_instances.has(name)) continue;
+        if (!_canResolveDeps(m)) continue;
+        _instantiateManifest(m);
+        progressed = true;
+      }
+    }
   }
 
   function _instantiateManifest(m) {
@@ -268,10 +310,15 @@ moduleLifecycle = (() => {
    * Throws on circular dependencies or missing dependencies.
    */
   function initializeAll() {
-    if (_bootState === 'booted') {
-      throw new Error('moduleLifecycle.initializeAll: already booted (call _resetForTests in tests)');
-    }
-    _bootState = 'booting';
+    // initializeAll's job is now to run any deferred work:
+    //   1. Run legacy registerInitializer entries in topo order. After each
+    //      runs, _drain() retries pending manifests that depended on it.
+    //   2. Final _drain() catches any cross-pool stragglers.
+    //   3. Verify every declared manifest has been instantiated; if any
+    //      remain pending, surface a precise error.
+    // Declared manifests with all-resolvable deps already instantiated at
+    // declare() time (eager instantiation), so this is purely the legacy +
+    // straggler path.
 
     // Unified topo-sort across BOTH the legacy registerInitializer pool
     // and the manifest-declared pool. They share a name namespace; declare()
@@ -341,10 +388,24 @@ moduleLifecycle = (() => {
     for (const name of _manifests.keys()) visit(name, null);
 
     for (const entry of sorted) {
+      // Skip manifest entries already instantiated by eager declare().
+      if (entry.kind === 'manifest' && _instances.has(entry.name)) continue;
       entry.runner();
+      // After each entry runs, drain pending manifests in case the new
+      // namespace value resolves any deps.
+      _drain();
     }
 
-    _bootState = 'booted';
+    // Final pending check: any manifest still uninstantiated is a real bug.
+    const stillPending = [];
+    for (const [name] of _manifests.entries()) {
+      if (!_instances.has(name)) stillPending.push(name);
+    }
+    if (stillPending.length > 0) {
+      throw new Error(
+        `moduleLifecycle.initializeAll: ${stillPending.length} manifest(s) failed to instantiate -- unresolved deps: ${stillPending.join(', ')}`
+      );
+    }
   }
 
   return {
