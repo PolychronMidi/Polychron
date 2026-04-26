@@ -175,20 +175,27 @@ test('lifesaver: source-tag self-origin overrides CRITICAL severity', () => {
   const r = _withLifesaverSandbox([
     '[2026-04-26T07:00:00Z] [universal_pulse] CRITICAL worker CPU-saturated (avg=113% over 90s)',
     '[2026-04-26T07:00:01Z] [llamacpp_supervisor] CRITICAL coder unreachable',
+    // Safe-helper writers also tagged self-origin: when streak crosses
+    // threshold _safe_curl flips its severity tag from WARN to ERROR;
+    // without _safe_curl in _SELF_TAG_RE, the ERROR-tagged line would
+    // be classified as agent-actionable even though it's a worker-down
+    // signal the agent has no causal path to fix.
+    '[2026-04-26T07:00:02Z] [_safe_curl] ERROR http://127.0.0.1:9098/transcript failed (rc=7, streak=5)',
+    '[2026-04-26T07:00:03Z] [_safe_jq] jq parse failed: malformed input',
   ]);
   try {
-    // These are CRITICAL but tagged with self-origin writer names —
-    // must NOT block. Agent has no causal path to fix worker CPU
-    // saturation or supervisor-managed daemon outage.
     assert.ok(
       !/"decision"\s*:\s*"block"/.test(r.stdout),
-      `lifesaver wrongly blocked on self-tagged CRITICAL. stdout: ${r.stdout}`,
+      `lifesaver wrongly blocked on self-tagged CRITICAL/ERROR. stdout: ${r.stdout}`,
     );
-    // Should surface as additionalContext (observation-only).
     if (r.stdout) {
       assert.ok(
         r.stdout.includes('hme self-health') || r.stdout.includes('observability only'),
-        `expected additionalContext for self-tagged CRITICAL, got: ${r.stdout}`,
+        `expected additionalContext for self-tagged CRITICAL/ERROR, got: ${r.stdout}`,
+      );
+      assert.ok(
+        r.stdout.includes('_safe_curl'),
+        '_safe_curl line must surface in self-origin observation',
       );
     }
   } finally {
