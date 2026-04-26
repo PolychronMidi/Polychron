@@ -93,7 +93,19 @@ def _split_meta(raw: list) -> tuple[dict, list]:
 
 
 def _load_todos() -> tuple[dict, list]:
-    return _split_meta(_load_raw())
+    meta, todos = _split_meta(_load_raw())
+    # Backfill `tier` for legacy entries that predate the field. Pure
+    # in-memory normalization — does not write back to disk on its own;
+    # the next save (any mutating action) persists the backfilled values.
+    # Default tier="medium" matches SPEC.md's graceful-degradation rule.
+    for t in todos:
+        if isinstance(t, dict):
+            if "tier" not in t:
+                t["tier"] = "medium"
+            for s in t.get("subs", []):
+                if isinstance(s, dict) and "tier" not in s:
+                    s["tier"] = "medium"
+    return meta, todos
 
 
 def _save_todos(meta: dict, todos: list):
@@ -113,12 +125,31 @@ def _allocate_id(meta: dict) -> int:
     return meta["max_id"]
 
 
+_VALID_TIERS = ("easy", "medium", "hard")
+
+
+def _normalize_tier(tier: str) -> str:
+    """Coerce a tier value to one of {easy, medium, hard}. Defaults to
+    'medium' for unknown / empty / legacy entries — matches SPEC.md's
+    'graceful degradation' rule for unlabeled items."""
+    t = (tier or "").strip().lower()
+    if t in _VALID_TIERS:
+        return t
+    return "medium"
+
+
 def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       active_form: str = "", critical: bool = False,
                       source: str = "hme_todo", on_done: str = "",
-                      parent_id: int = 0) -> dict:
+                      parent_id: int = 0, tier: str = "medium") -> dict:
     """Canonical entry constructor — every producer goes through this to ensure
-    schema stability across LIFESAVER, native mirror, hme_todo, and onboarding."""
+    schema stability across LIFESAVER, native mirror, hme_todo, and onboarding.
+
+    `tier` is one of {easy, medium, hard} (SPEC.md "Difficulty labels").
+    Routes the item to the appropriate co-buddy via the
+    `effective = max(item_tier, buddy_floor)` rule. Defaults to 'medium'
+    so legacy/unlabeled items still dispatch sensibly.
+    """
     # Single-writer invariant: only tools_analysis.todo may write the store.
     try:
         from server.lifecycle_writers import assert_writer
@@ -137,6 +168,7 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
         "ts": time.time(),
         "parent_id": parent_id,
         "subs": [] if parent_id == 0 else [],
+        "tier": _normalize_tier(tier),
     }
 
 
@@ -745,6 +777,272 @@ def merge_native_todowrite(incoming: list) -> list:
 
 
 
+# SPEC/TODO bridge — connects ephemeral i/todo state to durable
+# doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
+
+
+_SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
+_TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "TODO.md")
+# Matches a Next-up entry: "- [tier] description. Reason: ..."
+_NEXT_UP_RE = re.compile(
+    r"^\s*-\s+\[(easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
+    re.IGNORECASE,
+)
+# Matches an open spec checkbox: "- [ ] [tier] text"
+_SPEC_OPEN_RE = re.compile(
+    r"^(\s*-\s+\[)\s(\]\s+\[(?:easy|medium|hard)\]\s+)(.+?)$",
+    re.IGNORECASE,
+)
+
+
+def _read_section(md_text: str, header: str) -> list[str]:
+    """Return the lines of a section (between '## <header>' and the
+    next '## ' or '---' marker), stripped of empty leading/trailing
+    lines. Header match is case-sensitive."""
+    lines = md_text.splitlines()
+    out = []
+    in_section = False
+    for line in lines:
+        if line.startswith("## "):
+            if in_section:
+                break
+            if line.strip()[3:].strip() == header:
+                in_section = True
+                continue
+        if in_section:
+            if line.startswith("---"):
+                break
+            out.append(line)
+    # Trim leading/trailing blanks
+    while out and not out[0].strip():
+        out.pop(0)
+    while out and not out[-1].strip():
+        out.pop()
+    return out
+
+
+def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
+    """Read doc/TODO.md's Next up section, materialize each entry as an
+    i/todo entry with source='spec' and tier=<label>. Skips entries
+    whose text already matches an OPEN i/todo entry (universal dedup).
+    Returns the list of newly-created entries."""
+    if not os.path.exists(_TODOMD_FILE):
+        logger.warning(f"ingest_from_spec: {_TODOMD_FILE} missing")
+        return []
+    with open(_TODOMD_FILE, encoding="utf-8") as f:
+        md = f.read()
+    next_up_lines = _read_section(md, "Next up (queued for next cycle)")
+    created = []
+    for line in next_up_lines:
+        # Skip HTML comments + empty lines
+        s = line.strip()
+        if not s or s.startswith("<!--") or s.startswith("-->"):
+            continue
+        m = _NEXT_UP_RE.match(line)
+        if not m:
+            continue
+        tier_str, body, reason = m.group(1), m.group(2).strip(), (m.group(3) or "").strip()
+        # Strip trailing period from body if reason was attached
+        if body.endswith("."):
+            body = body[:-1]
+        text_norm = body
+        # Dedup: skip if an open entry with same text exists
+        already = False
+        for t in todos:
+            if (
+                t.get("text", "").strip() == text_norm
+                and not _check_main_done(t)
+            ):
+                already = True
+                break
+        if already:
+            continue
+        text_with_provenance = body
+        if reason:
+            text_with_provenance = f"{body} (from spec — {reason})"
+        entry = _write_todo_entry(
+            meta, text=text_with_provenance, status="pending",
+            critical=False, source="spec", tier=tier_str.lower(),
+        )
+        todos.append(entry)
+        created.append(entry)
+    return created
+
+
+def _promote_to_spec(entry: dict) -> str:
+    """Append an i/todo entry to doc/TODO.md's Next up section. Returns
+    the appended line for caller display."""
+    tier = _normalize_tier(entry.get("tier", "medium"))
+    text = entry.get("text", "").strip()
+    line = f"- [{tier}] {text}. Reason: i/todo #{entry.get('id')} promoted at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
+    if not os.path.exists(_TODOMD_FILE):
+        logger.warning(f"promote_to_spec: {_TODOMD_FILE} missing — creating")
+        with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
+            f.write("# TODO\n\n## In flight\n\n## Just shipped (last cycle)\n\n## Next up (queued for next cycle)\n\n")
+    with open(_TODOMD_FILE, encoding="utf-8") as f:
+        md = f.read()
+    # Insert at end of Next up section (before --- or EOF)
+    marker = "## Next up (queued for next cycle)"
+    if marker not in md:
+        md += f"\n{marker}\n\n{line}\n"
+    else:
+        # Find where to insert: end of Next up section
+        idx = md.index(marker) + len(marker)
+        rest = md[idx:]
+        # Find next '---' or end of file
+        end = rest.find("\n---")
+        if end == -1:
+            end = len(rest)
+        # Append line just before that boundary
+        before = md[:idx] + rest[:end].rstrip() + "\n" + line + "\n"
+        after = rest[end:]
+        md = before + after
+    with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
+        f.write(md)
+    return line
+
+
+def _normalize_for_match(s: str) -> str:
+    """Coerce two markdown entries to a comparable form: lowercase,
+    strip backticks/asterisks/quotes, collapse whitespace, drop trailing
+    period. SPEC.md items and TODO.md Next-up entries can be hand-edited
+    differently between the two docs (e.g. one has backticks around
+    `i/todo` and the other doesn't), so a strict equality match misses
+    legitimately-paired items. This normalization is the same shape as
+    the lifesaver dedup normalizer — strip noise before comparing.
+    """
+    if not s:
+        return ""
+    out = s.lower()
+    # Drop markdown emphasis chars + quote marks
+    out = re.sub(r"[`*_'\"]+", "", out)
+    # Collapse whitespace
+    out = re.sub(r"\s+", " ", out).strip()
+    # Trim trailing period (TODO.md format includes "Reason:" after period;
+    # SPEC.md items often end without period)
+    if out.endswith("."):
+        out = out[:-1]
+    return out
+
+
+def _common_prefix_len(a: str, b: str) -> int:
+    """Length of the longest common prefix of normalized strings."""
+    n = min(len(a), len(b))
+    i = 0
+    while i < n and a[i] == b[i]:
+        i += 1
+    return i
+
+
+def _close_with_spec_update(entry: dict) -> tuple[str, str]:
+    """Atomic SPEC/TODO close: flip the BEST-MATCHING `- [ ] [tier] <text>`
+    in doc/SPEC.md to `[x]`, append a Just-shipped entry to doc/TODO.md.
+
+    Match strategy: pick the open SPEC item whose normalized text
+    shares the longest common prefix with the i/todo entry's normalized
+    text, requiring at least 30 chars of common prefix to fire (avoids
+    false positives where two items share a generic preamble like
+    "Add"). TODO.md Next-up entries are often shortened versions of
+    the full SPEC.md item text, so strict equality / containment misses
+    legitimately-paired items.
+
+    Returns (flipped_spec_line, shipped_line). flipped_spec_line is
+    empty if no SPEC item matched well enough."""
+    text = entry.get("text", "").strip()
+    # Strip the "(from spec — Reason)" provenance suffix if present.
+    text_root = re.sub(r"\s+\(from spec.*?\)\s*$", "", text)
+    text_norm = _normalize_for_match(text_root)
+    flipped = ""
+    flipped_idx = -1
+    if os.path.exists(_SPEC_FILE) and text_norm:
+        with open(_SPEC_FILE, encoding="utf-8") as f:
+            spec_md = f.read()
+        spec_lines = spec_md.splitlines()
+        # Score every open SPEC item by common-prefix length.
+        candidates = []
+        for i, line in enumerate(spec_lines):
+            m = _SPEC_OPEN_RE.match(line)
+            if not m:
+                continue
+            spec_text = m.group(3).rstrip(".").strip()
+            spec_norm = _normalize_for_match(spec_text)
+            cp = _common_prefix_len(spec_norm, text_norm)
+            # Require at least 30 chars of shared prefix OR full equality
+            # OR one being a strict prefix of the other.
+            if (
+                cp >= 30
+                or spec_norm == text_norm
+                or spec_norm.startswith(text_norm)
+                or text_norm.startswith(spec_norm)
+            ):
+                candidates.append((cp, i, m, spec_text))
+        if candidates:
+            candidates.sort(key=lambda c: -c[0])
+            cp, i, m, spec_text = candidates[0]
+            new_line = m.group(1) + "x" + m.group(2) + m.group(3)
+            spec_lines[i] = new_line
+            flipped = spec_text
+            flipped_idx = i
+            with open(_SPEC_FILE, "w", encoding="utf-8") as f:
+                f.write("\n".join(spec_lines) + ("\n" if spec_md.endswith("\n") else ""))
+    # Append to TODO.md Just shipped at the FIRST entry slot (newest-first).
+    # Skip past HTML comment blocks (`<!-- ... -->`) so the insertion
+    # lands in real content space, not inside the template stub.
+    shipped = f"- {text_root} — by i/todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
+    if os.path.exists(_TODOMD_FILE):
+        with open(_TODOMD_FILE, encoding="utf-8") as f:
+            md = f.read()
+        marker = "## Just shipped (last cycle)"
+        if marker in md:
+            lines = md.split("\n")
+            out = []
+            in_section = False
+            in_comment = False
+            inserted = False
+            for line in lines:
+                if not inserted:
+                    s = line.strip()
+                    if s == marker:
+                        out.append(line)
+                        in_section = True
+                        continue
+                    if in_section:
+                        if "<!--" in line and "-->" not in line:
+                            in_comment = True
+                            out.append(line)
+                            continue
+                        if in_comment:
+                            out.append(line)
+                            if "-->" in line:
+                                in_comment = False
+                            continue
+                        # Real content line within Just shipped — insert
+                        # `shipped` BEFORE it, then continue normally.
+                        if s and not s.startswith("##"):
+                            out.append(shipped)
+                            out.append(line)
+                            inserted = True
+                            in_section = False
+                            continue
+                        # Hit next section header without finding entries.
+                        if s.startswith("##"):
+                            out.append(shipped)
+                            out.append(line)
+                            inserted = True
+                            in_section = False
+                            continue
+                        # Blank line inside section — keep going.
+                        out.append(line)
+                        continue
+                out.append(line)
+            if not inserted:
+                # Section was at file end with no entries; append at EOF.
+                out.append(shipped)
+            with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
+                f.write("\n".join(out))
+    return flipped, shipped
+
+
 # MCP tool — agents call this for hierarchical features TodoWrite lacks
 
 
@@ -752,7 +1050,8 @@ def merge_native_todowrite(incoming: list) -> list:
 @chained("hme_todo")
 def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
              parent_id: int = 0, critical: bool = False, on_done: str = "",
-             status: str = "pending", fmt: str = "text") -> str:
+             status: str = "pending", fmt: str = "text",
+             tier: str = "medium") -> str:
     """Hierarchical todo list (HME extension to native TodoWrite).
 
     Use this when you need features the native TodoWrite lacks: sub-todos with
@@ -825,11 +1124,11 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                         )
                 sub = _write_todo_entry(
                     meta, text=text, status=status, critical=critical,
-                    on_done=on_done, parent_id=parent_id,
+                    on_done=on_done, parent_id=parent_id, tier=tier,
                 )
                 main.setdefault("subs", []).append(sub)
                 _save_todos(meta, todos)
-                return f"Added sub #{sub['id']} (sub of #{parent_id}): {text_norm}\n\n{_render(todos)}"
+                return f"Added sub #{sub['id']} [{sub['tier']}] (sub of #{parent_id}): {text_norm}\n\n{_render(todos)}"
             for t in todos:
                 if (
                     t.get("text", "").strip() == text_norm
@@ -846,10 +1145,11 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                     )
             entry = _write_todo_entry(
                 meta, text=text, status=status, critical=critical, on_done=on_done,
+                tier=tier,
             )
             todos.append(entry)
             _save_todos(meta, todos)
-            return f"Added #{entry['id']}: {text_norm}\n\n{_render(todos)}"
+            return f"Added #{entry['id']} [{entry['tier']}]: {text_norm}\n\n{_render(todos)}"
 
         if action == "done":
             if not todo_id:
@@ -913,7 +1213,44 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             _save_todos(meta, todos)
             return f"Cleared {removed} completed todos.\n\n{_render(todos)}"
 
-        return f"Unknown action '{action}'. Use: list, add, done, undo, remove, clear, critical."
+        if action == "ingest_from_spec":
+            ingested = _ingest_from_spec(meta, todos)
+            _save_todos(meta, todos)
+            if not ingested:
+                return "No new entries from doc/TODO.md Next up (all already in i/todo).\n"
+            lines = [f"  + #{e['id']} [{e['tier']}] {e['text'][:80]}" for e in ingested]
+            return f"Ingested {len(ingested)} entries from doc/TODO.md Next up:\n" + "\n".join(lines)
+
+        if action == "promote_to_spec":
+            if not todo_id:
+                return "Error: todo_id= required for promote_to_spec."
+            main, sub = _find_any(todos, todo_id)
+            if main is None:
+                return f"Error: #{todo_id} not found."
+            target = sub or main
+            line = _promote_to_spec(target)
+            return f"Promoted #{todo_id} to doc/TODO.md Next up:\n  {line}"
+
+        if action == "close_with_spec_update":
+            if not todo_id:
+                return "Error: todo_id= required for close_with_spec_update."
+            main, sub = _find_any(todos, todo_id)
+            if main is None:
+                return f"Error: #{todo_id} not found."
+            target = sub or main
+            spec_flipped, shipped_line = _close_with_spec_update(target)
+            # Mark done in i/todo
+            _mark_status(target, "completed")
+            if sub is not None and _check_main_done(main):
+                _mark_status(main, "completed")
+            _save_todos(meta, todos)
+            note = ""
+            if spec_flipped:
+                note = f" (flipped doc/SPEC.md item: {spec_flipped[:80]})"
+            return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
+
+        return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
+                "ingest_from_spec, promote_to_spec, close_with_spec_update.")
 
 
 

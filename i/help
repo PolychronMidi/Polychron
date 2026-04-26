@@ -88,7 +88,7 @@ print()
 # Stable category order — known categories first, unregistered last.
 cat_order = [
     "review-discipline", "knowledge", "diagnostic", "evolution",
-    "policy-config", "infra", "meta", "uncategorized", "unregistered",
+    "policy-config", "infra", "orchestration", "meta", "uncategorized", "unregistered",
 ]
 seen = set()
 for cat in cat_order + sorted(groups.keys()):
