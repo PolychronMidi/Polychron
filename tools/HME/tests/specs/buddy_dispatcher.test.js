@@ -345,6 +345,85 @@ print(json.dumps({
   });
 });
 
+test('dispatcher: chain validation enforces description min-length + semver + on-rate-limit enum', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+print(json.dumps({
+  "short_desc": disp._validate_chain({"name": "x", "description": "too short", "version": "1.0.0", "skills": ["a"]}),
+  "bad_version": disp._validate_chain({"name": "x", "description": "long enough description for routing", "version": "v1.0", "skills": ["a"]}),
+  "bad_on_rate_limit": disp._validate_chain({"name": "x", "description": "long enough description for routing", "version": "1.0.0", "skills": ["a"], "on-rate-limit": "retry"}),
+  "max_pause_without_cap_mode": disp._validate_chain({"name": "x", "description": "long enough description for routing", "version": "1.0.0", "skills": ["a"], "on-rate-limit": "pause", "max-rate-limit-pause-seconds": 300}),
+  "all_valid": disp._validate_chain({"name": "x", "description": "long enough description for routing", "version": "1.0.0", "skills": ["a"], "on-rate-limit": "pause-with-cap", "max-rate-limit-pause-seconds": 300}),
+  "semver_with_prerelease": disp._validate_chain({"name": "x", "description": "long enough description for routing", "version": "1.0.0-alpha.1", "skills": ["a"]}),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.ok(parsed.short_desc.includes('20 chars'), 'rejects <20 char description');
+    assert.ok(parsed.bad_version.includes('semver'), 'rejects non-semver version');
+    assert.ok(parsed.bad_on_rate_limit.includes('on-rate-limit must be'), 'rejects unknown on-rate-limit value');
+    assert.ok(parsed.max_pause_without_cap_mode.includes('pause-with-cap'), 'enforces conditional-required: max-pause needs cap mode');
+    assert.strictEqual(parsed.all_valid, '', 'fully-valid chain returns empty');
+    assert.strictEqual(parsed.semver_with_prerelease, '', 'semver pre-release suffix accepted');
+  });
+});
+
+test('dispatcher: effort-floor axis is independent of model-floor', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+# Both axes resolve independently via max(item, floor)
+print(json.dumps({
+  # easy item + medium model-floor + high effort-floor → medium model, high effort
+  "easy_item_mixed_floors": [
+    disp._effective_tier("easy", "medium"),
+    disp._effective_effort("easy", "high"),
+  ],
+  # hard item + easy model-floor + low effort-floor → hard model, high effort (item wins both)
+  "hard_item_low_floors": [
+    disp._effective_tier("hard", "easy"),
+    disp._effective_effort("hard", "low"),
+  ],
+  # easy item + low effort-floor → low effort
+  "easy_item_low_effort_floor": disp._effective_effort("easy", "low"),
+  # bad effort-floor falls back to medium
+  "bad_effort_falls_back": disp._effective_effort("medium", "garbage"),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.deepStrictEqual(parsed.easy_item_mixed_floors, ['medium', 'high'], 'model + effort resolved independently');
+    assert.deepStrictEqual(parsed.hard_item_low_floors, ['hard', 'high'], 'item wins both axes when above floors');
+    assert.strictEqual(parsed.easy_item_low_effort_floor, 'low', 'easy task on low-effort buddy stays low');
+    assert.strictEqual(parsed.bad_effort_falls_back, 'medium', 'unknown effort defaults to medium');
+  });
+});
+
+test('dispatcher: guidance file gets bounded-shaping at cap', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const big = 'x'.repeat(3000);
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-operator-guidance.md'), big);
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+g = disp._read_guidance()
+import json
+print(json.dumps({
+  "len_bytes": len(g.encode("utf-8")),
+  "starts_with_trim_marker": g.startswith("[guidance trimmed from start"),
+  "tail_intact": g.endswith("x" * 50),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.ok(parsed.len_bytes <= 1100, `guidance must be capped near 1KB; got ${parsed.len_bytes} bytes`);
+    assert.strictEqual(parsed.starts_with_trim_marker, true, 'trim annotation present');
+    assert.strictEqual(parsed.tail_intact, true, 'newest content (tail) preserved');
+  });
+});
+
 test('dispatcher: chain validation rejects missing required fields', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `

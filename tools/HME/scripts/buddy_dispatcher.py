@@ -70,6 +70,16 @@ ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 TIER_ORDER = {"easy": 0, "medium": 1, "hard": 2}
 TIER_NAMES = ("easy", "medium", "hard")
 
+# Effort axis is parallel and independent (skill-set Phase 19 model+
+# effort routing). Each tier maps to an effort level that the buddy's
+# effort_floor governs. By keeping it parallel, a hard-effort task on
+# a low-effort-floor buddy still bumps the effort to hard — same shape
+# as model-floor escalation. When `effort-floor` is not declared in
+# the buddy config, defaults to the same value as the model floor.
+EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2}
+EFFORT_NAMES = ("low", "medium", "high")
+TIER_TO_EFFORT = {"easy": "low", "medium": "medium", "hard": "high"}
+
 # Sentinel emitted by buddies when idle. The dispatcher reads stdout
 # until this line appears OR a hard timeout fires.
 NO_WORK_SENTINEL = "[no-work]"
@@ -177,15 +187,30 @@ def _list_buddies() -> list[dict]:
     Returns list of {slot, sid, floor, sid_file, processing_dir}."""
     buddies = []
     tmp = PROJECT_ROOT / "tmp"
+    def _read_floor_pair(sid_file: Path):
+        """Read companion .floor and .effort_floor files. effort_floor
+        defaults to the canonical effort level for the model floor when
+        absent (e.g. model-floor=medium → effort-floor=medium)."""
+        floor_file = sid_file.with_suffix(".floor")
+        effort_file = sid_file.with_suffix(".effort_floor")
+        m_floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
+        m_floor = m_floor if m_floor in TIER_NAMES else "medium"
+        if effort_file.exists():
+            e_floor = effort_file.read_text().strip()
+            if e_floor not in EFFORT_NAMES:
+                e_floor = TIER_TO_EFFORT.get(m_floor, "medium")
+        else:
+            e_floor = TIER_TO_EFFORT.get(m_floor, "medium")
+        return m_floor, e_floor
     # Single-buddy back-compat path
     legacy_sid = tmp / "hme-buddy.sid"
     if legacy_sid.exists() and legacy_sid.read_text().strip():
-        floor_file = tmp / "hme-buddy.floor"
-        floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
+        m_floor, e_floor = _read_floor_pair(legacy_sid)
         buddies.append({
             "slot": 1,
             "sid": legacy_sid.read_text().strip(),
-            "floor": floor if floor in TIER_NAMES else "medium",
+            "floor": m_floor,
+            "effort_floor": e_floor,
             "sid_file": legacy_sid,
             "processing_dir": QUEUE_PROCESSING / "buddy-1",
         })
@@ -200,12 +225,12 @@ def _list_buddies() -> list[dict]:
             slot = int(sid_file.stem.rsplit("-", 1)[1])
         except (ValueError, IndexError):
             continue
-        floor_file = sid_file.with_suffix(".floor")
-        floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
+        m_floor, e_floor = _read_floor_pair(sid_file)
         buddies.append({
             "slot": slot,
             "sid": sid,
-            "floor": floor if floor in TIER_NAMES else "medium",
+            "floor": m_floor,
+            "effort_floor": e_floor,
             "sid_file": sid_file,
             "processing_dir": QUEUE_PROCESSING / f"buddy-{slot}",
         })
@@ -213,11 +238,25 @@ def _list_buddies() -> list[dict]:
 
 
 def _effective_tier(item_tier: str, buddy_floor: str) -> str:
-    """Apply `effective = max(item_tier, buddy_floor)` rule. Higher
-    ordinal wins (more capable model)."""
+    """Apply `effective = max(item_tier, buddy_floor)` rule (model axis).
+    Higher ordinal wins (more capable model)."""
     item_n = TIER_ORDER.get(item_tier, 1)
     floor_n = TIER_ORDER.get(buddy_floor, 1)
     return TIER_NAMES[max(item_n, floor_n)]
+
+
+def _effective_effort(item_tier: str, effort_floor: str) -> str:
+    """Apply `effective = max(item_effort, buddy_effort_floor)` rule
+    (effort axis, parallel to model axis). Item tier is mapped to its
+    canonical effort level (easy→low, medium→medium, hard→high) and
+    then escalated against the buddy's effort floor. Skill-set Phase
+    19 keeps these axes independent so a buddy declared with
+    `model-floor: medium` + `effort-floor: high` runs Sonnet at high
+    effort even on easy-tier items (intentional — quality over speed)."""
+    item_effort = TIER_TO_EFFORT.get(item_tier, "medium")
+    item_n = EFFORT_ORDER.get(item_effort, 1)
+    floor_n = EFFORT_ORDER.get(effort_floor, 1)
+    return EFFORT_NAMES[max(item_n, floor_n)]
 
 
 def _pick_buddy_for_task(task: dict, buddies: list[dict], busy: set[int]) -> dict | None:
@@ -285,6 +324,7 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
     started = time.time()
     item_tier = task.get("tier", "medium")
     effective = _effective_tier(item_tier, buddy["floor"])
+    effective_effort = _effective_effort(item_tier, buddy.get("effort_floor", "medium"))
     # Phase 2.5: prepend operator guidance (if any) so cross-run nudges
     # land in the buddy's prompt context.
     guidance = _read_guidance()
@@ -296,10 +336,11 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
     # creep gate). The buddy is responsible for self-policing this.
     prompt = (
         f"{guidance_block}"
-        f"[picked-difficulty: {effective}]\n"
+        f"[picked-difficulty: {effective}] [picked-effort: {effective_effort}]\n"
         f"Task ID: {task.get('id', '?')}\n"
         f"Source: {task.get('source', '?')}\n"
-        f"Tier (item={item_tier}, your-floor={buddy['floor']}, effective={effective}):\n\n"
+        f"Model tier (item={item_tier}, floor={buddy['floor']}, effective={effective})\n"
+        f"Effort tier (item={item_tier}, floor={buddy.get('effort_floor', 'medium')}, effective={effective_effort})\n\n"
         f"{task.get('text', '')}\n\n"
         f"Citation rule: every proposed change MUST cite the motivating line "
         f"(file:line). Unmotivated suggestions are scope creep — drop them.\n"
@@ -598,11 +639,23 @@ def _write_verdict(run_id: str, manifest: dict) -> Path:
     return verdict_path
 
 
+_GUIDANCE_MAX_BYTES = int(os.environ.get("HME_BUDDY_GUIDANCE_MAX_BYTES", "1024"))
+
+
 def _read_guidance() -> str:
     """Phase 2.5: manager-guidance file. Cross-run directive channel —
     the operator can edit tmp/hme-operator-guidance.md to nudge buddy
     behavior on the next drain. Each task prompt is prefixed with the
-    guidance content (if present and non-empty)."""
+    guidance content (if present and non-empty).
+
+    Bounded shaping (skill-set sst-manager pattern): the guidance file
+    is capped at HME_BUDDY_GUIDANCE_MAX_BYTES (default 1KB). Content
+    over the cap is truncated from the START so the most-recent
+    guidance survives — the file is treated as a rolling-newest
+    window rather than an unbounded accumulator. Without this cap,
+    long-running operators paste new directives without trimming and
+    the prompt prefix grows unbounded over time, taxing every buddy
+    invocation."""
     if not GUIDANCE_FILE.exists():
         return ""
     try:
@@ -611,6 +664,21 @@ def _read_guidance() -> str:
         return ""
     if not content:
         return ""
+    # Bounded shaping: keep newest portion under the cap.
+    if len(content.encode("utf-8")) > _GUIDANCE_MAX_BYTES:
+        encoded = content.encode("utf-8")
+        keep = encoded[-_GUIDANCE_MAX_BYTES:]
+        # Snap to a UTF-8 codepoint boundary at the truncation start.
+        for i in range(min(4, len(keep))):
+            try:
+                content = keep[i:].decode("utf-8")
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            content = keep.decode("utf-8", errors="ignore")
+        # Annotate that the head was trimmed so operator knows.
+        content = f"[guidance trimmed from start; cap={_GUIDANCE_MAX_BYTES}B]\n" + content
     return content
 
 
@@ -711,8 +779,40 @@ def cmd_drain(args: argparse.Namespace) -> int:
             if claimed is None:
                 continue
             busy.add(buddy["slot"])
-            verdict = _dispatch_to_buddy(task, claimed, buddy, run_id)
-            archived = _archive_task(claimed, verdict)
+            # Per-task render-error isolation: a malformed task payload,
+            # claude-cli crash, or transient subprocess hang must NOT
+            # crash the whole drain — it should fail just THIS task and
+            # let the loop continue to others. Lifted from skill-set
+            # skill-chain.py:862 (per-event try/except). Without this,
+            # one buddy choking on a poison task could wedge the
+            # entire fanout.
+            try:
+                verdict = _dispatch_to_buddy(task, claimed, buddy, run_id)
+            except Exception as e:
+                _log_error(
+                    f"drain: dispatch raised on task {task.get('id', '?')} "
+                    f"buddy {buddy['slot']}: {type(e).__name__}: {e}"
+                )
+                verdict = {
+                    "outcome": "render_error",
+                    "rc": -1,
+                    "elapsed_s": 0.0,
+                    "stdout_tail": "",
+                    "stderr_tail": f"_dispatch_to_buddy raised: {type(e).__name__}: {e}",
+                    "sentinel_seen": False,
+                    "effective_tier": task.get("tier", "medium"),
+                    "buddy_slot": buddy["slot"],
+                    "buddy_floor": buddy["floor"],
+                }
+            try:
+                archived = _archive_task(claimed, verdict)
+                archived_rel = str(archived.relative_to(PROJECT_ROOT))
+            except Exception as e:
+                _log_error(
+                    f"drain: archive raised on task {task.get('id', '?')}: "
+                    f"{type(e).__name__}: {e}"
+                )
+                archived_rel = "<archive-failed>"
             manifest["iterations"].append({
                 "task_id": task.get("id"),
                 "task_name": task.get("text", "")[:80],
@@ -721,7 +821,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
                 "outcome": verdict["outcome"],
                 "elapsed_s": verdict["elapsed_s"],
                 "sentinel_seen": verdict["sentinel_seen"],
-                "archived_path": str(archived.relative_to(PROJECT_ROOT)),
+                "archived_path": archived_rel,
             })
             _write_manifest(run_id, manifest, in_progress=True)
             busy.discard(buddy["slot"])
@@ -851,16 +951,36 @@ def _parse_minimal_yaml(text: str) -> dict:
 
 
 def _validate_chain(chain: dict) -> str:
-    """Return error string if the chain doc is invalid, empty string if OK."""
+    """Return error string if the chain doc is invalid, empty string if OK.
+
+    Validation rules (lifted from skill-set/schema/skill-chain.schema.json):
+      - Required fields: name, description, version, skills
+      - description: minimum 20 chars (forces specificity — generic
+        descriptions defeat any router that picks chains from a list)
+      - version: semver-pattern (X.Y.Z, optional pre-release suffix)
+      - skills: non-empty list
+      - loop-delay vs loop-delay-random: mutually exclusive
+      - on-rate-limit: must be one of {fail, pause, pause-with-cap}
+      - Conditional-required: max-rate-limit-pause-seconds requires
+        on-rate-limit=pause-with-cap (otherwise meaningless)
+    """
     if not isinstance(chain, dict):
         return "chain YAML did not parse to a dict"
     for required in ("name", "description", "version", "skills"):
         if required not in chain:
             return f"missing required field: {required}"
+    if not isinstance(chain.get("description"), str) or len(chain["description"].strip()) < 20:
+        return "description must be at least 20 chars (forces specificity over generic blurbs)"
+    if not isinstance(chain.get("version"), str) or not re.match(r"^\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$", chain["version"]):
+        return f"version must match semver X.Y.Z[-prerelease]; got {chain.get('version')!r}"
     if not isinstance(chain.get("skills"), list) or len(chain["skills"]) == 0:
         return "skills must be a non-empty list"
     if "loop-delay" in chain and "loop-delay-random" in chain:
         return "loop-delay and loop-delay-random are mutually exclusive"
+    if "on-rate-limit" in chain and chain["on-rate-limit"] not in ("fail", "pause", "pause-with-cap"):
+        return f"on-rate-limit must be one of fail/pause/pause-with-cap; got {chain['on-rate-limit']!r}"
+    if "max-rate-limit-pause-seconds" in chain and chain.get("on-rate-limit") != "pause-with-cap":
+        return "max-rate-limit-pause-seconds requires on-rate-limit=pause-with-cap (otherwise unused)"
     return ""
 
 
