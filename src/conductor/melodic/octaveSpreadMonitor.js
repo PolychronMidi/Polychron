@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'octaveSpreadMonitor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['octaveHelpers'],
   provides: ['octaveSpreadMonitor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'adaptiveTrustScoresVelocityNourishment',
   subsystem: 'crossLayer',
   deps: [],
+  lazyDeps: ['conductorSignalBridge', 'explainabilityBus'],
   provides: ['adaptiveTrustScoresVelocityNourishment'],
   init: () => {
   const _VELOCITY_EMA_ALPHA = 0.02;         // ~50-beat horizon

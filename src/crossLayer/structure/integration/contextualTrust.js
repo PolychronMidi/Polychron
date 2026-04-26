@@ -18,6 +18,7 @@ moduleLifecycle.declare({
   name: 'contextualTrust',
   subsystem: 'crossLayer',
   deps: ['crossLayerRegistry', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'conductorSignalBridge', 'emergentMelodicEngine'],
   provides: ['contextualTrust'],
   init: (deps) => {
   const crossLayerRegistry = deps.crossLayerRegistry;

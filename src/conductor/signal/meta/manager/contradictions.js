@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'hyperMetaManagerContradictions',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['conductorMetaWatchdog', 'explainabilityBus', 'hyperMetaManager', 'hyperMetaManagerState'],
   provides: ['hyperMetaManagerContradictions'],
   init: () => {
   const ST = hyperMetaManagerState;

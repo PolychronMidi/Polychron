@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'harmonicFieldDensityTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['harmonicFieldDensityTracker'],
   init: (deps) => {
   const L0 = deps.L0;

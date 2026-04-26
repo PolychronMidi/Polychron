@@ -10,6 +10,7 @@ moduleLifecycle.declare({
   name: 'emergentRhythmEngine',
   subsystem: 'crossLayer',
   deps: ['L0', 'crossLayerRegistry', 'regimeClassifier', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['emergentRhythmEngine'],
   init: (deps) => {
   const crossLayerRegistry = deps.crossLayerRegistry;

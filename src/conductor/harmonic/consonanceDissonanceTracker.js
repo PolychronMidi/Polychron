@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'consonanceDissonanceTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'pitchClassHelpers'],
   provides: ['consonanceDissonanceTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

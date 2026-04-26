@@ -10,6 +10,7 @@ moduleLifecycle.declare({
   name: 'conductorMetaWatchdog',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['explainabilityBus'],
   provides: ['conductorMetaWatchdog'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

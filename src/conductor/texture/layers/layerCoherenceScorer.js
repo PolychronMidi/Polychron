@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'layerCoherenceScorer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'pitchClassHelpers'],
   provides: ['layerCoherenceScorer'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

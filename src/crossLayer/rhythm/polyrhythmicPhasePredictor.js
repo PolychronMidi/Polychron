@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'polyrhythmicPhasePredictor',
   subsystem: 'crossLayer',
   deps: ['L0', 'crossLayerRegistry', 'timeStream', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['polyrhythmicPhasePredictor'],
   init: (deps) => {
   const crossLayerRegistry = deps.crossLayerRegistry;

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'crossLayerDynamicEnvelope',
   subsystem: 'crossLayer',
   deps: ['L0', 'timeStream', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'crossLayerHelpers', 'emergentMelodicEngine', 'interactionHeatMap', 'sectionIntentCurves'],
   provides: ['crossLayerDynamicEnvelope'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

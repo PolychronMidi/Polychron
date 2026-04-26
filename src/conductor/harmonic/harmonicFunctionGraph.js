@@ -15,6 +15,7 @@ moduleLifecycle.declare({
   name: 'harmonicFunctionGraph',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['conductorState'],
   provides: ['harmonicFunctionGraph'],
   init: (deps) => {
   const L0 = deps.L0;

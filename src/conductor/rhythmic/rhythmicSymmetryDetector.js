@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'rhythmicSymmetryDetector',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['beatGridHelpers'],
   provides: ['rhythmicSymmetryDetector'],
   init: (deps) => {
   const L0 = deps.L0;

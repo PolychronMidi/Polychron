@@ -18,6 +18,7 @@ moduleLifecycle.declare({
   name: 'regimeReactiveDamping',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'signalReader', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['conductorMetaWatchdog', 'conductorState', 'controllerConfig', 'explainabilityBus', 'harmonicContext', 'journeyRhythmCoupler', 'metaProfiles', 'phaseFloorController', 'pipelineCouplingManager', 'regimeReactiveDampingCore', 'regimeReactiveDampingEquilibrator', 'signalHealthAnalyzer'],
   provides: ['regimeReactiveDamping'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

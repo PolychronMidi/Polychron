@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'feedbackOscillator',
   subsystem: 'crossLayer',
   deps: ['L0', 'regimeClassifier', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine'],
   provides: ['feedbackOscillator'],
   crossLayerScopes: ['all'],
   init: (deps) => {

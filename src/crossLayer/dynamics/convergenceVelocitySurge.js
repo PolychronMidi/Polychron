@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'convergenceVelocitySurge',
   subsystem: 'crossLayer',
   deps: ['L0', 'harmonicJourney', 'validator'],
+  lazyDeps: ['convergenceDetector', 'emergentDownbeat', 'emergentMelodicEngine'],
   provides: ['convergenceVelocitySurge'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

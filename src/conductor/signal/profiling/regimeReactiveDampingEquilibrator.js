@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'regimeReactiveDampingEquilibrator',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['conductorMetaWatchdog', 'couplingHomeostasis', 'explainabilityBus', 'regimeClassifier'],
   provides: ['regimeReactiveDampingEquilibrator'],
   init: (deps) => {
   const V = deps.validator.create('regimeReactiveDampingEquilibrator');

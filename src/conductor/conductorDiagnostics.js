@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'conductorDiagnostics',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['conductorRecorderRegistry', 'conductorStateProviderRegistry'],
   provides: ['conductorDiagnostics'],
   init: () => {
   /**

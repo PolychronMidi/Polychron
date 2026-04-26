@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'thematicRecallDetector',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['thematicRecallDetector'],
   init: (deps) => {
   const L0 = deps.L0;

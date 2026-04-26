@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'densityReactiveVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['conductorSignalBridge'],
   provides: ['densityReactiveVariant'],
   init: () => {
     stutterVariants.register('densityReactive', function densityReactive(opts) {

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'spectralComplementarity',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine', 'sectionIntentCurves'],
   provides: ['spectralComplementarity'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

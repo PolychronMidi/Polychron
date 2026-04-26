@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'modalColorTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['pitchClassHelpers'],
   provides: ['modalColorTracker'],
   init: (deps) => {
   const L0 = deps.L0;

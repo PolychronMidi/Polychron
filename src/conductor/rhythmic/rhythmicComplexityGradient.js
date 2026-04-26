@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'rhythmicComplexityGradient',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['rhythmicComplexityGradient'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

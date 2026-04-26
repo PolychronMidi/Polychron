@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'convergenceDetector',
   subsystem: 'crossLayer',
   deps: ['L0', 'eventBus', 'validator'],
+  lazyDeps: ['crossLayerEmissionGateway', 'crossLayerHelpers', 'emergentMelodicEngine', 'sectionIntentCurves'],
   provides: ['convergenceDetector'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {

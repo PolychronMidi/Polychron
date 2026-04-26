@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'convergenceMemory',
   subsystem: 'crossLayer',
   deps: [],
+  lazyDeps: ['convergenceDetector', 'emergentMelodicEngine'],
   provides: ['convergenceMemory'],
   crossLayerScopes: ['all', 'section'],
   init: () => {

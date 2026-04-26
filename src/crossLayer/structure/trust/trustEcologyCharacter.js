@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'trustEcologyCharacter',
   subsystem: 'crossLayer',
   deps: ['validator'],
+  lazyDeps: ['adaptiveTrustScores', 'emergentMelodicEngine'],
   provides: ['trustEcologyCharacter'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

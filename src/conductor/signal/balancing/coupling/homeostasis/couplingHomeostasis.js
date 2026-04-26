@@ -23,6 +23,7 @@ moduleLifecycle.declare({
   // conductorScopes manifest fields handle the post-init registration
   // that previously lived as conductorIntelligence.* calls inside init.
   deps: ['homeostasisState', 'homeostasisRefresh', 'homeostasisTick', 'homeostasisFloor'],
+  lazyDeps: ['couplingHomeostasisSnapshot'],
   provides: ['couplingHomeostasis'],
   conductorScopes: ['section'],
   recorder: () => { couplingHomeostasis.refresh(); },

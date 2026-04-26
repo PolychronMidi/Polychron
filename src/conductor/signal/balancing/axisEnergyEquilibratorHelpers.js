@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'axisEnergyEquilibratorHelpers',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['conductorConfig'],
   provides: ['axisEnergyEquilibratorHelpers'],
   init: () => {
   function getWarmupTicks(defaultWarmup) {

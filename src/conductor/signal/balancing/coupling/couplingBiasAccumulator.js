@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'couplingBiasAccumulator',
   subsystem: 'conductor',
   deps: ['signalReader', 'validator'],
+  lazyDeps: ['couplingConstants', 'couplingHomeostasis', 'couplingState', 'explainabilityBus', 'signalHealthAnalyzer'],
   provides: ['couplingBiasAccumulator'],
   init: (deps) => {
   const signalReader = deps.signalReader;

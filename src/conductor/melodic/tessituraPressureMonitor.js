@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'tessituraPressureMonitor',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['tessituraPressureMonitor'],
   init: (deps) => {
   const L0 = deps.L0;

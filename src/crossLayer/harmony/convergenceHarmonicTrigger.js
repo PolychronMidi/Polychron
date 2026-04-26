@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'convergenceHarmonicTrigger',
   subsystem: 'crossLayer',
   deps: ['L0', 'eventBus', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'emergentMelodicEngine'],
   provides: ['convergenceHarmonicTrigger'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

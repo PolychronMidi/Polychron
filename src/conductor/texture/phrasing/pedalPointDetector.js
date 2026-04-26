@@ -11,6 +11,7 @@ moduleLifecycle.declare({
   name: 'pedalPointDetector',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['pedalPointDetector'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'articulationProfiler',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'beatGridHelpers'],
   provides: ['articulationProfiler'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

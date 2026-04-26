@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'durationalContourTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'beatGridHelpers'],
   provides: ['durationalContourTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

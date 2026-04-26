@@ -18,6 +18,7 @@ moduleLifecycle.declare({
   name: 'harmonicContext',
   subsystem: 'conductor',
   deps: ['eventBus', 'validator'],
+  lazyDeps: ['conductorState'],
   provides: ['harmonicContext'],
   init: (deps) => {
   const eventBus = deps.eventBus;

@@ -11,6 +11,7 @@ moduleLifecycle.declare({
   name: 'signalHealthAnalyzer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['adaptiveTrustScores', 'explainabilityBus'],
   provides: ['signalHealthAnalyzer'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

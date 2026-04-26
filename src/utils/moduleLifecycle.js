@@ -138,6 +138,17 @@ moduleLifecycle = (() => {
     for (let i = 0; i < m.provides.length; i++) {
       V.assertNonEmptyString(m.provides[i], `declare.manifest.provides[${i}] for "${m.name}"`);
     }
+    // lazyDeps: declared modules referenced by THIS module at RUNTIME (in
+    // method bodies that fire post-boot) but NOT required at init time.
+    // Does NOT participate in topo-sort -- so cyclic mutual references
+    // don't break boot. Resolves via global namespace at first method
+    // invocation (by then all manifests have been instantiated). Used by
+    // the no-bare-declared-global-in-init lint rule to silence warnings
+    // on names covered here without forcing init-time alias capture.
+    if (m.lazyDeps !== undefined) {
+      V.assertArray(m.lazyDeps, `declare.manifest.lazyDeps for "${m.name}"`);
+      for (let i = 0; i < m.lazyDeps.length; i++) V.assertNonEmptyString(m.lazyDeps[i], `declare.manifest.lazyDeps[${i}]`);
+    }
     if (m.subsystem !== undefined) V.assertNonEmptyString(m.subsystem, `declare.manifest.subsystem for "${m.name}"`);
     if (m.reads !== undefined) {
       V.assertArray(m.reads, `declare.manifest.reads for "${m.name}"`);

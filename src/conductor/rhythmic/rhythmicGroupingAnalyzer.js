@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'rhythmicGroupingAnalyzer',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['beatGridHelpers'],
   provides: ['rhythmicGroupingAnalyzer'],
   init: (deps) => {
   const L0 = deps.L0;

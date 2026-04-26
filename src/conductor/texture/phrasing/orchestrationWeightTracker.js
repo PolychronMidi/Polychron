@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'orchestrationWeightTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['orchestrationWeightTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

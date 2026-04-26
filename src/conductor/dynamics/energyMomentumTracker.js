@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'energyMomentumTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'signalReader'],
+  lazyDeps: ['analysisHelpers', 'conductorState', 'pipelineCouplingManager'],
   provides: ['energyMomentumTracker'],
   init: (deps) => {
   const signalReader = deps.signalReader;

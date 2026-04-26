@@ -23,6 +23,7 @@ moduleLifecycle.declare({
   name: 'criticalityEngine',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'signalReader', 'timeStream', 'validator'],
+  lazyDeps: ['conductorState', 'explainabilityBus', 'hyperMetaManager', 'signalHealthAnalyzer'],
   provides: ['criticalityEngine'],
   init: (deps) => {
   const signalReader = deps.signalReader;

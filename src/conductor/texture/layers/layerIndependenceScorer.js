@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'layerIndependenceScorer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'pitchClassHelpers'],
   provides: ['layerIndependenceScorer'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

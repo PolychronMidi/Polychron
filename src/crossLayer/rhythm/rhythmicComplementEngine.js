@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'rhythmicComplementEngine',
   subsystem: 'crossLayer',
   deps: ['L0', 'conductorConfig', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'crossLayerHelpers', 'emergentMelodicEngine', 'grooveTransfer', 'restSynchronizer', 'sectionIntentCurves'],
   provides: ['rhythmicComplementEngine'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {

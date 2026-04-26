@@ -24,6 +24,7 @@ moduleLifecycle.declare({
   name: 'harmonicJourney',
   subsystem: 'conductor',
   deps: ['L0', 'eventBus', 'validator'],
+  lazyDeps: ['harmonicContext', 'harmonicJourneyHelpers', 'harmonicJourneyPlanner', 'sectionMemory'],
   provides: ['harmonicJourney'],
   init: (deps) => {
   const L0 = deps.L0;

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'pitchClassGravityMap',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers', 'pitchClassHelpers'],
   provides: ['pitchClassGravityMap'],
   init: (deps) => {
   const L0 = deps.L0;

@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'stutterTremoloVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['stutterShift'],
   provides: ['stutterTremoloVariant'],
   init: () => {
     stutterVariants.register('stutterTremolo', function stutterTremolo(opts) {

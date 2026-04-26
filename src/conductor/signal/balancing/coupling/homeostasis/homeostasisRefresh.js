@@ -15,6 +15,7 @@ moduleLifecycle.declare({
   name: 'homeostasisRefresh',
   subsystem: 'conductor',
   deps: ['systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['conductorConfig', 'explainabilityBus', 'homeostasisConstants', 'homeostasisState', 'homeostasisTick', 'pairGainCeilingController', 'pipelineCouplingManager'],
   provides: ['homeostasisRefresh'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

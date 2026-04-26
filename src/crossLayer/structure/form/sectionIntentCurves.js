@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'sectionIntentCurves',
   subsystem: 'crossLayer',
   deps: ['L0', 'harmonicContext', 'harmonicJourney', 'hyperMetaManagerState', 'phaseFloorController', 'sectionMemory', 'timeStream', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'emergentMelodicEngine', 'sectionIntentCurvesHelpers'],
   provides: ['sectionIntentCurves'],
   crossLayerScopes: ['all'],
   init: (deps) => {

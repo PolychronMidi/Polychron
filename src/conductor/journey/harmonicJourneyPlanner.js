@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'harmonicJourneyPlanner',
   subsystem: 'conductor',
   deps: ['systemDynamicsProfiler'],
+  lazyDeps: ['harmonicJourneyPlannerStepBuilder'],
   provides: ['harmonicJourneyPlanner'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

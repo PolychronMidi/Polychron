@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'timbreBalanceTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['timbreBalanceTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

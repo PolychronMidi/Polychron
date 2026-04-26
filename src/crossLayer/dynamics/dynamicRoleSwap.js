@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'dynamicRoleSwap',
   subsystem: 'crossLayer',
   deps: ['L0', 'phaseFloorController', 'regimeClassifier', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'emergentMelodicEngine'],
   provides: ['dynamicRoleSwap'],
   crossLayerScopes: ['all'],
   init: (deps) => {

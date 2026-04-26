@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'intervalDirectionMemory',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['intervalDirectionMemory'],
   init: (deps) => {
   const L0 = deps.L0;

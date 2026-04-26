@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'motifChain',
   subsystem: 'composers',
   deps: ['conductorConfig', 'eventBus', 'validator'],
+  lazyDeps: ['motifTransformAdvisor'],
   provides: ['motifChain'],
   init: (deps) => {
   const eventBus = deps.eventBus;

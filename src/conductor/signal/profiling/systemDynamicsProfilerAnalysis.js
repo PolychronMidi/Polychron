@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'systemDynamicsProfilerAnalysis',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['conductorConfig', 'conductorDampening', 'entropyAmplificationController', 'entropyRegulator', 'explainabilityBus', 'hyperMetaManager', 'phaseSpaceMath', 'pipelineCouplingManager', 'regimeClassifier', 'systemDynamicsProfilerHelpers'],
   provides: ['systemDynamicsProfilerAnalysis'],
   init: () => {
   function systemDynamicsProfilerAnalysisResolveStateSmoothing(state, config) {

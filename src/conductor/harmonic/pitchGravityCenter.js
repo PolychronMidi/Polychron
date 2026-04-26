@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'pitchGravityCenter',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['pitchGravityCenter'],
   conductorScopes: ['section'],
   stateProvider: () => ({

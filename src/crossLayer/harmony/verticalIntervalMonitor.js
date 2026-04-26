@@ -9,6 +9,7 @@ moduleLifecycle.declare({
   name: 'verticalIntervalMonitor',
   subsystem: 'crossLayer',
   deps: ['L0', 'crossLayerRegistry', 'regimeClassifier', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['verticalIntervalMonitor'],
   init: (deps) => {
   const crossLayerRegistry = deps.crossLayerRegistry;

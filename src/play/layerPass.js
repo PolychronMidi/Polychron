@@ -4,6 +4,7 @@ moduleLifecycle.declare({
   name: 'layerPass',
   subsystem: 'play',
   deps: ['conductorConfig', 'eventBus', 'regimeFade', 'regimeFx', 'regimePan', 'regimeVelocity', 'texturalMemoryAdvisor', 'timeStream', 'validator'],
+  lazyDeps: ['mainBootstrap', 'microUnitAttenuator'],
   provides: ['layerPass'],
   init: (deps) => {
   const eventBus = deps.eventBus;

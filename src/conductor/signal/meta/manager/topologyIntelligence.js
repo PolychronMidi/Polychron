@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'hyperMetaManagerTopology',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['hyperMetaManagerState'],
   provides: ['hyperMetaManagerTopology'],
   init: () => {
   const ST = hyperMetaManagerState;

@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'tempoFeelEngine',
   subsystem: 'time',
   deps: ['L0', 'conductorState', 'timeStream', 'validator'],
+  lazyDeps: ['stutterTempoFeel'],
   provides: ['tempoFeelEngine'],
   init: (deps) => {
   const timeStream = deps.timeStream;

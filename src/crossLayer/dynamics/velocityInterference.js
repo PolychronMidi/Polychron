@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'velocityInterference',
   subsystem: 'crossLayer',
   deps: ['L0', 'regimeClassifier', 'validator'],
+  lazyDeps: ['crossLayerEmissionGateway', 'crossLayerHelpers', 'emergentMelodicEngine'],
   provides: ['velocityInterference'],
   crossLayerScopes: ['all'],
   init: (deps) => {

@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'negotiationEngine',
   subsystem: 'crossLayer',
   deps: ['validator'],
+  lazyDeps: ['adaptiveTrustScores', 'emergentMelodicEngine', 'explainabilityBus', 'sectionIntentCurves'],
   provides: ['negotiationEngine'],
   crossLayerScopes: ['all'],
   init: (deps) => {

@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'adaptiveTrustScoresCaching',
   subsystem: 'crossLayer',
   deps: [],
+  lazyDeps: ['conductorSignalBridge'],
   provides: ['adaptiveTrustScoresCaching'],
   init: () => {
   let cacheVersion = 0;

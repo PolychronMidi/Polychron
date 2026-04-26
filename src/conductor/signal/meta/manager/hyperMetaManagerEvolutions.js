@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'hyperMetaManagerEvolutions',
   subsystem: 'conductor',
   deps: ['signalReader', 'timeStream'],
+  lazyDeps: ['densityWaveAnalyzer', 'harmonicContext', 'hyperMetaManagerHealth', 'hyperMetaManagerState', 'pipelineCouplingManager'],
   provides: ['hyperMetaManagerEvolutions'],
   init: (deps) => {
   const signalReader = deps.signalReader;

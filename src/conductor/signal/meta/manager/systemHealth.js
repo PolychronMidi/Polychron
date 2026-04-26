@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'hyperMetaManagerHealth',
   subsystem: 'conductor',
   deps: ['systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['conductorMetaWatchdog', 'couplingHomeostasis', 'criticalityEngine', 'dimensionalityExpander', 'hyperMetaManagerState', 'metaControllerRegistry', 'pairGainCeilingController', 'phaseFloorController', 'warmupRampController'],
   provides: ['hyperMetaManagerHealth'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

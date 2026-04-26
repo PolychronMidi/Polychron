@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'structuralFormTracker',
   subsystem: 'conductor',
   deps: ['timeStream', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['structuralFormTracker'],
   conductorScopes: ['section'],
   stateProvider: () => ({

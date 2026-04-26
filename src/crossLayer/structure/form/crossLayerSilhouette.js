@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'crossLayerSilhouette',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'convergenceDetector', 'emergentMelodicEngine', 'entropyRegulator', 'interactionHeatMap', 'rhythmicPhaseLock', 'sectionIntentCurves', 'spectralComplementarity'],
   provides: ['crossLayerSilhouette'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

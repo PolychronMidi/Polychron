@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'tensionResolutionTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'conductorState', 'pitchClassHelpers'],
   provides: ['tensionResolutionTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

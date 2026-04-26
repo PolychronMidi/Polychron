@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'phaseAwareCadenceWindow',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['emergentMelodicEngine', 'explainabilityBus', 'rhythmicPhaseLock', 'sectionIntentCurves'],
   provides: ['phaseAwareCadenceWindow'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

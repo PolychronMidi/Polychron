@@ -4,6 +4,7 @@ moduleLifecycle.declare({
   name: 'axisEnergyEquilibrator',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['axisEnergyEquilibratorAxisAdjustments', 'axisEnergyEquilibratorPairAdjustments', 'axisEnergyEquilibratorRefreshContext', 'couplingConstants', 'explainabilityBus'],
   provides: ['axisEnergyEquilibrator'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

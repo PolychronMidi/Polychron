@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'alienArpeggioVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['emergentMelodicEngine', 'harmonicIntervalGuard', 'stutterShift'],
   provides: ['alienArpeggioVariant'],
   init: () => {
     stutterVariants.register('alienArpeggio', function alienArpeggio(opts) {

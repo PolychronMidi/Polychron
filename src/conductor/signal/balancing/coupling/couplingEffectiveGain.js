@@ -12,6 +12,7 @@ moduleLifecycle.declare({
   name: 'couplingEffectiveGain',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['couplingConstants', 'couplingState', 'hyperMetaManager', 'pairGainCeilingController', 'warmupRampController'],
   provides: ['couplingEffectiveGain'],
   init: (deps) => {
   const V = deps.validator.create('couplingEffectiveGain');

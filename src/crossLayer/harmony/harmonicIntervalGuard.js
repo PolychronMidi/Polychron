@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'harmonicIntervalGuard',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine', 'rhythmicPhaseLock', 'sectionIntentCurves'],
   provides: ['harmonicIntervalGuard'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

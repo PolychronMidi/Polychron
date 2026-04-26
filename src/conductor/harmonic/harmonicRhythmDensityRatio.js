@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'harmonicRhythmDensityRatio',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['harmonicRhythmTracker'],
   provides: ['harmonicRhythmDensityRatio'],
   init: (deps) => {
   const L0 = deps.L0;

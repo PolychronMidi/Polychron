@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'cadentialPreparationAdvisor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['harmonicContext'],
   provides: ['cadentialPreparationAdvisor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

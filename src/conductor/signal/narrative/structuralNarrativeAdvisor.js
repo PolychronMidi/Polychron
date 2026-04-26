@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'structuralNarrativeAdvisor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['conductorState'],
   provides: ['structuralNarrativeAdvisor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

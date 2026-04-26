@@ -11,6 +11,7 @@ moduleLifecycle.declare({
   name: 'couplingState',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['couplingConstants'],
   provides: ['couplingState'],
   init: () => {
   const C = couplingConstants;

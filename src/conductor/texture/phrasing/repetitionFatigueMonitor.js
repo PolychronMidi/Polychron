@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'repetitionFatigueMonitor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'timeStream', 'validator'],
+  lazyDeps: ['analysisHelpers', 'pipelineCouplingManager'],
   provides: ['repetitionFatigueMonitor'],
   init: (deps) => {
   const timeStream = deps.timeStream;

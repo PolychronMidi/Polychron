@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'crossLayerClimaxEngine',
   subsystem: 'crossLayer',
   deps: ['L0', 'fractalArcGenerator', 'modalColorTracker', 'phaseFloorController', 'timeStream', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'conductorSignalBridge', 'crossLayerHelpers', 'emergentMelodicEngine', 'interactionHeatMap', 'sectionIntentCurves'],
   provides: ['crossLayerClimaxEngine'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

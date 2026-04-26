@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'coordinationIndependenceManager',
   subsystem: 'crossLayer',
   deps: ['L0', 'controllerConfig', 'metaProfiles', 'regimeClassifier', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'articulationComplement', 'conductorSignalBridge', 'convergenceDetector', 'crossLayerDynamicEnvelope', 'emergentDownbeat', 'emergentMelodicEngine', 'emergentRhythmEngine', 'feedbackOscillator', 'grooveTransfer', 'harmonicIntervalGuard', 'motifEcho', 'negotiationEngine', 'registerCollisionAvoider', 'restSynchronizer', 'rhythmicComplementEngine', 'rhythmicPhaseLock', 'sectionIntentCurves', 'spectralComplementarity', 'stutterContagion', 'temporalGravity', 'texturalMirror', 'velocityInterference', 'verticalIntervalMonitor'],
   provides: ['coordinationIndependenceManager'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

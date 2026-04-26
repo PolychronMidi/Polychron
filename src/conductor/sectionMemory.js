@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'sectionMemory',
   subsystem: 'conductor',
   deps: ['L0', 'signalReader', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['coherenceMonitor', 'conductorState', 'energyMomentumTracker', 'sectionIntentCurves'],
   provides: ['sectionMemory'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

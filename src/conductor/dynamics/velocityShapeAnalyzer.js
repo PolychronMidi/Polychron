@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'velocityShapeAnalyzer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'pipelineCouplingManager'],
   provides: ['velocityShapeAnalyzer'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'pitchMemoryRecall',
   subsystem: 'crossLayer',
   deps: ['L0', 'regimeClassifier', 'timeStream', 'validator'],
+  lazyDeps: ['convergenceDetector', 'emergentDownbeat', 'emergentMelodicEngine'],
   provides: ['pitchMemoryRecall'],
   crossLayerScopes: ['all'],
   init: (deps) => {

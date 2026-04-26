@@ -18,6 +18,7 @@ moduleLifecycle.declare({
   name: 'pipelineCouplingManager',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'systemDynamicsProfiler'],
+  lazyDeps: ['couplingBiasAccumulator', 'couplingBudgetScoring', 'couplingConstants', 'couplingEffectiveGain', 'couplingGainEscalation', 'couplingRefreshSetup', 'couplingState', 'explainabilityBus', 'pipelineCouplingManagerSnapshot'],
   provides: ['pipelineCouplingManager'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

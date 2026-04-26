@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'intervalExpansionContractor',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['intervalExpansionContractor'],
   init: (deps) => {
   const L0 = deps.L0;

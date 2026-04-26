@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'dynamicPeakMemory',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['conductorState'],
   provides: ['dynamicPeakMemory'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

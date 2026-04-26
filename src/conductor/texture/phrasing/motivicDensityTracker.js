@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'motivicDensityTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['fragmentHelpers'],
   provides: ['motivicDensityTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

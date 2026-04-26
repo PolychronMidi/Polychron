@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'homeostasisFloor',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['homeostasisConstants', 'homeostasisState'],
   provides: ['homeostasisFloor'],
   init: () => {
   const { CHRONIC_DAMPEN_THRESHOLD, CHRONIC_FLOOR_RELAX_RATE,

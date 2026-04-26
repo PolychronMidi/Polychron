@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'texturalMirror',
   subsystem: 'crossLayer',
   deps: ['L0', 'regimeClassifier', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'crossLayerHelpers', 'dynamicRoleSwap', 'emergentMelodicEngine', 'sectionIntentCurves'],
   provides: ['texturalMirror'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

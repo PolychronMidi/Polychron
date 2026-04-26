@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'rhythmicPhaseLock',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['rhythmicPhaseLock'],
   crossLayerScopes: ['all'],
   init: (deps) => {

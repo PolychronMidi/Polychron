@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'onsetRegularityMonitor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'beatGridHelpers'],
   provides: ['onsetRegularityMonitor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

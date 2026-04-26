@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'profileAdaptation',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'signalReader'],
+  lazyDeps: ['signalTelemetry'],
   provides: ['profileAdaptation'],
   init: (deps) => {
   const signalReader = deps.signalReader;

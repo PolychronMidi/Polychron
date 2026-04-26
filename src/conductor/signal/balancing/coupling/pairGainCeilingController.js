@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'pairGainCeilingController',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['controllerConfig', 'hyperMetaManager', 'metaProfiles'],
   provides: ['pairGainCeilingController'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

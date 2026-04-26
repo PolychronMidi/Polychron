@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'axisEnergyEquilibratorPairAdjustments',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['pipelineCouplingManager'],
   provides: ['axisEnergyEquilibratorPairAdjustments'],
   init: () => {
   // R19 E4: Axis-aware giniMult dampening. Compute dominant axis from

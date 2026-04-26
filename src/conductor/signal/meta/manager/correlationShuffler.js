@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'correlationShuffler',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['hyperMetaManagerState'],
   provides: ['correlationShuffler'],
   init: () => {
   const S = hyperMetaManagerState.S;

@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'harmonicPedalFieldTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['harmonicPedalFieldTracker'],
   init: (deps) => {
   const L0 = deps.L0;

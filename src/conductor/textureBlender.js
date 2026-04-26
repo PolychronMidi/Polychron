@@ -9,6 +9,7 @@ moduleLifecycle.declare({
   name: 'textureBlender',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['conductorConfig', 'conductorState'],
   provides: ['textureBlender'],
   init: (deps) => {
   const V = deps.validator.create('textureBlender');

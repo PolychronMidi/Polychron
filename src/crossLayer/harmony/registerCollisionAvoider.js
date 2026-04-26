@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'registerCollisionAvoider',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine', 'explainabilityBus', 'spectralComplementarity'],
   provides: ['registerCollisionAvoider'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {
