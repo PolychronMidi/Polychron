@@ -271,7 +271,26 @@ def what_did_i_forget(changed_files: str) -> str:
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
     if not files:
-        return "No changed files detected. If you just edited files, they may already be committed. Pass changed_files='path1,path2' explicitly."
+        # Auto-fallback: when working tree is clean (typically because
+        # autocommit just landed everything), scan the LAST commit's
+        # diff instead of bailing with "pass paths explicitly". Most
+        # users running `i/review` after a session of work want to
+        # review what just got committed, not have to dig out the file
+        # list manually.
+        try:
+            import subprocess
+            from server.context import PROJECT_ROOT as _PR
+            r = subprocess.run(
+                ["git", "-C", _PR, "diff", "--name-only", "HEAD~1", "HEAD"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if r.returncode == 0 and r.stdout.strip():
+                files = [f.strip() for f in r.stdout.strip().split("\n") if f.strip()]
+        except Exception as _e:
+            files = []
+        if not files:
+            return "No changed files detected (working tree clean AND last commit empty). Pass changed_files='path1,path2' explicitly to review specific files."
+        # Fall through with the auto-derived files list.
     parts = [f"# Post-Change Audit (context: {budget})\n"]
     all_warnings = []
     doc_updates_needed = set()
