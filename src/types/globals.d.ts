@@ -528,6 +528,7 @@ interface ModuleLifecycleManifest {
   subsystem?: string;
   reads?: string[];
   emits?: string[];
+  lazyDeps?: string[];
   crossLayerScopes?: string[];
   conductorScopes?: string[];
   recorder?: (ctx: any) => void;
