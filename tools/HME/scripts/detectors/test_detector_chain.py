@@ -112,6 +112,50 @@ _CASES = [
      ],
      "ok"),
 
+    # Research-evaluation exemption: when the user explicitly invites
+    # enumeration ("what does X have to offer worth integrating?"), the
+    # closing list of recommendations IS the deliverable, not a punt.
+    # The detector must NOT fire on this shape so the agent can end the
+    # turn silently without writing a clarification wall.
+    ("exhaust_check", "research-eval-exemption",
+     [
+         _user_msg("what does this project have to offer ours worth integrating?"),
+         _assistant_msg(
+             "## Worth integrating\n\n"
+             "1. Filesystem-queue + drainer pattern\n"
+             "2. Sentinel protocol for idle signals\n"
+             "3. Sidecar proposal pattern\n\n"
+             "## Skip\n\n"
+             "- Chain runner — already covered\n"
+             "- Telegram bot — out of scope\n\n"
+             "Three patterns worth borrowing, two to skip."
+         ),
+     ],
+     "ok"),
+
+    # Always-fire override: even on a research turn, if the response
+    # contains "want me to" / "should I" / "I can build" the punt fires.
+    # The exemption only covers genuine evaluation deliverables, not
+    # survey-and-ask handoffs wearing research framing.
+    ("exhaust_check", "research-with-punt-fires",
+     [
+         _user_msg("what does this project have to offer ours worth integrating?"),
+         _assistant_msg(
+             "## Worth integrating\n\n"
+             "1. Pattern A — the queue dispatcher\n"
+             "2. Pattern B — the sentinel idle-signal\n"
+             "3. Pattern C — sidecar proposals\n"
+             "4. Pattern D — manifest snapshots\n"
+             "5. Pattern E — rate-limit modes\n\n"
+             "## Worth skipping\n\n"
+             "- Chain runner — already have main-pipeline.js\n"
+             "- Telegram integration — out of scope\n\n"
+             "Five patterns worth borrowing, two to skip. Want me to "
+             "implement the highest-leverage ones?"
+         ),
+     ],
+     "exhaust_violation"),
+
     # psycho_stop — Pattern C: survey-and-ask after being told to fix
     ("psycho_stop", "survey-and-ask",
      [
