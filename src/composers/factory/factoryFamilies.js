@@ -60,13 +60,11 @@ factoryFamilies = {
       // metaprofiles past pure decoration. Layer-aware -- when the active
       // profile declares layerVariants: { L1: 'a', L2: 'b' }, the L1 and L2
       // composer pools get DIFFERENT family weights, drawn from each
-      // variant's composerFamilies. Default to the active profile's
-      // weights when no layerVariant for the current layer.
-      const _layerForWeight = safePreBoot.call(() => LM.activeLayer, null);
-      const _metaFamilyWeight = safePreBoot.call(
-        () => metaProfiles.getComposerFamilyWeightForLayer(familyName, _layerForWeight),
-        1.0
-      );
+      // variant's composerFamilies. LM and metaProfiles are boot-validated
+      // globals available unconditionally by the time the factory resolves
+      // composers (called from the composition loop, post-boot), so direct
+      // reads are safe -- no safePreBoot wrap needed.
+      const _metaFamilyWeight = metaProfiles.getComposerFamilyWeightForLayer(familyName, LM.activeLayer);
       const profileMultiplier = (Number.isFinite(_biased) ? _biased : 1) * trendBias * _metaFamilyWeight;
       normalized[familyName] = {
         weight: (Number.isFinite(weight) && weight > 0 ? weight : 1) * profileMultiplier,
