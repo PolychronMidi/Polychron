@@ -140,6 +140,28 @@ Together these prevent the ~30-beat lag where warm-started EMA values pull towar
 
 Controller effectiveness EMA alpha scales with proven effectiveness (0.02-0.12 range). Rate multiplier authority +/-25%.
 
+### Module Registry (Stepping-Stone DI)
+
+`src/utils/moduleLifecycle.js` extends the legacy `registerInitializer(name, fn, deps)` pattern with a manifest-declared registry: `moduleLifecycle.declare({name, deps, provides, init, [crossLayerScopes/conductorScopes/recorder/stateProvider]})`. The registry owns global assignment (init returns the API; registry binds to each name in `provides`), topo-sorts deps across both pools, and fans out post-init registrations to `crossLayerRegistry` / `conductorIntelligence` from manifest fields rather than trailing `*.register()` calls.
+
+Boot sequence in `main.js`:
+1. `parseControls()` reads config-only globals
+2. `moduleLifecycle.initializeAll()` drains deferred manifests + runs legacy initializers in topological order
+3. `mainBootstrap.assertBootstrapGlobals()` validates the namespace post-boot
+4. Per-section / per-phrase resets fire via the existing `crossLayerLifecycleManager.reset*` paths
+
+Migrated modules drop the `name = (() => { ... })()` IIFE pattern in favor of `init: (deps) => { ... return api; }`. The 171+ `safePreBoot.call()` defensive guards drop to ~118 as deps become guaranteed-resolved at init time. Tests can override any module via `moduleLifecycle.override(name, mock)` before boot — the mock takes precedence over the real init.
+
+The 6 manifest types in current use:
+- `deps: ['validator', ...]` — required modules resolved into the deps argument
+- `provides: ['name']` — global names the init return is bound to
+- `crossLayerScopes: ['all', 'section']` — replaces `crossLayerRegistry.register(name, api, scopes)`
+- `conductorScopes: ['section']` — replaces `conductorIntelligence.registerModule(name, api, scopes)`
+- `recorder: (ctx) => { ... }` — replaces `conductorIntelligence.registerRecorder(name, fn)`
+- `stateProvider: () => snapshot` — replaces `conductorIntelligence.registerStateProvider(name, fn)`
+
+Coexists with the legacy IIFE+`registerInitializer` pattern during incremental migration. Full DI later is a mechanical rename of bare-global references inside method bodies to `deps.X.method()` — no further redesign needed.
+
 ## Regime Classification
 
 7 regime states with hysteresis:
