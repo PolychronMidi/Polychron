@@ -12,7 +12,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['pipelineBalancer'],
-  init: (deps) => {
+  init: () => {
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;

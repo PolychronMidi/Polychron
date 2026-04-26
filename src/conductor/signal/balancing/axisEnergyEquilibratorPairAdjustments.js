@@ -3,7 +3,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['axisEnergyEquilibratorPairAdjustments'],
-  init: (deps) => {
+  init: () => {
   // R19 E4: Axis-aware giniMult dampening. Compute dominant axis from
   // energy shares so giniMult preferentially targets pairs involving the
   // dominant axis, protecting non-dominant axes from over-tightening.

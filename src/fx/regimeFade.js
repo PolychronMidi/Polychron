@@ -21,7 +21,7 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: [],
   provides: ['regimeFade'],
-  init: (deps) => {
+  init: () => {
   const CENTER_FADE = 100;
   const MAX_BIAS = 27;
 

@@ -12,7 +12,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['couplingState'],
-  init: (deps) => {
+  init: () => {
   const C = couplingConstants;
 
   // Container state

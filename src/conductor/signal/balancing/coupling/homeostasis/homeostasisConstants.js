@@ -13,7 +13,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['homeostasisConstants'],
-  init: (deps) => {
+  init: () => {
 
   const ALL_DIMS = couplingConstants.ALL_MONITORED_DIMS;
 

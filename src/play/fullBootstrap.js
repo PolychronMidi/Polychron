@@ -6,7 +6,7 @@ moduleLifecycle.declare({
   subsystem: 'play',
   deps: [],
   provides: ['fullBootstrap'],
-  init: (deps) => {
+  init: () => {
   /**
    * AUTO-GENERATED from src/types/globals.d.ts - do not edit by hand.
    * Every name in this set is proven-defined by mainBootstrap.assertBootstrapGlobals()

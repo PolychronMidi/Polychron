@@ -3,7 +3,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['systemDynamicsProfilerAnalysis'],
-  init: (deps) => {
+  init: () => {
   function systemDynamicsProfilerAnalysisResolveStateSmoothing(state, config) {
     if (state.stateSmoothingResolved) return;
     try {

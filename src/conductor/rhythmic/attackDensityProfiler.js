@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['attackDensityProfiler'],
-  init: (deps) => {
+  init: () => {
   const WINDOW_SECONDS = 6;
   const SHORT_THRESHOLD = 0.15; // seconds - notes shorter than this are "attacks"
 

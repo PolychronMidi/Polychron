@@ -13,7 +13,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['couplingConstants'],
-  init: (deps) => {
+  init: () => {
 
   const NUDGEABLE = ['density', 'tension', 'flicker'];
   const NUDGEABLE_SET = new Set(NUDGEABLE);

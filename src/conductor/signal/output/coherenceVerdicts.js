@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['coherenceVerdicts'],
-  init: (deps) => {
+  init: () => {
 
   /**
    * Compute coherence verdicts from a fully-built manifest.

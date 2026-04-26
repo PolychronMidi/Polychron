@@ -10,7 +10,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['controllerConfig'],
-  init: (deps) => {
+  init: () => {
   const _fs = require('fs');
   const _path = require('path');
   let _config = null;

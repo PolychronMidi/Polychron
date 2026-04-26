@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'composers',
   deps: [],
   provides: ['motifTransformAdvisor'],
-  init: (deps) => {
+  init: () => {
   /**
    * Advise which motif transform parameters to use for the current musical context.
    * Returns mutation options compatible with motifChain.mutate().

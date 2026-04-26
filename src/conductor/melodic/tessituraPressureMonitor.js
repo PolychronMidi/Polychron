@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['tessituraPressureMonitor'],
-  init: (deps) => {
+  init: () => {
   const WINDOW_SECONDS = 8;
   const EXTREME_LOW = 48;   // C3 and below
   const EXTREME_HIGH = 84;  // C6 and above

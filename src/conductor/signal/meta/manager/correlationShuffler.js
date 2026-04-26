@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['correlationShuffler'],
-  init: (deps) => {
+  init: () => {
   const S = hyperMetaManagerState.S;
 
   const WINDOW_SIZE = 80;

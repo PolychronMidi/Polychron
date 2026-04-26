@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['conductorDiagnostics'],
-  init: (deps) => {
+  init: () => {
   /**
    * Create a diagnostics bundle bound to the given bias arrays and collector functions.
    * @param {{ density: Array<{name:string}>, tension: Array<{name:string}>, flicker: Array<{name:string}> }} biasArrays

@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['warmupRampController'],
-  init: (deps) => {
+  init: () => {
 
   const _S0_EXCEEDANCE_EMA_ALPHA = 0.10;
   const _SECTION_LENGTH_EMA_ALPHA = 0.08;

@@ -19,7 +19,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['pipelineCouplingManager'],
-  init: (deps) => {
+  init: () => {
   const { ALL_MONITORED_DIMS } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
   const S = couplingState;

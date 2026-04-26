@@ -14,7 +14,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['homeostasisState'],
-  init: (deps) => {
+  init: () => {
   const C = homeostasisConstants;
 
   const S = {

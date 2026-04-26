@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: [],
   provides: ['stutterSteps'],
-  init: (deps) => {
+  init: () => {
 
   /**
    * Evaluate whether this stutter step should emit.

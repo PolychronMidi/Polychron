@@ -13,7 +13,7 @@ moduleLifecycle.declare({
   subsystem: 'play',
   deps: [],
   provides: ['beatPipelineDescriptor'],
-  init: (deps) => {
+  init: () => {
 
   /** @type {readonly BeatPipelineStage[]} */
   const STAGES = Object.freeze([

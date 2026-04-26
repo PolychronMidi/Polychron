@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['phaseFloorController'],
-  init: (deps) => {
+  init: () => {
 
   // ADAPTIVE STATE
   const _SHARE_EMA_ALPHA = 0.06;

@@ -6,7 +6,7 @@ moduleLifecycle.declare({
   subsystem: 'writer',
   deps: [],
   provides: ['traceDrain'],
-  init: (deps) => {
+  init: () => {
 
   let isTracing = false;
   let fd = null;

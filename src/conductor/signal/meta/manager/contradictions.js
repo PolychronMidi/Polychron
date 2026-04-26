@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['hyperMetaManagerContradictions'],
-  init: (deps) => {
+  init: () => {
   const ST = hyperMetaManagerState;
   const S  = ST.S;
 

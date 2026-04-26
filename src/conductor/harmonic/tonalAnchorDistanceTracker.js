@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['tonalAnchorDistanceTracker'],
-  init: (deps) => {
+  init: () => {
   const WINDOW_SECONDS = 10;
   let homeCenter = -1; // established from first substantial material
 

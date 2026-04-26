@@ -25,7 +25,7 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: [],
   provides: ['regimeFx'],
-  init: (deps) => {
+  init: () => {
   const CENTER_CUTOFF = 80;
   const MAX_BIAS = 48;
 

@@ -5,7 +5,7 @@ moduleLifecycle.declare({
   subsystem: 'play',
   deps: [],
   provides: ['minimumNoteDuration'],
-  init: (deps) => {
+  init: () => {
   const CORE_MIN_S = 0.090;
   const ORNAMENT_MIN_S = 0.065;
   const CORE_UNIT_RATIO = 0.22;

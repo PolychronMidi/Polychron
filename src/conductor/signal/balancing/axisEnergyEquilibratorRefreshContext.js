@@ -3,7 +3,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['axisEnergyEquilibratorRefreshContext'],
-  init: (deps) => {
+  init: () => {
   function build(state, config, V) {
     state.beatCount++;
 
