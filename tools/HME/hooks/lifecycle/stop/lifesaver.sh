@@ -63,6 +63,17 @@ if [ -f "$ERROR_LOG" ]; then
   # - This rewrite: classify by severity word, not source tag. Any error
   #   surfaces; only explicit informational severities are observation-only.
   _OBSERVATION_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
+  # Self-origin source tags: writers that ONLY emit self-health alerts
+  # (operator/supervisor concerns, not agent code issues). Lines with
+  # these tags are classified as observation-only regardless of severity
+  # word (CRITICAL/ERROR included) — the agent has no causal path to
+  # fix a CPU-saturated worker daemon, so surfacing as a block-decision
+  # is a false-positive that flooded the alert chain. The history note
+  # in the original classifier rewrite ("source-tag whitelist that kept
+  # missing real failures") referred to GLOBAL whitelisting; this is
+  # tighter — only writers in this list, only when matched at the
+  # canonical [tag] position at line start.
+  _SELF_TAG_RE='^\[(universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   _CANARY_RE='\[CANARY-'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
@@ -79,9 +90,15 @@ if [ -f "$ERROR_LOG" ]; then
     fi
     # Strip canaries before agent/self classification.
     _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_CANARY_RE" || true)
-    # Agent-origin = anything without an explicit observation-severity word.
-    AGENT_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
-    SELF_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
+    # Self-origin = lines tagged with a known self-health writer (regardless
+    # of severity word) OR lines with an explicit observation-severity word.
+    # Agent-origin = everything else.
+    SELF_BY_TAG=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
+    REMAINING=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
+    AGENT_ERRORS=$(printf '%s\n' "$REMAINING" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
+    SELF_BY_SEV=$(printf '%s\n' "$REMAINING" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
+    # Combine self-origin from both axes (tag-based + severity-based).
+    SELF_ERRORS=$(printf '%s\n%s\n' "$SELF_BY_TAG" "$SELF_BY_SEV" | grep -v '^$' | sort -u || true)
     # Re-read line count AFTER the awk consumed its snapshot so watermark matches.
     TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
     TOTAL=${TOTAL:-0}
@@ -128,8 +145,14 @@ if [ -f "$ERROR_LOG" ]; then
       done <<< "$_UNFIXED_CANARY"
     fi
     _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" || true)
-    UNFIXED_AGENT=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
-    UNFIXED_SELF=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
+    # Same source-tag + severity-axis classification as the new-errors
+    # branch. Self-tagged writers are observation-only regardless of
+    # severity word.
+    UNFIXED_SELF_BY_TAG=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -E "$_SELF_TAG_RE" || true)
+    UNFIXED_REMAINING=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -vE "$_SELF_TAG_RE" || true)
+    UNFIXED_AGENT=$(printf '%s\n' "$UNFIXED_REMAINING" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
+    UNFIXED_SELF_BY_SEV=$(printf '%s\n' "$UNFIXED_REMAINING" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
+    UNFIXED_SELF=$(printf '%s\n%s\n' "$UNFIXED_SELF_BY_TAG" "$UNFIXED_SELF_BY_SEV" | grep -v '^$' | sort -u || true)
     echo "$TURN_START_LINE" > "$WATERMARK"
     if [ -n "$UNFIXED_AGENT" ]; then
       jq -n \

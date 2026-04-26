@@ -22,35 +22,35 @@ Stand up the spec+todo handoff doc system as the first integration. Use it to tr
 
 - [x] [easy] Create `doc/SPEC.md` seeded with full Phase 0-2 plan
 - [x] [easy] Create `doc/TODO.md` seeded with Next up = Phase 0 items
-- [ ] [easy] Add `tier` field to `i/todo` schema (default existing items to `"medium"`, new items accept `tier=easy|medium|hard`)
-- [ ] [medium] Add `i/todo action=ingest_from_spec` — read `doc/TODO.md` Next up, materialize each as an i/todo entry with `source="spec"` and `tier=<label>`
-- [ ] [medium] Add `i/todo action=promote_to_spec target=<id>` — move an ephemeral i/todo entry to `doc/TODO.md` Next up with a Reason cite
-- [ ] [medium] Add `i/todo action=close_with_spec_update target=<id>` — flip `doc/SPEC.md` `[ ]→[x]` if the i/todo item closes a spec item, append entry to `doc/TODO.md` Just shipped, mark i/todo done — atomic
-- [ ] [medium] Wire `sessionstart.sh` to read `doc/TODO.md` In flight section alongside `list_carried_over()` so handoff state surfaces at session start
-- [ ] [hard] Pre-commit / autocommit-guard rule: if `src/**` changed AND no existing-spec-item closure noted, require either `doc/SPEC.md` OR `doc/TODO.md` to change in the same commit (catches drift between work and canonical record)
+- [x] [easy] Add `tier` field to `i/todo` schema (default existing items to `"medium"`, new items accept `tier=easy|medium|hard`)
+- [x] [medium] Add `i/todo action=ingest_from_spec` — read `doc/TODO.md` Next up, materialize each as an i/todo entry with `source="spec"` and `tier=<label>`
+- [x] [medium] Add `i/todo action=promote_to_spec target=<id>` — move an ephemeral i/todo entry to `doc/TODO.md` Next up with a Reason cite
+- [x] [medium] Add `i/todo action=close_with_spec_update target=<id>` — flip `doc/SPEC.md` `[ ]→[x]` if the i/todo item closes a spec item, append entry to `doc/TODO.md` Just shipped, mark i/todo done — atomic
+- [x] [medium] Wire `sessionstart.sh` to read `doc/TODO.md` In flight section alongside `list_carried_over()` so handoff state surfaces at session start
+- [x] [hard] Pre-commit / autocommit-guard rule: if `src/**` changed AND no existing-spec-item closure noted, require either `doc/SPEC.md` OR `doc/TODO.md` to change in the same commit (catches drift between work and canonical record)
 
 ### Phase 1: Co-buddy fanout
 
 Spawn N co-buddies at SessionStart, dispatch queued tasks across them based on tier label.
 
-- [ ] [medium] Parameterize `BUDDY_COUNT=2` (or `3`) in `.env`; default to 1 when unset (back-compat with current single-buddy)
-- [ ] [medium] Extend `buddy_init.sh` to spawn N processes; each writes own SID to `tmp/hme-buddy-N.sid`
-- [ ] [medium] Create queue-dir scaffold `tmp/hme-buddy-queue/{pending,processing,done,failed}/` at SessionStart
-- [ ] [hard] Build dispatcher: scans `pending/`, atomically `mv` next file into `processing/<buddy-N>/`, dispatches via that buddy's SID, awaits sentinel, moves to `done/` (or `failed/` on non-zero exit)
-- [ ] [medium] Adopt `[no-work]` sentinel — buddy emits on stdout when its task completes AND queue dir is empty; dispatcher reads stdout until sentinel as positive idle declaration (closes the "response read prematurely" failure mode)
-- [ ] [medium] Per-run manifest at `tmp/hme-buddy-fanout/<run-id>/manifest.json` with `iterations: [...]`, `loop.terminated_by`, per-buddy `pid`/`sid`/`task_count`/`tier_distribution`
-- [ ] [medium] Floor-based escalation: each buddy declares `model-floor` and `effort-floor` in its config (tmp/hme-buddy-N.config); dispatcher computes `effective = max(item_tier, buddy_floor)` per axis
+- [x] [medium] Parameterize `BUDDY_COUNT=2` (or `3`) in `.env`; default to 1 when unset (back-compat with current single-buddy)
+- [x] [medium] Extend `buddy_init.sh` to spawn N processes; each writes own SID to `tmp/hme-buddy-N.sid`
+- [x] [medium] Create queue-dir scaffold `tmp/hme-buddy-queue/{pending,processing,done,failed}/` at SessionStart
+- [x] [hard] Build dispatcher: scans `pending/`, atomically `mv` next file into `processing/<buddy-N>/`, dispatches via that buddy's SID, awaits sentinel, moves to `done/` (or `failed/` on non-zero exit)
+- [x] [medium] Adopt `[no-work]` sentinel — buddy emits on stdout when its task completes AND queue dir is empty; dispatcher reads stdout until sentinel as positive idle declaration (closes the "response read prematurely" failure mode)
+- [x] [medium] Per-run manifest at `tmp/hme-buddy-fanout/<run-id>/manifest.json` with `iterations: [...]`, `loop.terminated_by`, per-buddy `pid`/`sid`/`task_count`/`tier_distribution`
+- [x] [medium] Floor-based escalation: each buddy declares `model-floor` and `effort-floor` in its config (tmp/hme-buddy-N.config); dispatcher computes `effective = max(item_tier, buddy_floor)` per axis
 
 ### Phase 2: Resilience + audit patterns
 
 Adopt skill-set's operational discipline patterns once Phase 1 substrate is running.
 
-- [ ] [hard] Iter-boundary drafts sweep — when iter_N+1 starts, scan iter_N's `processing/` for orphans (buddy died mid-task), treat each as injected work item with prior-iter manifest as citation, route through current dispatch mode
-- [ ] [medium] Verdict-file exit contract — every co-buddy turn writes `tmp/hme-buddy-fanout/<run-id>/buddy-<N>-verdict.md`; dispatcher's exit gate verifies every dispatched task either has a verdict OR is named in `[deferred]` block
-- [ ] [medium] Citation-required-for-edit — co-buddies proposing KB entries / spec changes must cite the motivating transcript line (`<i>_<skill>.txt:<line>` or for buddies `tmp/hme-buddy-fanout/<run-id>/buddy-<N>-transcript.txt:<line>`)
-- [ ] [medium] Fast-path on clean — verifiers skip deep walk when all 4 cheap signals say clean (no prior escalation, all exit codes 0, transcript free of error keywords, no orphan drafts)
-- [ ] [medium] Manager-guidance file `tmp/hme-operator-guidance.md` — durable cross-run directive channel; next `i/review` reads as priming context
-- [ ] [easy] Three-loop NEVER lists — codify per-buddy jurisdiction in tier-specific buddy frontmatter (e.g. easy buddy never edits architecture-bearing files; hard buddy never deals with mechanical refactors)
+- [x] [hard] Iter-boundary drafts sweep — when iter_N+1 starts, scan iter_N's `processing/` for orphans (buddy died mid-task), treat each as injected work item with prior-iter manifest as citation, route through current dispatch mode
+- [x] [medium] Verdict-file exit contract — every co-buddy turn writes `tmp/hme-buddy-fanout/<run-id>/buddy-<N>-verdict.md`; dispatcher's exit gate verifies every dispatched task either has a verdict OR is named in `[deferred]` block
+- [x] [medium] Citation-required-for-edit — co-buddies proposing KB entries / spec changes must cite the motivating transcript line (`<i>_<skill>.txt:<line>` or for buddies `tmp/hme-buddy-fanout/<run-id>/buddy-<N>-transcript.txt:<line>`)
+- [x] [medium] Fast-path on clean — verifiers skip deep walk when all 4 cheap signals say clean (no prior escalation, all exit codes 0, transcript free of error keywords, no orphan drafts)
+- [x] [medium] Manager-guidance file `tmp/hme-operator-guidance.md` — durable cross-run directive channel; next `i/review` reads as priming context
+- [x] [easy] Three-loop NEVER lists — codify per-buddy jurisdiction in tier-specific buddy frontmatter (e.g. easy buddy never edits architecture-bearing files; hard buddy never deals with mechanical refactors)
 
 ## Deferred / out of scope
 
