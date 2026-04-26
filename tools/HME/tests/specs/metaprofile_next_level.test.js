@@ -369,12 +369,10 @@ test('disableControllers: meditative silences antagonism_bridges + pair_gain_cei
 });
 
 test('pair_gain_ceiling controller respects metaprofile disable + coupling-pair hint', () => {
-  // Boot the controller graph minimally.
-  require('../../../../src/utils');
-  require('../../../../src/conductor/controllerConfig');
-  require('../../../../src/conductor');
-  // Drain the registry so declared modules with deferred deps instantiate.
-  // moduleLifecycle.initializeAll throws if already booted; guard.
+  // Full DI requires the entire dep graph -- pairGainCeilingController
+  // depends on harmonicContext which depends on eventBus (loaded in
+  // /play). Require the whole src/index to populate every declared module.
+  require('../../../../src/index');
   try { global.moduleLifecycle.initializeAll(); } catch (_e) { /* already booted */ }
 
   // Activate chaotic which prescribes density-entropy as a coupling pair.
