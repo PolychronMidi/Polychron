@@ -454,7 +454,7 @@ moduleLifecycle = (() => {
         // silently and let _instantiateManifest's namespace lookup catch
         // unresolved references at instantiation time with a clear error.
         // For registerInitializer-kind entries, the dep MAY be a legacy
-        // global that's bound by IIFE at file-require time (e.g. rhythmRegistry,
+        // namespace bound by IIFE at file-require time (e.g. rhythmRegistry,
         // chordRegistry). Those are loaded before initializeAll runs, so the
         // dep is already satisfied at execution time. Only fail if the
         // namespace ALSO has no value bound, which would mean the dep is
