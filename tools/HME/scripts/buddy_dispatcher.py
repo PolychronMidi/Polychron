@@ -139,19 +139,23 @@ _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 
 # Dispatch mode — decouples the dispatcher from the buddy fanout's
 # `claude --resume <sid>` worker so the queue + orphan-sweep + verdict
-# infrastructure stays useful even when BUDDY_SYSTEM=0:
+# infrastructure stays useful even when BUDDY_SYSTEM=0.
 #
-#   claude-resume  default when BUDDY_SYSTEM=1; spawns claude-cli per task
-#                  against the buddy's persistent session (model+effort
-#                  routing, etc.). Original behavior.
+# DESIGN INVARIANT: no path here uses raw Anthropic API. claude-resume
+# spawns the Claude Code CLI binary (consumes Max subscription quota,
+# same channel as interactive sessions); synthesis routes through HME's
+# cascade providers (NVIDIA/Cerebras/Groq/Gemini per synthesis_config.py).
+#
+#   claude-resume  default when BUDDY_SYSTEM=1; spawns the `claude` CLI
+#                  per task against the buddy's persistent session
+#                  (model+effort routing, etc.). Original behavior.
 #   synthesis      routes each task through synthesis_reasoning.call() —
-#                  HME's existing local/cascade reasoning path. No
-#                  Anthropic API calls, no rate-limit exposure, no buddy
-#                  sessions needed. Effective when Anthropic quota is
-#                  exhausted but local llamacpp / cascade providers are
-#                  still healthy.
+#                  HME's local/cascade reasoning path. No Anthropic
+#                  involvement at all. Effective when Max session quota
+#                  is exhausted but cascade providers are still healthy.
 #   disabled       no dispatcher activity; enqueue sentinel skips, drain
 #                  refuses. Default when BUDDY_SYSTEM=0 + no override.
+#                  Equivalent to pre-integration behavior.
 #
 # Resolution: HME_DISPATCH_MODE env wins; otherwise BUDDY_SYSTEM=1 →
 # claude-resume, BUDDY_SYSTEM=0 → disabled.
