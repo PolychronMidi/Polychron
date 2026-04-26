@@ -22,10 +22,11 @@ const SRC  = path.join(ROOT, 'src');
 
 // Baseline ratchets DOWN as the moduleLifecycle migration eliminates
 // safePreBoot wraps that the registry now makes unnecessary. Phase 2/3
-// migrations dropped this from 171/59 to current. Future migrations should
-// continue ratcheting; do NOT raise the baseline.
-const BASELINE_CALLS = 166;
-const BASELINE_FILES = 56;
+// migrations dropped this from 171/59 to 118/50 (8 modules migrated;
+// bulk-removed 48 wraps that referenced the now-guaranteed names). Future
+// migrations should continue ratcheting; do NOT raise the baseline.
+const BASELINE_CALLS = 118;
+const BASELINE_FILES = 50;
 
 function findJsFiles(dir) {
   const results = [];

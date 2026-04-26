@@ -94,10 +94,21 @@ moduleLifecycle = (() => {
   //     subsystem?: string                       -- 'utils'|'conductor'|'rhythm'|... (firewall metadata)
   //     reads?:     string[]                     -- cross-subsystem reads (firewall metadata)
   //     emits?:     string[]                     -- L0 channels written (firewall metadata)
+  //
+  //     // Phase 4 unification: post-init registrations declared inline.
+  //     // After init() returns, the registry calls the appropriate
+  //     // sub-registries automatically -- migrated modules drop the
+  //     // trailing crossLayerRegistry.register / conductorIntelligence.*
+  //     // calls that previously lived after the IIFE close.
+  //     crossLayerScopes?: string[]              -- crossLayerRegistry.register(name, api, scopes)
+  //     conductorScopes?: string[]               -- conductorIntelligence.registerModule(name, api, scopes)
+  //     recorder?: (ctx: any) => void            -- conductorIntelligence.registerRecorder(name, fn)
+  //     stateProvider?: () => object             -- conductorIntelligence.registerStateProvider(name, fn)
   //   }
   //
-  // The optional metadata (subsystem/reads/emits) is consumed by the
-  // future verifier; the registry itself only needs name/deps/provides/init.
+  // Subsystem/reads/emits metadata is consumed by check-module-manifests.js;
+  // the registry itself only needs name/deps/provides/init. The post-init
+  // registration fields are honored by the registry post-instantiate.
   // ===================================================================
 
   // Initialization Registry (legacy + declare unified). Defined up front
@@ -136,6 +147,17 @@ moduleLifecycle = (() => {
       V.assertArray(m.emits, `declare.manifest.emits for "${m.name}"`);
       for (let i = 0; i < m.emits.length; i++) V.assertNonEmptyString(m.emits[i], `declare.manifest.emits[${i}]`);
     }
+    // Phase 4 post-init registrations.
+    if (m.crossLayerScopes !== undefined) {
+      V.assertArray(m.crossLayerScopes, `declare.manifest.crossLayerScopes for "${m.name}"`);
+      for (let i = 0; i < m.crossLayerScopes.length; i++) V.assertNonEmptyString(m.crossLayerScopes[i], `declare.manifest.crossLayerScopes[${i}]`);
+    }
+    if (m.conductorScopes !== undefined) {
+      V.assertArray(m.conductorScopes, `declare.manifest.conductorScopes for "${m.name}"`);
+      for (let i = 0; i < m.conductorScopes.length; i++) V.assertNonEmptyString(m.conductorScopes[i], `declare.manifest.conductorScopes[${i}]`);
+    }
+    if (m.recorder !== undefined) V.requireType(m.recorder, 'function', `declare.manifest.recorder for "${m.name}"`);
+    if (m.stateProvider !== undefined) V.requireType(m.stateProvider, 'function', `declare.manifest.stateProvider for "${m.name}"`);
   }
 
   /**
@@ -280,6 +302,32 @@ moduleLifecycle = (() => {
       _instances.set(m.name, api);
       if (api !== undefined && api !== null) {
         for (const provName of m.provides) _writeNamespace(provName, api);
+      }
+      // Phase 4: honor post-init registration fields. Each sub-registry is
+      // looked up via the namespace (it's a legacy global today; later both
+      // could be declared modules). When the field is present, the registry
+      // dispatches to the sub-registry's appropriate API on the instance.
+      // Errors here are surfaced -- the manifest authored these fields, so
+      // missing sub-registries are real bugs.
+      if (api && m.crossLayerScopes && m.crossLayerScopes.length > 0) {
+        const reg = _readNamespace('crossLayerRegistry');
+        if (!reg) throw new Error(`moduleLifecycle: "${m.name}" declares crossLayerScopes but crossLayerRegistry is not loaded`);
+        reg.register(m.name, api, m.crossLayerScopes);
+      }
+      if (api && m.conductorScopes && m.conductorScopes.length > 0) {
+        const ci = _readNamespace('conductorIntelligence');
+        if (!ci) throw new Error(`moduleLifecycle: "${m.name}" declares conductorScopes but conductorIntelligence is not loaded`);
+        ci.registerModule(m.name, api, m.conductorScopes);
+      }
+      if (m.recorder) {
+        const ci = _readNamespace('conductorIntelligence');
+        if (!ci) throw new Error(`moduleLifecycle: "${m.name}" declares recorder but conductorIntelligence is not loaded`);
+        ci.registerRecorder(m.name, m.recorder);
+      }
+      if (m.stateProvider) {
+        const ci = _readNamespace('conductorIntelligence');
+        if (!ci) throw new Error(`moduleLifecycle: "${m.name}" declares stateProvider but conductorIntelligence is not loaded`);
+        ci.registerStateProvider(m.name, m.stateProvider);
       }
     }
   }
