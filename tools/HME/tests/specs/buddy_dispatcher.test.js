@@ -367,6 +367,75 @@ print(json.dumps({
   });
 });
 
+test('dispatcher: rate-limit detection handles TZ-aware wall-clock form', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json, time
+# "resets at 7:50pm (Asia/Tokyo)" — TZ-aware form
+rl = disp._detect_rate_limit("rate limit hit. resets at 7:50pm (Asia/Tokyo)", "")
+# Reset epoch should be set; specific time depends on now
+print(json.dumps({
+  "detected": rl is not None and rl["detected"],
+  "has_reset": rl is not None and rl.get("reset_epoch") is not None,
+  "reset_in_future": rl["reset_epoch"] > time.time() if rl and rl.get("reset_epoch") else False,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.detected, true, 'TZ-aware form must be detected');
+    assert.strictEqual(parsed.has_reset, true, 'TZ-aware form must parse a reset epoch');
+    assert.strictEqual(parsed.reset_in_future, true, 'reset epoch must be in future');
+  });
+});
+
+test('dispatcher: _atomic_write produces target with no half-written intermediate', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json, os
+disp._ensure_dirs()
+target = disp.FANOUT_ROOT / "atomic-test.json"
+disp._atomic_write(target, '{"a": 1, "b": 2}')
+# The .tmp-<pid> intermediate must be gone after replace
+tmp_files = [f for f in target.parent.iterdir() if ".tmp-" in f.name]
+content = json.loads(target.read_text())
+print(json.dumps({
+  "target_exists": target.exists(),
+  "tmp_files_remaining": len(tmp_files),
+  "content": content,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.target_exists, true, 'target written');
+    assert.strictEqual(parsed.tmp_files_remaining, 0, 'no .tmp- intermediates left behind');
+    assert.deepStrictEqual(parsed.content, { a: 1, b: 2 }, 'content correct');
+  });
+});
+
+test('dispatcher: _is_pid_alive correctly distinguishes live vs dead PIDs', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import os, json
+my_pid = os.getpid()
+print(json.dumps({
+  "self_alive": disp._is_pid_alive(my_pid),
+  "zero_pid": disp._is_pid_alive(0),
+  "negative_pid": disp._is_pid_alive(-1),
+  "implausible_pid": disp._is_pid_alive(2**30),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.self_alive, true, 'own PID is alive');
+    assert.strictEqual(parsed.zero_pid, false, 'pid=0 is sentinel for "no pid", treat as dead');
+    assert.strictEqual(parsed.negative_pid, false, 'negative pid is dead');
+    assert.strictEqual(parsed.implausible_pid, false, 'implausible PID is dead');
+  });
+});
+
 test('dispatcher: rate-limit detection parses reset_time when present', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `

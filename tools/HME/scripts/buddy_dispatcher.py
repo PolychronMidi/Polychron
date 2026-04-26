@@ -102,6 +102,15 @@ RATE_LIMIT_RESET_RE = re.compile(
     r"reset_time[\"']?\s*[:=]\s*[\"']?(\d+)",
     re.IGNORECASE,
 )
+
+# Field-name aliases for rate-limit signals — Anthropic's harness has
+# drifted across versions (resetsAt / reset_time / resetTime / resets_at;
+# retryAfterSeconds / retry_after_seconds / retryAfter). Defensive
+# extraction tries each in priority order. Lifted from skill-set
+# Phase 13 live-failure follow-ups (their structured-event schema
+# changed twice in production).
+_RATE_LIMIT_RESET_FIELDS = ("resetsAt", "reset_time", "resetTime", "resets_at", "reset")
+_RATE_LIMIT_RETRY_FIELDS = ("retryAfterSeconds", "retry_after_seconds", "retryAfter", "retry_after")
 RATE_LIMIT_JITTER_RANGE = (15, 60)              # extra seconds after parsed reset
 RATE_LIMIT_FALLBACK_BACKOFF_SECONDS = 300       # initial backoff when no reset_time
 
@@ -114,6 +123,39 @@ _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 def _ensure_dirs() -> None:
     for p in (QUEUE_PENDING, QUEUE_PROCESSING, QUEUE_DONE, QUEUE_FAILED, FANOUT_ROOT):
         p.mkdir(parents=True, exist_ok=True)
+
+
+def _atomic_write(target: Path, content: str) -> None:
+    """Atomic file write via same-directory temp + os.replace. Same
+    filesystem keeps rename atomic per POSIX; PID suffix avoids
+    collision with concurrent writers. Drop-in upgrade for any state
+    file write where partial-write corruption would be a real failure
+    mode (manifests, verdict files, watermarks). Skill-set's
+    apply-skill-patch.py uses this pattern for SKILL.md replacement;
+    same shape applies to JSON state files here."""
+    tmp = target.parent / f"{target.name}.tmp-{os.getpid()}"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(content)
+    os.replace(str(tmp), str(target))
+
+
+def _is_pid_alive(pid: int) -> bool:
+    """Liveness probe via os.kill(pid, 0) — distinguishes stale PID
+    files from live processes. PermissionError = alive but other-user;
+    ProcessLookupError = dead. Lifted from skill-set drive-chain.py;
+    drop-in upgrade for any PID-file consumer."""
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+        return True
+    except PermissionError:
+        return True  # exists, just not ours
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return False
 
 
 def _log_error(msg: str) -> None:
@@ -201,13 +243,13 @@ def _write_manifest(run_id: str, manifest: dict, in_progress: bool = True) -> No
     """Snapshot-write per-task. The `in_progress: true` flag tells any
     mid-run reader (a verifier, a sibling buddy) that the canonical
     record isn't complete — preventing false-positive "this task is
-    missing!" findings while the run is still draining."""
+    missing!" findings while the run is still draining.
+    Uses atomic write so a sibling reader never sees a half-written
+    JSON file (would make the in_progress flag itself unreliable)."""
     manifest["in_progress"] = in_progress
     manifest["updated_ts"] = time.time()
     manifest_path = FANOUT_ROOT / run_id / "manifest.json"
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2)
+    _atomic_write(manifest_path, json.dumps(manifest, indent=2))
 
 
 def _claim_task(task_path: Path, buddy: dict) -> Path | None:
@@ -362,27 +404,47 @@ def _detect_rate_limit(stderr: str, stdout: str) -> dict | None:
             except ValueError:
                 reset_epoch = None
         # "resets at HH:MM [am|pm] [(tz)]" form — interpret as next
-        # occurrence of that wall-clock time. Skip TZ handling (defer
-        # to local time); good-enough for pause behavior.
+        # occurrence of that wall-clock time, TZ-aware when an IANA
+        # zone name is captured (e.g. "7:50pm (Asia/Tokyo)"). Falls back
+        # to local time when no TZ given OR when zoneinfo can't resolve
+        # the captured name. Skill-set's live-failure traces show
+        # Anthropic emits localized banners for non-US users — without
+        # TZ-aware parsing those resets get misinterpreted by N hours.
         elif m.group(1) and m.group(2):
             try:
                 hh = int(m.group(1))
                 mm = int(m.group(2))
                 ampm = (m.group(3) or "").lower()
+                tz_name = (m.group(4) or "").strip()
                 if ampm == "pm" and hh < 12:
                     hh += 12
                 elif ampm == "am" and hh == 12:
                     hh = 0
-                now_lt = time.localtime()
-                target_lt = time.struct_time((
-                    now_lt.tm_year, now_lt.tm_mon, now_lt.tm_mday,
-                    hh, mm, 0,
-                    now_lt.tm_wday, now_lt.tm_yday, now_lt.tm_isdst
-                ))
-                target_epoch = time.mktime(target_lt)
-                if target_epoch <= time.time():
-                    target_epoch += 86400  # next day
-                reset_epoch = target_epoch
+                tz = None
+                if tz_name:
+                    try:
+                        from zoneinfo import ZoneInfo
+                        tz = ZoneInfo(tz_name)
+                    except (ImportError, Exception):
+                        tz = None
+                if tz is not None:
+                    from datetime import datetime, timedelta
+                    now_dt = datetime.now(tz)
+                    target_dt = now_dt.replace(hour=hh, minute=mm, second=0, microsecond=0)
+                    if target_dt <= now_dt:
+                        target_dt = target_dt + timedelta(days=1)
+                    reset_epoch = target_dt.timestamp()
+                else:
+                    now_lt = time.localtime()
+                    target_lt = time.struct_time((
+                        now_lt.tm_year, now_lt.tm_mon, now_lt.tm_mday,
+                        hh, mm, 0,
+                        now_lt.tm_wday, now_lt.tm_yday, now_lt.tm_isdst
+                    ))
+                    target_epoch = time.mktime(target_lt)
+                    if target_epoch <= time.time():
+                        target_epoch += 86400  # next day
+                    reset_epoch = target_epoch
             except (ValueError, OverflowError):
                 reset_epoch = None
     return {
