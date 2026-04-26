@@ -340,13 +340,17 @@ test('getComposerFamilyWeight: returns active profile bias or 1.0 default', () =
   mp.setActive(null);
 });
 
-test('conductor pairing: meditative prefers atmospheric, avoids chaotic', () => {
+test('conductor pairing: meditative prefers atmospheric, avoids explosive', () => {
+  // Affinity/antipathy reference REAL conductor profile names from
+  // CONDUCTOR_PROFILE_SOURCES. The fictional 'chaotic'/'varied' names
+  // were dropped after they caused setActiveProfile failures at runtime
+  // (no such conductor profile registered).
   mp.setActive(null);
   mp.setActive('meditative', 0);
   assert.strictEqual(mp.preferConductorProfile('atmospheric'), true);
-  assert.strictEqual(mp.preferConductorProfile('meditative'), true);
-  assert.strictEqual(mp.preferConductorProfile('chaotic'), false);
-  assert.strictEqual(mp.avoidConductorProfile('chaotic'), true);
+  assert.strictEqual(mp.preferConductorProfile('minimal'), true);
+  assert.strictEqual(mp.preferConductorProfile('explosive'), false);
+  assert.strictEqual(mp.avoidConductorProfile('explosive'), true);
   assert.strictEqual(mp.avoidConductorProfile('atmospheric'), false);
   mp.setActive(null);
 });
