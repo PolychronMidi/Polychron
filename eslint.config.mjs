@@ -149,10 +149,17 @@ export default [
       'local/no-bare-l0-channel': 'error',
       'local/no-doubled-fallback': 'error',
       'local/no-or-fallback-on-config-read': 'error',
-      // Warn (not error) so existing modules can be migrated incrementally
-      // from bare-globals to deps. references. Promote to 'error' after
-      // the per-module sweep completes.
-      'local/no-bare-declared-global-in-init': 'warn'
+      // Disabled by default. Bulk-converting bare-global references to
+      // deps. aliases appears safe but isn't: adding a name to a manifest's
+      // deps causes the registry to DEFER eager instantiation until that
+      // name is bound. Many declared modules are used at file-load time
+      // by their legacy IIFE-bound peers (e.g. stutterVariants is read by
+      // machineGun.js's top-level register call) -- deferral breaks those
+      // peers' load. Per-module manual migration is required: identify
+      // which deps are safe to add (no eager-load consumers), convert
+      // those, leave the rest. Re-enable as 'warn' / 'error' once the
+      // sweep completes per-subsystem.
+      'local/no-bare-declared-global-in-init': 'off'
     },
 
   },
