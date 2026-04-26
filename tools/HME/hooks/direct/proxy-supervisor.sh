@@ -195,21 +195,34 @@ _sv_fire_crashloop_lifesaver() {
 }
 
 _sv_loop() {
-  # Singleton check: if another supervisor's pid is already in the file
-  # AND that pid is alive, refuse to start. Two concurrent loops were
-  # the silent root cause of intermittent hook failures: each independently
-  # decided "proxy down -> respawn" and killed each other's spawns. The
-  # `start` action checks the pidfile, but `_loop` (called by setsid)
-  # didn't -- so a hook chain that fired `start` twice (during proxy
-  # crashes) could spawn two _loops that both grabbed the file in turn.
-  if [ -f "$_SV_PID_FILE" ]; then
-    _sv_existing=$(cat "$_SV_PID_FILE" 2>/dev/null)
-    if [ -n "$_sv_existing" ] && [ "$_sv_existing" != "$$" ] && kill -0 "$_sv_existing" 2>/dev/null; then
-      _sv_log "another supervisor already running (pid=$_sv_existing); refusing to start duplicate (this pid=$$)"
+  # Singleton check via flock advisory lock + pid-file confirmation.
+  # The pid-file-only check (kill -0 on existing pid) had a TOCTOU
+  # window: between the kill -0 and our `echo $$ > pidfile`, another
+  # _sv_loop could acquire and write its own pid. flock closes that
+  # window — two simultaneous _sv_loop invocations contend for the
+  # same lock fd; the loser bails. The pid-file is still written
+  # alongside so external observers can read which pid holds the
+  # supervisor (flock -n doesn't expose owner-pid via filesystem).
+  _SV_LOCK_FILE="$_SV_PID_FILE.lock"
+  exec 200>"$_SV_LOCK_FILE" 2>/dev/null || true
+  if command -v flock >/dev/null 2>&1; then
+    if ! flock -n 200 2>/dev/null; then
+      _sv_log "another supervisor holds the lock at $_SV_LOCK_FILE; refusing to start (this pid=$$)"
       exit 0
     fi
   fi
-  _sv_log "supervisor loop started (pid=$$)"
+  # Defense-in-depth: even with flock held, sanity-check the pid file
+  # (covers the edge where flock isn't available on this host or the
+  # lock dir is unmounted). If a live foreign pid is in the file,
+  # bail.
+  if [ -f "$_SV_PID_FILE" ]; then
+    _sv_existing=$(cat "$_SV_PID_FILE" 2>/dev/null)
+    if [ -n "$_sv_existing" ] && [ "$_sv_existing" != "$$" ] && kill -0 "$_sv_existing" 2>/dev/null; then
+      _sv_log "another supervisor pid in file (pid=$_sv_existing) and alive; refusing to start duplicate (this pid=$$)"
+      exit 0
+    fi
+  fi
+  _sv_log "supervisor loop started (pid=$$, flock held)"
   echo $$ > "$_SV_PID_FILE"
   # Only remove the pid file if it still contains OUR pid. Stop+start
   # races produce a window where the incoming supervisor has already
@@ -221,6 +234,11 @@ _sv_loop() {
     if [ "$(cat "$_SV_PID_FILE" 2>/dev/null)" = "$$" ]; then
       rm -f "$_SV_PID_FILE" 2>/dev/null
     fi
+    # Release flock + drop lockfile if we hold it. fd 200 closes
+    # automatically on exit; explicit close lets us also clean the
+    # lockfile to keep tmp/ tidy. flock release on close is automatic
+    # so leaving fd open until process exit is also correct.
+    rm -f "$_SV_LOCK_FILE" 2>/dev/null
     exit 0
   ' INT TERM
 
