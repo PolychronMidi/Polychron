@@ -42,14 +42,14 @@ factoryFamilies = {
       const profileWeights = (conductorConfig && conductorConfig.getFamilyWeights)
         ? conductorConfig.getFamilyWeights() : {};
       // Trust ecology character bias: dominant trust system boosts its associated family
-      const biasedWeights = /** @type {Record<string, number>} */ (safePreBoot.call(() => trustEcologyCharacter.biasWeights(profileWeights), profileWeights));
+      const biasedWeights = /** @type {Record<string, number>} */ (trustEcologyCharacter.biasWeights(profileWeights));
       // R24: section memory trend bias - previous section's momentum shapes families
       const TREND_FAMILY_BIAS = {
         rising: { development: 1.4, harmonicMotion: 1.3, rhythmicDrive: 1.2 },
         falling: { diatonicCore: 1.5, tonalExploration: 1.3 },
         steady: {}
       };
-      const prevSection = safePreBoot.call(() => sectionMemory.getPrevious(), null);
+      const prevSection = sectionMemory.getPrevious();
       const trendBias = (prevSection && prevSection.trend && TREND_FAMILY_BIAS[prevSection.trend])
         ? (TREND_FAMILY_BIAS[prevSection.trend][familyName] ?? 1.0) : 1.0;
       // Preserve explicit 0-weights (family disabled) instead of collapsing

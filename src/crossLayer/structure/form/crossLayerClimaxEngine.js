@@ -220,7 +220,7 @@ moduleLifecycle.declare({
     const MAX_DENSITY_SUPPRESSION = 0.45;
     const densityScale = clamp((lastDensity - 0.55) / 0.35, 0, 1);
     // Xenolinguistic L1: modal color awareness. Vanilla harmony = widen register to seek color tones.
-    const modalProfile = safePreBoot.call(() => modalColorTracker.getModalProfile(), null);
+    const modalProfile = modalColorTracker.getModalProfile();
     const colorRegisterBias = modalProfile && modalProfile.vanilla ? 2 : modalProfile && modalProfile.colorful ? -1 : 0;
     const dpRelief = V.optionalFinite(DENSITY_PRESSURE_RELIEF[climaxRegime], 0.12);
     const dpPressure = clamp(densityPressureAccum / DENSITY_SATURATION_BEATS, 0, 1);

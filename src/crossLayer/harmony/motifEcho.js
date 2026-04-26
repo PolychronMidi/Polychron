@@ -57,7 +57,7 @@ moduleLifecycle.declare({
       : 0;
     // R78: phase-lock coupling -- repel mode opens space for imitation (layers offset creates echo opportunity),
     // lock mode suppresses echo (synchronized layers reinforce directly, no need for delayed imitation).
-    const phaseModeEcho = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseModeEcho = rhythmicPhaseLock.getMode();
     const phaseEchoScale = phaseModeEcho === 'repel' ? 1.15 : phaseModeEcho === 'lock' ? 0.88 : 1.0;
     // R90 E1: contourShape antagonism bridge with entropyRegulator (VIRGIN pair r=-0.503) -- falling melodic contour
     // boosts echo probability (descending = nostalgic repetition, imitative memory natural).

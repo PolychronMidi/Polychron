@@ -126,7 +126,7 @@ moduleLifecycle.declare({
     const complexityNarrowHIG = clamp((complexityHIG - 0.5) * 0.06, -0.02, 0.04);
     // R80 E3: phase coupling -- locked layers prefer consonance (tighter deadband),
     // repelling layers tolerate dissonance (wider deadband for harmonic tension).
-    const phaseModeHIG = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseModeHIG = rhythmicPhaseLock.getMode();
     const phaseNarrowHIG = phaseModeHIG === 'lock' ? 0.03 : phaseModeHIG === 'repel' ? -0.04 : 0;
     // R82 E3: tessituraLoad bridge -- extreme register tightens harmonic control (narrow deadband).
     // Counterpart: stutterContagion AMPLIFIES contagion at register extremes (chaos diversifies).

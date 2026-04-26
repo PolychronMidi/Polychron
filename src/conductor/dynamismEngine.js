@@ -243,7 +243,7 @@ moduleLifecycle.declare({
     const rawPlayOut = inputPlay * (ctx.playBase + composite * ctx.playScale) + ctx.layerBias * 0.5 * ctx.layerBiasScale;
     const rawStutterOut = inputStutter * (ctx.stutterBase + composite * ctx.stutterScale) + journeyEnergy * ctx.journeyBoost + feedbackEnergy * ctx.feedbackBoost + ctx.layerBias * ctx.layerBiasScale;
     // R23: self-aware density correction from emission gap
-    const emGap = /** @type {number} */ (safePreBoot.call(() => emissionFeedbackListener.getEmissionGap(), 0));
+    const emGap = /** @type {number} */ (emissionFeedbackListener.getEmissionGap());
     const densityCorrection = Number.isFinite(emGap) ? clamp(emGap * 0.08, -0.04, 0.04) : 0;
     const playOut = clamp(V.optionalFinite(rawPlayOut + densityCorrection, inputPlay), 0.005, 0.98);
     const stutterOut = clamp(V.optionalFinite(rawStutterOut, inputStutter), 0.01, 0.98);

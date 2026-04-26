@@ -72,7 +72,7 @@ moduleLifecycle.declare({
     // RAISE the target for phase pairs so fewer of them exceed the threshold
     // and trigger decorrelation. Higher target = less tightening = phase
     // correlations persist longer = more phase axis energy.
-    const phaseFloorSnap = safePreBoot.call(() => phaseFloorController.getSnapshot(), null);
+    const phaseFloorSnap = phaseFloorController.getSnapshot();
     const phaseShareEma = V.optionalFinite(phaseFloorSnap && phaseFloorSnap.shareEma, 0.1667);
     const phaseTargetScaleIncrease = phaseShareEma < 0.10 && targetScale > 0
       ? clamp((0.10 - phaseShareEma) / 0.08, 0, 1)

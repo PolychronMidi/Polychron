@@ -43,8 +43,8 @@ stutterExecutePlan = function stutterExecutePlan(stutterMgr, plan = {}) {
   // Signal-driven curve override: articulation and rhythm mode modulate curve type
   if (!cfg.rateCurve && !cfg.phaseCurve) {
     const artLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
-    const art = safePreBoot.call(() => articulationComplement.getArticulationProfile(artLayer), null);
-    const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
+    const art = articulationComplement.getArticulationProfile(artLayer);
+    const rhythmMode = rhythmicComplementEngine.getMode();
     if (art && art.isStaccato) {
       directive.rateCurve = 'accelerando';
       directive.phaseCurve = 'pingpong';

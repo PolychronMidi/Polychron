@@ -159,7 +159,7 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     const outgoing = getActiveProfile();
     const outgoingName = getActiveProfileName();
     const finalSection = V.optionalFinite(totalSections, 0) > 0 && V.optionalFinite(sectionIndex, -1) === totalSections - 1;
-    const hints = safePreBoot.call(() => profileAdaptation.getHints(), null);
+    const hints = profileAdaptation.getHints();
     const explosiveHint = hints && typeof hints.explosiveHint === 'number' ? hints.explosiveHint : 0;
     const restrainedHint = hints && typeof hints.restrainedHint === 'number' ? hints.restrainedHint : 0;
     let profileName = PHASE_PROFILE_MAP[phase] || 'default';

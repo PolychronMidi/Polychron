@@ -220,7 +220,7 @@ moduleLifecycle.declare({
       const complexityMod = clamp((complexityEmaER - 0.5) * 0.10, 0, 0.07);
       // R78: phase-lock coupling -- repel mode (layers opposing) inherently raises entropy (counterpoint diversity),
       // lock mode (layers synchronized) creates coherent order (reduced entropy target).
-      const phaseModeER = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+      const phaseModeER = rhythmicPhaseLock.getMode();
       const phaseMod = phaseModeER === 'repel' ? 0.04 : phaseModeER === 'lock' ? -0.03 : 0;
       // R88 E1: density antagonism bridge with temporalGravity -- high note density raises entropy target
       // (dense textures generate pitch variety naturally; entropy should open up to match).

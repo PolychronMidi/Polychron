@@ -189,7 +189,7 @@ moduleLifecycle.declare({
 
     // Soft-limit
     let softLimit = 0.16;
-    const healthGrade = safePreBoot.call(() => signalHealthAnalyzer.getHealth().overall, 'healthy');
+    const healthGrade = signalHealthAnalyzer.getHealth().overall;
     if (healthGrade === 'strained' || healthGrade === 'stressed' || healthGrade === 'critical') {
       softLimit = 0.20;
     }

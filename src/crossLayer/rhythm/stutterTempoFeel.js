@@ -15,7 +15,7 @@ moduleLifecycle.declare({
 
   function getTempoModulation() {
     const layer = (LM && LM.activeLayer) ? LM.activeLayer : 'L1';
-    const raw = safePreBoot.call(() => stutterFeedbackListener.getIntensity(), null);
+    const raw = stutterFeedbackListener.getIntensity();
     const intensity = (raw && Number.isFinite(raw.overall)) ? raw.overall : 0.3;
     emaByLayer[layer] += (intensity - emaByLayer[layer]) * EMA_ALPHA;
     const base = clamp((emaByLayer[layer] - 0.3) * 0.06, -0.03, 0.03);

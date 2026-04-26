@@ -118,7 +118,7 @@ moduleLifecycle.declare({
       : 1.0;
     // R78: phase-lock coupling -- locked layers stutter together (synchronized burst = rhythmic unison),
     // repelling layers diverge (opposition should not cascade stutter across layers).
-    const phaseModeContagion = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseModeContagion = rhythmicPhaseLock.getMode();
     const phaseContagionScale = phaseModeContagion === 'lock' ? 1.12 : phaseModeContagion === 'repel' ? 0.88 : 1.0;
     // R79 E4: densitySurprise antagonism bridge with restSynchronizer -- surprising rhythmic events
     // amplify contagion spread (chaos invites more chaos). Counterpart: restSynchronizer SUPPRESSES

@@ -135,7 +135,7 @@ moduleLifecycle.declare({
     // Intent-aware: read actual interactionTarget from sectionIntentCurves
     // which encodes trajectory learning, contrast bias, and phase position.
     // Blends with the static phase target for a more nuanced dial.
-    const lastIntent = safePreBoot.call(() => sectionIntentCurves.getLastIntent(), null);
+    const lastIntent = sectionIntentCurves.getLastIntent();
     const intentInteraction = lastIntent ? clamp(V.optionalFinite(lastIntent.interactionTarget, 0.5), 0, 1) : 0.5;
 
     // Entropy modulation: high coherenceEntropy = loosen coordination
@@ -151,7 +151,7 @@ moduleLifecycle.declare({
 
     // Canon mode reduces stutter channel coordination to prevent overcrowding
     // (canon already adds rhythmic complexity via delayed imitation)
-    const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
+    const rhythmMode = rhythmicComplementEngine.getMode();
     const canonBias = (rhythmMode === 'canon' && pair === 'stutterChannels-coordination') ? -0.15 : 0;
 
     // Effectiveness modulation: if coordination worked well for this pair, bias toward it
@@ -316,64 +316,64 @@ moduleLifecycle.declare({
     const stutterChannelDial = dials['stutterChannels-coordination'];
 
     // restSynchronizer: shared rest probability scales with coordination
-    safePreBoot.call(() => restSynchronizer.setCoordinationScale(restRhythm), null);
+    restSynchronizer.setCoordinationScale(restRhythm);
 
     // rhythmicComplementEngine: mode change interval scales inversely with coordination
-    safePreBoot.call(() => rhythmicComplementEngine.setCoordinationScale(restRhythm), null);
+    rhythmicComplementEngine.setCoordinationScale(restRhythm);
 
     // stutterContagion: decay rate scales with coordination (coordinated = sticky)
-    safePreBoot.call(() => stutterContagion.setCoordinationScale(stutterContagionDial), null);
+    stutterContagion.setCoordinationScale(stutterContagionDial);
 
     // spectralComplementarity: nudge strength scales with coordination
-    safePreBoot.call(() => spectralComplementarity.setCoordinationScale(spectralVelocity), null);
+    spectralComplementarity.setCoordinationScale(spectralVelocity);
 
     // feedbackOscillator: energy routing scales with coordination
-    safePreBoot.call(() => feedbackOscillator.setCoordinationScale(feedbackDownbeat), null);
+    feedbackOscillator.setCoordinationScale(feedbackDownbeat);
 
     // emergentDownbeat: layer swap probability scales inversely with coordination
-    safePreBoot.call(() => emergentDownbeat.setCoordinationScale(feedbackDownbeat), null);
+    emergentDownbeat.setCoordinationScale(feedbackDownbeat);
 
     // emergentRhythmEngine: grid sensitivity + bias strength scale with coordination
-    safePreBoot.call(() => emergentRhythmEngine.setCoordinationScale(feedbackDownbeat), null);
+    emergentRhythmEngine.setCoordinationScale(feedbackDownbeat);
     // stutter channel coordination: how many channels stutter together
     safePreBoot.call(() => StutterManager.setChannelCoordinationScale(stutterChannelDial), null);
 
     // Harmonic pitch correction: interval guard + collision avoidance
     const harmonicDial = dials['harmonic-pitchCorrection'];
-    safePreBoot.call(() => harmonicIntervalGuard.setCoordinationScale(harmonicDial), null);
+    harmonicIntervalGuard.setCoordinationScale(harmonicDial);
     // emergentMelodicEngine: noveltyWeight amplification scales with harmonic coordination
     emergentMelodicEngine.setCoordinationScale(harmonicDial);
-    safePreBoot.call(() => registerCollisionAvoider.setCoordinationScale(harmonicDial), null);
-    safePreBoot.call(() => verticalIntervalMonitor.setCoordinationScale(harmonicDial), null);
+    registerCollisionAvoider.setCoordinationScale(harmonicDial);
+    verticalIntervalMonitor.setCoordinationScale(harmonicDial);
 
     // Rhythm phase/gravity: phase lock + temporal gravity + groove transfer
     const rhythmPhaseDial = dials['rhythm-phaseLockGravity'];
-    safePreBoot.call(() => rhythmicPhaseLock.setCoordinationScale(rhythmPhaseDial), null);
-    safePreBoot.call(() => temporalGravity.setCoordinationScale(rhythmPhaseDial), null);
+    rhythmicPhaseLock.setCoordinationScale(rhythmPhaseDial);
+    temporalGravity.setCoordinationScale(rhythmPhaseDial);
 
     // Groove + convergence
     const grooveConvDial = dials['rhythm-grooveConvergence'];
-    safePreBoot.call(() => grooveTransfer.setCoordinationScale(grooveConvDial), null);
-    safePreBoot.call(() => convergenceDetector.setCoordinationScale(grooveConvDial), null);
+    grooveTransfer.setCoordinationScale(grooveConvDial);
+    convergenceDetector.setCoordinationScale(grooveConvDial);
 
     // Dynamics: envelope + velocity interference
     const dynamicsDial = dials['dynamics-envelopeInterference'];
-    safePreBoot.call(() => crossLayerDynamicEnvelope.setCoordinationScale(dynamicsDial), null);
-    safePreBoot.call(() => velocityInterference.setCoordinationScale(dynamicsDial), null);
+    crossLayerDynamicEnvelope.setCoordinationScale(dynamicsDial);
+    velocityInterference.setCoordinationScale(dynamicsDial);
 
     // Dynamics: articulation + texture
     const artTexDial = dials['dynamics-articulationTexture'];
-    safePreBoot.call(() => articulationComplement.setCoordinationScale(artTexDial), null);
-    safePreBoot.call(() => texturalMirror.setCoordinationScale(artTexDial), null);
+    articulationComplement.setCoordinationScale(artTexDial);
+    texturalMirror.setCoordinationScale(artTexDial);
 
     // Motif echo: coordinated = more imitative counterpoint, independent = original material
     const motifDial = dials['motif-echoIdentity'];
-    safePreBoot.call(() => motifEcho.setCoordinationScale(motifDial), null);
+    motifEcho.setCoordinationScale(motifDial);
 
     // Structure: trust + negotiation
     const trustDial = dials['structure-trustNegotiation'];
     adaptiveTrustScores.setCoordinationScale(trustDial);
-    safePreBoot.call(() => negotiationEngine.setCoordinationScale(trustDial), null);
+    negotiationEngine.setCoordinationScale(trustDial);
   }
 
   /**

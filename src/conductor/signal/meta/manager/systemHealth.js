@@ -20,15 +20,15 @@ moduleLifecycle.declare({
    */
   function gatherControllerState() {
     return {
-      phaseFloor:        safePreBoot.call(() => phaseFloorController.getSnapshot(), null),
-      pairCeiling:       safePreBoot.call(() => pairGainCeilingController.getSnapshot(), null),
-      warmupRamp:        safePreBoot.call(() => warmupRampController.getSnapshot(), null),
-      watchdog:          safePreBoot.call(() => conductorMetaWatchdog.getSnapshot(), null),
+      phaseFloor:        phaseFloorController.getSnapshot(),
+      pairCeiling:       pairGainCeilingController.getSnapshot(),
+      warmupRamp:        warmupRampController.getSnapshot(),
+      watchdog:          conductorMetaWatchdog.getSnapshot(),
       homeostasis:       couplingHomeostasis.getState(),
-      registry:          safePreBoot.call(() => metaControllerRegistry.getSnapshot(), null),
+      registry:          metaControllerRegistry.getSnapshot(),
       profiler:          systemDynamicsProfiler.getSnapshot(),
-      criticality:       safePreBoot.call(() => criticalityEngine.getState(), null),
-      dimExpander:       safePreBoot.call(() => dimensionalityExpander.getSnapshot(), null),
+      criticality:       criticalityEngine.getState(),
+      dimExpander:       dimensionalityExpander.getSnapshot(),
     };
   }
 

@@ -114,7 +114,7 @@ setBinaural = () => {
     const brightness = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
     // Xenolinguistic: modal color drives binaural frequency. Chromatic = higher beta (alert),
     // diatonic = lower alpha (calm). The brainstem hears harmonic complexity.
-    const modalColor = safePreBoot.call(() => modalColorTracker.getModalProfile(), null);
+    const modalColor = modalColorTracker.getModalProfile();
     const colorShift = modalColor ? clamp((modalColor.colorToneRatio - 0.4) * 1.5, -0.5, 0.5) : 0;
     const brightnessBias = clamp((brightness - 0.5) * 1.5 + colorShift, -0.75, 0.75);
     let biasedMin = (binauralRegime === 'coherent' ? BINAURAL.min : binauralRegime === 'exploring' ? BINAURAL.min + 2 : BINAURAL.min + 1) + brightnessBias * 0.5;
