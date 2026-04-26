@@ -17,7 +17,7 @@ const ROOT = path.join(__dirname, '..', '..', '..');
 const SRC = path.join(ROOT, 'src');
 const DTS = path.join(ROOT, 'src/types/globals.d.ts');
 
-const START_MARKER = '// === AUTO-GENERATED FROM MANIFESTS (moduleLifecycle.declare) — do not hand-edit below this line ===';
+const START_MARKER = '// === AUTO-GENERATED FROM MANIFESTS (moduleLifecycle.declare) -- do not hand-edit below this line ===';
 const END_MARKER = '// === END AUTO-GENERATED ===';
 
 function walk(dir, out) {
