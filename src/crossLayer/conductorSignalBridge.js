@@ -6,10 +6,10 @@
 moduleLifecycle.declare({
   name: 'conductorSignalBridge',
   subsystem: 'crossLayer',
-  // Only validator is touched at init top-level. The cross-subsystem
-  // references (signalReader, conductorIntelligence, hyperMetaManager,
-  // systemDynamicsProfiler) are inside refresh() called per-beat post-boot.
-  deps: ['validator'],
+  // Full-DI deps: every cross-subsystem reference inside method bodies
+  // resolves through deps.X. Aliasing as locals keeps refresh() readable
+  // (`signalReader.snapshot()` reads from the local const, not the global).
+  deps: ['validator', 'signalReader', 'hyperMetaManager', 'systemDynamicsProfiler'],
   provides: ['conductorSignalBridge'],
   // Phase 4: declare post-init registrations inline. Registry binds the
   // recorder to conductorIntelligence and registers the module with
@@ -20,6 +20,10 @@ moduleLifecycle.declare({
   init: (deps) => {
   const V = deps.validator.create('conductorSignalBridge');
   void V;
+  // Full-DI aliases.
+  const signalReader = deps.signalReader;
+  const hyperMetaManager = deps.hyperMetaManager;
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
 
   let cached = /** @type {{ density: number, tension: number, flicker: number, compositeIntensity: number, sectionPhase: string, coherenceEntropy: number, healthEma: number, systemPhase: string, exceedanceTrendEma: number, topologyPhase: string, regime: string, effectiveDimensionality: number, couplingStrength: number, axisEnergyShares: Record<string,number>|null, adaptiveTargetSnapshot: Record<string,any>|null, couplingLabels: Record<string,string>|null, regimeProb: {coherent:number,exploring:number,evolving:number}, updatedAt: number }} */ ({
     density: 1,
