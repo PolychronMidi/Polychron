@@ -4,10 +4,10 @@
 // Sweeps within current side without crossing center.
 
 moduleLifecycle.declare({
-  name: 'stereoWidthModulation-variant',
+  name: 'stereoWidthModulationVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['stereoWidthModulation-variant'],
+  provides: ['stereoWidthModulationVariant'],
   init: () => {
     stutterVariants.register('stereoWidthModulation', function stereoWidthModulation(opts) {
       const width = (StutterManager.beatContext && Number.isFinite(StutterManager.beatContext.stereoWidth))

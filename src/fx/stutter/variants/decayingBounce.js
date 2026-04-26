@@ -2,10 +2,10 @@
 // shrink exponentially, converging on silence. Source pitch only.
 
 moduleLifecycle.declare({
-  name: 'decayingBounce-variant',
+  name: 'decayingBounceVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['decayingBounce-variant'],
+  provides: ['decayingBounceVariant'],
   init: () => {
     stutterVariants.register('decayingBounce', function decayingBounce(opts) {
       const bounces = ri(5, 10);

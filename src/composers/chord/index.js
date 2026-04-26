@@ -17,10 +17,10 @@ require('./pivotChordBridge');
 // participates in the manifest registry (full DI: every registrant is a
 // declared module, no legacy registerInitializer wrappers).
 moduleLifecycle.declare({
-  name: 'chord-progression-registration',
+  name: 'chordProgressionRegistration',
   subsystem: 'composers',
   deps: ['chordRegistry'],
-  provides: ['chord-progression-registration'],
+  provides: ['chordProgressionRegistration'],
   init: (deps) => {
     deps.chordRegistry.register('progression', (key, quality, type) => {
       const pg = new ProgressionGenerator(key, quality);

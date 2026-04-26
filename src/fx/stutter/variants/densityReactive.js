@@ -2,10 +2,10 @@
 // density. Sparse passages get more echoes (fill space), dense get fewer.
 
 moduleLifecycle.declare({
-  name: 'densityReactive-variant',
+  name: 'densityReactiveVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['densityReactive-variant'],
+  provides: ['densityReactiveVariant'],
   init: () => {
     stutterVariants.register('densityReactive', function densityReactive(opts) {
       const sigs = conductorSignalBridge.getSignals();

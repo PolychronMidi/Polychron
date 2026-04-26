@@ -3,10 +3,10 @@
 // successive echoes shift further in that direction, then reverse.
 
 moduleLifecycle.declare({
-  name: 'directionalOscillation-variant',
+  name: 'directionalOscillationVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['directionalOscillation-variant'],
+  provides: ['directionalOscillationVariant'],
   init: () => {
     stutterVariants.register('directionalOscillation', function directionalOscillation(opts) {
       const steps = ri(4, 7);

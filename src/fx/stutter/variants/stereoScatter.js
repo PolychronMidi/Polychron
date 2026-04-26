@@ -5,10 +5,10 @@
 // Outside crossfade: subtle widening with ghost-quiet opposite-side echoes.
 
 moduleLifecycle.declare({
-  name: 'stereoScatter-variant',
+  name: 'stereoScatterVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['stereoScatter-variant'],
+  provides: ['stereoScatterVariant'],
   init: () => {
     stutterVariants.register('stereoScatter', function stereoScatter(opts) {
       const allChs = source.concat(reflection);

@@ -2,10 +2,10 @@
 // First half: source pitch, second half: octave shifts.
 
 moduleLifecycle.declare({
-  name: 'machineGun-variant',
+  name: 'machineGunVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['machineGun-variant'],
+  provides: ['machineGunVariant'],
   init: () => {
     stutterVariants.register('machineGun', function machineGun(opts) {
       const burstCount = ri(4, 8);

@@ -2,10 +2,10 @@
 // Creates metrically precise stutter patterns.
 
 moduleLifecycle.declare({
-  name: 'rhythmicGrid-variant',
+  name: 'rhythmicGridVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['rhythmicGrid-variant'],
+  provides: ['rhythmicGridVariant'],
   init: () => {
     stutterVariants.register('rhythmicGrid', function rhythmicGrid(opts) {
       const gridSize = spBeat / ri(4, 8);

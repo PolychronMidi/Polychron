@@ -2,10 +2,10 @@
 // and its octave (up or down). Tremolo/trill effect using octave intervals.
 
 moduleLifecycle.declare({
-  name: 'stutterTremolo-variant',
+  name: 'stutterTremoloVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['stutterTremolo-variant'],
+  provides: ['stutterTremoloVariant'],
   init: () => {
     stutterVariants.register('stutterTremolo', function stutterTremolo(opts) {
       const altNote = stutterShift.pickOctaveAlternate(opts.note);

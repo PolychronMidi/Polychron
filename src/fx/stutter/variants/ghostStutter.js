@@ -3,10 +3,10 @@
 // handles higher stutter rates without overload.
 
 moduleLifecycle.declare({
-  name: 'ghostStutter-variant',
+  name: 'ghostStutterVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['ghostStutter-variant'],
+  provides: ['ghostStutterVariant'],
   init: () => {
     stutterVariants.register('ghostStutter', function ghostStutter(opts) {
       const ghostCount = ri(2, 4);
