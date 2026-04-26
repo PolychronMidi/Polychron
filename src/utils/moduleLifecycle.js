@@ -218,26 +218,27 @@ moduleLifecycle = (() => {
 
   function _instantiateManifest(m) {
     if (_overrides.has(m.name)) {
+      // Override path: skip init() entirely, bind mock to all provides.
       const mock = _overrides.get(m.name);
       _instances.set(m.name, mock);
       for (const provName of m.provides) _writeNamespace(provName, mock);
-      return;
-    }
-    const deps = {};
-    for (const depName of m.deps) {
-      const v = _resolveDepValue(depName);
-      if (v === undefined) {
-        throw new Error(
-          `moduleLifecycle: "${m.name}" depends on "${depName}" which is neither a declared module, an override, nor an existing global. ` +
-          `Declare "${depName}" via moduleLifecycle.declare() or ensure it is loaded before initializeAll() runs.`
-        );
+    } else {
+      const deps = {};
+      for (const depName of m.deps) {
+        const v = _resolveDepValue(depName);
+        if (v === undefined) {
+          throw new Error(
+            `moduleLifecycle: "${m.name}" depends on "${depName}" which is neither a declared module, an override, nor an existing global. ` +
+            `Declare "${depName}" via moduleLifecycle.declare() or ensure it is loaded before initializeAll() runs.`
+          );
+        }
+        deps[depName] = v;
       }
-      deps[depName] = v;
-    }
-    const api = m.init(deps);
-    _instances.set(m.name, api);
-    if (api !== undefined && api !== null) {
-      for (const provName of m.provides) _writeNamespace(provName, api);
+      const api = m.init(deps);
+      _instances.set(m.name, api);
+      if (api !== undefined && api !== null) {
+        for (const provName of m.provides) _writeNamespace(provName, api);
+      }
     }
   }
 
@@ -311,15 +312,15 @@ moduleLifecycle = (() => {
 
       const entry = _entryFor(name);
       if (!entry) {
-        // Manifest deps that resolve to legacy globals at runtime are NOT
-        // required to be registered here. Only fail when the missing name
-        // is required by a registerInitializer entry (which has stricter
-        // semantics) or by a manifest dep that ALSO doesn't exist as a
-        // global. We can't check global existence at sort time (modules
-        // load AFTER this function is defined), so for manifest deps we
-        // accept the missing-from-registry case silently and let
-        // _instantiateManifest's globalThis lookup catch unresolved
-        // references at instantiation time with a clear error.
+        // Manifest deps that resolve to legacy namespaces at runtime are
+        // NOT required to be registered here. Only fail when the missing
+        // name is required by a registerInitializer entry (which has
+        // stricter semantics) or by a manifest dep that ALSO doesn't
+        // exist as a namespace value. We can't check namespace existence
+        // at sort time (modules load AFTER this function is defined), so
+        // for manifest deps we accept the missing-from-registry case
+        // silently and let _instantiateManifest's namespace lookup catch
+        // unresolved references at instantiation time with a clear error.
         if (requiredBy && requiredBy.kind === 'init') {
           throw new Error(`moduleLifecycle.initializeAll: "${requiredBy.name}" depends on "${name}" but "${name}" is not registered`);
         }
