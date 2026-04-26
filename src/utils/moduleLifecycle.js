@@ -264,7 +264,17 @@ moduleLifecycle = (() => {
     function _entryFor(name) {
       if (initializers.has(name)) {
         const e = initializers.get(name);
-        return { kind: 'init', name: e.name, deps: e.dependencies, runner: e.initFn };
+        // Wrap legacy initFn so a sentinel lands in _instances after it runs.
+        // Manifests that depend on a legacy init name can then resolve via
+        // _resolveDepValue -- they get `true` rather than the real API
+        // (legacy initFn returns void), which is the right semantic: legacy
+        // deps mean "must run before me," not "pass your API to me."
+        return {
+          kind: 'init',
+          name: e.name,
+          deps: e.dependencies,
+          runner: () => { e.initFn(); _instances.set(e.name, true); },
+        };
       }
       if (_manifests.has(name)) {
         const m = _manifests.get(name);
