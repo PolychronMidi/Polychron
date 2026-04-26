@@ -53,33 +53,51 @@ HME's primary surface migrated to `i/<tool>` Bash wrappers because:
 The MCP route is preserved as a known-working fallback for users who
 prefer the MCP-native UX, but is not the recommended path.
 
-## Filesystem-IPC option (future, not implemented)
+## Filesystem-IPC hybrid (implemented, opt-in)
 
-For maximum bug-proofing the worker dispatch could move from HTTP →
-filesystem queue, mirroring the dispatcher pattern at
-[`tools/HME/scripts/buddy_dispatcher.py`](../../scripts/buddy_dispatcher.py):
+The MCP wire spec at the boundary (Claude Code ↔ proxy) is HTTP/SSE
+and that's preserved. But the INTERNAL leg (proxy ↔ worker tool
+dispatch) can route through the existing
+[`tools/HME/service/worker_queue.py`](../../service/worker_queue.py)
+filesystem watcher instead of HTTP. Activate via:
 
 ```
-tmp/hme-tool-queue/
-  pending/<req-id>.json          # {tool, args, timestamp}
-  processing/<req-id>.json
-  done/<req-id>.json             # {ok, result} | {ok:false, error}
+# .env
+HME_WORKER_TRANSPORT=hybrid
 ```
 
-Tradeoffs vs the current HTTP path:
-- ✅ No port collisions, no stuck sockets, no transport-error class
-- ✅ Atomic-mv claim semantics; supervisor can SIGKILL+restart worker
-  mid-call without losing the request (it stays in `pending/`)
-- ✅ Auditable (every call leaves a file trail)
-- ❌ Higher latency per call (filesystem syscalls vs localhost HTTP, ~1-5ms tax)
-- ❌ More complex polling logic on both sides
-- ❌ Doesn't match the MCP wire spec (which mandates SSE over HTTP)
+Routing decision (in [`../_worker_transport.js`](../_worker_transport.js)):
+- `POST /tool/<name>`, `POST /enrich`, `POST /enrich_prompt`,
+  `POST /audit` → filesystem queue (worker_queue.py drains)
+- Everything else (`GET /tools/list`, `GET /health`, `GET /version`,
+  `GET /transcript`, `POST /reindex`, etc.) → HTTP
 
-For the dormant MCP path specifically, filesystem-IPC isn't a fit
-because the spec REQUIRES HTTP/SSE. Where filesystem-IPC IS the
-right tool: HME-side internal worker dispatches that don't need to
-match an external protocol. Already adopted there (see
-`buddy_dispatcher.py`).
+Wire (driven by worker_queue.py's existing schema):
+- Request: `tmp/hme-worker-queue/<endpoint>/<jobId>.json` with
+  `{jobId, endpoint, body, ts}` — atomic temp+rename
+- Result: `tmp/hme-worker-results/<jobId>.json` — atomic temp+rename;
+  caller unlinks after read
+
+Tradeoffs vs HTTP-only:
+- ✅ SIGKILL-survivable: if the worker dies mid-tool-call, the job
+  file stays in the queue; the next worker boot's watcher picks it up
+- ✅ Audit trail: every tool call leaves a result file
+- ✅ No socket lifecycle issues (ECONNRESET, half-open sockets, port
+  collisions); proxy and worker just read/write files
+- ✅ Atomic-rename writes — never see partial reads
+- ❌ ~1-5ms FS tax per call (negligible vs typical tool-call wall-time
+  which is hundreds of ms to seconds)
+- ❌ Polling-based on the worker side (50ms default; tunable via
+  `HME_WORKER_FS_POLL_MS`) — not inotify
+
+The MCP wire spec is fully unaffected: external clients keep talking
+HTTP/SSE to `/mcp/*`. Same pattern as `_proxy_bridge.sh` ↔ proxy ↔
+direct dispatch — boundary stays standards-compliant; internal legs
+use whatever transport is most bug-proof for their workload.
+
+Coverage: routing logic tested in
+[`tools/HME/tests/specs/worker_transport_router.test.js`](../../tests/specs/worker_transport_router.test.js)
+— 5 cases including hybrid-routes-tool-to-FS and hybrid-keeps-health-on-HTTP.
 
 ## Tests
 
