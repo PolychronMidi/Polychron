@@ -274,6 +274,77 @@ print(json.dumps({
   });
 });
 
+test('dispatcher: cmd_chain runs a minimal echo chain end-to-end', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'chains'), { recursive: true });
+    fs.writeFileSync(path.join(sandbox, 'chains', 'smoke.yaml'),
+      `name: smoke\ndescription: smoke test chain for unit coverage harness\n` +
+      `version: 1.0.0\nloop: 1\nskills:\n  - echo step1\n  - echo step2\n`
+    );
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import argparse, json, os
+ns = argparse.Namespace(chain_name="smoke", loop=None, on_rate_limit=None)
+rc = disp.cmd_chain(ns)
+# Find the produced manifest under FANOUT_ROOT/chain-*/manifest.json
+import glob
+manifests = glob.glob(str(disp.FANOUT_ROOT / "chain-*" / "manifest.json"))
+manifest = json.loads(open(manifests[0]).read()) if manifests else {}
+print(json.dumps({
+  "rc": rc,
+  "manifest_count": len(manifests),
+  "iterations_count": len(manifest.get("iterations", [])),
+  "first_iter_skill_count": len(manifest.get("iterations", [{}])[0].get("skills", [])) if manifest.get("iterations") else 0,
+  "all_skills_done": all(
+    s.get("outcome") == "done" for it in manifest.get("iterations", []) for s in it.get("skills", [])
+  ),
+  "terminated_by": manifest.get("loop", {}).get("terminated_by"),
+  "in_progress": manifest.get("in_progress"),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.rc, 0, 'chain must exit 0 when all skills succeed');
+    assert.strictEqual(parsed.manifest_count, 1, 'one manifest per chain run');
+    assert.strictEqual(parsed.iterations_count, 1, 'loop=1 produces one iteration');
+    assert.strictEqual(parsed.first_iter_skill_count, 2, 'two skills ran');
+    assert.strictEqual(parsed.all_skills_done, true, 'all skills succeeded');
+    assert.strictEqual(parsed.terminated_by, 'loop_complete', 'terminated_by reflects natural completion');
+    assert.strictEqual(parsed.in_progress, false, 'manifest finalized with in_progress=false');
+  });
+});
+
+test('dispatcher: cmd_chain aborts iteration on first failing skill', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'chains'), { recursive: true });
+    fs.writeFileSync(path.join(sandbox, 'chains', 'fail-mid.yaml'),
+      `name: fail-mid\ndescription: fail-fast chain for unit coverage harness\n` +
+      `version: 1.0.0\nloop: 1\nskills:\n  - echo first\n  - false\n  - echo never-reached\n`
+    );
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import argparse, json, glob
+ns = argparse.Namespace(chain_name="fail-mid", loop=None, on_rate_limit="fail")
+rc = disp.cmd_chain(ns)
+manifests = glob.glob(str(disp.FANOUT_ROOT / "chain-*" / "manifest.json"))
+manifest = json.loads(open(manifests[0]).read()) if manifests else {}
+skills = manifest.get("iterations", [{}])[0].get("skills", [])
+print(json.dumps({
+  "rc": rc,
+  "skills_run": len(skills),
+  "outcomes": [s.get("outcome") for s in skills],
+  "terminated_by": manifest.get("loop", {}).get("terminated_by"),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.rc, 1, 'chain must exit 1 when a skill fails');
+    assert.strictEqual(parsed.skills_run, 2, 'only 2 of 3 skills ran (third skipped after failure)');
+    assert.deepStrictEqual(parsed.outcomes, ['done', 'failed'], 'first done, second failed, third never reached');
+    assert.ok(parsed.terminated_by.includes('failed'), 'terminated_by reflects skill failure');
+  });
+});
+
 test('dispatcher: chain validation rejects missing required fields', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `
