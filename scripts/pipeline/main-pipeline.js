@@ -39,6 +39,7 @@ const PRE_COMPOSITION = [
   // longer applies. Script is kept at scripts/pipeline/validators/check-hme-coherence.js
   // for history but is no longer wired into the pipeline.
   { label: 'check-safe-preboot-audit',     cmd: 'node scripts/pipeline/validators/check-safe-preboot-audit.js' },
+  { label: 'check-module-manifests',       cmd: 'node scripts/pipeline/validators/check-module-manifests.js' },
   { label: 'fix-non-ascii',                cmd: 'node scripts/pipeline/fix-non-ascii.js' },
   { label: 'lint',                          cmd: 'npm run lint' },
   { label: 'typecheck',                    cmd: 'npm run tc' },
