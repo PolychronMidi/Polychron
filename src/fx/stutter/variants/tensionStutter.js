@@ -8,7 +8,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['conductorSignalBridge'],
   provides: ['tensionStutterVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('tensionStutter', function tensionStutter(opts) {
       const sigs = conductorSignalBridge.getSignals();
       const tension = clamp(sigs.tension ?? 1.0, 0.3, 2.0);

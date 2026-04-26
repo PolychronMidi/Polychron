@@ -6,7 +6,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['reverseVelocityVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('reverseVelocity', function reverseVelocity(opts) {
       const echoCount = ri(3, 5);
       let lastShared = opts.shared;

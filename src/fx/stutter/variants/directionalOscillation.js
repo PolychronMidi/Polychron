@@ -8,7 +8,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['stutterShift'],
   provides: ['directionalOscillationVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('directionalOscillation', function directionalOscillation(opts) {
       const steps = ri(4, 7);
       const ascending = rf() < 0.5;

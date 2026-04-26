@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['conductorSignalBridge'],
   provides: ['densityReactiveVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('densityReactive', function densityReactive(opts) {
       const sigs = conductorSignalBridge.getSignals();
       const density = clamp(sigs.density ?? 1.0, 0.1, 2.0);

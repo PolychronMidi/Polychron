@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['stutterShift'],
   provides: ['octaveCascadeVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('octaveCascade', function octaveCascade(opts) {
       const direction = rf() < 0.5 ? 1 : -1;
       const steps = ri(3, 5);

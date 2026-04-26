@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['stutterShift'],
   provides: ['harmonicShadowVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('harmonicShadow', function harmonicShadow(opts) {
       const sourceOct = m.floor(opts.note / 12);
       const notes = stutterShift.enumerateOctaves(opts.note % 12, { exclude: opts.note });

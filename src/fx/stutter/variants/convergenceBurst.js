@@ -10,7 +10,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['convergenceDetector'],
   provides: ['convergenceBurstVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     const convergenceBurstByLayer = {};
     function getLayerBurst(layer) {
       if (!convergenceBurstByLayer[layer]) {

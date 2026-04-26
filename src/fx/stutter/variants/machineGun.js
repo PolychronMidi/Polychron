@@ -6,7 +6,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['machineGunVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('machineGun', function machineGun(opts) {
       const burstCount = ri(4, 8);
       const burstSpacing = opts.sustain / (burstCount + 1);

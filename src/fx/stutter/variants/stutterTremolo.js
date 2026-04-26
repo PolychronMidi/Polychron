@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['stutterShift'],
   provides: ['stutterTremoloVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('stutterTremolo', function stutterTremolo(opts) {
       const altNote = stutterShift.pickOctaveAlternate(opts.note);
       if (altNote === opts.note) return stutterNotes(opts);

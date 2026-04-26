@@ -6,7 +6,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['rhythmicGridVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('rhythmicGrid', function rhythmicGrid(opts) {
       const gridSize = spBeat / ri(4, 8);
       const echoCount = ri(2, 5);
