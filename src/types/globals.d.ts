@@ -520,10 +520,25 @@ interface ModuleLifecycleInstance {
   getCount(): number;
 }
 
+interface ModuleLifecycleManifest {
+  name: string;
+  deps: string[];
+  provides: string[];
+  init: (deps: Record<string, any>) => any;
+  subsystem?: string;
+  reads?: string[];
+  emits?: string[];
+}
+
 interface ModuleLifecycleFactory {
   create(ownerName: string): ModuleLifecycleInstance;
   registerInitializer(name: string, initFn: () => void, dependencies?: string[]): void;
   initializeAll(): void;
+  declare(manifest: ModuleLifecycleManifest): void;
+  override(name: string, instance: any): void;
+  getDeclared(): string[];
+  getInstance(name: string): any;
+  _resetForTests(): void;
 }
 
 interface BeatCacheInstance {
