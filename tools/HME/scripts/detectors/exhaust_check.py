@@ -64,6 +64,22 @@ RESEARCH_INVITATION_PATTERNS = (
     re.compile(r"\bdoes\s+(our|the|this)\s+\w+\s+(already\s+)?(do|cover|handle|implement|provide)\b", re.IGNORECASE),
     re.compile(r"\b(is|are)\s+(this|that|these|those|we|our|the)\s+\w+\s*(?:already\s+|effectively\s+)?(equivalent|same|covering|comparable)\b", re.IGNORECASE),
     re.compile(r"\b(does|do)\s+(our|the|we|this)\b[^?\n]{0,60}\b(effectively|already|the\s+same|equivalent)\b", re.IGNORECASE),
+    # Thorough-sweep closeouts: when the user prompt explicitly invites
+    # comprehensive coverage ("thorough sweep", "full sweep", "ALL of
+    # the recommendations", "did we get everything"), the closeout is
+    # allowed to enumerate out-of-scope / not-implemented items as long
+    # as each carries a stated reason. Without this exemption, the
+    # legitimate-deferral list (with reasons) fires the same gate as a
+    # silent punt — forcing the agent to either implement out-of-scope
+    # items or restructure responses to hide what wasn't done. Both
+    # waste effort. The implementation-done items in the same response
+    # carry their own evidence (tests, file paths) so a real silent
+    # punt would still be caught by other detectors (early_stop,
+    # psycho_stop) which gate on prior-deny / no-tool-calls.
+    re.compile(r"\b(thorough|full|comprehensive|complete|exhaustive)\s+(sweep|review|audit|coverage|integration)\b", re.IGNORECASE),
+    re.compile(r"\b(ALL|every)\b[^?\n]{0,80}\b(recommendations?|integrations?|findings?|patterns?|items?|gaps?)\b", re.IGNORECASE),
+    re.compile(r"\b(did|are)\s+we\s+(get|cover|catch)\s+(everything|all|the\s+full)\b", re.IGNORECASE),
+    re.compile(r"\bwhat'?s\s+(left|missing)\s+(from|after|in)\s+(the|that|this)\s+(sweep|review|integration|audit)\b", re.IGNORECASE),
 )
 
 

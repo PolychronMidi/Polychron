@@ -133,6 +133,24 @@ _CASES = [
      ],
      "ok"),
 
+    # Thorough-sweep closeout exemption: when the user invites
+    # comprehensive coverage, the response is allowed to enumerate
+    # out-of-scope items with reasons. The legitimate-deferral list
+    # carries evidence (each reason explains why) — gating the same
+    # shape as a silent punt forces the agent to either implement
+    # out-of-scope items or hide what wasn't done.
+    ("exhaust_check", "thorough-sweep-exemption",
+     [
+         _user_msg("does that complete ALL of the integration-worthy recommendations from the sweep?"),
+         _assistant_msg(
+             "Implemented 12 items. Out-of-scope (NOT implemented):\n"
+             "- Cursors — no consumer in HME currently\n"
+             "- Glob-shape audit — no immediate failure case\n"
+             "- bufsize=1 streaming Popen — invasive for marginal value\n"
+         ),
+     ],
+     "ok"),
+
     # Always-fire override: even on a research turn, if the response
     # contains "want me to" / "should I" / "I can build" the punt fires.
     # The exemption only covers genuine evaluation deliverables, not

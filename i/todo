@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
-# HME todo — hierarchical todo store with criticality + on-done triggers.
-# Usage: i/todo action=list|add|done|... [text=…] [parent_id=N] [criticality=normal|critical]
+# HME todo — hierarchical todo store + SPEC/TODO bridge + KB devlog archive.
+# Usage:
+#   i/todo <action> [key=value ...]            # positional action (preferred)
+#   i/todo action=<action> [key=value ...]     # explicit form
+# Actions: list, add, done, undo, remove, clear, critical,
+#          ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete
 _HME_CLI="$(dirname "$0")/../scripts/hme-cli.js"
 [ -f "$_HME_CLI" ] || { echo "i/: scripts/hme-cli.js missing at $_HME_CLI — run scripts/setup-mcp.sh after cloning" >&2; exit 1; }
-exec node "$_HME_CLI" hme_todo "$@"
+
+# Accept positional first arg as action= for symmetry with i/buddy /
+# i/review / etc. The hme-cli.js dispatcher only accepts key=value /
+# --key value / --flag forms; rewrite a bare first arg into action=<X>
+# so users don't have to remember which i/* tools take positional and
+# which don't.
+_ARGS=()
+if [ $# -gt 0 ] && [[ "$1" != *=* ]] && [[ "$1" != --* ]]; then
+  _ARGS+=("action=$1")
+  shift
+fi
+_ARGS+=("$@")
+exec node "$_HME_CLI" hme_todo "${_ARGS[@]}"
