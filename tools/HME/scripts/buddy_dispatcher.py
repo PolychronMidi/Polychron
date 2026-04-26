@@ -158,6 +158,21 @@ def _atomic_write(target: Path, content: str) -> None:
     os.replace(str(tmp), str(target))
 
 
+# ANSI escape sequence stripper — claude-cli emits color codes when its
+# stdout is a TTY *or* when its parent doesn't pass through a non-TTY
+# signal cleanly. Captured stdout/stderr land in JSON manifests +
+# verdict markdown; ANSI codes there are noise that makes diff/grep
+# fragile. Strip at sink time (per skill-set skill-chain.py:543-567
+# tee-with-strip pattern) so the on-disk artifact is clean.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]|\x1b\][^\x07]*\x07")
+
+
+def _strip_ansi(text: str) -> str:
+    if not text:
+        return text
+    return _ANSI_RE.sub("", text)
+
+
 def _is_pid_alive(pid: int) -> bool:
     """Liveness probe via os.kill(pid, 0) — distinguishes stale PID
     files from live processes. PermissionError = alive but other-user;
@@ -400,8 +415,8 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
                 "outcome": outcome,
                 "rc": rc,
                 "elapsed_s": round(elapsed, 2),
-                "stdout_tail": stdout[-2000:],
-                "stderr_tail": stderr[-1000:],
+                "stdout_tail": _strip_ansi(stdout)[-2000:],
+                "stderr_tail": _strip_ansi(stderr)[-1000:],
                 "sentinel_seen": sentinel_seen,
                 "effective_tier": effective,
                 "buddy_slot": buddy["slot"],
@@ -1089,7 +1104,8 @@ def cmd_chain(args: argparse.Namespace) -> int:
 
 def _run_skill(cmd: str) -> tuple[int, str, str, float]:
     """Spawn a chain skill (a Bash command) as a subprocess. Returns
-    (rc, stdout, stderr, elapsed_s)."""
+    (rc, stdout, stderr, elapsed_s). ANSI stripped at sink-time so
+    color codes don't pollute the on-disk manifest."""
     started = time.time()
     try:
         proc = subprocess.run(
@@ -1098,7 +1114,12 @@ def _run_skill(cmd: str) -> tuple[int, str, str, float]:
             env={**os.environ, "HME_THREAD_CHILD": "1"},
             cwd=str(PROJECT_ROOT),
         )
-        return proc.returncode, proc.stdout or "", proc.stderr or "", time.time() - started
+        return (
+            proc.returncode,
+            _strip_ansi(proc.stdout or ""),
+            _strip_ansi(proc.stderr or ""),
+            time.time() - started,
+        )
     except Exception as e:
         return -1, "", f"_run_skill exception: {e}", time.time() - started
 

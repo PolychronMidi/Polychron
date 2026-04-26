@@ -345,6 +345,66 @@ print(json.dumps({
   });
 });
 
+test('dispatcher: _strip_ansi removes CSI + OSC sequences, preserves text', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+# CSI (color, cursor) + OSC (window title) + plain mix
+samples = [
+  ("\\x1b[31mred\\x1b[0m text", "red text"),
+  ("plain text", "plain text"),
+  ("\\x1b[1;33;40mfg+bg\\x1b[m", "fg+bg"),
+  ("\\x1b]0;title\\x07after-osc", "after-osc"),
+  ("", ""),
+]
+out = []
+for raw, expected in samples:
+  stripped = disp._strip_ansi(raw)
+  out.append({"in": raw, "out": stripped, "ok": stripped == expected})
+print(json.dumps(out))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    for (const r of parsed) {
+      assert.strictEqual(r.ok, true, `_strip_ansi("${r.in}") = "${r.out}"`);
+    }
+  });
+});
+
+test('dispatcher: render-error isolation — exception in dispatch produces failed verdict, not crash', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'fake-sid\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import argparse, json, os
+disp._ensure_dirs()
+# Drop a task to claim
+(disp.QUEUE_PENDING / "poison.json").write_text(json.dumps({
+  "id": "poison", "tier": "easy", "text": "trigger crash"
+}))
+# Monkey-patch _dispatch_to_buddy to raise mid-dispatch
+def _boom(task, claimed_path, buddy, run_id):
+  raise RuntimeError("synthetic dispatch crash")
+disp._dispatch_to_buddy = _boom
+# cmd_drain must NOT raise; should record render_error verdict + continue
+ns = argparse.Namespace(loop=False, loop_delay=0)
+rc = disp.cmd_drain(ns)
+# Outcome: task moved to failed/ (render_error == not done), drain finished cleanly
+failed = sorted(os.listdir(disp.QUEUE_FAILED)) if disp.QUEUE_FAILED.exists() else []
+print(json.dumps({"rc": rc, "failed_files": failed}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.rc, 0, 'drain returns 0 even when individual task crashes');
+    assert.ok(
+      parsed.failed_files.some(f => f.startsWith('poison')),
+      'crashed task ends up in failed/ (with verdict, not vanished)',
+    );
+  });
+});
+
 test('dispatcher: chain validation enforces description min-length + semver + on-rate-limit enum', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `
