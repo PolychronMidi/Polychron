@@ -262,14 +262,14 @@
       "id": "hme-http-handlers-exist",
       "description": "HTTP handlers + store modules must exist — absorbed into worker.py after the shim split (was hme_http.py pre-decoupling)",
       "type": "file_exists",
-      "path": "tools/HME/mcp/hme_http_handlers.py",
+      "path": "tools/HME/service/hme_http_handlers.py",
       "severity": "error"
     },
     {
       "id": "hme-http-store-exists",
       "description": "HTTP store module must exist (successor to parts of the old hme_http.py)",
       "type": "file_exists",
-      "path": "tools/HME/mcp/hme_http_store.py",
+      "path": "tools/HME/service/hme_http_store.py",
       "severity": "error"
     },
     {
@@ -532,9 +532,9 @@
     },
     {
       "id": "hme-py-no-silent-catchall",
-      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/mcp/server. Promoted to error after the 149-hit backlog was cleared \u2014 any new instance is a regression.",
+      "description": "HME Python files must not use silent `except Exception: pass` catch-all (swallows all errors). Matches both same-line and next-line forms, project-wide under tools/HME/service/server. Promoted to error after the 149-hit backlog was cleared \u2014 any new instance is a regression.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/mcp/server",
+      "shell": "python3 tools/HME/scripts/check-silent-except.py tools/HME/service/server",
       "js_equivalent": "no-empty-catch",
       "severity": "error"
     },
@@ -542,7 +542,7 @@
       "id": "hme-py-no-silent-fallback",
       "description": "HME Python files must not silently return an empty default (`[]`, `None`, `False`, `{}`, `''`, `dict()`, etc.) from an `except Exception` without calling `logger.*` or `print` first. R33 found 3 instances in the wild (i/review auto-fire, list_knowledge, get_knowledge_status); each degraded a substrate capability invisibly because the fallback value LOOKED legitimate. Sibling of hme-py-no-silent-catchall but distinct: that catches `pass`, this catches silent-return-default.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-silent-fallback.py tools/HME/mcp",
+      "shell": "python3 tools/HME/scripts/check-silent-fallback.py tools/HME/service",
       "js_equivalent": "no-silent-early-return",
       "severity": "error"
     },
@@ -550,7 +550,7 @@
       "id": "hme-py-no-non-ascii",
       "description": "Python equivalent of ESLint local/no-non-ascii (scripts/eslint-rules/no-non-ascii.js). HME Python source must be ASCII except for an allowlist of legitimate typography (em-dash, arrows, box-drawing, Greek, accented Latin) declared in check-py-no-non-ascii.py. Blocks the copy-paste failure mode: NBSP, curly quotes, zero-width spaces, BOM — invisible chars that break regex matching and produce diff noise.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-py-no-non-ascii.py tools/HME/mcp",
+      "shell": "python3 tools/HME/scripts/check-py-no-non-ascii.py tools/HME/service",
       "js_equivalent": "no-non-ascii",
       "severity": "warning"
     },
@@ -558,7 +558,7 @@
       "id": "hme-py-no-doubled-fallback",
       "description": "Python equivalent of ESLint local/no-doubled-fallback (scripts/eslint-rules/no-doubled-fallback.js). Detects `dict.get(key, DEFAULT) or X` where DEFAULT is nontrivial — either the outer `or` is dead code OR it silently rewrites legitimate falsy values (empty list, 0, False) to X. The JS rule caught a regimeClassifier bug where every real 0-tension reading got coerced to 0.5; same class of bug in Python.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/mcp",
+      "shell": "python3 tools/HME/scripts/check-py-no-doubled-fallback.py tools/HME/service",
       "js_equivalent": "no-doubled-fallback",
       "severity": "error"
     },
@@ -566,7 +566,7 @@
       "id": "hme-py-no-fallback-infra-imports",
       "description": "HME Python files must not wrap `from hme_env import ENV` (or other infrastructure imports) in try/except fallback. Silent ImportError swallowed behind `os.environ.get(...)` fallback hid the synthesis_proxy_route ENV bug for weeks. Infrastructure imports must fail loud at module load time.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/mcp",
+      "shell": "python3 tools/HME/scripts/check-no-fallback-infra-imports.py tools/HME/service",
       "severity": "error"
     },
     {
@@ -587,7 +587,7 @@
       "id": "hme-py-meta-has-trim",
       "description": "meta_layers.py must define trim helpers (_trim_narrative_file, _trim_counterfactuals_file) alongside its append-only file writes. Prevents unbounded JSONL growth.",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/meta_layers.py",
+      "path": "tools/HME/service/server/meta_layers.py",
       "patterns": [
         "_trim_narrative_file",
         "_trim_counterfactuals_file"
@@ -598,7 +598,7 @@
       "id": "hme-py-valueerror-coverage",
       "description": "OSError-only except handlers in operational_state.py must also catch ValueError (int/float conversion safety)",
       "type": "shell_output_empty",
-      "shell": "grep -n 'except (OSError' tools/HME/mcp/server/operational_state.py | grep -v ValueError",
+      "shell": "grep -n 'except (OSError' tools/HME/service/server/operational_state.py | grep -v ValueError",
       "severity": "warning"
     },
     {
@@ -627,7 +627,7 @@
       "id": "review-verdict-marker-emitter-present",
       "description": "The server must emit verdicts via the canonical emit_review_verdict_marker() function. If this name is removed/renamed, the hook's contract regex will silently stop matching.",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/onboarding_chain.py",
+      "path": "tools/HME/service/server/onboarding_chain.py",
       "pattern": "def emit_review_verdict_marker",
       "severity": "error"
     },
@@ -675,14 +675,14 @@
       "id": "no-mcp-side-timeouts-synthesis",
       "description": "llama.cpp wall-clock enforcement belongs exclusively in llamacpp_daemon.py. No synthesis file may (a) spawn a thread and join(timeout=) on it, or (b) urlopen a llama-server inference URL (_LLAMACPP_ARBITER_URL / _LLAMACPP_CODER_URL) directly \u2014 all inference must route through _daemon_generate. Health/probe endpoints (/health, /api/ps) are exempt since they are not inference. _cancellable_urlopen is the preemption primitive and is exempt via marker.",
       "type": "shell_output_empty",
-      "shell": "grep -nE \"join\\(timeout=\" tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py tools/HME/mcp/server/tools_analysis/synthesis_warm.py tools/HME/mcp/server/tools_analysis/evolution_suggest.py tools/HME/mcp/server/tools_analysis/workflow_audit.py 2>/dev/null; grep -nE \"urlopen\\([^)]*_LLAMACPP_(ARBITER|CODER)_URL\" tools/HME/mcp/server/tools_analysis/synthesis_llamacpp.py tools/HME/mcp/server/tools_analysis/synthesis_warm.py tools/HME/mcp/server/tools_analysis/synthesis_pipeline.py 2>/dev/null | grep -vE \"/health|/api/ps|# preemption-ok\"",
+      "shell": "grep -nE \"join\\(timeout=\" tools/HME/service/server/tools_analysis/synthesis_llamacpp.py tools/HME/service/server/tools_analysis/synthesis_pipeline.py tools/HME/service/server/tools_analysis/synthesis_warm.py tools/HME/service/server/tools_analysis/evolution_suggest.py tools/HME/service/server/tools_analysis/workflow_audit.py 2>/dev/null; grep -nE \"urlopen\\([^)]*_LLAMACPP_(ARBITER|CODER)_URL\" tools/HME/service/server/tools_analysis/synthesis_llamacpp.py tools/HME/service/server/tools_analysis/synthesis_warm.py tools/HME/service/server/tools_analysis/synthesis_pipeline.py 2>/dev/null | grep -vE \"/health|/api/ps|# preemption-ok\"",
       "severity": "error"
     },
     {
       "id": "lifesaver-todo-mirror-dedup",
       "description": "register_todo_from_lifesaver must dedupe by text+source so a monitor loop cannot flood the todo store with zombie entries (116 such entries polluted todos.json before this rule landed).",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/todo.py",
+      "path": "tools/HME/service/server/tools_analysis/todo.py",
       "pattern": "existing.get\\(.source.\\) == .lifesaver.",
       "severity": "error"
     },
@@ -690,21 +690,21 @@
       "id": "hme-py-no-os-environ",
       "description": "HME Python files must not read os.environ directly \u2014 use hme_env.ENV.require/optional instead. os.environ is mutable by any subprocess and unauditable; .env on disk is the single source of truth. Subprocess env construction (os.environ.copy()) is exempt when marked with # env-ok. hme_env.py itself is exempt.",
       "type": "shell_output_empty",
-      "shell": "grep -rn 'os\\.environ' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -vE 'hme_env\\.py|# env-ok'",
+      "shell": "grep -rn 'os\\.environ' tools/HME/service/ --include='*.py' | grep -v '__pycache__' | grep -vE 'hme_env\\.py|# env-ok'",
       "severity": "error"
     },
     {
       "id": "hme-py-no-hardcoded-home",
       "description": "HME Python and shell files must not hardcode /home/jah \u2014 use PROJECT_ROOT from .env via hme_env.ENV or $PROJECT_ROOT in shell. Docs and logs are exempt.",
       "type": "shell_output_empty",
-      "shell": "grep -rn '/home/jah' tools/HME/mcp/ tools/HME/hooks/ tools/HME/scripts/ tools/HME/activity/ tools/HME/proxy/ --include='*.py' --include='*.sh' --include='*.js' | grep -v '__pycache__' | grep -vE '\\.log:|# path-ok'",
+      "shell": "grep -rn '/home/jah' tools/HME/service/ tools/HME/hooks/ tools/HME/scripts/ tools/HME/activity/ tools/HME/proxy/ --include='*.py' --include='*.sh' --include='*.js' | grep -v '__pycache__' | grep -vE '\\.log:|# path-ok'",
       "severity": "error"
     },
     {
       "id": "no-hardcoded-llamacpp-ports",
       "description": "HME server files must not hardcode llamacpp ports 11434/11435/11436 \u2014 they were retired in commit 0577c0f7 when local inference moved to llama-server. Use HME_LLAMACPP_ARBITER_URL / HME_LLAMACPP_CODER_URL via os.environ, or the env fallback in the legacy llamacpp branch guarded by HME_ARBITER_BACKEND.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/mcp/server/ --include='*.py' | grep -v 'HME_LLAMACPP_PORT' | grep -v '# llamacpp-legacy-ok'",
+      "shell": "grep -rnE 'localhost:1143[4-6]|127\\.0\\.0\\.1:1143[4-6]' tools/HME/service/server/ --include='*.py' | grep -v 'HME_LLAMACPP_PORT' | grep -v '# llamacpp-legacy-ok'",
       "severity": "error"
     },
     {
@@ -718,7 +718,7 @@
       "id": "hme-py-exception-must-have-name",
       "description": "HME Python exception handlers must bind to `as _var` or named var so the type/message can be logged. Unbound `except Exception:` paired with anything other than `pass` (which is separately forbidden) is a code smell \u2014 you probably want to log the failure. Exempt: `except Exception: pass` is caught by hme-py-no-silent-catchall above; this rule catches the `except Exception:` + block-without-name case.",
       "type": "shell_output_empty",
-      "shell": "python3 tools/HME/scripts/check-unnamed-except.py tools/HME/mcp/server",
+      "shell": "python3 tools/HME/scripts/check-unnamed-except.py tools/HME/service/server",
       "severity": "error"
     },
     {
@@ -746,7 +746,7 @@
       "id": "no-subpackage-alias-collision",
       "description": "_alias_subpackage must skip name==subpkg_name \u2014 aliasing a subpackage's own name to a .py module strips __path__, which breaks importlib.reload() for every submodule parent-lookup",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/__init__.py",
+      "path": "tools/HME/service/server/tools_analysis/__init__.py",
       "pattern": "if name == subpkg_name",
       "severity": "error"
     },
@@ -754,7 +754,7 @@
       "id": "activity-digest-in-reloadable",
       "description": "activity_digest module must be in RELOADABLE so hot-reload picks up changes",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/evolution/evolution_selftest.py",
+      "path": "tools/HME/service/server/tools_analysis/evolution/evolution_selftest.py",
       "pattern": "\"activity_digest\"",
       "severity": "error"
     },
@@ -762,7 +762,7 @@
       "id": "activity-mode-in-status",
       "description": "status_unified must dispatch mode='activity' to activity_digest",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
       "pattern": "from \\.activity_digest import activity_digest",
       "severity": "error"
     },
@@ -830,21 +830,21 @@
       "id": "blindspots-module-exists",
       "description": "Phase 2.4 \u2014 blind-spot surfacing module must exist under tools_analysis",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/blindspots.py",
+      "path": "tools/HME/service/server/tools_analysis/blindspots.py",
       "severity": "error"
     },
     {
       "id": "cascade-analysis-module-exists",
       "description": "Phase 2.5 \u2014 causal cascade analysis module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
+      "path": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
       "severity": "error"
     },
     {
       "id": "cascade-mode-in-trace",
       "description": "trace_unified must dispatch mode='impact' to cascade_report",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/trace_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/trace_unified.py",
       "pattern": "from \\.cascade_analysis import cascade_report",
       "severity": "error"
     },
@@ -852,7 +852,7 @@
       "id": "status-new-modes-dispatched",
       "description": "status_unified must dispatch the Phase 2.2\u20132.4 modes (staleness, coherence, blindspots)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
       "patterns": [
         "\"staleness\":",
         "\"coherence\":",
@@ -872,14 +872,14 @@
       "id": "hypothesis-registry-module-exists",
       "description": "Phase 3.1 \u2014 hypothesis registry module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/hypothesis_registry.py",
+      "path": "tools/HME/service/server/tools_analysis/hypothesis_registry.py",
       "severity": "error"
     },
     {
       "id": "hypothesis-actions-in-learn",
       "description": "learn_unified must dispatch hypothesize/hypothesis_test actions",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/learn_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
       "patterns": [
         "action == \"hypothesize\"",
         "action == \"hypothesis_test\""
@@ -945,7 +945,7 @@
       "id": "cascade-logs-predictions",
       "description": "cascade_analysis must log every prediction so the reconciler can score accuracy",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
+      "path": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
       "patterns": [
         "_log_prediction",
         "hme-predictions.jsonl"
@@ -956,14 +956,14 @@
       "id": "crystallizer-module-exists",
       "description": "Phase 3.5 \u2014 pattern crystallizer module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/crystallizer.py",
+      "path": "tools/HME/service/server/tools_analysis/crystallizer.py",
       "severity": "error"
     },
     {
       "id": "crystallize-action-in-learn",
       "description": "learn_unified must dispatch action='crystallize'",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/learn_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
       "pattern": "action == \"crystallize\"",
       "severity": "error"
     },
@@ -971,7 +971,7 @@
       "id": "status-phase3-modes",
       "description": "status_unified must dispatch the Phase 3 modes (hypotheses, drift, accuracy, crystallized)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
       "patterns": [
         "\"hypotheses\":",
         "\"drift\":",
@@ -1234,14 +1234,14 @@
       "id": "self-audit-module-exists",
       "description": "Phase 4.4 \u2014 HME self-audit module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/self_audit.py",
+      "path": "tools/HME/service/server/tools_analysis/self_audit.py",
       "severity": "error"
     },
     {
       "id": "probe-module-exists",
       "description": "Phase 4.5 \u2014 adversarial probe generator must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/probe.py",
+      "path": "tools/HME/service/server/tools_analysis/probe.py",
       "severity": "error"
     },
     {
@@ -1260,7 +1260,7 @@
       "id": "phase4-status-modes",
       "description": "status_unified must dispatch the Phase 4 modes (music_truth, kb_trust, intention_gap, self_audit, probes)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
       "patterns": [
         "\"music_truth\":",
         "\"kb_trust\":",
@@ -1288,21 +1288,21 @@
       "id": "negative-space-module-exists",
       "description": "Phase 5.3 \u2014 architectural negative space discovery module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/negative_space.py",
+      "path": "tools/HME/service/server/tools_analysis/negative_space.py",
       "severity": "error"
     },
     {
       "id": "cognitive-load-module-exists",
       "description": "Phase 5.4 \u2014 Evolver cognitive load modeling module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/cognitive_load.py",
+      "path": "tools/HME/service/server/tools_analysis/cognitive_load.py",
       "severity": "error"
     },
     {
       "id": "ground-truth-module-exists",
       "description": "Phase 5.5 \u2014 human ground truth module must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/ground_truth.py",
+      "path": "tools/HME/service/server/tools_analysis/ground_truth.py",
       "severity": "error"
     },
     {
@@ -1320,7 +1320,7 @@
       "id": "phase5-status-modes",
       "description": "status_unified must dispatch the Phase 5 modes (trajectory, budget, negative_space, cognitive_load, ground_truth)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
       "patterns": [
         "\"trajectory\":",
         "\"budget\":",
@@ -1334,7 +1334,7 @@
       "id": "ground-truth-action-in-learn",
       "description": "learn_unified must dispatch action='ground_truth'",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/learn_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/learn_unified.py",
       "pattern": "action == \"ground_truth\"",
       "severity": "error"
     },
@@ -1353,7 +1353,7 @@
       "id": "reflexivity-flag-in-cascade",
       "description": "Phase 6.1 \u2014 cascade_analysis._log_prediction must carry an injected flag",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/cascade_analysis.py",
+      "path": "tools/HME/service/server/tools_analysis/cascade_analysis.py",
       "pattern": "injected: bool = False",
       "severity": "error"
     },
@@ -1394,14 +1394,14 @@
       "id": "multi-agent-module-exists",
       "description": "Phase 6.5 \u2014 multi-agent observability scaffold must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/multi_agent.py",
+      "path": "tools/HME/service/server/tools_analysis/multi_agent.py",
       "severity": "error"
     },
     {
       "id": "phase6-reports-module-exists",
       "description": "Phase 6 reports module (constitution/doc_drift/generalizations/reflexivity) must exist",
       "type": "file_exists",
-      "path": "tools/HME/mcp/server/tools_analysis/phase6_reports.py",
+      "path": "tools/HME/service/server/tools_analysis/phase6_reports.py",
       "severity": "error"
     },
     {
@@ -1420,7 +1420,7 @@
       "id": "phase6-status-modes",
       "description": "status_unified must dispatch the Phase 6 modes (constitution, doc_drift, generalizations, reflexivity, multi_agent)",
       "type": "patterns_all_in_file",
-      "path": "tools/HME/mcp/server/tools_analysis/status_unified.py",
+      "path": "tools/HME/service/server/tools_analysis/status_unified.py",
       "patterns": [
         "\"constitution\":",
         "\"doc_drift\":",
@@ -1434,21 +1434,21 @@
       "id": "hme-no-raw-os-environ",
       "description": "HME Python files must use ENV (from hme_env) not raw os.environ.get for config. hme_env.py itself is exempt.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/mcp/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^\\s*#' | grep -v 'env\\[.*\\] = os.environ' | grep -v '# env-ok'",
+      "shell": "grep -rnE 'os\\.environ\\.get\\(' tools/HME/service/ --include='*.py' | grep -v hme_env.py | grep -v '__pycache__' | grep -v '\\.log' | grep -v '\\.jsonl' | grep -vE '^\\s*#' | grep -v 'env\\[.*\\] = os.environ' | grep -v '# env-ok'",
       "severity": "warning"
     },
     {
       "id": "index-directory-zero-args",
       "description": "index_directory must take zero arguments everywhere \u2014 ragIndexDirs in tools/HME/config/rag.json is the ONLY source of indexable paths. Any signature with a directory/path parameter is a bypass vector that WILL be abused as a fallback. See the walk_code_files purge in commit 469d072b.",
       "type": "shell_output_empty",
-      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/mcp/rag_engine/engine_indexing.py 2>/dev/null",
+      "shell": "grep -nE 'def index_directory\\(self,|def _index_directory_locked\\(self,|def _collect_files\\(self,' tools/HME/service/rag_engine/engine_indexing.py 2>/dev/null",
       "severity": "error"
     },
     {
       "id": "no-direct-gpu-model-load-in-indexing",
       "description": "indexing_mode.py and tools_index.py must NEVER import SentenceTransformer or torch \u2014 they talk to the daemon via HTTP, which tells the shim what device to use. Direct model loading in these files bypasses the daemon's GPU allocation authority. See the 'catastrophic failure' fix where indexing_mode was loading models directly.",
       "type": "shell_output_empty",
-      "shell": "grep -nE 'from sentence_transformers|import torch|SentenceTransformer' tools/HME/mcp/indexing_mode.py tools/HME/mcp/server/tools_index.py 2>/dev/null",
+      "shell": "grep -nE 'from sentence_transformers|import torch|SentenceTransformer' tools/HME/service/indexing_mode.py tools/HME/service/server/tools_index.py 2>/dev/null",
       "severity": "error"
     },
     {
@@ -1469,14 +1469,14 @@
       "id": "daemon-is-gpu-authority",
       "description": "Only llamacpp_daemon.py and rag_engines.py may reference CUDA device strings for model placement. Other HME files must not contain 'cuda:0' or 'cuda:1' device assignments \u2014 they route through the daemon which owns GPU topology. rag_engine/engine.py is exempt (fallback device picker for non-shim mode). # device-ok comments exempt specific lines.",
       "type": "shell_output_empty",
-      "shell": "grep -rnE '\"cuda:[0-9]\"' tools/HME/mcp/ --include='*.py' | grep -v '__pycache__' | grep -v llamacpp_daemon.py | grep -v rag_engines.py | grep -v 'rag_engine/engine.py' | grep -v vram_manager.py | grep -v '# device-ok'",
+      "shell": "grep -rnE '\"cuda:[0-9]\"' tools/HME/service/ --include='*.py' | grep -v '__pycache__' | grep -v llamacpp_daemon.py | grep -v rag_engines.py | grep -v 'rag_engine/engine.py' | grep -v vram_manager.py | grep -v '# device-ok'",
       "severity": "error"
     },
     {
       "id": "review-verdict-emitter-importable",
       "description": "emit_review_verdict_marker must be importable from server.onboarding_chain AND produce a string containing HME_REVIEW_VERDICT for the 'clean' verdict. Guards against signature drift that the pattern-in-file check can't catch \u2014 the function must actually work, not just exist.",
       "type": "shell_output_empty",
-      "shell": "python3 -c \"import sys; sys.path.insert(0,'tools/HME/mcp'); from server.onboarding_chain import emit_review_verdict_marker; m=emit_review_verdict_marker('clean'); assert 'HME_REVIEW_VERDICT' in m and 'clean' in m, f'bad marker: {m!r}'\" 2>&1 | grep -v '^$'",
+      "shell": "python3 -c \"import sys; sys.path.insert(0,'tools/HME/service'); from server.onboarding_chain import emit_review_verdict_marker; m=emit_review_verdict_marker('clean'); assert 'HME_REVIEW_VERDICT' in m and 'clean' in m, f'bad marker: {m!r}'\" 2>&1 | grep -v '^$'",
       "severity": "error"
     },
     {
@@ -1496,9 +1496,9 @@
     },
     {
       "id": "worker-version-endpoint",
-      "description": "tools/HME/mcp/worker.py must expose a GET /version endpoint. Paired with CLI_VERSION in hme-cli.js so deployment mismatches (old wrapper, new worker) are detectable.",
+      "description": "tools/HME/service/worker.py must expose a GET /version endpoint. Paired with CLI_VERSION in hme-cli.js so deployment mismatches (old wrapper, new worker) are detectable.",
       "type": "pattern_in_file",
-      "path": "tools/HME/mcp/worker.py",
+      "path": "tools/HME/service/worker.py",
       "pattern": "/version",
       "severity": "error"
     },

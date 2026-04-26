@@ -7,7 +7,7 @@ Matches both forms:
         pass                         (next-line)
 
 Prints one offense per line in `path:line: context` format; empty output means
-no offenses. Accepts optional path arguments; defaults to tools/HME/mcp.
+no offenses. Accepts optional path arguments; defaults to tools/HME/service.
 """
 import pathlib
 import re
@@ -34,7 +34,7 @@ def scan(root: pathlib.Path) -> list[str]:
 
 
 def main() -> int:
-    paths = sys.argv[1:] or ["tools/HME/mcp"]
+    paths = sys.argv[1:] or ["tools/HME/service"]
     all_hits: list[str] = []
     for p in paths:
         all_hits.extend(scan(pathlib.Path(p)))

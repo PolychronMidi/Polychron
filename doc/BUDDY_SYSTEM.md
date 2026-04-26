@@ -472,7 +472,7 @@ lengths of `worker.py` (670+), `synthesis_inference.py`,
 as ugly-suggesting-broken before any specific bug.
 
 **Status:** WIRED and invokable. `_PARTNER_SYSTEM` system prompt
-added to `tools/HME/mcp/server/tools_analysis/synthesis/synthesis_config.py`
+added to `tools/HME/service/server/tools_analysis/synthesis/synthesis_config.py`
 (performs the six register-operations the forensic methodology
 can't: mark beauty, name cultural artifacts, hold puzzlement, ask
 "should this exist", future-maintainer empathy, aesthetic gestalt).

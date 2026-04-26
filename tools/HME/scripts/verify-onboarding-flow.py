@@ -86,9 +86,9 @@ def main() -> int:
     # Copy Python source into tmp_project so relative paths resolve
     import shutil
     for rel in [
-        "tools/HME/mcp/server/onboarding_chain.py",
-        "tools/HME/mcp/server/tools_analysis/todo.py",
-        "tools/HME/mcp/hme_env.py",
+        "tools/HME/service/server/onboarding_chain.py",
+        "tools/HME/service/server/tools_analysis/todo.py",
+        "tools/HME/service/hme_env.py",
         "CLAUDE.md",
     ]:
         src = os.path.join(real_project, rel)

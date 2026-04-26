@@ -491,7 +491,7 @@ def audit_hook_sources(root: Path) -> list[dict]:
 
 
 def audit_module_imports(root: Path) -> list[dict]:
-    """Parse every .py file under tools/HME/mcp/server/ and verify that
+    """Parse every .py file under tools/HME/service/server/ and verify that
     every NAME referenced at module level OR in function bodies is either
     imported, defined, or a builtin. Catches the exact bug class where
     meta_layers.py used `subprocess.run(...)` without `import subprocess`.

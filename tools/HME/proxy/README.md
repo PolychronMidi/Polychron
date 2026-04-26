@@ -64,8 +64,8 @@ Exit `0` = clean, `1` = violation.
 ## Related
 
 - `tools/HME/activity/emit.py` — event emitter (proxy calls this fire-and-forget)
-- `tools/HME/mcp/worker.py` — Python worker serving `/tool/*`, `/enrich`, `/validate`
-- `tools/HME/mcp/llamacpp_daemon.py` — local-model daemon
+- `tools/HME/service/worker.py` — Python worker serving `/tool/*`, `/enrich`, `/validate`
+- `tools/HME/service/llamacpp_daemon.py` — local-model daemon
 - `scripts/pipeline/validators/check-hme-coherence.js` — pipeline gate reading the activity stream
 
 <!-- HME-DIR-INTENT

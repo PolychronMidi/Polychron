@@ -9,7 +9,7 @@
  *
  * Purpose: surface parallel subsystems that search alone wouldn't reveal.
  * Canonical failure this exists to prevent: "I grepped for 'provider', got
- * 9 hits in tools/HME/mcp/.../synthesis/, didn't realize that's a whole
+ * 9 hits in tools/HME/service/.../synthesis/, didn't realize that's a whole
  * parallel cascade already — wrote a duplicate module from scratch."
  *
  * Explored-directory tracking uses Read tool_results as the explored signal.

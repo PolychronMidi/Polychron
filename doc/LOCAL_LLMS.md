@@ -44,7 +44,7 @@ Switched in commit `0577c0f7`. llama.cpp gives:
 
 ### Shim in front (`hme_http.py`)
 
-Between the MCP host and llama-server sits `tools/HME/mcp/hme_http.py` on `127.0.0.1:7734`. It's a long-running Python process that:
+Between the MCP host and llama-server sits `tools/HME/service/hme_http.py` on `127.0.0.1:7734`. It's a long-running Python process that:
 
 - Holds the RAG engine (jina-embeddings-v2-base-code on one GPU, bge-reranker-v2-m3 on CPU or GPU)
 - Routes MCP tool calls to the right llama-server URL based on the requested model alias
@@ -86,7 +86,7 @@ With everything running at steady state:
 - Coder llama-server: **~18.6 GB** on its assigned M40 (qwen3-coder:30b Q4_K_M + KV cache for 8192 ctx, parallel=2)
 - RAG engine (jina + bge-reranker via `hme_http.py`): **~5 GB**, lands wherever free space is available. Can grow if queries keep embedding new content without triggering the VRAM monitor's pressure release.
 
-The monitor in `tools/HME/mcp/vram_monitor.py` watches both M40s and evicts embedding batches when headroom drops below a configured threshold, so the RAG engine can't starve the llama-servers.
+The monitor in `tools/HME/service/vram_monitor.py` watches both M40s and evicts embedding batches when headroom drops below a configured threshold, so the RAG engine can't starve the llama-servers.
 
 **Training is the only workload that needs all of one M40 to itself.** See the next section.
 

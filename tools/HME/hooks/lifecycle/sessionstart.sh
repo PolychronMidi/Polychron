@@ -162,7 +162,7 @@ echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" 
 # with full visibility into unfinished work. LIFESAVER criticals surface first,
 # then everything else. The TodoWrite hook will re-merge these into native view
 # on the next TodoWrite call.
-CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/mcp" python3 <<'PYEOF' 2>/dev/null
+CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>/dev/null
 try:
     from server.tools_analysis.todo import list_carried_over
     items = list_carried_over()

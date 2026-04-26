@@ -196,7 +196,7 @@ function getProxyVersion(timeoutMs) {
 
 /**
  * Direct-lance fallback for read-only KB tools. Spawns
- * `python3 tools/HME/mcp/direct_lance.py` with the appropriate subcommand
+ * `python3 tools/HME/service/direct_lance.py` with the appropriate subcommand
  * and parses the JSON output. Returns null when:
  *   - the tool is not a read-only KB query (mutating tools require the worker)
  *   - lancedb is not installed (Python ImportError surfaces as empty output)
@@ -208,7 +208,7 @@ function getProxyVersion(timeoutMs) {
 function _tryDirectLance(tool, args) {
   return new Promise((resolve) => {
     const projectRoot = path.resolve(__dirname, '..');
-    const directLance = path.join(projectRoot, 'tools/HME/mcp/direct_lance.py');
+    const directLance = path.join(projectRoot, 'tools/HME/service/direct_lance.py');
     if (!fs.existsSync(directLance)) return resolve(null);
 
     let scriptArgs;

@@ -105,7 +105,7 @@ def _scan_file(f: pathlib.Path) -> list[str]:
 
 
 def main() -> int:
-    paths = sys.argv[1:] or ["tools/HME/mcp"]
+    paths = sys.argv[1:] or ["tools/HME/service"]
     all_hits = []
     for p in paths:
         path = pathlib.Path(p)
