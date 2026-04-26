@@ -117,6 +117,58 @@ print(json.dumps({"open_count": len(ls_open)}))
   });
 });
 
+test('hme_todo add: identical-text duplicate becomes recurrence increment', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+hme_todo(action="add", text="rebuild the index")
+hme_todo(action="add", text="rebuild the index")  # duplicate
+hme_todo(action="add", text="rebuild the index")  # another duplicate
+meta, todos = _load_todos()
+matches = [t for t in todos if t.get("text") == "rebuild the index"]
+print(json.dumps({
+  "match_count": len(matches),
+  "recurrence": matches[0].get("recurrence_count") if matches else 0,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.match_count, 1, 'three identical adds must collapse to ONE entry');
+    assert.strictEqual(parsed.recurrence, 3, 'recurrence_count must reflect all three adds');
+  });
+});
+
+test('hme_todo add: dedup respects parent_id (sub-todos with same text under different parents stay distinct)', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+hme_todo(action="add", text="parent A")
+hme_todo(action="add", text="parent B")
+meta, todos = _load_todos()
+parent_a = next(t for t in todos if t.get("text") == "parent A")
+parent_b = next(t for t in todos if t.get("text") == "parent B")
+hme_todo(action="add", text="rebuild", parent_id=parent_a["id"])
+hme_todo(action="add", text="rebuild", parent_id=parent_b["id"])
+hme_todo(action="add", text="rebuild", parent_id=parent_a["id"])  # dup of A's sub
+meta, todos = _load_todos()
+parent_a = next(t for t in todos if t.get("text") == "parent A")
+parent_b = next(t for t in todos if t.get("text") == "parent B")
+print(json.dumps({
+  "a_subs": len(parent_a.get("subs", [])),
+  "b_subs": len(parent_b.get("subs", [])),
+  "a_recurrence": parent_a["subs"][0].get("recurrence_count", 1) if parent_a.get("subs") else 0,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.a_subs, 1, 'A has one sub even after duplicate add');
+    assert.strictEqual(parsed.b_subs, 1, 'B has its own sub (not deduped against A)');
+    assert.strictEqual(parsed.a_recurrence, 2, 'A sub recurrence reflects the second add');
+  });
+});
+
 test('lifesaver-todo store-protection: TTL sweep auto-resolves stale entries', () => {
   _withSandboxedTodoStore((sandbox) => {
     const result = _runPython(sandbox, `
