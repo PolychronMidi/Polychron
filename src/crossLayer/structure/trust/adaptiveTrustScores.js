@@ -1,10 +1,12 @@
 moduleLifecycle.declare({
   name: 'adaptiveTrustScores',
   subsystem: 'crossLayer',
-  // Init top-level touches validator + controllerConfig.getSection().
-  // metaProfiles / trustSystems / explainabilityBus are referenced from
-  // function bodies called per-beat post-boot.
-  deps: ['validator', 'controllerConfig'],
+  // Full-DI deps: every cross-module reference inside init() body and method
+  // closures resolves through deps. metaProfiles / trustSystems /
+  // explainabilityBus are declared modules (or bound globals) used at
+  // runtime; aliasing them as locals here keeps the method bodies clean
+  // (`metaProfiles.X` reads from the local const, not the global namespace).
+  deps: ['validator', 'controllerConfig', 'metaProfiles', 'trustSystems', 'explainabilityBus'],
   provides: ['adaptiveTrustScores'],
   // Phase 4: registry calls crossLayerRegistry.register() automatically
   // after init returns -- replaces the trailing post-IIFE register call.
@@ -12,6 +14,12 @@ moduleLifecycle.declare({
   init: (deps) => {
   const V = deps.validator.create('adaptiveTrustScores');
   const controllerConfig = deps.controllerConfig;
+  // Full-DI aliases: methods reference these locals; the `deps` object is
+  // the source of truth, the bare globals are only kept available for
+  // legacy callers that haven't migrated yet.
+  const metaProfiles = deps.metaProfiles;
+  const trustSystems = deps.trustSystems;
+  const explainabilityBus = deps.explainabilityBus;
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
   const _atsc = controllerConfig.getSection('adaptiveTrustScores');
