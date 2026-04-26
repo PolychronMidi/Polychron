@@ -173,22 +173,14 @@ conductorConfigDynamics = ({ getActiveProfile, getActiveProfileName, setActivePr
     // Metaprofile/conductor pairing: when the active metaprofile expresses
     // an explicit affinity / antipathy for conductor profiles, honor it.
     // Affinity beats default phase mapping; antipathy redirects to a
-    // preferred fallback. Closes the orthogonality gap that made meta and
-    // conductor profiles each touch only half the system.
-    const metaPreferred = safePreBoot.call(() => {
-      const meta = metaProfiles.getActive();
-      if (!meta) return null;
-      const aff = meta.conductorAffinity;
-      return Array.isArray(aff) && aff.length > 0 ? aff[0] : null;
-    }, null);
-    const metaAvoid = safePreBoot.call(
-      () => metaProfiles.avoidConductorProfile(profileName),
-      false
-    );
-    const metaPrefersCurrent = safePreBoot.call(
-      () => metaProfiles.preferConductorProfile(profileName),
-      true
-    );
+    // preferred fallback. metaProfiles is a boot-validated global -- this
+    // function only runs from main.js's section loop, post-boot, so direct
+    // reads are safe (no safePreBoot wrap needed).
+    const _metaActive = metaProfiles.getActive();
+    const _metaAff = _metaActive ? _metaActive.conductorAffinity : null;
+    const metaPreferred = Array.isArray(_metaAff) && _metaAff.length > 0 ? _metaAff[0] : null;
+    const metaAvoid = metaProfiles.avoidConductorProfile(profileName);
+    const metaPrefersCurrent = metaProfiles.preferConductorProfile(profileName);
     if (metaAvoid && metaPreferred) {
       profileName = metaPreferred;
     } else if (metaPreferred && !metaPrefersCurrent) {
