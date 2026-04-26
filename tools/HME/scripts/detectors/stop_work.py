@@ -119,7 +119,20 @@ def main() -> int:
         b.get("text", "") for b in blocks
         if isinstance(b, dict) and b.get("type") == "text"
     ]
-    full_text = " ".join(text_parts).strip().lower()
+    raw_text = " ".join(text_parts).strip()
+    # Strip quoted / code-fenced spans before phrase matching — same
+    # discipline as exhaust_check.py. Without this, a response that
+    # describes a regex / quotes user prompt / shows code containing a
+    # dismissive-phrase fragment (e.g. "All done" appearing inside a
+    # regex example like `^(Nothing missed|...|All done|...)$`)
+    # false-positives as a dismissive declaration. The patterns we
+    # actually want to catch are bare phrases in the agent's own prose,
+    # not quoted strings inside example/code/reference content.
+    stripped = re.sub(r"```.*?```", " ", raw_text, flags=re.DOTALL)
+    stripped = re.sub(r"`[^`\n]*`", " ", stripped)
+    stripped = re.sub(r'"[^"\n]*"', " ", stripped)
+    stripped = re.sub(r"'[^'\n]*'", " ", stripped)
+    full_text = stripped.lower().strip()
     if any(d in full_text for d in DISMISSIVE_PHRASES):
         print("DISMISSIVE")
         return 0
