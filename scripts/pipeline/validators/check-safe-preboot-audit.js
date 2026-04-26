@@ -21,12 +21,15 @@ const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metric
 const SRC  = path.join(ROOT, 'src');
 
 // Baseline ratchets DOWN as the moduleLifecycle migration eliminates
-// safePreBoot wraps that the registry now makes unnecessary. Phase 2/3
-// migrations dropped this from 171/59 to 118/50 (8 modules migrated;
-// bulk-removed 48 wraps that referenced the now-guaranteed names). Future
-// migrations should continue ratcheting; do NOT raise the baseline.
-const BASELINE_CALLS = 118;
-const BASELINE_FILES = 50;
+// safePreBoot wraps that the registry now makes unnecessary.
+// 171/59 -> 118/50 (initial migration; ~50 wraps stripped for 8 modules).
+// 118/50 -> 19/16 (bulk migration: 245 modules declared; sweep_safepreboot.js
+// stripped every wrap whose target name is now guaranteed-bound at boot).
+// The remaining 19 wraps are legitimately-optional integrations
+// (explainabilityBus telemetry, profileAdaptation hints) that may legitimately
+// be absent on certain runs. Future migrations should continue ratcheting.
+const BASELINE_CALLS = 19;
+const BASELINE_FILES = 16;
 
 function findJsFiles(dir) {
   const results = [];

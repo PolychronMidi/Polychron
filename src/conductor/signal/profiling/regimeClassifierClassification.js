@@ -178,10 +178,7 @@ moduleLifecycle.declare({
     // signal rather than a hardcoded constant.
     // Inner fn guarantees finite; `|| 0.5` was a redundant fallback that also
     // silently rewrote legitimate 0 tension readings to 0.5.
-    const tensionBiasProduct = (() => {
-      const s = conductorState.getField('tension');
-      return typeof s === 'number' && Number.isFinite(s) ? s : 0.5;
-    })();
+    const tensionBiasProduct = V.optionalFinite(conductorState.getField('tension'), 0.5);
     const tensionEvolvingSustain = clamp((tensionBiasProduct - 0.55) / 0.35, 0, 1) * 0.015;
     if (cadenceMonopolyPressure > 0.40 &&
         avgVelocity > evolvingEntryVelMin &&

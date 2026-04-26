@@ -2,7 +2,16 @@
 // Detects overuse or neglect of certain timbral colors across sections.
 // Pure query API - biases FactoryManager selection toward underused textures.
 
-texturalMemoryAdvisor = (() => {
+moduleLifecycle.declare({
+  name: 'texturalMemoryAdvisor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['texturalMemoryAdvisor'],
+  conductorScopes: ['section'],
+  stateProvider: () => ({
+    usageKeys: Object.keys(texturalMemoryAdvisor.getBiasWeights([])).length,
+  }),
+  init: () => {
   /** @type {Object.<string, { count: number, lastSection: number }>} */
   const usage = {};
   let totalSelections = 0;
@@ -105,8 +114,5 @@ texturalMemoryAdvisor = (() => {
     suggestRecall,
     reset
   };
-})();
-conductorIntelligence.registerStateProvider('texturalMemoryAdvisor', () => ({
-  usageKeys: Object.keys(texturalMemoryAdvisor.getBiasWeights([])).length
-}));
-conductorIntelligence.registerModule('texturalMemoryAdvisor', { reset: texturalMemoryAdvisor.reset }, ['section']);
+  },
+});

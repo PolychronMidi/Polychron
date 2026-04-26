@@ -2,7 +2,17 @@
 // Queries L0 for pitch distribution across octave bands.
 // Pure query API - guides voice allocation to avoid register crowding.
 
-registerPressureMonitor = (() => {
+moduleLifecycle.declare({
+  name: 'registerPressureMonitor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['registerPressureMonitor'],
+  conductorScopes: ['section'],
+  stateProvider: () => ({
+    overlap: registerPressureMonitor.getCrossLayerOverlap(),
+    ...registerPressureMonitor.getPressureSignal(),
+  }),
+  init: () => {
   const NUM_BANDS = 10; // octave bands 0-9 (MIDI 0-119)
 
   /**
@@ -100,14 +110,8 @@ registerPressureMonitor = (() => {
     getRegisterPressure,
     getCrossLayerOverlap,
     getRegisterBias,
-    getPressureSignal
+    getPressureSignal,
+    reset: () => {}
   };
-})();
-
-conductorIntelligence.registerStateProvider('registerPressureMonitor', () => ({
-  overlap: registerPressureMonitor.getCrossLayerOverlap(),
-  ...registerPressureMonitor.getPressureSignal()
-}));
-
-  function reset() {}
-  conductorIntelligence.registerModule('registerPressureMonitor', { reset }, ['section']);
+  },
+});

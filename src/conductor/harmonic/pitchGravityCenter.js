@@ -2,8 +2,18 @@
 // Detects tonal drift vs. anchoring across the recent note window.
 // Pure query API - advises register shifts toward or away from a tonal anchor.
 
-pitchGravityCenter = (() => {
-  const V = validator.create('pitchGravityCenter');
+moduleLifecycle.declare({
+  name: 'pitchGravityCenter',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['pitchGravityCenter'],
+  conductorScopes: ['section'],
+  stateProvider: () => ({
+    ...pitchGravityCenter.getGravityCenter(),
+    crossDrift: pitchGravityCenter.getCrossLayerDrift(),
+  }),
+  init: (deps) => {
+  const V = deps.validator.create('pitchGravityCenter');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 1 });
   const ANCHOR_PITCH = 60; // Middle C as default tonal anchor
 
@@ -72,14 +82,8 @@ pitchGravityCenter = (() => {
   return {
     getGravityCenter,
     getGravityBias,
-    getCrossLayerDrift
+    getCrossLayerDrift,
+    reset: () => {}
   };
-})();
-
-conductorIntelligence.registerStateProvider('pitchGravityCenter', () => ({
-  ...pitchGravityCenter.getGravityCenter(),
-  crossDrift: pitchGravityCenter.getCrossLayerDrift()
-}));
-
-  function reset() {}
-  conductorIntelligence.registerModule('pitchGravityCenter', { reset }, ['section']);
+  },
+});
