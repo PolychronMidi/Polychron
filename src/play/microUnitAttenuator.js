@@ -83,10 +83,10 @@ moduleLifecycle.declare({
       // scoreFraction: 0 at score <= 4.0, 1.0 at score >= 8.0.
       // E20 is skipped during exploring: consistent with E13/E19 -- exploring
       // passages should not receive sparse window suppression at any layer.
-      const e20Regime = {
+      const e20Regime = (() => {
         const sn = systemDynamicsProfiler.getSnapshot();
         return sn ? sn.regime : '';
-      };
+      })();
       const e20Bias = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e20AttenuatorBias'));
       const rawScore = V.optionalFinite(score, 0);
       const e20ScoreFraction = e20Regime !== 'exploring' ? clamp((rawScore - 4.0) / 4.0, 0, 1) : 0;
