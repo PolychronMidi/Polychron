@@ -108,8 +108,8 @@ moduleLifecycle.declare({
       // profiles that match the chaotic character; antipathic to settled
       // ones. Coupling-topology hint: chaotic favors entropy-bearing pairs.
       composerFamilies: { development: 1.6, rhythmicDrive: 1.4, tonalExploration: 1.2, harmonicMotion: 0.9, diatonicCore: 0.6 },
-      conductorAffinity: ['varied', 'chaotic'],
-      conductorAntipathy: ['atmospheric', 'meditative'],
+      conductorAffinity: ['explosive'],
+      conductorAntipathy: ['atmospheric', 'minimal'],
       couplingPairs: [['density', 'entropy'], ['flicker', 'entropy'], ['tension', 'flicker']],
       // Density target as a stochastic distribution -- per-tick samples
       // give organic micro-jitter without manual flicker code. cv ~0.08 =
@@ -152,8 +152,8 @@ moduleLifecycle.declare({
       // (Python-side; consumed via metaprofile-active.json). Conductor
       // pairing favors ambient profiles.
       composerFamilies: { harmonicMotion: 1.4, diatonicCore: 1.3, tonalExploration: 1.0, development: 0.6, rhythmicDrive: 0.5 },
-      conductorAffinity: ['atmospheric', 'meditative'],
-      conductorAntipathy: ['chaotic', 'varied'],
+      conductorAffinity: ['atmospheric', 'minimal'],
+      conductorAntipathy: ['explosive'],
       disableControllers: ['antagonism_bridges', 'pair_gain_ceiling'],
     },
 
@@ -202,7 +202,7 @@ moduleLifecycle.declare({
       // strong conductor profiles. Coupling pairs favor density-tension and
       // tension-flicker for a coordinated build.
       composerFamilies: { harmonicMotion: 1.5, diatonicCore: 1.4, rhythmicDrive: 1.2, development: 0.9, tonalExploration: 0.8 },
-      conductorAffinity: ['varied', 'atmospheric'],
+      conductorAffinity: ['explosive', 'atmospheric'],
       couplingPairs: [['density', 'tension'], ['tension', 'flicker']],
       sectionAffinity: ['climax', 'resolution'],
       minDwellSections: 2,
