@@ -169,6 +169,83 @@ print(json.dumps({
   });
 });
 
+test('archive: clear auto-archives complete set to KB devlog and resets to fresh slate', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const fs2 = require('fs');
+    const p2 = require('path');
+    fs2.mkdirSync(p2.join(sandbox, 'doc'), { recursive: true });
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'SPEC.md'),
+      `# Test SPEC\n\n## Phases\n\n### Phase 0: bootstrap\n\n- [x] [easy] Item A\n\n` +
+      `_Phase 0 complete_ (2026-04-26T10:00:00Z):\n\nDid bootstrap.\n\n` +
+      `### Phase 1: extension\n\n- [x] [hard] Item B\n\n` +
+      `_Phase 1 complete_ (2026-04-26T11:00:00Z):\n\nExtended.\n\n## Glossary\n\n- **t**: term\n`
+    );
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'TODO.md'),
+      `# TODO\n\n## In flight\n\n## Just shipped\n\n- did stuff\n\n## Next up\n\n(empty)\n`
+    );
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _detect_complete_set
+import json, os
+detection = _detect_complete_set()
+out = hme_todo(action="clear", text="test set name")
+spec_md = open(os.path.join("${sandbox}", "doc", "SPEC.md")).read()
+todo_md = open(os.path.join("${sandbox}", "doc", "TODO.md")).read()
+devlog_dir = os.path.join("${sandbox}", "tools", "HME", "KB", "devlog")
+devlog_files = sorted(os.listdir(devlog_dir)) if os.path.exists(devlog_dir) else []
+print(json.dumps({
+  "detected_complete": detection["complete"],
+  "archive_message_present": "📦 Set archived" in out,
+  "devlog_count": len(devlog_files),
+  "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
+  "spec_has_phase_0_placeholder": "### Phase 0: <next set" in spec_md,
+  "spec_has_archive_pointer": "Previous set" in spec_md and "archived" in spec_md,
+  "spec_no_old_phases": "_Phase 0 complete_" not in spec_md and "_Phase 1 complete_" not in spec_md,
+  "todo_reset_to_fresh": "(empty — populate from the new set" in todo_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.detected_complete, true, 'all-complete detection must fire');
+    assert.strictEqual(parsed.archive_message_present, true, 'clear must surface archive message');
+    assert.strictEqual(parsed.devlog_count, 1, 'one devlog file must be produced');
+    assert.strictEqual(parsed.devlog_filename_pattern, true, 'devlog filename must include slug');
+    assert.strictEqual(parsed.spec_has_phase_0_placeholder, true, 'fresh SPEC has Phase 0 placeholder');
+    assert.strictEqual(parsed.spec_has_archive_pointer, true, 'fresh SPEC has archive pointer');
+    assert.strictEqual(parsed.spec_no_old_phases, true, 'fresh SPEC drops old completed phases');
+    assert.strictEqual(parsed.todo_reset_to_fresh, true, 'fresh TODO has empty-Next-up message');
+  });
+});
+
+test('archive: clear refuses to archive when set is not complete', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const fs2 = require('fs');
+    const p2 = require('path');
+    fs2.mkdirSync(p2.join(sandbox, 'doc'), { recursive: true });
+    // Phase has open `[ ]` items — set not complete
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'SPEC.md'),
+      `# SPEC\n\n## Phases\n\n### Phase 0: wip\n\n- [x] [easy] Done item\n- [ ] [hard] Still open\n`
+    );
+    fs2.writeFileSync(p2.join(sandbox, 'doc', 'TODO.md'), `# TODO\n\n## Just shipped\n\n## Next up\n`);
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo
+import os
+out = hme_todo(action="clear")
+spec_md = open(os.path.join("${sandbox}", "doc", "SPEC.md")).read()
+import json
+print(json.dumps({
+  "no_archive_message": "📦 Set archived" not in out,
+  "blocker_message_shown": "Set not yet complete" in out,
+  "spec_unchanged": "Still open" in spec_md,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.no_archive_message, true, 'must NOT archive when set incomplete');
+    assert.strictEqual(parsed.blocker_message_shown, true, 'must surface blocker reason');
+    assert.strictEqual(parsed.spec_unchanged, true, 'SPEC.md must remain untouched');
+  });
+});
+
 test('lifesaver-todo store-protection: TTL sweep auto-resolves stale entries', () => {
   _withSandboxedTodoStore((sandbox) => {
     const result = _runPython(sandbox, `

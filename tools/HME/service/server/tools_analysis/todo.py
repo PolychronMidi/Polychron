@@ -783,6 +783,13 @@ def merge_native_todowrite(incoming: list) -> list:
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
 _TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "TODO.md")
+# Archive lives under KB as the "devlog" arm — searchable through the
+# same substrate as other knowledge entries, decoupled from the active
+# doc/ directory so completed work doesn't tax agents reading the spec.
+# Each archive event writes ONE timestamped file containing the
+# just-completed set of phases (no monthly rotation; the archive trigger
+# IS set-completion).
+_DEVLOG_DIR = os.path.join(ENV.require("PROJECT_ROOT"), "tools", "HME", "KB", "devlog")
 # Matches a Next-up entry: "- [tier] description. Reason: ..."
 _NEXT_UP_RE = re.compile(
     r"^\s*-\s+\[(easy|medium|hard)\]\s+(.+?)(?:\s+Reason:\s+(.+?))?\s*$",
@@ -934,6 +941,334 @@ def _common_prefix_len(a: str, b: str) -> int:
     return i
 
 
+_JUST_SHIPPED_LIMIT = int(os.environ.get("HME_JUST_SHIPPED_LIMIT", "10"))
+
+
+def _ensure_devlog_dir() -> None:
+    os.makedirs(_DEVLOG_DIR, exist_ok=True)
+
+
+def _slugify(text: str, max_len: int = 40) -> str:
+    """Filesystem-safe slug for archive filenames."""
+    s = re.sub(r"[^a-zA-Z0-9_\-]+", "-", text.lower()).strip("-")
+    return s[:max_len].rstrip("-") or "set"
+
+
+def _detect_complete_set() -> dict:
+    """Detect whether ALL phases in doc/SPEC.md are complete (each phase
+    has zero `[ ]` items AND a `_Phase N complete_` sentinel paragraph).
+    Returns {complete: bool, phases: [(n, header, start, end)], missing: [reason...]}.
+
+    A "set" = all phases currently in SPEC.md. The archive trigger fires
+    only when the entire set is complete — that's the "fresh slate"
+    moment the user asked for. Half-completed sets stay in place."""
+    out = {"complete": False, "phases": [], "missing": []}
+    if not os.path.exists(_SPEC_FILE):
+        out["missing"].append(f"{_SPEC_FILE} missing")
+        return out
+    with open(_SPEC_FILE, encoding="utf-8") as f:
+        spec_md = f.read()
+    blocks = _phase_blocks(spec_md)
+    if not blocks:
+        out["missing"].append("no phase blocks found in SPEC")
+        return out
+    sentinel_re = re.compile(r"_phase\s+\d+\s+complete_", re.IGNORECASE)
+    open_re = re.compile(r"^\s*-\s+\[\s\]")
+    lines = spec_md.split("\n")
+    all_complete = True
+    for start, end, header in blocks:
+        m = re.match(r"^###\s+Phase\s+(\d+):", header)
+        if not m:
+            continue
+        phase_n = int(m.group(1))
+        block = lines[start:end]
+        opens = sum(1 for ln in block if open_re.match(ln))
+        has_sentinel = any(sentinel_re.search(ln) for ln in block)
+        out["phases"].append({"n": phase_n, "header": header.strip(), "start": start, "end": end,
+                              "open_items": opens, "has_sentinel": has_sentinel})
+        if opens > 0:
+            out["missing"].append(f"Phase {phase_n} has {opens} open `[ ]` item(s)")
+            all_complete = False
+        elif not has_sentinel:
+            out["missing"].append(f"Phase {phase_n} missing `_Phase {phase_n} complete_` sentinel")
+            all_complete = False
+    out["complete"] = all_complete and bool(out["phases"])
+    return out
+
+
+def _archive_set(set_name: str = "") -> dict:
+    """Archive the entire set of phases in doc/SPEC.md to a single
+    timestamped KB devlog file. Refuses if any phase is incomplete.
+
+    Layout: tools/HME/KB/devlog/<YYYY-MM-DDTHHMMSSZ>-<slug>.md
+    Contents: all phase blocks verbatim + the SPEC's preamble (Goal /
+    Architecture / Phases header) + any closing sections (Glossary,
+    Three-loop NEVER lists, etc.) — the FULL spec snapshot at archive
+    time. Future agents can grep the devlog for "how did we land
+    Phase X" without paying the active-spec context tax.
+
+    Also archives the matching TODO.md state (entire file snapshot,
+    since "Just shipped" entries correlate with phases) so the devlog
+    captures both the plan AND the what-shipped record.
+
+    After archive: doc/SPEC.md is replaced with a fresh-slate
+    template; doc/TODO.md is replaced with empty 3-section template.
+    The active docs are now ready for the NEXT set without any
+    completed-work tax.
+
+    Returns {ok: bool, devlog_path: str, message: str}."""
+    detection = _detect_complete_set()
+    if not detection["complete"]:
+        return {
+            "ok": False,
+            "devlog_path": "",
+            "message": (
+                "Refused: set is not fully complete.\n  " +
+                "\n  ".join(detection["missing"])
+            ),
+        }
+    _ensure_devlog_dir()
+    ts = time.strftime("%Y-%m-%dT%H%M%SZ", time.gmtime())
+    if not set_name:
+        # Derive slug from the first phase's header
+        first_header = detection["phases"][0]["header"]
+        m = re.match(r"^###\s+Phase\s+\d+:\s*(.+?)\s*$", first_header)
+        set_name = m.group(1) if m else "set"
+    slug = _slugify(set_name)
+    devlog_path = os.path.join(_DEVLOG_DIR, f"{ts}-{slug}.md")
+    # Snapshot SPEC.md fully + TODO.md fully into the devlog file.
+    spec_md = open(_SPEC_FILE, encoding="utf-8").read() if os.path.exists(_SPEC_FILE) else ""
+    todo_md = open(_TODOMD_FILE, encoding="utf-8").read() if os.path.exists(_TODOMD_FILE) else ""
+    phase_count = len(detection["phases"])
+    devlog_content = [
+        f"# Devlog — {set_name}",
+        "",
+        f"_Archived: {ts}_",
+        f"_Phases: {phase_count} ({', '.join(str(p['n']) for p in detection['phases'])})_",
+        "",
+        "## SPEC snapshot",
+        "",
+        spec_md.rstrip(),
+        "",
+        "## TODO snapshot",
+        "",
+        todo_md.rstrip(),
+        "",
+    ]
+    with open(devlog_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(devlog_content) + "\n")
+    # Reset active SPEC.md to a fresh-slate template — preserves the
+    # preamble (Goal / Architecture) and trailing sections (Glossary,
+    # Three-loop NEVER lists, How this file evolves, Difficulty labels,
+    # Empty-queue bail) since those are stable across sets. Drops only
+    # the Phase blocks — those moved to the devlog.
+    _reset_spec_to_fresh_slate(set_name, ts, devlog_path)
+    _reset_todo_to_fresh_slate()
+    return {
+        "ok": True,
+        "devlog_path": devlog_path,
+        "message": f"Archived {phase_count} phase(s) to {devlog_path}; doc/SPEC.md and doc/TODO.md reset to fresh slate.",
+    }
+
+
+def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: str) -> None:
+    """After archiving a set, replace the Phase blocks in doc/SPEC.md
+    with an empty placeholder pointing at the devlog. Keeps preamble
+    (Goal / Architecture) and trailing sections (Glossary, NEVER lists,
+    How-this-file-evolves, Difficulty labels, Empty-queue bail) intact —
+    those are stable across sets and don't need rewriting."""
+    if not os.path.exists(_SPEC_FILE):
+        return
+    with open(_SPEC_FILE, encoding="utf-8") as f:
+        spec_md = f.read()
+    lines = spec_md.split("\n")
+    blocks = _phase_blocks(spec_md)
+    if not blocks:
+        return
+    first_phase_start = blocks[0][0]
+    last_phase_end = blocks[-1][1]
+    # Replace the [first_phase_start, last_phase_end) span with a
+    # placeholder note linking the archived devlog. Anything BEFORE
+    # first_phase_start is preamble (Goal / Architecture / Phases
+    # header); anything FROM last_phase_end onward is post-phases
+    # (Deferred / Glossary / How this evolves / etc.).
+    placeholder = [
+        "",
+        f"_Previous set ({prev_set_name}) archived {prev_ts} to {os.path.relpath(devlog_path, ENV.require('PROJECT_ROOT'))}._",
+        "",
+        "### Phase 0: <next set — name>",
+        "",
+        "<1-paragraph context for the new set.>",
+        "",
+        "- [ ] [easy] First item of the new set",
+        "",
+    ]
+    new_lines = lines[:first_phase_start] + placeholder + lines[last_phase_end:]
+    with open(_SPEC_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(new_lines))
+
+
+def _reset_todo_to_fresh_slate() -> None:
+    """After archiving a set, reset doc/TODO.md to the empty 3-section
+    template. The previous set's "Just shipped" entries are preserved
+    in the devlog snapshot."""
+    if not os.path.exists(_TODOMD_FILE):
+        return
+    fresh = (
+        "# Polychron HME TODO (handoff doc)\n\n"
+        "> Cross-cycle state. Every skill reads this on start and updates it on close. "
+        "Three sections, in this order. See [doc/SPEC.md](SPEC.md) for the full architectural plan.\n\n"
+        "## In flight\n\n"
+        "<!-- Exactly one line per currently-running skill, format:\n"
+        "  - [<skill-name> @ <utc-iso>] <one-line: what this skill is currently doing>\n"
+        "  Empty when no skill is running. -->\n\n"
+        "## Just shipped (last cycle)\n\n"
+        "<!-- Append-on-close, newest first. Trim to last 10; older history lives in\n"
+        "  the previous set's devlog at tools/HME/KB/devlog/. -->\n\n"
+        "## Next up (queued for next cycle)\n\n"
+        "<!-- One line per queued item:\n"
+        "  - [<difficulty>] <description>. Reason: <source> -->\n\n"
+        "(empty — populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)\n\n"
+        "---\n\n"
+        "When this Next up is empty AND every `- [ ]` in [doc/SPEC.md](SPEC.md) has been "
+        "flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "
+        "\"Empty-queue bail\" appendix.\n"
+    )
+    with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
+        f.write(fresh)
+
+
+def _archive_just_shipped_overflow(trimmed_entries: list[str]) -> str:
+    """When TODO.md "Just shipped" trims past the rolling-window cap
+    mid-set (before the set is fully archived), the trimmed entries
+    land in the current devlog scratch file so they're not lost.
+    Path: tools/HME/KB/devlog/_in-flight-shipped-overflow.md (single
+    rolling file, cleared on next archive_set)."""
+    if not trimmed_entries:
+        return ""
+    _ensure_devlog_dir()
+    overflow_path = os.path.join(_DEVLOG_DIR, "_in-flight-shipped-overflow.md")
+    header_present = os.path.exists(overflow_path)
+    body = []
+    if not header_present:
+        body.append("# In-flight just-shipped overflow")
+        body.append("")
+        body.append("> Trimmed from doc/TODO.md \"Just shipped\" rolling-10 window mid-set. "
+                    "Cleared when the current set is archived via `i/todo archive_set`.")
+        body.append("")
+    body.append(f"<!-- trimmed {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} -->")
+    body.extend(trimmed_entries)
+    body.append("")
+    with open(overflow_path, "a", encoding="utf-8") as f:
+        if header_present:
+            f.write("\n")
+        f.write("\n".join(body) + "\n")
+    return overflow_path
+
+
+def _trim_just_shipped(md: str) -> tuple[str, int]:
+    """Trim the Just shipped section to most recent N entries (per
+    skill-set's rolling-window pattern). Older entries live in SPEC.md
+    phase blocks + git log — the user said the file should not bloat
+    over time. Mutates the section in-place; non-list lines (HTML
+    comments, blank lines) are preserved. Returns (new_md, trimmed_count)."""
+    marker = "## Just shipped (last cycle)"
+    if marker not in md:
+        return md, 0
+    lines = md.split("\n")
+    out = []
+    in_section = False
+    in_comment = False
+    entry_count = 0
+    trimmed = 0
+    for line in lines:
+        s = line.strip()
+        if s == marker:
+            out.append(line)
+            in_section = True
+            entry_count = 0
+            continue
+        if in_section:
+            # Section ends at next "## " or "---"
+            if s.startswith("## ") or s.startswith("---"):
+                in_section = False
+                out.append(line)
+                continue
+            # Track comment blocks — never trim inside them.
+            if "<!--" in line and "-->" not in line:
+                in_comment = True
+                out.append(line)
+                continue
+            if in_comment:
+                out.append(line)
+                if "-->" in line:
+                    in_comment = False
+                continue
+            # Real entry line (markdown list item)
+            if s.startswith("- "):
+                entry_count += 1
+                if entry_count > _JUST_SHIPPED_LIMIT:
+                    trimmed += 1
+                    continue
+            out.append(line)
+            continue
+        out.append(line)
+    return "\n".join(out), trimmed
+
+
+def _phase_blocks(spec_md: str) -> list[tuple[int, int, str]]:
+    """Parse doc/SPEC.md for `### Phase <N>: <name>` blocks. Returns
+    list of (start_line_idx, end_line_idx_exclusive, header_line)
+    tuples. The end is the line where the next `### Phase` or `## `
+    starts (or EOF). Used by phase-completion detection."""
+    lines = spec_md.split("\n")
+    starts = []
+    for i, line in enumerate(lines):
+        if re.match(r"^###\s+Phase\s+\d+:", line):
+            starts.append((i, line))
+    blocks = []
+    for k, (start, header) in enumerate(starts):
+        if k + 1 < len(starts):
+            end = starts[k + 1][0]
+        else:
+            # Phase block ends at next "## " (top-level section) or EOF
+            end = len(lines)
+            for j in range(start + 1, len(lines)):
+                if lines[j].startswith("## "):
+                    end = j
+                    break
+        blocks.append((start, end, header))
+    return blocks
+
+
+def _detect_phase_complete(spec_md: str) -> list[dict]:
+    """For each Phase block, return one entry per phase that:
+       - has at least one `- [x]` item AND
+       - has zero `- [ ]` items AND
+       - does NOT yet have a "phase complete" sentinel paragraph.
+    Caller can use this to surface "Phase N is now complete — add a
+    completion paragraph" reminders. Pure detection; no mutation.
+    """
+    open_re = re.compile(r"^\s*-\s+\[\s\]")
+    closed_re = re.compile(r"^\s*-\s+\[x\]")
+    sentinel_re = re.compile(r"_phase\s+complete_|\*\*phase\s+complete\*\*", re.IGNORECASE)
+    lines = spec_md.split("\n")
+    out = []
+    for start, end, header in _phase_blocks(spec_md):
+        block = lines[start:end]
+        opens = sum(1 for ln in block if open_re.match(ln))
+        closes = sum(1 for ln in block if closed_re.match(ln))
+        has_sentinel = any(sentinel_re.search(ln) for ln in block)
+        if closes >= 1 and opens == 0 and not has_sentinel:
+            out.append({
+                "header": header.strip(),
+                "start_line": start,
+                "end_line": end,
+                "closed_count": closes,
+            })
+    return out
+
+
 def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     """Atomic SPEC/TODO close: flip the BEST-MATCHING `- [ ] [tier] <text>`
     in doc/SPEC.md to `[x]`, append a Just-shipped entry to doc/TODO.md.
@@ -946,8 +1281,10 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     the full SPEC.md item text, so strict equality / containment misses
     legitimately-paired items.
 
-    Returns (flipped_spec_line, shipped_line). flipped_spec_line is
-    empty if no SPEC item matched well enough."""
+    After flip+append, trims TODO.md "Just shipped" to most recent N
+    entries (skill-set's rolling-window pattern; older history lives in
+    SPEC.md phase blocks + git log). Returns (flipped_spec_line,
+    shipped_line); flipped is empty if no SPEC item matched."""
     text = entry.get("text", "").strip()
     # Strip the "(from spec — Reason)" provenance suffix if present.
     text_root = re.sub(r"\s+\(from spec.*?\)\s*$", "", text)
@@ -1038,8 +1375,13 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
             if not inserted:
                 # Section was at file end with no entries; append at EOF.
                 out.append(shipped)
+            new_md = "\n".join(out)
+            # Apply rolling-window trim AFTER the new entry lands so the
+            # newest entry always survives. Trim count is the difference
+            # between count-before and the configured limit.
+            trimmed_md, _trim_n = _trim_just_shipped(new_md)
             with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
-                f.write("\n".join(out))
+                f.write(trimmed_md)
     return flipped, shipped
 
 
@@ -1207,11 +1549,50 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             return f"Error: #{todo_id} not found."
 
         if action == "clear":
+            # Auto-archive trigger: when doc/SPEC.md is fully complete
+            # (all `[ ]` flipped to `[x]` AND every phase has its
+            # `_Phase N complete_` sentinel), `clear` snapshots the
+            # full SPEC + TODO state to a timestamped KB devlog file,
+            # clears completed i/todo entries, and resets SPEC.md +
+            # TODO.md to a fresh-slate template ready for the next set.
+            #
+            # Mid-set (any open `[ ]` items remaining): `clear` just
+            # removes completed i/todo entries (the original behavior).
+            # No archive happens because the set isn't done.
+            #
+            # The archive is "built into" clear — one action, one
+            # mental model: "I'm done with this list, clean up."
+            detection = _detect_complete_set()
+            archive_msg = ""
+            if detection["complete"]:
+                # Set is fully done — perform the archive + reset.
+                # Pass set_name from text= argument if provided, else
+                # auto-derive from the first phase header in _archive_set.
+                archive_result = _archive_set(set_name=text)
+                if archive_result["ok"]:
+                    archive_msg = (
+                        f"\n\n📦 Set archived to KB devlog:\n  {archive_result['devlog_path']}\n"
+                        f"doc/SPEC.md and doc/TODO.md reset to fresh slate."
+                    )
+                else:
+                    # Detection said complete but archive refused —
+                    # surface the reason instead of silently skipping.
+                    archive_msg = f"\n\n⚠ Archive refused: {archive_result['message']}"
+            elif detection["phases"]:
+                # Mid-set: surface what's still pending so the user
+                # knows why clear isn't archiving yet.
+                missing_count = len(detection["missing"])
+                if missing_count:
+                    archive_msg = (
+                        f"\n\n(Set not yet complete — {missing_count} blocker(s); "
+                        f"archive will fire on next `clear` once SPEC.md is fully checked. "
+                        f"First blocker: {detection['missing'][0]})"
+                    )
             before = len(todos)
             todos = [t for t in todos if not _check_main_done(t)]
             removed = before - len(todos)
             _save_todos(meta, todos)
-            return f"Cleared {removed} completed todos.\n\n{_render(todos)}"
+            return f"Cleared {removed} completed todos.{archive_msg}\n\n{_render(todos)}"
 
         if action == "ingest_from_spec":
             ingested = _ingest_from_spec(meta, todos)
@@ -1247,10 +1628,87 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             note = ""
             if spec_flipped:
                 note = f" (flipped doc/SPEC.md item: {spec_flipped[:80]})"
-            return f"Closed #{todo_id}{note}\nShipped: {shipped_line}\n"
+            # Phase-completion detection: if this flip closed the last
+            # `[ ]` in any Phase block, surface that to the caller so a
+            # buddy / human can append the completion-ritual paragraph
+            # via `i/todo phase_complete phase=N summary=\"...\"`.
+            phase_complete_msg = ""
+            if spec_flipped and os.path.exists(_SPEC_FILE):
+                with open(_SPEC_FILE, encoding="utf-8") as f:
+                    spec_md = f.read()
+                completed = _detect_phase_complete(spec_md)
+                if completed:
+                    headers = "\n  ".join(c["header"] for c in completed)
+                    phase_complete_msg = (
+                        f"\n\n🎉 Phase complete (no remaining `[ ]` items):\n  {headers}\n"
+                        f"Run `i/todo phase_complete phase=<N> summary=\"...\"` to append "
+                        f"the completion paragraph (1-paragraph result + bulleted file "
+                        f"citations + test-count delta)."
+                    )
+            return f"Closed #{todo_id}{note}\nShipped: {shipped_line}{phase_complete_msg}\n"
+
+        if action == "phase_complete":
+            # Append the phase-completion sentinel paragraph to a
+            # fully-checked Phase block in doc/SPEC.md. Caller passes
+            # phase=N (via todo_id arg) and summary (via text arg —
+            # the 1-paragraph result; bulleted file citations and
+            # test-count delta should be embedded by the caller).
+            #
+            # When all phases in the SPEC have completion paragraphs
+            # AND zero open `[ ]` items, the next `clear` action will
+            # auto-archive the set to KB devlog and reset to fresh slate.
+            phase_n = todo_id  # repurpose todo_id arg as phase number
+            if not phase_n:
+                return "Error: phase=N required for phase_complete (pass via todo_id=)."
+            if not text:
+                return "Error: text= required (the completion paragraph)."
+            if not os.path.exists(_SPEC_FILE):
+                return f"Error: {_SPEC_FILE} missing."
+            with open(_SPEC_FILE, encoding="utf-8") as f:
+                spec_md = f.read()
+            blocks = _phase_blocks(spec_md)
+            target_block = None
+            for start, end, header in blocks:
+                m = re.match(r"^###\s+Phase\s+(\d+):", header)
+                if m and int(m.group(1)) == phase_n:
+                    target_block = (start, end, header)
+                    break
+            if target_block is None:
+                return f"Error: Phase {phase_n} not found in {_SPEC_FILE}."
+            start, end, header = target_block
+            # Verify the phase is actually complete (no remaining `[ ]`)
+            lines = spec_md.split("\n")
+            block_lines = lines[start:end]
+            opens = sum(1 for ln in block_lines if re.match(r"^\s*-\s+\[\s\]", ln))
+            if opens > 0:
+                return (f"Error: Phase {phase_n} still has {opens} open `[ ]` items. "
+                        f"Close them via close_with_spec_update before appending the "
+                        f"completion paragraph.")
+            # Append the completion block before the next phase / section.
+            ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            completion_block = [
+                "",
+                f"_Phase {phase_n} complete_ ({ts}):",
+                "",
+                text.strip(),
+                "",
+            ]
+            new_lines = lines[:end] + completion_block + lines[end:]
+            with open(_SPEC_FILE, "w", encoding="utf-8") as f:
+                f.write("\n".join(new_lines))
+            # Surface whether the set is now fully complete (next clear
+            # will auto-archive).
+            redetect = _detect_complete_set()
+            tail = ""
+            if redetect["complete"]:
+                tail = (
+                    f"\n\n📦 All phases now complete — next `i/todo clear` will archive "
+                    f"the set to KB devlog and reset SPEC/TODO to fresh slate."
+                )
+            return f"Phase {phase_n} marked complete in {_SPEC_FILE}.{tail}\n"
 
         return ("Unknown action. Use: list, add, done, undo, remove, clear, critical, "
-                "ingest_from_spec, promote_to_spec, close_with_spec_update.")
+                "ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.")
 
 
 
