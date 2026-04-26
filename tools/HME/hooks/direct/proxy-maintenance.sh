@@ -58,7 +58,7 @@ case "$_action" in
     mkdir -p "$_MAINT_ROOT/log" 2>/dev/null
     ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     echo "[$ts] [proxy-maintenance] window opened (ttl=${_ttl}s)" \
-      >> "$_MAINT_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+      >> "$_MAINT_ROOT/log/hme-proxy-lifecycle.log"
     echo "proxy-maintenance: flag set at $_MAINT_FLAG (ttl=${_ttl}s)" >&2
     ;;
   clear)
@@ -67,7 +67,7 @@ case "$_action" in
       ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
       mkdir -p "$_MAINT_ROOT/log" 2>/dev/null
       echo "[$ts] [proxy-maintenance] window closed manually" \
-        >> "$_MAINT_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+        >> "$_MAINT_ROOT/log/hme-proxy-lifecycle.log"
       echo "proxy-maintenance: flag cleared" >&2
     else
       echo "proxy-maintenance: no flag to clear" >&2

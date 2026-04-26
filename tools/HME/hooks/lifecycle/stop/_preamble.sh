@@ -21,6 +21,16 @@ if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   # `|| true` is load-bearing: under set -e, a python crash here (e.g.
   # context_meter.py ImportError under a stale module graph) would kill
   # stop.sh with exit 2, bypassing all the actual lifecycle checks below.
-  # Surfaced via the new terse-verdict trap — user saw `fail=2` at 20ms.
-  python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>/dev/null || true
+  # FAIL-LOUD: stderr now captured and bridged so a context_meter crash
+  # surfaces to next-turn LIFESAVER instead of vanishing.
+  _PRE_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pre_py_err_$$")
+  python3 "$_DETECTORS_DIR/context_meter.py" "$_CTX_TRANSCRIPT" "$_CTX_OUT" 2>"$_PRE_PY_ERR" || true
+  if [ -s "$_PRE_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    _PRE_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _pre_line; do
+      [ -n "$_pre_line" ] && echo "[$_PRE_TS] [stop_preamble:context_meter] python3 failed: $_pre_line" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
+    done < "$_PRE_PY_ERR"
+  fi
+  rm -f "$_PRE_PY_ERR" 2>/dev/null
 fi

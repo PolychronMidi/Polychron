@@ -4,13 +4,14 @@
 # buried in string literals, heredocs, or unrelated arguments).
 GUARD_CFG="${PROJECT_ROOT}/tools/HME/config/context-guards.json"
 if [ -f "$GUARD_CFG" ] && echo "$CMD" | grep -qE '\b(cat|head|tail|less|more|batcat|bat|diff|sed|awk|xxd|od|git)\b'; then
-  BASH_HIT=$(python3 - "$CMD" "$GUARD_CFG" <<'PYEOF' 2>/dev/null
+  # FAIL-LOUD: was `2>/dev/null` + bare `except: sys.exit(0)` which fail-OPENed
+  # the bash-reader gate on every python crash. Now stderr captured so
+  # corrupted config / python crash surfaces to errors.log.
+  _BRG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_brg_py_err_$$")
+  BASH_HIT=$(python3 - "$CMD" "$GUARD_CFG" <<'PYEOF' 2>"$_BRG_PY_ERR"
 import json, os, shlex, sys
 cmd, cfg = sys.argv[1], sys.argv[2]
-try:
-    d = json.load(open(cfg))
-except Exception:
-    sys.exit(0)
+d = json.load(open(cfg))
 try:
     tokens = shlex.split(cmd, posix=True)
 except ValueError:
@@ -169,6 +170,14 @@ while i < len(tokens):
     i += 1
 PYEOF
 )
+  if [ -s "$_BRG_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    _BRG_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _brg_line; do
+      [ -n "$_brg_line" ] && echo "[$_BRG_TS] [reader_guards] python3 failed (gate fails OPEN): $_brg_line" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
+    done < "$_BRG_PY_ERR"
+  fi
+  rm -f "$_BRG_PY_ERR" 2>/dev/null
   if [ -n "$BASH_HIT" ]; then
     _emit_block "BLOCKED: Bash reader (cat/head/tail/less/more) targets context-guarded path '$BASH_HIT' (see tools/HME/config/context-guards.json). Use Grep with a targeted pattern, or head/tail -n N for paginated files."
     exit 2

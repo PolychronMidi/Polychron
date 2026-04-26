@@ -157,7 +157,10 @@ fi
 # instead of the prior 3-day silent-skip.)
 if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
-  if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
+  # Use _safe_jq (fail-loud) for tool_response extraction instead of raw jq
+  # with stderr suppressed.
+  _PTB_RESPONSE=$(_safe_jq "$INPUT" '.tool_response' '')
+  if [ "$EXIT_CODE" = "0" ] || echo "$_PTB_RESPONSE" | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
   fi
 fi

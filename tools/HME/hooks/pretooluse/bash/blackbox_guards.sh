@@ -47,7 +47,11 @@ if _policy_enabled block-curl-pipe-sh && echo "$CMD" | grep -qE '\b(curl|wget|fe
 fi
 
 if _policy_enabled block-runlock-deletion && echo "$CMD" | grep -q 'run\.lock'; then
-  _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>/dev/null <<'PY'
+  # FAIL-LOUD: was `2>/dev/null`. A python crash silently disabled the
+  # run.lock deletion-block — `tmp/run.lock` is a hard rule per CLAUDE.md
+  # ("Never remove tmp/run.lock"). Gate failing OPEN here is critical.
+  _BBG_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_bbg_py_err_$$")
+  _RUNLOCK_VERDICT=$(python3 - "$CMD" 2>"$_BBG_PY_ERR" <<'PY'
 import shlex, sys, re
 cmd = sys.argv[1] if len(sys.argv) > 1 else ""
 DELETION_VERBS = {"rm", "unlink", "shred", "truncate"}
@@ -91,6 +95,14 @@ if any(t in tokens for t in ("python3", "python", "node", "perl", "ruby")):
 print("ALLOW")
 PY
 )
+  if [ -s "$_BBG_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    _BBG_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _bbg_line; do
+      [ -n "$_bbg_line" ] && echo "[$_BBG_TS] [blackbox_guards:runlock] python3 failed (run.lock guard fails OPEN — CRITICAL): $_bbg_line" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
+    done < "$_BBG_PY_ERR"
+  fi
+  rm -f "$_BBG_PY_ERR" 2>/dev/null
   if [ "${_RUNLOCK_VERDICT:-}" != "ALLOW" ] && [ -n "${_RUNLOCK_VERDICT:-}" ]; then
     _emit_block "BLOCKED: Never delete run.lock (matched: ${_RUNLOCK_VERDICT})"
     exit 2
