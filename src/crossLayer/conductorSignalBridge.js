@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   // Full-DI deps: every cross-subsystem reference inside method bodies
   // resolves through deps.X. Aliasing as locals keeps refresh() readable
   // (`signalReader.snapshot()` reads from the local const, not the global).
-  deps: ['validator', 'signalReader', 'hyperMetaManager', 'systemDynamicsProfiler'],
+  deps: ['harmonicContext', 'hyperMetaManager', 'pipelineCouplingManager', 'signalReader', 'systemDynamicsProfiler', 'validator'],
   provides: ['conductorSignalBridge'],
   // Phase 4: declare post-init registrations inline. Registry binds the
   // recorder to conductorIntelligence and registers the module with
@@ -18,6 +18,8 @@ moduleLifecycle.declare({
   crossLayerScopes: ['all', 'section'],
   recorder: (ctx) => { conductorSignalBridge.refresh(ctx); },
   init: (deps) => {
+  const harmonicContext = deps.harmonicContext;
+  const pipelineCouplingManager = deps.pipelineCouplingManager;
   const V = deps.validator.create('conductorSignalBridge');
   // Full-DI aliases.
   const signalReader = deps.signalReader;

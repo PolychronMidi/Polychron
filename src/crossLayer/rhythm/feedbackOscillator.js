@@ -12,10 +12,12 @@ const COMPLEMENT_MAP = Object.freeze([6, 5, 4, 3, 8, 7, 0, 5, 4, 3, 2, 1]);
 moduleLifecycle.declare({
   name: 'feedbackOscillator',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'regimeClassifier', 'validator'],
   provides: ['feedbackOscillator'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('feedbackOscillator');
   const CHANNEL = 'feedbackLoop';
   const SYNC_TOLERANCE_MS = 250;

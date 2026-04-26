@@ -9,9 +9,16 @@
 moduleLifecycle.declare({
   name: 'emergentMelodicEngine',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'ambitusMigrationTracker', 'counterpointMotionTracker', 'intervalDirectionMemory', 'melodicContourTracker', 'tessituraPressureMonitor', 'thematicRecallDetector', 'validator'],
   provides: ['emergentMelodicEngine'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const ambitusMigrationTracker = deps.ambitusMigrationTracker;
+  const counterpointMotionTracker = deps.counterpointMotionTracker;
+  const intervalDirectionMemory = deps.intervalDirectionMemory;
+  const melodicContourTracker = deps.melodicContourTracker;
+  const tessituraPressureMonitor = deps.tessituraPressureMonitor;
+  const thematicRecallDetector = deps.thematicRecallDetector;
   const V = deps.validator.create('emergentMelodicEngine');
   const FRESHNESS_EMA_ALPHA = 0.07;
   const TESSITURE_EMA_ALPHA = 0.05;

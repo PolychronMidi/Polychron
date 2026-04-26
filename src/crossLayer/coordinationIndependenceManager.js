@@ -7,10 +7,14 @@
 moduleLifecycle.declare({
   name: 'coordinationIndependenceManager',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'controllerConfig', 'metaProfiles', 'regimeClassifier', 'validator'],
   provides: ['coordinationIndependenceManager'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const controllerConfig = deps.controllerConfig;
+  const metaProfiles = deps.metaProfiles;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('coordinationIndependenceManager');
 
   // Module pairs and their coordination dials (0=independent, 1=coordinated)

@@ -6,9 +6,21 @@
 moduleLifecycle.declare({
   name: 'feedbackGraphContract',
   subsystem: 'play',
-  deps: ['validator'],
+  deps: ['adaptiveTrustScores', 'coherenceMonitor', 'conductorIntelligence', 'correlationShuffler', 'crossLayerRegistry', 'dynamicArchitectPlanner', 'entropyRegulator', 'pipelineBalancer', 'pipelineCouplingManager', 'profileAdaptation', 'regimeReactiveDamping', 'stutterVariants', 'validator'],
   provides: ['feedbackGraphContract'],
   init: (deps) => {
+  const adaptiveTrustScores = deps.adaptiveTrustScores;
+  const coherenceMonitor = deps.coherenceMonitor;
+  const conductorIntelligence = deps.conductorIntelligence;
+  const correlationShuffler = deps.correlationShuffler;
+  const crossLayerRegistry = deps.crossLayerRegistry;
+  const dynamicArchitectPlanner = deps.dynamicArchitectPlanner;
+  const entropyRegulator = deps.entropyRegulator;
+  const pipelineBalancer = deps.pipelineBalancer;
+  const pipelineCouplingManager = deps.pipelineCouplingManager;
+  const profileAdaptation = deps.profileAdaptation;
+  const regimeReactiveDamping = deps.regimeReactiveDamping;
+  const stutterVariants = deps.stutterVariants;
   const V = deps.validator.create('feedbackGraphContract');
 
   const validLatencies = ['immediate', 'beat-delayed', 'phrase-delayed', 'section-delayed'];

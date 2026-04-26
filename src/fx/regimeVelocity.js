@@ -21,9 +21,10 @@
 moduleLifecycle.declare({
   name: 'regimeVelocity',
   subsystem: 'fx',
-  deps: [],
+  deps: ['systemDynamicsProfiler'],
   provides: ['regimeVelocity'],
-  init: () => {
+  init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const CENTER_EXPRESSION = 100; // MIDI expression default on most synths
   const MAX_BIAS = 27; // keep range [73, 127] -- audibly useful
 

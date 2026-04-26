@@ -23,9 +23,10 @@
 moduleLifecycle.declare({
   name: 'regimePan',
   subsystem: 'fx',
-  deps: [],
+  deps: ['systemDynamicsProfiler'],
   provides: ['regimePan'],
-  init: () => {
+  init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const CENTER_PAN = 64;
   const MAX_BIAS = 48;
 

@@ -6,10 +6,12 @@
 moduleLifecycle.declare({
   name: 'velocityInterference',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'regimeClassifier', 'validator'],
   provides: ['velocityInterference'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('velocityInterference');
   const CHANNEL = 'velocity';
   const CONTOUR_WINDOW_MS = 400;

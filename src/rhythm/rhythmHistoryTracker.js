@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'rhythmHistoryTracker',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['systemDynamicsProfiler', 'validator'],
   provides: ['rhythmHistoryTracker'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('rhythmHistoryTracker');
   const WINDOW = 12; // track last 12 rhythm selections
   /** @type {Array<{ method: string, length: number, layer: string }>} */

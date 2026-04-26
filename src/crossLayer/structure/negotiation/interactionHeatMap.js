@@ -7,10 +7,11 @@
 moduleLifecycle.declare({
   name: 'interactionHeatMap',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['interactionHeatMap'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('interactionHeatMap');
   const WINDOW_SIZE = 64; // rolling window of beats to track
   const HIGH_DENSITY_THRESHOLD = 0.7;

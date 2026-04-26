@@ -6,10 +6,11 @@
 moduleLifecycle.declare({
   name: 'spectralComplementarity',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['spectralComplementarity'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('spectralComplementarity');
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)

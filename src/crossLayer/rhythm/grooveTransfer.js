@@ -1,10 +1,11 @@
 moduleLifecycle.declare({
   name: 'grooveTransfer',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['grooveTransfer'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('grooveTransfer');
   const CHANNEL = 'grooveTransfer';
   const MAX_OFFSETS = 64;

@@ -6,10 +6,13 @@
 moduleLifecycle.declare({
   name: 'dynamicRoleSwap',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'phaseFloorController', 'regimeClassifier', 'validator'],
   provides: ['dynamicRoleSwap'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const phaseFloorController = deps.phaseFloorController;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('dynamicRoleSwap');
   const MIN_PHRASES_BETWEEN_SWAPS = 2;
   const TENSION_VALLEY_THRESHOLD = 0.45; // absolute floor: obvious valleys still trigger regardless of regime

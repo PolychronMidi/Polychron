@@ -6,10 +6,12 @@
 moduleLifecycle.declare({
   name: 'crossLayerDynamicEnvelope',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'timeStream', 'validator'],
   provides: ['crossLayerDynamicEnvelope'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('crossLayerDynamicEnvelope');
 
   /** @type {'parallel' | 'complementary' | 'independent'} */

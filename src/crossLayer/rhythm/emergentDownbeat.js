@@ -7,10 +7,11 @@
 moduleLifecycle.declare({
   name: 'emergentDownbeat',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['emergentDownbeat'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('emergentDownbeat');
   const CHANNEL = 'emergentDownbeat';
   const MIN_DOWNBEAT_INTERVAL_SEC = 0.8;

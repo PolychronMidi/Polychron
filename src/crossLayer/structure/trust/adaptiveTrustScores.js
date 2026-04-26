@@ -6,12 +6,13 @@ moduleLifecycle.declare({
   // explainabilityBus are declared modules (or bound globals) used at
   // runtime; aliasing them as locals here keeps the method bodies clean
   // (`metaProfiles.X` reads from the local const, not the global namespace).
-  deps: ['validator', 'controllerConfig', 'metaProfiles', 'trustSystems', 'explainabilityBus'],
+  deps: ['controllerConfig', 'explainabilityBus', 'metaProfiles', 'signalHealthAnalyzer', 'trustSystems', 'validator'],
   provides: ['adaptiveTrustScores'],
   // Phase 4: registry calls crossLayerRegistry.register() automatically
   // after init returns -- replaces the trailing post-IIFE register call.
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const signalHealthAnalyzer = deps.signalHealthAnalyzer;
   const V = deps.validator.create('adaptiveTrustScores');
   const controllerConfig = deps.controllerConfig;
   // Full-DI aliases: methods reference these locals; the `deps` object is

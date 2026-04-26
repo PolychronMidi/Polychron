@@ -3,9 +3,16 @@
 moduleLifecycle.declare({
   name: 'layerPass',
   subsystem: 'play',
-  deps: ['validator'],
+  deps: ['conductorConfig', 'regimeFade', 'regimeFx', 'regimePan', 'regimeVelocity', 'texturalMemoryAdvisor', 'timeStream', 'validator'],
   provides: ['layerPass'],
   init: (deps) => {
+  const conductorConfig = deps.conductorConfig;
+  const regimeFade = deps.regimeFade;
+  const regimeFx = deps.regimeFx;
+  const regimePan = deps.regimePan;
+  const regimeVelocity = deps.regimeVelocity;
+  const texturalMemoryAdvisor = deps.texturalMemoryAdvisor;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('layerPass');
 
   const selectLayerComposerForMeasure = (layerName, phraseFamily, composerCtx) => {

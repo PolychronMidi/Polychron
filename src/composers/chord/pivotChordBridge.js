@@ -4,9 +4,10 @@
 moduleLifecycle.declare({
   name: 'pivotChordBridge',
   subsystem: 'composers',
-  deps: [],
+  deps: ['harmonicJourney'],
   provides: ['pivotChordBridge'],
-  init: () => {
+  init: (deps) => {
+  const harmonicJourney = deps.harmonicJourney;
   /** @type {string[]|null} */
   let pivotChordBridgePendingBridge = null;
 

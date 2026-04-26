@@ -5,9 +5,13 @@
 moduleLifecycle.declare({
   name: 'phaseLockedRhythmGenerator',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['conductorConfig', 'phaseFloorController', 'pipelineCouplingManager', 'systemDynamicsProfiler', 'validator'],
   provides: ['phaseLockedRhythmGenerator'],
   init: (deps) => {
+  const conductorConfig = deps.conductorConfig;
+  const phaseFloorController = deps.phaseFloorController;
+  const pipelineCouplingManager = deps.pipelineCouplingManager;
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('phaseLockedRhythmGenerator');
   const phases = new Map();         // Map<layerName:patternName:length, offset>
   const generationHistory = [];     // Track recent generations for coherence analysis

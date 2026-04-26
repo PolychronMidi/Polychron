@@ -4,9 +4,11 @@
 moduleLifecycle.declare({
   name: 'sectionIntentCurvesHelpers',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'sectionMemory', 'validator'],
   provides: ['sectionIntentCurvesHelpers'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const sectionMemory = deps.sectionMemory;
   const V = deps.validator.create('sectionIntentCurvesHelpers');
 
   // Per-section CLAP xenolinguistic probes from previous run.

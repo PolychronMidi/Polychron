@@ -6,10 +6,12 @@
 moduleLifecycle.declare({
   name: 'articulationComplement',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'timeStream', 'validator'],
   provides: ['articulationComplement'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('articulationComplement');
   const WINDOW_SIZE = 16;
   // R73 E4: Section-progressive contrast. Base 0.5 grows to 0.8 across

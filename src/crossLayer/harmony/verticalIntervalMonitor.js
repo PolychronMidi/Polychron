@@ -8,9 +8,11 @@
 moduleLifecycle.declare({
   name: 'verticalIntervalMonitor',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'regimeClassifier', 'validator'],
   provides: ['verticalIntervalMonitor'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('verticalIntervalMonitor');
 
   const TOLERANCE   = 80;          // ms simultaneity window

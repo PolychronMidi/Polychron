@@ -5,9 +5,14 @@
 moduleLifecycle.declare({
   name: 'stutterVariants',
   subsystem: 'fx',
-  deps: ['validator'],
+  deps: ['L0', 'harmonicContext', 'stutterFeedbackListener', 'systemDynamicsProfiler', 'timeStream', 'validator'],
   provides: ['stutterVariants'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const harmonicContext = deps.harmonicContext;
+  const stutterFeedbackListener = deps.stutterFeedbackListener;
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('stutterVariants');
   const registered = new Map();
   let activeVariant = null;

@@ -6,10 +6,11 @@
 moduleLifecycle.declare({
   name: 'convergenceHarmonicTrigger',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['convergenceHarmonicTrigger'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('convergenceHarmonicTrigger');
   const MIN_TRIGGER_INTERVAL_SEC = 2;
   const TRIGGER_PROBABILITY = 0.35;

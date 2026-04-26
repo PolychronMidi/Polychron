@@ -1,4 +1,5 @@
 // Subsystem helpers (helpers first, manager last)
+
 require('./motifValues');
 require('./motifModulator');
 require('./motifConfig');
@@ -17,8 +18,10 @@ require('./playMotifsBuildCandidateNotes');
 require('./playMotifsApplyCycleTransforms');
 require('./playMotifs');
 
-// Register default generator wrapper
-motifRegistry.register('motif', (opts = {}) => {
-  const mc = new MotifComposer(opts);
-  return mc.generate(opts);
-});
+// Register default generator wrapper -- runs after motifRegistry init.
+moduleLifecycle.registerInitializer('motif-default-registration', () => {
+  motifRegistry.register('motif', (opts = {}) => {
+    const mc = new MotifComposer(opts);
+    return mc.generate(opts);
+  });
+}, ['motifRegistry']);

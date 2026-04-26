@@ -13,10 +13,12 @@
 moduleLifecycle.declare({
   name: 'stutterContagion',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'stutterVariants', 'validator'],
   provides: ['stutterContagion'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const stutterVariants = deps.stutterVariants;
   const V = deps.validator.create('stutterContagion');
   const STUTTER_TYPES = new Set(['fade', 'pan', 'fx']);
   const SYNC_TOLERANCE_MS = 150;

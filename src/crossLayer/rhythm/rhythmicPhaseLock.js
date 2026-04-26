@@ -6,10 +6,11 @@
 moduleLifecycle.declare({
   name: 'rhythmicPhaseLock',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['rhythmicPhaseLock'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('rhythmicPhaseLock');
   const CHANNEL = 'beatPhase';
   const PHASE_TOLERANCE_MS = 80;

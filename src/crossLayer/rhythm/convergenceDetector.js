@@ -7,10 +7,11 @@
 moduleLifecycle.declare({
   name: 'convergenceDetector',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['convergenceDetector'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('convergenceDetector');
   const CHANNEL = 'onset';
   const EVENTS = eventCatalog.names;

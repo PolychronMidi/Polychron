@@ -7,10 +7,11 @@
 moduleLifecycle.declare({
   name: 'crossLayerSilhouette',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['crossLayerSilhouette'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('crossLayerSilhouette');
   const SMOOTHING_REGIME = { exploring: 0.22, evolving: 0.15, coherent: 0.10 };
   const CORRECTION_GAIN_REGIME = { exploring: 0.75, evolving: 1.0, coherent: 1.0 };

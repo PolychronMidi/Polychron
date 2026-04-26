@@ -159,7 +159,7 @@ export default [
       // which deps are safe to add (no eager-load consumers), convert
       // those, leave the rest. Re-enable as 'warn' / 'error' once the
       // sweep completes per-subsystem.
-      'local/no-bare-declared-global-in-init': 'off'
+      'local/no-bare-declared-global-in-init': 'warn'
     },
 
   },
