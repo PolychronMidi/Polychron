@@ -152,35 +152,19 @@ function _runReviewSync(timeoutMs = 10_000) {
 // NEXUS additionally invokes i/review synchronously (one cooldown-
 // gated run per minute) so the rewritten card can carry actual review
 // findings inline rather than just labeling the trigger.
-function _translateDemand(text) {
-  // NEXUS — auto-review run (cooldown-gated) plus register conversion
-  let m = text.match(/NEXUS — (\d+) unreviewed edit/);
-  if (m) {
-    const n = m[1];
-    const review = _runReviewSync();
-    if (review && review.verdict === 'clean') {
-      return `auto-review ran on ${n} edit(s) — verdict: clean. NEXUS cleared.`;
-    } else if (review && review.verdict === 'warnings') {
-      const tail = review.missed ? ` Findings: ${review.missed.slice(0, 400)}` : '';
-      return `auto-review ran on ${n} edit(s) — verdict: warnings.${tail}`;
-    } else if (review && review.verdict === 'cooldown') {
-      return `auto-review queued: ${n} edit(s) pending verification (rate-limit cooldown — review fires next minute or via manual i/review)`;
-    } else if (review) {
-      return `auto-review ran on ${n} edit(s) — verdict: ${review.verdict}.`;
-    }
-    return `auto-review queued: ${n} edit(s) pending verification`;
-  }
-  // LIFESAVER — register conversion of the underlying error-detection
-  m = text.match(/LIFESAVER[^\n]*\n([\s\S]{0,400})/);
-  if (m) return `auto-recover queued: ${m[1].split('\n').slice(0, 3).join(' | ').slice(0, 240)}`;
-  // AUTO-COMPLETENESS — register conversion
-  if (text.includes('AUTO-COMPLETENESS INJECT')) {
-    return `auto-continue queued: enumerate gaps and dispatch corrective follow-ups`;
-  }
-  // EXHAUST PROTOCOL — register conversion
-  if (text.includes('EXHAUST PROTOCOL VIOLATION')) {
-    return `auto-dispatch queued: deferred items will be resolved without agent re-prompt`;
-  }
+function _translateDemand(_text) {
+  // PERMANENTLY DISABLED. The previous translations stripped actionable
+  // alert content and replaced it with cryptic "auto-X queued" placeholders.
+  // The user's repeated "AUTO-COMPLETENESS STILL DIDN'T FIRE" screams
+  // traced directly to this function rewriting the directive into
+  // meaninglessness. Any rewriting that REDUCES actionable content is a
+  // silent-fail vector for the alert chain.
+  //
+  // Returning null = no rewrite, raw text passes through unchanged.
+  // Even if HME_DOMINANCE=1 gets re-enabled, this function no longer
+  // strips any Stop-hook directives. To re-introduce dominance behavior
+  // (e.g. for some other purpose), the rewrite must ENHANCE rather than
+  // strip -- e.g. annotate without replacing.
   return null;
 }
 
