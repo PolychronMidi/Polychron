@@ -3,116 +3,8 @@
     "id": 0,
     "_meta": {
       "max_id": 1135,
-      "updated_ts": 1777218216.9118292
+      "updated_ts": 1777225252.4350865
     }
-  },
-  {
-    "id": 1128,
-    "text": "Fix meta_observer shutil NameError and clean up unused import",
-    "activeForm": "Fixing meta_observer shutil NameError",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777063747.980876,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1119,
-    "text": "Split stop.sh, pretooluse_bash.sh, _safety.sh into sub-files",
-    "activeForm": "Splitting stop.sh, pretooluse_bash.sh, _safety.sh into sub-files",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777049312.9916625,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1130,
-    "text": "Fix browser chat HME KB shim FAILED - GIL-saturated worker + supervisor hang-escalation",
-    "activeForm": "Fixing browser chat HME KB shim",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777063747.9809017,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1121,
-    "text": "Add UNIVERSAL_PULSE active-probe layer for proxy/worker/llamacpp/CPU/file-freshness",
-    "activeForm": "Adding UNIVERSAL_PULSE active-probe layer",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777049312.9916875,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1126,
-    "text": "Close silent-failure paths in claudeProcessPool: productivity watchdog + schema-drift logging + /clear-errors endpoint + sessionstart auto-prune",
-    "activeForm": "Closing silent-failure paths in claudeProcessPool",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777050628.6648242,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1127,
-    "text": "Always-rewrite fix for bare i/<tool> calls (removed cwd-guessing)",
-    "activeForm": "Applying always-rewrite fix for bare i/<tool> calls",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777050628.6648352,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1134,
-    "text": "Propagate HME_DOMINANCE=1 to supervisor/proxy/worker via .env sourcing in proxy-supervisor.sh",
-    "activeForm": "Propagating HME_DOMINANCE=1 through supervisor chain",
-    "status": "completed",
-    "done": true,
-    "critical": false,
-    "source": "native",
-    "on_done": "",
-    "ts": 1777063747.9809391,
-    "parent_id": 0,
-    "subs": []
-  },
-  {
-    "id": 1061,
-    "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] meta_observer: daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed, fix the underlying bug and restart server",
-    "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] meta_observer: daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed, fix the underlying bug and restart server",
-    "status": "completed",
-    "done": true,
-    "critical": true,
-    "source": "lifesaver",
-    "on_done": "",
-    "ts": 1777041428.0533745,
-    "parent_id": 0,
-    "subs": [],
-    "recurrence_count": 2,
-    "dedup_key": "CRITICAL|meta_observer|daemon crashloop: `NameError: name 'shutil' is not defined` \u00d7 3 \u2014 thread killed,",
-    "resolved_ts": 1777218013.434217,
-    "resolved_reason": "stale-ttl"
   },
   {
     "id": 1135,
@@ -127,6 +19,7 @@
     "parent_id": 0,
     "subs": [],
     "recurrence_count": 1,
-    "dedup_key": "CRITICAL|test_source|simulated bridge test"
+    "dedup_key": "CRITICAL|test_source|simulated bridge test",
+    "tier": "medium"
   }
 ]
