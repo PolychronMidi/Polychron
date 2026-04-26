@@ -2,10 +2,10 @@
 // High flicker = more rapid echoes. Low flicker = minimal stutter.
 
 moduleLifecycle.declare({
-  name: 'flickerStutter-variant',
+  name: 'flickerStutterVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['flickerStutter-variant'],
+  provides: ['flickerStutterVariant'],
   init: () => {
     stutterVariants.register('flickerStutter', function flickerStutter(opts) {
       const sigs = conductorSignalBridge.getSignals();

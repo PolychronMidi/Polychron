@@ -5,10 +5,10 @@
 // creating a foreign-musical-system feel.
 
 moduleLifecycle.declare({
-  name: 'alienArpeggio-variant',
+  name: 'alienArpeggioVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['alienArpeggio-variant'],
+  provides: ['alienArpeggioVariant'],
   init: () => {
     stutterVariants.register('alienArpeggio', function alienArpeggio(opts) {
       const dissonance = harmonicIntervalGuard.getDissonanceLevel();

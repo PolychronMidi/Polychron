@@ -2,10 +2,10 @@
 // Creates a "pre-echo" illusion implying reversed tape.
 
 moduleLifecycle.declare({
-  name: 'reverseVelocity-variant',
+  name: 'reverseVelocityVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['reverseVelocity-variant'],
+  provides: ['reverseVelocityVariant'],
   init: () => {
     stutterVariants.register('reverseVelocity', function reverseVelocity(opts) {
       const echoCount = ri(3, 5);

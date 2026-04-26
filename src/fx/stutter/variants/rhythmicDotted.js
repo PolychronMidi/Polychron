@@ -2,10 +2,10 @@
 // Creates swing/dotted rhythm feel from stutter alone.
 
 moduleLifecycle.declare({
-  name: 'rhythmicDotted-variant',
+  name: 'rhythmicDottedVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['rhythmicDotted-variant'],
+  provides: ['rhythmicDottedVariant'],
   init: () => {
     stutterVariants.register('rhythmicDotted', function rhythmicDotted(opts) {
       const gridSize = spBeat / ri(3, 6);

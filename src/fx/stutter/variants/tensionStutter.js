@@ -3,10 +3,10 @@
 // Tracks the emotional arc through stutter texture.
 
 moduleLifecycle.declare({
-  name: 'tensionStutter-variant',
+  name: 'tensionStutterVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['tensionStutter-variant'],
+  provides: ['tensionStutterVariant'],
   init: () => {
     stutterVariants.register('tensionStutter', function tensionStutter(opts) {
       const sigs = conductorSignalBridge.getSignals();

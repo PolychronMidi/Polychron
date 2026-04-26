@@ -2,10 +2,10 @@
 // Ascending or descending waterfall, direction chosen per-note.
 
 moduleLifecycle.declare({
-  name: 'octaveCascade-variant',
+  name: 'octaveCascadeVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['octaveCascade-variant'],
+  provides: ['octaveCascadeVariant'],
   init: () => {
     stutterVariants.register('octaveCascade', function octaveCascade(opts) {
       const direction = rf() < 0.5 ? 1 : -1;

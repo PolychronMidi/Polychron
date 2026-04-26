@@ -2,10 +2,10 @@
 // Vertical "chord" of octave multiples - no voicing conflict.
 
 moduleLifecycle.declare({
-  name: 'stutterSwarm-variant',
+  name: 'stutterSwarmVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['stutterSwarm-variant'],
+  provides: ['stutterSwarmVariant'],
   init: () => {
     stutterVariants.register('stutterSwarm', function stutterSwarm(opts) {
       const swarmSize = ri(3, 6);

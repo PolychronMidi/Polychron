@@ -5,10 +5,10 @@
 // Per-layer burst window state prevents L1/L2 cross-contamination
 
 moduleLifecycle.declare({
-  name: 'convergenceBurst-variant',
+  name: 'convergenceBurstVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['convergenceBurst-variant'],
+  provides: ['convergenceBurstVariant'],
   init: () => {
     const convergenceBurstByLayer = {};
     function getLayerBurst(layer) {

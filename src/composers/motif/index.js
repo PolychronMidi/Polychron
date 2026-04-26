@@ -22,10 +22,10 @@ require('./playMotifs');
 // registrant goes through the manifest registry, not legacy
 // registerInitializer wrappers).
 moduleLifecycle.declare({
-  name: 'motif-default-registration',
+  name: 'motifDefaultRegistration',
   subsystem: 'composers',
   deps: ['motifRegistry'],
-  provides: ['motif-default-registration'],
+  provides: ['motifDefaultRegistration'],
   init: (deps) => {
     deps.motifRegistry.register('motif', (opts = {}) => {
       const mc = new MotifComposer(opts);

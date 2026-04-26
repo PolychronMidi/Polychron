@@ -6,10 +6,10 @@
 // itself is a declared module that depends on crossLayerRegistry and
 // timeStream, runs in topo order after both are bound).
 moduleLifecycle.declare({
-  name: 'timeStream-crossLayer-registration',
+  name: 'timeStreamCrosslayerRegistration',
   subsystem: 'crossLayer',
   deps: ['crossLayerRegistry', 'timeStream'],
-  provides: ['timeStream-crossLayer-registration'],
+  provides: ['timeStreamCrosslayerRegistration'],
   init: (deps) => {
     deps.crossLayerRegistry.register('timeStream', { reset: deps.timeStream.resetPositions }, ['all']);
     return { registered: true };

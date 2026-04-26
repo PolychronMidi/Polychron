@@ -47,7 +47,7 @@ motifValidators = {
    * Throws a descriptive error on mismatch (keeps original MotifComposer error message for compatibility).
    * @param {Array} scaleNotes
    * @param {Object} developer
-   * @param {{ mode?: 'auto'|'strict-global'|'local-window', windowScale?: Array<string|number>|null, context?: Object }} [opts]
+   * @param {{ mode?: 'auto'|'strictGlobal'|'localWindow', windowScale?: Array<string|number>|null, context?: Object }} [opts]
    */
   assertScaleMatchesDeveloper(scaleNotes, developer, opts = {}) {
     V.assertArray(scaleNotes, 'scaleNotes');
@@ -60,14 +60,14 @@ motifValidators = {
     if (!caps.preservesScale) return;
 
     const modeInput = (opts && typeof opts.mode === 'string') ? opts.mode : 'auto';
-    const validModes = ['auto', 'strict-global', 'local-window'];
+    const validModes = ['auto', 'strictGlobal', 'localWindow'];
     V.assertInSet(modeInput, new Set(validModes), 'mode');
     const mode = modeInput === 'auto'
-      ? (caps.timeVaryingScaleContext ? 'local-window' : 'strict-global')
+      ? (caps.timeVaryingScaleContext ? 'localWindow' : 'strictGlobal')
       : modeInput;
 
     let expectedPCs = null;
-    if (mode === 'strict-global') {
+    if (mode === 'strictGlobal') {
       V.assertArray(developer.notes, 'developer.notes');
       if (!caps.notesReflectOutputSet || developer.notes.length === 0) return;
       expectedPCs = this.motifValidatorsToPCSet(developer.notes, 'developer.notes');

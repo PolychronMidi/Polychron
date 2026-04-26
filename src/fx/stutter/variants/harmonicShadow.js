@@ -2,10 +2,10 @@
 // source, creating deliberate register contrast. Single quiet echo.
 
 moduleLifecycle.declare({
-  name: 'harmonicShadow-variant',
+  name: 'harmonicShadowVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['harmonicShadow-variant'],
+  provides: ['harmonicShadowVariant'],
   init: () => {
     stutterVariants.register('harmonicShadow', function harmonicShadow(opts) {
       const sourceOct = m.floor(opts.note / 12);

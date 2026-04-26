@@ -2,10 +2,10 @@
 // Creates trailing echoes that spread out and fade over time.
 
 moduleLifecycle.declare({
-  name: 'echoTrail-variant',
+  name: 'echoTrailVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
-  provides: ['echoTrail-variant'],
+  provides: ['echoTrailVariant'],
   init: () => {
     stutterVariants.register('echoTrail', function echoTrail(opts) {
       const trails = ri(4, 7);

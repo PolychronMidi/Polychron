@@ -26,18 +26,18 @@ ProgressionGenerator = class ProgressionGenerator {
   getBuiltInPatternMap() {
     return {
       major: {
-        'I-IV-V': ['I', 'IV', 'V', 'I'],
-        'I-V-vi-IV': ['I', 'V', 'vi', 'IV'],
-        'ii-V-I': ['ii', 'V', 'I'],
-        'I-vi-IV-V': ['I', 'vi', 'IV', 'V'],
+        'IIvV': ['I', 'IV', 'V', 'I'],
+        'IVViIv': ['I', 'V', 'vi', 'IV'],
+        'iiVI': ['ii', 'V', 'I'],
+        'IViIvV': ['I', 'vi', 'IV', 'V'],
         circle: ['I', 'IV', 'vii', 'iii', 'vi', 'ii', 'V', 'I'],
         blues: ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V']
       },
       minor: {
-        'i-iv-v': ['i', 'iv', 'v', 'i'],
-        'i-VI-VII': ['i', 'VI', 'VII', 'i'],
-        'i-iv-VII': ['i', 'iv', 'VII', 'i'],
-        'ii-V-i': ['ii', 'V', 'i'],
+        'iIvV': ['i', 'iv', 'v', 'i'],
+        'iViVii': ['i', 'VI', 'VII', 'i'],
+        'iIvVii': ['i', 'iv', 'VII', 'i'],
+        'iiVI': ['ii', 'V', 'i'],
         andalusian: ['i', 'VII', 'VI', 'v']
       }
     };
@@ -176,8 +176,8 @@ ProgressionGenerator = class ProgressionGenerator {
     }
 
     const fallbackTypes = (this.romanQuality === 'major')
-      ? ['I-IV-V', 'I-V-vi-IV', 'ii-V-I', 'I-vi-IV-V']
-      : ['i-iv-v', 'i-VI-VII', 'i-iv-VII', 'ii-V-i'];
+      ? ['IIvV', 'IVViIv', 'iiVI', 'IViIvV']
+      : ['iIvV', 'iViVii', 'iIvVii', 'iiVI'];
 
     const randomType = fallbackTypes[ri(fallbackTypes.length - 1)];
     return this.generate(randomType, opts);

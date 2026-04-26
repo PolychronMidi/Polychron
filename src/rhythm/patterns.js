@@ -3,10 +3,10 @@
 // Local default pattern table
 
 moduleLifecycle.declare({
-  name: 'patterns-variant',
+  name: 'patternsVariant',
   subsystem: 'rhythm',
   deps: ['rhythmRegistry'],
-  provides: ['patterns-variant'],
+  provides: ['patternsVariant'],
   init: () => {
     const LOCAL_RHYTHMS = {
       'binary':{weights:[2,3,1],method:'binary',args:(length)=>[length]},
