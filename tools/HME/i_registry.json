@@ -263,6 +263,16 @@
         "chain",
         "clean"
       ]
+    },
+    "chain": {
+      "description": "Run an ordered Bash-skill chain from chains/<name>.yaml. Independent of BUDDY_SYSTEM.",
+      "category": "orchestration",
+      "usage": "i/chain <chain-name> [loop=N] [on_rate_limit=fail|pause|pause-with-cap]",
+      "examples": [
+        "i/chain review-then-test",
+        "i/chain dev-cycle loop=3",
+        "i/chain overnight on_rate_limit=pause-with-cap"
+      ]
     }
   }
 }
