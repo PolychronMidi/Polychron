@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'orchestrationWeightTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['orchestrationWeightTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('orchestrationWeightTracker');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 3 });
   // Register band boundaries (MIDI note numbers)

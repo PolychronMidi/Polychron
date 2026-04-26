@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'harmonicSurpriseIndex',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['harmonicSurpriseIndex'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('harmonicSurpriseIndex');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 

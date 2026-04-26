@@ -10,9 +10,10 @@
 moduleLifecycle.declare({
   name: 'signalHealthAnalyzer',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['signalHealthAnalyzer'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   // -- Accumulator state (reset per section) --
   let beatsSeen = 0;
   /** @type {{ density: number, tension: number, flicker: number }} */

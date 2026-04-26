@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'warmupRampController',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['warmupRampController'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
 
   const _S0_EXCEEDANCE_EMA_ALPHA = 0.10;
   const _SECTION_LENGTH_EMA_ALPHA = 0.08;

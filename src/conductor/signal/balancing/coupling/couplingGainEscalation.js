@@ -12,9 +12,10 @@
 moduleLifecycle.declare({
   name: 'couplingGainEscalation',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['signalReader', 'validator'],
   provides: ['couplingGainEscalation'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
   const V = deps.validator.create('couplingGainEscalation');
   const { GAIN_INIT, GAIN_MIN, GAIN_MAX, GAIN_ESCALATE_RATE, GAIN_EMERGENCY_RATE, GAIN_RELAX_RATE,
     NUDGEABLE_SET, AXIS_COUPLING_CEILING, HP_GAIN_MAX,

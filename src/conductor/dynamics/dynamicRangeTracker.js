@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'dynamicRangeTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['dynamicRangeTracker'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('dynamicRangeTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   let globalMin = 127;

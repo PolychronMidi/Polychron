@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'layerCoherenceScorer',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['layerCoherenceScorer'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('layerCoherenceScorer');
   let lastCoherence = 0.5;
 

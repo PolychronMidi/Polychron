@@ -10,9 +10,12 @@ currentDensity = 0.5;
 moduleLifecycle.declare({
   name: 'globalConductor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'systemDynamicsProfiler', 'timeStream', 'validator'],
   provides: ['globalConductor'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const timeStream = deps.timeStream;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('globalConductor');
 
   // Flicker modifier EMA state - smooths the amplitude envelope

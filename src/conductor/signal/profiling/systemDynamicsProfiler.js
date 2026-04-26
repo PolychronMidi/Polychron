@@ -3,9 +3,10 @@
 moduleLifecycle.declare({
   name: 'systemDynamicsProfiler',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['systemDynamicsProfiler'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const DIM_NAMES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
   const N_DIMS = DIM_NAMES.length;
   const N_COMPOSITIONAL_DIMS = 4;

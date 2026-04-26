@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'counterpointMotionTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['counterpointMotionTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('counterpointMotionTracker');
   const WINDOW_SECONDS = 4;
 

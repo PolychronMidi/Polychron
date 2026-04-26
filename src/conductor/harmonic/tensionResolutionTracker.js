@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'tensionResolutionTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['tensionResolutionTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('tensionResolutionTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
   const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;

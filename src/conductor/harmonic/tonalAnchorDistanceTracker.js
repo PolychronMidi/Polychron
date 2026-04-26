@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'tonalAnchorDistanceTracker',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['tonalAnchorDistanceTracker'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 10;
   let homeCenter = -1; // established from first substantial material
 

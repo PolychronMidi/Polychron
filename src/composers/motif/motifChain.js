@@ -4,9 +4,10 @@
 moduleLifecycle.declare({
   name: 'motifChain',
   subsystem: 'composers',
-  deps: ['conductorConfig', 'validator'],
+  deps: ['conductorConfig', 'eventBus', 'validator'],
   provides: ['motifChain'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const conductorConfig = deps.conductorConfig;
   const V = deps.validator.create('motifChain');
 

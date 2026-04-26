@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'harmonicDensityOscillator',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['harmonicDensityOscillator'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('harmonicDensityOscillator');
   const MAX_SAMPLES = 20;
   /** @type {Array<{ changeRate: number, time: number }>} */

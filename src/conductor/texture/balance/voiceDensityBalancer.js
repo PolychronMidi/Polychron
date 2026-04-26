@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'voiceDensityBalancer',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['voiceDensityBalancer'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('voiceDensityBalancer');
   const query = analysisHelpers.createTrackerQuery(V, 2, { minNotes: 2 });
   const COINCIDENCE_MS = 0.05; // notes within 50ms count as simultaneous

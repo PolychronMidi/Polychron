@@ -17,9 +17,10 @@
 moduleLifecycle.declare({
   name: 'contextualTrust',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['crossLayerRegistry', 'validator'],
   provides: ['contextualTrust'],
   init: (deps) => {
+  const crossLayerRegistry = deps.crossLayerRegistry;
   const V = deps.validator.create('contextualTrust');
 
   const DECAY    = 0.9;

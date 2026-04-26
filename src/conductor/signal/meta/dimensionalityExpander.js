@@ -18,9 +18,11 @@
 moduleLifecycle.declare({
   name: 'dimensionalityExpander',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'systemDynamicsProfiler', 'validator'],
   provides: ['dimensionalityExpander'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('dimensionalityExpander');
 
   // Below this threshold, we begin injecting perturbations.

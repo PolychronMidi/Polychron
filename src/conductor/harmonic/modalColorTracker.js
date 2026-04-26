@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'modalColorTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['modalColorTracker'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('modalColorTracker');
   const WINDOW_SECONDS = 6;
   // Scale-degree categories

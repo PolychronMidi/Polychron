@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'motivicDensityTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['motivicDensityTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('motivicDensityTracker');
   const WINDOW_SECONDS = 4;
   const FRAGMENT_LENGTH = 3; // 3-note pitch-class fragments

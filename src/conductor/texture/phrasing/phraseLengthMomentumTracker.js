@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'phraseLengthMomentumTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['phraseLengthMomentumTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('phraseLengthMomentumTracker');
   /** @type {Array<{ section: number, phraseIndex: number, measures: number }>} */
   const history = [];

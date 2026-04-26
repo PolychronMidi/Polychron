@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'accentPatternTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['accentPatternTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('accentPatternTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 

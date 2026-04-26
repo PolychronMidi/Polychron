@@ -9,9 +9,10 @@
 moduleLifecycle.declare({
   name: 'perceptualTensionBias',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['perceptualTensionBias'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const _perc = (() => {
     try {
       const fs = require('fs');

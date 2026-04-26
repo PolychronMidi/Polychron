@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'energyMomentumTracker',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence', 'signalReader'],
   provides: ['energyMomentumTracker'],
-  init: () => {
+  init: (deps) => {
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
   /** @type {Array<{ time: number, energy: number }>} */
   const samples = [];
   const MAX_SAMPLES = 64;

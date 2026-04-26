@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'onsetRegularityMonitor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['onsetRegularityMonitor'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('onsetRegularityMonitor');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 

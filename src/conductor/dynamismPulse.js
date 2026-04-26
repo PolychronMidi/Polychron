@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'dynamismPulse',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['timeStream'],
   provides: ['dynamismPulse'],
-  init: () => {
+  init: (deps) => {
+  const timeStream = deps.timeStream;
   /**
    * Compute per-unit pulse so probabilities evolve inside a measure.
    * Includes micro-hyper oscillation: two incommensurate fast sine layers +

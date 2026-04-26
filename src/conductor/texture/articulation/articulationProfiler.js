@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'articulationProfiler',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['articulationProfiler'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('articulationProfiler');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   // Duration thresholds relative to beat duration

@@ -6,9 +6,12 @@
 moduleLifecycle.declare({
   name: 'sectionMemory',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'signalReader', 'systemDynamicsProfiler', 'validator'],
   provides: ['sectionMemory'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const signalReader = deps.signalReader;
+  const L0 = deps.L0;
   const V = deps.validator.create('sectionMemory');
   const CARRYOVER = 0.30; // fraction of previous state seeded into new section
 

@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'cadentialPreparationAdvisor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['cadentialPreparationAdvisor'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('cadentialPreparationAdvisor');
   const PREP_WINDOW = 0.2; // prepare in the last 20% of a phrase
 

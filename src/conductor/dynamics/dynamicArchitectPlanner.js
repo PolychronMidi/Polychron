@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'dynamicArchitectPlanner',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['dynamicArchitectPlanner'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('dynamicArchitectPlanner');
   const MAX_SNAPSHOTS = 64;
   /** @type {Array<{ intensity: number, time: number }>} */

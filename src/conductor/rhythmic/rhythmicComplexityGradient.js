@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'rhythmicComplexityGradient',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['rhythmicComplexityGradient'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('rhythmicComplexityGradient');
   /** @type {Array<{ time: number, complexity: number }>} */
   const samples = [];

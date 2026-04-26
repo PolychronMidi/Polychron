@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'pitchClassHelpers',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['pitchClassHelpers'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('pitchClassHelpers');
   // Consonant intervals (semitones mod 12): P1=0, m3=3, M3=4, P4=5, P5=7, m6=8, M6=9
   const CONSONANT_INTERVALS = new Set([0, 3, 4, 5, 7, 8, 9]);

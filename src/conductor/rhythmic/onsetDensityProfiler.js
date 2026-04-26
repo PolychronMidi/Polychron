@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'onsetDensityProfiler',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['onsetDensityProfiler'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('onsetDensityProfiler');
   const query = analysisHelpers.createTrackerQuery(V, 3, { minNotes: 2 });
   const TARGET_NPS = 15; // target notes-per-second for "balanced" density

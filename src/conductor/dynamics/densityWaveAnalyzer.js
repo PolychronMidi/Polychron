@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'densityWaveAnalyzer',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'timeStream', 'validator'],
   provides: ['densityWaveAnalyzer'],
   init: (deps) => {
+  const timeStream = deps.timeStream;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('densityWaveAnalyzer');
   /** @type {Array<{ time: number, density: number }>} */
   const samples = [];

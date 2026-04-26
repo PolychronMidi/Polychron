@@ -12,9 +12,10 @@
 moduleLifecycle.declare({
   name: 'structuralNarrativeAdvisor',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['structuralNarrativeAdvisor'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
 
   const VARIETY_GAIN = 0.16;   // R14 E3: 0.08->0.14; bidirectional: 0.14->0.16 so lo=0.96 is reachable at high entropy
   const MAX_HISTORY  = 32;

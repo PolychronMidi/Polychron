@@ -8,9 +8,10 @@
 moduleLifecycle.declare({
   name: 'verticalIntervalMonitor',
   subsystem: 'crossLayer',
-  deps: ['L0', 'regimeClassifier', 'validator'],
+  deps: ['L0', 'crossLayerRegistry', 'regimeClassifier', 'validator'],
   provides: ['verticalIntervalMonitor'],
   init: (deps) => {
+  const crossLayerRegistry = deps.crossLayerRegistry;
   const L0 = deps.L0;
   const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('verticalIntervalMonitor');

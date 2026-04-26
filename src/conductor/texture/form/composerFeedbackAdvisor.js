@@ -11,9 +11,11 @@
 moduleLifecycle.declare({
   name: 'composerFeedbackAdvisor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'systemDynamicsProfiler', 'validator'],
   provides: ['composerFeedbackAdvisor'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('composerFeedbackAdvisor');
 
   /**

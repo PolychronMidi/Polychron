@@ -4,9 +4,11 @@
 moduleLifecycle.declare({
   name: 'dynamismEngine',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'systemDynamicsProfiler', 'validator'],
   provides: ['dynamismEngine'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const L0 = deps.L0;
   const V = deps.validator.create('dynamismEngine');
   let dependenciesValidated = false;
   let dynamismEngineResolveCacheKey = '';

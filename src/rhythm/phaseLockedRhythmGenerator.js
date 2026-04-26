@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'phaseLockedRhythmGenerator',
   subsystem: 'rhythm',
-  deps: ['conductorConfig', 'phaseFloorController', 'pipelineCouplingManager', 'systemDynamicsProfiler', 'validator'],
+  deps: ['conductorConfig', 'phaseFloorController', 'pipelineCouplingManager', 'systemDynamicsProfiler', 'timeStream', 'validator'],
   provides: ['phaseLockedRhythmGenerator'],
   init: (deps) => {
+  const timeStream = deps.timeStream;
   const conductorConfig = deps.conductorConfig;
   const phaseFloorController = deps.phaseFloorController;
   const pipelineCouplingManager = deps.pipelineCouplingManager;

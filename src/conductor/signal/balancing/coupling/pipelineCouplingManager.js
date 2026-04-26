@@ -17,9 +17,11 @@
 moduleLifecycle.declare({
   name: 'pipelineCouplingManager',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence', 'systemDynamicsProfiler'],
   provides: ['pipelineCouplingManager'],
-  init: () => {
+  init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const conductorIntelligence = deps.conductorIntelligence;
   const { ALL_MONITORED_DIMS } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
   const S = couplingState;

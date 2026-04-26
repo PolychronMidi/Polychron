@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'velocityShapeAnalyzer',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['velocityShapeAnalyzer'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('velocityShapeAnalyzer');
   const query = analysisHelpers.createTrackerQuery(V, 5, { minNotes: 4 });
 

@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'intervalBalanceTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['intervalBalanceTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('intervalBalanceTracker');
   const query = analysisHelpers.createTrackerQuery(V, 5, { minNotes: 3 });
 

@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'tessituraPressureMonitor',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['tessituraPressureMonitor'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 8;
   const EXTREME_LOW = 48;   // C3 and below
   const EXTREME_HIGH = 84;  // C6 and above

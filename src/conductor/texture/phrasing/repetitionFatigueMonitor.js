@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'repetitionFatigueMonitor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'timeStream', 'validator'],
   provides: ['repetitionFatigueMonitor'],
   init: (deps) => {
+  const timeStream = deps.timeStream;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('repetitionFatigueMonitor');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
   const MIN_PATTERN = 2;

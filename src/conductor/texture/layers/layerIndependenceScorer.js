@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'layerIndependenceScorer',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['layerIndependenceScorer'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('layerIndependenceScorer');
   const WINDOW_SECONDS = 4;
 

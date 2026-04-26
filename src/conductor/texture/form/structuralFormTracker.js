@@ -6,7 +6,7 @@
 moduleLifecycle.declare({
   name: 'structuralFormTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['timeStream', 'validator'],
   provides: ['structuralFormTracker'],
   conductorScopes: ['section'],
   stateProvider: () => ({
@@ -14,6 +14,7 @@ moduleLifecycle.declare({
     energyTrend: structuralFormTracker.getEnergyArc().trend,
   }),
   init: (deps) => {
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('structuralFormTracker');
   /** @type {Array<{ section: number, family: string, key: string, mode: string, energy: number }>} */
   const formMap = [];

@@ -6,10 +6,11 @@
 moduleLifecycle.declare({
   name: 'cadenceAlignment',
   subsystem: 'crossLayer',
-  deps: ['L0', 'regimeClassifier', 'validator'],
+  deps: ['L0', 'eventBus', 'regimeClassifier', 'validator'],
   provides: ['cadenceAlignment'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const L0 = deps.L0;
   const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('cadenceAlignment');

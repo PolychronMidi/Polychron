@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'octaveSpreadMonitor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['octaveSpreadMonitor'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('octaveSpreadMonitor');
   const WINDOW_SECONDS = 4;
 

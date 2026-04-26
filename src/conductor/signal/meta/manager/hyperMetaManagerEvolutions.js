@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'hyperMetaManagerEvolutions',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['signalReader', 'timeStream'],
   provides: ['hyperMetaManagerEvolutions'],
-  init: () => {
+  init: (deps) => {
+  const signalReader = deps.signalReader;
+  const timeStream = deps.timeStream;
   const ST     = hyperMetaManagerState;
   const S      = ST.S;
   const health = hyperMetaManagerHealth;

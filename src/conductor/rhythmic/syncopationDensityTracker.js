@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'syncopationDensityTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['syncopationDensityTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('syncopationDensityTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
 

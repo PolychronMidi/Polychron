@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'interLayerRhythmHelpers',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['interLayerRhythmHelpers'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('interLayerRhythmHelpers');
   const WINDOW_SECONDS        = 4;
   const COINCIDENCE_THRESHOLD = 0.05; // seconds

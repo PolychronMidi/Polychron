@@ -20,9 +20,10 @@
 moduleLifecycle.declare({
   name: 'beatInterleavedProcessor',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['crossLayerRegistry', 'validator'],
   provides: ['beatInterleavedProcessor'],
   init: (deps) => {
+  const crossLayerRegistry = deps.crossLayerRegistry;
   const V = deps.validator.create('beatInterleavedProcessor');
 
   /** @type {Map<number, object>} */

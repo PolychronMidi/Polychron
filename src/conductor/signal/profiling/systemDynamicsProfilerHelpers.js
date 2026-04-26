@@ -1,9 +1,12 @@
 moduleLifecycle.declare({
   name: 'systemDynamicsProfilerHelpers',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'signalReader', 'timeStream', 'validator'],
   provides: ['systemDynamicsProfilerHelpers'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
+  const timeStream = deps.timeStream;
+  const L0 = deps.L0;
   const V = deps.validator.create('systemDynamicsProfilerHelpers');
   function getAnalysisSettings(minWindowDefault) {
     const profile = conductorConfig.getActiveProfile();

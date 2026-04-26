@@ -4,9 +4,10 @@
 moduleLifecycle.declare({
   name: 'hyperMetaManagerHealth',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['systemDynamicsProfiler', 'validator'],
   provides: ['hyperMetaManagerHealth'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('systemHealth');
   const ST = hyperMetaManagerState;
   const C  = ST;                       // constants live on the same object

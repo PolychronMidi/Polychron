@@ -13,9 +13,10 @@
 moduleLifecycle.declare({
   name: 'homeostasisTick',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['systemDynamicsProfiler', 'validator'],
   provides: ['homeostasisTick'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('homeostasisTick');
   const { GAIN_FLOOR, GINI_THRESHOLD,
     MAX_TIME_SERIES, FLOOR_RECOVERY_TRIGGER, FLOOR_RECOVERY_HOLD } = homeostasisConstants;

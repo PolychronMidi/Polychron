@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'phraseContourArchetypeDetector',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['phraseContourArchetypeDetector'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 6;
 
   /**

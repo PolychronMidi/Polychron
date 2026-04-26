@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'consonanceDissonanceTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['consonanceDissonanceTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('consonanceDissonanceTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   // Shared consonant intervals from pitchClassHelpers

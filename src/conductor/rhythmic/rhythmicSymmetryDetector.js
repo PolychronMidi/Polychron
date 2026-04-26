@@ -7,9 +7,11 @@
 moduleLifecycle.declare({
   name: 'rhythmicSymmetryDetector',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['rhythmicSymmetryDetector'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 6;
   const MIN_ONSETS = 4;
 

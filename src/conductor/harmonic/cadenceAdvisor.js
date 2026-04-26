@@ -9,10 +9,11 @@ moduleLifecycle.declare({
   // listed in deps so the registry defers until eventBus is loaded. The
   // remaining cross-subsystem references (LM, L0, harmonicContext,
   // FactoryManager) live inside method bodies that run post-boot.
-  deps: ['validator', 'eventBus'],
+  deps: ['L0', 'eventBus', 'validator'],
   provides: ['cadenceAdvisor'],
   conductorScopes: ['section'],
   init: (deps) => {
+    const L0 = deps.L0;
     /** @type {Array<{ key: string, chords: any, tick: number, time: number }>} */
     const recentChanges = [];
     const MAX_HISTORY = 12;

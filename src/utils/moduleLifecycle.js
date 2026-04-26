@@ -182,6 +182,24 @@ moduleLifecycle = (() => {
     if (initializers.has(manifest.name)) {
       throw new Error(`moduleLifecycle.declare: "${manifest.name}" already registered via registerInitializer; use one or the other, not both`);
     }
+    // Implicit deps from post-init wiring fields. Manifests declaring
+    // conductorScopes / recorder / stateProvider need conductorIntelligence
+    // bound. Manifests declaring crossLayerScopes need crossLayerRegistry.
+    const implicitDeps = [];
+    if ((manifest.conductorScopes && manifest.conductorScopes.length > 0)
+      || manifest.recorder || manifest.stateProvider) {
+      if (!manifest.deps.includes('conductorIntelligence') && manifest.name !== 'conductorIntelligence') {
+        implicitDeps.push('conductorIntelligence');
+      }
+    }
+    if (manifest.crossLayerScopes && manifest.crossLayerScopes.length > 0) {
+      if (!manifest.deps.includes('crossLayerRegistry') && manifest.name !== 'crossLayerRegistry') {
+        implicitDeps.push('crossLayerRegistry');
+      }
+    }
+    if (implicitDeps.length > 0) {
+      manifest = Object.assign({}, manifest, { deps: [...manifest.deps, ...implicitDeps] });
+    }
     _manifests.set(manifest.name, manifest);
     // Try to instantiate this manifest (and any pending dependents).
     _drain();

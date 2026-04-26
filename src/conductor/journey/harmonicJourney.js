@@ -23,9 +23,11 @@
 moduleLifecycle.declare({
   name: 'harmonicJourney',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'eventBus', 'validator'],
   provides: ['harmonicJourney'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const eventBus = deps.eventBus;
   const V = deps.validator.create('harmonicJourney');
 
   V.requireType(harmonicJourneyHelpers, 'function', 'harmonicJourneyHelpers');
