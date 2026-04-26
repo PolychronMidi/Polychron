@@ -63,7 +63,7 @@ moduleLifecycle.declare({
 
   function refresh() {
     const chordRoot = V.optionalFinite(conductorState.get('tension'), 0);
-    const keyStr = conductorState.get('key') || 'C';
+    const keyStr = conductorState.get('key') ?? 'C';
     // Derive numeric root from key name via tonal
     const keyRoot = V.optionalFinite(t.Note.chroma(keyStr), 0);
 

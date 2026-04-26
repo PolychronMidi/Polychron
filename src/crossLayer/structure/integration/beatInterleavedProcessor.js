@@ -51,7 +51,7 @@ moduleLifecycle.declare({
    */
   function getOtherLayerOutcome(myLayer) {
     const other = myLayer === 1 ? 2 : 1;
-    return currentBeatOutcomes.get(other) || null;
+    return currentBeatOutcomes.get(other) ?? null;
   }
 
   /**
@@ -59,8 +59,8 @@ moduleLifecycle.declare({
    */
   function getBeatSnapshot() {
     return {
-      layer1: currentBeatOutcomes.get(1) || null,
-      layer2: currentBeatOutcomes.get(2) || null,
+      layer1: currentBeatOutcomes.get(1) ?? null,
+      layer2: currentBeatOutcomes.get(2) ?? null,
     };
   }
 

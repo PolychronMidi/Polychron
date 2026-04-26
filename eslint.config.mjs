@@ -149,6 +149,7 @@ export default [
       'local/no-bare-l0-channel': 'error',
       'local/no-doubled-fallback': 'error',
       'local/no-or-fallback-on-config-read': 'error',
+      'local/no-or-fallback-on-map-get': 'error',
       // Disabled by default. Bulk-converting bare-global references to
       // deps. aliases appears safe but isn't: adding a name to a manifest's
       // deps causes the registry to DEFER eager instantiation until that

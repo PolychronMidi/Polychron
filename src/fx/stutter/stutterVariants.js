@@ -126,7 +126,7 @@ moduleLifecycle.declare({
     // R19: uses full patterns.js selection. Activation scales with composite
     // intensity - sparse passages get fewer patterns, climactic sections more.
     const sigs = conductorSignalBridge.getSignals();
-    const compositeIntensity = sigs ? clamp((sigs.compositeIntensity || 0.5), 0, 1) : 0.5;
+    const compositeIntensity = sigs ? clamp(V.optionalFinite(sigs.compositeIntensity, 0.5), 0, 1) : 0.5;
     const patternActivationProb = clamp(0.55 + compositeIntensity * 0.35, 0.45, 0.90);
     if (rf() < patternActivationProb) {
       const patternLen = ri(4, 12);

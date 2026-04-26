@@ -22,11 +22,20 @@
 if printf '%s\n' "$CMD" | grep -q 'git commit'; then
   exit 0
 fi
-if printf '%s\n' "$CMD" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]]*\}' \
-   || printf '%s\n' "$CMD" | grep -qE '\.catch\([[:space:]]*(function[[:space:]]*\(\)|(\([^)]*\))[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}\)' \
-   || printf '%s\n' "$CMD" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
-   || printf '%s\n' "$CMD" | grep -q 'parseArbiterResponse.*no reason given' \
-   || printf '%s\n' "$CMD" | grep -qE '(tsc|npm run|node scripts/|eslint)[^|;&]*2>/dev/null'; then
+# Strip single-quoted, double-quoted, and backticked spans before
+# pattern-matching. Without this, grep/rg/sed/awk invocations whose
+# regex args contain the violation patterns (because the user is
+# SEARCHING for the pattern, not writing it) false-positive. Same
+# discipline stop_work.py + exhaust_check.py apply for their phrase
+# matchers. The strip is conservative — multi-line single-quote spans
+# crossing newlines are preserved as best-effort with `[^']*` (single-
+# line); commands rarely span multiple newlines anyway.
+_FF_STRIPPED=$(printf '%s\n' "$CMD" | sed "s/'[^']*'/ /g; s/\"[^\"]*\"/ /g; s/\`[^\`]*\`/ /g")
+if printf '%s\n' "$_FF_STRIPPED" | grep -qE 'catch[[:space:]]*(\([^)]*\))?[[:space:]]*\{[[:space:]]*\}' \
+   || printf '%s\n' "$_FF_STRIPPED" | grep -qE '\.catch\([[:space:]]*(function[[:space:]]*\(\)|(\([^)]*\))[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}\)' \
+   || printf '%s\n' "$_FF_STRIPPED" | grep -qE '(onError|onFail|reject)[[:space:]]*[:(=][[:space:]]*(function\s*\(\)|\([^)]*\)[[:space:]]*=>)[[:space:]]*\{[[:space:]]*\}' \
+   || printf '%s\n' "$_FF_STRIPPED" | grep -q 'parseArbiterResponse.*no reason given' \
+   || printf '%s\n' "$_FF_STRIPPED" | grep -qE '(\btsc\b|\bnpm run\b|\bnode scripts/|\beslint\b[[:space:]])[^|;&]*2>/dev/null'; then
   _emit_block "FAIL FAST VIOLATION — silent error suppression detected. No empty catch blocks, no-op onError/reject handlers, fallback values masking failures, or suppressed build stderr. Every error MUST bubble immediately: throw it, call onError(), call _postError(), reject the promise. Log to hme-errors.log. Surface in UI. No silent failures. Assume life-saving criticality."
   exit 2
 fi

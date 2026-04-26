@@ -177,7 +177,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
         for (const r of ranked) distMap.set(r.name, r.distance);
         pool = pool
           .slice()
-          .sort((a, b) => (distMap.get(a) || 99) - (distMap.get(b) || 99))
+          .sort((a, b) => (distMap.get(a) ?? 99) - (distMap.get(b) ?? 99))
           .slice(0, m.min(3, pool.length));
       }
       chosen = pool[ri(0, pool.length - 1)];
@@ -195,7 +195,7 @@ for (sectionIndex = 0; sectionIndex < totalSections; sectionIndex++) {
     const activeProfileObj = metaProfiles.getActive();
     const since = metaProfiles.getActiveSinceSection();
     if (activeProfileObj && since !== null) {
-      const dwell = activeProfileObj.minDwellSections || 1;
+      const dwell = activeProfileObj.minDwellSections ?? 1;
       const elapsed = sectionIndex - since;
       metaProfiles.setActivationProgress(elapsed / m.max(1, dwell));
     } else {

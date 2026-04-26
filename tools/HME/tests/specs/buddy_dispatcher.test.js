@@ -245,15 +245,34 @@ print(json.dumps({
   });
 });
 
-test('enqueue-sentinel: posttooluse_bash skips enqueue when BUDDY_SYSTEM=0', () => {
+test('enqueue-sentinel: posttooluse_bash skips enqueue when dispatch is disabled', () => {
   // The universal [enqueue: ...] sentinel must NOT create task files
-  // when BUDDY_SYSTEM is disabled — without a drainer, queued tasks
+  // when the dispatcher is disabled — without a drainer, queued tasks
   // pile up forever. The hook should observe-and-warn but not write.
+  //
+  // Test isolation: sandbox PROJECT_ROOT with a custom .env that sets
+  // BUDDY_SYSTEM=0 + HME_DISPATCH_MODE=disabled. Inline env-vars don't
+  // survive `_safety.sh`'s `source .env` because the latter uses
+  // `set -a; source ...` which re-evaluates assignments. Sandboxing
+  // PROJECT_ROOT lets us control .env contents independent of
+  // production state (which may have HME_DISPATCH_MODE=synthesis set).
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-enqueue-gate-test-'));
   fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'hooks'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'config'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
-  // Stub _safety.sh in the sandbox so the hook script can `source` it.
+  fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'CLAUDE.md'), '# sandbox\n');
+  // Real .env redacted + our overrides
   const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  let env = fs.readFileSync(path.join(repoRoot, '.env'), 'utf8');
+  env = env.replace(/^PROJECT_ROOT=.*$/m, `PROJECT_ROOT=${sandbox}`);
+  env = env.replace(/^BUDDY_SYSTEM=.*$/m, 'BUDDY_SYSTEM=0');
+  env = env.replace(/^HME_DISPATCH_MODE=.*$/m, 'HME_DISPATCH_MODE=disabled');
+  env = env.replace(/^([A-Z_]+_(?:TOKEN|KEY|SECRET|PASSWORD|AUTH|CREDENTIAL))=.*$/gm, '$1=REDACTED');
+  fs.writeFileSync(path.join(sandbox, '.env'), env);
+  // Symlink the helpers / posttooluse / and i/dispatch + i/buddy bins
+  // into the sandbox so the hook can find them.
   fs.symlinkSync(
     path.join(repoRoot, 'tools', 'HME', 'hooks', 'helpers'),
     path.join(sandbox, 'tools', 'HME', 'hooks', 'helpers'),
@@ -262,40 +281,31 @@ test('enqueue-sentinel: posttooluse_bash skips enqueue when BUDDY_SYSTEM=0', () 
     path.join(repoRoot, 'tools', 'HME', 'hooks', 'posttooluse'),
     path.join(sandbox, 'tools', 'HME', 'hooks', 'posttooluse'),
   );
+  fs.mkdirSync(path.join(sandbox, 'i'), { recursive: true });
+  fs.symlinkSync(path.join(repoRoot, 'i', 'dispatch'), path.join(sandbox, 'i', 'dispatch'));
+  fs.symlinkSync(path.join(repoRoot, 'i', 'buddy'), path.join(sandbox, 'i', 'buddy'));
   try {
     const input = JSON.stringify({
       tool_input: { command: "i/whatever" },
       tool_response: "Done.\n[enqueue: tier=medium text=\"should be skipped\" source=\"test\"]",
     });
-    // Spawn with BUDDY_SYSTEM=0 explicitly — verifies the gate's check.
-    // We can't override the production .env, but we can prove the env-var
-    // gate logic itself works by setting it in the spawned shell.
     const result = spawnSync('bash', ['-c',
-      `BUDDY_SYSTEM=0 PROJECT_ROOT="${repoRoot}" \
-       bash "${repoRoot}/tools/HME/hooks/posttooluse/posttooluse_bash.sh" <<< '${input.replace(/'/g, "'\\''")}'`,
+      `PROJECT_ROOT="${sandbox}" \
+       bash "${sandbox}/tools/HME/hooks/posttooluse/posttooluse_bash.sh" <<< '${input.replace(/'/g, "'\\''")}'`,
     ], { encoding: 'utf8' });
-    // Must surface the seen-but-skipped warning on stderr. New
-    // message wording: "dispatch disabled" (was "BUDDY_SYSTEM=0").
+    // Must surface the seen-but-skipped warning on stderr.
     assert.ok(
       (result.stderr || '').includes('dispatch disabled') &&
       (result.stderr || '').includes('not queued'),
       `expected seen-but-skipped warning; stderr: ${result.stderr}`,
     );
-    // Must NOT have created any task files in the production queue.
-    const prodQueue = path.join(repoRoot, 'tmp', 'hme-buddy-queue', 'pending');
-    let prodPending = [];
-    if (fs.existsSync(prodQueue)) {
-      prodPending = fs.readdirSync(prodQueue).filter(f => f.endsWith('.json'));
+    // Must NOT have created any task files in the sandbox queue.
+    const queueDir = path.join(sandbox, 'tmp', 'hme-buddy-queue', 'pending');
+    let pending = [];
+    if (fs.existsSync(queueDir)) {
+      pending = fs.readdirSync(queueDir).filter(f => f.endsWith('.json'));
     }
-    // Allow pre-existing tasks in prod; what matters is OUR sentinel
-    // didn't add one with our distinctive text.
-    const ours = prodPending.filter(f => {
-      try {
-        const t = JSON.parse(fs.readFileSync(path.join(prodQueue, f), 'utf8'));
-        return t.text === 'should be skipped';
-      } catch (_e) { return false; }
-    });
-    assert.strictEqual(ours.length, 0, 'gate must NOT have created our sentinel task');
+    assert.strictEqual(pending.length, 0, 'gate must NOT have created any task files');
   } finally {
     try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
   }
