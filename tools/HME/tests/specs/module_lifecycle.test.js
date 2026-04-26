@@ -452,19 +452,24 @@ test('phase 4: stateProvider dispatches to conductorIntelligence.registerStatePr
   });
 });
 
-test('phase 4: missing sub-registry surfaces a clear error', () => {
+test('phase 4: missing sub-registry defers instantiation (implicit dep)', () => {
+  // Updated behavior: declare() with crossLayerScopes auto-adds
+  // 'crossLayerRegistry' to implicit deps. If not bound, the manifest
+  // defers; instantiation happens later when crossLayerRegistry resolves.
+  // The declare call itself is non-throwing.
   withFreshRegistry(() => {
-    // No crossLayerRegistry global -- declare should fail loudly.
     const original = global.crossLayerRegistry;
     delete global.crossLayerRegistry;
     try {
-      assert.throws(() => ML.declare({
+      assert.doesNotThrow(() => ML.declare({
         name: 'p4_missing_xl',
         deps: [],
         provides: ['p4_missing_xl'],
         crossLayerScopes: ['all'],
         init: () => ({}),
-      }), /crossLayerRegistry is not loaded/);
+      }));
+      // Manifest is pending until crossLayerRegistry binds.
+      assert.strictEqual(ML.getInstance('p4_missing_xl'), null);
     } finally {
       if (original !== undefined) global.crossLayerRegistry = original;
       delete global.p4_missing_xl;

@@ -373,6 +373,9 @@ test('pair_gain_ceiling controller respects metaprofile disable + coupling-pair 
   require('../../../../src/utils');
   require('../../../../src/conductor/controllerConfig');
   require('../../../../src/conductor');
+  // Drain the registry so declared modules with deferred deps instantiate.
+  // moduleLifecycle.initializeAll throws if already booted; guard.
+  try { global.moduleLifecycle.initializeAll(); } catch (_e) { /* already booted */ }
 
   // Activate chaotic which prescribes density-entropy as a coupling pair.
   mp.setActive(null);
