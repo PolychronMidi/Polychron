@@ -12,18 +12,28 @@
 # when already absolute (leading `/`) or ./-prefixed.
 if [ -n "${PROJECT_ROOT:-}" ] \
    && echo "$CMD" | grep -qE '(^|[[:space:]])i/(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)\b'; then
-  _FIXED_CMD=$(PROJECT_ROOT="$PROJECT_ROOT" python3 - "$CMD" <<'PYEOF' 2>/dev/null
+  # FAIL-LOUD: was `2>/dev/null`. A python crash here silently disabled
+  # the i/wrapper path auto-correct, leading to the hard-to-debug
+  # `i/review: No such file or directory` error class this very hook
+  # was added to fix.
+  _CWD_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_cwd_py_err_$$")
+  _FIXED_CMD=$(PROJECT_ROOT="$PROJECT_ROOT" python3 - "$CMD" <<'PYEOF' 2>"$_CWD_PY_ERR"
 import os, re, sys
 cmd = sys.argv[1]
 root = os.environ["PROJECT_ROOT"]
 TOOLS = r'(review|learn|trace|evolve|hme-admin|status|todo|hme-read|hme)'
-# Match bare `i/<tool>` at start-of-command or after whitespace/shell
-# separator. Skip occurrences already prefixed with `/` or `./` —
-# the preceding lookbehind is [\s;&|(] so `/i/x` and `./i/x` don't match.
 pat = re.compile(r'(^|(?<=[\s;&|(]))i/' + TOOLS + r'\b')
 print(pat.sub(lambda m: f"{m.group(1)}{root}/i/{m.group(2)}", cmd), end='')
 PYEOF
 )
+  if [ -s "$_CWD_PY_ERR" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    _CWD_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _cwd_line; do
+      [ -n "$_cwd_line" ] && echo "[$_CWD_TS] [cwd_rewrite] python3 failed (i/ rewrite skipped): $_cwd_line" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
+    done < "$_CWD_PY_ERR"
+  fi
+  rm -f "$_CWD_PY_ERR" 2>/dev/null
   if [ -n "$_FIXED_CMD" ] && [ "$_FIXED_CMD" != "$CMD" ]; then
     _RUN_BG=$(_safe_jq "$INPUT" '.tool_input.run_in_background' 'false')
     if [ "$_RUN_BG" = "true" ]; then

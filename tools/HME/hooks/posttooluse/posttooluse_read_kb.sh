@@ -23,9 +23,23 @@ MODULE=$(basename "$FILE" | sed 's/\.[^.]*$//')
 _brief_add "$MODULE" "posttooluse_read_kb"
 
 # Fire KB brief async — inject context into next response without blocking.
+# FAIL-LOUD: was `2>/dev/null || echo $MODULE` which silently fell back to
+# unencoded module name on a python crash. Module names are typically
+# basename-safe but a python crash here points at environment breakage that
+# should surface.
 WORKER="${HME_SHIM_PORT:-9098}"
+_PTRK_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ptrk_py_err_$$")
+_ENCODED=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$MODULE" 2>"$_PTRK_PY_ERR" || echo "$MODULE")
+if [ -s "$_PTRK_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _PTRK_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _ptrk_line; do
+    [ -n "$_ptrk_line" ] && echo "[$_PTRK_TS] [posttooluse_read_kb:url-encode] python3 failed: $_ptrk_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_PTRK_PY_ERR"
+fi
+rm -f "$_PTRK_PY_ERR" 2>/dev/null
 curl -sf --max-time 8 \
-  "http://127.0.0.1:${WORKER}/hme/read?target=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$MODULE" 2>/dev/null || echo "$MODULE")&mode=auto" \
+  "http://127.0.0.1:${WORKER}/hme/read?target=${_ENCODED}&mode=auto" \
   > /dev/null 2>&1 &
 
 exit 0

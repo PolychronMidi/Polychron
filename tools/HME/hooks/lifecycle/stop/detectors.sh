@@ -19,7 +19,19 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
   # `|| echo ok` per-detector fallbacks).
-  _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>/dev/null || true)
+  # FAIL-LOUD: stderr captured + bridged. A run_all crash silently
+  # disabled all 9 stop-side detectors — psycho_stop, exhaust_check,
+  # fabrication_check, etc. — letting the agent stop on broken work.
+  _DET_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_det_py_err_$$")
+  _RUN_ALL_OUT=$(timeout 3 python3 "$_DETECTORS_DIR/run_all.py" "$TRANSCRIPT_PATH" 2>"$_DET_PY_ERR" || true)
+  if [ -s "$_DET_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    _DET_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _det_line; do
+      [ -n "$_det_line" ] && echo "[$_DET_TS] [stop_detectors:run_all] python3 failed (all 9 detectors fail OPEN): $_det_line" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
+    done < "$_DET_PY_ERR"
+  fi
+  rm -f "$_DET_PY_ERR" 2>/dev/null
   while IFS='=' read -r _k _v; do
     case "$_k" in
       poll_count)    POLL_COUNT="$_v" ;;

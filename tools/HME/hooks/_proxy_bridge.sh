@@ -164,7 +164,7 @@ if [ -z "$RESP" ]; then
     # functional state, not an error that LIFESAVER should surface).
     mkdir -p "$_PB_ROOT/log" 2>/dev/null
     echo "[$_PB_TS] [proxy-bridge] ${EVENT} ran in direct-mode (proxy down) — exit_code=${_PB_DIRECT_RC}" \
-      >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+      >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
     # Sticky proxy-down flag still set so the recovery banner fires
     # when the proxy comes back up (next successful POST).
     mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
@@ -207,7 +207,7 @@ if [ -z "$RESP" ]; then
     # skip every fail-LOUD channel.
     mkdir -p "$_PB_ROOT/log" 2>/dev/null
     echo "[$_PB_TS] [proxy-bridge] unreachable during planned maintenance window (event=${EVENT})" \
-      >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+      >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
     echo "[proxy-bridge MAINTENANCE $_PB_TS] proxy down during maintenance window (event=${EVENT})" >&2
     exit 0
   fi
@@ -280,7 +280,7 @@ if [ -n "$_PB_ROOT" ] && [ -f "$_PB_ROOT/tmp/hme-proxy-down.flag" ]; then
   mkdir -p "$_PB_ROOT/log" 2>/dev/null
   # Audit trail for recoveries — a separate file from the error log.
   echo "[$_PB_RECOVERY_TS] [proxy-bridge] HME proxy recovered on 127.0.0.1:${PORT} (event=${EVENT})" \
-    >> "$_PB_ROOT/log/hme-proxy-lifecycle.log" 2>/dev/null
+    >> "$_PB_ROOT/log/hme-proxy-lifecycle.log"
   echo "[proxy-bridge RECOVERED $_PB_RECOVERY_TS] HME proxy on 127.0.0.1:${PORT} responding again" >&2
 fi
 unset _PB_RECOVERY_TS 2>/dev/null
