@@ -16,6 +16,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: ['validator'],
   provides: ['pipelineNormalizer'],
+  conductorScopes: ['all'],
   init: (deps) => {
   const V = deps.validator.create('pipelineNormalizer');
 
@@ -112,7 +113,7 @@ moduleLifecycle.declare({
     return result;
   }
 
-  conductorIntelligence.registerModule('pipelineNormalizer', { reset }, ['all']);
+  // (conductorScopes manifest field replaces this registerModule call.)
 
   return { normalize, reset, getSnapshot };
   },
