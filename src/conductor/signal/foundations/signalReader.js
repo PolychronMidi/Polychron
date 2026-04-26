@@ -7,12 +7,16 @@
 moduleLifecycle.declare({
   name: 'signalReader',
   subsystem: 'conductor',
-  deps: ['validator', 'conductorIntelligence', 'explainabilityBus'],
+  // Only `validator` is touched at init top-level. conductorIntelligence and
+  // explainabilityBus are referenced inside function bodies (density(),
+  // queryByType(), etc.) called at composition time -- they're guaranteed
+  // loaded by then via the standard require chain. Listing them here would
+  // defer signalReader's instantiation past their load order, breaking the
+  // post-IIFE crossLayerRegistry.register call patterns elsewhere.
+  deps: ['validator'],
   provides: ['signalReader'],
   init: (deps) => {
   const V = deps.validator.create('signalReader');
-  const conductorIntelligence = deps.conductorIntelligence;
-  const explainabilityBus = deps.explainabilityBus;
   void V;
 
   /** @returns {number} Product of all registered density biases. */

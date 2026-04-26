@@ -6,19 +6,14 @@
 moduleLifecycle.declare({
   name: 'conductorSignalBridge',
   subsystem: 'crossLayer',
-  deps: ['validator', 'signalReader', 'conductorIntelligence', 'hyperMetaManager', 'systemDynamicsProfiler'],
+  // Only validator is touched at init top-level. The cross-subsystem
+  // references (signalReader, conductorIntelligence, hyperMetaManager,
+  // systemDynamicsProfiler) are inside refresh() called per-beat post-boot.
+  deps: ['validator'],
   provides: ['conductorSignalBridge'],
   init: (deps) => {
   const V = deps.validator.create('conductorSignalBridge');
-  const signalReader = deps.signalReader;
-  const conductorIntelligence = deps.conductorIntelligence;
-  const hyperMetaManager = deps.hyperMetaManager;
-  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   void V;
-  void signalReader;
-  void conductorIntelligence;
-  void hyperMetaManager;
-  void systemDynamicsProfiler;
 
   let cached = /** @type {{ density: number, tension: number, flicker: number, compositeIntensity: number, sectionPhase: string, coherenceEntropy: number, healthEma: number, systemPhase: string, exceedanceTrendEma: number, topologyPhase: string, regime: string, effectiveDimensionality: number, couplingStrength: number, axisEnergyShares: Record<string,number>|null, adaptiveTargetSnapshot: Record<string,any>|null, couplingLabels: Record<string,string>|null, regimeProb: {coherent:number,exploring:number,evolving:number}, updatedAt: number }} */ ({
     density: 1,
