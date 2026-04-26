@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'stutterFeedbackListener',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['feedbackAccumulator', 'validator'],
   provides: ['stutterFeedbackListener'],
   init: (deps) => {
+  const feedbackAccumulator = deps.feedbackAccumulator;
   const V = deps.validator.create('stutterFeedbackListener');
 
   let accumulator = null;
@@ -105,7 +106,7 @@ moduleLifecycle.declare({
   }
 
 
-  moduleLifecycle.registerInitializer('stutterFeedbackListener', initialize);
+  initialize();
   return {
     initialize,
     getIntensity,
