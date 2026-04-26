@@ -148,7 +148,11 @@ export default [
       'local/no-empty-catch': 'error',
       'local/no-bare-l0-channel': 'error',
       'local/no-doubled-fallback': 'error',
-      'local/no-or-fallback-on-config-read': 'error'
+      'local/no-or-fallback-on-config-read': 'error',
+      // Warn (not error) so existing modules can be migrated incrementally
+      // from bare-globals to deps. references. Promote to 'error' after
+      // the per-module sweep completes.
+      'local/no-bare-declared-global-in-init': 'warn'
     },
 
   },

@@ -3,8 +3,18 @@
 // Detects ABA returns, through-composed drift, or lack of recapitulation.
 // Pure query API - advises family/key selection for structural callbacks.
 
-structuralFormTracker = (() => {
-  const V = validator.create('structuralFormTracker');
+moduleLifecycle.declare({
+  name: 'structuralFormTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['structuralFormTracker'],
+  conductorScopes: ['section'],
+  stateProvider: () => ({
+    sectionCount: Object.keys(structuralFormTracker.getFamilyUsage()).length,
+    energyTrend: structuralFormTracker.getEnergyArc().trend,
+  }),
+  init: (deps) => {
+  const V = deps.validator.create('structuralFormTracker');
   /** @type {Array<{ section: number, family: string, key: string, mode: string, energy: number }>} */
   const formMap = [];
 
@@ -101,9 +111,5 @@ structuralFormTracker = (() => {
     getFamilyUsage,
     reset
   };
-})();
-conductorIntelligence.registerStateProvider('structuralFormTracker', () => ({
-  sectionCount: Object.keys(structuralFormTracker.getFamilyUsage()).length,
-  energyTrend: structuralFormTracker.getEnergyArc().trend
-}));
-conductorIntelligence.registerModule('structuralFormTracker', { reset: structuralFormTracker.reset }, ['section']);
+  },
+});

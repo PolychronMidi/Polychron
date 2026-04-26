@@ -23,6 +23,7 @@ module.exports = {
     'no-empty-catch': require('./no-empty-catch'),
     'no-bare-l0-channel': require('./no-bare-l0-channel'),
     'no-doubled-fallback': require('./no-doubled-fallback'),
-    'no-or-fallback-on-config-read': require('./no-or-fallback-on-config-read')
+    'no-or-fallback-on-config-read': require('./no-or-fallback-on-config-read'),
+    'no-bare-declared-global-in-init': require('./no-bare-declared-global-in-init')
   }
 };
