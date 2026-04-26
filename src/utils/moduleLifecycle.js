@@ -113,10 +113,10 @@ moduleLifecycle = (() => {
     V.assertNonEmptyString(m.name, 'declare.manifest.name');
     V.assertArray(m.deps, `declare.manifest.deps for "${m.name}"`);
     V.assertArray(m.provides, `declare.manifest.provides for "${m.name}"`);
-    V.requireType(m.init, 'function', `declare.manifest.init for "${m.name}"`);
     if (m.provides.length === 0) {
       throw new Error(`moduleLifecycle.declare: "${m.name}" provides must list at least one global name (typically [name] itself)`);
     }
+    V.requireType(m.init, 'function', `declare.manifest.init for "${m.name}"`);
     for (let i = 0; i < m.deps.length; i++) {
       V.assertNonEmptyString(m.deps[i], `declare.manifest.deps[${i}] for "${m.name}"`);
     }
@@ -175,11 +175,14 @@ moduleLifecycle = (() => {
     return _instances.has(name) ? _instances.get(name) : null;
   }
 
-  /** Test cleanup: clear overrides + instances + manifests. Call between test cases. */
+  /** Test cleanup: full registry reset. Clears manifests, instances, overrides,
+   *  AND legacy initializers (which may have leaked in from other test files'
+   *  side-effect requires). Tests must re-register anything they need. */
   function _resetForTests() {
     _manifests.clear();
     _instances.clear();
     _overrides.clear();
+    initializers.clear();
     _bootState = 'pending';
   }
 
