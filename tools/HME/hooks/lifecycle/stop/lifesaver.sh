@@ -43,12 +43,20 @@ if [ -f "$ERROR_LOG" ]; then
   _SELF_ORIGIN_RE='\[universal_pulse\]|\[supervisor\]|\[hme-proxy\]|meta_observer|daemon crashloop|claude-arbiter CPU|worker self-terminated|llamacpp_daemon'
   # Promotion list: substrings that, when matched against an otherwise
   # self-origin line, force re-classification as agent-origin. These name
-  # PERMANENT failure states the agent CAN cause and CAN fix -- distinct
-  # from routine restart-loop noise the supervisor handles automatically.
-  # Without this promotion, "[supervisor] worker hit restart limit" got
-  # buried in the self-origin bucket alongside transient restart attempts;
-  # the worker stayed dead for hours before any agent-visible alert.
-  _PROMOTE_TO_AGENT_RE='hit restart limit|gave up|abandoned|No such file or directory|cannot import|ModuleNotFoundError|ImportError|spawn aborted'
+  # PERMANENT failure states OR explicit-CRITICAL alerts -- distinct from
+  # routine restart-loop / pulse noise the supervisor handles automatically.
+  #
+  # History:
+  # - "hit restart limit" added when the worker stayed dead for hours
+  #   after a rename, buried under self-origin classification.
+  # - "CRITICAL" added when [universal_pulse] CRITICAL alerts (worker
+  #   CPU-saturated, worker unresponsive, daemon crashloop) were
+  #   suppressed alongside routine "p95 > 500ms" warnings, leaving
+  #   the agent blind to actively-broken hook infrastructure.
+  # - "worker unresponsive"/"urlopen error"/"Connection refused" added
+  #   because they directly indicate hook calls TO the worker are
+  #   failing right now -- agent-visible and often agent-caused.
+  _PROMOTE_TO_AGENT_RE='hit restart limit|gave up|abandoned|No such file or directory|cannot import|ModuleNotFoundError|ImportError|spawn aborted|CRITICAL|worker unresponsive|urlopen error|Connection refused|GIL/event-loop hang'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
     # Initial split: agent-origin = does not match self-origin pattern.
