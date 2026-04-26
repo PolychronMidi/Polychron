@@ -38,16 +38,17 @@ if [ ! -f "$CONFIG" ]; then
   exit 0
 fi
 
-#  Hard block list: never permit any read of these paths -
-BLOCK_HIT=$(python3 - "$REL" "$CONFIG" <<'PYEOF' 2>/dev/null
+# Hard block list: never permit any read of these paths.
+# FAIL-LOUD: was `2>/dev/null` + `try/except: sys.exit(0)` which made every
+# crash silently fail-OPEN — a malformed config or python crash defeated the
+# blocklist. Now: stderr captured, exceptions raise; load failure surfaces
+# to errors.log so LIFESAVER catches it and the gate fails CLOSED visibly.
+_PR_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_gate_err_$$")
+BLOCK_HIT=$(python3 - "$REL" "$CONFIG" <<'PYEOF' 2>"$_PR_GATE_ERR"
 import json, sys
 rel, cfg = sys.argv[1], sys.argv[2]
-try:
-    d = json.load(open(cfg))
-except Exception:
-    sys.exit(0)
+d = json.load(open(cfg))
 for p in d.get("blocked_paths", []):
-    # prefix match for dirs (trailing slash) or exact match for files
     if p.endswith("/"):
         if rel.startswith(p):
             print(p); sys.exit(0)
@@ -58,19 +59,26 @@ for ext in d.get("blocked_extensions", []):
         print(f"*{ext}"); sys.exit(0)
 PYEOF
 )
+if [ -s "$_PR_GATE_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _PR_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _pr_line; do
+    [ -n "$_pr_line" ] && echo "[$_PR_TS] [pretooluse_read:blocklist] python3 failed (gate fails OPEN until fixed): $_pr_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_PR_GATE_ERR"
+fi
+rm -f "$_PR_GATE_ERR" 2>/dev/null
 if [ -n "$BLOCK_HIT" ]; then
   _emit_block "BLOCKED: $REL matches guarded path '$BLOCK_HIT' (see tools/HME/config/context-guards.json). Full-file reads here flood agent context. If you truly need specific lines, use Grep with a targeted pattern, or read a smaller canonical file instead."
   exit 2
 fi
 
-#  Paginated paths: require offset+limit with bounded max_lines
-PAG=$(python3 - "$REL" "$CONFIG" "$OFFSET" "$LIMIT" <<'PYEOF' 2>/dev/null
+# Paginated paths: require offset+limit with bounded max_lines.
+# FAIL-LOUD: same rationale as the blocklist gate above.
+_PR_PAG_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_pag_err_$$")
+PAG=$(python3 - "$REL" "$CONFIG" "$OFFSET" "$LIMIT" <<'PYEOF' 2>"$_PR_PAG_ERR"
 import json, sys
 rel, cfg, offset, limit = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-try:
-    d = json.load(open(cfg))
-except Exception:
-    sys.exit(0)
+d = json.load(open(cfg))
 for entry in d.get("paginated_paths", []):
     prefix = entry.get("prefix", "")
     if not prefix or not rel.startswith(prefix):
@@ -79,13 +87,21 @@ for entry in d.get("paginated_paths", []):
     reason = entry.get("reason", "large append-only file")
     try:
         lim = int(limit) if limit else 0
-    except Exception:
+    except (ValueError, TypeError):
         lim = 0
     if lim == 0 or lim > max_lines:
         print(f"{max_lines}|{reason}")
     sys.exit(0)
 PYEOF
 )
+if [ -s "$_PR_PAG_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _PR_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _pr_line; do
+    [ -n "$_pr_line" ] && echo "[$_PR_TS] [pretooluse_read:paginated] python3 failed: $_pr_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_PR_PAG_ERR"
+fi
+rm -f "$_PR_PAG_ERR" 2>/dev/null
 if [ -n "$PAG" ]; then
   MAX_LINES="${PAG%%|*}"
   REASON="${PAG#*|}"
@@ -96,7 +112,17 @@ fi
 #  Soft size limit: large unexplored file without offset/limit → warn
 if [ -f "$FILE" ]; then
   SIZE=$(stat -c %s "$FILE" 2>/dev/null || echo 0)
-  SOFT=$(python3 -c "import json; print(json.load(open('$CONFIG')).get('soft_size_limit_bytes', 150000))" 2>/dev/null || echo 150000)
+  # FAIL-LOUD: corrupted config silently produced default-150000 soft limit.
+  _PR_SOFT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pr_soft_err_$$")
+  SOFT=$(python3 -c "import json; print(json.load(open('$CONFIG')).get('soft_size_limit_bytes', 150000))" 2>"$_PR_SOFT_ERR" || echo 150000)
+  if [ -s "$_PR_SOFT_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    _PR_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _pr_line; do
+      [ -n "$_pr_line" ] && echo "[$_PR_TS] [pretooluse_read:soft-limit] python3 failed: $_pr_line" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
+    done < "$_PR_SOFT_ERR"
+  fi
+  rm -f "$_PR_SOFT_ERR" 2>/dev/null
   if [ "$SIZE" -gt "$SOFT" ] && [ -z "$LIMIT" ] && [ -z "$OFFSET" ]; then
     echo "NEXUS: $REL is $(( SIZE / 1024 ))KB — consider passing limit/offset to Read if you only need part of it (soft threshold $(( SOFT / 1024 ))KB)." >&2
   fi

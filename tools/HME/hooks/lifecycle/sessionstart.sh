@@ -92,7 +92,20 @@ WORKER_PORT="${HME_SHIM_PORT:-9098}"
 curl -sf --max-time 2 -X POST "http://127.0.0.1:${WORKER_PORT}/clear-errors" \
   -H 'Content-Type: application/json' \
   -d '{"older_than_ms":1800000}' >/dev/null 2>&1 || true
-HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>/dev/null || echo "")
+# FAIL-LOUD: capture curl stderr; if non-empty AND it's not a "connection
+# refused" (worker genuinely down), surface it. Connection-refused while
+# the worker is starting is normal early-session noise; treat that as
+# silent. Anything else (DNS, permission, malformed URL) gets logged.
+_SS_CURL_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_curl_err_$$")
+HEALTH_JSON=$(curl -sf --max-time 1 "http://127.0.0.1:${WORKER_PORT}/health" 2>"$_SS_CURL_ERR" || echo "")
+if [ -s "$_SS_CURL_ERR" ] && ! grep -qiE 'connect|refused|timed out|timeout' "$_SS_CURL_ERR"; then
+  _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _ss_line; do
+    [ -n "$_ss_line" ] && echo "[$_SS_TS] [sessionstart:health] curl unexpected error: $_ss_line" \
+      >> "$PROJECT/log/hme-errors.log"
+  done < "$_SS_CURL_ERR"
+fi
+rm -f "$_SS_CURL_ERR" 2>/dev/null
 if [ -n "$HEALTH_JSON" ]; then
   # Write JSON to a temp file and have python read it — both `<<PYEOF` and
   # piped stdin together are ambiguous (heredoc wins, stdin gets the script
@@ -162,24 +175,34 @@ echo -e "HyperMeta Ecstasy active. Load skill: /HME\nOnboarding: $ONB_STEP$MSG" 
 # with full visibility into unfinished work. LIFESAVER criticals surface first,
 # then everything else. The TodoWrite hook will re-merge these into native view
 # on the next TodoWrite call.
-CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>/dev/null
-try:
-    from server.tools_analysis.todo import list_carried_over
-    items = list_carried_over()
-    if items:
-        print("\nCarried-over HME todos (" + str(len(items)) + " open):")
-        crit = [i for i in items if i['critical']]
-        normal = [i for i in items if not i['critical']]
-        for i in crit:
-            print("  !!! #" + str(i['id']) + " " + i['text'][:120] + " [" + i['source'] + "]")
-        for i in normal:
-            tag = " (" + str(i['open_subs']) + " open subs)" if i['open_subs'] else ""
-            src = " [" + i['source'] + "]" if i['source'] else ""
-            print("  [ ] #" + str(i['id']) + " " + i['text'][:100] + tag + src)
-except Exception:
-    pass
+# FAIL-LOUD: capture stderr; ImportError / module-load failures used to
+# vanish into `2>/dev/null` + `except Exception: pass`. Now: bridge crashes
+# to errors.log so LIFESAVER catches them next turn.
+_SS_CARRY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_carry_err_$$")
+CARRIED=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_SS_CARRY_ERR"
+from server.tools_analysis.todo import list_carried_over
+items = list_carried_over()
+if items:
+    print("\nCarried-over HME todos (" + str(len(items)) + " open):")
+    crit = [i for i in items if i['critical']]
+    normal = [i for i in items if not i['critical']]
+    for i in crit:
+        print("  !!! #" + str(i['id']) + " " + i['text'][:120] + " [" + i['source'] + "]")
+    for i in normal:
+        tag = " (" + str(i['open_subs']) + " open subs)" if i['open_subs'] else ""
+        src = " [" + i['source'] + "]" if i['source'] else ""
+        print("  [ ] #" + str(i['id']) + " " + i['text'][:100] + tag + src)
 PYEOF
 )
+_SS_CARRY_RC=$?
+if [ "$_SS_CARRY_RC" -ne 0 ] && [ -s "$_SS_CARRY_ERR" ] && [ -d "$PROJECT/log" ]; then
+  _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _ss_line; do
+    [ -n "$_ss_line" ] && echo "[$_SS_TS] [sessionstart:list_carried_over] python3 failed: $_ss_line" \
+      >> "$PROJECT/log/hme-errors.log"
+  done < "$_SS_CARRY_ERR"
+fi
+rm -f "$_SS_CARRY_ERR" 2>/dev/null
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
 # Lance _deletions compaction
@@ -201,10 +224,17 @@ fi
 # surface drift that happened during the session. The holograph is the
 # substrate for self-coherence time-series analysis — every session adds a
 # data point. Run in background so SessionStart stays fast.
+# Background-spawn discipline (per CLAUDE.md): stderr goes to a per-script
+# `log/hme-bg-<name>.err` file, truncated per session-start, surfaced via
+# the `pipeline-bg-script-health` HCI verifier. The previous `2>/dev/null`
+# made every crash invisible.
+mkdir -p "$PROJECT/log" 2>/dev/null
 HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
   SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"
-  PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout > "$SESSION_HOLO" 2>/dev/null &
+  : > "$PROJECT/log/hme-bg-snapshot-holograph.err"
+  PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout \
+    > "$SESSION_HOLO" 2>"$PROJECT/log/hme-bg-snapshot-holograph.err" &
 fi
 
 # Refresh the tool-effectiveness analysis in the background. Reads log/hme.log
@@ -212,14 +242,24 @@ fi
 # and MetaObserverCoherence verifiers consume to compute the HCI.
 EFF_SCRIPT="$PROJECT/tools/HME/scripts/analyze-tool-effectiveness.py"
 EFF_PID=""
-[ -f "$EFF_SCRIPT" ] && { PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" > /dev/null 2>&1 & EFF_PID=$!; }
+if [ -f "$EFF_SCRIPT" ]; then
+  : > "$PROJECT/log/hme-bg-analyze-tool-effectiveness.err"
+  PROJECT_ROOT="$PROJECT" python3 "$EFF_SCRIPT" \
+    > /dev/null 2>"$PROJECT/log/hme-bg-analyze-tool-effectiveness.err" &
+  EFF_PID=$!
+fi
 
 # Update HCI trajectory in the background for time-series analysis.
 # The --summary call below reads this script's output file; wait on the
 # refresh before summarizing so we never print a previous-session trajectory.
 TRAJ_SCRIPT="$PROJECT/tools/HME/scripts/analyze-hci-trajectory.py"
 TRAJ_PID=""
-[ -f "$TRAJ_SCRIPT" ] && { PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" > /dev/null 2>&1 & TRAJ_PID=$!; }
+if [ -f "$TRAJ_SCRIPT" ]; then
+  : > "$PROJECT/log/hme-bg-analyze-hci-trajectory.err"
+  PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" \
+    > /dev/null 2>"$PROJECT/log/hme-bg-analyze-hci-trajectory.err" &
+  TRAJ_PID=$!
+fi
 
 # Surface the current HCI trajectory summary so agents see the health arc.
 # Wait for the refresh job (bounded by a short timeout — analyze-hci-trajectory
@@ -233,7 +273,17 @@ if [ -f "$TRAJ_SCRIPT" ]; then
       sleep 1
     done
   fi
-  TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>/dev/null)
+  _SS_TRAJ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_traj_err_$$")
+  TRAJ_LINE=$(PROJECT_ROOT="$PROJECT" python3 "$TRAJ_SCRIPT" --summary 2>"$_SS_TRAJ_ERR")
+  _SS_TRAJ_RC=$?
+  if [ "$_SS_TRAJ_RC" -ne 0 ] && [ -s "$_SS_TRAJ_ERR" ] && [ -d "$PROJECT/log" ]; then
+    _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _ss_line; do
+      [ -n "$_ss_line" ] && echo "[$_SS_TS] [sessionstart:hci-trajectory] python3 failed: $_ss_line" \
+        >> "$PROJECT/log/hme-errors.log"
+    done < "$_SS_TRAJ_ERR"
+  fi
+  rm -f "$_SS_TRAJ_ERR" 2>/dev/null
   [ -n "$TRAJ_LINE" ] && echo "$TRAJ_LINE" >&2
 fi
 
@@ -244,7 +294,17 @@ fi
 # before wiring auto-application. If recommended != current default, surface.
 CALIB_SCRIPT="$PROJECT/tools/HME/activity/streak_calibrator.py"
 if [ -f "$CALIB_SCRIPT" ]; then
-  CALIB_JSON=$(PROJECT_ROOT="$PROJECT" python3 "$CALIB_SCRIPT" 2>/dev/null)
+  _SS_CALIB_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ss_calib_err_$$")
+  CALIB_JSON=$(PROJECT_ROOT="$PROJECT" python3 "$CALIB_SCRIPT" 2>"$_SS_CALIB_ERR")
+  _SS_CALIB_RC=$?
+  if [ "$_SS_CALIB_RC" -ne 0 ] && [ -s "$_SS_CALIB_ERR" ] && [ -d "$PROJECT/log" ]; then
+    _SS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _ss_line; do
+      [ -n "$_ss_line" ] && echo "[$_SS_TS] [sessionstart:streak_calibrator] python3 failed: $_ss_line" \
+        >> "$PROJECT/log/hme-errors.log"
+    done < "$_SS_CALIB_ERR"
+  fi
+  rm -f "$_SS_CALIB_ERR" 2>/dev/null
   if [ -n "$CALIB_JSON" ]; then
     CALIB_LINE=$(echo "$CALIB_JSON" | python3 -c "
 import json, os, sys

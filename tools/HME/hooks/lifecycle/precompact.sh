@@ -68,9 +68,20 @@ CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="${METRICS_DIR:-$PROJECT/output/metrics}/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
-  USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
-  REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
-  SIZE=$(jq -r '.size // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  # FAIL-LOUD: capture jq stderr; corrupted statusline JSON would silently
+  # produce all-null calibration rows and skew the meter analysis.
+  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pc_jq_err_$$")
+  USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
+  REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
+  SIZE=$(jq -r '.size // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
+  if [ -s "$_PC_JQ_ERR" ] && [ -d "$PROJECT/log" ]; then
+    _PC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _pc_line; do
+      [ -n "$_pc_line" ] && echo "[$_PC_TS] [precompact:ctx-parse] jq failed reading $CTX_FILE: $_pc_line" \
+        >> "$PROJECT/log/hme-errors.log"
+    done < "$_PC_JQ_ERR"
+  fi
+  rm -f "$_PC_JQ_ERR" 2>/dev/null
   AGE=$(( $(date +%s) - $(stat -c %Y "$CTX_FILE" 2>/dev/null || echo 0) ))
   echo "{\"ts\":\"$TS\",\"event\":\"pre_compact\",\"used_pct\":$USED,\"remaining_pct\":$REM,\"ctx_size\":$SIZE,\"meter_age_s\":$AGE}" >> "$LOG"
 else

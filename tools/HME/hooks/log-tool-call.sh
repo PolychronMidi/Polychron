@@ -22,7 +22,18 @@ set +e
 HOOK_DATA=$(cat)
 
 TOOL_NAME=$(_safe_jq "$HOOK_DATA" '.tool_name' 'unknown')
-TOOL_INPUT=$(echo "$HOOK_DATA" | jq -c '.tool_input // {}' 2>/dev/null | head -c 300)
+# FAIL-LOUD: capture jq stderr; malformed hook payloads would silently produce
+# empty TOOL_INPUT and skew transcript fidelity / HME-call detection.
+_LTC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_jq_err_$$")
+TOOL_INPUT=$(echo "$HOOK_DATA" | jq -c '.tool_input // {}' 2>"$_LTC_JQ_ERR" | head -c 300)
+if [ -s "$_LTC_JQ_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _LTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _ltc_line; do
+    [ -n "$_ltc_line" ] && echo "[$_LTC_TS] [log-tool-call] jq parse failed extracting tool_input: $_ltc_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_LTC_JQ_ERR"
+fi
+rm -f "$_LTC_JQ_ERR" 2>/dev/null
 TOOL_RESULT=$(_safe_jq "$HOOK_DATA" '.tool_response' '' | head -c 500)
 FILE_PATH=$(_safe_jq "$HOOK_DATA" '.tool_input.file_path' '')
 CWD=$(_safe_jq "$HOOK_DATA" '.cwd' '')
@@ -91,7 +102,10 @@ if [ "$_IS_HME_CALL" = "1" ] && [ "$ELAPSED_S" -gt 0 ]; then
   fi
 fi
 
-# Build transcript entry
+# Build transcript entry. FAIL-LOUD: was `2>/dev/null` which silently
+# dropped the whole transcript line on jq failure — agent-visibility into
+# tool history vanished without trace.
+_LTC_BUILD_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ltc_build_err_$$")
 ENTRY=$(jq -nc \
   --argjson ts "$TS" \
   --arg type "tool_call" \
@@ -100,7 +114,15 @@ ENTRY=$(jq -nc \
   --arg content "$TOOL_NAME: $TOOL_INPUT" \
   --arg result "$TOOL_RESULT" \
   --arg summary "Tool: $TOOL_NAME" \
-  '{ts: $ts, type: $type, route: $route, session_id: $session_id, content: $content, result: $result, summary: $summary}' 2>/dev/null)
+  '{ts: $ts, type: $type, route: $route, session_id: $session_id, content: $content, result: $result, summary: $summary}' 2>"$_LTC_BUILD_ERR")
+if [ -s "$_LTC_BUILD_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _LTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _ltc_line; do
+    [ -n "$_ltc_line" ] && echo "[$_LTC_TS] [log-tool-call] jq build failed (tool=$TOOL_NAME): $_ltc_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_LTC_BUILD_ERR"
+fi
+rm -f "$_LTC_BUILD_ERR" 2>/dev/null
 
 [ -z "$ENTRY" ] && exit 0
 

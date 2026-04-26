@@ -160,19 +160,31 @@ fi
 # HME critical todos — surface unresolved critical items at turn start
 # Reads the HME store, filters critical+open items, emits them so the agent
 # cannot miss LIFESAVER alerts, high-priority work, or unresolved trigger notes.
-CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>/dev/null
-try:
-    from server.tools_analysis.todo import list_critical
-    items = list_critical()
-    if items:
-        print("HME CRITICAL TODOS (unresolved):")
-        for i in items:
-            src = f" [{i['source']}]" if i.get('source') else ""
-            print(f"  !!! #{i['id']} {i['text']}{src}")
-except Exception:
-    pass
+#
+# FAIL-LOUD: capture stderr; ImportError / module-load failures used to
+# vanish into `2>/dev/null` + bare `except: pass`, leaving the agent blind
+# to critical TODOs. Now: any python crash is bridged to hme-errors.log
+# so LIFESAVER picks it up next turn.
+_UPS_CRIT_ERR=$(mktemp 2>/dev/null || echo "/tmp/_ups_crit_err_$$")
+CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>"$_UPS_CRIT_ERR"
+from server.tools_analysis.todo import list_critical
+items = list_critical()
+if items:
+    print("HME CRITICAL TODOS (unresolved):")
+    for i in items:
+        src = f" [{i['source']}]" if i.get('source') else ""
+        print(f"  !!! #{i['id']} {i['text']}{src}")
 PYEOF
 )
+_UPS_CRIT_RC=$?
+if [ "$_UPS_CRIT_RC" -ne 0 ] && [ -s "$_UPS_CRIT_ERR" ] && [ -d "$PROJECT/log" ]; then
+  _UPS_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _ups_line; do
+    [ -n "$_ups_line" ] && echo "[$_UPS_TS] [userpromptsubmit:list_critical] python3 failed: $_ups_line" \
+      >> "$PROJECT/log/hme-errors.log"
+  done < "$_UPS_CRIT_ERR"
+fi
+rm -f "$_UPS_CRIT_ERR" 2>/dev/null
 if [ -n "$CRIT_OUT" ]; then
   echo "" >&2
   echo "$CRIT_OUT" >&2

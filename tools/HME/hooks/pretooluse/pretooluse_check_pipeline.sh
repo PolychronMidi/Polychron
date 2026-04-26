@@ -22,7 +22,11 @@ fi
 # track parse failures — a handful of malformed lines is expected, but if
 # EVERY line fails to parse, the transcript format has drifted and the
 # polling guard is silently disabled. Surface that to hme-errors.log.
-_STATUS_COUNT_PARSE=$(python3 - "$TRANSCRIPT_PATH" <<'PYEOF' 2>/dev/null
+# FAIL-LOUD: was `2>/dev/null` which silenced ImportError / SyntaxError /
+# UnicodeDecodeError. The script's own try/except covers file-read; any
+# other crash silently disabled the polling gate (CALL_COUNT=0 → fail-OPEN).
+_PCP_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pcp_py_err_$$")
+_STATUS_COUNT_PARSE=$(python3 - "$TRANSCRIPT_PATH" <<'PYEOF' 2>"$_PCP_PY_ERR"
 import json, os, re, sys
 path = sys.argv[1]
 try:
@@ -72,9 +76,19 @@ PYEOF
 )
 CALL_COUNT=$(echo "$_STATUS_COUNT_PARSE" | awk '{print $1}')
 _SENTINEL=$(echo "$_STATUS_COUNT_PARSE" | awk '{print $2}')
+if [ -s "$_PCP_PY_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _PCP_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _pcp_line; do
+    [ -n "$_pcp_line" ] && echo "[$_PCP_TS] [pretooluse_check_pipeline] python3 failed (polling gate fails OPEN): $_pcp_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_PCP_PY_ERR"
+fi
+rm -f "$_PCP_PY_ERR" 2>/dev/null
 if [ -n "$_SENTINEL" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  # Drop stderr suppression — write failure should surface (rare; would
+  # indicate full disk / permission flap on log/ which has bigger problems).
   printf '[%s] [pretooluse_check_pipeline] transcript parse drift: %s (polling guard ineffective)\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_SENTINEL" >> "$PROJECT_ROOT/log/hme-errors.log" 2>/dev/null
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_SENTINEL" >> "$PROJECT_ROOT/log/hme-errors.log"
 fi
 CALL_COUNT="${CALL_COUNT:-0}"
 

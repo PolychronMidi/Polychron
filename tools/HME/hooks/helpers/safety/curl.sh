@@ -74,11 +74,17 @@ _safe_curl() {
       *)             max_time=10 ;;   # default (was 5, bumped after sustained /transcript timeout spam)
     esac
   fi
+  # FAIL-LOUD: capture curl stderr; if non-zero exit AND stderr written,
+  # log the curl error message itself (not just rc) so we know WHY (DNS,
+  # SSL, malformed URL, etc.) — was previously suppressed and we lost
+  # information about every transient failure.
+  local curl_err
+  curl_err=$(mktemp 2>/dev/null || echo "/tmp/_safe_curl_err_$$")
   if [ -n "$body" ]; then
-    out=$(curl -s --max-time "$max_time" -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>/dev/null)
+    out=$(curl -s --max-time "$max_time" -X POST "$url" -H 'Content-Type: application/json' -d "$body" 2>"$curl_err")
     rc=$?
   else
-    out=$(curl -s --max-time "$max_time" "$url" 2>/dev/null)
+    out=$(curl -s --max-time "$max_time" "$url" 2>"$curl_err")
     rc=$?
   fi
   if [ $rc -ne 0 ]; then
@@ -97,14 +103,21 @@ _safe_curl() {
     # receive empty strings as if success. The streak count stays as a
     # diagnostic trend signal but every failure now surfaces immediately.
     if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
-      printf '[%s] [_safe_curl] %s failed (rc=%d, streak=%d)\n' \
+      local curl_msg=""
+      [ -s "$curl_err" ] && curl_msg=$(head -c 200 "$curl_err" | tr '\n' ' ')
+      # FAIL-LOUD on alert-sink writes — was 2>/dev/null; if errors.log
+      # itself is unwritable, that failure must NOT be silent.
+      printf '[%s] [_safe_curl] %s failed (rc=%d, streak=%d)%s\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$url" "$rc" "$streak" \
-        >> "$PROJECT_ROOT/log/hme-errors.log" 2>/dev/null
+        "${curl_msg:+ — $curl_msg}" \
+        >> "$PROJECT_ROOT/log/hme-errors.log"
     fi
+    rm -f "$curl_err" 2>/dev/null
     echo ''
     return 0
   fi
   # Success — reset streak.
+  rm -f "$curl_err" 2>/dev/null
   [ -f "$streak_file" ] && rm -f "$streak_file" 2>/dev/null
   echo "$out"
 }

@@ -47,8 +47,9 @@ if [ ! -f "$_WD_SCRIPT" ]; then
   # still surface the proxy-down state on next UserPromptSubmit.
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   mkdir -p "$_WD_ROOT/log" 2>/dev/null
+  # FAIL-LOUD on alert-sink writes (see _proxy_bridge.sh rationale).
   echo "[$ts] [proxy-watchdog] SessionStart: proxy down AND hme_proxy.js missing at $_WD_SCRIPT" \
-    >> "$_WD_ROOT/log/hme-errors.log" 2>/dev/null
+    >> "$_WD_ROOT/log/hme-errors.log"
   exit 0
 fi
 
@@ -56,7 +57,7 @@ if ! command -v node >/dev/null 2>&1; then
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   mkdir -p "$_WD_ROOT/log" 2>/dev/null
   echo "[$ts] [proxy-watchdog] SessionStart: proxy down AND node binary not on PATH" \
-    >> "$_WD_ROOT/log/hme-errors.log" 2>/dev/null
+    >> "$_WD_ROOT/log/hme-errors.log"
   exit 0
 fi
 
@@ -88,7 +89,7 @@ while [ "$_waited" -lt 8 ]; do
     # Emit a one-shot recovery note into hme-errors.log so the log
     # captures the recovery as well as the failure.
     echo "[$ts] [proxy-watchdog] proxy respawned (pid=$_WD_PID) after ${_waited}s" \
-      >> "$_WD_ROOT/log/hme-errors.log" 2>/dev/null
+      >> "$_WD_ROOT/log/hme-errors.log"
     exit 0
   fi
   sleep 1
@@ -100,5 +101,5 @@ done
 ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
 echo "[$ts] [proxy-watchdog] spawn attempted (pid=$_WD_PID) but proxy still not responding after 8s" >&2
 echo "[$ts] [proxy-watchdog] spawn attempted (pid=$_WD_PID) but proxy still not responding after 8s" \
-  >> "$_WD_ROOT/log/hme-errors.log" 2>/dev/null
+  >> "$_WD_ROOT/log/hme-errors.log"
 exit 0
