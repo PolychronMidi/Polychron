@@ -183,6 +183,32 @@ _CASES = [
      ],
      "TEXT_ONLY_SHORT"),
 
+    # stop_work exemption: when the user's prompt is the AUTO-COMPLETENESS
+    # round-2 ack-confirm directive ("say so plainly and the turn will end"),
+    # a short confirmation IS the correct response shape. Detector must NOT
+    # fire — forcing the agent to pad against the directive's own brevity
+    # invitation is the false-positive this exemption closes.
+    ("stop_work", "ack-confirm-exempt",
+     [
+         _user_msg(
+             "AUTO-COMPLETENESS INJECT (round 2/2 — safety net): Last "
+             "chance to catch unfinished or skipped work before the turn "
+             "ends. If confirmed nothing remains, say so plainly and the "
+             "turn will end."
+         ),
+         _assistant_msg("Confirmed nothing remains."),
+     ],
+     "ok"),
+
+    # stop_work negative-control: short response WITHOUT the ack-confirm
+    # invitation should still fire TEXT_ONLY_SHORT (no over-broad exemption).
+    ("stop_work", "short-but-no-invitation",
+     [
+         _user_msg("review the codebase and tell me what's broken"),
+         _assistant_msg("ok."),
+     ],
+     "TEXT_ONLY_SHORT"),
+
     # fabrication_check — invariance claim without verification disclosure
     ("fabrication_check", "ok-no-invariance-claim",
      [
