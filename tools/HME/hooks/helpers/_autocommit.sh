@@ -38,20 +38,18 @@
 # and MUST NOT die on its return code — this function owns its own failure
 # bookkeeping. The return code is informational for the caller only.
 
-# Derive project root with three independent strategies — same pattern as
-# _safety.sh. BASH_SOURCE-relative ascent alone is NOT enough: when Claude
-# Code invokes the parent hook via the plugin-cache path, the ascent lands
-# at ~/.claude/plugins/cache/polychron-local/ (no .git), and autocommit
-# records a LIFESAVER-worthy failure on every turn. Order:
+# Derive project root via the three reliable strategies:
 #   1. $PROJECT_ROOT (set by _safety.sh before this helper is sourced)
-#   2. Walk up from $BASH_SOURCE[0] looking for .git + src/
-#   3. Hardcoded fallback to /home/jah/Polychron
+#   2. $CLAUDE_PROJECT_DIR (set by Claude Code in every hook invocation)
+#   3. Walk up from $BASH_SOURCE[0] looking for .git + src/
+# No host-specific hardcoded fallback — fail loud if all three miss.
 _AC_SELF="${BASH_SOURCE[0]}"
 _AC_ROOT=""
 if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
   _AC_ROOT="$PROJECT_ROOT"
-fi
-if [ -z "$_AC_ROOT" ]; then
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+  _AC_ROOT="$CLAUDE_PROJECT_DIR"
+else
   _AC_TRY="$(cd "$(dirname "$_AC_SELF")" 2>/dev/null && pwd)"
   while [ -n "$_AC_TRY" ] && [ "$_AC_TRY" != "/" ]; do
     if [ -d "$_AC_TRY/.git" ] && [ -d "$_AC_TRY/src" ]; then
@@ -61,7 +59,10 @@ if [ -z "$_AC_ROOT" ]; then
     _AC_TRY="$(dirname "$_AC_TRY")"
   done
 fi
-[ -z "$_AC_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _AC_ROOT="/home/jah/Polychron"
+if [ -z "$_AC_ROOT" ]; then
+  echo "[_autocommit] cannot resolve project root (PROJECT_ROOT/CLAUDE_PROJECT_DIR/walk-up all failed); autocommit disabled this turn" >&2
+  return 1 2>/dev/null || exit 1
+fi
 
 _AC_STATE_DIR="$_AC_ROOT/tmp"
 _AC_COUNTER="$_AC_STATE_DIR/hme-autocommit.counter"

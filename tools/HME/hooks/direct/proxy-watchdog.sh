@@ -23,14 +23,26 @@
 set +e
 cat >/dev/null 2>&1
 
-# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE from the
-# plugin-cache path (lands in ~/.claude/plugins/cache/). Prefer
-# CLAUDE_PROJECT_DIR, then hardcoded fallback.
+# Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _WD_ROOT=""
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _WD_ROOT="$PROJECT_ROOT"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _WD_ROOT="$CLAUDE_PROJECT_DIR"
+else
+  _wd_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  while [ -n "$_wd_try" ] && [ "$_wd_try" != "/" ]; do
+    if [ -d "$_wd_try/.git" ] && [ -d "$_wd_try/src" ]; then
+      _WD_ROOT="$_wd_try"
+      break
+    fi
+    _wd_try="$(dirname "$_wd_try")"
+  done
 fi
-[ -z "$_WD_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _WD_ROOT="/home/jah/Polychron"
+if [ -z "$_WD_ROOT" ]; then
+  echo "[proxy-watchdog] cannot resolve project root; exiting" >&2
+  exit 0
+fi
 
 _WD_PORT="${HME_PROXY_PORT:-9099}"
 _WD_URL="http://127.0.0.1:${_WD_PORT}/health"

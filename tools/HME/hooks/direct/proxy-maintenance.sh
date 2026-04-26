@@ -28,14 +28,26 @@
 
 set +e
 
-# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE from the
-# plugin-cache path (lands in ~/.claude/plugins/cache/). Prefer
-# CLAUDE_PROJECT_DIR, then hardcoded fallback.
+# Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _MAINT_ROOT=""
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _MAINT_ROOT="$PROJECT_ROOT"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _MAINT_ROOT="$CLAUDE_PROJECT_DIR"
+else
+  _maint_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  while [ -n "$_maint_try" ] && [ "$_maint_try" != "/" ]; do
+    if [ -d "$_maint_try/.git" ] && [ -d "$_maint_try/src" ]; then
+      _MAINT_ROOT="$_maint_try"
+      break
+    fi
+    _maint_try="$(dirname "$_maint_try")"
+  done
 fi
-[ -z "$_MAINT_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _MAINT_ROOT="/home/jah/Polychron"
+if [ -z "$_MAINT_ROOT" ]; then
+  echo "[proxy-maintenance] cannot resolve project root; exiting" >&2
+  exit 1
+fi
 _MAINT_FLAG="$_MAINT_ROOT/tmp/hme-proxy-maintenance.flag"
 
 _action="${1:-}"

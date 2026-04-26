@@ -89,6 +89,25 @@ if echo "$NEW_STRING" | grep -qiE '(#|//|/\*)[[:space:]]*(\.\.\.)?[[:space:]]*(e
   exit 2
 fi
 
+# Hardcoded-project-root guard. Catches `/home/jah/Polychron` (or any
+# absolute path matching the host's checkout) baked into source/script
+# content. The proper resolution is `$PROJECT_ROOT` (set by .env load),
+# `$CLAUDE_PROJECT_DIR` (Claude Code env var), or walk-up-from
+# $BASH_SOURCE — never a hardcoded host-specific string.
+#
+# The guard is only meaningful when we know the actual project root to
+# match against. In production hook invocation $PROJECT_ROOT is always
+# set. The check matches against the LIVE PROJECT_ROOT to avoid false
+# positives on someone else's checkout path.
+if [ -n "${PROJECT_ROOT:-}" ] \
+   && echo "$NEW_STRING" | grep -qF "$PROJECT_ROOT" \
+   && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
+   && ! echo "$NEW_STRING" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
+   && ! echo "$FILE" | grep -qE '/(\.env|\.env\.[a-z]+|README|CLAUDE\.md|tools/HME/KB/devlog/|doc/archive/)$'; then
+  _emit_block "BLOCKED: Edit new_string contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) — never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
+  exit 2
+fi
+
 # Pre-save pattern lint — block new_string before it lands if it introduces
 # forbidden patterns. Each block cites the rule + the fix, so the message
 # alone is enough for the agent to correct the edit.

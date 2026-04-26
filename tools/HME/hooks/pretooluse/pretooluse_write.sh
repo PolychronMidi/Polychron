@@ -49,6 +49,19 @@ if _policy_enabled block-secrets-write && echo "$_BASENAME" | grep -qiE '^(id_rs
   exit 2
 fi
 
+# Hardcoded-project-root guard. Mirrors the Edit-side check in
+# pretooluse_edit.sh. The literal path-to-project string baked into
+# any non-.env / non-README source file is a portability bug —
+# resolve via $PROJECT_ROOT or $CLAUDE_PROJECT_DIR instead.
+if [ -n "${PROJECT_ROOT:-}" ] \
+   && echo "$CONTENT" | grep -qF "$PROJECT_ROOT" \
+   && echo "$FILE" | grep -qE '\.(sh|py|js|ts|tsx|mjs|cjs|json|yaml|yml|md)$' \
+   && ! echo "$CONTENT" | grep -qE '"PROJECT_ROOT":[^,}]*"'"$PROJECT_ROOT"'"' \
+   && ! echo "$FILE" | grep -qE '/(\.env|\.env\.[a-z]+|README|CLAUDE\.md|tools/HME/KB/devlog/|doc/archive/)$'; then
+  _emit_block "BLOCKED: Write content contains hardcoded project root '$PROJECT_ROOT'. Use \$PROJECT_ROOT (already set by .env via _safety.sh) or \$CLAUDE_PROJECT_DIR (Claude Code env var) — never a host-specific path. The .env file itself is the only legitimate place for the literal path; it's checked-in but each clone overrides it. Exempt files: README, CLAUDE.md, devlog snapshots."
+  exit 2
+fi
+
 # Detect secret patterns in content (API keys, tokens, passwords).
 # JS counterpart: block-secret-content-pattern.
 if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(api[_-]?key|password|secret|token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9+/]{20,}'; then

@@ -43,24 +43,29 @@ esac
 # Capture stdin (the Claude Code hook payload).
 BODY=$(cat)
 
-# Derive Polychron project root from THIS script's own path. If a plugin
-# cache copy is being invoked, the path math still lands inside the cache
-# tree; if that fails we fall back to a hardcoded Polychron root so the
-# error logging path never dies for lack of a writable directory.
+# Derive project root. Resolution order:
+#   1. $PROJECT_ROOT (set by .env load if _safety.sh sourced upstream)
+#   2. $CLAUDE_PROJECT_DIR (set by Claude Code in every hook invocation)
+#   3. Walk up from $BASH_SOURCE looking for .git + src/ pair
+# No hardcoded host-path fallback — if the above three fail, the
+# invocation environment is fundamentally broken and the hook should
+# fail loud rather than guess.
 _PB_SELF="${BASH_SOURCE[0]}"
 _PB_ROOT=""
-# Cached copy lives at ~/.claude/plugins/cache/polychron-local/HME/1.0.0/hooks/;
-# repo copy lives at <repo>/tools/HME/hooks/. Walk up to find a .git next to src/.
-_pb_try="$(cd "$(dirname "$_PB_SELF")" 2>/dev/null && pwd)"
-while [ -n "$_pb_try" ] && [ "$_pb_try" != "/" ]; do
-  if [ -d "$_pb_try/.git" ] && [ -d "$_pb_try/src" ]; then
-    _PB_ROOT="$_pb_try"
-    break
-  fi
-  _pb_try="$(dirname "$_pb_try")"
-done
-# Fallback: Polychron's known checkout location on this host.
-[ -z "$_PB_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _PB_ROOT="/home/jah/Polychron"
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _PB_ROOT="$PROJECT_ROOT"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+  _PB_ROOT="$CLAUDE_PROJECT_DIR"
+else
+  _pb_try="$(cd "$(dirname "$_PB_SELF")" 2>/dev/null && pwd)"
+  while [ -n "$_pb_try" ] && [ "$_pb_try" != "/" ]; do
+    if [ -d "$_pb_try/.git" ] && [ -d "$_pb_try/src" ]; then
+      _PB_ROOT="$_pb_try"
+      break
+    fi
+    _pb_try="$(dirname "$_pb_try")"
+  done
+fi
 
 # Meta-watchdog: every hook invocation cheaply verifies the
 # proxy-supervisor is still alive. If the supervisor's pid file is

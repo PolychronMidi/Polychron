@@ -3,12 +3,8 @@
 # the dispatcher (stop.sh) which sourced _safety.sh and captured stdin first.
 # (`_stderr_verdict` / auto-summary-on-EXIT provided by _safety.sh.)
 
-# Resolve detectors to the REPO, not relative to $BASH_SOURCE[0]. When
-# Claude Code invokes this hook via the plugin-cache path, the relative
-# ascent lands in ~/.claude/plugins/cache/.../scripts/detectors — which
-# the install mechanism populates lazily (and bit-rots as new detectors
-# land in the repo). Using $PROJECT_ROOT keeps the running copy in sync
-# with git HEAD automatically.
+# Resolve detectors via $PROJECT_ROOT (set by .env/_safety.sh) so the
+# running copy always tracks git HEAD, regardless of $BASH_SOURCE.
 _DETECTORS_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tools/HME/scripts/detectors"
 
 # Context meter: merge token counts into existing statusLine data

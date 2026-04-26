@@ -96,13 +96,6 @@ RATE_LIMIT_TEXT_RE = re.compile(
     r"too many requests",
     re.IGNORECASE,
 )
-RATE_LIMIT_RESET_RE = re.compile(
-    r"resets?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?(?:\s+\(([^)]+)\))?|"
-    r"resets?\s+in\s+(\d+)\s+(?:hour|hr|minute|min)s?|"
-    r"reset_time[\"']?\s*[:=]\s*[\"']?(\d+)",
-    re.IGNORECASE,
-)
-
 # Field-name aliases for rate-limit signals — Anthropic's harness has
 # drifted across versions (resetsAt / reset_time / resetTime / resets_at;
 # retryAfterSeconds / retry_after_seconds / retryAfter). Defensive
@@ -111,6 +104,21 @@ RATE_LIMIT_RESET_RE = re.compile(
 # changed twice in production).
 _RATE_LIMIT_RESET_FIELDS = ("resetsAt", "reset_time", "resetTime", "resets_at", "reset")
 _RATE_LIMIT_RETRY_FIELDS = ("retryAfterSeconds", "retry_after_seconds", "retryAfter", "retry_after")
+
+# Build a regex alternation from the alias lists so the text-parser
+# catches each form. Without this, the aliases above were dead constants;
+# this wires them into the actual detection path. Pattern shape:
+# `<fieldname>` followed by optional quote/bracket then ":" or "=" then
+# numeric value (epoch seconds OR retry-after-seconds).
+_RATE_LIMIT_RESET_FIELD_ALT = "|".join(re.escape(f) for f in _RATE_LIMIT_RESET_FIELDS)
+_RATE_LIMIT_RETRY_FIELD_ALT = "|".join(re.escape(f) for f in _RATE_LIMIT_RETRY_FIELDS)
+RATE_LIMIT_RESET_RE = re.compile(
+    r"resets?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?(?:\s+\(([^)]+)\))?|"
+    r"resets?\s+in\s+(\d+)\s+(?:hour|hr|minute|min)s?|"
+    rf"(?:{_RATE_LIMIT_RESET_FIELD_ALT})[\"']?\s*[:=]\s*[\"']?(\d+)|"
+    rf"(?:{_RATE_LIMIT_RETRY_FIELD_ALT})[\"']?\s*[:=]\s*[\"']?(\d+)",
+    re.IGNORECASE,
+)
 RATE_LIMIT_JITTER_RANGE = (15, 60)              # extra seconds after parsed reset
 RATE_LIMIT_FALLBACK_BACKOFF_SECONDS = 300       # initial backoff when no reset_time
 
@@ -386,10 +394,23 @@ def _detect_rate_limit(stderr: str, stdout: str) -> dict | None:
     reset_epoch = None
     m = RATE_LIMIT_RESET_RE.search(combined)
     if m:
-        # epoch field present?
-        if m.group(6):
+        # retry-after-seconds field (relative from now) — group 7
+        if m.group(7):
             try:
-                reset_epoch = float(m.group(6))
+                reset_epoch = time.time() + float(m.group(7))
+            except ValueError:
+                reset_epoch = None
+        # epoch field present? (reset_time/resetsAt/etc.) — group 6
+        elif m.group(6):
+            try:
+                # If the value is small (< 10 years from epoch), treat
+                # as relative seconds; otherwise absolute epoch. Real
+                # Anthropic emits absolute epochs in 10-digit range.
+                v = float(m.group(6))
+                if v < 1_000_000_000:  # implausible absolute (year 2001 too old)
+                    reset_epoch = time.time() + v
+                else:
+                    reset_epoch = v
             except ValueError:
                 reset_epoch = None
         # "resets in N hours/minutes" form
