@@ -27,7 +27,16 @@ with open(reg_path) as f:
     reg = json.load(f)
 entry = reg.get("commands", {}).get(name)
 if not entry:
-    print(f"i/help: no registry entry for '{name}'", file=sys.stderr)
+    # Fuzzy-match suggestion when the user typo'd a tool name. Mirrors
+    # the same UX `i/why` got — surface near-matches instead of bare
+    # "not found".
+    from difflib import get_close_matches
+    names = sorted(reg.get("commands", {}).keys())
+    suggestions = get_close_matches(name, names, n=3, cutoff=0.5)
+    msg = f"i/help: no registry entry for '{name}'"
+    if suggestions:
+        msg += f"\n  did you mean: {', '.join(suggestions)}?"
+    print(msg, file=sys.stderr)
     sys.exit(1)
 print(f"i/{name}")
 print(f"  {entry.get('description', '(no description)')}")
