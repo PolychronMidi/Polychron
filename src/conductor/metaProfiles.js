@@ -8,8 +8,14 @@
 // multiply their _BASE constants by scaleFactor() instead of dividing by
 // hardcoded baselines -- the implicit "default profile" lives in one place.
 
-metaProfiles = (() => {
-  const V = validator.create('metaProfiles');
+moduleLifecycle.declare({
+  name: 'metaProfiles',
+  subsystem: 'conductor',
+  deps: ['validator', 'metaProfileDefinitions'],
+  provides: ['metaProfiles'],
+  init: (deps) => {
+  const V = deps.validator.create('metaProfiles');
+  const metaProfileDefinitions = deps.metaProfileDefinitions;
   const _fs = require('fs');
   const _path = require('path');
   const _activeFile      = _path.join(METRICS_DIR, 'metaprofile-active.json');
@@ -529,4 +535,5 @@ metaProfiles = (() => {
     list: metaProfileDefinitions.list,
     bySection: metaProfileDefinitions.bySection,
   };
-})();
+  },
+});

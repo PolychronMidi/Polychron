@@ -8,8 +8,13 @@
 // own _BASE constants. Single source of truth: change a baseline here, all
 // controller scaling stays coherent.
 
-metaProfileDefinitions = (() => {
-  const V = validator.create('metaProfileDefinitions');
+moduleLifecycle.declare({
+  name: 'metaProfileDefinitions',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['metaProfileDefinitions'],
+  init: (deps) => {
+  const V = deps.validator.create('metaProfileDefinitions');
 
   // Schema. 'pair' = 2-element finite-number array (lo, hi with lo <= hi).
   // Profiles must declare every key; unknown keys are rejected.
@@ -821,4 +826,5 @@ metaProfileDefinitions = (() => {
     _parseTriggerExpr,
     _evalTriggerExpr,
   };
-})();
+  },
+});
