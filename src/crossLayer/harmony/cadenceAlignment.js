@@ -3,8 +3,14 @@
 // independently approach high tension within the same ms window, forces
 // simultaneous resolution - syncing cadence points to the same ms-derived tick.
 
-cadenceAlignment = (() => {
-  const V = validator.create('cadenceAlignment');
+moduleLifecycle.declare({
+  name: 'cadenceAlignment',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['cadenceAlignment'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('cadenceAlignment');
   const CHANNEL = 'tension';
   const BASE_SYNC_TOLERANCE_MS = 400;
   const HIGH_TENSION_THRESHOLD = 0.55;
@@ -159,5 +165,5 @@ cadenceAlignment = (() => {
   }
 
   return { postTension, checkAlignment, applyAlignment, reset() { tensionPressureAccum = 0; } };
-})();
-crossLayerRegistry.register('cadenceAlignment', cadenceAlignment, ['all']);
+  },
+});

@@ -1,5 +1,11 @@
-negotiationEngine = (() => {
-  const V = validator.create('negotiationEngine');
+moduleLifecycle.declare({
+  name: 'negotiationEngine',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['negotiationEngine'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('negotiationEngine');
 
   // Play probability scaling
   const PLAY_DENSITY_BASE = 0.75;
@@ -174,5 +180,5 @@ negotiationEngine = (() => {
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   return { apply, gateConvergence, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('negotiationEngine', negotiationEngine, ['all']);
+  },
+});

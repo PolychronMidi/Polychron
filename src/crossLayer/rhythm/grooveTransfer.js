@@ -1,5 +1,11 @@
-grooveTransfer = (() => {
-  const V = validator.create('grooveTransfer');
+moduleLifecycle.declare({
+  name: 'grooveTransfer',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['grooveTransfer'],
+  crossLayerScopes: ['all', 'phrase'],
+  init: (deps) => {
+  const V = deps.validator.create('grooveTransfer');
   const CHANNEL = 'grooveTransfer';
   const MAX_OFFSETS = 64;
   const DAMPING = 0.55;
@@ -133,5 +139,5 @@ grooveTransfer = (() => {
   }
 
   return { recordTiming, applyOffset, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('grooveTransfer', grooveTransfer, ['all', 'phrase']);
+  },
+});

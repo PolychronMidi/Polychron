@@ -2,7 +2,13 @@
 // Reads trustEcologyCharacter's dominant system and suggests complementary
 // instrument families. Pools stay within timbral families to avoid whiplash.
 
-trustTimbreMapping = (() => {
+moduleLifecycle.declare({
+  name: 'trustTimbreMapping',
+  subsystem: 'crossLayer',
+  deps: [],
+  provides: ['trustTimbreMapping'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
   // Family-coherent pools: pads, keys, strings, synths, ensemble
   const TRUST_INSTRUMENT_POOLS = {
     convergenceHarmonicTrigger: [89, 92, 97, 98],
@@ -33,5 +39,5 @@ trustTimbreMapping = (() => {
   function reset() { lastShiftTime = -Infinity; }
 
   return { suggest, reset };
-})();
-crossLayerRegistry.register('trustTimbreMapping', trustTimbreMapping, ['all', 'section']);
+  },
+});

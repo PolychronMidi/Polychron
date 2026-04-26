@@ -1,7 +1,12 @@
 // src/crossLayer/crossLayerHelpers.js - Shared layer, timing, and MIDI helpers.
 
-crossLayerHelpers = (() => {
-  const V = validator.create('crossLayerHelpers');
+moduleLifecycle.declare({
+  name: 'crossLayerHelpers',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['crossLayerHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('crossLayerHelpers');
 
   function createLayerPair(l1Value, l2Value) {
     return {
@@ -43,4 +48,5 @@ crossLayerHelpers = (() => {
   }
 
   return { createLayerPair, getOtherLayer, scaleVelocity, syncOffset, getOctaveBounds };
-})();
+  },
+});

@@ -6,8 +6,13 @@
 //   getContourAscendBias() -- alienArpeggio contour-aware pitch direction
 // Mirrors emergentRhythmEngine: per-beat cache, self-calibrating EMAs, L0 post, feedbackRegistry.
 
-emergentMelodicEngine = (() => {
-  const V = validator.create('emergentMelodicEngine');
+moduleLifecycle.declare({
+  name: 'emergentMelodicEngine',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['emergentMelodicEngine'],
+  init: (deps) => {
+  const V = deps.validator.create('emergentMelodicEngine');
   const FRESHNESS_EMA_ALPHA = 0.07;
   const TESSITURE_EMA_ALPHA = 0.05;
   const PHRASE_POST_MIN_BEATS = 4;
@@ -155,4 +160,5 @@ emergentMelodicEngine = (() => {
   );
 
   return { synthesize, nudgeNoveltyWeight, getContourAscendBias, getMelodicWeights, getContext, setCoordinationScale, reset };
-})();
+  },
+});

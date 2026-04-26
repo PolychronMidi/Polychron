@@ -1,5 +1,11 @@
-phaseAwareCadenceWindow = (() => {
-  const V = validator.create('phaseAwareCadenceWindow');
+moduleLifecycle.declare({
+  name: 'phaseAwareCadenceWindow',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['phaseAwareCadenceWindow'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('phaseAwareCadenceWindow');
   const MAX_SAMPLES = 24;
   const MIN_CONFIDENCE = 0.45;
   /** @type {Map<string, Array<{ timeInSeconds: number, phaseDiff: number, mode: 'lock'|'drift'|'repel' }>>} */
@@ -120,5 +126,5 @@ phaseAwareCadenceWindow = (() => {
   }
 
   return { update, getLatest, getConfidence, shouldAllowCadence, reset };
-})();
-crossLayerRegistry.register('phaseAwareCadenceWindow', phaseAwareCadenceWindow, ['all', 'section']);
+  },
+});

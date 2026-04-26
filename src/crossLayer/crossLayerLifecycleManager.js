@@ -8,7 +8,12 @@
 // Not registered in crossLayerRegistry so it is excluded from all scoped resets.
 crossLayerRegistry.register('timeStream', { reset: timeStream.resetPositions }, ['all']);
 
-crossLayerLifecycleManager = (() => {
+moduleLifecycle.declare({
+  name: 'crossLayerLifecycleManager',
+  subsystem: 'crossLayer',
+  deps: [],
+  provides: ['crossLayerLifecycleManager'],
+  init: (deps) => {
   let hasRunSection = false;
 
   function resetAll() {
@@ -34,4 +39,5 @@ crossLayerLifecycleManager = (() => {
   }
 
   return { resetAll, resetSection, resetPhrase };
-})();
+  },
+});

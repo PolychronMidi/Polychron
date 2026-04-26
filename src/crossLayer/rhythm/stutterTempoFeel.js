@@ -2,8 +2,14 @@
 // High stutter = micro-accelerando, low = micro-ritardando.
 // Per-layer EMA prevents cross-layer contamination.
 
-stutterTempoFeel = (() => {
-  const V = validator.create('stutterTempoFeel');
+moduleLifecycle.declare({
+  name: 'stutterTempoFeel',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['stutterTempoFeel'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterTempoFeel');
   const emaByLayer = { L1: 0.3, L2: 0.3 };
   const EMA_ALPHA = 0.18;
 
@@ -22,5 +28,5 @@ stutterTempoFeel = (() => {
   function reset() { emaByLayer.L1 = 0.3; emaByLayer.L2 = 0.3; }
 
   return { getTempoModulation, reset };
-})();
-crossLayerRegistry.register('stutterTempoFeel', stutterTempoFeel, ['all', 'section']);
+  },
+});

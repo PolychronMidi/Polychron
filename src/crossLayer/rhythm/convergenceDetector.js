@@ -4,8 +4,14 @@
 // Burst = coordinated unison note cluster (same pitch class, octave-displaced)
 // creating a momentary "singularity."
 
-convergenceDetector = (() => {
-  const V = validator.create('convergenceDetector');
+moduleLifecycle.declare({
+  name: 'convergenceDetector',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['convergenceDetector'],
+  crossLayerScopes: ['all', 'phrase'],
+  init: (deps) => {
+  const V = deps.validator.create('convergenceDetector');
   const CHANNEL = 'onset';
   const EVENTS = eventCatalog.names;
   const CONVERGENCE_TOLERANCE_SEC = 0.05;
@@ -228,5 +234,5 @@ convergenceDetector = (() => {
   }
 
   return { postOnset, detect, applyIfConverged, wasRecent, getLastConvergenceMs, getConvergenceCount, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('convergenceDetector', convergenceDetector, ['all', 'phrase']);
+  },
+});

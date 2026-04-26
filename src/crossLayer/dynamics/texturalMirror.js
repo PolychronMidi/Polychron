@@ -3,8 +3,14 @@
 // textures for the other layer. Consumes dynamicRoleSwap chordalBias/melodicBias
 // (dead-end signals) to drive texture decisions.
 
-texturalMirror = (() => {
-  const V = validator.create('texturalMirror');
+moduleLifecycle.declare({
+  name: 'texturalMirror',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['texturalMirror'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('texturalMirror');
   const COMPLEMENT_MAP = Object.freeze({
     normal: 'normal',
     chordBurst: 'sparse',
@@ -148,5 +154,5 @@ texturalMirror = (() => {
   }
 
   return { recordTexture, suggestTexture, getTextureDistance, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('texturalMirror', texturalMirror, ['all', 'section']);
+  },
+});

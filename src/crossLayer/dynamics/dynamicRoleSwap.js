@@ -3,8 +3,14 @@
 // melodic - chordal, etc. Driven by conductorState intensity - swaps happen
 // at tension valleys for natural transitions.
 
-dynamicRoleSwap = (() => {
-  const V = validator.create('dynamicRoleSwap');
+moduleLifecycle.declare({
+  name: 'dynamicRoleSwap',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['dynamicRoleSwap'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('dynamicRoleSwap');
   const MIN_PHRASES_BETWEEN_SWAPS = 2;
   const TENSION_VALLEY_THRESHOLD = 0.45; // absolute floor: obvious valleys still trigger regardless of regime
   const SWAP_PROBABILITY = 0.75; // probability of actually swapping when conditions met
@@ -187,5 +193,5 @@ dynamicRoleSwap = (() => {
   }
 
   return { evaluateSwap, getProfileModifiers, modifyPlayProb, modifyVelocity, getIsSwapped, getSwapCount, reset };
-})();
-crossLayerRegistry.register('dynamicRoleSwap', dynamicRoleSwap, ['all']);
+  },
+});

@@ -2,8 +2,14 @@
 // bias. When a trust system dominates, the composition's "personality" shifts
 // toward the musical character that system represents.
 
-trustEcologyCharacter = (() => {
-  const V = validator.create('trustEcologyCharacter');
+moduleLifecycle.declare({
+  name: 'trustEcologyCharacter',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['trustEcologyCharacter'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('trustEcologyCharacter');
   const TRUST_TO_FAMILY = {
     stutterContagion: 'rhythmicDrive',
     harmonicIntervalGuard: 'diatonicCore',
@@ -51,5 +57,5 @@ trustEcologyCharacter = (() => {
   function reset() { dominantSystem = null; dominantFamily = null; }
 
   return { update, biasWeights, getDominant, reset };
-})();
-crossLayerRegistry.register('trustEcologyCharacter', trustEcologyCharacter, ['all', 'section']);
+  },
+});

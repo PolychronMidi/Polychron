@@ -4,8 +4,14 @@
 // Consumes spectralComplementarity ATG 'spectral' channel (dead-end signal).
 // Acts as the "meta-conductor" layer above individual cross-layer modules.
 
-crossLayerSilhouette = (() => {
-  const V = validator.create('crossLayerSilhouette');
+moduleLifecycle.declare({
+  name: 'crossLayerSilhouette',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['crossLayerSilhouette'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('crossLayerSilhouette');
   const SMOOTHING_REGIME = { exploring: 0.22, evolving: 0.15, coherent: 0.10 };
   const CORRECTION_GAIN_REGIME = { exploring: 0.75, evolving: 1.0, coherent: 1.0 };
   const ARC_HISTORY = 16;
@@ -189,5 +195,5 @@ crossLayerSilhouette = (() => {
   }
 
   return { tick, getCorrections, getSilhouette, getSilhouetteArc, reset };
-})();
-crossLayerRegistry.register('crossLayerSilhouette', crossLayerSilhouette, ['all', 'section']);
+  },
+});

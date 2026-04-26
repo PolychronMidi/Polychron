@@ -4,8 +4,14 @@
 // (retrograde, inversion, augmentation) into L2's motif pool.
 // Creates fugue-like imitative counterpoint across polyrhythmic layers.
 
-motifEcho = (() => {
-  const V = validator.create('motifEcho');
+moduleLifecycle.declare({
+  name: 'motifEcho',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['motifEcho'],
+  crossLayerScopes: ['all', 'phrase'],
+  init: (deps) => {
+  const V = deps.validator.create('motifEcho');
   const CHANNEL = 'motifEcho';
   const ECHO_DELAY_BEATS_MIN = 1;
   const ECHO_DELAY_BEATS_MAX = 4;
@@ -190,5 +196,5 @@ motifEcho = (() => {
   }
 
   return { recordNote, captureMotif, applyTransform, deliverEcho, getPendingCount, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('motifEcho', motifEcho, ['all', 'phrase']);
+  },
+});

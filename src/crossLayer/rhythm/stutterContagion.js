@@ -10,8 +10,14 @@
  * }} ContagionPayload
  */
 
-stutterContagion = (() => {
-  const V = validator.create('stutterContagion');
+moduleLifecycle.declare({
+  name: 'stutterContagion',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['stutterContagion'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterContagion');
   const STUTTER_TYPES = new Set(['fade', 'pan', 'fx']);
   const SYNC_TOLERANCE_MS = 150;
   const BASE_DECAY = 0.6;
@@ -206,5 +212,5 @@ stutterContagion = (() => {
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   return { postStutter, checkContagion, apply, setCoordinationScale, reset() { cimScale = 0.5; } };
-})();
-crossLayerRegistry.register('stutterContagion', stutterContagion, ['all']);
+  },
+});

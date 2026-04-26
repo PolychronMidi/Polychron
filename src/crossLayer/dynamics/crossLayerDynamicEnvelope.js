@@ -3,8 +3,14 @@
 // together), complementary arcs (one rises while the other falls), or
 // independent arcs. Provides per-beat velocity scaling factors.
 
-crossLayerDynamicEnvelope = (() => {
-  const V = validator.create('crossLayerDynamicEnvelope');
+moduleLifecycle.declare({
+  name: 'crossLayerDynamicEnvelope',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['crossLayerDynamicEnvelope'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('crossLayerDynamicEnvelope');
 
   /** @type {'parallel' | 'complementary' | 'independent'} */
   let arcType = /** @type {'parallel' | 'complementary' | 'independent'} */ ('parallel');
@@ -186,5 +192,5 @@ crossLayerDynamicEnvelope = (() => {
   }
 
   return { tick, getVelocityScale, setArcType, getArcType, autoSelectArcType, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('crossLayerDynamicEnvelope', crossLayerDynamicEnvelope, ['all', 'section']);
+  },
+});

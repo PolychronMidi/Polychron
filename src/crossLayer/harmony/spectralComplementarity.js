@@ -3,8 +3,14 @@
 // in a register, nudges the other to fill spectral gaps (bass or treble).
 // Ensures combined output always has full-spectrum coverage.
 
-spectralComplementarity = (() => {
-  const V = validator.create('spectralComplementarity');
+moduleLifecycle.declare({
+  name: 'spectralComplementarity',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['spectralComplementarity'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('spectralComplementarity');
   const CHANNEL = 'spectral';
   const REGISTER_BINS = 4; // bass(0-35), low-mid(36-59), high-mid(60-83), treble(84-108)
   const WINDOW_NOTES = 30; // rolling window size
@@ -168,5 +174,5 @@ spectralComplementarity = (() => {
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   return { recordNote, getHistogram, analyzeComplement, nudgeToFillGap, postSpectralState, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('spectralComplementarity', spectralComplementarity, ['all', 'section']);
+  },
+});

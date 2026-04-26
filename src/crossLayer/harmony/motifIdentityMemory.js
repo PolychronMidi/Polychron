@@ -1,5 +1,11 @@
-motifIdentityMemory = (() => {
-  const V = validator.create('motifIdentityMemory');
+moduleLifecycle.declare({
+  name: 'motifIdentityMemory',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['motifIdentityMemory'],
+  crossLayerScopes: ['all', 'phrase'],
+  init: (deps) => {
+  const V = deps.validator.create('motifIdentityMemory');
   const MAX_NOTES = 24;
   const MAX_IDENTITIES = 16;
 
@@ -112,5 +118,5 @@ motifIdentityMemory = (() => {
   }
 
   return { recordNote, getActiveIdentity, chooseEchoTransform, reset };
-})();
-crossLayerRegistry.register('motifIdentityMemory', motifIdentityMemory, ['all', 'phrase']);
+  },
+});

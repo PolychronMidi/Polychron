@@ -4,8 +4,14 @@
 // downbeats. Detect these emergent downbeats and lean into them: accent notes,
 // add bass reinforcement, widen stereo field.
 
-emergentDownbeat = (() => {
-  const V = validator.create('emergentDownbeat');
+moduleLifecycle.declare({
+  name: 'emergentDownbeat',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['emergentDownbeat'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('emergentDownbeat');
   const CHANNEL = 'emergentDownbeat';
   const MIN_DOWNBEAT_INTERVAL_SEC = 0.8;
   const ACCENT_VELOCITY_BOOST = 0.2; // 20% velocity increase
@@ -198,5 +204,5 @@ emergentDownbeat = (() => {
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   return { detect, accentVelocity, reinforceBass, widenStereo, applyTempoMultiplier, applyIfDownbeat, setCoordinationScale, getDownbeatCount, reset };
-})();
-crossLayerRegistry.register('emergentDownbeat', emergentDownbeat, ['all']);
+  },
+});

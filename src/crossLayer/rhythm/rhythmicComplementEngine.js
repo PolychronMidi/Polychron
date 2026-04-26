@@ -3,8 +3,14 @@
 // antiphony (call-response), and canon (delayed imitation).
 // Reads ATW for other layer timing to compute ideal complement positions.
 
-rhythmicComplementEngine = (() => {
-  const V = validator.create('rhythmicComplementEngine');
+moduleLifecycle.declare({
+  name: 'rhythmicComplementEngine',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['rhythmicComplementEngine'],
+  crossLayerScopes: ['all', 'phrase'],
+  init: (deps) => {
+  const V = deps.validator.create('rhythmicComplementEngine');
 
   /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */
   let mode = /** @type {'hocket' | 'antiphony' | 'canon' | 'free'} */ ('free');
@@ -226,5 +232,5 @@ rhythmicComplementEngine = (() => {
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   return { analyzeOtherLayer, suggestComplement, getMode, setMode, autoSelectMode, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('rhythmicComplementEngine', rhythmicComplementEngine, ['all', 'phrase']);
+  },
+});

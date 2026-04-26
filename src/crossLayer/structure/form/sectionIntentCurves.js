@@ -1,5 +1,11 @@
-sectionIntentCurves = (() => {
-  const V = validator.create('sectionIntentCurves');
+moduleLifecycle.declare({
+  name: 'sectionIntentCurves',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['sectionIntentCurves'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('sectionIntentCurves');
 
   // Intent curve shaping constants
   const PHRASE_PHASE_SCALE = 0.3;
@@ -171,5 +177,5 @@ sectionIntentCurves = (() => {
   }
 
   return { getIntent, getLastIntent, setManualIntent, reset };
-})();
-crossLayerRegistry.register('sectionIntentCurves', sectionIntentCurves, ['all']);
+  },
+});

@@ -2,8 +2,14 @@
 // When convergenceDetector fires, the next 2-4 notes get a velocity surge,
 // creating "impact" moments driven by cross-layer agreement.
 
-convergenceVelocitySurge = (() => {
-  const V = validator.create('convergenceVelocitySurge');
+moduleLifecycle.declare({
+  name: 'convergenceVelocitySurge',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['convergenceVelocitySurge'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('convergenceVelocitySurge');
   let surgeActive = 0;
   let surgeMultiplier = 1.0;
   let lastSurgeTime = -Infinity;
@@ -72,5 +78,5 @@ convergenceVelocitySurge = (() => {
   }
 
   return { check, reset };
-})();
-crossLayerRegistry.register('convergenceVelocitySurge', convergenceVelocitySurge, ['all', 'section']);
+  },
+});

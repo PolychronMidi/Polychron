@@ -3,8 +3,14 @@
 // When phase difference is small, briefly lock them (quantize onsets to aligned grid).
 // When large, repel further. Creates breathing patterns: sync - desync - sync.
 
-rhythmicPhaseLock = (() => {
-  const V = validator.create('rhythmicPhaseLock');
+moduleLifecycle.declare({
+  name: 'rhythmicPhaseLock',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['rhythmicPhaseLock'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('rhythmicPhaseLock');
   const CHANNEL = 'beatPhase';
   const PHASE_TOLERANCE_MS = 80;
   const LOCK_THRESHOLD = 0.2;    // phase diff < 20% of beat - lock
@@ -129,5 +135,5 @@ rhythmicPhaseLock = (() => {
   }
 
   return { postBeat, measurePhase, applyPhaseLock, getMode, getLockCount, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('rhythmicPhaseLock', rhythmicPhaseLock, ['all']);
+  },
+});

@@ -3,8 +3,14 @@
 // are crescendoing toward the same ms point, velocities reinforce. When one
 // crescendos while the other decrescendos, spectral separation increases.
 
-velocityInterference = (() => {
-  const V = validator.create('velocityInterference');
+moduleLifecycle.declare({
+  name: 'velocityInterference',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['velocityInterference'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('velocityInterference');
   const CHANNEL = 'velocity';
   const CONTOUR_WINDOW_MS = 400;
   const SYNC_TOLERANCE_MS = 300;
@@ -172,5 +178,5 @@ velocityInterference = (() => {
   }
 
   return { postVelocity, measureDelta, applyInterference, setCoordinationScale, reset() { /* stateless - no per-scope state to clear */ } };
-})();
-crossLayerRegistry.register('velocityInterference', velocityInterference, ['all']);
+  },
+});

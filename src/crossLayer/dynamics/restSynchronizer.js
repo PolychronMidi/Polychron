@@ -3,8 +3,14 @@
 // and complementary rests (one layer fills when the other rests, creating hocket).
 // Driven by interactionHeatMap pressure and sectionIntentCurves density.
 
-restSynchronizer = (() => {
-  const V = validator.create('restSynchronizer');
+moduleLifecycle.declare({
+  name: 'restSynchronizer',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['restSynchronizer'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_SEC = 0.8;
   // R73 E5: Regime-responsive base rest probability. Coherent regime
   // gets more shared rests (breathing room in unified sections),
@@ -216,5 +222,5 @@ restSynchronizer = (() => {
   }
 
   return { evaluateSharedRest, evaluateComplementaryRest, postRest, getSharedRestCount, isLayerResting, setCoordinationScale, getCoordinationScale, reset };
-})();
-crossLayerRegistry.register('restSynchronizer', restSynchronizer, ['all', 'section']);
+  },
+});
