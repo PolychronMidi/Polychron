@@ -74,7 +74,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     # pollute the coherence score.
     ACTIVITY_ALLOW_PREFIXES = (
         "/src/",
-        "/tools/HME/mcp/", "/tools/HME/chat/", "/tools/HME/proxy/",
+        "/tools/HME/service/", "/tools/HME/chat/", "/tools/HME/proxy/",
         "/tools/HME/hooks/", "/tools/HME/scripts/", "/tools/HME/activity/",
         "/tools/HME/config/",
         "/scripts/",

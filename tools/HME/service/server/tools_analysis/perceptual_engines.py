@@ -42,7 +42,7 @@ _audio_init_lock = threading.Lock()               # one-shot eager init gate
 _audio_init_done = False
 
 # Device selection — read from central .env via ENV.require (fail-fast).
-# The hme_env module lives at tools/HME/mcp/hme_env.py; add the mcp dir to
+# The hme_env module lives at tools/HME/service/hme_env.py; add the mcp dir to
 # sys.path so we can import it from server/tools_analysis/ without a
 # cross-package relative import.
 import sys as _sys_env
@@ -171,7 +171,7 @@ def _ensure_audio_initialized() -> None:
         # Register with VramManager
         try:
             import sys as _sys
-            # vram_manager.py lives one level up from server/ (in tools/HME/mcp/)
+            # vram_manager.py lives one level up from server/ (in tools/HME/service/)
             _mcp_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
             if _mcp_dir not in _sys.path:
                 _sys.path.insert(0, _mcp_dir)

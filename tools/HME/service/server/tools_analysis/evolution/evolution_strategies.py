@@ -404,8 +404,8 @@ def _detect_contradictions() -> str:
         parts.append(f"\n## Code-vs-KB Grounding ({len(code_mismatches)} stale claim(s))\n")
         for _m in code_mismatches:
             parts.append(f"  [{_m['id']}] \"{_m['title']}\"")
-            parts.append(f"    Symbol `{_m['symbol']}` not found in tools/HME/mcp/server/")
-            parts.append(f"    → Verify manually: grep -r '{_m['symbol']}' tools/HME/mcp/server/")
+            parts.append(f"    Symbol `{_m['symbol']}` not found in tools/HME/service/server/")
+            parts.append(f"    → Verify manually: grep -r '{_m['symbol']}' tools/HME/service/server/")
             parts.append(f"    → If removed: remove_knowledge(entry_id='{_m['id']}')")
             parts.append("")
 

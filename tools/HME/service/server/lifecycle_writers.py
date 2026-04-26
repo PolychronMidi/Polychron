@@ -16,9 +16,9 @@ Usage:
 
 Registered domains:
 
-  llama-server       → llamacpp_daemon         (tools/HME/mcp/llamacpp_daemon/)
-  embedders          → rag_engines             (tools/HME/mcp/rag_engines.py)
-  kb                 → tools_knowledge         (tools/HME/mcp/server/tools_knowledge.py)
+  llama-server       → llamacpp_daemon         (tools/HME/service/llamacpp_daemon/)
+  embedders          → rag_engines             (tools/HME/service/rag_engines.py)
+  kb                 → tools_knowledge         (tools/HME/service/server/tools_knowledge.py)
   conductor-state    → conductor subsystem     (src/conductor/*)
   cross-layer        → crossLayerEmissionGateway
   adaptive-state     → adaptive-state writer   (scripts/pipeline/*)

@@ -129,7 +129,7 @@ logger.setLevel(logging.INFO)
 
 # PROJECT_ROOT MUST be set by the proxy supervisor. Falling back to os.getcwd()
 # silently creates duplicate log/ directories wherever the worker was spawned
-# from (e.g. tools/HME/log/, tools/HME/mcp/log/) — fragmenting telemetry.
+# from (e.g. tools/HME/log/, tools/HME/service/log/) — fragmenting telemetry.
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 if not os.path.isdir(os.path.join(PROJECT_ROOT, "src")):
     raise RuntimeError(
@@ -224,7 +224,7 @@ def _background_load():
             f"project={PROJECT_ROOT} | libs={list(ctx.lib_engines.keys())}"
         )
         # llama-server lifecycle (arbiter + coder) is owned exclusively by
-        # tools/HME/mcp/llamacpp_daemon/ — the worker MUST NOT spawn its
+        # tools/HME/service/llamacpp_daemon/ — the worker MUST NOT spawn its
         # own llama-server processes. A duplicate worker-side supervisor
         # caused PID-collision races during /indexing-mode (worker spawned
         # a coder onto the GPU the daemon was trying to use for embedding,

@@ -21,9 +21,9 @@ Usage:
     rows = list_knowledge(limit=20, category='decision')
 
 CLI:
-    python3 tools/HME/mcp/direct_lance.py list --limit 5
-    python3 tools/HME/mcp/direct_lance.py count
-    python3 tools/HME/mcp/direct_lance.py lookup <knowledge_id>
+    python3 tools/HME/service/direct_lance.py list --limit 5
+    python3 tools/HME/service/direct_lance.py count
+    python3 tools/HME/service/direct_lance.py lookup <knowledge_id>
 """
 
 from __future__ import annotations

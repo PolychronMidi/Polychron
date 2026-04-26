@@ -19,8 +19,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
-sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools/HME/mcp"))
-sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools/HME/mcp/server"))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools/HME/service"))
+sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools/HME/service/server"))
 
 
 class ScaffoldPrefixContract(unittest.TestCase):
@@ -35,7 +35,7 @@ class ScaffoldPrefixContract(unittest.TestCase):
         # Read the prefix tuple from the source — don't duplicate the
         # definition here (duplicating would itself be Pattern A drift).
         import re
-        src = Path(PROJECT_ROOT, "tools/HME/mcp/server/tools_analysis/workflow_audit.py").read_text()
+        src = Path(PROJECT_ROOT, "tools/HME/service/server/tools_analysis/workflow_audit.py").read_text()
         m = re.search(r'_scaffold_prefixes\s*=\s*\(([^)]+)\)', src)
         self.assertIsNotNone(m, "prefix tuple definition not found at expected location")
         raw = m.group(1)
@@ -86,7 +86,7 @@ class DiffLanguageDetectionContract(unittest.TestCase):
         # the full server context stack (which these tests don't set
         # up). Instead verify the source contains the header-anchored
         # tokens, since the nested function body is what we're pinning.
-        src = Path(PROJECT_ROOT, "tools/HME/mcp/server/tools_analysis/workflow_audit.py").read_text()
+        src = Path(PROJECT_ROOT, "tools/HME/service/server/tools_analysis/workflow_audit.py").read_text()
         self.assertIn("+++ b/", src,
                       "_detect_languages must anchor to diff headers, not substring-scan")
         self.assertIn("MULTILINE", src,

@@ -4,7 +4,7 @@ import logging
 import sys
 import importlib
 
-# Path up four levels to reach tools/HME/mcp/ (post-split the file sits
+# Path up four levels to reach tools/HME/service/ (post-split the file sits
 # at mcp/server/tools_analysis/evolution/evolution_selftest/_shared.py).
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if _mcp_root not in sys.path:

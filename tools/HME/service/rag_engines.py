@@ -432,7 +432,7 @@ def _load_engines():
         # (coder, Vulkan2 = GPU1) plus compute buffers. Never land a
         # sentence-transformer on a GPU that doesn't have at least _MIN_FREE_GB
         # free AFTER those are loaded. llamacpp_daemon owns that allocation
-        # — see tools/HME/mcp/llamacpp_daemon.py for the authoritative
+        # — see tools/HME/service/llamacpp_daemon.py for the authoritative
         # topology. Declared in .env (HME_RAG_MIN_FREE_GB).
         _MIN_FREE_GB = ENV.require_float("HME_RAG_MIN_FREE_GB")
         _rag_device = "cpu"

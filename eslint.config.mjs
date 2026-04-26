@@ -54,7 +54,7 @@ export default [
       'lab/**',
       'tools/**',
       'tools/HME/chat/**',
-      'tools/HME/mcp/**',
+      'tools/HME/service/**',
       'tools/HME/activity/**',
       'tools/HME/warm-context-cache/**',
       'tools/**/node_modules/**',
