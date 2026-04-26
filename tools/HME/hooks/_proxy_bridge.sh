@@ -285,6 +285,28 @@ STDOUT=$(echo "$RESP" | jq -r '.stdout // ""' 2>/dev/null)
 STDERR=$(echo "$RESP" | jq -r '.stderr // ""' 2>/dev/null)
 EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>/dev/null)
 
+# Mid-turn LIFESAVER: on PostToolUse, scan errors.log for new entries since
+# the last tool call and emit them as additionalContext. Closes the silent-
+# fail window between when an error fires (mid-turn) and when the Stop hook
+# normally runs (end of turn). _safe_curl now logs every failure; this
+# helper shoves them into the model's teeth on the very next tool result
+# instead of waiting for Stop.
+if [ "$EVENT" = "PostToolUse" ]; then
+  _PB_INLINE_HELPER="${CLAUDE_PLUGIN_ROOT:-/home/jah/Polychron/tools/HME/hooks/..}/hooks/helpers/_check_errors_inline.sh"
+  if [ -f "$_PB_INLINE_HELPER" ]; then
+    # shellcheck disable=SC1090
+    source "$_PB_INLINE_HELPER"
+    _PB_INLINE_OUT=$(_hme_check_errors_inline 2>/dev/null)
+    if [ -n "$_PB_INLINE_OUT" ]; then
+      # If the proxy response was empty, emit the inline JSON as the
+      # PostToolUse output. If the proxy ALSO had output, prepend the inline
+      # JSON so Claude Code sees the LIFESAVER additionalContext first.
+      STDOUT="${_PB_INLINE_OUT}${STDOUT:+
+$STDOUT}"
+    fi
+  fi
+fi
+
 [ -n "$STDOUT" ] && printf '%s' "$STDOUT"
 [ -n "$STDERR" ] && printf '%s' "$STDERR" >&2
 exit "${EXIT_CODE:-0}"

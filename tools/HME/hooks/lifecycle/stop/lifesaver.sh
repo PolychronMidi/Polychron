@@ -22,6 +22,15 @@ if [ -f "$ERROR_LOG" ]; then
   TURN_START_LINE=${TURN_START_LINE:-0}
   WATERMARK_LINE=$(cat "$WATERMARK" 2>/dev/null | tr -d ' \t\n' || echo 0)
   WATERMARK_LINE=${WATERMARK_LINE:-0}
+  # Inline-mid-turn watermark: PostToolUse hooks already surfaced any new
+  # errors that fired during the just-completed turn (via _check_errors_inline).
+  # Advance our scan baseline past those so Stop doesn't re-surface duplicates.
+  INLINE_WATERMARK_FILE="$PROJECT/tmp/hme-errors.inline-watermark"
+  INLINE_WATERMARK=$(cat "$INLINE_WATERMARK_FILE" 2>/dev/null | tr -d ' \t\n' || echo 0)
+  INLINE_WATERMARK=${INLINE_WATERMARK:-0}
+  if [ "$INLINE_WATERMARK" -gt "$TURN_START_LINE" ]; then
+    TURN_START_LINE="$INLINE_WATERMARK"
+  fi
 
   # Recompute TOTAL right before using it for the watermark write so an
   # error appended between initial wc and the awk below doesn't create
