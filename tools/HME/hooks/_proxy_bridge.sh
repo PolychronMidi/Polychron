@@ -281,9 +281,36 @@ unset _PB_RECOVERY_TS 2>/dev/null
 
 # Parse response and relay. jq is available in every Claude Code environment;
 # this is the simplest way to pull structured fields from the JSON.
-STDOUT=$(echo "$RESP" | jq -r '.stdout // ""' 2>/dev/null)
-STDERR=$(echo "$RESP" | jq -r '.stderr // ""' 2>/dev/null)
-EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>/dev/null)
+#
+# FAIL-LOUD: capture jq stderr to a tempfile. If the proxy response is
+# malformed JSON, jq writes a parse error to stderr and produces empty
+# output -- the previous `2>/dev/null` pattern silently emitted empty
+# stdout/exit_code, making Claude Code think the hook succeeded with no
+# action. That's the canonical silent-fail pattern this audit pass is
+# closing. Now: if jq fails, we surface the parse error to errors.log so
+# the next inline-check or Stop scan picks it up.
+_PB_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/jq_err_$$.log")
+STDOUT=$(echo "$RESP" | jq -r '.stdout // ""' 2>"$_PB_JQ_ERR")
+STDERR=$(echo "$RESP" | jq -r '.stderr // ""' 2>>"$_PB_JQ_ERR")
+EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>>"$_PB_JQ_ERR")
+if [ -s "$_PB_JQ_ERR" ] && [ -n "$_PB_ROOT" ] && [ -d "$_PB_ROOT/log" ]; then
+  _PB_JQ_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r line; do
+    [ -n "$line" ] && echo "[$_PB_JQ_TS] [_proxy_bridge] jq parse failed on proxy response (event=$EVENT): $line" \
+      >> "$_PB_ROOT/log/hme-errors.log"
+  done < "$_PB_JQ_ERR"
+fi
+rm -f "$_PB_JQ_ERR" 2>/dev/null
+# Validate exit_code is numeric -- otherwise default to 0 with a log entry.
+case "$EXIT_CODE" in
+  ''|*[!0-9-]*)
+    if [ -n "$_PB_ROOT" ] && [ -d "$_PB_ROOT/log" ]; then
+      echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_proxy_bridge] non-numeric exit_code from proxy (event=$EVENT, value='$EXIT_CODE') -- defaulting to 0" \
+        >> "$_PB_ROOT/log/hme-errors.log"
+    fi
+    EXIT_CODE=0
+    ;;
+esac
 
 # Mid-turn LIFESAVER: on PostToolUse, scan errors.log for new entries since
 # the last tool call and emit them as additionalContext. Closes the silent-
