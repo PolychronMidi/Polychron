@@ -18,10 +18,19 @@ require('./playMotifsBuildCandidateNotes');
 require('./playMotifsApplyCycleTransforms');
 require('./playMotifs');
 
-// Register default generator wrapper -- runs after motifRegistry init.
-moduleLifecycle.registerInitializer('motif-default-registration', () => {
-  motifRegistry.register('motif', (opts = {}) => {
-    const mc = new MotifComposer(opts);
-    return mc.generate(opts);
-  });
-}, ['motifRegistry']);
+// Register default generator as a declared module (full DI -- every
+// registrant goes through the manifest registry, not legacy
+// registerInitializer wrappers).
+moduleLifecycle.declare({
+  name: 'motif-default-registration',
+  subsystem: 'composers',
+  deps: ['motifRegistry'],
+  provides: ['motif-default-registration'],
+  init: (deps) => {
+    deps.motifRegistry.register('motif', (opts = {}) => {
+      const mc = new MotifComposer(opts);
+      return mc.generate(opts);
+    });
+    return { registered: true };
+  },
+});
