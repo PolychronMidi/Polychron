@@ -51,6 +51,11 @@ _hme_check_errors_inline() {
   # agent-errors nor observations -- consume silently (advancing the
   # watermark past them is enough to prove this helper ran).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
+  # Self-origin source tags — same list as lifesaver.sh _SELF_TAG_RE.
+  # Lines tagged with these writers are observation-only regardless of
+  # severity word (worker daemons, supervisors, llamacpp invariants —
+  # operator/supervisor concerns, not agent code issues).
+  local _SELF_TAG_RE='^\[(universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   local _CANARY_RE='\[CANARY-'
   local NEW_RAW AGENT_ERRORS SELF_ERRORS CANARY_LINES
   NEW_RAW=$(awk "NR > $WATERMARK" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
@@ -58,8 +63,14 @@ _hme_check_errors_inline() {
   # Strip canaries before classifying so they don't count as agent-errors.
   local _NEW_NO_CANARY
   _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -vE "$_CANARY_RE" || true)
-  AGENT_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
-  SELF_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  # Two-axis classification: source-tag first (self-origin regardless of
+  # severity), then severity word (self-origin if WARN/INFO/DEBUG/NOTICE).
+  local _SELF_BY_TAG _REMAINING _SELF_BY_SEV
+  _SELF_BY_TAG=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -E "$_SELF_TAG_RE" || true)
+  _REMAINING=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -vE "$_SELF_TAG_RE" || true)
+  AGENT_ERRORS=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  _SELF_BY_SEV=$(printf '%s\n' "$_REMAINING" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  SELF_ERRORS=$(printf '%s\n%s\n' "$_SELF_BY_TAG" "$_SELF_BY_SEV" | /usr/bin/grep -v '^$' | sort -u || true)
   # Mark each consumed canary in the pending tracker so the Stop-hook
   # watchdog knows the inline-check actually saw it. Strip the "CANARY-"
   # prefix to match the bare ID format the producer (canary.sh) writes

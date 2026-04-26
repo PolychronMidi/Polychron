@@ -171,6 +171,57 @@ test('lifesaver: NEW-ERRORS branch consumes canary without blocking', () => {
   }
 });
 
+test('lifesaver: source-tag self-origin overrides CRITICAL severity', () => {
+  const r = _withLifesaverSandbox([
+    '[2026-04-26T07:00:00Z] [universal_pulse] CRITICAL worker CPU-saturated (avg=113% over 90s)',
+    '[2026-04-26T07:00:01Z] [llamacpp_supervisor] CRITICAL coder unreachable',
+  ]);
+  try {
+    // These are CRITICAL but tagged with self-origin writer names —
+    // must NOT block. Agent has no causal path to fix worker CPU
+    // saturation or supervisor-managed daemon outage.
+    assert.ok(
+      !/"decision"\s*:\s*"block"/.test(r.stdout),
+      `lifesaver wrongly blocked on self-tagged CRITICAL. stdout: ${r.stdout}`,
+    );
+    // Should surface as additionalContext (observation-only).
+    if (r.stdout) {
+      assert.ok(
+        r.stdout.includes('hme self-health') || r.stdout.includes('observability only'),
+        `expected additionalContext for self-tagged CRITICAL, got: ${r.stdout}`,
+      );
+    }
+  } finally {
+    r.cleanup();
+  }
+});
+
+test('lifesaver: source-tag self-origin separates from real agent CRITICAL', () => {
+  const r = _withLifesaverSandbox([
+    '[2026-04-26T07:00:00Z] [universal_pulse] CRITICAL worker CPU-saturated',
+    '[2026-04-26T07:00:01Z] [some_real_module] context_meter.py: ImportError: foo',
+  ]);
+  try {
+    // Mixed: pulse is self-origin (skipped), real module is agent-origin
+    // (must block on it).
+    assert.ok(
+      /"decision"\s*:\s*"block"/.test(r.stdout),
+      `lifesaver must block on real agent error in mix. stdout: ${r.stdout}`,
+    );
+    assert.ok(
+      r.stdout.includes('context_meter.py'),
+      'block reason must reference the agent error',
+    );
+    // The pulse line should appear in the [self-origin] section, not the agent block.
+    assert.ok(
+      r.stdout.includes('self-origin') && r.stdout.includes('universal_pulse'),
+      'pulse CRITICAL must be classified as self-origin, not agent',
+    );
+  } finally {
+    r.cleanup();
+  }
+});
+
 test('lifesaver: NEW-ERRORS branch BLOCKS on agent-origin error', () => {
   const r = _withLifesaverSandbox(
     ['[2026-04-26T07:00:00Z] [bar] another real failure'],
