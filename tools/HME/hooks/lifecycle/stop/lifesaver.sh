@@ -107,14 +107,46 @@ if [ -f "$ERROR_LOG" ]; then
 
   # Block on UNADDRESSED errors from before this turn (watermark not caught up)
   # This fires when userpromptsubmit showed errors but they were not fixed last turn.
+  #
+  # Apply the SAME severity + canary filtering as the new-errors branch above.
+  # Without this, an alert-chain canary written between turns (or any
+  # WARN/INFO/DEBUG/NOTICE-tagged observation entry) would surface as an
+  # "UNADDRESSED ERROR" and falsely block — the canary IS addressed (it's
+  # consumed silently when scanned), and observation entries are not agent-
+  # actionable. This branch was missing the filtering entirely, causing the
+  # exact "CANARY-... alert-chain self-test injection" false-block the user
+  # just hit. Mirror the agent/self/canary classification used above.
   if [ "$WATERMARK_LINE" -lt "$TURN_START_LINE" ]; then
-    UNFIXED_ERRORS=$(awk "NR > $WATERMARK_LINE && NR <= $TURN_START_LINE" "$ERROR_LOG" \
+    UNFIXED_RAW=$(awk "NR > $WATERMARK_LINE && NR <= $TURN_START_LINE" "$ERROR_LOG" \
       | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
+    # Consume canaries silently (same as new-errors branch).
+    _UNFIXED_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -E "$_CANARY_RE" || true)
+    if [ -n "$_UNFIXED_CANARY" ]; then
+      while IFS= read -r line; do
+        cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1 | sed 's/^CANARY-//')
+        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
+      done <<< "$_UNFIXED_CANARY"
+    fi
+    _UNFIXED_NO_CANARY=$(printf '%s\n' "$UNFIXED_RAW" | grep -vE "$_CANARY_RE" || true)
+    UNFIXED_AGENT=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
+    UNFIXED_SELF=$(printf '%s\n' "$_UNFIXED_NO_CANARY" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
     echo "$TURN_START_LINE" > "$WATERMARK"
-    jq -n \
-      --arg errors "$UNFIXED_ERRORS" \
-      '{"decision":"block","reason":("🚨 LIFESAVER — UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
-    _stderr_verdict "BLOCK: lifesaver prior-turn"
-    exit 0
+    if [ -n "$UNFIXED_AGENT" ]; then
+      jq -n \
+        --arg errors "$UNFIXED_AGENT" \
+        --arg self "$UNFIXED_SELF" \
+        '{"decision":"block","reason":("🚨 LIFESAVER — UNADDRESSED ERRORS FROM PREVIOUS TURN:\n" + $errors + (if $self != "" then "\n\n[self-origin (worker/daemon/supervisor — informational, not your problem to fix from this turn):\n" + $self + "]" else "" end) + "\n\nThese errors were shown at turn start but NOT fixed. Fix them now.\nAcknowledging without fixing is a CRITICAL VIOLATION. Do NOT stop.")}'
+      _stderr_verdict "BLOCK: lifesaver prior-turn"
+      exit 0
+    elif [ -n "$UNFIXED_SELF" ]; then
+      # Self-origin observations only — surface as additionalContext, don't block.
+      jq -n \
+        --arg self "$UNFIXED_SELF" \
+        '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":("[hme self-health, prior turn] " + $self + "\n(observability only — supervisor/operator concern, not agent action)")}}'
+      _stderr_verdict "PASS: lifesaver prior-turn self-only"
+      exit 0
+    fi
+    # Canary-only or empty after filter — silent pass; watermark already advanced.
+    _stderr_verdict "PASS: lifesaver prior-turn canary-only"
   fi
 fi
