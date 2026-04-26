@@ -104,6 +104,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('drumTextureCoupler', initialize);
   return {
     initialize,
     getIntensity,

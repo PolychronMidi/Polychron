@@ -145,6 +145,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('journeyRhythmCoupler', initialize);
   return {
     initialize,
     getBoldness,

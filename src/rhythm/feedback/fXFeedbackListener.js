@@ -182,6 +182,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('FXFeedbackListener', initialize);
   return {
     initialize,
     getIntensity,
