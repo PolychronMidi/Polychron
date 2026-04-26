@@ -53,7 +53,7 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   # is no longer meaningful signal; check-hme-coherence was aborting the
   # pipeline on 240 false positives per round).
   if [ "$HME_READ_PRIOR" = "false" ] && _onb_is_graduated; then
-    STALENESS_FILE="$PROJECT/metrics/kb-staleness.json"
+    STALENESS_FILE="$PROJECT/output/metrics/kb-staleness.json"
     COVERAGE_STATUS=UNKNOWN
     if [ -f "$STALENESS_FILE" ]; then
       COVERAGE_STATUS=$(_safe_py3 "

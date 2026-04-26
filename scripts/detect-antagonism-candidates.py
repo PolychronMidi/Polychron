@@ -33,8 +33,8 @@ from collections import defaultdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TRACE_PATH = PROJECT_ROOT / "metrics" / "trace.jsonl"
-REGISTRY_PATH = PROJECT_ROOT / "metrics" / "hme-suspected-upstreams.json"
+TRACE_PATH = PROJECT_ROOT / "output" / "metrics" / "trace.jsonl"
+REGISTRY_PATH = PROJECT_ROOT / "output" / "metrics" / "hme-suspected-upstreams.json"
 
 
 def _pearson(xs: list[float], ys: list[float]) -> float:

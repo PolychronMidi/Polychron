@@ -71,7 +71,7 @@ ANTIMSG
   # These are real failures (Traceback, CUDA OOM, RuntimeError) that the
   # pipeline continued past. They MUST be addressed — not ignored.
   PROJECT="$PROJECT_ROOT"
-  SUMMARY_FILE="$PROJECT/metrics/pipeline-summary.json"
+  SUMMARY_FILE="$PROJECT/output/metrics/pipeline-summary.json"
   if [ -f "$SUMMARY_FILE" ]; then
     ERROR_STEPS=$(_safe_py3 "
 import json, sys
@@ -126,10 +126,10 @@ if echo "$CMD" | grep -q 'npm run main'; then
   if echo "$RESULT" | grep -q 'Pipeline finished'; then
     PROJECT="$PROJECT_ROOT"
     SESSION_ID=$(_safe_jq "$INPUT" '.session_id' 'unknown')
-    PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
-    FP="$PROJECT/metrics/fingerprint-comparison.json"
+    PASSED=$(_safe_py3 "import json; d=json.load(open('$PROJECT/output/metrics/pipeline-summary.json')); print(d.get('failed',1))" "1")
+    FP="$PROJECT/output/metrics/fingerprint-comparison.json"
     VERDICT=$(_safe_py3 "import json; print(json.load(open('$FP')).get('verdict','UNKNOWN'))" "UNKNOWN")
-    WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
+    WALL_S=$(_safe_py3 "import json; d=json.load(open('$PROJECT/output/metrics/pipeline-summary.json')); print(int(d.get('wallTimeSeconds',0)))" "0")
     # pipeline_run + round_complete + HCI are all emitted by main-pipeline.js
     # itself — agent-independent observability. The hook no longer needs to
     # re-emit. It still owns nexus + onboarding state advancement below
