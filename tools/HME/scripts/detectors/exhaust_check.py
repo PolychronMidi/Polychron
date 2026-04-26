@@ -57,6 +57,13 @@ RESEARCH_INVITATION_PATTERNS = (
     re.compile(r"\bcompared\s+to\b", re.IGNORECASE),
     re.compile(r"\bI\s+(present|am\s+presenting)\s+you\b", re.IGNORECASE),
     re.compile(r"\b(secretly\s+have|might\s+(secretly\s+)?(have|offer))\b[^?\n]{0,60}\b(more|much\s+more)\b", re.IGNORECASE),
+    # Comparison questions: "does our system already do what X does?",
+    # "is this equivalent to Y?", "are we covering the same ground as Z?"
+    # The answer requires enumerating equivalents/gaps; the enumeration
+    # IS the deliverable, not a punt.
+    re.compile(r"\bdoes\s+(our|the|this)\s+\w+\s+(already\s+)?(do|cover|handle|implement|provide)\b", re.IGNORECASE),
+    re.compile(r"\b(is|are)\s+(this|that|these|those|we|our|the)\s+\w+\s*(?:already\s+|effectively\s+)?(equivalent|same|covering|comparable)\b", re.IGNORECASE),
+    re.compile(r"\b(does|do)\s+(our|the|we|this)\b[^?\n]{0,60}\b(effectively|already|the\s+same|equivalent)\b", re.IGNORECASE),
 )
 
 

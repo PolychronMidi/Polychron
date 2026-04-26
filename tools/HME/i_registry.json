@@ -246,13 +246,22 @@
       ]
     },
     "buddy": {
-      "description": "Co-buddy fanout dispatcher: status, enqueue, drain. See doc/SPEC.md Phase 1.",
+      "description": "Co-buddy fanout dispatcher: queue-driven (drain) + chain-driven (chain YAML). status / enqueue / drain / chain / clean. See doc/SPEC.md Phase 1+3.",
       "category": "orchestration",
       "usage": "i/buddy <status|enqueue|drain> [key=value ...]",
       "examples": [
         "i/buddy status",
-        "i/buddy enqueue tier=medium text=\"review the new dispatcher\" source=manual",
-        "i/buddy drain loop=true loop_delay=5"
+        "i/buddy enqueue tier=medium text=\"...\" source=manual",
+        "i/buddy drain loop=true loop_delay=5",
+        "i/buddy chain review-then-test",
+        "i/buddy clean age_hours=168"
+      ],
+      "actions": [
+        "status",
+        "enqueue",
+        "drain",
+        "chain",
+        "clean"
       ]
     }
   }

@@ -19,6 +19,7 @@
   blocks and `git log`.
 -->
 
+- Phase 3 chain YAML + rate-limit pause-and-resume + retry-archive — by manual at 2026-04-26T16:55:00Z
 - Phase 2 NEVER lists + lifesaver source-tag self-origin classifier — by manual at 2026-04-26T16:30:00Z
 - Phase 2.5 manager-guidance file (tmp/hme-operator-guidance.md) — by manual at 2026-04-26T16:25:00Z
 - Phase 2.4 fast-path on clean (skip deep walk) — by manual at 2026-04-26T16:20:00Z
