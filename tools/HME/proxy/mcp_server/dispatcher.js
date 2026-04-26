@@ -10,7 +10,11 @@
 // MCP-specific concerns: schema caching, throw-on-error semantics, and
 // content-block envelope formatting.
 
-const { workerRequest } = require('../_worker_http');
+// Use the transport router (not _worker_http directly) so this module
+// honors HME_WORKER_TRANSPORT and can route through the filesystem
+// queue when the user opts in. The MCP wire spec at the boundary is
+// untouched; this only affects how the proxy reaches the worker.
+const { workerRequest } = require('../_worker_transport');
 
 let _schemaCache = null;
 let _schemaCachedAt = 0;
