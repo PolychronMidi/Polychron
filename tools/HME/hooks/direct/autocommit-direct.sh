@@ -77,6 +77,21 @@ _ac_do_commit "direct-${1:-unknown}" || true
 # touches src/tools/HME/scripts/lab triggers the review.
 _AC_HEAD_AFTER=$(git -C "$_DIRECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
 if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE" != "$_AC_HEAD_AFTER" ]; then
+  # SPEC/TODO same-commit invariant (skill-set pattern, soft-warning form):
+  # if src/** changed in this commit AND neither doc/SPEC.md nor doc/TODO.md
+  # changed, surface a drift warning to hme-errors.log (LIFESAVER picks it
+  # up next turn). Soft warning rather than hard block — autocommit fires
+  # frequently and intermediate commits during a multi-step landing
+  # legitimately may not touch the spec yet. Drift is the SUSTAINED-not-
+  # touching-spec pattern; one-off skips are fine. The watchdog tier is
+  # the place to catch sustained drift, not autocommit.
+  _AC_DIFF=$(git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null)
+  if echo "$_AC_DIFF" | /usr/bin/grep -qE '^src/' \
+     && ! echo "$_AC_DIFF" | /usr/bin/grep -qE '^doc/(SPEC|TODO)\.md$'; then
+    _AC_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
+    echo "[$_AC_TS] [autocommit-direct] WARN spec-drift: src/ changed but doc/SPEC.md + doc/TODO.md untouched (commit ${_AC_HEAD_AFTER:0:8})" \
+      >> "$_DIRECT_ROOT/log/hme-errors.log"
+  fi
   if [ -x "$_DIRECT_ROOT/i/review" ]; then
     if git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null \
          | /usr/bin/grep -qE '^(src|tools/HME|scripts|lab)/'; then

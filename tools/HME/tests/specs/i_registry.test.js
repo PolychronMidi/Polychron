@@ -85,7 +85,7 @@ test('i_registry: every category appears in the cat_order whitelist (or is uncat
   // explicitly placed in the order array.
   const KNOWN = new Set([
     'review-discipline', 'knowledge', 'diagnostic', 'evolution',
-    'policy-config', 'infra', 'meta', 'uncategorized',
+    'policy-config', 'infra', 'orchestration', 'meta', 'uncategorized',
   ]);
   const reg = _registry();
   const novel = new Set();

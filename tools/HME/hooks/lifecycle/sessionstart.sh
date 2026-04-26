@@ -205,6 +205,20 @@ fi
 rm -f "$_SS_CARRY_ERR" 2>/dev/null
 [ -n "$CARRIED" ] && echo "$CARRIED" >&2
 
+# Surface doc/TODO.md "In flight" section so cross-cycle handoff state
+# (per skill-set's SPEC/TODO substrate) is visible at session start
+# alongside the i/todo carry-over. Read-only sed extraction — no python
+# needed for a single section read.
+_TODO_MD="$PROJECT/doc/TODO.md"
+if [ -f "$_TODO_MD" ]; then
+  IN_FLIGHT=$(sed -n '/^## In flight/,/^## /p' "$_TODO_MD" | grep -E '^\s*-\s+\[' | head -10)
+  if [ -n "$IN_FLIGHT" ]; then
+    echo "" >&2
+    echo "doc/TODO.md In flight:" >&2
+    echo "$IN_FLIGHT" >&2
+  fi
+fi
+
 # Lance _deletions compaction
 # If code_chunks.lance/_deletions/ has accumulated too many arrow files (>50),
 # run a background compaction so table opens stay fast. Non-blocking — runs

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# i/buddy — co-buddy fanout dispatcher CLI.
+# Usage:
+#   i/buddy status                                              # show queue + buddy state
+#   i/buddy enqueue tier=medium text="..." source="i/review"    # drop task into pending/
+#   i/buddy drain [loop=true loop_delay=5]                      # drain pending/ once or in a loop
+#
+# Per doc/SPEC.md Phase 1. Wraps tools/HME/scripts/buddy_dispatcher.py.
+_SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_dispatcher.py"
+[ -f "$_SCRIPT" ] || { echo "i/buddy: dispatcher missing at $_SCRIPT" >&2; exit 1; }
+
+# Convert key=value args to --key=value form for argparse.
+_ARGS=()
+_CMD="${1:-status}"
+shift || true
+for arg in "$@"; do
+  case "$arg" in
+    *=*)
+      _key="${arg%%=*}"
+      _val="${arg#*=}"
+      _ARGS+=("--${_key//_/-}=${_val}")
+      ;;
+    *)
+      _ARGS+=("$arg")
+      ;;
+  esac
+done
+exec python3 "$_SCRIPT" "$_CMD" "${_ARGS[@]}"

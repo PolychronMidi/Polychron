@@ -60,6 +60,28 @@ Adopt skill-set's operational discipline patterns once Phase 1 substrate is runn
 - **JSON schema validation for chain YAML** — Polychron has manifest validation; non-manifest configs (lab sketch metadata, hook chain ordering) could benefit but it's deferred until Phase 2 lands
 - **Auto-promote tiers + sanitize gate** — KB-to-shared-discoveries promotion is a separate workflow; revisit after Phase 2 stable
 
+## Three-loop role separation (NEVER lists)
+
+Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline. Each loop has an explicit NEVER list — actions outside its jurisdiction. Violations are framework bugs, not edge cases.
+
+**Co-buddy (the workers — `claude --resume <sid>`):**
+- NEVER edit `doc/SPEC.md` or `doc/TODO.md` directly. Updates flow through `i/todo close_with_spec_update` (atomic flip+ship) or `i/todo promote_to_spec` (queue addition).
+- NEVER make git commits. Autocommit-direct is the only writer.
+- NEVER decide which item to pick. The dispatcher picks; the buddy executes.
+- NEVER edit other buddies' processing/ files. Atomic-mv claim semantics own each task; cross-buddy peeking is a race.
+
+**Dispatcher (`tools/HME/scripts/buddy_dispatcher.py`):**
+- NEVER mutate task content. Reads JSON, routes, archives — never modifies the payload.
+- NEVER suppress a buddy's stderr. Errors land in `log/hme-errors.log` per the LIFESAVER chain.
+- NEVER skip the verdict file. Every drain, including fast-path-clean, writes one.
+- NEVER bypass the floor-based escalation. `effective = max(item_tier, buddy_floor)` per axis is the routing contract.
+
+**Operator (humans + the agent at session-leader scope):**
+- NEVER hand-edit `tmp/hme-buddy-queue/processing/`. Atomic claims live there; manual edits race the dispatcher.
+- NEVER kill a buddy mid-task. Halt fires SIGINT between tasks (skill-set's "halt-best-effort-between-atomic-units" rule).
+- NEVER skip the SPEC/TODO sync. The autocommit-guard surfaces drift; closing the loop on flagged drift is on you.
+- NEVER add policy to the dispatcher to handle an outlier. The dispatcher is mechanism; policy belongs in `doc/SPEC.md`.
+
 ## Glossary (project-specific terms)
 
 - **co-buddy**: one of N parallel persistent `claude --resume <sid>` sessions in the buddy fanout

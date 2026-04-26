@@ -1,11 +1,25 @@
 {
-  "_comment": "Metadata registry for the i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Adding a new command: drop the script in i/, register it here, done. Schema per command: {description, usage?, examples?, category, modes?}. Fields beyond description are optional — i/help degrades gracefully when missing.",
+  "_comment": "Metadata registry for the i/* command surface. Loaded by i/help and any future tab-completion / cross-discovery tooling. Adding a new command: drop the script in i/, register it here, done. Schema per command: {description, usage?, examples?, category, modes?}. Fields beyond description are optional \u2014 i/help degrades gracefully when missing.",
   "commands": {
     "review": {
       "description": "Post-change audit: KB constraints, boundary rules, doc drift, review verdicts.",
       "category": "review-discipline",
       "usage": "i/review [mode=digest|forget|...] [section_a=N] [section_b=N] [critique=true]",
-      "modes": ["digest", "regime", "trust", "sections", "audio", "composition", "health", "forget", "convention", "symbols", "docs", "evolve", "full"],
+      "modes": [
+        "digest",
+        "regime",
+        "trust",
+        "sections",
+        "audio",
+        "composition",
+        "health",
+        "forget",
+        "convention",
+        "symbols",
+        "docs",
+        "evolve",
+        "full"
+      ],
       "examples": [
         "i/review",
         "i/review mode=forget",
@@ -16,7 +30,22 @@
       "description": "HME knowledge base: add, search, list, compact, export, dream, hypothesize.",
       "category": "knowledge",
       "usage": "i/learn [query=<q>|action=search|add|remove|list|compact|export|graph|dream|health|hypothesize|hypotheses|ground_truth|discoveries|promote_discovery]",
-      "modes": ["search", "add", "remove", "list", "compact", "export", "graph", "dream", "health", "hypothesize", "hypotheses", "ground_truth", "discoveries", "promote_discovery"],
+      "modes": [
+        "search",
+        "add",
+        "remove",
+        "list",
+        "compact",
+        "export",
+        "graph",
+        "dream",
+        "health",
+        "hypothesize",
+        "hypotheses",
+        "ground_truth",
+        "discoveries",
+        "promote_discovery"
+      ],
       "examples": [
         "i/learn query=\"regime self-balancer\"",
         "i/learn action=add title=\"...\" content=\"...\" category=pattern",
@@ -27,7 +56,15 @@
       "description": "Causal/impact analysis and semantic search across signals, modules, beats.",
       "category": "diagnostic",
       "usage": "i/trace target=<channel|module|beat-key> [mode=auto|cascade|module|causal|snapshot|impact|delta]",
-      "modes": ["auto", "cascade", "module", "causal", "snapshot", "impact", "delta"],
+      "modes": [
+        "auto",
+        "cascade",
+        "module",
+        "causal",
+        "snapshot",
+        "impact",
+        "delta"
+      ],
       "examples": [
         "i/trace target=density",
         "i/trace target=adaptiveTrustScores mode=cascade"
@@ -47,13 +84,25 @@
       "description": "Evolution recommendations: what to change next round, plus selftest.",
       "category": "evolution",
       "usage": "i/evolve [mode=...]",
-      "examples": ["i/evolve"]
+      "examples": [
+        "i/evolve"
+      ]
     },
     "hme-read": {
       "description": "Pre-edit briefing: read a target with KB context, callers, structure.",
       "category": "review-discipline",
       "usage": "i/hme-read target=<path|module|function> [mode=before|story|impact|both|lines|function|structure|callers|deps] [fast=true]",
-      "modes": ["before", "story", "impact", "both", "lines", "function", "structure", "callers", "deps"],
+      "modes": [
+        "before",
+        "story",
+        "impact",
+        "both",
+        "lines",
+        "function",
+        "structure",
+        "callers",
+        "deps"
+      ],
       "examples": [
         "i/hme-read target=adaptiveTrustScores",
         "i/hme-read target=src/conductor/conductorState.js mode=structure"
@@ -63,7 +112,19 @@
       "description": "Admin: selftest, reload, restart, index/clear_index, warm, introspect, validate, fix_antipattern, health.",
       "category": "infra",
       "usage": "i/hme-admin action=<selftest|reload|restart|index|clear_index|warm|introspect|validate|fix_antipattern|health|both>",
-      "modes": ["selftest", "reload", "restart", "index", "clear_index", "warm", "introspect", "validate", "fix_antipattern", "health", "both"],
+      "modes": [
+        "selftest",
+        "reload",
+        "restart",
+        "index",
+        "clear_index",
+        "warm",
+        "introspect",
+        "validate",
+        "fix_antipattern",
+        "health",
+        "both"
+      ],
       "examples": [
         "i/hme-admin action=health",
         "i/hme-admin action=index"
@@ -88,27 +149,53 @@
       "usage": "i/pattern [list|matched|<id>]"
     },
     "why": {
-      "description": "Explain an invariant by id — full provenance + rationale.",
+      "description": "Explain an invariant by id \u2014 full provenance + rationale.",
       "category": "review-discipline",
       "usage": "i/why <invariant-id>"
     },
     "todo": {
       "description": "Hierarchical todo store with criticality + on-done triggers.",
       "category": "review-discipline",
-      "usage": "i/todo action=list|add|done|... [text=…] [parent_id=N] [criticality=normal|critical]",
-      "modes": ["list", "add", "done", "show", "update"]
+      "usage": "i/todo action=list|add|done|... [text=\u2026] [parent_id=N] [criticality=normal|critical]",
+      "modes": [
+        "list",
+        "add",
+        "done",
+        "show",
+        "update"
+      ]
     },
     "substrate": {
       "description": "Substrate browser: brief, detail, actions, drift, consensus, efficacy, patterns, diff, invariants.",
       "category": "diagnostic",
       "usage": "i/substrate [mode=brief|detail|actions|drift|consensus|efficacy|patterns|diff|invariants] [filter=<substring>]",
-      "modes": ["brief", "detail", "actions", "drift", "consensus", "efficacy", "patterns", "diff", "invariants"]
+      "modes": [
+        "brief",
+        "detail",
+        "actions",
+        "drift",
+        "consensus",
+        "efficacy",
+        "patterns",
+        "diff",
+        "invariants"
+      ]
     },
     "policies": {
-      "description": "Unified hook-time policy registry — list/show/enable/disable/reset/paths/eval.",
+      "description": "Unified hook-time policy registry \u2014 list/show/enable/disable/reset/paths/eval.",
       "category": "policy-config",
       "usage": "i/policies <list|all|summary|show|enable|disable|reset|paths|eval> [args] [--scope=local|project|global]",
-      "modes": ["list", "all", "summary", "show", "enable", "disable", "reset", "paths", "eval"],
+      "modes": [
+        "list",
+        "all",
+        "summary",
+        "show",
+        "enable",
+        "disable",
+        "reset",
+        "paths",
+        "eval"
+      ],
       "examples": [
         "i/policies list",
         "i/policies all",
@@ -129,10 +216,22 @@
       "category": "meta"
     },
     "sensitivity": {
-      "description": "Metaprofile attribution aggregator — per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
+      "description": "Metaprofile attribution aggregator \u2014 per-profile score distribution, per-(profile, sectionType) breakdown, and ranking by mean score.",
       "category": "diagnostic",
       "usage": "i/sensitivity",
-      "examples": ["i/sensitivity"]
+      "examples": [
+        "i/sensitivity"
+      ]
+    },
+    "buddy": {
+      "description": "Co-buddy fanout dispatcher: status, enqueue, drain. See doc/SPEC.md Phase 1.",
+      "category": "orchestration",
+      "usage": "i/buddy <status|enqueue|drain> [key=value ...]",
+      "examples": [
+        "i/buddy status",
+        "i/buddy enqueue tier=medium text=\"review the new dispatcher\" source=manual",
+        "i/buddy drain loop=true loop_delay=5"
+      ]
     }
   }
 }
