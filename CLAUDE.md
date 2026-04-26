@@ -1,8 +1,8 @@
 # Polychron — Coding Rules
 
-> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
+Keep this file focused, concise, lean - docs and auto-enforcement handle the rest. If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
 
-Keep this file lean - no mention of things that are, or can be, auto-enforced. If it would need to be mentioned here, fix its enforcement instead.
+> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
 
 ## Run
 
