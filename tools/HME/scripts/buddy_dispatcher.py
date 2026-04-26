@@ -440,12 +440,17 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
                 "dispatch_mode": "synthesis",
             }
         try:
+            # Pass `tier=effective` so synthesis_reasoning's
+            # OVERDRIVE_MODE=2 (tier-aware routing) can pick the right
+            # chain: hard→Opus, medium→Sonnet, easy→cascade. With
+            # OVERDRIVE_MODE=0 or =1, the tier parameter is harmless.
             response = synthesis_reasoning.call(
                 prompt=prompt,
                 system="You are a Polychron co-buddy. Read the task above; respond concisely with grounded reasoning. Cite file:line for every claim. When complete AND queue is drained, end your response with the [no-work] sentinel.",
                 max_tokens=2048,
                 temperature=0.3,
                 profile="reasoning",
+                tier=effective,
             )
             elapsed = time.time() - started
             if response is None:

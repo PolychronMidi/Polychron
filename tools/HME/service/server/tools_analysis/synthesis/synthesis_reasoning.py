@@ -625,7 +625,9 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     return (sentinel, "overdrive/subagent")
 
 
-def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str, str] | None:
+def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
+                          chain_override: tuple[str, ...] | None = None,
+                          allow_subagent: bool = True) -> tuple[str, str] | None:
     """OVERDRIVE_MODE path — Opus-then-Sonnet chain with max extended thinking.
 
     Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
@@ -639,6 +641,16 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
     through Claude Code's Agent tool instead (different rate-limit bucket —
     session budget, not per-minute RPM). See _dispatch_via_subagent.
 
+    chain_override: optional explicit (model_id, ...) tuple — overrides the
+    .env-resolved chain. Used by OVERDRIVE_MODE=2 (tier-aware routing) to
+    pin specific models per task tier (e.g. Sonnet-only for tier=medium).
+    Source labels are auto-generated via _label_for_model.
+
+    allow_subagent: when False, force direct API even if OVERDRIVE_VIA_SUBAGENT=1.
+    Used by OVERDRIVE_MODE=2 to pin model selection per tier — subagent
+    dispatch runs at whatever /model is set, so it can't honor a Sonnet-
+    specific chain. Hard-tier (Opus chain) keeps subagent compatibility.
+
     Returns (text, source_label) on success where source_label is e.g.
     'overdrive/opus' or 'overdrive/sonnet'. Returns None when every model in
     the chain failed.
@@ -651,9 +663,12 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
     session uses — your subscription covers both paths identically.
     The user configures nothing; auth is ambient."""
     from hme_env import ENV as _ENV_OD
-    if _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
+    if allow_subagent and _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
         return _dispatch_via_subagent(prompt, system, max_tokens)
-    chain = _resolve_overdrive_chain()
+    if chain_override is not None:
+        chain = tuple((m, _label_for_model(m)) for m in chain_override)
+    else:
+        chain = _resolve_overdrive_chain()
     for model_id, source_label in chain:
         result, rate_limited = _try_overdrive_model(model_id, prompt, system, max_tokens)
         if result:
@@ -669,7 +684,8 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int) -> tuple[str
 
 
 def call(prompt: str, system: str = "", max_tokens: int = 2048,
-         temperature: float = 0.3, profile: str = "reasoning") -> str | None:
+         temperature: float = 0.3, profile: str = "reasoning",
+         tier: str = "medium") -> str | None:
     """Walk the ranking for the given profile best→worst, returning the first success.
 
     profile='reasoning' (default) — deep think, architecture, analysis.
@@ -713,14 +729,48 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         logger.info("reasoning: HME_REASONING_OFFLINE=1 — skipping external cascade")
         return None
 
-    # OVERDRIVE_MODE: spend Anthropic credits for highest-quality output.
-    # Single-branch intercept. When OVERDRIVE_MODE is anything other than
-    # "1", this block is a no-op and the function behaves exactly as
-    # before. When =1 and the call succeeds, return immediately; on any
-    # failure, fall through to the cascade so the agent never blocks on
-    # a transient API issue.
-    if _ENV.optional("OVERDRIVE_MODE", "0") == "1":
+    # OVERDRIVE_MODE: route through Claude Code subscription for higher-
+    # quality output than the free cascade. All paths consume Max session
+    # quota (via direct API with proxy-injected OAuth token, OR via the
+    # subagent bridge), NEVER raw api.anthropic.com.
+    #
+    # Mode 1: Opus-then-Sonnet chain regardless of task tier. Original
+    #         behavior. Same chain for every call.
+    # Mode 2: tier-aware routing —
+    #           hard   → Opus chain (Opus, fallback Sonnet on rate-limit)
+    #           medium → Sonnet-only chain (skip Opus to preserve quota
+    #                    for hard tasks; force direct API since subagent
+    #                    can't pin a specific model independent of /model)
+    #           easy   → skip overdrive entirely → fall through to free
+    #                    cascade (NVIDIA/Cerebras/Groq/Gemini)
+    # Mode 0 (or unset): no-op; cascade is the only path.
+    #
+    # On any overdrive failure (rate-limit-everything, proxy down, etc.),
+    # we fall through to the free cascade so the agent never blocks on a
+    # transient API issue.
+    _od_mode = _ENV.optional("OVERDRIVE_MODE", "0")
+    _normalized_tier = (tier or "medium").lower()
+    if _normalized_tier not in ("easy", "medium", "hard"):
+        _normalized_tier = "medium"
+    if _od_mode == "1":
         _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
+        if _overdrive_result:
+            _text, _source = _overdrive_result
+            _last_source = _source
+            return _text
+    elif _od_mode == "2":
+        if _normalized_tier == "hard":
+            _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
+        elif _normalized_tier == "medium":
+            # Pin Sonnet — force direct API since subagent dispatch
+            # can't honor a model-specific chain (it runs at /model).
+            _overdrive_result = _call_opus_overdrive(
+                prompt, system, max_tokens,
+                chain_override=("claude-sonnet-4-6",),
+                allow_subagent=False,
+            )
+        else:  # easy
+            _overdrive_result = None  # skip overdrive → cascade handles it
         if _overdrive_result:
             _text, _source = _overdrive_result
             _last_source = _source
