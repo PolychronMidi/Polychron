@@ -4,6 +4,13 @@ require('../index');
 main = async function main() { console.log('Starting main.js ...');
 
 const boot = mainBootstrap.parseControls();
+// Drain deferred manifests + run registerInitializer init functions BEFORE
+// assertBootstrapGlobals(). Declared modules with cross-subsystem deps
+// (e.g. harmonicRhythmTracker depending on eventBus) defer at declare()
+// time because their deps load later in the require chain. initializeAll's
+// topo-sort drains them and binds globals; only then can assertBootstrapGlobals
+// validate every name.
+moduleLifecycle.initializeAll();
 mainBootstrap.assertBootstrapGlobals();
 const EVENTS = eventCatalog.names;
 
@@ -45,7 +52,8 @@ const composerCtx = {
 };
 FactoryManager.setComposerContext(composerCtx);
 
-moduleLifecycle.initializeAll();
+// (initializeAll moved to top of main() so declared modules are bound
+// before assertBootstrapGlobals validates the namespace.)
 crossLayerLifecycleManager.resetAll();
 traceDrain.init();
 

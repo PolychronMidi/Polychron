@@ -182,6 +182,11 @@ mainBootstrap = (() => {
 
     // -- Phase 4: Verify initializer methods --
     /** @type {[string, any][]} */
+    // Legacy initializer-method check: only modules that still use the
+    // `name = (() => {...})()` IIFE + registerInitializer pattern need
+    // `.initialize()` on their API. Modules migrated to moduleLifecycle.declare()
+    // handle init via the registry (no exposed initialize method); they're
+    // verified by the moduleLifecycle topo-sort + assertBootstrapGlobals.
     const requiredInitializers = [
       ['FXFeedbackListener', FXFeedbackListener],
       ['stutterFeedbackListener', stutterFeedbackListener],
@@ -189,9 +194,8 @@ mainBootstrap = (() => {
       ['conductorRegulationListener', conductorRegulationListener],
       ['drumTextureCoupler', drumTextureCoupler],
       ['emissionFeedbackListener', emissionFeedbackListener],
-      ['harmonicRhythmTracker', harmonicRhythmTracker],
       ['conductorState', conductorState],
-      ['cadenceAdvisor', cadenceAdvisor]
+      ['cadenceAdvisor', cadenceAdvisor],
     ];
     requiredInitializers.forEach(([name, obj]) => {
       V.requireType(obj.initialize, 'function', `${name}.initialize`);
