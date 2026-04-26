@@ -287,7 +287,7 @@ regimeReactiveDamping = (() => {
     const _tensionShape = _arc ? _arc.shape : 'arch';
     const sectionTensionNudge = clamp(regimeReactiveDampingCore.tensionShapeCurve(_tensionShape, sectionProgress), 0, 1) * 0.045;
     const densityArchProgress = m.abs(sectionProgress - 0.5) * 2;
-    const currentDensitySignal = safePreBoot.call(() => signalReader.density(), null);
+    const currentDensitySignal = signalReader.density();
     if (Number.isFinite(currentDensitySignal)) {
       const ds = /** @type {number} */ (currentDensitySignal);
       densityMeanEma += (ds - densityMeanEma) * _DENSITY_VAR_EMA_ALPHA;

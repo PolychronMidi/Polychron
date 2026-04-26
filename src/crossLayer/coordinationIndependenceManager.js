@@ -366,7 +366,7 @@ coordinationIndependenceManager = (() => {
 
     // Structure: trust + negotiation
     const trustDial = dials['structure-trustNegotiation'];
-    safePreBoot.call(() => adaptiveTrustScores.setCoordinationScale(trustDial), null);
+    adaptiveTrustScores.setCoordinationScale(trustDial);
     safePreBoot.call(() => negotiationEngine.setCoordinationScale(trustDial), null);
   }
 

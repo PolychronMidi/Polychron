@@ -71,7 +71,7 @@ regimeReactiveDampingEquilibrator = (() => {
       trustHotspotPressure = clamp((trustMax - 0.74) / 0.20, 0, 1);
       densityFlickerPressure = clamp((m.abs(V.optionalFinite(matrix['density-flicker'], 0)) - 0.82) / 0.16, 0, 1);
     }
-    const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const homeostasis = couplingHomeostasis.getState();
     const stickyTailPressure = clamp(V.optionalFinite(homeostasis && homeostasis.stickyTailPressure, 0) / 0.55, 0, 1);
     const hotspotCounterpressure = clamp(
       phaseHotspotPressure * 0.40 +

@@ -159,14 +159,14 @@ systemDynamicsProfilerHelpers = (() => {
         const sectionPart = sampledSectionProgress;
         let phrasePart = 0;
         {
-          const phraseProgress = safePreBoot.call(() => timeStream.normalizedProgress('phrase'), undefined);
+          const phraseProgress = timeStream.normalizedProgress('phrase');
           if (typeof phraseProgress === 'number' && Number.isFinite(phraseProgress)) {
             phrasePart = phraseProgress;
           }
         }
         let measurePart = 0;
         {
-          const measureProgress = safePreBoot.call(() => timeStream.normalizedProgress('measure'), undefined);
+          const measureProgress = timeStream.normalizedProgress('measure');
           if (typeof measureProgress === 'number' && Number.isFinite(measureProgress)) {
             measurePart = measureProgress;
           }

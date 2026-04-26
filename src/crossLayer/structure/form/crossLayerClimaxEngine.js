@@ -231,8 +231,8 @@ crossLayerClimaxEngine = (() => {
     const spectral = phraseCtx && Number.isFinite(phraseCtx.spectralDensity) ? phraseCtx.spectralDensity : 0.5;
     const spectralSpread = (spectral - 0.5) * 8;
     // R31 lab: trust-responsive articulation
-    const artTrust = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.ARTICULATION_COMPLEMENT), 1.0), 1.0);
-    const grooveTrust = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.GROOVE_TRANSFER), 1.0), 1.0);
+    const artTrust = V.optionalFinite(adaptiveTrustScores.getWeight(trustSystems.names.ARTICULATION_COMPLEMENT), 1.0);
+    const grooveTrust = V.optionalFinite(adaptiveTrustScores.getWeight(trustSystems.names.GROOVE_TRANSFER), 1.0);
     const trustVelSpread = clamp((artTrust - 1.2) * 0.6, -0.15, 0.2) - clamp((grooveTrust - 1.2) * 0.5, -0.1, 0.15);
     const trustVelMod = 1.0 + trustVelSpread * rf(-0.15, 0.15);
     // R31 lab: voice-independence-feedback
@@ -267,8 +267,8 @@ crossLayerClimaxEngine = (() => {
     const dirBias = melodicCtxCCE ? V.optionalFinite(melodicCtxCCE.directionBias, 0) : 0;
     const melodicRegBias = dirBias * 2.5; // [-2.5 descending ... +2.5 ascending]
     // R38: trust velocity anticipation -- lean into rising trust, back off falling
-    const motifTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.MOTIF_ECHO), 1.0), 1.0);
-    const stutterTrustW = V.optionalFinite(safePreBoot.call(() => adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION), 1.0), 1.0);
+    const motifTrustW = V.optionalFinite(adaptiveTrustScores.getWeight(trustSystems.names.MOTIF_ECHO), 1.0);
+    const stutterTrustW = V.optionalFinite(adaptiveTrustScores.getWeight(trustSystems.names.STUTTER_CONTAGION), 1.0);
     const trustLayer = activeLayer === 'L1' || activeLayer === 'L2' ? activeLayer : 'L1';
     const trustMotifDelta = motifTrustW - V.optionalFinite(lastMotifTrustByLayer[trustLayer], motifTrustW);
     const trustStutterDelta = stutterTrustW - V.optionalFinite(lastStutterTrustByLayer[trustLayer], stutterTrustW);

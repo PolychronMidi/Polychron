@@ -107,7 +107,7 @@ grandFinale = () => {
     const hmSnap = hyperMetaManager.getSnapshot();
     const rcReadiness = regimeClassifier.getTransitionReadiness();
     const cimSnap = safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null);
-    const trustScores = safePreBoot.call(() => adaptiveTrustScores.getScores(), null);
+    const trustScores = adaptiveTrustScores.getScores();
     const adaptiveState = {
       healthEma: hmSnap ? hmSnap.healthEma : 0.7,
       exceedanceTrendEma: hmSnap ? hmSnap.exceedanceTrendEma : 0,

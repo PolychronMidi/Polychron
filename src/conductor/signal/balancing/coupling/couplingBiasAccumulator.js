@@ -124,7 +124,7 @@ couplingBiasAccumulator = (() => {
    */
   function finalize(nudges, setup) {
     const S = couplingState;
-    const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const hs = couplingHomeostasis.getState();
 
     // Coherence gate
     const gateD = coherenceGate(nudges.DPos, nudges.DNeg);
@@ -209,7 +209,7 @@ couplingBiasAccumulator = (() => {
     S.biasFlicker = m.max(S.biasFlicker, 0.95);
 
     // Tension product self-limiter
-    const tensionProd = safePreBoot.call(() => signalReader.snapshot()?.tensionProduct, 1.0);
+    const tensionProd = signalReader.snapshot()?.tensionProduct;
     if (typeof tensionProd === 'number' && tensionProd > 1.30 && S.biasTension > 1.0) {
       const tensionSaturationDepth = clamp((tensionProd - 1.30) / 0.12, 0, 1);
       S.biasTension = 1.0 + (S.biasTension - 1.0) * (1.0 - tensionSaturationDepth * 0.70);

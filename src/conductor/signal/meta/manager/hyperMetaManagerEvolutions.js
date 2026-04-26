@@ -54,8 +54,8 @@ hyperMetaManagerEvolutions = (() => {
     // down to 1.75x when stressed. Base 1.5x always preserved (minimum protection).
     {
       let secProg = 0;
-      secProg = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("section"), 0)), 0, 1);
-      const currentTension = /** @type {number} */ (safePreBoot.call(() => signalReader.tension(), 1.0));
+      secProg = clamp(/** @type {number} */ (timeStream.compoundProgress("section")), 0, 1);
+      const currentTension = /** @type {number} */ (signalReader.tension());
       if (secProg < 0.3 && currentTension < 0.75) {
         const e4MaxProtection = 1.5 + S.e18ScaleEma; // 1.5 stressed -> 2.5 healthy (ramped)
         ST.rateMultipliers.tensionFloorProtection = clamp(1.5 + (0.75 - currentTension) * 2.0, 1.5, e4MaxProtection);
@@ -147,7 +147,7 @@ hyperMetaManagerEvolutions = (() => {
     {
       const sectionPhase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), '');
       let sectionProgress = 0;
-      sectionProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("section"), 0)), 0, 1);
+      sectionProgress = clamp(/** @type {number} */ (timeStream.compoundProgress("section")), 0, 1);
       const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
       if (inResolution) {
         // Ramp floor drop slowly via EMA -- avoids discontinuity spikes.
@@ -277,7 +277,7 @@ hyperMetaManagerEvolutions = (() => {
     // E18: strength scaled by e18Scale (health * exceedance-awareness).
     {
       let phraseIdx = -1;
-      phraseIdx = /** @type {number} */ (safePreBoot.call(() => timeStream.getPosition('phrase'), -1));
+      phraseIdx = /** @type {number} */ (timeStream.getPosition('phrase'));
       if (phraseIdx >= 0 && phraseIdx !== S.e9LastPhraseIndex) {
         S.e9LastPhraseIndex = phraseIdx;
         S.e9BreathingCountdown = m.max(2, m.min(6, m.round(layerNumerator * 0.5)));
@@ -308,7 +308,7 @@ hyperMetaManagerEvolutions = (() => {
     // Only the tension bias suppression remains (gentler pathway).
     {
       let phraseProgress = 0;
-      phraseProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("phrase"), 0)), 0, 1);
+      phraseProgress = clamp(/** @type {number} */ (timeStream.compoundProgress("phrase")), 0, 1);
       // Phrase troughs: second half of phrase is the natural descent
       const inPhraseTrough = phraseProgress > 0.55;
       // Check if density is flat via wave analyzer
@@ -344,9 +344,9 @@ hyperMetaManagerEvolutions = (() => {
     // share lost in E11 while concentrating breathing in coherent passages.
     {
       let phraseIdx = -1;
-      phraseIdx = /** @type {number} */ (safePreBoot.call(() => timeStream.getPosition('phrase'), -1));
+      phraseIdx = /** @type {number} */ (timeStream.getPosition('phrase'));
       let phraseProgress = 0;
-      phraseProgress = clamp(/** @type {number} */ (safePreBoot.call(() => timeStream.compoundProgress("phrase"), 0)), 0, 1);
+      phraseProgress = clamp(/** @type {number} */ (timeStream.compoundProgress("phrase")), 0, 1);
       // Sparse window at phrase wrap: last 5% of phrase
       const atPhraseEnd = phraseProgress > 0.95;
       // Also at phrase start: first 3% after phrase 0

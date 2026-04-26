@@ -436,7 +436,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       // Coherence gate + floor dampening state for anti-redistribution analysis
       couplingGates: crossLayerBeatRecordTraceCachedCouplingGates,
       // Whole-system coupling homeostasis state for governor diagnostics
-      couplingHomeostasis: safePreBoot.call(() => couplingHomeostasis.getState(), null),
+      couplingHomeostasis: couplingHomeostasis.getState(),
       // Direct snapshot bypass -- conductorState.updateFromConductor silently
       // drops state-provider fields, so axisEnergyEquilibrator never reaches snap.
       axisEnergyEquilibrator: crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator,

@@ -100,10 +100,10 @@ const manifestPath = path.join(METRICS_DIR, 'system-manifest.json');
     const trustPayoffs = MAIN_LOOP_CONTROLS.trustPayoffs;
 
     // -- Adaptive trust scores (end-of-run state) --
-    const trustSnapshot = safePreBoot.call(() => adaptiveTrustScores.getSnapshot(), {});
+    const trustSnapshot = adaptiveTrustScores.getSnapshot();
 
     // -- Trust journal (significant trust changes across the run) --
-    const trustJournal = safePreBoot.call(() => adaptiveTrustScores.getJournal(), []);
+    const trustJournal = adaptiveTrustScores.getJournal();
 
     return {
       timestamp: new Date().toISOString(),

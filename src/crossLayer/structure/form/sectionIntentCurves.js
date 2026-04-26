@@ -48,11 +48,11 @@ sectionIntentCurves = (() => {
       ? (personality.narrative && personality.narrative.includes('dense') ? -0.08 : personality.narrative && personality.narrative.includes('sparse') ? 0.06 : 0)
       : 0;
     const lateSurgeGate = clamp(1.0 - (sectionRoute - 0.70) / 0.30, 0, 1);
-    const axisEnergyShares = safePreBoot.call(() => conductorSignalBridge.getSignals().axisEnergyShares, null);
+    const axisEnergyShares = conductorSignalBridge.getSignals().axisEnergyShares;
     const phaseShare = axisEnergyShares && typeof axisEnergyShares.phase === 'number' ? axisEnergyShares.phase : 1.0 / 6.0;
     const lowPhaseThreshold = phaseFloorController.getLowShareThreshold();
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
-    const intentRegime = safePreBoot.call(() => conductorSignalBridge.getSignals().regime, 'evolving');
+    const intentRegime = conductorSignalBridge.getSignals().regime;
     const phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
 
     const arc = m.sin(m.pow(p, 1.15) * m.PI);

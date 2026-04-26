@@ -77,7 +77,7 @@ couplingRefreshSetup = (() => {
       : targetScale;
 
     // Flicker product guard with hysteresis (safePreBoot guarantees a finite number via its fallback)
-    const flickerProd = V.optionalFinite(safePreBoot.call(() => signalReader.snapshot()?.flickerProduct, 1.0), 1.0);
+    const flickerProd = V.optionalFinite(signalReader.snapshot()?.flickerProduct, 1.0);
     if (S.flickerGuardState === 'normal' && flickerProd < 0.90) {
       S.flickerGuardState = 'guarding';
       S.flickerGuardBeats = 0;
@@ -91,7 +91,7 @@ couplingRefreshSetup = (() => {
       : 1.0;
 
     // Density product guard with hysteresis
-    const densityProd = V.optionalFinite(safePreBoot.call(() => signalReader.snapshot()?.densityProduct, 1.0), 1.0);
+    const densityProd = V.optionalFinite(signalReader.snapshot()?.densityProduct, 1.0);
     if (S.densityGuardState === 'normal' && densityProd < 0.75) {
       S.densityGuardState = 'guarding';
       S.densityGuardBeats = 0;
@@ -105,8 +105,8 @@ couplingRefreshSetup = (() => {
       : 1.0;
 
     // Floor dampening + homeostasis state
-    const floorDampen = safePreBoot.call(() => couplingHomeostasis.getFloorDampen(), 1.0);
-    const hs = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const floorDampen = couplingHomeostasis.getFloorDampen();
+    const hs = couplingHomeostasis.getState();
     const budgetConstraintActive = Boolean(hs && hs.budgetConstraintActive);
     const budgetConstraintPressure = V.optionalFinite(hs && hs.budgetConstraintPressure, 0);
     const floorRecoveryActive = Boolean(hs && hs.floorRecoveryActive);
