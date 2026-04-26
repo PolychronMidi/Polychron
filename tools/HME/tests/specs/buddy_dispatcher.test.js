@@ -239,6 +239,124 @@ print(json.dumps({"guidance": guidance}))
   });
 });
 
+test('dispatcher: chain YAML loader parses minimal subset without PyYAML', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.mkdirSync(path.join(sandbox, 'chains'), { recursive: true });
+    fs.writeFileSync(path.join(sandbox, 'chains', 'test-chain.yaml'),
+      `name: test-chain\ndescription: a test chain definition for unit coverage\n` +
+      `version: 1.0.0\nloop: 2\nloop-delay-random: [60, 120]\non-rate-limit: pause\nskills:\n` +
+      `  - echo first\n  - echo second\n  - echo third\n`
+    );
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+chain = disp._load_chain_yaml("test-chain")
+err = disp._validate_chain(chain)
+import json
+print(json.dumps({
+  "name": chain.get("name"),
+  "version": chain.get("version"),
+  "loop": chain.get("loop"),
+  "loop-delay-random": chain.get("loop-delay-random"),
+  "on-rate-limit": chain.get("on-rate-limit"),
+  "skill_count": len(chain.get("skills", [])),
+  "validation_error": err,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.name, 'test-chain');
+    assert.strictEqual(parsed.version, '1.0.0');
+    assert.strictEqual(parsed.loop, 2);
+    assert.deepStrictEqual(parsed['loop-delay-random'], [60, 120]);
+    assert.strictEqual(parsed['on-rate-limit'], 'pause');
+    assert.strictEqual(parsed.skill_count, 3);
+    assert.strictEqual(parsed.validation_error, '');
+  });
+});
+
+test('dispatcher: chain validation rejects missing required fields', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+print(json.dumps({
+  "missing_skills": disp._validate_chain({"name": "x", "description": "y" * 30, "version": "1.0.0"}),
+  "empty_skills": disp._validate_chain({"name": "x", "description": "y" * 30, "version": "1.0.0", "skills": []}),
+  "both_delays": disp._validate_chain({"name": "x", "description": "y" * 30, "version": "1.0.0",
+    "skills": ["a"], "loop-delay": 60, "loop-delay-random": [10, 20]}),
+  "valid": disp._validate_chain({"name": "x", "description": "y" * 30, "version": "1.0.0", "skills": ["a"]}),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.ok(parsed.missing_skills.includes('skills'), 'flags missing skills');
+    assert.ok(parsed.empty_skills.includes('non-empty'), 'flags empty skills list');
+    assert.ok(parsed.both_delays.includes('mutually exclusive'), 'flags both-delay conflict');
+    assert.strictEqual(parsed.valid, '', 'valid chain returns empty error');
+  });
+});
+
+test('dispatcher: rate-limit detection parses reset_time when present', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+# stderr with rate-limit signal + reset-in-N-hours form
+rl1 = disp._detect_rate_limit("you've hit your rate limit. resets in 2 hours.", "")
+# stderr with reset_time=epoch form
+rl2 = disp._detect_rate_limit('rate limit exceeded; "reset_time": 9999999999', "")
+# clean stderr — no rate limit
+rl3 = disp._detect_rate_limit("ImportError: foo", "")
+print(json.dumps({
+  "rl1_detected": rl1 is not None and rl1["detected"],
+  "rl1_has_reset": rl1 is not None and rl1.get("reset_epoch") is not None,
+  "rl2_detected": rl2 is not None and rl2["detected"],
+  "rl2_reset": rl2["reset_epoch"] if rl2 else None,
+  "rl3_no_match": rl3 is None,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.rl1_detected, true, 'detects "resets in 2 hours" pattern');
+    assert.strictEqual(parsed.rl1_has_reset, true, 'parses reset epoch from "in N hours"');
+    assert.strictEqual(parsed.rl2_detected, true, 'detects reset_time epoch form');
+    assert.strictEqual(parsed.rl2_reset, 9999999999, 'extracts numeric reset epoch');
+    assert.strictEqual(parsed.rl3_no_match, true, 'clean stderr returns None');
+  });
+});
+
+test('dispatcher: retry-archive rotates prior attempt to .retry-N.json on collision', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json, os
+disp._ensure_dirs()
+# Drop a task to claim
+task_path = disp.QUEUE_PENDING / "task-A.json"
+task_path.write_text(json.dumps({"id": "task-A", "tier": "easy", "text": "first attempt"}))
+# Simulate a first archive (failed)
+buddy = {"slot": 1, "floor": "medium", "processing_dir": disp.QUEUE_PROCESSING / "buddy-1"}
+buddy["processing_dir"].mkdir(parents=True, exist_ok=True)
+import shutil
+shutil.move(str(task_path), str(buddy["processing_dir"] / "task-A.json"))
+disp._archive_task(buddy["processing_dir"] / "task-A.json", {"outcome": "failed", "rc": 1, "elapsed_s": 1.0, "stdout_tail": "", "stderr_tail": "", "sentinel_seen": False, "effective_tier": "easy", "buddy_slot": 1, "buddy_floor": "medium"})
+# Second attempt: re-enqueue same id, claim, archive failed again
+task_path.write_text(json.dumps({"id": "task-A", "tier": "easy", "text": "second attempt"}))
+shutil.move(str(task_path), str(buddy["processing_dir"] / "task-A.json"))
+disp._archive_task(buddy["processing_dir"] / "task-A.json", {"outcome": "failed", "rc": 1, "elapsed_s": 1.0, "stdout_tail": "", "stderr_tail": "", "sentinel_seen": False, "effective_tier": "easy", "buddy_slot": 1, "buddy_floor": "medium"})
+failed = sorted(os.listdir(disp.QUEUE_FAILED))
+print(json.dumps({"failed_files": failed}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.deepStrictEqual(
+      parsed.failed_files,
+      ['task-A.json', 'task-A.retry-1.json'],
+      'second attempt rotates first to .retry-1.json',
+    );
+  });
+});
+
 test('dispatcher: manager-guidance file returns empty when absent', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `

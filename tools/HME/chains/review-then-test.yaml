@@ -1,0 +1,9 @@
+name: review-then-test
+description: Run i/review in forget-mode, then npm run test:hme. Aborts the chain if review surfaces critical findings or tests fail. Safe pattern for "validate the working tree before declaring done".
+version: 1.0.0
+user-invocable: true
+loop: 1
+on-rate-limit: pause
+skills:
+  - i/review mode=forget
+  - npm run test:hme

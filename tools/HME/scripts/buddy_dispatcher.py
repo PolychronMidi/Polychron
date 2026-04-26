@@ -44,6 +44,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
+import re
 import shutil
 import subprocess
 import sys
@@ -74,6 +76,39 @@ NO_WORK_SENTINEL = "[no-work]"
 
 # Phase 2 paths.
 GUIDANCE_FILE = PROJECT_ROOT / "tmp" / "hme-operator-guidance.md"
+
+# Chain YAML lookup paths (project-local first, then HME-shipped).
+CHAIN_DIRS = [
+    PROJECT_ROOT / "chains",
+    PROJECT_ROOT / "tools" / "HME" / "chains",
+]
+
+# Rate-limit detection patterns (lifted from skill-set Phase 13). When
+# a buddy subprocess exits with stderr matching one of these, the task
+# isn't a real failure — it's quota exhaustion that resets in the future.
+# Pause-and-resume re-dispatches the same task after the reset window.
+RATE_LIMIT_TEXT_RE = re.compile(
+    r"rate.?limit|"
+    r"you'?ve hit your\s+\w+\s+rate limit|"
+    r"5-?hour\s+(rate\s+)?limit|"
+    r"out of (extra )?usage|"
+    r"quota\s+exceeded|"
+    r"too many requests",
+    re.IGNORECASE,
+)
+RATE_LIMIT_RESET_RE = re.compile(
+    r"resets?\s+(?:at\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?(?:\s+\(([^)]+)\))?|"
+    r"resets?\s+in\s+(\d+)\s+(?:hour|hr|minute|min)s?|"
+    r"reset_time[\"']?\s*[:=]\s*[\"']?(\d+)",
+    re.IGNORECASE,
+)
+RATE_LIMIT_JITTER_RANGE = (15, 60)              # extra seconds after parsed reset
+RATE_LIMIT_FALLBACK_BACKOFF_SECONDS = 300       # initial backoff when no reset_time
+
+# Per-task pause/retry caps (env-tunable; defaults match skill-set).
+_RATE_LIMIT_MODE = os.environ.get("HME_BUDDY_ON_RATE_LIMIT", "pause")  # fail|pause|pause-with-cap
+_MAX_RATE_LIMIT_PAUSE_SECONDS = int(os.environ.get("HME_BUDDY_MAX_PAUSE_SEC", str(8 * 3600)))
+_MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 
 
 def _ensure_dirs() -> None:
@@ -221,31 +256,67 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
         f"When complete AND the queue is drained, emit `{NO_WORK_SENTINEL} <reason>` on stdout."
     )
     timeout_s = {"easy": 60, "medium": 300, "hard": 900}.get(effective, 300)
+    pause_count = 0
     try:
-        proc = subprocess.run(
-            ["claude", "--resume", buddy["sid"], "-p", prompt],
-            capture_output=True, text=True, timeout=timeout_s,
-            env={**os.environ, "HME_THREAD_CHILD": "1"},
-        )
-        stdout = proc.stdout or ""
-        stderr = proc.stderr or ""
-        rc = proc.returncode
-        elapsed = time.time() - started
-        outcome = "done"
-        sentinel_seen = NO_WORK_SENTINEL in stdout
-        if rc != 0:
-            outcome = "failed"
-        return {
-            "outcome": outcome,
-            "rc": rc,
-            "elapsed_s": round(elapsed, 2),
-            "stdout_tail": stdout[-2000:],
-            "stderr_tail": stderr[-1000:],
-            "sentinel_seen": sentinel_seen,
-            "effective_tier": effective,
-            "buddy_slot": buddy["slot"],
-            "buddy_floor": buddy["floor"],
-        }
+        while True:
+            proc = subprocess.run(
+                ["claude", "--resume", buddy["sid"], "-p", prompt],
+                capture_output=True, text=True, timeout=timeout_s,
+                env={**os.environ, "HME_THREAD_CHILD": "1"},
+            )
+            stdout = proc.stdout or ""
+            stderr = proc.stderr or ""
+            rc = proc.returncode
+            # Rate-limit detection: when buddy hits Anthropic quota,
+            # don't burn the task as failed — pause until reset, then
+            # retry. Honors HME_BUDDY_ON_RATE_LIMIT and per-task pause
+            # cap (skill-set Phase 13 semantics).
+            if rc != 0 and _RATE_LIMIT_MODE != "fail":
+                rl = _detect_rate_limit(stderr, stdout)
+                if rl and rl["detected"]:
+                    pause_count += 1
+                    if pause_count > _MAX_PAUSES_PER_TASK:
+                        elapsed = time.time() - started
+                        return {
+                            "outcome": "rate_limit_max_pauses",
+                            "rc": rc, "elapsed_s": round(elapsed, 2),
+                            "stdout_tail": stdout[-2000:], "stderr_tail": stderr[-1000:],
+                            "sentinel_seen": False, "effective_tier": effective,
+                            "buddy_slot": buddy["slot"], "buddy_floor": buddy["floor"],
+                            "pause_count": pause_count,
+                        }
+                    sleep_s = _compute_pause_seconds(rl, _RATE_LIMIT_MODE)
+                    if sleep_s is None:
+                        elapsed = time.time() - started
+                        return {
+                            "outcome": "rate_limit_pause_capped",
+                            "rc": rc, "elapsed_s": round(elapsed, 2),
+                            "stdout_tail": stdout[-2000:], "stderr_tail": stderr[-1000:],
+                            "sentinel_seen": False, "effective_tier": effective,
+                            "buddy_slot": buddy["slot"], "buddy_floor": buddy["floor"],
+                            "pause_count": pause_count,
+                        }
+                    _log_error(
+                        f"buddy {buddy['slot']} task {task.get('id', '?')} hit rate limit; "
+                        f"sleeping {sleep_s:.0f}s ({rl.get('matched_text', '')})"
+                    )
+                    time.sleep(sleep_s)
+                    continue  # retry same task
+            elapsed = time.time() - started
+            outcome = "done" if rc == 0 else "failed"
+            sentinel_seen = NO_WORK_SENTINEL in stdout
+            return {
+                "outcome": outcome,
+                "rc": rc,
+                "elapsed_s": round(elapsed, 2),
+                "stdout_tail": stdout[-2000:],
+                "stderr_tail": stderr[-1000:],
+                "sentinel_seen": sentinel_seen,
+                "effective_tier": effective,
+                "buddy_slot": buddy["slot"],
+                "buddy_floor": buddy["floor"],
+                "pause_count": pause_count,
+            }
     except subprocess.TimeoutExpired as e:
         elapsed = time.time() - started
         return {
@@ -261,11 +332,94 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
         }
 
 
+def _detect_rate_limit(stderr: str, stdout: str) -> dict | None:
+    """Inspect a buddy's exit text for rate-limit signals (lifted from
+    skill-set Phase 13). Returns {detected: bool, reset_epoch: float|None,
+    matched_text: str} on hit, None on no match. Reset epoch is parsed
+    from the matched text; falls back to None (caller uses
+    RATE_LIMIT_FALLBACK_BACKOFF_SECONDS in that case)."""
+    combined = (stderr or "") + "\n" + (stdout or "")
+    if not RATE_LIMIT_TEXT_RE.search(combined):
+        return None
+    reset_epoch = None
+    m = RATE_LIMIT_RESET_RE.search(combined)
+    if m:
+        # epoch field present?
+        if m.group(6):
+            try:
+                reset_epoch = float(m.group(6))
+            except ValueError:
+                reset_epoch = None
+        # "resets in N hours/minutes" form
+        elif m.group(5):
+            try:
+                n = int(m.group(5))
+                # hour vs minute disambiguation: re-check the matched substring
+                if "min" in m.group(0).lower():
+                    reset_epoch = time.time() + n * 60
+                else:
+                    reset_epoch = time.time() + n * 3600
+            except ValueError:
+                reset_epoch = None
+        # "resets at HH:MM [am|pm] [(tz)]" form — interpret as next
+        # occurrence of that wall-clock time. Skip TZ handling (defer
+        # to local time); good-enough for pause behavior.
+        elif m.group(1) and m.group(2):
+            try:
+                hh = int(m.group(1))
+                mm = int(m.group(2))
+                ampm = (m.group(3) or "").lower()
+                if ampm == "pm" and hh < 12:
+                    hh += 12
+                elif ampm == "am" and hh == 12:
+                    hh = 0
+                now_lt = time.localtime()
+                target_lt = time.struct_time((
+                    now_lt.tm_year, now_lt.tm_mon, now_lt.tm_mday,
+                    hh, mm, 0,
+                    now_lt.tm_wday, now_lt.tm_yday, now_lt.tm_isdst
+                ))
+                target_epoch = time.mktime(target_lt)
+                if target_epoch <= time.time():
+                    target_epoch += 86400  # next day
+                reset_epoch = target_epoch
+            except (ValueError, OverflowError):
+                reset_epoch = None
+    return {
+        "detected": True,
+        "reset_epoch": reset_epoch,
+        "matched_text": (m.group(0) if m else "<no reset parse>")[:120],
+    }
+
+
 def _archive_task(claimed_path: Path, verdict: dict) -> Path:
-    """Move the claimed task file to done/ or failed/ based on verdict."""
+    """Move the claimed task file to done/ or failed/ based on verdict.
+
+    Retry-archive (skill-set Phase 13 pattern): if the destination
+    already exists from a prior attempt on the same task id, the prior
+    archive is renamed to `<basename>.retry-N.json` instead of being
+    overwritten. Each retry attempt's full audit (task + verdict +
+    archived_ts) is preserved, so debugging a chronically-failing task
+    has the full history available.
+    """
     target_dir = QUEUE_DONE if verdict["outcome"] == "done" else QUEUE_FAILED
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / claimed_path.name
+    # Retry-archive: if a same-name file already exists, rotate it to
+    # <basename>.retry-N.json (find the next available N).
+    if target.exists():
+        n = 1
+        while True:
+            rotated = target_dir / f"{target.stem}.retry-{n}.json"
+            if not rotated.exists():
+                try:
+                    target.rename(rotated)
+                except OSError:
+                    pass
+                break
+            n += 1
+            if n > 100:  # safety bound — something's wrong if we hit this
+                break
     # Embed verdict alongside the original task payload for audit trail.
     try:
         original = json.loads(claimed_path.read_text())
@@ -519,6 +673,288 @@ def cmd_drain(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_chain_yaml(chain_name: str) -> dict | None:
+    """Find and parse a chain YAML by name. Searches CHAIN_DIRS in
+    order (project-local first, then HME-shipped). Returns None if not
+    found. Validation: required fields name / description / version /
+    skills, plus mutual exclusion of loop-delay and loop-delay-random."""
+    for d in CHAIN_DIRS:
+        candidate = d / f"{chain_name}.yaml"
+        if not candidate.exists():
+            continue
+        try:
+            import yaml  # PyYAML; ships with most environments
+        except ImportError:
+            # Lightweight fallback: parse the small subset of YAML we
+            # actually use (key: value, key: [a, b], dash lists). Keeps
+            # the dispatcher dep-free.
+            return _parse_minimal_yaml(candidate.read_text())
+        with open(candidate, encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    return None
+
+
+def _parse_minimal_yaml(text: str) -> dict:
+    """Tiny YAML subset parser: top-level `key: value`, `key: [a, b]`,
+    and `key:\\n  - item` lists. Sufficient for chain YAML files which
+    are flat by design. Falls back to PyYAML when present (preferred)."""
+    out: dict = {}
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines):
+        raw = lines[i]
+        line = raw.rstrip()
+        if not line.strip() or line.lstrip().startswith("#"):
+            i += 1
+            continue
+        # Top-level "key: value" or "key:" (list to follow)
+        m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_-]*):\s*(.*)$", line)
+        if m:
+            key, val = m.group(1), m.group(2).strip()
+            if val == "":
+                # Block sequence: gather subsequent "  - item" lines
+                items = []
+                j = i + 1
+                while j < len(lines):
+                    sub = lines[j]
+                    if re.match(r"^\s+-\s+", sub):
+                        items.append(sub.strip()[2:].strip())
+                        j += 1
+                    elif sub.strip() == "" or sub.lstrip().startswith("#"):
+                        j += 1
+                    else:
+                        break
+                out[key] = items if items else ""
+                i = j
+                continue
+            # Flow sequence: "key: [a, b, c]"
+            if val.startswith("[") and val.endswith("]"):
+                inner = val[1:-1].strip()
+                if inner:
+                    parts = [p.strip().strip("'\"") for p in inner.split(",")]
+                    # Coerce numerics
+                    coerced = []
+                    for p in parts:
+                        try:
+                            coerced.append(int(p))
+                        except ValueError:
+                            try:
+                                coerced.append(float(p))
+                            except ValueError:
+                                coerced.append(p)
+                    out[key] = coerced
+                else:
+                    out[key] = []
+                i += 1
+                continue
+            # Scalar — strip quotes, coerce booleans/numbers
+            v = val.strip("'\"")
+            if v.lower() in ("true", "yes"):
+                out[key] = True
+            elif v.lower() in ("false", "no"):
+                out[key] = False
+            else:
+                try:
+                    out[key] = int(v)
+                except ValueError:
+                    try:
+                        out[key] = float(v)
+                    except ValueError:
+                        out[key] = v
+            i += 1
+            continue
+        i += 1
+    return out
+
+
+def _validate_chain(chain: dict) -> str:
+    """Return error string if the chain doc is invalid, empty string if OK."""
+    if not isinstance(chain, dict):
+        return "chain YAML did not parse to a dict"
+    for required in ("name", "description", "version", "skills"):
+        if required not in chain:
+            return f"missing required field: {required}"
+    if not isinstance(chain.get("skills"), list) or len(chain["skills"]) == 0:
+        return "skills must be a non-empty list"
+    if "loop-delay" in chain and "loop-delay-random" in chain:
+        return "loop-delay and loop-delay-random are mutually exclusive"
+    return ""
+
+
+def cmd_chain(args: argparse.Namespace) -> int:
+    """Run a chain: load YAML, execute skills sequentially, honor loop
+    + loop-delay-random + on-rate-limit semantics. Each skill is a
+    Bash command (Polychron's domain — i/* invocations, npm scripts,
+    test runners). The chain runner spawns each as a subprocess in
+    sequence; non-zero exit aborts the rest of the chain (same skill-
+    set semantics).
+
+    Per-iter manifest at tmp/hme-buddy-fanout/chain-<run-id>/manifest.json.
+    """
+    chain = _load_chain_yaml(args.chain_name)
+    if chain is None:
+        searched = " or ".join(str(d) for d in CHAIN_DIRS)
+        print(f"chain: {args.chain_name!r} not found in {searched}", file=sys.stderr)
+        return 2
+    err = _validate_chain(chain)
+    if err:
+        print(f"chain: invalid {args.chain_name}.yaml — {err}", file=sys.stderr)
+        return 2
+    _ensure_dirs()
+    loop = int(args.loop) if args.loop is not None else int(chain.get("loop", 1))
+    loop_delay = chain.get("loop-delay", 0)
+    loop_delay_random = chain.get("loop-delay-random")
+    on_rate_limit = args.on_rate_limit or chain.get("on-rate-limit", _RATE_LIMIT_MODE)
+    skills = chain["skills"]
+    run_id = f"chain-{int(time.time())}-{uuid.uuid4().hex[:6]}"
+    manifest = {
+        "run_id": run_id,
+        "chain_name": chain["name"],
+        "chain_version": chain.get("version", "?"),
+        "started_ts": time.time(),
+        "loop": {"requested": loop, "completed": 0, "terminated_by": "in_progress"},
+        "iterations": [],
+        "on_rate_limit": on_rate_limit,
+    }
+    _write_manifest(run_id, manifest, in_progress=True)
+    iter_n = 0
+    pause_count = 0
+    while loop == 0 or iter_n < loop:
+        iter_n += 1
+        iter_record = {"iter": iter_n, "started_ts": time.time(), "skills": []}
+        aborted_in_iter = False
+        for skill_idx, skill_cmd in enumerate(skills):
+            skill_record = {
+                "idx": skill_idx, "command": skill_cmd, "started_ts": time.time(),
+            }
+            attempt = 0
+            while True:
+                attempt += 1
+                rc, stdout, stderr, elapsed = _run_skill(skill_cmd)
+                if rc != 0 and on_rate_limit != "fail":
+                    rl = _detect_rate_limit(stderr, stdout)
+                    if rl and rl["detected"]:
+                        pause_count += 1
+                        if pause_count > _MAX_PAUSES_PER_TASK:
+                            skill_record["outcome"] = "max_pauses_exceeded"
+                            skill_record["pauses"] = pause_count
+                            break
+                        sleep_s = _compute_pause_seconds(rl, on_rate_limit)
+                        if sleep_s is None:
+                            skill_record["outcome"] = "rate_limit_pause_capped"
+                            skill_record["pauses"] = pause_count
+                            break
+                        _log_error(f"chain: {chain['name']} skill[{skill_idx}] hit rate limit; sleeping {sleep_s:.0f}s")
+                        time.sleep(sleep_s)
+                        continue  # retry same skill
+                # Final outcome (success or non-rate-limit failure)
+                skill_record["outcome"] = "done" if rc == 0 else "failed"
+                skill_record["rc"] = rc
+                skill_record["elapsed_s"] = round(elapsed, 2)
+                skill_record["stdout_tail"] = stdout[-1500:]
+                skill_record["stderr_tail"] = stderr[-1000:]
+                skill_record["attempts"] = attempt
+                break
+            iter_record["skills"].append(skill_record)
+            _write_manifest(run_id, manifest, in_progress=True)
+            if skill_record.get("outcome") != "done":
+                aborted_in_iter = True
+                manifest["loop"]["terminated_by"] = f"skill_{skill_record['outcome']}"
+                break
+        iter_record["finished_ts"] = time.time()
+        manifest["iterations"].append(iter_record)
+        manifest["loop"]["completed"] = iter_n
+        _write_manifest(run_id, manifest, in_progress=True)
+        if aborted_in_iter:
+            break
+        # Inter-iter delay
+        if loop_delay_random and isinstance(loop_delay_random, list) and len(loop_delay_random) == 2:
+            delay = random.uniform(float(loop_delay_random[0]), float(loop_delay_random[1]))
+            time.sleep(delay)
+        elif loop_delay:
+            time.sleep(float(loop_delay))
+    if manifest["loop"]["terminated_by"] == "in_progress":
+        manifest["loop"]["terminated_by"] = "loop_complete"
+    manifest["finished_ts"] = time.time()
+    _write_manifest(run_id, manifest, in_progress=False)
+    verdict_path = _write_verdict(run_id, {**manifest, "drained_count": sum(len(it["skills"]) for it in manifest["iterations"]), "buddies": []})
+    print(f"chain: {chain['name']} ran {iter_n} iter(s); terminated_by={manifest['loop']['terminated_by']}")
+    print(f"  manifest: {FANOUT_ROOT / run_id / 'manifest.json'}")
+    print(f"  verdict:  {verdict_path}")
+    return 0 if manifest["loop"]["terminated_by"] in ("loop_complete", "no_work_bail") else 1
+
+
+def _run_skill(cmd: str) -> tuple[int, str, str, float]:
+    """Spawn a chain skill (a Bash command) as a subprocess. Returns
+    (rc, stdout, stderr, elapsed_s)."""
+    started = time.time()
+    try:
+        proc = subprocess.run(
+            ["bash", "-c", cmd],
+            capture_output=True, text=True,
+            env={**os.environ, "HME_THREAD_CHILD": "1"},
+            cwd=str(PROJECT_ROOT),
+        )
+        return proc.returncode, proc.stdout or "", proc.stderr or "", time.time() - started
+    except Exception as e:
+        return -1, "", f"_run_skill exception: {e}", time.time() - started
+
+
+def _compute_pause_seconds(rl: dict, mode: str) -> float | None:
+    """Determine pause duration from rate-limit detection. Returns None
+    if mode='pause-with-cap' AND the would-be pause exceeds the cap
+    (caller treats as final failure)."""
+    now = time.time()
+    if rl.get("reset_epoch"):
+        sleep_s = max(0.0, rl["reset_epoch"] - now)
+        sleep_s += random.uniform(*RATE_LIMIT_JITTER_RANGE)
+    else:
+        sleep_s = RATE_LIMIT_FALLBACK_BACKOFF_SECONDS + random.uniform(*RATE_LIMIT_JITTER_RANGE)
+    if mode == "pause-with-cap" and sleep_s > _MAX_RATE_LIMIT_PAUSE_SECONDS:
+        return None
+    return sleep_s
+
+
+def cmd_clean(args: argparse.Namespace) -> int:
+    """Clean stale fanout artifacts. Removes done/ entries older than
+    --age-hours (default 168 = 7 days) and finalizes any orphan runs
+    in fanout/<run-id>/ with in_progress=true that haven't been
+    touched in >24h. Mirrors skill-set's bin/clean-skill-runs.py."""
+    _ensure_dirs()
+    age_seconds = float(args.age_hours) * 3600
+    now = time.time()
+    cleaned = {"done": 0, "failed": 0, "fanout_runs_finalized": 0}
+    for d, key in ((QUEUE_DONE, "done"), (QUEUE_FAILED, "failed")):
+        if not d.exists():
+            continue
+        for f in d.glob("*.json"):
+            if (now - f.stat().st_mtime) > age_seconds:
+                try:
+                    f.unlink()
+                    cleaned[key] += 1
+                except OSError:
+                    pass
+    if FANOUT_ROOT.exists():
+        for run_dir in FANOUT_ROOT.iterdir():
+            if not run_dir.is_dir():
+                continue
+            manifest_path = run_dir / "manifest.json"
+            if not manifest_path.exists():
+                continue
+            try:
+                m = json.loads(manifest_path.read_text())
+            except Exception:
+                continue
+            if m.get("in_progress") and (now - manifest_path.stat().st_mtime) > 86400:
+                m["in_progress"] = False
+                m["loop"]["terminated_by"] = m.get("loop", {}).get("terminated_by", "abandoned")
+                manifest_path.write_text(json.dumps(m, indent=2))
+                cleaned["fanout_runs_finalized"] += 1
+    print(f"clean: removed {cleaned['done']} done + {cleaned['failed']} failed task files older than {args.age_hours}h")
+    print(f"clean: finalized {cleaned['fanout_runs_finalized']} abandoned fanout runs")
+    return 0
+
+
 def cmd_enqueue(args: argparse.Namespace) -> int:
     """Drop a task file into pending/. Caller assigns id; if missing,
     we generate one. Used by producers (NEXUS auto-review, OVERDRIVE,
@@ -572,6 +1008,15 @@ def main() -> int:
     p_enq.set_defaults(func=cmd_enqueue)
     p_stat = sub.add_parser("status", help="show queue + buddy state")
     p_stat.set_defaults(func=cmd_status)
+    p_chain = sub.add_parser("chain", help="run a chain YAML (ordered skill sequence)")
+    p_chain.add_argument("chain_name", help="chain name (matches <name>.yaml in chains/)")
+    p_chain.add_argument("--loop", type=int, default=None, help="iteration count override (chain YAML default applies otherwise)")
+    p_chain.add_argument("--on-rate-limit", choices=("fail", "pause", "pause-with-cap"), default=None,
+                         help="rate-limit handling override (fail|pause|pause-with-cap)")
+    p_chain.set_defaults(func=cmd_chain)
+    p_clean = sub.add_parser("clean", help="prune stale fanout artifacts (done/failed older than age-hours)")
+    p_clean.add_argument("--age-hours", type=float, default=168, help="entries older than this (default 168 = 7d) get pruned")
+    p_clean.set_defaults(func=cmd_clean)
     args = parser.parse_args()
     return args.func(args)
 
