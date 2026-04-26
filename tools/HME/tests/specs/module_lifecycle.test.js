@@ -56,15 +56,25 @@ test('declare: rejects collision with registerInitializer name', () => {
   });
 });
 
-test('registerInitializer: rejects collision with declared manifest', () => {
+test('registerInitializer: same-name as declared manifest stores as lateInit', () => {
+  // Original behavior rejected this; now we store under "<name>:lateInit"
+  // so post-boot wiring (event subscriptions, cross-module registrations
+  // that need ALL modules loaded) can run after the manifest's init.
+  // This recovered the registerInitializer semantics for the 9 modules
+  // (drumTextureCoupler, conductorState, etc.) that needed late wiring.
   withFreshRegistry(() => {
+    let lateRan = false;
     ML.declare({
       name: 'shared_name_2',
       deps: [],
       provides: ['shared_name_2'],
-      init: () => ({}),
+      init: () => ({ tag: 'eager' }),
     });
-    assert.throws(() => ML.registerInitializer('shared_name_2', () => {}), /already declared/);
+    assert.doesNotThrow(() => ML.registerInitializer('shared_name_2', () => { lateRan = true; }));
+    ML.initializeAll();
+    assert.strictEqual(lateRan, true, 'lateInit should run during initializeAll');
+    assert.strictEqual(global.shared_name_2.tag, 'eager');
+    delete global.shared_name_2;
   });
 });
 
