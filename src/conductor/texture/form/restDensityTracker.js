@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'restDensityTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['restDensityTracker'],
   init: (deps) => {
   const L0 = deps.L0;

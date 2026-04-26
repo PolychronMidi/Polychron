@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'regimeClassifierClassification',
   subsystem: 'conductor',
   deps: ['L0', 'validator'],
+  lazyDeps: ['conductorConfig', 'conductorState', 'pipelineCouplingManager'],
   provides: ['regimeClassifierClassification'],
   init: (deps) => {
   const L0 = deps.L0;

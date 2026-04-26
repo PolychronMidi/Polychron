@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'interactionHeatMap',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['interactionHeatMap'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

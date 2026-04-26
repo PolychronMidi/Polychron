@@ -14,6 +14,7 @@ moduleLifecycle.declare({
   name: 'homeostasisTick',
   subsystem: 'conductor',
   deps: ['systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['homeostasisConstants', 'homeostasisFloor', 'homeostasisState', 'pipelineCouplingManager'],
   provides: ['homeostasisTick'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

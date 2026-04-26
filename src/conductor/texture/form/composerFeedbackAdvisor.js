@@ -12,6 +12,7 @@ moduleLifecycle.declare({
   name: 'composerFeedbackAdvisor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['profileAdaptation', 'repetitionFatigueMonitor', 'structuralNarrativeAdvisor', 'texturalMemoryAdvisor', 'thematicRecallDetector'],
   provides: ['composerFeedbackAdvisor'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

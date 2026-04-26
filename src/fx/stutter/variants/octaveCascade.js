@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'octaveCascadeVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['stutterShift'],
   provides: ['octaveCascadeVariant'],
   init: () => {
     stutterVariants.register('octaveCascade', function octaveCascade(opts) {

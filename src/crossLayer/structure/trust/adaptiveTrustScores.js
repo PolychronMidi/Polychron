@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   // runtime; aliasing them as locals here keeps the method bodies clean
   // (`metaProfiles.X` reads from the local const, not the global namespace).
   deps: ['controllerConfig', 'explainabilityBus', 'metaProfiles', 'signalHealthAnalyzer', 'trustSystems', 'validator'],
+  lazyDeps: ['adaptiveTrustScoresCaching', 'adaptiveTrustScoresHelpers', 'adaptiveTrustScoresVelocityNourishment', 'conductorSignalBridge', 'contextualTrust'],
   provides: ['adaptiveTrustScores'],
   // Phase 4: registry calls crossLayerRegistry.register() automatically
   // after init returns -- replaces the trailing post-IIFE register call.

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'restSynchronizer',
   subsystem: 'crossLayer',
   deps: ['L0', 'hyperMetaManager', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'crossLayerHelpers', 'emergentMelodicEngine'],
   provides: ['restSynchronizer'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'axisEnergyEquilibratorRefreshContext',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['axisEnergyEquilibratorHelpers', 'couplingHomeostasis', 'homeostasisState', 'pipelineCouplingManager', 'regimeClassifier'],
   provides: ['axisEnergyEquilibratorRefreshContext'],
   init: () => {
   function build(state, config, V) {

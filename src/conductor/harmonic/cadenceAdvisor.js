@@ -10,6 +10,7 @@ moduleLifecycle.declare({
   // remaining cross-subsystem references (LM, L0, harmonicContext,
   // FactoryManager) live inside method bodies that run post-boot.
   deps: ['L0', 'eventBus', 'validator'],
+  lazyDeps: ['harmonicContext'],
   provides: ['cadenceAdvisor'],
   conductorScopes: ['section'],
   init: (deps) => {

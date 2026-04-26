@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'intervalBalanceTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['intervalBalanceTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

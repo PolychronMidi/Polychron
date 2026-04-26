@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'emergentDownbeat',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['crossLayerEmissionGateway', 'crossLayerHelpers', 'emergentMelodicEngine', 'sectionIntentCurves'],
   provides: ['emergentDownbeat'],
   crossLayerScopes: ['all'],
   init: (deps) => {

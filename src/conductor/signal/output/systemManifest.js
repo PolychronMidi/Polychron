@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'systemManifest',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'signalReader', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'coherenceVerdicts', 'conductorConfig', 'conductorState', 'harmonicJourney', 'mainBootstrap', 'pipelineNormalizer', 'signalHealthAnalyzer', 'systemManifestMarkdown'],
   provides: ['systemManifest'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

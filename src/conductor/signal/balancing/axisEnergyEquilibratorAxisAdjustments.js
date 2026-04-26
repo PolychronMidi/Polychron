@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'axisEnergyEquilibratorAxisAdjustments',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['phaseFloorController', 'pipelineCouplingManager'],
   provides: ['axisEnergyEquilibratorAxisAdjustments'],
   init: () => {
   function axisEnergyEquilibratorAxisAdjustmentsApplyAxisLoop(state, config, context, V) {

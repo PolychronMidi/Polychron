@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'grooveTransfer',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine'],
   provides: ['grooveTransfer'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {

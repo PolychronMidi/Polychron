@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'motifIdentityMemory',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['motifIdentityMemory'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {

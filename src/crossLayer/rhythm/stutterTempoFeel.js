@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'stutterTempoFeel',
   subsystem: 'crossLayer',
   deps: ['stutterFeedbackListener', 'validator'],
+  lazyDeps: ['emergentMelodicEngine'],
   provides: ['stutterTempoFeel'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

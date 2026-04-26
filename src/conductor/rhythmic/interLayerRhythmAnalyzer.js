@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'interLayerRhythmAnalyzer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['interLayerRhythmHelpers'],
   provides: ['interLayerRhythmAnalyzer'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

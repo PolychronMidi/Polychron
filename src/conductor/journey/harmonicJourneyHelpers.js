@@ -4,6 +4,7 @@ moduleLifecycle.declare({
   name: 'harmonicJourneyHelpers',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['conductorConfig'],
   provides: ['harmonicJourneyHelpers'],
   init: () => {
   // R3 E1: brightness spectrum for modal interchange close move

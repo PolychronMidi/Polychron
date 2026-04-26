@@ -9,6 +9,7 @@ moduleLifecycle.declare({
   name: 'timeStreamCrosslayerRegistration',
   subsystem: 'crossLayer',
   deps: ['crossLayerRegistry', 'timeStream'],
+  lazyDeps: ['conductorSignalBridge'],
   provides: ['timeStreamCrosslayerRegistration'],
   init: (deps) => {
     deps.crossLayerRegistry.register('timeStream', { reset: deps.timeStream.resetPositions }, ['all']);

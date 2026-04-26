@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'voiceDensityBalancer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['voiceDensityBalancer'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

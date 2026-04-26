@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'homeostasisState',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['homeostasisConstants'],
   provides: ['homeostasisState'],
   init: () => {
   const C = homeostasisConstants;

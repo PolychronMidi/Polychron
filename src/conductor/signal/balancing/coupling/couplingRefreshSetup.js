@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'couplingRefreshSetup',
   subsystem: 'conductor',
   deps: ['signalReader', 'validator'],
+  lazyDeps: ['couplingConstants', 'couplingHomeostasis', 'couplingState', 'phaseFloorController', 'pipelineCouplingManagerSnapshot'],
   provides: ['couplingRefreshSetup'],
   init: (deps) => {
   const signalReader = deps.signalReader;

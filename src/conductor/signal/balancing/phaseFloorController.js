@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'phaseFloorController',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['hyperMetaManager', 'pipelineCouplingManager', 'regimeClassifier'],
   provides: ['phaseFloorController'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

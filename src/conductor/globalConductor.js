@@ -11,6 +11,7 @@ moduleLifecycle.declare({
   name: 'globalConductor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'systemDynamicsProfiler', 'timeStream', 'validator'],
+  lazyDeps: ['conductorConfig', 'conductorState', 'drumTextureCoupler', 'dynamismEngine', 'emissionFeedbackListener', 'harmonicContext', 'harmonicRhythmTracker', 'hyperMetaManager', 'pipelineCouplingManager'],
   provides: ['globalConductor'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

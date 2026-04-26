@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'sectionIntentCurvesHelpers',
   subsystem: 'crossLayer',
   deps: ['L0', 'sectionMemory', 'validator'],
+  lazyDeps: ['conductorSignalBridge'],
   provides: ['sectionIntentCurvesHelpers'],
   init: (deps) => {
   const L0 = deps.L0;

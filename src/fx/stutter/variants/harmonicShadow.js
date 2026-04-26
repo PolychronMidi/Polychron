@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'harmonicShadowVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['stutterShift'],
   provides: ['harmonicShadowVariant'],
   init: () => {
     stutterVariants.register('harmonicShadow', function harmonicShadow(opts) {

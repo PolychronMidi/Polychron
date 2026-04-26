@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'narrativeTrajectory',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'signalReader', 'systemDynamicsProfiler', 'timeStream', 'validator'],
+  lazyDeps: ['conductorState', 'pipelineCouplingManager'],
   provides: ['narrativeTrajectory'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

@@ -10,6 +10,7 @@ moduleLifecycle.declare({
   // resolves through deps.X. Aliasing as locals keeps refresh() readable
   // (`signalReader.snapshot()` reads from the local const, not the global).
   deps: ['harmonicContext', 'hyperMetaManager', 'pipelineCouplingManager', 'signalReader', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['explainabilityBus'],
   provides: ['conductorSignalBridge'],
   // Phase 4: declare post-init registrations inline. Registry binds the
   // recorder to conductorIntelligence and registers the module with

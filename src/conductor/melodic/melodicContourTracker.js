@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'melodicContourTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['melodicContourTracker'],
   init: (deps) => {
   const L0 = deps.L0;

@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'stutterSwarmVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['stutterShift'],
   provides: ['stutterSwarmVariant'],
   init: () => {
     stutterVariants.register('stutterSwarm', function stutterSwarm(opts) {

@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'harmonicVelocityMonitor',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['conductorState'],
   provides: ['harmonicVelocityMonitor'],
   init: (deps) => {
   const L0 = deps.L0;

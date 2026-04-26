@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'stutterSteps',
   subsystem: 'fx',
   deps: [],
+  lazyDeps: ['stutterVariants'],
   provides: ['stutterSteps'],
   init: () => {
 

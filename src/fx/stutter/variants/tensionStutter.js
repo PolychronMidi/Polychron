@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'tensionStutterVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['conductorSignalBridge'],
   provides: ['tensionStutterVariant'],
   init: () => {
     stutterVariants.register('tensionStutter', function tensionStutter(opts) {

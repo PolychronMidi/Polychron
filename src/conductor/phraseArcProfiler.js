@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'phraseArcProfiler',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['conductorConfig', 'regimeClassifier'],
   provides: ['phraseArcProfiler'],
   init: (deps) => {
   const V = deps.validator.create('phraseArcProfiler');

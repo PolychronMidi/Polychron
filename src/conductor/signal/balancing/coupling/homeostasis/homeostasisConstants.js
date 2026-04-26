@@ -12,6 +12,7 @@ moduleLifecycle.declare({
   name: 'homeostasisConstants',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['couplingConstants'],
   provides: ['homeostasisConstants'],
   init: () => {
 

@@ -11,6 +11,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   // Full DI: eventBus needed for SECTION_BOUNDARY subscription wired inline.
   deps: ['eventBus', 'validator'],
+  lazyDeps: ['conductorDampening', 'conductorDiagnostics', 'conductorRecorderRegistry', 'conductorStateProviderRegistry', 'pipelineNormalizer', 'regimeClassifier'],
   provides: ['conductorIntelligence'],
   init: (deps) => {
   const eventBus = deps.eventBus;

@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'sectionLengthAdvisor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['phraseLengthMomentumTracker'],
   provides: ['sectionLengthAdvisor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

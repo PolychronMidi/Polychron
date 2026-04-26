@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'registerPressureMonitor',
   subsystem: 'conductor',
   deps: [],
+  lazyDeps: ['octaveHelpers'],
   provides: ['registerPressureMonitor'],
   conductorScopes: ['section'],
   stateProvider: () => ({

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'harmonicSurpriseIndex',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['harmonicSurpriseIndex'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

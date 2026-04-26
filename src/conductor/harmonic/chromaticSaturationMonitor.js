@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'chromaticSaturationMonitor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['pitchClassHelpers'],
   provides: ['chromaticSaturationMonitor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

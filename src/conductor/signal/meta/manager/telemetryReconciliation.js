@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'hyperMetaManagerTelemetry',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['hyperMetaManagerState'],
   provides: ['hyperMetaManagerTelemetry'],
   init: (deps) => {
   const V = deps.validator.create('telemetryReconciliation');

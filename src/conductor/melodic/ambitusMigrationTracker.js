@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'ambitusMigrationTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['ambitusMigrationTracker'],
   init: (deps) => {
   const L0 = deps.L0;

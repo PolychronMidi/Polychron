@@ -14,6 +14,7 @@ moduleLifecycle.declare({
   name: 'stutterContagion',
   subsystem: 'crossLayer',
   deps: ['L0', 'stutterVariants', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine', 'rhythmicPhaseLock'],
   provides: ['stutterContagion'],
   crossLayerScopes: ['all'],
   init: (deps) => {

@@ -4,6 +4,7 @@ moduleLifecycle.declare({
   name: 'systemDynamicsProfiler',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['entropyAmplificationController', 'regimeClassifier', 'systemDynamicsProfilerAnalysis', 'systemDynamicsProfilerHelpers'],
   provides: ['systemDynamicsProfiler'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

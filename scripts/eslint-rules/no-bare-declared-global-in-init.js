@@ -64,6 +64,12 @@ module.exports = {
 
     // Track aliases: `const NAME = deps.NAME;` makes NAME safe to use bare.
     const aliasedFromDeps = new Set();
+    // Track lazyDeps: declared in the manifest's lazyDeps array. Means
+    // "this module references X at runtime but does not need X bound at
+    // init time." Bare references to lazyDeps are SILENCED -- the
+    // dependency contract is documented in the manifest, just not via
+    // topo-sort or alias capture.
+    const lazyDeps = new Set();
     // Track init function nesting depth.
     let inInitDepth = 0;
     let initFnNode = null;
@@ -88,6 +94,23 @@ module.exports = {
         if (isInitArrow(node)) {
           inInitDepth++;
           initFnNode = node;
+          // Walk the manifest object's lazyDeps array (sibling of the init
+          // property) to populate the silenced set for this declare scope.
+          const initProperty = node.parent;
+          const manifestObj = initProperty && initProperty.parent;
+          if (manifestObj && manifestObj.type === 'ObjectExpression') {
+            for (const prop of manifestObj.properties) {
+              if (prop.type !== 'Property' || !prop.key) continue;
+              const key = prop.key.name || prop.key.value;
+              if (key !== 'lazyDeps') continue;
+              if (!prop.value || prop.value.type !== 'ArrayExpression') continue;
+              for (const el of prop.value.elements) {
+                if (el && el.type === 'Literal' && typeof el.value === 'string') {
+                  lazyDeps.add(el.value);
+                }
+              }
+            }
+          }
         }
       },
       'ArrowFunctionExpression:exit'(node) {
@@ -96,6 +119,7 @@ module.exports = {
           if (inInitDepth === 0) {
             initFnNode = null;
             aliasedFromDeps.clear();
+            lazyDeps.clear();
           }
         }
       },
@@ -114,6 +138,7 @@ module.exports = {
         const name = node.name;
         if (!declared.has(name)) return;
         if (aliasedFromDeps.has(name)) return;
+        if (lazyDeps.has(name)) return;
         // Skip property accesses like `obj.metaProfiles` (we only care about
         // bare-identifier references to declared modules).
         const parent = node.parent;

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'dynamicRangeTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'pipelineCouplingManager'],
   provides: ['dynamicRangeTracker'],
   init: (deps) => {
   const L0 = deps.L0;

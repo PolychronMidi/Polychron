@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'registerMigrationTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['registerMigrationTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

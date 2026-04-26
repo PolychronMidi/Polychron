@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'dynamismEngine',
   subsystem: 'conductor',
   deps: ['L0', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['FXFeedbackListener', 'conductorConfig', 'dynamicRoleSwap', 'dynamismPulse', 'emissionFeedbackListener', 'harmonicJourney', 'harmonicRhythmTracker', 'journeyRhythmCoupler', 'pipelineCouplingManager', 'stutterFeedbackListener', 'textureBlender'],
   provides: ['dynamismEngine'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

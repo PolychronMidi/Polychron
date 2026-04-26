@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'voiceLeadingEfficiencyTracker',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['voiceLeadingEfficiencyTracker'],
   init: (deps) => {
   const L0 = deps.L0;

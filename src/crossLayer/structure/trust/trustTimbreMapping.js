@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'trustTimbreMapping',
   subsystem: 'crossLayer',
   deps: [],
+  lazyDeps: ['trustEcologyCharacter'],
   provides: ['trustTimbreMapping'],
   crossLayerScopes: ['all', 'section'],
   init: () => {

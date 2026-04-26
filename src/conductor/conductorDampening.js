@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'conductorDampening',
   subsystem: 'conductor',
   deps: ['systemDynamicsProfiler', 'timeStream', 'validator'],
+  lazyDeps: ['conductorMetaWatchdog', 'explainabilityBus', 'phaseFloorController', 'pipelineCouplingManager'],
   provides: ['conductorDampening'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

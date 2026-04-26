@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'couplingGainEscalation',
   subsystem: 'conductor',
   deps: ['signalReader', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'couplingConstants', 'couplingState', 'explainabilityBus', 'pipelineCouplingManagerSnapshot'],
   provides: ['couplingGainEscalation'],
   init: (deps) => {
   const signalReader = deps.signalReader;

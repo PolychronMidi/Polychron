@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'adaptiveTrustScoresHelpers',
   subsystem: 'crossLayer',
   deps: ['couplingHomeostasis', 'pipelineCouplingManager', 'regimeClassifier', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'contextualTrust'],
   provides: ['adaptiveTrustScoresHelpers'],
   init: (deps) => {
   const couplingHomeostasis = deps.couplingHomeostasis;

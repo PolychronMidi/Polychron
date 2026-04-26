@@ -5,6 +5,7 @@ moduleLifecycle.declare({
   name: 'flickerStutterVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['conductorSignalBridge'],
   provides: ['flickerStutterVariant'],
   init: () => {
     stutterVariants.register('flickerStutter', function flickerStutter(opts) {

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'articulationComplement',
   subsystem: 'crossLayer',
   deps: ['L0', 'timeStream', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'crossLayerHelpers', 'emergentMelodicEngine', 'sectionIntentCurves'],
   provides: ['articulationComplement'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

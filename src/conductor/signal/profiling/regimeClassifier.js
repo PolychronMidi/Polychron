@@ -4,6 +4,7 @@ moduleLifecycle.declare({
   name: 'regimeClassifier',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['regimeClassifierClassification', 'regimeClassifierHelpers', 'regimeClassifierResolution'],
   provides: ['regimeClassifier'],
   init: (deps) => {
   const V = deps.validator.create('regimeClassifier');

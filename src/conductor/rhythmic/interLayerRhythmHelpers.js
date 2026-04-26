@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'interLayerRhythmHelpers',
   subsystem: 'conductor',
   deps: ['L0', 'validator'],
+  lazyDeps: ['analysisHelpers', 'beatGridHelpers'],
   provides: ['interLayerRhythmHelpers'],
   init: (deps) => {
   const L0 = deps.L0;

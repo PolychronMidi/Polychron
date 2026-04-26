@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'accentPatternTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'beatGridHelpers'],
   provides: ['accentPatternTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

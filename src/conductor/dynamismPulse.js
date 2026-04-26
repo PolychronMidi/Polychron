@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'dynamismPulse',
   subsystem: 'conductor',
   deps: ['timeStream'],
+  lazyDeps: ['conductorConfig'],
   provides: ['dynamismPulse'],
   init: (deps) => {
   const timeStream = deps.timeStream;

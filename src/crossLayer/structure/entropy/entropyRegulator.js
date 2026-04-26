@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'entropyRegulator',
   subsystem: 'crossLayer',
   deps: ['L0', 'pipelineCouplingManager', 'timeStream', 'validator'],
+  lazyDeps: ['conductorSignalBridge', 'emergentMelodicEngine', 'entropyMetrics', 'rhythmicPhaseLock'],
   provides: ['entropyRegulator'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {

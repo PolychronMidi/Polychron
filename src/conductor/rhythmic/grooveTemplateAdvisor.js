@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'grooveTemplateAdvisor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['grooveTemplateAdvisor'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

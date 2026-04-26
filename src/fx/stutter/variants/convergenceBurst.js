@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'convergenceBurstVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['convergenceDetector'],
   provides: ['convergenceBurstVariant'],
   init: () => {
     const convergenceBurstByLayer = {};

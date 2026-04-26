@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'onsetDensityProfiler',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['onsetDensityProfiler'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

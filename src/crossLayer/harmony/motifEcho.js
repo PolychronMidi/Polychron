@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'motifEcho',
   subsystem: 'crossLayer',
   deps: ['L0', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine', 'motifIdentityMemory', 'rhythmicPhaseLock'],
   provides: ['motifEcho'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {

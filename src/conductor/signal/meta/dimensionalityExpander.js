@@ -19,6 +19,7 @@ moduleLifecycle.declare({
   name: 'dimensionalityExpander',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'systemDynamicsProfiler', 'validator'],
+  lazyDeps: ['explainabilityBus'],
   provides: ['dimensionalityExpander'],
   init: (deps) => {
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;

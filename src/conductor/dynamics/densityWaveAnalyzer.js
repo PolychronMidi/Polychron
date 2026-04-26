@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'densityWaveAnalyzer',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'timeStream', 'validator'],
+  lazyDeps: ['hyperMetaManager', 'phaseFloorController', 'pipelineCouplingManager', 'signalHealthAnalyzer'],
   provides: ['densityWaveAnalyzer'],
   init: (deps) => {
   const timeStream = deps.timeStream;

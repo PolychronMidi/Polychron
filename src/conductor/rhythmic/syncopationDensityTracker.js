@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'syncopationDensityTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers', 'beatGridHelpers'],
   provides: ['syncopationDensityTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

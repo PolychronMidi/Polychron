@@ -13,6 +13,7 @@ moduleLifecycle.declare({
   name: 'couplingBudgetScoring',
   subsystem: 'conductor',
   deps: ['validator'],
+  lazyDeps: ['couplingConstants', 'couplingState', 'pipelineCouplingManagerSnapshot'],
   provides: ['couplingBudgetScoring'],
   init: (deps) => {
   const V = deps.validator.create('couplingBudgetScoring');

@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'counterpointMotionTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['counterpointMotionTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'cadenceAlignment',
   subsystem: 'crossLayer',
   deps: ['L0', 'eventBus', 'regimeClassifier', 'validator'],
+  lazyDeps: ['crossLayerHelpers', 'emergentMelodicEngine'],
   provides: ['cadenceAlignment'],
   crossLayerScopes: ['all'],
   init: (deps) => {

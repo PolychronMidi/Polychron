@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'directionalOscillationVariant',
   subsystem: 'fx',
   deps: ['stutterVariants'],
+  lazyDeps: ['stutterShift'],
   provides: ['directionalOscillationVariant'],
   init: () => {
     stutterVariants.register('directionalOscillation', function directionalOscillation(opts) {

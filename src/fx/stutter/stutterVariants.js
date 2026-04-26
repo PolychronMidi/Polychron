@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'stutterVariants',
   subsystem: 'fx',
   deps: ['L0', 'harmonicContext', 'stutterFeedbackListener', 'systemDynamicsProfiler', 'timeStream', 'validator'],
+  lazyDeps: ['articulationComplement', 'conductorSignalBridge', 'crossLayerHelpers', 'emergentMelodicEngine', 'entropyRegulator', 'rhythmicComplementEngine'],
   provides: ['stutterVariants'],
   init: (deps) => {
   const L0 = deps.L0;

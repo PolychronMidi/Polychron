@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'tonalAnchorDistanceTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['conductorState', 'pitchClassHelpers'],
   provides: ['tonalAnchorDistanceTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

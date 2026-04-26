@@ -6,6 +6,7 @@ moduleLifecycle.declare({
   name: 'phaseLockedRhythmGenerator',
   subsystem: 'rhythm',
   deps: ['conductorConfig', 'phaseFloorController', 'pipelineCouplingManager', 'systemDynamicsProfiler', 'timeStream', 'validator'],
+  lazyDeps: ['drumTextureCoupler'],
   provides: ['phaseLockedRhythmGenerator'],
   init: (deps) => {
   const timeStream = deps.timeStream;

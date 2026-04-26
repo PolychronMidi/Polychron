@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'warmupRampController',
   subsystem: 'conductor',
   deps: ['conductorIntelligence'],
+  lazyDeps: ['pairGainCeilingController'],
   provides: ['warmupRampController'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

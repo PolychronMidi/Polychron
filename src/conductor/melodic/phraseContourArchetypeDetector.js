@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'phraseContourArchetypeDetector',
   subsystem: 'conductor',
   deps: ['L0', 'conductorIntelligence'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['phraseContourArchetypeDetector'],
   init: (deps) => {
   const L0 = deps.L0;

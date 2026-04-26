@@ -4,6 +4,7 @@ moduleLifecycle.declare({
   name: 'mainBootstrap',
   subsystem: 'play',
   deps: ['cadenceAdvisor', 'conductorConfig', 'conductorIntelligence', 'conductorState', 'convergenceHarmonicTrigger', 'crossLayerClimaxEngine', 'crossLayerRegistry', 'crossLayerSilhouette', 'dynamismEngine', 'entropyRegulator', 'globalConductor', 'harmonicJourney', 'interactionHeatMap', 'negotiationEngine', 'phaseLockedRhythmGenerator', 'pivotChordBridge', 'rhythmicPhaseLock', 'sectionIntentCurves', 'sectionLengthAdvisor', 'structuralFormTracker', 'texturalMemoryAdvisor', 'textureBlender', 'validator'],
+  lazyDeps: ['beatPipelineDescriptor', 'eventBus', 'feedbackGraphContract', 'fullBootstrap'],
   provides: ['mainBootstrap'],
   init: (deps) => {
   const cadenceAdvisor = deps.cadenceAdvisor;

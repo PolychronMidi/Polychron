@@ -2,6 +2,7 @@ moduleLifecycle.declare({
   name: 'systemDynamicsProfilerHelpers',
   subsystem: 'conductor',
   deps: ['L0', 'signalReader', 'timeStream', 'validator'],
+  lazyDeps: ['adaptiveTrustScores', 'conductorConfig', 'entropyAmplificationController', 'entropyMetrics', 'explainabilityBus', 'regimeClassifier'],
   provides: ['systemDynamicsProfilerHelpers'],
   init: (deps) => {
   const signalReader = deps.signalReader;

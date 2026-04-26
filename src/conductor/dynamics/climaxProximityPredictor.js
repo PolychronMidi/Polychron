@@ -7,6 +7,7 @@ moduleLifecycle.declare({
   name: 'climaxProximityPredictor',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'timeStream'],
+  lazyDeps: ['energyMomentumTracker', 'harmonicContext', 'onsetDensityProfiler', 'registerPressureMonitor'],
   provides: ['climaxProximityPredictor'],
   init: (deps) => {
   const timeStream = deps.timeStream;

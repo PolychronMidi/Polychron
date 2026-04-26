@@ -8,6 +8,7 @@ moduleLifecycle.declare({
   name: 'silenceDistributionTracker',
   subsystem: 'conductor',
   deps: ['conductorIntelligence', 'validator'],
+  lazyDeps: ['analysisHelpers'],
   provides: ['silenceDistributionTracker'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;

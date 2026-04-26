@@ -33,6 +33,7 @@ moduleLifecycle.declare({
   // here forces them to load before this module instantiates, which is
   // already the case via the helpers-first pattern in the index files.
   deps: ['conductorIntelligence', 'explainabilityBus', 'hyperMetaManagerState', 'signalReader'],
+  lazyDeps: ['correlationShuffler', 'hyperMetaManagerContradictions', 'hyperMetaManagerEvolutions', 'hyperMetaManagerHealth', 'hyperMetaManagerTelemetry', 'hyperMetaManagerTopology', 'reconvergenceAccelerator'],
   provides: ['hyperMetaManager'],
   init: (deps) => {
   const conductorIntelligence = deps.conductorIntelligence;
