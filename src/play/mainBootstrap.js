@@ -184,9 +184,9 @@ mainBootstrap = (() => {
     /** @type {[string, any][]} */
     // Legacy initializer-method check: only modules that still use the
     // `name = (() => {...})()` IIFE + registerInitializer pattern need
-    // `.initialize()` on their API. Modules migrated to moduleLifecycle.declare()
-    // handle init via the registry (no exposed initialize method); they're
-    // verified by the moduleLifecycle topo-sort + assertBootstrapGlobals.
+    // `.initialize()` on their API. Modules migrated to the registry
+    // handle init via moduleLifecycle (no exposed initialize method); they
+    // are verified by the registry topo-sort + assertBootstrapGlobals.
     const requiredInitializers = [
       ['FXFeedbackListener', FXFeedbackListener],
       ['stutterFeedbackListener', stutterFeedbackListener],
