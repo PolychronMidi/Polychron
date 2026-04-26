@@ -202,6 +202,19 @@ async function runStopChain(stdinJson) {
       if (!firstDeny) {
         firstDeny = result;
         appendTrace('deny_captured', name);
+      } else {
+        // Append additional denies to the first deny's reason so the user
+        // sees ALL block-worthy alerts on the same Stop, not just the
+        // earliest. Pre-fix: only the first deny surfaced; auto-completeness
+        // and other later-firing policies were silently swallowed when
+        // PSYCHOPATHIC-STOP or anti_patterns won the race. The user's
+        // recurring "auto-completeness STILL didn't fire!" scream traces
+        // here.
+        firstDeny = {
+          decision: 'deny',
+          reason: `${firstDeny.reason}\n\n---\n\n${result.reason}`,
+        };
+        appendTrace('deny_appended', name);
       }
       // Later policies still run for their side effects.
     } else if (result.decision === 'instruct' && result.message) {

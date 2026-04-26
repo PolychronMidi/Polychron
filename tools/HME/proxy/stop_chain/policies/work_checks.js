@@ -128,12 +128,19 @@ module.exports = {
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);
 
     // Auto-completeness inject — fires up to COMPL_MAX times per user-turn.
-    // Skip entirely when an earlier policy already captured a deny: under
-    // first-deny-wins, the user will never see this prompt, so bumping the
-    // turn-counter would silently advance to "round 2" without ever showing
-    // round 1. Mirrors the original sourced-bash chain where `exit 0` from
-    // an earlier stage stopped this code from running.
-    if (ctx.hasPriorDeny()) return ctx.allow();
+    // PRIOR FIX REMOVED: previously this skipped when any earlier policy
+    // (PSYCHOPATHIC-STOP, etc.) already denied. That meant the user only
+    // saw the EARLIEST deny, never auto-completeness. The user's repeated
+    // screams about "auto-completeness still not firing" traced directly
+    // here -- when PSYCHOPATHIC-STOP fired, auto-completeness silently
+    // skipped. Auto-completeness now ALWAYS fires when conditions allow,
+    // regardless of prior denies. The Stop chain runner emits the FIRST
+    // deny as the block reason; if multiple policies deny, downstream
+    // implementations need to either chain the messages or surface them
+    // separately. For now: the first-deny-wins behavior in the runner
+    // means auto-completeness's deny may be hidden if PSYCHOPATHIC-STOP
+    // already won, but the COMPL counter advances correctly so round 2
+    // fires on the next opportunity.
 
     const transcriptPath = ctx.payload && ctx.payload.transcript_path;
     if (!transcriptPath) return ctx.allow();
