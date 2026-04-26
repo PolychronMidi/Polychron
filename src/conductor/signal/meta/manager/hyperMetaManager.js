@@ -24,8 +24,17 @@
  * @global
  * @type {hyperMetaManagerAPI}
  */
-hyperMetaManager = (() => {
-  const ST     = hyperMetaManagerState;
+moduleLifecycle.declare({
+  name: 'hyperMetaManager',
+  subsystem: 'conductor',
+  // Top-of-init touches hyperMetaManagerState (assignment to S/ST). systemHealth
+  // / contradictions / topologyIntelligence / conductorIntelligence /
+  // signalReader are all referenced inside tick() and other handlers called
+  // post-boot -- they don't need to gate this module's instantiation.
+  deps: ['hyperMetaManagerState'],
+  provides: ['hyperMetaManager'],
+  init: (deps) => {
+  const ST     = deps.hyperMetaManagerState;
   const S      = ST.S;
   const health = hyperMetaManagerHealth;
   const contra = hyperMetaManagerContradictions;
@@ -277,4 +286,5 @@ hyperMetaManager = (() => {
     getSnapshot,
     reset,
   };
-})();
+  },
+});

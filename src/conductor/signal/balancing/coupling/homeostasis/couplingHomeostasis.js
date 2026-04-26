@@ -16,7 +16,19 @@
  * homeostasisTick, and floor/pressure in homeostasisFloor.
  */
 
-couplingHomeostasis = (() => {
+moduleLifecycle.declare({
+  name: 'couplingHomeostasis',
+  subsystem: 'conductor',
+  // Init touches conductorIntelligence (.registerRecorder, .registerModule)
+  // at the bottom plus the homeostasis* sub-modules in returned function bodies.
+  deps: ['conductorIntelligence', 'homeostasisState', 'homeostasisRefresh', 'homeostasisTick', 'homeostasisFloor'],
+  provides: ['couplingHomeostasis'],
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
+  const homeostasisState = deps.homeostasisState;
+  const homeostasisRefresh = deps.homeostasisRefresh;
+  const homeostasisTick = deps.homeostasisTick;
+  const homeostasisFloor = deps.homeostasisFloor;
 
   function refresh() {
     homeostasisRefresh.refresh();
@@ -85,4 +97,5 @@ couplingHomeostasis = (() => {
   conductorIntelligence.registerModule('couplingHomeostasis', { reset }, ['section']);
 
   return { getState, reset, tick, getFloorDampen };
-})();
+  },
+});

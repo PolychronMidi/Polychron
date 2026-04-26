@@ -1,14 +1,14 @@
 moduleLifecycle.declare({
   name: 'adaptiveTrustScores',
   subsystem: 'crossLayer',
-  deps: ['validator', 'controllerConfig', 'metaProfiles', 'trustSystems', 'explainabilityBus'],
+  // Init top-level touches validator + controllerConfig.getSection().
+  // metaProfiles / trustSystems / explainabilityBus are referenced from
+  // function bodies called per-beat post-boot.
+  deps: ['validator', 'controllerConfig'],
   provides: ['adaptiveTrustScores'],
   init: (deps) => {
   const V = deps.validator.create('adaptiveTrustScores');
   const controllerConfig = deps.controllerConfig;
-  const metaProfiles = deps.metaProfiles;
-  const trustSystems = deps.trustSystems;
-  const explainabilityBus = deps.explainabilityBus;
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
   const _atsc = controllerConfig.getSection('adaptiveTrustScores');
