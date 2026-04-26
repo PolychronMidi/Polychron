@@ -291,12 +291,30 @@ EXIT_CODE=$(echo "$RESP" | jq -r '.exit_code // 0' 2>/dev/null)
 # normally runs (end of turn). _safe_curl now logs every failure; this
 # helper shoves them into the model's teeth on the very next tool result
 # instead of waiting for Stop.
+#
+# CRITICAL: do NOT silence stderr from the helper. If the helper itself
+# crashes (unbound var, missing dep), we MUST log that failure -- the
+# silent-fail-detection chain must not silent-fail. Helper stderr routes to
+# errors.log so it gets picked up by the next inline check (or Stop scan)
+# as a self-referential alert.
 if [ "$EVENT" = "PostToolUse" ]; then
-  _PB_INLINE_HELPER="${CLAUDE_PLUGIN_ROOT:-/home/jah/Polychron/tools/HME/hooks/..}/hooks/helpers/_check_errors_inline.sh"
+  _PB_ROOT_FOR_INLINE="${PROJECT_ROOT:-/home/jah/Polychron}"
+  _PB_INLINE_HELPER="${CLAUDE_PLUGIN_ROOT:-${_PB_ROOT_FOR_INLINE}/tools/HME}/hooks/helpers/_check_errors_inline.sh"
   if [ -f "$_PB_INLINE_HELPER" ]; then
+    _PB_INLINE_ERR=$(mktemp 2>/dev/null || echo "/tmp/inline_err_$$.log")
     # shellcheck disable=SC1090
     source "$_PB_INLINE_HELPER"
-    _PB_INLINE_OUT=$(_hme_check_errors_inline 2>/dev/null)
+    _PB_INLINE_OUT=$(_hme_check_errors_inline 2>"$_PB_INLINE_ERR")
+    # Surface any helper-side errors LOUDLY into errors.log -- prevents the
+    # alert-firing system itself from being a silent-fail vector.
+    if [ -s "$_PB_INLINE_ERR" ]; then
+      _PB_INLINE_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      while IFS= read -r line; do
+        [ -n "$line" ] && echo "[$_PB_INLINE_TS] [_check_errors_inline] helper crashed: $line" \
+          >> "$_PB_ROOT_FOR_INLINE/log/hme-errors.log"
+      done < "$_PB_INLINE_ERR"
+    fi
+    rm -f "$_PB_INLINE_ERR" 2>&1
     if [ -n "$_PB_INLINE_OUT" ]; then
       # If the proxy response was empty, emit the inline JSON as the
       # PostToolUse output. If the proxy ALSO had output, prepend the inline
@@ -304,6 +322,10 @@ if [ "$EVENT" = "PostToolUse" ]; then
       STDOUT="${_PB_INLINE_OUT}${STDOUT:+
 $STDOUT}"
     fi
+  else
+    # Helper missing entirely -- log immediately, don't silent-fail.
+    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_proxy_bridge] inline-error-check helper missing at: $_PB_INLINE_HELPER" \
+      >> "$_PB_ROOT_FOR_INLINE/log/hme-errors.log" 2>&1 || true
   fi
 fi
 
