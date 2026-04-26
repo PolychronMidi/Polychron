@@ -66,8 +66,8 @@ repetitionFatigueMonitor = (() => {
     if (profile.fatigueLevel <= 0.20) return 1.0;
     const ramp = clamp((profile.fatigueLevel - 0.20) / 0.80, 0, 1);
     let penalty = 1.0 + ramp * 0.12;
-    const secProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
-    const edgeDistance = typeof secProgress === 'number' && Number.isFinite(secProgress)
+    const secProgress = timeStream.normalizedProgress('section');
+    const edgeDistance = Number.isFinite(secProgress)
       ? m.min(clamp(secProgress, 0, 1), clamp(1 - secProgress, 0, 1))
       : 0.5;
     const edgePressure = clamp((0.18 - edgeDistance) / 0.18, 0, 1);

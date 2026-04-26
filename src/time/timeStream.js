@@ -4,8 +4,13 @@
 // look ahead/behind, compute progress, and detect boundaries -
 // without coupling to the imperative loop structure in layerPass.
 
-timeStream = (() => {
-  const V = validator.create('timeStream');
+moduleLifecycle.declare({
+  name: 'timeStream',
+  subsystem: 'time',
+  deps: ['validator'],
+  provides: ['timeStream'],
+  init: (deps) => {
+  const V = deps.validator.create('timeStream');
 
   const LEVELS = Object.freeze(['section', 'phrase', 'measure', 'beat', 'div', 'subdiv', 'subsubdiv']);
   const LEVEL_SET = new Set(LEVELS);
@@ -225,4 +230,5 @@ timeStream = (() => {
     resetSubLevels,
     positionString
   };
-})();
+  },
+});

@@ -144,7 +144,7 @@ criticalityEngine = (() => {
     // in Q3/Q4 territory (Q3 collapsed 0.765->0.643). Front half keeps
     // normal gating. This is a structural change to the controller chain.
     {
-      const secProgForGate = /** @type {number} */ (safePreBoot.call(() => clamp(timeStream.compoundProgress('section'), 0, 1), 0));
+      const secProgForGate = clamp(timeStream.compoundProgress('section'), 0, 1);
       if (secProgForGate > 0.55) return 1.0;
     }
     // Orchestrator tension floor protection. When the manager detects

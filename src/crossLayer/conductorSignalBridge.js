@@ -3,8 +3,22 @@
 // Reads signalReader each beat and caches a snapshot so cross-layer modules
 // never need to understand conductorIntelligence internals.
 
-conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
-  const V = validator.create('conductorSignalBridge');
+moduleLifecycle.declare({
+  name: 'conductorSignalBridge',
+  subsystem: 'crossLayer',
+  deps: ['validator', 'signalReader', 'conductorIntelligence', 'hyperMetaManager', 'systemDynamicsProfiler'],
+  provides: ['conductorSignalBridge'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorSignalBridge');
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
+  const hyperMetaManager = deps.hyperMetaManager;
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  void V;
+  void signalReader;
+  void conductorIntelligence;
+  void hyperMetaManager;
+  void systemDynamicsProfiler;
 
   let cached = /** @type {{ density: number, tension: number, flicker: number, compositeIntensity: number, sectionPhase: string, coherenceEntropy: number, healthEma: number, systemPhase: string, exceedanceTrendEma: number, topologyPhase: string, regime: string, effectiveDimensionality: number, couplingStrength: number, axisEnergyShares: Record<string,number>|null, adaptiveTargetSnapshot: Record<string,any>|null, couplingLabels: Record<string,string>|null, regimeProb: {coherent:number,exploring:number,evolving:number}, updatedAt: number }} */ ({
     density: 1,
@@ -144,7 +158,8 @@ conductorSignalBridge = /** @type {ConductorSignalBridgeAPI} */ ((() => {
   }
 
   return { refresh, getSignals, reset };
-})());
+  },
+});
 // Registered as a recorder so refresh(ctx) runs each beat automatically.
 conductorIntelligence.registerRecorder('conductorSignalBridge', (ctx) => { conductorSignalBridge.refresh(ctx); });
 crossLayerRegistry.register('conductorSignalBridge', conductorSignalBridge, ['all', 'section']);
