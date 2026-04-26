@@ -21,8 +21,8 @@ from pathlib import Path
 from collections import defaultdict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TRACE_PATH = PROJECT_ROOT / "metrics" / "trace.jsonl"
-REGISTRY_PATH = PROJECT_ROOT / "metrics" / "hme-suspected-upstreams.json"
+TRACE_PATH = PROJECT_ROOT / "output" / "metrics" / "trace.jsonl"
+REGISTRY_PATH = PROJECT_ROOT / "output" / "metrics" / "hme-suspected-upstreams.json"
 THRESHOLD = -0.4
 MAX_ROWS = 5000
 
