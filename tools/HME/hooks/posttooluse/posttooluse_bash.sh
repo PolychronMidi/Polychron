@@ -31,12 +31,19 @@ _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub
 # the [no-work] and [picked-difficulty:] sentinels we already use.
 # Multiple matches per tool output are all enqueued.
 #
-# CRITICAL: only fires when BUDDY_SYSTEM=1. Without an active drainer,
-# enqueued tasks pile up in pending/ forever (the same stack-up class
-# the universal-prune fix closed for done todos). When buddies are
-# disabled, the sentinel is observed (logged to stderr for transcript
-# evidence) but no task file is written.
-if [ "${BUDDY_SYSTEM:-0}" = "1" ]; then
+# CRITICAL: only fires when an active dispatcher mode is configured.
+# Without a drainer, enqueued tasks pile up in pending/ forever (the
+# same stack-up class the universal-prune fix closed for done todos).
+# Active when EITHER:
+#   - BUDDY_SYSTEM=1 (claude-resume drainer)
+#   - HME_DISPATCH_MODE=synthesis (synthesis_reasoning drainer)
+# When neither holds, the sentinel is observed (logged to stderr for
+# transcript evidence) but no task file is written.
+_DISP_MODE="${HME_DISPATCH_MODE:-}"
+if [ -z "$_DISP_MODE" ]; then
+  [ "${BUDDY_SYSTEM:-0}" = "1" ] && _DISP_MODE="claude-resume" || _DISP_MODE="disabled"
+fi
+if [ "$_DISP_MODE" = "claude-resume" ] || [ "$_DISP_MODE" = "synthesis" ]; then
   _ENQUEUE_OUTPUT=$(_safe_jq "$INPUT" '.tool_response' '')
   if [ -n "$_ENQUEUE_OUTPUT" ] && [ -n "${PROJECT_ROOT:-}" ]; then
     _BUDDY_CLI="$PROJECT_ROOT/i/buddy"
@@ -62,7 +69,7 @@ else
   # "I emitted [enqueue: ...] but nothing happened" debugging gap.
   _ENQ_PEEK=$(_safe_jq "$INPUT" '.tool_response' '' | grep -oE '\[enqueue:[^]]+\]' | head -3)
   if [ -n "$_ENQ_PEEK" ]; then
-    echo "[enqueue-sentinel] BUDDY_SYSTEM=0 — $(echo "$_ENQ_PEEK" | wc -l) enqueue sentinel(s) seen but not queued (no drainer active). Set BUDDY_SYSTEM=1 in .env to enable." >&2
+    echo "[enqueue-sentinel] dispatch disabled — $(echo "$_ENQ_PEEK" | wc -l) enqueue sentinel(s) seen but not queued. Set BUDDY_SYSTEM=1 (claude-resume) OR HME_DISPATCH_MODE=synthesis (route through HME's synthesis cascade) in .env to activate." >&2
   fi
 fi
 

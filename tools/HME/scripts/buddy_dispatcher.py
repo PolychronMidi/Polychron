@@ -137,6 +137,31 @@ _RATE_LIMIT_MODE = os.environ.get("HME_BUDDY_ON_RATE_LIMIT", "pause")  # fail|pa
 _MAX_RATE_LIMIT_PAUSE_SECONDS = int(os.environ.get("HME_BUDDY_MAX_PAUSE_SEC", str(8 * 3600)))
 _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 
+# Dispatch mode — decouples the dispatcher from the buddy fanout's
+# `claude --resume <sid>` worker so the queue + orphan-sweep + verdict
+# infrastructure stays useful even when BUDDY_SYSTEM=0:
+#
+#   claude-resume  default when BUDDY_SYSTEM=1; spawns claude-cli per task
+#                  against the buddy's persistent session (model+effort
+#                  routing, etc.). Original behavior.
+#   synthesis      routes each task through synthesis_reasoning.call() —
+#                  HME's existing local/cascade reasoning path. No
+#                  Anthropic API calls, no rate-limit exposure, no buddy
+#                  sessions needed. Effective when Anthropic quota is
+#                  exhausted but local llamacpp / cascade providers are
+#                  still healthy.
+#   disabled       no dispatcher activity; enqueue sentinel skips, drain
+#                  refuses. Default when BUDDY_SYSTEM=0 + no override.
+#
+# Resolution: HME_DISPATCH_MODE env wins; otherwise BUDDY_SYSTEM=1 →
+# claude-resume, BUDDY_SYSTEM=0 → disabled.
+_BUDDY_SYSTEM_FLAG = os.environ.get("BUDDY_SYSTEM", "0").strip()
+_DISPATCH_MODE = os.environ.get("HME_DISPATCH_MODE", "").strip().lower()
+if not _DISPATCH_MODE:
+    _DISPATCH_MODE = "claude-resume" if _BUDDY_SYSTEM_FLAG == "1" else "disabled"
+if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
+    _DISPATCH_MODE = "disabled"
+
 
 def _ensure_dirs() -> None:
     for p in (QUEUE_PENDING, QUEUE_PROCESSING, QUEUE_DONE, QUEUE_FAILED, FANOUT_ROOT):
@@ -198,8 +223,28 @@ def _log_error(msg: str) -> None:
 
 
 def _list_buddies() -> list[dict]:
-    """Discover available co-buddies by scanning tmp/hme-buddy*.sid.
-    Returns list of {slot, sid, floor, sid_file, processing_dir}."""
+    """Discover available co-buddies (or synthesize a virtual worker
+    when HME_DISPATCH_MODE=synthesis). Returns list of dicts with
+    {slot, sid, floor, effort_floor, sid_file, processing_dir}.
+
+    When mode=synthesis, returns a single virtual worker that dispatches
+    via synthesis_reasoning.call() — no SID, no buddy session, no
+    Anthropic API quota required. Lets the queue/manifest/orphan-sweep
+    infrastructure stay useful when BUDDY_SYSTEM=0.
+    """
+    if _DISPATCH_MODE == "disabled":
+        return []
+    if _DISPATCH_MODE == "synthesis":
+        # Single virtual worker — synthesis_reasoning has its own
+        # provider cascade so we don't need parallel buddy slots.
+        return [{
+            "slot": 1,
+            "sid": "synthesis",  # sentinel: dispatch routes through synthesis_reasoning
+            "floor": "medium",
+            "effort_floor": "medium",
+            "sid_file": None,
+            "processing_dir": QUEUE_PROCESSING / "synthesis-1",
+        }]
     buddies = []
     tmp = PROJECT_ROOT / "tmp"
     def _read_floor_pair(sid_file: Path):
@@ -363,6 +408,82 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
     )
     timeout_s = {"easy": 60, "medium": 300, "hard": 900}.get(effective, 300)
     pause_count = 0
+    # Synthesis-routed dispatch: when buddy["sid"] is the "synthesis"
+    # sentinel, route through synthesis_reasoning.call() instead of
+    # claude --resume. No Anthropic-API rate-limit pause loop needed —
+    # synthesis_reasoning has its own provider cascade + circuit
+    # breakers that handle quota internally. Returns the response text
+    # as stdout-equivalent for the verdict; no stderr (synthesis has no
+    # subprocess channel). Failures (None return = full cascade
+    # exhausted) become a "failed" verdict the caller can retry-archive
+    # like any other failure.
+    if buddy.get("sid") == "synthesis":
+        try:
+            sys.path.insert(0, str(PROJECT_ROOT / "tools" / "HME" / "service"))
+            from server.tools_analysis.synthesis import synthesis_reasoning  # noqa: E402
+        except ImportError as e:
+            elapsed = time.time() - started
+            return {
+                "outcome": "failed",
+                "rc": -1,
+                "elapsed_s": round(elapsed, 2),
+                "stdout_tail": "",
+                "stderr_tail": f"synthesis_reasoning import failed: {e}",
+                "sentinel_seen": False,
+                "effective_tier": effective,
+                "buddy_slot": buddy["slot"],
+                "buddy_floor": buddy["floor"],
+                "dispatch_mode": "synthesis",
+            }
+        try:
+            response = synthesis_reasoning.call(
+                prompt=prompt,
+                system="You are a Polychron co-buddy. Read the task above; respond concisely with grounded reasoning. Cite file:line for every claim. When complete AND queue is drained, end your response with the [no-work] sentinel.",
+                max_tokens=2048,
+                temperature=0.3,
+                profile="reasoning",
+            )
+            elapsed = time.time() - started
+            if response is None:
+                return {
+                    "outcome": "failed",
+                    "rc": -1, "elapsed_s": round(elapsed, 2),
+                    "stdout_tail": "",
+                    "stderr_tail": "synthesis_reasoning.call returned None (cascade exhausted)",
+                    "sentinel_seen": False,
+                    "effective_tier": effective,
+                    "buddy_slot": buddy["slot"],
+                    "buddy_floor": buddy["floor"],
+                    "dispatch_mode": "synthesis",
+                }
+            sentinel_seen = NO_WORK_SENTINEL in response
+            last_src = synthesis_reasoning.last_source() or "synthesis"
+            return {
+                "outcome": "done",
+                "rc": 0, "elapsed_s": round(elapsed, 2),
+                "stdout_tail": _strip_ansi(response)[-2000:],
+                "stderr_tail": "",
+                "sentinel_seen": sentinel_seen,
+                "effective_tier": effective,
+                "buddy_slot": buddy["slot"],
+                "buddy_floor": buddy["floor"],
+                "dispatch_mode": "synthesis",
+                "synthesis_source": last_src,
+            }
+        except Exception as e:
+            elapsed = time.time() - started
+            return {
+                "outcome": "failed",
+                "rc": -1, "elapsed_s": round(elapsed, 2),
+                "stdout_tail": "",
+                "stderr_tail": f"synthesis_reasoning.call raised: {type(e).__name__}: {e}",
+                "sentinel_seen": False,
+                "effective_tier": effective,
+                "buddy_slot": buddy["slot"],
+                "buddy_floor": buddy["floor"],
+                "dispatch_mode": "synthesis",
+            }
+    # claude-resume path (original buddy fanout — requires BUDDY_SYSTEM=1).
     try:
         while True:
             proc = subprocess.run(
@@ -1199,20 +1320,28 @@ def cmd_enqueue(args: argparse.Namespace) -> int:
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    """Print current queue state + active buddies."""
+    """Print current queue state + active buddies + dispatch mode."""
     _ensure_dirs()
     pending = list(QUEUE_PENDING.glob("*.json"))
     processing = list(QUEUE_PROCESSING.rglob("*.json"))
     done = list(QUEUE_DONE.glob("*.json"))
     failed = list(QUEUE_FAILED.glob("*.json"))
     buddies = _list_buddies()
+    print(f"dispatch_mode: {_DISPATCH_MODE} (BUDDY_SYSTEM={_BUDDY_SYSTEM_FLAG})")
     print(f"queue: pending={len(pending)} processing={len(processing)} done={len(done)} failed={len(failed)}")
     if buddies:
-        print(f"buddies: {len(buddies)} active")
-        for b in buddies:
-            print(f"  slot={b['slot']} floor={b['floor']} sid={b['sid'][:16]}...")
+        if _DISPATCH_MODE == "synthesis":
+            print(f"workers: 1 synthesis-reasoning pseudo-buddy (no SID; routes through HME synthesis cascade)")
+        else:
+            print(f"buddies: {len(buddies)} active")
+            for b in buddies:
+                sid_preview = b["sid"][:16] if b["sid"] else "<unset>"
+                print(f"  slot={b['slot']} floor={b['floor']} effort_floor={b.get('effort_floor', 'medium')} sid={sid_preview}...")
     else:
-        print("buddies: none registered (sid files missing)")
+        if _DISPATCH_MODE == "disabled":
+            print("dispatcher disabled — set BUDDY_SYSTEM=1 OR HME_DISPATCH_MODE=synthesis in .env to activate")
+        else:
+            print("buddies: none registered (sid files missing)")
     return 0
 
 

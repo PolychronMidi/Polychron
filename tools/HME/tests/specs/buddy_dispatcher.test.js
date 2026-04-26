@@ -104,6 +104,9 @@ test('dispatcher: fast-path-clean returns true when all signals green', () => {
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'fake-sid-for-test\n');
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
     const result = _runPython(sandbox, `
+import os
+# claude-resume mode is what scans sid files; set explicitly for this test
+os.environ["BUDDY_SYSTEM"] = "1"
 ${_dispatcherImport()}
 disp._ensure_dirs()
 buddies = disp._list_buddies()
@@ -196,6 +199,52 @@ print(verdict_path.read_text())
   });
 });
 
+test('dispatch-mode: HME_DISPATCH_MODE=synthesis registers virtual worker without buddy SID', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+import os
+os.environ["HME_DISPATCH_MODE"] = "synthesis"
+os.environ["BUDDY_SYSTEM"] = "0"
+${_dispatcherImport()}
+buddies = disp._list_buddies()
+import json
+print(json.dumps({
+  "mode": disp._DISPATCH_MODE,
+  "count": len(buddies),
+  "synthesis_sentinel": buddies[0]["sid"] if buddies else None,
+  "no_sid_file": buddies[0]["sid_file"] is None if buddies else None,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.mode, 'synthesis', 'env-driven mode resolves');
+    assert.strictEqual(parsed.count, 1, 'synthesis mode produces 1 virtual worker');
+    assert.strictEqual(parsed.synthesis_sentinel, 'synthesis', 'sentinel SID identifies the synthesis path');
+    assert.strictEqual(parsed.no_sid_file, true, 'virtual worker has no SID file (no buddy session)');
+  });
+});
+
+test('dispatch-mode: BUDDY_SYSTEM=0 + no override → mode=disabled, _list_buddies returns empty', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+import os
+os.environ["HME_DISPATCH_MODE"] = ""
+os.environ["BUDDY_SYSTEM"] = "0"
+${_dispatcherImport()}
+buddies = disp._list_buddies()
+import json
+print(json.dumps({
+  "mode": disp._DISPATCH_MODE,
+  "count": len(buddies),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.mode, 'disabled', 'BUDDY_SYSTEM=0 + no override = disabled');
+    assert.strictEqual(parsed.count, 0, 'disabled mode returns 0 workers');
+  });
+});
+
 test('enqueue-sentinel: posttooluse_bash skips enqueue when BUDDY_SYSTEM=0', () => {
   // The universal [enqueue: ...] sentinel must NOT create task files
   // when BUDDY_SYSTEM is disabled — without a drainer, queued tasks
@@ -225,9 +274,10 @@ test('enqueue-sentinel: posttooluse_bash skips enqueue when BUDDY_SYSTEM=0', () 
       `BUDDY_SYSTEM=0 PROJECT_ROOT="${repoRoot}" \
        bash "${repoRoot}/tools/HME/hooks/posttooluse/posttooluse_bash.sh" <<< '${input.replace(/'/g, "'\\''")}'`,
     ], { encoding: 'utf8' });
-    // Must surface the seen-but-skipped warning on stderr.
+    // Must surface the seen-but-skipped warning on stderr. New
+    // message wording: "dispatch disabled" (was "BUDDY_SYSTEM=0").
     assert.ok(
-      (result.stderr || '').includes('BUDDY_SYSTEM=0') &&
+      (result.stderr || '').includes('dispatch disabled') &&
       (result.stderr || '').includes('not queued'),
       `expected seen-but-skipped warning; stderr: ${result.stderr}`,
     );
@@ -432,6 +482,8 @@ test('dispatcher: render-error isolation — exception in dispatch produces fail
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'fake-sid\n');
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
     const result = _runPython(sandbox, `
+import os
+os.environ["BUDDY_SYSTEM"] = "1"
 ${_dispatcherImport()}
 import argparse, json, os
 disp._ensure_dirs()
