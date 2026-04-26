@@ -4,8 +4,16 @@
 // All inter-module signal reading goes through signalReader - never call
 // conductorIntelligence.getSignalSnapshot() or explainabilityBus.queryByType() directly.
 
-signalReader = (() => {
-  const V = validator.create('signalReader');
+moduleLifecycle.declare({
+  name: 'signalReader',
+  subsystem: 'conductor',
+  deps: ['validator', 'conductorIntelligence', 'explainabilityBus'],
+  provides: ['signalReader'],
+  init: (deps) => {
+  const V = deps.validator.create('signalReader');
+  const conductorIntelligence = deps.conductorIntelligence;
+  const explainabilityBus = deps.explainabilityBus;
+  void V;
 
   /** @returns {number} Product of all registered density biases. */
   function density() {
@@ -89,4 +97,5 @@ signalReader = (() => {
     flickerAttribution,
     recentEvents
   };
-})();
+  },
+});

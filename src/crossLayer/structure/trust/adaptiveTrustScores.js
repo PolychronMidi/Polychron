@@ -1,5 +1,14 @@
-adaptiveTrustScores = (() => {
-  const V = validator.create('adaptiveTrustScores');
+moduleLifecycle.declare({
+  name: 'adaptiveTrustScores',
+  subsystem: 'crossLayer',
+  deps: ['validator', 'controllerConfig', 'metaProfiles', 'trustSystems', 'explainabilityBus'],
+  provides: ['adaptiveTrustScores'],
+  init: (deps) => {
+  const V = deps.validator.create('adaptiveTrustScores');
+  const controllerConfig = deps.controllerConfig;
+  const metaProfiles = deps.metaProfiles;
+  const trustSystems = deps.trustSystems;
+  const explainabilityBus = deps.explainabilityBus;
   /** @type {Map<string, { score: number, samples: number, lastMs: number }>} */
   const scoreBySystem = new Map();
   const _atsc = controllerConfig.getSection('adaptiveTrustScores');
@@ -442,5 +451,6 @@ adaptiveTrustScores = (() => {
   }
 
   return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, getScores, setCoordinationScale, reset };
-})();
+  },
+});
 crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);

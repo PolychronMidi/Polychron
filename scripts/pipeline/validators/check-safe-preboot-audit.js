@@ -20,8 +20,12 @@ const METRICS_DIR = process.env.METRICS_DIR || path.join(ROOT, 'output', 'metric
 
 const SRC  = path.join(ROOT, 'src');
 
-const BASELINE_CALLS = 171;
-const BASELINE_FILES = 59;
+// Baseline ratchets DOWN as the moduleLifecycle migration eliminates
+// safePreBoot wraps that the registry now makes unnecessary. Phase 2/3
+// migrations dropped this from 171/59 to current. Future migrations should
+// continue ratcheting; do NOT raise the baseline.
+const BASELINE_CALLS = 166;
+const BASELINE_FILES = 56;
 
 function findJsFiles(dir) {
   const results = [];

@@ -145,8 +145,9 @@ densityWaveAnalyzer = (() => {
   function getDensityBias() {
     const profile = getWaveProfile();
     if (profile.isFlat) {
-      let phraseProgress = 0;
-      phraseProgress = /** @type {number} */ (safePreBoot.call(() => clamp(timeStream.compoundProgress('phrase'), 0, 1), 0));
+      // timeStream is a registry-declared dep -- guaranteed bound when this
+      // runs (composition time, post-boot). Naked access, no defensive wrap.
+      const phraseProgress = clamp(timeStream.compoundProgress('phrase'), 0, 1);
       return phraseProgress < 0.5 ? 1.06 : 0.97;
     }
     if (profile.isWaving) return 0.97;
