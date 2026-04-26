@@ -105,10 +105,23 @@ _safe_curl() {
     if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
       local curl_msg=""
       [ -s "$curl_err" ] && curl_msg=$(head -c 200 "$curl_err" | tr '\n' ' ')
+      # Severity classification: tag with WARN (observation) below
+      # streak-warn threshold and ERROR (agent-blocking) at/above. The
+      # LIFESAVER classifier reads WARN/INFO/DEBUG/NOTICE as observation-
+      # only; tagging transient worker-port hiccups as WARN prevents
+      # false-blocks on momentary connectivity blips while still
+      # escalating to a real block when the streak proves the worker is
+      # actually down. Below threshold = informational; at threshold =
+      # actionable. Visibility is preserved either way (every failure
+      # logs); only the classification level changes.
+      local _sev="WARN"
+      if [ "$streak" -ge "${_HME_CURL_STREAK_WARN:-5}" ]; then
+        _sev="ERROR"
+      fi
       # FAIL-LOUD on alert-sink writes — was 2>/dev/null; if errors.log
       # itself is unwritable, that failure must NOT be silent.
-      printf '[%s] [_safe_curl] %s failed (rc=%d, streak=%d)%s\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$url" "$rc" "$streak" \
+      printf '[%s] [_safe_curl] %s %s failed (rc=%d, streak=%d)%s\n' \
+        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_sev" "$url" "$rc" "$streak" \
         "${curl_msg:+ — $curl_msg}" \
         >> "$PROJECT_ROOT/log/hme-errors.log"
     fi
