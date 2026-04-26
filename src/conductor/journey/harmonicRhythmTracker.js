@@ -65,7 +65,7 @@ moduleLifecycle.declare({
     });
 
     return {
-      // Conductor section reset — wired automatically via conductorScopes.
+      // Conductor section reset -- wired automatically via conductorScopes.
       reset: resetSection,
       getHarmonicRhythm,
       getMetrics,
