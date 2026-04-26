@@ -151,7 +151,7 @@ tools/HME/               The single source of truth
 ```
 ~/.claude/skills/HME  -> tools/HME/skills/
 ```
-(The former `~/tools/HME/KB → tools/HME/mcp/` symlink was removed when HME
+(The former `~/tools/HME/KB → tools/HME/service/` symlink was removed when HME
 decoupled from Claude Code's MCP system — see "Tool Invocation" below.)
 
 ### Databases
@@ -184,7 +184,7 @@ i/hme     <any-tool> key=value ...    # generic dispatcher
 ```
 
 All routes go through `scripts/hme-cli.js`, which POSTs `/tool/<name>` on the
-worker (`tools/HME/mcp/worker.py`, default port 9098). RAG config lives in
+worker (`tools/HME/service/worker.py`, default port 9098). RAG config lives in
 `tools/HME/config/rag.json` (migrated from the former `mcpServers.HME` block).
 The proxy at port 9099 still intercepts inference calls for observability and
 injection — it just no longer speaks MCP to Claude Code.
@@ -320,7 +320,7 @@ Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a
 
 ## Setup
 
-Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables, todos, file hashes). The worker (`tools/HME/mcp/worker.py`) spawns under the proxy (`tools/HME/proxy/hme_proxy.js`); HME tools are invoked via the shell wrappers in `i/` (`i/review`, `i/trace`, `i/learn`, etc.). Skills at `skills/`, symlinked from `~/.claude/skills/`. Load the skill before first use: `/HME`
+Source tracked in `tools/HME/`. Knowledge base at `tools/HME/KB/` (lance tables, todos, file hashes). The worker (`tools/HME/service/worker.py`) spawns under the proxy (`tools/HME/proxy/hme_proxy.js`); HME tools are invoked via the shell wrappers in `i/` (`i/review`, `i/trace`, `i/learn`, etc.). Skills at `skills/`, symlinked from `~/.claude/skills/`. Load the skill before first use: `/HME`
 
 ## Evolution Loop Integration
 
@@ -365,7 +365,7 @@ The lab (`lab/run.js` + `lab/sketches.js`) is HME's experimental substrate. Lab 
 
 ## Mandatory Workflow
 
-The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest → evolve → edit → review → pipeline → commit → learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
+The per-session walkthrough that enforces this workflow is specified in [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — a linear state machine driven by a chain-decider middleman ([onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)) living inside the MCP server. New sessions start in state `boot` and graduate only after one full loop (selftest → evolve → edit → review → pipeline → commit → learn). The KB briefing that used to be a separate `read(target, mode='before')` step is now auto-chained into every `Edit` via the pretooluse hook.
 
 ### Before Editing Code
 
@@ -445,13 +445,13 @@ cost. If cuda:0's VRAM pressure becomes a real problem in the future,
 lower `HME_CODE_EMBED_BATCH` or `max_seq_length` rather than reintroducing
 migration.
 
-**Enforcement**: [rag_engines.reload_on_device](../tools/HME/mcp/rag_engines.py)
+**Enforcement**: [rag_engines.reload_on_device](../tools/HME/service/rag_engines.py)
 refuses migration requests unless `HME_ALLOW_EMBEDDER_MIGRATION=1` is set
 in env. The escape hatch exists for humans doing one-off experiments; no
 automated code path should set it.
 
 **Separately kept**: the worker CUDA-corruption auto-restart at
-[rag_engines.py:reload_on_device](../tools/HME/mcp/rag_engines.py). If
+[rag_engines.py:reload_on_device](../tools/HME/service/rag_engines.py). If
 a migration ever does happen (via the escape hatch) and corrupts CUDA,
 the worker self-exits via `os._exit(98)` and the proxy supervisor
 respawns it with a fresh CUDA context — zero manual intervention.

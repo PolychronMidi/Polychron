@@ -18,7 +18,7 @@ const SHIM_PORT = MCP_PORT;  // legacy alias
 const LLAMACPP_DAEMON_PORT = _envPort('HME_LLAMACPP_DAEMON_PORT', 7735);
 
 const PYTHONPATH = process.env.PYTHONPATH || '';
-const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/mcp');
+const MCP_DIR = path.join(PROJECT_ROOT, 'tools/HME/service');
 
 function mcpEnv() {
   return {

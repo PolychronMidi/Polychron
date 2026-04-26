@@ -459,9 +459,9 @@ This means:
 ### Enforcement: `LifesaverIntegrityVerifier`
 
 The [LifesaverIntegrityVerifier](../tools/HME/scripts/verify-coherence.py) scans the call paths of `register_critical_failure` across:
-- `tools/HME/mcp/server/rag_proxy.py`
-- `tools/HME/mcp/server/context.py`
-- `tools/HME/mcp/server/meta_observer.py`
+- `tools/HME/service/server/rag_proxy.py`
+- `tools/HME/service/server/context.py`
+- `tools/HME/service/server/meta_observer.py`
 
 It fails (weight 5.0, score 0.0 — enough to crater the HCI on its own) if any of these patterns appear near a LIFESAVER fire site:
 
@@ -490,8 +490,8 @@ This is the principle that keeps HME honest with itself.
 The line between "fixing the detector" (allowed) and "dampening the alert" (forbidden) is sometimes subtle. Concrete cases from the construction of this system:
 
 **Allowed — detector calibration:**
-- **Maturity gate on health_topology** ([rag_proxy.py](../tools/HME/mcp/server/rag_proxy.py)): the topology coherence metric is unreliable for the first ~50 readings (cold caches, async init, no baseline). Before that threshold, the detector cannot honestly claim "this is a problem." After 50 samples, alerts fire normally. This is **calibration**, not dampening: the detector stops claiming knowledge it doesn't have.
-- **Crash-vs-reconnect distinction in restart_churn** ([meta_correlator.py](../tools/HME/mcp/server/meta_correlator.py)): MCP protocol restarts are normal. The original detector fired on `restarts >= 5 AND min_coherence < 0.5`, which conflated benign reconnects with crash loops. The fix adds `(shim_crashes >= 2 OR recovery_failures >= 3)` as a precondition. This is **detector accuracy**, not dampening: the detector now distinguishes the bad case from the benign case.
+- **Maturity gate on health_topology** ([rag_proxy.py](../tools/HME/service/server/rag_proxy.py)): the topology coherence metric is unreliable for the first ~50 readings (cold caches, async init, no baseline). Before that threshold, the detector cannot honestly claim "this is a problem." After 50 samples, alerts fire normally. This is **calibration**, not dampening: the detector stops claiming knowledge it doesn't have.
+- **Crash-vs-reconnect distinction in restart_churn** ([meta_correlator.py](../tools/HME/service/server/meta_correlator.py)): MCP protocol restarts are normal. The original detector fired on `restarts >= 5 AND min_coherence < 0.5`, which conflated benign reconnects with crash loops. The fix adds `(shim_crashes >= 2 OR recovery_failures >= 3)` as a precondition. This is **detector accuracy**, not dampening: the detector now distinguishes the bad case from the benign case.
 - **Baseline-relative latency verifier** ([verify-coherence.py](../tools/HME/scripts/verify-coherence.py)): absolute thresholds like "10 seconds is bad" don't generalize across hardware (local LLMs on amateur hardware naturally take 10+ seconds). The fix uses a rolling median per-machine baseline and only fires on a 3× regression from that baseline. This is **detector locality**, not dampening: it correctly distinguishes "slow for me" from "slower than I usually am."
 
 **Forbidden — alert dampening:**

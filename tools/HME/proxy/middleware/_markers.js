@@ -34,7 +34,7 @@ const MARKERS = {
   // (or i/thread send) executes, subagent_bridge.js captures the result
   // when Agent path is used.
   HME_AGENT_TASK: {
-    producer: 'tools/HME/mcp/server/tools_analysis/synthesis/synthesis_reasoning.py',
+    producer: 'tools/HME/service/server/tools_analysis/synthesis/synthesis_reasoning.py',
     consumers: [
       'tools/HME/proxy/middleware/subagent_bridge.js',
       '(buddy system: server-side dispatch_thread routes to tmp/hme-buddy.sid when BUDDY_SYSTEM=1)',
@@ -47,7 +47,7 @@ const MARKERS = {
   // an HTML-style comment that posttooluse_hme_review.sh greps to clear
   // EDIT-NEXUS state. Drift in either side hangs the stop chain.
   HME_REVIEW_VERDICT: {
-    producer: 'tools/HME/mcp/server/onboarding_chain.py',
+    producer: 'tools/HME/service/server/onboarding_chain.py',
     consumers: ['tools/HME/hooks/posttooluse/posttooluse_hme_review.sh'],
     pattern: /<!-- HME_REVIEW_VERDICT: (clean|warnings|error) -->/,
   },
@@ -103,26 +103,26 @@ const MARKERS = {
   // members survive in ALL THREE sites — drop one anywhere, verifier
   // breaks.
   HME_SCAFFOLD_HOOK_CHANGE: {
-    producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
+    producer: 'tools/HME/service/server/tools_analysis/review_unified.py',
     consumers: [
       'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
-      'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
+      'tools/HME/service/server/tools_analysis/workflow_audit.py',
     ],
     sentinel: 'HOOK CHANGE',
   },
   HME_SCAFFOLD_DOC_CHECK: {
-    producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
+    producer: 'tools/HME/service/server/tools_analysis/review_unified.py',
     consumers: [
       'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
-      'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
+      'tools/HME/service/server/tools_analysis/workflow_audit.py',
     ],
     sentinel: 'DOC CHECK',
   },
   HME_SCAFFOLD_SKIPPED: {
-    producer: 'tools/HME/mcp/server/tools_analysis/review_unified.py',
+    producer: 'tools/HME/service/server/tools_analysis/review_unified.py',
     consumers: [
       'tools/HME/hooks/posttooluse/posttooluse_hme_review.sh',
-      'tools/HME/mcp/server/tools_analysis/workflow_audit.py',
+      'tools/HME/service/server/tools_analysis/workflow_audit.py',
     ],
     sentinel: 'SKIPPED',
   },

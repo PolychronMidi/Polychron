@@ -3,7 +3,7 @@
 Per-session walkthrough that teaches the HME loop by gating and chaining tool calls. Every new session re-arms the walkthrough; graduation is session-local.
 
 The design lives in three pieces:
-- **Chain decider** ([tools/HME/mcp/server/onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py)) — the middleman that runs prerequisites silently inside HME tool handlers
+- **Chain decider** ([tools/HME/service/server/onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)) — the middleman that runs prerequisites silently inside HME tool handlers
 - **Shell hooks** ([tools/HME/hooks/](../tools/HME/hooks/)) — gate Edit/Bash (tools the chain decider cannot reach from Python)
 - **Primer** ([doc/AGENT_PRIMER.md](./AGENT_PRIMER.md)) — the walkthrough-shaped content the hook injects on first HME tool call
 
@@ -85,7 +85,7 @@ For tools outside the HME MCP server, hooks are the gatekeepers. Gates fire only
 
 ## Tool handler wiring
 
-Every HME tool is wrapped with `@chained("tool_name")` from [onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py). The decorator:
+Every HME tool is wrapped with `@chained("tool_name")` from [onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py). The decorator:
 
 1. Calls `chain_enter(tool_name, kwargs)` — runs any prerequisite, captures prereq output
 2. Executes the original tool body
@@ -138,7 +138,7 @@ The walkthrough state mirrors into the HME todo store as a parent todo with one 
 
 Flow:
 
-1. `set_state(new_state)` writes the state file AND calls `register_onboarding_tree(steps)` in [tools/HME/mcp/server/tools_analysis/todo.py](../tools/HME/mcp/server/tools_analysis/todo.py)
+1. `set_state(new_state)` writes the state file AND calls `register_onboarding_tree(steps)` in [tools/HME/service/server/tools_analysis/todo.py](../tools/HME/service/server/tools_analysis/todo.py)
 2. The todo module rebuilds the parent's sub list, preserving existing sub IDs by matching on step text (no ID churn across transitions)
 3. On the next `TodoWrite` call, [pretooluse_todowrite.sh](../tools/HME/hooks/pretooluse_todowrite.sh) reads the HME store, calls `merge_native_todowrite()`, and returns the merged flat list as `hookSpecificOutput.updatedInput`
 4. Native TodoWrite runs with the merged list — the agent sees the walkthrough as indented sub-items under a parent `[HME onboarding] walkthrough`
@@ -162,7 +162,7 @@ The todo store is the single source of truth for visible work; the onboarding st
 
 To add a state to the machine:
 
-1. Add it to `STATES` in [onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py)
+1. Add it to `STATES` in [onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)
 2. Add a `STEP_LABELS` entry
 3. Add a transition branch in `_advance()`
 4. Add the matching state to `_ONB_STATES` in [_onboarding.sh](../tools/HME/hooks/_onboarding.sh)
@@ -185,7 +185,7 @@ To add a new gate for an external tool:
 
 - [doc/AGENT_PRIMER.md](./AGENT_PRIMER.md) — what the primer hook injects on first HME call
 - [doc/HME.md](./HME.md) — the broader HME reference
-- [tools/HME/mcp/server/onboarding_chain.py](../tools/HME/mcp/server/onboarding_chain.py) — Python state machine
+- [tools/HME/service/server/onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py) — Python state machine
 - [tools/HME/hooks/_onboarding.sh](../tools/HME/hooks/_onboarding.sh) — shell helpers
 - [tools/HME/hooks/sessionstart.sh](../tools/HME/hooks/sessionstart.sh) — initializes state to `boot`
 - [tools/HME/hooks/pretooluse_hme_primer.sh](../tools/HME/hooks/pretooluse_hme_primer.sh) — injects primer on first HME call

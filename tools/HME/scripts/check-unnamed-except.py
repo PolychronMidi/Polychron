@@ -49,7 +49,7 @@ def scan(root: pathlib.Path) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("root", nargs="?", default="tools/HME/mcp/server")
+    ap.add_argument("root", nargs="?", default="tools/HME/service/server")
     args = ap.parse_args()
     hits = scan(pathlib.Path(args.root))
     if hits:

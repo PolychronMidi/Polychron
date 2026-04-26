@@ -57,7 +57,7 @@ _REPO_ROOT_TARGETS = (
     "/output/",
     "/tmp/",
     "/log/",
-    "/tools/HME/mcp/",
+    "/tools/HME/service/",
     "/tools/HME/proxy/",
     "/tools/HME/scripts/",
     "/tools/HME/activity/",

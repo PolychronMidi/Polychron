@@ -58,7 +58,7 @@ def main() -> int:
         # "llamacpp_daemon" identifier (not __file__, which would resolve
         # to `supervisor.py` and not match the registered owner stem).
         ("llama-server",        "llamacpp_daemon"),
-        ("embedders",           "/path/to/tools/HME/mcp/rag_engines.py"),
+        ("embedders",           "/path/to/tools/HME/service/rag_engines.py"),
         ("kb",                  "/path/to/server/tools_knowledge.py"),
         ("hme-todo-store",      "/path/to/server/tools_analysis/todo.py"),
         ("lifesaver-registry",  "/path/to/server/failure_genealogy.py"),

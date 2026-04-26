@@ -11,7 +11,7 @@
 _ONB_PROJECT="$PROJECT_ROOT"
 _ONB_STATE_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.state"
 _ONB_TARGET_FILE="${_ONB_PROJECT}/tmp/hme-onboarding.target"
-_ONB_PY="${_ONB_PROJECT}/tools/HME/mcp/server/onboarding_chain.py"
+_ONB_PY="${_ONB_PROJECT}/tools/HME/service/server/onboarding_chain.py"
 
 # Ordered state list — must match STATES in onboarding_chain.py
 # Source of truth is the Python module; this array mirrors it. C1: a codegen

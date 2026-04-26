@@ -110,7 +110,7 @@ def scan(path: pathlib.Path) -> list[str]:
 
 
 def main() -> int:
-    paths = sys.argv[1:] or ["tools/HME/mcp"]
+    paths = sys.argv[1:] or ["tools/HME/service"]
     all_hits: list[str] = []
     for p in paths:
         all_hits.extend(scan(pathlib.Path(p)))

@@ -72,7 +72,7 @@ TESTS = [
     {
         "id": 4,
         "name": "decorator counting",
-        "prompt": "Which files in tools/HME/mcp/server/ contain @ctx.mcp.tool() decorators?",
+        "prompt": "Which files in tools/HME/service/server/ contain @ctx.mcp.tool() decorators?",
         "mode": "explore",
         "must_contain": ["evolve", "learn", "review", "trace"],  # at least the public tools
         "must_not_contain": ["cannot locate", "no entries"],
@@ -82,7 +82,7 @@ TESTS = [
     {
         "id": 5,
         "name": "plan mode",
-        "prompt": "Plan how to add a simple health check endpoint to tools/HME/mcp/hme_http.py",
+        "prompt": "Plan how to add a simple health check endpoint to tools/HME/service/hme_http.py",
         "mode": "plan",
         "must_contain": ["hme_http"],  # plan should name the target file
         "must_not_contain": [],

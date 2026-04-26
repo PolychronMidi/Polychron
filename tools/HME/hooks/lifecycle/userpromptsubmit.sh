@@ -160,7 +160,7 @@ fi
 # HME critical todos — surface unresolved critical items at turn start
 # Reads the HME store, filters critical+open items, emits them so the agent
 # cannot miss LIFESAVER alerts, high-priority work, or unresolved trigger notes.
-CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/mcp" python3 <<'PYEOF' 2>/dev/null
+CRIT_OUT=$(PROJECT_ROOT="$PROJECT" PYTHONPATH="$PROJECT/tools/HME/service" python3 <<'PYEOF' 2>/dev/null
 try:
     from server.tools_analysis.todo import list_critical
     items = list_critical()

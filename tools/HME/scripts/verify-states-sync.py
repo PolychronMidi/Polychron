@@ -80,7 +80,7 @@ def main() -> int:
 
     print()
     print("Fix: update _ONB_STATES in tools/HME/hooks/helpers/_onboarding.sh to match")
-    print("the STATES list in tools/HME/mcp/server/onboarding_chain.py.")
+    print("the STATES list in tools/HME/service/server/onboarding_chain.py.")
     return 1
 
 
