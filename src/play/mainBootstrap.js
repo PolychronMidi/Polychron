@@ -3,27 +3,23 @@
 moduleLifecycle.declare({
   name: 'mainBootstrap',
   subsystem: 'play',
-  deps: ['FXFeedbackListener', 'cadenceAdvisor', 'conductorConfig', 'conductorIntelligence', 'conductorRegulationListener', 'conductorState', 'convergenceHarmonicTrigger', 'crossLayerClimaxEngine', 'crossLayerRegistry', 'crossLayerSilhouette', 'drumTextureCoupler', 'dynamismEngine', 'emissionFeedbackListener', 'entropyRegulator', 'globalConductor', 'harmonicJourney', 'interactionHeatMap', 'journeyRhythmCoupler', 'negotiationEngine', 'phaseLockedRhythmGenerator', 'pivotChordBridge', 'rhythmicPhaseLock', 'sectionIntentCurves', 'sectionLengthAdvisor', 'structuralFormTracker', 'stutterFeedbackListener', 'texturalMemoryAdvisor', 'textureBlender', 'validator'],
+  deps: ['FXFeedbackListener', 'cadenceAdvisor', 'conductorConfig', 'conductorIntelligence', 'conductorState', 'convergenceHarmonicTrigger', 'crossLayerClimaxEngine', 'crossLayerRegistry', 'crossLayerSilhouette', 'dynamismEngine', 'entropyRegulator', 'globalConductor', 'harmonicJourney', 'interactionHeatMap', 'negotiationEngine', 'phaseLockedRhythmGenerator', 'pivotChordBridge', 'rhythmicPhaseLock', 'sectionIntentCurves', 'sectionLengthAdvisor', 'structuralFormTracker', 'texturalMemoryAdvisor', 'textureBlender', 'validator'],
   provides: ['mainBootstrap'],
   init: (deps) => {
   const FXFeedbackListener = deps.FXFeedbackListener;
   const cadenceAdvisor = deps.cadenceAdvisor;
   const conductorConfig = deps.conductorConfig;
   const conductorIntelligence = deps.conductorIntelligence;
-  const conductorRegulationListener = deps.conductorRegulationListener;
   const conductorState = deps.conductorState;
   const convergenceHarmonicTrigger = deps.convergenceHarmonicTrigger;
   const crossLayerClimaxEngine = deps.crossLayerClimaxEngine;
   const crossLayerRegistry = deps.crossLayerRegistry;
   const crossLayerSilhouette = deps.crossLayerSilhouette;
-  const drumTextureCoupler = deps.drumTextureCoupler;
   const dynamismEngine = deps.dynamismEngine;
-  const emissionFeedbackListener = deps.emissionFeedbackListener;
   const entropyRegulator = deps.entropyRegulator;
   const globalConductor = deps.globalConductor;
   const harmonicJourney = deps.harmonicJourney;
   const interactionHeatMap = deps.interactionHeatMap;
-  const journeyRhythmCoupler = deps.journeyRhythmCoupler;
   const negotiationEngine = deps.negotiationEngine;
   const phaseLockedRhythmGenerator = deps.phaseLockedRhythmGenerator;
   const pivotChordBridge = deps.pivotChordBridge;
@@ -31,7 +27,6 @@ moduleLifecycle.declare({
   const sectionIntentCurves = deps.sectionIntentCurves;
   const sectionLengthAdvisor = deps.sectionLengthAdvisor;
   const structuralFormTracker = deps.structuralFormTracker;
-  const stutterFeedbackListener = deps.stutterFeedbackListener;
   const texturalMemoryAdvisor = deps.texturalMemoryAdvisor;
   const textureBlender = deps.textureBlender;
   const V = deps.validator.create('mainBootstrap');
