@@ -16,65 +16,14 @@ Evolve `buddy_system` from one persistent peer into a small co-buddy team (2-3 b
 
 ## Phases
 
-### Phase 0: SPEC/TODO substrate bootstrap
 
-Stand up the spec+todo handoff doc system as the first integration. Use it to track every subsequent pattern's landing — meta-bootstrap means we exercise the substrate on its first real workload.
+_Previous set (skill-set integration sweep) archived 2026-04-26T174052Z to tools/HME/KB/devlog/2026-04-26T174052Z-skill-set-integration-sweep.md._
 
-- [x] [easy] Create `doc/SPEC.md` seeded with full Phase 0-2 plan
-- [x] [easy] Create `doc/TODO.md` seeded with Next up = Phase 0 items
-- [x] [easy] Add `tier` field to `i/todo` schema (default existing items to `"medium"`, new items accept `tier=easy|medium|hard`)
-- [x] [medium] Add `i/todo action=ingest_from_spec` — read `doc/TODO.md` Next up, materialize each as an i/todo entry with `source="spec"` and `tier=<label>`
-- [x] [medium] Add `i/todo action=promote_to_spec target=<id>` — move an ephemeral i/todo entry to `doc/TODO.md` Next up with a Reason cite
-- [x] [medium] Add `i/todo action=close_with_spec_update target=<id>` — flip `doc/SPEC.md` `[ ]→[x]` if the i/todo item closes a spec item, append entry to `doc/TODO.md` Just shipped, mark i/todo done — atomic
-- [x] [medium] Wire `sessionstart.sh` to read `doc/TODO.md` In flight section alongside `list_carried_over()` so handoff state surfaces at session start
-- [x] [hard] Pre-commit / autocommit-guard rule: if `src/**` changed AND no existing-spec-item closure noted, require either `doc/SPEC.md` OR `doc/TODO.md` to change in the same commit (catches drift between work and canonical record)
+### Phase 0: <next set — name>
 
-_Phase 0 complete_ (2026-04-26T16:30:00Z):
+<1-paragraph context for the new set.>
 
-Bridge substrate landed across [tools/HME/service/server/tools_analysis/todo.py](../tools/HME/service/server/tools_analysis/todo.py): `tier` field on the schema (default `medium`, backfilled on load); three SPEC↔TODO bridge actions (`ingest_from_spec` parses TODO.md Next-up → i/todo entries with provenance suffix; `promote_to_spec` appends i/todo entries to TODO.md Next-up; `close_with_spec_update` flips `[ ]→[x]` via longest-common-prefix match + appends to Just-shipped, dedup-aware HTML-comment-skip insertion); `phase_complete` action for closing-paragraph append; archive-on-`clear` for set completion. Wired [tools/HME/hooks/lifecycle/sessionstart.sh](../tools/HME/hooks/lifecycle/sessionstart.sh) to surface `doc/TODO.md` "In flight" alongside i/todo carry-over. Added drift-warning to [tools/HME/hooks/direct/autocommit-direct.sh](../tools/HME/hooks/direct/autocommit-direct.sh) (soft-WARN to errors.log when `src/**` changes without `doc/SPEC.md`/`doc/TODO.md` touching). Tests +0, suite passing.
-
-### Phase 1: Co-buddy fanout
-
-Spawn N co-buddies at SessionStart, dispatch queued tasks across them based on tier label.
-
-- [x] [medium] Parameterize `BUDDY_COUNT=2` (or `3`) in `.env`; default to 1 when unset (back-compat with current single-buddy)
-- [x] [medium] Extend `buddy_init.sh` to spawn N processes; each writes own SID to `tmp/hme-buddy-N.sid`
-- [x] [medium] Create queue-dir scaffold `tmp/hme-buddy-queue/{pending,processing,done,failed}/` at SessionStart
-- [x] [hard] Build dispatcher: scans `pending/`, atomically `mv` next file into `processing/<buddy-N>/`, dispatches via that buddy's SID, awaits sentinel, moves to `done/` (or `failed/` on non-zero exit)
-- [x] [medium] Adopt `[no-work]` sentinel — buddy emits on stdout when its task completes AND queue dir is empty; dispatcher reads stdout until sentinel as positive idle declaration (closes the "response read prematurely" failure mode)
-- [x] [medium] Per-run manifest at `tmp/hme-buddy-fanout/<run-id>/manifest.json` with `iterations: [...]`, `loop.terminated_by`, per-buddy `pid`/`sid`/`task_count`/`tier_distribution`
-- [x] [medium] Floor-based escalation: each buddy declares `model-floor` and `effort-floor` in its config (tmp/hme-buddy-N.config); dispatcher computes `effective = max(item_tier, buddy_floor)` per axis
-
-_Phase 1 complete_ (2026-04-26T16:35:00Z):
-
-Co-buddy fanout substrate landed: `.env` knobs `BUDDY_COUNT` (default 1, max 10) and `BUDDY_MODEL_FLOORS` (comma-separated tier list); [tools/HME/hooks/helpers/buddy_init.sh](../tools/HME/hooks/helpers/buddy_init.sh) spawns N parallel `claude --resume` long-lived sessions with per-slot SID files (`tmp/hme-buddy-N.sid`) + floor files (`.floor`), N=1 preserving legacy `tmp/hme-buddy.sid` path; queue dir `tmp/hme-buddy-queue/{pending,processing,done,failed}/` with atomic-mv claim semantics (first-rename-wins); dispatcher [tools/HME/scripts/buddy_dispatcher.py](../tools/HME/scripts/buddy_dispatcher.py) implements floor-based escalation (`effective = max(item_tier, buddy_floor)` per axis, lowest-cost-buddy picker), dispatches via `claude --resume <sid>` with tier-scaled timeouts (60s/300s/900s), reads stdout for `[no-work]` sentinel as positive idle declaration, archives to done/failed/. Per-run manifest at `tmp/hme-buddy-fanout/<run-id>/manifest.json` snapshot-written per task with `in_progress: true` flag. CLI surface `i/buddy {status,enqueue,drain}` registered under the new `orchestration` category. Tests +9 (orphan sweep × 2, fast-path × 2, floor-escalation × 1, verdict-file × 1, enqueue × 1, manager-guidance × 2), all passing.
-
-### Phase 2: Resilience + audit patterns
-
-Adopt skill-set's operational discipline patterns once Phase 1 substrate is running.
-
-- [x] [hard] Iter-boundary drafts sweep — when iter_N+1 starts, scan iter_N's `processing/` for orphans (buddy died mid-task), treat each as injected work item with prior-iter manifest as citation, route through current dispatch mode
-- [x] [medium] Verdict-file exit contract — every co-buddy turn writes `tmp/hme-buddy-fanout/<run-id>/buddy-<N>-verdict.md`; dispatcher's exit gate verifies every dispatched task either has a verdict OR is named in `[deferred]` block
-- [x] [medium] Citation-required-for-edit — co-buddies proposing KB entries / spec changes must cite the motivating transcript line (`<i>_<skill>.txt:<line>` or for buddies `tmp/hme-buddy-fanout/<run-id>/buddy-<N>-transcript.txt:<line>`)
-- [x] [medium] Fast-path on clean — verifiers skip deep walk when all 4 cheap signals say clean (no prior escalation, all exit codes 0, transcript free of error keywords, no orphan drafts)
-- [x] [medium] Manager-guidance file `tmp/hme-operator-guidance.md` — durable cross-run directive channel; next `i/review` reads as priming context
-- [x] [easy] Three-loop NEVER lists — codify per-buddy jurisdiction in tier-specific buddy frontmatter (e.g. easy buddy never edits architecture-bearing files; hard buddy never deals with mechanical refactors)
-
-_Phase 2 complete_ (2026-04-26T16:40:00Z):
-
-Resilience patterns added to [tools/HME/scripts/buddy_dispatcher.py](../tools/HME/scripts/buddy_dispatcher.py): `_sweep_orphans` runs at every drain start, `mv`'s `processing/<buddy-N>/<task>.json` orphans back to `pending/` (with `.recovered` suffix on collision) so partial-completion failures self-heal across runs; `_write_verdict` produces required exit-contract artifact `tmp/hme-buddy-fanout/<run-id>/verdict.md` listing outcome counts + `[deferred]` block for any still-claimed orphans; `_fast_path_clean` short-circuits the deep walk when 4 cheap signals all green (no orphans, empty pending, no recent failures, no prior-escalation verdicts); citation-required-for-edit embedded in dispatch prompt as a behavioral rule; `_read_guidance` reads `tmp/hme-operator-guidance.md` and prepends to every task prompt as cross-run directive channel; Three-loop NEVER lists for co-buddy / dispatcher / operator jurisdictions documented in this SPEC. Severity classifier in [tools/HME/hooks/lifecycle/stop/lifesaver.sh](../tools/HME/hooks/lifecycle/stop/lifesaver.sh) and [tools/HME/hooks/helpers/_check_errors_inline.sh](../tools/HME/hooks/helpers/_check_errors_inline.sh) extended with `_SELF_TAG_RE` source-tag axis so writers like `[universal_pulse]` / `[supervisor]` / `[llamacpp_*]` are observation-only regardless of CRITICAL severity. Tests +3 (source-tag self-origin × 2, mixed agent+pulse classification × 1), all passing.
-
-### Phase 3: Chain YAML + rate-limit + retry-archive
-
-Closes the three remaining `bin/skill-chain.py` parity gaps identified in the post-Phase-2 comparison:
-
-- [x] [medium] Chain YAML definitions: `tools/HME/chains/<name>.yaml` with `name / description / version / skills / loop / loop-delay-random / on-rate-limit` fields. `i/buddy chain <name>` loads + validates + executes ordered skill sequence (each skill is a Bash command). Per-iter manifest with iteration records + skill records.
-- [x] [medium] Rate-limit pause-and-resume: dispatcher detects Anthropic quota signals via `RATE_LIMIT_TEXT_RE` regex, parses reset epoch from "resets in N hours" / "reset_time:N" / "resets at HH:MM" forms, sleeps until reset + jitter, retries the same task. `HME_BUDDY_ON_RATE_LIMIT={fail,pause,pause-with-cap}` mode + `HME_BUDDY_MAX_PAUSES_PER_TASK=3` cap (skill-set Phase 13 semantics).
-- [x] [medium] Retry-archive: `_archive_task` rotates a prior same-id archive to `<basename>.retry-N.json` instead of overwriting. Each failed attempt's full audit (task + verdict + archived_ts) preserved for debugging chronically-failing tasks.
-
-_Phase 3 complete_ (2026-04-26T16:55:00Z):
-
-Three skill-set parity features landed in [tools/HME/scripts/buddy_dispatcher.py](../tools/HME/scripts/buddy_dispatcher.py): `_load_chain_yaml` + `_parse_minimal_yaml` (PyYAML-optional, dep-free fallback for the small YAML subset used by chain definitions); `_validate_chain` enforces required fields + mutual exclusion of `loop-delay`/`loop-delay-random`; `cmd_chain` runs ordered Bash skills with per-iter manifest + on-rate-limit semantics + jittered inter-iter delay; `_detect_rate_limit` + `_compute_pause_seconds` + the retry loop in `_dispatch_to_buddy` cover quota crossings without burning the task; `_archive_task` rotates same-name archives via `.retry-N.json` suffix. Sample chain `tools/HME/chains/review-then-test.yaml` shipped. New CLI subcommands: `i/buddy chain <name>` and `i/buddy clean --age-hours=N`. Exhaust_check classifier extended with comparison-question patterns. Tests +4 (chain loader, validation, rate-limit detection, retry-archive collision); suite 252/252 passing.
+- [ ] [easy] First item of the new set
 
 ## Deferred / out of scope
 
