@@ -31,7 +31,118 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from _transcript import load_full_turn_with_user  # noqa: E402
+from _transcript import is_user, event_content, load_full_turn_with_user  # noqa: E402
+
+
+# User-prompt phrases that explicitly invite evaluation/enumeration as the
+# deliverable. When the user's prompt this turn matches one of these AND the
+# assistant's closing text is a structural enumeration (bullets, ## Future
+# headers, etc.) WITHOUT survey-and-ask language ("want me to", "should I"),
+# the enumeration IS the answer — not a punt. Suppress the violation in that
+# case so the agent can end the turn silently.
+#
+# Conservative: this list only contains UNAMBIGUOUS evaluation invitations.
+# A request that mixes "evaluate AND fix" doesn't get exemption — the user
+# wants the fix done, the enumeration is incidental.
+RESEARCH_INVITATION_PATTERNS = (
+    re.compile(r"\bwhat\s+(does|do|might)\b[^?\n]{0,80}\b(have\s+to\s+offer|offer)\b", re.IGNORECASE),
+    re.compile(r"\b(worth\s+(integrating|learning|borrowing|adopting|considering))\b", re.IGNORECASE),
+    re.compile(r"\b(evaluate|review|compare|research|survey|assess|inspect|examine)\s+(this|that|these|the|their|its)\b", re.IGNORECASE),
+    re.compile(r"\b(tell\s+me\s+about|look\s+at|check\s+out)\s+(this|that|the|their|its)\s+(project|repo|library|framework|tool|approach|design|pattern)\b", re.IGNORECASE),
+    re.compile(r"\b(enumerate|list)\s+(every|all|the|its|their)\b", re.IGNORECASE),
+    re.compile(r"\bcontinue\s+(researching|the\s+research|to\s+research)\b", re.IGNORECASE),
+    re.compile(r"\b(comparison|evaluation|assessment|review)\s+of\b", re.IGNORECASE),
+    re.compile(r"\bdo\s+(they|we|you)\s+(have|all\s+have)\b[^?\n]{0,40}\b(persisted|persistent|context)\b", re.IGNORECASE),
+    re.compile(r"\b(how\s+do\s+they|how\s+does\s+it|how\s+does\s+that)\s+(communicate|work|coordinate|persist)\b", re.IGNORECASE),
+    re.compile(r"\bcompared\s+to\b", re.IGNORECASE),
+    re.compile(r"\bI\s+(present|am\s+presenting)\s+you\b", re.IGNORECASE),
+    re.compile(r"\b(secretly\s+have|might\s+(secretly\s+)?(have|offer))\b[^?\n]{0,60}\b(more|much\s+more)\b", re.IGNORECASE),
+)
+
+
+# Phrases that ALWAYS fire regardless of research-context exemption. These
+# are agent-initiated punts that the user did not invite — survey-and-ask,
+# I-can-do-X-later, etc. Even on a research turn, asking permission instead
+# of executing or offering future work instead of doing it now is a punt.
+ALWAYS_FIRE_PHRASES = (
+    "want me to",
+    "should i ",
+    "shall i ",
+    "would you like me to",
+    "do you want me to",
+    "let me know if",
+    "noted but not fixed",
+    "noted, not fixed",
+    "noted not fixed",
+    "still not fixed",
+    "didn't fix this",
+    "won't fix this",
+    "i can build",
+    "i can implement",
+    "i could build",
+    "i could implement",
+    "i'll build",
+    "i'll implement",
+)
+
+
+def _last_user_text(events: list) -> str:
+    """Extract the last user message's text content. Mirrors
+    _last_assistant_text but for the user side. Returns '' if no user
+    message present (sole-assistant transcripts shouldn't happen, but
+    be defensive)."""
+    last_u = None
+    for ev in events:
+        if is_user(ev):
+            last_u = ev
+    if last_u is None:
+        return ""
+    parts = []
+    for block in event_content(last_u):
+        if isinstance(block, dict) and block.get("type") == "text":
+            t = block.get("text", "")
+            if isinstance(t, str):
+                parts.append(t)
+        elif isinstance(block, str):
+            parts.append(block)
+    # Some user events nest text under .message.content as a plain string.
+    msg = last_u.get("message")
+    if isinstance(msg, dict):
+        c = msg.get("content")
+        if isinstance(c, str):
+            parts.append(c)
+        elif isinstance(c, list):
+            for block in c:
+                if isinstance(block, dict) and block.get("type") == "text":
+                    t = block.get("text", "")
+                    if isinstance(t, str):
+                        parts.append(t)
+    return "\n".join(parts)
+
+
+def _is_research_evaluation_request(user_text: str) -> bool:
+    """True if the user's prompt this turn is unambiguously inviting
+    enumeration/evaluation as the deliverable. Scoped narrowly to avoid
+    false-suppression: a prompt that mixes "evaluate AND fix" does not
+    qualify — the user wants the fix done, not just analyzed."""
+    if not user_text:
+        return False
+    # Disqualify if the prompt also explicitly asks for implementation. A
+    # request like "evaluate this AND build the top picks" is implementation
+    # work, not research; the deferral suppression must not apply.
+    impl_signal = re.search(
+        r"\b(implement|build\s+(?!that\b)|integrate(?!\s+(would|might|could))|"
+        r"add\s+(it|them|these)|wire\s+up|merge\s+in|land\s+(it|them|these)|"
+        r"do\s+(all|each|the)\s+(of\s+)?(these|those|them))\b",
+        user_text,
+        re.IGNORECASE,
+    )
+    if impl_signal:
+        return False
+    for pat in RESEARCH_INVITATION_PATTERNS:
+        if pat.search(user_text):
+            return True
+    return False
 
 
 # Phrases that explicitly mark an item as "not done in this turn".
@@ -426,10 +537,39 @@ def main() -> int:
     handoff_count = sum(1 for _ in _ANY_HANDOFF_MARKER.finditer(after))
 
     if handoff_count >= 1 or in_closing:
+        # Research-evaluation exemption: when the user's prompt this turn
+        # explicitly invited enumeration/evaluation as the deliverable AND
+        # the closing text contains NO survey-and-ask / I-can-do-X-later
+        # patterns, the enumeration IS the answer, not a punt. Suppress
+        # the violation so the agent can end the turn silently instead of
+        # spamming a clarification wall.
+        #
+        # Conservative guardrails: any "want me to" / "should I" / "I can
+        # build" / "noted but not fixed" / etc. in the response immediately
+        # disqualifies — those are agent-initiated punts the user did not
+        # invite, fire regardless of research framing. Likewise a prompt
+        # that mixes "evaluate AND implement" does not qualify (handled in
+        # _is_research_evaluation_request).
+        always_fire_hit = None
+        for ph in ALWAYS_FIRE_PHRASES:
+            if ph in text_l:
+                always_fire_hit = ph
+                break
+        user_text = _last_user_text(events)
+        is_research_turn = _is_research_evaluation_request(user_text)
+        if is_research_turn and always_fire_hit is None:
+            _emit_stats(
+                "ok",
+                f"research_exemption deferral={deferral_label!r} "
+                f"user_invited_enumeration=True always_fire=None"
+            )
+            print("ok")
+            return 0
         reason = (
             f"deferral={deferral_label!r} bullets_after={bullet_count} "
             f"handoff_markers={handoff_count} in_closing={in_closing} "
-            f"pos={deferral_pos}/{text_len}"
+            f"pos={deferral_pos}/{text_len} "
+            f"research_turn={is_research_turn} always_fire={always_fire_hit!r}"
         )
         _emit_stats("exhaust_violation", reason)
         print("exhaust_violation")
