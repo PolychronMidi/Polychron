@@ -23,6 +23,36 @@ BG_FILE=$(echo "$INPUT" | _extract_bg_output_path)
 _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub.sh" 10 "" || true)
 [ -n "$_RESOLVED" ] && INPUT="$_RESOLVED"
 
+# Universal enqueue-sentinel scanner. Any tool output containing
+#   [enqueue: tier=<easy|medium|hard> text="<one-line>" source="<who>"]
+# automatically materializes as a task in tmp/hme-buddy-queue/pending/.
+# Lets any HME tool (or any Bash command) declare follow-up work
+# without each tool needing its own integration code — symmetric with
+# the [no-work] and [picked-difficulty:] sentinels we already use.
+# Multiple matches per tool output are all enqueued.
+_ENQUEUE_OUTPUT=$(_safe_jq "$INPUT" '.tool_response' '')
+if [ -n "$_ENQUEUE_OUTPUT" ] && [ -n "${PROJECT_ROOT:-}" ]; then
+  # Parse one match at a time. Format is regex-extractable: the
+  # tier/text/source values can contain anything except the closing `]`
+  # for safety. Keep parser tolerant of quote variants and arg order.
+  _BUDDY_CLI="$PROJECT_ROOT/i/buddy"
+  if [ -x "$_BUDDY_CLI" ]; then
+    while IFS= read -r _ENQ_LINE; do
+      [ -z "$_ENQ_LINE" ] && continue
+      _ENQ_TIER=$(echo "$_ENQ_LINE" | grep -oE 'tier=(easy|medium|hard)' | head -1 | cut -d= -f2)
+      _ENQ_TEXT=$(echo "$_ENQ_LINE" | grep -oE 'text="[^"]+"' | head -1 | sed 's/^text="\(.*\)"$/\1/')
+      _ENQ_SRC=$(echo "$_ENQ_LINE" | grep -oE 'source="[^"]+"' | head -1 | sed 's/^source="\(.*\)"$/\1/')
+      [ -z "$_ENQ_TIER" ] && _ENQ_TIER="medium"
+      [ -z "$_ENQ_SRC" ] && _ENQ_SRC="enqueue-sentinel"
+      [ -z "$_ENQ_TEXT" ] && continue
+      # Background fire — never block the parent hook.
+      ("$_BUDDY_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
+        > /dev/null 2>&1) &
+      disown 2>/dev/null || true
+    done < <(printf '%s\n' "$_ENQUEUE_OUTPUT" | grep -oE '\[enqueue:[^]]+\]')
+  fi
+fi
+
 # Dispatch HME shell-wrapper post-processors. These used to be triggered via
 # hooks.json matchers on mcp__HME__{learn,read,review} back when HME was an
 # MCP server; now HME tools run as Bash(i/<tool>) shell wrappers and the

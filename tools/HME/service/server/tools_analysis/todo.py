@@ -285,6 +285,12 @@ _LIFESAVER_TTL_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_TTL_SEC", str(24
 # keeps recent context for debugging while preventing unbounded growth
 # of todos.json + todo-graph.md (the spam vector the user filed).
 _LIFESAVER_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_PRUNE_SEC", str(3 * 24 * 3600)))
+# Prune-after for non-lifesaver done todos (native, hme_todo, onboarding, spec).
+# These are agent-/user-driven completions; once done they're history. Keep a
+# bit longer than lifesaver entries since they often have semantic value
+# (closed feature work) but eventually drop them so the store stays lean.
+# Default 7 days. Set HME_DONE_TODO_PRUNE_SEC=0 to disable auto-prune.
+_DONE_TODO_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_DONE_TODO_PRUNE_SEC", str(7 * 24 * 3600)))
 
 
 def _normalize_error_for_dedup(error: str) -> str:
@@ -369,6 +375,52 @@ def _enforce_lifesaver_caps(meta: dict, todos: list) -> int:
     if resolved_count:
         meta["updated_ts"] = now
     return resolved_count
+
+
+def _prune_done_todos_universal(meta: dict, todos: list) -> int:
+    """Prune done todos of ALL sources past their respective prune
+    horizons. Was previously lifesaver-only, leaving native/hme_todo/
+    onboarding/spec done entries to accumulate forever (the user's
+    "done todos stacking up" complaint).
+
+    Per-source horizons:
+      - lifesaver:  3 days  (HME_LIFESAVER_TODO_PRUNE_SEC)
+      - everything else: 7 days (HME_DONE_TODO_PRUNE_SEC)
+        — set 0 to disable.
+
+    Reference timestamp: min(ts, resolved_ts) — same as lifesaver path,
+    so retroactive cleanup of old failures resolves immediately rather
+    than waiting another N days from the resolve-now timestamp.
+
+    Mutates `todos` in place; returns count pruned. Safe to call on
+    every i/todo invocation: cheap (single pass over todos list) and
+    idempotent (no items to prune → no-op)."""
+    now = time.time()
+    keep = []
+    pruned = 0
+    for t in todos:
+        if not _check_main_done(t):
+            keep.append(t)
+            continue
+        source = t.get("source", "")
+        if source == "lifesaver":
+            horizon = _LIFESAVER_PRUNE_AFTER_SECONDS
+        else:
+            horizon = _DONE_TODO_PRUNE_AFTER_SECONDS
+        if horizon == 0:
+            keep.append(t)
+            continue
+        ts_orig = float(t.get("ts") or now)
+        ts_resolved = float(t.get("resolved_ts") or now)
+        ref_ts = min(ts_orig, ts_resolved)
+        if (now - ref_ts) > horizon:
+            pruned += 1
+            continue
+        keep.append(t)
+    if pruned:
+        todos[:] = keep
+        meta["updated_ts"] = now
+    return pruned
 
 
 def _prune_done_lifesavers(meta: dict, todos: list) -> int:
@@ -1441,6 +1493,18 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
     """
     _track("hme_todo")
     append_session_narrative("hme_todo", f"hme_todo({action}): {text[:40] or todo_id}")
+    # Auto-prune done todos on EVERY invocation (any source past its
+    # prune horizon). Keeps the store from accumulating done entries
+    # silently between active operations. Cheap (single pass), no
+    # state changes for fresh stores. The user complaint that landed
+    # this: "look into why you would be skipping clearing done
+    # todo/lifesavers and letting them stack."
+    with _todo_lock:
+        _meta_pre, _todos_pre = _load_todos()
+        _pruned_count = _prune_done_todos_universal(_meta_pre, _todos_pre)
+        if _pruned_count:
+            _save_todos(_meta_pre, _todos_pre)
+            logger.info(f"hme_todo: auto-pruned {_pruned_count} done entries past horizon")
 
     def _render(todos: list) -> str:
         return _format_todos_mermaid(todos) if fmt == "mermaid" else _format_todos(todos)
@@ -1449,7 +1513,22 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         meta, todos = _load_todos()
 
         if action == "list":
-            return _render(todos)
+            # Soft reminder when done-but-not-yet-pruned count crosses
+            # a threshold. Stays under the auto-prune horizon (so we
+            # don't churn the file) but tells the agent/operator the
+            # store is accumulating completions worth a `clear` pass.
+            done_count = sum(1 for t in todos if _check_main_done(t))
+            rendered = _render(todos)
+            if done_count >= 15:
+                rendered = (
+                    f"<system-reminder>\n"
+                    f"i/todo store has {done_count} done entries pending cleanup. "
+                    f"Run `i/todo clear` to drop them — or wait for the auto-prune "
+                    f"horizon ({_DONE_TODO_PRUNE_AFTER_SECONDS // 86400}d for native, "
+                    f"{_LIFESAVER_PRUNE_AFTER_SECONDS // 86400}d for lifesaver).\n"
+                    f"</system-reminder>\n\n{rendered}"
+                )
+            return rendered
 
         if action == "critical":
             items = list_critical()
