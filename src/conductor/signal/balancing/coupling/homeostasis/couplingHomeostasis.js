@@ -25,7 +25,7 @@ moduleLifecycle.declare({
   deps: ['homeostasisState', 'homeostasisRefresh', 'homeostasisTick', 'homeostasisFloor'],
   provides: ['couplingHomeostasis'],
   conductorScopes: ['section'],
-  recorder: () => { couplingHomeostasis.getState && /* trigger refresh */ null; },
+  recorder: () => { couplingHomeostasis.refresh(); },
   init: (deps) => {
   const homeostasisState = deps.homeostasisState;
   const homeostasisRefresh = deps.homeostasisRefresh;
@@ -94,10 +94,9 @@ moduleLifecycle.declare({
     homeostasisState.reset();
   }
 
-  // Self-registration
-  conductorIntelligence.registerRecorder('couplingHomeostasis', refresh);
-  conductorIntelligence.registerModule('couplingHomeostasis', { reset }, ['section']);
+  // (Recorder + scoped reset registered automatically by moduleLifecycle
+  // via the recorder + conductorScopes manifest fields above.)
 
-  return { getState, reset, tick, getFloorDampen };
+  return { refresh, getState, reset, tick, getFloorDampen };
   },
 });
