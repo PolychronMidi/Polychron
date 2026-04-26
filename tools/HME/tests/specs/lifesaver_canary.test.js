@@ -13,16 +13,28 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-function _withLifesaverSandbox(canaryLines) {
+// branch: 'unaddressed' (default) places watermarks behind the planted lines
+// so the WATERMARK_LINE < TURN_START_LINE branch fires. 'new' places
+// watermarks AT the start of planted lines so the TOTAL > TURN_START_LINE
+// (new-errors-this-turn) branch fires.
+function _withLifesaverSandbox(canaryLines, opts = {}) {
+  const branch = opts.branch || 'unaddressed';
   const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-test-'));
   fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
   fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
   const errLog = path.join(sandbox, 'log', 'hme-errors.log');
   fs.writeFileSync(errLog, canaryLines.join('\n') + '\n');
-  // Watermarks lag behind so the UNADDRESSED branch fires.
-  fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.lastread'), '0');
-  fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.turnstart'), String(canaryLines.length));
-  fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.inline-watermark'), '0');
+  if (branch === 'new') {
+    // Watermarks AT 0 so all planted lines are "new this turn".
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.lastread'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.turnstart'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.inline-watermark'), '0');
+  } else {
+    // Watermarks lag behind so the UNADDRESSED branch fires.
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.lastread'), '0');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.turnstart'), String(canaryLines.length));
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.inline-watermark'), '0');
+  }
   const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
   const lifesaverPath = path.join(repoRoot, 'tools', 'HME', 'hooks', 'lifecycle', 'stop', 'lifesaver.sh');
   // Source lifesaver inside a bash -c that stubs _stderr_verdict and exports
@@ -103,6 +115,75 @@ test('lifesaver: UNADDRESSED branch BLOCKS on real agent-origin error', () => {
     assert.ok(
       r.stdout.includes('UNADDRESSED ERRORS FROM PREVIOUS TURN'),
       'block reason must reference UNADDRESSED branch',
+    );
+  } finally {
+    r.cleanup();
+  }
+});
+
+test('lifesaver: UNADDRESSED branch with mixed canary+agent-error → blocks on agent, consumes canary', () => {
+  const r = _withLifesaverSandbox([
+    '[2026-04-26T07:00:00Z] [CANARY-canary-mix-789] alert-chain self-test injection',
+    '[2026-04-26T07:00:01Z] [foo] real agent-actionable failure',
+  ]);
+  try {
+    assert.ok(
+      /"decision"\s*:\s*"block"/.test(r.stdout),
+      `must block on the agent-origin error in the mix. stdout: ${r.stdout}`,
+    );
+    assert.ok(
+      r.stdout.includes('real agent-actionable failure'),
+      'block reason must include the agent-error line',
+    );
+    assert.ok(
+      !r.stdout.includes('CANARY-'),
+      'block reason must NOT include the canary line (canary should be consumed silently)',
+    );
+    // Canary still gets marked consumed even when accompanying agent error blocks.
+    const consumed = fs.readFileSync(r.consumedFile, 'utf8');
+    assert.ok(
+      consumed.includes('canary-mix-789|consumed-by-stop'),
+      'canary must be marked consumed even when sibling agent error blocks',
+    );
+  } finally {
+    r.cleanup();
+  }
+});
+
+test('lifesaver: NEW-ERRORS branch consumes canary without blocking', () => {
+  const r = _withLifesaverSandbox(
+    ['[2026-04-26T07:00:00Z] [CANARY-canary-newbranch-111] alert-chain self-test injection'],
+    { branch: 'new' },
+  );
+  try {
+    assert.ok(
+      !/"decision"\s*:\s*"block"/.test(r.stdout),
+      `new-errors branch wrongly blocked on canary-only payload. stdout: ${r.stdout}`,
+    );
+    assert.ok(fs.existsSync(r.consumedFile), 'canary-consumed.txt must exist');
+    const consumed = fs.readFileSync(r.consumedFile, 'utf8');
+    assert.ok(
+      consumed.includes('canary-newbranch-111|consumed-by-stop'),
+      'new-errors branch must mark canary consumed',
+    );
+  } finally {
+    r.cleanup();
+  }
+});
+
+test('lifesaver: NEW-ERRORS branch BLOCKS on agent-origin error', () => {
+  const r = _withLifesaverSandbox(
+    ['[2026-04-26T07:00:00Z] [bar] another real failure'],
+    { branch: 'new' },
+  );
+  try {
+    assert.ok(
+      /"decision"\s*:\s*"block"/.test(r.stdout),
+      `new-errors branch must block on agent error. stdout: ${r.stdout}`,
+    );
+    assert.ok(
+      r.stdout.includes('AGENT-ORIGIN ERRORS FIRED THIS TURN'),
+      'block reason must reference new-errors branch banner text',
     );
   } finally {
     r.cleanup();
