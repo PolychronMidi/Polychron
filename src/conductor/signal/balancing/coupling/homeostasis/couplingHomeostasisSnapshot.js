@@ -3,7 +3,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['couplingHomeostasisSnapshot'],
-  init: (deps) => {
+  init: () => {
   function buildState(args) {
     let floorContactBeats = 0;
     let ceilingContactBeats = 0;

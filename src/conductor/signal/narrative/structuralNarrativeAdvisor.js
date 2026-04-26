@@ -14,7 +14,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['structuralNarrativeAdvisor'],
-  init: (deps) => {
+  init: () => {
 
   const VARIETY_GAIN = 0.16;   // R14 E3: 0.08->0.14; bidirectional: 0.14->0.16 so lo=0.96 is reachable at high entropy
   const MAX_HISTORY  = 32;

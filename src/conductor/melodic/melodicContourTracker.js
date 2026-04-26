@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['melodicContourTracker'],
-  init: (deps) => {
+  init: () => {
   /** @type {{ shape: string, direction: number, range: number, avgPitch: number }} */
   let currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
 

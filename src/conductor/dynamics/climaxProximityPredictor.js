@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['climaxProximityPredictor'],
-  init: (deps) => {
+  init: () => {
   // Beat-level cache: predict() queries 4 external modules but is called twice
   // per beat (via getDensityRampBias + getTensionBias).
   const climaxProximityPredictorCache = beatCache.create(() => climaxProximityPredictorPredict());

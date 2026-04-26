@@ -5,7 +5,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['harmonicJourneyHelpers'],
-  init: (deps) => {
+  init: () => {
   // R3 E1: brightness spectrum for modal interchange close move
   const BRIGHTNESS_ORDER = ['phrygian', 'aeolian', 'minor', 'dorian', 'mixolydian', 'major', 'ionian', 'lydian'];
   const CLOSE_MOVES = [

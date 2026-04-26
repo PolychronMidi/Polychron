@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['interLayerRhythmAnalyzer'],
-  init: (deps) => {
+  init: () => {
   // Beat-level caches - each analysis function is called 2+ times per beat
   // (once from flicker/bias registration, once from stateProvider).
   const interLayerRhythmAnalyzerPhaseCache = beatCache.create(() => interLayerRhythmHelpers.computePhaseRelationship());

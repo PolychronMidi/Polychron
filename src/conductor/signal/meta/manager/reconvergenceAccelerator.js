@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['reconvergenceAccelerator'],
-  init: (deps) => {
+  init: () => {
   const DETECTION_WINDOW = 8;
   const JUMP_THRESHOLD = 0.25;
   const ACCEL_ALPHA = 0.4;

@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['voiceLeadingEfficiencyTracker'],
-  init: (deps) => {
+  init: () => {
   const WINDOW_SECONDS = 6;
 
   /**

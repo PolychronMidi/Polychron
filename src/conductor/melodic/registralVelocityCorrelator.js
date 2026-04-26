@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['registralVelocityCorrelator'],
-  init: (deps) => {
+  init: () => {
   const WINDOW_SECONDS = 8;
 
   /**

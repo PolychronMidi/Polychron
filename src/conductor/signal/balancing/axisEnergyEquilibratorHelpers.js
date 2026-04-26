@@ -3,7 +3,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['axisEnergyEquilibratorHelpers'],
-  init: (deps) => {
+  init: () => {
   function getWarmupTicks(defaultWarmup) {
     let profile = null;
     try {

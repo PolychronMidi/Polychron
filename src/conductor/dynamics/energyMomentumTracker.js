@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['energyMomentumTracker'],
-  init: (deps) => {
+  init: () => {
   /** @type {Array<{ time: number, energy: number }>} */
   const samples = [];
   const MAX_SAMPLES = 64;

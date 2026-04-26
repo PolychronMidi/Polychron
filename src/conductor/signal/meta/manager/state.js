@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['hyperMetaManagerState'],
-  init: (deps) => {
+  init: () => {
 
   // ORCHESTRATION CONSTANTS
   const ORCHESTRATE_INTERVAL = 25;

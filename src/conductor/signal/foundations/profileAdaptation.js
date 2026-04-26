@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['profileAdaptation'],
-  init: (deps) => {
+  init: () => {
   // Sustained-signal tracking: count consecutive beats meeting each threshold
   let lowDensityStreak = 0;
   let highTensionStreak = 0;

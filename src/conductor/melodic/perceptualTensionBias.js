@@ -11,7 +11,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['perceptualTensionBias'],
-  init: (deps) => {
+  init: () => {
   const _perc = (() => {
     try {
       const fs = require('fs');

@@ -9,7 +9,7 @@ moduleLifecycle.declare({
   subsystem: 'time',
   deps: [],
   provides: ['getMeterPair'],
-  init: (deps) => {
+  init: () => {
   const FIRST_LO = 2;
   const FIRST_HI = 3;
   const DRIFT = 0.1;

@@ -25,7 +25,7 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: [],
   provides: ['regimePan'],
-  init: (deps) => {
+  init: () => {
   const CENTER_PAN = 64;
   const MAX_BIAS = 48;
 

@@ -45,8 +45,8 @@ moduleLifecycle.declare({
    * @param {Object} deps.boot
    * @param {Object} deps.composerCtx
    */
-  function runLayerPass(layerId, phraseFamily, { withConductorTick = false } = {}, deps) {
-    const { boot, composerCtx } = deps;
+  function runLayerPass(layerId, phraseFamily, { withConductorTick = false } = {}, runDeps) {
+    const { boot, composerCtx } = runDeps;
     timeStream.setBounds('measure', measuresPerPhrase);
     let processedBeatCount = 0;
 

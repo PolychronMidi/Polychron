@@ -6,7 +6,7 @@ moduleLifecycle.declare({
   subsystem: 'composers',
   deps: [],
   provides: ['pivotChordBridge'],
-  init: (deps) => {
+  init: () => {
   /** @type {string[]|null} */
   let pivotChordBridgePendingBridge = null;
 

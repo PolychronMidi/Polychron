@@ -12,7 +12,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['signalHealthAnalyzer'],
-  init: (deps) => {
+  init: () => {
   // -- Accumulator state (reset per section) --
   let beatsSeen = 0;
   /** @type {{ density: number, tension: number, flicker: number }} */

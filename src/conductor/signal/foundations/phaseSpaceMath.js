@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['phaseSpaceMath'],
-  init: (deps) => {
+  init: () => {
   /**
    * Euclidean magnitude of a vector.
    * @param {number[]} v

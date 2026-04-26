@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['rhythmicGroupingAnalyzer'],
-  init: (deps) => {
+  init: () => {
   const WINDOW_SECONDS = 6;
 
   /**

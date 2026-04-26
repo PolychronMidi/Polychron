@@ -14,7 +14,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['homeostasisFloor'],
-  init: (deps) => {
+  init: () => {
   const { CHRONIC_DAMPEN_THRESHOLD, CHRONIC_FLOOR_RELAX_RATE,
     CHRONIC_FLOOR_RELAX_CAP } = homeostasisConstants;
 

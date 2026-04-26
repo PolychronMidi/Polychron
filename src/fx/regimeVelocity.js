@@ -23,7 +23,7 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: [],
   provides: ['regimeVelocity'],
-  init: (deps) => {
+  init: () => {
   const CENTER_EXPRESSION = 100; // MIDI expression default on most synths
   const MAX_BIAS = 27; // keep range [73, 127] -- audibly useful
 

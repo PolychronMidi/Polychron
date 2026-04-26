@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['dynamismPulse'],
-  init: (deps) => {
+  init: () => {
   /**
    * Compute per-unit pulse so probabilities evolve inside a measure.
    * Includes micro-hyper oscillation: two incommensurate fast sine layers +

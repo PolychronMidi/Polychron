@@ -7,7 +7,7 @@ moduleLifecycle.declare({
   subsystem: 'conductor',
   deps: [],
   provides: ['regimeReactiveDampingCore'],
-  init: (deps) => {
+  init: () => {
 
   /**
    * Compute the tension shape curve value for a given section progress.
