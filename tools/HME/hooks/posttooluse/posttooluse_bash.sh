@@ -148,26 +148,17 @@ if echo "$CMD" | grep -q 'npm run main'; then
   fi
 fi
 
-# Nexus: track git commits
+# Nexus: track git commits made via the Bash tool.
+# (Auto-fire i/review on commit was MOVED to autocommit-direct.sh — this
+# hook only fires when the user manually runs `git commit` via Bash, which
+# is rare. Autocommits go through autocommit-direct.sh, which now detects
+# HEAD movement post-commit and fires the same review autofire there. So
+# review reliably triggers on EVERY commit regardless of how it was made,
+# instead of the prior 3-day silent-skip.)
 if echo "$CMD" | grep -qE '^git commit'; then
   EXIT_CODE=$(_safe_jq "$INPUT" '.tool_result.exit_code // .exit_code // "0"' '0')
   if [ "$EXIT_CODE" = "0" ] || echo "$INPUT" | jq -r '.tool_response // ""' 2>/dev/null | grep -q '\[.*\]'; then
     _nexus_mark COMMIT
-    # R32: auto-fire i/review mode=forget after src/ auto-commits.
-    # R30 had three catastrophic sins (30s timeout, `|| true` swallowing
-    # failures, no LIFESAVER surfacing). _lifesaver_bg (added R32 to
-    # _safety.sh) fixes all three by construction. Gate on src/ changes
-    # keeps cost aligned with value: doc/substrate commits skip the review.
-    if [[ -x "$PROJECT_ROOT/i/review" ]]; then
-      # Widened from ^src/ → code+tooling scope. tools/HME/ (hooks, proxy,
-      # mcp, chat) and scripts/ edits are real engineering that must be
-      # reviewed against KB constraints just like src/ edits. Pure doc/
-      # log/ metrics/ tmp/ commits still skip — noise gate intact.
-      if git -C "$PROJECT_ROOT" diff --name-only HEAD~1 HEAD 2>/dev/null | grep -qE '^(src|tools/HME|scripts|lab)/'; then
-        _lifesaver_bg "review_auto_fire" 600 "$PROJECT_ROOT/tmp/hme-review-auto.out" \
-          "$PROJECT_ROOT/i/review" mode=forget
-      fi
-    fi
   fi
 fi
 
