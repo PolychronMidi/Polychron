@@ -195,7 +195,6 @@ mainBootstrap = (() => {
       ['drumTextureCoupler', drumTextureCoupler],
       ['emissionFeedbackListener', emissionFeedbackListener],
       ['conductorState', conductorState],
-      ['cadenceAdvisor', cadenceAdvisor],
     ];
     requiredInitializers.forEach(([name, obj]) => {
       V.requireType(obj.initialize, 'function', `${name}.initialize`);
