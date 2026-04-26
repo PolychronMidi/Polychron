@@ -39,8 +39,13 @@ fresh-spawning per task.
 
 - Not a persistent agent. When the session ends, the specialization
   ends. New session = fresh buddy.
-- Not user-invocable. There's no `i/buddy` command. The system is
-  built-in. Toggle via `.env BUDDY_SYSTEM=0` to disable.
+- The `buddy_system` itself (single persistent peer for synthesis
+  routing) is not user-invocable — it auto-initializes at SessionStart
+  when `.env BUDDY_SYSTEM=1`. Toggle via `.env BUDDY_SYSTEM=0` to
+  disable. (A separate `i/dispatch` CLI exists for the **task
+  dispatcher** fanout — different layer, different concern. The
+  back-compat alias `i/buddy` forwards to `i/dispatch`. See `doc/SPEC.md`
+  archive devlogs for the dispatcher's architecture.)
 
 ## What the buddy IS NOT capable of, structurally
 

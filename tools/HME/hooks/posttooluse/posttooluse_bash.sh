@@ -46,8 +46,11 @@ fi
 if [ "$_DISP_MODE" = "claude-resume" ] || [ "$_DISP_MODE" = "synthesis" ]; then
   _ENQUEUE_OUTPUT=$(_safe_jq "$INPUT" '.tool_response' '')
   if [ -n "$_ENQUEUE_OUTPUT" ] && [ -n "${PROJECT_ROOT:-}" ]; then
-    _BUDDY_CLI="$PROJECT_ROOT/i/buddy"
-    if [ -x "$_BUDDY_CLI" ]; then
+    # Prefer i/dispatch (canonical name); fall back to i/buddy for
+    # back-compat with any setup that hasn't yet pulled the rename.
+    _DISPATCH_CLI="$PROJECT_ROOT/i/dispatch"
+    [ -x "$_DISPATCH_CLI" ] || _DISPATCH_CLI="$PROJECT_ROOT/i/buddy"
+    if [ -x "$_DISPATCH_CLI" ]; then
       while IFS= read -r _ENQ_LINE; do
         [ -z "$_ENQ_LINE" ] && continue
         _ENQ_TIER=$(echo "$_ENQ_LINE" | grep -oE 'tier=(easy|medium|hard)' | head -1 | cut -d= -f2)
@@ -57,7 +60,7 @@ if [ "$_DISP_MODE" = "claude-resume" ] || [ "$_DISP_MODE" = "synthesis" ]; then
         [ -z "$_ENQ_SRC" ] && _ENQ_SRC="enqueue-sentinel"
         [ -z "$_ENQ_TEXT" ] && continue
         # Background fire — never block the parent hook.
-        ("$_BUDDY_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
+        ("$_DISPATCH_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
           > /dev/null 2>&1) &
         disown 2>/dev/null || true
       done < <(printf '%s\n' "$_ENQUEUE_OUTPUT" | grep -oE '\[enqueue:[^]]+\]')
