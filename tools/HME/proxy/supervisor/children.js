@@ -13,8 +13,16 @@ function _envPort(name, def) {
   }
   return n;
 }
-const MCP_PORT = _envPort('HME_MCP_PORT', 9098);
-const SHIM_PORT = MCP_PORT;  // legacy alias
+// Worker HTTP port (Python tools/HME/service/worker.py). Despite the
+// HME_MCP_PORT env-var name (kept for back-compat with .env files in the
+// wild), this is the WORKER's HTTP port — NOT the MCP server's port.
+// The MCP server itself runs in-process inside the proxy on the proxy's
+// port (default 9099); see tools/HME/proxy/mcp_server/. Aliasing
+// `WORKER_PORT` as the canonical name; `MCP_PORT` and `SHIM_PORT` kept
+// as legacy aliases.
+const WORKER_PORT = _envPort('HME_MCP_PORT', 9098);
+const MCP_PORT = WORKER_PORT;   // legacy alias — name is misleading
+const SHIM_PORT = WORKER_PORT;  // legacy alias
 const LLAMACPP_DAEMON_PORT = _envPort('HME_LLAMACPP_DAEMON_PORT', 7735);
 
 const PYTHONPATH = process.env.PYTHONPATH || '';
@@ -64,4 +72,4 @@ const CHILDREN = [
   },
 ];
 
-module.exports = { CHILDREN, MCP_PORT, SHIM_PORT };
+module.exports = { CHILDREN, WORKER_PORT, MCP_PORT, SHIM_PORT };

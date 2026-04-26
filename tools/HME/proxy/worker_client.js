@@ -16,10 +16,9 @@
  * repeated calls within a session.
  */
 
-const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { MCP_PORT } = require('./supervisor/children');
+const { workerRequest } = require('./_worker_http');
 
 const CACHE_CAP = 500;
 const _cache = new Map();
@@ -72,40 +71,26 @@ function _cacheSet(key, value) {
   }
 }
 
-function _post(reqPath, body, timeoutMs) {
-  return new Promise((resolve) => {
-    const data = Buffer.from(JSON.stringify(body), 'utf8');
-    const req = http.request(
-      {
-        hostname: '127.0.0.1', port: MCP_PORT, path: reqPath, method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
-        timeout: timeoutMs,
-      },
-      (res) => {
-        const chunks = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => {
-          const raw = Buffer.concat(chunks).toString('utf8') || '{}';
-          try {
-            const parsed = JSON.parse(raw);
-            if (res.statusCode >= 400) {
-              _recordFailure(reqPath, `HTTP ${res.statusCode}: ${raw.slice(0, 120)}`);
-              resolve(null); return;
-            }
-            _recordSuccess();
-            resolve(parsed);
-          } catch (e) {
-            _recordFailure(reqPath, `JSON parse error: ${e.message} (raw=${raw.slice(0, 80)})`);
-            resolve(null);
-          }
-        });
-      },
-    );
-    req.on('error', (e) => { _recordFailure(reqPath, `transport: ${e.message}`); resolve(null); });
-    req.on('timeout', () => { req.destroy(); _recordFailure(reqPath, `timeout after ${timeoutMs}ms`); resolve(null); });
-    req.write(data);
-    req.end();
-  });
+async function _post(reqPath, body, timeoutMs) {
+  // Shared low-level HTTP plumbing in _worker_http.js. This wrapper
+  // owns the enrichment-specific failure semantics (null-on-error +
+  // rolling streak telemetry). transport vs HTTP-error vs JSON-parse
+  // failures all fold into a single _recordFailure call here.
+  const { status, json, raw, error } = await workerRequest('POST', reqPath, body, timeoutMs);
+  if (error) {
+    _recordFailure(reqPath, `transport: ${error.message}`);
+    return null;
+  }
+  if (status >= 400) {
+    _recordFailure(reqPath, `HTTP ${status}: ${raw}`);
+    return null;
+  }
+  if (json === null) {
+    _recordFailure(reqPath, `JSON parse error (raw=${raw})`);
+    return null;
+  }
+  _recordSuccess();
+  return json;
 }
 
 // query: string. Returns { warnings: [...], blocks: [...] } or null on failure.
