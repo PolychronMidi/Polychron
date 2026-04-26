@@ -227,6 +227,29 @@ _CASES = [
      ],
      "TEXT_ONLY_SHORT"),
 
+    # stop_work: dismissive phrase appearing inside backticked / quoted
+    # content (e.g. a regex example or a code summary) MUST NOT fire
+    # DISMISSIVE — only bare-prose declarations should trigger. Mirrors
+    # the same quote-strip discipline exhaust_check uses. Padded long
+    # enough to also bypass TEXT_ONLY_SHORT so this fixture isolates
+    # the dismissive-strip behavior.
+    ("stop_work", "dismissive-phrase-in-quoted-context-exempt",
+     [
+         _user_msg("describe the matcher"),
+         _assistant_msg(
+             "Source-fix landed in tools/HME/proxy/stop_chain/policies/work_checks.js. "
+             "The regex matches the no-op shapes: "
+             "`^(Nothing missed|Confirmed nothing remains|All done|All set)[.!]?$`. "
+             "Length-gated to 80 chars so a long substantive answer that "
+             "happens to contain 'all done' as a fragment doesn't false-fire. "
+             "Three regression tests cover the cases — round-1 nothing-missed "
+             "triggers skip, substantive round-1 still fires round-2, and "
+             "long responses with embedded fragments stay protected by the "
+             "length gate. Net effect: the redundant two-turn cycle is gone."
+         ),
+     ],
+     "ok"),
+
     # fabrication_check — invariance claim without verification disclosure
     ("fabrication_check", "ok-no-invariance-claim",
      [
