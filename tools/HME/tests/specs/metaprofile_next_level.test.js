@@ -306,6 +306,47 @@ test('distance: chaotic and meditative are farther apart than chaotic and volati
     `expected d(chaotic,volatile)=${dCV} < d(chaotic,meditative)=${dCM}`);
 });
 
+test('distance: side-axis differences distinguish behaviorally-distinct profiles with identical numeric cores', () => {
+  // Regression for the bug caught April 2026: distance() previously
+  // computed cosine-only over the 6 numeric axes (regime/coupling/trust/
+  // tension/energy/phase). Profiles with identical numeric cores but
+  // different side-axes (layerVariants, composerFamilies, conductorAffinity,
+  // etc.) collapsed to distance 0.0, making nearest() mis-rank them as
+  // equivalent — breaking the smooth-transition heuristic in
+  // src/play/main.js where nearest() picks the next-section profile.
+  // The fix added _sideAxisPenalty so layerVariants/composerFamilies/etc.
+  // differences contribute weighted distance.
+  //
+  // Test fixture: anthemic and polyrhythmic_split share identical
+  // numeric vectors but polyrhythmic_split declares
+  // layerVariants:{L1:'anthemic',L2:'elegiac'}, which is a major
+  // behavioral shift (per-layer profile split). Distance MUST register
+  // them as non-identical for nearest() to rank correctly.
+  const d = defs.distance('anthemic', 'polyrhythmic_split');
+  assert.ok(d > 0,
+    `expected d(anthemic,polyrhythmic_split) > 0 (side-axis layerVariants differs); got ${d}`);
+  // Same numeric core but different side-axes should also register
+  // for chaotic vs volatile (chaotic declares composerFamilies +
+  // conductorAffinity + couplingPairs; volatile is a stripped
+  // skeleton). Penalty should accumulate from multiple side-axes.
+  const dCVol = defs.distance('chaotic', 'volatile');
+  assert.ok(dCVol > 0.04,
+    `expected d(chaotic,volatile) > 0.04 (5+ side-axes differ); got ${dCVol}`);
+});
+
+test('distance: raw-vector callers get cosine-only (back-compat — no side-axis penalty when names absent)', () => {
+  // Side-axis penalty is gated on string-name inputs because raw vectors
+  // don't carry side-axis info. Calling distance(vec, vec) preserves the
+  // legacy cosine-only path so any in-tree caller passing pre-extracted
+  // axisVectors stays bit-identical.
+  const va = defs.axisVector('anthemic');
+  const vb = defs.axisVector('polyrhythmic_split');
+  const dVec = defs.distance(va, vb);
+  // anthemic and polyrhythmic_split have identical numeric cores → cosine = 0
+  assert.ok(dVec < 0.001,
+    `raw-vector distance must stay cosine-only (no side-axis penalty); got ${dVec}`);
+});
+
 test('nearest: excludes self and default; sorted ascending by distance', () => {
   const ranked = defs.nearest('atmospheric', 4);
   assert.ok(Array.isArray(ranked));
