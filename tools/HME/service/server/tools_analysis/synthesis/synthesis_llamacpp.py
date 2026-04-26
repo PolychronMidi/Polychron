@@ -119,7 +119,7 @@ def _get_circuit_breaker(model: str) -> _CircuitBreaker:
 
 
 # All routing config comes from the central .env loader. No defaults.
-# See tools/HME/mcp/hme_env.py — fail-fast if any key is missing.
+# See tools/HME/service/hme_env.py — fail-fast if any key is missing.
 import sys as _sys
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _mcp_root not in _sys.path:

@@ -39,7 +39,7 @@ def agent(prompt: str, mode: str = "explore") -> str:
 
     ctx.ensure_ready_sync()
 
-    # agent_local lives at tools/HME/mcp/agent_local.py — one level above server/.
+    # agent_local lives at tools/HME/service/agent_local.py — one level above server/.
     import sys, os
     _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _mcp_root not in sys.path:

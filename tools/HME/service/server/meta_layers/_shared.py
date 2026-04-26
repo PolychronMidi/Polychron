@@ -13,7 +13,7 @@ import os
 import sys
 import threading
 
-# Ensure tools/HME/mcp/ is on sys.path so `from hme_env import ENV` works
+# Ensure tools/HME/service/ is on sys.path so `from hme_env import ENV` works
 # regardless of import order.
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _mcp_root not in sys.path:

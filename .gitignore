@@ -23,8 +23,8 @@ deepwiki.config.json
 /tools/*/global_kb/
 /tools/**/__pycache__/
 /tools/HME/session-state.json
-/tools/HME/mcp/db/
-/tools/HME/mcp/*.db
+/tools/HME/service/db/
+/tools/HME/service/*.db
 /tools/HME/chat/log/
 /tools/HME/chat/src/log/
 /tools/HME/chat/webview/log/

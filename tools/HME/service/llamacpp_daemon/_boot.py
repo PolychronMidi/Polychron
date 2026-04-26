@@ -12,7 +12,7 @@ import os
 import sys
 
 # Central .env loader — fail-fast semantics. The path insert is historical:
-# hme_env.py lives in tools/HME/mcp/, so any entry into the package needs
+# hme_env.py lives in tools/HME/service/, so any entry into the package needs
 # that directory on sys.path.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from hme_env import ENV  # noqa: E402
