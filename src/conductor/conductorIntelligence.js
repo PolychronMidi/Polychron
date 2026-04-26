@@ -9,9 +9,11 @@
 moduleLifecycle.declare({
   name: 'conductorIntelligence',
   subsystem: 'conductor',
-  deps: ['validator'],
+  // Full DI: eventBus needed for SECTION_BOUNDARY subscription wired inline.
+  deps: ['eventBus', 'validator'],
   provides: ['conductorIntelligence'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const V = deps.validator.create('conductorIntelligence');
 
   // Lifecycle (shared with crossLayerRegistry via moduleLifecycle)
@@ -189,7 +191,7 @@ moduleLifecycle.declare({
   );
 
 
-  moduleLifecycle.registerInitializer('conductorIntelligence', initialize);
+  initialize();
   return {
     // lifecycle
     registerModule,
