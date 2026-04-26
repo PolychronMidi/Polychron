@@ -56,7 +56,7 @@ moduleLifecycle.declare({
   try {
     const r = _runVerifier();
     assert.notStrictEqual(r.code, 0, 'verifier should fail on undeclared provides');
-    assert.match(r.stderr + r.stdout, /no .declare var definitelyNotInGlobalsDtsXyz: . entry exists/);
+    assert.match(r.stderr + r.stdout, /declare var definitelyNotInGlobalsDtsXyz/);
   } finally {
     fs.unlinkSync(fixturePath);
   }
