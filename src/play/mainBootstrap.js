@@ -3,10 +3,9 @@
 moduleLifecycle.declare({
   name: 'mainBootstrap',
   subsystem: 'play',
-  deps: ['FXFeedbackListener', 'cadenceAdvisor', 'conductorConfig', 'conductorIntelligence', 'conductorState', 'convergenceHarmonicTrigger', 'crossLayerClimaxEngine', 'crossLayerRegistry', 'crossLayerSilhouette', 'dynamismEngine', 'entropyRegulator', 'globalConductor', 'harmonicJourney', 'interactionHeatMap', 'negotiationEngine', 'phaseLockedRhythmGenerator', 'pivotChordBridge', 'rhythmicPhaseLock', 'sectionIntentCurves', 'sectionLengthAdvisor', 'structuralFormTracker', 'texturalMemoryAdvisor', 'textureBlender', 'validator'],
+  deps: ['cadenceAdvisor', 'conductorConfig', 'conductorIntelligence', 'conductorState', 'convergenceHarmonicTrigger', 'crossLayerClimaxEngine', 'crossLayerRegistry', 'crossLayerSilhouette', 'dynamismEngine', 'entropyRegulator', 'globalConductor', 'harmonicJourney', 'interactionHeatMap', 'negotiationEngine', 'phaseLockedRhythmGenerator', 'pivotChordBridge', 'rhythmicPhaseLock', 'sectionIntentCurves', 'sectionLengthAdvisor', 'structuralFormTracker', 'texturalMemoryAdvisor', 'textureBlender', 'validator'],
   provides: ['mainBootstrap'],
   init: (deps) => {
-  const FXFeedbackListener = deps.FXFeedbackListener;
   const cadenceAdvisor = deps.cadenceAdvisor;
   const conductorConfig = deps.conductorConfig;
   const conductorIntelligence = deps.conductorIntelligence;

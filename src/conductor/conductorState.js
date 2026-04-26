@@ -210,7 +210,10 @@ moduleLifecycle.declare({
     getSnapshot,
     getField,
     get,
-    reset
+    // conductorScopes section-reset uses api.reset -- bind it to resetSection
+    // (the lighter section reset). Full reset exposed as resetAll.
+    reset: resetSection,
+    resetAll: reset,
   };
   },
 });
