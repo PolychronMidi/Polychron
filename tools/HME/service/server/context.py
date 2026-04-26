@@ -69,6 +69,26 @@ def register_critical_failure(
         register_todo_from_lifesaver(source, error, severity)
     except Exception as _te:
         logger.error(f"LIFESAVER todo append failed (failure still queued): {_te}")
+
+    # CRITICAL bridge: write to hme-errors.log so the canonical Stop/PostToolUse
+    # LIFESAVER scanner picks it up. Without this, worker-side CRITICAL alerts
+    # were siloed in the worker's internal queue + logger output, never
+    # reaching the agent-visible alert channel. Recurring silent-fail vector
+    # documented across many sessions. Only log on first occurrence (is_new)
+    # so repeated cascade failures don't flood the log -- failure_genealogy
+    # already dedups by (source, error, severity).
+    if is_new:
+        try:
+            project_root = os.environ.get("PROJECT_ROOT", "/home/jah/Polychron")
+            err_log = os.path.join(project_root, "log", "hme-errors.log")
+            ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            line = f"[{ts}] [worker:{source}] [{severity}] {error}\n"
+            with open(err_log, "a", encoding="utf-8") as fh:
+                fh.write(line)
+        except Exception as _le:
+            # Don't suppress silently -- log to worker stderr at least so the
+            # bridge failure surfaces in the proxy log.
+            logger.error(f"LIFESAVER errors.log bridge write failed: {_le}")
     return fid
 
 
