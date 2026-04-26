@@ -73,7 +73,7 @@ if [ -f "$ERROR_LOG" ]; then
   # missing real failures") referred to GLOBAL whitelisting; this is
   # tighter — only writers in this list, only when matched at the
   # canonical [tag] position at line start.
-  _SELF_TAG_RE='^\[(universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
+  _SELF_TAG_RE='^\[(_safe_curl|_safe_jq|_safe_py3|universal_pulse|supervisor|hme-proxy|proxy-bridge|proxy-watchdog|proxy-supervisor|llamacpp_supervisor|llamacpp_offload_invariant|llamacpp_indexing_mode_resume|meta_observer|model_init|rag_proxy\.project|startup_chain|worker:[^]]+)\]'
   _CANARY_RE='\[CANARY-'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)

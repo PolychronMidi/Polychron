@@ -1124,40 +1124,86 @@ def _archive_set(set_name: str = "") -> dict:
 
 
 def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: str) -> None:
-    """After archiving a set, replace the Phase blocks in doc/SPEC.md
-    with an empty placeholder pointing at the devlog. Keeps preamble
-    (Goal / Architecture) and trailing sections (Glossary, NEVER lists,
-    How-this-file-evolves, Difficulty labels, Empty-queue bail) intact —
-    those are stable across sets and don't need rewriting."""
+    """After archiving a set, replace BOTH the preamble AND the Phase
+    blocks in doc/SPEC.md with generic-initiative placeholders pointing
+    at the devlog. Trailing sections (Glossary, NEVER lists,
+    How-this-file-evolves, Difficulty labels, Empty-queue bail) are
+    truly stable across sets and preserved verbatim.
+
+    Why reset the preamble too: the previous set's Goal / Architecture
+    sections are set-specific narrative ("Evolve buddy_system into
+    co-buddies", etc.) — preserving them frames the NEXT set as if
+    it's a continuation of the PREVIOUS one, which it usually isn't.
+    Each set should declare its own Goal at the start; the placeholder
+    text invites that.
+    """
     if not os.path.exists(_SPEC_FILE):
         return
     with open(_SPEC_FILE, encoding="utf-8") as f:
         spec_md = f.read()
     lines = spec_md.split("\n")
+    # Find boundary lines: end of preamble (just before "## Phases" or
+    # the first "### Phase N:"), start of post-phases trailing block
+    # (the first "## " after the last "### Phase N:" — i.e., a top-level
+    # section after the Phases section).
     blocks = _phase_blocks(spec_md)
     if not blocks:
+        # No phases yet — only reset the title + preamble, leave rest.
+        # Caller already verified set is complete; without phases this
+        # is a degenerate case (nothing to archive). No-op.
         return
     first_phase_start = blocks[0][0]
     last_phase_end = blocks[-1][1]
-    # Replace the [first_phase_start, last_phase_end) span with a
-    # placeholder note linking the archived devlog. Anything BEFORE
-    # first_phase_start is preamble (Goal / Architecture / Phases
-    # header); anything FROM last_phase_end onward is post-phases
-    # (Deferred / Glossary / How this evolves / etc.).
-    placeholder = [
+    # The preamble runs from line 0 through the line just BEFORE the
+    # `## Phases` header (or first `### Phase` if `## Phases` absent).
+    preamble_end = first_phase_start
+    # Walk back from first_phase_start to find the `## Phases` header
+    # if present; preserve from there inclusive (Phases header itself).
+    phases_header_idx = first_phase_start
+    for i in range(first_phase_start - 1, -1, -1):
+        if lines[i].strip() == "## Phases":
+            phases_header_idx = i
+            break
+    # Generic preamble template — initiative-agnostic.
+    rel_devlog = os.path.relpath(devlog_path, ENV.require('PROJECT_ROOT'))
+    fresh_preamble = [
+        "# Polychron Active SPEC",
         "",
-        f"_Previous set ({prev_set_name}) archived {prev_ts} to {os.path.relpath(devlog_path, ENV.require('PROJECT_ROOT'))}._",
+        "> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to \"Polychron Active SPEC\" after `i/todo clear` archives the set.",
+        ">",
+        "> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](HME.md), [doc/ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md), and [CLAUDE.md](../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.",
+        ">",
+        "> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/) — each `i/todo clear` (when all phases are checked + sentinel-marked) timestamps the SPEC+TODO state into a single devlog file and resets the active doc to a fresh-slate template.",
         "",
-        "### Phase 0: <next set — name>",
+        f"_Previous set ({prev_set_name}) archived {prev_ts} to {rel_devlog}._",
         "",
-        "<1-paragraph context for the new set.>",
+        "## Goal",
         "",
-        "- [ ] [easy] First item of the new set",
+        "<One paragraph naming the current initiative — what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>",
+        "",
+        "## Architecture / stack (one-liner each, current-initiative-relevant)",
+        "",
+        "<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture lives in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>",
+        "",
+        "- <subsystem>: <one-line>",
+        "- <data dir / queue / manifest>: <one-line>",
+        "- <handoff doc>: doc/SPEC.md (canonical phases) + doc/TODO.md (3-section: In flight / Just shipped / Next up)",
+        "",
+        "## Phases",
+        "",
+        "### Phase 0: <next initiative — name>",
+        "",
+        "<1-paragraph context for the new initiative.>",
+        "",
+        "- [ ] [easy] First item of the new initiative",
         "",
     ]
-    new_lines = lines[:first_phase_start] + placeholder + lines[last_phase_end:]
+    # Build new file: fresh preamble + everything from the post-phases
+    # trailing block (Deferred / Glossary / NEVER lists / How-this-
+    # evolves / etc.) preserved verbatim.
+    trailing = lines[last_phase_end:]
     with open(_SPEC_FILE, "w", encoding="utf-8") as f:
-        f.write("\n".join(new_lines))
+        f.write("\n".join(fresh_preamble + trailing))
 
 
 def _reset_todo_to_fresh_slate() -> None:

@@ -197,8 +197,10 @@ print(json.dumps({
   "archive_message_present": "📦 Set archived" in out,
   "devlog_count": len(devlog_files),
   "devlog_filename_pattern": all("test-set-name" in f for f in devlog_files) if devlog_files else False,
-  "spec_has_phase_0_placeholder": "### Phase 0: <next set" in spec_md,
+  "spec_has_phase_0_placeholder": "### Phase 0: <next initiative" in spec_md,
   "spec_has_archive_pointer": "Previous set" in spec_md and "archived" in spec_md,
+  "spec_has_generic_title": spec_md.startswith("# Polychron Active SPEC"),
+  "spec_preamble_no_buddy_specific": "buddy_system" not in spec_md and "Co-Buddy Fanout" not in spec_md,
   "spec_no_old_phases": "_Phase 0 complete_" not in spec_md and "_Phase 1 complete_" not in spec_md,
   "todo_reset_to_fresh": "(empty — populate from the new set" in todo_md,
 }))

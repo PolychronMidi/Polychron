@@ -1,18 +1,22 @@
-# Polychron HME Co-Buddy Fanout SPEC
+# Polychron Active SPEC
 
-> Canonical project spec for the co-buddy fanout integration. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/TODO.md`) in the same commit as any code change.
+> Canonical project spec for the **current initiative**. Every skill that runs in this project reads this file end-to-end before deciding what to do, and updates it (along with `doc/TODO.md`) in the same commit as any code change. Set the title above to the current initiative name; reset back to "Polychron Active SPEC" after `i/todo clear` archives the set.
+>
+> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](HME.md), [doc/ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md), and [CLAUDE.md](../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.
+>
+> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/) — each `i/todo clear` (when all phases are checked + sentinel-marked) timestamps the SPEC+TODO state into a single devlog file and resets the active doc to a fresh-slate template.
 
 ## Goal
 
-Evolve `buddy_system` from one persistent peer into a small co-buddy team (2-3 buddies, each with `claude --resume <sid>` persistence) that drains a queued task dir. Tasks carry difficulty labels that route to the appropriate co-buddy by model tier. Adopt the highest-leverage patterns from [skill-set](https://github.com/toadlyBroodle/skill-set) for queue/sentinel/manifest/exit-contract/cross-cycle-handoff discipline. Preserve HME's existing review-everything stance and filesystem-IPC philosophy.
+<One paragraph naming the current initiative — what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary. Reset to a `<placeholder>` after archive; the next initiative's owner fills it in.>
 
-## Architecture / stack (one-liner each)
+## Architecture / stack (one-liner each, current-initiative-relevant)
 
-- Co-buddies: N parallel `claude --resume <sid>` long-lived sessions, each with own SID file
-- Queue: `tmp/hme-buddy-queue/{pending,processing,done,failed}/` with atomic-mv claim semantics
-- Routing: `[easy|medium|hard]` task labels → model-tier dispatch via `effective = max(item_tier, buddy_floor)`
-- Handoff: `doc/SPEC.md` (canonical phases) + `doc/TODO.md` (3-section: In flight / Just shipped / Next up)
-- Manifests: `tmp/hme-buddy-fanout/<run-id>/manifest.json` (per-run, `in_progress: true` flag, `terminated_by` field)
+<Bullet the architectural touchpoints THIS initiative interacts with. Stable cross-initiative architecture (the 18 hypermeta controllers, L0 channels, etc.) is documented in doc/ARCHITECTURE.md and CLAUDE.md; don't restate here.>
+
+- <subsystem>: <one-line>
+- <data dir / queue / manifest>: <one-line>
+- <handoff doc>: doc/SPEC.md (canonical phases) + doc/TODO.md (3-section: In flight / Just shipped / Next up)
 
 ## Phases
 
