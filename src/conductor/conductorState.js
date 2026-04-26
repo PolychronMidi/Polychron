@@ -1,9 +1,17 @@
 moduleLifecycle.declare({
   name: 'conductorState',
   subsystem: 'conductor',
-  deps: ['validator'],
+  // Full DI: every cross-module reference inside init body flows through deps.
+  deps: ['conductorConfig', 'eventBus', 'harmonicContext', 'harmonicRhythmTracker', 'metaProfiles', 'textureBlender', 'validator'],
   provides: ['conductorState'],
+  conductorScopes: ['section'],
   init: (deps) => {
+  const conductorConfig = deps.conductorConfig;
+  const eventBus = deps.eventBus;
+  const harmonicContext = deps.harmonicContext;
+  const harmonicRhythmTracker = deps.harmonicRhythmTracker;
+  const metaProfiles = deps.metaProfiles;
+  const textureBlender = deps.textureBlender;
   const V = deps.validator.create('conductorState');
 
   let initialized = false;
@@ -120,7 +128,7 @@ moduleLifecycle.declare({
     if (initialized) return true;
     const EVENTS = V.getEventsOrThrow();
 
-    conductorIntelligence.registerModule('conductorState', { reset: resetSection }, ['section']);
+    // (conductorScopes manifest field replaces this registerModule call.)
 
     eventBus.on(EVENTS.TEXTURE_CONTRAST, (data) => {
       snapshot.textureMode = data.mode;
@@ -196,9 +204,8 @@ moduleLifecycle.declare({
   }
 
 
-  moduleLifecycle.registerInitializer('conductorState', initialize);
+  initialize();
   return {
-    initialize,
     updateFromConductor,
     getSnapshot,
     getField,

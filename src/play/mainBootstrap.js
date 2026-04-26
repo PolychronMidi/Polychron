@@ -182,7 +182,6 @@ moduleLifecycle.declare({
       ['FactoryManager', FactoryManager, 'getPhraseArcManager'],
       ['conductorConfig', conductorConfig, 'applyPhaseProfile'],
       ['StutterManager', StutterManager, 'prepareBeat'],
-      ['conductorState', conductorState, 'initialize'],
       ['conductorState', conductorState, 'getField'],
       ['globalConductor', globalConductor, 'update'],
       ['harmonicJourney', harmonicJourney, 'planJourney'],
@@ -221,7 +220,6 @@ moduleLifecycle.declare({
     // handle init via moduleLifecycle (no exposed initialize method); they
     // are verified by the registry topo-sort + assertBootstrapGlobals.
     const requiredInitializers = [
-      ['conductorState', conductorState],
     ];
     requiredInitializers.forEach(([name, obj]) => {
       V.requireType(obj.initialize, 'function', `${name}.initialize`);
