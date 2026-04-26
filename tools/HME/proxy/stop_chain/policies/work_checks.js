@@ -58,11 +58,13 @@ function readVerdicts() {
 }
 
 function lastRealUserPrompt(transcriptPath) {
-  if (!transcriptPath) return '';
+  if (!transcriptPath) return { text: '', turnIndex: 0 };
   let lines;
   try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
-  catch (_e) { return ''; }
+  catch (_e) { return { text: '', turnIndex: 0 }; }
   let last = '';
+  let lastTurnIndex = 0;
+  let turnIndex = 0;
   for (const line of lines) {
     if (!line) continue;
     let entry;
@@ -82,9 +84,16 @@ function lastRealUserPrompt(transcriptPath) {
     text = text.trim();
     if (!text) continue;
     if (HOOK_INJECT_PREFIXES.some((p) => text.startsWith(p))) continue;
+    // Each user message is a distinct "turn" -- the COMPL counter dedups
+    // per turnIndex so identical-text repeats (user retyping the same
+    // frustrated message) each get their own fresh COMPL_MAX budget.
+    // Without this, the counter saturated at 2 on the first occurrence
+    // and every subsequent repeat silently skipped auto-completeness.
+    turnIndex++;
     last = text;
+    lastTurnIndex = turnIndex;
   }
-  return last;
+  return { text: last, turnIndex: lastTurnIndex };
 }
 
 function loadComplStore() {
@@ -128,10 +137,17 @@ module.exports = {
 
     const transcriptPath = ctx.payload && ctx.payload.transcript_path;
     if (!transcriptPath) return ctx.allow();
-    const lastUser = lastRealUserPrompt(transcriptPath);
+    const { text: lastUser, turnIndex } = lastRealUserPrompt(transcriptPath);
     if (!lastUser) return ctx.allow();
 
-    const turnKey = crypto.createHash('sha256').update(lastUser).digest('hex').slice(0, 16);
+    // Dedup key includes turnIndex so identical-text repeats (user retyping
+    // the same prompt verbatim while frustrated) each get their own budget.
+    // Pre-fix: counter saturated at 2 on first occurrence -> every repeat
+    // skipped auto-completeness silently. The user's "STILL NOT FIRING"
+    // recurring scream traces directly to this bug.
+    const turnKey = crypto.createHash('sha256')
+      .update(`${turnIndex}|${lastUser}`)
+      .digest('hex').slice(0, 16);
     const store = loadComplStore();
     const count = parseInt(store[turnKey], 10) || 0;
     if (count >= COMPL_MAX) return ctx.allow();

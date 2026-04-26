@@ -210,6 +210,44 @@ DEFERRAL_REGEXES = (
         r"\bonce\s+(you\s+|the\s+)?(restart|reload|proxy|chat|panel|session|user)\b",
         re.IGNORECASE,
     ),
+    # "I can build/implement/fix that" -- offering future work instead of
+    # doing it now. The "I'll do it next time / want me to" frame.
+    re.compile(
+        r"\bI\s+(can|could|will|would|might|should)\s+"
+        r"(build|implement|fix|address|handle|land|ship|do|tackle|"
+        r"add|wire|migrate|convert|expand|extend|create|write|set\s+up)\b",
+        re.IGNORECASE,
+    ),
+    # "Want me to" / "Should I" / "Would you like me to" -- punts decision
+    # to the user instead of executing under existing authority. Mirrors
+    # PSYCHOPATHIC-STOP's survey-and-ask pattern but caught at exhaust time.
+    re.compile(
+        r"\b(want|need)\s+me\s+to\b|"
+        r"\bshould\s+I\b|"
+        r"\bwould\s+you\s+(like|want)\s+me\s+to\b|"
+        r"\bdo\s+you\s+want\s+me\s+to\b",
+        re.IGNORECASE,
+    ),
+    # "Tell me which" / "let me know" / "point me at" / "specify" --
+    # direct handoff to the user for required input.
+    re.compile(
+        r"\b(tell|let|point|show|give)\s+me\b[^\n]{0,40}?"
+        r"\b(which|what|where|the\s+specific|the\s+concrete|to\s+(it|that))\b",
+        re.IGNORECASE,
+    ),
+    # "Pick a direction" / "choose one" / "which option" -- multi-option
+    # presentation as substitute for execution.
+    re.compile(
+        r"\b(pick|choose|select)\s+(a|an|one|which)\b[^\n]{0,40}?"
+        r"\b(option|direction|approach|path|route|frontier|move)\b",
+        re.IGNORECASE,
+    ),
+    # Bullet/branch labels with bold-(a)/(b) where final text presents
+    # multiple paths as a question to the user.
+    re.compile(
+        r"^\s*\([a-c]\)\s*\*\*[^*]+\*\*",
+        re.MULTILINE,
+    ),
 )
 
 # A bullet line. The count threshold is intentionally low: even a single
