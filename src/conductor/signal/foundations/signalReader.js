@@ -7,17 +7,19 @@
 moduleLifecycle.declare({
   name: 'signalReader',
   subsystem: 'conductor',
-  // Only `validator` is touched at init top-level. conductorIntelligence and
-  // explainabilityBus are referenced inside function bodies (density(),
-  // queryByType(), etc.) called at composition time -- they're guaranteed
-  // loaded by then via the standard require chain. Listing them here would
-  // defer signalReader's instantiation past their load order, breaking the
-  // post-IIFE crossLayerRegistry.register call patterns elsewhere.
-  deps: ['validator'],
+  // Full-DI deps: conductorIntelligence + explainabilityBus are aliased
+  // as locals below so query methods reference deps.X via the local name.
+  // conductorIntelligence is itself a registerInitializer-pool module
+  // (loaded at IIFE time before signalReader.declare runs), so the
+  // dependency resolves eagerly without deferral.
+  deps: ['validator', 'conductorIntelligence', 'explainabilityBus'],
   provides: ['signalReader'],
   init: (deps) => {
   const V = deps.validator.create('signalReader');
   void V;
+  // Full-DI aliases.
+  const conductorIntelligence = deps.conductorIntelligence;
+  const explainabilityBus = deps.explainabilityBus;
 
   /** @returns {number} Product of all registered density biases. */
   function density() {

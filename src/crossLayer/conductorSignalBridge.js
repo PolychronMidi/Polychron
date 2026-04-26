@@ -19,7 +19,6 @@ moduleLifecycle.declare({
   recorder: (ctx) => { conductorSignalBridge.refresh(ctx); },
   init: (deps) => {
   const V = deps.validator.create('conductorSignalBridge');
-  void V;
   // Full-DI aliases.
   const signalReader = deps.signalReader;
   const hyperMetaManager = deps.hyperMetaManager;

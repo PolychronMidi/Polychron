@@ -27,11 +27,12 @@
 moduleLifecycle.declare({
   name: 'hyperMetaManager',
   subsystem: 'conductor',
-  // Top-of-init touches hyperMetaManagerState (assignment to S/ST). systemHealth
-  // / contradictions / topologyIntelligence / conductorIntelligence /
-  // signalReader are all referenced inside tick() and other handlers called
-  // post-boot -- they don't need to gate this module's instantiation.
-  deps: ['hyperMetaManagerState'],
+  // Full-DI deps: aliases below let tick() and helpers use the dep names
+  // directly. The state/health/contra/topo/telem/evo helpers are sibling
+  // legacy globals from the same hyperMetaManager* family -- listing them
+  // here forces them to load before this module instantiates, which is
+  // already the case via the helpers-first pattern in the index files.
+  deps: ['hyperMetaManagerState', 'signalReader', 'explainabilityBus'],
   provides: ['hyperMetaManager'],
   init: (deps) => {
   const ST     = deps.hyperMetaManagerState;
@@ -41,6 +42,9 @@ moduleLifecycle.declare({
   const topo   = hyperMetaManagerTopology;
   const telem  = hyperMetaManagerTelemetry;
   const evo    = hyperMetaManagerEvolutions;
+  // Full-DI aliases for cross-subsystem references.
+  const signalReader = deps.signalReader;
+  const explainabilityBus = deps.explainabilityBus;
 
   // MAIN ORCHESTRATION TICK
 
