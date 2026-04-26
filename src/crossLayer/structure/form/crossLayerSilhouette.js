@@ -75,7 +75,7 @@ moduleLifecycle.declare({
     const complexityInertiaCS = clamp((complexityEmaCS - 0.5) * 0.20, 0, 0.10);
     // R78: phase-lock coupling -- repel mode (layer opposition) demands sharper structural tracking;
     // lock mode (sync) stabilizes the holistic arc (layers moving together need less correction).
-    const phaseModeCSil = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseModeCSil = rhythmicPhaseLock.getMode();
     const phaseSmoothing = phaseModeCSil === 'repel' ? 0.88 : phaseModeCSil === 'lock' ? 1.10 : 1.0;
     // R82 E1: registerMigrationDir bridge -- ascending register migration tightens silhouette form
     // (structural tracking firms up as pitch center rises). Counterpart: phaseAwareCadenceWindow

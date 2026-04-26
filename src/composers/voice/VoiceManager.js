@@ -112,7 +112,7 @@ VoiceManager = class VoiceManager {
     const arcDensityMultiplier = this.V.optionalFinite(Number(phraseContext.densityMultiplier), 1.0);
     // R21: coherence-counterpoint: phase-locked = high independence (counterpoint),
     // divergent = low independence (harmony). Reads phase lock state directly.
-    const phaseLockMode = safePreBoot.call(() => rhythmicPhaseLock.getMode(), 'drift');
+    const phaseLockMode = rhythmicPhaseLock.getMode();
     const phaseIndependenceBias = phaseLockMode === 'lock' ? 0.2 : phaseLockMode === 'repel' ? -0.15 : 0;
     const voiceIndependence = clamp(
       this.V.optionalFinite(Number(phraseContext.voiceIndependence), VOICE_MANAGER.voiceIndependenceDefault) + phaseIndependenceBias,

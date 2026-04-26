@@ -106,10 +106,10 @@ moduleLifecycle.declare({
   function getWarmupCeiling(pair, sectionBeat) {
     const ps = getPairState(pair);
     if (sectionBeat >= ps.lastWarmupBeats) return 1 / 0; // Infinity
-    const profile = safePreBoot.call(() => {
+    const profile = {
       const snap = pairGainCeilingController.getSnapshot();
       return snap && snap[pair] ? snap[pair] : null;
-    }, null);
+    };
     // Fall back to hardcoded defaults if controller not ready
     // R12 E3: Raised initial floor from 50% to 60% of baseCeiling for faster
     // S0 coverage. density-flicker S0 p95 ~0.93 with 50%; 60% starts higher.

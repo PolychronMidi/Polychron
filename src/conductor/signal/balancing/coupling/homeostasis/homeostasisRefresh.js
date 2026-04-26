@@ -226,7 +226,7 @@ moduleLifecycle.declare({
     // R2 E2: Ceiling-aware budget relaxation. When pairGainCeilingController
     // is actively managing multiple pairs, homeostasis can afford a higher
     // budget since ceilings already prevent runaway coupling energy.
-    const ceilingSnap = safePreBoot.call(() => pairGainCeilingController.getSnapshot(), null);
+    const ceilingSnap = pairGainCeilingController.getSnapshot();
     if (ceilingSnap) {
       const managedPairs = Object.keys(ceilingSnap).length;
       if (managedPairs >= 3) {

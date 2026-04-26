@@ -226,9 +226,9 @@ moduleLifecycle.declare({
     const axisShares = axisEnergy && axisEnergy.shares;
     const phaseShare = V.optionalFinite(axisShares && axisShares.phase, 1.0 / 6.0);
     const trustShare = V.optionalFinite(axisShares && axisShares.trust, 1.0 / 6.0);
-    const signalHealth = safePreBoot.call(() => signalHealthAnalyzer.getHealth(), null);
+    const signalHealth = signalHealthAnalyzer.getHealth();
     const densityHealth = signalHealth && signalHealth.density ? signalHealth.density : null;
-    const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
+    const lowPhaseThreshold = /** @type {number} */ (phaseFloorController.getLowShareThreshold());
     const phaseContainmentTarget = 0.09;
     const lowPhasePressure = clamp((lowPhaseThreshold - phaseShare) / m.max(lowPhaseThreshold, 0.01), 0, 1);
     const phaseRecoveryCredit = clamp((phaseShare - phaseContainmentTarget) / 0.05, 0, 1);
@@ -254,7 +254,7 @@ moduleLifecycle.declare({
     const flickerRecoveryRelief = 1.0 - flickerDeficit * 0.25;
     const adjustedFlickerHotspotBrake = regimeFlickerHotspotBrake * flickerRecoveryRelief;
     const densityHotspotBrake = clamp((densityFlickerPressure * (0.010 + phaseRecoveryCredit * 0.015) + densityTrustPressure * 0.020 + trustSharePressure * 0.022 + densitySaturationPressure * (0.032 + lowPhasePressure * 0.025) + clamp((topPairConcentration - 0.70) / 0.15, 0, 1) * densityFlickerPressure * 0.020) * (0.45 + phaseRecoveryCredit * 0.55), 0, 0.09);
-    const tensionSignal = safePreBoot.call(() => conductorState.getField('tension'), null);
+    const tensionSignal = conductorState.getField('tension');
     const tensionValue = V.optionalFinite(tensionSignal, 0.5);
     const tensionRecoveryNudge = longFormBuildPressure * phaseRecoveryCredit * clamp((0.58 - tensionValue) / 0.22, 0, 1) * (1 - tensionFlickerPressure * 0.45) * 0.02;
     // R19: exploring brake strengthened. Duration-proportional component pushes
@@ -262,7 +262,7 @@ moduleLifecycle.declare({
     // Intent-aware exploring brake: soften during development/exposition where
     // exploring is a natural mode, strengthen during climax/resolution where
     // coherence is expected.
-    const sectionPhaseForBrake = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
+    const sectionPhaseForBrake = harmonicContext.getField('sectionPhase');
     const exploringPhaseScale = sectionPhaseForBrake === 'development' || sectionPhaseForBrake === 'exposition'
       ? 0.6
       : sectionPhaseForBrake === 'climax' || sectionPhaseForBrake === 'resolution'
@@ -320,9 +320,7 @@ moduleLifecycle.declare({
     const dtDensityBrake = dtAbs > 0.55
       ? clamp((dtAbs - 0.55) / 0.30, 0, 1) * 0.006
       : 0;
-    const journeyBoldness = safePreBoot.call(
-      () => journeyRhythmCoupler.getBoldness(), 0
-    );
+    const journeyBoldness = journeyRhythmCoupler.getBoldness();
     const dtCoMovementPush = journeyBoldness > 0.25
       ? clamp((journeyBoldness - 0.25) / 0.60, 0, 1) * 0.030
       : 0;

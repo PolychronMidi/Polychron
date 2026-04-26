@@ -57,7 +57,7 @@ const resolvedBassProgramPool = bassProgramPool.length > 0
       ? otherInstruments.filter(pg => !otherPrograms.some(op => gmFamily(pg) === gmFamily(op))) : [];
     const instrumentPool = biasedOtherInstruments.length > 2 ? biasedOtherInstruments : otherInstruments;
     // Trust-driven timbre: if trust ecology suggests a program, use it
-    const trustSuggestion = safePreBoot.call(() => trustTimbreMapping.suggest(absoluteSeconds), null);
+    const trustSuggestion = trustTimbreMapping.suggest(absoluteSeconds);
     // R25: regime-timbre-link - regime changes bias reflection instrument toward
     // regime-appropriate families (coherent=pads, exploring=synths, evolving=strings)
     const REGIME_REFLECTION_POOLS = { coherent: [89, 92, 97, 98], exploring: [79, 81, 104, 112], evolving: [48, 49, 50, 51] };

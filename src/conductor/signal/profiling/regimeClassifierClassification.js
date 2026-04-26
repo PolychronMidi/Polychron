@@ -9,7 +9,7 @@ moduleLifecycle.declare({
     if (avgVelocity < 0.004) return 'stagnant';
     // Lab R3: oscillating at 0.15 sounded good. Swing threshold dynamically
     // between 0.15 (stressed/tense) and 0.65 (relaxed) based on system state.
-    const tensionVal = /** @type {number} */ (safePreBoot.call(() => conductorState.getField('tension'), 0.5));
+    const tensionVal = /** @type {number} */ (conductorState.getField('tension'));
     const entropyEntry = L0.getLast(L0_CHANNELS.entropy, { layer: 'both' });
     const entropyVal = entropyEntry && typeof entropyEntry.smoothed === 'number' ? entropyEntry.smoothed : 0.5;
     const oscillatingDynamic = clamp(
@@ -178,10 +178,10 @@ moduleLifecycle.declare({
     // signal rather than a hardcoded constant.
     // Inner fn guarantees finite; `|| 0.5` was a redundant fallback that also
     // silently rewrote legitimate 0 tension readings to 0.5.
-    const tensionBiasProduct = safePreBoot.call(() => {
+    const tensionBiasProduct = {
       const s = conductorState.getField('tension');
       return typeof s === 'number' && Number.isFinite(s) ? s : 0.5;
-    }, 0.5);
+    };
     const tensionEvolvingSustain = clamp((tensionBiasProduct - 0.55) / 0.35, 0, 1) * 0.015;
     if (cadenceMonopolyPressure > 0.40 &&
         avgVelocity > evolvingEntryVelMin &&

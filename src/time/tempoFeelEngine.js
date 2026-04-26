@@ -68,7 +68,7 @@ moduleLifecycle.declare({
         : 0;
 
     // R21: stutter density modulates tempo feel
-    const stutterTempoMod = /** @type {number} */ (safePreBoot.call(() => stutterTempoFeel.getTempoModulation(), 0));
+    const stutterTempoMod = /** @type {number} */ (stutterTempoFeel.getTempoModulation());
     return 1.0 + feel + rubato + stutterTempoMod;
   }
 

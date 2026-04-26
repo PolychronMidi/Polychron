@@ -88,11 +88,11 @@ moduleLifecycle.declare({
     const rhythmDensityMod = clamp((rhythmDensity - 0.5) * 0.08, -0.04, 0.04);
 
     // Harmonic gravity well -- distant keys boost density and dissonance
-    const journeyStop = safePreBoot.call(() => harmonicJourney.getStop(s), null);
+    const journeyStop = harmonicJourney.getStop(s);
     const journeyDist = (journeyStop && Number.isFinite(journeyStop.distance)) ? journeyStop.distance : 0;
     const gravityBoost = clamp(journeyDist * 0.025, 0, 0.10);
 
-    const currentPhase = /** @type {string} */ (safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development'));
+    const currentPhase = /** @type {string} */ (harmonicContext.getField('sectionPhase'));
     const densityTarget = clamp(
       (DENSITY_BASE + arc * DENSITY_ARC_SCALE - lateLift * DENSITY_LATE_TAPER - longFormRelief * LONG_FORM_DENSITY_RELIEF + cb.densityContrast + cb.regimeContrast + cb.coherenceLearning + cb.spectralContrast + gravityBoost + rhythmDensityMod) * sectionBoundaryRelief
       + m.sin(phraseProgress * m.PI) * 0.14 * (ph % 2 === 0 ? 1.0 : -0.55) * (1.0 + m.sin(clamp(sectionRoute, 0, 1) * m.PI) * 0.3)

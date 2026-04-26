@@ -46,7 +46,7 @@ moduleLifecycle.declare({
     const recent = energyHistory.slice(-4);
     const trend = (recent[3] - recent[0]) / 3;
     const currentEnergy = recent[3];
-    const momentumSuggestion = safePreBoot.call(() => phraseLengthMomentumTracker.suggestAdjustment(), null);
+    const momentumSuggestion = phraseLengthMomentumTracker.suggestAdjustment();
     const momentumAdjustment = momentumSuggestion && Number.isFinite(momentumSuggestion.adjustment)
       ? momentumSuggestion.adjustment
       : 0;

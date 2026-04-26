@@ -6,7 +6,7 @@ moduleLifecycle.declare({
   init: (deps) => {
   const V = deps.validator.create('systemDynamicsProfilerHelpers');
   function getAnalysisSettings(minWindowDefault) {
-    const profile = safePreBoot.call(() => conductorConfig.getActiveProfile(), null);
+    const profile = conductorConfig.getActiveProfile();
     const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
     const configuredWarmup = analysis && Number.isFinite(analysis.warmupTicks)
       ? m.round(analysis.warmupTicks)

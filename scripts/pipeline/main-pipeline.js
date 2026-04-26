@@ -24,6 +24,7 @@ const MEASURE_TIMEOUT_SEC = 30;
 const PRE_COMPOSITION = [
   { label: 'check-root-only-dirs',         cmd: 'node scripts/pipeline/validators/check-root-only-dirs.js' },
   { label: 'sync-instructions',            cmd: 'node scripts/pipeline/sync-instructions.js' },
+  { label: 'generate-manifest-globals',    cmd: 'node scripts/pipeline/generators/generate-manifest-globals.js' },
   { label: 'generate-globals-dts',         cmd: 'node scripts/pipeline/generators/generate-globals-dts.js' },
   { label: 'verify-boot-order',            cmd: 'node scripts/pipeline/verify-boot-order.js --fix' },
   { label: 'check-tuning-invariants',      cmd: 'node scripts/pipeline/validators/check-tuning-invariants.js' },

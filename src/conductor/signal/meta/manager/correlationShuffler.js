@@ -311,7 +311,7 @@ moduleLifecycle.declare({
   }
 
   // Register as a closed-loop feedback controller
-  safePreBoot.call(() => {
+  {
     closedLoopController.create({
       name: 'correlationShuffler',
       observe: () => {
@@ -325,7 +325,7 @@ moduleLifecycle.declare({
       sourceDomain: 'feedback_correlation',
       targetDomain: 'feedback_loop_dampening'
     });
-  }, null);
+  };
 
   return { tick, getShuffleScale, getSnapshot, reset };
   },

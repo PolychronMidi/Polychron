@@ -409,7 +409,7 @@ crossLayerBeatRecord = function crossLayerBeatRecord(opts) {
       crossLayerBeatRecordTraceCachedAxisCouplingTotals = pipelineCouplingManager.getAxisCouplingTotals();
       crossLayerBeatRecordTraceCachedAxisEnergyShare = pipelineCouplingManager.getAxisEnergyShare();
       crossLayerBeatRecordTraceCachedCouplingGates = pipelineCouplingManager.getCouplingGates();
-      crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator = safePreBoot.call(() => axisEnergyEquilibrator.getSnapshot(), null);
+      crossLayerBeatRecordTraceCachedAxisEnergyEquilibrator = axisEnergyEquilibrator.getSnapshot();
       crossLayerBeatRecordTraceSnapBeatKey = clBeatKey;
     }
     const profilerTelemetry = crossLayerBeatRecordBuildProfilerTelemetry(crossLayerBeatRecordTraceCachedDynamicsSnap);

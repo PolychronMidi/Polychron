@@ -81,13 +81,13 @@ const manifestPath = path.join(METRICS_DIR, 'system-manifest.json');
     const activeProfile = conductorConfig.getActiveProfileName();
 
     // -- Harmonic journey plan --
-    const journeyPlan = safePreBoot.call(() => harmonicJourney.getPlan().map((stop, i) => ({
+    const journeyPlan = harmonicJourney.getPlan().map((stop, i) => ({
       section: i,
       key: stop.key,
       mode: stop.mode,
       move: stop.move,
       distance: stop.distance
-    })), []);
+    }));
 
     // -- Config constants snapshot --
     const configSnapshot = {
@@ -157,12 +157,12 @@ const manifestPath = path.join(METRICS_DIR, 'system-manifest.json');
 
   /** @returns {object} */
   function systemManifestBuildSignalHealth() {
-    return /** @type {object} */ (safePreBoot.call(() => signalHealthAnalyzer.getSummary(), /** @type {any} */ ({ beatsAnalyzed: 0, pinnedRate: {}, saturationRate: {}, lastHealth: {} })));
+    return /** @type {object} */ (signalHealthAnalyzer.getSummary());
   }
 
   /** @returns {object} */
   function systemManifestBuildPipelineNormalizer() {
-    return /** @type {object} */ (safePreBoot.call(() => pipelineNormalizer.getSnapshot(), {}));
+    return /** @type {object} */ (pipelineNormalizer.getSnapshot());
   }
 
   /** @returns {object} */

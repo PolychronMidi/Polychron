@@ -72,10 +72,10 @@ moduleLifecycle.declare({
     const phaseShare = axisEnergy && axisEnergy.shares && typeof axisEnergy.shares.phase === 'number'
       ? axisEnergy.shares.phase
       : 1.0 / 6.0;
-    const lowPhaseThreshold = /** @type {number} */ (safePreBoot.call(() => phaseFloorController.getLowShareThreshold(), 0.03));
+    const lowPhaseThreshold = /** @type {number} */ (phaseFloorController.getLowShareThreshold());
     const phaseRecoveryCredit = clamp((phaseShare - lowPhaseThreshold) / 0.08, 0, 1);
     const couplingPressures = pipelineCouplingManager.getCouplingPressures();
-    const signalHealth = safePreBoot.call(() => signalHealthAnalyzer.getHealth(), null);
+    const signalHealth = signalHealthAnalyzer.getHealth();
     const densityHealth = signalHealth && signalHealth.density ? signalHealth.density : null;
     const densityFlickerPressure = clamp((V.optionalFinite(couplingPressures['density-flicker'], 0) - 0.78) / 0.16, 0, 1);
     const densityPhasePressure = clamp((V.optionalFinite(couplingPressures['density-phase'], 0) - 0.68) / 0.16, 0, 1);

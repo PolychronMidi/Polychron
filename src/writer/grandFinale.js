@@ -69,21 +69,21 @@ grandFinale = () => {
     console.log('Wrote file: output/metrics/l0-dump.json');
     // CIM, stutter variant, and correlation shuffler telemetry snapshots
     const runtimeSnap = {
-      cim: safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null),
+      cim: coordinationIndependenceManager.getSnapshot(),
       stutterVariants: safePreBoot.call(() => stutterMetrics.getMetrics(), null),
-      correlationShuffler: safePreBoot.call(() => correlationShuffler.getSnapshot(), null),
-      emergentRhythm: safePreBoot.call(() => ({
+      correlationShuffler: correlationShuffler.getSnapshot(),
+      emergentRhythm: ({
         density: emergentRhythmEngine.getDensity(),
         complexity: emergentRhythmEngine.getComplexity(),
         biasStrength: emergentRhythmEngine.getBiasStrength(),
         densityEma: emergentRhythmEngine.getDensityEma(),
         grid: emergentRhythmEngine.getGrid()
-      }), null),
-      sectionHistory: safePreBoot.call(() => ({
+      }),
+      sectionHistory: ({
         tensionTrajectory: sectionMemory.getTensionTrajectory(),
         densityTrajectory: sectionMemory.getDensityTrajectory(),
         perSection: sectionMemory.getHistory()
-      }), null),
+      }),
       channelField: {
         stats: channelStateField.getStats(),
         rollup: channelStateField.getRollup(),
@@ -102,11 +102,11 @@ grandFinale = () => {
     console.log('Wrote file: metrics/runtime-snapshots.json');
     // Cross-run adaptive state: save terminal EMA values for next boot warm-start
     // Xenolinguistic L5: cross-run personality persistence
-    const lastNarration = safePreBoot.call(() => L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' }), null);
-    const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
+    const lastNarration = L0.getLast(L0_CHANNELS.selfNarration, { layer: 'both' });
+    const tensionTraj = sectionMemory.getTensionTrajectory();
     const hmSnap = hyperMetaManager.getSnapshot();
     const rcReadiness = regimeClassifier.getTransitionReadiness();
-    const cimSnap = safePreBoot.call(() => coordinationIndependenceManager.getSnapshot(), null);
+    const cimSnap = coordinationIndependenceManager.getSnapshot();
     const trustScores = adaptiveTrustScores.getScores();
     const adaptiveState = {
       healthEma: hmSnap ? hmSnap.healthEma : 0.7,

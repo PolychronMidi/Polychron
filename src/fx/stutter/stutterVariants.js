@@ -177,12 +177,12 @@ moduleLifecycle.declare({
       const from = fromMap[key] ?? 1.0;
       regimeMap[key] = from + (cur - from) * blendT;
     }
-    const phase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), 'development');
+    const phase = harmonicContext.getField('sectionPhase');
     const phaseDenseMult = PHASE_DENSE_MULT[phase] ?? 1.0;
 
     // R16: hocket mode favors rhythmic/subtle variants that complement interleaving
     const HOCKET_WEIGHTS = { ghostStutter: 1.5, rhythmicGrid: 1.4, rhythmicDotted: 1.4, harmonicShadow: 1.2, machineGun: 0.5, stutterTremolo: 0.5, stutterSwarm: 0.6 };
-    const rhythmMode = safePreBoot.call(() => rhythmicComplementEngine.getMode(), 'free');
+    const rhythmMode = rhythmicComplementEngine.getMode();
     const inHocket = rhythmMode === 'hocket';
 
     // R18: articulation-aware variant selection. Staccato passages favor
@@ -190,7 +190,7 @@ moduleLifecycle.declare({
     const STACCATO_WEIGHTS = { rhythmicGrid: 1.4, rhythmicDotted: 1.4, machineGun: 1.3, decayingBounce: 1.2, ghostStutter: 0.7, echoTrail: 0.6, harmonicShadow: 0.7 };
     const LEGATO_WEIGHTS = { ghostStutter: 1.5, echoTrail: 1.4, harmonicShadow: 1.3, stereoScatter: 1.2, machineGun: 0.5, stutterTremolo: 0.5, rhythmicGrid: 0.7 };
     const activeLayer = /** @type {string} */ (safePreBoot.call(() => LM.activeLayer, 'L1'));
-    const artProfile = safePreBoot.call(() => articulationComplement.getArticulationProfile(activeLayer), null);
+    const artProfile = articulationComplement.getArticulationProfile(activeLayer);
 
     // R21: harmonic journey distance biases variant character.
     // Near home = subtle variants, far = dramatic
@@ -213,7 +213,7 @@ moduleLifecycle.declare({
     const responseWeights = (otherLastVariant && CALL_RESPONSE_MAP[otherLastVariant]) ? CALL_RESPONSE_MAP[otherLastVariant] : {};
 
     // R24: entropy reversal detection - sudden entropy drops trigger dramatic variants
-    const currentEntropy = /** @type {number} */ (safePreBoot.call(() => entropyRegulator.measureEntropy(), 0.5));
+    const currentEntropy = /** @type {number} */ (entropyRegulator.measureEntropy());
     const entropyVal = Number.isFinite(currentEntropy) ? currentEntropy : 0.5;
     const entropyDelta = prevEntropyEma - entropyVal;
     prevEntropyEma += (entropyVal - prevEntropyEma) * ENTROPY_EMA_ALPHA;
@@ -335,7 +335,7 @@ moduleLifecycle.declare({
 
   // Register as a closed-loop feedback controller so feedbackRegistry tracks
   // and dampens the stutter variant selection loop
-  safePreBoot.call(() => {
+  {
     closedLoopController.create({
       name: 'stutterVariantFeedback',
       observe: () => stutterFeedbackListener.getIntensity().overall,
@@ -346,7 +346,7 @@ moduleLifecycle.declare({
       sourceDomain: 'stutter_density',
       targetDomain: 'stutter_variant_selection'
     });
-  }, null);
+  };
 
   return { register, getVariant, getNames, selectForBeat, getActive, getActiveName,
     getActiveSelfGate, shouldThrottle, incSectionCount, patternGate, reset, resetSection };

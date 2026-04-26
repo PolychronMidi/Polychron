@@ -150,7 +150,7 @@ moduleLifecycle.declare({
     // Uses a slow EMA ramp to avoid the coupling discontinuities that
     // killed the E10 arch floor drop attempt. Max drop 0.15 at full resolution.
     {
-      const sectionPhase = safePreBoot.call(() => harmonicContext.getField('sectionPhase'), '');
+      const sectionPhase = harmonicContext.getField('sectionPhase');
       let sectionProgress = 0;
       sectionProgress = clamp(/** @type {number} */ (timeStream.compoundProgress("section")), 0, 1);
       const inResolution = sectionPhase === 'resolution' && sectionProgress > 0.80;
@@ -317,10 +317,10 @@ moduleLifecycle.declare({
       // Phrase troughs: second half of phrase is the natural descent
       const inPhraseTrough = phraseProgress > 0.55;
       // Check if density is flat via wave analyzer
-      const densityWaveFlat = safePreBoot.call(() => {
+      const densityWaveFlat = {
         const wp = densityWaveAnalyzer.getWaveProfile();
         return wp && wp.isFlat;
-      }, false);
+      };
       if (inPhraseTrough && densityWaveFlat) {
         S.e10ReleaseCooldown = m.max(2, m.min(5, m.round(layerNumerator * 0.4)));
         // Tension suppression: < 1.0 tells densityWaveAnalyzer to suppress

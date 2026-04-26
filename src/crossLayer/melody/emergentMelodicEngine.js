@@ -28,13 +28,13 @@ moduleLifecycle.declare({
     if (beatIndex === cachedBeatIndex && lastContext) return lastContext;
     cachedBeatIndex = beatIndex;
 
-    const contour = safePreBoot.call(() => melodicContourTracker.getContour(), null);
-    const dirSig = safePreBoot.call(() => melodicContourTracker.getDirectionalitySignal(), null);
-    const freshSig = safePreBoot.call(() => intervalDirectionMemory.getFreshnessSignal(), null);
-    const tessPressSig = safePreBoot.call(() => tessituraPressureMonitor.getPressureSignal(), null);
-    const thematicSig = safePreBoot.call(() => thematicRecallDetector.getThematicSignal(), null);
-    const ambiSig = safePreBoot.call(() => ambitusMigrationTracker.getAmbitusSignal(), null);
-    const motionProf = safePreBoot.call(() => counterpointMotionTracker.getMotionProfile(), null);
+    const contour = melodicContourTracker.getContour();
+    const dirSig = melodicContourTracker.getDirectionalitySignal();
+    const freshSig = intervalDirectionMemory.getFreshnessSignal();
+    const tessPressSig = tessituraPressureMonitor.getPressureSignal();
+    const thematicSig = thematicRecallDetector.getThematicSignal();
+    const ambiSig = ambitusMigrationTracker.getAmbitusSignal();
+    const motionProf = counterpointMotionTracker.getMotionProfile();
 
     const contourShape = contour ? (contour.shape || 'static') : 'static';
     const directionBias = contour ? V.optionalFinite(contour.direction, 0) : 0;

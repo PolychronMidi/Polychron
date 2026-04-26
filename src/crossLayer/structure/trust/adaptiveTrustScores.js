@@ -314,7 +314,7 @@ moduleLifecycle.declare({
     // CIM: independent = more exploration nudge (keep all systems active),
     // coordinated = less nudge (let dominant systems stay dominant)
     let effectiveNudge = EXPLORATION_NUDGE * (1.5 - cimScale);
-    const trustGrade = safePreBoot.call(() => signalHealthAnalyzer.getHealth().trust.grade, 'healthy');
+    const trustGrade = signalHealthAnalyzer.getHealth().trust.grade;
     if (trustGrade === 'strained' || trustGrade === 'stressed' || trustGrade === 'critical') {
       effectiveNudge = EXPLORATION_NUDGE * 2;
     }
