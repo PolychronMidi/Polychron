@@ -772,6 +772,51 @@ moduleLifecycle.declare({
 
   // Cosine distance in axis-vector space. 0 = identical direction,
   // 2 = opposite. Both inputs accepted as profile name or vector.
+  // When both inputs are profile NAMES (not raw vectors), a side-axis
+  // penalty is added for differences in non-numeric axes that
+  // axisVector() doesn't capture (layerVariants, composerFamilies,
+  // conductorAffinity/Antipathy, couplingPairs, sectionArc,
+  // disableControllers). Without this, two profiles with identical
+  // numeric core but different per-layer composer pools collapse to
+  // distance=0, and nearest() mis-ranks substrate-level differences
+  // as "same" — breaking the smooth-transition heuristic in
+  // src/play/main.js:175 where nearest() picks the next profile.
+  // Concrete failure mode caught by audit: anthemic vs polyrhythmic_split
+  // were 0.000 numerically but the latter declares
+  // layerVariants:{L1:'anthemic',L2:'elegiac'} which is a major
+  // behavioral shift the metric was missing.
+  const _SIDE_AXIS_WEIGHTS = {
+    layerVariants:    0.15,  // per-layer profile split — major behavioral shift
+    composerFamilies: 0.10,  // composer pool bias — substantial pool change
+    conductorAffinity: 0.05, // conductor preference — moderate
+    conductorAntipathy: 0.05,
+    couplingPairs:    0.05,  // explicit coupling-graph nudges
+    sectionArc:       0.03,  // tension-shape progression
+    disableControllers: 0.05, // controller gating — substantial when set
+  };
+  function _sideAxisPenalty(profA, profB) {
+    if (!profA || !profB) return 0;
+    let penalty = 0;
+    for (const axis of Object.keys(_SIDE_AXIS_WEIGHTS)) {
+      const a = profA[axis];
+      const b = profB[axis];
+      const aPresent = a !== undefined && a !== null;
+      const bPresent = b !== undefined && b !== null;
+      // One declares it, the other doesn't → full weight differential.
+      if (aPresent !== bPresent) {
+        penalty += _SIDE_AXIS_WEIGHTS[axis];
+        continue;
+      }
+      // Both absent → no contribution.
+      if (!aPresent) continue;
+      // Both present → JSON-stringify equality check. Cheap and
+      // sufficient for the small dicts/arrays these axes hold.
+      if (JSON.stringify(a) !== JSON.stringify(b)) {
+        penalty += _SIDE_AXIS_WEIGHTS[axis];
+      }
+    }
+    return penalty;
+  }
   function distance(a, b) {
     const va = Array.isArray(a) ? a : axisVector(a);
     const vb = Array.isArray(b) ? b : axisVector(b);
@@ -784,8 +829,15 @@ moduleLifecycle.declare({
       na  += va[i] * va[i];
       nb  += vb[i] * vb[i];
     }
-    if (na === 0 || nb === 0) return 1;
-    return 1 - dot / (m.sqrt(na) * m.sqrt(nb));
+    const cosineDist = (na === 0 || nb === 0) ? 1 : 1 - dot / (m.sqrt(na) * m.sqrt(nb));
+    // Side-axis penalty only fires when both inputs were profile names
+    // (we have access to the full profile dict). Raw-vector callers
+    // get cosine-only behavior, preserving back-compat.
+    let sidePenalty = 0;
+    if (typeof a === 'string' && typeof b === 'string') {
+      sidePenalty = _sideAxisPenalty(profiles[a], profiles[b]);
+    }
+    return cosineDist + sidePenalty;
   }
 
   // Top-k nearest profiles to the named one, sorted ascending by cosine
