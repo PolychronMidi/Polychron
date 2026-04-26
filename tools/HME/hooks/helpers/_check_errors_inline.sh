@@ -22,13 +22,24 @@ _hme_check_errors_inline() {
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
   local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
 
-  [ ! -f "$ERROR_LOG" ] && return 0
+  if [ ! -f "$ERROR_LOG" ]; then
+    # Genuinely no log file yet (fresh repo) is a passthrough; an
+    # unreachable log file is a silent-fail vector we should surface.
+    return 0
+  fi
 
   local TOTAL WATERMARK
-  TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
+  # Don't suppress wc/cat stderr -- if reading fails (permission, missing
+  # parent dir), the caller (_proxy_bridge) routes our stderr to errors.log
+  # so the failure is visible. Use -f tests + explicit zero defaults.
+  TOTAL=$(wc -l < "$ERROR_LOG" | tr -d ' \t')
   TOTAL=${TOTAL:-0}
-  WATERMARK=$(cat "$INLINE_WATERMARK" 2>/dev/null | tr -d ' \t\n' || echo 0)
-  WATERMARK=${WATERMARK:-0}
+  if [ -f "$INLINE_WATERMARK" ]; then
+    WATERMARK=$(cat "$INLINE_WATERMARK" | tr -d ' \t\n')
+    WATERMARK=${WATERMARK:-0}
+  else
+    WATERMARK=0
+  fi
 
   # No new errors since last inline check.
   [ "$TOTAL" -le "$WATERMARK" ] && return 0
@@ -40,8 +51,13 @@ _hme_check_errors_inline() {
   AGENT_ERRORS=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
   SELF_ERRORS=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
 
-  # Always advance watermark so the same errors don't surface twice.
-  echo "$TOTAL" > "$INLINE_WATERMARK" 2>/dev/null
+  # Advance watermark BEFORE emitting, so a downstream crash doesn't cause
+  # the same lines to surface repeatedly. Failure to update watermark IS
+  # itself a silent-fail vector -- check exit code.
+  if ! echo "$TOTAL" > "$INLINE_WATERMARK"; then
+    echo "_check_errors_inline: failed to update watermark at $INLINE_WATERMARK" >&2
+    return 1
+  fi
 
   # Only emit if there are agent-errors. Self/observation errors are
   # informational; surfacing them mid-turn would create noise.
@@ -58,9 +74,14 @@ ${SELF_ERRORS}]"
     fi
     # additionalContext lands in the next turn's context. Silent on stdout
     # for non-output-accepting events, but PostToolUse accepts this shape.
-    jq -n \
+    # No stderr suppression on jq -- if jq is missing or fails, _proxy_bridge
+    # routes our stderr to errors.log so the failure surfaces.
+    if ! jq -n \
       --arg banner "$BANNER" \
-      '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$banner},"systemMessage":$banner}' 2>/dev/null
+      '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":$banner},"systemMessage":$banner}'; then
+      echo "_check_errors_inline: jq failed to render LIFESAVER JSON" >&2
+      return 1
+    fi
   fi
 
   return 0
