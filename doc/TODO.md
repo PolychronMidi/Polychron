@@ -19,8 +19,16 @@
   blocks and `git log`.
 -->
 
-- Phase 0 SPEC.md + TODO.md substrate created — by manual at 2026-04-26T15:00:00Z
-- Lifesaver-todo dedup + TTL + max-cap + prune store-protection — by manual at 2026-04-26T15:00:00Z (closes the 35-zombie-entries spam class)
+- Phase 2 NEVER lists + lifesaver source-tag self-origin classifier — by manual at 2026-04-26T16:30:00Z
+- Phase 2.5 manager-guidance file (tmp/hme-operator-guidance.md) — by manual at 2026-04-26T16:25:00Z
+- Phase 2.4 fast-path on clean (skip deep walk) — by manual at 2026-04-26T16:20:00Z
+- Phase 2.3 citation-required-for-edit gate (in dispatch prompt) — by manual at 2026-04-26T16:15:00Z
+- Phase 2.2 verdict-file exit contract — by manual at 2026-04-26T16:10:00Z
+- Phase 2.1 iter-boundary drafts sweep (self-heal partial completion) — by manual at 2026-04-26T16:05:00Z
+- Phase 1 dispatcher: queue-dir + atomic claim + sentinel + manifest + floor escalation — by manual at 2026-04-26T15:55:00Z
+- Phase 1.2 buddy_init.sh extended for N co-buddies + per-slot SID/floor files — by manual at 2026-04-26T15:50:00Z
+- Phase 1.1 BUDDY_COUNT + BUDDY_MODEL_FLOORS env knobs — by manual at 2026-04-26T15:45:00Z
+- Phase 0 substrate: tier field + ingest_from_spec + promote_to_spec + close_with_spec_update + sessionstart wire + drift guard — by manual at 2026-04-26T15:30:00Z
 
 ## Next up (queued for next cycle)
 
@@ -32,12 +40,7 @@
   Order: blockers/highest-impact first (label is independent of priority).
 -->
 
-- [easy] Add `tier` field to i/todo schema (default existing items to `"medium"`, accept `tier=easy|medium|hard` on add). Reason: spec Phase 0
-- [medium] Add `i/todo action=ingest_from_spec` — read TODO.md Next up, materialize each as i/todo entry with `source="spec"` and `tier=<label>`. Reason: spec Phase 0
-- [medium] Add `i/todo action=promote_to_spec target=<id>` — move ephemeral i/todo entry to TODO.md Next up with Reason cite. Reason: spec Phase 0
-- [medium] Add `i/todo action=close_with_spec_update target=<id>` — flip SPEC.md `[ ]→[x]` if entry closes a spec item, append to TODO.md Just shipped, mark i/todo done — atomic. Reason: spec Phase 0
-- [medium] Wire `sessionstart.sh` to read `doc/TODO.md` In flight section alongside `list_carried_over()`. Reason: spec Phase 0
-- [hard] Pre-commit / autocommit-guard rule: if `src/**` changed AND no spec-item closure noted, require either `doc/SPEC.md` OR `doc/TODO.md` to change in the same commit. Reason: spec Phase 0
+(empty — Phase 0/1/2 fully landed; next user direction sets the queue)
 
 ---
 
