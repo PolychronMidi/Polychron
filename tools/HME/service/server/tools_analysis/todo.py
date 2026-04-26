@@ -30,6 +30,7 @@ Completing the last open sub auto-completes the parent.
 """
 import json
 import os
+import re
 import sys
 import time
 import logging
@@ -237,46 +238,220 @@ def _write_graph_file(todos: list) -> None:
 # External API
 
 
-def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
-    """LIFESAVER entry point — dedup-aware.
+# Lifesaver-todo store-protection knobs. Override via env if the defaults
+# need tuning per deployment. The defaults are conservative — chosen to
+# keep the open-set under 20 entries and the youngest-stale entry under
+# 24h, which together prevent the runaway-monitor flood that put 35
+# zombie llamacpp_offload_invariant entries in the store before this
+# rule landed (see invariants.json: lifesaver-todo-dedup).
+_LIFESAVER_MAX_OPEN = int(os.environ.get("HME_LIFESAVER_TODO_MAX_OPEN", "20"))
+_LIFESAVER_TTL_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_TTL_SEC", str(24 * 3600)))
+# Prune-after: how long a DONE lifesaver entry stays in the store before
+# being deleted entirely. Once resolved, lifesaver entries have no
+# operational value — they're not historical lessons (those are KB
+# entries / commits), they're just monitor-loop residue. Default 3 days
+# keeps recent context for debugging while preventing unbounded growth
+# of todos.json + todo-graph.md (the spam vector the user filed).
+_LIFESAVER_PRUNE_AFTER_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_PRUNE_SEC", str(3 * 24 * 3600)))
 
-    Dedupes by the canonical text (severity+source+error) so a monitor
-    loop hammering the same failure doesn't flood the todo store. If an
-    unresolved entry with the same text already exists, this is a no-op.
+
+def _normalize_error_for_dedup(error: str) -> str:
+    """Strip variable tokens (numeric values, MB/GB sizes, hex addresses,
+    paths, timestamps) from the error string so structurally-identical
+    failures with different runtime numbers collapse to ONE dedup key.
+
+    Without this, an OOM error that varies only in "GPU1 has 17342 MB
+    free" vs "GPU1 has 16826 MB free" creates two distinct entries.
+    The user's spam-cleanup ticket caught a runaway store with 35 such
+    near-duplicates from a single monitor loop firing on memory drift.
+    """
+    if not error:
+        return ""
+    s = error
+    # Memory sizes: "17342 MB", "22049 MB", "228GB", "1.5 GiB"
+    s = re.sub(r"\b\d+(?:\.\d+)?\s*(?:[KMGT]i?B|[KMGT]B)\b", "<SIZE>", s, flags=re.IGNORECASE)
+    # Plain large numbers (>= 4 digits) — covers retry counts, line numbers,
+    # raw byte values, port numbers, timestamps. Smaller numbers stay
+    # because they often distinguish error classes (e.g. HTTP 503 vs 500).
+    s = re.sub(r"\b\d{4,}\b", "<NUM>", s)
+    # Hex pointers / addresses
+    s = re.sub(r"\b0x[0-9a-fA-F]+\b", "<HEX>", s)
+    # Absolute paths down to filename — keep filename as it's often the
+    # error class signal, drop the variable directory prefix
+    s = re.sub(r"/[A-Za-z0-9_\-./]+/([A-Za-z0-9_\-]+\.[A-Za-z0-9]+)", r"<PATH>/\1", s)
+    # ISO timestamps and dates
+    s = re.sub(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?", "<TS>", s)
+    s = re.sub(r"\d{4}-\d{2}-\d{2}", "<DATE>", s)
+    # Collapse runs of whitespace
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+
+def _enforce_lifesaver_caps(meta: dict, todos: list) -> int:
+    """Sweep two store-protection invariants on every register call:
+
+    1. TTL: lifesaver entries older than HME_LIFESAVER_TODO_TTL_SEC
+       (default 24h) auto-resolve with reason=stale-ttl. The recurrence
+       counter resets to 1 if the same error fires again later, so
+       chronic real failures don't get silently swept under the rug —
+       they re-enter as fresh entries when they recur.
+    2. MAX_OPEN: at most HME_LIFESAVER_TODO_MAX_OPEN concurrently-open
+       lifesaver entries. When the cap is hit, the OLDEST open entries
+       (by ts) are auto-resolved with reason=max-open-cap so newer
+       failures still surface. Without this cap a runaway monitor loop
+       can fill the store unbounded.
+
+    Returns count of entries auto-resolved.
+    """
+    now = time.time()
+    resolved_count = 0
+    # TTL pass. _check_main_done reads `t["done"]` (a mirror of
+    # status == "completed"); BOTH must be set in lockstep or the
+    # subsequent MAX_OPEN re-scan miscounts and resolves entries that
+    # the TTL pass already marked.
+    for t in todos:
+        if t.get("source") != "lifesaver" or _check_main_done(t):
+            continue
+        age = now - float(t.get("ts", now))
+        if age > _LIFESAVER_TTL_SECONDS:
+            t["status"] = "completed"
+            t["done"] = True
+            t["resolved_ts"] = now
+            t["resolved_reason"] = "stale-ttl"
+            resolved_count += 1
+    # MAX_OPEN pass — recompute open set after TTL sweep
+    open_lifesavers = [
+        t for t in todos
+        if t.get("source") == "lifesaver" and not _check_main_done(t)
+    ]
+    if len(open_lifesavers) > _LIFESAVER_MAX_OPEN:
+        # Resolve the oldest excess. Sort by ts ascending; trim until at cap.
+        open_lifesavers.sort(key=lambda x: float(x.get("ts", 0)))
+        excess = len(open_lifesavers) - _LIFESAVER_MAX_OPEN
+        for t in open_lifesavers[:excess]:
+            t["status"] = "completed"
+            t["done"] = True
+            t["resolved_ts"] = now
+            t["resolved_reason"] = "max-open-cap"
+            resolved_count += 1
+    if resolved_count:
+        meta["updated_ts"] = now
+    return resolved_count
+
+
+def _prune_done_lifesavers(meta: dict, todos: list) -> int:
+    """Delete done lifesaver entries whose resolved_ts (or ts as fallback
+    for legacy entries) is older than HME_LIFESAVER_TODO_PRUNE_SEC.
+
+    Once a lifesaver alert is resolved, it carries no operational value
+    — historical lessons live in commits / KB / docs. Keeping resolved
+    entries in todos.json forever bloats both the JSON store and the
+    rendered todo-graph.md (the spam vector the user reported). Pruning
+    is safe because:
+      1. The dedup key would re-spawn an identical entry if the same
+         failure recurs after pruning (cleanup loop self-heals).
+      2. recurrence_count + resolved_reason are preserved in any
+         downstream metric that reads the file before pruning happens.
+
+    Mutates `todos` in place; returns count pruned.
+    """
+    now = time.time()
+    keep = []
+    pruned = 0
+    for t in todos:
+        if (
+            t.get("source") == "lifesaver"
+            and _check_main_done(t)
+        ):
+            # Use the EARLIER of (original ts, resolved_ts) as the prune
+            # reference. This makes retroactive cleanup work correctly:
+            # a batch sweep that just marked many old entries done sets
+            # resolved_ts=now, but their original ts (when the failure
+            # actually fired) may be weeks old — those should prune
+            # immediately, not wait another 3 days.
+            ts_orig = float(t.get("ts") or now)
+            ts_resolved = float(t.get("resolved_ts") or now)
+            ref_ts = min(ts_orig, ts_resolved)
+            if (now - ref_ts) > _LIFESAVER_PRUNE_AFTER_SECONDS:
+                pruned += 1
+                continue
+        keep.append(t)
+    if pruned:
+        todos[:] = keep
+        meta["updated_ts"] = now
+    return pruned
+
+
+def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
+    """LIFESAVER entry point — dedup-aware with store-protection caps.
+
+    Dedup keys on the SEVERITY + SOURCE + NORMALIZED-ERROR-PREFIX. The
+    error is normalized first (memory sizes, large numbers, paths,
+    timestamps redacted to placeholders) so structurally-identical
+    failures with varying runtime numbers collapse to ONE entry that
+    increments its recurrence_count rather than spawning duplicates.
+
+    Store-protection (every call): a TTL sweep auto-resolves open
+    lifesaver entries older than 24h, and a hard cap (default 20)
+    auto-resolves the oldest excess if the open set grows past the
+    limit. Catches the runaway-monitor flood class even when dedup
+    misses a near-duplicate (e.g. when the source field itself varies).
+
     Pairs with failure_genealogy.record_failure which dedups the same
     alerts at the LIFESAVER log layer.
     """
     text = f"CRITICAL ERROR - LIFESAVER ALERT: [{severity}] {source}: {error}"
-    # Dedup key: (source, severity, first 80 chars of error). Text-exact
-    # dedup failed to catch near-duplicates where only a free-memory number
-    # or timestamp differed — one recurring GPU-OOM error became 15 "distinct"
-    # pending todos. Truncated-error-prefix dedup collapses all memory-variant
-    # restatements of the same underlying failure into ONE entry.
-    dedup_key = f"{severity}|{source}|{(error or '')[:80]}"
+    # Normalized dedup key — strips variable tokens before computing the
+    # 80-char prefix so memory-variant errors collapse into ONE entry.
+    normalized_err = _normalize_error_for_dedup(error or "")
+    dedup_key = f"{severity}|{source}|{normalized_err[:80]}"
     with _todo_lock:
         meta, todos = _load_todos()
+        # Sweep TTL + max-open caps BEFORE checking dedup so capped/stale
+        # entries can't block a legitimate fresh-recurrence registration.
+        cap_resolved = _enforce_lifesaver_caps(meta, todos)
+        if cap_resolved:
+            logger.info(f"LIFESAVER→TODO store-protection auto-resolved {cap_resolved} entries (ttl/cap)")
+        # Prune done-lifesaver residue after the TTL pass so newly-aged-out
+        # entries get a chance to be observed once before deletion-on-next-call.
+        pruned = _prune_done_lifesavers(meta, todos)
+        if pruned:
+            logger.info(f"LIFESAVER→TODO pruned {pruned} done entries past prune horizon")
         for existing in todos:
             if (
                 existing.get("source") == "lifesaver"
                 and not _check_main_done(existing)
             ):
-                existing_err = existing.get("text", "")
-                # Extract the tail of existing_err past the `<source>: ` boundary
-                # for the 80-char prefix compare. Falls back to full-text-exact.
-                sep = f"[{severity}] {source}: "
-                if sep in existing_err:
-                    existing_err_tail = existing_err.split(sep, 1)[1][:80]
-                    if existing_err_tail == (error or "")[:80]:
-                        # Refresh the existing entry's timestamp so freshness
-                        # tracking reflects continued occurrence, but don't
-                        # create a duplicate row.
-                        existing["ts"] = time.time()
-                        existing["recurrence_count"] = int(existing.get("recurrence_count", 1)) + 1
-                        _save_todos(meta, todos)
-                        return
-                if existing.get("text") == text:
+                # Prefer dedup_key match (set on entries written under this
+                # dedup regime). Fall back to recomputing the key from the
+                # existing entry's stored severity/source/text for legacy
+                # entries that predate the dedup_key field.
+                existing_key = existing.get("dedup_key")
+                if existing_key is None:
+                    # Reconstruct: extract error portion past the
+                    # "[<severity>] <source>: " separator, normalize, key.
+                    existing_text = existing.get("text", "")
+                    # Try every severity prefix until one matches; severity
+                    # is part of the canonical text shape.
+                    existing_err = ""
+                    for sev in ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTICE"):
+                        sep = f"[{sev}] {source}: "
+                        if sep in existing_text:
+                            existing_err = existing_text.split(sep, 1)[1]
+                            existing_key = f"{sev}|{source}|{_normalize_error_for_dedup(existing_err)[:80]}"
+                            break
+                if existing_key == dedup_key:
+                    # Match — increment recurrence and refresh ts. The TTL
+                    # check above ran on the SAVED ts, so a refresh here
+                    # legitimately keeps a chronically-recurring failure
+                    # surfaced as long as it keeps firing. A failure that
+                    # stops firing for 24h ages out via the TTL sweep on
+                    # the next register call.
                     existing["ts"] = time.time()
                     existing["recurrence_count"] = int(existing.get("recurrence_count", 1)) + 1
+                    # Backfill dedup_key on legacy entries that lacked one.
+                    if existing.get("dedup_key") is None:
+                        existing["dedup_key"] = dedup_key
                     _save_todos(meta, todos)
                     return
         entry = _write_todo_entry(
@@ -307,6 +482,7 @@ def resolve_lifesaver_todos(source_substring: str) -> int:
                 continue
             if source_substring in t.get("text", ""):
                 t["status"] = "completed"
+                t["done"] = True
                 t["resolved_ts"] = time.time()
                 resolved += 1
         if resolved:
