@@ -66,7 +66,7 @@ module.exports = {
     const aliasedFromDeps = new Set();
     // Track lazyDeps: declared in the manifest's lazyDeps array.
     const lazyDeps = new Set();
-    // Track manifest's own provides — self-references (the module accessing
+    // Track manifest's own provides -- self-references (the module accessing
     // its own globally-bound API from inside init body callbacks) are not
     // a DI violation; you can't add a module to its own deps. Skip these.
     const ownProvides = new Set();
