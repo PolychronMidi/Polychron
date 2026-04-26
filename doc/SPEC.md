@@ -95,9 +95,25 @@ Per skill-set's chain-driver / chain-runner / supervisor jurisdiction discipline
 
 ### How this file evolves
 
-- A skill closes an item by flipping `- [ ]` → `- [x]` in the same commit as the code change.
-- When all items in a phase are checked, append a "completed" block to that phase: 1-paragraph result + bulleted file citations + test-count delta. Don't delete the phase's checklist; it's the historical record.
+- A skill closes an item by flipping `- [ ]` → `- [x]` in the same commit as the code change. Use `i/todo close_with_spec_update target=<id>` to do this atomically (also appends to `doc/TODO.md` Just shipped).
+- When all items in a phase are checked, append a "completed" block via `i/todo phase_complete phase=<N> text="<1-paragraph result + bulleted file citations + test-count delta>"`. The completion paragraph is meaningful content authored by the closer — not auto-generated.
 - New work surfaced mid-cycle goes to `doc/TODO.md`'s "Next up", not directly here. The next cycle decides whether it merits a new spec phase or was actually a follow-up to the current one.
+
+### Archive on set completion (KB devlog)
+
+Diverges deliberately from skill-set's roll-forward design. Their model leaves completed phases stacked in the active SPEC.md (45KB+ over 20 phases) — every skill that reads the spec end-to-end pays that context tax. Polychron archives whole sets to KB devlog instead.
+
+**Trigger:** when ALL phases in `doc/SPEC.md` have zero open `- [ ]` items AND every phase carries its `_Phase N complete_` sentinel paragraph, the next `i/todo clear` action archives the set.
+
+**Archive flow:**
+1. Snapshot `doc/SPEC.md` + `doc/TODO.md` verbatim into a single timestamped file at `tools/HME/KB/devlog/<YYYY-MM-DDTHHMMSSZ>-<slug>.md` (slug optionally passed via `i/todo clear text="<set-name>"`)
+2. Reset `doc/SPEC.md` Phase blocks to a fresh-slate Phase 0 placeholder with a pointer back to the devlog file
+3. Reset `doc/TODO.md` to the empty 3-section template
+4. Preamble (Goal / Architecture) and trailing sections (Glossary, Three-loop NEVER lists, Difficulty labels, Empty-queue bail) are preserved across the reset since they're stable across sets
+
+**Mid-set:** if the set isn't complete (any open `[ ]` items remaining), `i/todo clear` just removes completed i/todo entries (the original behavior) — no archive, no SPEC reset. The `clear` output surfaces what's still blocking archive.
+
+The active doc/ directory thus stays lean; deeper history lives in the devlog and `git log`. Searching past sets: `grep -r "<keyword>" tools/HME/KB/devlog/` or any KB query that includes the devlog directory.
 
 ### Difficulty labels (model + effort routing)
 
