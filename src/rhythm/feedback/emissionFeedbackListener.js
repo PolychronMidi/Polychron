@@ -1,9 +1,12 @@
 moduleLifecycle.declare({
   name: 'emissionFeedbackListener',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['eventBus', 'validator'],
   provides: ['emissionFeedbackListener'],
+  // crossLayerScopes manifest field replaces the inline crossLayerRegistry.register call.
+  crossLayerScopes: ['section'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const V = deps.validator.create('emissionFeedbackListener');
 
   let initialized = false;
@@ -34,7 +37,7 @@ moduleLifecycle.declare({
       lastIntendedByLayer[layer] = intended;
     });
 
-    crossLayerRegistry.register('emissionFeedbackListener', { reset: resetSection }, ['section']);
+    // (crossLayerScopes manifest field replaces the inline register.)
     initialized = true;
   }
 
@@ -70,9 +73,8 @@ moduleLifecycle.declare({
   }
 
 
-  moduleLifecycle.registerInitializer('emissionFeedbackListener', initialize);
+  initialize();
   return {
-    initialize,
     getEmissionRatio,
     getEmissionGap,
     getMetrics,

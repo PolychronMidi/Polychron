@@ -4,9 +4,12 @@
 moduleLifecycle.declare({
   name: 'journeyRhythmCoupler',
   subsystem: 'rhythm',
-  deps: ['systemDynamicsProfiler', 'validator'],
+  deps: ['eventBus', 'systemDynamicsProfiler', 'validator'],
   provides: ['journeyRhythmCoupler'],
+  // crossLayerScopes manifest field replaces inline crossLayerRegistry.register call.
+  crossLayerScopes: ['section'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('journeyRhythmCoupler');
 
@@ -58,7 +61,7 @@ moduleLifecycle.declare({
       boldnessByLayer[evtLayer] = journeyRhythmCouplerBoldness;
     });
 
-    crossLayerRegistry.register('journeyRhythmCoupler', { reset: resetSection }, ['section']);
+    // (crossLayerScopes manifest field replaces inline register.)
     journeyRhythmCouplerInitialized = true;
   }
 
@@ -146,9 +149,8 @@ moduleLifecycle.declare({
   }
 
 
-  moduleLifecycle.registerInitializer('journeyRhythmCoupler', initialize);
+  initialize();
   return {
-    initialize,
     getBoldness,
     setExternalBias,
     biasRhythmWeights,

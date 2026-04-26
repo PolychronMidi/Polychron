@@ -7,9 +7,16 @@
 moduleLifecycle.declare({
   name: 'coherenceMonitor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  // Full DI: every cross-module reference inside init body is in deps.
+  deps: ['L0', 'conductorIntelligence', 'eventBus', 'signalReader', 'timeStream', 'validator'],
   provides: ['coherenceMonitor'],
+  conductorScopes: ['section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
+  const eventBus = deps.eventBus;
+  const signalReader = deps.signalReader;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('coherenceMonitor');
 
   let initialized = false;
@@ -258,17 +265,20 @@ moduleLifecycle.declare({
     entropySignal = 0;
   }
 
-  // Self-register into conductorIntelligence
-  // getDensityBias is called each beat by the conductor pipeline.
+  // Self-register into conductorIntelligence. registerDensityBias has no
+  // manifest-field counterpart yet; the inline call is OK because
+  // conductorIntelligence is in deps so it's bound by the time init runs.
+  // registerStateProvider/registerModule could move to manifest fields but
+  // require the API object to be returned first; left inline for now since
+  // they reference functions defined in this scope. registerInitializer
+  // wrapper removed -- these run at init time, deps guarantee binding.
   conductorIntelligence.registerDensityBias('coherenceMonitor', getDensityBias, BIAS_FLOOR, BIAS_CEILING); // floor=0.60, ceiling=1.3
-
-  // metrics to conductorState via the state provider registry.
   conductorIntelligence.registerStateProvider('coherenceMonitor', () => ({
     coherenceBias: getDensityBias(),
     coherenceEntropy: getEntropySignal(),
     coherenceWindowSize: window.length
   }));
-  conductorIntelligence.registerModule('coherenceMonitor', { reset }, ['section']);
+  // (conductorScopes manifest field replaces the registerModule call.)
 
 
   function flushToL0() {
@@ -280,9 +290,8 @@ moduleLifecycle.declare({
 
   function getCoherenceBuffer() { return coherenceBuffer; }
 
-  moduleLifecycle.registerInitializer('coherenceMonitor', initialize);
+  initialize();
   return {
-    initialize,
     getDensityBias,
     getLayerBias: (layer) => V.optionalFinite(layerBias[layer], 1.0),
     getEntropySignal,

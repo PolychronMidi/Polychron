@@ -4,9 +4,10 @@
 moduleLifecycle.declare({
   name: 'FXFeedbackListener',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['feedbackAccumulator', 'validator'],
   provides: ['FXFeedbackListener'],
   init: (deps) => {
+  const feedbackAccumulator = deps.feedbackAccumulator;
   const V = deps.validator.create('fXFeedbackListener');
 
   let accumulator = null;
@@ -182,7 +183,7 @@ moduleLifecycle.declare({
   }
 
 
-  moduleLifecycle.registerInitializer('FXFeedbackListener', initialize);
+  initialize();
   return {
     initialize,
     getIntensity,

@@ -1,9 +1,10 @@
 moduleLifecycle.declare({
   name: 'feedbackAccumulator',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['eventBus', 'validator'],
   provides: ['feedbackAccumulator'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const V = deps.validator.create('feedbackAccumulator');
 
   /**

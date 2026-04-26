@@ -221,12 +221,6 @@ moduleLifecycle.declare({
     // handle init via moduleLifecycle (no exposed initialize method); they
     // are verified by the registry topo-sort + assertBootstrapGlobals.
     const requiredInitializers = [
-      ['FXFeedbackListener', FXFeedbackListener],
-      ['stutterFeedbackListener', stutterFeedbackListener],
-      ['journeyRhythmCoupler', journeyRhythmCoupler],
-      ['conductorRegulationListener', conductorRegulationListener],
-      ['drumTextureCoupler', drumTextureCoupler],
-      ['emissionFeedbackListener', emissionFeedbackListener],
       ['conductorState', conductorState],
     ];
     requiredInitializers.forEach(([name, obj]) => {

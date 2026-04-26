@@ -5,9 +5,12 @@
 moduleLifecycle.declare({
   name: 'drumTextureCoupler',
   subsystem: 'rhythm',
-  deps: ['regimeClassifier', 'validator'],
+  // Full DI: feedbackAccumulator referenced inside ensureFeedback(); flow
+  // through deps so init runs only after feedbackAccumulator is bound.
+  deps: ['feedbackAccumulator', 'regimeClassifier', 'validator'],
   provides: ['drumTextureCoupler'],
   init: (deps) => {
+  const feedbackAccumulator = deps.feedbackAccumulator;
   const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('drumTextureCoupler');
 
@@ -105,9 +108,9 @@ moduleLifecycle.declare({
   }
 
 
-  moduleLifecycle.registerInitializer('drumTextureCoupler', initialize);
+  // Full DI: feedbackAccumulator is bound, run wiring inline.
+  initialize();
   return {
-    initialize,
     getIntensity,
     shouldAccent,
     getMetrics

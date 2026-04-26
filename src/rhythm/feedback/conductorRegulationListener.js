@@ -1,12 +1,14 @@
 moduleLifecycle.declare({
   name: 'conductorRegulationListener',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['eventBus', 'journeyRhythmCoupler', 'validator'],
   provides: ['conductorRegulationListener'],
+  // crossLayerScopes manifest field replaces the inline crossLayerRegistry.register call.
+  crossLayerScopes: ['section'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
+  const journeyRhythmCoupler = deps.journeyRhythmCoupler;
   const V = deps.validator.create('conductorRegulationListener');
-
-  let initialized = false;
 
   const state = {
     avg: 0,
@@ -16,32 +18,8 @@ moduleLifecycle.declare({
   };
 
   function applyJourneyBias(crossModBias) {
-    V.requireDefined(journeyRhythmCoupler, 'journeyRhythmCoupler');
     journeyRhythmCoupler.setExternalBias(crossModBias);
     return true;
-  }
-
-  function initialize() {
-    if (initialized) return;
-    const EVENTS = V.getEventsOrThrow();
-
-    eventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
-      const avg = V.requireFinite(data.avg, 'conductor-regulation.avg');
-      const densityBias = V.requireFinite(data.densityBias, 'conductor-regulation.densityBias');
-      const crossModBias = V.requireFinite(data.crossModBias, 'conductor-regulation.crossModBias');
-      const profile = data.profile;
-      V.assertNonEmptyString(profile, 'conductor-regulation.profile');
-
-      state.avg = clamp(avg, 0, 1);
-      state.densityBias = densityBias;
-      state.crossModBias = clamp(crossModBias, 0.5, 1.5);
-      state.profile = profile;
-
-      applyJourneyBias(state.crossModBias);
-    });
-
-    crossLayerRegistry.register('conductorRegulationListener', { reset: resetSection }, ['section']);
-    initialized = true;
   }
 
   function resetSection() {
@@ -55,12 +33,27 @@ moduleLifecycle.declare({
     return Object.assign({}, state);
   }
 
+  // Wire eventBus subscription inline (deps guaranteed bound).
+  const EVENTS = V.getEventsOrThrow();
+  eventBus.on(EVENTS.CONDUCTOR_REGULATION, (data) => {
+    const avg = V.requireFinite(data.avg, 'conductor-regulation.avg');
+    const densityBias = V.requireFinite(data.densityBias, 'conductor-regulation.densityBias');
+    const crossModBias = V.requireFinite(data.crossModBias, 'conductor-regulation.crossModBias');
+    const profile = data.profile;
+    V.assertNonEmptyString(profile, 'conductor-regulation.profile');
 
-  moduleLifecycle.registerInitializer('conductorRegulationListener', initialize);
+    state.avg = clamp(avg, 0, 1);
+    state.densityBias = densityBias;
+    state.crossModBias = clamp(crossModBias, 0.5, 1.5);
+    state.profile = profile;
+
+    applyJourneyBias(state.crossModBias);
+  });
+
   return {
-    initialize,
     getState,
-    resetSection
+    resetSection,
+    reset: resetSection
   };
   },
 });
