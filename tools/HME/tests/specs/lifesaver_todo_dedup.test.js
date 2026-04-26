@@ -216,6 +216,76 @@ print(json.dumps({
   });
 });
 
+test('auto-prune: every hme_todo invocation prunes done todos past horizon (all sources)', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+import os
+os.environ["HME_DONE_TODO_PRUNE_SEC"] = "1"  # 1-second horizon for test
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json, time
+hme_todo(action="add", text="will-be-done")
+hme_todo(action="add", text="will-stay-open")
+meta, todos = _load_todos()
+done_id = next(t["id"] for t in todos if "done" in t["text"])
+hme_todo(action="done", todo_id=done_id)
+time.sleep(2)  # past prune horizon
+# Triggering ANY action runs auto-prune
+hme_todo(action="list")
+meta, todos = _load_todos()
+texts = sorted(t["text"] for t in todos)
+print(json.dumps({"remaining": texts}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.deepStrictEqual(parsed.remaining, ['will-stay-open'], 'done entry past horizon must be auto-pruned');
+  });
+});
+
+test('auto-prune: list emits system-reminder when done-pending count crosses threshold', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    // Threshold: 15 done items in the store (high enough to avoid
+    // false-firing on legitimate work-in-progress; only fires once
+    // the store has genuinely accumulated stale completions).
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+for i in range(16):
+    hme_todo(action="add", text=f"item-{i}")
+_, todos = _load_todos()
+for t in todos:
+    hme_todo(action="done", todo_id=t["id"])
+output = hme_todo(action="list")
+print(json.dumps({
+  "has_reminder": "<system-reminder>" in output and "pending cleanup" in output,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.has_reminder, true, 'system-reminder must surface when threshold crossed');
+  });
+});
+
+test('auto-prune: list does NOT emit reminder when done count below threshold', () => {
+  _withSandboxedTodoStore((sandbox) => {
+    const result = _runPython(sandbox, `
+from server.tools_analysis.todo import hme_todo, _load_todos
+import json
+for i in range(3):
+    hme_todo(action="add", text=f"item-{i}")
+_, todos = _load_todos()
+for t in todos:
+    hme_todo(action="done", todo_id=t["id"])
+output = hme_todo(action="list")
+print(json.dumps({
+  "has_reminder": "<system-reminder>" in output and "pending cleanup" in output,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.has_reminder, false, 'small done count must NOT trigger reminder');
+  });
+});
+
 test('archive: clear refuses to archive when set is not complete', () => {
   _withSandboxedTodoStore((sandbox) => {
     const fs2 = require('fs');
