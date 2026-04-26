@@ -159,7 +159,11 @@ export default [
       // which deps are safe to add (no eager-load consumers), convert
       // those, leave the rest. Re-enable as 'warn' / 'error' once the
       // sweep completes per-subsystem.
-      'local/no-bare-declared-global-in-init': 'warn'
+      // Promoted from 'warn' to 'error' after the cycle-aware bulk fix
+      // resolved all 979 prior warnings (181 modules now use lazyDeps to
+      // break otherwise-circular dep graphs). New code that bare-refs a
+      // declared module from inside init() now fails CI.
+      'local/no-bare-declared-global-in-init': 'error'
     },
 
   },
