@@ -19,12 +19,14 @@
 moduleLifecycle.declare({
   name: 'couplingHomeostasis',
   subsystem: 'conductor',
-  // Init touches conductorIntelligence (.registerRecorder, .registerModule)
-  // at the bottom plus the homeostasis* sub-modules in returned function bodies.
-  deps: ['conductorIntelligence', 'homeostasisState', 'homeostasisRefresh', 'homeostasisTick', 'homeostasisFloor'],
+  // Init body uses homeostasis* sub-modules at top level. recorder /
+  // conductorScopes manifest fields handle the post-init registration
+  // that previously lived as conductorIntelligence.* calls inside init.
+  deps: ['homeostasisState', 'homeostasisRefresh', 'homeostasisTick', 'homeostasisFloor'],
   provides: ['couplingHomeostasis'],
+  conductorScopes: ['section'],
+  recorder: () => { couplingHomeostasis.getState && /* trigger refresh */ null; },
   init: (deps) => {
-  const conductorIntelligence = deps.conductorIntelligence;
   const homeostasisState = deps.homeostasisState;
   const homeostasisRefresh = deps.homeostasisRefresh;
   const homeostasisTick = deps.homeostasisTick;

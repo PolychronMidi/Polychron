@@ -11,6 +11,12 @@ moduleLifecycle.declare({
   // systemDynamicsProfiler) are inside refresh() called per-beat post-boot.
   deps: ['validator'],
   provides: ['conductorSignalBridge'],
+  // Phase 4: declare post-init registrations inline. Registry binds the
+  // recorder to conductorIntelligence and registers the module with
+  // crossLayerRegistry for scoped resets -- replaces the trailing register
+  // calls that previously lived after the IIFE close.
+  crossLayerScopes: ['all', 'section'],
+  recorder: (ctx) => { conductorSignalBridge.refresh(ctx); },
   init: (deps) => {
   const V = deps.validator.create('conductorSignalBridge');
   void V;
@@ -155,6 +161,3 @@ moduleLifecycle.declare({
   return { refresh, getSignals, reset };
   },
 });
-// Registered as a recorder so refresh(ctx) runs each beat automatically.
-conductorIntelligence.registerRecorder('conductorSignalBridge', (ctx) => { conductorSignalBridge.refresh(ctx); });
-crossLayerRegistry.register('conductorSignalBridge', conductorSignalBridge, ['all', 'section']);

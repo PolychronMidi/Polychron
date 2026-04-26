@@ -6,6 +6,9 @@ moduleLifecycle.declare({
   // function bodies called per-beat post-boot.
   deps: ['validator', 'controllerConfig'],
   provides: ['adaptiveTrustScores'],
+  // Phase 4: registry calls crossLayerRegistry.register() automatically
+  // after init returns -- replaces the trailing post-IIFE register call.
+  crossLayerScopes: ['all'],
   init: (deps) => {
   const V = deps.validator.create('adaptiveTrustScores');
   const controllerConfig = deps.controllerConfig;
@@ -453,4 +456,3 @@ moduleLifecycle.declare({
   return { registerOutcome, getBaseWeight, getWeight, getWeightBatch, decayAll, getSnapshot, getJournal, getScores, setCoordinationScale, reset };
   },
 });
-crossLayerRegistry.register('adaptiveTrustScores', adaptiveTrustScores, ['all']);

@@ -528,6 +528,10 @@ interface ModuleLifecycleManifest {
   subsystem?: string;
   reads?: string[];
   emits?: string[];
+  crossLayerScopes?: string[];
+  conductorScopes?: string[];
+  recorder?: (ctx: any) => void;
+  stateProvider?: () => Record<string, any>;
 }
 
 interface ModuleLifecycleFactory {
