@@ -13,10 +13,19 @@ require('./ChordComposer');
 require('./ProgressionGenerator');
 require('./pivotChordBridge');
 
-// Register progression generator wrapper -- runs after chordRegistry init.
-moduleLifecycle.registerInitializer('chord-progression-registration', () => {
-  chordRegistry.register('progression', (key, quality, type) => {
-    const pg = new ProgressionGenerator(key, quality);
-    return type ? pg.generate(type) : pg.random();
-  });
-}, ['chordRegistry']);
+// Register progression generator wrapper as a declared module so it
+// participates in the manifest registry (full DI: every registrant is a
+// declared module, no legacy registerInitializer wrappers).
+moduleLifecycle.declare({
+  name: 'chord-progression-registration',
+  subsystem: 'composers',
+  deps: ['chordRegistry'],
+  provides: ['chord-progression-registration'],
+  init: (deps) => {
+    deps.chordRegistry.register('progression', (key, quality, type) => {
+      const pg = new ProgressionGenerator(key, quality);
+      return type ? pg.generate(type) : pg.random();
+    });
+    return { registered: true };
+  },
+});
