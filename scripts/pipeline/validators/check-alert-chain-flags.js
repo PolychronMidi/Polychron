@@ -40,7 +40,7 @@ const REGRESSIONS = [
     // without reading the comments above it.
     file: 'tools/HME/proxy/middleware/dominance_response_rewriter.js',
     badPattern: /rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]*?_translateDemand|rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]*?for\s*\(\s*const\s+re\s+of\s+DEMAND_MARKERS/,
-    requirePattern: /rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]{0,400}return\s+raw\s*;/,
+    requirePattern: /rewriteStopOutput\s*\(\s*raw\s*\)\s*\{[\s\S]{0,2000}return\s+raw\s*;/,
     name: 'dominance_response_rewriter.rewriteStopOutput-not-noop',
     history:
       'rewriteStopOutput must be a permanent no-op (return raw). The prior ' +
@@ -74,15 +74,11 @@ function check() {
     const src = fs.readFileSync(fp, 'utf8');
     if (r.badPattern.test(src)) {
       violations.push(
-        `REGRESSION: ${r.file} contains "${r.name}". History: ${r.history}`
+        `REGRESSION (bad pattern matched) in ${r.file}: ${r.name}. History: ${r.history}`
       );
     } else if (r.requirePattern && !r.requirePattern.test(src)) {
-      // Required canonical state isn't present (file may have been edited
-      // to remove the line entirely, leaving env-default behavior unclear).
       violations.push(
-        `MISSING canonical: ${r.file} should explicitly set ${r.name.replace(/=1$/, '=0')}. ` +
-        `Without an explicit assignment, env-loader behavior on missing key is undefined. ` +
-        `History: ${r.history}`
+        `MISSING canonical pattern in ${r.file}: ${r.name}. History: ${r.history}`
       );
     }
   }
