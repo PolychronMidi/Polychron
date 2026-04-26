@@ -1,0 +1,110 @@
+'use strict';
+// Regression: lifesaver.sh's "UNADDRESSED ERRORS FROM PREVIOUS TURN" branch
+// must apply the same canary-consume + severity-classification filtering as
+// the new-errors branch. Previously only the new-errors branch filtered;
+// the watermark-lag branch surfaced everything raw, so a canary written
+// between turns false-blocked the agent. This test plants a canary in a
+// sandboxed errors.log with watermarks lagging, runs lifesaver.sh, and
+// asserts no block decision and watermark advancement.
+const { test } = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+function _withLifesaverSandbox(canaryLines) {
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-lifesaver-test-'));
+  fs.mkdirSync(path.join(sandbox, 'log'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
+  const errLog = path.join(sandbox, 'log', 'hme-errors.log');
+  fs.writeFileSync(errLog, canaryLines.join('\n') + '\n');
+  // Watermarks lag behind so the UNADDRESSED branch fires.
+  fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.lastread'), '0');
+  fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.turnstart'), String(canaryLines.length));
+  fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-errors.inline-watermark'), '0');
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  const lifesaverPath = path.join(repoRoot, 'tools', 'HME', 'hooks', 'lifecycle', 'stop', 'lifesaver.sh');
+  // Source lifesaver inside a bash -c that stubs _stderr_verdict and exports
+  // the sandbox PROJECT/PROJECT_ROOT. lifesaver.sh exits 0 in the alert
+  // paths, so we capture stdout directly.
+  const wrapper = `
+    PROJECT='${sandbox}'
+    PROJECT_ROOT='${sandbox}'
+    _stderr_verdict() { echo "[verdict] $1" >&2; }
+    export PROJECT PROJECT_ROOT
+    source '${lifesaverPath}'
+  `;
+  const result = spawnSync('bash', ['-c', wrapper], { encoding: 'utf8' });
+  return {
+    sandbox,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    consumedFile: path.join(sandbox, 'tmp', 'hme-canary-consumed.txt'),
+    watermarkFile: path.join(sandbox, 'tmp', 'hme-errors.lastread'),
+    cleanup: () => { try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ } },
+  };
+}
+
+test('lifesaver: UNADDRESSED branch consumes canary without blocking', () => {
+  const r = _withLifesaverSandbox([
+    '[2026-04-26T07:00:00Z] [CANARY-canary-test123-456] alert-chain self-test injection',
+  ]);
+  try {
+    // jq pretty-prints with `"key": "value"` (space after colon); match
+    // either compact or pretty-print form.
+    assert.ok(
+      !/"decision"\s*:\s*"block"/.test(r.stdout),
+      `lifesaver wrongly blocked on canary-only payload. stdout: ${r.stdout}`,
+    );
+    const watermark = fs.readFileSync(r.watermarkFile, 'utf8').trim();
+    assert.strictEqual(watermark, '1', 'watermark must advance past consumed canary');
+    assert.ok(fs.existsSync(r.consumedFile), 'canary-consumed.txt must be created');
+    const consumed = fs.readFileSync(r.consumedFile, 'utf8');
+    assert.ok(
+      consumed.includes('canary-test123-456|consumed-by-stop'),
+      `canary not marked consumed. file content: ${consumed}`,
+    );
+  } finally {
+    r.cleanup();
+  }
+});
+
+test('lifesaver: UNADDRESSED branch silent on observation-severity entries', () => {
+  const r = _withLifesaverSandbox([
+    '[2026-04-26T07:00:00Z] [universal_pulse] WARN p95 latency over threshold',
+  ]);
+  try {
+    assert.ok(
+      !/"decision"\s*:\s*"block"/.test(r.stdout),
+      `lifesaver wrongly blocked on WARN-only payload. stdout: ${r.stdout}`,
+    );
+    // Self-origin observations surface as additionalContext, not block.
+    if (r.stdout) {
+      assert.ok(
+        r.stdout.includes('hme self-health') || r.stdout.includes('observability only'),
+        `expected additionalContext for self-only observation, got: ${r.stdout}`,
+      );
+    }
+  } finally {
+    r.cleanup();
+  }
+});
+
+test('lifesaver: UNADDRESSED branch BLOCKS on real agent-origin error', () => {
+  const r = _withLifesaverSandbox([
+    '[2026-04-26T07:00:00Z] [some_module] context_meter.py: ImportError: no module named foo',
+  ]);
+  try {
+    assert.ok(
+      /"decision"\s*:\s*"block"/.test(r.stdout),
+      `lifesaver must block on agent-origin error. stdout: ${r.stdout}`,
+    );
+    assert.ok(
+      r.stdout.includes('UNADDRESSED ERRORS FROM PREVIOUS TURN'),
+      'block reason must reference UNADDRESSED branch',
+    );
+  } finally {
+    r.cleanup();
+  }
+});
