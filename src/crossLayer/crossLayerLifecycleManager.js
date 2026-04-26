@@ -3,10 +3,12 @@
 // here so they participate in scoped resets automatically.
 
 // Register time-subsystem modules into crossLayerRegistry for lifecycle management.
-// They load before crossLayer (utils - ... - time - ... - crossLayer) so they exist now.
-// L0 is never reset mid-run - it accumulates the full track history for post-loop use.
-// Not registered in crossLayerRegistry so it is excluded from all scoped resets.
-crossLayerRegistry.register('timeStream', { reset: timeStream.resetPositions }, ['all']);
+// Wrapped in registerInitializer so it runs at initializeAll() time, after both
+// crossLayerRegistry and timeStream are guaranteed bound -- avoids the legacy
+// file-load-time consumer pattern.
+moduleLifecycle.registerInitializer('timeStream-crossLayer-registration', () => {
+  crossLayerRegistry.register('timeStream', { reset: timeStream.resetPositions }, ['all']);
+}, ['crossLayerRegistry', 'timeStream']);
 
 moduleLifecycle.declare({
   name: 'crossLayerLifecycleManager',
