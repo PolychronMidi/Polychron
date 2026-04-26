@@ -796,23 +796,60 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         if action == "add":
             if not text.strip():
                 return "Error: text= required for add."
+            text_norm = text.strip()
+            # Universal text-dedup for the hme_todo add path. If an OPEN
+            # entry with identical text + parent_id already exists,
+            # increment its recurrence_count instead of creating a
+            # duplicate. Prevents the spam class the user reported
+            # ("absolutely riddled with spam — fix it so it never
+            # happens again") from re-emerging via a different source.
+            # The lifesaver path has its own normalization-aware dedup;
+            # this exact-match dedup covers the agent/user-driven path
+            # where text is deterministic.
             if parent_id:
                 main = _find_main(todos, parent_id)
                 if not main:
                     return f"Error: parent #{parent_id} not found."
+                for s in main.get("subs", []):
+                    if (
+                        s.get("text", "").strip() == text_norm
+                        and not s.get("done")
+                    ):
+                        s["recurrence_count"] = int(s.get("recurrence_count", 1)) + 1
+                        s["ts"] = time.time()
+                        _save_todos(meta, todos)
+                        return (
+                            f"Already exists as sub #{s['id']} of #{parent_id} "
+                            f"(recurrence now {s['recurrence_count']}): "
+                            f"{text_norm}\n\n{_render(todos)}"
+                        )
                 sub = _write_todo_entry(
                     meta, text=text, status=status, critical=critical,
                     on_done=on_done, parent_id=parent_id,
                 )
                 main.setdefault("subs", []).append(sub)
                 _save_todos(meta, todos)
-                return f"Added sub #{sub['id']} (sub of #{parent_id}): {text.strip()}\n\n{_render(todos)}"
+                return f"Added sub #{sub['id']} (sub of #{parent_id}): {text_norm}\n\n{_render(todos)}"
+            for t in todos:
+                if (
+                    t.get("text", "").strip() == text_norm
+                    and t.get("parent_id", 0) == 0
+                    and not _check_main_done(t)
+                ):
+                    t["recurrence_count"] = int(t.get("recurrence_count", 1)) + 1
+                    t["ts"] = time.time()
+                    _save_todos(meta, todos)
+                    return (
+                        f"Already exists as #{t['id']} "
+                        f"(recurrence now {t['recurrence_count']}): "
+                        f"{text_norm}\n\n{_render(todos)}"
+                    )
             entry = _write_todo_entry(
                 meta, text=text, status=status, critical=critical, on_done=on_done,
             )
             todos.append(entry)
             _save_todos(meta, todos)
-            return f"Added #{entry['id']}: {text.strip()}\n\n{_render(todos)}"
+            return f"Added #{entry['id']}: {text_norm}\n\n{_render(todos)}"
 
         if action == "done":
             if not todo_id:
