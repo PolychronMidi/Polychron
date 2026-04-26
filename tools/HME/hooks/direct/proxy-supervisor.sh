@@ -181,6 +181,20 @@ _sv_fire_crashloop_lifesaver() {
 }
 
 _sv_loop() {
+  # Singleton check: if another supervisor's pid is already in the file
+  # AND that pid is alive, refuse to start. Two concurrent loops were
+  # the silent root cause of intermittent hook failures: each independently
+  # decided "proxy down -> respawn" and killed each other's spawns. The
+  # `start` action checks the pidfile, but `_loop` (called by setsid)
+  # didn't -- so a hook chain that fired `start` twice (during proxy
+  # crashes) could spawn two _loops that both grabbed the file in turn.
+  if [ -f "$_SV_PID_FILE" ]; then
+    _sv_existing=$(cat "$_SV_PID_FILE" 2>/dev/null)
+    if [ -n "$_sv_existing" ] && [ "$_sv_existing" != "$$" ] && kill -0 "$_sv_existing" 2>/dev/null; then
+      _sv_log "another supervisor already running (pid=$_sv_existing); refusing to start duplicate (this pid=$$)"
+      exit 0
+    fi
+  fi
   _sv_log "supervisor loop started (pid=$$)"
   echo $$ > "$_SV_PID_FILE"
   # Only remove the pid file if it still contains OUR pid. Stop+start
