@@ -21,6 +21,8 @@ _hme_check_errors_inline() {
   local PROJECT="${PROJECT_ROOT:-/home/jah/Polychron}"
   local ERROR_LOG="$PROJECT/log/hme-errors.log"
   local INLINE_WATERMARK="$PROJECT/tmp/hme-errors.inline-watermark"
+  # Heartbeat -- proves this helper actually ran.
+  date +%s > "$PROJECT/tmp/hme-heartbeat-inline-check.ts" 2>/dev/null || true
 
   if [ ! -f "$ERROR_LOG" ]; then
     # Genuinely no log file yet (fresh repo) is a passthrough; an
@@ -45,11 +47,28 @@ _hme_check_errors_inline() {
   [ "$TOTAL" -le "$WATERMARK" ] && return 0
 
   # Severity-based classifier (mirrors lifesaver.sh).
+  # CANARY lines are alert-chain self-test markers; they're neither
+  # agent-errors nor observations -- consume silently (advancing the
+  # watermark past them is enough to prove this helper ran).
   local _OBS_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
-  local NEW_RAW AGENT_ERRORS SELF_ERRORS
+  local _CANARY_RE='\[CANARY-'
+  local NEW_RAW AGENT_ERRORS SELF_ERRORS CANARY_LINES
   NEW_RAW=$(awk "NR > $WATERMARK" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
-  AGENT_ERRORS=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
-  SELF_ERRORS=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  CANARY_LINES=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -E "$_CANARY_RE" || true)
+  # Strip canaries before classifying so they don't count as agent-errors.
+  local _NEW_NO_CANARY
+  _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | /usr/bin/grep -vE "$_CANARY_RE" || true)
+  AGENT_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -vE "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  SELF_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | /usr/bin/grep -E "$_OBS_RE" | /usr/bin/grep -v '^$' || true)
+  # Mark each consumed canary in the pending tracker so the Stop-hook
+  # watchdog knows the inline-check actually saw it.
+  if [ -n "$CANARY_LINES" ]; then
+    while IFS= read -r line; do
+      local cid
+      cid=$(printf '%s' "$line" | /usr/bin/grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1)
+      [ -n "$cid" ] && echo "$cid|consumed-by-inline|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
+    done <<< "$CANARY_LINES"
+  fi
 
   # Advance watermark BEFORE emitting, so a downstream crash doesn't cause
   # the same lines to surface repeatedly. Failure to update watermark IS
