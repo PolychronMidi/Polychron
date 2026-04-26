@@ -1398,19 +1398,42 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
 
     Use this when you need features the native TodoWrite lacks: sub-todos with
     parent auto-completion, critical/priority flags, lifecycle side-effects
-    via on_done triggers, or cross-session persistence with diff highlighting.
+    via on_done triggers, cross-session persistence, or the SPEC.md/TODO.md
+    bridge actions (see doc/SPEC.md Phase 0).
 
     action='list': show all todos. fmt='mermaid' renders as a graph diagram.
     action='add': add main todo (text=). With parent_id=N, adds as sub of #N.
         Pass critical=True to surface at turn start. Pass on_done='reindex'|
         'commit'|'learn' to trigger a lifecycle hook when marked done.
+        Pass tier=easy|medium|hard for model+effort routing (default medium).
+        Identical-text duplicate adds collapse to recurrence increment.
     action='done': mark #todo_id done. Sub-todo done → checks if parent auto-
         completes. Fires on_done trigger if set.
     action='undo': unmark #todo_id as done (also clears parent if it was auto-
         completed).
     action='remove': remove #todo_id (main or sub).
-    action='clear': remove all completed main todos.
+    action='clear': remove all completed main todos. WHEN doc/SPEC.md is
+        FULLY COMPLETE (all `[x]` + every phase has its `_Phase N complete_`
+        sentinel), clear AUTO-ARCHIVES the snapshot to KB devlog
+        (tools/HME/KB/devlog/<ts>-<slug>.md) and resets SPEC.md + TODO.md
+        to fresh-slate templates. Pass text="<set-name>" to label the
+        archive filename slug. Mid-set, clear keeps original behavior.
     action='critical': list only critical open items (used by turn-start hook).
+    action='ingest_from_spec': read doc/TODO.md "Next up" section, materialize
+        each entry as an i/todo entry with source='spec' and tier=<label>.
+        Skips entries whose text matches an existing open i/todo (dedup).
+    action='promote_to_spec': move ephemeral i/todo #todo_id into doc/TODO.md
+        "Next up" with a Reason: cite. Promotes one-off operational state
+        into the durable cross-cycle handoff queue.
+    action='close_with_spec_update': atomically flip the matching `- [ ] [tier]
+        <text>` in doc/SPEC.md to `[x]` (longest-common-prefix match), append
+        to doc/TODO.md "Just shipped" (rolling-10 trim), mark i/todo #todo_id
+        done. Surfaces phase-completion notice when the flip closes the last
+        open item in a phase block.
+    action='phase_complete': append a `_Phase N complete_` sentinel paragraph
+        to doc/SPEC.md Phase N. Pass phase number via todo_id arg, completion
+        paragraph via text arg. Refuses if phase still has open `[ ]` items.
+        When all phases gain sentinels, next clear auto-archives the set.
 
     Changes to this store propagate back to native TodoWrite via the
     pretooluse_todowrite.sh merge — items appear in the agent's native view
