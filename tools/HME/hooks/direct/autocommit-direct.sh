@@ -21,23 +21,33 @@
 #    .env loading that can itself fail silently. This script bypasses the
 #    fragile layer that keeps breaking.
 #  - Must emit nothing to stdout (Claude Code interprets stdout as hook
-#    decision JSON). stderr is fine but dropped by plugin machinery in
-#    some paths, so _autocommit.sh's sticky fail flag is the durable
-#    signal.
+#    decision JSON). stderr is fine but can be dropped by the harness,
+#    so _autocommit.sh's sticky fail flag is the durable signal.
 #  - Must exit 0 unconditionally. Blocking Claude Code on autocommit
 #    failure would create a worse problem than silent failure.
 
 set +e  # explicitly NOT fail-fast — we own our bookkeeping
 
-# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE here because
-# Claude Code invokes this hook via the plugin-cache path, where the
-# ascent lands inside ~/.claude/plugins/cache/. Prefer CLAUDE_PROJECT_DIR
-# (set by Claude Code on every hook invocation), then hardcoded fallback.
+# Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
 _DIRECT_ROOT=""
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _DIRECT_ROOT="$PROJECT_ROOT"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _DIRECT_ROOT="$CLAUDE_PROJECT_DIR"
+else
+  _ad_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  while [ -n "$_ad_try" ] && [ "$_ad_try" != "/" ]; do
+    if [ -d "$_ad_try/.git" ] && [ -d "$_ad_try/src" ]; then
+      _DIRECT_ROOT="$_ad_try"
+      break
+    fi
+    _ad_try="$(dirname "$_ad_try")"
+  done
 fi
-[ -z "$_DIRECT_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _DIRECT_ROOT="/home/jah/Polychron"
+if [ -z "$_DIRECT_ROOT" ]; then
+  echo "[autocommit-direct] cannot resolve project root; exiting silently to avoid blocking the parent hook chain" >&2
+  exit 0
+fi
 
 # Consume stdin (Claude Code hook payload) so the caller doesn't block.
 cat >/dev/null 2>&1

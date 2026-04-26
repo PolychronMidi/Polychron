@@ -6,26 +6,23 @@ Sister of scripts/audit-core-principles.py for shell code. ESLint covers
 audit-core-principles.py covers src/ architecture — .sh hooks were the
 blind spot. This script closes it.
 
-Why this exists: Claude Code invokes HME hooks via the plugin-cache path
-(`~/.claude/plugins/cache/polychron-local/HME/1.0.0/hooks/...`). Shell
-hooks that resolve paths via `${BASH_SOURCE[0]}`-relative ascents
-("`$(dirname ${BASH_SOURCE[0]})/../../..`") silently land INSIDE the
-cache tree when invoked from the cache, instead of reaching the repo.
-That broke _safety.sh (.env lookup miss → PROJECT_ROOT unset),
-_autocommit.sh (.git not found), and stop.sh (detectors loaded from
-stale cache copies). The fix was to resolve via `$PROJECT_ROOT` /
-walk-up-to-.git / hardcoded fallback. This audit enforces that fix.
+Why this exists: shell hooks that resolve paths via
+`${BASH_SOURCE[0]}`-relative ascents ("`$(dirname ${BASH_SOURCE[0]})/
+../../..`") are fragile — they break the moment the hook is symlinked,
+cached, or invoked from an unusual cwd. The fix is to resolve via
+`$PROJECT_ROOT` (set by .env load) or `$CLAUDE_PROJECT_DIR` (set by
+Claude Code in every hook invocation) and fall back to walk-up-to-.git
+only when those are absent. This audit enforces that fix.
 
 Rules:
   R1 — BASH_SOURCE-ascent-outside-hooks
        `${BASH_SOURCE[0]}` combined with `../..` (or deeper) OR a
        reference to a repo-root target (.env, .git, /src, /scripts,
-       /mcp, /proxy, /output, /tmp, /log, /tools/HME/<non-hooks>) is a
-       cache-trap — the path resolves into the plugin cache when the
-       hook is invoked from there. Resolve via $PROJECT_ROOT instead.
-       Exempt: hooks in `direct/` that explicitly walk-up looking for
-       .git (pattern `while ... dirname`), since they build their own
-       $PROJECT_ROOT from scratch.
+       /proxy, /output, /tmp, /log, /tools/HME/<non-hooks>) is fragile
+       under unusual invocation contexts. Resolve via $PROJECT_ROOT
+       instead. Exempt: hooks in `direct/` that explicitly walk-up
+       looking for .git (pattern `while ... dirname`), since they build
+       their own $PROJECT_ROOT from scratch.
 
 Outputs:
   - Human-readable summary on stdout (default)
@@ -48,7 +45,7 @@ _HOOKS_DIR = os.path.join(_PROJECT, "tools", "HME", "hooks")
 
 # Forbidden path fragments that, if reached via BASH_SOURCE-relative
 # resolution, indicate the hook is trying to touch a repo-root artifact
-# and will silently land in the plugin cache instead.
+# via fragile path math instead of $PROJECT_ROOT-relative resolution.
 _REPO_ROOT_TARGETS = (
     "/.env",
     "/.git",

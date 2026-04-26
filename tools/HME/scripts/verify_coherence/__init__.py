@@ -10,7 +10,7 @@ Package layout (was single 2842-line verify-coherence.py):
   docs.py               doc drift, numeric claims, docstring presence
   env_settings.py       settings.json, env tamper/load, OAuth expiry
   logs.py               log size, error log, lifesaver rate
-  plugin_cache.py       plugin cache parity, hook command existence
+  hook_existence.py     hook command existence (settings.json paths must resolve)
   hook_layout.py        registration, matcher validity, executability, order
   code_audits.py        core principles, shell hooks, proxy middleware, syntax
   autocommit_health.py  autocommit health, shim health
@@ -48,8 +48,8 @@ from .logs import (  # noqa: F401
     LogSizeVerifier, ErrorLogVerifier, LifesaverRateVerifier,
     PipelineBgScriptHealthVerifier,
 )
-from .plugin_cache import (  # noqa: F401
-    PluginCacheParityVerifier, HookCommandExistenceVerifier,
+from .hook_existence import (  # noqa: F401
+    HookCommandExistenceVerifier,
 )
 from .hook_layout import (  # noqa: F401
     HookExecutabilityVerifier, DecoratorOrderVerifier,
@@ -107,7 +107,6 @@ REGISTRY = [
     OAuthTokenExpiryVerifier(),
     SettingsJsonVerifier(),
     LogSizeVerifier(),
-    PluginCacheParityVerifier(),
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     ShellHookAuditVerifier(),

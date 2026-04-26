@@ -1,16 +1,8 @@
-# Resolve project root. Previous versions used BASH_SOURCE[0]-relative path
-# math (helpers/../../../../ = project root). That worked only when the
-# hook was invoked at the repo path — when Claude Code invokes hooks via
-# the plugin-cache path (~/.claude/plugins/cache/polychron-local/...),
-# the relative ascent lands inside the cache tree and .env is missing,
-# silently disabling PROJECT_ROOT and every downstream git / detector /
-# worker path. Fix: resolve to the repo first, fall back to path math
-# only as a last resort.
+# Resolve project root, three-tier fallback:
 #   1. $CLAUDE_PROJECT_DIR — standard Claude Code env var pointing at the
 #      working-tree root. Available inside all hook invocations.
 #   2. Walk up from $BASH_SOURCE[0] looking for a .git/.env-bearing root
-#      (works from repo path; fails from cache path — intentional, so we
-#      fall through).
+#      (works from any in-repo invocation).
 #   3. Hardcoded fallback to /home/jah/Polychron. Last resort — same
 #      pattern _proxy_bridge.sh uses for its own _PB_ROOT.
 _HME_PROJECT_ROOT=""
@@ -27,9 +19,9 @@ if [ -z "$_HME_PROJECT_ROOT" ]; then
     _HME_TRY="$(dirname "$_HME_TRY")"
   done
 fi
-if [ -z "$_HME_PROJECT_ROOT" ] && [ -f "/home/jah/Polychron/.env" ]; then
-  _HME_PROJECT_ROOT="/home/jah/Polychron"
-fi
+# No host-specific hardcoded fallback. If both $CLAUDE_PROJECT_DIR
+# and the walk-up strategy failed, the invocation environment is
+# fundamentally broken; fail loud rather than guess a path.
 _HME_ENV_FILE="$_HME_PROJECT_ROOT/.env"
 if [ -n "$_HME_PROJECT_ROOT" ] && [ -f "$_HME_ENV_FILE" ]; then
   set -a; source "$_HME_ENV_FILE"; set +a

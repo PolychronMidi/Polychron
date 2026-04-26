@@ -28,14 +28,28 @@
 
 set +e
 
-# Resolve repo root. BASH_SOURCE-relative ascent is UNSAFE from the
-# plugin-cache path (lands in ~/.claude/plugins/cache/). Prefer
-# CLAUDE_PROJECT_DIR, then hardcoded fallback.
+# Resolve repo root: $PROJECT_ROOT > $CLAUDE_PROJECT_DIR > walk-up.
+# No host-specific hardcoded fallback — if all three fail the
+# environment is broken; supervisor exits cleanly rather than guess.
 _SV_ROOT=""
-if [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
+if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/.git" ] && [ -d "$PROJECT_ROOT/src" ]; then
+  _SV_ROOT="$PROJECT_ROOT"
+elif [ -n "${CLAUDE_PROJECT_DIR:-}" ] && [ -d "$CLAUDE_PROJECT_DIR/.git" ] && [ -d "$CLAUDE_PROJECT_DIR/src" ]; then
   _SV_ROOT="$CLAUDE_PROJECT_DIR"
+else
+  _sv_try="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  while [ -n "$_sv_try" ] && [ "$_sv_try" != "/" ]; do
+    if [ -d "$_sv_try/.git" ] && [ -d "$_sv_try/src" ]; then
+      _SV_ROOT="$_sv_try"
+      break
+    fi
+    _sv_try="$(dirname "$_sv_try")"
+  done
 fi
-[ -z "$_SV_ROOT" ] && [ -d "/home/jah/Polychron/.git" ] && _SV_ROOT="/home/jah/Polychron"
+if [ -z "$_SV_ROOT" ]; then
+  echo "[proxy-supervisor] cannot resolve project root (no PROJECT_ROOT, no CLAUDE_PROJECT_DIR, no .git found in walk-up); exiting" >&2
+  exit 0
+fi
 
 # Absolute path to THIS script — used by the `start` subcommand's
 # `source '$_SV_SELF' _loop` fork-to-daemon line. Was previously
