@@ -41,10 +41,25 @@ if [ -f "$ERROR_LOG" ]; then
   # `[supervisor]`, `[hme-proxy] inline`, `meta_observer`, `daemon crashloop`,
   # `claude-arbiter CPU`, `worker self-terminated`.
   _SELF_ORIGIN_RE='\[universal_pulse\]|\[supervisor\]|\[hme-proxy\]|meta_observer|daemon crashloop|claude-arbiter CPU|worker self-terminated|llamacpp_daemon'
+  # Promotion list: substrings that, when matched against an otherwise
+  # self-origin line, force re-classification as agent-origin. These name
+  # PERMANENT failure states the agent CAN cause and CAN fix -- distinct
+  # from routine restart-loop noise the supervisor handles automatically.
+  # Without this promotion, "[supervisor] worker hit restart limit" got
+  # buried in the self-origin bucket alongside transient restart attempts;
+  # the worker stayed dead for hours before any agent-visible alert.
+  _PROMOTE_TO_AGENT_RE='hit restart limit|gave up|abandoned|No such file or directory|cannot import|ModuleNotFoundError|ImportError|spawn aborted'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
-    AGENT_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_SELF_ORIGIN_RE" || true)
-    SELF_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -E "$_SELF_ORIGIN_RE" || true)
+    # Initial split: agent-origin = does not match self-origin pattern.
+    _NOT_SELF=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_SELF_ORIGIN_RE" || true)
+    _SELF_RAW=$(printf '%s\n' "$NEW_RAW" | grep -E "$_SELF_ORIGIN_RE" || true)
+    # Promote: self-origin lines that ALSO match the promote pattern get
+    # bumped into the agent-origin bucket (and removed from self-origin).
+    _PROMOTED=$(printf '%s\n' "$_SELF_RAW" | grep -E "$_PROMOTE_TO_AGENT_RE" || true)
+    _SELF_RESIDUAL=$(printf '%s\n' "$_SELF_RAW" | grep -vE "$_PROMOTE_TO_AGENT_RE" || true)
+    AGENT_ERRORS=$(printf '%s\n%s' "$_NOT_SELF" "$_PROMOTED" | grep -v '^$' | sort -u || true)
+    SELF_ERRORS="$_SELF_RESIDUAL"
     # Re-read line count AFTER the awk consumed its snapshot so watermark matches.
     TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
     TOTAL=${TOTAL:-0}
