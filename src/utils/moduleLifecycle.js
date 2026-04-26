@@ -71,7 +71,7 @@ moduleLifecycle = (() => {
   //    name in `provides`. Inverts today's `name = (() => {...})()`
   //    pattern -- that's what lets full DI later be a mechanical sweep.
   // 3. `init(deps)` lifecycle replaces IIFE-at-require-time. Kills the
-  //    171+ safePreBoot.call() defensive guards because deps are
+  //    171+ safePreBoot wrapper defensive guards because deps are
   //    GUARANTEED resolved before init() runs.
   // 4. Boot order derived from manifests via topo-sort, never maintained
   //    by hand. Adding a module = drop a file with declare(); nothing
@@ -192,7 +192,7 @@ moduleLifecycle = (() => {
   }
 
   // Dynamic namespace lookup. The project's general convention is "naked
-  // global identifiers" (the lint rule no-restricted-globals enforces it).
+  // identifier access" (the lint rule no-restricted-globals enforces it).
   // BUT the registry NEEDS dynamic name-based access -- mainBootstrap.js
   // already does the same thing for its boot-time validation pass and uses
   // the same eslint-disable scope. Replacement: when the project moves to
