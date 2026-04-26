@@ -33,18 +33,31 @@ function _withSandboxedTodoStore(fn) {
   fs.mkdirSync(path.join(sandbox, 'output', 'metrics'), { recursive: true });
   // hme_env requires a .env file in PROJECT_ROOT and a CLAUDE.md sibling
   // to resolve project root. The synthesis import chain validates many
-  // model-alias keys at import time, so a minimal stub doesn't suffice
-  // — copy the production .env (which has every key) and rewrite
-  // PROJECT_ROOT to point at the sandbox. This isolates the todo store
-  // (sandbox <PROJECT_ROOT>/tools/HME/KB/todos.json) without breaking
-  // the env-validation chain that runs at module load.
+  // model-alias keys at import time, so a minimal stub doesn't suffice.
+  //
+  // SANITIZED clone: copy the production .env (so every required key is
+  // present), rewrite PROJECT_ROOT to the sandbox, and redact known
+  // secret-class keys to "REDACTED-FOR-TEST" so a /tmp leak from the
+  // sandbox dir doesn't expose API tokens. Keys that hme_env validates
+  // (model aliases, ports, paths) stay intact since they're not secret.
+  // If hme_env adds new secret-class keys, add them to SECRET_KEY_PATTERNS.
   const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
   const prodEnv = fs.readFileSync(path.join(repoRoot, '.env'), 'utf8');
-  const sandboxEnv = prodEnv.replace(
-    /^PROJECT_ROOT=.*$/m,
-    `PROJECT_ROOT=${sandbox}`,
-  );
-  fs.writeFileSync(path.join(sandbox, '.env'), sandboxEnv);
+  const SECRET_KEY_PATTERNS = [
+    /_TOKEN$/, /_KEY$/, /_SECRET$/, /_PASSWORD$/, /_PASSWD$/,
+    /_API_KEY$/, /_AUTH$/, /_CREDENTIALS?$/,
+    /^TELEGRAM_/, /^ANTHROPIC_/, /^OPENAI_/, /^GITHUB_/,
+  ];
+  const isSecretKey = (k) => SECRET_KEY_PATTERNS.some((re) => re.test(k));
+  const sandboxEnv = prodEnv.split('\n').map((line) => {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (!m) return line;
+    const [, key] = m;
+    if (key === 'PROJECT_ROOT') return `PROJECT_ROOT=${sandbox}`;
+    if (isSecretKey(key)) return `${key}=REDACTED-FOR-TEST`;
+    return line;
+  }).join('\n');
+  fs.writeFileSync(path.join(sandbox, '.env'), sandboxEnv, { mode: 0o600 });
   fs.writeFileSync(path.join(sandbox, 'CLAUDE.md'), '# sandbox\n');
   // Seed an empty store with the legacy meta-header sentinel shape.
   fs.writeFileSync(
