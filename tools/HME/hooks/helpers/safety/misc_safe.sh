@@ -49,6 +49,20 @@ _lifesaver_bg() {
   ) >/dev/null 2>&1 &
 }
 
+# Heartbeat: write a timestamp file proving a hook component executed.
+# A watchdog (check-heartbeat-freshness.js) compares mtimes against
+# expected freshness windows; stale = silent-fail.
+# Usage: _hme_heartbeat <component-name>
+# Writes: $PROJECT_ROOT/tmp/hme-heartbeat-<name>.ts (epoch seconds)
+_hme_heartbeat() {
+  local name="$1"
+  [ -z "$name" ] && return 1
+  [ -z "${PROJECT_ROOT:-}" ] && return 1
+  local hb_dir="$PROJECT_ROOT/tmp"
+  mkdir -p "$hb_dir" 2>/dev/null
+  date +%s > "$hb_dir/hme-heartbeat-${name}.ts" 2>/dev/null
+}
+
 # Safe numeric check: returns 0 if value is not a valid integer.
 # Usage: if [ "$(_safe_int "$val")" -gt 0 ]; then ...
 _safe_int() {

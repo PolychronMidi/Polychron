@@ -135,6 +135,8 @@ _ac_success() {
   echo 0 > "$_AC_COUNTER" 2>/dev/null || true
   date -u +"%Y-%m-%dT%H:%M:%SZ" > "$_AC_LAST_SUCCESS" 2>/dev/null || true
   rm -f "$_AC_FAIL_FLAG" 2>/dev/null || true
+  # Heartbeat for watchdog freshness check.
+  date +%s > "$_AC_STATE_DIR/hme-heartbeat-autocommit.ts" 2>/dev/null || true
 }
 
 # ──────────────────────────────────────────────────────────────────────

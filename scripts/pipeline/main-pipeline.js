@@ -24,6 +24,8 @@ const MEASURE_TIMEOUT_SEC = 30;
 const PRE_COMPOSITION = [
   { label: 'check-root-only-dirs',         cmd: 'node scripts/pipeline/validators/check-root-only-dirs.js' },
   { label: 'check-alert-chain-flags',      cmd: 'node scripts/pipeline/validators/check-alert-chain-flags.js' },
+  { label: 'check-heartbeat-freshness',    cmd: 'node scripts/pipeline/validators/check-heartbeat-freshness.js' },
+  { label: 'check-canary-consumption',     cmd: 'node scripts/pipeline/validators/check-canary-consumption.js' },
   { label: 'sync-instructions',            cmd: 'node scripts/pipeline/sync-instructions.js' },
   { label: 'generate-manifest-globals',    cmd: 'node scripts/pipeline/generators/generate-manifest-globals.js' },
   { label: 'generate-globals-dts',         cmd: 'node scripts/pipeline/generators/generate-globals-dts.js' },

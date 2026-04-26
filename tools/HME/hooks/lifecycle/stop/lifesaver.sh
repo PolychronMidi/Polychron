@@ -6,6 +6,8 @@ PROJECT="$PROJECT_ROOT"
 ERROR_LOG="$PROJECT/log/hme-errors.log"
 TURNSTART="$PROJECT/tmp/hme-errors.turnstart"
 WATERMARK="$PROJECT/tmp/hme-errors.lastread"
+# Heartbeat -- proves Stop-hook lifesaver actually ran.
+date +%s > "$PROJECT/tmp/hme-heartbeat-lifesaver.ts" 2>/dev/null || true
 
 if [ -f "$ERROR_LOG" ]; then
   # silent-ok: default-on-missing is load-bearing and documented. The
@@ -61,11 +63,24 @@ if [ -f "$ERROR_LOG" ]; then
   # - This rewrite: classify by severity word, not source tag. Any error
   #   surfaces; only explicit informational severities are observation-only.
   _OBSERVATION_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
+  _CANARY_RE='\[CANARY-'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
+    # CANARY markers: consume silently; they're alert-chain self-tests
+    # that prove the scanner ran. Advance watermark past them but don't
+    # surface as alerts.
+    _CANARY_LINES=$(printf '%s\n' "$NEW_RAW" | grep -E "$_CANARY_RE" || true)
+    if [ -n "$_CANARY_LINES" ]; then
+      while IFS= read -r line; do
+        cid=$(printf '%s' "$line" | grep -oE 'CANARY-[a-zA-Z0-9-]+' | head -1)
+        [ -n "$cid" ] && echo "$cid|consumed-by-stop|$(date +%s)" >> "$PROJECT/tmp/hme-canary-consumed.txt" 2>/dev/null
+      done <<< "$_CANARY_LINES"
+    fi
+    # Strip canaries before agent/self classification.
+    _NEW_NO_CANARY=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_CANARY_RE" || true)
     # Agent-origin = anything without an explicit observation-severity word.
-    AGENT_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
-    SELF_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
+    AGENT_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
+    SELF_ERRORS=$(printf '%s\n' "$_NEW_NO_CANARY" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
     # Re-read line count AFTER the awk consumed its snapshot so watermark matches.
     TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
     TOTAL=${TOTAL:-0}
