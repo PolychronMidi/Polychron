@@ -30,44 +30,33 @@ if [ -f "$ERROR_LOG" ]; then
   # not against current wc -l).
   # Block on NEW errors fired this turn (mid-turn).
   #
-  # Source-classification (peer-review iter 130 fix): the error log is
-  # written by multiple actors. Self-origin entries (worker GIL hangs,
-  # daemon crashloops, supervisor child-exit failures) cannot be fixed
-  # from inside an agent turn — surfacing them as "you MUST fix" causes
-  # the agent to attempt remediation it has no causal access to.
-  # Classify by source-tag prefix; agent-origin → demand-register block,
-  # self-origin → reveal-register observation passed through (no block).
-  # Self-origin patterns are documented in writers' source: `[universal_pulse]`,
-  # `[supervisor]`, `[hme-proxy] inline`, `meta_observer`, `daemon crashloop`,
-  # `claude-arbiter CPU`, `worker self-terminated`.
-  _SELF_ORIGIN_RE='\[universal_pulse\]|\[supervisor\]|\[hme-proxy\]|meta_observer|daemon crashloop|claude-arbiter CPU|worker self-terminated|llamacpp_daemon'
-  # Promotion list: substrings that, when matched against an otherwise
-  # self-origin line, force re-classification as agent-origin. These name
-  # PERMANENT failure states OR explicit-CRITICAL alerts -- distinct from
-  # routine restart-loop / pulse noise the supervisor handles automatically.
+  # Severity-based classification (replaces the source-tag whitelist that
+  # kept missing real failures). The previous source-classification axis
+  # was wrong: tagging by writer (universal_pulse, supervisor, hme-proxy)
+  # suppressed CRITICAL events alongside routine WARN noise. The correct
+  # axis is severity:
+  #
+  #   - WARN / INFO / DEBUG  -> observation only (informational)
+  #   - ERROR / CRITICAL / FATAL / no-severity-tag -> agent-origin block
+  #
+  # Lines without a clear severity word default to ERROR -- the error log
+  # shouldn't contain non-error content; if a writer logs something, the
+  # agent should see it. Routine pulse warnings (p95 latency, etc.) MUST
+  # be tagged with WARN to be filtered; otherwise they fire LIFESAVER.
   #
   # History:
-  # - "hit restart limit" added when the worker stayed dead for hours
-  #   after a rename, buried under self-origin classification.
-  # - "CRITICAL" added when [universal_pulse] CRITICAL alerts (worker
-  #   CPU-saturated, worker unresponsive, daemon crashloop) were
-  #   suppressed alongside routine "p95 > 500ms" warnings, leaving
-  #   the agent blind to actively-broken hook infrastructure.
-  # - "worker unresponsive"/"urlopen error"/"Connection refused" added
-  #   because they directly indicate hook calls TO the worker are
-  #   failing right now -- agent-visible and often agent-caused.
-  _PROMOTE_TO_AGENT_RE='hit restart limit|gave up|abandoned|No such file or directory|cannot import|ModuleNotFoundError|ImportError|spawn aborted|CRITICAL|worker unresponsive|urlopen error|Connection refused|GIL/event-loop hang'
+  # - "hit restart limit" missed when [supervisor] entries were globally
+  #   suppressed -> worker stayed dead 6 hours.
+  # - "CRITICAL worker CPU-saturated" missed when [universal_pulse] entries
+  #   were globally suppressed -> hooks failed silently, repeatedly.
+  # - This rewrite: classify by severity word, not source tag. Any error
+  #   surfaces; only explicit informational severities are observation-only.
+  _OBSERVATION_RE='\b(WARN|WARNING|INFO|DEBUG|NOTICE)\b'
   if [ "$TOTAL" -gt "$TURN_START_LINE" ]; then
     NEW_RAW=$(awk "NR > $TURN_START_LINE" "$ERROR_LOG" | sed 's/^\[[0-9TZ:.\-]*\] //' | sort -u)
-    # Initial split: agent-origin = does not match self-origin pattern.
-    _NOT_SELF=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_SELF_ORIGIN_RE" || true)
-    _SELF_RAW=$(printf '%s\n' "$NEW_RAW" | grep -E "$_SELF_ORIGIN_RE" || true)
-    # Promote: self-origin lines that ALSO match the promote pattern get
-    # bumped into the agent-origin bucket (and removed from self-origin).
-    _PROMOTED=$(printf '%s\n' "$_SELF_RAW" | grep -E "$_PROMOTE_TO_AGENT_RE" || true)
-    _SELF_RESIDUAL=$(printf '%s\n' "$_SELF_RAW" | grep -vE "$_PROMOTE_TO_AGENT_RE" || true)
-    AGENT_ERRORS=$(printf '%s\n%s' "$_NOT_SELF" "$_PROMOTED" | grep -v '^$' | sort -u || true)
-    SELF_ERRORS="$_SELF_RESIDUAL"
+    # Agent-origin = anything without an explicit observation-severity word.
+    AGENT_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -vE "$_OBSERVATION_RE" | grep -v '^$' || true)
+    SELF_ERRORS=$(printf '%s\n' "$NEW_RAW" | grep -E "$_OBSERVATION_RE" | grep -v '^$' || true)
     # Re-read line count AFTER the awk consumed its snapshot so watermark matches.
     TOTAL=$(wc -l < "$ERROR_LOG" 2>/dev/null | tr -d ' \t' || echo 0)
     TOTAL=${TOTAL:-0}
