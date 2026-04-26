@@ -127,17 +127,18 @@ test('initializeAll: detects circular declared deps', () => {
   });
 });
 
-test('initializeAll: undeclared dep that ALSO does not exist as global -> error at finalization', () => {
+test('initializeAll: undeclared dep that ALSO does not exist as global -> error', () => {
   withFreshRegistry(() => {
     // Eager declare with unresolvable deps defers (no instantiation).
-    // initializeAll's final pending check surfaces the unresolved manifest.
+    // initializeAll's topo-sort runs the manifest's runner, which calls
+    // _instantiateManifest -- that surfaces the unresolved dep.
     ML.declare({
       name: 'orphan_consumer',
       deps: ['nonexistent_global_xyz_' + Date.now()],
       provides: ['orphan_consumer'],
       init: () => ({}),
     });
-    assert.throws(() => ML.initializeAll(), /failed to instantiate/);
+    assert.throws(() => ML.initializeAll(), /(neither a declared module|failed to instantiate)/);
   });
 });
 
@@ -162,23 +163,25 @@ test('initializeAll: declared module CAN depend on legacy global', () => {
   });
 });
 
-test('override: replaces declared init for testing', () => {
+test('override: replaces declared init for testing (override BEFORE declare)', () => {
   withFreshRegistry(() => {
+    // Eager-instantiation model: override MUST come before declare so the
+    // mock takes effect at instantiation time.
+    ML.override('overridable', { source: 'mock' });
     ML.declare({
       name: 'overridable',
       deps: [],
       provides: ['overridable'],
       init: () => ({ source: 'real' }),
     });
-    ML.override('overridable', { source: 'mock' });
-    ML.initializeAll();
     assert.strictEqual(global.overridable.source, 'mock', 'override should win over real init');
     delete global.overridable;
   });
 });
 
-test('override: dependents see the mock instance', () => {
+test('override: dependents see the mock instance (override BEFORE declare)', () => {
   withFreshRegistry(() => {
+    ML.override('dep_root', { tag: 'mock_root' });
     ML.declare({
       name: 'dep_root',
       deps: [],
@@ -191,8 +194,6 @@ test('override: dependents see the mock instance', () => {
       provides: ['dep_consumer'],
       init: (deps) => ({ wrapping: deps.dep_root.tag }),
     });
-    ML.override('dep_root', { tag: 'mock_root' });
-    ML.initializeAll();
     assert.strictEqual(global.dep_consumer.wrapping, 'mock_root',
       'consumer should receive the override, not the real root');
     delete global.dep_root;
