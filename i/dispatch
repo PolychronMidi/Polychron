@@ -21,6 +21,20 @@
 _SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_dispatcher.py"
 [ -f "$_SCRIPT" ] || { echo "i/dispatch: dispatcher missing at $_SCRIPT" >&2; exit 1; }
 
+# Load .env so user-set BUDDY_SYSTEM / HME_DISPATCH_MODE / OVERDRIVE_MODE
+# are visible to the Python module. Without this, the CLI reports
+# "disabled" even when the user has explicitly set HME_DISPATCH_MODE=
+# synthesis in .env — because the Python reads os.environ at module
+# load and the bash session running this wrapper doesn't auto-load .env
+# (only HME hooks do, via _safety.sh).
+_ENV_FILE="$(dirname "$0")/../.env"
+if [ -f "$_ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$_ENV_FILE"
+  set +a
+fi
+
 # Convert key=value args to --key=value form for argparse.
 _ARGS=()
 _CMD="${1:-status}"

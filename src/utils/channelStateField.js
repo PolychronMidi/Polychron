@@ -92,7 +92,7 @@ channelStateField = (() => {
     const f = field[layer];
     if (!f) return null;
     const ch = f.get(channel);
-    return ch ? (ch.get(param) || null) : null;
+    return ch ? (ch.get(param) ?? null) : null;
   };
 
   // Inferred direction of recent writes on a slot (-1 descending, 0 flat /

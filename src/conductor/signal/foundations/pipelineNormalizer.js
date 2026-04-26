@@ -98,7 +98,12 @@ moduleLifecycle.declare({
     const result = {};
     for (const [pipeline, s] of Object.entries(pipelineNormalizerState)) {
       const b = BOUNDS[pipeline];
-      const total = s.beats || 1;
+      // Pre-first-beat: rates are undefined-by-nature; report 0 explicitly
+      // rather than divide-by-zero-guarded with `|| 1` (which would falsely
+      // return rate=0 via 0/1 anyway, but obscures intent and reads as a
+      // fail-fast violation under CLAUDE.md scan).
+      const lowRate = s.beats > 0 ? s.compressedLow / s.beats : 0;
+      const highRate = s.beats > 0 ? s.compressedHigh / s.beats : 0;
       result[pipeline] = {
         emaRawProduct: Number(s.emaRaw.toFixed(4)),
         beats: s.beats,
@@ -106,8 +111,8 @@ moduleLifecycle.declare({
         softMax: b.softMax,
         hardMin: Number((b.softMin - b.range).toFixed(2)),
         hardMax: Number((b.softMax + b.range).toFixed(2)),
-        compressedLowRate: Number((s.compressedLow / total).toFixed(3)),
-        compressedHighRate: Number((s.compressedHigh / total).toFixed(3))
+        compressedLowRate: Number(lowRate.toFixed(3)),
+        compressedHighRate: Number(highRate.toFixed(3))
       };
     }
     return result;

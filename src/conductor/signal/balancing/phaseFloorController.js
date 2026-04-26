@@ -162,7 +162,7 @@ moduleLifecycle.declare({
     // Extreme collapse: share < 1% -- emergency override
     // E1: boost ceiling managed by hyperMetaManager (#17)
     if (share < getExtremeCollapseShare() && phaseLowShareStreak > getExtremeCollapseStreak()) {
-      const boostCeiling = /** @type {number} */ (hyperMetaManager.getPhaseBoostCeiling()) || 25.0;
+      const boostCeiling = /** @type {number} */ (hyperMetaManager.getPhaseBoostCeiling()) ?? 25.0;
       phaseFloorBoost = clamp(14.0 + deficitRatio * 10.0 * recoveryFactor * phaseScaling, 14.0, boostCeiling);
     }
 

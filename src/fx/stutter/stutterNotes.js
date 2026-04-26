@@ -161,7 +161,7 @@ stutterNotes = (/** @type {any} */ opts = {}) => {
   }
 
   // Pick ONE octave shift (avoid repeating the last shift used on this channel)
-  const lastShift = localShared.shifts.get(channel) || null;
+  const lastShift = localShared.shifts.get(channel) ?? null;
   const baseShiftRange = isBass ? 2 : 3;
   const shiftRange = m.max(1, baseShiftRange + shiftRangeBias);
   const shift = stutterNotesPickRandomOctaveShift(baseMidiNote, isBass, shiftRange, lastShift, panBias);

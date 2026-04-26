@@ -24,6 +24,7 @@ module.exports = {
     'no-bare-l0-channel': require('./no-bare-l0-channel'),
     'no-doubled-fallback': require('./no-doubled-fallback'),
     'no-or-fallback-on-config-read': require('./no-or-fallback-on-config-read'),
+    'no-or-fallback-on-map-get': require('./no-or-fallback-on-map-get'),
     'no-bare-declared-global-in-init': require('./no-bare-declared-global-in-init')
   }
 };

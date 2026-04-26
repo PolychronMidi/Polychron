@@ -13,7 +13,20 @@ from _common import PROJECT_ROOT, METRICS_DIR, load_json as _load
 
 def main(argv):
     if len(argv) < 2:
+        # Surface available invariant IDs instead of just printing usage
+        # — the user has no way to discover valid IDs otherwise.
+        eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
+        ids = sorted((eff.get("per_invariant") or {}).keys())
         print("Usage: i/why <invariant-id>", file=sys.stderr)
+        if ids:
+            print(f"\nAvailable invariants ({len(ids)}):", file=sys.stderr)
+            for inv_id in ids[:30]:
+                print(f"  {inv_id}", file=sys.stderr)
+            if len(ids) > 30:
+                print(f"  ... +{len(ids) - 30} more", file=sys.stderr)
+        else:
+            print("  (no efficacy report found at output/metrics/hme-invariant-efficacy.json — run pipeline first)",
+                  file=sys.stderr)
         return 2
     inv_id = argv[1]
 
@@ -21,7 +34,14 @@ def main(argv):
     eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
     per_inv = eff.get("per_invariant", {}).get(inv_id)
     if not per_inv:
-        print(f"invariant '{inv_id}' not found in efficacy report", file=sys.stderr)
+        # Suggest near-matches when the user typo'd an ID.
+        all_ids = sorted((eff.get("per_invariant") or {}).keys())
+        from difflib import get_close_matches
+        suggestions = get_close_matches(inv_id, all_ids, n=3, cutoff=0.6)
+        msg = f"invariant '{inv_id}' not found in efficacy report"
+        if suggestions:
+            msg += f"\n  did you mean: {', '.join(suggestions)}?"
+        print(msg, file=sys.stderr)
         return 1
 
     streak = hist.get("fail_streaks", {}).get(inv_id, 0)

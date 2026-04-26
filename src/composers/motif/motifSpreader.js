@@ -190,7 +190,7 @@ motifSpreader = {
         if (!Array.isArray(bkt)) continue;
         for (const e of bkt) {
           const pc = ((Number(e.note) % 12) + 12) % 12;
-          pcFreq.set(pc, (pcFreq.get(pc) || 0) + 1);
+          pcFreq.set(pc, (pcFreq.get(pc) ?? 0) + 1);
         }
       }
       if (pcFreq.size > sibLimit) {

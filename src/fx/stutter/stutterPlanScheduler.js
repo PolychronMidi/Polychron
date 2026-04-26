@@ -38,7 +38,7 @@ moduleLifecycle.declare({
 
     const key = m.round(startTime);
     if (key > m.round(beatStartTime)) {
-      const arr = stutterMgr.scheduledPlans.get(key) || /** @type {string[]} */ ([]);
+      const arr = stutterMgr.scheduledPlans.get(key) ?? /** @type {string[]} */ ([]);
       arr.push(planId);
       stutterMgr.scheduledPlans.set(key, arr);
       V.assertNonEmptyString(plan.profile, 'plan.profile');
@@ -74,7 +74,7 @@ moduleLifecycle.declare({
     const key = m.round(Number(tick));
     const dueKeys = Array.from(stutterMgr.scheduledPlans.keys()).filter((k) => k <= key).sort((a, b) => a - b);
     for (const k of dueKeys) {
-      const arr = stutterMgr.scheduledPlans.get(k) || /** @type {string[]} */ ([]);
+      const arr = stutterMgr.scheduledPlans.get(k) ?? /** @type {string[]} */ ([]);
       for (const planId of arr) {
         const plan = stutterMgr.plans.get(planId);
         if (plan) {
