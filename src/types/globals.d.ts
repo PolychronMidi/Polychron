@@ -2215,7 +2215,7 @@ declare var polyNumerator: number;
 declare var polyDenominator: number;
 
 // === AUTO-GENERATED FROM MANIFESTS (moduleLifecycle.declare) — do not hand-edit below this line ===
-// 245 manifest-derived globals (regenerate via: node scripts/pipeline/generators/generate-manifest-globals.js)
+// 249 manifest-derived globals (regenerate via: node scripts/pipeline/generators/generate-manifest-globals.js)
 declare var FXFeedbackListener: any;
 declare var L0: any;
 declare var accentPatternTracker: any;
@@ -2386,6 +2386,7 @@ declare var pipelineCouplingManagerSnapshot: any;
 declare var pipelineNormalizer: any;
 declare var pitchClassGravityMap: any;
 declare var pitchClassHelpers: any;
+declare var pitchGravityCenter: any;
 declare var pitchMemoryRecall: any;
 declare var pivotChordBridge: any;
 declare var polyrhythmicPhasePredictor: any;
@@ -2404,6 +2405,7 @@ declare var regimeReactiveDampingEquilibrator: any;
 declare var regimeVelocity: any;
 declare var registerCollisionAvoider: any;
 declare var registerMigrationTracker: any;
+declare var registerPressureMonitor: any;
 declare var registralVelocityCorrelator: any;
 declare var repetitionFatigueMonitor: any;
 declare var restDensityTracker: any;
@@ -2425,6 +2427,7 @@ declare var signalReader: any;
 declare var signalTelemetry: any;
 declare var silenceDistributionTracker: any;
 declare var spectralComplementarity: any;
+declare var structuralFormTracker: any;
 declare var structuralNarrativeAdvisor: any;
 declare var stutterContagion: any;
 declare var stutterFailFast: any;
@@ -2446,6 +2449,7 @@ declare var temporalProportionTracker: any;
 declare var tensionResolutionTracker: any;
 declare var tessituraPressureMonitor: any;
 declare var texturalGradientTracker: any;
+declare var texturalMemoryAdvisor: any;
 declare var texturalMirror: any;
 declare var textureBlender: any;
 declare var thematicRecallDetector: any;
