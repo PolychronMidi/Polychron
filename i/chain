@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# i/chain — run an ordered Bash-skill chain from chains/<name>.yaml.
+#
+# Independent of the buddy fanout: a chain is just a sequenced list of
+# Bash commands with loop / rate-limit semantics. The dispatcher
+# implementation lives in tools/HME/scripts/buddy_dispatcher.py
+# (alongside the buddy-queue code) but invoking a chain does NOT
+# require BUDDY_SYSTEM=1 or any buddy to be running.
+#
+# Usage:
+#   i/chain <chain-name>                                  # one-shot
+#   i/chain <chain-name> loop=N                           # N iterations
+#   i/chain <chain-name> on_rate_limit=pause-with-cap     # override
+#
+# YAML lives at <project>/chains/<name>.yaml or
+# <project>/tools/HME/chains/<name>.yaml (HME-shipped). See
+# tools/HME/chains/review-then-test.yaml for an example.
+_SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_dispatcher.py"
+[ -f "$_SCRIPT" ] || { echo "i/chain: dispatcher missing at $_SCRIPT" >&2; exit 1; }
+
+_CHAIN_NAME="${1:-}"
+[ -z "$_CHAIN_NAME" ] && { echo "Usage: i/chain <chain-name> [loop=N] [on_rate_limit=fail|pause|pause-with-cap]" >&2; exit 1; }
+shift || true
+
+_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    *=*)
+      _key="${arg%%=*}"
+      _val="${arg#*=}"
+      _ARGS+=("--${_key//_/-}=${_val}")
+      ;;
+    *)
+      _ARGS+=("$arg")
+      ;;
+  esac
+done
+exec python3 "$_SCRIPT" chain "$_CHAIN_NAME" "${_ARGS[@]}"

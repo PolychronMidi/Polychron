@@ -196,6 +196,61 @@ print(verdict_path.read_text())
   });
 });
 
+test('enqueue-sentinel: posttooluse_bash skips enqueue when BUDDY_SYSTEM=0', () => {
+  // The universal [enqueue: ...] sentinel must NOT create task files
+  // when BUDDY_SYSTEM is disabled — without a drainer, queued tasks
+  // pile up forever. The hook should observe-and-warn but not write.
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'hme-enqueue-gate-test-'));
+  fs.mkdirSync(path.join(sandbox, 'tools', 'HME', 'hooks'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'tmp'), { recursive: true });
+  // Stub _safety.sh in the sandbox so the hook script can `source` it.
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  fs.symlinkSync(
+    path.join(repoRoot, 'tools', 'HME', 'hooks', 'helpers'),
+    path.join(sandbox, 'tools', 'HME', 'hooks', 'helpers'),
+  );
+  fs.symlinkSync(
+    path.join(repoRoot, 'tools', 'HME', 'hooks', 'posttooluse'),
+    path.join(sandbox, 'tools', 'HME', 'hooks', 'posttooluse'),
+  );
+  try {
+    const input = JSON.stringify({
+      tool_input: { command: "i/whatever" },
+      tool_response: "Done.\n[enqueue: tier=medium text=\"should be skipped\" source=\"test\"]",
+    });
+    // Spawn with BUDDY_SYSTEM=0 explicitly — verifies the gate's check.
+    // We can't override the production .env, but we can prove the env-var
+    // gate logic itself works by setting it in the spawned shell.
+    const result = spawnSync('bash', ['-c',
+      `BUDDY_SYSTEM=0 PROJECT_ROOT="${repoRoot}" \
+       bash "${repoRoot}/tools/HME/hooks/posttooluse/posttooluse_bash.sh" <<< '${input.replace(/'/g, "'\\''")}'`,
+    ], { encoding: 'utf8' });
+    // Must surface the seen-but-skipped warning on stderr.
+    assert.ok(
+      (result.stderr || '').includes('BUDDY_SYSTEM=0') &&
+      (result.stderr || '').includes('not queued'),
+      `expected seen-but-skipped warning; stderr: ${result.stderr}`,
+    );
+    // Must NOT have created any task files in the production queue.
+    const prodQueue = path.join(repoRoot, 'tmp', 'hme-buddy-queue', 'pending');
+    let prodPending = [];
+    if (fs.existsSync(prodQueue)) {
+      prodPending = fs.readdirSync(prodQueue).filter(f => f.endsWith('.json'));
+    }
+    // Allow pre-existing tasks in prod; what matters is OUR sentinel
+    // didn't add one with our distinctive text.
+    const ours = prodPending.filter(f => {
+      try {
+        const t = JSON.parse(fs.readFileSync(path.join(prodQueue, f), 'utf8'));
+        return t.text === 'should be skipped';
+      } catch (_e) { return false; }
+    });
+    assert.strictEqual(ours.length, 0, 'gate must NOT have created our sentinel task');
+  } finally {
+    try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch (_e) { /* best-effort */ }
+  }
+});
+
 test('dispatcher: enqueue produces well-formed task file', () => {
   _withDispatcherSandbox((sandbox) => {
     const result = _runPython(sandbox, `

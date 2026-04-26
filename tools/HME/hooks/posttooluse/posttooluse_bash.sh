@@ -30,26 +30,39 @@ _RESOLVED=$(printf '%s' "$INPUT" | bash "$SCRIPT_DIR/../helpers/_resolve_bg_stub
 # without each tool needing its own integration code — symmetric with
 # the [no-work] and [picked-difficulty:] sentinels we already use.
 # Multiple matches per tool output are all enqueued.
-_ENQUEUE_OUTPUT=$(_safe_jq "$INPUT" '.tool_response' '')
-if [ -n "$_ENQUEUE_OUTPUT" ] && [ -n "${PROJECT_ROOT:-}" ]; then
-  # Parse one match at a time. Format is regex-extractable: the
-  # tier/text/source values can contain anything except the closing `]`
-  # for safety. Keep parser tolerant of quote variants and arg order.
-  _BUDDY_CLI="$PROJECT_ROOT/i/buddy"
-  if [ -x "$_BUDDY_CLI" ]; then
-    while IFS= read -r _ENQ_LINE; do
-      [ -z "$_ENQ_LINE" ] && continue
-      _ENQ_TIER=$(echo "$_ENQ_LINE" | grep -oE 'tier=(easy|medium|hard)' | head -1 | cut -d= -f2)
-      _ENQ_TEXT=$(echo "$_ENQ_LINE" | grep -oE 'text="[^"]+"' | head -1 | sed 's/^text="\(.*\)"$/\1/')
-      _ENQ_SRC=$(echo "$_ENQ_LINE" | grep -oE 'source="[^"]+"' | head -1 | sed 's/^source="\(.*\)"$/\1/')
-      [ -z "$_ENQ_TIER" ] && _ENQ_TIER="medium"
-      [ -z "$_ENQ_SRC" ] && _ENQ_SRC="enqueue-sentinel"
-      [ -z "$_ENQ_TEXT" ] && continue
-      # Background fire — never block the parent hook.
-      ("$_BUDDY_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
-        > /dev/null 2>&1) &
-      disown 2>/dev/null || true
-    done < <(printf '%s\n' "$_ENQUEUE_OUTPUT" | grep -oE '\[enqueue:[^]]+\]')
+#
+# CRITICAL: only fires when BUDDY_SYSTEM=1. Without an active drainer,
+# enqueued tasks pile up in pending/ forever (the same stack-up class
+# the universal-prune fix closed for done todos). When buddies are
+# disabled, the sentinel is observed (logged to stderr for transcript
+# evidence) but no task file is written.
+if [ "${BUDDY_SYSTEM:-0}" = "1" ]; then
+  _ENQUEUE_OUTPUT=$(_safe_jq "$INPUT" '.tool_response' '')
+  if [ -n "$_ENQUEUE_OUTPUT" ] && [ -n "${PROJECT_ROOT:-}" ]; then
+    _BUDDY_CLI="$PROJECT_ROOT/i/buddy"
+    if [ -x "$_BUDDY_CLI" ]; then
+      while IFS= read -r _ENQ_LINE; do
+        [ -z "$_ENQ_LINE" ] && continue
+        _ENQ_TIER=$(echo "$_ENQ_LINE" | grep -oE 'tier=(easy|medium|hard)' | head -1 | cut -d= -f2)
+        _ENQ_TEXT=$(echo "$_ENQ_LINE" | grep -oE 'text="[^"]+"' | head -1 | sed 's/^text="\(.*\)"$/\1/')
+        _ENQ_SRC=$(echo "$_ENQ_LINE" | grep -oE 'source="[^"]+"' | head -1 | sed 's/^source="\(.*\)"$/\1/')
+        [ -z "$_ENQ_TIER" ] && _ENQ_TIER="medium"
+        [ -z "$_ENQ_SRC" ] && _ENQ_SRC="enqueue-sentinel"
+        [ -z "$_ENQ_TEXT" ] && continue
+        # Background fire — never block the parent hook.
+        ("$_BUDDY_CLI" enqueue tier="$_ENQ_TIER" text="$_ENQ_TEXT" source="$_ENQ_SRC" \
+          > /dev/null 2>&1) &
+        disown 2>/dev/null || true
+      done < <(printf '%s\n' "$_ENQUEUE_OUTPUT" | grep -oE '\[enqueue:[^]]+\]')
+    fi
+  fi
+else
+  # Surface seen-but-skipped sentinels so the operator knows their
+  # follow-up declarations aren't being dropped silently. Avoids the
+  # "I emitted [enqueue: ...] but nothing happened" debugging gap.
+  _ENQ_PEEK=$(_safe_jq "$INPUT" '.tool_response' '' | grep -oE '\[enqueue:[^]]+\]' | head -3)
+  if [ -n "$_ENQ_PEEK" ]; then
+    echo "[enqueue-sentinel] BUDDY_SYSTEM=0 — $(echo "$_ENQ_PEEK" | wc -l) enqueue sentinel(s) seen but not queued (no drainer active). Set BUDDY_SYSTEM=1 in .env to enable." >&2
   fi
 fi
 
