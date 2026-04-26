@@ -277,7 +277,7 @@ playNotesEmitPick = function(opts = {}) {
       // R26: density-inverse stutter - sparse passages get more stutter
       const densityScale = clamp(1.5 - tensionSigs.density, 0.6, 1.8);
       // R26: anticipatory stutter - ramp in last 20% of phrase based on tension trajectory
-      const phrasePos = /** @type {number} */ (safePreBoot.call(() => timeStream.normalizedProgress('phrase'), 0.5));
+      const phrasePos = /** @type {number} */ (timeStream.normalizedProgress('phrase'));
       const inRamp = Number.isFinite(phrasePos) && phrasePos > 0.80;
       const tensionTraj = safePreBoot.call(() => sectionMemory.getTensionTrajectory(), 0);
       const rampScale = inRamp ? clamp(1.0 + /** @type {number} */ (tensionTraj) * 2 * (phrasePos - 0.80) / 0.20, 0.7, 1.5) : 1.0;

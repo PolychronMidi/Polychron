@@ -144,7 +144,7 @@ crossLayerDynamicEnvelope = (() => {
     // interference that feeds phase coupling energy. This is a structural
     // feedback loop: low phase share -> more complementary arcs -> more
     // cross-layer contrast -> more phase coupling energy.
-    const phaseAxisShares = safePreBoot.call(() => conductorSignalBridge.getSignals().axisEnergyShares, null);
+    const phaseAxisShares = conductorSignalBridge.getSignals().axisEnergyShares;
     const phaseStarved = phaseAxisShares
       && typeof phaseAxisShares.phase === 'number'
       && phaseAxisShares.phase < 0.14;

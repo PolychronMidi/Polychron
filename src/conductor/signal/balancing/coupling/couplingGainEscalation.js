@@ -309,13 +309,13 @@ couplingGainEscalation = (() => {
       at.current = clamp(at.current + TARGET_RELAX_RATE, TARGET_MIN, couplingState.getTargetMax(key));
     } else if (at.rawRollingAbsCorr < at.current * 0.5) {
       let tightenRate = TARGET_TIGHTEN_RATE;
-      const sig = safePreBoot.call(() => signalReader.snapshot(), null);
+      const sig = signalReader.snapshot();
       if (sig && (dimA === 'density' || dimB === 'density')) {
         const sigScalar = 1 / (1 + m.exp(-25 * (sig.densityProduct - 0.72)));
         tightenRate *= sigScalar;
       }
       if (sig && (dimA === 'flicker' || dimB === 'flicker') && (dimA === 'trust' || dimB === 'trust')) {
-        const ts = safePreBoot.call(() => adaptiveTrustScores.getSnapshot(), {});
+        const ts = adaptiveTrustScores.getSnapshot();
         let avgTrust = 0;
         let tCount = 0;
         const entries = Object.values(ts);

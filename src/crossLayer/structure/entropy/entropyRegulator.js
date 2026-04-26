@@ -152,7 +152,7 @@ entropyRegulator = (() => {
       let intentWeight = INTENT_BLEND_WEIGHT;
       let targetTrim = 0;
       const couplingPressures = pipelineCouplingManager.getCouplingPressures();
-      const sectionProgress = safePreBoot.call(() => timeStream.normalizedProgress('section'), 0.5);
+      const sectionProgress = timeStream.normalizedProgress('section');
       const edgeDistance = typeof sectionProgress === 'number' && Number.isFinite(sectionProgress)
         ? m.min(clamp(sectionProgress, 0, 1), clamp(1 - sectionProgress, 0, 1))
         : 0.5;

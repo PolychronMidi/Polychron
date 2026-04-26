@@ -83,7 +83,7 @@ sectionIntentCurvesHelpers = (() => {
     const halfPhrase = m.floor(totalPhrases / 2);
     if (ph !== halfPhrase || p <= 0.3 || p >= 0.7) return;
     const midTensionSlope = sectionMemory.getTensionTrajectory();
-    const midSignals = safePreBoot.call(() => conductorSignalBridge.getSignals(), null);
+    const midSignals = conductorSignalBridge.getSignals();
     const midRegime = midSignals ? midSignals.regime || 'evolving' : 'evolving';
     if (midTensionSlope < -0.1 && midRegime !== 'coherent') {
       L0.post(L0_CHANNELS.sectionQuality, 'both', beatStartTime, { quality: 0.35, bias: 0.08 });

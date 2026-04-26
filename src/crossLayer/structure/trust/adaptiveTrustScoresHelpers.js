@@ -84,7 +84,7 @@ adaptiveTrustScoresHelpers = (() => {
     const pairList = pairAwareHotspotPairs[systemName] ?? ['density-trust', 'flicker-trust', 'tension-trust'];
     const pairWeights = pairAwarePairWeights[systemName] || /** @type {Record<string, number>} */ ({});
     const couplingPressures = (pipelineCouplingManager.getCouplingPressures()) ?? {};
-    const signals = safePreBoot.call(() => conductorSignalBridge.getSignals(), /** @type {any} */ ({}));
+    const signals = conductorSignalBridge.getSignals();
     const adaptiveSnapshot = signals.adaptiveTargetSnapshot || null;
     // Attenuate density-pair pressure when conductor intentionally suppresses density.
     // Low densityProduct + high density-axis correlation = axes moving together (expected), not stressed.
@@ -242,7 +242,7 @@ adaptiveTrustScoresHelpers = (() => {
 
     let trustAxisPressure = 0;
     let phaseStarvationPressure = 0;
-    const axisEnergyShares = safePreBoot.call(() => conductorSignalBridge.getSignals().axisEnergyShares, null);
+    const axisEnergyShares = conductorSignalBridge.getSignals().axisEnergyShares;
     if (axisEnergyShares && Number.isFinite(axisEnergyShares.trust)) {
       trustAxisPressure = clamp((axisEnergyShares.trust - 0.19) / 0.09, 0, 1);
       if (Number.isFinite(axisEnergyShares.phase)) {
@@ -251,7 +251,7 @@ adaptiveTrustScoresHelpers = (() => {
     }
 
     let stickyTailPressure = 0;
-    const homeostasis = safePreBoot.call(() => couplingHomeostasis.getState(), null);
+    const homeostasis = couplingHomeostasis.getState();
     if (homeostasis && Number.isFinite(homeostasis.stickyTailPressure)) {
       stickyTailPressure = clamp(homeostasis.stickyTailPressure / 0.55, 0, 1);
     }

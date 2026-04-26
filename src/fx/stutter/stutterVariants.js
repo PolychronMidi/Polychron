@@ -114,7 +114,7 @@ stutterVariants = (() => {
     // R18: pattern gating legendary across all profiles/regimes/densities.
     // R19: uses full patterns.js selection. Activation scales with composite
     // intensity - sparse passages get fewer patterns, climactic sections more.
-    const sigs = safePreBoot.call(() => conductorSignalBridge.getSignals(), null);
+    const sigs = conductorSignalBridge.getSignals();
     const compositeIntensity = sigs ? clamp((sigs.compositeIntensity || 0.5), 0, 1) : 0.5;
     const patternActivationProb = clamp(0.55 + compositeIntensity * 0.35, 0.45, 0.90);
     if (rf() < patternActivationProb) {
@@ -197,7 +197,7 @@ stutterVariants = (() => {
     const exoticness = clamp(excursion / 6, 0, 1);
 
     // R23: phrase boundary fills - boost decayingBounce/machineGun in last 12% of phrase
-    const phraseProgress = /** @type {number} */ (safePreBoot.call(() => timeStream.normalizedProgress('phrase'), 0.5));
+    const phraseProgress = /** @type {number} */ (timeStream.normalizedProgress('phrase'));
     const PHRASE_BOUNDARY_WEIGHTS = { decayingBounce: 2.0, machineGun: 1.5, rhythmicGrid: 1.3 };
     const atPhraseBoundary = Number.isFinite(phraseProgress) && phraseProgress > 0.88;
 
