@@ -329,3 +329,193 @@ test('initializeAll: subsystem/reads/emits metadata is permitted but not require
     delete global.metadata_carrier;
   });
 });
+
+// ── Phase 4 post-init registration fields ──────────────────────────────
+// crossLayerScopes / conductorScopes / recorder / stateProvider all fan
+// out to legacy sub-registries (crossLayerRegistry, conductorIntelligence)
+// after init() returns. We mock those globals to verify the registry
+// dispatches correctly with the right arguments.
+
+test('phase 4: crossLayerScopes dispatches to crossLayerRegistry.register', () => {
+  withFreshRegistry(() => {
+    const calls = [];
+    global.crossLayerRegistry = {
+      register: (name, api, scopes) => calls.push({ name, api, scopes }),
+    };
+    try {
+      ML.declare({
+        name: 'p4_xl',
+        deps: [],
+        provides: ['p4_xl'],
+        crossLayerScopes: ['all', 'section'],
+        init: () => ({ kind: 'xl_api' }),
+      });
+      assert.strictEqual(calls.length, 1, 'crossLayerRegistry.register called once');
+      assert.strictEqual(calls[0].name, 'p4_xl');
+      assert.strictEqual(calls[0].api.kind, 'xl_api');
+      assert.deepStrictEqual(calls[0].scopes, ['all', 'section']);
+    } finally {
+      delete global.p4_xl;
+      delete global.crossLayerRegistry;
+    }
+  });
+});
+
+test('phase 4: conductorScopes dispatches to conductorIntelligence.registerModule', () => {
+  withFreshRegistry(() => {
+    const calls = [];
+    global.conductorIntelligence = {
+      registerModule: (name, api, scopes) => calls.push({ name, api, scopes }),
+      registerRecorder: () => {},
+      registerStateProvider: () => {},
+    };
+    try {
+      ML.declare({
+        name: 'p4_cd',
+        deps: [],
+        provides: ['p4_cd'],
+        conductorScopes: ['section'],
+        init: () => ({ kind: 'cd_api' }),
+      });
+      assert.strictEqual(calls.length, 1);
+      assert.strictEqual(calls[0].name, 'p4_cd');
+      assert.strictEqual(calls[0].api.kind, 'cd_api');
+      assert.deepStrictEqual(calls[0].scopes, ['section']);
+    } finally {
+      delete global.p4_cd;
+      delete global.conductorIntelligence;
+    }
+  });
+});
+
+test('phase 4: recorder dispatches to conductorIntelligence.registerRecorder', () => {
+  withFreshRegistry(() => {
+    const calls = [];
+    const recorderFn = () => 'invoked';
+    global.conductorIntelligence = {
+      registerModule: () => {},
+      registerRecorder: (name, fn) => calls.push({ name, fn }),
+      registerStateProvider: () => {},
+    };
+    try {
+      ML.declare({
+        name: 'p4_rec',
+        deps: [],
+        provides: ['p4_rec'],
+        recorder: recorderFn,
+        init: () => ({}),
+      });
+      assert.strictEqual(calls.length, 1);
+      assert.strictEqual(calls[0].name, 'p4_rec');
+      assert.strictEqual(calls[0].fn, recorderFn, 'exact recorder fn forwarded');
+    } finally {
+      delete global.p4_rec;
+      delete global.conductorIntelligence;
+    }
+  });
+});
+
+test('phase 4: stateProvider dispatches to conductorIntelligence.registerStateProvider', () => {
+  withFreshRegistry(() => {
+    const calls = [];
+    const providerFn = () => ({ snapshot: 'data' });
+    global.conductorIntelligence = {
+      registerModule: () => {},
+      registerRecorder: () => {},
+      registerStateProvider: (name, fn) => calls.push({ name, fn }),
+    };
+    try {
+      ML.declare({
+        name: 'p4_sp',
+        deps: [],
+        provides: ['p4_sp'],
+        stateProvider: providerFn,
+        init: () => ({}),
+      });
+      assert.strictEqual(calls.length, 1);
+      assert.strictEqual(calls[0].name, 'p4_sp');
+      assert.strictEqual(calls[0].fn, providerFn);
+    } finally {
+      delete global.p4_sp;
+      delete global.conductorIntelligence;
+    }
+  });
+});
+
+test('phase 4: missing sub-registry surfaces a clear error', () => {
+  withFreshRegistry(() => {
+    // No crossLayerRegistry global -- declare should fail loudly.
+    const original = global.crossLayerRegistry;
+    delete global.crossLayerRegistry;
+    try {
+      assert.throws(() => ML.declare({
+        name: 'p4_missing_xl',
+        deps: [],
+        provides: ['p4_missing_xl'],
+        crossLayerScopes: ['all'],
+        init: () => ({}),
+      }), /crossLayerRegistry is not loaded/);
+    } finally {
+      if (original !== undefined) global.crossLayerRegistry = original;
+      delete global.p4_missing_xl;
+    }
+  });
+});
+
+test('phase 4: schema rejects malformed post-init fields', () => {
+  withFreshRegistry(() => {
+    assert.throws(() => ML.declare({
+      name: 'bad_xl_scopes',
+      deps: [],
+      provides: ['bad_xl_scopes'],
+      crossLayerScopes: 'not-an-array',
+      init: () => ({}),
+    }), /crossLayerScopes/);
+    assert.throws(() => ML.declare({
+      name: 'bad_recorder',
+      deps: [],
+      provides: ['bad_recorder'],
+      recorder: 'not-a-function',
+      init: () => ({}),
+    }), /recorder/);
+    assert.throws(() => ML.declare({
+      name: 'bad_state_provider',
+      deps: [],
+      provides: ['bad_state_provider'],
+      stateProvider: 42,
+      init: () => ({}),
+    }), /stateProvider/);
+  });
+});
+
+test('phase 4: combination -- crossLayerScopes + recorder fire in same declare', () => {
+  withFreshRegistry(() => {
+    const xlCalls = [];
+    const recCalls = [];
+    global.crossLayerRegistry = {
+      register: (name, api, scopes) => xlCalls.push({ name, api, scopes }),
+    };
+    global.conductorIntelligence = {
+      registerModule: () => {},
+      registerRecorder: (name, fn) => recCalls.push({ name, fn }),
+      registerStateProvider: () => {},
+    };
+    try {
+      ML.declare({
+        name: 'p4_combo',
+        deps: [],
+        provides: ['p4_combo'],
+        crossLayerScopes: ['all'],
+        recorder: () => {},
+        init: () => ({ combined: true }),
+      });
+      assert.strictEqual(xlCalls.length, 1, 'crossLayer fanout fired');
+      assert.strictEqual(recCalls.length, 1, 'recorder fanout fired');
+      assert.strictEqual(xlCalls[0].api.combined, true);
+    } finally {
+      delete global.p4_combo;
+      delete global.crossLayerRegistry;
+      delete global.conductorIntelligence;
+    }
+  });
+});
