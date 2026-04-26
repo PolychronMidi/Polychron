@@ -189,6 +189,7 @@ moduleLifecycle.declare({
   );
 
 
+  moduleLifecycle.registerInitializer('conductorIntelligence', initialize);
   return {
     // lifecycle
     registerModule,

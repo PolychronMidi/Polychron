@@ -280,6 +280,7 @@ moduleLifecycle.declare({
 
   function getCoherenceBuffer() { return coherenceBuffer; }
 
+  moduleLifecycle.registerInitializer('coherenceMonitor', initialize);
   return {
     initialize,
     getDensityBias,

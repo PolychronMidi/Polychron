@@ -56,6 +56,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('conductorRegulationListener', initialize);
   return {
     initialize,
     getState,

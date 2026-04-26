@@ -105,6 +105,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('stutterFeedbackListener', initialize);
   return {
     initialize,
     getIntensity,

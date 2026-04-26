@@ -196,6 +196,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('conductorState', initialize);
   return {
     initialize,
     updateFromConductor,

@@ -347,10 +347,18 @@ moduleLifecycle = (() => {
     if (initializers.has(name)) {
       throw new Error(`moduleLifecycle.registerInitializer: duplicate "${name}"`);
     }
-    if (_manifests.has(name)) {
-      throw new Error(`moduleLifecycle.registerInitializer: "${name}" already declared via declare(); use one or the other, not both`);
+    // If a declared module of the same name exists, register the initFn
+    // under a derived "<name>:lateInit" key. The post-boot wiring (event
+    // subscriptions, cross-module registrations) runs AFTER all declare()
+    // manifests have eagerly instantiated -- which is the original
+    // semantic registerInitializer was designed for. Avoids the rejection
+    // that would force the caller to inline the wiring into init() and
+    // hit reference errors when cross-module deps load later.
+    const storeName = _manifests.has(name) ? `${name}:lateInit` : name;
+    if (initializers.has(storeName)) {
+      throw new Error(`moduleLifecycle.registerInitializer: duplicate "${storeName}"`);
     }
-    initializers.set(name, { name, initFn, dependencies });
+    initializers.set(storeName, { name: storeName, initFn, dependencies });
   }
 
   /**

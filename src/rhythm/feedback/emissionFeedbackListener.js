@@ -70,6 +70,7 @@ moduleLifecycle.declare({
   }
 
 
+  moduleLifecycle.registerInitializer('emissionFeedbackListener', initialize);
   return {
     initialize,
     getEmissionRatio,
