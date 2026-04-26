@@ -246,7 +246,7 @@
       ]
     },
     "buddy": {
-      "description": "Co-buddy fanout dispatcher: queue-driven (drain) + chain-driven (chain YAML). status / enqueue / drain / chain / clean. See doc/SPEC.md Phase 1+3.",
+      "description": "Co-buddy fanout dispatcher (queue-driven). Subactions: status / enqueue / drain / clean. For ordered Bash-skill chains independent of buddies, use i/chain instead. Requires BUDDY_SYSTEM=1 in .env to drain; queue infra is buddy-only.",
       "category": "orchestration",
       "usage": "i/buddy <status|enqueue|drain> [key=value ...]",
       "examples": [
