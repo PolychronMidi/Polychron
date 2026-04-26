@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['ghostStutterVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('ghostStutter', function ghostStutter(opts) {
       const ghostCount = ri(2, 4);
       let lastShared = opts.shared;

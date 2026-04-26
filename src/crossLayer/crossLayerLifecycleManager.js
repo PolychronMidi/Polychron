@@ -12,6 +12,8 @@ moduleLifecycle.declare({
   lazyDeps: ['conductorSignalBridge'],
   provides: ['timeStreamCrosslayerRegistration'],
   init: (deps) => {
+    const crossLayerRegistry = deps.crossLayerRegistry;
+    const conductorSignalBridge = deps.conductorSignalBridge;
     deps.crossLayerRegistry.register('timeStream', { reset: deps.timeStream.resetPositions }, ['all']);
     return { registered: true };
   },

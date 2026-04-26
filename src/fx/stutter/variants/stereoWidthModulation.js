@@ -8,7 +8,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['stereoWidthModulationVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('stereoWidthModulation', function stereoWidthModulation(opts) {
       const width = (StutterManager.beatContext && Number.isFinite(StutterManager.beatContext.stereoWidth))
         ? StutterManager.beatContext.stereoWidth : 0.6;

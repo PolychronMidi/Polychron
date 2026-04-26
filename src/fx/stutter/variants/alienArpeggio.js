@@ -10,7 +10,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['emergentMelodicEngine', 'harmonicIntervalGuard', 'stutterShift'],
   provides: ['alienArpeggioVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('alienArpeggio', function alienArpeggio(opts) {
       const dissonance = harmonicIntervalGuard.getDissonanceLevel();
       // Alien cluster: m2(1) + tritone(6) + m7(10) -- atonal, extraterrestrial

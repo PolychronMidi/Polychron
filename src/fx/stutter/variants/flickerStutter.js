@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['conductorSignalBridge'],
   provides: ['flickerStutterVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('flickerStutter', function flickerStutter(opts) {
       const sigs = conductorSignalBridge.getSignals();
       const flicker = clamp(sigs.flicker ?? 1.0, 0.1, 2.0);

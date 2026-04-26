@@ -6,7 +6,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['echoTrailVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('echoTrail', function echoTrail(opts) {
       const trails = ri(4, 7);
       const delayGrowth = rf(1.3, 1.8);

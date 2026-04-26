@@ -6,7 +6,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['decayingBounceVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('decayingBounce', function decayingBounce(opts) {
       const bounces = ri(5, 10);
       const decayRate = rf(0.55, 0.75);

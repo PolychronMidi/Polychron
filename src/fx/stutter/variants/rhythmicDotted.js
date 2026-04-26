@@ -6,7 +6,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['rhythmicDottedVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('rhythmicDotted', function rhythmicDotted(opts) {
       const gridSize = spBeat / ri(3, 6);
       const dottedGrid = gridSize * 1.5;

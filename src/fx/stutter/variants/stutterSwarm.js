@@ -7,7 +7,8 @@ moduleLifecycle.declare({
   deps: ['stutterVariants'],
   lazyDeps: ['stutterShift'],
   provides: ['stutterSwarmVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('stutterSwarm', function stutterSwarm(opts) {
       const swarmSize = ri(3, 6);
       const octaveNotes = stutterShift.enumerateOctaves(opts.note % 12, { exclude: opts.note });

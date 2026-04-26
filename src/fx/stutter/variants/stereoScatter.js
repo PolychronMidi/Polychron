@@ -9,7 +9,8 @@ moduleLifecycle.declare({
   subsystem: 'fx',
   deps: ['stutterVariants'],
   provides: ['stereoScatterVariant'],
-  init: () => {
+  init: (deps) => {
+    const stutterVariants = deps.stutterVariants;
     stutterVariants.register('stereoScatter', function stereoScatter(opts) {
       const allChs = source.concat(reflection);
       if (allChs.length === 0) return stutterNotes(opts);
