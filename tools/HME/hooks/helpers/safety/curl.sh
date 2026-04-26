@@ -92,7 +92,11 @@ _safe_curl() {
     streak=$(_safe_int "$(cat "$streak_file" 2>/dev/null)")
     streak=$((streak + 1))
     echo "$streak" > "$streak_file"
-    if [ "$streak" -ge "$_HME_CURL_STREAK_WARN" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+    # FAIL-LOUD: log EVERY failure, not just streak >= threshold. Previously
+    # the streak gate suppressed failures 1..(N-1), letting hooks silently
+    # receive empty strings as if success. The streak count stays as a
+    # diagnostic trend signal but every failure now surfaces immediately.
+    if [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
       printf '[%s] [_safe_curl] %s failed (rc=%d, streak=%d)\n' \
         "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$url" "$rc" "$streak" \
         >> "$PROJECT_ROOT/log/hme-errors.log" 2>/dev/null
