@@ -1,10 +1,11 @@
 moduleLifecycle.declare({
   name: 'explainabilityBus',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['explainabilityBus'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('explainabilityBus');
   const MAX_ENTRIES = 600;
   const EVICT_BATCH = 100; // amortize O(n) splice cost over many emit calls

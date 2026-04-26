@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'drumTextureCoupler',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['regimeClassifier', 'validator'],
   provides: ['drumTextureCoupler'],
   init: (deps) => {
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('drumTextureCoupler');
 
   let feedback = null;

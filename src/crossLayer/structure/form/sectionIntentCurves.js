@@ -1,10 +1,17 @@
 moduleLifecycle.declare({
   name: 'sectionIntentCurves',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'harmonicContext', 'harmonicJourney', 'hyperMetaManagerState', 'phaseFloorController', 'sectionMemory', 'timeStream', 'validator'],
   provides: ['sectionIntentCurves'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const harmonicContext = deps.harmonicContext;
+  const harmonicJourney = deps.harmonicJourney;
+  const hyperMetaManagerState = deps.hyperMetaManagerState;
+  const phaseFloorController = deps.phaseFloorController;
+  const sectionMemory = deps.sectionMemory;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('sectionIntentCurves');
 
   // Intent curve shaping constants

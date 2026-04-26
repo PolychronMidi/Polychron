@@ -9,9 +9,11 @@
 moduleLifecycle.declare({
   name: 'emergentRhythmEngine',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'regimeClassifier', 'validator'],
   provides: ['emergentRhythmEngine'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('emergentRhythmEngine');
   const GRID_SIZE = 16;
   const DENSITY_EMA_ALPHA = 0.08;

@@ -5,10 +5,11 @@
 moduleLifecycle.declare({
   name: 'stutterTempoFeel',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['stutterFeedbackListener', 'validator'],
   provides: ['stutterTempoFeel'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const stutterFeedbackListener = deps.stutterFeedbackListener;
   const V = deps.validator.create('stutterTempoFeel');
   const emaByLayer = { L1: 0.3, L2: 0.3 };
   const EMA_ALPHA = 0.18;

@@ -4,9 +4,10 @@
 moduleLifecycle.declare({
   name: 'journeyRhythmCoupler',
   subsystem: 'rhythm',
-  deps: ['validator'],
+  deps: ['systemDynamicsProfiler', 'validator'],
   provides: ['journeyRhythmCoupler'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('journeyRhythmCoupler');
 
   // Per-layer boldness prevents L1's journey energy from contaminating L2's rhythm bias

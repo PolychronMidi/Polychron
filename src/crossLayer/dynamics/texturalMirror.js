@@ -6,10 +6,12 @@
 moduleLifecycle.declare({
   name: 'texturalMirror',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'regimeClassifier', 'validator'],
   provides: ['texturalMirror'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('texturalMirror');
   const COMPLEMENT_MAP = Object.freeze({
     normal: 'normal',

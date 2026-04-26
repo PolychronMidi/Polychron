@@ -6,10 +6,11 @@
 moduleLifecycle.declare({
   name: 'temporalGravity',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['temporalGravity'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('temporalGravity');
   const DENSITY_CHANNEL = 'density';
   const DENSITY_WINDOW_MS = 300;

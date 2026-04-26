@@ -1,4 +1,5 @@
 // Subsystem helpers (helpers first, manager last)
+
 require('./chordValues');
 require('./chordModulator');
 require('./chordConfig');
@@ -12,8 +13,10 @@ require('./ChordComposer');
 require('./ProgressionGenerator');
 require('./pivotChordBridge');
 
-// Register progression generator wrapper
-chordRegistry.register('progression', (key, quality, type) => {
-  const pg = new ProgressionGenerator(key, quality);
-  return type ? pg.generate(type) : pg.random();
-});
+// Register progression generator wrapper -- runs after chordRegistry init.
+moduleLifecycle.registerInitializer('chord-progression-registration', () => {
+  chordRegistry.register('progression', (key, quality, type) => {
+    const pg = new ProgressionGenerator(key, quality);
+    return type ? pg.generate(type) : pg.random();
+  });
+}, ['chordRegistry']);

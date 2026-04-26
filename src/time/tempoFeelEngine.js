@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'tempoFeelEngine',
   subsystem: 'time',
-  deps: ['validator'],
+  deps: ['conductorState', 'validator'],
   provides: ['tempoFeelEngine'],
   init: (deps) => {
+  const conductorState = deps.conductorState;
   const MAX_FEEL_RATIO = 0.025; // max 2.5% tempo deviation
 
   const V = deps.validator.create('tempoFeelEngine');

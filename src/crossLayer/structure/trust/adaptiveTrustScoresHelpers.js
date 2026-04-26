@@ -1,9 +1,12 @@
 moduleLifecycle.declare({
   name: 'adaptiveTrustScoresHelpers',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['couplingHomeostasis', 'pipelineCouplingManager', 'regimeClassifier', 'validator'],
   provides: ['adaptiveTrustScoresHelpers'],
   init: (deps) => {
+  const couplingHomeostasis = deps.couplingHomeostasis;
+  const pipelineCouplingManager = deps.pipelineCouplingManager;
+  const regimeClassifier = deps.regimeClassifier;
   const V = deps.validator.create('adaptiveTrustScoresHelpers');
   let adaptiveTrustScoresHelpersHotspotCacheBeatKey = '';
   const adaptiveTrustScoresHelpersHotspotCache = new Map();

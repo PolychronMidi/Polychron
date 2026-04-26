@@ -424,8 +424,17 @@ moduleLifecycle = (() => {
         // for manifest deps we accept the missing-from-registry case
         // silently and let _instantiateManifest's namespace lookup catch
         // unresolved references at instantiation time with a clear error.
+        // For registerInitializer-kind entries, the dep MAY be a legacy
+        // global that's bound by IIFE at file-require time (e.g. rhythmRegistry,
+        // chordRegistry). Those are loaded before initializeAll runs, so the
+        // dep is already satisfied at execution time. Only fail if the
+        // namespace ALSO has no value bound, which would mean the dep is
+        // genuinely unresolvable.
         if (requiredBy && requiredBy.kind === 'init') {
-          throw new Error(`moduleLifecycle.initializeAll: "${requiredBy.name}" depends on "${name}" but "${name}" is not registered`);
+          if (_readNamespace(name) === undefined) {
+            throw new Error(`moduleLifecycle.initializeAll: "${requiredBy.name}" depends on "${name}" but "${name}" is neither a registered initializer/manifest nor an existing global`);
+          }
+          // Legacy global is bound -- treat dep as satisfied without recursing.
         }
         visiting.delete(name);
         return;

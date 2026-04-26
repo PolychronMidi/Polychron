@@ -1,10 +1,11 @@
 moduleLifecycle.declare({
   name: 'registerCollisionAvoider',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['registerCollisionAvoider'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('registerCollisionAvoider');
   const CHANNEL = 'registerCollision';
   const TIME_TOLERANCE_SEC = 0.140;

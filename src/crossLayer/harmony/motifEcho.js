@@ -7,10 +7,11 @@
 moduleLifecycle.declare({
   name: 'motifEcho',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['motifEcho'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('motifEcho');
   const CHANNEL = 'motifEcho';
   const ECHO_DELAY_BEATS_MIN = 1;

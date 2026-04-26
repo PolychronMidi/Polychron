@@ -7,10 +7,11 @@
 moduleLifecycle.declare({
   name: 'harmonicIntervalGuard',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['harmonicIntervalGuard'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('harmonicIntervalGuard');
   const MAX_HISTORY = 40;
 

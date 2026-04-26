@@ -4,9 +4,10 @@
 moduleLifecycle.declare({
   name: 'motifChain',
   subsystem: 'composers',
-  deps: ['validator'],
+  deps: ['conductorConfig', 'validator'],
   provides: ['motifChain'],
   init: (deps) => {
+  const conductorConfig = deps.conductorConfig;
   const V = deps.validator.create('motifChain');
 
   let activeMotif = null;           // Current base motif

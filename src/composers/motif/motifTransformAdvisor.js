@@ -5,9 +5,12 @@
 moduleLifecycle.declare({
   name: 'motifTransformAdvisor',
   subsystem: 'composers',
-  deps: [],
+  deps: ['harmonicContext', 'layerCoherenceScorer', 'melodicContourTracker'],
   provides: ['motifTransformAdvisor'],
-  init: () => {
+  init: (deps) => {
+  const harmonicContext = deps.harmonicContext;
+  const layerCoherenceScorer = deps.layerCoherenceScorer;
+  const melodicContourTracker = deps.melodicContourTracker;
   /**
    * Advise which motif transform parameters to use for the current musical context.
    * Returns mutation options compatible with motifChain.mutate().

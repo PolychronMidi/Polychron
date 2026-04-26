@@ -5,10 +5,12 @@
 moduleLifecycle.declare({
   name: 'convergenceVelocitySurge',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'harmonicJourney', 'validator'],
   provides: ['convergenceVelocitySurge'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const harmonicJourney = deps.harmonicJourney;
   const V = deps.validator.create('convergenceVelocitySurge');
   let surgeActive = 0;
   let surgeMultiplier = 1.0;

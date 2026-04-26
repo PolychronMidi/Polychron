@@ -6,10 +6,12 @@
 moduleLifecycle.declare({
   name: 'restSynchronizer',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'hyperMetaManager', 'validator'],
   provides: ['restSynchronizer'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const hyperMetaManager = deps.hyperMetaManager;
   const V = deps.validator.create('restSynchronizer');
   const MIN_REST_INTERVAL_SEC = 0.8;
   // R73 E5: Regime-responsive base rest probability. Coherent regime

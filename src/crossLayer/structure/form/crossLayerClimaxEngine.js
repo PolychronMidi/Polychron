@@ -7,10 +7,15 @@
 moduleLifecycle.declare({
   name: 'crossLayerClimaxEngine',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'fractalArcGenerator', 'modalColorTracker', 'phaseFloorController', 'timeStream', 'validator'],
   provides: ['crossLayerClimaxEngine'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const fractalArcGenerator = deps.fractalArcGenerator;
+  const modalColorTracker = deps.modalColorTracker;
+  const phaseFloorController = deps.phaseFloorController;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('crossLayerClimaxEngine');
   const APPROACH_THRESHOLD = 0.65;
   const PEAK_THRESHOLD = 0.82;

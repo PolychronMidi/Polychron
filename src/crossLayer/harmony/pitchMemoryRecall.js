@@ -7,10 +7,13 @@
 moduleLifecycle.declare({
   name: 'pitchMemoryRecall',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'regimeClassifier', 'timeStream', 'validator'],
   provides: ['pitchMemoryRecall'],
   crossLayerScopes: ['all'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const regimeClassifier = deps.regimeClassifier;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('pitchMemoryRecall');
   const MAX_MEMORIES = 64;
   const RECALL_PROBABILITY = 0.2;

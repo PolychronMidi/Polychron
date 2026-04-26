@@ -13,9 +13,12 @@
 moduleLifecycle.declare({
   name: 'microUnitAttenuator',
   subsystem: 'play',
-  deps: ['validator'],
+  deps: ['conductorConfig', 'hyperMetaManager', 'systemDynamicsProfiler', 'validator'],
   provides: ['microUnitAttenuator'],
   init: (deps) => {
+  const conductorConfig = deps.conductorConfig;
+  const hyperMetaManager = deps.hyperMetaManager;
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('microUnitAttenuator');
   /** @type {Array<{ unit: string, limit: number, pairs: Array<{ on: object, off: object, score: number }> }>} */
   const microUnitAttenuatorStack = [];

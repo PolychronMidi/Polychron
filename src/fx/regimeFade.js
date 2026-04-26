@@ -19,9 +19,10 @@
 moduleLifecycle.declare({
   name: 'regimeFade',
   subsystem: 'fx',
-  deps: [],
+  deps: ['systemDynamicsProfiler'],
   provides: ['regimeFade'],
-  init: () => {
+  init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const CENTER_FADE = 100;
   const MAX_BIAS = 27;
 

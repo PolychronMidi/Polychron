@@ -7,10 +7,13 @@
 moduleLifecycle.declare({
   name: 'entropyRegulator',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'pipelineCouplingManager', 'timeStream', 'validator'],
   provides: ['entropyRegulator'],
   crossLayerScopes: ['all', 'section'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const pipelineCouplingManager = deps.pipelineCouplingManager;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('entropyRegulator');
   const WINDOW_NOTES = 10; // halved (was 20) - faster window turnover creates more beat-to-beat variance
   const SMOOTHING = 0.3; // exponential smoothing factor

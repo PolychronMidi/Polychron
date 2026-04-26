@@ -1,10 +1,11 @@
 moduleLifecycle.declare({
   name: 'motifIdentityMemory',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['motifIdentityMemory'],
   crossLayerScopes: ['all', 'phrase'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('motifIdentityMemory');
   const MAX_NOTES = 24;
   const MAX_IDENTITIES = 16;

@@ -23,9 +23,10 @@
 moduleLifecycle.declare({
   name: 'regimeFx',
   subsystem: 'fx',
-  deps: [],
+  deps: ['systemDynamicsProfiler'],
   provides: ['regimeFx'],
-  init: () => {
+  init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const CENTER_CUTOFF = 80;
   const MAX_BIAS = 48;
 

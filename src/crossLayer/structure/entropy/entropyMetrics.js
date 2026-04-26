@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'entropyMetrics',
   subsystem: 'crossLayer',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['entropyMetrics'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('entropyMetrics');
 
   /**
