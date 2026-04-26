@@ -40,29 +40,36 @@ if [ -f "$FLAG" ]; then
     COUPLING_HINT=""
     COUPLING_FILE="${METRICS_DIR:-$PROJECT/output/metrics}/hme-coupling.json"
     if [ -f "$COUPLING_FILE" ]; then
-      COUPLING_HINT=$(python3 <<'PYEOF' 2>/dev/null
-import json
-import os
-try:
-    d = json.load(open(os.environ.get("METRICS_DIR", os.path.join(os.environ.get("PROJECT_ROOT","."), "output", "metrics")) + "/hme-coupling.json"))
-    matrix = d.get('matrix', {})
-    # Find pairs with high lift (co-occurrence correlates with clean sessions)
-    pairs = []
-    for a, row in matrix.items():
-        for b, info in row.items():
-            lift = info.get('lift', 0)
-            coo = info.get('cooccurrence', 0)
-            if coo >= 2 and lift >= 1.2:
-                pairs.append((a, b, lift, coo))
-    pairs.sort(key=lambda x: -x[2])
-    if pairs:
-        print('Historically effective tool pairs (from session history):')
-        for a, b, lift, coo in pairs[:3]:
-            print(f'  - {a} → {b}  (lift={lift:.2f}, co-occurrence={coo} sessions)')
-except Exception:
-    pass
+      # FAIL-LOUD: was `2>/dev/null` + `except: pass`. Coupling-hint is
+      # informational, but a JSONDecodeError on the metrics file points at
+      # writer-side corruption that must surface.
+      _PHM_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_phm_py_err_$$")
+      COUPLING_HINT=$(python3 <<'PYEOF' 2>"$_PHM_PY_ERR"
+import json, os
+d = json.load(open(os.environ.get("METRICS_DIR", os.path.join(os.environ.get("PROJECT_ROOT","."), "output", "metrics")) + "/hme-coupling.json"))
+matrix = d.get('matrix', {})
+pairs = []
+for a, row in matrix.items():
+    for b, info in row.items():
+        lift = info.get('lift', 0)
+        coo = info.get('cooccurrence', 0)
+        if coo >= 2 and lift >= 1.2:
+            pairs.append((a, b, lift, coo))
+pairs.sort(key=lambda x: -x[2])
+if pairs:
+    print('Historically effective tool pairs (from session history):')
+    for a, b, lift, coo in pairs[:3]:
+        print(f'  - {a} → {b}  (lift={lift:.2f}, co-occurrence={coo} sessions)')
 PYEOF
 )
+      if [ -s "$_PHM_PY_ERR" ] && [ -d "$PROJECT/log" ]; then
+        _PHM_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+        while IFS= read -r _phm_line; do
+          [ -n "$_phm_line" ] && echo "[$_PHM_TS] [pretooluse_hme_primer:coupling] python3 failed: $_phm_line" \
+            >> "$PROJECT/log/hme-errors.log"
+        done < "$_PHM_PY_ERR"
+      fi
+      rm -f "$_PHM_PY_ERR" 2>/dev/null
     fi
     [ -n "$COUPLING_HINT" ] && COUPLING_HINT=$'\n\n'"$COUPLING_HINT"
     # Step indicator. The primer content above describes the full loop; this

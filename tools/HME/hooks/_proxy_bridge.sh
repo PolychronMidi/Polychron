@@ -215,12 +215,18 @@ if [ -z "$RESP" ]; then
   _PB_MSG="[$_PB_TS] [proxy-bridge] HME proxy unreachable on 127.0.0.1:${PORT} (event=${EVENT}). No LIFESAVER, no KB briefing, no hook logic for this turn."
 
   # Channel A: hme-errors.log for LIFESAVER text-scan pickup.
+  # Stderr suppression intentionally REMOVED here: if errors.log itself
+  # is unwritable (the canonical alert sink for the whole HME chain), the
+  # write error MUST surface — silent-fail on the alert sink is the
+  # exact failure mode the LIFESAVER chain is supposed to prevent. The
+  # other 3 channels (stderr banner, JSON, sticky flag) still carry the
+  # signal even if this write succeeds.
   if [ -n "$_PB_ROOT" ]; then
     mkdir -p "$_PB_ROOT/log" 2>/dev/null
-    echo "$_PB_MSG" >> "$_PB_ROOT/log/hme-errors.log" 2>/dev/null
+    echo "$_PB_MSG" >> "$_PB_ROOT/log/hme-errors.log"
     # Channel B: sticky proxy-down flag — separate from autocommit flag.
     mkdir -p "$_PB_ROOT/tmp" 2>/dev/null
-    echo "$_PB_MSG" > "$_PB_ROOT/tmp/hme-proxy-down.flag" 2>/dev/null
+    echo "$_PB_MSG" > "$_PB_ROOT/tmp/hme-proxy-down.flag"
   fi
 
   # Channel C: stderr. Even when plugin machinery swallows stderr, the

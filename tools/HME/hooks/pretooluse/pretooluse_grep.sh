@@ -35,28 +35,34 @@ if [ -n "$PROJECT_ROOT" ] && [[ "$REL" == "$PROJECT_ROOT"/* ]]; then
   REL="${REL#"$PROJECT_ROOT"/}"
 fi
 
-HIT=$(python3 - "$REL" "$GLOB" "$CONFIG" <<'PYEOF' 2>/dev/null
+# FAIL-LOUD: was `2>/dev/null` + bare `except: sys.exit(0)` which fail-OPENed
+# the content-mode guard on every python crash. Now stderr captured and
+# bridged so a corrupted config or python crash is visible.
+_PG_GATE_ERR=$(mktemp 2>/dev/null || echo "/tmp/_pg_gate_err_$$")
+HIT=$(python3 - "$REL" "$GLOB" "$CONFIG" <<'PYEOF' 2>"$_PG_GATE_ERR"
 import json, os, sys
 rel, glob, cfg = sys.argv[1], sys.argv[2], sys.argv[3]
-try:
-    d = json.load(open(cfg))
-except Exception:
-    sys.exit(0)
-# Block content-mode grep targeting guarded dirs/files
+d = json.load(open(cfg))
 for p in d.get("blocked_paths", []):
     if p.endswith("/"):
-        # Grep path inside a guarded dir
         if rel == p.rstrip("/") or rel.startswith(p):
             print(p); sys.exit(0)
     elif rel == p:
         print(p); sys.exit(0)
-# Block content-mode against paginated append-only files (single-file search).
 for entry in d.get("paginated_paths", []):
     prefix = entry.get("prefix", "")
     if prefix and (rel == prefix or (rel.endswith(prefix) and os.path.isfile(os.path.join(os.environ.get("PROJECT_ROOT",""), prefix)))):
         print(f"{prefix} (paginated-only)"); sys.exit(0)
 PYEOF
 )
+if [ -s "$_PG_GATE_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  _PG_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+  while IFS= read -r _pg_line; do
+    [ -n "$_pg_line" ] && echo "[$_PG_TS] [pretooluse_grep:guard] python3 failed (gate fails OPEN): $_pg_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_PG_GATE_ERR"
+fi
+rm -f "$_PG_GATE_ERR" 2>/dev/null
 
 if [ -n "$HIT" ]; then
   _emit_block "BLOCKED: Grep output_mode='content' on guarded path '$HIT' can leak the file's contents into context. Use output_mode='files_with_matches' (default) or 'count' — or narrow the path to a non-guarded subtree."

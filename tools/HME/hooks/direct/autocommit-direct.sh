@@ -50,7 +50,8 @@ if [ ! -f "$_HELPER" ]; then
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
   echo "[autocommit-direct FAIL $ts] helper missing at $_HELPER" >&2
   mkdir -p "$_DIRECT_ROOT/log" 2>/dev/null
-  echo "[$ts] [autocommit-direct] helper missing at $_HELPER" >> "$_DIRECT_ROOT/log/hme-errors.log" 2>/dev/null
+  # FAIL-LOUD on alert-sink writes (see _proxy_bridge.sh rationale).
+  echo "[$ts] [autocommit-direct] helper missing at $_HELPER" >> "$_DIRECT_ROOT/log/hme-errors.log"
   mkdir -p "$_DIRECT_ROOT/tmp" 2>/dev/null
   echo "[$ts] helper missing at $_HELPER" > "$_DIRECT_ROOT/tmp/hme-autocommit.fail" 2>/dev/null
   exit 0
@@ -90,7 +91,7 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
         if [ "$_AR_RC" -ne 0 ]; then
           _AR_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo unknown)
           echo "[$_AR_TS] [review_auto_fire_direct] FAILED (rc=$_AR_RC) — see tmp/hme-review-auto.out" \
-            >> "$_DIRECT_ROOT/log/hme-errors.log" 2>/dev/null
+            >> "$_DIRECT_ROOT/log/hme-errors.log"
         fi
       ) >/dev/null 2>&1 &
     fi

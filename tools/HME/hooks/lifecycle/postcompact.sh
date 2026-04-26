@@ -39,8 +39,19 @@ CTX_FILE="${HME_CTX_FILE:-/tmp/claude-context.json}"
 LOG="$PROJECT/output/metrics/compact-log.jsonl"
 TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [[ -f "$CTX_FILE" ]]; then
-  USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
-  REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>/dev/null || echo "null")
+  # FAIL-LOUD: same rationale as precompact.sh — corrupted statusline JSON
+  # would silently produce all-null calibration rows.
+  _PC_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_jq_err_$$")
+  USED=$(jq -r '.used_pct // "null"' "$CTX_FILE" 2>"$_PC_JQ_ERR" || echo "null")
+  REM=$(jq -r '.remaining_pct // "null"' "$CTX_FILE" 2>>"$_PC_JQ_ERR" || echo "null")
+  if [ -s "$_PC_JQ_ERR" ] && [ -d "$PROJECT/log" ]; then
+    _PC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _pc_line; do
+      [ -n "$_pc_line" ] && echo "[$_PC_TS] [postcompact:ctx-parse] jq failed reading $CTX_FILE: $_pc_line" \
+        >> "$PROJECT/log/hme-errors.log"
+    done < "$_PC_JQ_ERR"
+  fi
+  rm -f "$_PC_JQ_ERR" 2>/dev/null
   echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":$USED,\"stale_remaining_pct\":$REM}" >> "$LOG"
 else
   echo "{\"ts\":\"$TS\",\"event\":\"post_compact\",\"stale_used_pct\":null,\"stale_remaining_pct\":null}" >> "$LOG"
@@ -87,7 +98,12 @@ if [ -f "$LATEST_LINK" ]; then
   echo "" >&2
   echo "━━━ CHAIN LINK HYDRATION (PostCompact) ━━━" >&2
   echo "  Loading state from: $(readlink -f "$LATEST_LINK")" >&2
-  python3 <<'PYEOF' 2>/dev/null >&2
+  # FAIL-LOUD: was `2>/dev/null >&2` which silenced ImportError / SyntaxError
+  # / KeyError. The script's own try/except only covers the file-load; any
+  # other crash silently swallowed the entire hydration. Now stderr is
+  # captured and bridged to errors.log; stdout still goes to >&2 as banner.
+  _POSTC_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_py_err_$$")
+  python3 <<'PYEOF' 2>"$_POSTC_PY_ERR" >&2
 import json, os
 project = os.environ["PROJECT_ROOT"]
 latest = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project, "output", "metrics")), "chain-history", "latest.yaml")
@@ -138,6 +154,14 @@ if onb and onb.get("state") != "graduated":
 
 print("  (full link readable at output/metrics/chain-history/latest.yaml)")
 PYEOF
+  if [ -s "$_POSTC_PY_ERR" ] && [ -d "$PROJECT/log" ]; then
+    _POSTC_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    while IFS= read -r _postc_line; do
+      [ -n "$_postc_line" ] && echo "[$_POSTC_TS] [postcompact:chain-hydrate] python3 failed: $_postc_line" \
+        >> "$PROJECT/log/hme-errors.log"
+    done < "$_POSTC_PY_ERR"
+  fi
+  rm -f "$_POSTC_PY_ERR" 2>/dev/null
   echo "━━━ END CHAIN LINK HYDRATION ━━━" >&2
 fi
 
