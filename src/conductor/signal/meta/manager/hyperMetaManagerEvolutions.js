@@ -317,10 +317,10 @@ moduleLifecycle.declare({
       // Phrase troughs: second half of phrase is the natural descent
       const inPhraseTrough = phraseProgress > 0.55;
       // Check if density is flat via wave analyzer
-      const densityWaveFlat = {
+      const densityWaveFlat = (() => {
         const wp = densityWaveAnalyzer.getWaveProfile();
         return wp && wp.isFlat;
-      };
+      })();
       if (inPhraseTrough && densityWaveFlat) {
         S.e10ReleaseCooldown = m.max(2, m.min(5, m.round(layerNumerator * 0.4)));
         // Tension suppression: < 1.0 tells densityWaveAnalyzer to suppress

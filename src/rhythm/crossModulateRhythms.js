@@ -202,10 +202,10 @@ crossModulateRhythms = () => {
   // E19 is skipped during exploring: E13 gives exploring a 1.0 ceiling (no sparse
   // suppression), so crossMod suppression here would be inconsistent. Also prevents
   // EMA ramp tail from bleeding into exploring passages after a coherent sparse window.
-  const e19Regime = {
+  const e19Regime = (() => {
     const sn = systemDynamicsProfiler.getSnapshot();
     return sn ? sn.regime : '';
-  };
+  })();
   const e19Mult = /** @type {number} */ (hyperMetaManager.getRateMultiplier('e19CrossModScale'));
   if (e19Mult < 1.0 && e19Regime !== 'exploring') {
     const e19SuppressFraction = clamp((crossModulation - 4.0) / 4.0, 0, 1);
