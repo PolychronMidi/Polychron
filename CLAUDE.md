@@ -2,6 +2,8 @@
 
 > Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
 
+Keep this file lean - no mention of things that are, or can be, auto-enforced. If it would need to be mentioned here, fix its enforcement instead.
+
 ## Run
 
 `npm run main` — full pipeline. **Never run individual pipeline scripts directly.**
