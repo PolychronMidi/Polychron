@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'registerMigrationTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['registerMigrationTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('registerMigrationTracker');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 

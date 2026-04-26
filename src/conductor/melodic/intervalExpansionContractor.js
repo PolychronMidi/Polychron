@@ -7,9 +7,11 @@
 moduleLifecycle.declare({
   name: 'intervalExpansionContractor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['intervalExpansionContractor'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('intervalExpansionContractor');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */

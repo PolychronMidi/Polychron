@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'harmonicJourneyPlanner',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['systemDynamicsProfiler'],
   provides: ['harmonicJourneyPlanner'],
-  init: () => {
+  init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const VALID_MODES = ['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
   const START_MODE_POOL = ['major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'aeolian'];
 

@@ -1,9 +1,10 @@
 moduleLifecycle.declare({
   name: 'regimeClassifierResolution',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['regimeClassifierResolution'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('regimeClassifierResolution');
   function activateForcedRegime(state, config, regime, reason, beatsRemaining, triggerStreak, triggerTickId) {
     state.forcedRegime = regime;

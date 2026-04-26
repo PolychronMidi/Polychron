@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'thematicRecallDetector',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['thematicRecallDetector'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const FINGERPRINT_LENGTH = 6; // 6-note interval fingerprint
   /** @type {Array<{ section: number, fingerprint: string }>} */
   const sectionFingerprints = [];

@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'harmonicFieldDensityTracker',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['harmonicFieldDensityTracker'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 4;
   const SIMULTANEITY_TOLERANCE = 0.06; // seconds within which notes are "simultaneous"
 

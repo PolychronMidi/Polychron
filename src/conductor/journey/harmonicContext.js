@@ -17,9 +17,10 @@
 moduleLifecycle.declare({
   name: 'harmonicContext',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['eventBus', 'validator'],
   provides: ['harmonicContext'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const V = deps.validator.create('harmonicContext');
 
   /** @type {Set<number>} */

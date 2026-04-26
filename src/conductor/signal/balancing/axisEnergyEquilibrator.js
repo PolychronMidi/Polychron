@@ -3,9 +3,10 @@
 moduleLifecycle.declare({
   name: 'axisEnergyEquilibrator',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['axisEnergyEquilibrator'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('axisEnergyEquilibrator');
   const axisEnergyEquilibratorConfig = {
     HOTSPOT_RATIO: 2.0,

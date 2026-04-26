@@ -12,9 +12,11 @@
 moduleLifecycle.declare({
   name: 'harmonicPedalFieldTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['harmonicPedalFieldTracker'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('harmonicPedalFieldTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ bassPC: number, time: number }>} */

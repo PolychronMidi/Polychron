@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'grooveTemplateAdvisor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['grooveTemplateAdvisor'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('grooveTemplateAdvisor');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 

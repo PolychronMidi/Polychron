@@ -12,9 +12,10 @@
 moduleLifecycle.declare({
   name: 'couplingBiasAccumulator',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['signalReader', 'validator'],
   provides: ['couplingBiasAccumulator'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
   const V = deps.validator.create('couplingBiasAccumulator');
   const { ALL_MONITORED_DIMS, NUDGEABLE_SET, GAIN_MAX,
     AXIS_SMOOTH_ALPHA, AXIS_BUDGET, GATE_EMA_ALPHA,

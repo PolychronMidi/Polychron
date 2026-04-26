@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'chromaticSaturationMonitor',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['chromaticSaturationMonitor'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 8;
 
   /**

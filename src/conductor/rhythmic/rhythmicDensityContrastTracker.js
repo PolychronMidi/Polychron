@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'rhythmicDensityContrastTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['rhythmicDensityContrastTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('rhythmicDensityContrastTracker');
   const MAX_SAMPLES = 20;
   /** @type {number[]} */

@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'sectionLengthAdvisor',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['sectionLengthAdvisor'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('sectionLengthAdvisor');
   /** @type {Array<number>} */
   const energyHistory = [];

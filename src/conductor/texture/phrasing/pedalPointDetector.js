@@ -10,9 +10,10 @@
 moduleLifecycle.declare({
   name: 'pedalPointDetector',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['pedalPointDetector'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('pedalPointDetector');
   const WINDOW_SECONDS = 6;
   const BASS_CEILING = 55; // MIDI note - below this = bass register

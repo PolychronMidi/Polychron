@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'fragmentHelpers',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['fragmentHelpers'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('fragmentHelpers');
   /**
    * Extract pitch-class interval fragments of a given length from recent notes.

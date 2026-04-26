@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'profileAdaptation',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence', 'signalReader'],
   provides: ['profileAdaptation'],
-  init: () => {
+  init: (deps) => {
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
   // Sustained-signal tracking: count consecutive beats meeting each threshold
   let lowDensityStreak = 0;
   let highTensionStreak = 0;

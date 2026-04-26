@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'ambitusMigrationTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['ambitusMigrationTracker'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('ambitusMigrationTracker');
   const WINDOW_SECONDS = 10;
   const MAX_HISTORY = 12;

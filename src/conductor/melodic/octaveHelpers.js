@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'octaveHelpers',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['octaveHelpers'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('octaveHelpers');
   /**
    * Build an octave-band count histogram from recent notes.

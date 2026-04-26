@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'conductorDampening',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['systemDynamicsProfiler', 'timeStream', 'validator'],
   provides: ['conductorDampening'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('conductorDampening');
   // Base damping (0.6) calibrated for ~20 contributors.
   // Smaller pipelines get proportionally less pass-through so each module's

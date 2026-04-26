@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'dynamicPeakMemory',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['dynamicPeakMemory'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('dynamicPeakMemory');
   const MAX_PEAKS = 12;
   /** @type {Array<{ intensity: number, time: number, type: string }>} */

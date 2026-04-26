@@ -32,9 +32,10 @@ moduleLifecycle.declare({
   // legacy globals from the same hyperMetaManager* family -- listing them
   // here forces them to load before this module instantiates, which is
   // already the case via the helpers-first pattern in the index files.
-  deps: ['hyperMetaManagerState', 'signalReader', 'explainabilityBus'],
+  deps: ['conductorIntelligence', 'explainabilityBus', 'hyperMetaManagerState', 'signalReader'],
   provides: ['hyperMetaManager'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const ST     = deps.hyperMetaManagerState;
   const S      = ST.S;
   const health = hyperMetaManagerHealth;

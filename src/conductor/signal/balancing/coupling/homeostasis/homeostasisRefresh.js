@@ -14,9 +14,10 @@
 moduleLifecycle.declare({
   name: 'homeostasisRefresh',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['systemDynamicsProfiler', 'validator'],
   provides: ['homeostasisRefresh'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
   const V = deps.validator.create('homeostasisRefresh');
   const { ALL_DIMS, ENERGY_EMA_ALPHA, REDISTRIBUTION_EMA_ALPHA,
     PEAK_DECAY, BUDGET_PEAK_RATIO, PEAK_EMA_CAP_RATIO,

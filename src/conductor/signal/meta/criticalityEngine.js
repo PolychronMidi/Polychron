@@ -22,9 +22,12 @@
 moduleLifecycle.declare({
   name: 'criticalityEngine',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'signalReader', 'timeStream', 'validator'],
   provides: ['criticalityEngine'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
+  const timeStream = deps.timeStream;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('criticalityEngine');
 
   const WINDOW         = 16;       // beats to accumulate

@@ -14,9 +14,11 @@
 moduleLifecycle.declare({
   name: 'harmonicFunctionGraph',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['harmonicFunctionGraph'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('harmonicFunctionGraph');
 
   const CHANNEL = 'harmonicFunction';

@@ -5,9 +5,12 @@
 moduleLifecycle.declare({
   name: 'systemManifest',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'signalReader', 'systemDynamicsProfiler', 'validator'],
   provides: ['systemManifest'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('systemManifest');
 
   /**

@@ -5,9 +5,12 @@
 moduleLifecycle.declare({
   name: 'signalTelemetry',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'signalReader', 'validator'],
   provides: ['signalTelemetry'],
+  conductorScopes: ['section'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('signalTelemetry');
   const MAX_HISTORY = 200;
   /** @type {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>} */
@@ -114,13 +117,15 @@ moduleLifecycle.declare({
     trend = 'stable';
   }
 
-  // Self-register
+  // (conductorScopes manifest field replaces registerModule.)
+  // registerRecorder/registerStateProvider remain inline (no manifest-field
+  // counterparts that take inline-scope-defined functions; deps guarantee
+  // conductorIntelligence is bound here).
   conductorIntelligence.registerRecorder('signalTelemetry', record);
   conductorIntelligence.registerStateProvider('signalTelemetry', () => ({
     telemetryAnomalyDetected: anomalyDetected,
     telemetryTrend: trend
   }));
-  conductorIntelligence.registerModule('signalTelemetry', { reset }, ['section']);
 
   return { record, getHistory, isAnomalyDetected, getTrend, reset };
   },

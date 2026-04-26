@@ -10,9 +10,11 @@
 moduleLifecycle.declare({
   name: 'pipelineBalancer',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence', 'signalReader'],
   provides: ['pipelineBalancer'],
-  init: () => {
+  init: (deps) => {
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;

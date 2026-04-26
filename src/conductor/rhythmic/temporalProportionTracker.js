@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'temporalProportionTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['temporalProportionTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('temporalProportionTracker');
   const PHI = 1.618033988749895;
   /** @type {number[]} */

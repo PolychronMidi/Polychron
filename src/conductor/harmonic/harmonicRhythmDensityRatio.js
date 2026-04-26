@@ -5,9 +5,11 @@
 moduleLifecycle.declare({
   name: 'harmonicRhythmDensityRatio',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['harmonicRhythmDensityRatio'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('harmonicRhythmDensityRatio');
   const WINDOW_SECONDS = 6;
 

@@ -3,9 +3,10 @@
 moduleLifecycle.declare({
   name: 'layerPass',
   subsystem: 'play',
-  deps: ['conductorConfig', 'regimeFade', 'regimeFx', 'regimePan', 'regimeVelocity', 'texturalMemoryAdvisor', 'timeStream', 'validator'],
+  deps: ['conductorConfig', 'eventBus', 'regimeFade', 'regimeFx', 'regimePan', 'regimeVelocity', 'texturalMemoryAdvisor', 'timeStream', 'validator'],
   provides: ['layerPass'],
   init: (deps) => {
+  const eventBus = deps.eventBus;
   const conductorConfig = deps.conductorConfig;
   const regimeFade = deps.regimeFade;
   const regimeFx = deps.regimeFx;

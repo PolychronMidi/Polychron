@@ -6,9 +6,10 @@
 moduleLifecycle.declare({
   name: 'phaseFloorController',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['conductorIntelligence'],
   provides: ['phaseFloorController'],
-  init: () => {
+  init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
 
   // ADAPTIVE STATE
   const _SHARE_EMA_ALPHA = 0.06;

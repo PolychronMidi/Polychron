@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'texturalGradientTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['texturalGradientTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('texturalGradientTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ density: number, time: number }>} */

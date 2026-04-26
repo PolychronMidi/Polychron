@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'analysisHelpers',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0'],
   provides: ['analysisHelpers'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
   /**
    * Shared ATW note-window query for single-layer analysis modules.
    * @param {{ optionalFinite: (value: unknown, fallback?: number) => number }} V

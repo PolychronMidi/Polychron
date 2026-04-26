@@ -17,9 +17,10 @@
 moduleLifecycle.declare({
   name: 'fractalArcGenerator',
   subsystem: 'time',
-  deps: ['validator'],
+  deps: ['timeStream', 'validator'],
   provides: ['fractalArcGenerator'],
   init: (deps) => {
+  const timeStream = deps.timeStream;
   const V = deps.validator.create('fractalArcGenerator');
 
   /** @type {TimeStreamLevel[]} */

@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'rhythmicGroupingAnalyzer',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['rhythmicGroupingAnalyzer'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 6;
 
   /**

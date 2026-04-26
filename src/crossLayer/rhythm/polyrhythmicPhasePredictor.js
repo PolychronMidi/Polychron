@@ -12,9 +12,10 @@
 moduleLifecycle.declare({
   name: 'polyrhythmicPhasePredictor',
   subsystem: 'crossLayer',
-  deps: ['L0', 'timeStream', 'validator'],
+  deps: ['L0', 'crossLayerRegistry', 'timeStream', 'validator'],
   provides: ['polyrhythmicPhasePredictor'],
   init: (deps) => {
+  const crossLayerRegistry = deps.crossLayerRegistry;
   const L0 = deps.L0;
   const timeStream = deps.timeStream;
   const V = deps.validator.create('polyrhythmicPhasePredictor');

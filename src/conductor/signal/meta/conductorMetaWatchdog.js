@@ -9,9 +9,10 @@
 moduleLifecycle.declare({
   name: 'conductorMetaWatchdog',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['conductorMetaWatchdog'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('conductorMetaWatchdog');
 
   const _CHECK_INTERVAL = 50;      // run watchdog every N beats

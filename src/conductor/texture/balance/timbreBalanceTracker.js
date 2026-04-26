@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'timbreBalanceTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['timbreBalanceTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('timbreBalanceTracker');
   const WINDOW_SECONDS = 6;
 

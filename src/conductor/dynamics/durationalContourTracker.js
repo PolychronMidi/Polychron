@@ -5,9 +5,10 @@
 moduleLifecycle.declare({
   name: 'durationalContourTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['durationalContourTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('durationalContourTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 

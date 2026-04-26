@@ -12,9 +12,10 @@
 moduleLifecycle.declare({
   name: 'couplingRefreshSetup',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['signalReader', 'validator'],
   provides: ['couplingRefreshSetup'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
   const V = deps.validator.create('couplingRefreshSetup');
   const { COHERENT_SHARE_EMA_ALPHA, VELOCITY_EMA_ALPHA, VELOCITY_TRIGGER_RATIO,
     VELOCITY_BOOST_BEATS } = couplingConstants;

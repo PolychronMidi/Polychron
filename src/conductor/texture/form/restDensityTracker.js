@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'restDensityTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['restDensityTracker'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('restDensityTracker');
   const WINDOW_SECONDS = 4;
   const BREATH_THRESHOLD = 0.3; // gaps >0.3s count as breaths

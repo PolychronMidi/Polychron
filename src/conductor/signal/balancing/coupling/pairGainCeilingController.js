@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'pairGainCeilingController',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['pairGainCeilingController'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
 
   const _P95_EMA_ALPHA = 0.08;
   const _EXCEEDANCE_EMA_ALPHA = 0.04;

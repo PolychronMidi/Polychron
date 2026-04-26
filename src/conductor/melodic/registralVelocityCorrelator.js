@@ -7,9 +7,11 @@
 moduleLifecycle.declare({
   name: 'registralVelocityCorrelator',
   subsystem: 'conductor',
-  deps: [],
+  deps: ['L0', 'conductorIntelligence'],
   provides: ['registralVelocityCorrelator'],
-  init: () => {
+  init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const WINDOW_SECONDS = 8;
 
   /**

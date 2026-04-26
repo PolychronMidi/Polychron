@@ -17,9 +17,12 @@
 moduleLifecycle.declare({
   name: 'regimeReactiveDamping',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'signalReader', 'systemDynamicsProfiler', 'validator'],
   provides: ['regimeReactiveDamping'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('regimeReactiveDamping');
 
   const REGIME_DENSITY_DIR = {

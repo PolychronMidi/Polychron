@@ -7,9 +7,10 @@
 moduleLifecycle.declare({
   name: 'silenceDistributionTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'validator'],
   provides: ['silenceDistributionTracker'],
   init: (deps) => {
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('silenceDistributionTracker');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 

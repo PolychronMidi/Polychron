@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'layerEntryExitTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'conductorIntelligence', 'validator'],
   provides: ['layerEntryExitTracker'],
   init: (deps) => {
+  const L0 = deps.L0;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('layerEntryExitTracker');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ layerCount: number, time: number }>} */

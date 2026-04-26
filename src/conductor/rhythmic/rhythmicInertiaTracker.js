@@ -6,9 +6,11 @@
 moduleLifecycle.declare({
   name: 'rhythmicInertiaTracker',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'signalReader', 'validator'],
   provides: ['rhythmicInertiaTracker'],
   init: (deps) => {
+  const signalReader = deps.signalReader;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('rhythmicInertiaTracker');
   const MAX_SNAPSHOTS = 20;
   /** @type {Array<string>} */

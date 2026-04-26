@@ -12,9 +12,13 @@
 moduleLifecycle.declare({
   name: 'narrativeTrajectory',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['conductorIntelligence', 'signalReader', 'systemDynamicsProfiler', 'timeStream', 'validator'],
   provides: ['narrativeTrajectory'],
   init: (deps) => {
+  const systemDynamicsProfiler = deps.systemDynamicsProfiler;
+  const signalReader = deps.signalReader;
+  const timeStream = deps.timeStream;
+  const conductorIntelligence = deps.conductorIntelligence;
   const V = deps.validator.create('narrativeTrajectory');
 
   const HISTORY_LEN      = 16;

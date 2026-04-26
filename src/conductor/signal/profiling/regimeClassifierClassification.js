@@ -1,9 +1,10 @@
 moduleLifecycle.declare({
   name: 'regimeClassifierClassification',
   subsystem: 'conductor',
-  deps: ['validator'],
+  deps: ['L0', 'validator'],
   provides: ['regimeClassifierClassification'],
   init: (deps) => {
+  const L0 = deps.L0;
   const V = deps.validator.create('regimeClassifierClassification');
   function classify(state, config, avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
     if (avgVelocity < 0.004) return 'stagnant';
