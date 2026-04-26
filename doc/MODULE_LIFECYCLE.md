@@ -53,7 +53,10 @@ moduleLifecycle.declare({
 3. **Return the public API** from `init`. The registry binds it to each name in `provides`.
 4. **Drop any `safePreBoot.call(() => x.foo(), fb)` wraps** for deps that are now declared. The `deps` argument guarantees they're resolved before `init()` runs.
 5. **Drop any `moduleLifecycle.registerInitializer('foo', initFn, ['bar'])`** in the same file -- the manifest's `init` IS the initializer.
-6. **List `deps` precisely.** Names that are other declared modules, names that are still legacy globals (resolved via dynamic namespace lookup), and names registered via `registerInitializer` all work. The verifier does NOT yet check declared deps against import-graph reality -- that's phase 2 work.
+6. **List `deps` precisely — top-of-init touches ONLY.** A dep is anything `init` body references *at top level* (assignments, immediate function calls, V.create, etc). Names referenced *inside function bodies* the init returns are NOT deps -- those functions run post-boot when their globals have been loaded by the standard require chain. Over-listing deps causes the registry to defer instantiation when those globals haven't loaded yet, breaking patterns like trailing `crossLayerRegistry.register(...)` calls on the same line as the declare. Concretely:
+   - `const V = deps.validator.create(...)` -> `validator` IS a dep (top-level)
+   - `function foo() { return signalReader.snapshot(); }` -> `signalReader` is NOT a dep (inside a function)
+   - `conductorIntelligence.registerRecorder(...)` at the bottom of init body -> `conductorIntelligence` IS a dep (top-level call)
 7. **List `provides` precisely.** Usually just `[name]` so the existing global identifier keeps pointing at the same value. Multi-provides is supported when a module exposes multiple identifiers.
 8. **Fill `subsystem`, `reads`, `emits`** for forward firewall enforcement. Today they're advisory; phase 2's verifier upgrade will use them.
 
