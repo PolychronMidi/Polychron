@@ -1,5 +1,10 @@
-conductorRegulationListener = (() => {
-  const V = validator.create('conductorRegulationListener');
+moduleLifecycle.declare({
+  name: 'conductorRegulationListener',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['conductorRegulationListener'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorRegulationListener');
 
   let initialized = false;
 
@@ -50,11 +55,11 @@ conductorRegulationListener = (() => {
     return Object.assign({}, state);
   }
 
-  moduleLifecycle.registerInitializer('conductorRegulationListener', initialize);
 
   return {
     initialize,
     getState,
     resetSection
   };
-})();
+  },
+});

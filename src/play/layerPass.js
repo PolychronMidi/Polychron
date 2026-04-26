@@ -1,7 +1,12 @@
 // src/play/layerPass.js - Extracted layer pass loop for main.js
 
-layerPass = (() => {
-  const V = validator.create('layerPass');
+moduleLifecycle.declare({
+  name: 'layerPass',
+  subsystem: 'play',
+  deps: ['validator'],
+  provides: ['layerPass'],
+  init: (deps) => {
+  const V = deps.validator.create('layerPass');
 
   const selectLayerComposerForMeasure = (layerName, phraseFamily, composerCtx) => {
     V.assertNonEmptyString(layerName, 'layerName');
@@ -117,4 +122,5 @@ layerPass = (() => {
     runLayerPass,
     selectLayerComposerForMeasure
   };
-})();
+  },
+});

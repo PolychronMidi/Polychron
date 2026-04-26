@@ -2,8 +2,13 @@
 // Detects whether the piece is building toward denser subdivisions or simplifying.
 // Pure query API - advises rhythm pattern tier selection and subdivision depth bias.
 
-rhythmicComplexityGradient = (() => {
-  const V = validator.create('rhythmicComplexityGradient');
+moduleLifecycle.declare({
+  name: 'rhythmicComplexityGradient',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['rhythmicComplexityGradient'],
+  init: (deps) => {
+  const V = deps.validator.create('rhythmicComplexityGradient');
   /** @type {Array<{ time: number, complexity: number }>} */
   const samples = [];
   const MAX_SAMPLES = 48;
@@ -100,4 +105,5 @@ rhythmicComplexityGradient = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

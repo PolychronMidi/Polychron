@@ -3,8 +3,13 @@
 // the next section with attenuated carryover. Prevents cold-start
 // amnesia where each section restarts from a blank slate.
 
-sectionMemory = (() => {
-  const V = validator.create('sectionMemory');
+moduleLifecycle.declare({
+  name: 'sectionMemory',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['sectionMemory'],
+  init: (deps) => {
+  const V = deps.validator.create('sectionMemory');
   const CARRYOVER = 0.30; // fraction of previous state seeded into new section
 
   /** @type {{ energy: number, tension: number, density: number, flicker: number, trend: string, regime?: string, coherenceBias?: number, intentDensity?: number, intentTension?: number, regimeTransitionCount?: number, lastTransitionCause?: string|null, spectralBrightness?: number, quality?: number } | null} */
@@ -128,4 +133,5 @@ sectionMemory = (() => {
   }
 
   return { snapshot, seed, getPrevious, getTensionTrajectory, getDensityTrajectory, getHistory, reset };
-})();
+  },
+});

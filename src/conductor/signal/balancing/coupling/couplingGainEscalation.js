@@ -9,8 +9,13 @@
  * target calibration.
  */
 
-couplingGainEscalation = (() => {
-  const V = validator.create('couplingGainEscalation');
+moduleLifecycle.declare({
+  name: 'couplingGainEscalation',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['couplingGainEscalation'],
+  init: (deps) => {
+  const V = deps.validator.create('couplingGainEscalation');
   const { GAIN_INIT, GAIN_MIN, GAIN_MAX, GAIN_ESCALATE_RATE, GAIN_EMERGENCY_RATE, GAIN_RELAX_RATE,
     NUDGEABLE_SET, AXIS_COUPLING_CEILING, HP_GAIN_MAX,
     FLICKER_PAIR_GAIN_CAP, FLICKER_PAIR_GAIN_CAP_THRESHOLD,
@@ -338,4 +343,5 @@ couplingGainEscalation = (() => {
   }
 
   return { processGain, handleNonNudgeable };
-})();
+  },
+});

@@ -1,8 +1,13 @@
 // src/rhythm/journeyRhythmCoupler.js - Harmonic journey - rhythm complexity coupling
 // Bold key moves trigger higher rhythm complexity via eventBus journey-move events
 
-journeyRhythmCoupler = (() => {
-  const V = validator.create('journeyRhythmCoupler');
+moduleLifecycle.declare({
+  name: 'journeyRhythmCoupler',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['journeyRhythmCoupler'],
+  init: (deps) => {
+  const V = deps.validator.create('journeyRhythmCoupler');
 
   // Per-layer boldness prevents L1's journey energy from contaminating L2's rhythm bias
   const boldnessByLayer = { L1: 0, L2: 0 };
@@ -139,7 +144,6 @@ journeyRhythmCoupler = (() => {
     journeyRhythmCouplerInitialized = false;
   }
 
-  moduleLifecycle.registerInitializer('journeyRhythmCoupler', initialize);
 
   return {
     initialize,
@@ -150,4 +154,5 @@ journeyRhythmCoupler = (() => {
     reset,
     resetSection
   };
-})();
+  },
+});

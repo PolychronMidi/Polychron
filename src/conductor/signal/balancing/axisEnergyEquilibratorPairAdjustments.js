@@ -1,4 +1,9 @@
-axisEnergyEquilibratorPairAdjustments = (() => {
+moduleLifecycle.declare({
+  name: 'axisEnergyEquilibratorPairAdjustments',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['axisEnergyEquilibratorPairAdjustments'],
+  init: (deps) => {
   // R19 E4: Axis-aware giniMult dampening. Compute dominant axis from
   // energy shares so giniMult preferentially targets pairs involving the
   // dominant axis, protecting non-dominant axes from over-tightening.
@@ -148,4 +153,5 @@ axisEnergyEquilibratorPairAdjustments = (() => {
   }
 
   return { apply };
-})();
+  },
+});

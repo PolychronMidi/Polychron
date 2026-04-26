@@ -14,8 +14,13 @@
  * section. Pure post-hoc observation - no feedback into composition.
  */
 
-outputAnalyzer = (() => {
-  const V = validator.create('outputAnalyzer');
+moduleLifecycle.declare({
+  name: 'outputAnalyzer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['outputAnalyzer'],
+  init: (deps) => {
+  const V = deps.validator.create('outputAnalyzer');
 
   /**
    * Analyse an array of note events.
@@ -89,4 +94,5 @@ outputAnalyzer = (() => {
   function reset() { /* stateless */ }
 
   return { analyse, reset };
-})();
+  },
+});

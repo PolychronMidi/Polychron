@@ -4,8 +4,13 @@
 // rhythmicGroupingAnalyzer, onsetRegularityMonitor.
 // Pure query - reads timing globals.
 
-beatGridHelpers = (() => {
-  const V = validator.create('beatGridHelpers');
+moduleLifecycle.declare({
+  name: 'beatGridHelpers',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['beatGridHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('beatGridHelpers');
 
   /**
    * Get the current beat duration in seconds.
@@ -50,4 +55,5 @@ beatGridHelpers = (() => {
   }
 
   return { getBeatDuration, getBeatPosition, getRecentIOIs };
-})();
+  },
+});

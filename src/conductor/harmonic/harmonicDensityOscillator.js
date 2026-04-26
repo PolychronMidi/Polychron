@@ -3,8 +3,13 @@
 // Tension bias to reinforce natural harmonic "breathing" or break stale patterns.
 // Pure query API - no side effects.
 
-harmonicDensityOscillator = (() => {
-  const V = validator.create('harmonicDensityOscillator');
+moduleLifecycle.declare({
+  name: 'harmonicDensityOscillator',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicDensityOscillator'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicDensityOscillator');
   const MAX_SAMPLES = 20;
   /** @type {Array<{ changeRate: number, time: number }>} */
   const changeSamples = [];
@@ -122,4 +127,5 @@ harmonicDensityOscillator = (() => {
     getDensityBias,
     reset
   };
-})();
+  },
+});

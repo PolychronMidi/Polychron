@@ -1,6 +1,11 @@
 // harmonicJourneyHelpers.js - shared theory helpers for harmonicJourney
 
-harmonicJourneyHelpers = (() => {
+moduleLifecycle.declare({
+  name: 'harmonicJourneyHelpers',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['harmonicJourneyHelpers'],
+  init: (deps) => {
   // R3 E1: brightness spectrum for modal interchange close move
   const BRIGHTNESS_ORDER = ['phrygian', 'aeolian', 'minor', 'dorian', 'mixolydian', 'major', 'ionian', 'lydian'];
   const CLOSE_MOVES = [
@@ -178,4 +183,5 @@ harmonicJourneyHelpers = (() => {
   return function harmonicJourneyHelpers() {
     return api;
   };
-})();
+  },
+});

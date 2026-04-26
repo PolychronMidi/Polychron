@@ -3,8 +3,13 @@
 // Too locked = boring homophony; too diverged = incoherent.
 // Pure query API - nudges density toward balance between coupling and independence.
 
-layerIndependenceScorer = (() => {
-  const V = validator.create('layerIndependenceScorer');
+moduleLifecycle.declare({
+  name: 'layerIndependenceScorer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['layerIndependenceScorer'],
+  init: (deps) => {
+  const V = deps.validator.create('layerIndependenceScorer');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -87,4 +92,5 @@ layerIndependenceScorer = (() => {
     getIndependenceProfile,
     getDensityBias
   };
-})();
+  },
+});

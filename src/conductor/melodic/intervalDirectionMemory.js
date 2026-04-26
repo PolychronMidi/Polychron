@@ -3,8 +3,13 @@
 // heavily used recently, providing freshness signals and avoidance hints.
 // Pure query API - consumed via conductorState.
 
-intervalDirectionMemory = (() => {
-  const V = validator.create('intervalDirectionMemory');
+moduleLifecycle.declare({
+  name: 'intervalDirectionMemory',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['intervalDirectionMemory'],
+  init: (deps) => {
+  const V = deps.validator.create('intervalDirectionMemory');
   const WINDOW_SECONDS = 8;
 
   /**
@@ -78,4 +83,5 @@ intervalDirectionMemory = (() => {
   return {
     getFreshnessSignal
   };
-})();
+  },
+});

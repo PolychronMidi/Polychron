@@ -3,7 +3,12 @@
 // and biases density to manage vertical pile-up or thinness.
 // Pure query API - no side effects.
 
-harmonicFieldDensityTracker = (() => {
+moduleLifecycle.declare({
+  name: 'harmonicFieldDensityTracker',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['harmonicFieldDensityTracker'],
+  init: (deps) => {
   const WINDOW_SECONDS = 4;
   const SIMULTANEITY_TOLERANCE = 0.06; // seconds within which notes are "simultaneous"
 
@@ -119,4 +124,5 @@ harmonicFieldDensityTracker = (() => {
     getDensityBias,
     getFlickerModifier
   };
-})();
+  },
+});

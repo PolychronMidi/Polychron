@@ -2,8 +2,13 @@
 // Distinguishes between intentional density waves and flat/monotone density envelopes.
 // Pure query API - amplifies or dampens density flicker for musical shape.
 
-densityWaveAnalyzer = (() => {
-  const V = validator.create('densityWaveAnalyzer');
+moduleLifecycle.declare({
+  name: 'densityWaveAnalyzer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['densityWaveAnalyzer'],
+  init: (deps) => {
+  const V = deps.validator.create('densityWaveAnalyzer');
   /** @type {Array<{ time: number, density: number }>} */
   const samples = [];
   const MAX_SAMPLES = 48;
@@ -173,4 +178,5 @@ densityWaveAnalyzer = (() => {
     getDensityBias,
     reset
   };
-})();
+  },
+});

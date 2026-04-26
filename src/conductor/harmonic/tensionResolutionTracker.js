@@ -2,8 +2,13 @@
 // Detects dangling unresolved tension (dissonant intervals not followed by resolution).
 // Pure query API - modifies derivedTension to penalize sustained unresolved dissonance.
 
-tensionResolutionTracker = (() => {
-  const V = validator.create('tensionResolutionTracker');
+moduleLifecycle.declare({
+  name: 'tensionResolutionTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['tensionResolutionTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('tensionResolutionTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
   const CONSONANT = pitchClassHelpers.CONSONANT_INTERVALS;
 
@@ -101,4 +106,5 @@ tensionResolutionTracker = (() => {
     getResolutionProfile,
     getTensionBias
   };
-})();
+  },
+});

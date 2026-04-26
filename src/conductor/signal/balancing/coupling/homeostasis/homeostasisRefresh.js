@@ -11,8 +11,13 @@
  * delegates to homeostasisTick for multiplier management.
  */
 
-homeostasisRefresh = (() => {
-  const V = validator.create('homeostasisRefresh');
+moduleLifecycle.declare({
+  name: 'homeostasisRefresh',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['homeostasisRefresh'],
+  init: (deps) => {
+  const V = deps.validator.create('homeostasisRefresh');
   const { ALL_DIMS, ENERGY_EMA_ALPHA, REDISTRIBUTION_EMA_ALPHA,
     PEAK_DECAY, BUDGET_PEAK_RATIO, PEAK_EMA_CAP_RATIO,
     REDIST_RELATIVE_THRESHOLD, REDIST_COOLDOWN_BEATS, REDIST_COOLDOWN_DECAY,
@@ -358,4 +363,5 @@ homeostasisRefresh = (() => {
   }
 
   return { refresh };
-})();
+  },
+});

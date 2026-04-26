@@ -2,7 +2,12 @@
 // Compares recent pitch patterns against stored section fingerprints.
 // Pure query API - signals thematic callback opportunities or staleness.
 
-thematicRecallDetector = (() => {
+moduleLifecycle.declare({
+  name: 'thematicRecallDetector',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['thematicRecallDetector'],
+  init: (deps) => {
   const FINGERPRINT_LENGTH = 6; // 6-note interval fingerprint
   /** @type {Array<{ section: number, fingerprint: string }>} */
   const sectionFingerprints = [];
@@ -138,4 +143,5 @@ thematicRecallDetector = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

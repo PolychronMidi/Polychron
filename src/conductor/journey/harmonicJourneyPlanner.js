@@ -2,7 +2,12 @@
 // Pure journey-planning helpers extracted from harmonicJourney.planJourney().
 // Resolves the starting key/mode and builds subsequent journey steps.
 
-harmonicJourneyPlanner = (() => {
+moduleLifecycle.declare({
+  name: 'harmonicJourneyPlanner',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['harmonicJourneyPlanner'],
+  init: (deps) => {
   const VALID_MODES = ['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian', 'ionian'];
   const START_MODE_POOL = ['major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'major', 'minor', 'dorian', 'lydian', 'mixolydian', 'ionian', 'aeolian'];
 
@@ -53,4 +58,5 @@ harmonicJourneyPlanner = (() => {
   }
 
   return { resolveStart, buildSteps: harmonicJourneyPlannerStepBuilder.buildSteps };
-})();
+  },
+});

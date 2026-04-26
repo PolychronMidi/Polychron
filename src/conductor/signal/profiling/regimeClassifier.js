@@ -1,7 +1,12 @@
 // regimeClassifier.js - Regime classification facade with hysteresis state.
 
-regimeClassifier = (() => {
-  const V = validator.create('regimeClassifier');
+moduleLifecycle.declare({
+  name: 'regimeClassifier',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['regimeClassifier'],
+  init: (deps) => {
+  const V = deps.validator.create('regimeClassifier');
   const regimeClassifierConfig = {
     REGIME_WINDOW: 5,
     REGIME_MAJORITY: 3,
@@ -314,4 +319,5 @@ regimeClassifier = (() => {
   }
 
   return { classify, resolve, grade, setOscillatingThreshold, getOscillatingThreshold, setCoherentThresholdScale, setCoherentShareAlphaMin, setEvolvingMinDwell, setEvolvingMinDwellSec, getExploringBeats, getRegime, getTransitionReadiness, consumeForcedTransitionEvent, reset };
-})();
+  },
+});

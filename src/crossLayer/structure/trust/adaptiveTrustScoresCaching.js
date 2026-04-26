@@ -6,7 +6,7 @@ moduleLifecycle.declare({
   subsystem: 'crossLayer',
   deps: [],
   provides: ['adaptiveTrustScoresCaching'],
-  init: (deps) => {
+  init: () => {
   let cacheVersion = 0;
   let contextCacheKey = '';
   let contextCache = null;

@@ -3,8 +3,13 @@
 // subtractive orchestration). Signals orchestration momentum direction.
 // Pure query API - consumed via conductorState.
 
-layerEntryExitTracker = (() => {
-  const V = validator.create('layerEntryExitTracker');
+moduleLifecycle.declare({
+  name: 'layerEntryExitTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['layerEntryExitTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('layerEntryExitTracker');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ layerCount: number, time: number }>} */
   const snapshots = [];
@@ -74,4 +79,5 @@ layerEntryExitTracker = (() => {
     getMomentumSignal,
     reset
   };
-})();
+  },
+});

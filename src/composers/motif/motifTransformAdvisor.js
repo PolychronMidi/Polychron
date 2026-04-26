@@ -2,7 +2,12 @@
 // Uses contour, coherence, section phase, and excursion to select contextually
 // appropriate motif transformations. Pure query API.
 
-motifTransformAdvisor = (() => {
+moduleLifecycle.declare({
+  name: 'motifTransformAdvisor',
+  subsystem: 'composers',
+  deps: [],
+  provides: ['motifTransformAdvisor'],
+  init: (deps) => {
   /**
    * Advise which motif transform parameters to use for the current musical context.
    * Returns mutation options compatible with motifChain.mutate().
@@ -128,4 +133,5 @@ motifTransformAdvisor = (() => {
     adviseTransform,
     getTransformComplexity
   };
-})();
+  },
+});

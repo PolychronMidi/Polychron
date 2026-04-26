@@ -2,8 +2,13 @@
 // Detects octave clustering (all notes in one octave) vs wide spread.
 // Pure query API - nudges composers toward underused octaves via conductorState.
 
-octaveSpreadMonitor = (() => {
-  const V = validator.create('octaveSpreadMonitor');
+moduleLifecycle.declare({
+  name: 'octaveSpreadMonitor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['octaveSpreadMonitor'],
+  init: (deps) => {
+  const V = deps.validator.create('octaveSpreadMonitor');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -94,4 +99,5 @@ octaveSpreadMonitor = (() => {
     getUnderusedOctaves,
     getSpreadBias
   };
-})();
+  },
+});

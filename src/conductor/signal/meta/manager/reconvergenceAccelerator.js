@@ -4,7 +4,12 @@
 // the old calibration is wrong. This module detects the shift and
 // accelerates convergence for 50-100 ticks, then decays back to normal.
 
-reconvergenceAccelerator = (() => {
+moduleLifecycle.declare({
+  name: 'reconvergenceAccelerator',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['reconvergenceAccelerator'],
+  init: (deps) => {
   const DETECTION_WINDOW = 8;
   const JUMP_THRESHOLD = 0.25;
   const ACCEL_ALPHA = 0.4;
@@ -54,4 +59,5 @@ reconvergenceAccelerator = (() => {
   }
 
   return { recordInput, getAlphaMultiplier, isAccelerating, reset };
-})();
+  },
+});

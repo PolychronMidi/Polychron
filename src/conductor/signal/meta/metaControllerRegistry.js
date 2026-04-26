@@ -6,8 +6,13 @@
 // and interaction partners. The conductorMetaWatchdog consumes this registry
 // for authoritative conflict detection instead of heuristic sign-matching.
 
-metaControllerRegistry = (() => {
-  const V = validator.create('metaControllerRegistry');
+moduleLifecycle.declare({
+  name: 'metaControllerRegistry',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['metaControllerRegistry'],
+  init: (deps) => {
+  const V = deps.validator.create('metaControllerRegistry');
 
   /**
    * @typedef {{
@@ -265,4 +270,5 @@ metaControllerRegistry = (() => {
   }
 
   return { getAll, getById, getByAxis, getInteractors, getSnapshot };
-})();
+  },
+});

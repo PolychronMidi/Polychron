@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   deps: [],
   provides: ['convergenceMemory'],
   crossLayerScopes: ['all', 'section'],
-  init: (deps) => {
+  init: () => {
   const BINS = 16;
   const histogram = new Array(BINS).fill(0);
   let totalSamples = 0;

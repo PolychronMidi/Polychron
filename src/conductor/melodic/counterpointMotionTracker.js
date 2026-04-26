@@ -2,8 +2,13 @@
 // Classifies note-pairs across L1/L2 as parallel, contrary, oblique, or similar motion.
 // Pure query API - composers use to favor underused motion types.
 
-counterpointMotionTracker = (() => {
-  const V = validator.create('counterpointMotionTracker');
+moduleLifecycle.declare({
+  name: 'counterpointMotionTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['counterpointMotionTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('counterpointMotionTracker');
   const WINDOW_SECONDS = 4;
 
   /**
@@ -125,4 +130,5 @@ counterpointMotionTracker = (() => {
     getMotionProfile,
     getMotionBias
   };
-})();
+  },
+});

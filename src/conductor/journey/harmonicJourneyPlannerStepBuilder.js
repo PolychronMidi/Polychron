@@ -1,8 +1,13 @@
 // src/conductor/journey/harmonicJourneyPlannerStepBuilder.js
 // Extracted from harmonicJourneyPlanner: builds journey stops for sections 1..totalSections-1.
 
-harmonicJourneyPlannerStepBuilder = (() => {
-  const V = validator.create('harmonicJourneyPlannerStepBuilder');
+moduleLifecycle.declare({
+  name: 'harmonicJourneyPlannerStepBuilder',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicJourneyPlannerStepBuilder'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicJourneyPlannerStepBuilder');
   const DARK_MODES = new Set(['locrian', 'phrygian', 'aeolian']);
   const BRIGHTEN_MODE_MAP = {
     locrian: 'dorian',
@@ -400,4 +405,5 @@ harmonicJourneyPlannerStepBuilder = (() => {
   }
 
   return { buildSteps };
-})();
+  },
+});

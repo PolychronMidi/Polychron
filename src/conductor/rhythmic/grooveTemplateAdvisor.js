@@ -2,8 +2,13 @@
 // Detects mechanical rigidity vs. human-like swing feel.
 // Pure query API - advises velocity humanization and swing feel per section phase.
 
-grooveTemplateAdvisor = (() => {
-  const V = validator.create('grooveTemplateAdvisor');
+moduleLifecycle.declare({
+  name: 'grooveTemplateAdvisor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['grooveTemplateAdvisor'],
+  init: (deps) => {
+  const V = deps.validator.create('grooveTemplateAdvisor');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   /**
@@ -126,4 +131,5 @@ grooveTemplateAdvisor = (() => {
     getVelocityHumanizeBias,
     getGrooveTensionBias
   };
-})();
+  },
+});

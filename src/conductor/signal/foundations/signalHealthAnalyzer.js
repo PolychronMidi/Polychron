@@ -7,7 +7,12 @@
 // Emits health grades into conductorState and explainabilityBus each beat.
 // Does NOT modify signal values - pure observation + diagnostics.
 
-signalHealthAnalyzer = (() => {
+moduleLifecycle.declare({
+  name: 'signalHealthAnalyzer',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['signalHealthAnalyzer'],
+  init: (deps) => {
   // -- Accumulator state (reset per section) --
   let beatsSeen = 0;
   /** @type {{ density: number, tension: number, flicker: number }} */
@@ -223,4 +228,5 @@ signalHealthAnalyzer = (() => {
   conductorIntelligence.registerModule('signalHealthAnalyzer', { reset }, ['section']);
 
   return { analyze, getHealth, getSummary, reset };
-})();
+  },
+});

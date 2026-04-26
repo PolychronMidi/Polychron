@@ -8,8 +8,13 @@
  * into final nudge magnitudes applied to density/tension/flicker axes.
  */
 
-couplingEffectiveGain = (() => {
-  const V = validator.create('couplingEffectiveGain');
+moduleLifecycle.declare({
+  name: 'couplingEffectiveGain',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['couplingEffectiveGain'],
+  init: (deps) => {
+  const V = deps.validator.create('couplingEffectiveGain');
   const { NUDGEABLE_SET, BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN,
     VELOCITY_GAIN_BOOST } = couplingConstants;
 
@@ -254,4 +259,5 @@ couplingEffectiveGain = (() => {
   }
 
   return { computeSurfacePressures, computeAndNudge };
-})();
+  },
+});

@@ -3,8 +3,13 @@
 // Flicker modifier widens when contrast is healthy, stabilizes when extreme.
 // Pure query API - no side effects.
 
-rhythmicDensityContrastTracker = (() => {
-  const V = validator.create('rhythmicDensityContrastTracker');
+moduleLifecycle.declare({
+  name: 'rhythmicDensityContrastTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['rhythmicDensityContrastTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('rhythmicDensityContrastTracker');
   const MAX_SAMPLES = 20;
   /** @type {number[]} */
   const densitySamples = [];
@@ -94,4 +99,5 @@ rhythmicDensityContrastTracker = (() => {
     getFlickerModifier,
     reset
   };
-})();
+  },
+});

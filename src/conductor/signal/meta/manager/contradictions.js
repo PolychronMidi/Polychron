@@ -2,7 +2,12 @@
 // adaptive rate multiplier computation. Identifies when controllers
 // work at cross-purposes and applies resolution multipliers.
 
-hyperMetaManagerContradictions = (() => {
+moduleLifecycle.declare({
+  name: 'hyperMetaManagerContradictions',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['hyperMetaManagerContradictions'],
+  init: (deps) => {
   const ST = hyperMetaManagerState;
   const S  = ST.S;
 
@@ -178,4 +183,5 @@ hyperMetaManagerContradictions = (() => {
     updateRateMultipliers,
     detectContradictions,
   };
-})();
+  },
+});

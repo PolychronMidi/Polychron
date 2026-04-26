@@ -4,8 +4,13 @@
 // conductorIntelligence density pipeline. This closes the open loop:
 // the system now listens to its own song.
 
-coherenceMonitor = (() => {
-  const V = validator.create('coherenceMonitor');
+moduleLifecycle.declare({
+  name: 'coherenceMonitor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['coherenceMonitor'],
+  init: (deps) => {
+  const V = deps.validator.create('coherenceMonitor');
 
   let initialized = false;
 
@@ -265,7 +270,6 @@ coherenceMonitor = (() => {
   }));
   conductorIntelligence.registerModule('coherenceMonitor', { reset }, ['section']);
 
-  moduleLifecycle.registerInitializer('coherenceMonitor', initialize);
 
   function flushToL0() {
     if (!coherenceBufferDirty || coherenceBuffer.length === 0) return;
@@ -286,4 +290,5 @@ coherenceMonitor = (() => {
     getMetrics,
     reset
   };
-})();
+  },
+});

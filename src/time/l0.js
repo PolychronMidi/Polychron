@@ -1,8 +1,13 @@
 // src/time/L0.js - Unified in-memory temporal layer (L0).
 // Single flat-array buffer per channel. Never pruned - the composition run is finite and bounded.
 
-L0 = (() => {
-  const V = validator.create('l0');
+moduleLifecycle.declare({
+  name: 'L0',
+  subsystem: 'time',
+  deps: ['validator'],
+  provides: ['L0'],
+  init: (deps) => {
+  const V = deps.validator.create('l0');
 
   /**
    * Per-channel flat arrays of entries.
@@ -314,4 +319,5 @@ L0 = (() => {
     getBuffer,
     channels
   };
-})();
+  },
+});

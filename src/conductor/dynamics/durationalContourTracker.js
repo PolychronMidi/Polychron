@@ -2,8 +2,13 @@
 // Detects acceleration (durations getting shorter) or deceleration (durations getting longer).
 // Pure query API - biases duration envelope for intentional temporal shaping.
 
-durationalContourTracker = (() => {
-  const V = validator.create('durationalContourTracker');
+moduleLifecycle.declare({
+  name: 'durationalContourTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['durationalContourTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('durationalContourTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   // Beat-level cache: getDurationBias is called 2x per beat (flickerModifier + stateProvider)
@@ -121,4 +126,5 @@ durationalContourTracker = (() => {
     getDurationBias,
     getTensionBias
   };
-})();
+  },
+});

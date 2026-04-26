@@ -2,8 +2,13 @@
 // Pure computation helpers extracted from interLayerRhythmAnalyzer.
 // Five analysis functions operating on L0 data.
 
-interLayerRhythmHelpers = (() => {
-  const V = validator.create('interLayerRhythmHelpers');
+moduleLifecycle.declare({
+  name: 'interLayerRhythmHelpers',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['interLayerRhythmHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('interLayerRhythmHelpers');
   const WINDOW_SECONDS        = 4;
   const COINCIDENCE_THRESHOLD = 0.05; // seconds
   const ALIGNMENT_THRESHOLD   = 0.08; // seconds
@@ -213,4 +218,5 @@ interLayerRhythmHelpers = (() => {
   }
 
   return { getLayerOnsets, computePhaseRelationship, computeDriftSignal, computeAlignmentSignal, computeDisplacementProfile };
-})();
+  },
+});

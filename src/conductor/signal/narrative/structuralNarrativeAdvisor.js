@@ -9,7 +9,12 @@
  * Also exposes state to conductorState for downstream consumers.
  */
 
-structuralNarrativeAdvisor = (() => {
+moduleLifecycle.declare({
+  name: 'structuralNarrativeAdvisor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['structuralNarrativeAdvisor'],
+  init: (deps) => {
 
   const VARIETY_GAIN = 0.16;   // R14 E3: 0.08->0.14; bidirectional: 0.14->0.16 so lo=0.96 is reachable at high entropy
   const MAX_HISTORY  = 32;
@@ -73,4 +78,5 @@ structuralNarrativeAdvisor = (() => {
   conductorIntelligence.registerModule('structuralNarrativeAdvisor', { reset }, ['all']);
 
   return { recordFamily, getHistory, getVarietyPressure, densityBias, reset };
-})();
+  },
+});

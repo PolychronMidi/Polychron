@@ -3,7 +3,12 @@
 // to produce actionable severity-graded verdicts. Pure computation -
 // reads structured data, returns verdicts. No side effects.
 
-coherenceVerdicts = (() => {
+moduleLifecycle.declare({
+  name: 'coherenceVerdicts',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['coherenceVerdicts'],
+  init: (deps) => {
 
   /**
    * Compute coherence verdicts from a fully-built manifest.
@@ -248,4 +253,5 @@ coherenceVerdicts = (() => {
   }
 
   return { compute };
-})();
+  },
+});

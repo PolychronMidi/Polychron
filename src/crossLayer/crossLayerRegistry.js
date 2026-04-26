@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   subsystem: 'crossLayer',
   deps: [],
   provides: ['crossLayerRegistry'],
-  init: (deps) => {
+  init: () => {
   const lifecycle = moduleLifecycle.create('crossLayerRegistry');
 
   return {

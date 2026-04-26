@@ -1,5 +1,10 @@
-systemDynamicsProfilerHelpers = (() => {
-  const V = validator.create('systemDynamicsProfilerHelpers');
+moduleLifecycle.declare({
+  name: 'systemDynamicsProfilerHelpers',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['systemDynamicsProfilerHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('systemDynamicsProfilerHelpers');
   function getAnalysisSettings(minWindowDefault) {
     const profile = safePreBoot.call(() => conductorConfig.getActiveProfile(), null);
     const analysis = profile && typeof profile.analysis === 'object' ? profile.analysis : null;
@@ -329,4 +334,5 @@ systemDynamicsProfilerHelpers = (() => {
     getPhasePairStates,
     sampleState,
   };
-})();
+  },
+});

@@ -3,7 +3,12 @@
 // adjustments based on emergent musical content. Does NOT switch profiles -
 // provides advisory signals that conductorConfig can optionally blend.
 
-profileAdaptation = (() => {
+moduleLifecycle.declare({
+  name: 'profileAdaptation',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['profileAdaptation'],
+  init: (deps) => {
   // Sustained-signal tracking: count consecutive beats meeting each threshold
   let lowDensityStreak = 0;
   let highTensionStreak = 0;
@@ -81,4 +86,5 @@ profileAdaptation = (() => {
   conductorIntelligence.registerModule('profileAdaptation', { reset }, ['section']);
 
   return { update, getHints, reset };
-})();
+  },
+});

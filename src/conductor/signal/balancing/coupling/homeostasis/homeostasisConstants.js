@@ -8,7 +8,12 @@
  * tracking, floor recovery, and chronic dampening constants.
  */
 
-homeostasisConstants = (() => {
+moduleLifecycle.declare({
+  name: 'homeostasisConstants',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['homeostasisConstants'],
+  init: (deps) => {
 
   const ALL_DIMS = couplingConstants.ALL_MONITORED_DIMS;
 
@@ -62,4 +67,5 @@ homeostasisConstants = (() => {
     FLOOR_RECOVERY_TRIGGER, FLOOR_RECOVERY_HOLD, MAX_TIME_SERIES,
     NON_NUDGEABLE_SET, TAIL_TRACKED_PAIRS,
   };
-})();
+  },
+});

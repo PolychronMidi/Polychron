@@ -1,5 +1,10 @@
-regimeClassifierHelpers = (() => {
-  const V = validator.create('regimeClassifierHelpers');
+moduleLifecycle.declare({
+  name: 'regimeClassifierHelpers',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['regimeClassifierHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('regimeClassifierHelpers');
   function getTickSpan(state, tickId) {
     const currentTick = state.V.optionalFinite(tickId, 0);
     if (currentTick <= 0) return 1;
@@ -154,4 +159,5 @@ regimeClassifierHelpers = (() => {
     getTickSpan,
     updateRunResolvedTelemetry,
   };
-})();
+  },
+});

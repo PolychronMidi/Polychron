@@ -9,8 +9,13 @@
  * budgetPriority* fields.
  */
 
-couplingBudgetScoring = (() => {
-  const V = validator.create('couplingBudgetScoring');
+moduleLifecycle.declare({
+  name: 'couplingBudgetScoring',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['couplingBudgetScoring'],
+  init: (deps) => {
+  const V = deps.validator.create('couplingBudgetScoring');
   const { ALL_MONITORED_DIMS, NON_NUDGEABLE_SET,
     BUDGET_PRIORITY_GAIN, BUDGET_DEPRIORITIZED_GAIN, BUDGET_PRIORITY_TOP_K } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
@@ -367,4 +372,5 @@ couplingBudgetScoring = (() => {
   }
 
   return { compute };
-})();
+  },
+});

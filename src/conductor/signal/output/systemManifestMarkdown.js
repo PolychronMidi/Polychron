@@ -1,8 +1,13 @@
 // systemManifestMarkdown.js - Markdown renderer for capability-matrix.md.
 // Extracted from systemManifest.js. Pure formatting - no side effects, no I/O.
 
-systemManifestMarkdown = (() => {
-  const V = validator.create('systemManifestMarkdown');
+moduleLifecycle.declare({
+  name: 'systemManifestMarkdown',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['systemManifestMarkdown'],
+  init: (deps) => {
+  const V = deps.validator.create('systemManifestMarkdown');
 
   /**
    * Build a Markdown capability matrix from the manifest data.
@@ -338,4 +343,5 @@ systemManifestMarkdown = (() => {
   }
 
   return { build };
-})();
+  },
+});

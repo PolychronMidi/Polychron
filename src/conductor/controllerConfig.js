@@ -5,7 +5,12 @@
 // defaults). Malformed JSON -> throw (corruption is not a graceful-degradation
 // case per CLAUDE.md P2).
 
-controllerConfig = (() => {
+moduleLifecycle.declare({
+  name: 'controllerConfig',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['controllerConfig'],
+  init: (deps) => {
   const _fs = require('fs');
   const _path = require('path');
   let _config = null;
@@ -40,4 +45,5 @@ controllerConfig = (() => {
   }
 
   return { get, getSection, reload };
-})();
+  },
+});

@@ -2,8 +2,13 @@
 // Tracks MIDI channel usage to detect timbre clustering or neglect.
 // Pure query API - nudges composer selection toward underused timbres.
 
-timbreBalanceTracker = (() => {
-  const V = validator.create('timbreBalanceTracker');
+moduleLifecycle.declare({
+  name: 'timbreBalanceTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['timbreBalanceTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('timbreBalanceTracker');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -104,4 +109,5 @@ timbreBalanceTracker = (() => {
     getUnderusedChannels,
     getTimbreSignal
   };
-})();
+  },
+});

@@ -2,8 +2,13 @@
 // Each provider returns an object whose keys map directly to
 // conductorState.updateFromConductor() fields.
 
-conductorStateProviderRegistry = (() => {
-  const V = validator.create('conductorStateProviderRegistry');
+moduleLifecycle.declare({
+  name: 'conductorStateProviderRegistry',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['conductorStateProviderRegistry'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorStateProviderRegistry');
 
   /** @type {Array<{ name: string, getter: () => Record<string, any> }>} */
   const stateProviders = [];
@@ -75,4 +80,5 @@ conductorStateProviderRegistry = (() => {
   }
 
   return { registerStateProvider, collectStateFields, getNames, getCount };
-})();
+  },
+});

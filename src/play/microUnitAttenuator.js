@@ -10,8 +10,13 @@
 // Each begin() pushes a new frame; flush() pops the innermost frame and writes
 // survivors to the next frame (or to `c` if at the outermost level).
 
-microUnitAttenuator = (() => {
-  const V = validator.create('microUnitAttenuator');
+moduleLifecycle.declare({
+  name: 'microUnitAttenuator',
+  subsystem: 'play',
+  deps: ['validator'],
+  provides: ['microUnitAttenuator'],
+  init: (deps) => {
+  const V = deps.validator.create('microUnitAttenuator');
   /** @type {Array<{ unit: string, limit: number, pairs: Array<{ on: object, off: object, score: number }> }>} */
   const microUnitAttenuatorStack = [];
 
@@ -137,4 +142,5 @@ microUnitAttenuator = (() => {
       microUnitAttenuatorStack.length = 0;
     }
   };
-})();
+  },
+});

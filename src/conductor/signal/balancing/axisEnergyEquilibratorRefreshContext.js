@@ -1,4 +1,9 @@
-axisEnergyEquilibratorRefreshContext = (() => {
+moduleLifecycle.declare({
+  name: 'axisEnergyEquilibratorRefreshContext',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['axisEnergyEquilibratorRefreshContext'],
+  init: (deps) => {
   function build(state, config, V) {
     state.beatCount++;
 
@@ -141,4 +146,5 @@ axisEnergyEquilibratorRefreshContext = (() => {
   }
 
   return { build };
-})();
+  },
+});

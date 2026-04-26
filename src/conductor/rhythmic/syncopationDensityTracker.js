@@ -2,8 +2,13 @@
 // Detects metric monotony (all on-beat) or excessive syncopation (all off-beat).
 // Pure query API - biases rhythm pattern selection weights.
 
-syncopationDensityTracker = (() => {
-  const V = validator.create('syncopationDensityTracker');
+moduleLifecycle.declare({
+  name: 'syncopationDensityTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['syncopationDensityTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('syncopationDensityTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
 
   /**
@@ -109,4 +114,5 @@ syncopationDensityTracker = (() => {
     getSyncopationProfile,
     getRhythmBias
   };
-})();
+  },
+});

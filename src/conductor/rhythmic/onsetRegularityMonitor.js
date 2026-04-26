@@ -2,8 +2,13 @@
 // Detects metronomic uniformity vs. rhythmic chaos in onset timing.
 // Pure query API - biases toward variety when IOI is too uniform, stabilizes when chaotic.
 
-onsetRegularityMonitor = (() => {
-  const V = validator.create('onsetRegularityMonitor');
+moduleLifecycle.declare({
+  name: 'onsetRegularityMonitor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['onsetRegularityMonitor'],
+  init: (deps) => {
+  const V = deps.validator.create('onsetRegularityMonitor');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   /**
@@ -73,4 +78,5 @@ onsetRegularityMonitor = (() => {
     getRegularityProfile,
     getRhythmVarietyBias
   };
-})();
+  },
+});

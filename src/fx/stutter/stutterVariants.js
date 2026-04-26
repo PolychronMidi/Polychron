@@ -2,8 +2,13 @@
 // Each variant self-registers. The selector picks one per beat based on regime,
 // density, and randomness. Falls back to default stutterNotes when no variant fires.
 
-stutterVariants = (() => {
-  const V = validator.create('stutterVariants');
+moduleLifecycle.declare({
+  name: 'stutterVariants',
+  subsystem: 'fx',
+  deps: ['validator'],
+  provides: ['stutterVariants'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterVariants');
   const registered = new Map();
   let activeVariant = null;
   let activeVariantName = null;
@@ -345,4 +350,5 @@ stutterVariants = (() => {
 
   return { register, getVariant, getNames, selectForBeat, getActive, getActiveName,
     getActiveSelfGate, shouldThrottle, incSectionCount, patternGate, reset, resetSection };
-})();
+  },
+});

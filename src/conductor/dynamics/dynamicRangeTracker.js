@@ -3,8 +3,13 @@
 // Provides instantaneous velocity spread bias + longitudinal contrast tracking.
 // Pure query API - recordExtremes for longitudinal memory.
 
-dynamicRangeTracker = (() => {
-  const V = validator.create('dynamicRangeTracker');
+moduleLifecycle.declare({
+  name: 'dynamicRangeTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['dynamicRangeTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('dynamicRangeTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   let globalMin = 127;
   let globalMax = 0;
@@ -207,4 +212,5 @@ dynamicRangeTracker = (() => {
     suggestDynamicShift,
     reset
   };
-})();
+  },
+});

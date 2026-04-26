@@ -1,7 +1,12 @@
 // fullBootstrap.js - AUTO-GENERATED from src/types/globals.d.ts by scripts/generate-globals-dts.js (runs automatically at the start of `npm run main`).
 // To add a new validated global: edit globals.d.ts only.
 
-fullBootstrap = (() => {
+moduleLifecycle.declare({
+  name: 'fullBootstrap',
+  subsystem: 'play',
+  deps: [],
+  provides: ['fullBootstrap'],
+  init: (deps) => {
   /**
    * AUTO-GENERATED from src/types/globals.d.ts - do not edit by hand.
    * Every name in this set is proven-defined by mainBootstrap.assertBootstrapGlobals()
@@ -900,4 +905,5 @@ fullBootstrap = (() => {
      */
     isValidated(name) { return validatedSet.has(name); },
   };
-})();
+  },
+});

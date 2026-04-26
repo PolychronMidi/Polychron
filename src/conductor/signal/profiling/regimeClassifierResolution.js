@@ -1,5 +1,10 @@
-regimeClassifierResolution = (() => {
-  const V = validator.create('regimeClassifierResolution');
+moduleLifecycle.declare({
+  name: 'regimeClassifierResolution',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['regimeClassifierResolution'],
+  init: (deps) => {
+  const V = deps.validator.create('regimeClassifierResolution');
   function activateForcedRegime(state, config, regime, reason, beatsRemaining, triggerStreak, triggerTickId) {
     state.forcedRegime = regime;
     state.forcedRegimeBeatsRemaining = beatsRemaining;
@@ -333,4 +338,5 @@ regimeClassifierResolution = (() => {
   }
 
   return { activateForcedRegime, resolve };
-})();
+  },
+});

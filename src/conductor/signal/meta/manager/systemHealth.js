@@ -1,8 +1,13 @@
 // systemHealth.js -- system health computation, phase classification,
 // controller effectiveness tracking, and controller state gathering.
 
-hyperMetaManagerHealth = (() => {
-  const V = validator.create('systemHealth');
+moduleLifecycle.declare({
+  name: 'hyperMetaManagerHealth',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['hyperMetaManagerHealth'],
+  init: (deps) => {
+  const V = deps.validator.create('systemHealth');
   const ST = hyperMetaManagerState;
   const C  = ST;                       // constants live on the same object
   const S  = ST.S;
@@ -227,4 +232,5 @@ hyperMetaManagerHealth = (() => {
     getAxisConcentration,
     getPairMonopoly,
   };
-})();
+  },
+});

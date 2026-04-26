@@ -2,8 +2,13 @@
 // Captures the organism's configuration and module topology for each run,
 // enabling compositional forensics and newcomer onboarding.
 
-systemManifest = (() => {
-  const V = validator.create('systemManifest');
+moduleLifecycle.declare({
+  name: 'systemManifest',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['systemManifest'],
+  init: (deps) => {
+  const V = deps.validator.create('systemManifest');
 
   /**
    * Write system-manifest.json and capability-matrix.md to metrics/.
@@ -166,4 +171,5 @@ const manifestPath = path.join(METRICS_DIR, 'system-manifest.json');
   }
 
   return { emit };
-})();
+  },
+});

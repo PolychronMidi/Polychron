@@ -11,8 +11,13 @@
 // Profile-independent: compresses extremes proportionally regardless of how
 // many modules contribute or which profile is active.
 
-pipelineNormalizer = (() => {
-  const V = validator.create('pipelineNormalizer');
+moduleLifecycle.declare({
+  name: 'pipelineNormalizer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['pipelineNormalizer'],
+  init: (deps) => {
+  const V = deps.validator.create('pipelineNormalizer');
 
   // Soft-envelope boundaries per pipeline, calibrated from observed products.
   // softMin/softMax: compression onset thresholds (passthrough zone).
@@ -110,4 +115,5 @@ pipelineNormalizer = (() => {
   conductorIntelligence.registerModule('pipelineNormalizer', { reset }, ['all']);
 
   return { normalize, reset, getSnapshot };
-})();
+  },
+});

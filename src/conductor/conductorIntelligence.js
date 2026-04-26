@@ -6,8 +6,13 @@
 // Sub-registries: conductorRecorderRegistry, conductorStateProviderRegistry
 // Diagnostics: conductorDiagnostics (factory, created below)
 
-conductorIntelligence = (() => {
-  const V = validator.create('conductorIntelligence');
+moduleLifecycle.declare({
+  name: 'conductorIntelligence',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['conductorIntelligence'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorIntelligence');
 
   // Lifecycle (shared with crossLayerRegistry via moduleLifecycle)
   const lifecycle = moduleLifecycle.create('conductorIntelligence');
@@ -183,7 +188,6 @@ conductorIntelligence = (() => {
     { collectDensityBias, collectTensionBias, collectFlickerModifier }
   );
 
-  moduleLifecycle.registerInitializer('conductorIntelligence', initialize);
 
   return {
     // lifecycle
@@ -214,4 +218,5 @@ conductorIntelligence = (() => {
     getRegistryNames: diag.getRegistryNames,
     getSignalSnapshot: diag.getSignalSnapshot
   };
-})();
+  },
+});

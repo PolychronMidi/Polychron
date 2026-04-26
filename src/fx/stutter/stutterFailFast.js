@@ -1,7 +1,12 @@
 // stutterFailFast.js - shared dependency and payload checks for stutter modules
 
-stutterFailFast = (() => {
-  const V = validator.create('stutterFailFast');
+moduleLifecycle.declare({
+  name: 'stutterFailFast',
+  subsystem: 'fx',
+  deps: ['validator'],
+  provides: ['stutterFailFast'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterFailFast');
 
   function requireEventInfra() {
     const eventName = V.getEventsOrThrow().STUTTER_APPLIED;
@@ -33,4 +38,5 @@ stutterFailFast = (() => {
     assertModulationXY,
     inferProfile
   };
-})();
+  },
+});

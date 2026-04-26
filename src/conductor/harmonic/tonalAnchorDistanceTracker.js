@@ -3,7 +3,12 @@
 // signalling harmonic adventure level. Tension bias proportional to distance.
 // Pure query API - no side effects.
 
-tonalAnchorDistanceTracker = (() => {
+moduleLifecycle.declare({
+  name: 'tonalAnchorDistanceTracker',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['tonalAnchorDistanceTracker'],
+  init: (deps) => {
   const WINDOW_SECONDS = 10;
   let homeCenter = -1; // established from first substantial material
 
@@ -91,4 +96,5 @@ tonalAnchorDistanceTracker = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

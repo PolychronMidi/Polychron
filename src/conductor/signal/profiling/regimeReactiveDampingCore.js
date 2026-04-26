@@ -2,7 +2,12 @@
 // No globals, no side effects. Input -> output only.
 // Tests can call these directly without loading the entire conductor subsystem.
 
-regimeReactiveDampingCore = (() => {
+moduleLifecycle.declare({
+  name: 'regimeReactiveDampingCore',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['regimeReactiveDampingCore'],
+  init: (deps) => {
 
   /**
    * Compute the tension shape curve value for a given section progress.
@@ -63,4 +68,5 @@ regimeReactiveDampingCore = (() => {
     equilibratorCorrection,
     scaleByTarget,
   };
-})();
+  },
+});

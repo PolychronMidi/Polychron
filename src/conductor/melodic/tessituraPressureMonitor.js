@@ -3,7 +3,12 @@
 // density toward relief when tessitural pressure is sustained too long.
 // Pure query API - no side effects.
 
-tessituraPressureMonitor = (() => {
+moduleLifecycle.declare({
+  name: 'tessituraPressureMonitor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['tessituraPressureMonitor'],
+  init: (deps) => {
   const WINDOW_SECONDS = 8;
   const EXTREME_LOW = 48;   // C3 and below
   const EXTREME_HIGH = 84;  // C6 and above
@@ -95,4 +100,5 @@ tessituraPressureMonitor = (() => {
     getPressureSignal,
     getDensityBias
   };
-})();
+  },
+});

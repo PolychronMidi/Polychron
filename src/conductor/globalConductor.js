@@ -7,8 +7,13 @@
 // State for smoothing transitions (naked global for runtime state)
 currentDensity = 0.5;
 
-globalConductor = (() => {
-  const V = validator.create('globalConductor');
+moduleLifecycle.declare({
+  name: 'globalConductor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['globalConductor'],
+  init: (deps) => {
+  const V = deps.validator.create('globalConductor');
 
   // Flicker modifier EMA state - smooths the amplitude envelope
   // while preserving the per-beat noise pattern.
@@ -438,4 +443,5 @@ globalConductor = (() => {
   }
 
   return { update };
-})();
+  },
+});

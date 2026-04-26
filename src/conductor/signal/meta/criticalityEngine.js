@@ -19,8 +19,13 @@
  * biases snap toward neutral. Between avalanches, allows accumulation.
  */
 
-criticalityEngine = (() => {
-  const V = validator.create('criticalityEngine');
+moduleLifecycle.declare({
+  name: 'criticalityEngine',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['criticalityEngine'],
+  init: (deps) => {
+  const V = deps.validator.create('criticalityEngine');
 
   const WINDOW         = 16;       // beats to accumulate
   const TARGET_RATE    = 0.20;     // desired avalanche fraction
@@ -198,4 +203,5 @@ criticalityEngine = (() => {
   conductorIntelligence.registerModule('criticalityEngine', { reset }, ['all']);
 
   return { densityBias, tensionBias, flickerMod, getState, reset };
-})();
+  },
+});

@@ -2,8 +2,13 @@
 // Detects accent ruts (always downbeat emphasis, or no accents at all).
 // Pure query API - biases velocity curves for variety.
 
-accentPatternTracker = (() => {
-  const V = validator.create('accentPatternTracker');
+moduleLifecycle.declare({
+  name: 'accentPatternTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['accentPatternTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('accentPatternTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
 
   /**
@@ -110,4 +115,5 @@ accentPatternTracker = (() => {
     getAccentProfile,
     getAccentBias
   };
-})();
+  },
+});

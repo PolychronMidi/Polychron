@@ -2,7 +2,12 @@
 // Detects rising, falling, or plateaued energy momentum.
 // Pure query API - advises conductor to inject contrast when momentum stalls.
 
-energyMomentumTracker = (() => {
+moduleLifecycle.declare({
+  name: 'energyMomentumTracker',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['energyMomentumTracker'],
+  init: (deps) => {
   /** @type {Array<{ time: number, energy: number }>} */
   const samples = [];
   const MAX_SAMPLES = 64;
@@ -185,4 +190,5 @@ energyMomentumTracker = (() => {
     getTensionNudge,
     reset
   };
-})();
+  },
+});

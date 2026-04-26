@@ -8,8 +8,13 @@
 // Design: pure query API. No side-effects. Registered as a conductorIntelligence
 // stateProvider so the advisory is visible in system-manifest.json diagnostics.
 
-composerFeedbackAdvisor = (() => {
-  const V = validator.create('composerFeedbackAdvisor');
+moduleLifecycle.declare({
+  name: 'composerFeedbackAdvisor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['composerFeedbackAdvisor'],
+  init: (deps) => {
+  const V = deps.validator.create('composerFeedbackAdvisor');
 
   /**
    * @typedef {{
@@ -259,4 +264,5 @@ composerFeedbackAdvisor = (() => {
     getQualitySnapshot,
     reset
   };
-})();
+  },
+});

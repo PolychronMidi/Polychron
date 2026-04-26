@@ -3,8 +3,13 @@
 // Provides density bias, interval selection biases, rut detection, and leap penalties.
 // Pure query API - no side effects.
 
-intervalBalanceTracker = (() => {
-  const V = validator.create('intervalBalanceTracker');
+moduleLifecycle.declare({
+  name: 'intervalBalanceTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['intervalBalanceTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('intervalBalanceTracker');
   const query = analysisHelpers.createTrackerQuery(V, 5, { minNotes: 3 });
 
   // Beat-level cache: getIntervalProfile is called 2-3x per beat
@@ -170,4 +175,5 @@ intervalBalanceTracker = (() => {
     getLeapPenaltyBias,
     suggestIntervalChange
   };
-})();
+  },
+});

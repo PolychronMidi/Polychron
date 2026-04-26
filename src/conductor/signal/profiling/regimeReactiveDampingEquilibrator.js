@@ -1,5 +1,10 @@
-regimeReactiveDampingEquilibrator = (() => {
-  const V = validator.create('regimeReactiveDampingEquilibrator');
+moduleLifecycle.declare({
+  name: 'regimeReactiveDampingEquilibrator',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['regimeReactiveDampingEquilibrator'],
+  init: (deps) => {
+  const V = deps.validator.create('regimeReactiveDampingEquilibrator');
   function compute(args) {
     args.regimeRing.push(args.currentRegime);
     if (args.regimeRing.length > args.regimeRingSize) args.regimeRing.shift();
@@ -186,4 +191,5 @@ regimeReactiveDampingEquilibrator = (() => {
   return {
     compute,
   };
-})();
+  },
+});

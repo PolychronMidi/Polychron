@@ -1,7 +1,12 @@
 // src/events.js - Lightweight event dispatcher for feedback loops
 
-eventBus = (() => {
-  const V = validator.create('events');
+moduleLifecycle.declare({
+  name: 'eventBus',
+  subsystem: 'play',
+  deps: ['validator'],
+  provides: ['eventBus'],
+  init: (deps) => {
+  const V = deps.validator.create('events');
   const listenersMap = {}; // { eventName: [handlers] }
 
   function on(name, handler) {
@@ -51,4 +56,5 @@ eventBus = (() => {
     clear,
     clearAll
   };
-})();
+  },
+});

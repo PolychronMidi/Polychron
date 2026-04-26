@@ -3,8 +3,13 @@
 // aesthetically pleasing proportions (phi ~= 1.618, sqrt(2), 2:3, etc.).
 // Pure query API - signals proportion quality and nudge suggestions.
 
-temporalProportionTracker = (() => {
-  const V = validator.create('temporalProportionTracker');
+moduleLifecycle.declare({
+  name: 'temporalProportionTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['temporalProportionTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('temporalProportionTracker');
   const PHI = 1.618033988749895;
   /** @type {number[]} */
   const sectionDurations = [];
@@ -112,4 +117,5 @@ temporalProportionTracker = (() => {
     getProportionSignal,
     reset
   };
-})();
+  },
+});

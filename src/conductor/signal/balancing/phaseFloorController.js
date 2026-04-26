@@ -3,7 +3,12 @@
 // multipliers with adaptive logic derived from rolling phase share volatility
 // and coherent regime duration. Consumed by axisEnergyEquilibratorAxisAdjustments.
 
-phaseFloorController = (() => {
+moduleLifecycle.declare({
+  name: 'phaseFloorController',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['phaseFloorController'],
+  init: (deps) => {
 
   // ADAPTIVE STATE
   const _SHARE_EMA_ALPHA = 0.06;
@@ -301,4 +306,5 @@ phaseFloorController = (() => {
     getSnapshot,
     reset
   };
-})();
+  },
+});

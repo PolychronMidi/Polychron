@@ -1,5 +1,10 @@
-regimeClassifierClassification = (() => {
-  const V = validator.create('regimeClassifierClassification');
+moduleLifecycle.declare({
+  name: 'regimeClassifierClassification',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['regimeClassifierClassification'],
+  init: (deps) => {
+  const V = deps.validator.create('regimeClassifierClassification');
   function classify(state, config, avgVelocity, avgCurvature, effectiveDim, couplingStrength) {
     if (avgVelocity < 0.004) return 'stagnant';
     // Lab R3: oscillating at 0.15 sounded good. Swing threshold dynamically
@@ -280,4 +285,5 @@ regimeClassifierClassification = (() => {
   }
 
   return { classify };
-})();
+  },
+});

@@ -3,7 +3,12 @@
 // valley, zigzag. Signals contour type awareness and variety nudging.
 // Pure query API - consumed via conductorState.
 
-phraseContourArchetypeDetector = (() => {
+moduleLifecycle.declare({
+  name: 'phraseContourArchetypeDetector',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['phraseContourArchetypeDetector'],
+  init: (deps) => {
   const WINDOW_SECONDS = 6;
 
   /**
@@ -120,4 +125,5 @@ phraseContourArchetypeDetector = (() => {
     getContourSignal,
     getFlickerBias
   };
-})();
+  },
+});

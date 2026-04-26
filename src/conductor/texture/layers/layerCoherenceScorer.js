@@ -2,8 +2,13 @@
 // Queries L0 for concurrent L1/L2 pitch content and scores
 // their intervallic compatibility. Pure query API for conductor decisions.
 
-layerCoherenceScorer = (() => {
-  const V = validator.create('layerCoherenceScorer');
+moduleLifecycle.declare({
+  name: 'layerCoherenceScorer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['layerCoherenceScorer'],
+  init: (deps) => {
+  const V = deps.validator.create('layerCoherenceScorer');
   let lastCoherence = 0.5;
 
   // Shared consonant intervals from pitchClassHelpers
@@ -84,4 +89,5 @@ layerCoherenceScorer = (() => {
     getDensityBias,
     reset
   };
-})();
+  },
+});

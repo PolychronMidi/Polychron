@@ -2,8 +2,13 @@
 // Mirrors FXFeedbackListener but accumulates stutter activity (CC + note) so
 // rhythm/dynamism systems can respond to stutter intensity.
 
-stutterFeedbackListener = (() => {
-  const V = validator.create('stutterFeedbackListener');
+moduleLifecycle.declare({
+  name: 'stutterFeedbackListener',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['stutterFeedbackListener'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterFeedbackListener');
 
   let accumulator = null;
   const perProfile = { source: 0, reflection: 0, bass: 0 };
@@ -99,7 +104,6 @@ stutterFeedbackListener = (() => {
     Object.keys(perProfile).forEach(k => perProfile[k] = 0);
   }
 
-  moduleLifecycle.registerInitializer('stutterFeedbackListener', initialize);
 
   return {
     initialize,
@@ -108,4 +112,5 @@ stutterFeedbackListener = (() => {
     decay,
     reset
   };
-})();
+  },
+});

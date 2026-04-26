@@ -3,8 +3,13 @@
 // This is a second immune layer beyond lint rules: it proves the declared
 // feedback topology still matches live registrations and firewall boundaries.
 
-feedbackGraphContract = (() => {
-  const V = validator.create('feedbackGraphContract');
+moduleLifecycle.declare({
+  name: 'feedbackGraphContract',
+  subsystem: 'play',
+  deps: ['validator'],
+  provides: ['feedbackGraphContract'],
+  init: (deps) => {
+  const V = deps.validator.create('feedbackGraphContract');
 
   const validLatencies = ['immediate', 'beat-delayed', 'phrase-delayed', 'section-delayed'];
 
@@ -131,4 +136,5 @@ feedbackGraphContract = (() => {
   }
 
   return { assert };
-})();
+  },
+});

@@ -1,7 +1,12 @@
 // traceDrain.js - Visual Diagnostic Mode.
 // Captures per-beat conductor and cross-layer state continuously if --trace is passed.
 
-traceDrain = (() => {
+moduleLifecycle.declare({
+  name: 'traceDrain',
+  subsystem: 'writer',
+  deps: [],
+  provides: ['traceDrain'],
+  init: (deps) => {
 
   let isTracing = false;
   let fd = null;
@@ -333,4 +338,5 @@ traceDrain = (() => {
     flush: traceDrainFlush,
     shutdown
   };
-})();
+  },
+});

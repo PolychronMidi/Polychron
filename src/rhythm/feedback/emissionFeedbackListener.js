@@ -1,5 +1,10 @@
-emissionFeedbackListener = (() => {
-  const V = validator.create('emissionFeedbackListener');
+moduleLifecycle.declare({
+  name: 'emissionFeedbackListener',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['emissionFeedbackListener'],
+  init: (deps) => {
+  const V = deps.validator.create('emissionFeedbackListener');
 
   let initialized = false;
   // Per-layer emission tracking prevents L1's emission ratio from biasing L2
@@ -64,7 +69,6 @@ emissionFeedbackListener = (() => {
     lastIntendedByLayer.L1 = 0; lastIntendedByLayer.L2 = 0;
   }
 
-  moduleLifecycle.registerInitializer('emissionFeedbackListener', initialize);
 
   return {
     initialize,
@@ -74,4 +78,5 @@ emissionFeedbackListener = (() => {
     reset,
     resetSection
   };
-})();
+  },
+});

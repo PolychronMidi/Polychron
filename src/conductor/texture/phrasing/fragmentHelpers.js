@@ -2,8 +2,13 @@
 // Used by motivicDensityTracker.
 // Pure query - reads L0.
 
-fragmentHelpers = (() => {
-  const V = validator.create('fragmentHelpers');
+moduleLifecycle.declare({
+  name: 'fragmentHelpers',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['fragmentHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('fragmentHelpers');
   /**
    * Extract pitch-class interval fragments of a given length from recent notes.
    * Each fragment is a string key of consecutive PC intervals (e.g., "3,7").
@@ -47,4 +52,5 @@ fragmentHelpers = (() => {
   }
 
   return { getPCFragments };
-})();
+  },
+});

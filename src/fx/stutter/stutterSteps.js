@@ -3,7 +3,12 @@
 // (sustain-proportional + variant selfGate). Both must pass for a step to emit.
 // Extracted from stutterNotes for single-responsibility and reuse by variants.
 
-stutterSteps = (() => {
+moduleLifecycle.declare({
+  name: 'stutterSteps',
+  subsystem: 'fx',
+  deps: [],
+  provides: ['stutterSteps'],
+  init: (deps) => {
 
   /**
    * Evaluate whether this stutter step should emit.
@@ -41,4 +46,5 @@ stutterSteps = (() => {
   }
 
   return { shouldEmit, getStepProbability, patternAllows };
-})();
+  },
+});

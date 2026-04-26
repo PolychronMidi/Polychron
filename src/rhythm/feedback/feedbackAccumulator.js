@@ -1,5 +1,10 @@
-feedbackAccumulator = (() => {
-  const V = validator.create('feedbackAccumulator');
+moduleLifecycle.declare({
+  name: 'feedbackAccumulator',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['feedbackAccumulator'],
+  init: (deps) => {
+  const V = deps.validator.create('feedbackAccumulator');
 
   /**
    * @param {{
@@ -79,4 +84,5 @@ feedbackAccumulator = (() => {
   return {
     create
   };
-})();
+  },
+});

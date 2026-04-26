@@ -2,8 +2,13 @@
 // Detects motivic overcrowding (too many competing fragments) or sparseness.
 // Pure query API - biases targetDensity to thin when overcrowded, thicken when sparse.
 
-motivicDensityTracker = (() => {
-  const V = validator.create('motivicDensityTracker');
+moduleLifecycle.declare({
+  name: 'motivicDensityTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['motivicDensityTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('motivicDensityTracker');
   const WINDOW_SECONDS = 4;
   const FRAGMENT_LENGTH = 3; // 3-note pitch-class fragments
 
@@ -64,4 +69,5 @@ motivicDensityTracker = (() => {
     getMotivicProfile,
     getDensityBias
   };
-})();
+  },
+});

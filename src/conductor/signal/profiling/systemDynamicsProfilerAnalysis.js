@@ -1,4 +1,9 @@
-systemDynamicsProfilerAnalysis = (() => {
+moduleLifecycle.declare({
+  name: 'systemDynamicsProfilerAnalysis',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['systemDynamicsProfilerAnalysis'],
+  init: (deps) => {
   function systemDynamicsProfilerAnalysisResolveStateSmoothing(state, config) {
     if (state.stateSmoothingResolved) return;
     try {
@@ -268,4 +273,5 @@ systemDynamicsProfilerAnalysis = (() => {
   }
 
   return { analyze };
-})();
+  },
+});

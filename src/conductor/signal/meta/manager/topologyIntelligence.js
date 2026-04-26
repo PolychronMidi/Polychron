@@ -4,7 +4,12 @@
 // trajectory, recognizes attractors via fingerprint similarity, and
 // modulates downstream controllers via topology-derived multipliers.
 
-hyperMetaManagerTopology = (() => {
+moduleLifecycle.declare({
+  name: 'hyperMetaManagerTopology',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['hyperMetaManagerTopology'],
+  init: (deps) => {
   const ST = hyperMetaManagerState;
   const S  = ST.S;
 
@@ -225,4 +230,5 @@ hyperMetaManagerTopology = (() => {
   }
 
   return { update };
-})();
+  },
+});

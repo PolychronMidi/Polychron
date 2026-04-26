@@ -1,4 +1,9 @@
-axisEnergyEquilibratorHelpers = (() => {
+moduleLifecycle.declare({
+  name: 'axisEnergyEquilibratorHelpers',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['axisEnergyEquilibratorHelpers'],
+  init: (deps) => {
   function getWarmupTicks(defaultWarmup) {
     let profile = null;
     try {
@@ -46,4 +51,5 @@ axisEnergyEquilibratorHelpers = (() => {
     computeSurfacePressure,
     getWarmupTicks,
   };
-})();
+  },
+});

@@ -1,7 +1,12 @@
 // stutterPlanScheduler.js - Extracted plan scheduling helpers for StutterManager.
 
-stutterPlanScheduler = (() => {
-  const V = validator.create('stutterPlanScheduler');
+moduleLifecycle.declare({
+  name: 'stutterPlanScheduler',
+  subsystem: 'fx',
+  deps: ['validator'],
+  provides: ['stutterPlanScheduler'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterPlanScheduler');
 
   function assertManagerLike(stutterMgr) {
     const manager = V.requireDefined(stutterMgr, 'stutterMgr');
@@ -97,4 +102,5 @@ stutterPlanScheduler = (() => {
     runDuePlans,
     executePlan
   };
-})();
+  },
+});

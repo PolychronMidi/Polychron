@@ -9,7 +9,12 @@
  * rather than wipes to preserve cross-section learning.
  */
 
-homeostasisState = (() => {
+moduleLifecycle.declare({
+  name: 'homeostasisState',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['homeostasisState'],
+  init: (deps) => {
   const C = homeostasisConstants;
 
   const S = {
@@ -135,4 +140,5 @@ homeostasisState = (() => {
   };
 
   return S;
-})();
+  },
+});

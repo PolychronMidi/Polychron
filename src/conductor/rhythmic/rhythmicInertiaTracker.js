@@ -3,8 +3,13 @@
 // Biases density to break rhythmic ruts or sustain good grooves.
 // Pure query API - no side effects.
 
-rhythmicInertiaTracker = (() => {
-  const V = validator.create('rhythmicInertiaTracker');
+moduleLifecycle.declare({
+  name: 'rhythmicInertiaTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['rhythmicInertiaTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('rhythmicInertiaTracker');
   const MAX_SNAPSHOTS = 20;
   /** @type {Array<string>} */
   const patternFingerprints = [];
@@ -120,4 +125,5 @@ rhythmicInertiaTracker = (() => {
     getDensityBias,
     reset
   };
-})();
+  },
+});

@@ -8,7 +8,12 @@
  * budget priority weights, and detection constants.
  */
 
-couplingConstants = (() => {
+moduleLifecycle.declare({
+  name: 'couplingConstants',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['couplingConstants'],
+  init: (deps) => {
 
   const NUDGEABLE = ['density', 'tension', 'flicker'];
   const NUDGEABLE_SET = new Set(NUDGEABLE);
@@ -191,4 +196,5 @@ couplingConstants = (() => {
     MONOTONE_TRIGGER, HIGH_CORR_MONOTONE_TRIGGER, MONOTONE_ABS_THRESHOLD, MONOTONE_IMPULSE_RATE,
     sharesAxis, sharesAnyAxis, classifyPair,
   };
-})();
+  },
+});

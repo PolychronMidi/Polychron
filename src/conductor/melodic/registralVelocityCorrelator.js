@@ -4,7 +4,12 @@
 // Flicker modifier to encourage natural but varied register-dynamic mapping.
 // Pure query API - no side effects.
 
-registralVelocityCorrelator = (() => {
+moduleLifecycle.declare({
+  name: 'registralVelocityCorrelator',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['registralVelocityCorrelator'],
+  init: (deps) => {
   const WINDOW_SECONDS = 8;
 
   /**
@@ -124,4 +129,5 @@ registralVelocityCorrelator = (() => {
     getFlickerModifier,
     getTensionBias
   };
-})();
+  },
+});
