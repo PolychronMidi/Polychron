@@ -29,7 +29,19 @@ _rbg_max_wait="${1:-10}"
 _rbg_must_contain="${2:-}"
 
 # Fast path: if no stub in response, pass through.
-_rbg_stub_line="$(printf '%s' "$_rbg_input" | jq -r '.tool_response // ""' 2>/dev/null \
+# FAIL-LOUD: capture jq stderr to errors.log if parsing fails -- silent
+# parse failures here would let bg-task stubs pass through unresolved,
+# breaking i/review verdicts and other structured-output flows.
+_rbg_jq_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_jq_$$.err")
+_rbg_tool_response="$(printf '%s' "$_rbg_input" | jq -r '.tool_response // ""' 2>"$_rbg_jq_err")"
+if [ -s "$_rbg_jq_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  while IFS= read -r _rbg_line; do
+    [ -n "$_rbg_line" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_resolve_bg_stub] jq parse failed extracting tool_response: $_rbg_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_rbg_jq_err"
+fi
+rm -f "$_rbg_jq_err" 2>/dev/null
+_rbg_stub_line="$(printf '%s' "$_rbg_tool_response" \
   | grep -oE 'Command running in background with ID:[[:space:]]*[a-zA-Z0-9]+' | head -1 || true)"
 if [ -z "$_rbg_stub_line" ]; then
   printf '%s' "$_rbg_input"
@@ -71,10 +83,19 @@ fi
 
 # Rewrite .tool_response with the real output. Use jq with --arg so
 # the payload is safely string-escaped regardless of content.
+# FAIL-LOUD: log jq errors to errors.log instead of silently dropping.
+_rbg_rewrite_err=$(mktemp 2>/dev/null || echo "/tmp/_rbg_rewrite_$$.err")
 _rbg_rewritten="$(printf '%s' "$_rbg_input" \
-  | jq --arg real "$_rbg_real" '.tool_response = $real' 2>/dev/null || true)"
+  | jq --arg real "$_rbg_real" '.tool_response = $real' 2>"$_rbg_rewrite_err" || true)"
+if [ -s "$_rbg_rewrite_err" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+  while IFS= read -r _rbg_line; do
+    [ -n "$_rbg_line" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [_resolve_bg_stub] jq rewrite failed (task=$_rbg_task_id): $_rbg_line" \
+      >> "$PROJECT_ROOT/log/hme-errors.log"
+  done < "$_rbg_rewrite_err"
+fi
+rm -f "$_rbg_rewrite_err" 2>/dev/null
 if [ -z "$_rbg_rewritten" ]; then
-  # jq blew up (shouldn't) — pass through to avoid wedging downstream.
+  # jq blew up (logged above) — pass through to avoid wedging downstream.
   printf '%s' "$_rbg_input"
   exit 0
 fi

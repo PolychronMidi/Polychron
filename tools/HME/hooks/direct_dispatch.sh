@@ -102,7 +102,16 @@ case "$EVENT" in
     ;;
 
   PreToolUse)
-    TOOL_NAME=$(echo "$BODY" | jq -r '.tool_name // ""' 2>/dev/null)
+    # FAIL-LOUD jq: log parse errors to errors.log instead of silent fallback.
+    _DD_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_dd_jq_$$.err")
+    TOOL_NAME=$(echo "$BODY" | jq -r '.tool_name // ""' 2>"$_DD_JQ_ERR")
+    if [ -s "$_DD_JQ_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+      while IFS= read -r _dd_l; do
+        [ -n "$_dd_l" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [direct_dispatch] jq parse failed extracting tool_name (event=$EVENT): $_dd_l" \
+          >> "$PROJECT_ROOT/log/hme-errors.log"
+      done < "$_DD_JQ_ERR"
+    fi
+    rm -f "$_DD_JQ_ERR" 2>/dev/null
     case "$TOOL_NAME" in
       Edit|MultiEdit) _run "$PRETOOLUSE_DIR/pretooluse_edit.sh"; _EXIT=$? ;;
       Write)          _run "$PRETOOLUSE_DIR/pretooluse_write.sh"; _EXIT=$? ;;
@@ -117,7 +126,16 @@ case "$EVENT" in
     ;;
 
   PostToolUse)
-    TOOL_NAME=$(echo "$BODY" | jq -r '.tool_name // ""' 2>/dev/null)
+    # FAIL-LOUD jq: log parse errors to errors.log instead of silent fallback.
+    _DD_JQ_ERR=$(mktemp 2>/dev/null || echo "/tmp/_dd_jq_$$.err")
+    TOOL_NAME=$(echo "$BODY" | jq -r '.tool_name // ""' 2>"$_DD_JQ_ERR")
+    if [ -s "$_DD_JQ_ERR" ] && [ -n "${PROJECT_ROOT:-}" ] && [ -d "$PROJECT_ROOT/log" ]; then
+      while IFS= read -r _dd_l; do
+        [ -n "$_dd_l" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] [direct_dispatch] jq parse failed extracting tool_name (event=$EVENT): $_dd_l" \
+          >> "$PROJECT_ROOT/log/hme-errors.log"
+      done < "$_DD_JQ_ERR"
+    fi
+    rm -f "$_DD_JQ_ERR" 2>/dev/null
     # Universal log-tool-call always runs; tool-specific scripts after.
     SCRIPTS=("$HOOKS_DIR/log-tool-call.sh")
     case "$TOOL_NAME" in
