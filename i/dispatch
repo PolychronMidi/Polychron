@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# i/dispatch — task dispatcher CLI (queue + worker routing).
+#
+# Operates the queue at tmp/hme-buddy-queue/{pending,processing,done,failed}/
+# and the worker pool selected by HME_DISPATCH_MODE in .env. Works in
+# any of the three modes (claude-resume / synthesis / disabled) — the
+# `dispatch` framing replaces the historical "buddy" framing because
+# the dispatcher is no longer buddy-specific. `i/buddy` is kept as an
+# alias for back-compat.
+#
+# Usage:
+#   i/dispatch status                                            # show queue + worker state
+#   i/dispatch enqueue tier=medium text="..." source="i/review"  # drop task into pending/
+#   i/dispatch drain [loop=true loop_delay=5]                    # drain pending/ once or in a loop
+#   i/dispatch clean                                             # remove stale done/failed entries
+#   i/dispatch chain <chain-name> [loop=N] [on_rate_limit=...]   # run a Bash-skill chain
+#
+# See HME_DISPATCH_MODE in .env for routing modes. See doc/SPEC.md
+# (devlog snapshot of the buddy fanout integration) for architectural
+# context.
+_SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_dispatcher.py"
+[ -f "$_SCRIPT" ] || { echo "i/dispatch: dispatcher missing at $_SCRIPT" >&2; exit 1; }
+
+# Convert key=value args to --key=value form for argparse.
+_ARGS=()
+_CMD="${1:-status}"
+shift || true
+for arg in "$@"; do
+  case "$arg" in
+    *=*)
+      _key="${arg%%=*}"
+      _val="${arg#*=}"
+      _ARGS+=("--${_key//_/-}=${_val}")
+      ;;
+    *)
+      _ARGS+=("$arg")
+      ;;
+  esac
+done
+exec python3 "$_SCRIPT" "$_CMD" "${_ARGS[@]}"

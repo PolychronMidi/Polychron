@@ -246,22 +246,11 @@
       ]
     },
     "buddy": {
-      "description": "Co-buddy fanout dispatcher (queue-driven). Subactions: status / enqueue / drain / clean. For ordered Bash-skill chains independent of buddies, use i/chain instead. Drain activates when BUDDY_SYSTEM=1 (claude-resume worker) OR HME_DISPATCH_MODE=synthesis (HME synthesis cascade worker, no API quota required).",
+      "description": "DEPRECATED \u2014 alias for i/dispatch. Use i/dispatch for new code. Preserved so existing callers + transcripts keep working.",
       "category": "orchestration",
-      "usage": "i/buddy <status|enqueue|drain> [key=value ...]",
+      "usage": "i/buddy <status|enqueue|drain|clean|chain> [key=value ...]  (forwards to i/dispatch)",
       "examples": [
-        "i/buddy status",
-        "i/buddy enqueue tier=medium text=\"...\" source=manual",
-        "i/buddy drain loop=true loop_delay=5",
-        "i/buddy chain review-then-test",
-        "i/buddy clean age_hours=168"
-      ],
-      "actions": [
-        "status",
-        "enqueue",
-        "drain",
-        "chain",
-        "clean"
+        "i/buddy status  # equivalent to: i/dispatch status"
       ]
     },
     "chain": {
@@ -272,6 +261,17 @@
         "i/chain review-then-test",
         "i/chain dev-cycle loop=3",
         "i/chain overnight on_rate_limit=pause-with-cap"
+      ]
+    },
+    "dispatch": {
+      "description": "Task dispatcher CLI (queue + worker routing). Subactions: status / enqueue / drain / clean / chain. Routes via HME_DISPATCH_MODE (claude-resume / synthesis / disabled).",
+      "category": "orchestration",
+      "usage": "i/dispatch <status|enqueue|drain|clean|chain> [key=value ...]",
+      "examples": [
+        "i/dispatch status",
+        "i/dispatch enqueue tier=medium text=\"address review finding\" source=i/review",
+        "i/dispatch drain loop=true loop_delay=5",
+        "i/dispatch chain review-then-test"
       ]
     }
   }
