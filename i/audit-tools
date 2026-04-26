@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# i/audit-tools — UX stress test for the i/* CLI surface.
+# Probes each registered tool with no-args + typo'd-action and rates
+# the response shape against a UX rubric. Tools scoring < 4/5 are
+# flagged for fix. Run on-demand or once-per-session as a hygiene
+# check. See scripts/hme/audit-tool-surface.py for the rubric.
+exec python3 "$(dirname "$0")/../scripts/hme/audit-tool-surface.py" "$@"

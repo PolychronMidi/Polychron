@@ -102,6 +102,51 @@ function isNothingMissedResponse(text) {
   return re.test(trimmed);
 }
 
+// Speculation-debt scanner. Surfaces phrases in the agent's last text
+// that are SHAPED like unverified opinion ("I worry that...", "this might
+// be...", "could be a problem", "worth investigating separately") so
+// round 1's inject can name them specifically and demand each resolve
+// to evidence-or-drop within the same turn.
+//
+// Strict false-positive control: matches only the leading speculation
+// phrase + ~80 chars after, and dedup by phrase-prefix so repeated
+// patterns surface once. Skip code-fenced / quoted spans (same
+// discipline stop_work / exhaust_check use).
+const SPECULATION_RES = [
+  /\bi\s+(worry|suspect|imagine|wonder|guess|think\s+(that|maybe))\b[^.!?\n]{1,120}/gi,
+  /\b(this|that|it)\s+(might|may|could)\s+(be|have|cause|break|miss)\b[^.!?\n]{1,120}/gi,
+  /\b(probably|likely|presumably|seems?\s+like|appears?\s+to)\b[^.!?\n]{1,120}/gi,
+  /\b(worth\s+(investigating|verifying|checking|confirming|exploring)|might\s+be\s+worth)\b[^.!?\n]{1,120}/gi,
+  /\b(open\s+question|outstanding\s+question|haven'?t\s+verified)\b[^.!?\n]{1,120}/gi,
+  /\b(my\s+(concern|worry)|the\s+concern\s+(is|here))\b[^.!?\n]{1,120}/gi,
+];
+
+function scanSpeculation(text) {
+  if (!text) return [];
+  // Strip code fences + backticks + quoted spans before scanning so
+  // documentation/examples don't false-fire.
+  let stripped = text.replace(/```[\s\S]*?```/g, ' ');
+  stripped = stripped.replace(/`[^`\n]*`/g, ' ');
+  stripped = stripped.replace(/"[^"\n]*"/g, ' ');
+  stripped = stripped.replace(/'[^'\n]*'/g, ' ');
+  const seen = new Set();
+  const hits = [];
+  for (const re of SPECULATION_RES) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(stripped)) !== null) {
+      const snippet = m[0].trim().replace(/\s+/g, ' ').slice(0, 120);
+      const key = snippet.toLowerCase().slice(0, 40);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      hits.push(snippet);
+      if (hits.length >= 5) break;
+    }
+    if (hits.length >= 5) break;
+  }
+  return hits;
+}
+
 function lastRealUserPrompt(transcriptPath) {
   if (!transcriptPath) return { text: '', turnIndex: 0 };
   let lines;
@@ -223,6 +268,30 @@ module.exports = {
     store[turnKey] = next;
     saveComplStore(store);
 
-    return ctx.deny(next === 1 ? REASONS.COMPL_ROUND_1 : REASONS.COMPL_ROUND_2);
+    if (next === 1) {
+      // Round 1: targeted speculation-debt scan. If the agent's last
+      // text contains unverified-opinion phrases ("I worry", "might
+      // be", "worth investigating", etc.), name them specifically in
+      // the inject so the agent must resolve each to evidence or drop
+      // it. Without this, speculation accumulates across turns into
+      // permanent fog. Compresses the speculation→evidence distance
+      // by making the prompt actionable instead of generic.
+      const lastAssistant = lastAssistantText(transcriptPath);
+      const specs = scanSpeculation(lastAssistant);
+      if (specs.length > 0) {
+        const enumerated = specs.map((s, i) => `  ${i + 1}. "${s}"`).join('\n');
+        const targeted =
+          `${REASONS.COMPL_ROUND_1}\n\n` +
+          `SPECULATION-DEBT SCAN: your last response contained ${specs.length} ` +
+          `speculation-shaped phrase(s). Each must resolve to evidence ` +
+          `(grep/Read the relevant code and either confirm or refute) or be ` +
+          `dropped before stopping. NEVER leave speculation as a parting ` +
+          `note — it becomes permanent fog otherwise.\n\n` +
+          enumerated;
+        return ctx.deny(targeted);
+      }
+      return ctx.deny(REASONS.COMPL_ROUND_1);
+    }
+    return ctx.deny(REASONS.COMPL_ROUND_2);
   },
 };

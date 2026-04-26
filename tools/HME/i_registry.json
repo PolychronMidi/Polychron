@@ -273,6 +273,14 @@
         "i/dispatch drain loop=true loop_delay=5",
         "i/dispatch chain review-then-test"
       ]
+    },
+    "audit-tools": {
+      "description": "UX stress test for the i/* CLI surface \u2014 probes each tool with no-args + typo'd action, rates against UX rubric, flags tools < 4/5.",
+      "category": "meta",
+      "usage": "i/audit-tools",
+      "examples": [
+        "i/audit-tools"
+      ]
     }
   }
 }
