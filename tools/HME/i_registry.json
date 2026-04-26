@@ -154,15 +154,37 @@
       "usage": "i/why <invariant-id>"
     },
     "todo": {
-      "description": "Hierarchical todo store with criticality + on-done triggers.",
+      "description": "Hierarchical todo store + SPEC/TODO bridge + KB devlog archive on set completion.",
       "category": "review-discipline",
-      "usage": "i/todo action=list|add|done|... [text=\u2026] [parent_id=N] [criticality=normal|critical]",
+      "usage": "i/todo <action> [text=...] [todo_id=N] [parent_id=N] [tier=easy|medium|hard] [critical=true]",
       "modes": [
         "list",
         "add",
         "done",
         "show",
         "update"
+      ],
+      "examples": [
+        "i/todo list",
+        "i/todo add text=\"refactor X\" tier=hard",
+        "i/todo done todo_id=42",
+        "i/todo ingest_from_spec",
+        "i/todo close_with_spec_update todo_id=42",
+        "i/todo phase_complete todo_id=2 text=\"Phase 2 complete: <summary>\"",
+        "i/todo clear text=\"set name for archive\""
+      ],
+      "actions": [
+        "list",
+        "add",
+        "done",
+        "undo",
+        "remove",
+        "clear",
+        "critical",
+        "ingest_from_spec",
+        "promote_to_spec",
+        "close_with_spec_update",
+        "phase_complete"
       ]
     },
     "substrate": {
