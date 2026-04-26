@@ -57,6 +57,51 @@ function readVerdicts() {
   return out;
 }
 
+function lastAssistantText(transcriptPath) {
+  // Read the most recent assistant turn's text content from the
+  // transcript JSONL. Used by the round-2 skip check below — when the
+  // agent's response to round 1 was already a clean "nothing missed"
+  // declaration, round 2 is pure context burn and should NOT fire.
+  if (!transcriptPath) return '';
+  let lines;
+  try { lines = fs.readFileSync(transcriptPath, 'utf8').split('\n'); }
+  catch (_e) { return ''; }
+  let last = '';
+  for (const line of lines) {
+    if (!line) continue;
+    let entry;
+    try { entry = JSON.parse(line); } catch (_e) { continue; }
+    const role = entry.type || entry.role;
+    if (role !== 'assistant') continue;
+    const content = (entry.message && entry.message.content) || entry.content;
+    let text = '';
+    if (typeof content === 'string') {
+      text = content;
+    } else if (Array.isArray(content)) {
+      text = content
+        .filter((b) => b && b.type === 'text')
+        .map((b) => b.text || '')
+        .join(' ');
+    }
+    text = text.trim();
+    if (text) last = text;
+  }
+  return last;
+}
+
+// Match the "nothing missed" / "confirmed nothing remains" no-op response
+// shape exactly. Conservative: only short responses that EQUAL one of these
+// declarations qualify. A long answer that happens to contain "nothing
+// missed" mid-sentence does NOT match — those legitimately preceded real
+// work and round 2 should still fire.
+function isNothingMissedResponse(text) {
+  if (!text) return false;
+  const trimmed = text.trim().replace(/\s+/g, ' ');
+  if (trimmed.length > 80) return false;  // long responses always run round 2
+  const re = /^(nothing\s+missed|confirmed\s+nothing\s+(missed|remains|left)|nothing\s+remains|all\s+(set|done|clear))[.!]?$/i;
+  return re.test(trimmed);
+}
+
 function lastRealUserPrompt(transcriptPath) {
   if (!transcriptPath) return { text: '', turnIndex: 0 };
   let lines;
@@ -160,6 +205,21 @@ module.exports = {
     if (count >= COMPL_MAX) return ctx.allow();
 
     const next = count + 1;
+    // Round-2 skip: if the assistant's response to round 1 was a clean
+    // "nothing missed" / "confirmed nothing remains" no-op, round 2 is
+    // pure context burn — it provokes another no-op response and adds
+    // zero value. Advance the counter to MAX (spending the budget) and
+    // return allow without firing the deny. Round 1 still fires
+    // unconditionally as the safety check; only the redundant round 2
+    // is suppressed when round 1 was definitively answered.
+    if (next === 2) {
+      const lastAssistant = lastAssistantText(transcriptPath);
+      if (isNothingMissedResponse(lastAssistant)) {
+        store[turnKey] = COMPL_MAX;
+        saveComplStore(store);
+        return ctx.allow();
+      }
+    }
     store[turnKey] = next;
     saveComplStore(store);
 
