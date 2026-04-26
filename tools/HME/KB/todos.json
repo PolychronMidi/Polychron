@@ -3,23 +3,7 @@
     "id": 0,
     "_meta": {
       "max_id": 1135,
-      "updated_ts": 1777225252.4350865
+      "updated_ts": 1777225594.2905788
     }
-  },
-  {
-    "id": 1135,
-    "text": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] test_source: simulated bridge test",
-    "activeForm": "CRITICAL ERROR - LIFESAVER ALERT: [CRITICAL] test_source: simulated bridge test",
-    "status": "pending",
-    "done": false,
-    "critical": true,
-    "source": "lifesaver",
-    "on_done": "",
-    "ts": 1777180249.2846334,
-    "parent_id": 0,
-    "subs": [],
-    "recurrence_count": 1,
-    "dedup_key": "CRITICAL|test_source|simulated bridge test",
-    "tier": "medium"
   }
 ]
