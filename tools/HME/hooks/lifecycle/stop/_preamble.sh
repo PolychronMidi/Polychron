@@ -16,20 +16,6 @@ _DETECTORS_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tools/HME/scripts/detectors
 # Stop hook only adds input_tokens/output_tokens from the transcript — never
 # overwrites used_pct (that would replace real API data with a fabricated estimate).
 _CTX_OUT="${HME_CTX_FILE:-/tmp/claude-context.json}"
-# Diagnostic: capture $INPUT shape if jq parse is going to fail. Removed
-# after root-cause is fixed.
-if [ -n "$INPUT" ]; then
-  _DEBUG_FILE="${PROJECT_ROOT:-/home/jah/Polychron}/tmp/hme-stop-input-debug.txt"
-  {
-    echo "===== $(date -u +%Y-%m-%dT%H:%M:%SZ) stage=_preamble ====="
-    echo "INPUT length: ${#INPUT}"
-    echo "first 64 bytes (hex):"
-    printf '%s' "$INPUT" | head -c 64 | xxd
-    echo "first 200 chars:"
-    printf '%s' "$INPUT" | head -c 200
-    echo ""
-  } >> "$_DEBUG_FILE" 2>/dev/null
-fi
 _CTX_TRANSCRIPT=$(_safe_jq "$INPUT" '.transcript_path' '')
 if [[ -n "$_CTX_TRANSCRIPT" && -f "$_CTX_TRANSCRIPT" ]]; then
   # `|| true` is load-bearing: under set -e, a python crash here (e.g.
