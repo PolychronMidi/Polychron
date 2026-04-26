@@ -1,5 +1,10 @@
-adaptiveTrustScoresHelpers = (() => {
-  const V = validator.create('adaptiveTrustScoresHelpers');
+moduleLifecycle.declare({
+  name: 'adaptiveTrustScoresHelpers',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['adaptiveTrustScoresHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('adaptiveTrustScoresHelpers');
   let adaptiveTrustScoresHelpersHotspotCacheBeatKey = '';
   const adaptiveTrustScoresHelpersHotspotCache = new Map();
 
@@ -359,4 +364,5 @@ adaptiveTrustScoresHelpers = (() => {
     getSystemPairHotspotProfile,
     applyTrustBrakes,
   };
-})();
+  },
+});

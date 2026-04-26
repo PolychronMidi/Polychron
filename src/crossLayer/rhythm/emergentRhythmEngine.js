@@ -6,8 +6,13 @@
 // biasRhythmWeights() chains after journeyRhythmCoupler in getRhythm.js (4th link).
 // Self-calibrating: running density EMA adjusts grid sensitivity threshold.
 
-emergentRhythmEngine = (() => {
-  const V = validator.create('emergentRhythmEngine');
+moduleLifecycle.declare({
+  name: 'emergentRhythmEngine',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['emergentRhythmEngine'],
+  init: (deps) => {
+  const V = deps.validator.create('emergentRhythmEngine');
   const GRID_SIZE = 16;
   const DENSITY_EMA_ALPHA = 0.08;
   const COMPLEXITY_EMA_ALPHA = 0.06;
@@ -195,4 +200,5 @@ emergentRhythmEngine = (() => {
     biasRhythmWeights, getDensity, getComplexity, getBiasStrength,
     getDensityEma, getGrid, setCoordinationScale, reset
   };
-})();
+  },
+});

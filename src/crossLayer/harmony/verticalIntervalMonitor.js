@@ -5,8 +5,13 @@
 // penalty proportional to collision severity. Regime-responsive: coherent
 // tolerates more unisons (voices unify), exploring penalizes harder.
 
-verticalIntervalMonitor = (() => {
-  const V = validator.create('verticalIntervalMonitor');
+moduleLifecycle.declare({
+  name: 'verticalIntervalMonitor',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['verticalIntervalMonitor'],
+  init: (deps) => {
+  const V = deps.validator.create('verticalIntervalMonitor');
 
   const TOLERANCE   = 80;          // ms simultaneity window
   const BASE_PROB_REDUCE = -0.04;
@@ -110,4 +115,5 @@ verticalIntervalMonitor = (() => {
   crossLayerRegistry.register('verticalIntervalMonitor', { reset }, ['all', 'section']);
 
   return { process, getCollisionCount, getCollisionRate, setCoordinationScale, reset };
-})();
+  },
+});

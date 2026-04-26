@@ -4,8 +4,14 @@
 // for thematic unity. This is the only cross-layer module that persists across
 // sections by design - it's the long-term memory of the composition.
 
-pitchMemoryRecall = (() => {
-  const V = validator.create('pitchMemoryRecall');
+moduleLifecycle.declare({
+  name: 'pitchMemoryRecall',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['pitchMemoryRecall'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('pitchMemoryRecall');
   const MAX_MEMORIES = 64;
   const RECALL_PROBABILITY = 0.2;
   const MIN_RECALL_INTERVAL_SEC = 3;
@@ -160,5 +166,5 @@ pitchMemoryRecall = (() => {
   }
 
   return { memorize, recall, getMemoryCount, getRecallCount, reset };
-})();
-crossLayerRegistry.register('pitchMemoryRecall', pitchMemoryRecall, ['all']);
+  },
+});

@@ -1,8 +1,13 @@
 // Section intent curve helpers -- CLAP guidance, section contrast biases, mid-section self-eval.
 // Loaded before sectionIntentCurves.js via subsystem index.js.
 
-sectionIntentCurvesHelpers = (() => {
-  const V = validator.create('sectionIntentCurvesHelpers');
+moduleLifecycle.declare({
+  name: 'sectionIntentCurvesHelpers',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['sectionIntentCurvesHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('sectionIntentCurvesHelpers');
 
   // Per-section CLAP xenolinguistic probes from previous run.
   // alien/organic/chaotic/sparse scores nudge intent targets each section.
@@ -100,4 +105,5 @@ sectionIntentCurvesHelpers = (() => {
   }
 
   return { getClapNudges, getSectionContrastBiases, midSectionEval };
-})();
+  },
+});

@@ -4,8 +4,14 @@
 // above thresholds, coordinates a unified climactic build:
 // increases density, widens register, boosts velocity, raises entropy target.
 
-crossLayerClimaxEngine = (() => {
-  const V = validator.create('crossLayerClimaxEngine');
+moduleLifecycle.declare({
+  name: 'crossLayerClimaxEngine',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['crossLayerClimaxEngine'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('crossLayerClimaxEngine');
   const APPROACH_THRESHOLD = 0.65;
   const PEAK_THRESHOLD = 0.82;
   const SMOOTHING = 0.25;
@@ -314,5 +320,5 @@ crossLayerClimaxEngine = (() => {
   }
 
   return { tick, getModifiers, isApproaching, isPeak, getClimaxLevel, getClimaxCount, reset };
-})();
-crossLayerRegistry.register('crossLayerClimaxEngine', crossLayerClimaxEngine, ['all', 'section']);
+  },
+});

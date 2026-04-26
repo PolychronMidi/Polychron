@@ -4,8 +4,14 @@
 // signals to dial back; when sparse, signals to ramp up.
 // Provides diagnostic visibility into cross-layer system effectiveness.
 
-interactionHeatMap = (() => {
-  const V = validator.create('interactionHeatMap');
+moduleLifecycle.declare({
+  name: 'interactionHeatMap',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['interactionHeatMap'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('interactionHeatMap');
   const WINDOW_SIZE = 64; // rolling window of beats to track
   const HIGH_DENSITY_THRESHOLD = 0.7;
   const LOW_DENSITY_THRESHOLD = 0.2;
@@ -226,5 +232,5 @@ interactionHeatMap = (() => {
     getTrend,
     reset
   };
-})();
-crossLayerRegistry.register('interactionHeatMap', interactionHeatMap, ['all', 'section']);
+  },
+});

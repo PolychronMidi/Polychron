@@ -17,8 +17,13 @@
  * Registered as a cross-layer module with phrase scope.
  */
 
-beatInterleavedProcessor = (() => {
-  const V = validator.create('beatInterleavedProcessor');
+moduleLifecycle.declare({
+  name: 'beatInterleavedProcessor',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['beatInterleavedProcessor'],
+  init: (deps) => {
+  const V = deps.validator.create('beatInterleavedProcessor');
 
   /** @type {Map<number, object>} */
   let currentBeatOutcomes = new Map();
@@ -68,4 +73,5 @@ beatInterleavedProcessor = (() => {
   crossLayerRegistry.register('beatInterleavedProcessor', mod, ['all', 'phrase']);
 
   return mod;
-})();
+  },
+});

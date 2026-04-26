@@ -2,8 +2,13 @@
 // Pure entropy measurement helpers for entropyRegulator.
 // Extracted to keep entropyRegulator.js focused on regulation logic.
 
-entropyMetrics = (() => {
-  const V = validator.create('entropyMetrics');
+moduleLifecycle.declare({
+  name: 'entropyMetrics',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['entropyMetrics'],
+  init: (deps) => {
+  const V = deps.validator.create('entropyMetrics');
 
   /**
    * Compute pitch-class diversity (Shannon entropy normalized to 0-1).
@@ -68,4 +73,5 @@ entropyMetrics = (() => {
   }
 
   return { pitchEntropy, velocityVariance, rhythmicIrregularity };
-})();
+  },
+});

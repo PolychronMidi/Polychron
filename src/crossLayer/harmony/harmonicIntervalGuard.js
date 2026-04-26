@@ -4,8 +4,14 @@
 // perfect/imperfect consonances. When dissonance is desired, steers toward
 // tritones, 2nds, and 7ths. Consumes feedbackOscillator.pitchBias (dead-end signal).
 
-harmonicIntervalGuard = (() => {
-  const V = validator.create('harmonicIntervalGuard');
+moduleLifecycle.declare({
+  name: 'harmonicIntervalGuard',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['harmonicIntervalGuard'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicIntervalGuard');
   const MAX_HISTORY = 40;
 
   // Consonance table: interval class - consonance score 0-1
@@ -219,5 +225,5 @@ harmonicIntervalGuard = (() => {
   }
 
   return { recordCrossInterval, getDissonanceLevel, nudgePitch, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('harmonicIntervalGuard', harmonicIntervalGuard, ['all', 'section']);
+  },
+});

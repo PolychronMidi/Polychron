@@ -14,8 +14,13 @@
  *   contextualTrust.reset()
  */
 
-contextualTrust = (() => {
-  const V = validator.create('contextualTrust');
+moduleLifecycle.declare({
+  name: 'contextualTrust',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['contextualTrust'],
+  init: (deps) => {
+  const V = deps.validator.create('contextualTrust');
 
   const DECAY    = 0.9;
   const LO       = -1;
@@ -84,4 +89,5 @@ contextualTrust = (() => {
   crossLayerRegistry.register('contextualTrust', mod, ['all']);
 
   return mod;
-})();
+  },
+});

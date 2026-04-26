@@ -1,5 +1,11 @@
-explainabilityBus = (() => {
-  const V = validator.create('explainabilityBus');
+moduleLifecycle.declare({
+  name: 'explainabilityBus',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['explainabilityBus'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('explainabilityBus');
   const MAX_ENTRIES = 600;
   const EVICT_BATCH = 100; // amortize O(n) splice cost over many emit calls
   const CHANNEL = 'explainability';
@@ -67,5 +73,5 @@ explainabilityBus = (() => {
   }
 
   return { emit, getRecent, querySince, queryByType, reset };
-})();
-crossLayerRegistry.register('explainabilityBus', explainabilityBus, ['all', 'section']);
+  },
+});

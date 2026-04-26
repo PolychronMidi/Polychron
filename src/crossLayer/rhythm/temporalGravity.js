@@ -3,8 +3,14 @@
 // hits a dense cluster, the other layer's note ticks get micro-pulled toward
 // the cluster center - creating organic emergent rubato.
 
-temporalGravity = (() => {
-  const V = validator.create('temporalGravity');
+moduleLifecycle.declare({
+  name: 'temporalGravity',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['temporalGravity'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('temporalGravity');
   const DENSITY_CHANNEL = 'density';
   const DENSITY_WINDOW_MS = 300;
   const GRAVITY_TOLERANCE_MS = 500;
@@ -113,5 +119,5 @@ temporalGravity = (() => {
   }
 
   return { postDensity, measureDensity, applyGravity, setCoordinationScale, reset() { /* stateless - no per-scope state to clear */ } };
-})();
-crossLayerRegistry.register('temporalGravity', temporalGravity, ['all']);
+  },
+});

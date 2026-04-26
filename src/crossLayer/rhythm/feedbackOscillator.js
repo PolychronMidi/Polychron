@@ -9,8 +9,14 @@
 /** @type {ReadonlyArray<number>} complementary interval map: for each interval 0-11, the "answer" interval */
 const COMPLEMENT_MAP = Object.freeze([6, 5, 4, 3, 8, 7, 0, 5, 4, 3, 2, 1]);
 
-feedbackOscillator = (() => {
-  const V = validator.create('feedbackOscillator');
+moduleLifecycle.declare({
+  name: 'feedbackOscillator',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['feedbackOscillator'],
+  crossLayerScopes: ['all'],
+  init: (deps) => {
+  const V = deps.validator.create('feedbackOscillator');
   const CHANNEL = 'feedbackLoop';
   const SYNC_TOLERANCE_MS = 250;
   const DAMPING = 0.55;
@@ -192,5 +198,5 @@ feedbackOscillator = (() => {
   function setCoordinationScale(scale) { cimScale = clamp(scale, 0, 1); }
 
   return { inject, react, applyFeedback, setCoordinationScale, reset() { cimScale = 0.5; } };
-})();
-crossLayerRegistry.register('feedbackOscillator', feedbackOscillator, ['all']);
+  },
+});

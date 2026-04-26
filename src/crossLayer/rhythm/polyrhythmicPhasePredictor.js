@@ -9,8 +9,13 @@
  * near predicted convergence points.
  */
 
-polyrhythmicPhasePredictor = (() => {
-  const V = validator.create('polyrhythmicPhasePredictor');
+moduleLifecycle.declare({
+  name: 'polyrhythmicPhasePredictor',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['polyrhythmicPhasePredictor'],
+  init: (deps) => {
+  const V = deps.validator.create('polyrhythmicPhasePredictor');
 
   const CHANNEL        = 'phaseConvergence';
   const BOOST_WINDOW   = 0.15;   // fraction of phrase length
@@ -111,4 +116,5 @@ polyrhythmicPhasePredictor = (() => {
   crossLayerRegistry.register('polyrhythmicPhasePredictor', mod, ['all', 'phrase']);
 
   return mod;
-})();
+  },
+});

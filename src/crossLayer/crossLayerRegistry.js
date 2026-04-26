@@ -3,7 +3,12 @@
 // crossLayerLifecycleManager iterates this registry instead of probing typeof guards.
 // Lifecycle management delegates to the shared moduleLifecycle utility.
 
-crossLayerRegistry = (() => {
+moduleLifecycle.declare({
+  name: 'crossLayerRegistry',
+  subsystem: 'crossLayer',
+  deps: [],
+  provides: ['crossLayerRegistry'],
+  init: (deps) => {
   const lifecycle = moduleLifecycle.create('crossLayerRegistry');
 
   return {
@@ -14,4 +19,5 @@ crossLayerRegistry = (() => {
     getRegisteredNames: lifecycle.getNames,
     getCount: lifecycle.getCount
   };
-})();
+  },
+});

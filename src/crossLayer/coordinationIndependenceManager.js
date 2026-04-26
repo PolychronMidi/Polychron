@@ -4,8 +4,14 @@
 // and self-assessed effectiveness. Lives in crossLayer (reads conductor via
 // bridge, writes to peer crossLayer modules via setCoordinationScale).
 
-coordinationIndependenceManager = (() => {
-  const V = validator.create('coordinationIndependenceManager');
+moduleLifecycle.declare({
+  name: 'coordinationIndependenceManager',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['coordinationIndependenceManager'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('coordinationIndependenceManager');
 
   // Module pairs and their coordination dials (0=independent, 1=coordinated)
   const MODULE_PAIRS = [
@@ -428,5 +434,5 @@ coordinationIndependenceManager = (() => {
   }
 
   return { tick, getDial, setChaosMode, setOscillationMode, getSnapshot, reset };
-})();
-crossLayerRegistry.register('coordinationIndependenceManager', coordinationIndependenceManager, ['all', 'section']);
+  },
+});

@@ -12,8 +12,13 @@
 //   2. Counted for density monitoring
 //   3. Emitted to explainabilityBus for forensic traceability
 
-crossLayerEmissionGateway = (() => {
-  const V = validator.create('crossLayerEmissionGateway');
+moduleLifecycle.declare({
+  name: 'crossLayerEmissionGateway',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['crossLayerEmissionGateway'],
+  init: (deps) => {
+  const V = deps.validator.create('crossLayerEmissionGateway');
 
   /** @type {Record<string, number>} per-module emission counts for the current scope */
   const counts = {};
@@ -94,4 +99,5 @@ crossLayerEmissionGateway = (() => {
   }
 
   return { emit, emitMultiple, getCounts, getTotal, getSnapshot, reset };
-})();
+  },
+});

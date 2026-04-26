@@ -4,8 +4,14 @@
 // Nudges all cross-layer systems up or down to steer total entropy toward the target.
 // Acts as a meta-conductor for the cross-layer systems themselves.
 
-entropyRegulator = (() => {
-  const V = validator.create('entropyRegulator');
+moduleLifecycle.declare({
+  name: 'entropyRegulator',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['entropyRegulator'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('entropyRegulator');
   const WINDOW_NOTES = 10; // halved (was 20) - faster window turnover creates more beat-to-beat variance
   const SMOOTHING = 0.3; // exponential smoothing factor
 
@@ -313,5 +319,5 @@ entropyRegulator = (() => {
     recordSample, measureEntropy, measureRawEntropy, setTarget, getArcTarget,
     getRegulation, regulate, setRegulationStrength, reset, getRhythmErrors
   };
-})();
-crossLayerRegistry.register('entropyRegulator', entropyRegulator, ['all', 'section']);
+  },
+});

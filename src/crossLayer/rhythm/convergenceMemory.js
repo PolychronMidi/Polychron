@@ -2,7 +2,13 @@
 // builds a histogram, and provides probability boosts at positions that
 // historically have high convergence. System learns its own rhythm.
 
-convergenceMemory = (() => {
+moduleLifecycle.declare({
+  name: 'convergenceMemory',
+  subsystem: 'crossLayer',
+  deps: [],
+  provides: ['convergenceMemory'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
   const BINS = 16;
   const histogram = new Array(BINS).fill(0);
   let totalSamples = 0;
@@ -35,5 +41,5 @@ convergenceMemory = (() => {
   }
 
   return { record, getBoost, reset };
-})();
-crossLayerRegistry.register('convergenceMemory', convergenceMemory, ['all', 'section']);
+  },
+});

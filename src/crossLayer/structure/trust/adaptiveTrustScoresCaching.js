@@ -1,7 +1,12 @@
 // src/crossLayer/structure/trust/adaptiveTrustScoresCaching.js
 // Cache key/version management and weight/snapshot caching for adaptiveTrustScores.
 
-adaptiveTrustScoresCaching = (() => {
+moduleLifecycle.declare({
+  name: 'adaptiveTrustScoresCaching',
+  subsystem: 'crossLayer',
+  deps: [],
+  provides: ['adaptiveTrustScoresCaching'],
+  init: (deps) => {
   let cacheVersion = 0;
   let contextCacheKey = '';
   let contextCache = null;
@@ -92,4 +97,5 @@ adaptiveTrustScoresCaching = (() => {
   }
 
   return { getBeatKey, getCacheKey, invalidateValueCaches, resolveContext, getWeightCached, setWeightCached, getSnapshotCached, setSnapshotCached, resetCaches };
-})();
+  },
+});

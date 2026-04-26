@@ -1,7 +1,12 @@
 // src/crossLayer/structure/trust/adaptiveTrustScoresVelocityNourishment.js
 // Velocity EMA tracking, stagnation detection, and synthetic payoff injection for trust scores.
 
-adaptiveTrustScoresVelocityNourishment = (() => {
+moduleLifecycle.declare({
+  name: 'adaptiveTrustScoresVelocityNourishment',
+  subsystem: 'crossLayer',
+  deps: [],
+  provides: ['adaptiveTrustScoresVelocityNourishment'],
+  init: (deps) => {
   const _VELOCITY_EMA_ALPHA = 0.02;         // ~50-beat horizon
   const _STAGNATION_THRESHOLD = 0.001;      // velocity below this is "stagnant"
   const _DISENGAGE_THRESHOLD = 0.003;       // 3x threshold for hysteresis disengage
@@ -101,4 +106,5 @@ adaptiveTrustScoresVelocityNourishment = (() => {
   }
 
   return { runVelocityNourishment, resetVelocityState };
-})();
+  },
+});

@@ -1,5 +1,11 @@
-registerCollisionAvoider = (() => {
-  const V = validator.create('registerCollisionAvoider');
+moduleLifecycle.declare({
+  name: 'registerCollisionAvoider',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['registerCollisionAvoider'],
+  crossLayerScopes: ['all', 'phrase'],
+  init: (deps) => {
+  const V = deps.validator.create('registerCollisionAvoider');
   const CHANNEL = 'registerCollision';
   const TIME_TOLERANCE_SEC = 0.140;
   const octaveBounds = crossLayerHelpers.getOctaveBounds({ lowOffset: 0, clipToMidi: true });
@@ -95,5 +101,5 @@ registerCollisionAvoider = (() => {
   }
 
   return { recordNote, avoid, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('registerCollisionAvoider', registerCollisionAvoider, ['all', 'phrase']);
+  },
+});

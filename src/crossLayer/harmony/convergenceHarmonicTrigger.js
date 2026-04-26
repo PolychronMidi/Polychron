@@ -3,8 +3,14 @@
 // modal interchange moments, cadence resolutions, or tonic reaffirmations.
 // Consumes cadenceAlignment tonicBias/dominantBias (dead-end signals).
 
-convergenceHarmonicTrigger = (() => {
-  const V = validator.create('convergenceHarmonicTrigger');
+moduleLifecycle.declare({
+  name: 'convergenceHarmonicTrigger',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['convergenceHarmonicTrigger'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('convergenceHarmonicTrigger');
   const MIN_TRIGGER_INTERVAL_SEC = 2;
   const TRIGGER_PROBABILITY = 0.35;
   const EVENTS = eventCatalog.names;
@@ -137,5 +143,5 @@ convergenceHarmonicTrigger = (() => {
   }
 
   return { onConvergence, shouldTriggerChange, getTriggeredChanges, getTriggerCount, reset };
-})();
-crossLayerRegistry.register('convergenceHarmonicTrigger', convergenceHarmonicTrigger, ['all', 'section']);
+  },
+});

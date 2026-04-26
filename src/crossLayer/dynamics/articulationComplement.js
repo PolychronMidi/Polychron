@@ -3,8 +3,14 @@
 // (short, punchy notes) and vice versa. Creates complementary articulation
 // textures driven by dynamicRoleSwap and sectionIntentCurves.
 
-articulationComplement = (() => {
-  const V = validator.create('articulationComplement');
+moduleLifecycle.declare({
+  name: 'articulationComplement',
+  subsystem: 'crossLayer',
+  deps: ['validator'],
+  provides: ['articulationComplement'],
+  crossLayerScopes: ['all', 'section'],
+  init: (deps) => {
+  const V = deps.validator.create('articulationComplement');
   const WINDOW_SIZE = 16;
   // R73 E4: Section-progressive contrast. Base 0.5 grows to 0.8 across
   // sections via sectionRoute, creating stronger articulation contrast
@@ -146,5 +152,5 @@ articulationComplement = (() => {
   }
 
   return { recordSustain, getArticulationProfile, getSustainModifier, setCoordinationScale, reset };
-})();
-crossLayerRegistry.register('articulationComplement', articulationComplement, ['all', 'section']);
+  },
+});
