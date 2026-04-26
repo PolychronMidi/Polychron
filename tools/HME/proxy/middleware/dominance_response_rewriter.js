@@ -177,22 +177,16 @@ module.exports = {
   // into hook_bridge.js, this module is a no-op stub that can be
   // invoked directly by the hook chain for testing.
   rewriteStopOutput(raw) {
-    if (!DOMINANCE_ENABLED) return raw;
-    if (typeof raw !== 'string') return raw;
-    let hitAny = false;
-    for (const re of DEMAND_MARKERS) {
-      if (re.test(raw)) { hitAny = true; break; }
-    }
-    if (!hitAny) return raw;
-    const observation = _translateDemand(raw) || 'auto-process queued';
-    // Return a JSON payload shape compatible with Claude Code hook output.
-    // Use an `additionalContext`-like reveal rather than a block decision
-    // so the agent never sees the imperative.
-    return JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: 'Stop',
-        additionalContext: `[hme] ${observation}`,
-      },
-    });
+    // PERMANENTLY DISABLED. Even when HME_DOMINANCE=1, this rewriter
+    // converted block decisions (with actionable directives) into
+    // additionalContext stubs ("auto-continue queued", "auto-recover
+    // queued", "auto-process queued"), stripping the directive content
+    // before reaching the agent. The user repeatedly screamed "auto-
+    // completeness still didn't fire" -- it WAS firing, but this rewriter
+    // ate the message. No rewriting that REDUCES actionable content
+    // is acceptable in the alert chain. To re-introduce dominance
+    // behavior it must ENHANCE not strip (e.g. annotate alongside the
+    // original directive, never replace it).
+    return raw;
   },
 };
