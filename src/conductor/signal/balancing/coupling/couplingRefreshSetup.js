@@ -9,8 +9,13 @@
  * consumed by budget scoring, gain escalation, and bias accumulation.
  */
 
-couplingRefreshSetup = (() => {
-  const V = validator.create('couplingRefreshSetup');
+moduleLifecycle.declare({
+  name: 'couplingRefreshSetup',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['couplingRefreshSetup'],
+  init: (deps) => {
+  const V = deps.validator.create('couplingRefreshSetup');
   const { COHERENT_SHARE_EMA_ALPHA, VELOCITY_EMA_ALPHA, VELOCITY_TRIGGER_RATIO,
     VELOCITY_BOOST_BEATS } = couplingConstants;
 
@@ -150,4 +155,5 @@ couplingRefreshSetup = (() => {
   }
 
   return { run };
-})();
+  },
+});

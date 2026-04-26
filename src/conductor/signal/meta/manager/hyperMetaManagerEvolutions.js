@@ -2,7 +2,12 @@
 // Extracted from hyperMetaManager tick() to keep the orchestrator file concise.
 // Called once per orchestration tick with the gathered controller state.
 
-hyperMetaManagerEvolutions = (() => {
+moduleLifecycle.declare({
+  name: 'hyperMetaManagerEvolutions',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['hyperMetaManagerEvolutions'],
+  init: (deps) => {
   const ST     = hyperMetaManagerState;
   const S      = ST.S;
   const health = hyperMetaManagerHealth;
@@ -401,4 +406,5 @@ hyperMetaManagerEvolutions = (() => {
   }
 
   return { applyEvolutions };
-})();
+  },
+});

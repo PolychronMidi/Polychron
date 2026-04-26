@@ -2,8 +2,13 @@
 // Pure arc profile helpers extracted from PhraseArcManager.
 // Provides breath profile, phase classification, and arc profile generation.
 
-phraseArcProfiler = (() => {
-  const V = validator.create('phraseArcProfiler');
+moduleLifecycle.declare({
+  name: 'phraseArcProfiler',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['phraseArcProfiler'],
+  init: (deps) => {
+  const V = deps.validator.create('phraseArcProfiler');
 
   /**
    * Get phrase breath parameters from conductorConfig with built-in fallback.
@@ -117,4 +122,5 @@ phraseArcProfiler = (() => {
   }
 
   return { getBreathProfile, getPhase, generateArcProfiles };
-})();
+  },
+});

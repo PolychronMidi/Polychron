@@ -2,8 +2,13 @@
 // Detects whether phrases are getting shorter (accelerating) or longer (expanding).
 // Pure query API - advises phrase-count decisions alongside sectionLengthAdvisor.
 
-phraseLengthMomentumTracker = (() => {
-  const V = validator.create('phraseLengthMomentumTracker');
+moduleLifecycle.declare({
+  name: 'phraseLengthMomentumTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['phraseLengthMomentumTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('phraseLengthMomentumTracker');
   /** @type {Array<{ section: number, phraseIndex: number, measures: number }>} */
   const history = [];
   const MAX_HISTORY = 32;
@@ -84,4 +89,5 @@ phraseLengthMomentumTracker = (() => {
     suggestAdjustment,
     reset
   };
-})();
+  },
+});

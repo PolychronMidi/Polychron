@@ -4,7 +4,12 @@
 // to break them. Inversely health-gated: shuffles MORE under stress since
 // correlation lock may be the cause of the stress.
 
-correlationShuffler = (() => {
+moduleLifecycle.declare({
+  name: 'correlationShuffler',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['correlationShuffler'],
+  init: (deps) => {
   const S = hyperMetaManagerState.S;
 
   const WINDOW_SIZE = 80;
@@ -323,4 +328,5 @@ correlationShuffler = (() => {
   }, null);
 
   return { tick, getShuffleScale, getSnapshot, reset };
-})();
+  },
+});

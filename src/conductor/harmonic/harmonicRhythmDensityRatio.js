@@ -2,8 +2,13 @@
 // Detects imbalance: fast harmony + sparse notes, or slow harmony + dense notes.
 // Pure query API - corrects density when harmonic and melodic activity diverge.
 
-harmonicRhythmDensityRatio = (() => {
-  const V = validator.create('harmonicRhythmDensityRatio');
+moduleLifecycle.declare({
+  name: 'harmonicRhythmDensityRatio',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicRhythmDensityRatio'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicRhythmDensityRatio');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -67,4 +72,5 @@ harmonicRhythmDensityRatio = (() => {
     getRatioProfile,
     getDensityBias
   };
-})();
+  },
+});

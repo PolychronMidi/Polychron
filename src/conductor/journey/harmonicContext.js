@@ -14,8 +14,13 @@
  * @property {number} mutationCount
  * @property {number} modifiedAt
  */
-harmonicContext = (() => {
-  const V = validator.create('harmonicContext');
+moduleLifecycle.declare({
+  name: 'harmonicContext',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicContext'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicContext');
 
   /** @type {Set<number>} */
   let scaleChromaSet = new Set();
@@ -239,4 +244,5 @@ harmonicContext = (() => {
     reset,
     toJSON
   };
-})();
+  },
+});

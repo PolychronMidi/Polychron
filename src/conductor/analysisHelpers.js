@@ -4,7 +4,12 @@
 // structuralFormTracker.
 // Pure, stateless helpers - no side effects, no ATW dependency.
 
-analysisHelpers = (() => {
+moduleLifecycle.declare({
+  name: 'analysisHelpers',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['analysisHelpers'],
+  init: (deps) => {
   /**
    * Shared ATW note-window query for single-layer analysis modules.
    * @param {{ optionalFinite: (value: unknown, fallback?: number) => number }} V
@@ -123,4 +128,5 @@ analysisHelpers = (() => {
     halfSplitSlope,
     createTrackerQuery
   };
-})();
+  },
+});

@@ -1,6 +1,11 @@
 const V = validator.create('minimumNoteDuration');
 
-minimumNoteDuration = (() => {
+moduleLifecycle.declare({
+  name: 'minimumNoteDuration',
+  subsystem: 'play',
+  deps: [],
+  provides: ['minimumNoteDuration'],
+  init: (deps) => {
   const CORE_MIN_S = 0.090;
   const ORNAMENT_MIN_S = 0.065;
   const CORE_UNIT_RATIO = 0.22;
@@ -32,4 +37,5 @@ minimumNoteDuration = (() => {
       return m.max(onTimeValue + getFloorSeconds(kind, unitSecs), desiredTimeValue);
     }
   };
-})();
+  },
+});

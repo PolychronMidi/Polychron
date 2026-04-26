@@ -4,7 +4,12 @@
 // couplingEffectiveGain. Pairs that historically spike during S0 get
 // longer ramps; pairs that need immediate decorrelation get shorter ones.
 
-warmupRampController = (() => {
+moduleLifecycle.declare({
+  name: 'warmupRampController',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['warmupRampController'],
+  init: (deps) => {
 
   const _S0_EXCEEDANCE_EMA_ALPHA = 0.10;
   const _SECTION_LENGTH_EMA_ALPHA = 0.08;
@@ -180,4 +185,5 @@ warmupRampController = (() => {
     getSnapshot,
     reset
   };
-})();
+  },
+});

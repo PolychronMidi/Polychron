@@ -3,7 +3,12 @@
 // Smooth voice leading (minimal movement) - higher efficiency score.
 // Pure query API - density bias to allow resolution time when choppy.
 
-voiceLeadingEfficiencyTracker = (() => {
+moduleLifecycle.declare({
+  name: 'voiceLeadingEfficiencyTracker',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['voiceLeadingEfficiencyTracker'],
+  init: (deps) => {
   const WINDOW_SECONDS = 6;
 
   /**
@@ -142,4 +147,5 @@ voiceLeadingEfficiencyTracker = (() => {
     getTensionBias,
     getFlickerModifier
   };
-})();
+  },
+});

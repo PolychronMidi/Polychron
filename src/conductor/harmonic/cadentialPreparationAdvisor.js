@@ -3,8 +3,13 @@
 // signalling when dominant preparation or leading-tone pressure should begin.
 // Pure query API - biases derivedTension near cadence points.
 
-cadentialPreparationAdvisor = (() => {
-  const V = validator.create('cadentialPreparationAdvisor');
+moduleLifecycle.declare({
+  name: 'cadentialPreparationAdvisor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['cadentialPreparationAdvisor'],
+  init: (deps) => {
+  const V = deps.validator.create('cadentialPreparationAdvisor');
   const PREP_WINDOW = 0.2; // prepare in the last 20% of a phrase
 
   /**
@@ -79,4 +84,5 @@ cadentialPreparationAdvisor = (() => {
     getCadentialSignal,
     getTensionBias
   };
-})();
+  },
+});

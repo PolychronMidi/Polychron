@@ -10,8 +10,13 @@
  * exceedance braking, and time-series capture.
  */
 
-homeostasisTick = (() => {
-  const V = validator.create('homeostasisTick');
+moduleLifecycle.declare({
+  name: 'homeostasisTick',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['homeostasisTick'],
+  init: (deps) => {
+  const V = deps.validator.create('homeostasisTick');
   const { GAIN_FLOOR, GINI_THRESHOLD,
     MAX_TIME_SERIES, FLOOR_RECOVERY_TRIGGER, FLOOR_RECOVERY_HOLD } = homeostasisConstants;
 
@@ -218,4 +223,5 @@ homeostasisTick = (() => {
   }
 
   return { tick };
-})();
+  },
+});

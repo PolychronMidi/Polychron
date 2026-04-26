@@ -3,7 +3,12 @@
 // (sustain-heavy) notes. Density bias for articulation balance.
 // Pure query API - no side effects.
 
-attackDensityProfiler = (() => {
+moduleLifecycle.declare({
+  name: 'attackDensityProfiler',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['attackDensityProfiler'],
+  init: (deps) => {
   const WINDOW_SECONDS = 6;
   const SHORT_THRESHOLD = 0.15; // seconds - notes shorter than this are "attacks"
 
@@ -78,4 +83,5 @@ attackDensityProfiler = (() => {
     getAttackSignal,
     getDensityBias
   };
-})();
+  },
+});

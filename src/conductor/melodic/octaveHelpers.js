@@ -2,8 +2,13 @@
 // Used by octaveSpreadMonitor, registerPressureMonitor.
 // Pure query - reads L0.
 
-octaveHelpers = (() => {
-  const V = validator.create('octaveHelpers');
+moduleLifecycle.declare({
+  name: 'octaveHelpers',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['octaveHelpers'],
+  init: (deps) => {
+  const V = deps.validator.create('octaveHelpers');
   /**
    * Build an octave-band count histogram from recent notes.
    * @param {number} [windowSeconds=6] - lookback window
@@ -32,4 +37,5 @@ octaveHelpers = (() => {
   }
 
   return { getOctaveHistogram };
-})();
+  },
+});

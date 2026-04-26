@@ -2,8 +2,13 @@
 // Tracks gaps between trace P95 and controller P95, applies trust
 // velocity damping, and checks phase telemetry integrity.
 
-hyperMetaManagerTelemetry = (() => {
-  const V = validator.create('telemetryReconciliation');
+moduleLifecycle.declare({
+  name: 'hyperMetaManagerTelemetry',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['hyperMetaManagerTelemetry'],
+  init: (deps) => {
+  const V = deps.validator.create('telemetryReconciliation');
   const ST = hyperMetaManagerState;
   const S  = ST.S;
 
@@ -106,4 +111,5 @@ hyperMetaManagerTelemetry = (() => {
     applyTrustVelocityDamping,
     checkPhaseTelemetryIntegrity,
   };
-})();
+  },
+});

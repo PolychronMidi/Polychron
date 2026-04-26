@@ -4,7 +4,12 @@
 // Provides phase relationship, timing drift, alignment flicker, and hemiola detection.
 // Pure query API - no side effects.
 
-interLayerRhythmAnalyzer = (() => {
+moduleLifecycle.declare({
+  name: 'interLayerRhythmAnalyzer',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['interLayerRhythmAnalyzer'],
+  init: (deps) => {
   // Beat-level caches - each analysis function is called 2+ times per beat
   // (once from flicker/bias registration, once from stateProvider).
   const interLayerRhythmAnalyzerPhaseCache = beatCache.create(() => interLayerRhythmHelpers.computePhaseRelationship());
@@ -123,4 +128,5 @@ interLayerRhythmAnalyzer = (() => {
     getDisplacementProfile,
     getDisplacementSignal
   };
-})();
+  },
+});

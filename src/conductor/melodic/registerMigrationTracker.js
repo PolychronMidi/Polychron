@@ -2,8 +2,13 @@
 // Detects ascending, descending, or static register migration over time.
 // Pure query API - nudges pitch gravity toward underexplored registers.
 
-registerMigrationTracker = (() => {
-  const V = validator.create('registerMigrationTracker');
+moduleLifecycle.declare({
+  name: 'registerMigrationTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['registerMigrationTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('registerMigrationTracker');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 
   /**
@@ -72,4 +77,5 @@ registerMigrationTracker = (() => {
     getMigrationProfile,
     getRegisterBias
   };
-})();
+  },
+});

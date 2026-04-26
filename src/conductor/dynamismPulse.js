@@ -2,7 +2,12 @@
 // Per-unit probability pulse extracted from dynamismEngine.getUnitPulse().
 // Combines measure/beat progress, oscillation, and micro-hyper flicker.
 
-dynamismPulse = (() => {
+moduleLifecycle.declare({
+  name: 'dynamismPulse',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['dynamismPulse'],
+  init: (deps) => {
   /**
    * Compute per-unit pulse so probabilities evolve inside a measure.
    * Includes micro-hyper oscillation: two incommensurate fast sine layers +
@@ -40,4 +45,5 @@ dynamismPulse = (() => {
   }
 
   return { compute };
-})();
+  },
+});

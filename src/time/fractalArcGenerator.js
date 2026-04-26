@@ -14,8 +14,13 @@
  *   fractalArcGenerator.reset()
  */
 
-fractalArcGenerator = (() => {
-  const V = validator.create('fractalArcGenerator');
+moduleLifecycle.declare({
+  name: 'fractalArcGenerator',
+  subsystem: 'time',
+  deps: ['validator'],
+  provides: ['fractalArcGenerator'],
+  init: (deps) => {
+  const V = deps.validator.create('fractalArcGenerator');
 
   /** @type {TimeStreamLevel[]} */
   const LEVELS  = ['section', 'phrase', 'measure'];
@@ -56,4 +61,5 @@ fractalArcGenerator = (() => {
   function reset() { /* stateless - nothing to clear */ }
 
   return { intensity, composite, arcShape, reset };
-})();
+  },
+});

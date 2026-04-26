@@ -3,8 +3,13 @@
 // Biases toward range exploration when constrained or consolidation when overspread.
 // Pure query API - no side effects.
 
-ambitusMigrationTracker = (() => {
-  const V = validator.create('ambitusMigrationTracker');
+moduleLifecycle.declare({
+  name: 'ambitusMigrationTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['ambitusMigrationTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('ambitusMigrationTracker');
   const WINDOW_SECONDS = 10;
   const MAX_HISTORY = 12;
   /** @type {Array<{ range: number, center: number, time: number }>} */
@@ -136,4 +141,5 @@ ambitusMigrationTracker = (() => {
     getFlickerBias,
     reset
   };
-})();
+  },
+});

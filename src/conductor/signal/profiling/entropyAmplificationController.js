@@ -6,8 +6,13 @@
 //
 // Extracted from systemDynamicsProfiler.js for single-responsibility.
 
-entropyAmplificationController = (() => {
-  const V = validator.create('entropyAmplificationController');
+moduleLifecycle.declare({
+  name: 'entropyAmplificationController',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['entropyAmplificationController'],
+  init: (deps) => {
+  const V = deps.validator.create('entropyAmplificationController');
 
   // Target variance share for entropy dimension
   const TARGET_SHARE = 0.25;
@@ -77,4 +82,5 @@ entropyAmplificationController = (() => {
   }
 
   return { adapt, getAmp, reset };
-})();
+  },
+});

@@ -4,7 +4,12 @@
 // vs. when asymmetry should keep things fresh.
 // Pure query API - no side effects.
 
-rhythmicSymmetryDetector = (() => {
+moduleLifecycle.declare({
+  name: 'rhythmicSymmetryDetector',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['rhythmicSymmetryDetector'],
+  init: (deps) => {
   const WINDOW_SECONDS = 6;
   const MIN_ONSETS = 4;
 
@@ -113,4 +118,5 @@ rhythmicSymmetryDetector = (() => {
   return {
     getSymmetrySignal
   };
-})();
+  },
+});

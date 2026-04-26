@@ -3,8 +3,13 @@
 // Tension bias spaces dynamic peaks for maximum impact.
 // Pure query API - no side effects.
 
-dynamicPeakMemory = (() => {
-  const V = validator.create('dynamicPeakMemory');
+moduleLifecycle.declare({
+  name: 'dynamicPeakMemory',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['dynamicPeakMemory'],
+  init: (deps) => {
+  const V = deps.validator.create('dynamicPeakMemory');
   const MAX_PEAKS = 12;
   /** @type {Array<{ intensity: number, time: number, type: string }>} */
   const peaks = [];
@@ -129,4 +134,5 @@ dynamicPeakMemory = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

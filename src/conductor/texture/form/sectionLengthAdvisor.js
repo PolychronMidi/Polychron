@@ -2,8 +2,13 @@
 // Tracks composite intensity over time to recommend extending or truncating sections.
 // Pure query API - consumed by main.js when determining phrasesPerSection.
 
-sectionLengthAdvisor = (() => {
-  const V = validator.create('sectionLengthAdvisor');
+moduleLifecycle.declare({
+  name: 'sectionLengthAdvisor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['sectionLengthAdvisor'],
+  init: (deps) => {
+  const V = deps.validator.create('sectionLengthAdvisor');
   /** @type {Array<number>} */
   const energyHistory = [];
   const MAX_HISTORY = 60;
@@ -103,4 +108,5 @@ sectionLengthAdvisor = (() => {
     getEnergyTrajectory,
     reset
   };
-})();
+  },
+});

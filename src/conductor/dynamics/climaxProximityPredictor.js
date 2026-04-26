@@ -3,7 +3,12 @@
 // to predict when a climax is approaching, occurring, or spent.
 // Pure query API - prepares density/register/dynamics ramp before peaks.
 
-climaxProximityPredictor = (() => {
+moduleLifecycle.declare({
+  name: 'climaxProximityPredictor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['climaxProximityPredictor'],
+  init: (deps) => {
   // Beat-level cache: predict() queries 4 external modules but is called twice
   // per beat (via getDensityRampBias + getTensionBias).
   const climaxProximityPredictorCache = beatCache.create(() => climaxProximityPredictorPredict());
@@ -137,4 +142,5 @@ climaxProximityPredictor = (() => {
     getDensityRampBias,
     getTensionBias
   };
-})();
+  },
+});

@@ -8,7 +8,12 @@
  * @typedef {{ name: string, after: string[], produces: string[] }} BeatPipelineStage
  */
 
-beatPipelineDescriptor = (() => {
+moduleLifecycle.declare({
+  name: 'beatPipelineDescriptor',
+  subsystem: 'play',
+  deps: [],
+  provides: ['beatPipelineDescriptor'],
+  init: (deps) => {
 
   /** @type {readonly BeatPipelineStage[]} */
   const STAGES = Object.freeze([
@@ -97,4 +102,5 @@ beatPipelineDescriptor = (() => {
   function getStageNames() { return STAGES.map(s => s.name); }
 
   return { getStages, getStageNames, assertTopologicalOrder };
-})();
+  },
+});

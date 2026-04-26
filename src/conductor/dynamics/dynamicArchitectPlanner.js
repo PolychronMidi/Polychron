@@ -3,8 +3,13 @@
 // biases tension to enforce a long-range dynamic plan.
 // Pure query API - tension bias drives gradual macro-dynamic shape.
 
-dynamicArchitectPlanner = (() => {
-  const V = validator.create('dynamicArchitectPlanner');
+moduleLifecycle.declare({
+  name: 'dynamicArchitectPlanner',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['dynamicArchitectPlanner'],
+  init: (deps) => {
+  const V = deps.validator.create('dynamicArchitectPlanner');
   const MAX_SNAPSHOTS = 64;
   /** @type {Array<{ intensity: number, time: number }>} */
   const snapshots = [];
@@ -162,4 +167,5 @@ dynamicArchitectPlanner = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

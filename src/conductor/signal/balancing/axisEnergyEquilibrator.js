@@ -1,7 +1,12 @@
 // axisEnergyEquilibrator.js - Hypermeta controller facade for coupling-energy redistribution.
 
-axisEnergyEquilibrator = (() => {
-  const V = validator.create('axisEnergyEquilibrator');
+moduleLifecycle.declare({
+  name: 'axisEnergyEquilibrator',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['axisEnergyEquilibrator'],
+  init: (deps) => {
+  const V = deps.validator.create('axisEnergyEquilibrator');
   const axisEnergyEquilibratorConfig = {
     HOTSPOT_RATIO: 2.0,
     HOTSPOT_ABS_MIN: 0.25,
@@ -169,4 +174,5 @@ axisEnergyEquilibrator = (() => {
   conductorIntelligence.registerModule('axisEnergyEquilibrator', { reset }, ['section']);
 
   return { getSnapshot, reset };
-})();
+  },
+});

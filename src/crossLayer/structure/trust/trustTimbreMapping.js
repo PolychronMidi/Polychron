@@ -8,7 +8,7 @@ moduleLifecycle.declare({
   deps: [],
   provides: ['trustTimbreMapping'],
   crossLayerScopes: ['all', 'section'],
-  init: (deps) => {
+  init: () => {
   // Family-coherent pools: pads, keys, strings, synths, ensemble
   const TRUST_INSTRUMENT_POOLS = {
     convergenceHarmonicTrigger: [89, 92, 97, 98],

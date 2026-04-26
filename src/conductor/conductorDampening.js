@@ -2,8 +2,13 @@
 // Extracted from conductorIntelligence.js. Prevents coordinated crush (many modules
 // each pulling to 0.85-0.94) from accumulating catastrophic suppression.
 
-conductorDampening = (() => {
-  const V = validator.create('conductorDampening');
+moduleLifecycle.declare({
+  name: 'conductorDampening',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['conductorDampening'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorDampening');
   // Base damping (0.6) calibrated for ~20 contributors.
   // Smaller pipelines get proportionally less pass-through so each module's
   // deviation is attenuated more, reducing volatility.
@@ -336,4 +341,5 @@ conductorDampening = (() => {
   }
 
   return { scaledDamping, progressiveDampen, collectDampened, collectDampenedWithAttribution, setFlickerTargetRange };
-})();
+  },
+});

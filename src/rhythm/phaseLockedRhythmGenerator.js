@@ -2,8 +2,13 @@
 // Enables explicit polyrhythmic interlocking via phase offset tracking
 // Reflects African music principles: cyclic patterns with phase relationships
 
-phaseLockedRhythmGenerator = (() => {
-  const V = validator.create('phaseLockedRhythmGenerator');
+moduleLifecycle.declare({
+  name: 'phaseLockedRhythmGenerator',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['phaseLockedRhythmGenerator'],
+  init: (deps) => {
+  const V = deps.validator.create('phaseLockedRhythmGenerator');
   const phases = new Map();         // Map<layerName:patternName:length, offset>
   const generationHistory = [];     // Track recent generations for coherence analysis
   let activeLayer = null;           // Track which layer is currently active for phase context
@@ -313,4 +318,5 @@ phaseLockedRhythmGenerator = (() => {
     setActiveLayer,
     initializePolyrhythmCoupling
   };
-})();
+  },
+});

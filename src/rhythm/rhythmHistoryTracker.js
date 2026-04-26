@@ -2,8 +2,13 @@
 // Provides novelty bias by penalizing recently-used rhythm patterns.
 // Integrates into getRhythm() as an additional bias stage.
 
-rhythmHistoryTracker = (() => {
-  const V = validator.create('rhythmHistoryTracker');
+moduleLifecycle.declare({
+  name: 'rhythmHistoryTracker',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['rhythmHistoryTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('rhythmHistoryTracker');
   const WINDOW = 12; // track last 12 rhythm selections
   /** @type {Array<{ method: string, length: number, layer: string }>} */
   const history = [];
@@ -101,4 +106,5 @@ rhythmHistoryTracker = (() => {
     getVariety,
     reset
   };
-})();
+  },
+});

@@ -4,10 +4,15 @@
 // All child unit durations (div/subdiv/subsubdiv) inherit the change
 // automatically, and BPM events reflect the actual effective tempo.
 
-tempoFeelEngine = (() => {
+moduleLifecycle.declare({
+  name: 'tempoFeelEngine',
+  subsystem: 'time',
+  deps: ['validator'],
+  provides: ['tempoFeelEngine'],
+  init: (deps) => {
   const MAX_FEEL_RATIO = 0.025; // max 2.5% tempo deviation
 
-  const V = validator.create('tempoFeelEngine');
+  const V = deps.validator.create('tempoFeelEngine');
 
   function requirePhraseContextPosition() {
     const phraseCtx = FactoryManager.sharedPhraseArcManager.getPhraseContext();
@@ -83,4 +88,5 @@ tempoFeelEngine = (() => {
     getTimeOffset,
     getFeelState
   };
-})();
+  },
+});

@@ -14,7 +14,12 @@
  * the nudgeable partner is nudged.
  */
 
-pipelineCouplingManager = (() => {
+moduleLifecycle.declare({
+  name: 'pipelineCouplingManager',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['pipelineCouplingManager'],
+  init: (deps) => {
   const { ALL_MONITORED_DIMS } = couplingConstants;
   const getPairTailTelemetry = pipelineCouplingManagerSnapshot.getPairTailTelemetry;
   const S = couplingState;
@@ -247,4 +252,5 @@ pipelineCouplingManager = (() => {
     getCouplingPressures,
     reset,
   };
-})();
+  },
+});

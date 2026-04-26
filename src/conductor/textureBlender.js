@@ -5,8 +5,13 @@
 // never settles into a predictable pattern.
 // Integrations: stutter coupling (#1), Phrase arc fatigue tracking (#3).
 
-textureBlender = (() => {
-  const V = validator.create('textureBlender');
+moduleLifecycle.declare({
+  name: 'textureBlender',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['textureBlender'],
+  init: (deps) => {
+  const V = deps.validator.create('textureBlender');
   // Fatigue tracking: rolling window of recent decisions (#3)
   const FATIGUE_WINDOW = 12;
   const recentModes = [];
@@ -163,4 +168,5 @@ textureBlender = (() => {
     resolve,
     getRecentDensity
   };
-})();
+  },
+});

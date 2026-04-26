@@ -3,7 +3,12 @@
 // Biases toward variety when diatonic-locked, restraint when over-saturated.
 // Pure query API - no side effects.
 
-chromaticSaturationMonitor = (() => {
+moduleLifecycle.declare({
+  name: 'chromaticSaturationMonitor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['chromaticSaturationMonitor'],
+  init: (deps) => {
   const WINDOW_SECONDS = 8;
 
   /**
@@ -76,4 +81,5 @@ chromaticSaturationMonitor = (() => {
     getDensityBias,
     getTensionBias
   };
-})();
+  },
+});

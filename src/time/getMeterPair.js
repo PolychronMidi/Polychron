@@ -4,7 +4,12 @@
 // Subsequent calls: picks a pair within 10% of the previous pair's length.
 // Sets numerator/denominator (L1) and polyNumerator/polyDenominator/polyMeterRatio/measuresPerPhrase1/measuresPerPhrase2.
 
-getMeterPair = (() => {
+moduleLifecycle.declare({
+  name: 'getMeterPair',
+  subsystem: 'time',
+  deps: [],
+  provides: ['getMeterPair'],
+  init: (deps) => {
   const FIRST_LO = 2;
   const FIRST_HI = 3;
   const DRIFT = 0.1;
@@ -50,4 +55,5 @@ getMeterPair = (() => {
   }
 
   return { pick, reset };
-})();
+  },
+});

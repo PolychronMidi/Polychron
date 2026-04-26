@@ -4,8 +4,13 @@
 // vs. staggered breathing for the conductor to modulate.
 // Pure query API - no side effects.
 
-silenceDistributionTracker = (() => {
-  const V = validator.create('silenceDistributionTracker');
+moduleLifecycle.declare({
+  name: 'silenceDistributionTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['silenceDistributionTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('silenceDistributionTracker');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 
   /**
@@ -95,4 +100,5 @@ silenceDistributionTracker = (() => {
   return {
     getSilenceSignal
   };
-})();
+  },
+});

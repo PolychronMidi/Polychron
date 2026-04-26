@@ -7,8 +7,13 @@
 // pedalSuggestion for compositional guidance (move-bass / pedal-effective / anchor).
 // Both are consumed by globalConductor for different product chains.
 
-pedalPointDetector = (() => {
-  const V = validator.create('pedalPointDetector');
+moduleLifecycle.declare({
+  name: 'pedalPointDetector',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['pedalPointDetector'],
+  init: (deps) => {
+  const V = deps.validator.create('pedalPointDetector');
   const WINDOW_SECONDS = 6;
   const BASS_CEILING = 55; // MIDI note - below this = bass register
 
@@ -115,4 +120,5 @@ pedalPointDetector = (() => {
     getPedalProfile,
     getBassSuggestion
   };
-})();
+  },
+});

@@ -1,7 +1,12 @@
 // src/composers/chord/pivotChordBridge.js - Pivot chord modulation bridge between harmonic journey stops
 // Finds shared diatonic chords between two keys and generates smooth transitional progressions
 
-pivotChordBridge = (() => {
+moduleLifecycle.declare({
+  name: 'pivotChordBridge',
+  subsystem: 'composers',
+  deps: [],
+  provides: ['pivotChordBridge'],
+  init: (deps) => {
   /** @type {string[]|null} */
   let pivotChordBridgePendingBridge = null;
 
@@ -203,4 +208,5 @@ pivotChordBridge = (() => {
     consumeBridge,
     reset
   };
-})();
+  },
+});

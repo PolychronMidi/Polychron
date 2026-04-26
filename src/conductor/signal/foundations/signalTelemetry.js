@@ -2,8 +2,13 @@
 // Records a lightweight snapshot of key signal products each beat.
 // Detects anomalies (>30% change from rolling mean) for debugging emergent moments.
 
-signalTelemetry = (() => {
-  const V = validator.create('signalTelemetry');
+moduleLifecycle.declare({
+  name: 'signalTelemetry',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['signalTelemetry'],
+  init: (deps) => {
+  const V = deps.validator.create('signalTelemetry');
   const MAX_HISTORY = 200;
   /** @type {Array<{ tick: number, density: number, tension: number, flicker: number, compositeIntensity: number }>} */
   const history = [];
@@ -118,4 +123,5 @@ signalTelemetry = (() => {
   conductorIntelligence.registerModule('signalTelemetry', { reset }, ['section']);
 
   return { record, getHistory, isAnomalyDetected, getTrend, reset };
-})();
+  },
+});

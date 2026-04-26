@@ -2,8 +2,13 @@
 // Note-onset count per second across both layers, independent of eventBus feedback.
 // Directly scales conductor densityBias and crossModBias.
 
-onsetDensityProfiler = (() => {
-  const V = validator.create('onsetDensityProfiler');
+moduleLifecycle.declare({
+  name: 'onsetDensityProfiler',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['onsetDensityProfiler'],
+  init: (deps) => {
+  const V = deps.validator.create('onsetDensityProfiler');
   const query = analysisHelpers.createTrackerQuery(V, 3, { minNotes: 2 });
   const TARGET_NPS = 15; // target notes-per-second for "balanced" density
 
@@ -124,4 +129,5 @@ onsetDensityProfiler = (() => {
     getCrossModBias,
     getLayerDensities
   };
-})();
+  },
+});

@@ -9,7 +9,12 @@
  * pairs. Includes chronic dampening decay to break floor locks.
  */
 
-homeostasisFloor = (() => {
+moduleLifecycle.declare({
+  name: 'homeostasisFloor',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['homeostasisFloor'],
+  init: (deps) => {
   const { CHRONIC_DAMPEN_THRESHOLD, CHRONIC_FLOOR_RELAX_RATE,
     CHRONIC_FLOOR_RELAX_CAP } = homeostasisConstants;
 
@@ -53,4 +58,5 @@ homeostasisFloor = (() => {
   }
 
   return { getFloorDampen, getBudgetConstraintPressure };
-})();
+  },
+});

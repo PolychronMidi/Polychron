@@ -3,8 +3,13 @@
 // High entropy = surprising/fresh; low entropy = predictable/stale.
 // Pure query API - biases derivedTension toward harmonic freshness.
 
-harmonicSurpriseIndex = (() => {
-  const V = validator.create('harmonicSurpriseIndex');
+moduleLifecycle.declare({
+  name: 'harmonicSurpriseIndex',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicSurpriseIndex'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicSurpriseIndex');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 4 });
 
   /**
@@ -141,4 +146,5 @@ harmonicSurpriseIndex = (() => {
     getDensityBias,
     getFlickerBias
   };
-})();
+  },
+});

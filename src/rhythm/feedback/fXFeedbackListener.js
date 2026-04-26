@@ -1,8 +1,13 @@
 // src/rhythm/FXFeedbackListener.js - eventBus listener for FX-Rhythm feedback loops
 // Enables stutter/FX intensity to modulate future rhythm pattern selection
 
-FXFeedbackListener = (() => {
-  const V = validator.create('fXFeedbackListener');
+moduleLifecycle.declare({
+  name: 'FXFeedbackListener',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['FXFeedbackListener'],
+  init: (deps) => {
+  const V = deps.validator.create('fXFeedbackListener');
 
   let accumulator = null;
   let initialized = false;
@@ -176,7 +181,6 @@ FXFeedbackListener = (() => {
     accumulator.reset();
   }
 
-  moduleLifecycle.registerInitializer('FXFeedbackListener', initialize);
 
   return {
     initialize,
@@ -186,4 +190,5 @@ FXFeedbackListener = (() => {
     decay,
     reset
   };
-})();
+  },
+});

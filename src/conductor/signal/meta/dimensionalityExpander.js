@@ -15,8 +15,13 @@
  * the collapse and fades as dimensionality recovers.
  */
 
-dimensionalityExpander = (() => {
-  const V = validator.create('dimensionalityExpander');
+moduleLifecycle.declare({
+  name: 'dimensionalityExpander',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['dimensionalityExpander'],
+  init: (deps) => {
+  const V = deps.validator.create('dimensionalityExpander');
 
   // Below this threshold, we begin injecting perturbations.
   const DIM_THRESHOLD = 2.2;
@@ -223,4 +228,5 @@ dimensionalityExpander = (() => {
   conductorIntelligence.registerModule('dimensionalityExpander', { reset }, ['all', 'section']);
 
   return { densityBias, tensionBias, flickerBias, getSnapshot, reset };
-})();
+  },
+});

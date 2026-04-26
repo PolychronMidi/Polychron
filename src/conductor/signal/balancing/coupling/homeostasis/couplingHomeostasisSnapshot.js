@@ -1,4 +1,9 @@
-couplingHomeostasisSnapshot = (() => {
+moduleLifecycle.declare({
+  name: 'couplingHomeostasisSnapshot',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['couplingHomeostasisSnapshot'],
+  init: (deps) => {
   function buildState(args) {
     let floorContactBeats = 0;
     let ceilingContactBeats = 0;
@@ -87,4 +92,5 @@ couplingHomeostasisSnapshot = (() => {
   return {
     buildState,
   };
-})();
+  },
+});

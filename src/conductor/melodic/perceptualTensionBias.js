@@ -6,7 +6,12 @@
 // Effect scales with confidence: at 15% -> ~25% of full effect (+-0.02 max).
 // Full effect at confidence >= 0.30 (+-0.08 max).
 
-perceptualTensionBias = (() => {
+moduleLifecycle.declare({
+  name: 'perceptualTensionBias',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['perceptualTensionBias'],
+  init: (deps) => {
   const _perc = (() => {
     try {
       const fs = require('fs');
@@ -39,4 +44,5 @@ perceptualTensionBias = (() => {
   conductorIntelligence.registerModule('perceptualTensionBias', { reset }, ['section']);
 
   return {};
-})();
+  },
+});

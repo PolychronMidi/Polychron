@@ -9,8 +9,13 @@
  * bias that gently steers away from monotonic trajectories.
  */
 
-narrativeTrajectory = (() => {
-  const V = validator.create('narrativeTrajectory');
+moduleLifecycle.declare({
+  name: 'narrativeTrajectory',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['narrativeTrajectory'],
+  init: (deps) => {
+  const V = deps.validator.create('narrativeTrajectory');
 
   const HISTORY_LEN      = 16;
   const SMOOTHING        = 0.3;
@@ -175,4 +180,5 @@ narrativeTrajectory = (() => {
   conductorIntelligence.registerModule('narrativeTrajectory', { reset }, ['all']);
 
   return { getTrajectory, tensionBias, reset };
-})();
+  },
+});

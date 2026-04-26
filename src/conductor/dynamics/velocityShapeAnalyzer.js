@@ -3,8 +3,13 @@
 // Provides velocity contour shape, punchiness, and a single flicker modifier.
 // Pure query API - no side effects.
 
-velocityShapeAnalyzer = (() => {
-  const V = validator.create('velocityShapeAnalyzer');
+moduleLifecycle.declare({
+  name: 'velocityShapeAnalyzer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['velocityShapeAnalyzer'],
+  init: (deps) => {
+  const V = deps.validator.create('velocityShapeAnalyzer');
   const query = analysisHelpers.createTrackerQuery(V, 5, { minNotes: 4 });
 
   /**
@@ -187,4 +192,5 @@ velocityShapeAnalyzer = (() => {
     getFlickerModifier,
     getTensionBias
   };
-})();
+  },
+});

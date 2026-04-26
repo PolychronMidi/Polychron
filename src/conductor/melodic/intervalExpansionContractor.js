@@ -4,8 +4,13 @@
 // Density bias to allow expansion room or encourage consolidation.
 // Pure query API - no side effects.
 
-intervalExpansionContractor = (() => {
-  const V = validator.create('intervalExpansionContractor');
+moduleLifecycle.declare({
+  name: 'intervalExpansionContractor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['intervalExpansionContractor'],
+  init: (deps) => {
+  const V = deps.validator.create('intervalExpansionContractor');
   const MAX_SNAPSHOTS = 16;
   /** @type {Array<{ avgInterval: number, maxInterval: number, time: number }>} */
   const intervalSnapshots = [];
@@ -148,4 +153,5 @@ intervalExpansionContractor = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

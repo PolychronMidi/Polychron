@@ -1,8 +1,13 @@
 // src/composers/motif/motifChain.js - Cascading motif transformations & mutations
 // Enables experimental motif feedback: transformations stack and mutate over time
 
-motifChain = (() => {
-  const V = validator.create('motifChain');
+moduleLifecycle.declare({
+  name: 'motifChain',
+  subsystem: 'composers',
+  deps: ['validator'],
+  provides: ['motifChain'],
+  init: (deps) => {
+  const V = deps.validator.create('motifChain');
 
   let activeMotif = null;           // Current base motif
   let transforms = [];              // Array of transform specs: [{type, args}, ...]
@@ -189,4 +194,5 @@ motifChain = (() => {
     getTransforms,
     getHistory
   };
-})();
+  },
+});

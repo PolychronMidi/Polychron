@@ -1,6 +1,11 @@
 // systemDynamicsProfiler.js - Phase-space trajectory analysis of the signal organism.
 
-systemDynamicsProfiler = (() => {
+moduleLifecycle.declare({
+  name: 'systemDynamicsProfiler',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['systemDynamicsProfiler'],
+  init: (deps) => {
   const DIM_NAMES = ['density', 'tension', 'flicker', 'entropy', 'trust', 'phase'];
   const N_DIMS = DIM_NAMES.length;
   const N_COMPOSITIONAL_DIMS = 4;
@@ -114,4 +119,5 @@ systemDynamicsProfiler = (() => {
   conductorIntelligence.registerModule('systemDynamicsProfiler', { reset }, ['all']);
 
   return { analyze, ensureBeatAnalysis, getSnapshot, getSummary, reset };
-})();
+  },
+});

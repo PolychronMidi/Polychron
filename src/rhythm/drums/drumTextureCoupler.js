@@ -2,8 +2,13 @@
 // When textureBlender fires chord bursts or flurries, this listener accumulates
 // intensity and exposes it so drum patterns can accent in sympathy.
 
-drumTextureCoupler = (() => {
-  const V = validator.create('drumTextureCoupler');
+moduleLifecycle.declare({
+  name: 'drumTextureCoupler',
+  subsystem: 'rhythm',
+  deps: ['validator'],
+  provides: ['drumTextureCoupler'],
+  init: (deps) => {
+  const V = deps.validator.create('drumTextureCoupler');
 
   let feedback = null;
   const decayRate = 0.88;
@@ -98,7 +103,6 @@ drumTextureCoupler = (() => {
     return { burstCount, flurryCount, intensity: getIntensity() };
   }
 
-  moduleLifecycle.registerInitializer('drumTextureCoupler', initialize);
 
   return {
     initialize,
@@ -106,4 +110,5 @@ drumTextureCoupler = (() => {
     shouldAccent,
     getMetrics
   };
-})();
+  },
+});

@@ -1,5 +1,10 @@
-conductorState = (() => {
-  const V = validator.create('conductorState');
+moduleLifecycle.declare({
+  name: 'conductorState',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['conductorState'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorState');
 
   let initialized = false;
 
@@ -190,7 +195,6 @@ conductorState = (() => {
     snapshot.updatedAt = Date.now();
   }
 
-  moduleLifecycle.registerInitializer('conductorState', initialize);
 
   return {
     initialize,
@@ -200,4 +204,5 @@ conductorState = (() => {
     get,
     reset
   };
-})();
+  },
+});

@@ -20,8 +20,13 @@
  * @property {number} distance - Semitone distance from previous stop (0 for origin)
  */
 
-harmonicJourney = (() => {
-  const V = validator.create('harmonicJourney');
+moduleLifecycle.declare({
+  name: 'harmonicJourney',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicJourney'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicJourney');
 
   V.requireType(harmonicJourneyHelpers, 'function', 'harmonicJourneyHelpers');
   const HJ = harmonicJourneyHelpers();
@@ -225,4 +230,5 @@ harmonicJourney = (() => {
     getOrigin,
     reset
   };
-})();
+  },
+});

@@ -20,7 +20,12 @@
 // when each timer allows it). MAX_BIAS=48 keeps cutoff in [32, 127], which
 // is the audibly useful range (below ~30 is mud, above 127 is clamped).
 
-regimeFx = (() => {
+moduleLifecycle.declare({
+  name: 'regimeFx',
+  subsystem: 'fx',
+  deps: [],
+  provides: ['regimeFx'],
+  init: (deps) => {
   const CENTER_CUTOFF = 80;
   const MAX_BIAS = 48;
 
@@ -102,4 +107,5 @@ regimeFx = (() => {
   }
 
   return { tick };
-})();
+  },
+});

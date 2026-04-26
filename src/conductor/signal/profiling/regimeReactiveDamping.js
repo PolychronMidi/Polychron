@@ -14,8 +14,13 @@
  * Coherent / Evolving - neutral (1.0)
  */
 
-regimeReactiveDamping = (() => {
-  const V = validator.create('regimeReactiveDamping');
+moduleLifecycle.declare({
+  name: 'regimeReactiveDamping',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['regimeReactiveDamping'],
+  init: (deps) => {
+  const V = deps.validator.create('regimeReactiveDamping');
 
   const REGIME_DENSITY_DIR = {
     stagnant: 1,
@@ -425,4 +430,5 @@ regimeReactiveDamping = (() => {
   );
 
   return { densityBias, tensionBias, flickerMod, reset };
-})();
+  },
+});

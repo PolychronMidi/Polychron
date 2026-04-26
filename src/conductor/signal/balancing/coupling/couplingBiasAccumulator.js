@@ -9,8 +9,13 @@
  * recovery nudges.
  */
 
-couplingBiasAccumulator = (() => {
-  const V = validator.create('couplingBiasAccumulator');
+moduleLifecycle.declare({
+  name: 'couplingBiasAccumulator',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['couplingBiasAccumulator'],
+  init: (deps) => {
+  const V = deps.validator.create('couplingBiasAccumulator');
   const { ALL_MONITORED_DIMS, NUDGEABLE_SET, GAIN_MAX,
     AXIS_SMOOTH_ALPHA, AXIS_BUDGET, GATE_EMA_ALPHA,
     HP_ROLLING_THRESHOLD, HP_MAX_BEATS, HP_COOLDOWN_BEATS } = couplingConstants;
@@ -232,4 +237,5 @@ couplingBiasAccumulator = (() => {
   }
 
   return { computeAxisTotals, snapshotPrevBeat, processHPPromotion, finalize };
-})();
+  },
+});

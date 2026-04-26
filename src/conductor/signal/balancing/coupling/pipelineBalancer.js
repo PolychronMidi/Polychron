@@ -7,7 +7,12 @@
  * mild counter-bias to prevent monopoly. Pure homeostatic mechanism.
  */
 
-pipelineBalancer = (() => {
+moduleLifecycle.declare({
+  name: 'pipelineBalancer',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['pipelineBalancer'],
+  init: (deps) => {
 
   const DOMINANCE_THRESHOLD = 0.45;
   const COUNTER_STRENGTH    = 0.04;
@@ -101,4 +106,5 @@ pipelineBalancer = (() => {
   conductorIntelligence.registerModule('pipelineBalancer', { reset }, ['section']);
 
   return { densityBias, tensionBias, reset };
-})();
+  },
+});

@@ -16,7 +16,12 @@
 // Rate-limit shared with regimePan (0.05s min between fires) to prevent
 // high-BPM sections from flooding the MIDI buffer with CC events.
 
-regimeFade = (() => {
+moduleLifecycle.declare({
+  name: 'regimeFade',
+  subsystem: 'fx',
+  deps: [],
+  provides: ['regimeFade'],
+  init: (deps) => {
   const CENTER_FADE = 100;
   const MAX_BIAS = 27;
 
@@ -103,4 +108,5 @@ regimeFade = (() => {
   }
 
   return { tick };
-})();
+  },
+});

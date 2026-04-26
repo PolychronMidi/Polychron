@@ -2,8 +2,13 @@
 // Detects homophonic collapse (1 voice) or textural overcrowding.
 // Pure query API - scales motifConfig voice count targets and emission limits.
 
-voiceDensityBalancer = (() => {
-  const V = validator.create('voiceDensityBalancer');
+moduleLifecycle.declare({
+  name: 'voiceDensityBalancer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['voiceDensityBalancer'],
+  init: (deps) => {
+  const V = deps.validator.create('voiceDensityBalancer');
   const query = analysisHelpers.createTrackerQuery(V, 2, { minNotes: 2 });
   const COINCIDENCE_MS = 0.05; // notes within 50ms count as simultaneous
 
@@ -95,4 +100,5 @@ voiceDensityBalancer = (() => {
     getVoiceCountBias,
     getCrossLayerBalance
   };
-})();
+  },
+});

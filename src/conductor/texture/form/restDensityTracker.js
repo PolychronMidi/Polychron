@@ -3,8 +3,13 @@
 // Also detects phrase breathing points - merged from PhraseBreathingAdvisor.
 // Pure query API - biases rhythm onset probability and phrase breathing.
 
-restDensityTracker = (() => {
-  const V = validator.create('restDensityTracker');
+moduleLifecycle.declare({
+  name: 'restDensityTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['restDensityTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('restDensityTracker');
   const WINDOW_SECONDS = 4;
   const BREATH_THRESHOLD = 0.3; // gaps >0.3s count as breaths
 
@@ -164,4 +169,5 @@ restDensityTracker = (() => {
     getBreathingProfile,
     getBreathingDensityBias
   };
-})();
+  },
+});

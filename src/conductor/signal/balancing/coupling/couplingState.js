@@ -7,7 +7,12 @@
  * functions and the per-section reset logic.
  */
 
-couplingState = (() => {
+moduleLifecycle.declare({
+  name: 'couplingState',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['couplingState'],
+  init: (deps) => {
   const C = couplingConstants;
 
   // Container state
@@ -165,4 +170,5 @@ couplingState = (() => {
   S.reset = reset;
 
   return S;
-})();
+  },
+});

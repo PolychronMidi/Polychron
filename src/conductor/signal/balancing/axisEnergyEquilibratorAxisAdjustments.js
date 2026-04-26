@@ -1,4 +1,9 @@
-axisEnergyEquilibratorAxisAdjustments = (() => {
+moduleLifecycle.declare({
+  name: 'axisEnergyEquilibratorAxisAdjustments',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['axisEnergyEquilibratorAxisAdjustments'],
+  init: (deps) => {
   function axisEnergyEquilibratorAxisAdjustmentsApplyAxisLoop(state, config, context, V) {
     const entropyExploringDamp = context.regimeKey === 'exploring' ? 0.95 : 1.0;
     const phaseEvolvingDamp = context.regimeKey === 'evolving' ? 0.95 : 1.0;
@@ -241,4 +246,5 @@ axisEnergyEquilibratorAxisAdjustments = (() => {
   }
 
   return { apply };
-})();
+  },
+});

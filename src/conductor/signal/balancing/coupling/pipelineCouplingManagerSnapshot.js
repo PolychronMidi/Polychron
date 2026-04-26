@@ -1,5 +1,10 @@
-pipelineCouplingManagerSnapshot = (() => {
-  const V = validator.create('pipelineCouplingManagerSnapshot');
+moduleLifecycle.declare({
+  name: 'pipelineCouplingManagerSnapshot',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['pipelineCouplingManagerSnapshot'],
+  init: (deps) => {
+  const V = deps.validator.create('pipelineCouplingManagerSnapshot');
   function computeP95(arr) {
     if (arr.length < 4) return 0;
     const sorted = arr.slice().sort((a, b) => a - b);
@@ -147,4 +152,5 @@ pipelineCouplingManagerSnapshot = (() => {
     getPairTailTelemetry,
     pushWindowValue,
   };
-})();
+  },
+});

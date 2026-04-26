@@ -18,7 +18,12 @@
 // rate-limit, cooperation branch (aligns with trend), flutter strobe
 // (peak anti-trend flash), section-type gated flutter multiplier.
 
-regimeVelocity = (() => {
+moduleLifecycle.declare({
+  name: 'regimeVelocity',
+  subsystem: 'fx',
+  deps: [],
+  provides: ['regimeVelocity'],
+  init: (deps) => {
   const CENTER_EXPRESSION = 100; // MIDI expression default on most synths
   const MAX_BIAS = 27; // keep range [73, 127] -- audibly useful
 
@@ -95,4 +100,5 @@ regimeVelocity = (() => {
   }
 
   return { tick };
-})();
+  },
+});

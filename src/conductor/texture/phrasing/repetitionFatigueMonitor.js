@@ -2,8 +2,13 @@
 // Flags melodic loops/ruts at short timescales (2-6 note patterns recurring within 4s).
 // Pure query API - penalty weight for VoiceLeadingScore or composer note selection.
 
-repetitionFatigueMonitor = (() => {
-  const V = validator.create('repetitionFatigueMonitor');
+moduleLifecycle.declare({
+  name: 'repetitionFatigueMonitor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['repetitionFatigueMonitor'],
+  init: (deps) => {
+  const V = deps.validator.create('repetitionFatigueMonitor');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 4 });
   const MIN_PATTERN = 2;
   const MAX_PATTERN = 6;
@@ -92,4 +97,5 @@ repetitionFatigueMonitor = (() => {
     getRepetitionProfile,
     getRepetitionPenalty
   };
-})();
+  },
+});

@@ -3,8 +3,13 @@
 // layer dominates. Density bias to rebalance activity across layers.
 // Pure query API - no side effects.
 
-crossLayerDensityBalancer = (() => {
-  const V = validator.create('crossLayerDensityBalancer');
+moduleLifecycle.declare({
+  name: 'crossLayerDensityBalancer',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['crossLayerDensityBalancer'],
+  init: (deps) => {
+  const V = deps.validator.create('crossLayerDensityBalancer');
   const WINDOW_SECONDS = 6;
 
   /** @private */
@@ -89,4 +94,5 @@ crossLayerDensityBalancer = (() => {
     getBalanceSignal,
     getDensityBias
   };
-})();
+  },
+});

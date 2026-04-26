@@ -3,8 +3,13 @@
 // and signals imbalance for the conductor to correct via register nudges.
 // Pure query API - consumed via conductorState.
 
-orchestrationWeightTracker = (() => {
-  const V = validator.create('orchestrationWeightTracker');
+moduleLifecycle.declare({
+  name: 'orchestrationWeightTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['orchestrationWeightTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('orchestrationWeightTracker');
   const query = analysisHelpers.createTrackerQuery(V, 6, { minNotes: 3 });
   // Register band boundaries (MIDI note numbers)
   const BASS_CEIL = 55;     // up to G3
@@ -89,4 +94,5 @@ orchestrationWeightTracker = (() => {
   return {
     getWeightSignal
   };
-})();
+  },
+});

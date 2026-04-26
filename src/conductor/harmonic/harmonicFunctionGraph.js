@@ -11,8 +11,13 @@
  * so cross-layer modules can reason about harmonic trajectory.
  */
 
-harmonicFunctionGraph = (() => {
-  const V = validator.create('harmonicFunctionGraph');
+moduleLifecycle.declare({
+  name: 'harmonicFunctionGraph',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicFunctionGraph'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicFunctionGraph');
 
   const CHANNEL = 'harmonicFunction';
 
@@ -87,4 +92,5 @@ harmonicFunctionGraph = (() => {
   conductorIntelligence.registerModule('harmonicFunctionGraph', { reset }, ['section']);
 
   return { classify, getFunction, tensionBias, reset };
-})();
+  },
+});

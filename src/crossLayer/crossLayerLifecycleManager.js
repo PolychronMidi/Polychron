@@ -13,7 +13,7 @@ moduleLifecycle.declare({
   subsystem: 'crossLayer',
   deps: [],
   provides: ['crossLayerLifecycleManager'],
-  init: (deps) => {
+  init: () => {
   let hasRunSection = false;
 
   function resetAll() {

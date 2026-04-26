@@ -3,8 +3,13 @@
 // themselves previously drifted into three distinct bugs (clamp vs modClamp
 // vs break vs continue, plus upward-first bias in stutterTremolo).
 
-stutterShift = (() => {
-  const V = validator.create('stutterShift');
+moduleLifecycle.declare({
+  name: 'stutterShift',
+  subsystem: 'fx',
+  deps: ['validator'],
+  provides: ['stutterShift'],
+  init: (deps) => {
+  const V = deps.validator.create('stutterShift');
   const bassMax = 59;
   const rangeFor = (isBass) => ({ lo: minMidi, hi: isBass ? bassMax : maxMidi });
 
@@ -52,4 +57,5 @@ stutterShift = (() => {
   };
 
   return { shift, pickOctaveAlternate, enumerateOctaves };
-})();
+  },
+});

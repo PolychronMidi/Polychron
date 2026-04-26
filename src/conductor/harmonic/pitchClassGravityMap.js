@@ -3,7 +3,12 @@
 // and signals tonal center stability vs. drift.
 // Pure query API - consumed via conductorState.
 
-pitchClassGravityMap = (() => {
+moduleLifecycle.declare({
+  name: 'pitchClassGravityMap',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['pitchClassGravityMap'],
+  init: (deps) => {
   const WINDOW_SECONDS = 10;
 
   /**
@@ -72,4 +77,5 @@ pitchClassGravityMap = (() => {
   return {
     getGravitySignal
   };
-})();
+  },
+});

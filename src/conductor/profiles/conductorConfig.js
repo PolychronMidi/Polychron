@@ -1,7 +1,12 @@
 // conductorConfig.js - Conductor profile validation, selection, and access.
 // Single authority for the active conductor profile.
 
-conductorConfig = (() => {
+moduleLifecycle.declare({
+  name: 'conductorConfig',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['conductorConfig'],
+  init: (deps) => {
   /** @type {string} */
   let activeProfileName = 'default';
 
@@ -11,7 +16,7 @@ conductorConfig = (() => {
   /** @type {boolean} */
   let profileLocked = false;
 
-  const V = validator.create('conductorConfig');
+  const V = deps.validator.create('conductorConfig');
 
   const PROFILE_TUNING_DEFAULTS = conductorConfigTuningDefaults();
   const PROFILE_TUNING_OVERRIDES = conductorConfigTuningOverrides();
@@ -184,4 +189,5 @@ conductorConfig = (() => {
     getRegulationCrossModBias: dynamics.getRegulationCrossModBias,
     validateProfileOrFail
   };
-})();
+  },
+});

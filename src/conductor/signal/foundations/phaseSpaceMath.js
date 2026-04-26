@@ -2,7 +2,12 @@
 // Extracted from systemDynamicsProfiler.js. Stateless functions with zero
 // internal state - consumed as a global helper by systemDynamicsProfiler.
 
-phaseSpaceMath = (() => {
+moduleLifecycle.declare({
+  name: 'phaseSpaceMath',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['phaseSpaceMath'],
+  init: (deps) => {
   /**
    * Euclidean magnitude of a vector.
    * @param {number[]} v
@@ -232,4 +237,5 @@ phaseSpaceMath = (() => {
   }
 
   return { magnitude, cosine, stats, coupling, jacobiEigenvalues, effectiveDimensionality };
-})();
+  },
+});

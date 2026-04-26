@@ -3,7 +3,12 @@
 // providing signals for grouping type awareness and transition detection.
 // Pure query API - consumed via conductorState.
 
-rhythmicGroupingAnalyzer = (() => {
+moduleLifecycle.declare({
+  name: 'rhythmicGroupingAnalyzer',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['rhythmicGroupingAnalyzer'],
+  init: (deps) => {
   const WINDOW_SECONDS = 6;
 
   /**
@@ -95,4 +100,5 @@ rhythmicGroupingAnalyzer = (() => {
   return {
     getGroupingSignal
   };
-})();
+  },
+});

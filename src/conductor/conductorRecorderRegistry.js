@@ -2,8 +2,13 @@
 // Recorders receive a context object each beat and perform side-effects
 // (recording snapshots, updating internal state).
 
-conductorRecorderRegistry = (() => {
-  const V = validator.create('conductorRecorderRegistry');
+moduleLifecycle.declare({
+  name: 'conductorRecorderRegistry',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['conductorRecorderRegistry'],
+  init: (deps) => {
+  const V = deps.validator.create('conductorRecorderRegistry');
 
   /**
    * @typedef {{
@@ -62,4 +67,5 @@ conductorRecorderRegistry = (() => {
   }
 
   return { registerRecorder, runRecorders, getNames, getCount };
-})();
+  },
+});

@@ -9,8 +9,13 @@
 // derivedTension product chain; pedalPointDetector feeds pedalSuggestion.
 // Both are consumed by globalConductor for different purposes.
 
-harmonicPedalFieldTracker = (() => {
-  const V = validator.create('harmonicPedalFieldTracker');
+moduleLifecycle.declare({
+  name: 'harmonicPedalFieldTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicPedalFieldTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicPedalFieldTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ bassPC: number, time: number }>} */
   const bassSamples = [];
@@ -114,4 +119,5 @@ harmonicPedalFieldTracker = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

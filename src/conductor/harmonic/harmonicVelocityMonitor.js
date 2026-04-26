@@ -2,8 +2,13 @@
 // Flags harmony moving too fast in calm passages or stalling at climaxes.
 // Pure query API - scales harmonicRhythmTracker thresholds and journey boldness.
 
-harmonicVelocityMonitor = (() => {
-  const V = validator.create('harmonicVelocityMonitor');
+moduleLifecycle.declare({
+  name: 'harmonicVelocityMonitor',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['harmonicVelocityMonitor'],
+  init: (deps) => {
+  const V = deps.validator.create('harmonicVelocityMonitor');
   const WINDOW_SECONDS = 6;
 
   /**
@@ -98,4 +103,5 @@ harmonicVelocityMonitor = (() => {
     getChangeThresholdBias,
     getJourneyBoldnessBias
   };
-})();
+  },
+});

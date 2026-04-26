@@ -20,7 +20,12 @@
 //   evolving   -> oscillating asymmetry via sin(beatCount + subdivIndex)
 //   initializing -> inert (warmup -- don't poison early coherence)
 
-regimePan = (() => {
+moduleLifecycle.declare({
+  name: 'regimePan',
+  subsystem: 'fx',
+  deps: [],
+  provides: ['regimePan'],
+  init: (deps) => {
   const CENTER_PAN = 64;
   const MAX_BIAS = 48;
 
@@ -136,4 +141,5 @@ regimePan = (() => {
   function apply() { tick('beat'); }
 
   return { tick, apply };
-})();
+  },
+});

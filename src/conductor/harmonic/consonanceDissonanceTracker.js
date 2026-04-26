@@ -2,8 +2,13 @@
 // Measures consonant vs dissonant intervals in simultaneously sounding notes.
 // Pure query API - modifies derivedTension to prevent dissonance ruts or blandness.
 
-consonanceDissonanceTracker = (() => {
-  const V = validator.create('consonanceDissonanceTracker');
+moduleLifecycle.declare({
+  name: 'consonanceDissonanceTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['consonanceDissonanceTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('consonanceDissonanceTracker');
   const query = analysisHelpers.createTrackerQuery(V, 4, { minNotes: 3 });
   // Shared consonant intervals from pitchClassHelpers
   const CONSONANT_INTERVALS = pitchClassHelpers.CONSONANT_INTERVALS;
@@ -114,4 +119,5 @@ consonanceDissonanceTracker = (() => {
     getFlickerModifier,
     getDensityBias
   };
-})();
+  },
+});

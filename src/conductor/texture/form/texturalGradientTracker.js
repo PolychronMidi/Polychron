@@ -4,8 +4,13 @@
 // extreme, or allows sudden changes when dramatically appropriate.
 // Pure query API - no side effects.
 
-texturalGradientTracker = (() => {
-  const V = validator.create('texturalGradientTracker');
+moduleLifecycle.declare({
+  name: 'texturalGradientTracker',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['texturalGradientTracker'],
+  init: (deps) => {
+  const V = deps.validator.create('texturalGradientTracker');
   const MAX_SAMPLES = 16;
   /** @type {Array<{ density: number, time: number }>} */
   const densitySamples = [];
@@ -121,4 +126,5 @@ texturalGradientTracker = (() => {
     getTensionBias,
     reset
   };
-})();
+  },
+});

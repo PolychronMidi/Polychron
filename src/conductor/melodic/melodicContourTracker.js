@@ -4,7 +4,12 @@
 // MelodicDirectionalityTracker.
 // Pure query API - no events emitted; polled by globalConductor and motifTransformAdvisor.
 
-melodicContourTracker = (() => {
+moduleLifecycle.declare({
+  name: 'melodicContourTracker',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['melodicContourTracker'],
+  init: (deps) => {
   /** @type {{ shape: string, direction: number, range: number, avgPitch: number }} */
   let currentContour = { shape: 'static', direction: 0, range: 0, avgPitch: 60 };
 
@@ -205,4 +210,5 @@ melodicContourTracker = (() => {
     getDirectionalityTensionBias,
     reset
   };
-})();
+  },
+});

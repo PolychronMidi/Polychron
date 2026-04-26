@@ -3,7 +3,12 @@
 // via conductorDiagnostics.create(), which passes the private bias arrays
 // so diagnostics can aggregate across all five registry buckets.
 
-conductorDiagnostics = (() => {
+moduleLifecycle.declare({
+  name: 'conductorDiagnostics',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['conductorDiagnostics'],
+  init: (deps) => {
   /**
    * Create a diagnostics bundle bound to the given bias arrays and collector functions.
    * @param {{ density: Array<{name:string}>, tension: Array<{name:string}>, flicker: Array<{name:string}> }} biasArrays
@@ -93,4 +98,5 @@ conductorDiagnostics = (() => {
   }
 
   return { create };
-})();
+  },
+});

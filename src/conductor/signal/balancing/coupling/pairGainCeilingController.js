@@ -4,11 +4,16 @@
 // couplingEffectiveGain. Each pair self-calibrates its ceiling based on
 // observed tail pressure, preventing whack-a-mole ceiling proliferation.
 
-pairGainCeilingController = (() => {
+moduleLifecycle.declare({
+  name: 'pairGainCeilingController',
+  subsystem: 'conductor',
+  deps: ['validator'],
+  provides: ['pairGainCeilingController'],
+  init: (deps) => {
 
   const _P95_EMA_ALPHA = 0.08;
   const _EXCEEDANCE_EMA_ALPHA = 0.04;
-  const V = validator.create('pairGainCeilingController');
+  const V = deps.validator.create('pairGainCeilingController');
   const _pgcc = controllerConfig.getSection('pairGainCeilingController');
   const _CEILING_ADAPT_RATE = V.optionalFinite(_pgcc.ceilingAdaptRate, 0.008);
   const _CEILING_RELAX_RATE = V.optionalFinite(_pgcc.ceilingRelaxRate, 0.003);
@@ -269,4 +274,5 @@ pairGainCeilingController = (() => {
     getSnapshot,
     reset
   };
-})();
+  },
+});

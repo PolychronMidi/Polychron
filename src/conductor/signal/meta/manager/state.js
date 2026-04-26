@@ -2,7 +2,12 @@
 // hyper-meta orchestrator. Sub-modules mutate this shared object;
 // the main hyperMetaManager file assembles the public API on top of it.
 
-hyperMetaManagerState = (() => {
+moduleLifecycle.declare({
+  name: 'hyperMetaManagerState',
+  subsystem: 'conductor',
+  deps: [],
+  provides: ['hyperMetaManagerState'],
+  init: (deps) => {
 
   // ORCHESTRATION CONSTANTS
   const ORCHESTRATE_INTERVAL = 25;
@@ -200,4 +205,5 @@ hyperMetaManagerState = (() => {
     trustVelocityHistory,
     lastRunPersonality,
   };
-})();
+  },
+});
