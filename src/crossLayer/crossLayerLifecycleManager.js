@@ -9,11 +9,8 @@ moduleLifecycle.declare({
   name: 'timeStreamCrosslayerRegistration',
   subsystem: 'crossLayer',
   deps: ['crossLayerRegistry', 'timeStream'],
-  lazyDeps: ['conductorSignalBridge'],
   provides: ['timeStreamCrosslayerRegistration'],
   init: (deps) => {
-    const crossLayerRegistry = deps.crossLayerRegistry;
-    const conductorSignalBridge = deps.conductorSignalBridge;
     deps.crossLayerRegistry.register('timeStream', { reset: deps.timeStream.resetPositions }, ['all']);
     return { registered: true };
   },
@@ -22,9 +19,11 @@ moduleLifecycle.declare({
 moduleLifecycle.declare({
   name: 'crossLayerLifecycleManager',
   subsystem: 'crossLayer',
-  deps: [],
+  deps: ['crossLayerRegistry', 'conductorSignalBridge'],
   provides: ['crossLayerLifecycleManager'],
-  init: () => {
+  init: (deps) => {
+  const crossLayerRegistry = deps.crossLayerRegistry;
+  const conductorSignalBridge = deps.conductorSignalBridge;
   let hasRunSection = false;
 
   function resetAll() {
