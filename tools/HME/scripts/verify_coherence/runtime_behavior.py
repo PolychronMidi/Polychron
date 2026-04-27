@@ -26,6 +26,7 @@ class TransientErrorFilterVerifier(Verifier):
     """
     name = "transient-error-filter"
     category = "runtime"
+    subtag = "regression-prevention"
     weight = 1.5
 
     def run(self) -> VerdictResult:
@@ -83,6 +84,7 @@ class ContextBudgetVerifier(Verifier):
     """
     name = "context-budget"
     category = "runtime"
+    subtag = "drift-detection"
     weight = 1.5
 
     def run(self) -> VerdictResult:
@@ -225,6 +227,7 @@ class PlanOutputValidityVerifier(Verifier):
     hallucinated code in edit mode — both are capability failures."""
     name = "plan-output-validity"
     category = "runtime"
+    subtag = "drift-detection"
     weight = 0.5
 
     def run(self) -> VerdictResult:

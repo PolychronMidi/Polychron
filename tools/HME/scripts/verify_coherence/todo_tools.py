@@ -127,6 +127,7 @@ class TodoMergeHookConsistencyVerifier(Verifier):
     agent's session-visible todo list freezes. This regression check."""
     name = "todowrite-hook-nonblock"
     category = "code"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:

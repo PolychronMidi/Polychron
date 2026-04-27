@@ -29,6 +29,7 @@ class SettingsJsonVerifier(Verifier):
     the next time Claude Code reads it."""
     name = "settings-json"
     category = "state"
+    subtag = "interface-contract"
     weight = 2.0
 
     _REQUIRED_HOOK_EVENTS = {
@@ -114,6 +115,7 @@ class OAuthTokenExpiryVerifier(Verifier):
     this is informational, not catastrophic."""
     name = "oauth-token-expiry"
     category = "state"
+    subtag = "freshness"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -164,6 +166,7 @@ class EnvTamperVerifier(Verifier):
     """
     name = "env-tamper"
     category = "state"
+    subtag = "regression-prevention"
     weight = 2.0
 
     def run(self) -> VerdictResult:
@@ -218,6 +221,7 @@ class EnvLoadVerifier(Verifier):
     untrustworthy, so the score hit should be substantial."""
     name = "env-load"
     category = "state"
+    subtag = "structural-integrity"
     weight = 3.0
 
     def run(self) -> VerdictResult:

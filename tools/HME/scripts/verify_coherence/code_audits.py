@@ -144,6 +144,7 @@ class ShellHookAuditVerifier(Verifier):
     this verifier covers .sh."""
     name = "shell-hook-audit"
     category = "code"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -181,6 +182,7 @@ class InterControllerCoherenceVerifier(Verifier):
     snapshot pipeline hasn't populated effect fields yet."""
     name = "intercontroller-coherence"
     category = "code"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -217,6 +219,7 @@ class ClaudeSettingsJsonVerifier(Verifier):
     catches it in seconds."""
     name = "claude-settings-json"
     category = "code"
+    subtag = "interface-contract"
     weight = 3.0   # load-bearing: invalid settings.json silently breaks everything
 
     def run(self) -> VerdictResult:
@@ -253,6 +256,7 @@ class HumanDeferredAuditVerifier(Verifier):
     """
     name = "human-deferred"
     category = "code"
+    subtag = "structural-integrity"
     weight = 0.5
 
     def run(self) -> VerdictResult:
@@ -295,6 +299,7 @@ class StateFileOwnershipVerifier(Verifier):
     """
     name = "state-file-ownership"
     category = "code"
+    subtag = "interface-contract"
     weight = 1.5
 
     def run(self) -> VerdictResult:
@@ -329,6 +334,7 @@ class SilentFailureClassVerifier(Verifier):
     """
     name = "silent-failure-class"
     category = "code"
+    subtag = "regression-prevention"
     weight = 0.5  # advisory — annotate over time, don't block merges yet
 
     def run(self) -> VerdictResult:
@@ -368,6 +374,7 @@ class ShellUndefinedVarsVerifier(Verifier):
     catches grammar-valid code that explodes at runtime."""
     name = "shell-undefined-vars"
     category = "code"
+    subtag = "structural-integrity"
     weight = 2.0  # any violation is silent-disable class, rank high
 
     def run(self) -> VerdictResult:
@@ -400,6 +407,7 @@ class ShellUndefinedVarsVerifier(Verifier):
 class PythonSyntaxVerifier(Verifier):
     name = "python-syntax"
     category = "code"
+    subtag = "structural-integrity"
     weight = 3.0  # critical: broken Python = broken HME server
 
     def run(self) -> VerdictResult:
@@ -426,6 +434,7 @@ class PythonSyntaxVerifier(Verifier):
 class ShellSyntaxVerifier(Verifier):
     name = "shell-syntax"
     category = "code"
+    subtag = "structural-integrity"
     weight = 2.0
 
     def run(self) -> VerdictResult:

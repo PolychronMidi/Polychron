@@ -427,8 +427,8 @@ def what_did_i_forget(changed_files: str) -> str:
         for d in sorted(doc_updates_needed):
             parts.append(f"  - {d}")
     parts.append(f"\n## Reminders")
-    parts.append("  - hme_admin(action='index') after batch changes (file watcher handles individual saves)")
-    parts.append("  - add_knowledge for any new calibration anchors or decisions")
+    parts.append("  - `i/hme-admin action=index` after batch changes (file watcher handles individual saves)")
+    parts.append("  - `i/learn action=add title=… content=…` for any new calibration anchors or decisions")
 
     # Collect git diff for synthesis context (bounded to 4000 chars).
     # This project runs a direct-autocommit hook that commits edits before the

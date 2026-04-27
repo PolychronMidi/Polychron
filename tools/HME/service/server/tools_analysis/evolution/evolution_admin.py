@@ -86,7 +86,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         _threading.Thread(target=_bg_pre_edit, daemon=True).start()
         parts.append(
             "Warm priming started (2 parallel background tasks: GPU KV contexts + pre-edit cache).\n"
-            "Use hme_admin(action='selftest') to check status."
+            "Use `i/hme-admin action=selftest` to check status."
         )
     if action == "introspect":
         parts.append(hme_introspect())

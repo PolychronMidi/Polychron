@@ -21,6 +21,7 @@ class MetaObserverCoherenceVerifier(Verifier):
     whether HME is currently unstable."""
     name = "meta-observer-coherence"
     category = "runtime"
+    subtag = "drift-detection"
     weight = 2.0
 
     def run(self) -> VerdictResult:
