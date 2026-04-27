@@ -264,6 +264,15 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             with _lock:
                 _changed_files.add(abs_path)
             _schedule_reindex()
+            # Auto hot-reload: any .py edit under tools/HME/service/server/
+            # schedules a hot reload after a debounce window. Removes the
+            # "edit then i/hme-admin action=reload" friction step.
+            if (
+                ext == ".py"
+                and "/tools/HME/service/server/" in abs_path.replace(os.sep, "/")
+                and not _pipeline_running()
+            ):
+                _schedule_hot_reload()
 
     def _schedule_reindex():
         with _lock:
@@ -273,6 +282,36 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             t.daemon = True
             _timer[0] = t
             t.start()
+
+    # Hot-reload debounce: 5s (longer than reindex's 3s so a burst of
+    # edits coalesces into one reload).
+    _reload_timer: list = [None]
+    _reload_pending: list[bool] = [False]
+
+    def _schedule_hot_reload():
+        with _lock:
+            _reload_pending[0] = True
+            if _reload_timer[0] is not None:
+                _reload_timer[0].cancel()
+            t = threading.Timer(5.0, _do_hot_reload)
+            t.daemon = True
+            _reload_timer[0] = t
+            t.start()
+
+    def _do_hot_reload():
+        with _lock:
+            if not _reload_pending[0]:
+                return
+            _reload_pending[0] = False
+        try:
+            from tools_analysis.evolution.evolution_selftest.hot_reload \
+                import hme_hot_reload as _reload
+            result = _reload("")
+            logger.info("auto hot-reload: %s",
+                        result.split("\n")[0] if result else "(empty)")
+        except Exception as _e:
+            logger.warning("Acceptable warning: auto hot-reload failed: "
+                           "%s: %s", type(_e).__name__, _e)
 
     def _maybe_reindex():
         now = time.time()

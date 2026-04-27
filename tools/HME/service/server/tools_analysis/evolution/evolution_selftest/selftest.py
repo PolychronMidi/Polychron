@@ -831,10 +831,18 @@ def hme_selftest(verbose: bool = False) -> str:
         else:
             with open(order_path, encoding="utf-8") as _of:
                 manifest = _json_mw.load(_of).get("order", [])
-            present = sorted(
-                f for f in os.listdir(mw_dir)
-                if f.endswith(".js") and f not in ("index.js", "order.json")
-            )
+            # Mirror middleware/index.js loadAll() exclusions: skip
+            # underscore-prefixed helpers (_markers.js, _persistent_map.js)
+            # and test files (test_*.js, *.test.js, *_test.js).
+            def _is_middleware_file(f: str) -> bool:
+                if not f.endswith(".js") or f in ("index.js", "order.json"):
+                    return False
+                if f.startswith("_") or f.startswith("test_"):
+                    return False
+                if f.endswith(".test.js") or f.endswith("_test.js"):
+                    return False
+                return True
+            present = sorted(f for f in os.listdir(mw_dir) if _is_middleware_file(f))
             unlisted = [f for f in present if f not in manifest]
             stale_in_manifest = [f for f in manifest if f not in present]
             if unlisted or stale_in_manifest:
@@ -946,6 +954,32 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _ts_err:
         results.append(f"WARN: temporal drift -- timeseries unavailable: {type(_ts_err).__name__}: {_ts_err}")
 
+    # Static fix-hint map: FAIL/WARN line prefix → next-move suggestion.
+    # Match by substring (after the "FAIL: "/"WARN: " label) to keep this
+    # robust to inline "(run X for details)" suffixes already present.
+    _FIX_HINTS = {
+        "doc sync":              "edit the file/count the verifier names; re-run.",
+        "doc stale-ref scan":    "python3 tools/HME/scripts/verify-doc-sync.py for offending files.",
+        "onboarding flow":       "python3 tools/HME/scripts/verify-onboarding-flow.py for diff.",
+        "STATES sync":           "python3 tools/HME/scripts/verify-states-sync.py for diff.",
+        "HCI":                   "python3 tools/HME/scripts/verify-coherence.py for per-verifier breakdown.",
+        "index":                 "i/hme-admin action=clear_index then i/hme-admin action=index.",
+        "hash cache":            "i/hme-admin action=index to rebuild.",
+        "middleware order":      "edit tools/HME/proxy/middleware/order.json or remove stale entries.",
+        "temporal drift":        "i/status mode=trajectory for trend; investigate the regressed verifier.",
+    }
+    def _annotate(line: str) -> str:
+        if not line.startswith(("FAIL:", "WARN:")):
+            return line
+        # Strip the "FAIL: " / "WARN: " prefix; what remains starts with
+        # the diagnostic name (e.g. "HCI -- 89/100..."). Match a hint key
+        # if the remainder begins with it followed by a non-word char.
+        body = line.split(": ", 1)[1] if ": " in line else line
+        for key, hint in _FIX_HINTS.items():
+            if body == key or body.startswith(key + " ") or body.startswith(key + "-"):
+                return f"{line}\n      → fix: {hint}"
+        return line
+
     passed = sum(1 for r in results if r.startswith("PASS"))
     failed = sum(1 for r in results if r.startswith("FAIL"))
     total = len(results)
@@ -964,6 +998,6 @@ def hme_selftest(verbose: bool = False) -> str:
     non_pass = [r for r in results if not r.startswith("PASS")]
     if has_issues and non_pass and not verbose:
         # Show only non-PASS lines + a summary count of PASSes.
-        body = "\n".join(f"  {r}" for r in non_pass)
+        body = "\n".join(f"  {_annotate(r)}" for r in non_pass)
         return header + body + f"\n  ({passed} PASS suppressed — use i/hme-admin action=selftest verbose=true for full listing)"
-    return header + "\n".join(f"  {r}" for r in results)
+    return header + "\n".join(f"  {_annotate(r)}" for r in results)

@@ -1,0 +1,75 @@
+{
+  "_comment": "Canonical mapping from internal MCP tool names to user-facing forms. Every doc, error message, primer example, selftest hint, and onboarding label SHOULD render through this map (read via tool_invocations.py helper). One edit here updates every reference. Reduces the 'old tool name' drift class that historically required hand-grepping every doc and Python file.",
+  "_legend": {
+    "mcp": "internal MCP tool function name as registered with @ctx.mcp.tool()",
+    "i": "user-facing i/<wrapper> shell-call form (the form Claude actually types via Bash)",
+    "primer": "documentation/example form — same as `i` but may include placeholders like `…`"
+  },
+  "tools": {
+    "hme_admin": {
+      "i": "i/hme-admin action=<ACTION>",
+      "primer": "i/hme-admin action=selftest"
+    },
+    "hme_selftest": {
+      "i": "i/hme-admin action=selftest",
+      "primer": "i/hme-admin action=selftest"
+    },
+    "hme_hot_reload": {
+      "i": "i/hme-admin action=reload",
+      "primer": "i/hme-admin action=reload"
+    },
+    "hme_todo": {
+      "i": "i/todo action=<ACTION>",
+      "primer": "i/todo action=add text=… parent_id=… critical=… on_done=…"
+    },
+    "evolve": {
+      "i": "i/evolve focus=<FOCUS>",
+      "primer": "i/evolve focus=design"
+    },
+    "review": {
+      "i": "i/review mode=<MODE>",
+      "primer": "i/review mode=forget"
+    },
+    "learn": {
+      "i": "i/learn",
+      "primer": "i/learn title=… content=…"
+    },
+    "trace": {
+      "i": "i/trace target=<TARGET>",
+      "primer": "i/trace target=… mode=snapshot"
+    },
+    "status": {
+      "i": "i/status mode=<MODE>",
+      "primer": "i/status mode=hme"
+    },
+    "agent": {
+      "i": "i/dispatch enqueue …",
+      "primer": "i/dispatch enqueue …"
+    },
+    "edit": {
+      "i": "Edit",
+      "primer": "Edit"
+    },
+    "read": {
+      "i": "i/hme-read target=<TARGET>",
+      "primer": "i/hme-read target=… mode=before"
+    },
+    "grep": {
+      "i": "Grep",
+      "primer": "Grep"
+    },
+    "glob_search": {
+      "i": "Glob",
+      "primer": "Glob"
+    }
+  },
+  "actions": {
+    "warm": "i/hme-admin action=warm",
+    "selftest": "i/hme-admin action=selftest",
+    "reload": "i/hme-admin action=reload",
+    "index": "i/hme-admin action=index",
+    "clear_index": "i/hme-admin action=clear_index",
+    "validate": "i/hme-admin action=validate",
+    "health": "i/hme-admin action=health"
+  }
+}
