@@ -100,6 +100,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 - `pretooluse_write.sh` — API key/password/secret/token pattern detected. Security: review before writing credentials.
 - `pretooluse_write.sh` — LLM stub placeholder in full file write. Correctness: stubs destroy files.
 - `pretooluse_write.sh` — `logger.warning()` for expected background failures. Fix antipattern: use `logger.info` for expected failures.
+- `pretooluse_write.sh` / `pretooluse_edit.sh` — content contains 4+ identical decoration characters in a row (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing). Style: visual-decoration spam is banned. JS counterpart: `block-character-spam`. Per-line opt-out: append `spam-ok`. Companion HCI verifier: `repeated-char-spam`.
 - `pretooluse_check_pipeline.sh` — 2nd+ `i/status` call in same turn. **Redirect**: deny + suggest continuing real work while the pipeline runs.
 
 ### Soft Feedback (stderr — command proceeds, agent sees advice)
