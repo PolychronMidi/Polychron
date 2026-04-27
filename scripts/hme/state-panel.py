@@ -129,13 +129,49 @@ def main(argv):
         except (OSError, ValueError):
             pass
 
-    # 7. Selftest verdict (lightweight; just last cached header if present)
+    # 7. HCI score with trend delta (last vs ~1h ago, falls back to vs first row).
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if snap:
         hci = snap.get("hci", "?")
         n = len(snap.get("verifiers", {})) or snap.get("verifier_count", "?")
-        out.append(f"  HCI                {hci}/100 ({n} verifiers)")
+        delta_str = ""
+        ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+                               "hme-coherence-timeseries.jsonl")
+        if os.path.isfile(ts_path) and isinstance(hci, (int, float)):
+            try:
+                with open(ts_path) as _tf:
+                    rows = _tf.readlines()
+                if len(rows) >= 2:
+                    cutoff = time.time() - 3600
+                    anchor = None
+                    for line in rows[-200:]:
+                        try:
+                            r = json.loads(line)
+                        except ValueError:
+                            continue
+                        if r.get("ts", 0) <= cutoff and r.get("hci") is not None:
+                            anchor = r
+                    if anchor is None:
+                        try:
+                            anchor = json.loads(rows[0])
+                        except ValueError:
+                            anchor = None
+                    if anchor and anchor.get("hci") is not None:
+                        d = float(hci) - float(anchor["hci"])
+                        if abs(d) >= 0.1:
+                            sign = "+" if d > 0 else ""
+                            delta_str = f"  ({sign}{d:.1f} vs ~1h ago)"
+                        else:
+                            delta_str = "  (steady)"
+            except OSError:
+                pass
+        out.append(f"  HCI                {hci}/100 ({n} verifiers){delta_str}")
+
+    # 8. KB add count this session — proves the round-trip is working.
+    accepted = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json.accepted")
+    if os.path.isfile(accepted):
+        out.append(f"  last KB accept     {_age(accepted)}")
 
     if not brief:
         out.append("")

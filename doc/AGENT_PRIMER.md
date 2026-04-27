@@ -162,6 +162,7 @@ The activity bridge emits `file_written` events for every edit under `src/` or `
 ## Reference (consult as needed)
 
 - [CLAUDE.md](../CLAUDE.md) — authoritative rule set, loaded every prompt. Read first on any new session where the walkthrough does not answer the question.
+- [doc/HME_MENTAL_MODEL.md](./HME_MENTAL_MODEL.md) — one-page picture of HME (two coherences, four surfaces, five state machines, four enforcement layers, seven sub-tags). Read this before anything else.
 - [doc/HME_ONBOARDING_FLOW.md](./HME_ONBOARDING_FLOW.md) — state machine spec. Read this if the chain surprises you.
 - [doc/HME.md](./HME.md) — HME internals, tool surface, Phase 1-6 per-subsystem narrative.
 - [doc/ARCHITECTURE.md](./ARCHITECTURE.md) — beat lifecycle, signal flow, L1/L2 layer isolation.
