@@ -687,6 +687,69 @@ class AntiForkHeuristicListVerifier(Verifier):
                        violations[:10])
 
 
+class TestIsolationVerifier(Verifier):
+    """Tests that exercise `runStopChain`, `dispatchEvent`, or `shellPolicy`
+    spawn bash hooks that write to log/hme-errors.log via fail-loud
+    helpers. Without sandboxing PROJECT_ROOT to a tmp dir AND busting
+    require.cache for proxy/+policies/, those writes pollute the real log
+    and trip the next Stop hook's LIFESAVER as 'UNADDRESSED ERRORS FROM
+    PREVIOUS TURN'.
+
+    Detects: any test file under tools/HME/tests/ that imports/calls one
+    of those three symbols MUST also reference a sandbox helper or
+    pattern that overrides PROJECT_ROOT to a tmp path."""
+    name = "test-isolation-stop-chain"
+    category = "code"
+    subtag = "regression-prevention"
+    weight = 1.5
+
+    _RISKY_RE = re.compile(r"\b(runStopChain|dispatchEvent|shellPolicy)\b")
+    _SANDBOX_RE = re.compile(
+        r"_withChainSandbox|_withSandbox|"
+        r"PROJECT_ROOT\s*=\s*(?:os\.path\.join\([^)]*tmp|fs\.mkdtempSync|tmp_)"
+    )
+
+    def run(self) -> VerdictResult:
+        tests_dir = os.path.join(_PROJECT, "tools", "HME", "tests")
+        if not os.path.isdir(tests_dir):
+            return _result(SKIP, 1.0, "tests dir not present")
+        violations = []
+        scanned = 0
+        for r, _d, files in os.walk(tests_dir):
+            for f in files:
+                if not f.endswith((".js", ".mjs", ".cjs", ".ts")):
+                    continue
+                scanned += 1
+                p = os.path.join(r, f)
+                try:
+                    with open(p, encoding="utf-8") as fp:
+                        src = fp.read()
+                except OSError:
+                    continue
+                if not self._RISKY_RE.search(src):
+                    continue
+                if self._SANDBOX_RE.search(src):
+                    continue
+                # Find first risky line for the report
+                line_no = "?"
+                for i, line in enumerate(src.splitlines(), start=1):
+                    if self._RISKY_RE.search(line):
+                        line_no = str(i)
+                        break
+                violations.append(
+                    f"{os.path.relpath(p, _PROJECT)}:{line_no}: "
+                    f"references runStopChain/dispatchEvent/shellPolicy without "
+                    f"_withChainSandbox / _withSandbox / tmp PROJECT_ROOT"
+                )
+        if not violations:
+            return _result(PASS, 1.0,
+                           f"{scanned} test file(s) scanned; all stop-chain tests sandbox PROJECT_ROOT")
+        score = max(0.0, 1.0 - len(violations) * 0.25)
+        return _result(FAIL, score,
+                       f"{len(violations)} unsandboxed stop-chain test(s)",
+                       violations[:10])
+
+
 class TestEnvUndefinedVerifier(Verifier):
     """In Node test files, `process.env.X = undefined` does NOT delete the
     var — it sets the literal string 'undefined' (truthy). Later tests

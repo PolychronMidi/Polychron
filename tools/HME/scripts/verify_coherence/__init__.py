@@ -64,7 +64,7 @@ from .code_audits import (  # noqa: F401
     SilentFailureClassVerifier, StateFileOwnershipVerifier,
     HumanDeferredAuditVerifier,
     AtomicStateWritesVerifier, AntiForkHeuristicListVerifier,
-    TestEnvUndefinedVerifier,
+    TestEnvUndefinedVerifier, TestIsolationVerifier,
 )
 from .autocommit_health import (  # noqa: F401
     AutocommitHealthVerifier, ShimHealthVerifier,
@@ -117,6 +117,7 @@ REGISTRY = [
     AtomicStateWritesVerifier(),
     AntiForkHeuristicListVerifier(),
     TestEnvUndefinedVerifier(),
+    TestIsolationVerifier(),
     ActivityEventsDocSyncVerifier(),
     ShellHookAuditVerifier(),
     ShellUndefinedVarsVerifier(),
