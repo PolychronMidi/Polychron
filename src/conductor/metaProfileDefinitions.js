@@ -779,20 +779,20 @@ moduleLifecycle.declare({
   // disableControllers). Without this, two profiles with identical
   // numeric core but different per-layer composer pools collapse to
   // distance=0, and nearest() mis-ranks substrate-level differences
-  // as "same" — breaking the smooth-transition heuristic in
+  // as "same" -- breaking the smooth-transition heuristic in
   // src/play/main.js:175 where nearest() picks the next profile.
   // Concrete failure mode caught by audit: anthemic vs polyrhythmic_split
   // were 0.000 numerically but the latter declares
   // layerVariants:{L1:'anthemic',L2:'elegiac'} which is a major
   // behavioral shift the metric was missing.
   const _SIDE_AXIS_WEIGHTS = {
-    layerVariants:    0.15,  // per-layer profile split — major behavioral shift
-    composerFamilies: 0.10,  // composer pool bias — substantial pool change
-    conductorAffinity: 0.05, // conductor preference — moderate
+    layerVariants:    0.15,  // per-layer profile split -- major behavioral shift
+    composerFamilies: 0.10,  // composer pool bias -- substantial pool change
+    conductorAffinity: 0.05, // conductor preference -- moderate
     conductorAntipathy: 0.05,
     couplingPairs:    0.05,  // explicit coupling-graph nudges
     sectionArc:       0.03,  // tension-shape progression
-    disableControllers: 0.05, // controller gating — substantial when set
+    disableControllers: 0.05, // controller gating -- substantial when set
   };
   function _sideAxisPenalty(profA, profB) {
     if (!profA || !profB) return 0;
@@ -802,14 +802,14 @@ moduleLifecycle.declare({
       const b = profB[axis];
       const aPresent = a !== undefined && a !== null;
       const bPresent = b !== undefined && b !== null;
-      // One declares it, the other doesn't → full weight differential.
+      // One declares it, the other doesn't -> full weight differential.
       if (aPresent !== bPresent) {
         penalty += _SIDE_AXIS_WEIGHTS[axis];
         continue;
       }
-      // Both absent → no contribution.
+      // Both absent -> no contribution.
       if (!aPresent) continue;
-      // Both present → JSON-stringify equality check. Cheap and
+      // Both present -> JSON-stringify equality check. Cheap and
       // sufficient for the small dicts/arrays these axes hold.
       if (JSON.stringify(a) !== JSON.stringify(b)) {
         penalty += _SIDE_AXIS_WEIGHTS[axis];

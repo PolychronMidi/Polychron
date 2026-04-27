@@ -1,12 +1,12 @@
 // ESLint rule: no-or-fallback-on-map-get
 //
-// Bans `Map.prototype.get(...) || <literal>` — `||` falls back on every
+// Bans `Map.prototype.get(...) || <literal>` -- `||` falls back on every
 // falsy value (0, '', false, NaN), but `Map.get` returns `undefined`
 // only when a key is absent. A legitimate value of 0 stored in the Map
 // silently rewrites to the literal default, masking real lookups.
 //
 // Concrete bug class: `distMap.get(profileName) || 99` in a sort
-// comparator — when a profile's distance is genuinely 0 (the active
+// comparator -- when a profile's distance is genuinely 0 (the active
 // profile), it sorts to position 99 instead of 0. Caught during a
 // targeted fail-fast sweep April 2026.
 //
@@ -18,11 +18,11 @@
 // Allowed replacement: `??` (nullish coalescing) which only falls back
 // on null/undefined, preserving 0/''/false as legitimate values.
 //
-// Out-of-scope: bare `obj.field || x` reads — handled by
+// Out-of-scope: bare `obj.field || x` reads -- handled by
 // no-or-fallback-on-config-read for config-prefixed variables, or by
 // type-aware lints for typed code. This rule targets the
 // Map/WeakMap/cache idiom specifically because the semantic of
-// "missing key → undefined, present-but-zero key → 0" is a defining
+// "missing key -> undefined, present-but-zero key -> 0" is a defining
 // property of the Map interface that `||` violates by collapsing both.
 //
 // Counter init pattern (`counters[k] = (counters[k] || 0) + 1`) is
