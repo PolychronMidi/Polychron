@@ -112,6 +112,7 @@ function isNothingMissedResponse(text) {
 // phrase + ~80 chars after, and dedup by phrase-prefix so repeated
 // patterns surface once. Skip code-fenced / quoted spans (same
 // discipline stop_work / exhaust_check use).
+// anti-fork-begin: speculation-regexes min=6
 const SPECULATION_RES = [
   /\bi\s+(worry|suspect|imagine|wonder|guess|think\s+(that|maybe))\b[^.!?\n]{1,120}/gi,
   /\b(this|that|it)\s+(might|may|could)\s+(be|have|cause|break|miss)\b[^.!?\n]{1,120}/gi,
@@ -120,6 +121,7 @@ const SPECULATION_RES = [
   /\b(open\s+question|outstanding\s+question|haven'?t\s+verified)\b[^.!?\n]{1,120}/gi,
   /\b(my\s+(concern|worry)|the\s+concern\s+(is|here))\b[^.!?\n]{1,120}/gi,
 ];
+// anti-fork-end: speculation-regexes
 
 function scanSpeculation(text) {
   if (!text) return [];
