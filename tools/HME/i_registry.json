@@ -168,14 +168,17 @@
       "usage": "i/pattern [list|matched|<id>]"
     },
     "why": {
-      "description": "Explain something the system did or is in: an invariant, a recent block, or the current onboarding state.",
+      "description": "Explain something the system did or is in: an invariant, a recent block, the onboarding state, a specific HCI verifier, an HCI drop, or recent hook activity.",
       "category": "review-discipline",
-      "usage": "i/why <invariant-id>  |  i/why mode=block  |  i/why mode=state",
-      "modes": ["invariant (default)", "block", "state"],
+      "usage": "i/why <invariant-id>  |  i/why mode=<block|state|verifier|hci-drop|hook> [name=…]",
+      "modes": ["invariant (default)", "block", "state", "verifier", "hci-drop", "hook"],
       "examples": [
         "i/why nexus-state-integrity",
         "i/why mode=block",
-        "i/why mode=state"
+        "i/why mode=state",
+        "i/why mode=verifier doc-drift",
+        "i/why mode=hci-drop",
+        "i/why mode=hook"
       ]
     },
     "todo": {
