@@ -64,18 +64,18 @@ The MCP server, proxy, and hooks all read/write a shared substrate: KB (LanceDB)
 
 When something blocks you: bash hook (exit 2 + message), JS policy (`{decision: 'deny', reason: ...}`), HCI verifier (FAIL line in selftest), ESLint rule (lint output). Each has a unique signature.
 
-## The seven verifier sub-tags
+## The verifier sub-tags
 
-Every verifier carries a `subtag` declaring what *kind* of breakage it catches:
+Every verifier carries a `subtag` declaring what *kind* of breakage it catches. The set:
 
-- **structural-integrity** (24) — would something stop loading/running? syntax, registration, decorator order, missing required structure.
-- **interface-contract** (11) — does the boundary still match? settings shape, subagent passthrough, schema, ownership.
-- **drift-detection** (8) — does the doc still match the code? numeric counts, doc-sync, memetic drift.
-- **regression-prevention** (7) — would this re-open a known failure mode? lifesaver integrity, silent failure, char spam.
-- **performance** (5) — is it slow / big / chatty? log size, hook latency, tool response time.
-- **freshness** (2) — has it gone stale?
+- **structural-integrity** — would something stop loading/running? syntax, registration, decorator order, missing required structure.
+- **interface-contract** — does the boundary still match? settings shape, subagent passthrough, schema, ownership.
+- **drift-detection** — does the doc still match the code? numeric counts, doc-sync, memetic drift.
+- **regression-prevention** — would this re-open a known failure mode? lifesaver integrity, silent failure, char spam.
+- **performance** — is it slow / big / chatty? log size, hook latency, tool response time.
+- **freshness** — has it gone stale?
 
-When a verifier reds, the subtag tells you the shape of the fix before you read the message.
+When a verifier reds, the subtag tells you the shape of the fix before you read the message. For the live distribution at any moment: `python3 tools/HME/scripts/verify-coherence.py --json | jq '.verifiers | map(.subtag) | group_by(.) | map({tag: .[0], count: length})'`.
 
 ## The HME loop (per round)
 
