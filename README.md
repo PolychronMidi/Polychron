@@ -34,17 +34,15 @@ Signal flow: [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)
 
 ## Subsystems
 
-| Directory | Files | Purpose |
-
-| `src/utils/` | 35 | Core utilities, registries, random, validation |
-| `src/conductor/` | 193 | Signal pipeline, profiles, dynamics, coupling, meta |
-| `src/rhythm/` | 22 | Pattern generation, feedback listeners, drums |
-| `src/time/` | 13 | LayerManager, tempo feel, timing |
-| `src/composers/` | 24 | 11 composer types, voice management, motif |
-| `src/fx/` | 55 | Stutter (19 variants), binaural, balance, noise |
-| `src/crossLayer/` | 58 | Dynamics, harmony, rhythm, structure, trust, CIM |
-| `src/writer/` | 4 | CSV output, grandFinale |
-| `src/play/` | 18 | Beat loop, emission, layer passes |
+- [src/utils/](src/utils/) — core utilities, registries, random, validation
+- [src/conductor/](src/conductor/) — signal pipeline, profiles, dynamics, coupling, meta
+- [src/rhythm/](src/rhythm/) — pattern generation, feedback listeners, drums
+- [src/time/](src/time/) — LayerManager, tempo feel, timing
+- [src/composers/](src/composers/) — 11 composer types, voice management, motif
+- [src/fx/](src/fx/) — stutter (19 variants), binaural, balance, noise
+- [src/crossLayer/](src/crossLayer/) — dynamics, harmony, rhythm, structure, trust, CIM
+- [src/writer/](src/writer/) — CSV output, grandFinale
+- [src/play/](src/play/) — beat loop, emission, layer passes
 
 Details: [doc/SUBSYSTEMS.md](doc/SUBSYSTEMS.md)
 
@@ -61,7 +59,7 @@ Details: [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md)
 Details: [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md)
 
 ### Hypermeta Self-Calibrating Controllers
-19 controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, gain budgets, phase floors, pair ceilings, warmup ramps, and correlation shuffling. Health-gated evolution scaling. Structural discontinuity detection with fast reconvergence.
+18 controllers auto-tune coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, gain budgets, phase floors, pair ceilings, warmup ramps, and correlation shuffling. Health-gated evolution scaling. Structural discontinuity detection with fast reconvergence.
 
 Details: [doc/HYPERMETA.md](doc/HYPERMETA.md)
 
@@ -93,30 +91,26 @@ Details: [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) (Layer Isolation section)
 
 ## Conductor Profiles
 
-| Profile | Character |
-
-| `atmospheric` | Dense, lush, high reverb/delay. Canon-biased rhythm. Oscillating threshold 0.14. |
-| `explosive` | Maximum energy, wide dynamics, aggressive stutter rates |
-| `restrained` | Conservative density (0.25-0.42), low emission gates |
-| `minimal` | Very sparse, near-silent, high stutter emission for texture |
-| `default` | Balanced baseline |
-| `rhythmicDrive` | Rhythm-forward, high subdivision counts |
+- `atmospheric` — dense, lush, high reverb/delay; canon-biased rhythm; oscillating threshold 0.14
+- `explosive` — maximum energy, wide dynamics, aggressive stutter rates
+- `restrained` — conservative density (0.25-0.42), low emission gates
+- `minimal` — very sparse, near-silent, high stutter emission for texture
+- `default` — balanced baseline
+- `rhythmicDrive` — rhythm-forward, high subdivision counts
 
 ## Diagnostics
 
 Generated per-run in `output/metrics/`:
 
-| File | Purpose |
-
-| `trace-summary.json` | Beats, regimes, signals, coupling, trust, axis energy |
-| `golden-fingerprint.json` | 10-dimension stability fingerprint |
-| `fingerprint-comparison.json` | Run-over-run delta with STABLE/EVOLVED/DRIFTED verdict |
-| `narrative-digest.md` | Prose composition story |
-| `runtime-snapshots.json` | CIM dials, stutter variant counts, shuffler state |
-| `adaptive-state.json` | Cross-run warm-start EMAs |
-| `feedback_graph.json` | 7 feedback loop topology |
-| `conductor-map.md` | Conductor intelligence map |
-| `crosslayer-map.md` | Cross-layer topology |
+- `trace-summary.json` — beats, regimes, signals, coupling, trust, axis energy
+- `golden-fingerprint.json` — 10-dimension stability fingerprint
+- `fingerprint-comparison.json` — run-over-run delta with STABLE/EVOLVED/DRIFTED verdict
+- `narrative-digest.md` — prose composition story
+- `runtime-snapshots.json` — CIM dials, stutter variant counts, shuffler state
+- `adaptive-state.json` — cross-run warm-start EMAs
+- `feedback_graph.json` — 7 feedback loop topology
+- `conductor-map.md` — conductor intelligence map
+- `crosslayer-map.md` — cross-layer topology
 
 ## Documentation
 
