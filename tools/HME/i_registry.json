@@ -275,12 +275,9 @@
       ]
     },
     "audit-tools": {
-      "description": "UX stress test for the i/* CLI surface \u2014 probes each tool with no-args + typo'd action, rates against UX rubric, flags tools < 4/5.",
+      "description": "DISABLED \u2014 crashed host twice in real use. Process-group kill insufficient against double-forking subprocess descendants. Needs cgroup isolation before re-enable. See wrapper script for diagnostic context.",
       "category": "meta",
-      "usage": "i/audit-tools",
-      "examples": [
-        "i/audit-tools"
-      ]
+      "usage": "i/audit-tools  # refuses to run; requires --i-understand-this-may-crash to override"
     }
   }
 }
