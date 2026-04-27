@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 # i/why — explain something the system did or is in.
-#   i/why <invariant-id>     full provenance + rationale for an invariant
-#   i/why mode=block         most recent hook/policy block + how to opt out
-#   i/why mode=state         current onboarding state + transition history
+#   i/why <invariant-id>          full provenance + rationale for an invariant
+#   i/why mode=block              most recent hook/policy block + how to opt out
+#   i/why mode=state              current onboarding state + transition history
+#   i/why mode=verifier <name>    explain a specific HCI verifier (status, history, source)
+#   i/why mode=hci-drop           find the most recent HCI regression + which verifier(s) caused it
+#   i/why mode=hook               recent hook activity (broader than mode=block)
 SCRIPT_DIR="$(dirname "$0")/../scripts/hme"
 python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" why "$@" &
 
 # Mode dispatch — keep first-arg-as-invariant-id as the historical default.
 for arg in "$@"; do
   case "$arg" in
-    mode=block)  exec python3 "$SCRIPT_DIR/why-block.py" "$@" ;;
-    mode=state)  exec python3 "$SCRIPT_DIR/why-state.py" "$@" ;;
+    mode=block)     exec python3 "$SCRIPT_DIR/why-block.py" "$@" ;;
+    mode=state)     exec python3 "$SCRIPT_DIR/why-state.py" "$@" ;;
+    mode=verifier)  exec python3 "$SCRIPT_DIR/why-verifier.py" "$@" ;;
+    mode=hci-drop)  exec python3 "$SCRIPT_DIR/why-hci-drop.py" "$@" ;;
+    mode=hook)      exec python3 "$SCRIPT_DIR/why-hook.py" "$@" ;;
   esac
 done
 exec python3 "$SCRIPT_DIR/why-invariant.py" "$@"
