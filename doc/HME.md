@@ -1090,6 +1090,10 @@ All hooks share `_tab_helpers.sh` for deduped tab operations and `_safety.sh` fo
 2. Add entry to `hooks/hooks.json` with `${CLAUDE_PLUGIN_ROOT}/hooks/your_hook.sh`
 3. Document in this table
 
+### Bash-gate ↔ JS-policy unification
+
+When adding a bash gate that has a JS-policy counterpart in [tools/HME/policies/builtin/](../tools/HME/policies/builtin/), source [hooks/helpers/_policy_enabled.sh](../tools/HME/hooks/helpers/_policy_enabled.sh) and wrap the gate body in `if _policy_enabled <kebab-name> && <existing-condition>; then …`. The helper reads the same three-scope `.hme/policies.json` config that `i/policies` writes, so `i/policies disable <name>` works uniformly across both proxy-up (JS) and proxy-down direct-mode (bash) paths. Without this guard, disabling a JS policy leaves the bash gate firing — the "disable-doesn't-fully-disable" wart now closed across all 7 currently-duplicated rules.
+
 ## Polychron-Specific Features
 
 ### IIFE-Aware Chunking
