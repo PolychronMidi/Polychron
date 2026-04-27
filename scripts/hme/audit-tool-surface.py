@@ -198,10 +198,18 @@ def _has_substantive_content(text: str) -> bool:
     lines = [ln for ln in stripped.splitlines() if ln.strip()]
     if len(lines) < 3:
         return False
-    # Has list-shape markers (bullets, numbered, indented, headers, etc.)
+    # 5+ lines of non-empty content is substantive regardless of marker
+    # shape. Catches tools whose output is indented action lists, JSON
+    # blocks, or other non-bullet shapes.
+    if len(lines) >= 5:
+        return True
+    # Has list-shape markers (bullets, numbered, headers, indented
+    # continuations, key:value, key=value).
     list_markers = sum(1 for ln in lines
-                        if ln.lstrip().startswith(("-", "*", "[", "#"))
-                        or ":" in ln[:30])
+                        if ln.lstrip().startswith(("-", "*", "[", "#", ">"))
+                        or ":" in ln[:30]
+                        or "=" in ln[:30]
+                        or (ln.startswith("  ") and len(ln.strip()) > 0))
     return list_markers >= 2
 
 
