@@ -267,6 +267,12 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             # Auto hot-reload: any .py edit under tools/HME/service/server/
             # schedules a hot reload after a debounce window. Removes the
             # "edit then i/hme-admin action=reload" friction step.
+            #
+            # NOTE: this watcher is started ONCE per server boot (see
+            # rag_engines.py:738). Edits to start_watcher() itself only
+            # take effect after a full server restart, not after
+            # `i/hme-admin action=reload` (which only re-imports tool
+            # modules — the watcher closure was already bound).
             if (
                 ext == ".py"
                 and "/tools/HME/service/server/" in abs_path.replace(os.sep, "/")
