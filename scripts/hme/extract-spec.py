@@ -149,7 +149,17 @@ def _render_markdown(specs):
 
 def main(argv):
     if len(argv) < 2:
-        print("usage: extract-spec.py <dir> [--md]", file=sys.stderr)
+        msg = (
+            "usage: extract-spec.py <dir> [--md]\n"
+            "  <dir>: target directory to extract behavioral spec from\n"
+            "  --md:  emit Markdown instead of JSON (default JSON)\n"
+            "  examples:\n"
+            "    extract-spec.py src/conductor/signal\n"
+            "    extract-spec.py src/composers/voice --md\n"
+            "  the script extracts API + invariant claims by walking the\n"
+            "  module graph and reading docstring/JSDoc declarations."
+        )
+        print(msg, file=sys.stderr)
         sys.exit(2)
     target = argv[1]
     as_markdown = '--md' in argv[2:]

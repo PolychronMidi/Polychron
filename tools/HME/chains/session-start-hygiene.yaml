@@ -1,0 +1,8 @@
+name: session-start-hygiene
+description: One-shot hygiene pass at session start — runs the i/audit-tools UX probe over the i/* surface and surfaces any flagged tools. Cgroup-isolated so even if a probed tool cascades, descendants stay bounded. Run via `i/chain session-start-hygiene` once when starting a fresh session, or wire into a SessionStart hook.
+version: 1.0.0
+loop: 1
+on-rate-limit: fail
+auto-promote: "off"
+skills:
+  - i/audit-tools

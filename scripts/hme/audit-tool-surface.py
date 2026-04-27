@@ -228,10 +228,14 @@ def _has_useful_error(text: str, rc: int) -> bool:
     lower = text.lower()
     error_signals = (
         "did you mean", "near match",
-        "unknown", "invalid", "not found",
+        "unknown", "invalid", "not found", "not registered",
+        "no such", "not a directory", "no entry", "no entries",
         "try:", "try ",
         "available", "valid options", "valid values", "use:",
         "usage",
+        "failed (status",   # hme-cli error envelope
+        "must be",          # parameter validation
+        "expected ",        # type-mismatch errors
     )
     if any(s in lower for s in error_signals):
         return True
