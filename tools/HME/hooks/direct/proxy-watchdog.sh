@@ -3,7 +3,7 @@
 # respawns the HME proxy. Idempotent: if the proxy is already alive, no-op.
 #
 # Why this exists:
-# ---------------
+#
 # When the HME proxy dies (crash, OOM, manual kill), nothing brings it
 # back. Every subsequent session operates with LIFESAVER / KB briefing /
 # jurisdiction injection silently offline. The fail-LOUD banner in

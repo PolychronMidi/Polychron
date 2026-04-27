@@ -217,7 +217,7 @@ channelStateField = (() => {
     };
   };
 
-  // ==== CIS widening/deepening (R39+) ====
+  // CIS widening/deepening (R39+)
   //
   // The scalar meanCooperation gives CIM one number for the whole field.
   // Real synergy has structure: different layers can cooperate differently,

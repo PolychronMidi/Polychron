@@ -69,6 +69,26 @@ if _policy_enabled block-secret-content-pattern && echo "$CONTENT" | grep -qE '(
   exit 2
 fi
 
+# Block 4+ identical non-word, non-whitespace, non-paren/bracket characters
+# in a row (visual-decoration spam). JS counterpart: block-character-spam.
+if _policy_enabled block-character-spam; then
+  _SPAM_HIT=$(CONTENT="$CONTENT" _safe_py3 "
+import os, re
+content = os.environ.get('CONTENT', '')
+PAT = re.compile(r'([^\w\s()\[\]{}])\1{3,}')
+for i, line in enumerate(content.split('\n'), 1):
+    if 'spam-ok' in line: continue
+    m = PAT.search(line)
+    if m:
+        print(f'line {i}: {m.group(1)!r}x{len(m.group(0))}')
+        break
+" "")
+  if [ -n "$_SPAM_HIT" ]; then
+    _emit_block "BLOCKED: Write content contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth ≤3. Append the literal token spam-ok on a line to opt out where genuinely required."
+    exit 2
+  fi
+fi
+
 # Block stub/placeholder writes — LLM-generated code with comment-ellipsis
 # elision patterns destroys files by replacing real content with placeholder
 # references. JS counterpart: block-comment-ellipsis-stub.

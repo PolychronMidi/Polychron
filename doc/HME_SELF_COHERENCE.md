@@ -10,7 +10,7 @@ This document describes the substrate that makes that possible — the **HME Coh
 
 ### The HME Coherence Index (HCI)
 
-The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **55 weighted verifiers** across 6 categories:
+The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **56 weighted verifiers** across 6 categories:
 
 - **doc** — documentation matches code reality; CLAUDE.md rules aren't silently violated. Verifiers: doc-drift, tool-docstrings, memetic-drift.
 - **code** — source code can run; decorator order correct; TodoWrite hook stays non-blocking. Verifiers: python-syntax, shell-syntax, hook-executability, decorator-order, todowrite-hook-nonblock.
@@ -87,7 +87,7 @@ These are 20 more verifiers. With 35+ total, the HCI becomes a high-resolution s
 
 Beyond adding more verifiers, HME's *scope* should expand. The current substrate is single-machine, single-project, single-session. The next phases stretch each dimension:
 
-#### Phase 1: HME as Polychron module
+### Phase 1: HME as Polychron module
 
 Treat HME's coherence the way Polychron treats its musical coherence. Specifically:
 
@@ -96,7 +96,7 @@ Treat HME's coherence the way Polychron treats its musical coherence. Specifical
 - **Lab sketches for HME.** Lab sketches currently prototype musical behavior. They could equally prototype HME behavior — e.g., "this hook configuration produces 30% higher onboarding completion." Run, measure HCI delta, promote to /src.
 - **Feedback graph for HME.** Currently `output/metrics/feedback_graph.json` describes Polychron's feedback loops. Add a sibling `output/metrics/hme-feedback-graph.json` describing HME's own loops: streak counter → hook block → agent retry → tool call → streak reset. Visualize the same way.
 
-#### Phase 2: Co-evolution loop
+### Phase 2: Co-evolution loop
 
 Couple Polychron's pipeline verdict with HME's HCI:
 
@@ -108,7 +108,7 @@ Couple Polychron's pipeline verdict with HME's HCI:
 
 The two signals become one coupled organism. Music coherence ≈ self-coherence. The system that writes music well also writes itself well, and vice versa.
 
-#### Phase 3: Predictive coherence
+### Phase 3: Predictive coherence
 
 The holograph history is a time series. With enough snapshots, drift can be **predicted** before it manifests:
 
@@ -116,7 +116,7 @@ The holograph history is a time series. With enough snapshots, drift can be **pr
 - When predicted drift exceeds threshold, fire a warning *before* the actual breakage.
 - Same pattern as Polychron's `verdictPredictor` — but for HME's own trajectory.
 
-#### Phase 4: Multi-organism federation
+### Phase 4: Multi-organism federation
 
 HME currently lives in `tools/HME/` inside one project. The architecture is generic. The next breadth-jump:
 
@@ -124,7 +124,7 @@ HME currently lives in `tools/HME/` inside one project. The architecture is gene
 - **Cross-project KB sync.** The global KB at `$HME_GLOBAL_KB_PATH` (default: project-local `tools/HME/KB/global_kb` after the MCP decoupling) is currently tiny. Auto-promote pattern entries from project KBs to global, with consent. Patterns learned in Polychron propagate to other projects.
 - **Federated coherence.** HCI scores from multiple projects roll up into a meta-score. Best practices propagate. Worst practices get flagged across the federation.
 
-#### Phase 5: Self-modification
+### Phase 5: Self-modification
 
 Eventually HME observes its own behavior over hundreds of sessions and proposes refinements to its own code:
 
@@ -134,7 +134,7 @@ Eventually HME observes its own behavior over hundreds of sessions and proposes 
 
 The agent reads the proposal, accepts/rejects/edits, and commits. HME then observes whether the change improved the metrics. The loop closes.
 
-#### Phase ∞: The infinity push
+### Phase ∞: The infinity push
 
 Beyond all of the above, the asymptotic vision is:
 
@@ -331,7 +331,7 @@ With Round 9's measurement loop established, five rounds of data-driven decision
 **Numeric journey:**
 
 | Round | LEGACY_OVERRIDES | Invariants PASS | HCI | What happened |
-|-------|------------------|-----------------|-----|---------------|
+| --- | --- | --- | --- | --- |
 | R11   | 6                | 145/145         | 95.1 | Instrumentation added (`perLegacyOverride` fire counts) |
 | R12   | 6                | 151/153         | 96.4 | Entry counts added, first round of 2x zero-fire data |
 | R13   | 5                | 155/155         | 96.4 | `entropy-cap-0.19` retired — 1st data-driven removal |

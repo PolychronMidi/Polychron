@@ -53,7 +53,7 @@ initializeAll() (called from main.js BEFORE assertBootstrapGlobals)
 ## When to use which lifecycle hook
 
 | Need                                                         | Field            |
-| ------------------------------------------------------------ | ---------------- |
+| --- | --- |
 | API setup, dep-aliasing, state initialization                | `init(deps)`     |
 | Reset method called at section / phrase / all boundaries     | `conductorScopes`|
 | Reset method called at cross-layer boundaries                | `crossLayerScopes`|

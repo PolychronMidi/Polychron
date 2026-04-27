@@ -102,7 +102,7 @@ def _gpu_persona(model: str) -> str:
             "src/conductor/**/*.js",
             "src/fx/**/*.js",
         ], _src_token_budget)
-        return (base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
+        return (base + "\n\n// SOURCE FILES\n" + src)[:_MAX_PERSONA_CHARS]
 
     if model == _ARBITER_MODEL:
         _signal_fields = []
@@ -142,7 +142,7 @@ def _gpu_persona(model: str) -> str:
             "src/conductor/melodic/*.js",
             "src/crossLayer/structure/**/*.js",
         ], _src_token_budget)
-        return (arb_base + "\n\n// ===== PIPELINE SCRIPTS =====\n" + src)[:_arbiter_cap]
+        return (arb_base + "\n\n// PIPELINE SCRIPTS\n" + src)[:_arbiter_cap]
 
     # Reasoner persona: full KB + module list
     rsn_base = (
@@ -159,4 +159,4 @@ def _gpu_persona(model: str) -> str:
         "src/crossLayer/**/*.js",
         "src/composers/**/*.js",
     ], _src_token_budget)
-    return (rsn_base + "\n\n// ===== SOURCE FILES =====\n" + src)[:_MAX_PERSONA_CHARS]
+    return (rsn_base + "\n\n// SOURCE FILES\n" + src)[:_MAX_PERSONA_CHARS]

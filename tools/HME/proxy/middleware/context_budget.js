@@ -200,11 +200,11 @@ module.exports = {
     _prunePending();
     const text = _textOf(toolResult);
 
-    // ============================================
+    //
     // READ-SIDE FIRST: did THIS tool_use's input reference identifiers
     // that a PRIOR enricher footer injected? If yes, that prior
     // enricher was acted-upon. Bump its `acted` counter.
-    // ============================================
+    //
     const tuInput = (toolUse && toolUse.input) || {};
     let actedBumped = 0;
     for (const [pendingId, entry] of _pending) {
@@ -224,11 +224,11 @@ module.exports = {
       ctx.emit({ event: 'enricher_acted_upon', count: actedBumped });
     }
 
-    // ============================================
+    //
     // WRITE-SIDE: detect which enrichers fired on THIS tool_result and
     // extract identifiers they injected. Store keyed by tool_use_id so
     // the NEXT tool_use's read-side scan can match against them.
-    // ============================================
+    //
     if (!text) return;
     const hits = {};
     const identifiers = [];

@@ -48,7 +48,7 @@ SPECIFICITY_THRESHOLD = float(
     os.environ.get("HME_GENERALIZATION_THRESHOLD", "0.3")
 )
 
-# ─── Dynamic project vocabulary ──────────────────────────────────────────
+# Dynamic project vocabulary
 #
 # Instead of a hardcoded list (the R96 bug — missed everything not in a
 # fixed 40-token set), we build vocab at run time from the three places

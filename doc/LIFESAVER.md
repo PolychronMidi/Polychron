@@ -19,7 +19,7 @@ Layer 1: PreToolUse hooks     — intercept before execution (block, correct, or
 Layer 2: PostToolUse hooks    — react after execution (track state, surface errors)
 Layer 3: Stop hook            — prevent premature exit (8 blocking checks)
 Layer 4: Declarative invariants — config/invariants.json (45+ checks, no code changes needed)
-Layer 5: ESLint rules         — 24 custom rules enforcing fail-fast + architectural boundaries
+Layer 5: ESLint rules         — 27 custom rules enforcing fail-fast + architectural boundaries
 Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
 ```
 
@@ -57,7 +57,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 - `pretooluse_todowrite.sh` — any TodoWrite call. **Redirect**: deny, extract tasks, format for HME todo. Message: "Use `i/todo` instead — supports subtodos. Your tasks: …".
 - `pretooluse_hme_primer.sh` — first HME tool call of session (via `Bash(i/<tool>)`). **Enrich**: allow tool, inject AGENT_PRIMER.md content via systemMessage. One-shot primer injection via hookSpecificOutput.
 
-#### Correct example (Bash timeout stripping)
+### Correct example (Bash timeout stripping)
 ```json
 {
   "hookSpecificOutput": {
@@ -68,7 +68,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 }
 ```
 
-#### Enrich example (Read KB injection)
+### Enrich example (Read KB injection)
 ```json
 {
   "hookSpecificOutput": {"permissionDecision": "allow"},
@@ -76,7 +76,7 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 }
 ```
 
-#### Redirect example (TodoWrite to HME todo)
+### Redirect example (TodoWrite to HME todo)
 ```json
 {
   "hookSpecificOutput": {"permissionDecision": "deny"},
@@ -248,23 +248,21 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 
 ### Check Types
 
-| Type | Description |
--
-| `files_executable` | Glob files must be executable |
-| `files_referenced` | Glob files must appear in reference file |
-| `file_exists` | Path must exist |
-| `symlink_valid` | Symlink must resolve |
-| `json_valid` | File must parse as valid JSON |
-| `glob_count_gte` | Count of glob matches >= minimum |
-| `pattern_in_file` | Regex pattern found in file |
-| `patterns_all_in_file` | All patterns present in file |
-| `pattern_count_gte` | Count of pattern matches >= minimum |
-| `symbols_used` | Defined symbols must be referenced |
-| `symbols_have_kb` | High-caller symbols need KB entries |
-| `files_mtime_window` | Two files modified within time delta |
-| `kb_content_no_pattern` | KB entries must not contain regex |
-| `kb_freshness` | KB updated within max_age_days |
-| `shell_output_empty` | Shell command must produce no stdout |
+- `files_executable` — glob files must be executable
+- `files_referenced` — glob files must appear in reference file
+- `file_exists` — path must exist
+- `symlink_valid` — symlink must resolve
+- `json_valid` — file must parse as valid JSON
+- `glob_count_gte` — count of glob matches ≥ minimum
+- `pattern_in_file` — regex pattern found in file
+- `patterns_all_in_file` — all patterns present in file
+- `pattern_count_gte` — count of pattern matches ≥ minimum
+- `symbols_used` — defined symbols must be referenced
+- `symbols_have_kb` — high-caller symbols need KB entries
+- `files_mtime_window` — two files modified within time delta
+- `kb_content_no_pattern` — KB entries must not contain regex
+- `kb_freshness` — KB updated within max_age_days
+- `shell_output_empty` — shell command must produce no stdout
 
 ### Critical Invariants (errors)
 
@@ -303,49 +301,45 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 
 ## Layer 5: ESLint Rules
 
-22 custom rules in `scripts/eslint-rules/`, all integrated into `npm run main`.
+27 custom rules in `scripts/eslint-rules/`, all integrated into `npm run main`. Authoritative count comes from `verify-numeric-drift.py`.
 
 ### Fail Fast Enforcement
 
-| Rule | Prevents |
--
-| `no-empty-catch` | Empty catch blocks — must rethrow, log, or recover |
-| `only-error-throws` | Throwing strings/objects — must throw Error instances |
-| `no-silent-early-return` | Bare returns without prior error handling |
+- `no-empty-catch` — empty catch blocks; must rethrow, log, or recover
+- `only-error-throws` — throwing strings/objects; must throw `Error` instances
+- `no-silent-early-return` — bare returns without prior error handling
+- `no-doubled-fallback` — `x || y || z`-style cascades on Map.get/config reads
+- `no-or-fallback-on-config-read` — `||` defaults on configuration reads (use validators)
+- `no-or-fallback-on-map-get` — `||` defaults on `Map.get()` (use validators)
 
 ### Architectural Boundaries
 
-| Rule | Prevents |
--
-| `no-direct-buffer-push-from-crosslayer` | Cross-layer calling p()/push() — must use crossLayerEmissionGateway |
-| `no-unregistered-feedback-loop` | Feedback loops without feedbackRegistry registration |
-| `no-direct-conductor-state-from-crosslayer` | Cross-layer reading conductorState — must use conductorSignalBridge |
-| `no-conductor-registration-from-crosslayer` | Cross-layer registering with conductorIntelligence |
-| `no-direct-coupling-matrix-read` | Reading .couplingMatrix outside coupling engine |
-| `no-direct-signal-read` | Reading signal snapshot directly — must use signalReader |
-| `no-direct-crosslayer-write-from-conductor` | Conductor writing to cross-layer state |
+- `no-direct-buffer-push-from-crosslayer` — cross-layer calling `p()`/`push()`; must use `crossLayerEmissionGateway`
+- `no-unregistered-feedback-loop` — feedback loops without `feedbackRegistry` registration
+- `no-direct-conductor-state-from-crosslayer` — cross-layer reading `conductorState`; must use `conductorSignalBridge`
+- `no-conductor-registration-from-crosslayer` — cross-layer registering with `conductorIntelligence`
+- `no-direct-coupling-matrix-read` — reading `.couplingMatrix` outside coupling engine
+- `no-direct-signal-read` — reading signal snapshot directly; must use `signalReader`
+- `no-direct-crosslayer-write-from-conductor` — conductor writing to cross-layer state
 
 ### Channel & Math Discipline
 
-| Rule | Prevents |
--
-| `no-bare-l0-channel` | Bare string literals in L0 calls — must use L0_CHANNELS constants |
-| `no-bare-math` | Direct Math.* access — must use project `m = Math` alias |
-| `no-math-random` | Math.random() — must use deterministic RNG |
+- `no-bare-l0-channel` — bare string literals in L0 calls; must use `L0_CHANNELS` constants
+- `no-bare-math` — direct `Math.*` access; must use project `m = Math` alias
+- `no-math-random` — `Math.random()`; must use deterministic RNG
 
 ### Validator & Code Organization
 
-| Rule | Prevents |
--
-| `prefer-validator` | Ad-hoc typeof/isFinite checks when validator exists |
-| `validator-name-matches-filename` | Mismatched validator.create() name vs filename |
-| `no-unstamped-validator` | Validators without module name stamp |
-| `no-requires-outside-index` | require() outside index.js files |
-| `case-conventions` | Wrong casing (camelCase vars, PascalCase classes) |
-| `no-non-ascii` | Non-ASCII characters in source code |
-| `no-typeof-validated-global` | typeof checks on boot-validated globals |
-| `no-console-acceptable-warning` | Console calls outside accepted format |
-| `no-useless-expose-dependencies-comments` | Dead @expose-dependencies comments |
+- `prefer-validator` — ad-hoc `typeof`/`isFinite` checks when validator exists
+- `validator-name-matches-filename` — mismatched `validator.create()` name vs filename
+- `no-unstamped-validator` — validators without module name stamp
+- `no-requires-outside-index` — `require()` outside `index.js` files
+- `case-conventions` — wrong casing (camelCase vars, PascalCase classes)
+- `no-non-ascii` — non-ASCII characters in source code
+- `no-typeof-validated-global` — `typeof` checks on boot-validated globals
+- `no-console-acceptable-warning` — console calls outside accepted format
+- `no-useless-expose-dependencies-comments` — dead `@expose-dependencies` comments
+- `no-bare-declared-global-in-init` — globals referenced in init before side-effect require
 
 
 

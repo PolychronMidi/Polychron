@@ -340,7 +340,7 @@ test('initializeAll: subsystem/reads/emits metadata is permitted but not require
   });
 });
 
-// ── Phase 4 post-init registration fields ──────────────────────────────
+// Phase 4 post-init registration fields
 // crossLayerScopes / conductorScopes / recorder / stateProvider all fan
 // out to legacy sub-registries (crossLayerRegistry, conductorIntelligence)
 // after init() returns. We mock those globals to verify the registry

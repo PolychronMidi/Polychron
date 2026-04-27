@@ -34,7 +34,7 @@ const path = require('path');
 const PROJECT_ROOT = process.env.PROJECT_ROOT
   || path.resolve(__dirname, '..', '..', '..');
 
-// ── Adapters ────────────────────────────────────────────────────────────
+// Adapters
 
 function _scanHookPolicies() {
   // Reuses the existing registry — the canonical source.
@@ -197,7 +197,7 @@ function _scanMiddleware() {
   return out;
 }
 
-// ── Public API ──────────────────────────────────────────────────────────
+// Public API
 
 function listAll() {
   return [
