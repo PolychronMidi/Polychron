@@ -97,7 +97,10 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`
 - **"Why is HME in this onboarding state?"** → `i/why mode=state`
-- **"What does verifier X actually check?"** → `i/help` then read its source under `tools/HME/scripts/verify_coherence/`
+- **"Why is verifier X red? what does it actually check?"** → `i/why mode=verifier <name>` (status + last 3 runs + source)
+- **"Did HCI just regress? what caused it?"** → `i/why mode=hci-drop` (peak vs current + which verifiers flipped)
+- **"What hooks have been firing recently?"** → `i/why mode=hook` (broader than mode=block)
+- **"<free-text question> ?"** → `i/why "<question>"` (Tier-2 catch-all: grep + KB + activity → citation packet, no LLM in the loop)
 - **"What does invariant Y mean?"** → `i/why <invariant-id>`
 - **"What policy fired and how do I opt out?"** → `i/policies list`, `i/policies disable <name>`
 
