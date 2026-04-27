@@ -284,7 +284,7 @@ No code changes needed to add new checks — add JSON entries with a type, path,
 - LIFESAVER FAIL scan present in log-tool-call.sh (`patterns_all_in_file`)
 - All _safety.sh helpers present (`patterns_all_in_file`)
 - All 7 lifecycle events registered in settings (`patterns_all_in_file`)
-- Minimum 24 ESLint rules (`glob_count_gte`)
+- Minimum 27 ESLint rules (`glob_count_gte`)
 - Minimum 25 L0 channel constants (`pattern_count_gte`)
 - All 27 trust system pairs (`pattern_count_gte`)
 - 19 stutter variants self-registered (`pattern_count_gte`)
