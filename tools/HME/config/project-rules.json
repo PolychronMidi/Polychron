@@ -1,5 +1,13 @@
 {
   "_comment": "Project-specific rules consumed by HME tools and hooks. Logic stays in Python/bash; declarations live here.",
+  "atomic_write_path_patterns": [
+    "output/metrics/.*\\.json$",
+    "feedback_graph\\.json$",
+    "adaptive-state\\.json$",
+    "manifest.*\\.json$",
+    "tmp/hme-.*\\.(json|state)$",
+    "registry.*\\.json$"
+  ],
   "crosslayer_boundary_violations": [
     "conductorIntelligence.",
     "conductorState.",
