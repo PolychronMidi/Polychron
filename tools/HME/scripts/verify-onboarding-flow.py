@@ -35,7 +35,7 @@ def _load_onboarding_chain():
         "server.onboarding_chain",
         os.path.join(
             os.environ["PROJECT_ROOT"],
-            "tools", "HME", "mcp", "server", "onboarding_chain.py"
+            "tools", "HME", "service", "server", "onboarding_chain.py"
         ),
     )
     mod = importlib.util.module_from_spec(spec)
@@ -56,7 +56,7 @@ def _load_todo_module(project_root: str):
         mcp=_FakeMCP(), PROJECT_ROOT=project_root,
     )
     ta_pkg = types.ModuleType("server.tools_analysis")
-    ta_pkg.__path__ = [os.path.join(project_root, "tools", "HME", "mcp", "server", "tools_analysis")]
+    ta_pkg.__path__ = [os.path.join(project_root, "tools", "HME", "service", "server", "tools_analysis")]
     ta_pkg._track = lambda *_a, **_kw: None
     sys.modules["server.tools_analysis"] = ta_pkg
     ss_pkg = types.ModuleType("server.tools_analysis.synthesis_session")
@@ -65,7 +65,7 @@ def _load_todo_module(project_root: str):
 
     spec = importlib.util.spec_from_file_location(
         "server.tools_analysis.todo",
-        os.path.join(project_root, "tools", "HME", "mcp", "server", "tools_analysis", "todo.py"),
+        os.path.join(project_root, "tools", "HME", "service", "server", "tools_analysis", "todo.py"),
     )
     mod = importlib.util.module_from_spec(spec)
     sys.modules["server.tools_analysis.todo"] = mod
@@ -78,8 +78,8 @@ def main() -> int:
         os.path.join(os.path.dirname(__file__), "..", "..", "..")
     )
     tmp_project = tempfile.mkdtemp(prefix="hme-onb-verify-")
-    os.makedirs(os.path.join(tmp_project, "tools", "HME", "mcp", "server"), exist_ok=True)
-    os.makedirs(os.path.join(tmp_project, "tools", "HME", "mcp", "server", "tools_analysis"), exist_ok=True)
+    os.makedirs(os.path.join(tmp_project, "tools", "HME", "service", "server"), exist_ok=True)
+    os.makedirs(os.path.join(tmp_project, "tools", "HME", "service", "server", "tools_analysis"), exist_ok=True)
     os.makedirs(os.path.join(tmp_project, "metrics"), exist_ok=True)
     os.makedirs(os.path.join(tmp_project, "tmp"), exist_ok=True)
 

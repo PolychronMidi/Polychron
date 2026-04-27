@@ -187,7 +187,7 @@ def hme_selftest(verbose: bool = False) -> str:
         else:
             results.append(
                 f"WARN: hash cache -- {hash_count} hashes vs {table_files} indexed files "
-                f"(stale entries from deleted/renamed files — fix: hme_admin(action='clear_index'))"
+                f"(stale entries from deleted/renamed files — fix: i/hme-admin action=clear_index)"
             )
     except Exception as e:
         results.append(f"FAIL: hash cache -- {e}")
@@ -280,7 +280,7 @@ def hme_selftest(verbose: bool = False) -> str:
                         f"{'fresh' if info.get('kb_fresh') else 'STALE'}, {_age:.0f}s old"
                     )
             elif isinstance(info, dict):
-                results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run hme_admin warm)")
+                results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run i/hme-admin action=warm)")
         arbiter_info = wcs.get(_ARBITER_MODEL, {})
         arbiter_state = "primed" if isinstance(arbiter_info, dict) and arbiter_info.get("primed") else "not primed"
         results.append(f"INFO: arbiter ({_ARBITER_MODEL[:20]}) -- {arbiter_state}")
@@ -965,5 +965,5 @@ def hme_selftest(verbose: bool = False) -> str:
     if has_issues and non_pass and not verbose:
         # Show only non-PASS lines + a summary count of PASSes.
         body = "\n".join(f"  {r}" for r in non_pass)
-        return header + body + f"\n  ({passed} PASS suppressed — use hme_admin selftest verbose for full listing)"
+        return header + body + f"\n  ({passed} PASS suppressed — use i/hme-admin action=selftest verbose=true for full listing)"
     return header + "\n".join(f"  {r}" for r in results)

@@ -2,7 +2,7 @@
 
 > Persistent peer subagent, auto-initiated per HME session. All
 > reasoning calls (review reflection, OVERDRIVE cascade,
-> suggest_evolution, what_did_i_forget) route through one long-lived
+> `evolve(focus='pipeline')`, `review(mode='forget')`) route through one long-lived
 > Claude Code session. Context accumulates across calls; specialization
 > emerges from accumulated commitments.
 
@@ -271,7 +271,7 @@ attribute.
 
 **Open extension:** widen the markers registry to include filesystem
 paths (e.g. `tmp/hme-buddy.sid`), env-var names (`BUDDY_SYSTEM`,
-`HME_THREAD_CHILD`), and sentinel constants used across files. The
+`HME_BUDDY_ON_RATE_LIMIT`), and sentinel constants used across files. The
 verifier becomes a general agreement-enforcer rather than only a
 text-marker checker.
 

@@ -170,7 +170,7 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
                     if (_s := r.get("score")) is not None and _s > 0]
 
     if not proj_results and not glob_results:
-        return "No knowledge entries found. Use add_knowledge to build the knowledge base."
+        return "No knowledge entries found. Use `i/learn action=add title=… content=…` to build the knowledge base."
 
     parts = []
 

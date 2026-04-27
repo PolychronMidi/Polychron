@@ -183,7 +183,7 @@ class ToolResponseLatencyVerifier(Verifier):
 
     def run(self) -> VerdictResult:
         candidates = [
-            os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "hme-ops.json"),
+            os.path.join(_PROJECT, "tools", "HME", "service", "server", "hme-ops.json"),
             os.path.join(_PROJECT, "tools", "HME", "KB", "hme-ops.json"),
             os.path.join(_PROJECT, "tmp", "hme-ops.json"),
         ]

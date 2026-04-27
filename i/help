@@ -63,9 +63,14 @@ fi
 # Top-level: list every script grouped by registry category. Scripts not
 # in the registry get listed under [unregistered] with their line-2
 # header comment as the description (the legacy fallback).
-python3 - "$REGISTRY" "$(pwd)" <<'PY'
+# Deprecated entries (description starts "DEPRECATED") and over-long
+# descriptions are hidden/trimmed by default; pass `--all` to show them
+# in full.
+SHOW_ALL=0
+[ "$1" = "--all" ] && SHOW_ALL=1
+python3 - "$REGISTRY" "$(pwd)" "$SHOW_ALL" <<'PY'
 import json, os, sys
-reg_path, i_dir = sys.argv[1], sys.argv[2]
+reg_path, i_dir, show_all = sys.argv[1], sys.argv[2], sys.argv[3] == "1"
 with open(reg_path) as f:
     reg = json.load(f)
 commands = reg.get("commands", {})
@@ -74,6 +79,7 @@ scripts = sorted(f for f in os.listdir(i_dir)
                  if os.path.isfile(os.path.join(i_dir, f)) and not f.startswith('.'))
 
 groups = {}  # category → [(name, description), ...]
+hidden = 0
 for script in scripts:
     entry = commands.get(script)
     if entry:
@@ -93,6 +99,13 @@ for script in scripts:
                         break
         except OSError:
             pass
+    if desc.startswith("DEPRECATED") and not show_all:
+        hidden += 1
+        continue
+    if not show_all and len(desc) > 100:
+        # Trim to first sentence or 100 chars; full text via `i/help <name>`.
+        first_dot = desc.find(". ")
+        desc = (desc[:first_dot] + "." if 0 < first_dot < 100 else desc[:97] + "...")
     groups.setdefault(cat, []).append((script, desc))
 
 print("HME tool surface (i/):  use `i/help <name>` for detail")
@@ -112,6 +125,9 @@ for cat in cat_order + sorted(groups.keys()):
         print(f"  {('i/' + name).ljust(16)}  {desc}")
     print()
 
+if hidden:
+    plural = "y" if hidden == 1 else "ies"
+    print(f"({hidden} deprecated entr{plural} hidden — use `i/help --all` to show)")
 print("See doc/HME.md for full reference.")
 print("Tip: `i/help --json` dumps the full metadata for tab-completion / tooling.")
 PY
