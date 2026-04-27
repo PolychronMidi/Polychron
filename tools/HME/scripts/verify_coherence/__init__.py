@@ -63,6 +63,8 @@ from .code_audits import (  # noqa: F401
     PythonSyntaxVerifier, ShellSyntaxVerifier,
     SilentFailureClassVerifier, StateFileOwnershipVerifier,
     HumanDeferredAuditVerifier,
+    AtomicStateWritesVerifier, AntiForkHeuristicListVerifier,
+    TestEnvUndefinedVerifier,
 )
 from .autocommit_health import (  # noqa: F401
     AutocommitHealthVerifier, ShimHealthVerifier,
@@ -112,6 +114,9 @@ REGISTRY = [
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     RepeatedCharSpamVerifier(),
+    AtomicStateWritesVerifier(),
+    AntiForkHeuristicListVerifier(),
+    TestEnvUndefinedVerifier(),
     ActivityEventsDocSyncVerifier(),
     ShellHookAuditVerifier(),
     ShellUndefinedVarsVerifier(),
