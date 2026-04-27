@@ -17,6 +17,18 @@ for arg in "$@"; do
     mode=verifier)  exec python3 "$SCRIPT_DIR/why-verifier.py" "$@" ;;
     mode=hci-drop)  exec python3 "$SCRIPT_DIR/why-hci-drop.py" "$@" ;;
     mode=hook)      exec python3 "$SCRIPT_DIR/why-hook.py" "$@" ;;
+    mode=search)    exec python3 "$SCRIPT_DIR/why-search.py" "$@" ;;
   esac
 done
+
+# Tier 1: try as invariant ID first. If unknown, fall through to Tier 2
+# search retrieval. Distinguishes by checking if first arg looks like an
+# invariant ID (kebab-case, no spaces). Multi-word questions go to search.
+if [ "$#" -ge 1 ]; then
+  FIRST="$1"
+  # Multi-word or contains spaces or first arg has special chars → search.
+  if [ "$#" -gt 1 ] || [[ "$FIRST" == *" "* ]] || [[ "$FIRST" == *"?"* ]]; then
+    exec python3 "$SCRIPT_DIR/why-search.py" "$@"
+  fi
+fi
 exec python3 "$SCRIPT_DIR/why-invariant.py" "$@"

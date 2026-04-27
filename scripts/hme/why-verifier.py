@@ -92,6 +92,25 @@ def main(argv):
     print()
     print(f"  current: {entry.get('status')} score={entry.get('score', 0):.3f}")
 
+    # If status is non-PASS, re-run the verifier live to get FAIL details
+    # (the snapshot file only stores status+score; details require execution).
+    if entry.get("status") in ("FAIL", "WARN", "ERROR"):
+        try:
+            sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"))
+            from verify_coherence import REGISTRY  # type: ignore
+            for v in REGISTRY:
+                if v.name == name:
+                    fresh = v.execute()
+                    print(f"  summary: {fresh.summary}")
+                    if fresh.details:
+                        print()
+                        print("  details (fresh re-run):")
+                        for d in fresh.details[:5]:
+                            print(f"    {d}")
+                    break
+        except Exception as _re:
+            print(f"  (re-run failed: {type(_re).__name__}: {_re})")
+
     # Last 3 runs from timeseries
     ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                            "hme-coherence-timeseries.jsonl")
