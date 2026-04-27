@@ -430,7 +430,39 @@ def main(argv: list) -> int:
             sys.stderr.write(f"--diff requires a path to a prior holograph JSON file\n")
             return 2
         with open(prior_path) as f:
-            prior = json.load(f)
+            text = f.read()
+        try:
+            prior = json.loads(text)
+        except json.JSONDecodeError:
+            # Self-heal: a non-atomic prior write may have left two JSON
+            # objects concatenated. Decode the first, log a self-origin
+            # WARN (not a multi-line traceback that trips LIFESAVER), and
+            # atomically rewrite the file with just the first valid object.
+            try:
+                prior, end = json.JSONDecoder().raw_decode(text)
+            except json.JSONDecodeError:
+                sys.stderr.write(
+                    f"[snapshot-holograph] WARN prior holograph "
+                    f"unrecoverable; skipping diff. path={prior_path}\n"
+                )
+                return 0
+            sys.stderr.write(
+                f"[snapshot-holograph] WARN prior holograph had trailing "
+                f"data ({len(text) - end} bytes after first object); "
+                f"auto-repaired in place.\n"
+            )
+            tmp = prior_path + ".repair.tmp"
+            try:
+                with open(tmp, "w") as wf:
+                    json.dump(prior, wf, indent=2)
+                os.replace(tmp, prior_path)
+            except OSError:
+                # Best-effort repair; even if the rewrite fails, we still
+                # have `prior` in memory and can run the diff.
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
         current = build_holograph()
         diffs = _diff(prior, current)
         if not diffs:
