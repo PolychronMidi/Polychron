@@ -49,15 +49,13 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 **Enrich** (`permissionDecision: "allow"` + `systemMessage`): let the call proceed, inject extra context.
 **Redirect** (`permissionDecision: "deny"` + `systemMessage`): deny the tool, tell agent which tool to use instead with the original data pre-formatted.
 
-| Hook | Trigger | Pattern | Message |
--
-| `pretooluse_bash.sh` | `timeout` in tool_input | **Correct** — strip timeout via updatedInput | "timeout removed — all project scripts handle timeouts inline" |
-| `pretooluse_read.sh` | Read on project src/ file with KB entries | **Enrich** — allow Read, inject KB titles + entry count | "KB context for {module} (N entries). For full briefing: `i/hme-read target={module}`" |
-| `pretooluse_grep.sh` | Any Grep with KB matches | **Enrich** — allow Grep, inject KB titles + trace nudge | "HME has N KB entries. For KB-enriched results: `i/trace target=<query>`" |
-| `pretooluse_grep.sh` | Any Grep without KB matches | **Enrich** — allow Grep, inject trace nudge | "`i/trace` returns matches + KB cross-references" |
-| `pretooluse_write.sh` | Write to src/ file with KB entries | **Enrich** — allow Write, inject KB constraint titles | "Writing to {module} — N KB constraints exist. Verify compliance..." |
-| `pretooluse_todowrite.sh` | Any TodoWrite call | **Redirect** — deny, extract tasks, format for HME todo | "Use `i/todo` instead — supports subtodos. Your tasks: ..." |
-| `pretooluse_hme_primer.sh` | First HME tool call of session (via `Bash(i/<tool>)`) | **Enrich** — allow tool, inject AGENT_PRIMER.md content via systemMessage | One-shot primer injection via hookSpecificOutput |
+- `pretooluse_bash.sh` — `timeout` in tool_input. **Correct**: strip timeout via updatedInput. Message: "timeout removed — all project scripts handle timeouts inline".
+- `pretooluse_read.sh` — Read on project src/ file with KB entries. **Enrich**: allow Read, inject KB titles + entry count. Message: "KB context for {module} (N entries). For full briefing: `i/hme-read target={module}`".
+- `pretooluse_grep.sh` — Grep with KB matches. **Enrich**: allow Grep, inject KB titles + trace nudge. Message: "HME has N KB entries. For KB-enriched results: `i/trace target=<query>`".
+- `pretooluse_grep.sh` — Grep without KB matches. **Enrich**: allow Grep, inject trace nudge. Message: "`i/trace` returns matches + KB cross-references".
+- `pretooluse_write.sh` — Write to src/ file with KB entries. **Enrich**: allow Write, inject KB constraint titles. Message: "Writing to {module} — N KB constraints exist. Verify compliance…".
+- `pretooluse_todowrite.sh` — any TodoWrite call. **Redirect**: deny, extract tasks, format for HME todo. Message: "Use `i/todo` instead — supports subtodos. Your tasks: …".
+- `pretooluse_hme_primer.sh` — first HME tool call of session (via `Bash(i/<tool>)`). **Enrich**: allow tool, inject AGENT_PRIMER.md content via systemMessage. One-shot primer injection via hookSpecificOutput.
 
 #### Correct example (Bash timeout stripping)
 ```json
@@ -88,34 +86,30 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 
 ### Hard Blocks (exit 2 — command rejected, agent must retry differently)
 
-| Hook | Trigger | Principle |
--
-| `pretooluse_bash.sh` | `rm` + `run.lock` in command | LIFESAVER — never delete run.lock |
-| `pretooluse_bash.sh` | Any `run.lock` access | Anti-polling — checking lock IS polling |
-| `pretooluse_bash.sh` | `stat`/`ls -l` on pipeline metric files | Anti-polling — timestamp checking is indirect polling |
-| `pretooluse_bash.sh` | Pipeline command without `run_in_background=true` | Anti-wait — pipeline must run in background |
-| `pretooluse_bash.sh` | `run_in_background=true` AND trailing `&` | Correctness — double-backgrounding fires false completion |
-| `pretooluse_bash.sh` | `tail`/`cat`/`grep` on pipeline log files | Anti-polling — use `i/status` |
-| `pretooluse_bash.sh` | `sleep` + `tail`/`cat`/`grep` in same command | Anti-polling — sleep-then-check is the antipattern |
-| `pretooluse_bash.sh` | Empty catch blocks, no-op error handlers, suppressed stderr | Fail fast — no silent error suppression |
-| `pretooluse_bash.sh` | 3rd+ read of `/tmp/claude-*` task output | Anti-polling — already checked twice, wait for notification |
-| `pretooluse_edit.sh` | LLM stub placeholder pattern (ellipsis + "remaining" language) | Correctness — use actual replacement content |
-| `pretooluse_write.sh` | Write to `.claude/projects/*/memory/` | Anti-pattern — memory saving supplanted by HME |
-| `pretooluse_write.sh` | API key/password/secret/token pattern detected | Security — review before writing credentials |
-| `pretooluse_write.sh` | LLM stub placeholder in full file write | Correctness — stubs destroy files |
-| `pretooluse_write.sh` | `logger.warning()` for expected background failures | fix_antipattern — use logger.info for expected failures |
-| `pretooluse_check_pipeline.sh` | 2nd+ `i/status` call in same turn | **Redirect** — deny + suggest continuing real work while the pipeline runs |
+- `pretooluse_bash.sh` — `rm` + `run.lock` in command. LIFESAVER: never delete run.lock.
+- `pretooluse_bash.sh` — any `run.lock` access. Anti-polling: checking the lock IS polling.
+- `pretooluse_bash.sh` — `stat`/`ls -l` on pipeline metric files. Anti-polling: timestamp checking is indirect polling.
+- `pretooluse_bash.sh` — pipeline command without `run_in_background=true`. Anti-wait: pipeline must run in background.
+- `pretooluse_bash.sh` — `run_in_background=true` AND trailing `&`. Correctness: double-backgrounding fires false completion.
+- `pretooluse_bash.sh` — `tail`/`cat`/`grep` on pipeline log files. Anti-polling: use `i/status`.
+- `pretooluse_bash.sh` — `sleep` + `tail`/`cat`/`grep` in same command. Anti-polling: sleep-then-check is the antipattern.
+- `pretooluse_bash.sh` — empty catch blocks, no-op error handlers, suppressed stderr. Fail fast: no silent error suppression.
+- `pretooluse_bash.sh` — 3rd+ read of `/tmp/claude-*` task output. Anti-polling: already checked twice; wait for notification.
+- `pretooluse_edit.sh` — LLM stub placeholder pattern (ellipsis + "remaining" language). Correctness: use actual replacement content.
+- `pretooluse_write.sh` — write to `.claude/projects/*/memory/`. Anti-pattern: memory saving supplanted by HME.
+- `pretooluse_write.sh` — API key/password/secret/token pattern detected. Security: review before writing credentials.
+- `pretooluse_write.sh` — LLM stub placeholder in full file write. Correctness: stubs destroy files.
+- `pretooluse_write.sh` — `logger.warning()` for expected background failures. Fix antipattern: use `logger.info` for expected failures.
+- `pretooluse_check_pipeline.sh` — 2nd+ `i/status` call in same turn. **Redirect**: deny + suggest continuing real work while the pipeline runs.
 
 ### Soft Feedback (stderr — command proceeds, agent sees advice)
 
-| Hook | Trigger | Advice |
--
-| `pretooluse_edit.sh` | Editing src/ without prior `read(mode='before')` | NEXUS: call read() for KB constraints + callers + risks |
-| `pretooluse_edit.sh` | Module has KB entries (via HTTP shim) | Surface KB constraint titles and counts |
-| `pretooluse_grep.sh` | Any grep pattern with KB matches | Suggest `find()` for KB-enriched results |
-| `pretooluse_read.sh` | Reading task output file | Remind to wait for completion notification |
-| `pretooluse_read.sh` | Project file with no KB entries | Suggest `read()` for KB + callers + structure |
-| `pretooluse_write.sh` | Writing to `lab/sketches.js` | Lab rules: real monkey-patching, no empty sketches |
+- `pretooluse_edit.sh` — editing src/ without prior `read(mode='before')`. NEXUS: call read() for KB constraints + callers + risks.
+- `pretooluse_edit.sh` — module has KB entries (via HTTP shim). Surface KB constraint titles and counts.
+- `pretooluse_grep.sh` — grep pattern with KB matches. Suggest `find()` for KB-enriched results.
+- `pretooluse_read.sh` — reading task output file. Remind to wait for completion notification.
+- `pretooluse_read.sh` — project file with no KB entries. Suggest `read()` for KB + callers + structure.
+- `pretooluse_write.sh` — writing to `lab/sketches.js`. Lab rules: real monkey-patching, no empty sketches.
 
 Note: `pretooluse_read.sh` on project files WITH KB entries now uses the Enrich pattern (see Corrections above) instead of stderr. The Read proceeds and KB context is injected via `systemMessage`.
 
@@ -123,12 +117,10 @@ Note: `pretooluse_read.sh` on project files WITH KB entries now uses the Enrich 
 
 Raw tool calls accumulate a weighted score. HME MCP tool calls reset it to zero.
 
-| Tool | Weight | Calls to warn (50) | Calls to block (70) |
-
-| Read | 5 | 10 | 14 |
-| Edit/Write | 10 | 5 | 7 |
-| Bash | 15 | ~3 | ~5 |
-| Grep | 20 | ~3 | ~4 |
+- **Read** — weight 5; warns at 10 calls (score 50), blocks at 14 (score 70).
+- **Edit/Write** — weight 10; warns at 5 calls, blocks at 7.
+- **Bash** — weight 15; warns at ~3 calls, blocks at ~5.
+- **Grep** — weight 20; warns at ~3 calls, blocks at ~4.
 
 Block message: "Use an HME npm script (`i/hme-read`, `i/trace`, `i/review`) before continuing."
 
