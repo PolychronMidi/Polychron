@@ -10,7 +10,7 @@ const tester = new RuleTester({
 
 tester.run('no-or-fallback-on-map-get', rule, {
   valid: [
-    // Nullish coalescing — the intended replacement.
+    // Nullish coalescing -- the intended replacement.
     "const x = m.get('k') ?? 99;",
     // No fallback at all.
     "const x = m.get('k');",
@@ -21,7 +21,7 @@ tester.run('no-or-fallback-on-map-get', rule, {
     // Fallback on .get() with a NON-literal RHS (variable / expression).
     "const x = m.get('k') || dynamicDefault();",
     "const x = m.get('k') || other.thing;",
-    // Different method name (.find, .at, etc.) — only .get is matched.
+    // Different method name (.find, .at, etc.) -- only .get is matched.
     "const x = arr.find(p) || 99;",
   ],
   invalid: [
@@ -50,7 +50,7 @@ tester.run('no-or-fallback-on-map-get', rule, {
       output: "const x = m.get('k') ?? '';",
       errors: 1,
     },
-    // Method-chain on .get() result with || literal — the LHS of the
+    // Method-chain on .get() result with || literal -- the LHS of the
     // outer `||` here is a MemberExpression on a.get(x), not the
     // CallExpression itself, so this rule (intentionally) doesn't fire.
     // The behavior is documented; if we want to catch this shape later,
