@@ -204,7 +204,21 @@ def _mark_status(entry: dict, status: str) -> None:
 
 def _format_todos(todos: list) -> str:
     if not todos:
-        return "No todos."
+        # Empty state: surface available actions so the user has
+        # discoverability instead of bare "No todos." dead-end.
+        return (
+            "No todos.\n\n"
+            "Available actions:\n"
+            "  i/todo action=add text=\"...\" [tier=easy|medium|hard] [critical=true]\n"
+            "  i/todo action=list                       — list all\n"
+            "  i/todo action=critical                   — list open critical only\n"
+            "  i/todo action=done todo_id=N             — mark #N done\n"
+            "  i/todo action=clear                      — drop completed (auto-archives full sets)\n"
+            "  i/todo action=ingest_from_spec           — pull doc/TODO.md Next-up\n"
+            "  i/todo action=close_with_spec_update todo_id=N\n"
+            "  i/todo action=phase_complete todo_id=N text=\"...\"\n"
+            "\nSee i/help todo for full registry entry."
+        )
     lines = []
     for t in todos:
         auto_done = _check_main_done(t)

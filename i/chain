@@ -19,7 +19,30 @@ _SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_dispatcher.py"
 [ -f "$_SCRIPT" ] || { echo "i/chain: dispatcher missing at $_SCRIPT" >&2; exit 1; }
 
 _CHAIN_NAME="${1:-}"
-[ -z "$_CHAIN_NAME" ] && { echo "Usage: i/chain <chain-name> [loop=N] [on_rate_limit=fail|pause|pause-with-cap]" >&2; exit 1; }
+if [ -z "$_CHAIN_NAME" ]; then
+  echo "Usage: i/chain <chain-name> [loop=N] [on_rate_limit=fail|pause|pause-with-cap]" >&2
+  echo "" >&2
+  _CHAIN_DIRS=(
+    "$(dirname "$0")/../chains"
+    "$(dirname "$0")/../tools/HME/chains"
+  )
+  _AVAIL=()
+  for _d in "${_CHAIN_DIRS[@]}"; do
+    [ -d "$_d" ] || continue
+    while IFS= read -r f; do
+      [ -n "$f" ] && _AVAIL+=("$(basename "$f" .yaml)")
+    done < <(find "$_d" -maxdepth 1 -name '*.yaml' -type f 2>/dev/null | sort)
+  done
+  if [ "${#_AVAIL[@]}" -gt 0 ]; then
+    echo "Available chains:" >&2
+    for _c in "${_AVAIL[@]}"; do
+      echo "  $_c" >&2
+    done
+  else
+    echo "(no chains found in chains/ or tools/HME/chains/)" >&2
+  fi
+  exit 2
+fi
 shift || true
 
 _ARGS=()

@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -73,7 +74,21 @@ def _assistant_tool_use(name: str, tool_input: dict) -> dict:
 
 
 def _write_transcript(events: list[dict]) -> Path:
-    f = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False)
+    # Write the fixture under $PROJECT_ROOT/tmp/ rather than the system
+    # temp dir. fabrication_check's path-safety guard restricts
+    # transcripts to ~/.claude/projects/ or $PROJECT_ROOT/tmp/ to
+    # prevent malicious paths from leaking secrets via metric writes.
+    # System /tmp is excluded → fixture-based tests for that detector
+    # silently no-op. Caught April 2026 during the dual-purpose audit.
+    project_root = os.environ.get("PROJECT_ROOT", "")
+    if project_root:
+        tmp_dir = Path(project_root) / "tmp" / "detector-test-fixtures"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        f = tempfile.NamedTemporaryFile(
+            mode="w", suffix=".jsonl", delete=False, dir=str(tmp_dir),
+        )
+    else:
+        f = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False)
     for ev in events:
         f.write(json.dumps(ev) + "\n")
     f.close()

@@ -354,7 +354,13 @@ def main() -> int:
         return 0
 
     # Signal 2: does the final assistant text show enumerate-but-didnt-execute?
-    final_text = _last_assistant_text(events).lower()
+    # Strip code-fenced / backticked / quoted spans before phrase-
+    # matching — same discipline stop_work + exhaust_check + psycho_stop
+    # + fabrication_check apply. A response that DESCRIBES enumerated
+    # remaining items (in a regex example or quoted block) shouldn't
+    # false-fire as if the agent left work undone in their own prose.
+    from _text_strip import strip_quoted
+    final_text = strip_quoted(_last_assistant_text(events)).lower()
     if not final_text:
         _emit_stats("ok", "no_final_text")
         print("ok")

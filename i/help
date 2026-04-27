@@ -33,9 +33,13 @@ if not entry:
     from difflib import get_close_matches
     names = sorted(reg.get("commands", {}).keys())
     suggestions = get_close_matches(name, names, n=3, cutoff=0.5)
-    msg = f"i/help: no registry entry for '{name}'"
+    msg = f"i/help: '{name}' not found in registry"
     if suggestions:
         msg += f"\n  did you mean: {', '.join(suggestions)}?"
+    else:
+        # No close match — at least point at the discovery surface so
+        # the user has somewhere to go.
+        msg += f"\n  try: i/help    (lists all {len(names)} registered tools)"
     print(msg, file=sys.stderr)
     sys.exit(1)
 print(f"i/{name}")
