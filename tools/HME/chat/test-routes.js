@@ -75,9 +75,9 @@ async function run() {
   const MSG = [{ role: "user", content: "Reply with exactly: ROUTE_OK" }];
   const results = {};
 
-  // ═══════════════════════════════════════════════════════════════
+  //
   // WARMUP: pre-load qwen3:4b so arbiter tests don't hit cold-model timeouts
-  // ═══════════════════════════════════════════════════════════════
+  //
   {
     console.log("\n=== ARBITER MODEL WARMUP ===");
     const t0 = Date.now();
@@ -87,9 +87,9 @@ async function run() {
     else console.log(`[WARMUP] qwen3:4b ready (${elapsed}s)`);
   }
 
-  // ═══════════════════════════════════════════════════════════════
+  //
   // SECTION 1: HAPPY PATH — all routes should succeed
-  // ═══════════════════════════════════════════════════════════════
+  //
 
   // 1a. Arbiter classify
   console.log("\n=== ARBITER classify (local task) START ===");
@@ -183,9 +183,9 @@ async function run() {
   });
   results["hybrid"] = r3.ok;
 
-  // ═══════════════════════════════════════════════════════════════
+  //
   // SECTION 2: STRESS — error paths must surface, never hang
-  // ═══════════════════════════════════════════════════════════════
+  //
 
   const DEAD = { model: LLAMACPP_MODEL, url: "http://127.0.0.1:19999" };
 
@@ -230,21 +230,17 @@ async function run() {
   const s6 = await testRoute("EMPTY_MESSAGES", (c, d, e) => streamLlamacpp([], OPTS, c, d, e));
   results["stress-empty-msgs"] = s6.ok;
 
-  // ═══════════════════════════════════════════════════════════════
+  //
   // SUMMARY
-  // ═══════════════════════════════════════════════════════════════
-  console.log("\n╔══════════════════════════════════════════════════╗");
-  console.log("║              TEST RESULTS SUMMARY                ║");
-  console.log("╠══════════════════════════════════════════════════╣");
+  //
+  console.log("\nTEST RESULTS SUMMARY");
   let allOk = true;
   for (const [name, ok] of Object.entries(results)) {
     const status = ok ? "✓ PASS" : "✗ FAIL";
-    console.log(`║  ${status}  ${name.padEnd(35)} ║`);
+    console.log(`  ${status}  ${name}`);
     if (!ok) allOk = false;
   }
-  console.log("╠══════════════════════════════════════════════════╣");
-  console.log(`║  ${allOk ? "ALL TESTS PASSED" : "SOME TESTS FAILED"}${" ".repeat(allOk ? 17 : 16)}║`);
-  console.log("╚══════════════════════════════════════════════════╝");
+  console.log(allOk ? "ALL TESTS PASSED" : "SOME TESTS FAILED");
 
   process.exit(allOk ? 0 : 1);
 }

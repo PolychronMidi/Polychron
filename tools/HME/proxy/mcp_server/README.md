@@ -11,7 +11,7 @@ and [doc/HME.md](../../../../doc/HME.md) for the active surface.
 Four files, ≤200 lines each, single concern per file:
 
 | File           | Concern                                                       |
-| -------------- | ------------------------------------------------------------- |
+| --- | --- |
 | `index.js`     | HTTP route handler for `/mcp/sse` + `/mcp/messages` + `/mcp/health` |
 | `session.js`   | session-id ↔ SSE response stream map; 10-min TTL reaper        |
 | `protocol.js`  | JSON-RPC + SSE framing primitives                             |

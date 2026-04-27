@@ -2,7 +2,7 @@
 # Autocommit — fail-fast-hardened single source of truth.
 #
 # Why this exists in its own helper:
-# ---------------------------------
+#
 # The historical failure mode: stop.sh and userpromptsubmit.sh each had
 # their own inline git-add / git-commit block that depended on
 # $PROJECT_ROOT being set by .env. When .env failed to load (moved path,
@@ -76,7 +76,7 @@ _AC_ERROR_LOG="$_AC_ROOT/log/hme-errors.log"
 # a strong signal of a wedged state that no amount of retries will fix.
 _AC_COUNTER_FAIL_THRESHOLD=3
 
-# ──────────────────────────────────────────────────────────────────────
+#
 # Helper: write a failure to every channel we can reach. Every channel is
 # individually `|| true` guarded because we are the fallback of last
 # resort — we never die for logging reasons.
@@ -110,7 +110,7 @@ _ac_record_failure() {
   fi
 }
 
-# ──────────────────────────────────────────────────────────────────────
+#
 # Helper: begin an autocommit attempt. Increment counter FIRST so that if
 # we die before recording success (segfault, SIGKILL, disk full, etc.),
 # the counter stays elevated and the HCI verifier catches the wedge on the
@@ -127,7 +127,7 @@ _ac_begin() {
   echo $((n + 1)) > "$_AC_COUNTER" 2>/dev/null || true
 }
 
-# ──────────────────────────────────────────────────────────────────────
+#
 # Helper: record a successful commit. Reset counter, update success
 # timestamp, clear fail flag.
 
@@ -140,7 +140,7 @@ _ac_success() {
   date +%s > "$_AC_STATE_DIR/hme-heartbeat-autocommit.ts" 2>/dev/null || true
 }
 
-# ──────────────────────────────────────────────────────────────────────
+#
 # Core autocommit operation. Returns 0 on success, 1 on failure.
 # Callers MUST append `|| true` at the call site — we own our bookkeeping
 # and the return is informational only. The hook must NOT exit on our
@@ -234,7 +234,7 @@ _ac_do_commit() {
   return 1
 }
 
-# ──────────────────────────────────────────────────────────────────────
+#
 # Read-only helper for the LIFESAVER UserPromptSubmit scan and other
 # inspection points. Returns 0 if autocommit is healthy, 1 otherwise.
 # Prints a short reason on stderr when unhealthy.

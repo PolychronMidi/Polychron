@@ -46,7 +46,7 @@ const voteAxisCostTrend = _v.voteAxisCostTrend;
 const voteClapStability = _v.voteClapStability;
 const voteListeningVerdict = _v.voteListeningVerdict;
 
-// ---- main ----
+// main
 
 function mean(xs) {
   return xs.reduce((a, b) => a + b, 0) / xs.length;

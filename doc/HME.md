@@ -45,7 +45,7 @@ Phases 1-6 produced seven independent observability substrates. Phase 7 made the
 **Agent-facing tool surface** (R30, `i/substrate` + helpers):
 
 | Tool | Purpose |
-|------|---------|
+| --- | --- |
 | `i/substrate [mode]` | Unified four-arc view. Modes: brief, detail, actions, drift, consensus, efficacy, patterns, diff |
 | `i/why <invariant-id>` | Explain an invariant's class, streak, commit citations, recent history |
 | `i/freeze [query]` | Show arc-freeze marker; check query against forbidden list |
@@ -127,7 +127,7 @@ tools/HME/               The single source of truth
   agents/
     Evolver.agent.md                    7-phase evolution loop agent
   scripts/                              Verifier engine, stress tests, analyzers:
-    verify-coherence.py                   Unified HCI engine (55 verifiers, 0-100 score)
+    verify-coherence.py                   Unified HCI engine (56 verifiers, 0-100 score)
     verify-doc-sync.py                    Stale tool name drift detector
     verify-onboarding-flow.py             18-test dry run of onboarding state machine
     verify-states-sync.py                 Python↔shell STATES list diff
@@ -274,7 +274,7 @@ Subscription billing is preserved because we still shell out to `claude` (OAuth-
 Selftest now runs these additional structural probes beyond the legacy 17:
 
 | Probe | Catches |
-|---|---|
+| --- | --- |
 | daemon uniqueness | more than one `llamacpp_daemon` process visible to pgrep |
 | llama-server count | more than 2 running (declared topology = arbiter + coder) |
 | daemon thread hygiene | `Exception in thread` in recent daemon log = silent thread crash |
@@ -294,7 +294,7 @@ Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert 
 Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes nine detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop.sh) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
 
 | Detector | Catches |
-|---|---|
+| --- | --- |
 | `poll_count` | 2+ background-task status polls in one turn (wait-and-poll antipattern) |
 | `idle_after_bg` | Launched a pipeline in background then stopped without substantive follow-up work |
 | `psycho_stop` | (A) background job + ScheduleWakeup; (B) admit-and-stop (final text enumerates pending work, no tool calls follow); (C) survey-and-ask (asks permission after directive already granted authority) |
@@ -310,7 +310,7 @@ Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a
 ### Chat invariants (tonight's pass added these guarantees)
 
 | Invariant | Where enforced | Failure mode it prevents |
-|---|---|---|
+| --- | --- | --- |
 | Stream-frame parse errors surface to UI | `routerLlamacpp.ts` JSON parse → `onChunk(..., "error")` | Silent token loss when API returns partial / malformed SSE frame |
 | Agent-mode `read_file`/`write_file` paths constrained to `workingDir` | `_resolveWithinWorkdir` in `routerLlamacpp.ts` | Path-traversal escape via `../` or absolute path |
 | Message queue bounded to 10 pending | `BrowserPanel.ts` send-queue gate | Unbounded growth when stream is stuck and user spams send |
@@ -398,7 +398,7 @@ Read pipeline output, then `evolve(focus='blast', query='<symbol>')` for depende
 HME ships three smoke-test scripts and a chaos-injection battery. Run any directly — they're self-contained bash scripts that boot the components they need and tear down on exit.
 
 | Script | What it asserts |
-|---|---|
+| --- | --- |
 | `scripts/test/smoke-test-i-wrappers.sh` | Every `i/*` shell wrapper resolves + returns a non-error response |
 | `scripts/test/smoke-test-indexing-mode.sh` | Full `/indexing-mode` cycle: daemon+worker reachable → coder suspended → embedders reloaded → index runs → coder respawns healthy → selftest still READY |
 | `scripts/test/smoke-test-chat.sh` | Chat server boots → SSE subscriber attaches → POST accepted → SSE event delivered (listSessions triggers a sessionList broadcast) → all 5 assertions pass |
@@ -407,7 +407,7 @@ HME ships three smoke-test scripts and a chaos-injection battery. Run any direct
 Chaos injectors live in `scripts/chaos/`:
 
 | Script | What it injects / asserts |
-|---|---|
+| --- | --- |
 | `inject-silent-thread-crash.sh` | Appends a fake `Exception in thread` line to the daemon log; asserts the `daemon thread hygiene` selftest probe flips FAIL |
 | `inject-duplicate-llama-server.sh` | Spawns a decoy process matching the llama-server pgrep pattern; asserts the `llama-server count` probe catches the count exceeding topology |
 | `run-all.sh` | Runs every injector as a battery; any injector whose probe doesn't catch it is a dead probe |
@@ -417,7 +417,7 @@ Run after any selftest-probe change: `bash scripts/chaos/run-all.sh`. A probe th
 ## Operator Commands
 
 | Command | Purpose |
-|---|---|
+| --- | --- |
 | `i/hme-admin action=selftest` | Full self-check; ~15 probes covering tool registration, docs, index, KB, llamacpp, version consistency, single-writer invariants, timeseries drift |
 | `i/hme-admin action=health` | Operator triage view: daemon PID+uptime, worker PID+uptime, llama aliases, /health states, per-GPU VRAM, recent errors, version banner, single-writer domain snapshot |
 | `i/hme-admin action=reload modules=<name>` | Hot-reload one or more tool modules without restarting the worker (runs against `tool_registry._TOOLS`) |
@@ -462,7 +462,7 @@ respawns it with a fresh CUDA context — zero manual intervention.
 The 2026-04-22 indexing-mode incident ([7 root causes](../tools/HME/KB/)) was persisted as KB entries. Retrieve with `i/learn query="<topic>"`:
 
 | Topic | KB entry (short id) | Query hint |
-|---|---|---|
+| --- | --- | --- |
 | dotenv inline-comment parse bug | `a8b4eeb6d3fa` | `i/learn query="dotenv inline comment"` |
 | duplicate supervisor race | `54e18b372699` | `i/learn query="duplicate supervisor"` |
 | PyTorch cuda context residual | `e8c883ae6af1` | `i/learn query="cuda context residual"` |
@@ -676,7 +676,7 @@ All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks
 Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `output/metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` — a zero-dependency CLI invoked from bash hooks in the background.
 
 | Event | Source | Agent-independent? | Fields |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `edit_pending` | `pretooluse_edit.sh` (Claude Edit) | no — Claude-only | file, module, hme_read_prior |
 | `file_written` | `watcher.py` filesystem watcher + proxy middleware | **yes** — any editor triggers it | file, module, hme_read_prior |
 | `coherence_violation` | `posttooluse_edit.sh` | no — Claude-only | file, module, reason |

@@ -13,7 +13,7 @@ Compares actual vs intended note output. Feeds a correction bias back into
 the density product so the system listens to its own song.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `SMOOTHING` | 0.55 | EMA factor for `coherenceBias` - higher = slower adaptation | `BIAS_FLOOR/CEILING`, `phaseGain` |
 | `BIAS_FLOOR` | 0.60 | Min density correction multiplier | `SMOOTHING`, conductorConfig density range |
 | `BIAS_CEILING` | 1.38 | Max density correction multiplier | `SMOOTHING`, profileAdaptation restrained hint |
@@ -34,7 +34,7 @@ Measures combined pitch/velocity/rhythmic entropy. Steers cross-layer
 systems toward a target curve driven by section position.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `SMOOTHING` | 0.3 | EMA factor for smoothed entropy | Pitch/velocity/rhythm weights |
 | `WINDOW_NOTES` | 10 | Max note history per layer (halved for faster turnover) | Pitch entropy uniqueness calc |
 | Pitch weight | 0.4 | Contribution of pitch diversity to combined entropy | Velocity weight (0.3), rhythm weight (0.3) |
@@ -56,7 +56,7 @@ Watches for sustained low-density / high-tension / flat-flicker streaks.
 Produces advisory hints consumed by `conductorConfig`.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `DENSITY_LOW_THRESHOLD` | 0.55 | Density below this increments low-density streak | `STREAK_TRIGGER`, coherenceMonitor bias |
 | `TENSION_HIGH_THRESHOLD` | 1.4 | Tension above this increments high-tension streak | `STREAK_TRIGGER`, negotiation conflict threshold |
 | `FLICKER_FLAT_THRESHOLD` | 1.05 | Flicker within 0.05 of 1.0 counts as flat | `STREAK_TRIGGER` |
@@ -75,7 +75,7 @@ Integrates trust scores, entropy regulation, and intent targets to produce
 final `playProb` / `stutterProb` values.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | Play scale formula | (0.75 + density·0.45) * (0.9 + trust·0.08) | Computes play probability scale from intent + trust | `playScale` clamp, adaptiveTrustScores |
 | `playScale` clamp | [0.4, 1.8] | Prevents play probability extinction or saturation | coherenceMonitor `BIAS_CEILING` (1.38) |
 | stutter scale formula | (0.6 + interaction·0.75) * (0.85 + trust·0.1) | Computes stutter scale from interaction target + trust | `stutterScale` clamp |
@@ -101,7 +101,7 @@ systems in `trustSystems.names`, 13 heat-map systems in
 `trustSystems.heatMapSystems`. Never hardcode trust name strings.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | EMA decay | 0.9 | Weight on previous score: `score = score·0.9 + payoff·0.1` | Weight formula, payoff clamp |
 | EMA new-data | 0.1 | Weight on new payoff observation | EMA decay |
 | Score clamp | [−1, 1] | Trust score range | Weight formula |
@@ -118,7 +118,7 @@ systems in `trustSystems.names`, 13 heat-map systems in
 Final probability adjustments applied in the `probability-adjust` pipeline stage.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | Complement fill urgency | 0.3 | `playProb *= (1 + fillUrgency * 0.3)` - max 30% boost | restSynchronizer complementary rest |
 | Breathing decrease: play | 0.96 | 4% play reduction on heat-map breathing decrease | interactionHeatMap heat level |
 | Breathing decrease: stutter | 0.94 | 6% stutter reduction on decrease | interactionHeatMap heat level |
@@ -133,7 +133,7 @@ Self-tuning decorrelation engine for all 15 compositional dimension pairs.
 Nudges density/tension/flicker biases to reduce inter-signal correlation.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `DEFAULT_TARGET` | 0.25 | Default coupling target for any pair | Per-pair overrides in `PAIR_TARGETS` |
 | `GAIN_INIT` | 0.16 | Starting gain for new pairs | `GAIN_MIN`, `GAIN_MAX`, effectiveness gate |
 | `GAIN_MIN` | 0.08 | Minimum gain floor | `GAIN_INIT` |
@@ -172,7 +172,7 @@ Layer 2 balances axis-level energy shares. Interacts with #1 (targets),
 #9 (gain budget), #12 (homeostasis).
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `_HOTSPOT_RATIO` | 2.0 | Pair hot when raw > 2.0x baseline | `_HOTSPOT_ABS_MIN`, Layer 1 tighten |
 | `_HOTSPOT_ABS_MIN` | 0.25 | Ignore hotspot unless raw crosses this floor | `_HOTSPOT_RATIO` |
 | `_COLDSPOT_RATIO` | 0.3 | Pair cold when raw < 0.3x baseline | `_COLDSPOT_ABS_MAX` |
@@ -202,7 +202,7 @@ Global coupling energy governance. Tracks total energy, detects
 redistribution, controls gain multiplier and floor dampening.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `_GAIN_FLOOR` | 0.20 | Minimum global gain multiplier | `_globalGainMultiplier` in coupling manager |
 | `_GINI_THRESHOLD` | 0.40 | Gini above this triggers redistribution detection | Pair-level Gini coefficient |
 | `_REDIST_RELATIVE_THRESHOLD` | 0.008 | Redistribution detection: \|deltaEma\| < 0.008 AND turbulence > 0.008 | `pairTurbulenceEma` |
@@ -226,7 +226,7 @@ and coherent regime duration. Now bidirectional: boosts when phase is low,
 attenuates when phase recently overshot.
 
 | Constant / State | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `_SHARE_EMA_ALPHA` | 0.06 | ~17-beat EMA for phase share | `persistentLowSharePressure`, `getLowShareThreshold()` |
 | `_RECOVERY_EMA_ALPHA` | 0.08 | Recovery attribution window EMA | `recoveryFactor` in computeBoosts |
 | `RECOVERY_ATTRIBUTION_WINDOW` | 12 | Beats after boost before unattributed failure | `phaseFloorControllerBeatsSinceBoost` |
@@ -250,7 +250,7 @@ effectiveDimensionality falls below threshold. Now gated by per-axis cooldowns
 to prevent continuous nudging before the axis has responded.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `DIM_THRESHOLD` | 2.2 | Below this, begin injecting perturbations | effectiveDimensionality from systemDynamicsProfiler |
 | `DIM_CRITICAL` | 1.5 | At this, perturbation is at full strength | Urgency ramp between 1.5–2.2 |
 | `MAX_PERTURBATION` | 0.15 | Maximum perturbation per axis | Coupling-based perturbation direction vectors |
@@ -275,7 +275,7 @@ health-aware: worse system health lowers the effective trigger threshold, produc
 more corrective avalanches when the system is under stress.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `WINDOW` | 16 | Beats to accumulate energy before avalanche check | `THRESHOLD_MIN/MAX`, `energyBuffer` |
 | `TARGET_RATE` | 0.20 | Desired fraction of beats with avalanche | `ADAPT_RATE`, threshold self-calibration |
 | `THRESHOLD_MIN` | 0.08 | Minimum energy threshold (calibrated down from 0.15 to activate at normal energy levels) | `ADAPT_RATE`, avg window energy |
@@ -297,7 +297,7 @@ Creates rhythmic round-trip impulses between L1/L2 with complementary
 interval biasing. Highest hotspot rate (31%) of any trust system.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | `DAMPING` | 0.55 | Energy decay per round-trip — prevents runaway feedback | CIM `setCoordinationScale`, trust EMA weight |
 | `COMPLEMENT_MAP` | interval→complement | Biases response pitch toward complementary interval of stimulus | harmonicContext key/mode |
 | `MAX_PENDING` | 4 | Maximum concurrent feedback rounds — caps multi-layer accumulation | L1/L2 activate cycle timing |
@@ -312,7 +312,7 @@ to the other with adaptive decay. The #2 hotspot system with extreme
 peak pressure (0.944) and a dramatic regime-dependent performance swing.
 
 | Constant | Value | Role | Interaction Partners |
-|||||
+| --- | --- | --- | --- |
 | Adaptive decay | EMA-based | Adjusts stutter propagation intensity over time | CIM `setCoordinationScale`, regime |
 | Stutter variants | 19 types | Selection weighted by 12 signal dimensions | `stutterVariants.selectForBeat()` |
 

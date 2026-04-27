@@ -4,7 +4,7 @@
 # stderr, exit_code} back to Claude Code.
 #
 # CRITICAL CHANGE (fail-LOUD, not fail-open):
-# ------------------------------------------
+#
 # The old code exited 0 silently when the proxy was unreachable. That was
 # the single largest silent-failure mode in the HME stack — proxy dies,
 # every hook silently succeeds, LIFESAVER never fires (LIFESAVER itself

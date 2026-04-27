@@ -204,10 +204,7 @@ function generateMarkdown(modules) {
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push('| Domain | Modules | Density | Tension | Flicker | Recorders | State Providers |');
-  lines.push('||||||||');
 
-  // Group by domain
   const byDomain = {};
   for (const mod of modules) {
     if (!byDomain[mod.domain]) byDomain[mod.domain] = [];
@@ -220,7 +217,9 @@ function generateMarkdown(modules) {
     const f = mods.filter(m => m.registrations.includes('flicker')).length;
     const r = mods.filter(m => m.registrations.includes('recorder')).length;
     const s = mods.filter(m => m.registrations.includes('stateProvider')).length;
-    lines.push('| ' + domain + ' | ' + mods.length + ' | ' + d + ' | ' + t + ' | ' + f + ' | ' + r + ' | ' + s + ' |');
+    lines.push('- **' + domain + '** — ' + mods.length + ' modules; '
+      + d + ' density, ' + t + ' tension, ' + f + ' flicker, '
+      + r + ' recorders, ' + s + ' state providers');
   }
 
   lines.push('');
@@ -232,22 +231,20 @@ function generateMarkdown(modules) {
     lines.push('');
 
     for (const mod of mods.sort((a, b) => a.name.localeCompare(b.name))) {
-      lines.push('#### `' + mod.name + '`');
-      lines.push('');
-      if (mod.file) lines.push('- **File:** `' + mod.file + '`');
-      lines.push('- **Registrations:** ' + (mod.registrations.length > 0 ? mod.registrations.join(', ') : 'none'));
-      lines.push('- **Reset scopes:** ' + (mod.scopes.length > 0 ? mod.scopes.join(', ') : 'none detected'));
-      lines.push('- **Signal reads:** ' + (mod.signalReads.length > 0 ? mod.signalReads.join(', ') : 'none detected'));
+      lines.push('- **`' + mod.name + '`**');
+      if (mod.file) lines.push('  - File: `' + mod.file + '`');
+      lines.push('  - Registrations: ' + (mod.registrations.length > 0 ? mod.registrations.join(', ') : 'none'));
+      lines.push('  - Reset scopes: ' + (mod.scopes.length > 0 ? mod.scopes.join(', ') : 'none detected'));
+      lines.push('  - Signal reads: ' + (mod.signalReads.length > 0 ? mod.signalReads.join(', ') : 'none detected'));
 
       if (Object.keys(mod.biasValues).length > 0) {
         const bv = Object.entries(mod.biasValues)
           .map(([k, v]) => k + '=' + (v.clamped !== undefined ? v.clamped.toFixed(4) : '?'))
           .join(', ');
-        lines.push('- **Bias values (end-of-run):** ' + bv);
+        lines.push('  - Bias values (end-of-run): ' + bv);
       }
-
-      lines.push('');
     }
+    lines.push('');
   }
 
   return lines.join('\n');

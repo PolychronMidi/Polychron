@@ -4,7 +4,7 @@
  * Pattern lifted from FailproofAI's `require-no-conflicts-before-stop`.
  * Polychron's CLAUDE.md says "investigate before deleting or overwriting"
  * unfamiliar state — this enforces that for the most common case (an
- * abandoned rebase or merge with `<<<<<<<` markers in tracked files).
+ * abandoned rebase or merge with `<<<<<<<` markers in tracked files). spam-ok
  *
  * Detection layered: cheapest check first.
  *   1. .git/MERGE_HEAD or .git/REBASE_HEAD presence → in-progress operation.
@@ -63,7 +63,7 @@ module.exports = {
       if (conflicted.length > 10) lines.push(`      ... (+${conflicted.length - 10} more)`);
     }
     lines.push('');
-    lines.push('Resolve all conflicts (edit files, remove <<<<<<< / ======= / >>>>>>> markers, `git add` resolved files) and complete or abort the operation (`git rebase --continue` / `--abort`, `git merge --continue` / `--abort`) before stopping.');
+    lines.push('Resolve all conflicts (edit files, remove <<<<<<< / ======= / >>>>>>> markers, `git add` resolved files) and complete or abort the operation (`git rebase --continue` / `--abort`, `git merge --continue` / `--abort`) before stopping.');  // spam-ok
     return ctx.deny(lines.join('\n'));
   },
 };

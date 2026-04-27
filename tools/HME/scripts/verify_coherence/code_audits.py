@@ -443,3 +443,96 @@ class ShellSyntaxVerifier(Verifier):
         return _result(FAIL, score, f"{len(broken)}/{total} shell hooks broken", broken)
 
 
+# Banned: 4+ identical non-word, non-whitespace, non-paren/bracket characters
+# in a row. Targets visual-decoration spam — runs of equals, dashes, hashes,
+# pipes, tildes, slashes, or unicode box-drawing — without false-positiving
+# on legitimate code structure (stacked closing parens, identifiers with
+# repeated underscores, hex constants like 0xFFFFFFFF).
+_SPAM_RE = re.compile(r"([^\w\s()\[\]{}])\1{3,}")
+# Per-line opt-out: line containing this token is exempt. Keep narrow so
+# allowlisting requires conscious intent.
+_SPAM_ALLOW = "spam-ok"
+# Files/dirs exempt entirely (vendored libs, fixtures that DEFINE the
+# patterns the sanitizer detects, model assets).
+_SPAM_SKIP_DIRS = {
+    ".git", "node_modules", "output", "tmp", "log", "dist", "build",
+    "__pycache__", ".venv", "venv", "lab", "plugin-cache", "models",
+}
+_SPAM_SKIP_FILES = {
+    # Test fixtures whose purpose is to exercise sanitizer regex catalogs.
+    "tools/HME/proxy/middleware/secret_sanitizer.js",
+    "tools/HME/tests/specs/secret_sanitizer.test.js",
+    "tools/HME/tests/specs/migrated_policies.test.js",
+    "tools/HME/tests/specs/migrated_policies_round2.test.js",
+    "tools/HME/tests/specs/metaprofile_next_level.test.js",
+    # Vendored: external library, not under our editorial control.
+    "tools/csv_maestro/py_midicsv/midi_converters.py",
+}
+_SPAM_EXTS = (
+    ".md", ".py", ".js", ".mjs", ".cjs", ".sh", ".bash", ".json",
+    ".yaml", ".yml", ".ts", ".tsx", ".css", ".html", ".txt",
+)
+
+
+class RepeatedCharSpamVerifier(Verifier):
+    """No character may repeat 4+ times in a row in tracked text files —
+    targets divider/box-decoration spam (runs of dashes, equals, hashes,
+    pipes, tildes, unicode box-drawing). Word characters, whitespace, and
+    paren/bracket/brace pairs are exempt so identifiers, indentation, and
+    stacked code structure don't trip the rule. Per-line opt-out via the
+    literal token `spam-ok`.
+
+    Failing the verifier is intentional: the rule is meant to BLOCK these
+    patterns. New violations should be removed — a markdown heading is
+    `## Section`, not the same with a divider tail; a code separator is a
+    single blank line, not a comment of repeated symbols."""
+    name = "repeated-char-spam"
+    category = "code"
+    weight = 2.0
+
+    def run(self) -> VerdictResult:
+        violations = []
+        for root, dirs, files in os.walk(_PROJECT):
+            dirs[:] = [
+                d for d in dirs
+                if d not in _SPAM_SKIP_DIRS and not d.startswith(".")
+            ]
+            for f in files:
+                if not f.endswith(_SPAM_EXTS):
+                    continue
+                abs_path = os.path.join(root, f)
+                rel = os.path.relpath(abs_path, _PROJECT)
+                if rel in _SPAM_SKIP_FILES:
+                    continue
+                try:
+                    with open(abs_path, encoding="utf-8") as fp:
+                        for i, line in enumerate(fp, 1):
+                            if _SPAM_ALLOW in line:
+                                continue
+                            m = _SPAM_RE.search(line)
+                            if m:
+                                ch = m.group(1)
+                                run_len = len(m.group(0))
+                                violations.append(
+                                    f"{rel}:{i}  {ch!r}×{run_len}"
+                                )
+                                if len(violations) >= 200:
+                                    break
+                except (UnicodeDecodeError, OSError):
+                    pass
+                if len(violations) >= 200:
+                    break
+            if len(violations) >= 200:
+                break
+        if not violations:
+            return _result(PASS, 1.0, "no character-spam runs detected")
+        # Linear penalty: 50 violations halves the score; 100 zeros it.
+        score = max(0.0, 1.0 - len(violations) / 100.0)
+        suffix = " (showing first 200)" if len(violations) >= 200 else ""
+        return _result(
+            FAIL, score,
+            f"{len(violations)} character-spam run(s){suffix}",
+            violations[:30],
+        )
+
+

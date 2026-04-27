@@ -57,9 +57,7 @@ moduleLifecycle = (() => {
     return { register, resetByScope, resetAll, resetSection, resetPhrase, getNames, getCount };
   }
 
-  // ===================================================================
   // STEPPING-STONE DI REGISTRY (phase 1 foundation)
-  // ===================================================================
   // Full DI is a multi-week refactor; this is the scaffolding that gets
   // ~75% of DI's benefits and makes the eventual full DI a mechanical
   // sweep rather than a redesign. Five non-negotiable design choices:
@@ -109,7 +107,6 @@ moduleLifecycle = (() => {
   // Subsystem/reads/emits metadata is consumed by check-module-manifests.js;
   // the registry itself only needs name/deps/provides/init. The post-init
   // registration fields are honored by the registry post-instantiate.
-  // ===================================================================
 
   // Initialization Registry (legacy + declare unified). Defined up front
   // so the manifest helpers below can reference it without a temporal

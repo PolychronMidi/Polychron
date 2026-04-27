@@ -3,7 +3,7 @@
 # going through the HME proxy.
 #
 # Why this exists:
-# ---------------
+#
 # The primary hook path goes through _proxy_bridge.sh, which POSTs to the
 # HME proxy on port 9099. If the proxy is DOWN (crashed, restarting, not
 # yet started), _proxy_bridge.sh fail-opens with exit 0 — Claude Code

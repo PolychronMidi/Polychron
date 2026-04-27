@@ -108,6 +108,26 @@ if [ -n "${PROJECT_ROOT:-}" ] \
   exit 2
 fi
 
+# Block 4+ identical non-word, non-whitespace, non-paren/bracket characters
+# in a row (visual-decoration spam). JS counterpart: block-character-spam.
+if _policy_enabled block-character-spam; then
+  _SPAM_HIT=$(NEW_STRING="$NEW_STRING" _safe_py3 "
+import os, re
+content = os.environ.get('NEW_STRING', '')
+PAT = re.compile(r'([^\w\s()\[\]{}])\1{3,}')
+for i, line in enumerate(content.split('\n'), 1):
+    if 'spam-ok' in line: continue
+    m = PAT.search(line)
+    if m:
+        print(f'line {i}: {m.group(1)!r}x{len(m.group(0))}')
+        break
+" "")
+  if [ -n "$_SPAM_HIT" ]; then
+    _emit_block "BLOCKED: Edit new_string contains a run of 4+ identical decoration characters ($_SPAM_HIT). Visual-decoration spam (runs of dashes, equals, hashes, pipes, tildes, slashes, unicode box-drawing) is banned. Use plain text; normalize markdown table separators to 3 dashes per cell; demote headings to depth ≤3. Append the literal token spam-ok on a line to opt out where genuinely required."
+    exit 2
+  fi
+fi
+
 # Pre-save pattern lint — block new_string before it lands if it introduces
 # forbidden patterns. Each block cites the rule + the fix, so the message
 # alone is enough for the agent to correct the edit.
