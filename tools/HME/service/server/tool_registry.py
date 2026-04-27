@@ -166,11 +166,41 @@ class Registry:
 
 
 def call(name: str, args: dict):
-    """Invoke a registered tool by name. Returns whatever the tool returns."""
+    """Invoke a registered tool by name. Returns whatever the tool returns.
+
+    Catches the generic TypeError from passing unexpected kwargs and
+    re-raises as a friendlier error that names the bad arg + lists
+    valid ones. Without this, a user typo'ing `action=` to a tool
+    that accepts only `mode=` (or vice versa) gets a raw Python
+    traceback dumped to stdout. The audit-tools probe surfaced this
+    against i/status; same shape applies to any tool with strict
+    kwargs.
+    """
     entry = _TOOLS.get(name)
     if not entry:
         raise KeyError(f"tool not registered: {name}")
-    return entry["fn"](**(args or {}))
+    fn = entry["fn"]
+    try:
+        return fn(**(args or {}))
+    except TypeError as e:
+        # TypeError from kwargs-mismatch has a recognizable shape:
+        # "<name>() got an unexpected keyword argument 'X'"
+        # OR "<name>() missing 1 required positional argument: 'X'".
+        # Catch ONLY those — re-raise other TypeErrors (real bugs).
+        msg = str(e)
+        if ("unexpected keyword argument" in msg
+                or "missing" in msg and "required" in msg
+                or "got multiple values" in msg):
+            import inspect
+            try:
+                sig = inspect.signature(fn)
+                valid_args = [p for p in sig.parameters
+                              if p not in ("self", "cls", "args", "kwargs")]
+                hint = f"  valid args for {name}: {', '.join(valid_args) or '(none)'}"
+            except (ValueError, TypeError):
+                hint = ""
+            raise TypeError(f"{name}: {msg}\n{hint}".strip()) from e
+        raise
 
 
 def list_schemas() -> list:

@@ -50,7 +50,8 @@
         "i/learn query=\"regime self-balancer\"",
         "i/learn action=add title=\"...\" content=\"...\" category=pattern",
         "i/learn action=ground_truth title=R98 tags=[stable] content=\"verdict\""
-      ]
+      ],
+      "safe_no_args": true
     },
     "trace": {
       "description": "Causal/impact analysis and semantic search across signals, modules, beats.",
@@ -68,7 +69,8 @@
       "examples": [
         "i/trace target=density",
         "i/trace target=adaptiveTrustScores mode=cascade"
-      ]
+      ],
+      "safe_no_args": true
     },
     "status": {
       "description": "Status modes: budget, coherence, trajectory, resume, list, plus ~35 others.",
@@ -78,7 +80,8 @@
         "i/status mode=list",
         "i/status mode=resume",
         "i/status mode=budget"
-      ]
+      ],
+      "safe_no_args": true
     },
     "evolve": {
       "description": "Evolution recommendations: what to change next round, plus selftest.",
@@ -106,7 +109,8 @@
       "examples": [
         "i/hme-read target=adaptiveTrustScores",
         "i/hme-read target=src/conductor/conductorState.js mode=structure"
-      ]
+      ],
+      "safe_no_args": true
     },
     "hme-admin": {
       "description": "Admin: selftest, reload, restart, index/clear_index, warm, introspect, validate, fix_antipattern, health.",
@@ -243,7 +247,8 @@
       "usage": "i/sensitivity",
       "examples": [
         "i/sensitivity"
-      ]
+      ],
+      "safe_no_args": true
     },
     "buddy": {
       "description": "DEPRECATED \u2014 alias for i/dispatch. Use i/dispatch for new code. Preserved so existing callers + transcripts keep working.",
