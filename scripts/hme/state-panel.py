@@ -76,7 +76,8 @@ def main(argv):
                                  "fingerprint-comparison.json"))
     if fp:
         verdict = fp.get("verdict", "?")
-        out.append(f"  last verdict       {verdict}")
+        suffix = "  (first run; no prior to compare)" if verdict == "BASELINE_MISSING" else ""
+        out.append(f"  last verdict       {verdict}{suffix}")
     else:
         out.append(f"  last verdict       (no baseline yet — run pipeline once)")
 
