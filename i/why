@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
-# i/why <invariant-id> — explain an invariant: class, streak, citations, recent commits.
+# i/why — explain something the system did or is in.
+#   i/why <invariant-id>     full provenance + rationale for an invariant
+#   i/why mode=block         most recent hook/policy block + how to opt out
+#   i/why mode=state         current onboarding state + transition history
+SCRIPT_DIR="$(dirname "$0")/../scripts/hme"
 python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" why "$@" &
-exec python3 "$(dirname "$0")/../scripts/hme/why-invariant.py" "$@"
+
+# Mode dispatch — keep first-arg-as-invariant-id as the historical default.
+for arg in "$@"; do
+  case "$arg" in
+    mode=block)  exec python3 "$SCRIPT_DIR/why-block.py" "$@" ;;
+    mode=state)  exec python3 "$SCRIPT_DIR/why-state.py" "$@" ;;
+  esac
+done
+exec python3 "$SCRIPT_DIR/why-invariant.py" "$@"
