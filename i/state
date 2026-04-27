@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# i/state — unified panel: every state machine HME tracks, in one view.
+#   i/state              full panel + drill-in suggestions
+#   i/state mode=brief   just the state lines, no footer
+python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" state "$@" &
+exec python3 "$(dirname "$0")/../scripts/hme/state-panel.py" "$@"

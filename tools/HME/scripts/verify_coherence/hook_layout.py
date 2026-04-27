@@ -19,6 +19,7 @@ class HookExecutabilityVerifier(Verifier):
     """Every non-helper hook script must be +x."""
     name = "hook-executability"
     category = "code"
+    subtag = "structural-integrity"
     weight = 2.0
 
     def run(self) -> VerdictResult:
@@ -44,6 +45,7 @@ class DecoratorOrderVerifier(Verifier):
     """Every @chained tool must have @ctx.mcp.tool() OUTERMOST."""
     name = "decorator-order"
     category = "code"
+    subtag = "structural-integrity"
     weight = 2.0
 
     def run(self) -> VerdictResult:
@@ -108,6 +110,7 @@ class HookRegistrationVerifier(Verifier):
     """Every matcher in hooks.json points to a real .sh file."""
     name = "hook-registration"
     category = "coverage"
+    subtag = "structural-integrity"
     weight = 1.5
 
     def run(self) -> VerdictResult:

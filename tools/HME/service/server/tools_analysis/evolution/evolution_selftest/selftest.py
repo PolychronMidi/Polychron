@@ -10,6 +10,24 @@ from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE, ENV
 from .hot_reload import hme_hot_reload
 from ...synthesis import _local_think
 
+# Canonical invocation rendering — single source of truth at
+# tools/HME/config/tool-invocations.json. Falls back to direct strings
+# if the helper isn't importable (e.g. legacy install layout) so this
+# import never breaks selftest.
+try:
+    import sys as _sys_ti
+    _scripts_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "..", "..", "..", "..", "scripts",
+    )
+    _scripts_dir = os.path.abspath(_scripts_dir)
+    if _scripts_dir not in _sys_ti.path:
+        _sys_ti.path.insert(0, _scripts_dir)
+    from tool_invocations import action_form as _action_form  # type: ignore
+except Exception:
+    def _action_form(action: str) -> str:
+        return f"i/hme-admin action={action}"
+
 logger = logging.getLogger("HME")
 
 
@@ -187,7 +205,7 @@ def hme_selftest(verbose: bool = False) -> str:
         else:
             results.append(
                 f"WARN: hash cache -- {hash_count} hashes vs {table_files} indexed files "
-                f"(stale entries from deleted/renamed files — fix: i/hme-admin action=clear_index)"
+                f"(stale entries from deleted/renamed files — fix: {_action_form('clear_index')})"
             )
     except Exception as e:
         results.append(f"FAIL: hash cache -- {e}")
@@ -280,7 +298,7 @@ def hme_selftest(verbose: bool = False) -> str:
                         f"{'fresh' if info.get('kb_fresh') else 'STALE'}, {_age:.0f}s old"
                     )
             elif isinstance(info, dict):
-                results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run i/hme-admin action=warm)")
+                results.append(f"INFO: warm ctx {model_name[:20]} -- not primed (run {_action_form('warm')})")
         arbiter_info = wcs.get(_ARBITER_MODEL, {})
         arbiter_state = "primed" if isinstance(arbiter_info, dict) and arbiter_info.get("primed") else "not primed"
         results.append(f"INFO: arbiter ({_ARBITER_MODEL[:20]}) -- {arbiter_state}")
@@ -963,8 +981,8 @@ def hme_selftest(verbose: bool = False) -> str:
         "onboarding flow":       "python3 tools/HME/scripts/verify-onboarding-flow.py for diff.",
         "STATES sync":           "python3 tools/HME/scripts/verify-states-sync.py for diff.",
         "HCI":                   "python3 tools/HME/scripts/verify-coherence.py for per-verifier breakdown.",
-        "index":                 "i/hme-admin action=clear_index then i/hme-admin action=index.",
-        "hash cache":            "i/hme-admin action=index to rebuild.",
+        "index":                 f"{_action_form('clear_index')} then {_action_form('index')}.",
+        "hash cache":            f"{_action_form('index')} to rebuild.",
         "middleware order":      "edit tools/HME/proxy/middleware/order.json or remove stale entries.",
         "temporal drift":        "i/status mode=trajectory for trend; investigate the regressed verifier.",
     }

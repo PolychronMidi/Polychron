@@ -73,6 +73,17 @@
       ],
       "safe_no_args": true
     },
+    "state": {
+      "description": "Unified state panel — every state machine HME tracks, in one ~10-line view.",
+      "category": "diagnostic",
+      "usage": "i/state  |  i/state mode=brief",
+      "modes": ["full (default)", "brief"],
+      "examples": [
+        "i/state",
+        "i/state mode=brief"
+      ],
+      "safe_no_args": true
+    },
     "status": {
       "description": "Status modes: budget, coherence, trajectory, resume, list, plus ~35 others.",
       "category": "diagnostic",

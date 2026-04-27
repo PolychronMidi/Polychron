@@ -57,7 +57,7 @@ from .hook_layout import (  # noqa: F401
 )
 from .code_audits import (  # noqa: F401
     CorePrinciplesAuditVerifier, ProxyMiddlewareRegistryVerifier,
-    RepeatedCharSpamVerifier,
+    RepeatedCharSpamVerifier, ActivityEventsDocSyncVerifier,
     ShellHookAuditVerifier, ShellUndefinedVarsVerifier,
     ClaudeSettingsJsonVerifier, InterControllerCoherenceVerifier,
     PythonSyntaxVerifier, ShellSyntaxVerifier,
@@ -112,6 +112,7 @@ REGISTRY = [
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     RepeatedCharSpamVerifier(),
+    ActivityEventsDocSyncVerifier(),
     ShellHookAuditVerifier(),
     ShellUndefinedVarsVerifier(),
     SilentFailureClassVerifier(),

@@ -36,6 +36,7 @@ class LifesaverIntegrityVerifier(Verifier):
     """
     name = "lifesaver-integrity"
     category = "runtime"
+    subtag = "regression-prevention"
     weight = 5.0  # highest weight — silencing LIFESAVER is a category-killing bug
 
     def run(self) -> VerdictResult:
@@ -111,6 +112,7 @@ class TrajectoryTrendVerifier(Verifier):
     FAIL even if the CURRENT HCI is still green — predictive coherence."""
     name = "trajectory-trend"
     category = "runtime"
+    subtag = "regression-prevention"
     weight = 1.5
 
     def run(self) -> VerdictResult:

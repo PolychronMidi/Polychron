@@ -24,6 +24,7 @@ class CorePrinciplesAuditVerifier(Verifier):
     is aspirational and most of the codebase brushes it occasionally."""
     name = "core-principles-audit"
     category = "code"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -66,6 +67,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
     Surface this class of failure immediately."""
     name = "proxy-middleware-registry"
     category = "code"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -474,6 +476,87 @@ _SPAM_EXTS = (
 )
 
 
+class ActivityEventsDocSyncVerifier(Verifier):
+    """The event names in tools/HME/activity/EVENTS.md must match the
+    set actually emitted across hooks/middleware/python. Drift here means
+    the agent reading the activity log will hit names with no reference.
+
+    Live set: union of `--event=<name>` (shell/python) and
+    `event: '<name>'` (JS proxy middleware) across the repo.
+    Doc set: bullet entries `- **\\`<name>\\`**` in EVENTS.md.
+
+    FAIL if doc-only entries exist (stale references), WARN on
+    code-only entries (undocumented new event)."""
+    name = "activity-events-doc-sync"
+    category = "doc"
+    subtag = "drift-detection"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        doc_path = os.path.join(_PROJECT, "tools", "HME", "activity", "EVENTS.md")
+        if not os.path.isfile(doc_path):
+            return _result(SKIP, 1.0, "EVENTS.md not present", [doc_path])
+        with open(doc_path, encoding="utf-8") as f:
+            doc_content = f.read()
+        doc_events = set(re.findall(r"^-\s+\*\*`([a-z_]+)`\*\*", doc_content, re.MULTILINE))
+
+        # Scan live emitters across hooks/, scripts/, tools/HME/.
+        emit_re_a = re.compile(r"--event=([a-z_]+)")
+        emit_re_b = re.compile(r"event:\s*['\"]([a-z_]+)['\"]")
+        emit_re_c = re.compile(r"event=['\"]([a-z_]+)['\"]")
+        live = set()
+        scan_roots = [
+            os.path.join(_PROJECT, "tools", "HME"),
+            os.path.join(_PROJECT, "scripts"),
+        ]
+        for root_dir in scan_roots:
+            for root, dirs, files in os.walk(root_dir):
+                dirs[:] = [d for d in dirs if d not in {
+                    ".git", "node_modules", "__pycache__", ".venv",
+                    "venv", "dist", "build", "models",
+                }]
+                for fn in files:
+                    if not fn.endswith((".py", ".sh", ".js", ".mjs", ".cjs")):
+                        continue
+                    p = os.path.join(root, fn)
+                    try:
+                        with open(p, encoding="utf-8") as fp:
+                            txt = fp.read()
+                    except (OSError, UnicodeDecodeError):
+                        continue
+                    live |= set(emit_re_a.findall(txt))
+                    live |= set(emit_re_b.findall(txt))
+                    live |= set(emit_re_c.findall(txt))
+
+        doc_only = sorted(doc_events - live)
+        code_only = sorted(live - doc_events)
+
+        # Some doc events are agent/stop-hook emissions that may not
+        # appear in static scans (e.g. round_complete fired by external
+        # commands). Allowlist these so the verifier stays useful.
+        _DOC_ONLY_ALLOWLIST = {
+            "round_complete", "state_advance", "onboarding_init",
+        }
+        doc_only = [e for e in doc_only if e not in _DOC_ONLY_ALLOWLIST]
+
+        if not doc_only and not code_only:
+            return _result(PASS, 1.0,
+                           f"EVENTS.md matches {len(doc_events)} live event(s)")
+
+        details = []
+        if doc_only:
+            details.append(f"doc-only ({len(doc_only)}): {', '.join(doc_only)}")
+        if code_only:
+            details.append(f"code-only ({len(code_only)}): {', '.join(code_only[:20])}"
+                           + ("…" if len(code_only) > 20 else ""))
+        if doc_only:
+            score = max(0.0, 1.0 - len(doc_only) / 10.0)
+            return _result(FAIL, score, f"{len(doc_only)} stale doc reference(s)", details)
+        # code_only only: WARN, partial credit.
+        score = max(0.5, 1.0 - len(code_only) / 20.0)
+        return _result(WARN, score, f"{len(code_only)} undocumented event(s)", details)
+
+
 class RepeatedCharSpamVerifier(Verifier):
     """No character may repeat 4+ times in a row in tracked text files —
     targets divider/box-decoration spam (runs of dashes, equals, hashes,
@@ -488,6 +571,7 @@ class RepeatedCharSpamVerifier(Verifier):
     single blank line, not a comment of repeated symbols."""
     name = "repeated-char-spam"
     category = "code"
+    subtag = "regression-prevention"
     weight = 2.0
 
     def run(self) -> VerdictResult:
