@@ -168,10 +168,16 @@ def main(argv):
                 pass
         out.append(f"  HCI                {hci}/100 ({n} verifiers){delta_str}")
 
-    # 8. KB add count this session — proves the round-trip is working.
+    # 8. KB add cadence — proves the round-trip is working. Annotate stale
+    # acceptances (>24h) so the line doesn't read as fresh forever.
     accepted = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json.accepted")
     if os.path.isfile(accepted):
-        out.append(f"  last KB accept     {_age(accepted)}")
+        try:
+            age_s = time.time() - os.path.getmtime(accepted)
+            stale = "  (stale: >1d)" if age_s > 86400 else ""
+            out.append(f"  last KB accept     {_age(accepted)}{stale}")
+        except OSError:
+            pass
 
     if not brief:
         out.append("")
