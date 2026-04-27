@@ -172,7 +172,13 @@ def main() -> int:
         print("ok")  # silently no-op rather than scan an unauthorized path
         return 0
     events = load_turn_events(sys.argv[1])
-    final_text = _last_assistant_text(events).lower()
+    # Strip code-fenced / backticked / quoted spans before phrase-
+    # matching — same discipline stop_work + exhaust_check + psycho_stop
+    # apply. Without this, an agent response that DESCRIBES an
+    # invariance claim (regex example, quoted user prompt, code block
+    # showing the antipattern) false-fires as if the agent declared it.
+    from _text_strip import strip_quoted
+    final_text = strip_quoted(_last_assistant_text(events)).lower()
     if not final_text:
         print("ok")
         return 0

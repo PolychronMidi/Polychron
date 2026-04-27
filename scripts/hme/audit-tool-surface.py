@@ -61,9 +61,10 @@ SAFE_NO_ARGS_ALLOWLIST = {
     "audit-tools",     # circular self-call is harmless usage line
 }
 
-# Aliases / deprecated entries — skip outright (they delegate elsewhere
-# and rating them double-counts).
-SKIP_TOOLS = {"buddy"}  # deprecated alias for i/dispatch
+# Aliases / deprecated entries / self — skip outright. `audit-tools`
+# self-probes would recurse (the auditor probing itself probes itself
+# probing itself), bounded by the cgroup but wasteful.
+SKIP_TOOLS = {"buddy", "audit-tools"}
 
 
 def _systemd_run_available() -> bool:
@@ -184,9 +185,61 @@ def _has_examples_or_options(text: str) -> bool:
     return any(s in lower for s in signals)
 
 
+def _has_substantive_content(text: str) -> bool:
+    """A tool emits substantive content on no-args when output is more
+    than just whitespace + a usage line: multi-line output, list
+    markers, or > 100 chars of non-trivial content. Catches tools
+    whose canonical no-args behavior IS the useful action (e.g.
+    `i/dispatch status`, `i/help` index, `i/policies list`).
+    """
+    stripped = text.strip()
+    if len(stripped) < 100:
+        return False
+    lines = [ln for ln in stripped.splitlines() if ln.strip()]
+    if len(lines) < 3:
+        return False
+    # Has list-shape markers (bullets, numbered, indented, headers, etc.)
+    list_markers = sum(1 for ln in lines
+                        if ln.lstrip().startswith(("-", "*", "[", "#"))
+                        or ":" in ln[:30])
+    return list_markers >= 2
+
+
 def _has_did_you_mean(text: str) -> bool:
     lower = text.lower()
     return any(s in lower for s in ("did you mean", "near match", "available", "valid options", "valid values"))
+
+
+def _has_useful_error(text: str, rc: int) -> bool:
+    """A typo'd action is well-handled if the response either tells the
+    user what went wrong AND points toward a fix, OR ignores the
+    unknown arg and shows normal output. Exit code is informational —
+    many HME tools return 0 even on user-error (lenient stdout-only
+    surfaces). The check is on output quality, not return code.
+
+    Useful-error signals:
+      - "did you mean" / "near match" — fuzzy-match suggestion
+      - "unknown" / "invalid" — names the problem
+      - "not found" — names the problem
+      - "try:" / "try " — action-suggesting instruction
+      - "available" / "valid" / "use:" — names valid alternatives
+      - "usage" — falls back to usage line
+    """
+    lower = text.lower()
+    error_signals = (
+        "did you mean", "near match",
+        "unknown", "invalid", "not found",
+        "try:", "try ",
+        "available", "valid options", "valid values", "use:",
+        "usage",
+    )
+    if any(s in lower for s in error_signals):
+        return True
+    # rc=0 with no recognizable error → maybe the tool ignored the arg
+    # gracefully and produced normal output. OK iff substantive.
+    if rc == 0 and _has_substantive_content(text):
+        return True
+    return False
 
 
 def _rate_tool(name: str, entry: dict) -> dict:
@@ -207,24 +260,38 @@ def _rate_tool(name: str, entry: dict) -> dict:
         score["skipped"] = True
         score["reason"] = "not in safe_no_args allowlist (opt in via registry)"
         return score
-    # Probe 1: no-args. 2s timeout + process-group kill — allowlisted
-    # tools should respond within ms (usage-line emit, no work).
+    # Probe 1: no-args. 2s timeout + cgroup isolation — allowlisted
+    # tools should respond within ms (usage-line or canonical default
+    # action like `dispatch status`).
     no_args = _run([str(bin_path)], timeout=2.0)
     combined = (no_args["stdout"] + "\n" + no_args["stderr"])
-    score["checks"]["usage_line"] = _has_usage_line(combined)
-    score["checks"]["examples_or_options"] = _has_examples_or_options(combined)
-    score["checks"]["nonzero_exit"] = no_args["rc"] != 0
-    score["checks"]["completes_under_5s"] = not no_args["timed_out"]
+    # Rubric: a tool is well-behaved on no-args if EITHER it shows a
+    # usage line + valid options (the "REQUIRES an arg" pattern) OR
+    # it produces substantive content (the "DEFAULTS to a useful
+    # action" pattern). Exit code is informational, not a fail
+    # condition — both rc=0 (default-action tools) and rc=2 (usage-
+    # gate tools) are acceptable. Hangs ARE failures.
+    has_usage = _has_usage_line(combined)
+    has_examples = _has_examples_or_options(combined)
+    has_content = _has_substantive_content(combined)
+    score["checks"]["self_documents_on_noargs"] = (
+        (has_usage and has_examples) or has_content
+    )
+    score["checks"]["completes_within_timeout"] = not no_args["timed_out"]
     # Brief pause so any subprocess descendant of the prior probe has
     # a chance to finish exiting before we add more load.
     time.sleep(0.1)
-    # Probe 2: typo'd action — only meaningful when the tool accepts an
-    # action arg. Best-effort: try `action=garbage-mode`. If the tool
-    # ignores it (no-action tools), check stays neutral; if the tool
-    # errors with a useful message, +1.
+    # Probe 2: typo'd action. A tool is well-behaved on a typo'd
+    # action if EITHER it returns non-zero with a useful error OR
+    # it ignores the unknown arg and produces normal output (the
+    # latter is correct for tools that don't accept an action= arg
+    # at all — passing garbage to i/help shouldn't error).
     typo = _run([str(bin_path), "action=garbage-mode-xyz"], timeout=2.0)
     typo_combined = (typo["stdout"] + "\n" + typo["stderr"])
-    score["checks"]["typo_suggests_alternative"] = _has_did_you_mean(typo_combined)
+    score["checks"]["handles_typo_gracefully"] = _has_useful_error(
+        typo_combined, typo["rc"],
+    )
+    score["max"] = 3  # rubric is now 3 checks (was 5 with redundant exit + usage_line)
     score["score"] = sum(1 for v in score["checks"].values() if v)
     return score
 
@@ -257,13 +324,15 @@ def main() -> int:
         rated.append(r)
         if r["score"] < 4:
             flagged.append(r)
+    # Flag tools that fail any rubric check (3 checks, threshold = full pass).
+    flagged = [r for r in rated if r["score"] < r["max"]]
     rated.sort(key=lambda r: (r["score"], r["name"]))
-    print(f"\nRATED: {len(rated)}    FLAGGED (score<4): {len(flagged)}    SKIPPED: {len(skipped)}")
+    print(f"\nRATED: {len(rated)}    FLAGGED: {len(flagged)}    SKIPPED: {len(skipped)}")
     if flagged:
         print("\nFlagged for UX improvement:")
         for r in flagged:
             checks_failed = [k for k, v in r["checks"].items() if not v]
-            print(f"  {r['score']}/5  i/{r['name']:<14} ({r['category']:<20}) "
+            print(f"  {r['score']}/{r['max']}  i/{r['name']:<14} ({r['category']:<20}) "
                   f"missing: {', '.join(checks_failed)}")
     if skipped:
         print("\nSkipped:")
