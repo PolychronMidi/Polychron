@@ -153,6 +153,7 @@ class HookMatcherValidityVerifier(Verifier):
     """
     name = "hook-matcher-validity"
     category = "coverage"
+    subtag = "structural-integrity"
     weight = 2.0  # high: silently-dead hooks are a major self-coherence failure
 
     # Wrappers that have no posttooluse side-effect by design. Claude just

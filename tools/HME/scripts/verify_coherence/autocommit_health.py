@@ -34,6 +34,7 @@ class AutocommitHealthVerifier(Verifier):
     structural-dampening failure mode that weight exists for."""
     name = "autocommit-health"
     category = "state"
+    subtag = "structural-integrity"
     weight = 5.0
 
     def run(self) -> VerdictResult:
@@ -110,6 +111,7 @@ class AutocommitHealthVerifier(Verifier):
 class ShimHealthVerifier(Verifier):
     name = "shim-health"
     category = "runtime"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:

@@ -19,6 +19,7 @@ class FeedbackGraphVerifier(Verifier):
     """output/metrics/feedback_graph.json validates against scripts/validate-feedback-graph.js"""
     name = "feedback-graph"
     category = "topology"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -40,6 +41,7 @@ class ReloadableModuleSyncVerifier(Verifier):
     """Every module in RELOADABLE list in evolution_selftest.py actually exists."""
     name = "reloadable-sync"
     category = "state"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:

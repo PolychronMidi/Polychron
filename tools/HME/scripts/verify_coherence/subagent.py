@@ -24,6 +24,7 @@ class SubagentModeVerifier(Verifier):
     stays empty. This catches the drift at HCI time."""
     name = "subagent-mode-sync"
     category = "coverage"
+    subtag = "interface-contract"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -72,6 +73,7 @@ class SubagentPassthroughVerifier(Verifier):
     would downgrade every general-purpose agent call to a read-only stub."""
     name = "subagent-general-purpose-passthrough"
     category = "coverage"
+    subtag = "interface-contract"
     weight = 3.0
 
     _FORBIDDEN_INTERCEPTS = ("general-purpose", "statusline-setup")
@@ -128,6 +130,7 @@ class SubagentGuardVerifier(Verifier):
     """
     name = "subagent-short-prompt-guard"
     category = "runtime"
+    subtag = "interface-contract"
     weight = 0.5
 
     def run(self) -> VerdictResult:
@@ -185,6 +188,7 @@ class SubagentBackendsVerifier(Verifier):
     """
     name = "subagent-backends"
     category = "runtime"
+    subtag = "interface-contract"
     weight = 1.5
 
     def run(self) -> VerdictResult:

@@ -30,6 +30,7 @@ class LogSizeVerifier(Verifier):
     next write."""
     name = "log-size"
     category = "state"
+    subtag = "performance"
     weight = 1.0
 
     WARN_BYTES = 50 * 1024 * 1024       # 50 MB
@@ -77,6 +78,7 @@ class ErrorLogVerifier(Verifier):
     """Open LIFESAVER errors should be zero or very few."""
     name = "error-log"
     category = "runtime"
+    subtag = "performance"
     weight = 1.5
 
     def run(self) -> VerdictResult:
@@ -176,6 +178,7 @@ class PipelineBgScriptHealthVerifier(Verifier):
     """
     name = "pipeline-bg-script-health"
     category = "state"
+    subtag = "structural-integrity"
     weight = 1.5
 
     def run(self) -> VerdictResult:

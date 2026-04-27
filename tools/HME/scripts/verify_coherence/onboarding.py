@@ -18,6 +18,7 @@ from ._base import (
 class StatesSyncVerifier(Verifier):
     name = "states-sync"
     category = "state"
+    subtag = "structural-integrity"
     weight = 2.0
 
     def run(self) -> VerdictResult:
@@ -36,6 +37,7 @@ class StatesSyncVerifier(Verifier):
 class OnboardingFlowVerifier(Verifier):
     name = "onboarding-flow"
     category = "state"
+    subtag = "structural-integrity"
     weight = 2.0
 
     def run(self) -> VerdictResult:
@@ -59,6 +61,7 @@ class OnboardingStateIntegrityVerifier(Verifier):
     """If state file exists, its value must be in STATES."""
     name = "onboarding-state-integrity"
     category = "state"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -90,6 +93,7 @@ class OnboardingChainImportVerifier(Verifier):
     top-level side effects that require the MCP server)."""
     name = "onboarding-chain-importable"
     category = "state"
+    subtag = "structural-integrity"
     weight = 1.0
 
     def run(self) -> VerdictResult:
