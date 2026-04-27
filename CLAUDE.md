@@ -23,6 +23,7 @@ Keep this file focused, concise, lean - docs and auto-enforcement handle the res
 - No ad-hoc validation: use `validator`, never raw `typeof` / `|| []` / `|| 0` / ternary fallbacks.
 - Globals are truth: initialize correctly at the source. Never sanitize downstream.
 - Comments are terse. No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
+- No character-spam decoration: 4+ identical non-word, non-whitespace, non-paren/bracket characters in a row are banned anywhere — code, comments, docs, generated output. No `====` dividers, `----` separators, `####`+ markdown headings, `||||` table-separator shortcuts, unicode `─`/`═` runs. Markdown table separators must use `| --- |` cells. Enforced by the `block-character-spam` policy (Write/Edit/MultiEdit) and the `repeated-char-spam` HCI verifier. Per-line opt-out: append the literal token `spam-ok`.
 
 ## Load Order
 
