@@ -42,15 +42,23 @@ PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or
 REGISTRY = PROJECT_ROOT / "tools" / "HME" / "i_registry.json"
 DEVLOG = PROJECT_ROOT / "tools" / "HME" / "KB" / "devlog"
 
-# Tools whose no-args invocation would mutate state — skip the no-args
-# probe. Add `safe_no_args: false` to a tool's registry entry to opt
-# out instead of editing this list.
-DESTRUCTIVE_NO_ARGS_DEFAULT = {
-    "evolve",          # writes to lab/, kicks off a sketch
-    "extract-spec",    # writes to output/
-    "freeze",          # mutates lab state
-    "substrate",       # mutates substrate state
-    "prove",           # potentially long-running compile
+# Allowlist (NOT blocklist) of tools safe to probe with no-args.
+# Inverted from the prior blocklist after a probe pass cascaded into
+# verify-coherence.py + verify-doc-sync.py subprocesses that orphaned
+# past the 5s timeout (grandchildren survive subprocess.run timeout —
+# only the direct child is SIGTERMed). The accumulated memory pressure
+# crashed the host. New default: assume a tool is UNSAFE to probe
+# unless its registry entry has `safe_no_args: true`.
+SAFE_NO_ARGS_ALLOWLIST = {
+    "help",            # pure stdout, no subprocess cascade
+    "buddy",           # deprecated alias — exec to dispatch (light)
+    "dispatch",        # status path is filesystem-only read
+    "chain",           # usage line only
+    "policies",        # static config read
+    "todo",            # local JSON read
+    "pattern",         # local JSON read
+    "why",             # static metric file read (now lists IDs on no-args)
+    "audit-tools",     # circular self-call is harmless usage line
 }
 
 # Aliases / deprecated entries — skip outright (they delegate elsewhere
@@ -59,24 +67,58 @@ SKIP_TOOLS = {"buddy"}  # deprecated alias for i/dispatch
 
 
 def _run(cmd: list[str], timeout: float = 5.0) -> dict:
+    """Run a command with hard process-group kill on timeout.
+
+    subprocess.run's timeout only SIGTERMs the direct child. HME tools
+    cascade into verify-coherence + posttooluse hooks that survive the
+    parent's death — those grandchildren accumulate as orphans and
+    blow up host memory. This wrapper uses Popen with start_new_session
+    so the child becomes a process-group leader; on timeout we
+    os.killpg() the entire group (SIGTERM, then SIGKILL after grace)
+    so no descendant survives.
+    """
+    import signal as _sig
     t0 = time.time()
     try:
-        proc = subprocess.run(
-            cmd, capture_output=True, text=True,
-            timeout=timeout, cwd=str(PROJECT_ROOT),
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, cwd=str(PROJECT_ROOT),
+            start_new_session=True,  # makes child the process-group leader
         )
+    except OSError as e:
+        return {"rc": -1, "stdout": "", "stderr": f"spawn failed: {e}",
+                "elapsed_s": 0.0, "timed_out": False}
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
         return {
             "rc": proc.returncode,
-            "stdout": proc.stdout or "",
-            "stderr": proc.stderr or "",
+            "stdout": stdout or "",
+            "stderr": stderr or "",
             "elapsed_s": round(time.time() - t0, 3),
             "timed_out": False,
         }
-    except subprocess.TimeoutExpired as e:
+    except subprocess.TimeoutExpired:
+        # Kill the entire process group — children + grandchildren all die.
+        try:
+            os.killpg(os.getpgid(proc.pid), _sig.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+        # Grace period for graceful termination
+        try:
+            stdout, stderr = proc.communicate(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(os.getpgid(proc.pid), _sig.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+            try:
+                stdout, stderr = proc.communicate(timeout=1.0)
+            except Exception:
+                stdout, stderr = "", ""
         return {
             "rc": -1,
-            "stdout": (e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")),
-            "stderr": (e.stderr.decode("utf-8", "replace") if isinstance(e.stderr, bytes) else (e.stderr or "")),
+            "stdout": stdout or "",
+            "stderr": stderr or "",
             "elapsed_s": round(time.time() - t0, 3),
             "timed_out": True,
         }
@@ -106,7 +148,11 @@ def _has_did_you_mean(text: str) -> bool:
 
 def _rate_tool(name: str, entry: dict) -> dict:
     """Run the probe battery; return rating dict."""
-    safe = entry.get("safe_no_args", name not in DESTRUCTIVE_NO_ARGS_DEFAULT)
+    # Allowlist: only probe tools the registry explicitly opts in via
+    # `safe_no_args: true` OR that appear in SAFE_NO_ARGS_ALLOWLIST.
+    # Inverted from the prior blocklist — see comment near
+    # SAFE_NO_ARGS_ALLOWLIST. New tools default to NOT probed.
+    safe = entry.get("safe_no_args", name in SAFE_NO_ARGS_ALLOWLIST)
     score = {"name": name, "category": entry.get("category", ""),
              "checks": {}, "skipped": False, "score": 0, "max": 5}
     bin_path = PROJECT_ROOT / "i" / name
@@ -116,20 +162,24 @@ def _rate_tool(name: str, entry: dict) -> dict:
         return score
     if not safe:
         score["skipped"] = True
-        score["reason"] = "destructive no-args (opted out)"
+        score["reason"] = "not in safe_no_args allowlist (opt in via registry)"
         return score
-    # Probe 1: no-args
-    no_args = _run([str(bin_path)])
+    # Probe 1: no-args. 2s timeout + process-group kill — allowlisted
+    # tools should respond within ms (usage-line emit, no work).
+    no_args = _run([str(bin_path)], timeout=2.0)
     combined = (no_args["stdout"] + "\n" + no_args["stderr"])
     score["checks"]["usage_line"] = _has_usage_line(combined)
     score["checks"]["examples_or_options"] = _has_examples_or_options(combined)
     score["checks"]["nonzero_exit"] = no_args["rc"] != 0
     score["checks"]["completes_under_5s"] = not no_args["timed_out"]
+    # Brief pause so any subprocess descendant of the prior probe has
+    # a chance to finish exiting before we add more load.
+    time.sleep(0.1)
     # Probe 2: typo'd action — only meaningful when the tool accepts an
     # action arg. Best-effort: try `action=garbage-mode`. If the tool
     # ignores it (no-action tools), check stays neutral; if the tool
     # errors with a useful message, +1.
-    typo = _run([str(bin_path), "action=garbage-mode-xyz"])
+    typo = _run([str(bin_path), "action=garbage-mode-xyz"], timeout=2.0)
     typo_combined = (typo["stdout"] + "\n" + typo["stderr"])
     score["checks"]["typo_suggests_alternative"] = _has_did_you_mean(typo_combined)
     score["score"] = sum(1 for v in score["checks"].values() if v)
@@ -147,6 +197,10 @@ def main() -> int:
         if name in SKIP_TOOLS:
             continue
         results.append(_rate_tool(name, entry))
+        # Inter-tool cooldown so any descendant the prior tool spawned
+        # has a chance to fully exit before we move on. Belt to the
+        # process-group kill suspenders.
+        time.sleep(0.2)
     # Render summary
     print(f"i/audit-tools — surface stress test ({len(results)} tools probed)")
     print("=" * 78)
