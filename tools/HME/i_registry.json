@@ -24,7 +24,8 @@
         "i/review",
         "i/review mode=forget",
         "i/review mode=regime section_a=3 section_b=5"
-      ]
+      ],
+      "safe_no_args": true
     },
     "learn": {
       "description": "HME knowledge base: add, search, list, compact, export, dream, hypothesize.",
@@ -89,7 +90,8 @@
       "usage": "i/evolve [mode=...]",
       "examples": [
         "i/evolve"
-      ]
+      ],
+      "safe_no_args": true
     },
     "hme-read": {
       "description": "Pre-edit briefing: read a target with KB context, callers, structure.",
@@ -136,7 +138,8 @@
     },
     "hme": {
       "description": "Convenience wrapper that dispatches to other i/* tools by subcommand.",
-      "category": "meta"
+      "category": "meta",
+      "safe_no_args": true
     },
     "freeze": {
       "description": "Show arc-freeze marker; optionally check a query against the forbidden-pattern list.",
@@ -145,7 +148,8 @@
       "examples": [
         "i/freeze",
         "i/freeze \"never disable trust ceiling\""
-      ]
+      ],
+      "safe_no_args": true
     },
     "pattern": {
       "description": "Pattern catalogue: list, matched, or fetch by id.",
@@ -205,7 +209,8 @@
         "patterns",
         "diff",
         "invariants"
-      ]
+      ],
+      "safe_no_args": true
     },
     "policies": {
       "description": "Unified hook-time policy registry \u2014 list/show/enable/disable/reset/paths/eval.",
@@ -231,11 +236,13 @@
     },
     "extract-spec": {
       "description": "Extract a structured spec for a target module/feature for evolution planning.",
-      "category": "evolution"
+      "category": "evolution",
+      "safe_no_args": true
     },
     "prove": {
       "description": "Cross-file architectural invariant prover. Complements per-file ESLint rules with global/dataflow questions.",
-      "category": "review-discipline"
+      "category": "review-discipline",
+      "safe_no_args": true
     },
     "help": {
       "description": "List all i/ tools grouped by category, with descriptions and usage.",

@@ -1,0 +1,9 @@
+name: audit-and-fix
+description: Survey-and-fix loop pattern. First step audits the i/* surface for UX bugs and the codebase for fail-fast violations; second step lets the operator review the findings before any fixes. Composable starter chain — extend with project-specific fix steps once the audit is stable in your environment.
+version: 1.0.0
+loop: 1
+on-rate-limit: fail
+auto-promote: "off"
+skills:
+  - i/audit-tools
+  - i/review

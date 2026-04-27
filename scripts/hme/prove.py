@@ -174,7 +174,16 @@ INVARIANTS = {
 
 def main(argv):
     if len(argv) < 2:
-        _die(f"usage: prove.py <invariant> <key=val>...  invariants: {sorted(INVARIANTS)}")
+        # Multi-line self-documentation so the user sees usage + valid
+        # invariants + a concrete invocation example. Bare usage line
+        # alone is too thin (no way to know what `<invariant>` should be).
+        msg = (
+            f"usage: prove.py <invariant> <key=val>...\n"
+            f"  available invariants: {sorted(INVARIANTS)}\n"
+            f"  example: prove.py sole-writer target=couplingMatrix allowed='src/conductor/**'\n"
+            f"  see scripts/hme/prove.py docstring for the full invariant catalog."
+        )
+        _die(msg)
     kind = argv[1]
     if kind not in INVARIANTS:
         _die(f"unknown invariant '{kind}'. Known: {sorted(INVARIANTS)}")
