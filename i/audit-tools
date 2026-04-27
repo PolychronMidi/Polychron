@@ -1,7 +1,36 @@
 #!/usr/bin/env bash
-# i/audit-tools — UX stress test for the i/* CLI surface.
-# Probes each registered tool with no-args + typo'd-action and rates
-# the response shape against a UX rubric. Tools scoring < 4/5 are
-# flagged for fix. Run on-demand or once-per-session as a hygiene
-# check. See scripts/hme/audit-tool-surface.py for the rubric.
+# i/audit-tools — DISABLED.
+#
+# This tool was designed to UX-stress-test the i/* CLI surface but
+# crashed the host TWICE in real use. The probe spawned subprocess
+# trees (HME tool cascades through verify-coherence + verify-doc-sync
+# + posttooluse hooks) whose grandchildren survived the parent's
+# timeout-kill, accumulated memory pressure, and brought the system
+# down. Process-group kill via os.killpg + an allowlist + per-probe
+# timeout were not sufficient — something in the cascade still
+# escaped.
+#
+# This wrapper now refuses to run without an explicit
+# --i-understand-this-may-crash flag. Do NOT pass that flag without
+# (1) reading scripts/hme/audit-tool-surface.py top-to-bottom and
+# (2) running it manually outside Claude Code on a machine where you
+# can recover from a crash. Until the host-crash failure mode is
+# eliminated, this tool is a hazard, not a hygiene check.
+#
+# Open work: identify the specific subprocess type that escapes
+# os.killpg(SIGKILL) and the resource it accumulates. Until then, no
+# automated invocation. Probably needs a cgroup-based isolation
+# (systemd-run --scope) instead of process-group, since process-group
+# kill misses descendants that double-fork.
+if [ "${1:-}" != "--i-understand-this-may-crash" ]; then
+  cat <<'EOF' >&2
+i/audit-tools is DISABLED — it crashed the host twice.
+
+Pass --i-understand-this-may-crash to override (NOT recommended). See
+i/audit-tools wrapper script comment for the diagnostic context and
+the open work needed to make it safe.
+EOF
+  exit 1
+fi
+shift
 exec python3 "$(dirname "$0")/../scripts/hme/audit-tool-surface.py" "$@"
