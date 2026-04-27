@@ -109,9 +109,19 @@ def _recent_activity() -> list[str]:
 
 
 def main(argv):
-    question = " ".join(argv[1:]).strip()
+    # Strip flags from positional args
+    deep = False
+    pos = []
+    for a in argv[1:]:
+        if a == "--deep" or a == "deep=true":
+            deep = True
+        elif a.startswith("mode="):
+            continue  # mode dispatch markers don't belong in the question
+        else:
+            pos.append(a)
+    question = " ".join(pos).strip()
     if not question:
-        print("Usage: i/why <question>", file=sys.stderr)
+        print("Usage: i/why <question> [--deep]", file=sys.stderr)
         return 2
 
     print(f"# i/why search — '{question}'")
@@ -151,10 +161,89 @@ def main(argv):
         print("i/why mode=<block|state|verifier|hci-drop|hook> for narrow questions.)")
         return 0
 
+    # Tier 3 — opt-in subagent synthesis. Writes a queue entry containing
+    # the packet + question; emits the [[HME_AGENT_TASK ...]] sentinel that
+    # subagent_bridge.js looks for. The agent that runs i/why sees the
+    # sentinel in its tool result, fires Agent(...) on its next turn, and
+    # the bridge captures the result into tmp/hme-subagent-results/<id>.json.
+    if deep:
+        _emit_subagent_task(question, grep_hits, kb, activity)
+        return 0
+
     print("# Next:")
-    print("  Read the citations above. For deeper synthesis (subagent-backed),")
-    print("  Tier-3 will land in a future session via the synthesis_reasoning path.")
+    print("  Read the citations above. For subagent-backed synthesis on this")
+    print("  question, re-run with --deep:")
+    print(f"    i/why \"{question}\" --deep")
     return 0
+
+
+def _emit_subagent_task(question, grep_hits, kb, activity):
+    import json as _json
+    import secrets as _secrets
+    import time as _time
+
+    queue_dir = os.path.join(PROJECT_ROOT, "tmp", "hme-subagent-queue")
+    bridge_present = os.path.isfile(os.path.join(
+        PROJECT_ROOT, "tools", "HME", "proxy", "middleware", "subagent_bridge.js"
+    ))
+    if not bridge_present:
+        print()
+        print("# --deep skipped: subagent_bridge.js not present at expected path.")
+        print("  Tier 3 requires the proxy middleware to be active.")
+        return
+
+    os.makedirs(queue_dir, exist_ok=True)
+    req_id = _secrets.token_hex(6)
+
+    # Build the prompt: the same packet shown to the user, plus the question.
+    pkt = [f"User question: {question}", "",
+           "RETRIEVED EVIDENCE (deterministic grep + KB + activity):", ""]
+    if grep_hits:
+        pkt.append("## Source matches:")
+        for path, line, snippet in grep_hits:
+            pkt.append(f"  {path}:{line}  {snippet}")
+        pkt.append("")
+    if activity:
+        pkt.append("## Recent activity:")
+        pkt.extend(activity)
+        pkt.append("")
+    if kb and "No knowledge entries found" not in kb:
+        pkt.append("## KB hits:")
+        for ln in kb.splitlines()[:20]:
+            pkt.append(f"  {ln}")
+        pkt.append("")
+    pkt.extend([
+        "TASK:",
+        "Synthesize a terse answer to the user's question using the cited",
+        "evidence. Cite specific files/lines. If the evidence is insufficient,",
+        "say so explicitly — do not invent citations. 3-6 sentences max.",
+    ])
+
+    entry = {
+        "req_id": req_id,
+        "prompt": "\n".join(pkt),
+        "system": "",
+        "max_tokens": 1024,
+        "subagent_type": "general-purpose",
+        "created_at": _time.time(),
+    }
+    queue_path = os.path.join(queue_dir, f"{req_id}.json")
+    tmp = queue_path + ".tmp"
+    with open(tmp, "w") as f:
+        _json.dump(entry, f)
+    os.replace(tmp, queue_path)
+
+    print()
+    print("# --deep: subagent task queued.")
+    print(f"  req_id={req_id}  queue=tmp/hme-subagent-queue/{req_id}.json")
+    print()
+    print("# Sentinel for subagent_bridge.js (the agent fires Agent on next turn):")
+    print(f"  [[HME_AGENT_TASK req_id={req_id} "
+          f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
+          f"subagent_type=general-purpose]]")
+    print()
+    print("# Poll result:")
+    print(f"  cat tmp/hme-subagent-results/{req_id}.json   # appears once Agent completes")
 
 
 if __name__ == "__main__":

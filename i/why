@@ -6,6 +6,8 @@
 #   i/why mode=verifier <name>    explain a specific HCI verifier (status, history, source)
 #   i/why mode=hci-drop           find the most recent HCI regression + which verifier(s) caused it
 #   i/why mode=hook               recent hook activity (broader than mode=block)
+#   i/why "<free-text>"           Tier 2 — deterministic retrieval (grep + KB + activity)
+#   i/why "<free-text>" --deep    Tier 3 — queue subagent synthesis on top of Tier 2 packet
 SCRIPT_DIR="$(dirname "$0")/../scripts/hme"
 python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" why "$@" &
 
