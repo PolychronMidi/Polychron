@@ -217,7 +217,7 @@ function generateMarkdown(modules) {
     const f = mods.filter(m => m.registrations.includes('flicker')).length;
     const r = mods.filter(m => m.registrations.includes('recorder')).length;
     const s = mods.filter(m => m.registrations.includes('stateProvider')).length;
-    lines.push('- **' + domain + '** — ' + mods.length + ' modules; '
+    lines.push('- **' + domain + '** -- ' + mods.length + ' modules; '
       + d + ' density, ' + t + ' tension, ' + f + ' flicker, '
       + r + ' recorders, ' + s + ' state providers');
   }
