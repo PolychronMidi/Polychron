@@ -275,9 +275,9 @@
       ]
     },
     "audit-tools": {
-      "description": "DISABLED \u2014 crashed host twice in real use. Process-group kill insufficient against double-forking subprocess descendants. Needs cgroup isolation before re-enable. See wrapper script for diagnostic context.",
+      "description": "UX stress test for i/* CLI surface. Each probe runs inside a transient systemd-run --scope cgroup (MemoryMax=512M, TasksMax=64) so disown'd/double-forked descendants of HME posttooluse hooks die atomically with the scope. Crashed the host twice before this isolation landed; treat with caution on first re-enable.",
       "category": "meta",
-      "usage": "i/audit-tools  # refuses to run; requires --i-understand-this-may-crash to override"
+      "usage": "i/audit-tools"
     }
   }
 }

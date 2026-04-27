@@ -66,62 +66,105 @@ SAFE_NO_ARGS_ALLOWLIST = {
 SKIP_TOOLS = {"buddy"}  # deprecated alias for i/dispatch
 
 
-def _run(cmd: list[str], timeout: float = 5.0) -> dict:
-    """Run a command with hard process-group kill on timeout.
-
-    subprocess.run's timeout only SIGTERMs the direct child. HME tools
-    cascade into verify-coherence + posttooluse hooks that survive the
-    parent's death — those grandchildren accumulate as orphans and
-    blow up host memory. This wrapper uses Popen with start_new_session
-    so the child becomes a process-group leader; on timeout we
-    os.killpg() the entire group (SIGTERM, then SIGKILL after grace)
-    so no descendant survives.
+def _systemd_run_available() -> bool:
+    """Return True if `systemd-run --scope` can be used to spawn the
+    probe inside a transient cgroup. Required for safe operation —
+    process-group kill is insufficient here because HME hooks
+    `disown` backgrounded work (see posttooluse_bash.sh:65,
+    _lifesaver_bg in misc_safe.sh:76, etc.), which detaches from the
+    parent group and survives os.killpg(SIGKILL).
     """
-    import signal as _sig
+    import shutil as _shutil
+    return _shutil.which("systemd-run") is not None
+
+
+def _run(cmd: list[str], timeout: float = 5.0) -> dict:
+    """Run a command inside a transient systemd cgroup scope so that
+    EVERY descendant — including double-forked + disown'd background
+    processes — is killed atomically when the scope is terminated.
+
+    Why systemd-run --scope (not process-group):
+      HME hooks routinely fire backgrounded subprocesses with
+      `(...) & disown`, which detaches them from the parent's process
+      group. os.killpg(SIGKILL) misses them. Those orphans accumulate
+      memory pressure across probes and brought the host down twice
+      during this auditor's development. cgroup-scoped kill cannot
+      be escaped by `disown` / `setsid` / `nohup` / double-fork because
+      the cgroup membership is inherited by every fork() and only
+      cleared by an explicit cgroup-write.
+
+    Resource caps applied per probe:
+      MemoryMax=512M     prevents accumulation; hard kill at limit
+      CPUQuota=100%      one core max; no fork-bomb amplification
+      TasksMax=64        cap on descendant count
+
+    Refuses to run if systemd-run is unavailable — the legacy
+    process-group fallback was demonstrated unsafe and is removed.
+    """
+    if not _systemd_run_available():
+        return {
+            "rc": -1, "stdout": "", "elapsed_s": 0.0, "timed_out": False,
+            "stderr": (
+                "audit-tool-surface: systemd-run is required for safe "
+                "subprocess isolation. Install systemd or run on a host "
+                "with cgroups available. The legacy process-group "
+                "fallback escapes via `disown` and was removed after "
+                "crashing the host twice."
+            ),
+        }
     t0 = time.time()
+    # Transient unit name — visible in `systemctl list-units --user`
+    # while running, gone after.
+    unit = f"hme-audit-{os.getpid()}-{int(t0 * 1000)}"
+    wrapped = [
+        "systemd-run", "--user", "--scope", "--quiet",
+        f"--unit={unit}",
+        f"--property=RuntimeMaxSec={int(timeout) + 2}",
+        "--property=MemoryMax=512M",
+        "--property=CPUQuota=100%",
+        "--property=TasksMax=64",
+        "--",
+        *cmd,
+    ]
     try:
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            wrapped, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, cwd=str(PROJECT_ROOT),
-            start_new_session=True,  # makes child the process-group leader
         )
     except OSError as e:
         return {"rc": -1, "stdout": "", "stderr": f"spawn failed: {e}",
                 "elapsed_s": 0.0, "timed_out": False}
+    timed_out = False
     try:
-        stdout, stderr = proc.communicate(timeout=timeout)
-        return {
-            "rc": proc.returncode,
-            "stdout": stdout or "",
-            "stderr": stderr or "",
-            "elapsed_s": round(time.time() - t0, 3),
-            "timed_out": False,
-        }
+        # `timeout + 1` — systemd-run's RuntimeMaxSec kills at timeout;
+        # we wait a little longer for the descendants + cgroup teardown
+        # to finalize before declaring our own timeout.
+        stdout, stderr = proc.communicate(timeout=timeout + 2)
     except subprocess.TimeoutExpired:
-        # Kill the entire process group — children + grandchildren all die.
+        # Belt-and-suspenders: tell systemd to stop the scope. cgroup
+        # kill follows; ALL descendants die regardless of disown/setsid.
+        timed_out = True
         try:
-            os.killpg(os.getpgid(proc.pid), _sig.SIGTERM)
-        except (ProcessLookupError, PermissionError):
+            subprocess.run(
+                ["systemctl", "--user", "stop", unit],
+                check=False, capture_output=True, text=True, timeout=3,
+            )
+        except (subprocess.TimeoutExpired, OSError):
             pass
-        # Grace period for graceful termination
         try:
-            stdout, stderr = proc.communicate(timeout=1.0)
+            stdout, stderr = proc.communicate(timeout=2.0)
         except subprocess.TimeoutExpired:
-            try:
-                os.killpg(os.getpgid(proc.pid), _sig.SIGKILL)
-            except (ProcessLookupError, PermissionError):
-                pass
-            try:
-                stdout, stderr = proc.communicate(timeout=1.0)
-            except Exception:
-                stdout, stderr = "", ""
-        return {
-            "rc": -1,
-            "stdout": stdout or "",
-            "stderr": stderr or "",
-            "elapsed_s": round(time.time() - t0, 3),
-            "timed_out": True,
-        }
+            try: proc.kill()
+            except OSError: pass
+            try: stdout, stderr = proc.communicate(timeout=1.0)
+            except Exception: stdout, stderr = "", ""
+    return {
+        "rc": -1 if timed_out else proc.returncode,
+        "stdout": stdout or "",
+        "stderr": stderr or "",
+        "elapsed_s": round(time.time() - t0, 3),
+        "timed_out": timed_out,
+    }
 
 
 def _has_usage_line(text: str) -> bool:

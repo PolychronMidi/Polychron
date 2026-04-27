@@ -1,36 +1,24 @@
 #!/usr/bin/env bash
-# i/audit-tools — DISABLED.
+# i/audit-tools — UX stress test for the i/* CLI surface.
 #
-# This tool was designed to UX-stress-test the i/* CLI surface but
-# crashed the host TWICE in real use. The probe spawned subprocess
-# trees (HME tool cascades through verify-coherence + verify-doc-sync
-# + posttooluse hooks) whose grandchildren survived the parent's
-# timeout-kill, accumulated memory pressure, and brought the system
-# down. Process-group kill via os.killpg + an allowlist + per-probe
-# timeout were not sufficient — something in the cascade still
-# escaped.
+# Probes each registered tool with no-args + typo'd-action and rates
+# the response shape against a UX rubric. Tools scoring < 4/5 are
+# flagged for fix.
 #
-# This wrapper now refuses to run without an explicit
-# --i-understand-this-may-crash flag. Do NOT pass that flag without
-# (1) reading scripts/hme/audit-tool-surface.py top-to-bottom and
-# (2) running it manually outside Claude Code on a machine where you
-# can recover from a crash. Until the host-crash failure mode is
-# eliminated, this tool is a hazard, not a hygiene check.
+# SAFETY HISTORY: this tool crashed the host twice during initial
+# development. Root cause: HME hooks fire backgrounded subprocesses
+# via `(...) & disown` (see posttooluse_bash.sh:65, _lifesaver_bg in
+# misc_safe.sh:76, _proxy_bridge.sh, etc.) which detach from the
+# parent's process group and survive os.killpg(SIGKILL). Probing
+# multiple tools accumulated those orphans into host-killing memory
+# pressure.
 #
-# Open work: identify the specific subprocess type that escapes
-# os.killpg(SIGKILL) and the resource it accumulates. Until then, no
-# automated invocation. Probably needs a cgroup-based isolation
-# (systemd-run --scope) instead of process-group, since process-group
-# kill misses descendants that double-fork.
-if [ "${1:-}" != "--i-understand-this-may-crash" ]; then
-  cat <<'EOF' >&2
-i/audit-tools is DISABLED — it crashed the host twice.
-
-Pass --i-understand-this-may-crash to override (NOT recommended). See
-i/audit-tools wrapper script comment for the diagnostic context and
-the open work needed to make it safe.
-EOF
-  exit 1
-fi
-shift
+# CURRENT ISOLATION: each probe now runs inside a transient
+# `systemd-run --scope` cgroup with MemoryMax=512M, CPUQuota=100%,
+# TasksMax=64, and RuntimeMaxSec={timeout+2}. cgroup-scoped kill
+# cannot be escaped by `disown`/`setsid`/`nohup`/double-fork — every
+# descendant is in the cgroup and dies atomically with the scope.
+# Refuses to run if systemd-run is unavailable.
+#
+# Even with cgroup isolation, watch for runaway behavior on first run.
 exec python3 "$(dirname "$0")/../scripts/hme/audit-tool-surface.py" "$@"
