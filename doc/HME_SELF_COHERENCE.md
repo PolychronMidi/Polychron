@@ -10,16 +10,14 @@ This document describes the substrate that makes that possible — the **HME Coh
 
 ### The HME Coherence Index (HCI)
 
-The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **47 weighted verifiers** across 6 categories:
+The HCI is a 0-100 score computed by [tools/HME/scripts/verify-coherence.py](../tools/HME/scripts/verify-coherence.py) from **55 weighted verifiers** across 6 categories:
 
-| Category | Verifiers (partial list — 38 total) | What it measures |
---
-| **doc** | doc-drift, tool-docstrings, memetic-drift | Documentation matches code reality; CLAUDE.md rules aren't silently violated |
-| **code** | python-syntax, shell-syntax, hook-executability, decorator-order, todowrite-hook-nonblock | Source code can run; decorator order correct; TodoWrite hook stays non-blocking |
-| **state** | states-sync, onboarding-flow, onboarding-state-integrity, todo-store-schema, reloadable-sync, onboarding-chain-importable | Runtime state machines are valid and consistent |
-| **coverage** | hook-registration, hook-matcher-validity, subagent-mode-sync, subagent-general-purpose-passthrough, mcp-instructions-empty, tool-surface-coverage | Every declared interface points to a real implementation; subagents routed correctly |
-| **runtime** | shim-health, error-log, lifesaver-integrity, lifesaver-rate, meta-observer-coherence, tool-response-latency, trajectory-trend, subagent-backends, subagent-short-prompt-guard, warm-context-freshness, hook-latency, plan-output-validity, git-commit-test-coverage, transient-error-filter, verifier-coverage-gap, predictive-hci | Live services responsive; alerts honest; subagent stack functional; latency within baseline; detector not drifting |
-| **topology** | feedback-graph | Cross-boundary structures declared |
+- **doc** — documentation matches code reality; CLAUDE.md rules aren't silently violated. Verifiers: doc-drift, tool-docstrings, memetic-drift.
+- **code** — source code can run; decorator order correct; TodoWrite hook stays non-blocking. Verifiers: python-syntax, shell-syntax, hook-executability, decorator-order, todowrite-hook-nonblock.
+- **state** — runtime state machines are valid and consistent. Verifiers: states-sync, onboarding-flow, onboarding-state-integrity, todo-store-schema, reloadable-sync, onboarding-chain-importable.
+- **coverage** — every declared interface points to a real implementation; subagents routed correctly. Verifiers: hook-registration, hook-matcher-validity, subagent-mode-sync, subagent-general-purpose-passthrough, mcp-instructions-empty, tool-surface-coverage.
+- **runtime** — live services responsive; alerts honest; subagent stack functional; latency within baseline; detector not drifting. Verifiers: shim-health, error-log, lifesaver-integrity, lifesaver-rate, meta-observer-coherence, tool-response-latency, trajectory-trend, subagent-backends, subagent-short-prompt-guard, warm-context-freshness, hook-latency, plan-output-validity, git-commit-test-coverage, transient-error-filter, verifier-coverage-gap, predictive-hci.
+- **topology** — cross-boundary structures declared. Verifiers: feedback-graph.
 
 Each verifier returns a `VerdictResult` with `status` (PASS/WARN/FAIL/SKIP/ERROR), `score` (0-1), `summary`, and `details`. The aggregate is a weighted mean × 100.
 
@@ -172,13 +170,11 @@ That's it. Run `verify-coherence.py` and the new dimension shows up in the repor
 
 The HCI alone doesn't tell you everything — drill into the per-category and per-verifier scores to find specific drift. But the aggregate has one clear meaning: **how much of HME's own self-observation surface is currently in the green?**
 
-| HCI | Meaning |
-
-| 100 | Every measured dimension is fully coherent |
-| 95-99 | Minor drift, mostly cosmetic |
-| 80-94 | Real drift in one or two dimensions; investigate the lowest verifier |
-| 50-79 | Multiple categories degraded; system is noticeably broken |
-| 0-49 | Foundational failure; HME may not be safe to use |
+- **100** — every measured dimension is fully coherent
+- **95-99** — minor drift, mostly cosmetic
+- **80-94** — real drift in one or two dimensions; investigate the lowest verifier
+- **50-79** — multiple categories degraded; system is noticeably broken
+- **0-49** — foundational failure; HME may not be safe to use
 
 The threshold I've set in `verify-coherence.py` is 80 — exit code 1 below that. Pipeline integration should fail the build below 80.
 
@@ -236,16 +232,14 @@ Pipeline:
 
 **Traps discovered along the way, in order:**
 
-| # | Layer | Trap | Fix |
--
-| 1 | `pip` | PEP 668 blocks user installs on Debian | `--break-system-packages` flag |
-| 2 | `peft 0.19.0` | References `torch.float8_e8m0fnu` which doesn't exist in `torch 2.5.1` | Downgrade to `peft==0.13.2` |
-| 3 | `DataCollatorForLanguageModeling` | Can't pad a manually-set `labels` field (expects ints, gets lists) | Don't set labels in `fmt()`; let the collator handle them from `input_ids` via `mlm=False` |
-| 4 | `peft + gradient_checkpointing` | `RuntimeError: element 0 does not require grad` | `model.enable_input_require_grads()` after `get_peft_model()` |
-| 5 | `list_knowledge` shim method | Returns only `{id, title, category, tags}` — no content | Two-pass: list for titles, `search_knowledge` per title for content |
-| 6 | `llama.cpp convert_hf_to_gguf.py` from master | References `GEMMA4` arch that newer `gguf` library doesn't have | Fetch from tagged release `b3800` that matches `gguf 0.18.0` |
-| 7 | `llama.cpp b6780` convert script | Requires `mistral_common` package not in our env | Same fix: use `b3800` instead |
-| 8 | **Maxwell architecture (Tesla M40)** | fp16 training diverges to NaN from step 1 — attention/softmax overflow without Tensor Cores / bf16 / flash attention | **fp32 training only**. Use a smaller base model (0.5B not 1.5B) to fit in 24GB VRAM with gradient checkpointing. |
+1. `pip` — PEP 668 blocks user installs on Debian. Fix: `--break-system-packages` flag.
+2. `peft 0.19.0` — references `torch.float8_e8m0fnu` which doesn't exist in `torch 2.5.1`. Fix: downgrade to `peft==0.13.2`.
+3. `DataCollatorForLanguageModeling` — can't pad a manually-set `labels` field (expects ints, gets lists). Fix: don't set labels in `fmt()`; let the collator handle them from `input_ids` via `mlm=False`.
+4. `peft + gradient_checkpointing` — `RuntimeError: element 0 does not require grad`. Fix: `model.enable_input_require_grads()` after `get_peft_model()`.
+5. `list_knowledge` shim method — returns only `{id, title, category, tags}` (no content). Fix: two-pass — list for titles, `search_knowledge` per title for content.
+6. `llama.cpp convert_hf_to_gguf.py` from master — references `GEMMA4` arch that newer `gguf` library doesn't have. Fix: fetch from tagged release `b3800` that matches `gguf 0.18.0`.
+7. `llama.cpp b6780` convert script — requires `mistral_common` package not in our env. Same fix: use `b3800` instead.
+8. **Maxwell architecture (Tesla M40)** — fp16 training diverges to NaN from step 1 (attention/softmax overflow without Tensor Cores / bf16 / flash attention). Fix: **fp32 training only**; use a smaller base model (0.5B not 1.5B) to fit in 24GB VRAM with gradient checkpointing.
 
 The Maxwell trap (#8) is the most painful because it's silent: loss prints as 0.0, gradient prints as NaN, training "completes" successfully, and the saved adapter weights are effectively zero. Nothing in the stock `transformers.Trainer` path fails loudly. The only way to catch it is to look at the loss values and notice they were 0.0 from step 1.
 

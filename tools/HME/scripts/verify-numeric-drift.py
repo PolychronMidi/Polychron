@@ -113,10 +113,19 @@ def count_hypermeta_controllers():
 
 
 def count_hci_verifiers():
-    path = os.path.join(_PROJECT, "tools", "HME", "scripts", "verify-coherence.py")
-    with open(path) as f:
-        src = f.read()
-    return len(re.findall(r"^class\s+\w+Verifier\(Verifier\):", src, re.MULTILINE))
+    pkg_dir = os.path.join(
+        _PROJECT, "tools", "HME", "scripts", "verify_coherence"
+    )
+    pat = re.compile(r"^class\s+\w+Verifier\(Verifier\):", re.MULTILINE)
+    total = 0
+    for root, dirs, files in os.walk(pkg_dir):
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
+        for f in files:
+            if not f.endswith(".py"):
+                continue
+            with open(os.path.join(root, f)) as fp:
+                total += len(pat.findall(fp.read()))
+    return total
 
 
 def count_cim_dials():

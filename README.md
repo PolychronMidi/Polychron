@@ -2,7 +2,7 @@
 
 Generative polyrhythmic composition engine. Two independent rhythmic layers interact through 64 cross-layer modules, governed by 27 trust-scored systems and 18 self-calibrating hypermeta controllers. Produces MIDI compositions with emergent musical behaviors arising from cross-system interaction.
 
-487 source files | 66K LOC | 7 feedback loops | 19 stutter variants | 12 CIM coordination dials
+7 feedback loops · 19 stutter variants · 12 CIM coordination dials · 27 ESLint rules
 
 ## Quick Start
 
@@ -24,9 +24,9 @@ node lab/run.js sketch-name        # run specific sketch
 
 The system has three interacting layers:
 
-**Conductor** (196 files) -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 18 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
+**Conductor** -- unified signal pipeline computing density, tension, and flicker products every beat. 37 registered recorders advance state. 18 hypermeta controllers self-calibrate coupling targets, thresholds, and gains. Tick L1-only to prevent polyrhythmic double-counting.
 
-**Cross-Layer** (64 files) -- 45 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 12 module-pair dials.
+**Cross-Layer** -- 45 registered modules managing inter-layer dynamics: rhythmic complement (hocket/antiphony/canon), spectral gap-filling, velocity interference, articulation contrast, convergence detection, stutter contagion, and the Coordination Independence Manager (CIM) with 12 module-pair dials.
 
 **Play Loop** -- alternates L1/L2 via `LM.activate()` with full per-layer state isolation (crossModulation, balance, flipBin). Each beat: conductor tick -> processBeat -> playNotes -> crossLayerBeatRecord -> trust/feedback updates.
 
