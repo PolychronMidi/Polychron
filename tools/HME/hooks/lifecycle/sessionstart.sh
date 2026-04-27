@@ -247,8 +247,17 @@ HOLO_SCRIPT="$PROJECT/tools/HME/scripts/snapshot-holograph.py"
 if [ -f "$HOLO_SCRIPT" ]; then
   SESSION_HOLO="$PROJECT/tmp/hme-session-start.holograph.json"
   : > "$PROJECT/log/hme-bg-snapshot-holograph.err"
-  PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout \
-    > "$SESSION_HOLO" 2>"$PROJECT/log/hme-bg-snapshot-holograph.err" &
+  # Atomic write: temp file + mv on the same filesystem. Without this,
+  # two concurrent session starts (or restarts within the same second)
+  # can interleave the redirected stdout and produce concatenated JSON
+  # objects that crash the stop_holograph diff reader.
+  (
+    SESSION_HOLO_TMP="${SESSION_HOLO}.$$.tmp"
+    PROJECT_ROOT="$PROJECT" python3 "$HOLO_SCRIPT" --stdout \
+      > "$SESSION_HOLO_TMP" 2>"$PROJECT/log/hme-bg-snapshot-holograph.err" \
+      && mv "$SESSION_HOLO_TMP" "$SESSION_HOLO" \
+      || rm -f "$SESSION_HOLO_TMP"
+  ) &
 fi
 
 # Refresh the tool-effectiveness analysis in the background. Reads log/hme.log

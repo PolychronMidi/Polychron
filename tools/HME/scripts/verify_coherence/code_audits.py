@@ -574,9 +574,70 @@ class AtomicStateWritesVerifier(Verifier):
                             f"(use _atomic_write or temp+os.replace; "
                             f"per-line opt-out: append '# atomic-ok')"
                         )
+        # Shell pass: scan .sh files for `> "<state-path>"` redirects
+        # without a same-line `mv` to atomically rename. Catches the
+        # bash-level version of the same antipattern (e.g. holograph
+        # stdout-redirect bug that produced interleaved JSON in 2026-04).
+        # We run this pass even if the Python pass passed.
+        # Build a regex for known state paths. The path can appear quoted
+        # or unquoted; we match the substring.
+        # Match `cmd > <state-path>` redirects only when there's an actual
+        # command on the LHS. Three things to exclude:
+        #   - lines whose first non-whitespace char is `>` (pure truncate)
+        #   - `2>` stderr redirects (skipped by requiring a non-digit char
+        #     immediately before `>`)
+        #   - `>>` append (rare on JSON state files; accepted for now)
+        truncate_only_re = re.compile(r'^\s*>')
+        path_substr_re = re.compile(
+            r'[A-Za-z_"}\)]\s*>\s*"?[^"\s]*?(?:output/metrics/[^"\s]*\.json|'
+            r'tmp/hme-[^"\s]*\.(?:json|state)|'
+            r'feedback_graph\.json|adaptive-state\.json)"?'
+        )
+        same_line_mv_re = re.compile(r'\bmv\s+\S+\s+\S+')
+        # Files we explicitly skip (this verifier itself, the helper module).
+        sh_skip = {
+            os.path.join(_PROJECT, "tools", "HME", "scripts",
+                         "buddy_dispatcher.py"),
+        }
+        sh_roots = [
+            os.path.join(_PROJECT, "tools", "HME", "hooks"),
+            os.path.join(_PROJECT, "scripts"),
+        ]
+        for root in sh_roots:
+            if not os.path.isdir(root):
+                continue
+            for r, _d, files in os.walk(root):
+                for f in files:
+                    if not f.endswith((".sh", ".bash")):
+                        continue
+                    p = os.path.join(r, f)
+                    if p in sh_skip:
+                        continue
+                    try:
+                        with open(p, encoding="utf-8") as fp:
+                            for i, line in enumerate(fp, start=1):
+                                if "atomic-ok" in line:
+                                    continue
+                                if truncate_only_re.match(line):
+                                    continue  # pure `> path` truncation
+                                if not path_substr_re.search(line):
+                                    continue
+                                # Allow if the same line also does an mv
+                                # (atomic temp+rename pattern).
+                                if same_line_mv_re.search(line):
+                                    continue
+                                violations.append(
+                                    f"{os.path.relpath(p, _PROJECT)}:{i}: "
+                                    f"shell `> <state-path>` redirect without same-line "
+                                    f"mv (write to .tmp + mv for atomicity; "
+                                    f"per-line opt-out: append `# atomic-ok`)"
+                                )
+                    except OSError:
+                        continue
         if not violations:
             return _result(PASS, 1.0,
-                           f"{scanned} Python file(s) scanned; no naked state-file writes")
+                           f"{scanned} Python file(s) + shell scripts scanned; "
+                           f"no naked state-file writes")
         score = max(0.0, 1.0 - len(violations) * 0.2)
         return _result(FAIL, score,
                        f"{len(violations)} non-atomic state-file write(s)",
