@@ -3,7 +3,7 @@ selftest, hme-errors.log, daemon.out, worker.out, and /health endpoints
 into one view.
 
 Tonight's debugging required tailing 5 separate logs to answer "is the
-system healthy?"; this module turns that into a single `hme_admin
+system healthy?"; this module turns that into a single `i/hme-admin
 action=health` call. Distinct from selftest — selftest is pre-flight
 validation (0 FAIL = ready to use), health is triage ("what's going on
 RIGHT NOW"). Overlapping signals are OK; the two views optimize for

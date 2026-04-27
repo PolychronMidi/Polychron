@@ -89,13 +89,13 @@ _onb_advance_to() {
 _onb_step_label() {
   local s; s="$(_onb_state)"
   case "$s" in
-    boot)        echo "1/7 boot check (run hme_admin selftest)" ;;
-    selftest_ok) echo "2/7 pick evolution target (run evolve focus=design)" ;;
+    boot)        echo "1/7 boot check (run i/hme-admin action=selftest)" ;;
+    selftest_ok) echo "2/7 pick evolution target (run i/evolve focus=design)" ;;
     targeted)    echo "3/7 edit target module (Edit tool — briefing auto-chains)" ;;
-    edited)      echo "4/7 audit changes (run review mode=forget)" ;;
+    edited)      echo "4/7 audit changes (run i/review mode=forget)" ;;
     reviewed)    echo "5/7 run pipeline (Bash: npm run main)" ;;
     piped)       echo "6/7 await verdict (hooks advance automatically)" ;;
-    verified)    echo "7/7 persist learning (run learn title=, content=)" ;;
+    verified)    echo "7/7 persist learning (run i/learn title=… content=…)" ;;
     graduated)   echo "graduated" ;;
     *)           echo "unknown ($s)" ;;
   esac

@@ -48,7 +48,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 _HOOKS_DIR = os.path.join(_PROJECT, "tools", "HME", "hooks")
-_SERVER_DIR = os.path.join(_PROJECT, "tools", "HME", "mcp", "server")
+_SERVER_DIR = os.path.join(_PROJECT, "tools", "HME", "service", "server")
 _SCRIPTS_DIR = os.path.join(_PROJECT, "tools", "HME", "scripts")
 METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", "metrics")
 _HOLOGRAPH_DIR = os.path.join(METRICS_DIR, "holograph")

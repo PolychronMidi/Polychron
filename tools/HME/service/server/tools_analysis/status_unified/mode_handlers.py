@@ -42,8 +42,71 @@ def _mode_trust():
     return _tr("", "")
 
 def _mode_hme():
-    from ..evolution.evolution_admin import hme_selftest as _st
-    return _st()
+    """HME session state — distinct from selftest (pre-flight readiness).
+    Surfaces: onboarding step, last activity events, current verdict.
+    For pre-flight readiness (PASS/FAIL count + warnings), use
+    `i/hme-admin action=selftest`."""
+    import os as _os
+    import json as _json
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    out = ["## HME session state",
+           "(For pre-flight check use `i/hme-admin action=selftest`.)",
+           ""]
+
+    # Onboarding state
+    onb_file = _os.path.join(_root, "tmp", "hme-onboarding.state")
+    onb_state = "graduated"
+    if _os.path.isfile(onb_file):
+        try:
+            with open(onb_file) as _f:
+                onb_state = _f.read().strip() or "graduated"
+        except OSError:
+            pass
+    out.append(f"  onboarding: {onb_state}")
+
+    # Pipeline verdict
+    verdict_file = _os.path.join(_root, "output", "metrics", "fingerprint-comparison.json")
+    if _os.path.isfile(verdict_file):
+        try:
+            with open(verdict_file) as _f:
+                _v = _json.load(_f)
+            out.append(f"  last pipeline verdict: {_v.get('verdict', '?')}")
+        except (OSError, ValueError):
+            pass
+
+    # Recent activity (last 15 events, run-length-collapsed)
+    activity_file = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+    if _os.path.isfile(activity_file):
+        try:
+            with open(activity_file) as _f:
+                _lines = _f.readlines()[-15:]
+            out.append("")
+            out.append("recent activity:")
+            _last_key = None
+            _count = 0
+            def _flush():
+                if _last_key:
+                    _ev, _src = _last_key
+                    _label = f"{_ev}  {_src}".strip()
+                    out.append(f"  {f'{_count}× ' if _count > 1 else ''}{_label}")
+            for _ln in _lines:
+                try:
+                    _e = _json.loads(_ln)
+                except ValueError:
+                    continue
+                _key = (_e.get("event", "?"), _e.get("source", _e.get("session", "")))
+                if _key == _last_key:
+                    _count += 1
+                else:
+                    _flush()
+                    _last_key = _key
+                    _count = 1
+            _flush()
+        except OSError:
+            pass
+
+    return "\n".join(out)
 
 def _mode_activity():
     from ..activity_digest import activity_digest as _ad

@@ -21,7 +21,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 
-_PY_FILE = os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "onboarding_chain.py")
+_PY_FILE = os.path.join(_PROJECT, "tools", "HME", "service", "server", "onboarding_chain.py")
 _SH_FILE = os.path.join(_PROJECT, "tools", "HME", "hooks", "helpers", "_onboarding.sh")
 
 

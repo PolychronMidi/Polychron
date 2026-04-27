@@ -76,6 +76,8 @@
     "HME_ALLOW_EMBEDDER_MIGRATION",
     "HME_CODE_EMBED_BATCH",
     "HME_RAG_GPU",
+    "inference_write_without_hme_read",
+    "write_without_hme_read",
     "cache_creation_input_tokens",
     "cache_read_input_tokens",
     "input_tokens",

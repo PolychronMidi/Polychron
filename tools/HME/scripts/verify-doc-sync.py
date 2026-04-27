@@ -25,8 +25,8 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 
-_SOURCE_DIR = os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "tools_analysis")
-_SERVER_ROOT = os.path.join(_PROJECT, "tools", "HME", "mcp", "server")
+_SOURCE_DIR = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tools_analysis")
+_SERVER_ROOT = os.path.join(_PROJECT, "tools", "HME", "service", "server")
 _DOC_DIRS = [
     os.path.join(_PROJECT, "doc"),
     os.path.join(_PROJECT, "tools", "HME", "skills"),

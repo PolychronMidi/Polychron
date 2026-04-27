@@ -53,25 +53,25 @@ STATES = [
 ]
 
 STEP_LABELS = {
-    "boot":        "1/7 boot check (run hme_admin selftest)",
-    "selftest_ok": "2/7 pick evolution target (run evolve focus=design)",
+    "boot":        "1/7 boot check (run i/hme-admin action=selftest)",
+    "selftest_ok": "2/7 pick evolution target (run i/evolve focus=design)",
     "targeted":    "3/7 edit target module (Edit tool — briefing auto-chains)",
-    "edited":      "4/7 audit changes (run review mode=forget)",
+    "edited":      "4/7 audit changes (run i/review mode=forget)",
     "reviewed":    "5/7 run pipeline (Bash: npm run main)",
     "piped":       "6/7 await verdict (hooks advance automatically)",
-    "verified":    "7/7 persist learning (run learn title=, content=)",
+    "verified":    "7/7 persist learning (run i/learn title=… content=…)",
     "graduated":   "graduated — blocks relax",
 }
 
 # Ordered step list for the todo tree mirror — index matches STATES order
 STEP_SHORT = [
-    "boot check (hme_admin action=selftest)",
-    "pick evolution target (evolve focus=design)",
+    "boot check (i/hme-admin action=selftest)",
+    "pick evolution target (i/evolve focus=design)",
     "edit target module (KB briefing auto-chains)",
-    "audit changes (review mode=forget)",
+    "audit changes (i/review mode=forget)",
     "run pipeline (Bash: npm run main)",
     "await pipeline verdict",
-    "persist learning (learn title=, content=)",
+    "persist learning (i/learn title=… content=…)",
 ]
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
