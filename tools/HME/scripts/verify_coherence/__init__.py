@@ -108,6 +108,7 @@ REGISTRY = [
     OAuthTokenExpiryVerifier(),
     SettingsJsonVerifier(),
     LogSizeVerifier(),
+    PipelineBgScriptHealthVerifier(),
     HookCommandExistenceVerifier(),
     CorePrinciplesAuditVerifier(),
     RepeatedCharSpamVerifier(),
