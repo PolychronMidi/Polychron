@@ -113,6 +113,67 @@ def _mode_activity():
     return _ad(window="round")
 
 
+def _mode_hci_diff():
+    """Show what verifier statuses changed since the last HCI engine run.
+    Compares hci-verifier-snapshot.json (current) against .prev (previous);
+    surfaces only verifiers whose status changed or whose score moved by
+    more than 0.05. Best-effort: if .prev is absent, says so."""
+    import os as _os
+    import json as _json
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    cur_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    prev_path = cur_path + ".prev"
+    if not _os.path.isfile(cur_path):
+        return ("# i/status mode=hci-diff\n"
+                "No snapshot found — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+    if not _os.path.isfile(prev_path):
+        return ("# i/status mode=hci-diff\n"
+                "No prior snapshot to diff — run the engine twice (once to seed .prev).")
+    try:
+        with open(cur_path) as _f:
+            cur = _json.load(_f)
+        with open(prev_path) as _f:
+            prev = _json.load(_f)
+    except (OSError, ValueError) as _e:
+        return f"# i/status mode=hci-diff\nsnapshot read failed: {_e}"
+
+    cur_v = cur.get("verifiers", {})
+    prev_v = prev.get("verifiers", {})
+    status_changes = []
+    score_moves = []
+    added = sorted(set(cur_v) - set(prev_v))
+    removed = sorted(set(prev_v) - set(cur_v))
+    for name in sorted(set(cur_v) & set(prev_v)):
+        cs, ps = cur_v[name].get("status"), prev_v[name].get("status")
+        cscore = float(cur_v[name].get("score") or 0)
+        pscore = float(prev_v[name].get("score") or 0)
+        if cs != ps:
+            status_changes.append(f"  {name:36}  {ps} → {cs}")
+        elif abs(cscore - pscore) >= 0.05:
+            arrow = "↑" if cscore > pscore else "↓"
+            score_moves.append(f"  {name:36}  {pscore:.2f} {arrow} {cscore:.2f}")
+
+    out = ["# HCI verifier diff (current vs .prev snapshot)"]
+    out.append(f"  HCI: {prev.get('hci', '?')} → {cur.get('hci', '?')}")
+    out.append("")
+    if status_changes:
+        out.append("status changes:")
+        out.extend(status_changes)
+        out.append("")
+    if score_moves:
+        out.append("score moves (≥0.05):")
+        out.extend(score_moves)
+        out.append("")
+    if added:
+        out.append(f"added verifiers ({len(added)}): {', '.join(added)}")
+    if removed:
+        out.append(f"removed verifiers ({len(removed)}): {', '.join(removed)}")
+    if not (status_changes or score_moves or added or removed):
+        out.append("(no verifier status changes; no score moves ≥0.05)")
+    return "\n".join(out)
+
+
 def _mode_race_stats():
     """Summarize recent local-vs-cloud race outcomes from
     hme-race-outcomes.jsonl. Helps tune _RACE_CLOUD_DELAY_SEC — if local
@@ -483,6 +544,8 @@ _STATUS_MODES: dict[str, callable] = {
     "perceptual": _mode_perceptual,
     "hme": _mode_hme,
     "activity": _mode_activity,
+    "hci-diff": _mode_hci_diff,
+    "hci_diff": _mode_hci_diff,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,

@@ -65,6 +65,7 @@ class VerifierCoverageGapVerifier(Verifier):
     this is aspirational."""
     name = "verifier-coverage-gap"
     category = "runtime"
+    subtag = "interface-contract"
     weight = 0.5
 
     def run(self) -> VerdictResult:
@@ -97,6 +98,7 @@ class MemeticDriftVerifier(Verifier):
     (violation detection is heuristic)."""
     name = "memetic-drift"
     category = "doc"
+    subtag = "drift-detection"
     weight = 0.5
 
     def run(self) -> VerdictResult:
@@ -130,6 +132,7 @@ class PredictiveHCIVerifier(Verifier):
     actually does, so the agent has time to fix whatever's driving the drop."""
     name = "predictive-hci"
     category = "runtime"
+    subtag = "regression-prevention"
     weight = 1.0
 
     def run(self) -> VerdictResult:

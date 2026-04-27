@@ -27,6 +27,7 @@ def run_engine() -> dict:
         result = v.execute()
         results[v.name] = {
             "category": v.category,
+            "subtag": getattr(v, "subtag", "") or "",
             "weight": v.weight,
             **result.to_dict(),
         }
@@ -84,8 +85,10 @@ def format_text(report: dict) -> str:
         lines.append(f"### {cat}")
         for name, info in sorted(by_cat[cat]):
             score_pct = info["score"] * 100
+            subtag = info.get("subtag", "")
+            tag_col = f"[{subtag}]" if subtag else ""
             lines.append(
-                f"  {info['status']:5}  {score_pct:5.1f}%  {name:30}  {info['summary']}"
+                f"  {info['status']:5}  {score_pct:5.1f}%  {name:30}  {tag_col:24}  {info['summary']}"
             )
             if info["status"] in (FAIL, ERROR) and info["details"]:
                 for d in info["details"][:5]:

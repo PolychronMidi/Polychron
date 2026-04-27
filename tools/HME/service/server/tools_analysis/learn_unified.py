@@ -141,6 +141,38 @@ def learn(query: str = "", title: str = "", content: str = "",
         from server.tools_knowledge import remove_knowledge as _rk
         return _rk(remove, scope=scope)
 
+    # Accept-draft action: consume tmp/hme-learn-draft.json (written by
+    # posttooluse_bash on STABLE/EVOLVED verdict) and add it to KB.
+    # Triggered by `i/learn action=add accept_draft=true` or
+    # `i/learn action=accept_draft`. Lets the agent commit a round's
+    # learning with one tool call instead of inventing wording.
+    if action in ("accept_draft",) or (action == "add" and not (title and content)):
+        import json as _json
+        import os as _os
+        _draft_path = _os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-learn-draft.json")
+        if not _os.path.isfile(_draft_path):
+            return ("No draft found at tmp/hme-learn-draft.json. "
+                    "Drafts are auto-generated after a STABLE/EVOLVED pipeline run. "
+                    "Pass title= and content= explicitly to add manually.")
+        try:
+            with open(_draft_path) as _df:
+                _draft = _json.load(_df)
+        except (OSError, ValueError) as _de:
+            return f"Could not read draft: {_de}"
+        from server.tools_knowledge import add_knowledge as _ak_d
+        _ret = _ak_d(
+            title=_draft.get("title", "untitled"),
+            content=_draft.get("content", ""),
+            category=_draft.get("category", "decision"),
+            tags=_draft.get("tags", []),
+            scope=scope,
+        )
+        try:
+            _os.replace(_draft_path, _draft_path + ".accepted")
+        except OSError:
+            pass
+        return f"draft accepted → {_ret}"
+
     # Add action (title + content provided)
     if title and content:
         from server.tools_knowledge import add_knowledge as _ak

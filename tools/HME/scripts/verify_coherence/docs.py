@@ -18,6 +18,7 @@ from ._base import (
 class DocDriftVerifier(Verifier):
     name = "doc-drift"
     category = "doc"
+    subtag = "drift-detection"
     weight = 2.0  # critical: stale docs mislead every agent
 
     def run(self) -> VerdictResult:
@@ -49,6 +50,7 @@ class NumericClaimDriftVerifier(Verifier):
     claims manifest and the ground-truth counters."""
     name = "numeric-claim-drift"
     category = "doc"
+    subtag = "drift-detection"
     weight = 1.5
 
     def run(self) -> VerdictResult:
@@ -79,6 +81,7 @@ class DocstringPresenceVerifier(Verifier):
     """Every @ctx.mcp.tool() function has a non-empty docstring."""
     name = "tool-docstrings"
     category = "doc"
+    subtag = "drift-detection"
     weight = 1.0
 
     def run(self) -> VerdictResult:

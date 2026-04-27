@@ -123,6 +123,7 @@ class LifesaverRateVerifier(Verifier):
     """
     name = "lifesaver-rate"
     category = "runtime"
+    subtag = "performance"
     weight = 2.0
 
     def run(self) -> VerdictResult:

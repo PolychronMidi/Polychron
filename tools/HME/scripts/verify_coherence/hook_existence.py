@@ -33,6 +33,7 @@ class HookCommandExistenceVerifier(Verifier):
     SKIP so this verifier doesn't flag unrelated tools."""
     name = "hook-command-existence"
     category = "state"
+    subtag = "structural-integrity"
     weight = 1.5
 
     def run(self) -> VerdictResult:

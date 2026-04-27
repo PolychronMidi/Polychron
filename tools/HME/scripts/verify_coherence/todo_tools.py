@@ -19,6 +19,7 @@ class TodoStoreSchemaVerifier(Verifier):
     """Every entry in todos.json has the required canonical fields."""
     name = "todo-store-schema"
     category = "state"
+    subtag = "interface-contract"
     weight = 1.0
 
     def run(self) -> VerdictResult:
@@ -60,6 +61,7 @@ class ToolSurfaceCoverageVerifier(Verifier):
     or HME.md. Hidden tools don't need to be documented."""
     name = "tool-surface-coverage"
     category = "coverage"
+    subtag = "interface-contract"
     weight = 1.0
 
     def run(self) -> VerdictResult:

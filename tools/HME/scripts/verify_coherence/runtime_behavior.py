@@ -153,6 +153,7 @@ class WarmContextFreshnessVerifier(Verifier):
     """
     name = "warm-context-freshness"
     category = "runtime"
+    subtag = "freshness"
     weight = 1.0
 
     def run(self) -> VerdictResult:

@@ -36,6 +36,7 @@ class HookLatencyVerifier(Verifier):
     """
     name = "hook-latency"
     category = "runtime"
+    subtag = "performance"
     weight = 1.0
 
     # Per-hook budget table. Keys are prefix-matched: any hook whose
@@ -110,6 +111,7 @@ class GitCommitTestCoverageVerifier(Verifier):
     there's nothing to catch it."""
     name = "git-commit-test-coverage"
     category = "runtime"
+    subtag = "interface-contract"
     weight = 0.5
 
     _FIX_KEYWORDS = ("fix", "bug", "regression", "repair", "patch", "correct", "error")
@@ -179,6 +181,7 @@ class ToolResponseLatencyVerifier(Verifier):
     """
     name = "tool-response-latency"
     category = "runtime"
+    subtag = "performance"
     weight = 1.5
 
     def run(self) -> VerdictResult:
