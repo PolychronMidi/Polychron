@@ -47,16 +47,14 @@ This document is the design spec. Edit it when the flow changes; the code follow
 
 ### State definitions
 
-| State | Meaning | Transition tool | Forward condition |
--
-| `boot` | Fresh session | `hme_admin(action='selftest')` | output contains no `FAIL:` lines |
-| `selftest_ok` | Tool surface + index + KB verified | `evolve(focus=...)` with a target-picking focus | always |
-| `targeted` | Evolution target chosen; ready for Edit | Edit on any `/src/` file | successful Edit in PostToolUse (briefing surfaces via pretooluse_edit's `_hme_validate`) |
-| `edited` | Changes applied | `review(mode='forget')` | output contains `Warnings: none` or `No changed files detected` |
-| `reviewed` | Changes pass KB audit | `Bash: npm run main` | command actually launched in PostToolUse |
-| `piped` | Pipeline running in background | pipeline completion | `pipeline-summary.json.failed == 0` AND `fingerprint-comparison.json.verdict in {STABLE, EVOLVED}` |
-| `verified` | Pipeline passed | `learn(title=, content=)` | both `title` and `content` non-empty |
-| `graduated` | Loop complete | — | state file is deleted |
+- **boot** — fresh session. Transition: `hme_admin(action='selftest')`. Forward when: output contains no `FAIL:` lines.
+- **selftest_ok** — tool surface + index + KB verified. Transition: `evolve(focus=...)` with a target-picking focus. Forward: always.
+- **targeted** — evolution target chosen; ready for Edit. Transition: Edit on any `/src/` file. Forward when: successful Edit in PostToolUse (briefing surfaces via pretooluse_edit's `_hme_validate`).
+- **edited** — changes applied. Transition: `review(mode='forget')`. Forward when: output contains `Warnings: none` or `No changed files detected`.
+- **reviewed** — changes pass KB audit. Transition: `Bash: npm run main`. Forward when: command actually launched in PostToolUse.
+- **piped** — pipeline running in background. Transition: pipeline completion. Forward when: `pipeline-summary.json.failed == 0` AND `fingerprint-comparison.json.verdict in {STABLE, EVOLVED}`.
+- **verified** — pipeline passed. Transition: `learn(title=, content=)`. Forward when: both `title` and `content` non-empty.
+- **graduated** — loop complete. State file is deleted.
 
 The `briefed` state was removed: the KB briefing that used to be its own step is now auto-chained into every Edit via `_hme_validate` in [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh), so the agent never needs to call `read(target, mode='before')` explicitly. The `read` tool still exists as a hidden internal utility called by the hook.
 
@@ -76,12 +74,10 @@ This is the only rule because the other transitions already describe natural wor
 
 For tools outside the HME MCP server, hooks are the gatekeepers. Gates fire only during onboarding — graduated agents bypass them and hit the pre-existing soft warnings.
 
-| Hook | Gate | Reason |
---
-| [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh) | Block `Edit` on `/src/` when state is earlier than `briefed` | Force agent through read(mode='before') first |
-| [pretooluse_bash.sh](../tools/HME/hooks/pretooluse_bash.sh) | Block `Bash: npm run main` when state is earlier than `reviewed` | Force agent through review(mode='forget') first |
-| [posttooluse_edit.sh](../tools/HME/hooks/posttooluse_edit.sh) | Advance `briefed` → `edited` on successful src/ Edit | Automatic state bookkeeping |
-| [posttooluse_bash.sh](../tools/HME/hooks/posttooluse_bash.sh) | Advance `reviewed` → `piped` on npm launch; `piped` → `verified` on clean STABLE/EVOLVED verdict | Automatic state bookkeeping |
+- [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh) — block `Edit` on `/src/` when state is earlier than `briefed`. Forces agent through read(mode='before') first.
+- [pretooluse_bash.sh](../tools/HME/hooks/pretooluse_bash.sh) — block `Bash: npm run main` when state is earlier than `reviewed`. Forces agent through review(mode='forget') first.
+- [posttooluse_edit.sh](../tools/HME/hooks/posttooluse_edit.sh) — advance `briefed` → `edited` on successful src/ Edit. Automatic state bookkeeping.
+- [posttooluse_bash.sh](../tools/HME/hooks/posttooluse_bash.sh) — advance `reviewed` → `piped` on npm launch; `piped` → `verified` on clean STABLE/EVOLVED verdict.
 
 ## Tool handler wiring
 
@@ -148,15 +144,13 @@ The todo store is the single source of truth for visible work; the onboarding st
 
 ## Failure modes
 
-| Condition | Behavior |
-
-| State file missing mid-session | Treated as `graduated`. Permissive — never gets the agent stuck. |
-| Python onboarding_chain import fails | Shell hooks still work (they read state file directly via `cat`). Tool handlers fall through — no state advancement, no chain output. |
-| Agent picks a non-existent target at step 3 | `read()` returns an error; state stays `targeted`. No advancement. Agent retries. |
-| Agent edits outside `/src/` during onboarding | No block. Hooks only gate `/src/` edits. |
-| Selftest fails at boot | `chain_enter` still prepends the selftest output. State stays `boot`. Agent sees failures and fixes them before proceeding. |
-| User interrupts mid-loop | State persists. Next prompt shows `_nexus_pending()` reminder. Agent resumes. |
-| Compaction | State file survives. Walkthrough continues from current step. |
+- **State file missing mid-session** — treated as `graduated`. Permissive; never gets the agent stuck.
+- **Python onboarding_chain import fails** — shell hooks still work (they read the state file directly via `cat`). Tool handlers fall through: no state advancement, no chain output.
+- **Agent picks a non-existent target at step 3** — `read()` returns an error; state stays `targeted`. No advancement. Agent retries.
+- **Agent edits outside `/src/` during onboarding** — no block. Hooks only gate `/src/` edits.
+- **Selftest fails at boot** — `chain_enter` still prepends the selftest output. State stays `boot`. Agent sees failures and fixes them before proceeding.
+- **User interrupts mid-loop** — state persists. Next prompt shows `_nexus_pending()` reminder. Agent resumes.
+- **Compaction** — state file survives. Walkthrough continues from current step.
 
 ## Adding new steps
 

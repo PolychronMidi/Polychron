@@ -114,21 +114,20 @@ Generated per-run in `output/metrics/`:
 
 ## Documentation
 
-| File | Scope |
-
-| [CLAUDE.md](CLAUDE.md) | Coding rules, architectural boundaries, hard rules |
-| [doc/HME.md](doc/HME.md) | Local semantic RAG + HME tool reference (invoked via `i/<tool>` shell wrappers) |
-| [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) | Beat lifecycle, signal flow, layer isolation |
-| [doc/TUNING_MAP.md](doc/TUNING_MAP.md) | Feedback loop constants, cross-constant invariants |
-| [doc/HYPERMETA.md](doc/HYPERMETA.md) | 18 self-calibrating controllers |
-| [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md) | 19 variants, selection, gating |
-| [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md) | CIM 12 dials |
-| [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) | 11 loops, correlation shuffler |
-| [doc/ADAPTIVE_INFRASTRUCTURE.md](doc/ADAPTIVE_INFRASTRUCTURE.md) | Warm-start, reconvergence |
-| [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md) | 27 trust-scored systems |
-| [doc/CONVERGENCE_SYSTEMS.md](doc/CONVERGENCE_SYSTEMS.md) | Convergence detection, cascades |
-| [doc/SUBSYSTEMS.md](doc/SUBSYSTEMS.md) | Directory overview |
-| [doc/theory/README.md](doc/theory/README.md) | Collection of theory essays about what drives Polychron |
+- [CLAUDE.md](CLAUDE.md) — coding rules, architectural boundaries, hard rules
+- [doc/HME.md](doc/HME.md) — local semantic RAG + HME tool reference (invoked via `i/<tool>` shell wrappers)
+- [doc/AGENT_PRIMER.md](doc/AGENT_PRIMER.md) — agent-facing walkthrough behavior
+- [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) — beat lifecycle, signal flow, layer isolation
+- [doc/TUNING_MAP.md](doc/TUNING_MAP.md) — feedback loop constants, cross-constant invariants
+- [doc/HYPERMETA.md](doc/HYPERMETA.md) — 18 self-calibrating controllers
+- [doc/STUTTER_SYSTEM.md](doc/STUTTER_SYSTEM.md) — 19 variants, selection, gating
+- [doc/COORDINATION_INDEPENDENCE.md](doc/COORDINATION_INDEPENDENCE.md) — CIM 12 dials
+- [doc/FEEDBACK_LOOPS.md](doc/FEEDBACK_LOOPS.md) — 11 loops, correlation shuffler
+- [doc/ADAPTIVE_INFRASTRUCTURE.md](doc/ADAPTIVE_INFRASTRUCTURE.md) — warm-start, reconvergence
+- [doc/TRUST_ECOLOGY.md](doc/TRUST_ECOLOGY.md) — 27 trust-scored systems
+- [doc/CONVERGENCE_SYSTEMS.md](doc/CONVERGENCE_SYSTEMS.md) — convergence detection, cascades
+- [doc/SUBSYSTEMS.md](doc/SUBSYSTEMS.md) — directory overview
+- [doc/theory/README.md](doc/theory/README.md) — collection of theory essays about what drives Polychron
 
 ## Dependencies
 
