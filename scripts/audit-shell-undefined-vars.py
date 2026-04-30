@@ -202,17 +202,29 @@ def _strip_single_quoted(text: str) -> str:
     `$VAR` references inside (jq program text, awk scripts, python
     heredocs, etc.) don't trigger false positives. Bash itself never
     expands $ inside single quotes, so any ref there is by definition
-    not a shell-scope reference. Preserve newlines for line numbers."""
+    not a shell-scope reference. Preserve newlines for line numbers.
+
+    Tracks double-quote state so apostrophes in strings like
+    `"Claude's"` or `"pipeline's"` aren't mis-treated as start-of-
+    single-quote (which would put the scanner into a multi-line
+    'inside-quotes' state and pollute downstream analysis with
+    cross-region $VAR misses)."""
     out = []
     i = 0
     n = len(text)
+    in_double = False
     while i < n:
         c = text[i]
         if c == "\\" and i + 1 < n:
             out.append(text[i:i+2])
             i += 2
             continue
-        if c == "'":
+        if c == '"':
+            in_double = not in_double
+            out.append(c)
+            i += 1
+            continue
+        if c == "'" and not in_double:
             # Find matching close quote. Bash single quotes can't contain
             # escaped quotes — first unescaped ' ends the string.
             j = text.find("'", i + 1)
