@@ -116,6 +116,7 @@ Generated per-run in `output/metrics/`:
 
 - [CLAUDE.md](CLAUDE.md) — coding rules, architectural boundaries, hard rules
 - [doc/HME_MENTAL_MODEL.md](doc/HME_MENTAL_MODEL.md) — one-page mental model: read this before anything else
+- [doc/HME_HORIZONS.md](doc/HME_HORIZONS.md) — the 10 architectural horizons HME hasn't yet stretched into; read when next-round work feels like rearranging stones
 - [doc/HME.md](doc/HME.md) — local semantic RAG + HME tool reference (invoked via `i/<tool>` shell wrappers)
 - [doc/AGENT_PRIMER.md](doc/AGENT_PRIMER.md) — agent-facing walkthrough behavior
 - [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) — beat lifecycle, signal flow, layer isolation
