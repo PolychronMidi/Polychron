@@ -13,7 +13,13 @@ The trajectory of every horizon below is the same: convert one more axis of *imp
 
 What follows is the asymptote, not the next sprint.
 
-## Horizon I — Predictive HME
+## Status legend
+
+- 🌱 **seed shipped** — first concrete tool/view exists; full vision still ahead
+- 🌳 **expanded** — multiple parts of the horizon now operational
+- 📜 **vision only** — no implementation yet
+
+## Horizon I — Predictive HME 📜
 
 Today HME observes itself and reports. It does not predict. The next layer of self-coherence is HME modeling its own behavior under hypothetical agent actions.
 
@@ -23,7 +29,7 @@ Today HME observes itself and reports. It does not predict. The next layer of se
 
 The shape: HME's self-model includes a model of the agent's behavior. Already seeded by `dominance_prefetch.js` and the auto-briefing on Edit. Generalize: every agent action has a predictable consequence; surface the prediction before the action.
 
-## Horizon II — Multi-timescale, multi-axis coherence
+## Horizon II — Multi-timescale, multi-axis coherence 🌱
 
 HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggregations that throw away phase information.
 
@@ -33,7 +39,7 @@ HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggre
 
 The shape: every collapsed scalar is a thrown-away signal. Find each one; un-collapse it.
 
-## Horizon III — The KB as an active knowledge graph
+## Horizon III — The KB as an active knowledge graph 📜
 
 The KB has 175+ entries. Today it's a flat list with semantic search. Implicit graph structure exists (which entries cite which, which contradict, which were promoted from drafts). Made explicit:
 
@@ -44,9 +50,11 @@ The KB has 175+ entries. Today it's a flat list with semantic search. Implicit g
 
 The shape: turn the KB from a vector-search index into a queryable graph. The graph is what the KB *is*; the flat list is the projection.
 
-## Horizon IV — Agent behavior as a tracked dimension
+## Horizon IV — Agent behavior as a tracked dimension 🌱
 
 The agent (the LLM running through Claude Code, including me right now) is currently invisible to HME except as a stream of tool calls. But the agent is *part of the system* — its loop rate, decision quality, error frequency, context-window pressure all shape outcomes.
+
+**Seed shipped:** `i/status mode=agent-loop` aggregates per-session tools-per-turn, brief-coverage ratio, error-surface rate, inter-tool gap (median + p90), hook-intervention count. The agent is no longer invisible — read the panel.
 
 - **Per-turn agent metrics.** Tools-per-turn, average tool latency, retry rate, "psychopathic-stop" frequency, brief-vs-edit-ratio. Each is a signal about the agent's loop quality.
 - **Agent-quality verifier.** A verifier whose `run()` reads recent turn telemetry and scores agent loop quality. Becomes part of HCI.
@@ -54,7 +62,7 @@ The agent (the LLM running through Claude Code, including me right now) is curre
 
 The shape: the agent is not external to HME; the agent is a subsystem of HME. Modeled accordingly.
 
-## Horizon V — The composition⇔HME conjugate channel
+## Horizon V — The composition⇔HME conjugate channel 📜
 
 Musical coherence and HCI co-evolve over rounds but don't directly inform each other. They are two parallel scores that should be a coupled system.
 
@@ -64,17 +72,17 @@ Musical coherence and HCI co-evolve over rounds but don't directly inform each o
 
 The shape: the two scores are conjugate variables, not independent. Treat as one system.
 
-## Horizon VI — Meta-meta verifiers
+## Horizon VI — Meta-meta verifiers 🌳
 
 The verifiers check the system. What checks the verifiers?
 
-- **Verifier-utility verifier.** Computes per-verifier signal-to-noise: how often does this verifier flip? How often did its FAILs catch real bugs? How often was its FAIL ignored? Verifiers with score < threshold get pruned from HCI weighting (still run, but contribute less).
-- **Verifier-coverage verifier.** Are there file paths that NO verifier checks? Are there policy categories with zero verifiers? Surface coverage gaps the way doc-sync surfaces stale references.
-- **Verifier-drift verifier.** A verifier passes for 100 runs straight — is it still actually checking what it used to? Verifiers can rust.
+- **Verifier-utility verifier.** ✅ Shipped: `i/why mode=verifier-utility`. Computes per-verifier signal-to-noise: always-PASS / always-FAIL / flapping / high-variance buckets across 544 runs of timeseries. First run found 9 verifiers that have NEVER flipped — real prune candidates.
+- **Verifier-coverage verifier.** ✅ Shipped: `i/why mode=verifier-coverage`. Heuristic scan of which directories have specific-path verifier mentions vs only universal-walker coverage. Surfaces where DEEP coverage is thin even when baseline coverage exists.
+- **Verifier-drift verifier.** 📜 Vision: a verifier passes for 100 runs straight — is it still actually checking what it used to? Verifiers can rust. Detection: snapshot each verifier's source hash; flag verifiers whose source hasn't changed in N rounds AND whose status hasn't changed either (potentially stale assertions about a moved-on system).
 
 The shape: every layer of self-coherence needs a layer above it that audits *its* coherence. Recursion is structural.
 
-## Horizon VII — Causal traversal of `i/why`
+## Horizon VII — Causal traversal of `i/why` 📜
 
 `i/why` answers narrow questions today. The full vision: every observed effect has a queryable chain of causes, traversable to its root.
 
@@ -86,7 +94,7 @@ Implementation: every state-changing action records its `caused_by` reference. T
 
 The shape: the system becomes *legible to itself* in causal form. Today it's legible in static form (read the code). Tomorrow it's legible in dynamic form (read the trace).
 
-## Horizon VIII — The architectural conscience
+## Horizon VIII — The architectural conscience 📜
 
 Some moves feel right; others feel wrong. The "feel" lives in the user's head and partially in the KB. Make it operational:
 
@@ -96,7 +104,7 @@ Some moves feel right; others feel wrong. The "feel" lives in the user's head an
 
 The shape: the agent's intuition becomes durable, queryable, transferable.
 
-## Horizon IX — The chaordic-band as a learned controllable
+## Horizon IX — The chaordic-band as a learned controllable 🌱
 
 Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself should be learned from human verdicts.
 
@@ -104,9 +112,11 @@ Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself sh
 - "This run felt mechanical at HCI 0.88" → pull both bounds toward each other; the system was over-coherent.
 - The band becomes a function of recent ground-truth verdicts. Self-tuning all the way down.
 
+**Seed shipped:** `i/status mode=band-tuning` joins ground-truth verdicts with HCI timeseries by timestamp, computes the HCI distribution per sentiment bucket, proposes new band bounds. First run found 9 legendary verdicts cluster at HCI=95 → proposes raising upper bound from 85 to 95. Real data-driven evidence the current band may be too tight. Wiring the proposal into the actual coherence-budget constants is the next step.
+
 The shape: every fixed parameter is a candidate for self-tuning if there's ground-truth feedback to drive it.
 
-## Horizon X — Fractal recursion
+## Horizon X — Fractal recursion 📜
 
 Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs. The pattern *itself* is the architectural hypothesis: that compound systems should self-organize fractally.
 

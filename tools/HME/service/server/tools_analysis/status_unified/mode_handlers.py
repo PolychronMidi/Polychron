@@ -117,6 +117,217 @@ def _mode_activity():
     return _ad(window="round")
 
 
+def _mode_band_tuning():
+    """Horizon IX seed — chaordic band as a learned controllable.
+
+    Reads output/metrics/hme-ground-truth.jsonl (human verdicts with
+    sentiment tags) and joins each verdict against the HCI timeseries
+    at its timestamp. Computes the HCI distribution per sentiment
+    bucket. Proposes new band bounds from the data: upper bound near
+    the median HCI of legendary/compelling rounds, lower bound near
+    the median of mechanical/flat rounds.
+
+    Today's band is fixed [0.55, 0.85] (or [55, 85] in 0-100 scale).
+    Self-tuning all the way down: the band itself becomes a function
+    of recent ground-truth feedback."""
+    import os as _os
+    import json as _json
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+
+    gt_path = _os.path.join(_root, "output", "metrics", "hme-ground-truth.jsonl")
+    ts_path = _os.path.join(_root, "output", "metrics", "hme-coherence-timeseries.jsonl")
+
+    if not _os.path.isfile(gt_path):
+        try:
+            from tool_invocations import i_form as _i_form
+            _hint = _i_form('learn', value='ground_truth')
+        except ImportError:
+            _hint = "i/learn action=ground_truth"  # tool-form-ok: fallback
+        return ("# i/status mode=band-tuning\n"
+                "No ground-truth log at output/metrics/hme-ground-truth.jsonl yet.\n"
+                f"Add verdicts via `{_hint}` first.")
+    if not _os.path.isfile(ts_path):
+        return ("# i/status mode=band-tuning\n"
+                "No HCI timeseries — nothing to join verdicts against.")
+
+    try:
+        with open(gt_path) as _f:
+            verdicts = [_json.loads(ln) for ln in _f if ln.strip()]
+        with open(ts_path) as _f:
+            ts_rows = [_json.loads(ln) for ln in _f if ln.strip()]
+    except (OSError, ValueError) as e:
+        return f"# i/status mode=band-tuning\nFailed to read inputs: {e}"
+
+    # Build sorted HCI history for nearest-neighbor join
+    ts_rows = [r for r in ts_rows if r.get("hci") is not None and r.get("ts")]
+    ts_rows.sort(key=lambda r: r.get("ts", 0))
+
+    def _hci_at(t: float) -> float | None:
+        if not ts_rows:
+            return None
+        # Find row with ts closest to t (binary-ish search via linear)
+        best = min(ts_rows, key=lambda r: abs(r["ts"] - t))
+        if abs(best["ts"] - t) > 86400 * 7:  # 7-day max window
+            return None
+        return float(best["hci"])
+
+    # Bucket verdicts by sentiment
+    buckets: dict[str, list[float]] = {}
+    for v in verdicts:
+        sentiment = v.get("sentiment", "?")
+        ts = v.get("ts")
+        if not isinstance(ts, (int, float)):
+            continue
+        hci = _hci_at(float(ts))
+        if hci is None:
+            continue
+        buckets.setdefault(sentiment, []).append(hci)
+
+    if not buckets:
+        return ("# i/status mode=band-tuning\n"
+                "No ground-truth verdicts could be joined to HCI timeseries.")
+
+    # Categorize sentiments
+    POSITIVE = {"legendary", "compelling", "surprising", "moving"}
+    NEGATIVE = {"flat", "mechanical", "boring", "broken"}
+
+    pos_hcis: list[float] = []
+    neg_hcis: list[float] = []
+    for sent, vals in buckets.items():
+        if sent in POSITIVE:
+            pos_hcis.extend(vals)
+        elif sent in NEGATIVE:
+            neg_hcis.extend(vals)
+
+    out = [f"# Chaordic band tuning (from {len(verdicts)} ground-truth verdicts)"]
+    out.append("")
+    out.append("## HCI distribution by sentiment:")
+    for sent in sorted(buckets.keys(), key=lambda s: -len(buckets[s])):
+        vals = sorted(buckets[sent])
+        median = vals[len(vals) // 2]
+        out.append(f"  {sent:14}  n={len(vals):3}  median={median:5.1f}  range=[{vals[0]:.0f}-{vals[-1]:.0f}]")
+
+    # Proposal
+    out.append("")
+    out.append("## Band proposal:")
+    if pos_hcis:
+        pos_hcis.sort()
+        upper = pos_hcis[len(pos_hcis) // 2]
+        out.append(f"  upper bound  ≈ {upper:.0f}  (median HCI of {len(pos_hcis)} positive verdicts)")
+    else:
+        out.append(f"  upper bound  not enough positive verdicts")
+    if neg_hcis:
+        neg_hcis.sort()
+        lower = neg_hcis[len(neg_hcis) // 2]
+        out.append(f"  lower bound  ≈ {lower:.0f}  (median HCI of {len(neg_hcis)} negative verdicts)")
+    else:
+        out.append(f"  lower bound  not enough negative verdicts (current default 55)")
+    out.append("")
+    out.append("# Note:")
+    out.append("  This is a proposal. Today's band [55, 85] is fixed.")
+    out.append("  Horizon IX makes it self-tuning. See doc/HME_HORIZONS.md.")
+    return "\n".join(out)
+
+
+def _mode_agent_loop():
+    """Horizon IV — agent behavior as a tracked dimension.
+
+    The agent (the LLM running the session) has been invisible to HME
+    except as a stream of tool calls. This mode aggregates per-session
+    metrics from the activity log:
+      - tools-per-turn (loop tightness)
+      - brief-ratio (auto_brief_injected vs Edit count)
+      - error-surface rate (bash_error_surfaced / tool_call)
+      - average inter-tool gap (loop pace)
+      - turns observed in the last hour"""
+    import os as _os
+    import json as _json
+    import time as _time
+    from collections import Counter, defaultdict
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    activity = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+    if not _os.path.isfile(activity):
+        return "# i/status mode=agent-loop\nNo activity log found."
+    try:
+        with open(activity) as _f:
+            tail = _f.readlines()[-3000:]
+    except OSError as e:
+        return f"# i/status mode=agent-loop\nFailed to read activity: {e}"
+
+    cutoff = _time.time() - 3600  # last hour
+    events = []
+    for ln in tail:
+        try:
+            e = _json.loads(ln)
+        except ValueError:
+            continue
+        if e.get("ts", 0) >= cutoff:
+            events.append(e)
+    if not events:
+        return "# i/status mode=agent-loop\nNo activity in last hour."
+
+    # Per-session windows
+    per_session: dict[str, list[dict]] = defaultdict(list)
+    for e in events:
+        sid = e.get("session", "?")
+        per_session[sid].append(e)
+
+    # Aggregate
+    by_event: Counter = Counter()
+    for e in events:
+        by_event[e.get("event", "?")] += 1
+
+    tool_calls = by_event.get("tool_call", 0)
+    inference_calls = by_event.get("inference_call", 0)
+    turns = by_event.get("turn_complete", 0)
+    edits = sum(1 for e in events if e.get("event") == "tool_call"
+                and e.get("tool") == "Edit")
+    brief_inj = by_event.get("auto_brief_injected", 0)
+    brief_rec = by_event.get("brief_recorded", 0)
+    bash_errs = by_event.get("bash_error_surfaced", 0)
+
+    out = [f"# Agent loop (last hour, {len(events)} events, {len(per_session)} session(s))"]
+    out.append("")
+    out.append(f"  turns observed:        {turns}")
+    if turns > 0:
+        out.append(f"  tools per turn:        {tool_calls/turns:.1f}  (avg)")
+        out.append(f"  inferences per turn:   {inference_calls/turns:.1f}")
+    out.append(f"  total tool calls:      {tool_calls}")
+    out.append(f"    of which Edit:       {edits}")
+    if edits > 0:
+        out.append(f"    brief coverage:      {(brief_rec / edits) * 100:.0f}%  ({brief_rec}/{edits})")
+    out.append(f"  auto-brief injected:   {brief_inj}")
+    if tool_calls > 0:
+        err_rate = bash_errs / tool_calls * 100
+        out.append(f"  bash error rate:       {err_rate:.1f}%  ({bash_errs}/{tool_calls})")
+
+    # Inter-tool gap (median pause between consecutive tool_call events)
+    tool_ts = sorted(e.get("ts", 0) for e in events
+                     if e.get("event") == "tool_call")
+    if len(tool_ts) >= 2:
+        gaps = [tool_ts[i + 1] - tool_ts[i] for i in range(len(tool_ts) - 1)]
+        gaps.sort()
+        median = gaps[len(gaps) // 2]
+        p90 = gaps[int(len(gaps) * 0.9)] if len(gaps) >= 10 else gaps[-1]
+        out.append(f"  inter-tool gap:        median {median:.1f}s · p90 {p90:.1f}s")
+
+    # Stop-hook activity hints
+    stop_hits = sum(1 for e in events if e.get("event") in (
+        "bash_error_surfaced", "auto_brief_injected"
+    ))
+    out.append("")
+    out.append("# Loop quality signals:")
+    out.append(f"  hook interventions:    {brief_inj + brief_rec} brief-related, {bash_errs} error-surfaced")
+
+    out.append("")
+    out.append("# Drill-in:")
+    out.append("  i/timeline window=1h           full chronological view")
+    out.append("  i/why mode=hook                broader hook-firing detail")
+    return "\n".join(out)
+
+
 def _mode_hci_by_subtag():
     """Aggregate verifier status by subtag — answers 'what KIND of broken
     is everything that's red?' Joins the live snapshot (status+score per
@@ -620,6 +831,10 @@ _STATUS_MODES: dict[str, callable] = {
     "hci_diff": _mode_hci_diff,
     "hci-by-subtag": _mode_hci_by_subtag,
     "hci_by_subtag": _mode_hci_by_subtag,
+    "agent-loop": _mode_agent_loop,
+    "agent_loop": _mode_agent_loop,
+    "band-tuning": _mode_band_tuning,
+    "band_tuning": _mode_band_tuning,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,
