@@ -162,3 +162,23 @@ test('i/why mode=conscience renders Horizon VIII signature view', () => {
   // Either reports the verdict count + signature, or notes empty log
   assert.match(r.stdout, /Architectural conscience|No ground-truth/);
 });
+
+test('i/why mode=causality <event> renders Horizon VII chain view', () => {
+  const r = _runWhy(['mode=causality', 'auto_brief_injected']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Heuristic causal chain|No.*events found/);
+});
+
+test('i/why mode=causality without event prints usage', () => {
+  const r = _runWhy(['mode=causality']);
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stdout, /Usage:|<event-name>/);
+});
+
+test('i/why mode=fractal-shape renders Horizon X tensegrity-shape table', () => {
+  const r = _runWhy(['mode=fractal-shape']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Fractal-shape signature|Gini/);
+  // Should report at least one scale
+  assert.match(r.stdout, /project→subsystem|verifier→category|kb→category/);
+});

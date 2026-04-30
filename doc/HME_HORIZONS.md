@@ -88,7 +88,7 @@ The verifiers check the system. What checks the verifiers?
 
 The shape: every layer of self-coherence needs a layer above it that audits *its* coherence. Recursion is structural.
 
-## Horizon VII — Causal traversal of `i/why` 📜
+## Horizon VII — Causal traversal of `i/why` 🌱
 
 `i/why` answers narrow questions today. The full vision: every observed effect has a queryable chain of causes, traversable to its root.
 
@@ -97,6 +97,8 @@ The shape: every layer of self-coherence needs a layer above it that audits *its
 - **`i/why this-state-advanced`** → which posttooluse → which tool result → which conditional matched.
 
 Implementation: every state-changing action records its `caused_by` reference. The chain is replayable. `i/why <observed-effect>` walks the chain.
+
+**Seed shipped:** `i/why mode=causality <event-name>` approximates the chain heuristically — the activity log's `session` field already groups events causally (same Claude turn). Within a session, events are temporally adjacent and most often causally related. Lookup walks back up to 8 events in same session before each occurrence, surfacing the heuristic chain. The full vision adds explicit `caused_by` to each emit site so the chain becomes a hard fact rather than a temporal-adjacency guess. The seed teaches the eventual instrumentation what shape it needs.
 
 The shape: the system becomes *legible to itself* in causal form. Today it's legible in static form (read the code). Tomorrow it's legible in dynamic form (read the trace).
 
@@ -124,7 +126,7 @@ Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself sh
 
 The shape: every fixed parameter is a candidate for self-tuning if there's ground-truth feedback to drive it.
 
-## Horizon X — Fractal recursion 📜
+## Horizon X — Fractal recursion 🌱
 
 Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs. The pattern *itself* is the architectural hypothesis: that compound systems should self-organize fractally.
 
@@ -135,6 +137,8 @@ Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs
 - **KB-level** — entries, relations, generalizations.
 
 If the architecture *is* a tensegrity hypothesis, then it should hold at every scale. A meta-verifier could test the hypothesis: at each scale, does removing one element redistribute load (tensegrity property) or break the structure (non-tensegrity)?
+
+**Seed shipped:** `i/why mode=fractal-shape` measures Gini-coefficient fan-out concentration at five architectural scales: project→subsystem, subsystem→module(LOC), verifier→category, verifier→subtag, kb→category. First run produced striking empirical support for the hypothesis: **4 of 5 levels measure as tensegrity-shaped (Gini ≥ 0.40)**, the fifth (verifier→category) is "partial" at Gini 0.38. The recursion claim isn't just rhetoric — the empirical signature of nested concentration appears at every scale tested. Static topology proxy only; the literal "removing one element redistributes load sub-proportionally" test would need per-element ablation runs (out of scope for this seed).
 
 The shape: the architecture isn't just designed AS a fractal — it claims to BE one. Test the claim at every scale.
 

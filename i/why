@@ -26,6 +26,8 @@ for arg in "$@"; do
     mode=kb-graph) exec python3 "$SCRIPT_DIR/why-kb-graph.py" "$@" ;;
     mode=predict) exec python3 "$SCRIPT_DIR/why-predict.py" "$@" ;;
     mode=conscience) exec python3 "$SCRIPT_DIR/why-conscience.py" "$@" ;;
+    mode=causality) exec python3 "$SCRIPT_DIR/why-causality.py" "$@" ;;
+    mode=fractal-shape) exec python3 "$SCRIPT_DIR/why-fractal-shape.py" "$@" ;;
     mode=search)    exec python3 "$SCRIPT_DIR/why-search.py" "$@" ;;
   esac
 done
