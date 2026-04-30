@@ -26,6 +26,7 @@ if [[ -f "$LOOP_FILE" ]]; then
       rm "$LOOP_FILE"
     else
       # Check transcript for done_signal
+      INPUT="${INPUT:?evolver.sh requires INPUT from dispatcher (Stop payload)}"
       TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
       DONE=false
       if [[ -n "$DONE_SIGNAL" && -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then

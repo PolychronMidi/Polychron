@@ -10,6 +10,7 @@ _signal_emit turn_complete stop.sh turn '{}'
 # evolution rounds happen on pipeline cadence. Conflating them collapsed
 # the coherence-score window to stale data. Separate events keep the
 # semantic clean.
+INPUT="${INPUT:?post_hooks.sh requires INPUT from dispatcher (Stop payload)}"
 _SESSION_ID_FOR_ACTIVITY=$(_safe_jq "$INPUT" '.session_id' 'unknown')
 _emit_activity turn_complete --session="$_SESSION_ID_FOR_ACTIVITY"
 

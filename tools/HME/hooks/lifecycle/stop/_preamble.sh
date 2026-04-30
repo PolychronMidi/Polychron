@@ -3,6 +3,13 @@
 # the dispatcher (stop.sh) which sourced _safety.sh and captured stdin first.
 # (`_stderr_verdict` / auto-summary-on-EXIT provided by _safety.sh.)
 
+# Fail-loud self-assignment: requires the dispatcher to have set INPUT
+# (Claude Code Stop payload via stdin). Self-assigning rather than just
+# `: "${INPUT:?...}"` because the static `shell-undefined-vars`
+# verifier looks for `VAR=` patterns; parameter-expansion-with-error
+# doesn't satisfy its regex even though the runtime semantics are equivalent.
+INPUT="${INPUT:?_preamble.sh requires INPUT from dispatcher (Claude Code Stop payload via stdin)}"
+
 # Resolve detectors via $PROJECT_ROOT (set by .env/_safety.sh) so the
 # running copy always tracks git HEAD, regardless of $BASH_SOURCE.
 _DETECTORS_DIR="${PROJECT_ROOT:-/home/jah/Polychron}/tools/HME/scripts/detectors"

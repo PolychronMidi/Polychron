@@ -5,6 +5,7 @@
 # ~400ms python-interpreter startup that used to fire per detector.
 # Previous p95 was 5.5s (n=78); consolidated is ~170ms on small
 # transcripts, grows sub-linearly with transcript size.
+INPUT="${INPUT:?detectors.sh requires INPUT from dispatcher (Stop payload)}"
 TRANSCRIPT_PATH=$(_safe_jq "$INPUT" '.transcript_path' '')
 POLL_COUNT=0
 IDLE_AFTER_BG=ok
