@@ -256,7 +256,80 @@ def _predict_summary() -> str:
     return f"{len(inf_ts)} calls/6h · median gap {median:.0f}s"
 
 
+def _persist_snapshot(rows: list[tuple]) -> None:
+    """Append a holograph snapshot to history JSONL for trajectory view.
+    Atomic-ish via append; cheap (~12 lines per row, runs at most once
+    per i/holograph invocation)."""
+    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+                                "hme-holograph-history.jsonl")
+    try:
+        os.makedirs(os.path.dirname(history_path), exist_ok=True)
+    except OSError:
+        return
+    snap = {
+        "ts": time.time(),
+        "rows": {f"{hid}:{label}": summary for hid, label, summary in rows},
+    }
+    try:
+        with open(history_path, "a") as f:
+            f.write(json.dumps(snap, separators=(",", ":")) + "\n")
+    except OSError:
+        pass
+
+
+def _render_trajectory(n: int = 5) -> int:
+    """Render the last n holograph snapshots as a trajectory — for each
+    horizon row, the value across recent invocations. Cross-horizon
+    time-series in one view (Horizon X × cross-horizon compounding)."""
+    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+                                "hme-holograph-history.jsonl")
+    if not os.path.isfile(history_path):
+        print("# i/holograph mode=trajectory")
+        print("  No history yet. Run `i/holograph` (default mode) several times to accumulate.")
+        return 0
+    try:
+        with open(history_path) as f:
+            rows = [json.loads(ln) for ln in f if ln.strip()][-n:]
+    except (OSError, ValueError) as e:
+        print(f"# i/holograph mode=trajectory\nFailed to read history: {e}")
+        return 1
+    if len(rows) < 2:
+        print(f"# i/holograph mode=trajectory")
+        print(f"  Only {len(rows)} snapshot(s) recorded — need ≥2 for trajectory.")
+        return 0
+
+    print(f"# Holograph trajectory  (last {len(rows)} snapshots)")
+    print()
+    # Print timestamps as column headers
+    header_ts = "  " + " " * 30
+    for r in rows:
+        ts_str = datetime.fromtimestamp(r.get("ts", 0)).strftime("%H:%M")
+        header_ts += f"  {ts_str:>10}"
+    print(header_ts)
+    # Per-row trajectory
+    keys = list(rows[-1].get("rows", {}).keys())
+    for k in keys:
+        line = f"  {k:30}"
+        for r in rows:
+            val = r.get("rows", {}).get(k, "")
+            # Trim each cell so the row stays narrow
+            short = str(val)[:30]
+            line += f"  {short:>30}"
+        print(line)
+    print()
+    print("# Note: cell width truncated to 30 chars for column alignment.")
+    print("  Use `i/holograph` for the full latest snapshot.")
+    return 0
+
+
 def main(argv):
+    mode = ""
+    for a in argv[1:]:
+        if a.startswith("mode="):
+            mode = a.split("=", 1)[1]
+    if mode == "trajectory":
+        return _render_trajectory()
+
     rows = [
         ("I",    "Predictive HME",            _predict_summary()),
         ("II",   "Multi-timescale HCI",       _hci_phase()),
@@ -270,6 +343,8 @@ def main(argv):
         ("IX",   "Chaordic band",             _band_summary()),
         ("X",    "Fractal-shape Gini",        _fractal_summary()),
     ]
+    # Persist this snapshot for `mode=trajectory`. Cheap — append-only.
+    _persist_snapshot(rows)
 
     print("# HME Holograph — interstellar overview")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -281,6 +356,7 @@ def main(argv):
     print("  i/state                    state-machine snapshot")
     print("  i/timeline window=10m      chronological audit trail")
     print("  i/why mode=<…>             causality / per-horizon detail")
+    print("  i/holograph mode=trajectory   horizon-evolution over recent runs")
     return 0
 
 

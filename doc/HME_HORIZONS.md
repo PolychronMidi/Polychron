@@ -31,7 +31,7 @@ What follows is the asymptote, not the next sprint.
 - 🌲 **VII** — Causal traversal (Tier-2 heuristic + Tier-1 explicit caused_by at 5+ emit sites: hot_reload, brief_recorded, kb_draft_written, nexus_cleared, auto_brief_injected × 2 hooks + Tier-1.5 activity-log caused_by field for any future opt-in event)
 - 🌲 **VIII** — Architectural conscience (descriptive signature + move-similarity + threshold-warning soft signal)
 - 🌲 **IX** — Learned chaordic band (proposal compute + persisted aggregate + persisted per-axis state + **subtag-tagged ground-truth verdicts → genuine per-axis bands learnable from data, not placeholders**)
-- 🌲 **X** — Fractal recursion test (7 scales + uniform-baseline contrast + per-run history → trend tracking)
+- 🌲 **X** — Fractal recursion test (7 scales + uniform-baseline contrast + per-run history → trend tracking; **`i/holograph mode=trajectory` adds cross-horizon time-series compounding all 10 horizons' signals over recent invocations**)
 
 Every horizon now has *asymptote-deepening* expansions: compounding signals between horizons (II reads IX's persisted proposal; V's conjugate-channel surfaces in II's multi-axis-band; VI's incident-correlation reads from III's KB), persisted state hand-offs (band proposal, fractal history, hot-reload markers), and per-element instrumentation (caused_by both in markers AND opt-in via activity-log field). The structural trajectory is established at every scale. Continued work toward the deeper asymptote (ML-shaped predictive models, more emit sites with caused_by, fractal ablation tests) is now compounding rather than greenfielding.
 

@@ -303,6 +303,25 @@ test('conjugate-channel V-coupling: tightening file lifecycle is sane', () => {
   // whether it was present); just assert no exception.
 });
 
+test('i/holograph mode=trajectory renders horizon evolution over time', () => {
+  // Run once to ensure history has at least 1 snapshot, then again so
+  // we have 2 (the trajectory view requires ≥2 to render side-by-side).
+  spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+    encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+    encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), ['mode=trajectory'], {
+    encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Holograph trajectory|need.*for trajectory/);
+});
+
 test('i/holograph renders all 10 horizons as one panel', () => {
   const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
     encoding: 'utf8',

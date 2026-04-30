@@ -74,11 +74,12 @@
       "safe_no_args": true
     },
     "holograph": {
-      "description": "Interstellar overview — single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad — when you want every dimension at once.",
+      "description": "Interstellar overview — single ~12-line panel summarizing all 10 HME horizons (HCI phase, agent-loop, conjugate quadrant, KB graph density, fractal Gini trend, ground-truth verdicts, band proposal, causality marker, etc). Pure composition over existing data. The asymptote of the observability triad — when you want every dimension at once. `mode=trajectory` shows horizon evolution over recent invocations.",
       "category": "diagnostic",
-      "usage": "i/holograph",
+      "usage": "i/holograph  |  i/holograph mode=trajectory",
       "examples": [
-        "i/holograph"
+        "i/holograph",
+        "i/holograph mode=trajectory"
       ]
     },
     "timeline": {
