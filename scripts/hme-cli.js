@@ -127,13 +127,13 @@ function coerce(v) {
     // bare strings. JSON.parse refuses (unquoted values), but the
     // intent is obvious from the bracket+comma syntax. Without this
     // shortcut, the Python side iterates the raw string `[a,b,c]`
-    // character-by-character — recording `subtag: "r"` instead of
+    // character-by-character -- recording `subtag: "r"` instead of
     // `subtag: "structural-integrity"`. Real bug surfaced in ground-
-    // truth tagging. Bracket-only — leave object syntax to JSON.
+    // truth tagging. Bracket-only -- leave object syntax to JSON.
     if (v.startsWith('[') && v.endsWith(']')) {
       const inner = v.slice(1, -1).trim();
       if (inner === '') return [];
-      // Naive split on comma — sufficient for tag-list use case.
+      // Naive split on comma -- sufficient for tag-list use case.
       // Strings with literal commas should use proper JSON syntax.
       return inner.split(',').map(s => s.trim()).filter(s => s.length > 0);
     }

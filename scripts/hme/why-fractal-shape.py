@@ -155,7 +155,11 @@ def _measure_kb_categories() -> dict:
 
 
 def _measure_l0_channels() -> dict:
-    """L0 channel → consumer fan-out: how many places consume each channel."""
+    """L0 channel → consumer fan-out: how many places consume each channel.
+    Uses a single combined-alternation grep instead of 35 per-channel
+    forks. grep -E with `chan1|chan2|...|chanN` walks the tree ONCE and
+    reports matches for any channel; we then parse the output back to
+    per-channel file sets. Drops latency below the multi-fork approach."""
     rules_path = os.path.join(PROJECT_ROOT, "tools", "HME", "config",
                               "project-rules.json")
     if not os.path.isfile(rules_path):
@@ -167,23 +171,34 @@ def _measure_l0_channels() -> dict:
     except Exception:
         return _scale_signature("L0→consumers", [])
     src_dir = os.path.join(PROJECT_ROOT, "src")
-    if not os.path.isdir(src_dir):
+    if not os.path.isdir(src_dir) or not channels:
         return _scale_signature("L0→consumers", [])
-    counts = []
-    for chan in channels:
-        n = 0
-        # Use a quick subprocess grep — counting consumers per channel
-        import subprocess
-        try:
-            r = subprocess.run(
-                ["grep", "-rln", "-w", chan, src_dir],
-                capture_output=True, text=True, timeout=20
-            )
-            n = len([ln for ln in r.stdout.splitlines() if ln])
-        except (subprocess.SubprocessError, OSError):
+    # Single combined grep: alternation of all channel words; output is
+    # `path:line` per match, we count distinct paths per channel.
+    import subprocess
+    pattern = r"\b(" + "|".join(re.escape(c) for c in channels) + r")\b"
+    try:
+        r = subprocess.run(
+            ["grep", "-rEon", "--include=*.js", pattern, src_dir],
+            capture_output=True, text=True, timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return _scale_signature("L0→consumers", [])
+    files_per_chan: dict[str, set[str]] = {chan: set() for chan in channels}
+    # Output format: file:line:matched-text
+    for ln in r.stdout.splitlines():
+        # Find the third colon-separated field (the matched word)
+        parts = ln.split(":", 2)
+        if len(parts) < 3:
             continue
-        if n > 0:
-            counts.append(n)
+        fp, _line, match_field = parts
+        # The match_field may contain the matched text; extract first
+        # known-channel substring (channels are all distinct words).
+        for chan in channels:
+            if chan in match_field:
+                files_per_chan[chan].add(fp)
+                break
+    counts = [len(s) for s in files_per_chan.values() if s]
     return _scale_signature("L0→consumers", counts)
 
 

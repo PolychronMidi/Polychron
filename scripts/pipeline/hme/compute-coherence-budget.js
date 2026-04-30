@@ -213,7 +213,7 @@ function main() {
     bandRounds = topN;
   }
 
-  // Horizon V→IX bidirectional coupling: if the conjugate-channel
+  // Horizon V->IX bidirectional coupling: if the conjugate-channel
   // verifier wrote a tightening proposal (lost-quadrant FAIL fired
   // on the previous round), narrow the band by the recommended delta.
   // This is THE FIRST PLACE HME's signal changes composition behavior:
@@ -229,7 +229,7 @@ function main() {
       const writtenAt = Number(tighten.ts || 0);
       const writtenAgeS = (Date.now() / 1000) - writtenAt;
       // Apply only if the proposal is fresh (within the last 24h);
-      // older proposals are stale signal — we'd be tightening based
+      // older proposals are stale signal -- we'd be tightening based
       // on long-past architectural state.
       if (writtenAgeS < 86400) {
         const delta = Number(tighten.band_delta || 0);
@@ -260,7 +260,7 @@ function main() {
     }
   } catch (err) {
     // Surface tightening-read failures so silent corruption doesn't
-    // mask architectural feedback. Throw — fail-fast invariant. The
+    // mask architectural feedback. Throw -- fail-fast invariant. The
     // tightening file is optional, so absence is fine; presence with
     // bad content is a real bug to surface.
     throw new Error(`band-tightening read failed: ${err.message}`);
@@ -344,7 +344,7 @@ function main() {
     state,
     prescription,
     ground_truth_override: groundTruthOverride,
-    band_tightening: bandTighteningApplied,  // V→IX coupling outcome
+    band_tightening: bandTighteningApplied,  // V->IX coupling outcome
     history: newHistory,
   };
 

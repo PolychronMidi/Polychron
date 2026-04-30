@@ -2,7 +2,7 @@
 
 Keep this file focused, concise, lean - docs and auto-enforcement handle the rest. If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
 
-> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
+> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/HME_MENTAL_MODEL.md](../doc/HME_MENTAL_MODEL.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/HME_HORIZONS.md](../doc/HME_HORIZONS.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
 
 ## Run
 
@@ -82,27 +82,13 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 - **User messages via system-reminder:** respond immediately. Do not wait for any running process or tool call to finish first. Drop everything and reply now. Resume prior work after responding, unless the message says to stop.
 - **Context budget:** when the window has headroom, be greedy — use parallel research agents, read full files, investigate deeply. Only economize when window pressure is high or the task is clearly trivial. Default to thoroughness.
 - **Act on feedback or discovered issues immediately and thoroughly.** Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
-- **If you find yourself violating a rule here, the fix is behavioral, not more memories or hooks.**
+- **Two-tier severity in reviews/audits:** findings carry exactly **blocker** or **should-fix** — never "nit" / "nice-to-have" / "could-be-clearer." Self-gate: "would this actually hurt a user or cause a real bug?" If no, drop it. A zero-finding review IS success.
 
 ## HyperMeta Mandatory Workflow
 
 All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`, `i/trace`). The proxy middleware owns MCP transport; Claude no longer connects to an MCP server. Full reference: [doc/HME.md](../doc/HME.md).
 
-- **After implementing changes:** `i/review mode=forget` — auto-detects changed files from git. Checks KB constraints, boundary rules, new L0 channels, doc update needs.
 - **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `output/metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
 - **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The Stop chain does this at turn end automatically (post_hooks stage in the JS evaluator at `tools/HME/proxy/stop_chain/`); do it manually mid-turn.
 - **When pipeline fails:** read pipeline output, fix root cause. `i/hme-read target=<moduleName> mode=before` on the failing file.
 
-## Reference Pointers
-
-- Calibration anchors → KB (`i/learn query=…`); universal principles → [doc/hme-discoveries.md](../doc/hme-discoveries.md); historical round archive (deprecated) → [output/metrics/journal.md](../metrics/journal.md)
-- ESLint rules (27) → `scripts/eslint-rules/` (enforced at lint time; no need to memorize)
-- HME unit tests → `npm run test:hme` runs [tools/HME/tests/specs/](tools/HME/tests/specs/) via `node:test` (no new dep). Covers stop_chain evaluator, policies registry/config/migrated-rules, secret_sanitizer regex catalog, worker_queue round-trip, telemetry channels. Add a `*.test.js` file under `specs/` to register more tests.
-- `i/*` command surface → [tools/HME/i_registry.json](tools/HME/i_registry.json) holds metadata for every wrapper. `i/help` lists everything grouped by category; `i/help <name>` shows usage/modes/examples; `i/help --json` dumps the full registry for tab-completion or external tooling. New `i/*` script: drop the file, add an entry to the registry. Until registered it shows up under `[unregistered]` with the line-2 header comment as fallback description.
-- Unified hook-time policy registry → [tools/HME/policies/](tools/HME/policies/) with `i/policies` CLI. Single discovery + config surface for PreToolUse / PostToolUse / Stop / middleware rules: `i/policies list` shows every JS-implemented hook-time rule grouped by category; `i/policies disable <name>` writes to `.hme/policies.json` (project) / `.hme/policies.local.json` (developer-local) / `~/.hme/policies.json` (global) with three-scope merge. Built-ins live in [policies/builtin/](tools/HME/policies/builtin/); custom policies via `customPoliciesPath` in config. Out of scope: ESLint / boot validators / runtime invariants / HCI verifiers — those have load-bearing timing properties incompatible with hook-time evaluation.
-- Bash-gate ↔ JS-policy unification: when adding a bash gate that has a JS-policy counterpart in `policies/builtin/`, source [hooks/helpers/_policy_enabled.sh](tools/HME/hooks/helpers/_policy_enabled.sh) and wrap the gate body in `if _policy_enabled <kebab-name> && <existing-condition>; then …`. The helper reads the same three-scope `.hme/policies.json` config that `i/policies` writes, so `i/policies disable <name>` works uniformly across both proxy-up (JS) and proxy-down direct-mode (bash) paths. Without this guard, disabling a JS policy leaves the bash gate firing — the "disable-doesn't-fully-disable" wart now closed across all 7 currently-duplicated rules.
-- Two-tier severity, no third tier: review/audit findings carry exactly **blocker** or **should-fix** — never "nit" / "nice-to-have" / "could-be-clearer." Padding with trivia dilutes signal so the reader skims past the load-bearing items. Self-gate every finding with "would this actually hurt a user / cause a real bug" — if honest answer is no, drop it. A zero-finding review IS a success signal, not a failure to find work. Lifted from skill-set sst-supervisor §2 + sst-dev-review §severity-bar.
-- Per-run diagnostics → `output/metrics/conductor-map.md`, `output/metrics/crosslayer-map.md`, `output/metrics/narrative-digest.md`, `output/metrics/trace-replay.json`, `output/metrics/runtime-snapshots.json`, `output/metrics/feedback-graph.html`
-- Cross-run state → `output/metrics/adaptive-state.json`
-- Feedback loop topology → [output/metrics/feedback_graph.json](../metrics/feedback_graph.json)
-- Doc-drift on counted architectural claims → `python3 tools/HME/scripts/verify-numeric-drift.py` (surfaced via the `numeric-claim-drift` HCI verifier; catches stale "N hypermeta controllers" / "K verifiers" / "M feedback loops" claims across every `.md` when the code count shifts)
