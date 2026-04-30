@@ -1074,6 +1074,29 @@ class AgentLoopQualityVerifier(Verifier):
             pass
 
 
+def _count_legendary_streak(project_root: str) -> int:
+    """Count consecutive 'legendary' ground-truth verdicts ending at the
+    most recent verdict. Used by ConjugateChannelVerifier's license-to-
+    explore branch to scale band-widening proportionally to recent
+    productive-territory evidence (V × VIII × IX compounding)."""
+    gt_path = os.path.join(project_root, "output", "metrics",
+                           "hme-ground-truth.jsonl")
+    if not os.path.isfile(gt_path):
+        return 0
+    try:
+        with open(gt_path) as f:
+            rows = [json.loads(ln) for ln in f if ln.strip()]
+    except (OSError, ValueError):
+        return 0
+    streak = 0
+    for r in reversed(rows):
+        if r.get("sentiment") == "legendary":
+            streak += 1
+        else:
+            break
+    return streak
+
+
 class ConjugateChannelVerifier(Verifier):
     """Horizon V expansion — composition⇔HME conjugate-channel feedback.
 
@@ -1198,7 +1221,18 @@ class ConjugateChannelVerifier(Verifier):
                 # ≥ 5 of 7 axes saturated → license-to-explore signal.
                 # Persist a loosening proposal mirroring the tightening
                 # one. Composition consumer applies opposite-sign delta.
+                # Streak-aware sizing (V × VIII × IX compounding): consecutive
+                # legendary ground-truth verdicts indicate the wider band
+                # is producing real composition wins, so the license should
+                # extend in both magnitude and duration. Without this, every
+                # legendary round would re-derive a 1-round license that
+                # expires before the next pipeline run inherits it.
                 if _total >= 6 and _above >= 5:
+                    legendary_streak = _count_legendary_streak(_PROJECT)
+                    # Magnitude: +0.05 base, +0.025 per additional streak round, capped at +0.10
+                    streak_delta = min(0.10, 0.05 + max(0, legendary_streak - 1) * 0.025)
+                    # Duration: 1 round base, +1 per additional streak round, capped at 4
+                    streak_expiry = min(4, 1 + max(0, legendary_streak - 1))
                     loosen_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
                     loosen_proposal = {
                         "ts": time.time(),
@@ -1206,8 +1240,12 @@ class ConjugateChannelVerifier(Verifier):
                         "reason": (f"{_above} of {_total} subtags ABOVE band "
                                    f"(saturated → license to explore)"),
                         "recommended_action": "widen_band",
-                        "band_delta": +0.05,  # positive = expand
-                        "expires_after_rounds": 1,
+                        "band_delta": streak_delta,
+                        "expires_after_rounds": streak_expiry,
+                        "streak": {
+                            "legendary_consecutive": legendary_streak,
+                            "policy": "magnitude +0.025/streak (cap +0.10) · duration +1/streak (cap 4)",
+                        },
                     }
                     loosen_tmp = loosen_path + ".tmp"
                     with open(loosen_tmp, "w") as _lf:
