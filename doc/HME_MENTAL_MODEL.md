@@ -117,6 +117,7 @@ This is what self-coherence means at the smallest scale. The HCI is just the sam
 - [doc/AGENT_PRIMER.md](AGENT_PRIMER.md) — first-session walkthrough behavior
 - [doc/HME.md](HME.md) — full HME reference (tool surface, Phase 1-6 internals)
 - [doc/HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) — why HME exists; the long view
+- [doc/HME_HORIZONS.md](HME_HORIZONS.md) — the 10 architectural horizons HME hasn't yet stretched into; read when next-round work feels like rearranging stones
 - [doc/HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) — onboarding state machine spec
 - [doc/LIFESAVER.md](LIFESAVER.md) — every hook/policy/verifier catalogued
 - [tools/HME/activity/EVENTS.md](../tools/HME/activity/EVENTS.md) — every activity event documented

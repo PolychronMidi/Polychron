@@ -129,44 +129,58 @@ def main(argv):
         except (OSError, ValueError):
             pass
 
-    # 7. HCI score with trend delta (last vs ~1h ago, falls back to vs first row).
+    # 7. HCI score with multi-timescale phase view. A single delta throws
+    # away signal: HCI can dip this turn while rising over the day. The
+    # multi-horizon view (1m, 1h, 1d, peak) reveals the actual phase
+    # coherence — analogous to a piano chord vs a single tone.
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if snap:
         hci = snap.get("hci", "?")
         n = len(snap.get("verifiers", {})) or snap.get("verifier_count", "?")
-        delta_str = ""
+        out.append(f"  HCI                {hci}/100 ({n} verifiers)")
         ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                                "hme-coherence-timeseries.jsonl")
         if os.path.isfile(ts_path) and isinstance(hci, (int, float)):
             try:
                 with open(ts_path) as _tf:
-                    rows = _tf.readlines()
-                if len(rows) >= 2:
-                    cutoff = time.time() - 3600
+                    rows = [json.loads(ln) for ln in _tf
+                            if ln.strip()]
+                rows = [r for r in rows if r.get("hci") is not None]
+            except (OSError, ValueError):
+                rows = []
+            if len(rows) >= 2:
+                now = time.time()
+                horizons = [
+                    ("1m  ago", now - 60),
+                    ("1h  ago", now - 3600),
+                    ("1d  ago", now - 86400),
+                ]
+                # For each horizon find the row at-or-before the cutoff
+                segments = []
+                for label, cutoff in horizons:
                     anchor = None
-                    for line in rows[-200:]:
-                        try:
-                            r = json.loads(line)
-                        except ValueError:
-                            continue
-                        if r.get("ts", 0) <= cutoff and r.get("hci") is not None:
+                    for r in rows:
+                        if r.get("ts", 0) <= cutoff:
                             anchor = r
-                    if anchor is None:
-                        try:
-                            anchor = json.loads(rows[0])
-                        except ValueError:
-                            anchor = None
-                    if anchor and anchor.get("hci") is not None:
-                        d = float(hci) - float(anchor["hci"])
-                        if abs(d) >= 0.1:
-                            sign = "+" if d > 0 else ""
-                            delta_str = f"  ({sign}{d:.1f} vs ~1h ago)"
                         else:
-                            delta_str = "  (steady)"
-            except OSError:
-                pass
-        out.append(f"  HCI                {hci}/100 ({n} verifiers){delta_str}")
+                            break
+                    if anchor:
+                        d = float(hci) - float(anchor["hci"])
+                        sign = "+" if d > 0 else ""
+                        segments.append(f"{label} {sign}{d:.1f}")
+                    else:
+                        segments.append(f"{label} ─")
+                # Add all-time peak vs current
+                peak = max(rows, key=lambda r: r.get("hci", 0))
+                peak_hci = peak.get("hci", 0)
+                peak_age_h = (now - peak.get("ts", now)) / 3600
+                if peak_age_h < 24:
+                    peak_str = f"peak {peak_hci:.0f} ({peak_age_h:.0f}h ago)"
+                else:
+                    peak_str = f"peak {peak_hci:.0f} ({peak_age_h/24:.0f}d ago)"
+                segments.append(peak_str)
+                out.append(f"                     {' · '.join(segments)}")
         # Always check for PASS→non-PASS verifier flips, even when the
         # aggregate HCI hasn't dropped (a single FAIL can be offset by
         # gains elsewhere; the flipped verifier still matters). Diff
