@@ -42,6 +42,7 @@ DETECTORS = [
     ("fabrication_check", "fabrication_check"),
     ("early_stop", "early_stop"),
     ("exhaust_check", "exhaust_check"),
+    ("scope_escape", "scope_escape"),
 ]
 
 

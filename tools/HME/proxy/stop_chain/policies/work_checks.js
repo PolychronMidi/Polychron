@@ -22,6 +22,8 @@ const REASONS = {
     'STOP-WORK ANTIPATTERN: Your last turn was a short text-only response with no tool calls. If there is remaining work, continue it now. If you genuinely completed everything, provide a substantive summary of what was done.',
   EXHAUST:
     'EXHAUST PROTOCOL VIOLATION: Final text enumerated remaining items (TBD/noted/remaining tools) without fixing them. Every enumerated item must be fixed in the same turn. Resume and implement the highest-leverage items now.',
+  SCOPE_ESCAPE:
+    'SCOPE-ESCAPE VIOLATION: Final text dismissed a problem by labeling it pre-existing / unrelated / not-introduced-here / out-of-scope-of-this-turn instead of fixing it. The rule is: if you saw it, fix it. "Pre-existing" is not a permission slip to skip work. Either (a) fix the problem in this turn, or (b) if fixing is genuinely wrong (e.g. would break an unrelated boundary), say so explicitly and explain why fixing is the wrong move — do NOT just label-and-stop. The rescue clause "and I fixed it" / "now resolved" suppresses this gate, so the path forward is always to fix.',
   COMPL_ROUND_1:
     "AUTO-COMPLETENESS INJECT (round 1/2): Before stopping, enumerate everything that might still be missing, unfinished, deferred, flagged, a possible gap, or worth doing relative to THIS TURN's work. Then do ALL of it — no deferrals, no flagging, no punts. If truly nothing remains, state 'Nothing missed' explicitly. This is the auto-injected version of the user's usual 'what's missing? do all' follow-up.",
   COMPL_ROUND_2:
@@ -44,7 +46,7 @@ const HOOK_INJECT_PREFIXES = [
 // anti-fork-end: hook-inject-prefixes
 
 function readVerdicts() {
-  const out = { STOP_WORK: 'ok', EXHAUST_CHECK: 'ok' };
+  const out = { STOP_WORK: 'ok', EXHAUST_CHECK: 'ok', SCOPE_ESCAPE: 'ok' };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
   try { text = fs.readFileSync(VERDICTS_FILE, 'utf8'); }
@@ -220,6 +222,7 @@ module.exports = {
     if (v.STOP_WORK === 'DISMISSIVE')      return ctx.deny(REASONS.STOP_WORK_DISMISSIVE);
     if (v.STOP_WORK === 'TEXT_ONLY_SHORT') return ctx.deny(REASONS.STOP_WORK_TEXT_ONLY);
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);
+    if (v.SCOPE_ESCAPE === 'scope_escape_violation') return ctx.deny(REASONS.SCOPE_ESCAPE);
 
     // Auto-completeness inject — fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy

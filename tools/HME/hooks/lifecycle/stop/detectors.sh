@@ -16,6 +16,7 @@ STOP_WORK=ok
 FABRICATION_CHECK=ok
 EARLY_STOP=ok
 EXHAUST_CHECK=ok
+SCOPE_ESCAPE=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
@@ -44,6 +45,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       fabrication_check) FABRICATION_CHECK="$_v" ;;
       early_stop)    EARLY_STOP="$_v" ;;
       exhaust_check) EXHAUST_CHECK="$_v" ;;
+      scope_escape)  SCOPE_ESCAPE="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
@@ -65,4 +67,5 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "FABRICATION_CHECK=$FABRICATION_CHECK"
   echo "EARLY_STOP=$EARLY_STOP"
   echo "EXHAUST_CHECK=$EXHAUST_CHECK"
+  echo "SCOPE_ESCAPE=$SCOPE_ESCAPE"
 } > "$_DETECTOR_VERDICTS_FILE"

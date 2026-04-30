@@ -131,3 +131,60 @@ ALL_DEFERRAL: tuple[str, ...] = (
     + DEFERRAL_ACK_NO_FIX
     + DEFERRAL_CANT_DO
 )
+
+# Scope-escape: phrases the agent uses to JUSTIFY skipping a problem by
+# claiming it doesn't belong to "this turn" / "this change" / "this work".
+# Born from the user correction: agent identified bugs surfaced during a
+# task ("4 pre-existing undefined-var issues", "pre-existing FAIL on
+# index"), characterized them as out-of-scope, and stopped. Each enumerated
+# instance is real work the agent SAW and chose not to do; the rule is
+# "if you saw it, fix it" — escape phrases mark the intent to skip.
+#
+# Detection target: the phrases attached to a problem the agent just
+# named. Closing-text position counts as evidence the agent is summarizing
+# what they DIDN'T do (parallel to exhaust_check's deferral handling).
+SCOPE_ESCAPE: tuple[str, ...] = (
+    "pre-existing",
+    "preexisting",
+    "pre existing",
+    "not introduced by",
+    "not introduced in this",
+    "not from this turn",
+    "not from this change",
+    "not produced by this turn",
+    "not produced by this change",
+    "not caused by this",
+    "not caused by my",
+    "not caused by these",
+    "not related to this turn",
+    "not related to this change",
+    "not related to my changes",
+    "unrelated to this turn",
+    "unrelated to my changes",
+    "in unrelated files",
+    "in an unrelated file",
+    "in other unrelated",
+    "outside the scope of this turn",
+    "outside this turn's scope",
+    "outside the scope of my changes",
+    "out of scope of this turn",
+    "out of scope of this change",
+    "doesn't belong to this turn",
+    "doesn't belong to this change",
+    "isn't part of this turn",
+    "not part of this turn",
+    "not part of this work",
+    "before my changes",
+    "predates this",
+    "predates my changes",
+    "predates the change",
+    "not new",
+    "not a new failure",
+    "not a regression",
+    "not regressed by",
+    "not introduced here",
+    "outside this commit",
+    "wasn't caused by",
+    "wasn't introduced by",
+    "wasn't introduced here",
+)

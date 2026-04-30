@@ -17,7 +17,7 @@ Complete reference for every enforcement mechanism that keeps the agent, pipelin
 Layer 0: SessionStart hook    — bootstrap: validate hooks, start HTTP shim, reset state, orient
 Layer 1: PreToolUse hooks     — intercept before execution (block, correct, or advise)
 Layer 2: PostToolUse hooks    — react after execution (track state, surface errors)
-Layer 3: Stop hook            — prevent premature exit (8 blocking checks)
+Layer 3: Stop hook            — prevent premature exit (10 blocking checks)
 Layer 4: Declarative invariants — config/invariants.json (45+ checks, no code changes needed)
 Layer 5: ESLint rules         — 27 custom rules enforcing fail-fast + architectural boundaries
 Layer 6: Pipeline validators  — 6 scripts integrated into npm run main
@@ -240,6 +240,14 @@ Detects last assistant message containing: "no response requested", "nothing to 
 ### 8. Stop-work antipattern (text-only short)
 
 Last message was <200 chars with no tool_use blocks. Hard block — if work remains, continue; if genuinely done, provide substantive summary.
+
+### 9. Exhaust violation
+
+Detector: `exhaust_check.py`. Final assistant text enumerates remaining items (TBD/noted/remaining tools/banked/takes-effect-on-next-X). Hard block — every enumerated item must be fixed in the same turn. Research-evaluation prompts and thorough-sweep closeouts are exempt; survey-and-ask register ("want me to", "should I") fires regardless.
+
+### 10. Scope-escape violation
+
+Detector: `scope_escape.py`. Final assistant text dismisses a problem by labeling it `pre-existing` / `unrelated` / `not introduced by my changes` / `out of scope of this turn` instead of fixing it. Hard block — if you saw it, fix it. The phrase list lives in `_phrase_lists.py` under `SCOPE_ESCAPE`. Rescue clause: an "and I fixed it" / "now resolved" within ~120 chars after the escape phrase suppresses the block (fabrication_check covers the lie case if the rescue clause is false).
 
 
 
