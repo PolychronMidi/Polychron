@@ -111,6 +111,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"What will my next call probably cost?"** → `i/status mode=tool-latency` (Horizon I — per-tool p50/p95/p99 from recent invocations)
 - **"What does the user's verdict history say about good moves?"** → `i/why mode=conscience` (Horizon VIII — approved/rejected move signatures from ground-truth log)
 - **"What just happened that caused this event?"** → `i/why mode=causality <event>` (Horizon VII — heuristic causal-chain reconstruction from session adjacency)
+- **"Walk the cause-of-cause chain back to root"** → `i/why mode=causality <event> --chain` (recursive walker; resolves caused_by → upstream event via prefix heuristics)
 - **"Does the architecture's tensegrity claim hold across scales?"** → `i/why mode=fractal-shape` (Horizon X — Gini fan-out at every scale)
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`

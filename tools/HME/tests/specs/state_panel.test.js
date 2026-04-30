@@ -386,6 +386,14 @@ test('i/status mode=band-tuning persists proposal to tmp file', () => {
   }
 });
 
+test('i/why mode=causality --chain recursively walks caused_by chains', () => {
+  const r = _runWhy(['mode=causality', 'brief_recorded', '--chain', 'depth=3']);
+  assert.strictEqual(r.status, 0);
+  // Either renders a recursive chain (with arrows + caused_by lines)
+  // or reports no events of that type yet
+  assert.match(r.stdout, /Recursive causal chain|No 'brief_recorded' events found/);
+});
+
 test('i/why mode=causality reads explicit caused_by from marker (Tier-1)', () => {
   // Inject a test marker with caused_by; verify the Tier-1 path renders it
   const fs = require('node:fs');

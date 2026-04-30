@@ -28,7 +28,7 @@ What follows is the asymptote, not the next sprint.
 - 🌲 **IV** — Agent-loop dimension (panel + HCI verifier + agent-loop-quality surfaced inline in `i/state`)
 - 🌲 **V** — Conjugate channel + coupling verifier + multi-axis-band cross-surfacing + bidirectional band-tightening proposal (FAIL writes `tmp/hme-band-tightening.json` for downstream coherence-budget consumers)
 - 🌲 **VI** — Meta-meta verifiers (utility + coverage + drift + KB-incident-correlation heuristic)
-- 🌲 **VII** — Causal traversal (Tier-2 heuristic + Tier-1 explicit caused_by at 5+ emit sites: hot_reload, brief_recorded, kb_draft_written, nexus_cleared, auto_brief_injected × 2 hooks + Tier-1.5 activity-log caused_by field for any future opt-in event)
+- 🌲 **VII** — Causal traversal (Tier-2 heuristic + Tier-1 explicit caused_by at 5+ emit sites: hot_reload, brief_recorded, kb_draft_written, nexus_cleared, auto_brief_injected × 2 hooks + Tier-1.5 activity-log caused_by field + **`--chain` recursive walker that resolves caused_by strings to upstream events via layered prefix heuristics**)
 - 🌲 **VIII** — Architectural conscience (descriptive signature + move-similarity + threshold-warning soft signal)
 - 🌲 **IX** — Learned chaordic band (proposal compute + persisted aggregate + persisted per-axis state + **subtag-tagged ground-truth verdicts → genuine per-axis bands learnable from data, not placeholders**)
 - 🌲 **X** — Fractal recursion test (7 scales + uniform-baseline contrast + per-run history → trend tracking; **`i/holograph mode=trajectory` adds cross-horizon time-series compounding all 10 horizons' signals over recent invocations**)

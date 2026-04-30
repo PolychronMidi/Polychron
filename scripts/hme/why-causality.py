@@ -30,15 +30,76 @@ from datetime import datetime
 from _common import PROJECT_ROOT
 
 
+def _resolve_cause(cause: str, before_ts: float, all_events: list[dict]) -> dict | None:
+    """Given a caused_by value string, find an event that could be the
+    upstream cause. Heuristics by prefix:
+      - 'pretooluse_edit:<file>' / 'pretooluse_write:<file>' →
+        a tool_call event with file=<file> just before before_ts
+      - 'pipeline_verdict:<V>' → round_complete event with verdict=<V>
+      - 'posttooluse_read_kb:<target>' → file_written event with
+        target as file or module
+      - file path → file_written event for that file
+    Returns the closest preceding event matching, or None if no resolution."""
+    if not cause or not isinstance(cause, str):
+        return None
+    # Walk backwards in time from before_ts looking for the resolved event.
+    candidates = [e for e in all_events if e.get("ts", 0) < before_ts]
+    candidates.sort(key=lambda e: e.get("ts", 0), reverse=True)
+
+    # Pattern: source:target
+    if ":" in cause:
+        prefix, payload = cause.split(":", 1)
+        if prefix in ("pretooluse_edit", "pretooluse_write"):
+            for e in candidates:
+                if e.get("event") == "tool_call" and e.get("file") == payload:
+                    return e
+                if e.get("event") == "file_written" and e.get("file") == payload:
+                    return e
+        if prefix == "pipeline_verdict":
+            for e in candidates:
+                if e.get("event") == "round_complete" and e.get("verdict") == payload:
+                    return e
+                if e.get("event") == "turn_complete":  # weaker fallback
+                    return e
+        # Generic source:target — find an event matching the source name
+        for e in candidates:
+            if e.get("source") == prefix or e.get("event") == prefix:
+                if not payload or payload in (e.get("target", ""), e.get("file", ""),
+                                              e.get("module", "")):
+                    return e
+
+    # Bare file path (heuristic: contains '/' or ends in .py/.js/.sh)
+    if "/" in cause or cause.endswith((".py", ".js", ".sh", ".ts")):
+        for e in candidates:
+            if e.get("file") == cause or e.get("target") == cause:
+                return e
+
+    # Bare event name
+    for e in candidates:
+        if e.get("event") == cause:
+            return e
+
+    return None
+
+
 def main(argv):
     target_event = ""
     show_n = 5
+    walk_chain = False
+    chain_depth = 5
     for a in argv[1:]:
         if a.startswith("event="):
             target_event = a.split("=", 1)[1]
         elif a.startswith("n="):
             try:
                 show_n = int(a.split("=", 1)[1])
+            except ValueError:
+                pass
+        elif a == "--chain" or a == "chain=true":
+            walk_chain = True
+        elif a.startswith("depth="):
+            try:
+                chain_depth = max(1, min(20, int(a.split("=", 1)[1])))
             except ValueError:
                 pass
         elif not a.startswith("mode=") and not a.startswith("--"):
@@ -105,6 +166,7 @@ def main(argv):
     # caused_by:<value> in the event payload). Scan for events of the
     # target type that already carry the field; if found, show those
     # explicit chains preferentially.
+    all_events = []
     explicit_chain_events = []
     try:
         with open(activity) as _af:
@@ -113,10 +175,51 @@ def main(argv):
                     e = json.loads(ln)
                 except ValueError:
                     continue
+                all_events.append(e)
                 if e.get("event") == target_event and "caused_by" in e:
                     explicit_chain_events.append(e)
     except OSError:
         pass
+
+    # Recursive chain mode — walks caused_by references through layered
+    # heuristic resolution. Bridges the Tier-1 (explicit caused_by) and
+    # Tier-2 (session adjacency) gap by trying to resolve each cause
+    # string to another event whose own caused_by can be followed.
+    if walk_chain and explicit_chain_events:
+        print(f"# Recursive causal chain — '{target_event}' (depth ≤ {chain_depth})")
+        print()
+        latest = explicit_chain_events[-1]
+        current = latest
+        depth = 0
+        while current and depth < chain_depth:
+            ts = current.get("ts", 0)
+            ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
+            ev = current.get("event", "?")
+            cb = current.get("caused_by", "")
+            indent = "  " + ("  " * depth)
+            arrow = "▶" if depth == 0 else "└─►"
+            if cb:
+                print(f"{indent}{arrow} {ts_str}  {ev:24}  caused_by={cb}")
+            else:
+                print(f"{indent}{arrow} {ts_str}  {ev:24}  (no caused_by — terminal)")
+            if not cb:
+                break
+            # Try to resolve caused_by to another event
+            resolved = _resolve_cause(cb, ts, all_events)
+            if resolved is None:
+                indent2 = "  " + ("  " * (depth + 1))
+                print(f"{indent2}└─ (cause '{cb[:60]}' is a leaf description — no upstream event match)")
+                break
+            current = resolved
+            depth += 1
+        if depth >= chain_depth:
+            print(f"  (chain truncated at depth={chain_depth}; pass `depth=N` to extend)")
+        print()
+        print("# Note: heuristic resolution. Each step matches by prefix or file.")
+        print("  Walks stop at leaf-description causes (file paths, verdict labels)")
+        print("  that don't correspond to a separate emitted event.")
+        return 0
+
     if explicit_chain_events:
         print(f"# Causal chain — '{target_event}' (Tier-1.5: activity-log caused_by)")
         print(f"  ({len(explicit_chain_events)} explicit-cause occurrence(s); showing last 5)")
@@ -126,7 +229,8 @@ def main(argv):
             ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
             print(f"  {ts_str}  caused_by={e['caused_by']}")
         print()
-        print("  (Tier-2 heuristic chain follows for events without explicit caused_by)")
+        print("  (Tier-2 heuristic chain follows for events without explicit caused_by;")
+        print("  pass `--chain` to recursively resolve caused_by → upstream events)")
         print()
 
     # Read all events; group by session for causal-window lookup. Events
