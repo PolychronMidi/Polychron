@@ -1117,6 +1117,11 @@ class ActivityEventsDocSyncVerifier(Verifier):
                 dirs[:] = [d for d in dirs if d not in {
                     ".git", "node_modules", "__pycache__", ".venv",
                     "venv", "dist", "build", "models",
+                    # Test fixtures often inject synthetic event names to
+                    # exercise emit / dispatch paths; excluding them
+                    # prevents the verifier from treating test scaffolding
+                    # as a documentation gap.
+                    "tests", "test", "specs",
                 }]
                 for fn in files:
                     if not fn.endswith((".py", ".sh", ".js", ".mjs", ".cjs")):
