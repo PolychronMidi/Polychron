@@ -213,6 +213,59 @@ function main() {
     bandRounds = topN;
   }
 
+  // Horizon V→IX bidirectional coupling: if the conjugate-channel
+  // verifier wrote a tightening proposal (lost-quadrant FAIL fired
+  // on the previous round), narrow the band by the recommended delta.
+  // This is THE FIRST PLACE HME's signal changes composition behavior:
+  // a sustained "lost" quadrant on the architectural axis triggers
+  // the chaordic edge to contract for the next round.
+  let bandTighteningApplied = null;
+  try {
+    const tighteningPath = path.join(__dirname, '..', '..', '..', 'tmp', 'hme-band-tightening.json');
+    if (fs.existsSync(tighteningPath)) {
+      const tightenRaw = fs.readFileSync(tighteningPath, 'utf8');
+      const tighten = JSON.parse(tightenRaw);
+      const ageRounds = (tighten.expires_after_rounds != null) ? tighten.expires_after_rounds : 1;
+      const writtenAt = Number(tighten.ts || 0);
+      const writtenAgeS = (Date.now() / 1000) - writtenAt;
+      // Apply only if the proposal is fresh (within the last 24h);
+      // older proposals are stale signal — we'd be tightening based
+      // on long-past architectural state.
+      if (writtenAgeS < 86400) {
+        const delta = Number(tighten.band_delta || 0);
+        // Negative delta = narrow the band symmetrically
+        const before = band.slice();
+        const newLo = Math.max(0, band[0] - delta / 2);  // delta is negative; subtracting raises floor
+        const newHi = Math.min(1, band[1] + delta / 2);  // delta is negative; adding lowers ceiling
+        if (newLo < newHi) {
+          band = [newLo, newHi];
+          bandSource += ` + V-tightening (delta=${delta})`;
+          bandTighteningApplied = {
+            applied: true,
+            delta,
+            before,
+            after: band.slice(),
+            reason: tighten.reason || 'conjugate-channel lost-quadrant',
+            expires_after_rounds: ageRounds,
+            written_age_s: writtenAgeS,
+          };
+        }
+      } else {
+        bandTighteningApplied = {
+          applied: false,
+          reason: 'tightening proposal stale (>24h)',
+          written_age_s: writtenAgeS,
+        };
+      }
+    }
+  } catch (err) {
+    // Surface tightening-read failures so silent corruption doesn't
+    // mask architectural feedback. Throw — fail-fast invariant. The
+    // tightening file is optional, so absence is fine; presence with
+    // bad content is a real bug to surface.
+    throw new Error(`band-tightening read failed: ${err.message}`);
+  }
+
   // Find the ground truth that belongs to the CURRENT round (latest
   // snapshot) if one exists. This is what drives the override.
   const latestSnapTs = history.length ? history[history.length - 1].timestamp : null;
@@ -291,6 +344,7 @@ function main() {
     state,
     prescription,
     ground_truth_override: groundTruthOverride,
+    band_tightening: bandTighteningApplied,  // V→IX coupling outcome
     history: newHistory,
   };
 

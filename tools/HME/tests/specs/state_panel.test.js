@@ -406,6 +406,72 @@ test('i/why mode=causality --root-cause walks to leaf and reports it', () => {
   assert.match(r.stdout, /Root cause|walked \d+ step|No 'brief_recorded' events found/);
 });
 
+test('subagent_bridge captures Agent result + writes to tmp/hme-subagent-results/', () => {
+  // End-to-end Tier-3 round-trip: simulate the proxy delivering an
+  // Agent tool_result whose description carries the HME_AGENT_TASK
+  // sentinel. The bridge must capture the text, write the result file,
+  // emit the captured event. We bypass the proxy daemon by invoking
+  // the middleware directly with a synthetic toolUse + toolResult.
+  const fs = require('node:fs');
+  const path = require('node:path');
+  // Force PROJECT_ROOT for the require-cached middleware
+  process.env.PROJECT_ROOT = PROJECT_ROOT;
+  // Bust require cache so the middleware reads our env
+  for (const key of Object.keys(require.cache)) {
+    if (key.includes('/proxy/') || key.includes('/middleware/')) {
+      delete require.cache[key];
+    }
+  }
+  const bridge = require(path.join(PROJECT_ROOT, 'tools/HME/proxy/middleware/subagent_bridge.js'));
+  // Generate a unique req_id so we don't collide with any real run
+  const reqId = `test_${Date.now().toString(16).slice(-12)}`.replace(/[^a-f0-9]/g, 'a').slice(0, 12).padEnd(12, 'b');
+  const queueDir = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-queue');
+  const resultsDir = path.join(PROJECT_ROOT, 'tmp', 'hme-subagent-results');
+  const queuePath = path.join(queueDir, `${reqId}.json`);
+  const resultPath = path.join(resultsDir, `${reqId}.json`);
+  // Pre-stage queue entry so the bridge has something to move to done/
+  fs.mkdirSync(queueDir, { recursive: true });
+  fs.writeFileSync(queuePath, JSON.stringify({ req_id: reqId, prompt: 'test' }));
+  // Synthetic toolUse + toolResult mimicking what the proxy would route
+  const toolUse = {
+    name: 'Agent',
+    input: { description: `HME reasoning for ${reqId}` },
+  };
+  const toolResult = { content: 'simulated agent reply text' };
+  const emitted = [];
+  const ctx = {
+    emit: (e) => emitted.push(e),
+    warn: () => {},
+  };
+  try {
+    bridge.onToolResult({ toolUse, toolResult, ctx });
+    // The bridge must have written the result file
+    assert.ok(fs.existsSync(resultPath), 'subagent_bridge did not write result file');
+    const body = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+    assert.strictEqual(body.req_id, reqId);
+    assert.strictEqual(body.text, 'simulated agent reply text');
+    assert.strictEqual(body.empty, false);
+    assert.ok(typeof body.captured_at === 'number');
+    // The bridge must have emitted the captured event
+    const cap = emitted.find(e => e.event === 'subagent_bridge_result_captured');
+    assert.ok(cap, 'subagent_bridge did not emit result-captured event');
+    assert.strictEqual(cap.req_id, reqId);
+    // Queue entry must be moved to done/
+    const donePath = path.join(queueDir, 'done', `${reqId}.json`);
+    assert.ok(fs.existsSync(donePath), 'queue entry not moved to done/');
+    assert.ok(!fs.existsSync(queuePath), 'queue entry not removed from active dir');
+  } finally {
+    // Clean up test artifacts. Use existence checks rather than
+    // try/catch — fail-fast policy disallows empty catches, and these
+    // paths legitimately may or may not exist depending on whether the
+    // test reached the move-to-done branch.
+    if (fs.existsSync(resultPath)) fs.unlinkSync(resultPath);
+    const donePath = path.join(queueDir, 'done', `${reqId}.json`);
+    if (fs.existsSync(donePath)) fs.unlinkSync(donePath);
+    if (fs.existsSync(queuePath)) fs.unlinkSync(queuePath);
+  }
+});
+
 test('hme-cli coerce parses bracket-CSV form (real-bug regression)', () => {
   // The shorthand `tags=[a,b,c]` should produce ['a','b','c'], not iterate
   // characters. Tested via the i/learn ground_truth path: tags[2] should
