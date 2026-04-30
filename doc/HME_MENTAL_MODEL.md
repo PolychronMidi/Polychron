@@ -102,6 +102,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"Which verifiers are dead weight?"** → `i/why mode=verifier-utility` (always-PASS / flapping / variance buckets)
 - **"Which dirs are under-covered by verifiers?"** → `i/why mode=verifier-coverage`
 - **"Which verifiers' status hasn't changed in N runs?"** → `i/why mode=verifier-drift` (Horizon VI third leg)
+- **"How is the KB structured? Are entries woven together or flat?"** → `i/why mode=kb-graph` (Horizon III — citation/supersession edges + orphan map)
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`
 - **"Why is HME in this onboarding state?"** → `i/why mode=state`

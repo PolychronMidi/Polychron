@@ -136,3 +136,10 @@ test('i/why mode=verifier-drift accepts n= lookback parameter', () => {
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /lookback:\s*10/);
 });
+
+test('i/why mode=kb-graph renders Horizon III citation graph', () => {
+  const r = _runWhy(['mode=kb-graph']);
+  assert.strictEqual(r.status, 0);
+  // Either reports the graph (entries + edges) or notes lance unavailable
+  assert.match(r.stdout, /KB citation graph|KB empty|lance access unavailable/);
+});

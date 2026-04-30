@@ -39,7 +39,7 @@ HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggre
 
 The shape: every collapsed scalar is a thrown-away signal. Find each one; un-collapse it.
 
-## Horizon III — The KB as an active knowledge graph 📜
+## Horizon III — The KB as an active knowledge graph 🌱
 
 The KB has 175+ entries. Today it's a flat list with semantic search. Implicit graph structure exists (which entries cite which, which contradict, which were promoted from drafts). Made explicit:
 
@@ -47,6 +47,8 @@ The KB has 175+ entries. Today it's a flat list with semantic search. Implicit g
 - **Contradiction edges.** `evolve(focus='contradict')` already finds these implicitly. Persist them as edges; surface in `i/state` as `contradicting entries: 3`.
 - **Promotion edges.** Crystallized patterns trace back to their member entries. Already partly implemented; promote to navigable links.
 - **Generalization edges.** `hme-discoveries.md` entries trace back to which Polychron-specific patterns they generalize from.
+
+**Seed shipped:** `i/why mode=kb-graph` reads all 192 entries via direct lance access, extracts edges from three signals (tag-encoded `supersedes:<id>` / `contradicts:<id>` / `derived_from:<id>`, content-id refs, title-substring matches). First run revealed the KB's architectural truth: 0 live edges, 192 orphans, 3 dangling supersession edges to entries that were removed. The KB is currently FLAT — entries are added without weaving into the existing structure. The seed makes that finding visible and surfaces concrete next-step guidance (use `tags` for explicit relations on future adds).
 
 The shape: turn the KB from a vector-search index into a queryable graph. The graph is what the KB *is*; the flat list is the projection.
 
