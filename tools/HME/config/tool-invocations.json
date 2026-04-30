@@ -31,7 +31,7 @@
       "primer": "i/review mode=forget"
     },
     "learn": {
-      "i": "i/learn",
+      "i": "i/learn action=<ACTION>",
       "primer": "i/learn title=… content=…"
     },
     "trace": {

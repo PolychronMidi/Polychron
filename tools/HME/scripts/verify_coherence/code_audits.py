@@ -812,22 +812,31 @@ class TestIsolationVerifier(Verifier):
 
 
 class HardcodedToolInvocationVerifier(Verifier):
-    """Strings like `i/hme-admin action=warm` and `i/hme-admin action=index`
+    """Strings like `i/hme-admin action=warm`, `i/status mode=hci-diff`,
+    `i/evolve focus=design`, `i/review mode=forget`, `i/why mode=block`
     in user-facing output paths (selftest hints, error messages, primer
     examples, narrative output) should render through `tool_invocations.py`
-    helpers — `_action_form('warm')` instead of the literal. Otherwise a
-    rename of any wrapper requires hand-grepping every occurrence.
+    helpers — `_action_form('warm')` or `_i_form('status', primer=True)`
+    instead of the literal. Otherwise a rename of any wrapper requires
+    hand-grepping every occurrence.
 
-    This verifier flags hardcoded `i/hme-admin action=<name>` strings in
-    Python files under tools/HME/service/. Per-line opt-out: append
-    `# tool-form-ok` (use only when the helper genuinely doesn't fit, e.g.
-    test fixtures asserting on the literal output)."""
+    This verifier flags hardcoded `i/<wrapper> <key>=<value>` strings
+    that match the mode/action/focus invocation shape. Per-line opt-out:
+    append `# tool-form-ok` (use only when the helper genuinely doesn't
+    fit, e.g. test fixtures asserting on the literal output, or static
+    docstrings where f-strings can't go)."""
     name = "hardcoded-tool-invocation"
     category = "code"
     subtag = "drift-detection"
     weight = 1.5
 
-    _RE = re.compile(r'["\'`]i/hme-admin\s+action=[a-z_]+')
+    # All wrapper invocation shapes that have canonical helper coverage.
+    # Each entry is `i/<wrapper> <key>=<value>`. Bare `i/<wrapper>` calls
+    # without parameters aren't flagged — those rarely drift on rename.
+    _RE = re.compile(
+        r'["\'`]i/(?:hme-admin|status|evolve|review|why|learn|trace|hme-read)'
+        r'\s+(?:action|mode|focus|target|name|query)=[a-zA-Z_][\w-]*'
+    )
     _SKIP_FILES = {
         # Helper itself defines the canonical mapping
         "tool_invocations.py",
@@ -851,24 +860,35 @@ class HardcodedToolInvocationVerifier(Verifier):
                     p = os.path.join(r, f)
                     try:
                         with open(p, encoding="utf-8") as fp:
-                            for i, line in enumerate(fp, start=1):
-                                if "tool-form-ok" in line:
-                                    continue
-                                stripped = line.lstrip()
-                                # Skip Python and JS comments
-                                if stripped.startswith("#") or stripped.startswith("//"):
-                                    continue
-                                if self._RE.search(line):
-                                    violations.append(
-                                        f"{os.path.relpath(p, _PROJECT)}:{i}: "
-                                        f"hardcoded `i/hme-admin action=…` "
-                                        f"(use `_action_form('<name>')` from tool_invocations)"
-                                    )
+                            file_lines = fp.readlines()
+                        for i, line in enumerate(file_lines, start=1):
+                            # Opt-out: `tool-form-ok` on this line OR within
+                            # the previous 3 lines (covers `parts.append(\n
+                            # multi-line-string\n)` shapes where the comment
+                            # naturally lands above the call).
+                            opt_out_window = "".join(
+                                file_lines[max(0, i - 4): i]
+                            )
+                            if "tool-form-ok" in opt_out_window:
+                                continue
+                            stripped = line.lstrip()
+                            # Skip Python and JS comments
+                            if stripped.startswith("#") or stripped.startswith("//"):
+                                continue
+                            m = self._RE.search(line)
+                            if m:
+                                snippet = m.group(0).strip("\"'`")
+                                violations.append(
+                                    f"{os.path.relpath(p, _PROJECT)}:{i}: "
+                                    f"hardcoded `{snippet}` "
+                                    f"(use `_action_form()` or `_i_form()` from "
+                                    f"tool_invocations; opt-out: append `# tool-form-ok`)"
+                                )
                     except OSError:
                         continue
         if not violations:
             return _result(PASS, 1.0,
-                           f"{scanned} file(s) scanned; no hardcoded i/hme-admin invocations")
+                           f"{scanned} file(s) scanned; no hardcoded tool invocations")
         score = max(0.0, 1.0 - len(violations) * 0.15)
         return _result(FAIL, score,
                        f"{len(violations)} hardcoded tool-invocation(s)",

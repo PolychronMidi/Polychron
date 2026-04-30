@@ -117,6 +117,74 @@ def _mode_activity():
     return _ad(window="round")
 
 
+def _mode_hci_by_subtag():
+    """Aggregate verifier status by subtag — answers 'what KIND of broken
+    is everything that's red?' Joins the live snapshot (status+score per
+    verifier) with REGISTRY introspection (which has the subtag attribute
+    declared on each verifier class)."""
+    import os as _os
+    import json as _json
+    import sys as _sys
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    if not _os.path.isfile(snap_path):
+        return ("# i/status mode=hci-by-subtag\n"
+                "No snapshot found — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+    try:
+        with open(snap_path) as _f:
+            snap = _json.load(_f)
+    except (OSError, ValueError) as e:
+        return f"# i/status mode=hci-by-subtag\nFailed to read snapshot: {e}"
+
+    # Introspect REGISTRY for subtags
+    _scripts = _os.path.join(_root, "tools", "HME", "scripts")
+    if _scripts not in _sys.path:
+        _sys.path.insert(0, _scripts)
+    try:
+        from verify_coherence import REGISTRY  # type: ignore
+    except Exception as e:
+        return f"# i/status mode=hci-by-subtag\nFailed to import REGISTRY: {e}"
+    name_to_subtag = {}
+    for v in REGISTRY:
+        name_to_subtag[v.name] = getattr(v, "subtag", "(none)")
+
+    # Aggregate
+    verifiers = snap.get("verifiers", {})
+    by_subtag: dict[str, dict[str, list[tuple[str, float]]]] = {}
+    for name, info in verifiers.items():
+        subtag = name_to_subtag.get(name, "(unknown)")
+        status = info.get("status", "?")
+        score = info.get("score", 0.0)
+        by_subtag.setdefault(subtag, {}).setdefault(status, []).append((name, score))
+
+    out = [f"# HCI by subtag (HCI {snap.get('hci', '?')}/100)"]
+    out.append("")
+    # Render: subtag → counts + names of non-PASS
+    for subtag in sorted(by_subtag.keys()):
+        statuses = by_subtag[subtag]
+        total = sum(len(v) for v in statuses.values())
+        passed = len(statuses.get("PASS", []))
+        non_pass = total - passed
+        marker = " " if non_pass == 0 else "!"
+        summary = f"  {marker} {subtag:24} {passed}/{total} PASS"
+        if non_pass > 0:
+            non_pass_names = []
+            for st in ("FAIL", "ERROR", "WARN", "SKIP"):
+                if st in statuses:
+                    for nm, sc in statuses[st]:
+                        non_pass_names.append(f"{nm}({st}:{sc:.2f})")
+            summary += f"  → {', '.join(non_pass_names[:3])}"
+            if len(non_pass_names) > 3:
+                summary += f" (+{len(non_pass_names) - 3} more)"
+        out.append(summary)
+    out.append("")
+    out.append("# Drill-in:")
+    out.append("  i/why mode=verifier <name>     status + history + source for one verifier")
+    out.append("  i/status mode=hci-diff         what changed since last run")
+    return "\n".join(out)
+
+
 def _mode_hci_diff():
     """Show what verifier statuses changed since the last HCI engine run.
     Compares hci-verifier-snapshot.json (current) against .prev (previous);
@@ -550,6 +618,8 @@ _STATUS_MODES: dict[str, callable] = {
     "activity": _mode_activity,
     "hci-diff": _mode_hci_diff,
     "hci_diff": _mode_hci_diff,
+    "hci-by-subtag": _mode_hci_by_subtag,
+    "hci_by_subtag": _mode_hci_by_subtag,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,

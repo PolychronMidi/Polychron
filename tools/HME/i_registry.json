@@ -91,7 +91,9 @@
       "examples": [
         "i/status mode=list",
         "i/status mode=resume",
-        "i/status mode=budget"
+        "i/status mode=budget",
+        "i/status mode=hci-diff",
+        "i/status mode=hci-by-subtag"
       ],
       "safe_no_args": true
     },

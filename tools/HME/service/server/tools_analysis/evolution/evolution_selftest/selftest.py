@@ -23,10 +23,13 @@ try:
     _scripts_dir = os.path.abspath(_scripts_dir)
     if _scripts_dir not in _sys_ti.path:
         _sys_ti.path.insert(0, _scripts_dir)
-    from tool_invocations import action_form as _action_form  # type: ignore
+    from tool_invocations import action_form as _action_form, i_form as _i_form  # type: ignore
 except Exception:
     def _action_form(action: str) -> str:
-        return f"i/hme-admin action={action}"
+        return f"i/hme-admin action={action}"  # tool-form-ok: fallback when helper unavailable
+    def _i_form(name: str, primer: bool = False, value: str = "") -> str:
+        # tool-form-ok: fallback when helper unavailable
+        return f"i/{name} mode={value}" if value else f"i/{name}"
 
 logger = logging.getLogger("HME")
 
@@ -984,7 +987,7 @@ def hme_selftest(verbose: bool = False) -> str:
         "index":                 f"{_action_form('clear_index')} then {_action_form('index')}.",
         "hash cache":            f"{_action_form('index')} to rebuild.",
         "middleware order":      "edit tools/HME/proxy/middleware/order.json or remove stale entries.",
-        "temporal drift":        "i/status mode=trajectory for trend; investigate the regressed verifier.",
+        "temporal drift":        f"{_i_form('status', value='trajectory')} for trend; investigate the regressed verifier.",
     }
     def _annotate(line: str) -> str:
         if not line.startswith(("FAIL:", "WARN:")):

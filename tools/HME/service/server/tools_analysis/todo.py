@@ -830,9 +830,14 @@ def merge_native_todowrite(incoming: list) -> list:
                     "status": s.get("status", "pending"),
                 })
         if critical_overflow > 0:
+            try:
+                from tool_invocations import i_form as _i_form
+                _signals_hint = _i_form('status', value='signals')
+            except ImportError:
+                _signals_hint = "i/status mode=signals"  # tool-form-ok: fallback when helper unavailable
             summary_text = (
                 f"[CRITICAL] +{critical_overflow} older critical alert(s) "
-                f"suppressed — run `i/status mode=signals` or check todos.json"
+                f"suppressed — run `{_signals_hint}` or check todos.json"
             )
             flat.insert(critical_shown, {
                 "content": summary_text,
