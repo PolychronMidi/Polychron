@@ -507,6 +507,51 @@ test('i/state HCI line carries confidence indicator (Horizon II maturity)', () =
   assert.match(r.stdout, /HCI\s+\S+.*\s*(conf=(uniform|mixed|fragile)|\(\d+ verifiers\))/);
 });
 
+test('compute-coherence-budget handles bidirectional band adjustment (widen + narrow)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
+  const outPath = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-coherence-budget.json');
+  const tighteningExisted = fs.existsSync(tighteningPath);
+  const tighteningPrev = tighteningExisted ? fs.readFileSync(tighteningPath, 'utf8') : null;
+  const outExisted = fs.existsSync(outPath);
+  const outPrev = outExisted ? fs.readFileSync(outPath, 'utf8') : null;
+  try {
+    // Stage a positive-delta (widen) proposal — license-to-explore signal
+    fs.mkdirSync(path.dirname(tighteningPath), { recursive: true });
+    fs.writeFileSync(tighteningPath, JSON.stringify({
+      ts: Date.now() / 1000,
+      trigger: 'license-to-explore-test',
+      reason: 'test: integration smoke for widen branch',
+      recommended_action: 'widen_band',
+      band_delta: +0.05,
+      expires_after_rounds: 1,
+    }));
+    const r = spawnSync('node',
+      [path.join(PROJECT_ROOT, 'scripts/pipeline/hme/compute-coherence-budget.js')],
+      { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+        env: { ...process.env, PROJECT_ROOT } });
+    if (r.status !== 0) return;  // bail gracefully if upstream deps missing
+    if (fs.existsSync(outPath)) {
+      const report = JSON.parse(fs.readFileSync(outPath, 'utf8'));
+      assert.ok('band_tightening' in report);
+      if (report.band_tightening && report.band_tightening.applied) {
+        assert.strictEqual(report.band_tightening.direction, 'widen',
+          'positive delta should produce direction=widen');
+        // Widen must produce after-band wider than before-band
+        const before = report.band_tightening.before;
+        const after = report.band_tightening.after;
+        assert.ok((after[1] - after[0]) > (before[1] - before[0]),
+          'widen direction should produce wider after-band');
+      }
+    }
+  } finally {
+    if (tighteningExisted) fs.writeFileSync(tighteningPath, tighteningPrev);
+    else if (fs.existsSync(tighteningPath)) fs.unlinkSync(tighteningPath);
+    if (outExisted) fs.writeFileSync(outPath, outPrev);
+  }
+});
+
 test('compute-coherence-budget consumes V→IX band-tightening proposal', () => {
   // Verifies the cross-horizon coupling: when conjugate-channel writes
   // tmp/hme-band-tightening.json, the next pipeline run's

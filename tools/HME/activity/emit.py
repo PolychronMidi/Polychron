@@ -68,7 +68,13 @@ def main(argv: list[str]) -> int:
     if skip_append:
         return 0
 
-    project_root = os.environ["PROJECT_ROOT"]  # env-ok: set by caller from .env
+    # PROJECT_ROOT fallback: callers who don't source .env (manual
+    # invocations from agents) shouldn't KeyError — derive from the
+    # script's own location (this file lives at
+    # <PROJECT_ROOT>/tools/HME/activity/emit.py). env-ok.
+    project_root = os.environ.get("PROJECT_ROOT") or os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "..")
+    )
     out_path = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project_root, "output", "metrics")), "hme-activity.jsonl")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
