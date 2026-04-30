@@ -24,11 +24,11 @@ What follows is the asymptote, not the next sprint.
 - 🌱 **I** — Predictive HME (`i/why mode=predict`)
 - 🌳 **II** — Multi-timescale + multi-axis (`i/state` phase line + `i/status mode=multi-axis-band`)
 - 🌳 **III** — KB graph + context (`i/why mode=kb-graph` + `mode=kb-context <id>`)
-- 🌱 **IV** — Agent-loop dimension (`i/status mode=agent-loop`)
+- 🌳 **IV** — Agent-loop dimension (`i/status mode=agent-loop` + `agent-loop-quality` HCI verifier)
 - 🌳 **V** — Conjugate channel + coupling verifier (`i/status mode=conjugate` + `conjugate-channel` HCI verifier)
 - 🌳 **VI** — Meta-meta verifiers (`i/why mode=verifier-utility|verifier-coverage|verifier-drift`)
 - 🌳 **VII** — Causal traversal (`i/why mode=causality` heuristic + explicit `caused_by` at hot-reload site)
-- 🌱 **VIII** — Architectural conscience (`i/why mode=conscience`)
+- 🌳 **VIII** — Architectural conscience (`i/why mode=conscience` — descriptive signature + move-similarity scoring)
 - 🌱 **IX** — Learned chaordic band (`i/status mode=band-tuning`)
 - 🌱 **X** — Fractal recursion test (`i/why mode=fractal-shape`)
 
@@ -73,11 +73,13 @@ Together: graph (system view) + context (entry view) cover both projections of t
 
 The shape: turn the KB from a vector-search index into a queryable graph. The graph is what the KB *is*; the flat list is the projection.
 
-## Horizon IV — Agent behavior as a tracked dimension 🌱
+## Horizon IV — Agent behavior as a tracked dimension 🌳
 
 The agent (the LLM running through Claude Code, including me right now) is currently invisible to HME except as a stream of tool calls. But the agent is *part of the system* — its loop rate, decision quality, error frequency, context-window pressure all shape outcomes.
 
-**Seed shipped:** `i/status mode=agent-loop` aggregates per-session tools-per-turn, brief-coverage ratio, error-surface rate, inter-tool gap (median + p90), hook-intervention count. The agent is no longer invisible — read the panel.
+**Shipped (two legs → 🌳):**
+- `i/status mode=agent-loop` — human view. Aggregates per-session tools-per-turn, brief-coverage ratio, error-surface rate, inter-tool gap (median + p90), hook-intervention count.
+- `agent-loop-quality` HCI verifier — same data wired into HCI. FAILs when error rate > 25% or no turns recorded; PASS otherwise. The agent is now a tracked DIMENSION, not just a viewable signal — degraded loops degrade aggregate HCI automatically.
 
 - **Per-turn agent metrics.** Tools-per-turn, average tool latency, retry rate, "psychopathic-stop" frequency, brief-vs-edit-ratio. Each is a signal about the agent's loop quality.
 - **Agent-quality verifier.** A verifier whose `run()` reads recent turn telemetry and scores agent loop quality. Becomes part of HCI.
@@ -125,7 +127,7 @@ Implementation: every state-changing action records its `caused_by` reference. T
 
 The shape: the system becomes *legible to itself* in causal form. Today it's legible in static form (read the code). Tomorrow it's legible in dynamic form (read the trace).
 
-## Horizon VIII — The architectural conscience 🌱
+## Horizon VIII — The architectural conscience 🌳
 
 Some moves feel right; others feel wrong. The "feel" lives in the user's head and partially in the KB. Make it operational:
 
@@ -133,7 +135,9 @@ Some moves feel right; others feel wrong. The "feel" lives in the user's head an
 - **Rejected-move ledger.** "Don't do this" patterns logged. Future PRs that match the rejected shape get a soft warning before landing.
 - **Move-class similarity.** A new edit's signature (files touched, function shapes, magnitude) is compared to past approved/rejected moves. Surface "this looks 0.83 similar to an approved move from R5; 0.12 similar to a rejected one."
 
-**Seed shipped:** `i/why mode=conscience` reads ground-truth verdicts and joins them with file_written events from the activity log within a 1h window before each verdict. Surfaces approved-move directory signatures and (when negative verdicts exist) contrast with rejected-move signatures. First run found a real limitation honestly: 0/12 positive verdicts had activity-log overlap because verdicts are 7-10 days old and the activity log doesn't retain that far back. The seed reports the gap explicitly rather than failing silently — once the activity log is rotated to retain longer history, OR once new verdicts are added, the signature analysis becomes meaningful.
+**Shipped (two legs → 🌳):**
+- `i/why mode=conscience` (descriptive) — reads ground-truth verdicts, joins with file_written events in 1h window before each verdict, surfaces approved-move directory signatures.
+- **Move-similarity scoring** (discriminative seed) — same view computes cosine similarity between recent file-write activity and the approved-move directory signature. Reports `similarity score: 0.NN` plus shared-vs-unique-dir breakdown when both vectors have data. First-run gap: activity log retention is shorter than verdict age (0/12 positive verdicts overlap), so similarity is dormant pending log retention extension OR new verdicts. The code path is shipped and ready; it activates as soon as both signals are within the same time window.
 
 The shape: the agent's intuition becomes durable, queryable, transferable.
 

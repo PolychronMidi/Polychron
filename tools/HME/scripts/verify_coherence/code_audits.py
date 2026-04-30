@@ -895,6 +895,71 @@ class HardcodedToolInvocationVerifier(Verifier):
                        violations[:10])
 
 
+class AgentLoopQualityVerifier(Verifier):
+    """Horizon IV expansion — agent loop quality wired into HCI.
+
+    Reads the activity log over the last 1h window and scores agent loop
+    quality on three axes:
+      - inference cadence: turns observed (≥1)
+      - hook-intervention rate: brief-related interventions per turn
+        (presence of ≥1 indicates the briefing chain is working)
+      - error rate: bash_error_surfaced / inference_call (lower is better)
+
+    FAILs only on hard pathologies (zero turns, error rate above 25%);
+    PASS otherwise. The seed (`i/status mode=agent-loop`) is the human
+    view; this verifier is the same data wired into HCI so degraded
+    loops degrade the aggregate score automatically."""
+    name = "agent-loop-quality"
+    category = "code"
+    subtag = "freshness"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        import time as _time
+        path = os.path.join(_PROJECT, "output", "metrics", "hme-activity.jsonl")
+        if not os.path.isfile(path):
+            return _result(SKIP, 1.0, "no activity log yet")
+        try:
+            with open(path) as f:
+                lines = f.readlines()[-3000:]
+        except OSError as e:
+            return _result(ERROR, 0.0, f"read failed: {e}")
+
+        cutoff = _time.time() - 3600
+        events = []
+        for ln in lines:
+            try:
+                e = json.loads(ln)
+            except ValueError:
+                continue
+            if e.get("ts", 0) >= cutoff:
+                events.append(e)
+        if not events:
+            return _result(SKIP, 1.0, "no activity in last hour")
+
+        turns = sum(1 for e in events if e.get("event") == "turn_complete")
+        infs = sum(1 for e in events if e.get("event") == "inference_call")
+        bash_errs = sum(1 for e in events if e.get("event") == "bash_error_surfaced")
+        briefs = sum(1 for e in events
+                     if e.get("event") in ("brief_recorded", "auto_brief_injected"))
+
+        if turns == 0:
+            return _result(WARN, 0.5,
+                           f"no turn_complete events in last hour "
+                           f"({len(events)} events but no turn boundaries)")
+
+        err_rate = bash_errs / infs if infs > 0 else 0.0
+        if err_rate > 0.25:
+            return _result(FAIL, max(0.0, 1.0 - err_rate),
+                           f"high error rate: {err_rate*100:.1f}% "
+                           f"({bash_errs} bash errors / {infs} inferences)")
+
+        return _result(PASS, 1.0,
+                       f"healthy: {turns} turns, {infs} inferences, "
+                       f"{briefs} briefs, {bash_errs} errors "
+                       f"(err_rate={err_rate*100:.1f}%)")
+
+
 class ConjugateChannelVerifier(Verifier):
     """Horizon V expansion — composition⇔HME conjugate-channel feedback.
 

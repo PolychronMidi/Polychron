@@ -169,11 +169,56 @@ def main(argv):
         print(f"  comment:   {str(latest.get('comment', ''))[:120]}")
         print()
 
+    # Move-similarity scoring (Horizon VIII expansion). Compare recent
+    # file-write activity to the approved-move directory signature. If
+    # current edits cluster in dirs that historically appeared in
+    # approved rounds, score = high; if they don't, score = low.
+    if pos_dirs:
+        recent_files = _files_in_window(activity, _coerce_ts(verdicts[-1]) - 3600,
+                                        _coerce_ts(verdicts[-1]) + 7200) \
+            if verdicts and _coerce_ts(verdicts[-1]) > 0 else []
+        # Recent-file dirs (last 1h of activity log)
+        try:
+            with open(activity) as _af:
+                _all = _af.readlines()[-200:]
+            now_ts = max(
+                (json.loads(ln).get("ts", 0)
+                 for ln in _all if ln.strip()),
+                default=0,
+            )
+        except (OSError, ValueError):
+            now_ts = 0
+        recent = _files_in_window(activity, now_ts - 3600, now_ts) if now_ts else []
+        recent_dirs: Counter = Counter()
+        for f in recent:
+            d = os.path.dirname(f.replace(PROJECT_ROOT + "/", ""))
+            if d:
+                recent_dirs[d] += 1
+
+        if recent_dirs:
+            # Cosine-ish similarity: dot-product of normalized vectors.
+            # Use union of dirs as the keyspace.
+            all_dirs = set(pos_dirs.keys()) | set(recent_dirs.keys())
+            pos_norm = (sum(c*c for c in pos_dirs.values())) ** 0.5 or 1
+            recent_norm = (sum(c*c for c in recent_dirs.values())) ** 0.5 or 1
+            dot = sum(pos_dirs.get(d, 0) * recent_dirs.get(d, 0) for d in all_dirs)
+            similarity = dot / (pos_norm * recent_norm)
+            print()
+            print(f"## Move similarity — recent edits vs approved-move signature")
+            print(f"  similarity score: {similarity:.2f}  (1.0 = identical signature, 0.0 = orthogonal)")
+            shared = [d for d in recent_dirs if d in pos_dirs]
+            unique = [d for d in recent_dirs if d not in pos_dirs]
+            if shared:
+                print(f"  shared dirs ({len(shared)}):  " + ", ".join(shared[:5]))
+            if unique:
+                print(f"  unique-to-recent ({len(unique)}):  " + ", ".join(unique[:5]))
+            print()
+
     print("# Note:")
-    print("  This is the descriptive seed. The discriminative version")
-    print("  (similarity scoring of new edits against ledger) needs more")
-    print("  rejected verdicts to learn from. Tag flat/mechanical rounds")
-    print("  via `i/learn action=ground_truth tags=[flat]` to build it.")
+    print("  Descriptive version of approved-signature + move-similarity.")
+    print("  Discriminative version (vs rejected) needs flat/mechanical")
+    print("  verdicts to learn from. Tag negatives via `i/learn")
+    print("  action=ground_truth tags=[flat]` to build it.")
     print()
     print("# Drill-in:")
     print("  i/status mode=band-tuning      band proposal from same data")
