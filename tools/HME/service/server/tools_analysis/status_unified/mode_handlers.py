@@ -191,6 +191,37 @@ def _mode_tool_latency():
         # If tool_call events stop, the daemon's tool_use/tool_result
         # routing has broken (or the daemon isn't running).
         out.append("  (no tool_call events in window — falling back to inference cadence)")
+        # Pin the regression's age: scan the FULL activity log for the
+        # most recent tool_call event so the operator knows when it
+        # last fired (and how far back the regression extends).
+        last_tool_call_ts = None
+        try:
+            full_path = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+            with open(full_path) as _af:
+                for ln in _af:
+                    try:
+                        e = _json.loads(ln)
+                    except ValueError:
+                        continue
+                    if e.get("event") == "tool_call":
+                        ts = e.get("ts", 0)
+                        if isinstance(ts, (int, float)) and (last_tool_call_ts is None or ts > last_tool_call_ts):
+                            last_tool_call_ts = ts
+        except OSError:
+            pass
+        if last_tool_call_ts:
+            from datetime import datetime as _dt
+            age_s = _time.time() - last_tool_call_ts
+            if age_s < 86400:
+                age_str = f"{int(age_s/3600)}h ago"
+            elif age_s < 86400 * 7:
+                age_str = f"{int(age_s/86400)}d ago"
+            else:
+                age_str = f"{int(age_s/86400)}d ago"
+            ts_iso = _dt.fromtimestamp(last_tool_call_ts).strftime("%Y-%m-%d %H:%M")
+            out.append(f"  last tool_call: {ts_iso} ({age_str}) — regression extends back this far")
+        else:
+            out.append("  last tool_call: NONE in entire log — instrumentation never fired")
         out.append("")
         out.append("  Root-cause hypothesis: proxy daemon not routing tool_use/tool_result")
         out.append("  pairs through the middleware pipeline. activity_log.js loads cleanly")
