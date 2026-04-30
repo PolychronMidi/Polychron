@@ -73,6 +73,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             parts.append(_tr(system_a=system_a, system_b=system_b))
         elif m == "sections":
             if section_a < 0 or section_b < 0:
+                # tool-form-ok: multi-line usage doc; literal command strings are the contract
                 parts.append(
                     "i/review mode=sections — compare two sections side-by-side.\n\n"
                     "Usage: i/review mode=sections section_a=<N> section_b=<M>\n"
@@ -235,6 +236,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                     logger.debug(f'silent-except review_unified.py:123: {type(_err4).__name__}: {_err4}')
         elif m == "convention":
             if not file_path:
+                # tool-form-ok: multi-line usage doc; literal command strings are the contract
                 parts.append(
                     "i/review mode=convention — check a single file against project conventions.\n\n"
                     "Usage: i/review mode=convention file_path=<relative/path.js>\n"

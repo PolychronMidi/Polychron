@@ -219,9 +219,9 @@ def _trajectory_report() -> str:
     # Interpretation + suggested next step keyed off the verdict.
     _GUIDANCE = {
         "GROWING": "Composition is acquiring more variety/complexity over the window. Confirm the perceptual signal you're tracking is the one you intended to grow.",
-        "DECLINING": "Composition is losing variety/intensity. Likely causes: a recent change reduced the signal it was driving, a regime is overstaying, or a recent profile shift dampened diversity. Inspect with `i/status mode=accuracy` (which predictions failed?) and `i/review mode=regime` (which sections went monotone?).",
+        "DECLINING": "Composition is losing variety/intensity. Likely causes: a recent change reduced the signal it was driving, a regime is overstaying, or a recent profile shift dampened diversity. Inspect with `i/status mode=accuracy` (which predictions failed?) and `i/review mode=regime` (which sections went monotone?).",  # tool-form-ok: prose with embedded command examples
         "PLATEAU": "Slope near zero — the signal is stable, not necessarily good. If you wanted growth, this means the lever is broken; if you wanted equilibrium, this is success.",
-        "OSCILLATING": "Signal is bouncing — likely a feedback loop tuning back-and-forth. Look at `i/substrate diff` to see what changed last round and `i/status mode=trust` for the destabilizing system.",
+        "OSCILLATING": "Signal is bouncing — likely a feedback loop tuning back-and-forth. Look at `i/substrate diff` to see what changed last round and `i/status mode=trust` for the destabilizing system.",  # tool-form-ok: prose with embedded command examples
     }
     if verdict in _GUIDANCE:
         lines.append("")

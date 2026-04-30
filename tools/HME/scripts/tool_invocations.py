@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 _CONFIG_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -33,13 +34,26 @@ def _load() -> dict:
 _DATA = _load()
 
 
-def i_form(mcp_name: str, primer: bool = False) -> str:
+def i_form(mcp_name: str, primer: bool = False, value: str = "") -> str:
     """Return the user-facing `i/<wrapper>` form for an MCP tool name.
-    `primer=True` returns the documentation-style form with placeholders."""
+
+    - default: `i/<wrapper> <key>=<MODE>` (template form with placeholder)
+    - `primer=True`: doc-style form with the canonical example value
+      (e.g. `i/status mode=hme`, `i/evolve focus=design`)
+    - `value=...`: substitute the placeholder with a concrete value
+      (e.g. `i_form('status', value='signals')` → `i/status mode=signals`)
+    """
     entry = _DATA.get("tools", {}).get(mcp_name)
     if not entry:
-        return f"i/{mcp_name.replace('_', '-')}"
-    return entry.get("primer" if primer else "i", f"i/{mcp_name}")
+        base = f"i/{mcp_name.replace('_', '-')}"
+        return f"{base} mode={value}" if value else base
+    template = entry.get("primer" if primer else "i", f"i/{mcp_name}")
+    if value:
+        # Substitute the angle-bracket placeholder if present (e.g. <MODE>,
+        # <ACTION>, <FOCUS>, <TARGET>). Falls through to template if no
+        # placeholder — caller gets the original string back.
+        return re.sub(r"<[A-Z_]+>", value, template, count=1)
+    return template
 
 
 def action_form(action: str) -> str:

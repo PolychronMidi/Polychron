@@ -146,7 +146,7 @@ def _coherence_report() -> str:
             lines.append("Interpretation: DEGRADED — address the lowest component before next major change.")
         else:
             lines.append("")
-            lines.append("Interpretation: POOR — KB/code alignment is breaking down. Do `i/status mode=staleness` + `i/status mode=blindspots` for specifics.")
+            lines.append("Interpretation: POOR — KB/code alignment is breaking down. Do `i/status mode=staleness` + `i/status mode=blindspots` for specifics.")  # tool-form-ok: prose with embedded command examples
     if prev is not None:
         lines.append("")
         if isinstance(prev, (int, float)) and isinstance(score, (int, float)):

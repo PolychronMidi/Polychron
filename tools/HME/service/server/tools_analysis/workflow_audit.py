@@ -427,12 +427,13 @@ def what_did_i_forget(changed_files: str) -> str:
         for d in sorted(doc_updates_needed):
             parts.append(f"  - {d}")
     try:
-        from tool_invocations import action_form as _action_form
+        from tool_invocations import action_form as _action_form, i_form as _i_form
     except ImportError:
         def _action_form(a): return f"i/hme-admin action={a}"
+        def _i_form(name, primer=False, value=""): return f"i/{name} action={value}" if value else f"i/{name}"
     parts.append(f"\n## Reminders")
     parts.append(f"  - `{_action_form('index')}` after batch changes (file watcher handles individual saves)")
-    parts.append("  - `i/learn action=add title=… content=…` for any new calibration anchors or decisions")
+    parts.append(f"  - `{_i_form('learn', value='add')} title=… content=…` for any new calibration anchors or decisions")
 
     # Collect git diff for synthesis context (bounded to 4000 chars).
     # This project runs a direct-autocommit hook that commits edits before the
