@@ -179,6 +179,41 @@ def main(argv):
         except OSError:
             pass
 
+    # 9. Last hot-reload — auto-reload fires on .py edits under
+    # tools/HME/service/server/ but is otherwise silent. Surfacing it
+    # here means an agent can confirm "the code I just edited is
+    # loaded" without firing `i/hme-admin action=reload` redundantly.
+    reload_marker = os.path.join(PROJECT_ROOT, "tmp", "hme-last-reload.json")
+    reload_info = _read_json(reload_marker)
+    if reload_info:
+        try:
+            age_s = time.time() - reload_info.get("ts", 0)
+            trigger = reload_info.get("trigger", "?")
+            human_age = (
+                f"{int(age_s)}s ago" if age_s < 60 else
+                f"{int(age_s/60)}m ago" if age_s < 3600 else
+                f"{age_s/3600:.1f}h ago"
+            )
+            out.append(f"  last hot-reload    {human_age}  ({trigger})")
+        except (OSError, TypeError):
+            pass
+
+    # 10. Pending KB draft — visibility for the auto-suggest after
+    # STABLE/EVOLVED verdict. Without surfacing it, drafts written by
+    # posttooluse_bash sit unread.
+    draft_path = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json")
+    if os.path.isfile(draft_path):
+        try:
+            age_s = time.time() - os.path.getmtime(draft_path)
+            human_age = (
+                f"{int(age_s)}s ago" if age_s < 60 else
+                f"{int(age_s/60)}m ago" if age_s < 3600 else
+                f"{age_s/3600:.1f}h ago"
+            )
+            out.append(f"  pending KB draft   written {human_age}  → accept with `i/learn action=accept_draft`")
+        except OSError:
+            pass
+
     if not brief:
         out.append("")
         out.append("# Drill-in:")
@@ -186,6 +221,7 @@ def main(argv):
         out.append("  i/hme-admin action=selftest       full readiness check")
         out.append("  i/status mode=hme                 session-state + recent activity")
         out.append("  i/status mode=hci-diff            verifier deltas since last run")
+        out.append("  i/status mode=hci-by-subtag       what KIND of broken everything is")
 
     print("\n".join(out))
     return 0
