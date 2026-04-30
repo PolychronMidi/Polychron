@@ -19,6 +19,12 @@ What follows is the asymptote, not the next sprint.
 - 🌳 **expanded** — multiple parts of the horizon now operational
 - 📜 **vision only** — no implementation yet
 
+## Current status (10 of 10 advanced)
+
+🌱 I Predictive · 🌱 II Multi-timescale · 🌱 III KB graph · 🌱 IV Agent-loop · 🌱 V Conjugate · 🌳 VI Meta-meta verifiers · 🌱 VII Causal traversal · 🌱 VIII Conscience · 🌱 IX Chaordic band · 🌱 X Fractal recursion
+
+Every horizon now has at least one concrete tool or view. From here, the work shifts from greenfielding to *expansion*: deepening seeds toward 🌳, then iterating to satiation.
+
 ## Horizon I — Predictive HME 🌱
 
 Today HME observes itself and reports. It does not predict. The next layer of self-coherence is HME modeling its own behavior under hypothetical agent actions.
@@ -148,7 +154,7 @@ The shape: the architecture isn't just designed AS a fractal — it claims to BE
 
 These ten horizons aren't independent. They share a generating function: every implicit dimension becomes explicit. Every aggregation un-collapses. Every silent automation surfaces. Every fixed parameter becomes a learned controllable.
 
-Pick the one that energizes you. Each *seed* lands in a session; each *expansion* into a 🌳 takes longer (incident-correlation in Horizon VI; full citation graph in Horizon III; subagent-backed predictions in Horizon I). Each compounds with every other once shipped — Horizon II makes Horizon V tractable; Horizon III makes Horizon VII queryable; Horizon VIII rides on Horizon IV.
+Every horizon is seeded. Pick whichever expansion energizes you — the seed surfaces what shape the deeper work needs to take. Some natural compounding paths: Horizon II's per-axis bands make Horizon V's quadrant analysis tractable across coherence dimensions; Horizon III's edge-densification makes Horizon VII's causal traversal queryable through the KB; Horizon VIII's discriminative pattern matching rides on Horizon IV's loop telemetry.
 
 The optimization target is not "more verifiers" or "more tools." It is *legibility of the system to itself, at every scale, across every timescale, for every actor*. When the system can describe its own state, predict its own next state, explain why it took its last action, and refine the explanation as it learns — when all of that is true at every nesting level — the substrate has reached the asymptote this collection of essays is pointing at.
 

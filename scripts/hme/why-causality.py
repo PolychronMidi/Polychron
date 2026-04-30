@@ -60,7 +60,10 @@ def main(argv):
         print(f"# i/why mode=causality {target_event}\nNo activity log.")
         return 1
 
-    # Read all events; group by session for causal-window lookup
+    # Read all events; group by session for causal-window lookup. Events
+    # without a session field are common (proxy-internal events emitted
+    # outside an agent turn); group them under "no-session" rather than
+    # "?" so the output is more readable.
     by_session: dict[str, list[dict]] = defaultdict(list)
     with open(activity) as f:
         for ln in f:
@@ -68,7 +71,9 @@ def main(argv):
                 e = json.loads(ln)
             except ValueError:
                 continue
-            sess = e.get("session", "?")
+            sess = e.get("session") or "no-session"
+            if not sess or sess == "?":
+                sess = "no-session"
             by_session[sess].append(e)
 
     # Find target-event occurrences (most recent first)
@@ -95,7 +100,8 @@ def main(argv):
         ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
         # Walk back up to 8 events in same session, capturing the causal chain
         prior = events[max(0, idx - 8):idx]
-        print(f"## Occurrence at {ts_str}  (session {sess[:8]}, +{len(prior)} events prior)")
+        sess_label = sess if sess == "no-session" else sess[:8]
+        print(f"## Occurrence at {ts_str}  (session {sess_label}, +{len(prior)} events prior)")
         for p in prior:
             p_ts = p.get("ts", 0)
             p_age = ts - p_ts if p_ts else 0
