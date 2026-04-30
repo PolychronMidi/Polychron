@@ -1139,6 +1139,39 @@ class ConjugateChannelVerifier(Verifier):
             return _result(SKIP, 1.0, "no rounds carry both signals")
         if not isinstance(latest.get("hme_coherence"), (int, float)) or \
            not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
+            # SKIP path — but DON'T let the streak-aware license signal go
+            # stale just because the quantitative signals are pending.
+            # If a ground-truth legendary streak exists, keep the band-
+            # widening proposal fresh based on streak alone (composition-
+            # aware fast feedback: listener verdicts update the license
+            # immediately, not waiting for the next pipeline correlation).
+            try:
+                _streak = _count_legendary_streak(_PROJECT)
+                if _streak >= 2:
+                    _delta = min(0.10, 0.05 + max(0, _streak - 1) * 0.025)
+                    _expiry = min(4, 1 + max(0, _streak - 1))
+                    _refresh_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
+                    _refresh = {
+                        "ts": time.time(),
+                        "trigger": "streak-aware-skip-refresh",
+                        "reason": (f"latest round missing quantitative signals "
+                                   f"but {_streak}-round legendary streak active"),
+                        "recommended_action": "widen_band",
+                        "band_delta": _delta,
+                        "expires_after_rounds": _expiry,
+                        "streak": {
+                            "legendary_consecutive": _streak,
+                            "policy": "magnitude +0.025/streak (cap +0.10) · duration +1/streak (cap 4)",
+                        },
+                    }
+                    _refresh_tmp = _refresh_path + ".tmp"
+                    with open(_refresh_tmp, "w") as _rf:
+                        json.dump(_refresh, _rf, indent=2)
+                    os.replace(_refresh_tmp, _refresh_path)
+            except OSError:
+                # Marker write is advisory; SKIP returns successfully
+                # regardless.
+                pass
             return _result(SKIP, 1.0, "latest round missing one of the two signals")
         # Data-driven thresholds — medians across history
         sorted_h = sorted(r["hme_coherence"] for r in all_rounds)
