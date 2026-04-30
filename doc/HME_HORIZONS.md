@@ -21,7 +21,16 @@ What follows is the asymptote, not the next sprint.
 
 ## Current status (10 of 10 advanced)
 
-🌱 I Predictive · 🌱 II Multi-timescale · 🌱 III KB graph · 🌱 IV Agent-loop · 🌱 V Conjugate · 🌳 VI Meta-meta verifiers · 🌱 VII Causal traversal · 🌱 VIII Conscience · 🌱 IX Chaordic band · 🌱 X Fractal recursion
+- 🌱 **I** — Predictive HME (`i/why mode=predict`)
+- 🌱 **II** — Multi-timescale coherence (`i/state` HCI phase line)
+- 🌱 **III** — KB graph (`i/why mode=kb-graph`)
+- 🌱 **IV** — Agent-loop dimension (`i/status mode=agent-loop`)
+- 🌱 **V** — Conjugate channel (`i/status mode=conjugate`)
+- 🌳 **VI** — Meta-meta verifiers (`i/why mode=verifier-utility|verifier-coverage|verifier-drift`)
+- 🌱 **VII** — Causal traversal (`i/why mode=causality`)
+- 🌱 **VIII** — Architectural conscience (`i/why mode=conscience`)
+- 🌱 **IX** — Learned chaordic band (`i/status mode=band-tuning`)
+- 🌱 **X** — Fractal recursion test (`i/why mode=fractal-shape`)
 
 Every horizon now has at least one concrete tool or view. From here, the work shifts from greenfielding to *expansion*: deepening seeds toward 🌳, then iterating to satiation.
 
