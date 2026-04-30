@@ -811,6 +811,89 @@ class TestIsolationVerifier(Verifier):
                        violations[:10])
 
 
+class StalePathRenameVerifier(Verifier):
+    """Catches stale references to renamed-but-still-cited paths across
+    the entire repo. Surfaced after a `mcp/server → service/server`
+    rename left 3 sites broken in scripts/ and hooks/ that no other
+    verifier caught (silent ImportError → battery skipped → invariant
+    history stale → only surfaced 5 days later via downstream FAIL).
+
+    Path patterns that have been renamed live in
+    project-rules.json under `stale_path_patterns`: each entry maps
+    a pattern (regex) → reason. The verifier greps the whole repo
+    for the pattern; any match in a non-comment, non-keyword-list
+    context is a violation.
+
+    Per-line opt-out: `# stale-path-ok: <reason>` on the line.
+    Use only for keyword lists or historical refs."""
+    name = "stale-path-rename"
+    category = "code"
+    subtag = "drift-detection"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        rules_path = os.path.join(_PROJECT, "tools", "HME", "config",
+                                  "project-rules.json")
+        try:
+            with open(rules_path) as f:
+                patterns = json.load(f).get("stale_path_patterns", [])
+        except Exception:
+            patterns = []
+        if not patterns:
+            return _result(SKIP, 1.0, "no stale_path_patterns configured")
+
+        compiled = []
+        for entry in patterns:
+            try:
+                compiled.append((re.compile(entry["pattern"]), entry.get("reason", "")))
+            except (re.error, KeyError):
+                continue
+
+        roots = [
+            os.path.join(_PROJECT, "scripts"),
+            os.path.join(_PROJECT, "tools", "HME"),
+        ]
+        skip_dirs = {"node_modules", "__pycache__", ".git", "output", "tmp", "log"}
+        exts = (".py", ".js", ".mjs", ".cjs", ".sh", ".bash", ".ts")
+        violations = []
+        scanned = 0
+        for root in roots:
+            if not os.path.isdir(root):
+                continue
+            for r, dirs, files in os.walk(root):
+                dirs[:] = [d for d in dirs if d not in skip_dirs
+                           and d not in ("tests", "test", "specs")]
+                for f in files:
+                    if not f.endswith(exts):
+                        continue
+                    scanned += 1
+                    p = os.path.join(r, f)
+                    try:
+                        with open(p, encoding="utf-8", errors="ignore") as fp:
+                            for i, line in enumerate(fp, start=1):
+                                if "stale-path-ok" in line:
+                                    continue
+                                stripped = line.lstrip()
+                                if stripped.startswith(("#", "//", "*")):
+                                    continue
+                                for pat, reason in compiled:
+                                    if pat.search(line):
+                                        violations.append(
+                                            f"{os.path.relpath(p, _PROJECT)}:{i}: "
+                                            f"{reason or 'stale path'}"
+                                        )
+                                        break
+                    except OSError:
+                        continue
+        if not violations:
+            return _result(PASS, 1.0,
+                           f"{scanned} file(s) scanned; no stale path references")
+        score = max(0.0, 1.0 - len(violations) * 0.1)
+        return _result(FAIL, score,
+                       f"{len(violations)} stale path reference(s)",
+                       violations[:10])
+
+
 class HardcodedToolInvocationVerifier(Verifier):
     """Strings like `i/hme-admin action=warm`, `i/status mode=hci-diff`,
     `i/evolve focus=design`, `i/review mode=forget`, `i/why mode=block`

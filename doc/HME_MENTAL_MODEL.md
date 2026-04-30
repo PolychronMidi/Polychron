@@ -11,7 +11,7 @@ HME is a self-coherence substrate that watches both Polychron's musical evolutio
 Two parallel scores, both 0-100ish, both moving over rounds:
 
 - **Musical coherence.** How well does the composition cohere? Measured by `output/metrics/fingerprint-comparison.json` → `STABLE` / `EVOLVED` / `DRIFTED`.
-- **Self-coherence (HCI).** How well does HME's own observation surface cohere? Measured by `tools/HME/scripts/verify-coherence.py` → 0-100, aggregated from 64 weighted verifiers.
+- **Self-coherence (HCI).** How well does HME's own observation surface cohere? Measured by `tools/HME/scripts/verify-coherence.py` → 0-100, aggregated from 65 weighted verifiers.
 
 Polychron is the *thing being made*. HME is *the awareness of how it's being made*. Both have a coherence number. Both numbers move together over rounds. Improving one improves the other. The agent's job is to nudge both upward.
 
@@ -59,7 +59,7 @@ The MCP server, proxy, and hooks all read/write a shared substrate: KB (LanceDB)
 
 - **Hooks** (bash) — `_proxy_bridge.sh` dispatches to `pretooluse_*.sh` / `posttooluse_*.sh`. Fires every Tool call. Inspect via `tools/HME/hooks/` and `i/why mode=block`.
 - **Policies** (JS) — `tools/HME/policies/builtin/*.js`. Fires every Tool call (proxy-side). Inspect via `i/policies list`, `show`, `disable`.
-- **HCI verifiers** (py) — 64 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme-admin action=selftest` (subtag column reveals "what kind of broken").
+- **HCI verifiers** (py) — 65 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme-admin action=selftest` (subtag column reveals "what kind of broken").
 - **ESLint rules** — `scripts/eslint-rules/`. Fires `npm run main` lint phase. Inspect via `npm run lint`.
 
 When something blocks you: bash hook (exit 2 + message), JS policy (`{decision: 'deny', reason: ...}`), HCI verifier (FAIL line in selftest), ESLint rule (lint output). Each has a unique signature.

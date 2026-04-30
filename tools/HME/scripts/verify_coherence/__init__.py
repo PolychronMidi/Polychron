@@ -65,7 +65,7 @@ from .code_audits import (  # noqa: F401
     HumanDeferredAuditVerifier,
     AtomicStateWritesVerifier, AntiForkHeuristicListVerifier,
     TestEnvUndefinedVerifier, TestIsolationVerifier,
-    HardcodedToolInvocationVerifier,
+    HardcodedToolInvocationVerifier, StalePathRenameVerifier,
     ConjugateChannelVerifier, AgentLoopQualityVerifier,
 )
 from .autocommit_health import (  # noqa: F401
@@ -120,6 +120,7 @@ REGISTRY = [
     AntiForkHeuristicListVerifier(),
     TestEnvUndefinedVerifier(),
     HardcodedToolInvocationVerifier(),
+    StalePathRenameVerifier(),
     ConjugateChannelVerifier(),
     AgentLoopQualityVerifier(),
     TestIsolationVerifier(),

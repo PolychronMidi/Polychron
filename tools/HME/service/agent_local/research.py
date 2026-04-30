@@ -131,7 +131,7 @@ def _pre_research(prompt: str) -> tuple[str, list[str]]:
             grep_results[term] = result
             tools_used.append(f"GREP({term}, src/)")
         # Also search tools/HME for infrastructure queries
-        if any(w in prompt.lower() for w in ["hme", "hook", "mcp", "server", "shim", "proxy"]):
+        if any(w in prompt.lower() for w in ["hme", "hook", "mcp", "server", "shim", "proxy"]):  # stale-path-ok: keyword list, not a path
             result2 = _exec_grep(term, "tools/HME/")
             if not result2.startswith("No matches"):
                 grep_results[f"{term}(HME)"] = result2

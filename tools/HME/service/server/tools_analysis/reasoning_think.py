@@ -129,7 +129,7 @@ def think(about: str, context: str = "") -> str:
         except Exception as _err2:
             logger.debug(f'silent-except reasoning_think.py:129: {type(_err2).__name__}: {_err2}')
         injected_state += "\n\n## Recent HME Evolution History (from KB):\n"
-        _hme_keywords = {"hme", "mcp", "server", "tool", "evolution_", "coupling_",
+        _hme_keywords = {"hme", "mcp", "server", "tool", "evolution_", "coupling_",  # stale-path-ok: keyword set, not a path
                          "synthesis", "reasoning", "before_editing", "module_intel",
                          "coupling_intel", "what_did_i_forget", "pipeline_digest",
                          "split", "extract", "refactor", "kb_seed", "hot_reload"}
