@@ -380,23 +380,23 @@ The full-briefing internal function (`read(target, mode='before')`) still exists
 
 ### After Code Changes
 
-1. **`review(mode='forget')`** — auto-detects changed files from git. Checks against KB constraints, boundary rules, L0 channels, doc needs. Optionally pass `changed_files='file1.js,file2.js'` to override.
+1. **`i/review mode=forget`** — auto-detects changed files from git. Checks against KB constraints, boundary rules, L0 channels, doc needs. Optionally pass `changed_files=file1.js,file2.js` to override.
 2. File watcher auto-reindexes on save (5s debounce, 5min cooldown between full reindexes)
-3. For batch changes: `hme_admin(action='index')` once at the end
+3. For batch changes: `i/hme-admin action=index` once at the end
 
 ### After Confirmed Round
 
-1. `learn(title='...', content='...', category='pattern')` for calibration anchors, decisions, anti-patterns
-2. Use `related_to="<entry_id>"` with `relation_type` to link related entries
+1. `i/learn title=… content=… category=pattern` for calibration anchors, decisions, anti-patterns
+2. Use `tags=supersedes:<id>` / `tags=derived_from:<id>` / `tags=contradicts:<id>` to link related entries (see `i/why mode=kb-context <id>` for traversal)
 3. Update docs: CLAUDE.md, relevant doc/*.md files
 
 ### For Any Search
 
-Use `learn(query='...')` for KB semantic search, `trace(target)` for signal flow / caller chains, or the native `Grep` tool (which is passthru-enriched with KB context via the HME hook). All searches add KB cross-referencing that bare Grep misses.
+Use `i/learn query=…` for KB semantic search, `i/trace target=…` for signal flow / caller chains, or the native `Grep` tool (which is passthru-enriched with KB context via the HME hook). All searches add KB cross-referencing that bare Grep misses.
 
 ### When Pipeline Fails
 
-Read pipeline output, then `evolve(focus='blast', query='<symbol>')` for dependency traces or `learn(query='<error text>')` for similar-KB-bug lookup.
+Read pipeline output, then `i/evolve focus=blast query=<symbol>` for dependency traces or `i/learn query=<error text>` for similar-KB-bug lookup.
 
 ### When Lost Mid-Session
 
