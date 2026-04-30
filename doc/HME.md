@@ -398,6 +398,16 @@ Use `learn(query='...')` for KB semantic search, `trace(target)` for signal flow
 
 Read pipeline output, then `evolve(focus='blast', query='<symbol>')` for dependency traces or `learn(query='<error text>')` for similar-KB-bug lookup.
 
+### When Lost Mid-Session
+
+Three orthogonal observability surfaces cover the entire "what's happening in HME right now" question space:
+
+- **`i/state`** — snapshot of every state machine (onboarding, NEXUS, pipeline lock, fingerprint verdict, KB freshness, HCI multi-timescale phase, last hot-reload, pending KB drafts) in one ~10-line view.
+- **`i/why mode=…`** — causality. 14 modes spanning verifier internals (`mode=verifier <name>`), HCI regression (`mode=hci-drop`), KB structure (`mode=kb-graph` / `mode=kb-context <id>`), pre-edit prediction (`mode=predict <file>`), ground-truth signatures (`mode=conscience`), tensegrity-shape (`mode=fractal-shape`), and free-text retrieval (`mode=search` / `--deep`). Run `i/help why` for the full list.
+- **`i/timeline`** — chronological audit trail of silent automations (auto-reload, KB drafts, fs_watcher events, hook firings) joined into one run-length-collapsed view. Default 30m window; `window=5m|1h` to narrow/widen.
+
+See [doc/HME_HORIZONS.md](HME_HORIZONS.md) for the architectural trajectory each tool advances.
+
 ## Testing & Chaos
 
 HME ships three smoke-test scripts and a chaos-injection battery. Run any directly — they're self-contained bash scripts that boot the components they need and tear down on exit.

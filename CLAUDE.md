@@ -2,7 +2,7 @@
 
 Keep this file focused, concise, lean - docs and auto-enforcement handle the rest. If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
 
-> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
+> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/HME_MENTAL_MODEL.md](../doc/HME_MENTAL_MODEL.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/HME_HORIZONS.md](../doc/HME_HORIZONS.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
 
 ## Run
 
