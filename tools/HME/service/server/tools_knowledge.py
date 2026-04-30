@@ -34,6 +34,58 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     tag_list = [str(t).strip() for t in tags if str(t).strip()] if tags else []
     results = []
 
+    # Horizon III asymptote — auto-densification. When the caller didn't
+    # provide an explicit relation, run a semantic-similarity scan of
+    # the existing KB. Strong matches (≥0.70) become auto-relations
+    # noted in the response; weaker matches (0.50-0.70) surface as a
+    # suggestion the agent can act on after-the-fact. Cheap (single
+    # encode + dot-products against in-memory vectors).
+    auto_predecessor_note = ""
+    has_explicit_relation = bool(related_to) or any(
+        ":" in t and len(t.split(":", 1)[1]) >= 8 for t in tag_list
+    )
+    if not has_explicit_relation:
+        try:
+            import math as _math
+            cand_vec = ctx.shared_model.encode([f"{title} {content}".strip()])[0]
+            cand_norm = _math.sqrt(sum(float(x) * float(x) for x in cand_vec)) or 1.0
+            tbl = ctx.project_engine.knowledge_table
+            if tbl is not None:
+                df = tbl.to_pandas()
+                top = (None, 0.0, "")
+                for _, row in df.iterrows():
+                    v = row.get("vector")
+                    if v is None:
+                        continue
+                    try:
+                        vlist = list(v)
+                        if len(vlist) != len(cand_vec):
+                            continue
+                        v_norm = _math.sqrt(sum(float(x) * float(x) for x in vlist)) or 1.0
+                        dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
+                        sim = dot / (cand_norm * v_norm)
+                    except Exception:
+                        continue
+                    if sim > top[1]:
+                        top = (str(row.get("id", "")), sim, str(row.get("title", "")))
+                if top[0] and top[1] >= 0.70:
+                    # Strong match — auto-set related_to with derived_from.
+                    related_to = top[0]
+                    relation_type = relation_type or "derived_from"
+                    auto_predecessor_note = (
+                        f"  ⓘ Auto-densification (Horizon III): linked as "
+                        f"`derived_from:{top[0][:8]}` ({top[1]:.2f} similarity, "
+                        f"title: {top[2][:40]})"
+                    )
+                elif top[0] and top[1] >= 0.50:
+                    auto_predecessor_note = (
+                        f"  ⓘ Suggested predecessor (Horizon III): "
+                        f"[{top[0][:8]}] {top[2][:40]} (similarity {top[1]:.2f})\n"
+                        f"     Re-add with tags=\"derived_from:{top[0]}\" if confirming."
+                    )
+        except Exception as _e:
+            logger.debug("auto-predecessor scan failed: %s", _e)
+
     if scope in ("project", "both"):
         r = ctx.project_engine.add_knowledge(title=title, content=content, category=category, tags=tag_list, related_to=related_to, relation_type=relation_type)
         action = r.get("action", "store")
@@ -74,6 +126,8 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
         contradiction_warning = _check_kb_contradictions(title, content, ctx.project_engine)
 
     base = f"Knowledge added ({scope}):\n  Title: {title}\n  Category: {category}\n" + "\n".join(results)
+    if auto_predecessor_note:
+        base += "\n" + auto_predecessor_note
     return base + contradiction_warning if not contradiction_warning else base + "\n\n" + contradiction_warning
 
 

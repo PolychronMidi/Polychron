@@ -263,8 +263,13 @@ def _mode_multi_axis_band():
             float(getattr(v, "weight", 1.0)),
         )
 
-    # Aggregate per subtag: weighted-score sum / weighted-max sum
+    # Aggregate per subtag: weighted-score sum / weighted-max sum.
+    # Track raw scores too for the confidence column (Horizon II asymptote
+    # — confidence dimension exposes whether high score is uniformly
+    # high vs barely-passing; a uniform-high subtag is genuinely strong,
+    # a barely-passing one is precarious).
     by_subtag: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    raw_scores_by_subtag: dict[str, list[float]] = defaultdict(list)
     for name, info in snap.get("verifiers", {}).items():
         meta = name_to_meta.get(name)
         if meta is None:
@@ -272,6 +277,7 @@ def _mode_multi_axis_band():
         subtag, weight = meta
         score = float(info.get("score", 0.0))
         by_subtag[subtag].append((score * weight, weight))
+        raw_scores_by_subtag[subtag].append(score)
 
     LO, HI = 0.55, 0.85
 
@@ -297,7 +303,7 @@ def _mode_multi_axis_band():
     if proposed_aggregate:
         out.append(f"  proposed aggregate band: [{proposed_aggregate[0]:.2f}, {proposed_aggregate[1]:.2f}]  (from tmp/hme-band-proposal.json)")
     out.append("")
-    out.append(f"  {'subtag':24}  {'verifiers':>9}  {'score':>5}  {'state':>9}  {'band':>14}")
+    out.append(f"  {'subtag':24}  {'verifiers':>9}  {'score':>5}  {'min':>5}  {'state':>9}  {'band':>14}")
     rows = []
     for subtag, pairs in sorted(by_subtag.items()):
         if not pairs:
@@ -318,7 +324,12 @@ def _mode_multi_axis_band():
         # Prefer per-axis band when persisted, else aggregate
         ax_band = per_axis_bands.get(subtag) or proposed_aggregate or [LO, HI]
         band_str = f"[{ax_band[0]:.2f}, {ax_band[1]:.2f}]"
-        out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {state:>9}  {band_str:>14}")
+        # Confidence: minimum raw score in the subtag. A subtag where
+        # every verifier scores 0.95 is genuinely strong; one where the
+        # mean is 0.85 but min is 0.42 has a fragile member dragging it.
+        raw = raw_scores_by_subtag.get(subtag, [])
+        min_raw = min(raw) if raw else 0.0
+        out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {min_raw:>5.2f}  {state:>9}  {band_str:>14}")
 
     out.append("")
     # Conjugate-channel quadrant inline (Horizon V × II compounding):
@@ -452,6 +463,27 @@ def _mode_conjugate():
     return "\n".join(out)
 
 
+def _compute_per_axis_band(sentiment_buckets: dict) -> list:
+    """Given a per-axis sentiment→[hci] mapping, compute proposed band
+    bounds. Lower = median of negative-axis verdicts; upper = median of
+    positive-axis verdicts. Falls back to default [0.55, 0.85] when
+    not enough per-axis data."""
+    POS = {"legendary", "compelling", "surprising", "moving"}
+    NEG = {"flat", "mechanical", "boring", "broken"}
+    pos_h = []
+    neg_h = []
+    for sent, vals in sentiment_buckets.items():
+        if sent in POS:
+            pos_h.extend(vals)
+        elif sent in NEG:
+            neg_h.extend(vals)
+    pos_h.sort()
+    neg_h.sort()
+    upper = pos_h[len(pos_h) // 2] / 100.0 if pos_h else 0.85
+    lower = neg_h[len(neg_h) // 2] / 100.0 if neg_h else 0.55
+    return [lower, upper]
+
+
 def _mode_band_tuning():
     """Horizon IX seed — chaordic band as a learned controllable.
 
@@ -507,8 +539,10 @@ def _mode_band_tuning():
             return None
         return float(best["hci"])
 
-    # Bucket verdicts by sentiment
+    # Bucket verdicts by sentiment, and per-axis if subtag is present.
+    # Horizon IX × II asymptote: per-axis verdicts → per-axis bands.
     buckets: dict[str, list[float]] = {}
+    per_axis_buckets: dict[str, dict[str, list[float]]] = {}  # subtag → sentiment → [hci]
     for v in verdicts:
         sentiment = v.get("sentiment", "?")
         ts = v.get("ts")
@@ -518,6 +552,10 @@ def _mode_band_tuning():
         if hci is None:
             continue
         buckets.setdefault(sentiment, []).append(hci)
+        # Per-axis when subtag is recorded
+        subtag = v.get("subtag", "")
+        if subtag:
+            per_axis_buckets.setdefault(subtag, {}).setdefault(sentiment, []).append(hci)
 
     if not buckets:
         return ("# i/status mode=band-tuning\n"
@@ -614,12 +652,15 @@ def _mode_band_tuning():
         "n_negative_verdicts": len(neg_hcis),
         "sentiments": {sent: len(vals) for sent, vals in buckets.items()},
         "per_axis": {
-            # For each subtag: current median score as "observed center";
-            # proposed_band defaults to aggregate until per-axis verdicts arrive.
+            # For each subtag: current observed_median (from snapshot) AND
+            # the proposed_band learned from per-axis verdicts when present.
+            # Horizon IX × II compounding: subtag-tagged verdicts produce
+            # axis-specific bands; absent that data, falls back to aggregate.
             subtag: {
                 "observed_median": (sorted(scores)[len(scores) // 2] if scores else 0.0),
                 "n_verifiers": len(scores),
-                "proposed_band": [0.55, 0.85],  # placeholder until per-axis verdicts learned
+                "proposed_band": _compute_per_axis_band(per_axis_buckets.get(subtag, {})),
+                "n_axis_verdicts": sum(len(v) for v in per_axis_buckets.get(subtag, {}).values()),
             }
             for subtag, scores in per_axis.items()
         },

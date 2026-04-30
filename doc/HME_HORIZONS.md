@@ -23,14 +23,14 @@ What follows is the asymptote, not the next sprint.
 ## Current status (10 of 10 asymptote-deepening — 🌲 across the board)
 
 - 🌲 **I** — Predictive HME (change-pred + cost-pred + cold-start indicator + sample-count caveats)
-- 🌲 **II** — Multi-timescale + multi-axis (phase line + per-subtag bands + persisted-proposal-aware band display + conjugate-channel inline)
-- 🌲 **III** — KB graph + context + active densification (graph view + per-entry traversal + orphan-by-density-share + `i/learn action=suggest_predecessors` semantic-similarity edge suggester)
+- 🌲 **II** — Multi-timescale + multi-axis (phase line + per-subtag bands + persisted-proposal-aware band display + conjugate-channel inline + **min-score confidence column: distinguishes uniform-strong from fragile-mean subtags**)
+- 🌲 **III** — KB graph + context + active densification (graph view + per-entry traversal + orphan-by-density-share + `i/learn action=suggest_predecessors` semantic-similarity edge suggester + **`i/learn add` auto-densification: every add runs the similarity scan inline, surfaces strong predecessor matches as `derived_from` auto-relations or as suggestions for weaker matches**)
 - 🌲 **IV** — Agent-loop dimension (panel + HCI verifier + agent-loop-quality surfaced inline in `i/state`)
 - 🌲 **V** — Conjugate channel + coupling verifier + multi-axis-band cross-surfacing + bidirectional band-tightening proposal (FAIL writes `tmp/hme-band-tightening.json` for downstream coherence-budget consumers)
 - 🌲 **VI** — Meta-meta verifiers (utility + coverage + drift + KB-incident-correlation heuristic)
 - 🌲 **VII** — Causal traversal (Tier-2 heuristic + Tier-1 explicit caused_by at 5+ emit sites: hot_reload, brief_recorded, kb_draft_written, nexus_cleared, auto_brief_injected × 2 hooks + Tier-1.5 activity-log caused_by field for any future opt-in event)
 - 🌲 **VIII** — Architectural conscience (descriptive signature + move-similarity + threshold-warning soft signal)
-- 🌲 **IX** — Learned chaordic band (proposal compute + persisted aggregate + persisted per-axis state for II compounding)
+- 🌲 **IX** — Learned chaordic band (proposal compute + persisted aggregate + persisted per-axis state + **subtag-tagged ground-truth verdicts → genuine per-axis bands learnable from data, not placeholders**)
 - 🌲 **X** — Fractal recursion test (7 scales + uniform-baseline contrast + per-run history → trend tracking)
 
 Every horizon now has *asymptote-deepening* expansions: compounding signals between horizons (II reads IX's persisted proposal; V's conjugate-channel surfaces in II's multi-axis-band; VI's incident-correlation reads from III's KB), persisted state hand-offs (band proposal, fractal history, hot-reload markers), and per-element instrumentation (caused_by both in markers AND opt-in via activity-log field). The structural trajectory is established at every scale. Continued work toward the deeper asymptote (ML-shaped predictive models, more emit sites with caused_by, fractal ablation tests) is now compounding rather than greenfielding.

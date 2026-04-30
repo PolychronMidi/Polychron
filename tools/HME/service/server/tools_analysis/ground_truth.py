@@ -55,13 +55,21 @@ def record_ground_truth(
     sentiment: str,
     comment: str,
     round_tag: str = "",
+    subtag: str = "",
 ) -> str:
     """Record a structured human feedback entry and write it into the KB
-    with an unconditional high-trust flag."""
+    with an unconditional high-trust flag.
+
+    Horizon IX × II asymptote: optional `subtag` parameter labels the
+    verdict by HCI verifier subtag (structural-integrity, drift-detection,
+    regression-prevention, freshness, performance, interface-contract,
+    data-integrity). When present, band-tuning can compute per-axis
+    bands rather than just aggregate."""
     _track("ground_truth_record")
     section_n = (section or "").strip()
     moment_n = (moment_type or "").strip().lower()
     sentiment_n = (sentiment or "").strip().lower()
+    subtag_n = (subtag or "").strip().lower()
     if not section_n:
         return "Error: section is required (e.g. S3, or 'all')."
     if not moment_n:
@@ -89,6 +97,8 @@ def record_ground_truth(
         "round_tag": round_tag,
         "provenance": "human_ground_truth",
     }
+    if subtag_n:
+        record["subtag"] = subtag_n
 
     # 1) Append to the streaming log
     log_path = os.path.join(ctx.PROJECT_ROOT, GROUND_TRUTH_LOG_REL)

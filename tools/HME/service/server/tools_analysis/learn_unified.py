@@ -200,9 +200,13 @@ def learn(query: str = "", title: str = "", content: str = "",
         # parameter surface: title=section, tags[0]=moment_type,
         # tags[1]=sentiment, query=round_tag, content=comment,
         # listening_notes=also-comment (either works).
+        # Horizon IX × II asymptote: tags[2] (if present) carries an
+        # HCI subtag (e.g. "structural-integrity"). Per-axis verdicts
+        # let band-tuning compute per-axis bands.
         from .ground_truth import record_ground_truth as _gt
         _moment = tags[0] if tags and len(tags) > 0 else ""
         _sent = tags[1] if tags and len(tags) > 1 else ""
+        _subtag = tags[2] if tags and len(tags) > 2 else ""
         _comment = content or listening_notes or ""
         return _gt(
             section=title,
@@ -210,6 +214,7 @@ def learn(query: str = "", title: str = "", content: str = "",
             sentiment=_sent,
             comment=_comment,
             round_tag=query,
+            subtag=_subtag,
         )
 
     # Remove action
