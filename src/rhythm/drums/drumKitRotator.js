@@ -83,14 +83,25 @@ drumKitRotator = (() => {
     },
   ];
 
-  function presetIndex(layerOffset) {
+  // Normal mode: per-phrase rotation. Flair mode: per-beat rotation for
+  // touches of rapid randomization. Both modes preserve the foundational
+  // dominant drums (every preset already anchors on kick1+kick3 / kick2+
+  // kick5+kick7), so flair only varies the supplementary slots.
+  function presetIndex(layerOffset, flair) {
     V_kitRotator.requireFinite(sectionIndex, 'sectionIndex');
     V_kitRotator.requireFinite(phraseIndex, 'phraseIndex');
+    if (flair) {
+      V_kitRotator.requireFinite(measureIndex, 'measureIndex');
+      V_kitRotator.requireFinite(beatIndex, 'beatIndex');
+      // Adds per-beat-and-measure terms so flair picks a fresh preset on
+      // every beat. Multipliers 5 and 2 are coprime with 4-preset count.
+      return (sectionIndex * 11 + phraseIndex * 3 + measureIndex * 5 + beatIndex * 2 + layerOffset) % L1_PRESETS.length;
+    }
     return (sectionIndex * 11 + phraseIndex * 3 + layerOffset) % L1_PRESETS.length;
   }
 
   return {
-    getL1Preset: () => L1_PRESETS[presetIndex(0)],
-    getL2Preset: () => L2_PRESETS[presetIndex(1)],
+    getL1Preset: (flair) => L1_PRESETS[presetIndex(0, Boolean(flair))],
+    getL2Preset: (flair) => L2_PRESETS[presetIndex(1, Boolean(flair))],
   };
 })();

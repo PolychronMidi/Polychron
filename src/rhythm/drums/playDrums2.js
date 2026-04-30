@@ -19,7 +19,9 @@ playDrums2 = function playDrums2() {
   const stutterRange = intensity > 0.65 ? [3, 12] : [2, 8];
   const stutterDecay = clamp(0.85 + intensity * 0.25, 0.75, 1.2);
 
-  const p = drumKitRotator.getL2Preset();
+  // ~12% of beats: pick a per-beat flair preset for a touch of rapid
+  // variation. Normal beats keep the per-phrase preset for grounding.
+  const p = drumKitRotator.getL2Preset(rf() < 0.12);
 
   if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
     drummer(p.kicks,p.kickOffs,rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);

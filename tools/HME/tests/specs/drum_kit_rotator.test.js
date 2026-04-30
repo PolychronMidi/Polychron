@@ -32,7 +32,7 @@ const L1_FOUNDATION_LEAD_SNARES = new Set(['snare1', 'snare4']);
 // L2 mixFill must lead with one of these.
 const L2_FOUNDATION_LEAD_SNARES = new Set(['snare2', 'snare3']);
 
-function loadRotator(sectionIdx, phraseIdx) {
+function loadRotator(sectionIdx, phraseIdx, measureIdx = 0, beatIdx = 0) {
   global.validator = {
     create: () => ({
       requireFinite: (v, n) => { if (!Number.isFinite(v)) throw new Error(n); return v; },
@@ -41,6 +41,8 @@ function loadRotator(sectionIdx, phraseIdx) {
   };
   global.sectionIndex = sectionIdx;
   global.phraseIndex = phraseIdx;
+  global.measureIndex = measureIdx;
+  global.beatIndex = beatIdx;
   delete require.cache[require.resolve(ROTATOR)];
   require(ROTATOR);
   return global.drumKitRotator;
@@ -155,6 +157,43 @@ test('missing globals fail loud (no silent fallback)', () => {
   delete require.cache[require.resolve(ROTATOR)];
   require(ROTATOR);
   assert.throws(() => global.drumKitRotator.getL1Preset(), /sectionIndex/);
+});
+
+test('flair: per-beat rotation hits multiple presets within one phrase', () => {
+  // Normal mode pins to one preset for the whole phrase. Flair mode
+  // should walk through multiple presets across the beats of a phrase.
+  const flairCymbals = new Set();
+  for (let m = 0; m < 4; m++) {
+    for (let b = 0; b < 4; b++) {
+      flairCymbals.add(loadRotator(0, 0, m, b).getL1Preset(true).cymbal);
+    }
+  }
+  assert.ok(flairCymbals.size >= 3,
+    `flair mode must rotate per-beat, got ${flairCymbals.size} distinct cymbals in 16 beats of same phrase`);
+});
+
+test('flair: foundation-anchored even in flair mode (kicks stay {kick1,kick3})', () => {
+  for (let m = 0; m < 4; m++) {
+    for (let b = 0; b < 4; b++) {
+      const preset = loadRotator(0, 0, m, b).getL1Preset(true);
+      const kicks = asSet(preset.kicks);
+      assert.ok(setsEqual(kicks, L1_FOUNDATION_KICKS),
+        `flair m=${m} b=${b}: L1 kicks must stay {kick1,kick3}, got {${[...kicks].join(',')}}`);
+    }
+  }
+});
+
+test('flair: normal mode pins to one preset per phrase (no per-beat drift)', () => {
+  // Normal (non-flair) mode must NOT vary across beats of the same
+  // phrase — that's the per-phrase grounding contract.
+  const cymbals = new Set();
+  for (let m = 0; m < 4; m++) {
+    for (let b = 0; b < 4; b++) {
+      cymbals.add(loadRotator(0, 0, m, b).getL1Preset(false).cymbal);
+    }
+  }
+  assert.strictEqual(cymbals.size, 1,
+    `normal mode must pin to one cymbal per phrase, got ${cymbals.size} distinct in 16 beats`);
 });
 
 test('source: phraseIndex multiplier is coprime with preset count', () => {
