@@ -183,6 +183,21 @@ test('i/why mode=fractal-shape renders Horizon X tensegrity-shape table', () => 
   assert.match(r.stdout, /project→subsystem|verifier→category|kb→category/);
 });
 
+test('i/why mode=fractal-shape includes the expansion scales (L0 + policy)', () => {
+  const r = _runWhy(['mode=fractal-shape']);
+  assert.strictEqual(r.status, 0);
+  // Both scales added during the X expansion should render
+  assert.match(r.stdout, /L0→consumers/, 'L0→consumers scale missing from fractal-shape');
+  assert.match(r.stdout, /policy→event/, 'policy→event scale missing from fractal-shape');
+});
+
+test('i/why mode=fractal-shape reports uniform-baseline verdict', () => {
+  const r = _runWhy(['mode=fractal-shape']);
+  assert.strictEqual(r.status, 0);
+  // Uniform-baseline contrast section should be present
+  assert.match(r.stdout, /Empirical signature vs uniform-baseline|verdict:\s*(SUPPORTS|PARTIAL|NOT SUPPORTED)/);
+});
+
 test('i/why mode=kb-context <id> renders entry context', () => {
   // Pick a known id (8-char prefix); fall back gracefully if KB empty
   const r = _runWhy(['mode=kb-context', 'be854cd8']);
