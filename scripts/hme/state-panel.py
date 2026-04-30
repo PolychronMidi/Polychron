@@ -167,27 +167,27 @@ def main(argv):
             except OSError:
                 pass
         out.append(f"  HCI                {hci}/100 ({n} verifiers){delta_str}")
-        # If HCI dropped, surface WHICH verifier(s) flipped to non-PASS by
-        # diffing current vs .prev snapshot. Causality at the panel level —
-        # the agent doesn't have to chase `i/status mode=hci-diff`.
-        if isinstance(hci, (int, float)) and delta_str.startswith("  (-"):
-            prev_snap = _read_json(
-                os.path.join(PROJECT_ROOT, "output", "metrics",
-                             "hci-verifier-snapshot.json.prev")
-            )
-            if prev_snap:
-                cur_v = snap.get("verifiers", {})
-                prev_v = prev_snap.get("verifiers", {})
-                regressed = [
-                    name for name in sorted(set(cur_v) | set(prev_v))
-                    if prev_v.get(name, {}).get("status") == "PASS"
-                    and cur_v.get(name, {}).get("status") in ("FAIL", "WARN", "ERROR")
-                ]
-                if regressed:
-                    shown = ", ".join(regressed[:3])
-                    if len(regressed) > 3:
-                        shown += f" (+{len(regressed) - 3} more)"
-                    out.append(f"    → regressed: {shown}")
+        # Always check for PASS→non-PASS verifier flips, even when the
+        # aggregate HCI hasn't dropped (a single FAIL can be offset by
+        # gains elsewhere; the flipped verifier still matters). Diff
+        # current vs .prev snapshot for direct causality.
+        prev_snap = _read_json(
+            os.path.join(PROJECT_ROOT, "output", "metrics",
+                         "hci-verifier-snapshot.json.prev")
+        )
+        if prev_snap:
+            cur_v = snap.get("verifiers", {})
+            prev_v = prev_snap.get("verifiers", {})
+            regressed = [
+                name for name in sorted(set(cur_v) | set(prev_v))
+                if prev_v.get(name, {}).get("status") == "PASS"
+                and cur_v.get(name, {}).get("status") in ("FAIL", "WARN", "ERROR")
+            ]
+            if regressed:
+                shown = ", ".join(regressed[:3])
+                if len(regressed) > 3:
+                    shown += f" (+{len(regressed) - 3} more)"
+                out.append(f"    → regressed: {shown}")
 
     # 8. KB add cadence — proves the round-trip is working. Annotate stale
     # acceptances (>24h) so the line doesn't read as fresh forever.

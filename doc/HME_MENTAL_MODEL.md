@@ -92,6 +92,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 ## Where to look when you lose your place
 
 - **"Where am I in the workflow?"** → `i/state`
+- **"What just happened? what has HME done in the last N minutes?"** → `i/timeline` (joins markers + activity log into one chronological view)
 - **"What's HME's current health?"** → `i/hme-admin action=selftest`
 - **"Did my last edit help or hurt the score?"** → `i/status mode=hci-diff`
 - **"What in the KB knows about X?"** → `i/learn query="X"`

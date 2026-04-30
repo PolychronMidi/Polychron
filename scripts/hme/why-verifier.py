@@ -73,7 +73,18 @@ def _find_verifier_source(name: str) -> tuple[str, list[str]] | None:
                 if indent <= class_indent and stripped.lstrip().startswith(("class ", "def ", "@", "_")):
                     class_end = i
                     break
-            return (p, lines[class_start:class_end])
+            # Cap at 100 lines so a verifier with a long run() doesn't
+            # flood the agent's context. The class header + docstring +
+            # decorators + run signature + first ~80 lines of run body
+            # is almost always enough to understand WHAT the verifier
+            # checks; the rest is detail.
+            extracted = lines[class_start:class_end]
+            if len(extracted) > 100:
+                extracted = extracted[:100] + [
+                    f"    ... ({len(lines[class_start:class_end]) - 100} more lines truncated; "
+                    f"open {os.path.relpath(p, PROJECT_ROOT)}:{class_start + 1} to see all)"
+                ]
+            return (p, extracted)
     return None
 
 
