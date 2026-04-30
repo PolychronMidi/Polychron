@@ -6,6 +6,7 @@
 #   i/why mode=verifier <name>    explain a specific HCI verifier (status, history, source)
 #   i/why mode=hci-drop           find the most recent HCI regression + which verifier(s) caused it
 #   i/why mode=hook               recent hook activity (broader than mode=block)
+#   i/why mode=verifier-utility   meta-meta: which verifiers always-PASS, flap, or have noisy scores (Horizon VI)
 #   i/why "<free-text>"           Tier 2 — deterministic retrieval (grep + KB + activity)
 #   i/why "<free-text>" --deep    Tier 3 — queue subagent synthesis on top of Tier 2 packet
 SCRIPT_DIR="$(dirname "$0")/../scripts/hme"
@@ -19,6 +20,7 @@ for arg in "$@"; do
     mode=verifier)  exec python3 "$SCRIPT_DIR/why-verifier.py" "$@" ;;
     mode=hci-drop)  exec python3 "$SCRIPT_DIR/why-hci-drop.py" "$@" ;;
     mode=hook)      exec python3 "$SCRIPT_DIR/why-hook.py" "$@" ;;
+    mode=verifier-utility) exec python3 "$SCRIPT_DIR/why-verifier-utility.py" "$@" ;;
     mode=search)    exec python3 "$SCRIPT_DIR/why-search.py" "$@" ;;
   esac
 done

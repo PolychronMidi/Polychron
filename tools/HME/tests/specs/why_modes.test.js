@@ -58,6 +58,13 @@ test('i/why mode=hook surfaces recent hook activity', () => {
   assert.match(r.stdout, /mode=hook/);
 });
 
+test('i/why mode=verifier-utility analyzes per-verifier signal-to-noise', () => {
+  const r = _run(['mode=verifier-utility']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /verifier-utility/);
+  assert.match(r.stdout, /Summary|runs analyzed/);
+});
+
 test('i/why with multi-word question dispatches to search (Tier 2)', () => {
   const r = _run(['where', 'is', 'the', 'spam', 'verifier']);
   assert.strictEqual(r.status, 0);
