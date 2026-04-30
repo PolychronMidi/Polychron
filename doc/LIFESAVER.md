@@ -95,6 +95,8 @@ The `hookSpecificOutput` mechanism replaces the old exit-2 block pattern. Three 
 - `pretooluse_bash.sh` — `sleep` + `tail`/`cat`/`grep` in same command. Anti-polling: sleep-then-check is the antipattern.
 - `pretooluse_bash.sh` — empty catch blocks, no-op error handlers, suppressed stderr. Fail fast: no silent error suppression.
 - `pretooluse_bash.sh` — 3rd+ read of `/tmp/claude-*` task output. Anti-polling: already checked twice; wait for notification.
+- `pretooluse_bash.sh` (`bash/log_first.sh`) — `npm run lint`/`tc` when `log/lint.log`/`log/tc.log` is fresher than every file under `src/` and `tools/HME/`. Anti-pattern: re-running a verifier whose output already sits in a log. Opt-out: prepend `: force-rerun;` to bypass.
+- `pretooluse_bash.sh` (`bash/kb_spam.sh`) — `i/learn` invocations whose title starts with `Feedback:` (quoted or unquoted). Anti-pattern: behavioral self-notes belong in CLAUDE.md or a hook, not the project KB.
 - `pretooluse_edit.sh` — LLM stub placeholder pattern (ellipsis + "remaining" language). Correctness: use actual replacement content.
 - `pretooluse_write.sh` — write to `.claude/projects/*/memory/`. Anti-pattern: memory saving supplanted by HME.
 - `pretooluse_write.sh` — API key/password/secret/token pattern detected. Security: review before writing credentials.
