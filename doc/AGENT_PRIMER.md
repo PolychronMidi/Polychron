@@ -80,6 +80,7 @@ i/status mode=hci-by-subtag              what KIND of broken everything is
 i/status mode=agent-loop                 Horizon IV: agent loop quality
 i/status mode=band-tuning                Horizon IX: band proposal from ground-truth
 i/status mode=conjugate                  Horizon V: HCI ⇔ perceptual quadrants
+i/status mode=multi-axis-band            Horizon II: per-subtag bands (BELOW/IN_BAND/ABOVE)
 i/status mode=…                          ~35 other modes — see `i/help status`
 ```
 

@@ -202,3 +202,28 @@ test('i/status mode=multi-axis-band renders Horizon II per-subtag bands', () => 
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /Multi-axis|chaordic band|subtag/);
 });
+
+test('i/why mode=causality reads explicit caused_by from marker (Tier-1)', () => {
+  // Inject a test marker with caused_by; verify the Tier-1 path renders it
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const markerPath = path.join(PROJECT_ROOT, 'tmp', 'hme-last-reload.json');
+  let backup = null;
+  try { backup = fs.readFileSync(markerPath, 'utf8'); } catch (_e) { /* no prior marker */ }
+  const testMarker = {
+    ts: Math.floor(Date.now() / 1000),
+    trigger: 'auto',
+    caused_by: 'tools/HME/service/server/test_caused_by.py',
+    summary: 'test caused_by instrumentation',
+  };
+  fs.writeFileSync(markerPath, JSON.stringify(testMarker));
+  try {
+    const r = _runWhy(['mode=causality', 'hot_reload']);
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stdout, /Tier-1: explicit caused_by/);
+    assert.match(r.stdout, /test_caused_by\.py/);
+  } finally {
+    if (backup) fs.writeFileSync(markerPath, backup);
+    else { try { fs.unlinkSync(markerPath); } catch (_e) { /* best effort */ } }
+  }
+});

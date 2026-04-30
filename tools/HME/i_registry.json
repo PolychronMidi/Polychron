@@ -106,7 +106,8 @@
         "i/status mode=hci-by-subtag",
         "i/status mode=agent-loop",
         "i/status mode=band-tuning",
-        "i/status mode=conjugate"
+        "i/status mode=conjugate",
+        "i/status mode=multi-axis-band"
       ],
       "safe_no_args": true
     },
