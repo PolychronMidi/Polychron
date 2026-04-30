@@ -376,7 +376,7 @@ def _detect_contradictions() -> str:
     code_mismatches = []
     try:
         import subprocess as _sp_cgrep
-        _server_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "mcp", "server")
+        _server_root = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "service", "server")
         for _e in entries:
             _cat = _e.get("category", "")
             _tags = _e.get("tags", "")

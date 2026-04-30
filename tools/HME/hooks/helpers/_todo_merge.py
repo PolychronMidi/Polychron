@@ -21,7 +21,7 @@ import traceback
 import types
 
 _PROJECT = os.environ["PROJECT_ROOT"]  # env-ok: set by _safety.sh from .env
-_TODO_PY = os.path.join(_PROJECT, "tools", "HME", "mcp", "server", "tools_analysis", "todo.py")
+_TODO_PY = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tools_analysis", "todo.py")
 
 # Prefixes the hook adds when returning merged items back to native TodoWrite.
 # When the agent echoes them on the next TodoWrite call, we strip them — they
