@@ -40,7 +40,7 @@ Every horizon has shipped a working slice for every leg in its vision section. F
 
 Today HME observes itself and reports. It does not predict. The next layer of self-coherence is HME modeling its own behavior under hypothetical agent actions.
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/why mode=predict <file_path>` — change prediction. Joins timeseries flip events with activity-log file_writes; reports verifiers historically correlated with edits to a directory.
 - `i/status mode=tool-latency` — cost preflighting. Computes per-tool latency p50/p95/p99 from recent invocations; falls back to inference-call cadence when tool_call instrumentation is sparse. Together with `mode=predict`, answers "what will my next action cost AND change?" before making it.
 
@@ -69,7 +69,7 @@ The KB has 175+ entries. Today it's a flat list with semantic search. Implicit g
 - **Promotion edges.** Crystallized patterns trace back to their member entries. Already partly implemented; promote to navigable links.
 - **Generalization edges.** `hme-discoveries.md` entries trace back to which Polychron-specific patterns they generalize from.
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/why mode=kb-graph` — system-wide view. Reads all 192 entries via direct lance, extracts edges from three signals (tag-encoded `supersedes:<id>` / `contradicts:<id>` / `derived_from:<id>`, content-id refs, title-substring matches). First run revealed the KB's architectural truth: 0 live edges, 192 orphans, 3 dangling supersession edges. The KB is currently FLAT.
 - `i/why mode=kb-context <id>` — per-entry view. Given a 12-char id or 8-char prefix, traverses outgoing + incoming tag-edges, shows content preview, lists same-category siblings, and (for orphans) suggests the canonical `tags=…` form to cite this entry from future adds.
 
@@ -81,7 +81,7 @@ The shape: turn the KB from a vector-search index into a queryable graph. The gr
 
 The agent (the LLM running through Claude Code, including me right now) is currently invisible to HME except as a stream of tool calls. But the agent is *part of the system* — its loop rate, decision quality, error frequency, context-window pressure all shape outcomes.
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/status mode=agent-loop` — human view. Aggregates per-session tools-per-turn, brief-coverage ratio, error-surface rate, inter-tool gap (median + p90), hook-intervention count.
 - `agent-loop-quality` HCI verifier — same data wired into HCI. FAILs when error rate > 25% or no turns recorded; PASS otherwise. The agent is now a tracked DIMENSION, not just a viewable signal — degraded loops degrade aggregate HCI automatically.
 
@@ -99,7 +99,7 @@ Musical coherence and HCI co-evolve over rounds but don't directly inform each o
 - **Composition → HCI.** When fingerprint-comparison verdict flips DRIFTED, an HCI verifier checks whether recent edits introduced uncovered KB regions. The compositional verdict drives architectural inspection.
 - **Joint distribution.** A 2D plot of (HCI, perceptual-correlation) per round. Quadrants reveal: high-both = mature stability, high-HCI low-perceptual = sterile rigor, low-HCI high-perceptual = lucky chaos, low-both = lost. Currently invisible.
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/status mode=conjugate` — passive view. Joins HCI + perceptual-complexity per round from `hme-musical-correlation.json` with median-as-threshold partitioning. First run revealed 23 rounds bimodal between mature-stability (12) and sterile-rigor (11); zero chaos quadrants. The system has two stable attractors.
 - `conjugate-channel` HCI verifier — active feedback. The FIRST verifier whose status depends on the composition signal: FAILs when the latest round is in the 'lost' quadrant (low HCI AND low perceptual). With this verifier the two coherences become a coupled system — sustained 'lost' state degrades HCI, signaling the agent to investigate. Currently PASS (latest round = mature stability).
 
@@ -125,7 +125,7 @@ The shape: every layer of self-coherence needs a layer above it that audits *its
 
 Implementation: every state-changing action records its `caused_by` reference. The chain is replayable. `i/why <observed-effect>` walks the chain.
 
-**Shipped (two-tier resolution → 🌳):**
+**Shipped (multi-tier resolution → 🪐):**
 - `i/why mode=causality <event>` — heuristic chain via session adjacency (Tier-2). Walks back up to 8 events in same session before each occurrence.
 - **Real `caused_by` instrumentation at the hot-reload site (Tier-1).** Watcher captures the `.py` file whose change scheduled the reload; passes it as `_caused_by` through `hme_hot_reload`; the marker file `tmp/hme-last-reload.json` carries `caused_by: <file_path>`. `i/why mode=causality hot_reload` reads the marker FIRST and reports the explicit cause; falls back to heuristic if marker lacks the field (manual reloads). First explicit instrumentation site — the pattern is now established for any future emit-site to opt into Tier-1.
 
@@ -139,7 +139,7 @@ Some moves feel right; others feel wrong. The "feel" lives in the user's head an
 - **Rejected-move ledger.** "Don't do this" patterns logged. Future PRs that match the rejected shape get a soft warning before landing.
 - **Move-class similarity.** A new edit's signature (files touched, function shapes, magnitude) is compared to past approved/rejected moves. Surface "this looks 0.83 similar to an approved move from R5; 0.12 similar to a rejected one."
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/why mode=conscience` (descriptive) — reads ground-truth verdicts, joins with file_written events in 1h window before each verdict, surfaces approved-move directory signatures.
 - **Move-similarity scoring** (discriminative seed) — same view computes cosine similarity between recent file-write activity and the approved-move directory signature. Reports `similarity score: 0.NN` plus shared-vs-unique-dir breakdown when both vectors have data. First-run gap: activity log retention is shorter than verdict age (0/12 positive verdicts overlap), so similarity is dormant pending log retention extension OR new verdicts. The code path is shipped and ready; it activates as soon as both signals are within the same time window.
 
@@ -153,7 +153,7 @@ Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself sh
 - "This run felt mechanical at HCI 0.88" → pull both bounds toward each other; the system was over-coherent.
 - The band becomes a function of recent ground-truth verdicts. Self-tuning all the way down.
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/status mode=band-tuning` — proposal computation. Joins ground-truth verdicts with HCI timeseries, computes per-sentiment median, proposes new band bounds. First run: 9 legendary verdicts cluster at HCI=95 → proposes raising upper bound from 85 to 95.
 - **Persisted proposal at `tmp/hme-band-proposal.json`** — atomic write of `{current_band, proposed_band, n_positive_verdicts, n_negative_verdicts, sentiments}`. Downstream code (composition coherence-budget consumer, future self-tuner) can read the file and adopt the proposed band when ready. Establishes the data hand-off without forcing composition behavior change yet — the wiring step is left for when ground-truth volume justifies it.
 
@@ -171,7 +171,7 @@ Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs
 
 If the architecture *is* a tensegrity hypothesis, then it should hold at every scale. A meta-verifier could test the hypothesis: at each scale, does removing one element redistribute load (tensegrity property) or break the structure (non-tensegrity)?
 
-**Shipped (two legs → 🌳):**
+**Shipped (multiple legs → 🪐):**
 - `i/why mode=fractal-shape` — measurement. Now spans **7 architectural scales**: project→subsystem, subsystem→module(LOC), verifier→category, verifier→subtag, kb→category, **L0→consumers** (Gini 0.69 — most concentrated layer), **policy→event** (Gini 0.38).
 - **Uniform-baseline contrast** — every measurement now reports against a synthetic uniform baseline (Gini ≈ 0). Mean Gini across 7 levels = 0.49; 5 of 7 above the 0.40 tensegrity threshold. **Verdict: SUPPORTS the tensegrity hypothesis** (mean above 0.40, majority of levels structurally concentrated). The empirical signal is decisively NOT coincidence — uniform random distributions would cluster near 0; actual layers cluster near 0.4-0.5+. The recursion claim now has explicit statistical backing.
 

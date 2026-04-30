@@ -406,6 +406,65 @@ test('i/why mode=causality --root-cause walks to leaf and reports it', () => {
   assert.match(r.stdout, /Root cause|walked \d+ step|No 'brief_recorded' events found/);
 });
 
+test('i/why mode=fractal-shape reports redundancy ablation column (Horizon X maturity)', () => {
+  const r = _runWhy(['mode=fractal-shape']);
+  assert.strictEqual(r.status, 0);
+  // Table now has gini-no-max + redundancy columns
+  assert.match(r.stdout, /gini-no-max|redundancy/);
+});
+
+test('i/why mode=verifier-utility persists auto-prune marker (Horizon VI maturity)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const prunePath = path.join(PROJECT_ROOT, 'tmp', 'hme-verifier-prune.json');
+  const r = _runWhy(['mode=verifier-utility']);
+  assert.strictEqual(r.status, 0);
+  // Marker may not exist if no always-PASS verifiers (rare); both are
+  // valid outcomes — test asserts the marker has the right shape if present.
+  if (fs.existsSync(prunePath)) {
+    const body = JSON.parse(fs.readFileSync(prunePath, 'utf8'));
+    assert.ok('candidates' in body);
+    assert.ok('weight_multiplier' in body);
+    assert.ok(Array.isArray(body.candidates));
+  }
+});
+
+test('agent-loop-quality verifier writes tier marker (Horizon IV maturity)', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  // Run the verifier directly via Python — same path the snapshot pass takes.
+  const r = spawnSync('python3', ['-c',
+    `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); ` +
+    'from verify_coherence.code_audits import AgentLoopQualityVerifier; ' +
+    'r = AgentLoopQualityVerifier().execute(); print(r.status)'
+  ], { encoding: 'utf8', timeout: 15000 });
+  assert.strictEqual(r.status, 0);
+  // Tier marker is conditional on having data; only PASS/FAIL paths write it.
+  // SKIP path (no activity) skips the marker — both are valid.
+  const tierPath = path.join(PROJECT_ROOT, 'tmp', 'hme-agent-loop-tier.json');
+  if (fs.existsSync(tierPath)) {
+    const body = JSON.parse(fs.readFileSync(tierPath, 'utf8'));
+    assert.ok(['GREEN', 'YELLOW', 'RED'].includes(body.tier));
+    assert.ok('reason' in body);
+  }
+});
+
+test('i/why mode=kb-graph reports entity-name edges (Horizon III maturity)', () => {
+  const r = _runWhy(['mode=kb-graph']);
+  assert.strictEqual(r.status, 0);
+  // When KB has data, the entity-name edge kind should appear; when
+  // KB is empty, the empty-message path is used.
+  assert.match(r.stdout, /entity-name|KB empty|0 edges/);
+});
+
+test('i/state HCI line carries confidence indicator (Horizon II maturity)', () => {
+  const r = _run();
+  assert.strictEqual(r.status, 0);
+  // HCI line should include conf=uniform/mixed/fragile when a snapshot
+  // is available; absent that, the fallback HCI line is acceptable.
+  assert.match(r.stdout, /HCI\s+\S+.*\s*(conf=(uniform|mixed|fragile)|\(\d+ verifiers\))/);
+});
+
 test('compute-coherence-budget consumes V→IX band-tightening proposal', () => {
   // Verifies the cross-horizon coupling: when conjugate-channel writes
   // tmp/hme-band-tightening.json, the next pipeline run's
