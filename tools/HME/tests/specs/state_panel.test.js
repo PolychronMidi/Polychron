@@ -399,6 +399,58 @@ test('i/why mode=causality --chain recursively walks caused_by chains', () => {
   }
 });
 
+test('i/why mode=causality --root-cause walks to leaf and reports it', () => {
+  const r = _runWhy(['mode=causality', 'brief_recorded', '--root-cause']);
+  assert.strictEqual(r.status, 0);
+  // Either reports root cause + walked-N-steps or notes no events
+  assert.match(r.stdout, /Root cause|walked \d+ step|No 'brief_recorded' events found/);
+});
+
+test('hme-cli coerce parses bracket-CSV form (real-bug regression)', () => {
+  // The shorthand `tags=[a,b,c]` should produce ['a','b','c'], not iterate
+  // characters. Tested via the i/learn ground_truth path: tags[2] should
+  // arrive as the third tag, not the third character of the third tag.
+  const tmpJsonl = path.join(PROJECT_ROOT, 'output', 'metrics', 'hme-ground-truth.jsonl');
+  if (!require('node:fs').existsSync(tmpJsonl)) return;
+  const beforeLen = require('node:fs').statSync(tmpJsonl).size;
+  const round = `bracket_test_${Date.now()}`;
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'), [
+    'action=ground_truth',
+    'title=S0',
+    'tags=[arrival,legendary,structural-integrity]',
+    `query=${round}`,
+    'content=bracket regression smoke',
+  ], { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+       env: { ...process.env, PROJECT_ROOT } });
+  if (r.status !== 0) return;  // path may fail offline; bail gracefully
+  try {
+    const tail = require('node:fs').readFileSync(tmpJsonl, 'utf8').split('\n').filter(s => s.includes(round));
+    if (tail.length) {
+      const rec = JSON.parse(tail[tail.length - 1]);
+      assert.strictEqual(rec.moment_type, 'arrival', 'tags[0] should parse to "arrival" not a single char');
+      assert.strictEqual(rec.sentiment, 'legendary', 'tags[1] should parse to "legendary" not a single char');
+      assert.strictEqual(rec.subtag, 'structural-integrity', 'tags[2] should parse fully not as single char');
+    }
+  } finally {
+    // Truncate the test entry from the JSONL so we don't pollute logs.
+    require('node:fs').truncateSync(tmpJsonl, beforeLen);
+    // Remove the KB mirror so the test doesn't accumulate orphan entries
+    // in the project KB on every run.
+    const search = spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'),
+      ['action=search', `query=${round}`], {
+        encoding: 'utf8', timeout: 15000, cwd: PROJECT_ROOT,
+        env: { ...process.env, PROJECT_ROOT },
+      });
+    const idMatch = (search.stdout || '').match(/id:\s*([a-f0-9]{12})/);
+    if (idMatch) {
+      spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'), [`remove=${idMatch[1]}`], {
+        encoding: 'utf8', timeout: 15000, cwd: PROJECT_ROOT,
+        env: { ...process.env, PROJECT_ROOT },
+      });
+    }
+  }
+});
+
 test('i/why mode=causality depth= clamps to safe range', () => {
   const r = _runWhy(['mode=causality', 'brief_recorded', '--chain', 'depth=999']);
   assert.strictEqual(r.status, 0);

@@ -86,6 +86,7 @@ def main(argv):
     target_event = ""
     show_n = 5
     walk_chain = False
+    root_cause_only = False
     chain_depth = 5
     for a in argv[1:]:
         if a.startswith("event="):
@@ -97,6 +98,13 @@ def main(argv):
                 pass
         elif a == "--chain" or a == "chain=true":
             walk_chain = True
+        elif a == "--root-cause" or a == "root_cause=true":
+            # Root-cause shorthand: walks the chain to terminal, prints
+            # only the final leaf cause + traversal depth. Often what's
+            # actually wanted ("what was the ROOT trigger?") rather
+            # than the full chain.
+            walk_chain = True
+            root_cause_only = True
         elif a.startswith("depth="):
             try:
                 chain_depth = max(1, min(20, int(a.split("=", 1)[1])))
@@ -185,6 +193,49 @@ def main(argv):
     # heuristic resolution. Bridges the Tier-1 (explicit caused_by) and
     # Tier-2 (session adjacency) gap by trying to resolve each cause
     # string to another event whose own caused_by can be followed.
+    if walk_chain and explicit_chain_events and root_cause_only:
+        # Root-cause shorthand — walk silently, print only the leaf.
+        latest = explicit_chain_events[-1]
+        current = latest
+        depth = 0
+        seen: set[tuple[str, float]] = set()
+        leaf_event = current
+        leaf_cause = current.get("caused_by", "")
+        leaf_reason = "no further chain"
+        while current and depth < chain_depth:
+            ts = current.get("ts", 0)
+            ev = current.get("event", "?")
+            cb = current.get("caused_by", "")
+            key = (ev, ts)
+            if key in seen:
+                leaf_reason = "cycle detected"
+                break
+            seen.add(key)
+            if not cb:
+                leaf_reason = "no caused_by — terminal event"
+                break
+            leaf_cause = cb
+            resolved = _resolve_cause(cb, ts, all_events)
+            if resolved is None:
+                leaf_reason = "leaf description (no upstream event match)"
+                break
+            current = resolved
+            leaf_event = current
+            depth += 1
+        if depth >= chain_depth:
+            leaf_reason = f"chain truncated at depth={chain_depth}"
+        print(f"# Root cause — '{target_event}'")
+        print(f"  walked {depth} step(s), stopped because: {leaf_reason}")
+        print(f"  root: caused_by={leaf_cause}")
+        if leaf_event != latest:
+            ts = leaf_event.get("ts", 0)
+            ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
+            ev = leaf_event.get("event", "?")
+            print(f"  upstream event: {ev}  at {ts_str}")
+        print()
+        print("  (Use `--chain` to see the full traversal path.)")
+        return 0
+
     if walk_chain and explicit_chain_events:
         print(f"# Recursive causal chain — '{target_event}' (depth ≤ {chain_depth})")
         print()
