@@ -14,7 +14,7 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool(meta={"hidden": True})
-def hme_hot_reload(modules: str = "") -> str:
+def hme_hot_reload(modules: str = "", _trigger: str = "manual") -> str:
     """Hot-reload HME tool modules without restarting the server.
 
     Works against the dict-backed `tool_registry._TOOLS` — the FastMCP
@@ -169,13 +169,10 @@ def hme_hot_reload(modules: str = "") -> str:
         _root = ctx.PROJECT_ROOT
         _marker_path = os.path.join(_root, "tmp", "hme-last-reload.json")
         _marker_tmp = _marker_path + ".tmp"
-        # Caller hint: watcher.py calls with empty modules string for auto;
-        # manual i/hme-admin invocations may pass "all" or specific names.
-        _trigger = "manual" if modules and modules.strip() else "auto"
         with open(_marker_tmp, "w") as _mf:
             _json.dump({
                 "ts": _time.time(),
-                "trigger": _trigger,
+                "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme-admin
                 "summary": summary.split("\n\n")[-1][:160],
             }, _mf)
         os.replace(_marker_tmp, _marker_path)
