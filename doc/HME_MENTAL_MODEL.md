@@ -11,7 +11,7 @@ HME is a self-coherence substrate that watches both Polychron's musical evolutio
 Two parallel scores, both 0-100ish, both moving over rounds:
 
 - **Musical coherence.** How well does the composition cohere? Measured by `output/metrics/fingerprint-comparison.json` → `STABLE` / `EVOLVED` / `DRIFTED`.
-- **Self-coherence (HCI).** How well does HME's own observation surface cohere? Measured by `tools/HME/scripts/verify-coherence.py` → 0-100, aggregated from 57 weighted verifiers.
+- **Self-coherence (HCI).** How well does HME's own observation surface cohere? Measured by `tools/HME/scripts/verify-coherence.py` → 0-100, aggregated from 61 weighted verifiers.
 
 Polychron is the *thing being made*. HME is *the awareness of how it's being made*. Both have a coherence number. Both numbers move together over rounds. Improving one improves the other. The agent's job is to nudge both upward.
 
@@ -59,7 +59,7 @@ The MCP server, proxy, and hooks all read/write a shared substrate: KB (LanceDB)
 
 - **Hooks** (bash) — `_proxy_bridge.sh` dispatches to `pretooluse_*.sh` / `posttooluse_*.sh`. Fires every Tool call. Inspect via `tools/HME/hooks/` and `i/why mode=block`.
 - **Policies** (JS) — `tools/HME/policies/builtin/*.js`. Fires every Tool call (proxy-side). Inspect via `i/policies list`, `show`, `disable`.
-- **HCI verifiers** (py) — 57 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme-admin action=selftest` (subtag column reveals "what kind of broken").
+- **HCI verifiers** (py) — 61 verifiers in `tools/HME/scripts/verify_coherence/`. Fires every pipeline run + on-demand. Inspect via `i/hme-admin action=selftest` (subtag column reveals "what kind of broken").
 - **ESLint rules** — `scripts/eslint-rules/`. Fires `npm run main` lint phase. Inspect via `npm run lint`.
 
 When something blocks you: bash hook (exit 2 + message), JS policy (`{decision: 'deny', reason: ...}`), HCI verifier (FAIL line in selftest), ESLint rule (lint output). Each has a unique signature.
@@ -108,7 +108,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 
 **Every stale string is a tax on every future agent.** Fix-hints, primer examples, error messages, doc references — all converge through one source of truth (`tools/HME/config/tool-invocations.json` + `tool_invocations.py` helper) so a rename touches one file. The numeric-drift verifier, doc-sync verifier, events-doc-sync verifier, character-spam verifier, repeated-char-spam policy all exist to keep this property: *the docs you read can be trusted to match the code that runs.*
 
-This is what self-coherence means at the smallest scale. The HCI is just the same property scaled up: a 57-dimensional check that the system's self-description matches its self.
+This is what self-coherence means at the smallest scale. The HCI is just the same property scaled up: a 61-dimensional check that the system's self-description matches its self.
 
 ## Reference
 

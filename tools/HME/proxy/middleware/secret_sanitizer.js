@@ -33,6 +33,7 @@
  */
 
 // Pre-compiled patterns. Each entry: [regex, redacted-marker, friendly-tag].
+// anti-fork-begin: secret-sanitizer-patterns min=12
 const PATTERNS = [
   // OpenAI / Anthropic / Stripe / GitHub / generic "sk-" provider keys.
   // 30+ alphanumeric/underscore/dash chars after `sk-` covers OpenAI
@@ -76,6 +77,7 @@ const PATTERNS = [
     (m) => m.replace(/:\/\/[^@]+@/, '://<REDACTED:db-creds>@'),
   ],
 ];
+// anti-fork-end: secret-sanitizer-patterns
 
 // Substitution markers we ALREADY emit — used to suppress double-redaction
 // across proxy restarts where tool_results re-enter the pipeline.
