@@ -84,9 +84,13 @@ def hme_admin(action: str = "selftest", modules: str = "",
                 logger.info(f"warm: pre-edit cache error: {e}")
         _threading.Thread(target=_bg_gpu_warm, daemon=True).start()
         _threading.Thread(target=_bg_pre_edit, daemon=True).start()
+        try:
+            from tool_invocations import action_form as _action_form
+        except ImportError:
+            def _action_form(a): return f"i/hme-admin action={a}"
         parts.append(
             "Warm priming started (2 parallel background tasks: GPU KV contexts + pre-edit cache).\n"
-            "Use `i/hme-admin action=selftest` to check status."
+            f"Use `{_action_form('selftest')}` to check status."
         )
     if action == "introspect":
         parts.append(hme_introspect())
