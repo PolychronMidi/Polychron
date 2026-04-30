@@ -38,6 +38,10 @@
       "i": "i/trace target=<TARGET>",
       "primer": "i/trace target=… mode=snapshot"
     },
+    "why": {
+      "i": "i/why mode=<MODE>",
+      "primer": "i/why mode=block"
+    },
     "status": {
       "i": "i/status mode=<MODE>",
       "primer": "i/status mode=hme"
