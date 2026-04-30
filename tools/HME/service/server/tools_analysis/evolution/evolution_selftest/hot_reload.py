@@ -14,7 +14,8 @@ logger = logging.getLogger("HME")
 
 
 @ctx.mcp.tool(meta={"hidden": True})
-def hme_hot_reload(modules: str = "", _trigger: str = "manual") -> str:
+def hme_hot_reload(modules: str = "", _trigger: str = "manual",
+                   _caused_by: str = "") -> str:
     """Hot-reload HME tool modules without restarting the server.
 
     Works against the dict-backed `tool_registry._TOOLS` — the FastMCP
@@ -169,12 +170,19 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual") -> str:
         _root = ctx.PROJECT_ROOT
         _marker_path = os.path.join(_root, "tmp", "hme-last-reload.json")
         _marker_tmp = _marker_path + ".tmp"
+        payload = {
+            "ts": _time.time(),
+            "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme-admin
+            "summary": summary.split("\n\n")[-1][:160],
+        }
+        # Horizon VII: explicit caused_by — the specific file that
+        # triggered this reload. Watcher fills this in with the path
+        # whose change scheduled the reload. Manual invocations leave
+        # it empty. Consumers prefer caused_by over heuristic chains.
+        if _caused_by:
+            payload["caused_by"] = _caused_by
         with open(_marker_tmp, "w") as _mf:
-            _json.dump({
-                "ts": _time.time(),
-                "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme-admin
-                "summary": summary.split("\n\n")[-1][:160],
-            }, _mf)
+            _json.dump(payload, _mf)
         os.replace(_marker_tmp, _marker_path)
     except (OSError, AttributeError) as _werr:
         logger.debug("hot-reload marker write failed: %s", _werr)

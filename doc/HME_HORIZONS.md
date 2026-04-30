@@ -22,12 +22,12 @@ What follows is the asymptote, not the next sprint.
 ## Current status (10 of 10 advanced)
 
 - 🌱 **I** — Predictive HME (`i/why mode=predict`)
-- 🌱 **II** — Multi-timescale coherence (`i/state` HCI phase line)
+- 🌳 **II** — Multi-timescale + multi-axis (`i/state` phase line + `i/status mode=multi-axis-band`)
 - 🌳 **III** — KB graph + context (`i/why mode=kb-graph` + `mode=kb-context <id>`)
 - 🌱 **IV** — Agent-loop dimension (`i/status mode=agent-loop`)
-- 🌱 **V** — Conjugate channel (`i/status mode=conjugate`)
+- 🌳 **V** — Conjugate channel + coupling verifier (`i/status mode=conjugate` + `conjugate-channel` HCI verifier)
 - 🌳 **VI** — Meta-meta verifiers (`i/why mode=verifier-utility|verifier-coverage|verifier-drift`)
-- 🌱 **VII** — Causal traversal (`i/why mode=causality`)
+- 🌳 **VII** — Causal traversal (`i/why mode=causality` heuristic + explicit `caused_by` at hot-reload site)
 - 🌱 **VIII** — Architectural conscience (`i/why mode=conscience`)
 - 🌱 **IX** — Learned chaordic band (`i/status mode=band-tuning`)
 - 🌱 **X** — Fractal recursion test (`i/why mode=fractal-shape`)
@@ -46,12 +46,12 @@ Today HME observes itself and reports. It does not predict. The next layer of se
 
 The shape: HME's self-model includes a model of the agent's behavior. Already seeded by `dominance_prefetch.js` and the auto-briefing on Edit. Generalize: every agent action has a predictable consequence; surface the prediction before the action.
 
-## Horizon II — Multi-timescale, multi-axis coherence 🌱
+## Horizon II — Multi-timescale, multi-axis coherence 🌳
 
 HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggregations that throw away phase information.
 
-- **Multi-timescale HCI** (shipped this turn). 1m / 1h / 1d / peak — different horizons reveal different signals.
-- **Multi-axis budgets**. One coherence-budget per category (`structural-integrity` band, `freshness` band, `regression-prevention` band). The chaordic edge is N-dimensional, not 1-dimensional. A system can be over-ordered along one axis and under-ordered along another simultaneously. Today's single homeostat collapses this.
+- **Multi-timescale HCI** ✅ shipped: `i/state` HCI line shows 1m / 1h / 1d / peak.
+- **Multi-axis budgets** ✅ shipped: `i/status mode=multi-axis-band` computes per-subtag weighted score and reports each axis's BELOW/IN_BAND/ABOVE relative to [0.55, 0.85]. First run revealed 6 of 7 subtags ABOVE band, 1 IN_BAND (freshness) — the system is over-coherent in most dimensions, license to explore. Future expansion: per-axis LEARNED bands tuned from ground-truth signature per subtag (Horizon IX × II compounding).
 - **Verifier confidence**. Status is currently 4-valued (PASS/FAIL/WARN/SKIP). Add a confidence dimension: `PASS@0.95` vs `PASS@0.51` are different. 62 noisy 0.51-PASSes voting into HCI is a different signal than 62 confident 0.95-PASSes. The `score` field already carries this; promote it to first-class.
 
 The shape: every collapsed scalar is a thrown-away signal. Find each one; un-collapse it.
@@ -85,7 +85,7 @@ The agent (the LLM running through Claude Code, including me right now) is curre
 
 The shape: the agent is not external to HME; the agent is a subsystem of HME. Modeled accordingly.
 
-## Horizon V — The composition⇔HME conjugate channel 🌱
+## Horizon V — The composition⇔HME conjugate channel 🌳
 
 Musical coherence and HCI co-evolve over rounds but don't directly inform each other. They are two parallel scores that should be a coupled system.
 
@@ -93,7 +93,9 @@ Musical coherence and HCI co-evolve over rounds but don't directly inform each o
 - **Composition → HCI.** When fingerprint-comparison verdict flips DRIFTED, an HCI verifier checks whether recent edits introduced uncovered KB regions. The compositional verdict drives architectural inspection.
 - **Joint distribution.** A 2D plot of (HCI, perceptual-correlation) per round. Quadrants reveal: high-both = mature stability, high-HCI low-perceptual = sterile rigor, low-HCI high-perceptual = lucky chaos, low-both = lost. Currently invisible.
 
-**Seed shipped:** `i/status mode=conjugate` joins HCI + perceptual-complexity per round from `hme-musical-correlation.json`. Uses median-as-threshold per axis so partition is data-driven across whatever scales the two metrics are on. First run revealed: 23 rounds bimodal between mature-stability (12) and sterile-rigor (11); zero in chaos quadrants. The system has two stable attractors — alive-enough vs structured-but-flat. That bimodality was invisible before this view.
+**Shipped (two legs → 🌳):**
+- `i/status mode=conjugate` — passive view. Joins HCI + perceptual-complexity per round from `hme-musical-correlation.json` with median-as-threshold partitioning. First run revealed 23 rounds bimodal between mature-stability (12) and sterile-rigor (11); zero chaos quadrants. The system has two stable attractors.
+- `conjugate-channel` HCI verifier — active feedback. The FIRST verifier whose status depends on the composition signal: FAILs when the latest round is in the 'lost' quadrant (low HCI AND low perceptual). With this verifier the two coherences become a coupled system — sustained 'lost' state degrades HCI, signaling the agent to investigate. Currently PASS (latest round = mature stability).
 
 The shape: the two scores are conjugate variables, not independent. Treat as one system.
 
@@ -107,7 +109,7 @@ The verifiers check the system. What checks the verifiers?
 
 The shape: every layer of self-coherence needs a layer above it that audits *its* coherence. Recursion is structural.
 
-## Horizon VII — Causal traversal of `i/why` 🌱
+## Horizon VII — Causal traversal of `i/why` 🌳
 
 `i/why` answers narrow questions today. The full vision: every observed effect has a queryable chain of causes, traversable to its root.
 
@@ -117,7 +119,9 @@ The shape: every layer of self-coherence needs a layer above it that audits *its
 
 Implementation: every state-changing action records its `caused_by` reference. The chain is replayable. `i/why <observed-effect>` walks the chain.
 
-**Seed shipped:** `i/why mode=causality <event-name>` approximates the chain heuristically — the activity log's `session` field already groups events causally (same Claude turn). Within a session, events are temporally adjacent and most often causally related. Lookup walks back up to 8 events in same session before each occurrence, surfacing the heuristic chain. The full vision adds explicit `caused_by` to each emit site so the chain becomes a hard fact rather than a temporal-adjacency guess. The seed teaches the eventual instrumentation what shape it needs.
+**Shipped (two-tier resolution → 🌳):**
+- `i/why mode=causality <event>` — heuristic chain via session adjacency (Tier-2). Walks back up to 8 events in same session before each occurrence.
+- **Real `caused_by` instrumentation at the hot-reload site (Tier-1).** Watcher captures the `.py` file whose change scheduled the reload; passes it as `_caused_by` through `hme_hot_reload`; the marker file `tmp/hme-last-reload.json` carries `caused_by: <file_path>`. `i/why mode=causality hot_reload` reads the marker FIRST and reports the explicit cause; falls back to heuristic if marker lacks the field (manual reloads). First explicit instrumentation site — the pattern is now established for any future emit-site to opt into Tier-1.
 
 The shape: the system becomes *legible to itself* in causal form. Today it's legible in static form (read the code). Tomorrow it's legible in dynamic form (read the trace).
 

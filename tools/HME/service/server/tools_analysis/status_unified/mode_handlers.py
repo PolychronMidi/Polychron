@@ -117,6 +117,99 @@ def _mode_activity():
     return _ad(window="round")
 
 
+def _mode_multi_axis_band():
+    """Horizon II expansion — multi-axis bands.
+
+    Today's chaordic band is [55, 85] for the aggregate HCI score, one
+    homeostat across all dimensions. The chaordic edge is N-dimensional;
+    a system can be over-ordered along structural-integrity AND
+    under-ordered along freshness simultaneously, and the aggregate
+    band hides both.
+
+    This view computes the per-subtag HCI sub-score (sum of weighted
+    PASS/FAIL/WARN scores within each subtag) and reports each axis's
+    position relative to a default [0.55, 0.85] band. Turns the single
+    homeostat into N independent ones — agent reads which axes are
+    saturated, which are starving, which are healthy.
+    """
+    import os as _os
+    import json as _json
+    import sys as _sys
+    from collections import defaultdict
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    if not _os.path.isfile(snap_path):
+        return ("# i/status mode=multi-axis-band\n"
+                "No snapshot — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+    try:
+        with open(snap_path) as _f:
+            snap = _json.load(_f)
+    except (OSError, ValueError) as e:
+        return f"# i/status mode=multi-axis-band\nFailed to read snapshot: {e}"
+
+    _scripts = _os.path.join(_root, "tools", "HME", "scripts")
+    if _scripts not in _sys.path:
+        _sys.path.insert(0, _scripts)
+    try:
+        from verify_coherence import REGISTRY  # type: ignore
+    except Exception as e:
+        return f"# i/status mode=multi-axis-band\nFailed to import REGISTRY: {e}"
+
+    # Index verifiers by name for subtag + weight lookup
+    name_to_meta: dict[str, tuple[str, float]] = {}
+    for v in REGISTRY:
+        name_to_meta[v.name] = (
+            getattr(v, "subtag", "(none)"),
+            float(getattr(v, "weight", 1.0)),
+        )
+
+    # Aggregate per subtag: weighted-score sum / weighted-max sum
+    by_subtag: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    for name, info in snap.get("verifiers", {}).items():
+        meta = name_to_meta.get(name)
+        if meta is None:
+            continue
+        subtag, weight = meta
+        score = float(info.get("score", 0.0))
+        by_subtag[subtag].append((score * weight, weight))
+
+    LO, HI = 0.55, 0.85
+
+    out = [f"# Multi-axis chaordic bands  (per-subtag HCI; default band [{LO}, {HI}])"]
+    out.append("")
+    out.append(f"  {'subtag':24}  {'verifiers':>9}  {'score':>5}  {'state':>9}")
+    rows = []
+    for subtag, pairs in sorted(by_subtag.items()):
+        if not pairs:
+            continue
+        weighted_total = sum(p[0] for p in pairs)
+        weight_sum = sum(p[1] for p in pairs) or 1.0
+        score = weighted_total / weight_sum
+        if score < LO:
+            state = "BELOW"
+        elif score > HI:
+            state = "ABOVE"
+        else:
+            state = "IN_BAND"
+        rows.append((subtag, len(pairs), score, state))
+    rows.sort(key=lambda r: (r[3] != "IN_BAND", -r[2]))
+    for subtag, n, score, state in rows:
+        marker = " " if state == "IN_BAND" else "!"
+        out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {state:>9}")
+
+    out.append("")
+    out.append("# Reading the table:")
+    out.append("  - BELOW band = axis is starved (too few PASSes / too low weighted score)")
+    out.append("  - ABOVE band = axis is saturated (everything green; could license exploration)")
+    out.append("  - IN_BAND = healthy chaordic edge for this axis")
+    out.append("")
+    out.append("  The default [0.55, 0.85] band is shared across axes today.")
+    out.append("  Future expansion: per-axis learned bands tuned from ground-truth")
+    out.append("  signature per subtag (Horizon IX × Horizon II compounding).")
+    return "\n".join(out)
+
+
 def _mode_conjugate():
     """Horizon V seed — composition⇔HME conjugate channel.
 
@@ -964,6 +1057,8 @@ _STATUS_MODES: dict[str, callable] = {
     "band-tuning": _mode_band_tuning,
     "band_tuning": _mode_band_tuning,
     "conjugate": _mode_conjugate,
+    "multi-axis-band": _mode_multi_axis_band,
+    "multi_axis_band": _mode_multi_axis_band,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,

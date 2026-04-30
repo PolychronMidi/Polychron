@@ -46,14 +46,54 @@ def main(argv):
     if not target_event:
         print("# i/why mode=causality <event-name>")
         print()
-        print("Surfaces the heuristic causal chain leading to recent")
-        print("occurrences of <event-name> by grouping same-session")
-        print("events temporally before each occurrence.")
+        print("Surfaces the causal chain leading to recent occurrences of")
+        print("<event-name>. Two-tier resolution:")
+        print("  1. If a marker file with explicit caused_by exists for this")
+        print("     event, use that (Horizon VII real instrumentation).")
+        print("  2. Otherwise, fall back to same-session temporal-adjacency")
+        print("     heuristic (8 events back in same session).")
         print()
         print("Examples:")
         print("  i/why mode=causality auto_brief_injected")
-        print("  i/why mode=causality bash_error_surfaced")
+        print("  i/why mode=causality hot_reload    (uses explicit caused_by)")
         return 2
+
+    # Tier-1: explicit caused_by from marker files (Horizon VII
+    # instrumentation). Hot-reload writes tmp/hme-last-reload.json with
+    # caused_by when triggered by fs_watcher. As more sites add explicit
+    # caused_by, expand this catalogue.
+    marker_catalog = {
+        "hot_reload": "tmp/hme-last-reload.json",
+    }
+    if target_event in marker_catalog:
+        marker_path = os.path.join(PROJECT_ROOT, marker_catalog[target_event])
+        if os.path.isfile(marker_path):
+            try:
+                with open(marker_path) as _mf:
+                    marker = json.load(_mf)
+            except (OSError, ValueError):
+                marker = None
+            if marker:
+                ts = marker.get("ts", 0)
+                ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
+                has_explicit = "caused_by" in marker
+                tier_label = "Tier-1: explicit caused_by" if has_explicit else "Tier-1: marker without caused_by"
+                print(f"# Causal chain — '{target_event}' ({tier_label})")
+                print()
+                print(f"## Latest occurrence at {ts_str}")
+                print(f"  trigger:    {marker.get('trigger', '?')}")
+                if has_explicit:
+                    print(f"  caused_by:  {marker['caused_by']}")
+                else:
+                    print(f"  caused_by:  (not recorded — only auto-reloads from fs_watcher carry caused_by)")
+                print(f"  summary:    {marker.get('summary', '')[:120]}")
+                print(f"  ▶  {target_event}")
+                print()
+                print("# Note:")
+                print("  This is the explicit-instrumentation path (Horizon VII real")
+                print("  caused_by). Manual reloads don't carry caused_by since the")
+                print("  trigger is the operator. Watcher-driven auto-reloads do.")
+                return 0
 
     activity = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
     if not os.path.isfile(activity):

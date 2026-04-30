@@ -196,3 +196,9 @@ test('i/why mode=kb-context without id prints usage', () => {
   assert.strictEqual(r.status, 2);
   assert.match(r.stdout, /Usage:|<entry-id-or-prefix>/);
 });
+
+test('i/status mode=multi-axis-band renders Horizon II per-subtag bands', () => {
+  const r = _runStatus('multi-axis-band');
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Multi-axis|chaordic band|subtag/);
+});

@@ -278,6 +278,12 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                 and "/tools/HME/service/server/" in abs_path.replace(os.sep, "/")
                 and not _pipeline_running()
             ):
+                # Capture the triggering file for explicit caused_by
+                # instrumentation (Horizon VII). The watcher knows
+                # which file caused the reload — pass it down so the
+                # hot-reload marker carries the real cause, not just
+                # "auto" as a category.
+                _reload_cause[0] = abs_path
                 _schedule_hot_reload()
 
     def _schedule_reindex():
@@ -293,6 +299,8 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     # edits coalesces into one reload).
     _reload_timer: list = [None]
     _reload_pending: list[bool] = [False]
+    # Triggering file path for explicit caused_by (Horizon VII).
+    _reload_cause: list[str] = [""]
 
     def _schedule_hot_reload():
         with _lock:
@@ -313,9 +321,15 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             from tools_analysis.evolution.evolution_selftest.hot_reload \
                 import hme_hot_reload as _reload
             # hme_hot_reload writes tmp/hme-last-reload.json itself.
-            # Pass _trigger='auto' so the marker correctly attributes
-            # this to the watcher rather than a manual invocation.
-            result = _reload("", _trigger="auto")
+            # Pass _trigger='auto' AND _caused_by=<file_path> for real
+            # causal attribution (Horizon VII). Marker carries the
+            # specific file that triggered the reload, not just the
+            # category. Consumers like `i/why mode=causality` read
+            # caused_by directly instead of falling back to session
+            # adjacency heuristics.
+            cause = _reload_cause[0] or ""
+            _reload_cause[0] = ""  # reset for next firing
+            result = _reload("", _trigger="auto", _caused_by=cause)
             logger.info("auto hot-reload: %s",
                         result.split("\n")[0] if result else "(empty)")
         except Exception as _e:

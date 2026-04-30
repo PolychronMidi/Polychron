@@ -895,6 +895,76 @@ class HardcodedToolInvocationVerifier(Verifier):
                        violations[:10])
 
 
+class ConjugateChannelVerifier(Verifier):
+    """Horizon V expansion — composition⇔HME conjugate-channel feedback.
+
+    Couples HCI to perceptual coherence by reading the latest
+    musical-correlation row and FAILing when the system is in the
+    'lost' quadrant (low HCI AND low perceptual). PASS when in any
+    other quadrant. The `perceptual_complexity_avg` and `hme_coherence`
+    fields exist in `output/metrics/hme-musical-correlation.json`.
+
+    This is the FIRST verifier whose status depends on the composition
+    signal — the conjugate channel previously was a passive view
+    (`i/status mode=conjugate`) but didn't feed back into HCI. With
+    this verifier the two coherences become a coupled system: a
+    sustained 'lost' state degrades HCI, which signals the agent to
+    investigate.
+
+    Threshold: 'lost' = HCI < median AND perceptual < median (data-driven)."""
+    name = "conjugate-channel"
+    category = "code"
+    subtag = "regression-prevention"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        path = os.path.join(_PROJECT, "output", "metrics",
+                            "hme-musical-correlation.json")
+        if not os.path.isfile(path):
+            return _result(SKIP, 1.0,
+                           "no musical-correlation file yet; pipeline hasn't produced one")
+        try:
+            with open(path) as f:
+                d = json.load(f)
+        except (OSError, ValueError) as e:
+            return _result(ERROR, 0.0, f"could not read: {e}")
+        latest = d.get("latest") or {}
+        history = d.get("history") or []
+        all_rounds = [r for r in (history + [latest])
+                      if isinstance(r.get("hme_coherence"), (int, float))
+                      and isinstance(r.get("perceptual_complexity_avg"), (int, float))]
+        if not all_rounds:
+            return _result(SKIP, 1.0, "no rounds carry both signals")
+        if not isinstance(latest.get("hme_coherence"), (int, float)) or \
+           not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
+            return _result(SKIP, 1.0, "latest round missing one of the two signals")
+        # Data-driven thresholds — medians across history
+        sorted_h = sorted(r["hme_coherence"] for r in all_rounds)
+        sorted_p = sorted(r["perceptual_complexity_avg"] for r in all_rounds)
+        h_thr = sorted_h[len(sorted_h) // 2]
+        p_thr = sorted_p[len(sorted_p) // 2]
+        cur_h = float(latest["hme_coherence"])
+        cur_p = float(latest["perceptual_complexity_avg"])
+        if cur_h < h_thr and cur_p < p_thr:
+            return _result(FAIL, 0.0,
+                           f"latest round in 'lost' quadrant "
+                           f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
+                           f"perc={cur_p:.2f} < {p_thr:.2f})",
+                           ["consider: i/status mode=conjugate for full quadrant view",
+                            "consider: i/why mode=hci-drop to identify regressed axes",
+                            "consider: i/why mode=conscience for ground-truth context"])
+        # Otherwise: PASS, with quadrant label in summary
+        if cur_h >= h_thr and cur_p >= p_thr:
+            quad = "mature stability"
+        elif cur_h >= h_thr:
+            quad = "sterile rigor"
+        else:
+            quad = "lucky chaos"
+        return _result(PASS, 1.0,
+                       f"latest round: '{quad}' "
+                       f"(HCI={cur_h:.2f}, perc={cur_p:.2f}; medians {h_thr:.2f}/{p_thr:.2f})")
+
+
 class TestEnvUndefinedVerifier(Verifier):
     """In Node test files, `process.env.X = undefined` does NOT delete the
     var — it sets the literal string 'undefined' (truthy). Later tests
