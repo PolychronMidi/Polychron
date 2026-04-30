@@ -185,19 +185,21 @@ def _measure_l0_channels() -> dict:
     except (subprocess.SubprocessError, OSError):
         return _scale_signature("L0→consumers", [])
     files_per_chan: dict[str, set[str]] = {chan: set() for chan in channels}
-    # Output format: file:line:matched-text
+    chan_set = set(channels)
+    # Output format: file:line:matched-text. -o emits ONLY the matched
+    # substring on the third field; with the alternation we have, the
+    # match_field IS one of the channel names verbatim. Exact-match
+    # against the channel set — earlier `chan in match_field` was buggy
+    # because `coherence` is a substring of `channel-coherence` (both
+    # declared), so the wrong channel won the loop.
     for ln in r.stdout.splitlines():
-        # Find the third colon-separated field (the matched word)
         parts = ln.split(":", 2)
         if len(parts) < 3:
             continue
         fp, _line, match_field = parts
-        # The match_field may contain the matched text; extract first
-        # known-channel substring (channels are all distinct words).
-        for chan in channels:
-            if chan in match_field:
-                files_per_chan[chan].add(fp)
-                break
+        match_field = match_field.strip()
+        if match_field in chan_set:
+            files_per_chan[match_field].add(fp)
     counts = [len(s) for s in files_per_chan.values() if s]
     return _scale_signature("L0→consumers", counts)
 
