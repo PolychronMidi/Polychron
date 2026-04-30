@@ -1166,7 +1166,58 @@ class ConjugateChannelVerifier(Verifier):
                 os.remove(tightening_path)
         except OSError:
             pass
-        # Otherwise: PASS, with quadrant label in summary
+        # Otherwise: PASS, with quadrant label in summary.
+        # Plus check for the symmetric "license to explore" condition:
+        # when most subtags are ABOVE band (system over-coherent), write
+        # a band-LOOSENING marker so the next pipeline run gets a wider
+        # chaordic edge. Mirrors the tightening branch above. The
+        # composition consumer (compute-coherence-budget.js) reads the
+        # same file via tmp/hme-band-tightening.json convention and
+        # applies the delta. Pure logic enhancement, no constant tuning.
+        try:
+            snap_path = os.path.join(_PROJECT, "output", "metrics",
+                                     "hci-verifier-snapshot.json")
+            if os.path.isfile(snap_path):
+                with open(snap_path) as _sf:
+                    _snap = json.load(_sf)
+                # Compute per-subtag mean score; count ABOVE band
+                from collections import defaultdict
+                _by_subtag: dict = defaultdict(list)
+                _scripts2 = os.path.join(_PROJECT, "tools", "HME", "scripts")
+                if _scripts2 not in sys.path:
+                    sys.path.insert(0, _scripts2)
+                from verify_coherence import REGISTRY as _REG
+                _name_to_subtag = {v.name: getattr(v, "subtag", "(none)") for v in _REG}
+                for name, info in (_snap.get("verifiers") or {}).items():
+                    subtag = _name_to_subtag.get(name, "(none)")
+                    _by_subtag[subtag].append(float(info.get("score", 0.0)))
+                _LO, _HI = 0.55, 0.85
+                _above = sum(1 for vals in _by_subtag.values()
+                             if vals and (sum(vals) / len(vals)) > _HI)
+                _total = sum(1 for vals in _by_subtag.values() if vals)
+                # ≥ 5 of 7 axes saturated → license-to-explore signal.
+                # Persist a loosening proposal mirroring the tightening
+                # one. Composition consumer applies opposite-sign delta.
+                if _total >= 6 and _above >= 5:
+                    loosen_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
+                    loosen_proposal = {
+                        "ts": time.time(),
+                        "trigger": "conjugate-channel-license-to-explore",
+                        "reason": (f"{_above} of {_total} subtags ABOVE band "
+                                   f"(saturated → license to explore)"),
+                        "recommended_action": "widen_band",
+                        "band_delta": +0.05,  # positive = expand
+                        "expires_after_rounds": 1,
+                    }
+                    loosen_tmp = loosen_path + ".tmp"
+                    with open(loosen_tmp, "w") as _lf:
+                        json.dump(loosen_proposal, _lf, indent=2)
+                    os.replace(loosen_tmp, loosen_path)
+        except (OSError, ImportError, ValueError):
+            # Loosening signal is advisory; absence of the marker is
+            # equivalent to "no exploration license." Don't fail the
+            # verifier on bookkeeping issues.
+            pass
         if cur_h >= h_thr and cur_p >= p_thr:
             quad = "mature stability"
         elif cur_h >= h_thr:

@@ -233,19 +233,27 @@ function main() {
       // on long-past architectural state.
       if (writtenAgeS < 86400) {
         const delta = Number(tighten.band_delta || 0);
-        // Negative delta = narrow the band symmetrically
+        // Bidirectional band adjustment:
+        //   delta < 0  → narrow symmetrically (lost-quadrant tightening)
+        //   delta > 0  → widen symmetrically (license-to-explore loosening,
+        //                fired when ≥5 of 7 axes saturated)
+        // Symmetric formula: newLo = band[0] - delta/2, newHi = band[1] + delta/2.
+        // Negative delta: subtracting raises floor, adding lowers ceiling → narrow.
+        // Positive delta: subtracting lowers floor, adding raises ceiling → widen.
         const before = band.slice();
-        const newLo = Math.max(0, band[0] - delta / 2);  // delta is negative; subtracting raises floor
-        const newHi = Math.min(1, band[1] + delta / 2);  // delta is negative; adding lowers ceiling
+        const newLo = Math.max(0, band[0] - delta / 2);
+        const newHi = Math.min(1, band[1] + delta / 2);
         if (newLo < newHi) {
           band = [newLo, newHi];
-          bandSource += ` + V-tightening (delta=${delta})`;
+          const direction = delta < 0 ? 'V-tightening' : 'V-loosening';
+          bandSource += ` + ${direction} (delta=${delta > 0 ? '+' : ''}${delta})`;
           bandTighteningApplied = {
             applied: true,
+            direction: delta < 0 ? 'narrow' : 'widen',
             delta,
             before,
             after: band.slice(),
-            reason: tighten.reason || 'conjugate-channel lost-quadrant',
+            reason: tighten.reason || 'conjugate-channel signal',
             expires_after_rounds: ageRounds,
             written_age_s: writtenAgeS,
           };
@@ -253,7 +261,7 @@ function main() {
       } else {
         bandTighteningApplied = {
           applied: false,
-          reason: 'tightening proposal stale (>24h)',
+          reason: 'band-adjustment proposal stale (>24h)',
           written_age_s: writtenAgeS,
         };
       }
