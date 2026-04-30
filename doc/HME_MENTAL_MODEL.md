@@ -116,6 +116,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"Walk the cause-of-cause chain back to root"** → `i/why mode=causality <event> --chain` (recursive walker; resolves caused_by → upstream event via prefix heuristics)
 - **"What was the ROOT cause of this event?"** → `i/why mode=causality <event> --root-cause` (shorthand: walks to leaf silently, reports just the root)
 - **"Did the conjugate-channel verifier change anything in the next pipeline run?"** → check `output/metrics/hme-coherence-budget.json` → `band_tightening` field. The V→IX coupling lands here; reflects whether the tightening proposal was applied, ignored as stale, or absent.
+- **"How does the system respond to listener verdicts?"** → Consecutive `legendary` ground-truth verdicts trigger streak-aware band-loosening: each round of legendary streak adds +0.025 to the band-widen delta (cap +0.10) and +1 to the license duration (cap 4 rounds). The `tmp/hme-band-tightening.json` carries a `streak: {legendary_consecutive, policy}` field documenting which streak count produced the current proposal. Non-legendary verdict breaks the streak; license shrinks to base on next conjugate-channel run.
 - **"Does the architecture's tensegrity claim hold across scales?"** → `i/why mode=fractal-shape` (Horizon X — Gini fan-out at every scale)
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`

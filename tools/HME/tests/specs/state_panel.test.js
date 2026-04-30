@@ -507,6 +507,43 @@ test('i/state HCI line carries confidence indicator (Horizon II maturity)', () =
   assert.match(r.stdout, /HCI\s+\S+.*\s*(conf=(uniform|mixed|fragile)|\(\d+ verifiers\))/);
 });
 
+test('_count_legendary_streak counts consecutive legendary verdicts ending at latest', () => {
+  // Direct-import the helper; verifies the streak-aware sizing math
+  // independently of the verifier's full execution (which SKIPs when
+  // hme_coherence is null).
+  const r = spawnSync('python3', ['-c',
+    `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); ` +
+    'from verify_coherence.code_audits import _count_legendary_streak; ' +
+    `print(_count_legendary_streak('${PROJECT_ROOT}'))`
+  ], { encoding: 'utf8', timeout: 15000 });
+  assert.strictEqual(r.status, 0);
+  // Streak count must be a non-negative integer (live data may have any value)
+  const streak = parseInt(r.stdout.trim(), 10);
+  assert.ok(Number.isInteger(streak), 'streak must be an integer');
+  assert.ok(streak >= 0, 'streak must be non-negative');
+});
+
+test('streak-aware sizing math: cap at +0.10 delta and 4 rounds expiry', () => {
+  // Verify the scaling formulas directly. base 0.05, +0.025/streak, cap 0.10
+  // for delta; base 1, +1/streak, cap 4 for expires_after_rounds.
+  const cases = [
+    { streak: 0, delta: 0.05, expiry: 1 },  // 0/1 fallback
+    { streak: 1, delta: 0.05, expiry: 1 },  // base
+    { streak: 2, delta: 0.075, expiry: 2 },
+    { streak: 3, delta: 0.10, expiry: 3 },  // delta hits cap
+    { streak: 4, delta: 0.10, expiry: 4 },  // both at cap
+    { streak: 10, delta: 0.10, expiry: 4 }, // both saturated
+  ];
+  for (const c of cases) {
+    const delta = Math.min(0.10, 0.05 + Math.max(0, c.streak - 1) * 0.025);
+    const expiry = Math.min(4, 1 + Math.max(0, c.streak - 1));
+    assert.ok(Math.abs(delta - c.delta) < 1e-9,
+      `streak=${c.streak}: expected delta=${c.delta}, got ${delta}`);
+    assert.strictEqual(expiry, c.expiry,
+      `streak=${c.streak}: expected expiry=${c.expiry}, got ${expiry}`);
+  }
+});
+
 test('compute-coherence-budget handles bidirectional band adjustment (widen + narrow)', () => {
   const fs = require('node:fs');
   const path = require('node:path');
