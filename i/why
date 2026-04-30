@@ -29,6 +29,7 @@ for arg in "$@"; do
     mode=conscience) exec python3 "$SCRIPT_DIR/why-conscience.py" "$@" ;;
     mode=causality) exec python3 "$SCRIPT_DIR/why-causality.py" "$@" ;;
     mode=fractal-shape) exec python3 "$SCRIPT_DIR/why-fractal-shape.py" "$@" ;;
+    mode=architecture-snapshot) exec python3 "$SCRIPT_DIR/why-architecture-snapshot.py" "$@" ;;
     mode=search)    exec python3 "$SCRIPT_DIR/why-search.py" "$@" ;;
   esac
 done

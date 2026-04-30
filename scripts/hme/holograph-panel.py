@@ -129,7 +129,7 @@ def _kb_summary() -> str:
 
 
 def _agent_loop_summary() -> str:
-    """Horizon IV — agent-loop quality."""
+    """Horizon IV — agent-loop quality + tier marker."""
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
@@ -137,7 +137,14 @@ def _agent_loop_summary() -> str:
     alq = (snap.get("verifiers") or {}).get("agent-loop-quality")
     if not alq:
         return "verifier absent"
-    return f"{alq.get('status', '?')}  score={alq.get('score', 0):.2f}"
+    base = f"{alq.get('status', '?')}  score={alq.get('score', 0):.2f}"
+    # Maturity tier marker (Horizon IV asymptote): GREEN/YELLOW/RED for
+    # adaptive-priming consumers. Surface inline so the panel reflects
+    # both the verifier verdict AND the actionable tier label.
+    tier = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-agent-loop-tier.json"))
+    if tier:
+        base += f"  ·  tier={tier.get('tier', '?')}"
+    return base
 
 
 def _conjugate_summary() -> str:
@@ -153,7 +160,7 @@ def _conjugate_summary() -> str:
 
 
 def _verifier_meta_summary() -> str:
-    """Horizon VI — meta-meta verifier health."""
+    """Horizon VI — meta-meta verifier health + auto-prune marker."""
     sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"))
     try:
         from verify_coherence import REGISTRY  # type: ignore
@@ -171,7 +178,16 @@ def _verifier_meta_summary() -> str:
     for st in ("PASS", "FAIL", "WARN", "SKIP", "ERROR"):
         if statuses.get(st):
             parts.append(f"{st}={statuses[st]}")
-    return f"{n} verifiers · " + " ".join(parts)
+    base = f"{n} verifiers · " + " ".join(parts)
+    # Auto-prune marker (Horizon VI maturity): surface dead-weight
+    # candidate count so the agent sees how many always-PASS verifiers
+    # are diluting HCI without explicit drill-in.
+    prune = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-verifier-prune.json"))
+    if prune and isinstance(prune.get("candidates"), list):
+        cand_n = len(prune["candidates"])
+        if cand_n > 0:
+            base += f"  ·  prune-candidates={cand_n}"
+    return base
 
 
 def _causality_summary() -> str:

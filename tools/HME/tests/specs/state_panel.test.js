@@ -406,6 +406,48 @@ test('i/why mode=causality --root-cause walks to leaf and reports it', () => {
   assert.match(r.stdout, /Root cause|walked \d+ step|No 'brief_recorded' events found/);
 });
 
+test('i/why mode=architecture-snapshot renders composite full-system report', () => {
+  const r = _runWhy(['mode=architecture-snapshot']);
+  assert.strictEqual(r.status, 0);
+  // Multiple section dividers should appear; at minimum the title block
+  // and the State machine snapshot section.
+  assert.match(r.stdout, /HME Architecture Snapshot/);
+  assert.match(r.stdout, /State machine snapshot/);
+  assert.match(r.stdout, /Composite report complete/);
+});
+
+test('rotate-history-files dry-run reports policy state without modifying', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const activityPath = path.join(PROJECT_ROOT, 'output/metrics/hme-activity.jsonl');
+  const beforeSize = fs.existsSync(activityPath) ? fs.statSync(activityPath).size : 0;
+  const r = spawnSync('python3',
+    [path.join(PROJECT_ROOT, 'scripts/hme/rotate-history-files.py'), '--dry-run'],
+    { encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+      env: { ...process.env, PROJECT_ROOT } });
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /HME history rotation.*\(dry-run\)/);
+  assert.match(r.stdout, /under cap|would-rotate/);
+  // Dry-run must not modify the file
+  const afterSize = fs.existsSync(activityPath) ? fs.statSync(activityPath).size : 0;
+  assert.strictEqual(beforeSize, afterSize, 'dry-run modified file');
+});
+
+test('i/holograph reflects tier marker + prune-candidate count', () => {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+    encoding: 'utf8', timeout: 30000, cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  assert.strictEqual(r.status, 0);
+  // tier= label appears on agent-loop row when marker file present;
+  // prune-candidates= appears on verifier ecosystem row when prune
+  // marker has candidates. Both are conditional on data state.
+  // Assert at minimum the holograph rendered all 10 horizon rows.
+  for (const hid of ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']) {
+    assert.match(r.stdout, new RegExp(`\\[${hid}\\s*\\]`));
+  }
+});
+
 test('i/why mode=fractal-shape reports redundancy ablation column (Horizon X maturity)', () => {
   const r = _runWhy(['mode=fractal-shape']);
   assert.strictEqual(r.status, 0);
