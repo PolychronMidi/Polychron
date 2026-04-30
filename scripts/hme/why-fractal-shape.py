@@ -196,7 +196,69 @@ def _measure_policies_by_event() -> dict:
     return _scale_signature("policy→event", list(event_counts.values()))
 
 
+def _append_history(scales: list[dict]) -> None:
+    """Append a per-run snapshot of per-scale Gini values to
+    output/metrics/hme-fractal-history.jsonl. Enables `mode=fractal-shape
+    history=true` to render the trend over time — is the architecture
+    becoming MORE or LESS tensegrity-shaped over rounds? Atomic write
+    via temp+os.replace pattern (matches the project's data-integrity
+    invariant)."""
+    import json
+    import time
+    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+                                "hme-fractal-history.jsonl")
+    try:
+        os.makedirs(os.path.dirname(history_path), exist_ok=True)
+    except OSError:
+        return
+    row = {
+        "ts": time.time(),
+        "scales": {s["name"]: {"n": s["n"], "gini": round(s.get("gini", 0.0), 3)}
+                   for s in scales if s["n"] > 0},
+        "mean_gini": round(
+            sum(s["gini"] for s in scales if s["n"] > 0) /
+            max(1, sum(1 for s in scales if s["n"] > 0)), 3
+        ),
+    }
+    try:
+        with open(history_path, "a") as f:
+            f.write(json.dumps(row) + "\n")
+    except OSError:
+        pass
+
+
+def _render_history() -> str:
+    """Read fractal-history.jsonl and report Gini trend per scale across
+    recent runs. Detects whether the architecture's tensegrity-shape is
+    rising, falling, or steady."""
+    import json
+    history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
+                                "hme-fractal-history.jsonl")
+    if not os.path.isfile(history_path):
+        return "  (no history yet — run `i/why mode=fractal-shape` more times to accumulate)"
+    try:
+        with open(history_path) as f:
+            rows = [json.loads(ln) for ln in f if ln.strip()]
+    except (OSError, ValueError):
+        return "  (history file unreadable)"
+    if len(rows) < 2:
+        return f"  ({len(rows)} run(s) recorded — need ≥2 for trend)"
+    out = [f"  {len(rows)} runs recorded; mean-Gini trend:"]
+    # Latest vs first
+    first_mean = rows[0].get("mean_gini", 0.0)
+    last_mean = rows[-1].get("mean_gini", 0.0)
+    delta = last_mean - first_mean
+    direction = "→ steady" if abs(delta) < 0.02 else (
+        "↑ tensegrity-strengthening" if delta > 0 else "↓ tensegrity-weakening"
+    )
+    out.append(f"    first run: mean Gini {first_mean:.2f}")
+    out.append(f"    latest:    mean Gini {last_mean:.2f}  ({direction})")
+    return "\n".join(out)
+
+
 def main(argv):
+    show_history = any(a == "history=true" or a == "--history"
+                       for a in argv[1:])
     scales = [
         _measure_subsystems(),
         _measure_module_loc(),
@@ -206,6 +268,8 @@ def main(argv):
         _measure_l0_channels(),
         _measure_policies_by_event(),
     ]
+    # Record this run for time-series tracking (Horizon X asymptote).
+    _append_history(scales)
 
     print(f"# Fractal-shape signature  (Horizon X)")
     print(f"  At each architectural scale: element count + fan-out concentration.")
@@ -262,11 +326,17 @@ def main(argv):
     print("    If all rows are 'yes', the architecture's recursion claim holds")
     print("    structurally. If some rows are 'no', those are levels where the")
     print("    tensegrity is actually flat — interesting but not falsifying.")
+    if show_history:
+        print()
+        print("## Tensegrity-shape trend over time:")
+        print(_render_history())
+
     print()
     print("# Note:")
     print("  Static topology proxy. The hypothesis 'removing one element")
     print("  redistributes load sub-proportionally' requires per-element")
     print("  ablation runs to test directly — out of scope for this seed.")
+    print("  Pass `history=true` to see Gini trend across recent runs.")
     return 0
 
 

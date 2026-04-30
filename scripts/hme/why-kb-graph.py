@@ -186,8 +186,13 @@ def main(argv):
             by_cat[cat].append(kid)
         print()
         print(f"## Orphans by category ({len(orphans)} of {n}):")
+        # Sort by descending count (Horizon III asymptote: surface
+        # which categories have the most flat structure first — those
+        # are the highest-leverage targets for citation densification).
         for cat, ids in sorted(by_cat.items(), key=lambda kv: -len(kv[1])):
-            print(f"  {cat:14}  {len(ids)} entries")
+            density_share = len(ids) / n * 100
+            marker = "!" if density_share > 30 else " "
+            print(f"  {marker} {cat:14}  {len(ids)} entries  ({density_share:.0f}% of total)")
 
     # Citation chains (longest paths) — simple BFS from each entry
     if out_edges:

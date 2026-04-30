@@ -100,6 +100,35 @@ def main(argv):
         print(f"# i/why mode=causality {target_event}\nNo activity log.")
         return 1
 
+    # Tier-1.5: explicit caused_by field on activity-log events themselves
+    # (Horizon VII asymptote — any emit site can opt-in by including
+    # caused_by:<value> in the event payload). Scan for events of the
+    # target type that already carry the field; if found, show those
+    # explicit chains preferentially.
+    explicit_chain_events = []
+    try:
+        with open(activity) as _af:
+            for ln in _af:
+                try:
+                    e = json.loads(ln)
+                except ValueError:
+                    continue
+                if e.get("event") == target_event and "caused_by" in e:
+                    explicit_chain_events.append(e)
+    except OSError:
+        pass
+    if explicit_chain_events:
+        print(f"# Causal chain — '{target_event}' (Tier-1.5: activity-log caused_by)")
+        print(f"  ({len(explicit_chain_events)} explicit-cause occurrence(s); showing last 5)")
+        print()
+        for e in explicit_chain_events[-5:]:
+            ts = e.get("ts", 0)
+            ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
+            print(f"  {ts_str}  caused_by={e['caused_by']}")
+        print()
+        print("  (Tier-2 heuristic chain follows for events without explicit caused_by)")
+        print()
+
     # Read all events; group by session for causal-window lookup. Events
     # without a session field are common (proxy-internal events emitted
     # outside an agent turn); group them under "no-session" rather than

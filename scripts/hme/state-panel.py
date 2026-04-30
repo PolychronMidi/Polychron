@@ -214,6 +214,21 @@ def main(argv):
         except OSError:
             pass
 
+    # 8b. Agent-loop-quality verifier (Horizon IV asymptote-deepening).
+    # Read the latest snapshot's status for the agent-loop-quality
+    # verifier and surface inline. The verifier reads the activity log;
+    # exposing its verdict here means the agent's own loop-quality is
+    # visible alongside the state machines it operates within.
+    snap2 = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
+                                    "hci-verifier-snapshot.json"))
+    if snap2:
+        alq = (snap2.get("verifiers") or {}).get("agent-loop-quality")
+        if alq:
+            status = alq.get("status", "?")
+            score = alq.get("score", 0)
+            marker = "·" if status == "PASS" else "!"
+            out.append(f"  agent-loop {marker}      {status}  score={score:.2f}  (i/status mode=agent-loop for detail)")
+
     # 9. Last hot-reload — auto-reload fires on .py edits under
     # tools/HME/service/server/ but is otherwise silent. Surfacing it
     # here means an agent can confirm "the code I just edited is

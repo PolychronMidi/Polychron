@@ -203,9 +203,25 @@ def main(argv):
             recent_norm = (sum(c*c for c in recent_dirs.values())) ** 0.5 or 1
             dot = sum(pos_dirs.get(d, 0) * recent_dirs.get(d, 0) for d in all_dirs)
             similarity = dot / (pos_norm * recent_norm)
+            # Threshold-warning (Horizon VIII asymptote): when similarity
+            # is high but unique-to-recent dirs dominate, warn about
+            # divergence from approved-move signature. When low, warn
+            # outright. The thresholds are deliberately conservative —
+            # this is a soft signal, not a gate.
+            if similarity < 0.30:
+                marker = "!"
+                warn = "  ⚠ low similarity — recent edits diverge from approved-move signature"
+            elif similarity < 0.60:
+                marker = "·"
+                warn = "  · partial similarity — review unique-to-recent dirs below"
+            else:
+                marker = " "
+                warn = ""
             print()
             print(f"## Move similarity — recent edits vs approved-move signature")
-            print(f"  similarity score: {similarity:.2f}  (1.0 = identical signature, 0.0 = orthogonal)")
+            print(f" {marker} similarity score: {similarity:.2f}  (1.0 = identical signature, 0.0 = orthogonal)")
+            if warn:
+                print(warn)
             shared = [d for d in recent_dirs if d in pos_dirs]
             unique = [d for d in recent_dirs if d not in pos_dirs]
             if shared:

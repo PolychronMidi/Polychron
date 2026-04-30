@@ -15,26 +15,27 @@ What follows is the asymptote, not the next sprint.
 
 ## Status legend
 
+- 📜 **vision only** — no implementation yet
 - 🌱 **seed shipped** — first concrete tool/view exists; full vision still ahead
 - 🌳 **expanded** — multiple parts of the horizon now operational
-- 📜 **vision only** — no implementation yet
+- 🌲 **asymptote-deepening** — non-trivial second-order expansions landed (compounding signals between horizons, persisted state hand-offs, per-element instrumentation)
 
-## Current status (10 of 10 expanded — 🌳 across the board)
+## Current status (10 of 10 asymptote-deepening — 🌲 across the board)
 
-- 🌳 **I** — Predictive HME (`i/why mode=predict <file>` change-pred + `i/status mode=tool-latency` cost-pred)
-- 🌳 **II** — Multi-timescale + multi-axis (`i/state` phase line + `i/status mode=multi-axis-band`)
-- 🌳 **III** — KB graph + context (`i/why mode=kb-graph` + `mode=kb-context <id>`)
-- 🌳 **IV** — Agent-loop dimension (`i/status mode=agent-loop` + `agent-loop-quality` HCI verifier)
-- 🌳 **V** — Conjugate channel + coupling verifier (`i/status mode=conjugate` + `conjugate-channel` HCI verifier)
-- 🌳 **VI** — Meta-meta verifiers (`i/why mode=verifier-utility|verifier-coverage|verifier-drift`)
-- 🌳 **VII** — Causal traversal (`i/why mode=causality` heuristic + explicit `caused_by` at hot-reload site)
-- 🌳 **VIII** — Architectural conscience (`i/why mode=conscience` — descriptive signature + move-similarity scoring)
-- 🌳 **IX** — Learned chaordic band (`i/status mode=band-tuning` + persisted `tmp/hme-band-proposal.json`)
-- 🌳 **X** — Fractal recursion test (`i/why mode=fractal-shape` — 7 scales + uniform-baseline contrast)
+- 🌲 **I** — Predictive HME (change-pred + cost-pred + cold-start indicator + sample-count caveats)
+- 🌲 **II** — Multi-timescale + multi-axis (phase line + per-subtag bands + persisted-proposal-aware band display + conjugate-channel inline)
+- 🌲 **III** — KB graph + context (graph view + per-entry traversal + orphan-by-density-share)
+- 🌲 **IV** — Agent-loop dimension (panel + HCI verifier + agent-loop-quality surfaced inline in `i/state`)
+- 🌲 **V** — Conjugate channel + coupling verifier + multi-axis-band cross-surfacing
+- 🌲 **VI** — Meta-meta verifiers (utility + coverage + drift + KB-incident-correlation heuristic)
+- 🌲 **VII** — Causal traversal (Tier-2 heuristic + Tier-1 explicit caused_by at hot-reload + Tier-1.5 activity-log caused_by field for any opt-in event)
+- 🌲 **VIII** — Architectural conscience (descriptive signature + move-similarity + threshold-warning soft signal)
+- 🌲 **IX** — Learned chaordic band (proposal compute + persisted aggregate + persisted per-axis state for II compounding)
+- 🌲 **X** — Fractal recursion test (7 scales + uniform-baseline contrast + per-run history → trend tracking)
 
-Every horizon now has multiple operational legs. The plan-as-greenfielding AND plan-as-expansion are both complete. From here, work continues toward the asymptote — deeper expansions per horizon (e.g. ML-shaped predictive models, persisted `caused_by` at every emit site, fractal ablation tests) — but the structural trajectory is now established at every scale.
+Every horizon now has *asymptote-deepening* expansions: compounding signals between horizons (II reads IX's persisted proposal; V's conjugate-channel surfaces in II's multi-axis-band; VI's incident-correlation reads from III's KB), persisted state hand-offs (band proposal, fractal history, hot-reload markers), and per-element instrumentation (caused_by both in markers AND opt-in via activity-log field). The structural trajectory is established at every scale. Continued work toward the deeper asymptote (ML-shaped predictive models, more emit sites with caused_by, fractal ablation tests) is now compounding rather than greenfielding.
 
-## Horizon I — Predictive HME 🌳
+## Horizon I — Predictive HME 🌲
 
 Today HME observes itself and reports. It does not predict. The next layer of self-coherence is HME modeling its own behavior under hypothetical agent actions.
 
@@ -48,7 +49,7 @@ Today HME observes itself and reports. It does not predict. The next layer of se
 
 The shape: HME's self-model includes a model of the agent's behavior. Already seeded by `dominance_prefetch.js` and the auto-briefing on Edit. Generalize: every agent action has a predictable consequence; surface the prediction before the action.
 
-## Horizon II — Multi-timescale, multi-axis coherence 🌳
+## Horizon II — Multi-timescale, multi-axis coherence 🌲
 
 HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggregations that throw away phase information.
 
@@ -58,7 +59,7 @@ HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggre
 
 The shape: every collapsed scalar is a thrown-away signal. Find each one; un-collapse it.
 
-## Horizon III — The KB as an active knowledge graph 🌳
+## Horizon III — The KB as an active knowledge graph 🌲
 
 The KB has 175+ entries. Today it's a flat list with semantic search. Implicit graph structure exists (which entries cite which, which contradict, which were promoted from drafts). Made explicit:
 
@@ -75,7 +76,7 @@ Together: graph (system view) + context (entry view) cover both projections of t
 
 The shape: turn the KB from a vector-search index into a queryable graph. The graph is what the KB *is*; the flat list is the projection.
 
-## Horizon IV — Agent behavior as a tracked dimension 🌳
+## Horizon IV — Agent behavior as a tracked dimension 🌲
 
 The agent (the LLM running through Claude Code, including me right now) is currently invisible to HME except as a stream of tool calls. But the agent is *part of the system* — its loop rate, decision quality, error frequency, context-window pressure all shape outcomes.
 
@@ -89,7 +90,7 @@ The agent (the LLM running through Claude Code, including me right now) is curre
 
 The shape: the agent is not external to HME; the agent is a subsystem of HME. Modeled accordingly.
 
-## Horizon V — The composition⇔HME conjugate channel 🌳
+## Horizon V — The composition⇔HME conjugate channel 🌲
 
 Musical coherence and HCI co-evolve over rounds but don't directly inform each other. They are two parallel scores that should be a coupled system.
 
@@ -103,7 +104,7 @@ Musical coherence and HCI co-evolve over rounds but don't directly inform each o
 
 The shape: the two scores are conjugate variables, not independent. Treat as one system.
 
-## Horizon VI — Meta-meta verifiers 🌳
+## Horizon VI — Meta-meta verifiers 🌲
 
 The verifiers check the system. What checks the verifiers?
 
@@ -113,7 +114,7 @@ The verifiers check the system. What checks the verifiers?
 
 The shape: every layer of self-coherence needs a layer above it that audits *its* coherence. Recursion is structural.
 
-## Horizon VII — Causal traversal of `i/why` 🌳
+## Horizon VII — Causal traversal of `i/why` 🌲
 
 `i/why` answers narrow questions today. The full vision: every observed effect has a queryable chain of causes, traversable to its root.
 
@@ -129,7 +130,7 @@ Implementation: every state-changing action records its `caused_by` reference. T
 
 The shape: the system becomes *legible to itself* in causal form. Today it's legible in static form (read the code). Tomorrow it's legible in dynamic form (read the trace).
 
-## Horizon VIII — The architectural conscience 🌳
+## Horizon VIII — The architectural conscience 🌲
 
 Some moves feel right; others feel wrong. The "feel" lives in the user's head and partially in the KB. Make it operational:
 
@@ -143,7 +144,7 @@ Some moves feel right; others feel wrong. The "feel" lives in the user's head an
 
 The shape: the agent's intuition becomes durable, queryable, transferable.
 
-## Horizon IX — The chaordic-band as a learned controllable 🌳
+## Horizon IX — The chaordic-band as a learned controllable 🌲
 
 Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself should be learned from human verdicts.
 
@@ -157,7 +158,7 @@ Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself sh
 
 The shape: every fixed parameter is a candidate for self-tuning if there's ground-truth feedback to drive it.
 
-## Horizon X — Fractal recursion 🌳
+## Horizon X — Fractal recursion 🌲
 
 Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs. The pattern *itself* is the architectural hypothesis: that compound systems should self-organize fractally.
 

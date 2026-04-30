@@ -161,6 +161,39 @@ def main(argv):
     print(f"  flapping: {len(flappers)}")
     print(f"  active stable: {active}")
     print()
+    # Incident-correlation heuristic (Horizon VI asymptote): walk the
+    # KB for entries whose tags reference 'fix' or 'bugfix' AND mention
+    # a verifier name. Surfaces "this verifier has caught at least one
+    # real bug" as a per-verifier signal beyond flip-count alone.
+    try:
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
+        from direct_lance import _open_table  # type: ignore
+        table = _open_table()
+        if table is not None:
+            df = table.to_pandas()
+            verifier_names = {m["name"] for m in metrics}
+            incident_hits = defaultdict(int)
+            for _, row in df.iterrows():
+                cat = str(row.get("category", ""))
+                if cat not in ("bugfix", "fix"):
+                    continue
+                content = str(row.get("content", "")).lower()
+                title = str(row.get("title", "")).lower()
+                full = content + " " + title
+                for name in verifier_names:
+                    if name.lower() in full:
+                        incident_hits[name] += 1
+            if incident_hits:
+                print("## Incident-correlation (heuristic)")
+                print("  Verifiers mentioned by name in KB bugfix/fix entries —")
+                print("  weak-signal proof the verifier has helped surface real bugs.")
+                ranked = sorted(incident_hits.items(), key=lambda kv: -kv[1])
+                for name, count in ranked[:5]:
+                    print(f"  {name:36}  {count} mention(s) in fix/bugfix entries")
+                print()
+    except Exception:
+        pass
+
     print("# Next:")
     print("  i/why mode=verifier <name>     drill into one verifier (status + history + source)")
     print("  i/status mode=hci-by-subtag    aggregate by category")

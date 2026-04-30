@@ -167,7 +167,7 @@ def _mode_tool_latency():
     out = ["# Tool-cost preflighting  (last 6h)"]
     out.append("")
     if by_tool:
-        out.append(f"  {'tool':18}  {'n':>4}  {'p50':>7}  {'p95':>7}  {'p99':>7}  ms")
+        out.append(f"  {'tool':18}  {'n':>4}  {'p50':>7}  {'p95':>7}  {'p99':>7}  ms  cold-start?")
         for tool, latencies in sorted(by_tool.items(), key=lambda kv: -len(kv[1])):
             if len(latencies) < 3:
                 continue
@@ -175,7 +175,13 @@ def _mode_tool_latency():
             p50 = s[len(s) // 2]
             p95 = s[int(len(s) * 0.95)]
             p99 = s[int(len(s) * 0.99)]
-            out.append(f"  {tool:18}  {len(s):>4}  {p50:>7.0f}  {p95:>7.0f}  {p99:>7.0f}  ms")
+            # Cold-start indicator (Horizon I asymptote): if max ≥ 3× p50,
+            # this tool has cold-start behavior — first call after idle
+            # is much slower. Heads-up to the agent: budget extra time
+            # for the first invocation.
+            cold = "yes" if (s[-1] >= p50 * 3 and len(s) >= 5) else " no"
+            sample_caveat = " (n<10; noisy)" if len(s) < 10 else ""
+            out.append(f"  {tool:18}  {len(s):>4}  {p50:>7.0f}  {p95:>7.0f}  {p99:>7.0f}  ms  {cold}{sample_caveat}")
         out.append("")
     else:
         out.append("  (no tool_call events with latency_ms in window —")
@@ -259,9 +265,29 @@ def _mode_multi_axis_band():
 
     LO, HI = 0.55, 0.85
 
+    # Read persisted band proposal (Horizon IX × II compounding) — if a
+    # band-tuning run wrote per-axis proposed bands, use them; otherwise
+    # fall back to the aggregate [LO, HI] for every axis.
+    proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
+    per_axis_bands: dict[str, list[float]] = {}
+    proposed_aggregate = None
+    if _os.path.isfile(proposal_path):
+        try:
+            with open(proposal_path) as _pf:
+                _proposal = _json.load(_pf)
+            proposed_aggregate = _proposal.get("proposed_band")
+            for subtag, axis in (_proposal.get("per_axis") or {}).items():
+                _band = axis.get("proposed_band")
+                if isinstance(_band, list) and len(_band) == 2:
+                    per_axis_bands[subtag] = _band
+        except (OSError, ValueError):
+            pass
+
     out = [f"# Multi-axis chaordic bands  (per-subtag HCI; default band [{LO}, {HI}])"]
+    if proposed_aggregate:
+        out.append(f"  proposed aggregate band: [{proposed_aggregate[0]:.2f}, {proposed_aggregate[1]:.2f}]  (from tmp/hme-band-proposal.json)")
     out.append("")
-    out.append(f"  {'subtag':24}  {'verifiers':>9}  {'score':>5}  {'state':>9}")
+    out.append(f"  {'subtag':24}  {'verifiers':>9}  {'score':>5}  {'state':>9}  {'band':>14}")
     rows = []
     for subtag, pairs in sorted(by_subtag.items()):
         if not pairs:
@@ -279,9 +305,23 @@ def _mode_multi_axis_band():
     rows.sort(key=lambda r: (r[3] != "IN_BAND", -r[2]))
     for subtag, n, score, state in rows:
         marker = " " if state == "IN_BAND" else "!"
-        out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {state:>9}")
+        # Prefer per-axis band when persisted, else aggregate
+        ax_band = per_axis_bands.get(subtag) or proposed_aggregate or [LO, HI]
+        band_str = f"[{ax_band[0]:.2f}, {ax_band[1]:.2f}]"
+        out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {state:>9}  {band_str:>14}")
 
     out.append("")
+    # Conjugate-channel quadrant inline (Horizon V × II compounding):
+    # the multi-axis view is per-subtag; the conjugate quadrant is per-
+    # round (HCI × perceptual). Surface it as a one-liner so the agent
+    # sees both the multi-axis and the joint-coupling picture together.
+    snap_v = snap.get("verifiers", {}).get("conjugate-channel")
+    if snap_v:
+        cur_status = snap_v.get("status", "?")
+        out.append(f"  conjugate-channel: {cur_status}  "
+                   f"(score={snap_v.get('score', 0):.2f}; "
+                   f"see `i/status mode=conjugate` for full quadrant view)")  # tool-form-ok: drill-in advisory
+        out.append("")
     out.append("# Reading the table:")
     out.append("  - BELOW band = axis is starved (too few PASSes / too low weighted score)")
     out.append("  - ABOVE band = axis is saturated (everything green; could license exploration)")
@@ -520,7 +560,39 @@ def _mode_band_tuning():
     # code (coherence-budget consumer, future self-tuner) can read it
     # without re-deriving. Establishes the data hand-off without forcing
     # composition behavior change yet.
+    # Per-axis proposals (Horizon IX × II asymptote-deepening): for each
+    # subtag, find rounds whose snapshot had high score in that subtag at
+    # the time of the verdict, propose a band per axis. Today we have one
+    # ground-truth axis (overall HCI) but the persisted shape allows
+    # per-axis adoption when subtag-aware verdicts arrive. The shape is
+    # right; the data is the lagging indicator.
     proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
+    per_axis: dict[str, list[float]] = {}
+    # Read the snapshot to get current per-subtag scores; use them as
+    # the "current observed" anchor. Per-axis proposed bounds aren't
+    # learnable until we have per-axis verdicts — until then, the
+    # aggregate proposed_band is the best signal per axis.
+    snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
+    if _os.path.isfile(snap_path):
+        try:
+            with open(snap_path) as _sf:
+                snap = _json.load(_sf)
+            try:
+                _sys2 = __import__("sys")
+                _scripts2 = _os.path.join(_root, "tools", "HME", "scripts")
+                if _scripts2 not in _sys2.path:
+                    _sys2.path.insert(0, _scripts2)
+                from verify_coherence import REGISTRY as _REG  # type: ignore
+                _name_to_subtag = {v.name: getattr(v, "subtag", "(none)") for v in _REG}
+                for name, info in snap.get("verifiers", {}).items():
+                    subtag = _name_to_subtag.get(name, "(none)")
+                    score = float(info.get("score", 0.0))
+                    per_axis.setdefault(subtag, []).append(score)
+            except Exception:
+                pass
+        except (OSError, ValueError):
+            pass
+
     proposal = {
         "ts": __import__("time").time(),
         "current_band": [0.55, 0.85],
@@ -531,7 +603,17 @@ def _mode_band_tuning():
         "n_positive_verdicts": len(pos_hcis),
         "n_negative_verdicts": len(neg_hcis),
         "sentiments": {sent: len(vals) for sent, vals in buckets.items()},
-        "note": "Advisory proposal. Consumers may read but composition behavior remains driven by current_band until explicitly wired.",
+        "per_axis": {
+            # For each subtag: current median score as "observed center";
+            # proposed_band defaults to aggregate until per-axis verdicts arrive.
+            subtag: {
+                "observed_median": (sorted(scores)[len(scores) // 2] if scores else 0.0),
+                "n_verifiers": len(scores),
+                "proposed_band": [0.55, 0.85],  # placeholder until per-axis verdicts learned
+            }
+            for subtag, scores in per_axis.items()
+        },
+        "note": "Advisory proposal. Aggregate proposed_band is learned from ground-truth verdicts; per_axis observed_median is current state, per_axis proposed_band is placeholder until subtag-aware verdicts accumulate.",
     }
     try:
         proposal_tmp = proposal_path + ".tmp"
