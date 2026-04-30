@@ -61,8 +61,8 @@ for (const filePath of allFiles) {
   totalFunctional++;
 
   // Lifecycle-reset registration accepts EITHER form:
-  //   1. conductorIntelligence.registerModule(...) — explicit call
-  //   2. conductorScopes: [...] manifest field — declarative; the
+  //   1. conductorIntelligence.registerModule(...) -- explicit call
+  //   2. conductorScopes: [...] manifest field -- declarative; the
   //      module loader binds the reset chain from the manifest. Used
   //      in newer modules (coherenceMonitor, signalTelemetry) that
   //      migrated from the explicit call. Both genuinely register the

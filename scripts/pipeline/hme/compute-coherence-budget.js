@@ -234,12 +234,12 @@ function main() {
       if (writtenAgeS < 86400) {
         const delta = Number(tighten.band_delta || 0);
         // Bidirectional band adjustment:
-        //   delta < 0  → narrow symmetrically (lost-quadrant tightening)
-        //   delta > 0  → widen symmetrically (license-to-explore loosening,
-        //                fired when ≥5 of 7 axes saturated)
+        //   delta < 0  -> narrow symmetrically (lost-quadrant tightening)
+        //   delta > 0  -> widen symmetrically (license-to-explore loosening,
+        //                fired when >=5 of 7 axes saturated)
         // Symmetric formula: newLo = band[0] - delta/2, newHi = band[1] + delta/2.
-        // Negative delta: subtracting raises floor, adding lowers ceiling → narrow.
-        // Positive delta: subtracting lowers floor, adding raises ceiling → widen.
+        // Negative delta: subtracting raises floor, adding lowers ceiling -> narrow.
+        // Positive delta: subtracting lowers floor, adding raises ceiling -> widen.
         const before = band.slice();
         const newLo = Math.max(0, band[0] - delta / 2);
         const newHi = Math.min(1, band[1] + delta / 2);
