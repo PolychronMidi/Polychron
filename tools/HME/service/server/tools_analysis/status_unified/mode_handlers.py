@@ -292,16 +292,27 @@ def _mode_agent_loop():
     out.append("")
     out.append(f"  turns observed:        {turns}")
     if turns > 0:
-        out.append(f"  tools per turn:        {tool_calls/turns:.1f}  (avg)")
-        out.append(f"  inferences per turn:   {inference_calls/turns:.1f}")
-    out.append(f"  total tool calls:      {tool_calls}")
-    out.append(f"    of which Edit:       {edits}")
-    if edits > 0:
-        out.append(f"    brief coverage:      {(brief_rec / edits) * 100:.0f}%  ({brief_rec}/{edits})")
-    out.append(f"  auto-brief injected:   {brief_inj}")
+        out.append(f"  inferences per turn:   {inference_calls/turns:.1f}  (Anthropic API calls per turn)")
     if tool_calls > 0:
+        if turns > 0:
+            out.append(f"  tools per turn:        {tool_calls/turns:.1f}  (avg)")
+        out.append(f"  total tool calls:      {tool_calls}")
+        out.append(f"    of which Edit:       {edits}")
+        if edits > 0:
+            out.append(f"    brief coverage:      {(brief_rec / edits) * 100:.0f}%  ({brief_rec}/{edits})")
         err_rate = bash_errs / tool_calls * 100
         out.append(f"  bash error rate:       {err_rate:.1f}%  ({bash_errs}/{tool_calls})")
+    else:
+        # Known instrumentation gap: tool_call events emitted by the proxy
+        # middleware activity_log.js are intermittent — fs_watcher catches
+        # file_written but tool_call hits aren't reliably appearing in the
+        # log. Surface the gap rather than silently report zero, and use
+        # file_written + brief_recorded as proxy signals for agent activity.
+        fwrites = sum(1 for e in events if e.get("event") == "file_written")
+        out.append(f"  total tool calls:      ─  (proxy tool_call instrumentation degraded; see note)")
+        out.append(f"  file writes (proxy):   {fwrites}  (via fs_watcher)")
+        out.append(f"  briefs recorded:       {brief_rec}  (KB consultations)")
+    out.append(f"  auto-brief injected:   {brief_inj}")
 
     # Inter-tool gap (median pause between consecutive tool_call events)
     tool_ts = sorted(e.get("ts", 0) for e in events

@@ -95,6 +95,11 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"What just happened? what has HME done in the last N minutes?"** → `i/timeline` (joins markers + activity log into one chronological view)
 - **"What's HME's current health?"** → `i/hme-admin action=selftest`
 - **"Did my last edit help or hurt the score?"** → `i/status mode=hci-diff`
+- **"What kind of broken is everything that's red?"** → `i/status mode=hci-by-subtag` (aggregates by category)
+- **"How is the agent loop running this session?"** → `i/status mode=agent-loop` (Horizon IV — tools-per-turn, brief coverage, error rate)
+- **"What does ground truth say about the chaordic band?"** → `i/status mode=band-tuning` (Horizon IX — proposes band bounds from human verdicts)
+- **"Which verifiers are dead weight?"** → `i/why mode=verifier-utility` (always-PASS / flapping / variance buckets)
+- **"Which dirs are under-covered by verifiers?"** → `i/why mode=verifier-coverage`
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`
 - **"Why is HME in this onboarding state?"** → `i/why mode=state`

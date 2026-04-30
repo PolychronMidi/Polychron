@@ -62,3 +62,52 @@ test('i/state shows pipeline state', () => {
   const r = _run();
   assert.match(r.stdout, /pipeline\s+(idle|RUNNING)/);
 });
+
+
+// Smoke tests for the three new horizon-seed modes shipped this session.
+const I_STATUS = path.join(PROJECT_ROOT, 'i', 'status');
+function _runStatus(mode) {
+  const r = spawnSync(I_STATUS, [`mode=${mode}`], {
+    encoding: 'utf8',
+    timeout: 15000,
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
+}
+
+test('i/status mode=agent-loop renders Horizon IV view', () => {
+  const r = _runStatus('agent-loop');
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Agent loop|No activity/);
+});
+
+test('i/status mode=band-tuning renders Horizon IX view', () => {
+  const r = _runStatus('band-tuning');
+  assert.strictEqual(r.status, 0);
+  // Either reports band proposal or notes missing prerequisite logs
+  assert.match(r.stdout, /band[\- _]?tuning|band proposal|No (ground-truth|HCI timeseries)/i);
+});
+
+test('i/status mode=hci-by-subtag renders Horizon VI subtag aggregation', () => {
+  const r = _runStatus('hci-by-subtag');
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /HCI by subtag|HCI \d/);
+});
+
+const I_WHY = path.join(PROJECT_ROOT, 'i', 'why');
+function _runWhy(args) {
+  const r = spawnSync(I_WHY, args, {
+    encoding: 'utf8',
+    timeout: 15000,
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  return { stdout: r.stdout || '', stderr: r.stderr || '', status: r.status };
+}
+
+test('i/why mode=verifier-coverage renders Horizon VI coverage view', () => {
+  const r = _runWhy(['mode=verifier-coverage']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Verifier coverage|verifier-coverage/);
+});
