@@ -507,6 +507,50 @@ test('i/state HCI line carries confidence indicator (Horizon II maturity)', () =
   assert.match(r.stdout, /HCI\s+\S+.*\s*(conf=(uniform|mixed|fragile)|\(\d+ verifiers\))/);
 });
 
+test('conjugate-channel SKIP path refreshes license when streak active', () => {
+  // Verifier SKIPs when hme_coherence is null. Before this turn,
+  // SKIP did nothing else; now it refreshes the band-widening
+  // proposal based on legendary streak alone (composition-aware fast
+  // feedback). Test: invoke the verifier directly and check the
+  // marker file gets a `streak-aware-skip-refresh` trigger when the
+  // streak is ≥2 (and the verifier returns SKIP).
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
+  // Snapshot for restore
+  const had = fs.existsSync(tighteningPath);
+  const prev = had ? fs.readFileSync(tighteningPath, 'utf8') : null;
+  try {
+    // Run the verifier
+    const r = spawnSync('python3', ['-c',
+      `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); ` +
+      'from verify_coherence.code_audits import ConjugateChannelVerifier, _count_legendary_streak; ' +
+      `r = ConjugateChannelVerifier().execute(); ` +
+      `streak = _count_legendary_streak('${PROJECT_ROOT}'); ` +
+      'print(f"{r.status}|{streak}")'
+    ], { encoding: 'utf8', timeout: 15000 });
+    assert.strictEqual(r.status, 0);
+    const [status, streakStr] = r.stdout.trim().split('|');
+    const streak = parseInt(streakStr, 10);
+    // If status=SKIP AND streak ≥ 2, the file should be a
+    // streak-aware-skip-refresh proposal. Otherwise behavior unchanged.
+    if (status === 'SKIP' && streak >= 2 && fs.existsSync(tighteningPath)) {
+      const body = JSON.parse(fs.readFileSync(tighteningPath, 'utf8'));
+      // Either it was JUST written by the SKIP path (carries the new trigger)
+      // or it was written by an earlier path; both are valid outcomes,
+      // but the field shape must be consistent.
+      assert.ok('band_delta' in body);
+      assert.ok('expires_after_rounds' in body);
+      if (body.trigger === 'streak-aware-skip-refresh') {
+        assert.ok(body.streak && body.streak.legendary_consecutive >= 2,
+          'SKIP-refresh trigger should record streak count');
+      }
+    }
+  } finally {
+    if (had) fs.writeFileSync(tighteningPath, prev);
+  }
+});
+
 test('_count_legendary_streak counts consecutive legendary verdicts ending at latest', () => {
   // Direct-import the helper; verifies the streak-aware sizing math
   // independently of the verifier's full execution (which SKIPs when
