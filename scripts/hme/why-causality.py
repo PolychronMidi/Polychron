@@ -191,6 +191,11 @@ def main(argv):
         latest = explicit_chain_events[-1]
         current = latest
         depth = 0
+        # Cycle detection: track (event, ts) tuples we've already visited.
+        # Layered heuristic resolution can match the same event twice if
+        # caused_by patterns happen to converge; without this guard we'd
+        # infinite-loop bounded only by chain_depth.
+        seen: set[tuple[str, float]] = set()
         while current and depth < chain_depth:
             ts = current.get("ts", 0)
             ts_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S") if ts else "?"
@@ -202,6 +207,12 @@ def main(argv):
                 print(f"{indent}{arrow} {ts_str}  {ev:24}  caused_by={cb}")
             else:
                 print(f"{indent}{arrow} {ts_str}  {ev:24}  (no caused_by — terminal)")
+            key = (ev, ts)
+            if key in seen:
+                indent2 = "  " + ("  " * (depth + 1))
+                print(f"{indent2}└─ (cycle detected — already visited this event)")
+                break
+            seen.add(key)
             if not cb:
                 break
             # Try to resolve caused_by to another event

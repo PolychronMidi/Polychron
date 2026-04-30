@@ -392,6 +392,20 @@ test('i/why mode=causality --chain recursively walks caused_by chains', () => {
   // Either renders a recursive chain (with arrows + caused_by lines)
   // or reports no events of that type yet
   assert.match(r.stdout, /Recursive causal chain|No 'brief_recorded' events found/);
+  // If chain rendered, it must show either at least one arrow or a
+  // terminal/leaf marker — proves the walker actually traversed.
+  if (r.stdout.includes('Recursive causal chain')) {
+    assert.match(r.stdout, /▶|└─|terminal|leaf description|cycle detected/);
+  }
+});
+
+test('i/why mode=causality depth= clamps to safe range', () => {
+  const r = _runWhy(['mode=causality', 'brief_recorded', '--chain', 'depth=999']);
+  assert.strictEqual(r.status, 0);
+  // depth is clamped to 20 internally; output should NOT actually walk
+  // 999 levels (sanity bound — runtime would explode otherwise)
+  // Assertion is just non-crash + non-empty output
+  assert.ok(r.stdout.length > 0);
 });
 
 test('i/why mode=causality reads explicit caused_by from marker (Tier-1)', () => {
