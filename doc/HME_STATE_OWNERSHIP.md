@@ -61,6 +61,23 @@ These are the structural risk. Each row needs an explicit strategy.
 - `tools/HME/hooks/direct/autocommit-direct.sh` — fail-loud channel for direct autocommit
 - `tools/HME/hooks/direct/proxy-watchdog.sh` — supervisor-abandoned sentinel
 - `tools/HME/hooks/pretooluse/pretooluse_check_pipeline.sh` — pipeline-status fail entries
+- `tools/HME/hooks/direct_dispatch.sh` — proxy-down direct-mode dispatch failures
+- `tools/HME/hooks/log-tool-call.sh` — tool-call telemetry write failures
+- `tools/HME/hooks/helpers/_resolve_bg_stub.sh` — background-stub resolution failures
+- `tools/HME/hooks/lifecycle/postcompact.sh` — post-compact reconciliation failures
+- `tools/HME/hooks/lifecycle/precompact.sh` — pre-compact preservation failures
+- `tools/HME/hooks/lifecycle/stop/_preamble.sh` — Stop-chain preamble setup failures (jq/transcript reads)
+- `tools/HME/hooks/lifecycle/stop/detectors.sh` — Stop-chain detector dispatch failures
+- `tools/HME/hooks/lifecycle/stop/holograph.sh` — Stop-time holograph render failures
+- `tools/HME/hooks/pretooluse/pretooluse_grep.sh` — Grep guard failures
+- `tools/HME/hooks/pretooluse/pretooluse_read.sh` — Read guard failures
+- `tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh` — primer injection failures
+- `tools/HME/hooks/posttooluse/posttooluse_read_kb.sh` — post-Read KB-brief failures
+- `tools/HME/hooks/pretooluse/bash/reader_guards.sh` — reader-guard helper failures (cat/head/tail/sed)
+- `tools/HME/hooks/pretooluse/bash/cwd_rewrite.sh` — cwd-rewrite helper failures
+- `tools/HME/hooks/pretooluse/bash/blackbox_guards.sh` — blackbox-guard helper failures (sudo/curl|sh)
+
+All entries above this line use the `_safe_*` fail-loud helper pattern: write to `hme-errors.log` only on INTERNAL helper failure (jq parse, py3 timeout, curl error). This keeps the `_safe_*` invariant — the helper either succeeds or self-reports — without each call site needing custom error plumbing.
 
 **Reader:** `tools/HME/hooks/lifecycle/stop/lifesaver.sh` (and `userpromptsubmit.sh` mid-turn)
 
