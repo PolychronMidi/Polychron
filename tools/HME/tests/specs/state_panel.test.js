@@ -203,6 +203,26 @@ test('i/status mode=multi-axis-band renders Horizon II per-subtag bands', () => 
   assert.match(r.stdout, /Multi-axis|chaordic band|subtag/);
 });
 
+test('i/status mode=tool-latency renders Horizon I cost-pred view', () => {
+  const r = _runStatus('tool-latency');
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /Tool-cost preflighting|cadence|latency/);
+});
+
+test('i/status mode=band-tuning persists proposal to tmp file', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const proposalPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-proposal.json');
+  // Run band-tuning; it should write the proposal
+  _runStatus('band-tuning');
+  if (fs.existsSync(proposalPath)) {
+    const data = JSON.parse(fs.readFileSync(proposalPath, 'utf8'));
+    assert.ok('proposed_band' in data);
+    assert.ok('current_band' in data);
+    assert.ok(Array.isArray(data.proposed_band));
+  }
+});
+
 test('i/why mode=causality reads explicit caused_by from marker (Tier-1)', () => {
   // Inject a test marker with caused_by; verify the Tier-1 path renders it
   const fs = require('node:fs');

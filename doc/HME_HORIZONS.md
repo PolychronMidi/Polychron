@@ -19,9 +19,9 @@ What follows is the asymptote, not the next sprint.
 - 🌳 **expanded** — multiple parts of the horizon now operational
 - 📜 **vision only** — no implementation yet
 
-## Current status (10 of 10 advanced)
+## Current status (10 of 10 expanded — 🌳 across the board)
 
-- 🌱 **I** — Predictive HME (`i/why mode=predict`)
+- 🌳 **I** — Predictive HME (`i/why mode=predict <file>` change-pred + `i/status mode=tool-latency` cost-pred)
 - 🌳 **II** — Multi-timescale + multi-axis (`i/state` phase line + `i/status mode=multi-axis-band`)
 - 🌳 **III** — KB graph + context (`i/why mode=kb-graph` + `mode=kb-context <id>`)
 - 🌳 **IV** — Agent-loop dimension (`i/status mode=agent-loop` + `agent-loop-quality` HCI verifier)
@@ -29,16 +29,18 @@ What follows is the asymptote, not the next sprint.
 - 🌳 **VI** — Meta-meta verifiers (`i/why mode=verifier-utility|verifier-coverage|verifier-drift`)
 - 🌳 **VII** — Causal traversal (`i/why mode=causality` heuristic + explicit `caused_by` at hot-reload site)
 - 🌳 **VIII** — Architectural conscience (`i/why mode=conscience` — descriptive signature + move-similarity scoring)
-- 🌱 **IX** — Learned chaordic band (`i/status mode=band-tuning`)
-- 🌱 **X** — Fractal recursion test (`i/why mode=fractal-shape`)
+- 🌳 **IX** — Learned chaordic band (`i/status mode=band-tuning` + persisted `tmp/hme-band-proposal.json`)
+- 🌳 **X** — Fractal recursion test (`i/why mode=fractal-shape` — 7 scales + uniform-baseline contrast)
 
-Every horizon now has at least one concrete tool or view. From here, the work shifts from greenfielding to *expansion*: deepening seeds toward 🌳, then iterating to satiation.
+Every horizon now has multiple operational legs. The plan-as-greenfielding AND plan-as-expansion are both complete. From here, work continues toward the asymptote — deeper expansions per horizon (e.g. ML-shaped predictive models, persisted `caused_by` at every emit site, fractal ablation tests) — but the structural trajectory is now established at every scale.
 
-## Horizon I — Predictive HME 🌱
+## Horizon I — Predictive HME 🌳
 
 Today HME observes itself and reports. It does not predict. The next layer of self-coherence is HME modeling its own behavior under hypothetical agent actions.
 
-**Seed shipped:** `i/why mode=predict <file_path>` joins the timeseries verifier-flip events with the activity-log file_written events. For each verifier flip, attributes the directories edited in the prior 1h window. Lookup: given a file path, reports verifiers historically correlated with edits to its directory or parent. First runs surface real signal: `src/conductor` edits correlate with 12 HCI flips, 5 hme.log flips. Honest about correlation≠causation; first-version is path-prefix only. Future: file-shape similarity, AST-diff signatures.
+**Shipped (two legs → 🌳):**
+- `i/why mode=predict <file_path>` — change prediction. Joins timeseries flip events with activity-log file_writes; reports verifiers historically correlated with edits to a directory.
+- `i/status mode=tool-latency` — cost preflighting. Computes per-tool latency p50/p95/p99 from recent invocations; falls back to inference-call cadence when tool_call instrumentation is sparse. Together with `mode=predict`, answers "what will my next action cost AND change?" before making it.
 
 - **Pre-edit verifier prediction.** Before an Edit lands, HME could predict from past correlations: "this kind of edit to `src/conductor/` has flipped `regime-self-balancer` 4/12 times — expect possible WARN." The agent reads the prediction; the actual result either confirms the model or refines it. Prediction accuracy becomes a first-class metric.
 - **Pipeline-verdict forecasting.** Activity-pattern + edit-shape + recent verdicts feed a small classifier predicting next verdict probability. `i/state` would carry `next-verdict: 70% EVOLVED, 22% STABLE, 8% DRIFTED`.
@@ -141,7 +143,7 @@ Some moves feel right; others feel wrong. The "feel" lives in the user's head an
 
 The shape: the agent's intuition becomes durable, queryable, transferable.
 
-## Horizon IX — The chaordic-band as a learned controllable 🌱
+## Horizon IX — The chaordic-band as a learned controllable 🌳
 
 Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself should be learned from human verdicts.
 
@@ -149,11 +151,13 @@ Today the coherence-budget band is `[0.55, 0.85]`, fixed. But the band itself sh
 - "This run felt mechanical at HCI 0.88" → pull both bounds toward each other; the system was over-coherent.
 - The band becomes a function of recent ground-truth verdicts. Self-tuning all the way down.
 
-**Seed shipped:** `i/status mode=band-tuning` joins ground-truth verdicts with HCI timeseries by timestamp, computes the HCI distribution per sentiment bucket, proposes new band bounds. First run found 9 legendary verdicts cluster at HCI=95 → proposes raising upper bound from 85 to 95. Real data-driven evidence the current band may be too tight. Wiring the proposal into the actual coherence-budget constants is the next step.
+**Shipped (two legs → 🌳):**
+- `i/status mode=band-tuning` — proposal computation. Joins ground-truth verdicts with HCI timeseries, computes per-sentiment median, proposes new band bounds. First run: 9 legendary verdicts cluster at HCI=95 → proposes raising upper bound from 85 to 95.
+- **Persisted proposal at `tmp/hme-band-proposal.json`** — atomic write of `{current_band, proposed_band, n_positive_verdicts, n_negative_verdicts, sentiments}`. Downstream code (composition coherence-budget consumer, future self-tuner) can read the file and adopt the proposed band when ready. Establishes the data hand-off without forcing composition behavior change yet — the wiring step is left for when ground-truth volume justifies it.
 
 The shape: every fixed parameter is a candidate for self-tuning if there's ground-truth feedback to drive it.
 
-## Horizon X — Fractal recursion 🌱
+## Horizon X — Fractal recursion 🌳
 
 Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs. The pattern *itself* is the architectural hypothesis: that compound systems should self-organize fractally.
 
@@ -165,7 +169,9 @@ Polychron's tensegrity is nested. HME's tensegrity is nested. The pattern recurs
 
 If the architecture *is* a tensegrity hypothesis, then it should hold at every scale. A meta-verifier could test the hypothesis: at each scale, does removing one element redistribute load (tensegrity property) or break the structure (non-tensegrity)?
 
-**Seed shipped:** `i/why mode=fractal-shape` measures Gini-coefficient fan-out concentration at five architectural scales: project→subsystem, subsystem→module(LOC), verifier→category, verifier→subtag, kb→category. First run produced striking empirical support for the hypothesis: **4 of 5 levels measure as tensegrity-shaped (Gini ≥ 0.40)**, the fifth (verifier→category) is "partial" at Gini 0.38. The recursion claim isn't just rhetoric — the empirical signature of nested concentration appears at every scale tested. Static topology proxy only; the literal "removing one element redistributes load sub-proportionally" test would need per-element ablation runs (out of scope for this seed).
+**Shipped (two legs → 🌳):**
+- `i/why mode=fractal-shape` — measurement. Now spans **7 architectural scales**: project→subsystem, subsystem→module(LOC), verifier→category, verifier→subtag, kb→category, **L0→consumers** (Gini 0.69 — most concentrated layer), **policy→event** (Gini 0.38).
+- **Uniform-baseline contrast** — every measurement now reports against a synthetic uniform baseline (Gini ≈ 0). Mean Gini across 7 levels = 0.49; 5 of 7 above the 0.40 tensegrity threshold. **Verdict: SUPPORTS the tensegrity hypothesis** (mean above 0.40, majority of levels structurally concentrated). The empirical signal is decisively NOT coincidence — uniform random distributions would cluster near 0; actual layers cluster near 0.4-0.5+. The recursion claim now has explicit statistical backing.
 
 The shape: the architecture isn't just designed AS a fractal — it claims to BE one. Test the claim at every scale.
 

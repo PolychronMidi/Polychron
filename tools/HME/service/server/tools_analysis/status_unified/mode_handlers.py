@@ -117,6 +117,89 @@ def _mode_activity():
     return _ad(window="round")
 
 
+def _mode_tool_latency():
+    """Horizon I expansion — tool-cost preflighting.
+
+    Reads recent tool_call + inference_call events from the activity log
+    and computes per-tool latency distributions (p50/p95/p99). Surfaces
+    'this is what the next call probably costs' as a heads-up. Pairs
+    with `i/why mode=predict <file>` (which predicts verifier flips):  tool-form-ok
+    together they answer 'what will my next action cost AND change?'
+
+    Limitation: tool_call events are intermittent (proxy instrumentation
+    gap noted earlier); the inference_call signal is reliable. Falls
+    back to inference-call-based latency when tool_call is sparse.
+    """
+    import os as _os
+    import json as _json
+    import time as _time
+    from collections import defaultdict
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    activity = _os.path.join(_root, "output", "metrics", "hme-activity.jsonl")
+    if not _os.path.isfile(activity):
+        return "# i/status mode=tool-latency\nNo activity log."
+    try:
+        with open(activity) as _f:
+            lines = _f.readlines()[-3000:]
+    except OSError as e:
+        return f"# i/status mode=tool-latency\nFailed to read: {e}"
+
+    cutoff = _time.time() - 3600 * 6  # last 6h
+    by_tool: dict[str, list[float]] = defaultdict(list)
+    inf_ts: list[float] = []
+    for ln in lines:
+        try:
+            e = _json.loads(ln)
+        except ValueError:
+            continue
+        if e.get("ts", 0) < cutoff:
+            continue
+        ev = e.get("event", "")
+        if ev == "tool_call":
+            tool = e.get("tool", "?")
+            # latency_ms isn't always present; if it is, use it
+            if "latency_ms" in e:
+                by_tool[tool].append(float(e["latency_ms"]))
+        elif ev == "inference_call":
+            inf_ts.append(e.get("ts", 0))
+
+    out = ["# Tool-cost preflighting  (last 6h)"]
+    out.append("")
+    if by_tool:
+        out.append(f"  {'tool':18}  {'n':>4}  {'p50':>7}  {'p95':>7}  {'p99':>7}  ms")
+        for tool, latencies in sorted(by_tool.items(), key=lambda kv: -len(kv[1])):
+            if len(latencies) < 3:
+                continue
+            s = sorted(latencies)
+            p50 = s[len(s) // 2]
+            p95 = s[int(len(s) * 0.95)]
+            p99 = s[int(len(s) * 0.99)]
+            out.append(f"  {tool:18}  {len(s):>4}  {p50:>7.0f}  {p95:>7.0f}  {p99:>7.0f}  ms")
+        out.append("")
+    else:
+        out.append("  (no tool_call events with latency_ms in window —")
+        out.append("   proxy instrumentation gap; falling back to inference cadence)")
+        out.append("")
+
+    # Inference-cadence proxy: how spaced apart are calls?
+    if len(inf_ts) >= 5:
+        inf_ts.sort()
+        gaps = [inf_ts[i + 1] - inf_ts[i] for i in range(len(inf_ts) - 1)]
+        gaps.sort()
+        median_gap = gaps[len(gaps) // 2]
+        p95_gap = gaps[int(len(gaps) * 0.95)]
+        out.append(f"  inference-call cadence (proxy for round-trip cost):")
+        out.append(f"    {len(inf_ts)} calls · median gap {median_gap:.1f}s · p95 {p95_gap:.1f}s")
+        out.append("")
+
+    out.append("# Reading the table:")
+    out.append("  - Use to estimate the cost of an upcoming call BEFORE making it.")
+    out.append("  - High p99 = occasionally slow; high p50 = always slow.")
+    out.append("  - Pairs with `i/why mode=predict <file>` for cost AND change predictions.")  # tool-form-ok: drill-in advisory; literal command shape is the contract
+    return "\n".join(out)
+
+
 def _mode_multi_axis_band():
     """Horizon II expansion — multi-axis bands.
 
@@ -433,10 +516,39 @@ def _mode_band_tuning():
         out.append(f"               (to inform: tag a flat/mechanical/boring round via")
         out.append(f"                `{_gt_hint} tags=[flat]` when one occurs —")
         out.append(f"                even one negative verdict starts the calibration)")
+    # Persist the proposal to tmp/hme-band-proposal.json so downstream
+    # code (coherence-budget consumer, future self-tuner) can read it
+    # without re-deriving. Establishes the data hand-off without forcing
+    # composition behavior change yet.
+    proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
+    proposal = {
+        "ts": __import__("time").time(),
+        "current_band": [0.55, 0.85],
+        "proposed_band": [
+            (neg_hcis[len(neg_hcis) // 2] / 100.0) if neg_hcis else 0.55,
+            (pos_hcis[len(pos_hcis) // 2] / 100.0) if pos_hcis else 0.85,
+        ],
+        "n_positive_verdicts": len(pos_hcis),
+        "n_negative_verdicts": len(neg_hcis),
+        "sentiments": {sent: len(vals) for sent, vals in buckets.items()},
+        "note": "Advisory proposal. Consumers may read but composition behavior remains driven by current_band until explicitly wired.",
+    }
+    try:
+        proposal_tmp = proposal_path + ".tmp"
+        with open(proposal_tmp, "w") as _pf:
+            _json.dump(proposal, _pf, indent=2)
+        _os.replace(proposal_tmp, proposal_path)
+        out.append("")
+        out.append(f"# Persisted proposal:")
+        out.append(f"  tmp/hme-band-proposal.json   (downstream consumers may read)")
+    except OSError:
+        pass
+
     out.append("")
     out.append("# Note:")
-    out.append("  This is a proposal. Today's band [55, 85] is fixed.")
-    out.append("  Horizon IX makes it self-tuning. See doc/HME_HORIZONS.md.")
+    out.append("  Today's band [55, 85] is fixed. The proposal above is advisory.")
+    out.append("  Future expansion: composition code reads the proposal on round")
+    out.append("  start, allowing the band to self-tune as new ground-truth lands.")
     return "\n".join(out)
 
 
@@ -1059,6 +1171,8 @@ _STATUS_MODES: dict[str, callable] = {
     "conjugate": _mode_conjugate,
     "multi-axis-band": _mode_multi_axis_band,
     "multi_axis_band": _mode_multi_axis_band,
+    "tool-latency": _mode_tool_latency,
+    "tool_latency": _mode_tool_latency,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,
