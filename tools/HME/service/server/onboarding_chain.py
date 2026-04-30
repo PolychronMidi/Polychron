@@ -41,6 +41,8 @@ from hme_env import ENV  # noqa: E402
 
 # Pull canonical i/<wrapper> + action= forms from the single source of
 # truth. Fallback keeps server bootable if the helper module is missing.
+# _mcp_root is tools/HME/service; helpers live at tools/HME/scripts
+# (one dirname up from _mcp_root, then "scripts").
 try:
     _scripts_dir = os.path.join(
         os.path.dirname(_mcp_root), "scripts"
