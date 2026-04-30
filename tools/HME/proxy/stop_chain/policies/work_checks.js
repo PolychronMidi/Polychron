@@ -31,6 +31,7 @@ const REASONS = {
 const ENFORCEMENT_REMINDER =
   'STOP. Re-read CLAUDE.md and the user prompt. Did you do ALL the work asked? Every change must be implemented in code, including errors that surface along the way in other involved tools or code (in /src, /tools, or wherever the request is scoped), not just documented. If you skipped anything, go back and do it now.';
 
+// anti-fork-begin: hook-inject-prefixes min=7
 const HOOK_INJECT_PREFIXES = [
   'Stop hook feedback:',
   'AUTO-COMPLETENESS INJECT',
@@ -40,6 +41,7 @@ const HOOK_INJECT_PREFIXES = [
   'PreToolUse:',
   'PostToolUse:',
 ];
+// anti-fork-end: hook-inject-prefixes
 
 function readVerdicts() {
   const out = { STOP_WORK: 'ok', EXHAUST_CHECK: 'ok' };
