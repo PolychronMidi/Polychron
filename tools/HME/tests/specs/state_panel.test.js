@@ -260,6 +260,49 @@ test('i/why mode=conscience renders move-similarity threshold marker when scored
     /(similarity score|low similarity|partial similarity|No file_written events|(Architectural conscience))/);
 });
 
+test('i/learn action=suggest_predecessors returns ranked similarity matches', () => {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'learn'), [
+    'action=suggest_predecessors',
+    'title=HME multi-axis chaordic bands learned per subtag',
+    'content=per-subtag verifier scores tracked against bands proposed from ground-truth verdicts',
+  ], {
+    encoding: 'utf8',
+    timeout: 30000,
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  assert.strictEqual(r.status, 0);
+  // Either matches above threshold (tags= suggestion) or honest "no matches"
+  assert.match(r.stdout, /Predecessor suggestions|tags="(derived_from|supersedes):|No matches above 0\.50|KB empty/);
+});
+
+test('conjugate-channel V-coupling: tightening file lifecycle is sane', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const tighteningPath = path.join(PROJECT_ROOT, 'tmp', 'hme-band-tightening.json');
+  // Run the verifier — outcome depends on current data state, but the
+  // marker should be either (a) present with the correct schema if FAIL
+  // fired, or (b) absent if PASS fired and cleanup ran.
+  const r = spawnSync('python3', ['-c',
+    `import sys; sys.path.insert(0, '${path.join(PROJECT_ROOT, 'tools/HME/scripts')}'); ` +
+    'from verify_coherence.code_audits import ConjugateChannelVerifier; ' +
+    'r = ConjugateChannelVerifier().execute(); print(r.status)'
+  ], { encoding: 'utf8', timeout: 15000 });
+  assert.strictEqual(r.status, 0);
+  const status = r.stdout.trim();
+  if (status === 'FAIL') {
+    // FAIL must produce the tightening marker
+    assert.ok(fs.existsSync(tighteningPath),
+      'conjugate-channel FAIL but tmp/hme-band-tightening.json not written');
+    const body = JSON.parse(fs.readFileSync(tighteningPath, 'utf8'));
+    assert.ok('recommended_action' in body);
+    assert.ok('band_delta' in body);
+    assert.ok('expires_after_rounds' in body);
+  }
+  // PASS path: cleanup may or may not have removed it (depends on
+  // whether it was present); just assert no exception.
+});
+
 test('i/holograph renders all 10 horizons as one panel', () => {
   const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
     encoding: 'utf8',

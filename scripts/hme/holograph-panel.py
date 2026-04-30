@@ -203,16 +203,25 @@ def _conscience_summary() -> str:
 
 
 def _band_summary() -> str:
-    """Horizon IX — band proposal."""
+    """Horizon IX — band proposal + V→IX tightening signal."""
     p = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-band-proposal.json"))
+    # V→IX bidirectional coupling: surface active tightening signal so
+    # the agent sees the conjugate-channel verifier's recommendation
+    # alongside the static proposal.
+    tightening = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-band-tightening.json"))
     if not p:
+        if tightening:
+            return f"⚠ tightening signal active ({tightening.get('reason', '?')[:50]})"
         return "no proposal yet"
     cur = p.get("current_band", [0.55, 0.85])
     proposed = p.get("proposed_band", cur)
-    if proposed == cur:
-        return f"current [{cur[0]:.2f}, {cur[1]:.2f}]  (no proposal change)"
-    return (f"current [{cur[0]:.2f}, {cur[1]:.2f}] → "
-            f"proposed [{proposed[0]:.2f}, {proposed[1]:.2f}]")
+    base = (f"current [{cur[0]:.2f}, {cur[1]:.2f}] → proposed [{proposed[0]:.2f}, {proposed[1]:.2f}]"
+            if proposed != cur else
+            f"current [{cur[0]:.2f}, {cur[1]:.2f}]  (no change)")
+    if tightening:
+        delta = tightening.get("band_delta", 0)
+        base += f"  ⚠ V-tightening: {delta:+.2f}"
+    return base
 
 
 def _fractal_summary() -> str:
