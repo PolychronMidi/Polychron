@@ -52,7 +52,12 @@ def _human_age(delta: float) -> str:
 def _gather_marker_events(now: float, window_s: float) -> list[dict]:
     """Read tmp/hme-last-*.json marker files; one event per marker still
     in window. Markers track silent automations the activity log doesn't
-    necessarily capture (auto-reload, draft-write, accept)."""
+    necessarily capture (auto-reload, draft-write, accept).
+
+    These are SYNTHESIZED events — derived from file existence/mtime
+    rather than emit() calls into hme-activity.jsonl. So they will NOT
+    appear in EVENTS.md (which catalogues real activity events) and the
+    activity-events-doc-sync verifier won't see them as drift."""
     out = []
     candidates = [
         ("hme-last-reload.json",          "auto-reload"),
@@ -168,6 +173,7 @@ def main(argv):
     out.append("  i/timeline window=5m       narrow to last 5 minutes")
     out.append("  i/timeline window=1h       widen to last hour")
     out.append("  i/state                    snapshot of current state machines")
+    out.append("  i/why mode=hook            recent hook firings only (narrower scope)")
     print("\n".join(out))
     return 0
 
