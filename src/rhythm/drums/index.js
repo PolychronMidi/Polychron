@@ -3,6 +3,8 @@
 
 require('./drumMap');
 
+require('./drumKitRotator');
+
 require('./drummer');
 
 require('./drumTextureCoupler');
