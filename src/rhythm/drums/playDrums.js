@@ -18,27 +18,19 @@ playDrums = function playDrums() {
   const stutterRange = intensity > 0.65 ? [3, 12] : [2, 8];
   const stutterDecay = clamp(0.85 + intensity * 0.25, 0.75, 1.2);
 
-  const k = drumKitRotator.pickKicks(2);
-  const s = drumKitRotator.pickSnares(2);
-  const cym = drumKitRotator.pickCymbal(0);
-  const cga = drumKitRotator.pickConga(0);
-
   if (beatIndex % 2===0 && beatRhythm[beatIndex] > 0 && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
-    drummer([k[0],k[1]],[0,.5],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
+    drummer(['kick1','kick3'],[0,.5],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
     if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
-      drummer([drumKitRotator.pickKick(2),drumKitRotator.pickKick(3)],[0,.5],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
-    }
-    if (beatIndex===0 && rf() < .35*bpmRatio3) {
-      drummer([cym],[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
+      drummer(['kick2','kick5'],[0,.5],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
     }
   } else if (beatRhythm[beatIndex] > 0  && rf() < .3 * m.max(1,beatsOff*rf(2,3.5))*bpmRatio3) {
-    drummer([s[0],k[0],k[1],s[1]],[0,.5,.75,.25],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
+    drummer(['snare1','kick4','kick7','snare4'],[0,.5,.75,.25],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
   } else if (beatIndex % 2===0) {
-    drummer([cga],[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
+    drummer('random',[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
     if (numerator % 2===1 && beatIndex===numerator - 1 && rf() < (1/measuresPerPhrase)*bpmRatio3) {
-      drummer([drumKitRotator.pickSnare(4)],[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
+      drummer(['snare5'],[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
     }
   } else  {
-    drummer([drumKitRotator.pickSnare(5)],[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
+    drummer(['snare6'],[0],rf(.08,.16),stutterChance,stutterRange,stutterDecay,drumCtx);
   }
 };

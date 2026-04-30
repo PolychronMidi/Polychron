@@ -1706,7 +1706,6 @@ declare var rotate: any;
 declare var lastCrossMod: number;
 declare var playDrums: any;
 declare var playDrums2: any;
-declare var drumKitRotator: any;
 declare var binary: any;
 declare var hex: any;
 declare var onsets: any;
