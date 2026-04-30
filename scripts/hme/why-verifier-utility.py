@@ -28,12 +28,26 @@ from _common import PROJECT_ROOT
 
 
 def main(argv):
+    verbose = any(
+        a in ("verbose=true", "--verbose", "-v")
+        for a in argv[1:]
+    )
     ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                            "hme-coherence-timeseries.jsonl")
     if not os.path.isfile(ts_path):
         print("# i/why mode=verifier-utility")
         print(f"No timeseries at {ts_path}")
         return 1
+
+    # Pull subtag map from REGISTRY (not stored in snapshot history).
+    name_to_subtag: dict[str, str] = {}
+    try:
+        sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"))
+        from verify_coherence import REGISTRY  # type: ignore
+        for v in REGISTRY:
+            name_to_subtag[v.name] = getattr(v, "subtag", "(none)")
+    except Exception:
+        pass
 
     try:
         with open(ts_path) as f:
@@ -83,25 +97,31 @@ def main(argv):
     print(f"# i/why mode=verifier-utility ({len(rows)} runs analyzed)")
     print()
 
+    cap = 999 if verbose else 8
+
+    def _fmt_row(m: dict, extra: str) -> str:
+        subtag = name_to_subtag.get(m["name"], "(none)")
+        return f"  {m['name']:36}  {subtag:24}  {extra}"
+
     # Bucket 1: always-PASS verifiers (zero information ever)
     always_pass = [m for m in metrics if m["pass"] == m["n"] and m["n"] >= 10]
     if always_pass:
         always_pass.sort(key=lambda m: -m["n"])
         print(f"## Always-PASS ({len(always_pass)}) — zero information ever; candidates for downweighting")
-        for m in always_pass[:8]:
-            print(f"  {m['name']:36}  {m['n']} runs, never flipped")
-        if len(always_pass) > 8:
-            print(f"  (+{len(always_pass) - 8} more)")
+        for m in always_pass[:cap]:
+            print(_fmt_row(m, f"{m['n']} runs, never flipped"))
+        if len(always_pass) > cap:
+            print(f"  (+{len(always_pass) - cap} more — pass verbose=true to show)")
         print()
 
     # Bucket 2: always-FAIL (broken or signal we ignore)
     always_fail = [m for m in metrics if m["fail"] == m["n"] and m["n"] >= 10]
     if always_fail:
         print(f"## Always-FAIL ({len(always_fail)}) — broken, alarmist, or chronically ignored")
-        for m in always_fail[:8]:
-            print(f"  {m['name']:36}  {m['n']} runs, all FAIL")
-        if len(always_fail) > 8:
-            print(f"  (+{len(always_fail) - 8} more)")
+        for m in always_fail[:cap]:
+            print(_fmt_row(m, f"{m['n']} runs, all FAIL"))
+        if len(always_fail) > cap:
+            print(f"  (+{len(always_fail) - cap} more — pass verbose=true to show)")
         print()
 
     # Bucket 3: flapping — high flip rate signals noise or genuine instability
@@ -112,20 +132,23 @@ def main(argv):
     flappers.sort(key=lambda m: -m["flips"])
     if flappers:
         print(f"## Flapping ({len(flappers)}) — flips ≥15% of runs; either noisy or catching real instability")
-        for m in flappers[:8]:
+        for m in flappers[:cap]:
             rate = m["flips"] / m["n"] * 100
-            print(f"  {m['name']:36}  {m['flips']}/{m['n']} flips ({rate:.0f}%) · last={m['last']}")
-        if len(flappers) > 8:
-            print(f"  (+{len(flappers) - 8} more)")
+            print(_fmt_row(m, f"{m['flips']}/{m['n']} flips ({rate:.0f}%) · last={m['last']}"))
+        if len(flappers) > cap:
+            print(f"  (+{len(flappers) - cap} more — pass verbose=true to show)")
         print()
 
     # Bucket 4: high score variance (mode oscillating even when status stable)
     variant = [m for m in metrics if m["n"] >= 10 and m["var"] > 0.02]
     variant.sort(key=lambda m: -m["var"])
     if variant:
+        cap2 = 999 if verbose else 5
         print(f"## High score variance ({len(variant)}) — score oscillates even when status doesn't")
-        for m in variant[:5]:
-            print(f"  {m['name']:36}  var={m['var']:.3f} · last={m['last']}")
+        for m in variant[:cap2]:
+            print(_fmt_row(m, f"var={m['var']:.3f} · last={m['last']}"))
+        if len(variant) > cap2:
+            print(f"  (+{len(variant) - cap2} more — pass verbose=true to show)")
         print()
 
     # Summary
