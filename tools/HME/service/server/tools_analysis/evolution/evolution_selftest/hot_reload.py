@@ -157,10 +157,31 @@ def hme_hot_reload(modules: str = "") -> str:
         results.append(f"  OK {name}: {status_str} (was {len(tools_before)})")
 
     total_tools = len(_tools)
-    return (
-        f"## HME Hot Reload\n"
-        + "\n".join(results)
-        + f"\n\nTotal tools registered: {total_tools}"
-    )
+    summary = f"## HME Hot Reload\n" + "\n".join(results) + f"\n\nTotal tools registered: {total_tools}"
+
+    # Surface the reload as an observable artifact. Both manual
+    # (i/hme-admin action=reload) and auto (watcher.py debounced) paths
+    # converge here, so writing the marker here covers both. `i/state`
+    # reads it to show "last hot-reload Ns ago".
+    try:
+        import json as _json
+        import time as _time
+        _root = ctx.PROJECT_ROOT
+        _marker_path = os.path.join(_root, "tmp", "hme-last-reload.json")
+        _marker_tmp = _marker_path + ".tmp"
+        # Caller hint: watcher.py calls with empty modules string for auto;
+        # manual i/hme-admin invocations may pass "all" or specific names.
+        _trigger = "manual" if modules and modules.strip() else "auto"
+        with open(_marker_tmp, "w") as _mf:
+            _json.dump({
+                "ts": _time.time(),
+                "trigger": _trigger,
+                "summary": summary.split("\n\n")[-1][:160],
+            }, _mf)
+        os.replace(_marker_tmp, _marker_path)
+    except (OSError, AttributeError) as _werr:
+        logger.debug("hot-reload marker write failed: %s", _werr)
+
+    return summary
 
 

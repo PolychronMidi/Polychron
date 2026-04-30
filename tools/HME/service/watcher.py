@@ -312,6 +312,10 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         try:
             from tools_analysis.evolution.evolution_selftest.hot_reload \
                 import hme_hot_reload as _reload
+            # hme_hot_reload writes tmp/hme-last-reload.json itself, so
+            # both manual (i/hme-admin action=reload) and auto-watcher
+            # paths converge to one marker. Empty modules string =
+            # "auto" trigger from the watcher's perspective.
             result = _reload("")
             logger.info("auto hot-reload: %s",
                         result.split("\n")[0] if result else "(empty)")
