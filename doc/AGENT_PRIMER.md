@@ -46,6 +46,7 @@ You never call `i/hme-read mode=before` explicitly — the briefing is woven int
 ```
 i/state                                  snapshot: every state machine in one ~10-line view
 i/timeline window=5m|1h                  chronological audit trail of silent automations
+i/holograph                              interstellar overview: one row per HME horizon (all 10 dimensions at once)
 i/why mode=…                             causality (see modes below)
 ```
 

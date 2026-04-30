@@ -212,10 +212,12 @@ ${_file_head}"
         _AUTO_BRIEF_JSON=$(jq -nR --arg b "$_brief" --arg m "$_auto_module" \
           '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)
         if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
+          # Horizon VII: caused_by = the file path being written.
           python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
             --event=auto_brief_injected \
             --file="$FILE" \
             --module="$_auto_module" \
+            --caused_by="pretooluse_write:$FILE" \
             >/dev/null 2>&1 &
         fi
         mkdir -p "$(dirname "$_AUTO_BRIEF_TURN_FILE")" 2>/dev/null

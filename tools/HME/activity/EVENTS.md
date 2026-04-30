@@ -16,6 +16,7 @@ file's listed events and FAILs if they drift.
 - **`brief_recorded`** — agent ran `i/hme-read` on a target before editing it. Drops the file's "needs-brief" flag in NEXUS state.
 - **`auto_brief_injected`** — pretooluse_edit hook chained the KB briefing automatically. Counterpart to manual `brief_recorded`.
 - **`edit_without_brief`** — a `/src/` Edit fired without a prior brief. Surfaces as a soft warning in selftest.
+- **`kb_draft_written`** — posttooluse_bash auto-wrote `tmp/hme-learn-draft.json` after a STABLE/EVOLVED pipeline verdict. Carries `caused_by: pipeline_verdict:<VERDICT>` (Horizon VII Tier-1.5).
 
 ## KB / context
 

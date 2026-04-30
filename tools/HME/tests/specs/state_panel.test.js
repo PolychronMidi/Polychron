@@ -260,6 +260,22 @@ test('i/why mode=conscience renders move-similarity threshold marker when scored
     /(similarity score|low similarity|partial similarity|No file_written events|(Architectural conscience))/);
 });
 
+test('i/holograph renders all 10 horizons as one panel', () => {
+  const r = spawnSync(path.join(PROJECT_ROOT, 'i', 'holograph'), [], {
+    encoding: 'utf8',
+    timeout: 30000,
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, PROJECT_ROOT },
+  });
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /HME Holograph|interstellar overview/);
+  // Each horizon should appear as a [N] tag
+  for (const hid of ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']) {
+    assert.match(r.stdout, new RegExp(`\\[${hid}\\s*\\]`),
+      `i/holograph missing horizon [${hid}] row`);
+  }
+});
+
 test('i/state surfaces agent-loop-quality verifier inline', () => {
   const r = _run();
   assert.strictEqual(r.status, 0);

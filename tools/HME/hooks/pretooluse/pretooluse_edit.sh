@@ -260,10 +260,13 @@ ${_file_head}"
         _AUTO_BRIEF_JSON=$(jq -nR --arg b "$_brief" --arg m "$_auto_module" \
           '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"allow",additionalContext:("[hme auto-brief: " + $m + "]\n" + $b + "\n[/hme auto-brief]")}}' 2>/dev/null)
         if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
+          # Horizon VII: caused_by = the file path being edited
+          # (the cause of the auto-briefing was the agent's Edit on FILE).
           python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
             --event=auto_brief_injected \
             --file="$FILE" \
             --module="$_auto_module" \
+            --caused_by="pretooluse_edit:$FILE" \
             >/dev/null 2>&1 &
         fi
         # Record this module so subsequent Edits/Writes to the same

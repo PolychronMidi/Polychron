@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# i/holograph — interstellar overview of HME's state across all 10
+# horizons in one panel. Pure data composition; no new computation.
+#   i/holograph                single ~12-line view of every horizon
+python3 "$(dirname "$0")/../scripts/hme/tool-usage-log.py" holograph "$@" &
+exec python3 "$(dirname "$0")/../scripts/hme/holograph-panel.py" "$@"

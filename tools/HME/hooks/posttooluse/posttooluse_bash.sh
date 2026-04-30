@@ -204,6 +204,17 @@ if echo "$CMD" | grep -q 'npm run main'; then
             --verdict="$VERDICT" --session="$SESSION_ID" --out="$DRAFT_PATH" \
             >/dev/null 2>&1 && \
             echo "[hme-learn] $VERDICT verdict — KB draft written to tmp/hme-learn-draft.json. Accept with: i/learn action=add accept_draft=true" >&2
+          # Horizon VII instrumentation: emit kb_draft_written event with
+          # caused_by = the verdict that triggered the draft. Lets
+          # `i/why mode=causality kb_draft_written` resolve via Tier-1.5.
+          if [ -x "$PROJECT/tools/HME/activity/emit.py" ]; then
+            PROJECT_ROOT="$PROJECT" python3 "$PROJECT/tools/HME/activity/emit.py" \
+              --event=kb_draft_written \
+              --verdict="$VERDICT" \
+              --caused_by="pipeline_verdict:$VERDICT" \
+              --session="$SESSION_ID" \
+              >/dev/null 2>&1 &
+          fi
         fi
       fi
     else

@@ -104,12 +104,16 @@ function nexusClearType(type) {
   const sinceBootMs = Date.now() - _PROCESS_BOOT_TS;
   const isSuspicious = sinceBootMs < _RESTART_SUSPICION_WINDOW_MS;
   // Activity stream: always emit so the audit trail is complete.
+  // Horizon VII instrumentation: caused_by = the JS module that called
+  // _nexus_clear (resolved via _callerModule from stack inspection).
+  // Lets `i/why mode=causality nexus_cleared` resolve via Tier-1.5.
   try {
     emit({
       event: 'nexus_cleared',
       type,
       removed,
       caller,
+      caused_by: caller || 'unknown',
       since_boot_ms: sinceBootMs,
       suspicious: isSuspicious,
     });

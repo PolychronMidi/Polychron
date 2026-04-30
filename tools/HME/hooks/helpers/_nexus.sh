@@ -168,7 +168,12 @@ _brief_add() {
   else
     _brief_module="$target"
   fi
-  # Emit activity event in background; never block the caller
+  # Emit activity event in background; never block the caller.
+  # Horizon VII instrumentation: caused_by = the source path that
+  # triggered this briefing (e.g. posttooluse_read_kb, pretooluse_grep,
+  # nexus_tracking middleware). Lets `i/why mode=causality
+  # brief_recorded` resolve via Tier-1.5 (activity-log caused_by) rather
+  # than session-adjacency heuristic.
   if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ] 2>/dev/null; then
     python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
       --event=brief_recorded \
@@ -176,6 +181,7 @@ _brief_add() {
       --file="$_brief_file" \
       --module="$_brief_module" \
       --source="$source" \
+      --caused_by="$source:$target" \
       --session="$(whoami 2>/dev/null || echo shell)" \
       >/dev/null 2>&1 &
   fi
