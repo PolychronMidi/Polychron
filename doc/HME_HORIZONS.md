@@ -62,13 +62,15 @@ The agent (the LLM running through Claude Code, including me right now) is curre
 
 The shape: the agent is not external to HME; the agent is a subsystem of HME. Modeled accordingly.
 
-## Horizon V — The composition⇔HME conjugate channel 📜
+## Horizon V — The composition⇔HME conjugate channel 🌱
 
 Musical coherence and HCI co-evolve over rounds but don't directly inform each other. They are two parallel scores that should be a coupled system.
 
 - **HCI → composition.** When `regression-prevention` verifiers FAIL, the next pipeline run could automatically tighten coherence-budget tolerance. The architectural state colors the compositional state.
 - **Composition → HCI.** When fingerprint-comparison verdict flips DRIFTED, an HCI verifier checks whether recent edits introduced uncovered KB regions. The compositional verdict drives architectural inspection.
 - **Joint distribution.** A 2D plot of (HCI, perceptual-correlation) per round. Quadrants reveal: high-both = mature stability, high-HCI low-perceptual = sterile rigor, low-HCI high-perceptual = lucky chaos, low-both = lost. Currently invisible.
+
+**Seed shipped:** `i/status mode=conjugate` joins HCI + perceptual-complexity per round from `hme-musical-correlation.json`. Uses median-as-threshold per axis so partition is data-driven across whatever scales the two metrics are on. First run revealed: 23 rounds bimodal between mature-stability (12) and sterile-rigor (11); zero in chaos quadrants. The system has two stable attractors — alive-enough vs structured-but-flat. That bimodality was invisible before this view.
 
 The shape: the two scores are conjugate variables, not independent. Treat as one system.
 
@@ -78,7 +80,7 @@ The verifiers check the system. What checks the verifiers?
 
 - **Verifier-utility verifier.** ✅ Shipped: `i/why mode=verifier-utility`. Computes per-verifier signal-to-noise: always-PASS / always-FAIL / flapping / high-variance buckets across 544 runs of timeseries. First run found 9 verifiers that have NEVER flipped — real prune candidates.
 - **Verifier-coverage verifier.** ✅ Shipped: `i/why mode=verifier-coverage`. Heuristic scan of which directories have specific-path verifier mentions vs only universal-walker coverage. Surfaces where DEEP coverage is thin even when baseline coverage exists.
-- **Verifier-drift verifier.** 📜 Vision: a verifier passes for 100 runs straight — is it still actually checking what it used to? Verifiers can rust. Detection: snapshot each verifier's source hash; flag verifiers whose source hasn't changed in N rounds AND whose status hasn't changed either (potentially stale assertions about a moved-on system).
+- **Verifier-drift verifier.** ✅ Shipped: `i/why mode=verifier-drift`. Reports per-verifier (status, source-hash) where status has been frozen across the last N runs (default 50). Distinguishes HCI verifiers from selftest probes. First run found ZERO HCI verifiers frozen — encouraging negative result: the HCI verifier set is informationally alive. Future expansion: persist source-hash history per round so the (status-frozen × source-changed) intersection auto-surfaces.
 
 The shape: every layer of self-coherence needs a layer above it that audits *its* coherence. Recursion is structural.
 

@@ -22,6 +22,7 @@ for arg in "$@"; do
     mode=hook)      exec python3 "$SCRIPT_DIR/why-hook.py" "$@" ;;
     mode=verifier-utility) exec python3 "$SCRIPT_DIR/why-verifier-utility.py" "$@" ;;
     mode=verifier-coverage) exec python3 "$SCRIPT_DIR/why-verifier-coverage.py" "$@" ;;
+    mode=verifier-drift) exec python3 "$SCRIPT_DIR/why-verifier-drift.py" "$@" ;;
     mode=search)    exec python3 "$SCRIPT_DIR/why-search.py" "$@" ;;
   esac
 done

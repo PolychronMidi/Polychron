@@ -98,8 +98,10 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"What kind of broken is everything that's red?"** → `i/status mode=hci-by-subtag` (aggregates by category)
 - **"How is the agent loop running this session?"** → `i/status mode=agent-loop` (Horizon IV — tools-per-turn, brief coverage, error rate)
 - **"What does ground truth say about the chaordic band?"** → `i/status mode=band-tuning` (Horizon IX — proposes band bounds from human verdicts)
+- **"How do music-coherence and self-coherence relate?"** → `i/status mode=conjugate` (Horizon V — joint distribution + quadrant classification)
 - **"Which verifiers are dead weight?"** → `i/why mode=verifier-utility` (always-PASS / flapping / variance buckets)
 - **"Which dirs are under-covered by verifiers?"** → `i/why mode=verifier-coverage`
+- **"Which verifiers' status hasn't changed in N runs?"** → `i/why mode=verifier-drift` (Horizon VI third leg)
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`
 - **"Why is HME in this onboarding state?"** → `i/why mode=state`

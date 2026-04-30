@@ -117,6 +117,115 @@ def _mode_activity():
     return _ad(window="round")
 
 
+def _mode_conjugate():
+    """Horizon V seed — composition⇔HME conjugate channel.
+
+    The two coherences (HCI = HME's self-coherence, perceptual = the
+    music's coherence) have always been tracked in parallel but never
+    plotted together. This view joins them per round and classifies into
+    quadrants:
+      - high-both           = mature stability
+      - high-HCI low-perc   = sterile rigor (well-organized but lifeless)
+      - low-HCI high-perc   = lucky chaos (good music despite mess)
+      - low-both            = lost
+    Threshold defaults: HCI=0.85 (current band upper), perc=0.5 (median).
+    """
+    import os as _os
+    import json as _json
+    from .. import ctx as _ctx_mod
+    _root = getattr(_ctx_mod, "PROJECT_ROOT", _os.environ.get("PROJECT_ROOT", "."))
+    mc_path = _os.path.join(_root, "output", "metrics", "hme-musical-correlation.json")
+    if not _os.path.isfile(mc_path):
+        return ("# i/status mode=conjugate\n"
+                "No musical-correlation file at output/metrics/hme-musical-correlation.json")
+    try:
+        with open(mc_path) as _f:
+            mc = _json.load(_f)
+    except (OSError, ValueError) as e:
+        return f"# i/status mode=conjugate\nFailed to read: {e}"
+
+    history = list(mc.get("history", []))
+    if mc.get("latest"):
+        history.append(mc["latest"])
+    if not history:
+        return "# i/status mode=conjugate\nNo per-round history yet."
+
+    # Pull rounds that have both signals
+    rounds = []
+    for r in history:
+        hci = r.get("hme_coherence")
+        perc = r.get("perceptual_complexity_avg")
+        if isinstance(hci, (int, float)) and isinstance(perc, (int, float)):
+            rounds.append({
+                "round_id": r.get("round_id", "?"),
+                "verdict": r.get("fingerprint_verdict", "?"),
+                "hci": hci,
+                "perc": perc,
+            })
+    if not rounds:
+        return ("# i/status mode=conjugate\n"
+                "No rounds carry both hme_coherence + perceptual_complexity_avg.")
+
+    # Quadrant thresholds — data-driven medians since `hme_coherence`
+    # in musical-correlation history is on a different scale (0-1) than
+    # the verifier-snapshot HCI (0-100). Use the median of each axis
+    # over the joined rounds so quadrants always partition meaningfully.
+    sorted_hci = sorted(r["hci"] for r in rounds)
+    sorted_perc = sorted(r["perc"] for r in rounds)
+    HCI_T = sorted_hci[len(sorted_hci) // 2]
+    PERC_T = sorted_perc[len(sorted_perc) // 2]
+    quads = {"mature": [], "sterile": [], "lucky": [], "lost": []}
+    for r in rounds:
+        hh = r["hci"] >= HCI_T
+        pp = r["perc"] >= PERC_T
+        if hh and pp:
+            quads["mature"].append(r)
+        elif hh and not pp:
+            quads["sterile"].append(r)
+        elif not hh and pp:
+            quads["lucky"].append(r)
+        else:
+            quads["lost"].append(r)
+
+    def _avg(rs, key):
+        if not rs:
+            return None
+        return sum(r[key] for r in rs) / len(rs)
+
+    out = [f"# Conjugate channel — composition ⇔ HME ({len(rounds)} rounds joined)"]
+    out.append(f"  thresholds: HCI ≥ {HCI_T:.2f} · perceptual ≥ {PERC_T:.2f}  (medians; partition is data-driven)")
+    out.append("")
+    out.append(f"  {'quadrant':18}  {'rounds':>6}  {'avg HCI':>8}  {'avg perc':>9}  meaning")
+    rows = [
+        ("mature stability",   quads["mature"],  "high-both: well-organized + alive"),
+        ("sterile rigor",      quads["sterile"], "high-HCI low-perc: organized but lifeless"),
+        ("lucky chaos",        quads["lucky"],   "low-HCI high-perc: alive despite mess"),
+        ("lost",               quads["lost"],    "low-both: organize OR vivify next round"),
+    ]
+    for label, rs, meaning in rows:
+        avg_hci = _avg(rs, "hci")
+        avg_perc = _avg(rs, "perc")
+        avg_hci_s = f"{avg_hci:.2f}" if avg_hci is not None else "─"
+        avg_perc_s = f"{avg_perc:.2f}" if avg_perc is not None else "─"
+        out.append(f"  {label:18}  {len(rs):>6}  {avg_hci_s:>8}  {avg_perc_s:>9}  {meaning}")
+
+    # Latest round
+    latest = rounds[-1]
+    if latest["hci"] >= HCI_T and latest["perc"] >= PERC_T:
+        cur_q = "mature stability"
+    elif latest["hci"] >= HCI_T:
+        cur_q = "sterile rigor"
+    elif latest["perc"] >= PERC_T:
+        cur_q = "lucky chaos"
+    else:
+        cur_q = "lost"
+    out.append("")
+    out.append(f"## Latest round ({latest['round_id'][:24]}):")
+    out.append(f"  HCI={latest['hci']:.2f}  perc={latest['perc']:.2f}  verdict={latest['verdict']}")
+    out.append(f"  quadrant: {cur_q}")
+    return "\n".join(out)
+
+
 def _mode_band_tuning():
     """Horizon IX seed — chaordic band as a learned controllable.
 
@@ -854,6 +963,7 @@ _STATUS_MODES: dict[str, callable] = {
     "agent_loop": _mode_agent_loop,
     "band-tuning": _mode_band_tuning,
     "band_tuning": _mode_band_tuning,
+    "conjugate": _mode_conjugate,
     "staleness": lambda: _staleness_report(),
     "coherence": lambda: _coherence_report(),
     "blindspots": _mode_blindspots,
