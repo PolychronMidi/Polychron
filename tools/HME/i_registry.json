@@ -73,6 +73,16 @@
       ],
       "safe_no_args": true
     },
+    "timeline": {
+      "description": "Unified audit trail — chronological view of HME's silent automations (auto-reload, KB draft writes, posttooluse hooks, fs_watcher events) joined into one timeline. Answers 'what has HME done in the last N minutes?' without reading 5+ files.",
+      "category": "diagnostic",
+      "usage": "i/timeline [window=<5m|1h|30s>]",
+      "examples": [
+        "i/timeline",
+        "i/timeline window=5m",
+        "i/timeline window=1h"
+      ]
+    },
     "state": {
       "description": "Unified state panel — every state machine HME tracks, in one ~10-line view.",
       "category": "diagnostic",

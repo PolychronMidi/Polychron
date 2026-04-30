@@ -28,7 +28,10 @@ def _read_json(path: str) -> dict | None:
 
 
 def _find_verifier_source(name: str) -> tuple[str, list[str]] | None:
-    """Walk verify_coherence/ for class with this name attr; return (path, source_lines)."""
+    """Walk verify_coherence/ for class with this name attr; return (path,
+    source_lines). Always includes the class header + docstring + def run().
+    The run() method body is the load-bearing part — readers want to see
+    WHAT the verifier checks, not just its weight/category metadata."""
     pkg = os.path.join(PROJECT_ROOT, "tools", "HME", "scripts",
                        "verify_coherence")
     name_re = re.compile(rf'^\s*name = "{re.escape(name)}"\s*$', re.MULTILINE)
@@ -45,14 +48,32 @@ def _find_verifier_source(name: str) -> tuple[str, list[str]] | None:
             m = name_re.search(src)
             if not m:
                 continue
-            # Find the class definition (walk back to nearest "class ")
             lines = src.splitlines()
             line_idx = src[:m.start()].count("\n")
+            # Find the class header (walk back to nearest "class ")
+            class_start = None
             for i in range(line_idx, -1, -1):
                 if lines[i].lstrip().startswith("class "):
-                    end = min(i + 30, len(lines))
-                    return (p, lines[i:end])
-            return (p, lines[max(0, line_idx - 5):line_idx + 25])
+                    class_start = i
+                    break
+            if class_start is None:
+                return (p, lines[max(0, line_idx - 5):line_idx + 25])
+            # Find the END: scan forward from class_start until we hit
+            # either another top-level class/def OR run out of indented
+            # lines. This captures the whole verifier including run().
+            class_end = len(lines)
+            class_indent = len(lines[class_start]) - len(lines[class_start].lstrip())
+            for i in range(class_start + 1, len(lines)):
+                stripped = lines[i].rstrip()
+                if not stripped:
+                    continue
+                indent = len(lines[i]) - len(lines[i].lstrip())
+                # A line at <= class_indent that starts with class/def
+                # (or any top-level token) ends the class block.
+                if indent <= class_indent and stripped.lstrip().startswith(("class ", "def ", "@", "_")):
+                    class_end = i
+                    break
+            return (p, lines[class_start:class_end])
     return None
 
 

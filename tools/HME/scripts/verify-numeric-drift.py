@@ -333,12 +333,17 @@ def _print_report(drifts, filtered, scanned, truth, show_filtered):
             for d in items:
                 print(f"    {d['file']}:{d['line']}  stated={d['stated']}")
                 print(f"      > {d['quote'][:140]}")
-    if show_filtered and filtered:
-        print(f"\n{len(filtered)} implausible match(es) filtered (--noisy to inspect):")
-        if show_filtered == "verbose":
-            for d in filtered:
-                print(f"  {d['file']}:{d['line']}  claim={d['claim']}  "
-                      f"stated={d['stated']} actual={d['actual']}")
+    # Filtered matches surface only when explicitly requested (--noisy).
+    # The default-summary noise of "N implausible match(es) filtered" was
+    # surfacing every pipeline run for false-positive prose hits like
+    # "one verifier added" — the filter handled them correctly but the
+    # persistent message read as a problem. If the filter mis-fires,
+    # `--noisy` shows everything.
+    if show_filtered == "verbose" and filtered:
+        print(f"\n{len(filtered)} implausible match(es) filtered:")
+        for d in filtered:
+            print(f"  {d['file']}:{d['line']}  claim={d['claim']}  "
+                  f"stated={d['stated']} actual={d['actual']}")
 
 
 def main():
