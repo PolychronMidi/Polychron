@@ -218,6 +218,7 @@ moduleLifecycle.declare({
     'lastCrossMod',
     'playDrums',
     'playDrums2',
+    'drumKitRotator',
     'binary',
     'hex',
     'onsets',
