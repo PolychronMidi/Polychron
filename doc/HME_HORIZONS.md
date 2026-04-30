@@ -19,9 +19,11 @@ What follows is the asymptote, not the next sprint.
 - 🌳 **expanded** — multiple parts of the horizon now operational
 - 📜 **vision only** — no implementation yet
 
-## Horizon I — Predictive HME 📜
+## Horizon I — Predictive HME 🌱
 
 Today HME observes itself and reports. It does not predict. The next layer of self-coherence is HME modeling its own behavior under hypothetical agent actions.
+
+**Seed shipped:** `i/why mode=predict <file_path>` joins the timeseries verifier-flip events with the activity-log file_written events. For each verifier flip, attributes the directories edited in the prior 1h window. Lookup: given a file path, reports verifiers historically correlated with edits to its directory or parent. First runs surface real signal: `src/conductor` edits correlate with 12 HCI flips, 5 hme.log flips. Honest about correlation≠causation; first-version is path-prefix only. Future: file-shape similarity, AST-diff signatures.
 
 - **Pre-edit verifier prediction.** Before an Edit lands, HME could predict from past correlations: "this kind of edit to `src/conductor/` has flipped `regime-self-balancer` 4/12 times — expect possible WARN." The agent reads the prediction; the actual result either confirms the model or refines it. Prediction accuracy becomes a first-class metric.
 - **Pipeline-verdict forecasting.** Activity-pattern + edit-shape + recent verdicts feed a small classifier predicting next verdict probability. `i/state` would carry `next-verdict: 70% EVOLVED, 22% STABLE, 8% DRIFTED`.

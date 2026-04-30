@@ -143,3 +143,15 @@ test('i/why mode=kb-graph renders Horizon III citation graph', () => {
   // Either reports the graph (entries + edges) or notes lance unavailable
   assert.match(r.stdout, /KB citation graph|KB empty|lance access unavailable/);
 });
+
+test('i/why mode=predict <file> renders Horizon I correlation view', () => {
+  const r = _runWhy(['mode=predict', 'src/conductor/dynamics/coupling.js']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /predict.*src.conductor|No historical|correlated with edits/);
+});
+
+test('i/why mode=predict without path prints usage', () => {
+  const r = _runWhy(['mode=predict']);
+  assert.strictEqual(r.status, 2);  // exit code 2 for usage error
+  assert.match(r.stdout, /Usage:|<file_path>/);
+});
