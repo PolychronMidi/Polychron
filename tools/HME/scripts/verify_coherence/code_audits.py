@@ -811,6 +811,70 @@ class TestIsolationVerifier(Verifier):
                        violations[:10])
 
 
+class HardcodedToolInvocationVerifier(Verifier):
+    """Strings like `i/hme-admin action=warm` and `i/hme-admin action=index`
+    in user-facing output paths (selftest hints, error messages, primer
+    examples, narrative output) should render through `tool_invocations.py`
+    helpers — `_action_form('warm')` instead of the literal. Otherwise a
+    rename of any wrapper requires hand-grepping every occurrence.
+
+    This verifier flags hardcoded `i/hme-admin action=<name>` strings in
+    Python files under tools/HME/service/. Per-line opt-out: append
+    `# tool-form-ok` (use only when the helper genuinely doesn't fit, e.g.
+    test fixtures asserting on the literal output)."""
+    name = "hardcoded-tool-invocation"
+    category = "code"
+    subtag = "drift-detection"
+    weight = 1.5
+
+    _RE = re.compile(r'["\'`]i/hme-admin\s+action=[a-z_]+')
+    _SKIP_FILES = {
+        # Helper itself defines the canonical mapping
+        "tool_invocations.py",
+        # Test fixtures legitimately assert on literal output
+    }
+
+    def run(self) -> VerdictResult:
+        roots = [os.path.join(_PROJECT, "tools", "HME", "service")]
+        violations = []
+        scanned = 0
+        for root in roots:
+            if not os.path.isdir(root):
+                continue
+            for r, _d, files in os.walk(root):
+                if "__pycache__" in r or "/tests/" in r:
+                    continue
+                for f in files:
+                    if not f.endswith(".py") or f in self._SKIP_FILES:
+                        continue
+                    scanned += 1
+                    p = os.path.join(r, f)
+                    try:
+                        with open(p, encoding="utf-8") as fp:
+                            for i, line in enumerate(fp, start=1):
+                                if "tool-form-ok" in line:
+                                    continue
+                                stripped = line.lstrip()
+                                # Skip Python and JS comments
+                                if stripped.startswith("#") or stripped.startswith("//"):
+                                    continue
+                                if self._RE.search(line):
+                                    violations.append(
+                                        f"{os.path.relpath(p, _PROJECT)}:{i}: "
+                                        f"hardcoded `i/hme-admin action=…` "
+                                        f"(use `_action_form('<name>')` from tool_invocations)"
+                                    )
+                    except OSError:
+                        continue
+        if not violations:
+            return _result(PASS, 1.0,
+                           f"{scanned} file(s) scanned; no hardcoded i/hme-admin invocations")
+        score = max(0.0, 1.0 - len(violations) * 0.15)
+        return _result(FAIL, score,
+                       f"{len(violations)} hardcoded tool-invocation(s)",
+                       violations[:10])
+
+
 class TestEnvUndefinedVerifier(Verifier):
     """In Node test files, `process.env.X = undefined` does NOT delete the
     var — it sets the literal string 'undefined' (truthy). Later tests

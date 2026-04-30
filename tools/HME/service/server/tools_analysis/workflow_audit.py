@@ -426,8 +426,12 @@ def what_did_i_forget(changed_files: str) -> str:
         parts.append(f"\n## Docs to Update")
         for d in sorted(doc_updates_needed):
             parts.append(f"  - {d}")
+    try:
+        from tool_invocations import action_form as _action_form
+    except ImportError:
+        def _action_form(a): return f"i/hme-admin action={a}"
     parts.append(f"\n## Reminders")
-    parts.append("  - `i/hme-admin action=index` after batch changes (file watcher handles individual saves)")
+    parts.append(f"  - `{_action_form('index')}` after batch changes (file watcher handles individual saves)")
     parts.append("  - `i/learn action=add title=… content=…` for any new calibration anchors or decisions")
 
     # Collect git diff for synthesis context (bounded to 4000 chars).

@@ -205,7 +205,11 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
     elif any(a.get("type") == "cb_flapping" for a in correlations.get("alerts", [])):
         parts.append("ACTION: Circuit breaker flapping — model is oscillating between available/unavailable. Check GPU OOM pressure or thermal throttling.")
     elif any(a.get("type") == "synthesis_phantom_surge" for a in correlations.get("alerts", [])):
-        parts.append("ACTION: High phantom rate in synthesis outputs — consider running `i/hme-admin action=index` to refresh module index.")
+        try:
+            from tool_invocations import action_form as _action_form
+        except ImportError:
+            def _action_form(a): return f"i/hme-admin action={a}"
+        parts.append(f"ACTION: High phantom rate in synthesis outputs — consider running `{_action_form('index')}` to refresh module index.")
 
     return " ".join(parts)
 
