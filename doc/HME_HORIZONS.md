@@ -23,7 +23,7 @@ What follows is the asymptote, not the next sprint.
 
 - 🌱 **I** — Predictive HME (`i/why mode=predict`)
 - 🌱 **II** — Multi-timescale coherence (`i/state` HCI phase line)
-- 🌱 **III** — KB graph (`i/why mode=kb-graph`)
+- 🌳 **III** — KB graph + context (`i/why mode=kb-graph` + `mode=kb-context <id>`)
 - 🌱 **IV** — Agent-loop dimension (`i/status mode=agent-loop`)
 - 🌱 **V** — Conjugate channel (`i/status mode=conjugate`)
 - 🌳 **VI** — Meta-meta verifiers (`i/why mode=verifier-utility|verifier-coverage|verifier-drift`)
@@ -56,7 +56,7 @@ HCI is one number. The coherence budget is one band [0.55, 0.85]. Both are aggre
 
 The shape: every collapsed scalar is a thrown-away signal. Find each one; un-collapse it.
 
-## Horizon III — The KB as an active knowledge graph 🌱
+## Horizon III — The KB as an active knowledge graph 🌳
 
 The KB has 175+ entries. Today it's a flat list with semantic search. Implicit graph structure exists (which entries cite which, which contradict, which were promoted from drafts). Made explicit:
 
@@ -65,7 +65,11 @@ The KB has 175+ entries. Today it's a flat list with semantic search. Implicit g
 - **Promotion edges.** Crystallized patterns trace back to their member entries. Already partly implemented; promote to navigable links.
 - **Generalization edges.** `hme-discoveries.md` entries trace back to which Polychron-specific patterns they generalize from.
 
-**Seed shipped:** `i/why mode=kb-graph` reads all 192 entries via direct lance access, extracts edges from three signals (tag-encoded `supersedes:<id>` / `contradicts:<id>` / `derived_from:<id>`, content-id refs, title-substring matches). First run revealed the KB's architectural truth: 0 live edges, 192 orphans, 3 dangling supersession edges to entries that were removed. The KB is currently FLAT — entries are added without weaving into the existing structure. The seed makes that finding visible and surfaces concrete next-step guidance (use `tags` for explicit relations on future adds).
+**Shipped (two legs → 🌳):**
+- `i/why mode=kb-graph` — system-wide view. Reads all 192 entries via direct lance, extracts edges from three signals (tag-encoded `supersedes:<id>` / `contradicts:<id>` / `derived_from:<id>`, content-id refs, title-substring matches). First run revealed the KB's architectural truth: 0 live edges, 192 orphans, 3 dangling supersession edges. The KB is currently FLAT.
+- `i/why mode=kb-context <id>` — per-entry view. Given a 12-char id or 8-char prefix, traverses outgoing + incoming tag-edges, shows content preview, lists same-category siblings, and (for orphans) suggests the canonical `tags=…` form to cite this entry from future adds.
+
+Together: graph (system view) + context (entry view) cover both projections of the KB's structure. Future expansion: integrating the citations into `i/learn add` so adding a new entry suggests likely predecessors automatically.
 
 The shape: turn the KB from a vector-search index into a queryable graph. The graph is what the KB *is*; the flat list is the projection.
 

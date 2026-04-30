@@ -177,11 +177,16 @@ i/learn   title="…" content="…"
 i/trace   target=<module> mode=impact
 i/evolve  focus=<axis>
 i/status                              # pipeline status
+i/state                               # unified state-machine snapshot (Horizon II seed)
+i/timeline                            # chronological audit trail of silent automations
+i/why     mode=<…>                    # 14 causality modes (see AGENT_PRIMER.md)
 i/hme-admin action=selftest
 i/todo    action=list
 i/hme-read target=<module>
 i/hme     <any-tool> key=value ...    # generic dispatcher
 ```
+
+The `i/state` + `i/why` + `i/timeline` triad covers three orthogonal observability questions: *what state am I in* (snapshot), *why did this fire* (causality), *what just happened* (chronology). Three commands span the entire "what's happening in HME right now" question space. See [doc/HME_HORIZONS.md](HME_HORIZONS.md) for the architectural trajectory each tool advances.
 
 All routes go through `scripts/hme-cli.js`, which POSTs `/tool/<name>` on the
 worker (`tools/HME/service/worker.py`, default port 9098). RAG config lives in

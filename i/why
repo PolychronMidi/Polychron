@@ -24,6 +24,7 @@ for arg in "$@"; do
     mode=verifier-coverage) exec python3 "$SCRIPT_DIR/why-verifier-coverage.py" "$@" ;;
     mode=verifier-drift) exec python3 "$SCRIPT_DIR/why-verifier-drift.py" "$@" ;;
     mode=kb-graph) exec python3 "$SCRIPT_DIR/why-kb-graph.py" "$@" ;;
+    mode=kb-context) exec python3 "$SCRIPT_DIR/why-kb-context.py" "$@" ;;
     mode=predict) exec python3 "$SCRIPT_DIR/why-predict.py" "$@" ;;
     mode=conscience) exec python3 "$SCRIPT_DIR/why-conscience.py" "$@" ;;
     mode=causality) exec python3 "$SCRIPT_DIR/why-causality.py" "$@" ;;

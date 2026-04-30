@@ -41,6 +41,50 @@ You never call `i/hme-read mode=before` explicitly — the briefing is woven int
 
 ## Other HME tools (use when needed)
 
+### Observability triad — three orthogonal questions
+
+```
+i/state                                  snapshot: every state machine in one ~10-line view
+i/timeline window=5m|1h                  chronological audit trail of silent automations
+i/why mode=…                             causality (see modes below)
+```
+
+### `i/why` modes — answers "why did X happen / what caused / what would happen"
+
+```
+i/why <invariant-id>                     full provenance + rationale for an invariant
+i/why mode=block                         most recent hook/policy block + how to opt out
+i/why mode=state                         current onboarding state explanation
+i/why mode=verifier <name>               status + history + run() body for one verifier
+i/why mode=verifier-utility              meta-meta: which verifiers are dead weight
+i/why mode=verifier-coverage             which dirs are under-covered by verifiers
+i/why mode=verifier-drift                which verifiers' status hasn't changed in N runs
+i/why mode=hci-drop                      most recent HCI regression + which verifiers flipped
+i/why mode=hook                          recent hook firings (broader than mode=block)
+i/why mode=kb-graph                      KB citation/supersession edges + orphan map
+i/why mode=predict <file>                which verifiers historically flipped on edits to this dir
+i/why mode=conscience                    approved/rejected move signatures from ground-truth log
+i/why mode=causality <event>             heuristic causal chain leading to <event>
+i/why mode=fractal-shape                 tensegrity-shape Gini at every architectural scale
+i/why "<free-text>"                      Tier-2 retrieval: grep + KB + activity citation packet
+i/why "<free-text>" --deep               Tier-3 subagent synthesis on top of Tier-2 packet
+```
+
+### `i/status` modes — pipeline + meta + horizon views
+
+```
+i/status                                 four-arc brief (default)
+i/status mode=hme                        session state + recent activity
+i/status mode=hci-diff                   verifier deltas since last run
+i/status mode=hci-by-subtag              what KIND of broken everything is
+i/status mode=agent-loop                 Horizon IV: agent loop quality
+i/status mode=band-tuning                Horizon IX: band proposal from ground-truth
+i/status mode=conjugate                  Horizon V: HCI ⇔ perceptual quadrants
+i/status mode=…                          ~35 other modes — see `i/help status`
+```
+
+### Compositional tools
+
 ```
 i/trace target=…                         signal flow: L0 cascade, module chains, causal chains
 i/trace target=… mode=snapshot           beat state: S3 / 2:1:3:0 / 400 → regime, trust, notes
@@ -54,14 +98,15 @@ i/evolve focus=stress                    35 adversarial enforcement probes
 i/evolve focus=contradict                KB conflict scanner
 i/learn query=…                          KB search
 i/learn action=health                    KB staleness check
-i/hme-admin index                        reindex after batch changes
-i/hme-admin reload                       hot-reload tool modules
+i/hme-admin action=index                 reindex after batch changes
+i/hme-admin action=reload                hot-reload tool modules
 i/todo action=add text=… parent_id=… critical=… on_done=…
                                          hierarchical extension of TodoWrite (subs, critical,
                                          on_done triggers 'reindex'/'learn'/'commit')
 ```
 
-(Run `i/help` for the full wrapper surface and `i/help <name>` for usage.)
+(Run `i/help` for the full wrapper surface and `i/help <name>` for usage.
+For the architectural map of HME's evolution trajectory see [doc/HME_HORIZONS.md](HME_HORIZONS.md).)
 
 ## Todo system
 

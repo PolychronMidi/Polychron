@@ -182,3 +182,17 @@ test('i/why mode=fractal-shape renders Horizon X tensegrity-shape table', () => 
   // Should report at least one scale
   assert.match(r.stdout, /project→subsystem|verifier→category|kb→category/);
 });
+
+test('i/why mode=kb-context <id> renders entry context', () => {
+  // Pick a known id (8-char prefix); fall back gracefully if KB empty
+  const r = _runWhy(['mode=kb-context', 'be854cd8']);
+  assert.strictEqual(r.status, 0);
+  // Either matches the entry or reports KB unavailable
+  assert.match(r.stdout, /KB context|KB empty|No entry/);
+});
+
+test('i/why mode=kb-context without id prints usage', () => {
+  const r = _runWhy(['mode=kb-context']);
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stdout, /Usage:|<entry-id-or-prefix>/);
+});
