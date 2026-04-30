@@ -138,7 +138,23 @@ def main(argv):
     if snap:
         hci = snap.get("hci", "?")
         n = len(snap.get("verifiers", {})) or snap.get("verifier_count", "?")
-        out.append(f"  HCI                {hci}/100 ({n} verifiers)")
+        # Horizon II maturity — confidence dimension on HCI line.
+        # Min raw score across all verifiers = "weakest link" reading.
+        # If HCI is 90 but min=0.30, the average obscures a fragile
+        # member; if HCI is 90 and min=0.85, the score is genuinely
+        # uniform-strong.
+        scores = [info.get("score", 0) for info in snap.get("verifiers", {}).values()
+                  if isinstance(info.get("score"), (int, float))]
+        min_score = min(scores) if scores else None
+        conf_str = ""
+        if min_score is not None:
+            if min_score >= 0.80:
+                conf_str = f"  conf=uniform"
+            elif min_score >= 0.50:
+                conf_str = f"  conf=mixed (min={min_score:.2f})"
+            else:
+                conf_str = f"  conf=fragile (min={min_score:.2f})"
+        out.append(f"  HCI                {hci}/100 ({n} verifiers){conf_str}")
         ts_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                                "hme-coherence-timeseries.jsonl")
         if os.path.isfile(ts_path) and isinstance(hci, (int, float)):

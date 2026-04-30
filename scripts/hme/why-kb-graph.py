@@ -73,6 +73,47 @@ def _extract_title_refs(content: str, title_to_id: dict[str, str], own_id: str,
     return found
 
 
+def _extract_entity_refs(content: str, entity_to_id: dict[str, str],
+                         own_id: str) -> set[str]:
+    """Horizon III maturity — entity-name link extraction.
+
+    KB entries reference each other by ARCHITECTURAL CONCEPT NAME more
+    often than by full title (e.g. 'conductorIntelligence' appears in
+    many entries' content as a reference to the entry titled
+    'conductorIntelligence — central registration hub'). This widens
+    citation discovery beyond exact-title substring match: any 12+ char
+    camelCase or snake_case identifier in another entry's TITLE that
+    appears verbatim in this entry's content counts as a citation."""
+    if not isinstance(content, str):
+        return set()
+    found = set()
+    for entity, kid in entity_to_id.items():
+        if kid == own_id.lower():
+            continue
+        # Word-boundary match — avoids substring false positives
+        # like 'composer' matching inside 'composerFactory'.
+        if re.search(rf"\b{re.escape(entity)}\b", content):
+            found.add(kid)
+    return found
+
+
+def _build_entity_index(by_id: dict) -> dict[str, str]:
+    """Build {entity_name: kid} from each entry's title. Looks for
+    camelCase / snake_case identifiers ≥12 chars (the threshold filters
+    out common short words while catching most module names)."""
+    out = {}
+    pat = re.compile(r"\b([a-z][A-Za-z]{11,}|[a-z][a-z_]{11,})\b")
+    for kid, row in by_id.items():
+        title = str(row.get("title", ""))
+        for m in pat.finditer(title):
+            ent = m.group(1)
+            # Prefer the first entry that introduced an entity name; later
+            # entries citing the same name link back to that introducer.
+            if ent not in out:
+                out[ent] = kid
+    return out
+
+
 def main(argv):
     rows = _load_kb()
     if not rows:
@@ -96,6 +137,11 @@ def main(argv):
         title = str(row.get("title", "")).strip()
         if title and len(title) >= 25:
             title_to_id[title] = kid
+
+    # Entity-name index — Horizon III maturity. Catches citations by
+    # architectural concept (camelCase/snake_case identifiers in titles
+    # that show up verbatim in other entries' content).
+    entity_to_id = _build_entity_index(by_id)
 
     # Build edges: source-id → set of target-ids. Combines three signals:
     # 1. Tag-encoded references like `supersedes:abc123def456`. Sparse
@@ -136,6 +182,15 @@ def main(argv):
             out_edges[kid].add(target)
             in_edges[target].add(kid)
             edge_kinds[(kid, target)].add("title-quote")
+        # Entity-name refs — Horizon III maturity. The actual citation
+        # pattern in this KB: entries reference architectural concepts
+        # (module names, IIFE globals) that appear in other entries'
+        # titles. This unlocks the latent graph that title-substring
+        # matching missed.
+        for target in _extract_entity_refs(content, entity_to_id, kid):
+            out_edges[kid].add(target)
+            in_edges[target].add(kid)
+            edge_kinds[(kid, target)].add("entity-name")
 
     n = len(by_id)
     n_edges = sum(len(v) for v in out_edges.values())

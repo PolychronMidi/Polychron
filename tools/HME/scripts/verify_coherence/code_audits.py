@@ -944,20 +944,51 @@ class AgentLoopQualityVerifier(Verifier):
                      if e.get("event") in ("brief_recorded", "auto_brief_injected"))
 
         if turns == 0:
+            self._write_tier_marker("YELLOW", "no turn_complete in last hour")
             return _result(WARN, 0.5,
                            f"no turn_complete events in last hour "
                            f"({len(events)} events but no turn boundaries)")
 
         err_rate = bash_errs / infs if infs > 0 else 0.0
         if err_rate > 0.25:
+            self._write_tier_marker("RED", f"err_rate={err_rate*100:.1f}%")
             return _result(FAIL, max(0.0, 1.0 - err_rate),
                            f"high error rate: {err_rate*100:.1f}% "
                            f"({bash_errs} bash errors / {infs} inferences)")
 
+        # Horizon IV maturity — adaptive priming hook. Write a tier
+        # marker the proxy/hooks can read to scale context-injection
+        # aggressiveness. GREEN = healthy, reduce injection; YELLOW =
+        # turns thin, default injection; RED = error-rate elevated,
+        # increase injection. Advisory only — consumer wiring lives
+        # in proxy middleware (any future reader can opt to scale
+        # behavior on this signal without touching the verifier).
+        self._write_tier_marker("GREEN", "healthy loop")
         return _result(PASS, 1.0,
                        f"healthy: {turns} turns, {infs} inferences, "
                        f"{briefs} briefs, {bash_errs} errors "
                        f"(err_rate={err_rate*100:.1f}%)")
+
+    def _write_tier_marker(self, tier: str, reason: str) -> None:
+        """Persist a GREEN/YELLOW/RED tier marker for downstream
+        priming-aggressiveness consumers (Horizon IV maturity)."""
+        try:
+            import json as _json
+            import time as _time
+            marker_path = os.path.join(_PROJECT, "tmp", "hme-agent-loop-tier.json")
+            tmp_path = marker_path + ".tmp"
+            with open(tmp_path, "w") as f:
+                _json.dump({
+                    "ts": _time.time(),
+                    "tier": tier,
+                    "reason": reason,
+                    "advisory": "consumer wiring optional; no behavior change unless read",
+                }, f)
+            os.replace(tmp_path, marker_path)
+        except OSError:
+            # Marker write is advisory; absence shouldn't fail the
+            # verifier itself.
+            pass
 
 
 class ConjugateChannelVerifier(Verifier):

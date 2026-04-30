@@ -104,9 +104,12 @@ _ac_record_failure() {
   # unavailable. The HCI verifier still catches via the counter/flag.
   local emit_script="$_AC_ROOT/tools/HME/activity/emit.py"
   if [ -x "$emit_script" ] 2>/dev/null; then
+    # Horizon VII: caused_by = the autocommit-detected reason; lets
+    # `i/why mode=causality coherence_violation` resolve Tier-1.5.
     PROJECT_ROOT="$_AC_ROOT" python3 "$emit_script" \
       --event=coherence_violation --session=autocommit --verdict=FAIL \
-      --payload="$reason" >/dev/null 2>&1 || true
+      --payload="$reason" --caused_by="autocommit:$reason" \
+      >/dev/null 2>&1 || true
   fi
 }
 

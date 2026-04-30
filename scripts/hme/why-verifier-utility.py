@@ -113,6 +113,34 @@ def main(argv):
         if len(always_pass) > cap:
             print(f"  (+{len(always_pass) - cap} more — pass verbose=true to show)")
         print()
+        # Horizon VI maturity: persist auto-prune marker so downstream
+        # weight-computation can halve these verifiers' contribution to
+        # HCI without removing them from the registry. State hand-off
+        # via tmp/, atomic write, advisory only — composition behavior
+        # remains unchanged until a consumer explicitly reads this.
+        try:
+            import time as _time
+            prune_path = os.path.join(PROJECT_ROOT, "tmp", "hme-verifier-prune.json")
+            tmp_path = prune_path + ".tmp"
+            payload = {
+                "ts": _time.time(),
+                "rationale": "verifiers passing for ≥10 consecutive runs without flipping carry zero information",
+                "weight_multiplier": 0.5,
+                "candidates": [
+                    {"name": m["name"], "runs": m["n"], "subtag": name_to_subtag.get(m["name"], "(none)")}
+                    for m in always_pass
+                ],
+            }
+            with open(tmp_path, "w") as _pf:
+                json.dump(payload, _pf, indent=2)
+            os.replace(tmp_path, prune_path)
+            print(f"  Persisted auto-prune marker: tmp/hme-verifier-prune.json (advisory)")
+            print()
+        except OSError as _err:
+            # Marker write is advisory; don't fail the analysis on
+            # filesystem hiccups, but surface the diagnostic.
+            print(f"  (auto-prune marker write failed: {_err})")
+            print()
 
     # Bucket 2: always-FAIL (broken or signal we ignore)
     always_fail = [m for m in metrics if m["fail"] == m["n"] and m["n"] >= 10]

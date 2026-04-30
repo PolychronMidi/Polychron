@@ -48,7 +48,7 @@ def _scale_signature(name: str, fan_outs: list[int]) -> dict:
     if not fan_outs:
         return {"name": name, "n": 0, "max": 0, "median": 0, "gini": 0}
     s = sorted(fan_outs)
-    return {
+    sig = {
         "name": name,
         "n": len(s),
         "total": sum(s),
@@ -57,6 +57,20 @@ def _scale_signature(name: str, fan_outs: list[int]) -> dict:
         "p90": s[int(len(s) * 0.9)] if len(s) >= 10 else s[-1],
         "gini": _gini(s),
     }
+    # Horizon X maturity — synthetic ablation. Recompute Gini after
+    # removing the strongest element. Tensegrity hypothesis predicts the
+    # distribution stays concentrated (load redistributes among the
+    # remaining nodes) rather than collapsing to uniform. Gini_no_max
+    # ≥ 0.30 = redundancy present at this scale; < 0.30 = the strongest
+    # element WAS the structure, not a hub-among-many.
+    if len(s) >= 3:
+        ablated = s[:-1]
+        sig["gini_no_max"] = _gini(ablated)
+        sig["redundancy"] = "yes" if sig["gini_no_max"] >= 0.30 else "no"
+    else:
+        sig["gini_no_max"] = None
+        sig["redundancy"] = "—"
+    return sig
 
 
 def _measure_subsystems() -> dict:
@@ -277,8 +291,8 @@ def main(argv):
     print(f"  a few hubs absorb most connections, many leaves. Uniform fan-out")
     print(f"  (Gini ≈ 0) is the non-tensegrity counter-shape.")
     print()
-    print(f"  {'scale':28}  {'n':>4}  {'total':>6}  {'max':>5}  "
-          f"{'median':>7}  {'p90':>5}  {'gini':>5}  {'tensegrity-shape?':>17}")
+    print(f"  {'scale':28}  {'n':>4}  {'gini':>5}  {'gini-no-max':>11}  "
+          f"{'redundancy':>11}  {'tensegrity-shape?':>17}")
     for s in scales:
         if s["n"] == 0:
             print(f"  {s['name']:28}  ─    no data")
@@ -286,10 +300,12 @@ def main(argv):
         gini = s["gini"]
         shape = "yes" if gini >= 0.4 else ("partial" if gini >= 0.25 else "no")
         marker = " " if shape == "yes" else ("·" if shape == "partial" else "!")
+        gini_nm = s.get("gini_no_max")
+        gini_nm_str = f"{gini_nm:.2f}" if isinstance(gini_nm, (int, float)) else "—"
+        red = s.get("redundancy", "—")
         print(f"  {marker} {s['name']:26}  "
-              f"{s['n']:>4}  {s.get('total', '─'):>6}  "
-              f"{s['max']:>5}  {s['median']:>7}  {s.get('p90', '─'):>5}  "
-              f"{gini:>5.2f}  {shape:>17}")
+              f"{s['n']:>4}  {gini:>5.2f}  {gini_nm_str:>11}  "
+              f"{red:>11}  {shape:>17}")
     print()
     # Uniform-baseline contrast — a synthetic uniform distribution of
     # the same total count would have Gini ≈ 0. By comparing actual

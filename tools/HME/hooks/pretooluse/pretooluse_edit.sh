@@ -211,10 +211,13 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
   _auto_module=$(_extract_module "$FILE")
   if [ -n "$_auto_module" ] && ! _nexus_has BRIEF "$_auto_module"; then
     if [ -x "$PROJECT_ROOT/tools/HME/activity/emit.py" ]; then
+      # Horizon VII maturity: caused_by = the file path being edited
+      # without a prior brief — the cause IS the unbriefed edit target.
       python3 "$PROJECT_ROOT/tools/HME/activity/emit.py" \
         --event=edit_without_brief \
         --file="$FILE" \
         --module="$_auto_module" \
+        --caused_by="unbriefed_edit:$FILE" \
         --session="$(whoami 2>/dev/null || echo shell)" \
         >/dev/null 2>&1 &
     fi
