@@ -24,9 +24,9 @@ What follows is the asymptote, not the next sprint.
 
 - 🌲 **I** — Predictive HME (change-pred + cost-pred + cold-start indicator + sample-count caveats)
 - 🌲 **II** — Multi-timescale + multi-axis (phase line + per-subtag bands + persisted-proposal-aware band display + conjugate-channel inline)
-- 🌲 **III** — KB graph + context (graph view + per-entry traversal + orphan-by-density-share)
+- 🌲 **III** — KB graph + context + active densification (graph view + per-entry traversal + orphan-by-density-share + `i/learn action=suggest_predecessors` semantic-similarity edge suggester)
 - 🌲 **IV** — Agent-loop dimension (panel + HCI verifier + agent-loop-quality surfaced inline in `i/state`)
-- 🌲 **V** — Conjugate channel + coupling verifier + multi-axis-band cross-surfacing
+- 🌲 **V** — Conjugate channel + coupling verifier + multi-axis-band cross-surfacing + bidirectional band-tightening proposal (FAIL writes `tmp/hme-band-tightening.json` for downstream coherence-budget consumers)
 - 🌲 **VI** — Meta-meta verifiers (utility + coverage + drift + KB-incident-correlation heuristic)
 - 🌲 **VII** — Causal traversal (Tier-2 heuristic + Tier-1 explicit caused_by at 5+ emit sites: hot_reload, brief_recorded, kb_draft_written, nexus_cleared, auto_brief_injected × 2 hooks + Tier-1.5 activity-log caused_by field for any future opt-in event)
 - 🌲 **VIII** — Architectural conscience (descriptive signature + move-similarity + threshold-warning soft signal)

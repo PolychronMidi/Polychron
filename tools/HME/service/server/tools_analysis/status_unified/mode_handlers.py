@@ -184,8 +184,18 @@ def _mode_tool_latency():
             out.append(f"  {tool:18}  {len(s):>4}  {p50:>7.0f}  {p95:>7.0f}  {p99:>7.0f}  ms  {cold}{sample_caveat}")
         out.append("")
     else:
-        out.append("  (no tool_call events with latency_ms in window —")
-        out.append("   proxy instrumentation gap; falling back to inference cadence)")
+        # Diagnostic: surface root-cause hypothesis and actionable
+        # remediation path. The proxy middleware activity_log.js DOES
+        # emit `event=tool_call` in onToolResult — but that pipeline
+        # is dispatched by the proxy daemon, not the in-process server.
+        # If tool_call events stop, the daemon's tool_use/tool_result
+        # routing has broken (or the daemon isn't running).
+        out.append("  (no tool_call events in window — falling back to inference cadence)")
+        out.append("")
+        out.append("  Root-cause hypothesis: proxy daemon not routing tool_use/tool_result")
+        out.append("  pairs through the middleware pipeline. activity_log.js loads cleanly")
+        out.append("  in isolation; the regression is at dispatch-call level.")
+        out.append("  Remediation: check proxy daemon status; review hme_proxy.js routing.")
         out.append("")
 
     # Inference-cadence proxy: how spaced apart are calls?

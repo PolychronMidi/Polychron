@@ -106,6 +106,7 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"Which axis is over/under-coherent?"** → `i/status mode=multi-axis-band` (Horizon II — per-subtag bands)
 - **"How is the KB structured? Are entries woven together or flat?"** → `i/why mode=kb-graph` (Horizon III — citation/supersession edges + orphan map)
 - **"What's the context around this KB entry?"** → `i/why mode=kb-context <id>` (per-entry traversal: outgoing/incoming edges + same-category siblings)
+- **"What KB entries should I cite when adding a new one?"** → `i/learn action=suggest_predecessors title=… content=…` (Horizon III asymptote — semantic similarity → copy-paste-ready `tags=derived_from:<id>` suggestions)
 - **"What verifiers might flip if I edit this file?"** → `i/why mode=predict <file>` (Horizon I — historical edit→flip correlation by directory)
 - **"What will my next call probably cost?"** → `i/status mode=tool-latency` (Horizon I — per-tool p50/p95/p99 from recent invocations)
 - **"What does the user's verdict history say about good moves?"** → `i/why mode=conscience` (Horizon VIII — approved/rejected move signatures from ground-truth log)

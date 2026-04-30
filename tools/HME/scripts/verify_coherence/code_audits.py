@@ -1011,13 +1011,47 @@ class ConjugateChannelVerifier(Verifier):
         cur_h = float(latest["hme_coherence"])
         cur_p = float(latest["perceptual_complexity_avg"])
         if cur_h < h_thr and cur_p < p_thr:
+            # Bidirectional V-coupling (Horizon V asymptote): on lost-
+            # quadrant FAIL, write a band-tightening proposal so the
+            # NEXT round's coherence-budget consumer can opt to narrow
+            # the chaordic edge. Composition→HCI was the seed; this
+            # closes the HCI→composition direction. The marker file is
+            # advisory — composition behavior remains driven by the
+            # configured band until a consumer explicitly reads this.
+            try:
+                tightening = {
+                    "ts": time.time(),
+                    "trigger": "conjugate-channel-lost-quadrant",
+                    "reason": (f"HCI={cur_h:.2f} < {h_thr:.2f} AND "
+                               f"perc={cur_p:.2f} < {p_thr:.2f}"),
+                    "recommended_action": "narrow_band",
+                    "band_delta": -0.05,  # advisory: contract by 5pp
+                    "expires_after_rounds": 1,
+                }
+                tightening_path = os.path.join(
+                    _PROJECT, "tmp", "hme-band-tightening.json")
+                tightening_tmp = tightening_path + ".tmp"
+                with open(tightening_tmp, "w") as _tf:
+                    json.dump(tightening, _tf, indent=2)
+                os.replace(tightening_tmp, tightening_path)
+            except OSError:
+                pass
             return _result(FAIL, 0.0,
                            f"latest round in 'lost' quadrant "
                            f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
                            f"perc={cur_p:.2f} < {p_thr:.2f})",
-                           ["consider: i/status mode=conjugate for full quadrant view",
+                           ["wrote tmp/hme-band-tightening.json (V→IX bidirectional coupling)",
+                            "consider: i/status mode=conjugate for full quadrant view",
                             "consider: i/why mode=hci-drop to identify regressed axes",
                             "consider: i/why mode=conscience for ground-truth context"])
+        # Bidirectional cleanup: if we're NOT in lost quadrant, clear any
+        # stale tightening proposal so it doesn't persist past its trigger.
+        try:
+            tightening_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
+            if os.path.isfile(tightening_path):
+                os.remove(tightening_path)
+        except OSError:
+            pass
         # Otherwise: PASS, with quadrant label in summary
         if cur_h >= h_thr and cur_p >= p_thr:
             quad = "mature stability"

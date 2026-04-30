@@ -119,6 +119,82 @@ def learn(query: str = "", title: str = "", content: str = "",
         from .discovery_promote import list_discoveries as _ld
         return _ld()
 
+    if action == "suggest_predecessors":
+        # Horizon III asymptote — KB edge densification via semantic
+        # similarity. Given a candidate title+content, computes the
+        # embedding and reports top-k existing entries above a similarity
+        # threshold. Agent consumes the suggestions to populate
+        # `tags=derived_from:<id>` / `tags=supersedes:<id>` on add,
+        # weaving new knowledge into the existing graph instead of
+        # leaving each addition as an orphan.
+        if not (title or content):
+            return ("Provide title= and/or content= to score against existing entries.\n"
+                    "Returns top-k semantic matches with similarity scores; copy the\n"
+                    "strongest into your add call as `tags=derived_from:<id>`.")
+        ctx.ensure_ready_sync()
+        candidate_text = f"{title} {content}".strip()
+        try:
+            cand_vec = ctx.shared_model.encode([candidate_text])[0]
+        except Exception as e:
+            return f"Embedding failed: {type(e).__name__}: {e}"
+        # Walk all entries and rank by cosine similarity. list_knowledge_full
+        # strips the vector field, so use direct lance access — gives us
+        # title + content + vector together in one pass without re-encoding.
+        try:
+            tbl = ctx.project_engine.knowledge_table
+            if tbl is None:
+                return "Knowledge table not available."
+            df = tbl.to_pandas()
+        except Exception as e:
+            return f"KB read failed: {type(e).__name__}: {e}"
+        if len(df) == 0:
+            return "KB empty — first entry has no predecessors. Add freely."
+        import math as _math
+        cand_norm = _math.sqrt(sum(float(x) * float(x) for x in cand_vec)) or 1.0
+        ranked = []
+        for _, row in df.iterrows():
+            v = row.get("vector")
+            if v is None:
+                continue
+            try:
+                vlist = list(v)
+                if len(vlist) != len(cand_vec):
+                    continue  # dim mismatch (model migration); skip
+                v_norm = _math.sqrt(sum(float(x) * float(x) for x in vlist)) or 1.0
+                dot = sum(float(a) * float(b) for a, b in zip(cand_vec, vlist))
+                sim = dot / (cand_norm * v_norm)
+            except Exception:
+                continue
+            ranked.append((sim, {
+                "id": str(row.get("id", "")),
+                "title": str(row.get("title", "")),
+            }))
+        ranked.sort(key=lambda kv: -kv[0])
+        # Return top 5 with similarity ≥ 0.50; below that the suggestion
+        # is too weak to act on without manual review.
+        suggestions = [r for r in ranked[:5] if r[0] >= 0.50]
+        out = ["# Predecessor suggestions (Horizon III seed)"]
+        out.append(f"  candidate: {title[:60]}")
+        out.append("")
+        if not suggestions:
+            top_sim = ranked[0][0] if ranked else 0
+            out.append(f"  No matches above 0.50 similarity threshold "
+                       f"(strongest: {top_sim:.2f}).")
+            out.append("  Adding this entry as a fresh node is correct.")
+            return "\n".join(out)
+        out.append("## Top matches:")
+        for sim, r in suggestions:
+            kid = r["id"][:12]
+            t = r["title"][:55]
+            relation = "derived_from" if sim < 0.85 else "supersedes"
+            out.append(f"  {sim:.2f}  [{kid[:8]}] {t}")
+            out.append(f"           → consider tag: tags=\"{relation}:{kid}\"")
+        out.append("")
+        out.append("# Next:")
+        out.append("  Pick the strongest match (or none); copy its `tags=...:<id>` form")
+        out.append("  into your `i/learn action=add` call to create an explicit edge.")  # tool-form-ok: drill-in advisory; literal command is the contract
+        return "\n".join(out)
+
     if action == "ground_truth":
         # Phase 5.5 — human ground-truth feedback. We reuse the learn()
         # parameter surface: title=section, tags[0]=moment_type,
