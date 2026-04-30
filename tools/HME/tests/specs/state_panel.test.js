@@ -111,3 +111,28 @@ test('i/why mode=verifier-coverage renders Horizon VI coverage view', () => {
   assert.strictEqual(r.status, 0);
   assert.match(r.stdout, /Verifier coverage|verifier-coverage/);
 });
+
+test('i/status mode=conjugate renders Horizon V joint view', () => {
+  const r = _runStatus('conjugate');
+  assert.strictEqual(r.status, 0);
+  // Either reports the joint distribution or notes missing prerequisite
+  assert.match(r.stdout, /Conjugate channel|No.*correlation/i);
+});
+
+test('i/status mode=conjugate uses data-driven thresholds when data present', () => {
+  const r = _runStatus('conjugate');
+  if (/No.*correlation/.test(r.stdout)) return;  // skip if no data
+  assert.match(r.stdout, /thresholds:.*medians.*data-driven/);
+});
+
+test('i/why mode=verifier-drift renders Horizon VI drift view', () => {
+  const r = _runWhy(['mode=verifier-drift']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /verifier-drift|frozen|No verifier/);
+});
+
+test('i/why mode=verifier-drift accepts n= lookback parameter', () => {
+  const r = _runWhy(['mode=verifier-drift', 'n=10']);
+  assert.strictEqual(r.status, 0);
+  assert.match(r.stdout, /lookback:\s*10/);
+});
