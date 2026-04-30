@@ -112,6 +112,8 @@ Steps 1-4 are agent decisions. Step 5 is automatic. Step 6 is one call. Step 7 f
 - **"What does the user's verdict history say about good moves?"** → `i/why mode=conscience` (Horizon VIII — approved/rejected move signatures from ground-truth log)
 - **"What just happened that caused this event?"** → `i/why mode=causality <event>` (Horizon VII — heuristic causal-chain reconstruction from session adjacency)
 - **"Walk the cause-of-cause chain back to root"** → `i/why mode=causality <event> --chain` (recursive walker; resolves caused_by → upstream event via prefix heuristics)
+- **"What was the ROOT cause of this event?"** → `i/why mode=causality <event> --root-cause` (shorthand: walks to leaf silently, reports just the root)
+- **"Did the conjugate-channel verifier change anything in the next pipeline run?"** → check `output/metrics/hme-coherence-budget.json` → `band_tightening` field. The V→IX coupling lands here; reflects whether the tightening proposal was applied, ignored as stale, or absent.
 - **"Does the architecture's tensegrity claim hold across scales?"** → `i/why mode=fractal-shape` (Horizon X — Gini fan-out at every scale)
 - **"What in the KB knows about X?"** → `i/learn query="X"`
 - **"What blocked me just now?"** → `i/why mode=block`
