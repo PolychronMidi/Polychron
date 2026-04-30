@@ -222,7 +222,15 @@ def _mode_band_tuning():
         lower = neg_hcis[len(neg_hcis) // 2]
         out.append(f"  lower bound  ≈ {lower:.0f}  (median HCI of {len(neg_hcis)} negative verdicts)")
     else:
-        out.append(f"  lower bound  not enough negative verdicts (current default 55)")
+        try:
+            from tool_invocations import i_form as _i_form
+            _gt_hint = _i_form('learn', value='ground_truth')
+        except ImportError:
+            _gt_hint = "i/learn action=ground_truth"  # tool-form-ok: fallback
+        out.append(f"  lower bound  not enough negative verdicts; current default 55 retained")
+        out.append(f"               (to inform: tag a flat/mechanical/boring round via")
+        out.append(f"                `{_gt_hint} tags=[flat]` when one occurs —")
+        out.append(f"                even one negative verdict starts the calibration)")
     out.append("")
     out.append("# Note:")
     out.append("  This is a proposal. Today's band [55, 85] is fixed.")

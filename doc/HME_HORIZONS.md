@@ -136,7 +136,7 @@ The shape: the architecture isn't just designed AS a fractal — it claims to BE
 
 These ten horizons aren't independent. They share a generating function: every implicit dimension becomes explicit. Every aggregation un-collapses. Every silent automation surfaces. Every fixed parameter becomes a learned controllable.
 
-Pick the one that energizes you. Each is a one-week project at the deeper end. Each compounds with every other once shipped — Horizon II makes Horizon V tractable; Horizon III makes Horizon VII queryable; Horizon VIII rides on Horizon IV.
+Pick the one that energizes you. Each *seed* lands in a session; each *expansion* into a 🌳 takes longer (incident-correlation in Horizon VI; full citation graph in Horizon III; subagent-backed predictions in Horizon I). Each compounds with every other once shipped — Horizon II makes Horizon V tractable; Horizon III makes Horizon VII queryable; Horizon VIII rides on Horizon IV.
 
 The optimization target is not "more verifiers" or "more tools." It is *legibility of the system to itself, at every scale, across every timescale, for every actor*. When the system can describe its own state, predict its own next state, explain why it took its last action, and refine the explanation as it learns — when all of that is true at every nesting level — the substrate has reached the asymptote this collection of essays is pointing at.
 
