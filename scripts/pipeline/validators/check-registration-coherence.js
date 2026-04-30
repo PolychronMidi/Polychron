@@ -60,8 +60,17 @@ for (const filePath of allFiles) {
   if (found.length === 0) continue;
   totalFunctional++;
 
+  // Lifecycle-reset registration accepts EITHER form:
+  //   1. conductorIntelligence.registerModule(...) — explicit call
+  //   2. conductorScopes: [...] manifest field — declarative; the
+  //      module loader binds the reset chain from the manifest. Used
+  //      in newer modules (coherenceMonitor, signalTelemetry) that
+  //      migrated from the explicit call. Both genuinely register the
+  //      module for section-boundary reset; rejecting the manifest
+  //      form as "missing registerModule" is a false positive.
   const hasRegisterModule = /conductorIntelligence\.registerModule\(/.test(src);
-  if (hasRegisterModule) {
+  const hasConductorScopes = /\bconductorScopes\s*:\s*\[/.test(src);
+  if (hasRegisterModule || hasConductorScopes) {
     totalWithModule++;
   } else {
     orphans.push({ file: rel, registrations: found });
@@ -84,10 +93,10 @@ fs.writeFileSync(outputPath, JSON.stringify({
 if (orphans.length > 0) {
   console.log(`check-registration-coherence: WARNING -- ${orphans.length} conductor modules have functional registrations without registerModule (no lifecycle reset):`);
   for (const o of orphans) {
-    console.log(`  ${o.file}: has ${o.registrations.join(', ')} but no registerModule`);
+    console.log(`  ${o.file}: has ${o.registrations.join(', ')} but no registerModule and no conductorScopes manifest field`);
   }
-  console.log(`  Total: ${totalFunctional} modules with functional registrations, ${totalWithModule} also have registerModule`);
+  console.log(`  Total: ${totalFunctional} modules with functional registrations, ${totalWithModule} have lifecycle-reset registration (registerModule OR conductorScopes manifest)`);
   console.log('  These modules will not reset state at section boundaries, potentially causing coherence decay.');
 } else {
-  console.log(`check-registration-coherence: PASS (${totalFunctional} modules, all have registerModule)`);
+  console.log(`check-registration-coherence: PASS (${totalFunctional} modules, all have lifecycle-reset registration via registerModule or conductorScopes)`);
 }

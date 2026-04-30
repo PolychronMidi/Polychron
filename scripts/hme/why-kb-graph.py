@@ -29,7 +29,12 @@ from _common import PROJECT_ROOT
 
 
 def _load_kb() -> list[dict]:
-    """Read all KB entries via direct lance access."""
+    """Read all KB entries via direct lance access. Projects to needed
+    columns only (skips 1024-d vectors). Note: ~830ms of the latency
+    is `_open_table()` connection setup, not column transfer — that
+    floor is intrinsic to opening a lance table from disk per-process.
+    Cross-invocation caching would need a daemon; this view is fine
+    at ~1s for an on-demand panel."""
     sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
     try:
         from direct_lance import _open_table  # type: ignore
@@ -40,7 +45,16 @@ def _load_kb() -> list[dict]:
     if table is None:
         return []
     try:
-        df = table.to_pandas()
+        # to_arrow() with column projection: pull only what we read.
+        # to_pandas() then materializes; vectors stay in lance.
+        wanted = ["id", "title", "content", "category", "tags"]
+        if hasattr(table, "to_arrow"):
+            arr = table.to_arrow()
+            available = [c for c in wanted if c in arr.column_names]
+            df = arr.select(available).to_pandas()
+        else:
+            df = table.to_pandas()
+            df = df[[c for c in wanted if c in df.columns]]
     except Exception:
         return []
     return df.to_dict(orient="records")

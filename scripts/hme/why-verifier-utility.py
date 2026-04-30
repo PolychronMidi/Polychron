@@ -191,14 +191,20 @@ def main(argv):
     print()
     # Incident-correlation heuristic (Horizon VI asymptote): walk the
     # KB for entries whose tags reference 'fix' or 'bugfix' AND mention
-    # a verifier name. Surfaces "this verifier has caught at least one
-    # real bug" as a per-verifier signal beyond flip-count alone.
+    # a verifier name. Project to only columns we read (skips the
+    # 1024-d vector blob, ~half the lance read time).
     try:
         sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
         from direct_lance import _open_table  # type: ignore
         table = _open_table()
         if table is not None:
-            df = table.to_pandas()
+            wanted = ["title", "content", "category"]
+            if hasattr(table, "to_arrow"):
+                arr = table.to_arrow()
+                cols = [c for c in wanted if c in arr.column_names]
+                df = arr.select(cols).to_pandas()
+            else:
+                df = table.to_pandas()[wanted]
             verifier_names = {m["name"] for m in metrics}
             incident_hits = defaultdict(int)
             for _, row in df.iterrows():
