@@ -155,3 +155,10 @@ test('i/why mode=predict without path prints usage', () => {
   assert.strictEqual(r.status, 2);  // exit code 2 for usage error
   assert.match(r.stdout, /Usage:|<file_path>/);
 });
+
+test('i/why mode=conscience renders Horizon VIII signature view', () => {
+  const r = _runWhy(['mode=conscience']);
+  assert.strictEqual(r.status, 0);
+  // Either reports the verdict count + signature, or notes empty log
+  assert.match(r.stdout, /Architectural conscience|No ground-truth/);
+});

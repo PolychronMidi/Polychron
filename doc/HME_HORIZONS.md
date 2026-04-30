@@ -100,13 +100,15 @@ Implementation: every state-changing action records its `caused_by` reference. T
 
 The shape: the system becomes *legible to itself* in causal form. Today it's legible in static form (read the code). Tomorrow it's legible in dynamic form (read the trace).
 
-## Horizon VIII — The architectural conscience 📜
+## Horizon VIII — The architectural conscience 🌱
 
 Some moves feel right; others feel wrong. The "feel" lives in the user's head and partially in the KB. Make it operational:
 
 - **Approved-move ledger.** Every verdict the user gives ("legendary", "this works", "good call") attaches to the diff that produced it. Future similar diffs cite the approval pattern.
 - **Rejected-move ledger.** "Don't do this" patterns logged. Future PRs that match the rejected shape get a soft warning before landing.
 - **Move-class similarity.** A new edit's signature (files touched, function shapes, magnitude) is compared to past approved/rejected moves. Surface "this looks 0.83 similar to an approved move from R5; 0.12 similar to a rejected one."
+
+**Seed shipped:** `i/why mode=conscience` reads ground-truth verdicts and joins them with file_written events from the activity log within a 1h window before each verdict. Surfaces approved-move directory signatures and (when negative verdicts exist) contrast with rejected-move signatures. First run found a real limitation honestly: 0/12 positive verdicts had activity-log overlap because verdicts are 7-10 days old and the activity log doesn't retain that far back. The seed reports the gap explicitly rather than failing silently — once the activity log is rotated to retain longer history, OR once new verdicts are added, the signature analysis becomes meaningful.
 
 The shape: the agent's intuition becomes durable, queryable, transferable.
 
