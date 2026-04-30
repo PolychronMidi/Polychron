@@ -188,7 +188,7 @@ After Write to `.md`/`.txt` files outside `tmp/`: appends path to compact tab. E
 
 ## Layer 3: Stop Hook
 
-8 independent blocking checks in `stop.sh`, all returning `{"decision":"block","reason":"..."}`:
+10 independent blocking checks in `stop.sh`, all returning `{"decision":"block","reason":"..."}`:
 
 ### 1. LIFESAVER — mid-turn error detection
 
