@@ -24,8 +24,11 @@ Principles audited (numbered to match CLAUDE.md):
         subsubsystem should have at most one *Manager.js file. Multiple
         managers at the same level without clearly disjoint scopes is a
         smell.
-  P5 — Coherent files ≤200 lines
-        Count LOC per .js file. Flag >200 (WARN) and >400 (CRITICAL).
+  P5 — Coherent files (CLAUDE.md target: 150-350 LOC; 350 is the
+        upper bound, files exceeding it are CRITICAL).
+        Thresholds loaded from tools/HME/config/project-rules.json
+        (defaults: WARN >250, CRITICAL >350). Files matched by
+        config/loc-ignore.txt are skipped from both lists.
 
 Outputs:
   - Human-readable summary on stdout (default)
@@ -50,9 +53,17 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 _SRC = os.path.join(_PROJECT, "src")
 
-# Thresholds per CLAUDE.md "target ≤200 lines".
-_LOC_WARN = 200
-_LOC_CRITICAL = 400
+# Thresholds — single source of truth in tools/HME/config/project-rules.json.
+# Same file consumed by `i/evolve focus=loc` via helpers.py.
+def _load_loc_thresholds():
+    rules_path = os.path.join(_PROJECT, "tools", "HME", "config", "project-rules.json")
+    try:
+        with open(rules_path, encoding="utf-8") as f:
+            cfg = json.load(f).get("line_count_thresholds", {})
+        return cfg.get("warn", 250), cfg.get("critical", 350)
+    except (OSError, ValueError):
+        return 250, 350  # safe defaults if config missing/malformed
+_LOC_WARN, _LOC_CRITICAL = _load_loc_thresholds()
 
 # Load order for subsystems (from CLAUDE.md). Extra subsystems present in
 # src/ but not in this list get ordered last alphabetically.
@@ -277,7 +288,7 @@ def _format_report(subsystems):
 
     # Summary table — code stats only (data files excluded from size rules).
     lines.append(f"{'subsystem':<14} {'code':>5} {'data':>5} {'cLOC':>6} "
-                 f"{'avg':>4} {'max':>5} {'mgr':>4} {'>200':>5} {'>400':>5}")
+                 f"{'avg':>4} {'max':>5} {'mgr':>4} {'>'+str(_LOC_WARN):>5} {'>'+str(_LOC_CRITICAL):>5}")
     lines.append("-" * 70)
     total_code = 0
     total_data = 0
@@ -348,7 +359,7 @@ def _format_report(subsystems):
     lines.append(f"  P3 (self-registration):                 not audited "
                  f"(needs full require-graph analysis)")
     lines.append(f"  P4 (single-manager hub):                {per_principle['P4']}")
-    lines.append(f"  P5 (coherent files ≤200 lines):        "
+    lines.append(f"  P5 (coherent files <={_LOC_WARN} lines):      "
                  f"{per_principle['P5']} (oversize files, code only)")
 
     # Data file callout — if any data files are unusually large.

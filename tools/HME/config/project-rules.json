@@ -286,8 +286,8 @@
     "writer"
   ],
   "line_count_thresholds": {
-    "target": 200,
+    "target": 150,
     "warn": 250,
-    "critical": 300
+    "critical": 350
   }
 }
