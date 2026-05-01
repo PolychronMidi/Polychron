@@ -13,13 +13,24 @@
 // anchored mixFill leaders, every-phrase rotation of supplementary
 // slots, and source-level coprime multipliers vs preset count.
 
-const { test } = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 const ROTATOR = path.join(REPO, 'src', 'rhythm', 'drums', 'drumKitRotator.js');
+
+// Capture the real validator BEFORE any test stubs it, so the file-level
+// teardown can restore it for tests that run later in the same Node
+// process (e.g. metaprofile_next_level which loads src/index and calls
+// validator.create(...).optionalFinite — our stub doesn't carry that
+// surface, so leaving it installed pollutes the rest of the suite).
+require('../../../../src/utils');
+const _REAL_VALIDATOR = global.validator;
+after(() => {
+  if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+});
 
 // L1 foundation: every preset must use kick1 + kick3 in the kicks slot,
 // in some order, with no other kick identities permitted.
@@ -45,7 +56,13 @@ function loadRotator(sectionIdx, phraseIdx, measureIdx = 0, beatIdx = 0) {
   global.beatIndex = beatIdx;
   delete require.cache[require.resolve(ROTATOR)];
   require(ROTATOR);
-  return global.drumKitRotator;
+  const rotator = global.drumKitRotator;
+  // Restore the real validator now that the rotator has captured the
+  // stub it needs. Leaving the stub installed pollutes later specs in
+  // the run.js single-process suite (metaprofile loads validator surface
+  // we don't carry: optionalFinite, optionalType).
+  if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+  return rotator;
 }
 
 function asSet(arr) { return new Set(arr); }
@@ -156,7 +173,11 @@ test('missing globals fail loud (no silent fallback)', () => {
   global.phraseIndex = 0;
   delete require.cache[require.resolve(ROTATOR)];
   require(ROTATOR);
-  assert.throws(() => global.drumKitRotator.getL1Preset(), /sectionIndex/);
+  try {
+    assert.throws(() => global.drumKitRotator.getL1Preset(), /sectionIndex/);
+  } finally {
+    if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+  }
 });
 
 test('flair: per-beat rotation hits multiple presets within one phrase', () => {

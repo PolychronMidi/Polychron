@@ -102,8 +102,12 @@ if [ -f "$LATEST_LINK" ]; then
   # / KeyError. The script's own try/except only covers the file-load; any
   # other crash silently swallowed the entire hydration. Now stderr is
   # captured and bridged to errors.log; stdout still goes to >&2 as banner.
+  # Redirection ORDER matters: bash processes left-to-right, so do `>&2`
+  # FIRST (fd1 → original stderr) then `2>"$_POSTC_PY_ERR"` (fd2 → file).
+  # The reverse order makes fd1 follow fd2 into the file and silently logs
+  # every banner line as "python3 failed:".
   _POSTC_PY_ERR=$(mktemp 2>/dev/null || echo "/tmp/_postc_py_err_$$")
-  python3 <<'PYEOF' 2>"$_POSTC_PY_ERR" >&2
+  python3 <<'PYEOF' >&2 2>"$_POSTC_PY_ERR"
 import json, os
 project = os.environ["PROJECT_ROOT"]
 latest = os.path.join(os.environ.get("METRICS_DIR", os.path.join(project, "output", "metrics")), "chain-history", "latest.yaml")

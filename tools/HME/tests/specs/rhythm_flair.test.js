@@ -7,7 +7,7 @@
 // drum win was: stable foundation + per-phrase rotation + occasional
 // flair. These tests lock in the same shape for the rhythm module.
 
-const { test } = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
@@ -15,6 +15,17 @@ const path = require('path');
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 const SET_RHYTHM = path.join(REPO, 'src', 'rhythm', 'setRhythm.js');
 const RHYTHM_VALUES = path.join(REPO, 'src', 'rhythm', 'rhythmValues.js');
+
+// loadRhythmValues stubs global.validator with a thin shim that lacks
+// optionalFinite/optionalType. Capture the real validator now and restore
+// after this file's tests so later specs (metaprofile_next_level loads
+// src/index, which calls validator.create(...).optionalFinite) don't pick
+// up the stub.
+require('../../../../src/utils');
+const _REAL_VALIDATOR = global.validator;
+after(() => {
+  if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+});
 
 test('setRhythm: PHRASE_DENSITY_FACTORS array exists and centers near 1.0', () => {
   const src = fs.readFileSync(SET_RHYTHM, 'utf8');
@@ -70,14 +81,17 @@ function loadRhythmValues() {
   global._setRfQueue = (q) => { _rfQueue = q.slice(); };
   global.rf = (a, b) => {
     if (_rfQueue.length > 0) return _rfQueue.shift();
-    if (a === undefined) return 0.5;       // default for `rf()`
-    if (b === undefined) return a * 0.5;   // single-arg form
-    return (a + b) / 2;                    // two-arg form: midpoint
+    if (a === undefined) return 0.5;
+    if (b === undefined) return a * 0.5;
+    return (a + b) / 2;
   };
   global.m = Math;
   delete require.cache[require.resolve(RHYTHM_VALUES)];
   require(RHYTHM_VALUES);
-  return global.rhythmValues;
+  const rv = global.rhythmValues;
+  // Restore real validator — see comment in drum_kit_rotator.test.js.
+  if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+  return rv;
 }
 
 test('swingOffset: foundation behavior on most calls (90% baseline path)', () => {

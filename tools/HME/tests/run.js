@@ -20,6 +20,14 @@
 const path = require('path');
 const fs = require('fs');
 
+// Several specs (metaprofile fixtures, src/index DI graph) read
+// process.env.PROJECT_ROOT to locate config/. Anchor it to the repo root
+// derived from this file's path so the suite is hermetic — no caller
+// needs to export PROJECT_ROOT manually.
+if (!process.env.PROJECT_ROOT) {
+  process.env.PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
+}
+
 // node:test exits non-zero if any test fails.
 const TESTS_DIR = path.join(__dirname, 'specs');
 const files = fs.readdirSync(TESTS_DIR)
