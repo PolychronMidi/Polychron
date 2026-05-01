@@ -137,121 +137,14 @@ class _Handler(BaseHTTPRequestHandler):
         return json.loads(raw)
 
     def _post_tool(self, name: str, args: dict):
-        # One INFO line per incoming tool call so hme.log has a trail.
-        try:
-            _args_preview = json.dumps(args)[:200] if args else ""
-        except Exception as _log_err:  # silent-ok: log-line formatting; tool call itself must not fail from log prep
-            _args_preview = f"<unserializable: {type(_log_err).__name__}>"
-        logger.info(f"/tool/{name} dispatching  args={_args_preview}")
-        _tool_t0 = time.time()
-
-        # LAYER 3 WATCHDOG — two-phase, reliable-under-GIL-contention.
-        #
-        # Phase A (graceful, Thread.join): spawn the tool in a daemon
-        # thread and join with timeout_s. If it finishes in time, return
-        # normally. If join returns with is_alive()=True, send 504.
-        #
-        # Phase B (brute, self-SIGTERM): register this thread with the
-        # module-level active-tool table. A dedicated watchdog-thread
-        # (started at worker boot, see _watchdog_loop) polls every 5s
-        # and, if any active tool has exceeded HARD_KILL_SECONDS (default
-        # 240s), fires `os.kill(os.getpid(), SIGTERM)` to self-terminate.
-        # The supervisor respawns the worker. This exists because Phase A
-        # can't actually fire when this handler thread is GIL-starved —
-        # `Thread.join(timeout)` relies on the handler thread getting
-        # scheduled to check the clock, which doesn't happen reliably
-        # when other threads saturate CPU (e.g. during a heavy reasoning
-        # synthesis). The watchdog thread runs `time.sleep(5)` which
-        # releases the GIL and wakes reliably regardless of other threads'
-        # CPU use. OS-level signal delivery is kernel-managed — not
-        # blocked by Python's GIL.
-        import threading as _th
-        import signal as _sig
-        timeout_s = float(os.environ.get("HME_TOOL_WATCHDOG_S", "120"))
-        hard_kill_s = float(os.environ.get("HME_TOOL_HARDKILL_S", "240"))
-        result_box: list = [None, None]  # [value, exception]
-
-        def _runner():
-            try:
-                result_box[0] = tool_call(name, args)
-            except Exception as e:
-                result_box[1] = e
-
-        t = _th.Thread(target=_runner, daemon=True, name=f"tool-{name}")
-        # Register BEFORE starting so the watchdog sees it immediately.
-        _active_tool_register(t, name, _tool_t0, hard_kill_s)
-        try:
-            t.start()
-            t.join(timeout=timeout_s)
-            if t.is_alive():
-                logger.error(
-                    f"tool {name!r} watchdog (phase A, graceful): exceeded {timeout_s:.0f}s; "
-                    f"returning 504. Thread leaked; watchdog thread will force-kill worker at "
-                    f"{hard_kill_s:.0f}s total if tool still running. args keys="
-                    f"{list(args.keys()) if isinstance(args, dict) else '?'}"
-                )
-                self._json(504, {
-                    "ok": False,
-                    "error": f"tool {name!r} exceeded {timeout_s:.0f}s wall clock",
-                    "watchdog_timeout": True,
-                })
-                return
-            ex = result_box[1]
-            _elapsed_ms = (time.time() - _tool_t0) * 1000
-            if isinstance(ex, KeyError):
-                logger.warning(f"/tool/{name} unknown-tool {_elapsed_ms:.0f}ms")
-                self._json(404, {"ok": False, "error": str(ex)})
-            elif ex is not None:
-                import traceback
-                tb = "".join(traceback.format_exception(type(ex), ex, ex.__traceback__))
-                logger.warning(f"/tool/{name} FAILED {_elapsed_ms:.0f}ms: {type(ex).__name__}: {ex}")
-                self._json(500, {"ok": False, "error": f"{type(ex).__name__}: {ex}",
-                                 "trace": tb[-2000:]})
-            else:
-                logger.info(f"/tool/{name} OK {_elapsed_ms:.0f}ms")
-                self._json(200, {"ok": True, "result": result_box[0]})
-        finally:
-            _active_tool_unregister(t)
+        from worker_post_handlers import post_tool
+        post_tool(self, name, args, tool_call=tool_call,
+                  active_register=_active_tool_register,
+                  active_unregister=_active_tool_unregister)
 
     def _post_rag_dispatch(self, body: dict):
-        """Generic engine method dispatch. Mirrors hme_http.py's _handle_rag_dispatch."""
-        import rag_engines
-        engine_name = body.get("engine", "project")
-        method = body.get("method", "")
-        kwargs = body.get("kwargs", {})
-        if not rag_engines._engine_ready.wait(timeout=10):
-            self._json(503, {"error": "engines loading"})
-            return
-        if engine_name == "project":
-            engine = rag_engines._project_engine
-        elif engine_name == "global":
-            engine = rag_engines._global_engine
-        elif engine_name.startswith("lib/"):
-            engine = rag_engines._lib_engines.get(engine_name[4:])
-        else:
-            engine = None
-        if engine is None:
-            self._json(503, {"error": f"{engine_name} engine not ready"})
-            return
-        try:
-            if method == "_symbol_table_list":
-                result = engine.symbol_table.to_arrow().to_pylist() if engine.symbol_table is not None else []
-            elif method == "_encode":
-                texts = kwargs.get("texts", [])
-                result = engine.text_model.encode(texts).tolist() if engine.text_model is not None else []
-            elif method == "_get_file_hashes":
-                result = dict(getattr(engine, "_file_hashes", {}))
-            elif method == "index_directory":
-                result = getattr(engine, method)()
-            elif hasattr(engine, method) and callable(getattr(engine, method)):
-                result = getattr(engine, method)(**kwargs)
-            else:
-                self._json(400, {"error": f"unknown method: {method}"})
-                return
-            self._json(200, {"result": result})
-        except Exception as e:
-            logger.error(f"/rag dispatch {engine_name}.{method}: {type(e).__name__}: {e}")
-            self._json(500, {"error": str(e)})
+        from worker_post_handlers import post_rag_dispatch
+        post_rag_dispatch(self, body)
 
     def _post_enrich(self, body: dict):
         from hme_http_handlers import _enrich
@@ -274,86 +167,13 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(200, {"enriched": prompt, "original": prompt, "error": str(e)})
 
     def _post_cascade_predict(self, body: dict):
-        """Phase 6.1 injection arm — wired per peer-review iter 145.
-
-        Middleware calls this on PreToolUse Edit/Write to get a cascade
-        prediction for the target file BEFORE the agent makes the edit.
-        Records the prediction with `injected=True` so the post-pipeline
-        reconciler can distinguish "middleware-surfaced predictions"
-        from "agent-queried predictions" when scoring accuracy.
-
-        Body: {"target_file": "<absolute or repo-relative path>"}
-        Returns: {"target": <stem>, "predicted": [<stem>, ...], "logged": true}
-                 or {"error": "..."} if the file isn't analyzable.
-        """
-        target = body.get("target_file", "")
-        if not target:
-            self._json(400, {"error": "target_file required"})
-            return
-        try:
-            from tools_analysis.cascade_analysis import (
-                _load_dep_graph, _load_feedback_graph, _log_prediction,
-            )
-            import os.path as _osp
-            # Compute the affected modules deterministically without
-            # round-tripping through the full cascade_intel surface.
-            stem = _osp.splitext(_osp.basename(target))[0]
-            if not stem:
-                self._json(400, {"error": "could not derive module stem from target_file"})
-                return
-            dep = _load_dep_graph()
-            fb = _load_feedback_graph()
-            affected: list[str] = []
-            # Forward callers from dep graph (1 hop)
-            for node, info in (dep.get("nodes") or {}).items():
-                if not isinstance(info, dict):
-                    continue
-                # Match either bare stem or path containing stem
-                node_stem = _osp.splitext(_osp.basename(node))[0]
-                if stem in (info.get("imports") or []) or stem == node_stem:
-                    if node_stem and node_stem != stem and node_stem not in affected:
-                        affected.append(node_stem)
-            # Feedback-loop members
-            for loop in (fb.get("loops") or []):
-                members = loop.get("members") or []
-                if stem in members:
-                    for m in members:
-                        if m != stem and m not in affected:
-                            affected.append(m)
-            # Cap to keep injection footer reasonable
-            affected = affected[:12]
-            _log_prediction(target_module=stem,
-                           affected_modules=affected,
-                           injected=True)
-            self._json(200, {"target": stem, "predicted": affected, "logged": True})
-        except Exception as e:
-            logger.warning(f"/cascade_predict failed: {type(e).__name__}: {e}")
-            self._json(200, {"target": "", "predicted": [], "logged": False,
-                             "error": f"{type(e).__name__}: {e}"})
+        from worker_post_handlers import post_cascade_predict
+        post_cascade_predict(self, body)
 
     def _post_validate(self, body: dict):
-        # _validate is imported lazily inside _bounded_validate now — keeps
-        # the handler hot-path free of the import cycle cost.
-        query = body.get("query", "")
-        if not query:
-            self._json(400, {"error": "query required"})
-            return
-        # Stay under the 5s client timeout: if search takes >3s, return
-        # a deferred response rather than letting the client time out.
-        # Previously spawned a fresh ThreadPoolExecutor per request with
-        # cancel_futures=True — but Python threads cannot be interrupted,
-        # so the running _validate kept executing past the 3s timeout
-        # and each overload cycle leaked one engine-bound thread
-        # holding model/lock state, compounding GIL contention. Now:
-        # shared module-level executor (threads are reused not
-        # respawned) + semaphore that caps concurrent in-flight
-        # validates so timeout pile-ups can't accumulate runaway workers.
-        _fut = _VALIDATE_EXECUTOR.submit(_bounded_validate, query)
-        try:
-            result = _fut.result(timeout=3.0)
-        except concurrent.futures.TimeoutError:
-            result = {"warnings": [], "blocks": [], "deferred": "search timeout — engine under load"}
-        self._json(200, result)
+        from worker_post_handlers import post_validate
+        post_validate(self, body, executor=_VALIDATE_EXECUTOR,
+                      bounded_validate=_bounded_validate)
 
     def _post_audit(self, body: dict):
         from hme_http_handlers import _post_audit

@@ -62,3 +62,51 @@ tools/HME/scripts/verify_coherence/code_audits_state.py
 # (187L) and CLI scaffolding that's intrinsically single-unit.
 tools/HME/scripts/buddy_dispatcher.py
 tools/HME/scripts/buddy_dispatch_lifecycle.py
+
+# Single mega-functions that resist module-level splitting. Each is one
+# coherent function whose body would need helper-function decomposition
+# (different class of work than module split).
+
+# selftest.py: `hme_selftest` is one ~1000-line sequential probe pipeline.
+tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py
+
+# what_did_i_forget is one ~460-line analysis function.
+tools/HME/service/server/tools_analysis/workflow_audit.py
+
+# _adversarial_stress is one ~430-line probe function.
+tools/HME/service/server/tools_analysis/evolution/evolution_stress.py
+
+# JS module-lifecycle wrapped giant data structures. These can't move
+# without restructuring the lifecycle.declare() pattern that anchors them
+# — different class of work than module split.
+src/conductor/metaProfileDefinitions.js
+src/conductor/metaProfiles.js
+src/utils/moduleLifecycle.js
+
+# Complex proxy with intricate closure state coupling. The HTTP listener,
+# routing, supervisor, middleware orchestration, and request lifecycle
+# share extensive closure state — can't safely module-split.
+tools/HME/proxy/hme_proxy.js
+tools/HME/proxy/middleware/index.js
+
+# rag_engines.py: _load_engines (~340L) and reload_on_device (~190L) share
+# 8+ globals (_shared_*, _*_engine, _*_router, _lib_engines, _engine_ready,
+# _reload_lock) plus closures for VRAM-managed model factories. Module-level
+# split would require funneling every shared mutation through getters/setters
+# — inverts the pattern that anchors it.
+tools/HME/service/rag_engines.py
+
+# Per-beat tick mega-functions: each is one coherent function emitting
+# 30+ inter-dependent trust outcomes / channel emissions per beat,
+# sharing dozens of locals (clDensity, clTension, clCadResult, channelHarmonic,
+# ...). Splitting requires either passing 20+ params through helper signatures
+# or refactoring to a beat-context object — different class of work than
+# module-level split (helper-function decomposition of a single function).
+src/play/crossLayerBeatRecord.js
+src/play/playNotesEmitPick.js
+
+# moduleLifecycle.declare wrapping one giant init closure with 200+ LOC of
+# state-coupled signal computations across refresh()/densityBias()/tensionBias()
+# /flickerMod()/reset(). Same pattern as the already-exempted lifecycle
+# wrappers (moduleLifecycle.js, metaProfiles.js).
+src/conductor/signal/profiling/regimeReactiveDamping.js
