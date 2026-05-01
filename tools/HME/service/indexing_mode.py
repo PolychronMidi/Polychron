@@ -26,7 +26,10 @@ _DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 
 def request_full_reindex() -> dict:
     """Ask the daemon to orchestrate a GPU-dedicated full reindex.
-    Returns the index result dict. Blocks until complete."""
+    Returns the index result dict. Blocks until complete, or coalesces
+    with an in-progress run (returned dict carries `coalesced=True`).
+    Concurrent reindex triggers are EXPECTED — the daemon serializes
+    them, this function never errors on overlap alone."""
     try:
         req = urllib.request.Request(
             f"{_DAEMON_URL}/indexing-mode",
@@ -36,6 +39,14 @@ def request_full_reindex() -> dict:
         resp = json.loads(urllib.request.urlopen(req, timeout=600).read())
         if resp.get("error"):
             logger.warning(f"Indexing mode failed: {resp['error']}")
+            return resp
+        if resp.get("coalesced"):
+            # Another reindex was in flight; we waited and inherited
+            # its result. Log at info, not warning — this is the design.
+            logger.info(
+                f"Indexing mode coalesced into in-progress run: "
+                f"{resp.get('indexed', '?')} files"
+            )
             return resp
         logger.info(f"Indexing mode complete: {resp.get('indexed', '?')} files")
         return resp

@@ -139,6 +139,22 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
             f"Check log/hme-llamacpp_daemon.out for traceback. The daemon "
             f"owns GPU allocation — do not bypass it."
         )
+    if main_result.get("coalesced"):
+        # An overlapping reindex finished while we waited — its result
+        # IS our result, no second pass needed. Surface at info-level
+        # so the agent knows their request was honored without spurious
+        # error framing. If `total_files` is missing on the coalesced
+        # result the in-flight pass returned an unexpected shape and
+        # the next branch handles it normally.
+        if "total_files" in main_result:
+            return (
+                f"[main] files={main_result['total_files']} "
+                f"indexed={main_result['indexed']} "
+                f"skipped={main_result.get('skipped_unchanged', 0)} "
+                f"chunks={main_result.get('chunks_created', 0)} "
+                f"symbols={main_result.get('symbols_indexed', 0)} "
+                f"(coalesced into in-progress reindex)"
+            )
     if "total_files" not in main_result:
         return f"index error: daemon returned unexpected shape: {main_result}"
 
