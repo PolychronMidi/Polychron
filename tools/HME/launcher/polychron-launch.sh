@@ -170,12 +170,26 @@ if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
   _vscode_dir="$PROJECT_ROOT/.vscode"
   mkdir -p "$_vscode_dir"
   python3 - "$_vscode_dir/settings.json" "$ANTHROPIC_BASE_URL" <<'PYEOF' || true
-import json, sys
+import json, os, sys
 path, base_url = sys.argv[1], sys.argv[2]
-try:
+exists = os.path.exists(path)
+if exists:
     with open(path) as f:
-        data = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
+        raw = f.read()
+    try:
+        data = json.loads(raw) if raw.strip() else {}
+    except json.JSONDecodeError as exc:
+        # VSCode settings.json supports JSONC (comments + trailing commas).
+        # Strict json.loads fails on those. Refusing to overwrite is the
+        # safe default — a destructive rewrite would wipe the user's
+        # config. Print a clear instruction instead.
+        print(f"[launch] WARN: .vscode/settings.json is not strict JSON "
+              f"(parse error: {exc}). Refusing to auto-edit — please add "
+              f"manually:", file=sys.stderr)
+        print(f"[launch]   \"terminal.integrated.env.linux\": "
+              f"{{\"ANTHROPIC_BASE_URL\": \"{base_url}\"}}", file=sys.stderr)
+        sys.exit(0)
+else:
     data = {}
 changed = False
 for key in ("terminal.integrated.env.linux",
