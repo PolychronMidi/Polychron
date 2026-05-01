@@ -11,7 +11,7 @@ function _extractModule(fp) {
 
 function _isTrackedPath(fp) {
   if (!fp) return false;
-  return /\/(src|tools\/HME\/(mcp|chat|activity|hooks|scripts|proxy))\//.test(fp);
+  return /\/(src|tools\/HME\/(mcp|activity|hooks|scripts|proxy))\//.test(fp);
 }
 
 module.exports = {

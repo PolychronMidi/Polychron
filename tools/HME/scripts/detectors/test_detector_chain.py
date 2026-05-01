@@ -129,7 +129,7 @@ _CASES = [
          _assistant_msg(
              "**Still banked (not actionable right now):**\n"
              "- supervisor fix — takes effect on next proxy restart.\n"
-             "- chat panel — takes effect on next extension-host reload.\n\n"
+             "- daemon watchdog — takes effect on next worker reload.\n\n"
              "Nothing else within scope."
          ),
      ],
@@ -303,7 +303,7 @@ _CASES = [
              "Remaining items:\n"
              "- fix the validator regression\n"
              "- update docs\n"
-             "- rebuild the chat panel\n"
+             "- rebuild the worker daemon\n"
          ),
      ],
      "early_stop"),

@@ -25,12 +25,9 @@ deepwiki.config.json
 /tools/HME/session-state.json
 /tools/HME/service/db/
 /tools/HME/service/*.db
-/tools/HME/chat/log/
-/tools/HME/chat/src/log/
-/tools/HME/chat/webview/log/
 /scripts/pipeline/log/
 /scripts/pipeline/hme/log/
-# Removed silencer entries: /tools/HME/{mcp,proxy,chat}/metrics/ and
+# Removed silencer entries: /tools/HME/{mcp,proxy}/metrics/ and
 # /scripts/pipeline/metrics/. None of those directories exist; the entries
 # were stale silencer patterns that would have masked the same path-bug
 # class as the just-removed /metrics root entry. The verifier catches

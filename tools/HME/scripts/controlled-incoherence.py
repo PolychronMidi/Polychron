@@ -84,9 +84,9 @@ def perturb_exhaust_check() -> dict:
                      "commit log for your review.\n\n"
                      "**Still banked (not actionable right now):**\n"
                      "- supervisor/index.js hang-escalation — takes effect on next "
-                     "proxy restart; won't restart while you're using chat.\n"
-                     "- claudeProcessPool.ts productivity watchdog — takes effect "
-                     "on next extension-host reload (your action, not mine).\n\n"
+                     "proxy restart; won't restart mid-session.\n"
+                     "- daemon productivity watchdog — takes effect "
+                     "on next worker reload (your action, not mine).\n\n"
                      "Nothing else missing within the scope of this session's fixes.")
         }]},
     }) + "\n")
