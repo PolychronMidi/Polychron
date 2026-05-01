@@ -1,85 +1,32 @@
 # Polychron — Coding Rules
 
-Keep this file focused, concise, lean - docs and auto-enforcement handle the rest.
+Polychron development has two interleaving modes. Most days are mixed: an HME-side change to support a `src/` exploration, a `src/` discipline check via HME's hooks. Both spaces evolve as synergistic-but-distinct partners.
 
-If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
+- **Composition** (`src/`) — the polyrhythmic engine itself: 64 cross-layer modules, 18 hypermeta controllers, 27 trust-scored systems. Mode-specific rules: [doc/SRC.md](doc/SRC.md).
+- **HME** (`tools/HME/`) — the cognitive scaffolding: proxy middleware, stop-chain detectors, KB, agent infrastructure. Mode-specific rules and tool reference: [doc/HME.md](doc/HME.md).
 
-> Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/HME_MENTAL_MODEL.md](../doc/HME_MENTAL_MODEL.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/HME_HORIZONS.md](../doc/HME_HORIZONS.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
+For *what things are* (orientation, not rules), see [README.md](README.md), [doc/HME_MENTAL_MODEL.md](doc/HME_MENTAL_MODEL.md), [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md).
 
 ## Run
 
-`npm run main` — full pipeline.
+`npm run main` — full pipeline. **Never run individual pipeline scripts directly.**
 
-## Five Core Principles
+## Universal Principles
 
-1. **Globals via side-effect `require()` in `index.js`.** Never `global.` / `globalThis.` / `/* global */`. Reference globals directly — never alias. To add: side-effect module → require from subsystem `index.js` → declare in `globals.d.ts`. **Never hand-edit `VALIDATED_GLOBALS`** (auto-generated). Critical globals throw on missing; advisory globals (`/** @boot-advisory */`) warn only. Never `typeof` a boot-validated global.
-2. **Fail fast.** Every module throws on bad input. No silent early returns. No `|| 0` / `|| []` fallbacks. No graceful degradation. Use `validator.create('ModuleName')` for all validation. Use `optionalFinite(val, fallback)` only for legitimately optional numerics.
-3. **Self-registration.** Modules self-register at load time via `crossLayerRegistry` or `conductorIntelligence`. To add: write file, self-register at end of IIFE, require from subsystem `index.js`. **Never manually tune constants that a meta-controller already manages** (see Hypermeta-First below).
-4. **Single-Manager Hub per subsystem.** One `*Manager` per subsystem (Facade + service locator). Helpers load first via `index.js`, then the manager. When a file exceeds ~200 lines, extract a focused helper loaded **before** the consumer.
-5. **Coherent files, one responsibility.** Target ≤200 lines. File name matches main export. `const` and pure functions preferred. Only classes use PascalCase; everything else camelCase.
-
-## Code Style
-
-- No ad-hoc validation: use `validator`, never raw `typeof` / `|| []` / `|| 0` / ternary fallbacks.
-- Globals are truth: initialize correctly at the source. Never sanitize downstream.
-- Comments are terse. No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
-
-
-## Load Order
-
-`src/index.js` requires subsystems in this exact order:
-`utils → conductor → rhythm → time → composers → fx → crossLayer → writer → play`
-
-Each subsystem `index.js`: helpers first, manager/orchestrator last.
-
-## Architectural Boundaries (rules — no exceptions)
-
-- **Cross-layer cannot write to conductor.** Only local `playProb`/`stutterProb` and `explainabilityBus` diagnostics.
-- **Conductor cannot mutate cross-layer state.** Read-only via getters is fine; writes are banned (`local/no-direct-crosslayer-write-from-conductor`).
-- **Signal reading:** always through `signalReader`, never `conductorIntelligence.getSignalSnapshot()` directly.
-- **New feedback loops:** must register with `feedbackRegistry` and declare in `output/metrics/feedback_graph.json`.
-- **Trust system names:** always use `trustSystems.names.*` / `trustSystems.heatMapSystems.*`. Never hardcode strings.
-- **Cross-layer emission:** route all buffer writes through `crossLayerEmissionGateway.emit(sourceModule, buffer, event)`. Never `push()` directly.
-- **Inter-module communication:** via `L0` (L0) channels, not direct calls. Channel names must use `L0_CHANNELS.xxx` constants; bare strings in L0 method calls are a hard error (`local/no-bare-l0-channel`). New channel: add to `l0Channels.js`, declare in `globals.d.ts`.
-- **Firewall ports:** the 9 controlled cross-boundary openings are declared in `output/metrics/feedback_graph.json` under `firewallPorts`. New cross-boundary data flow → declare a port.
-
-### Hypermeta-First (no whack-a-mole overrides)
-
-The 18 hypermeta self-calibrating controllers manage all 6 axes and own coupling targets, regime distribution, pipeline centroids, flicker range, trust starvation, coherent relaxation, entropy amplification, progressive strength, gain budgets, axis equilibration, phase energy floor, per-pair gain ceilings, section-0 warmup ramps, and `coherentThresholdScale`.
-
-- **Never hand-tune meta-controller constants.** Modify the controller logic instead.
-- **Never set `coherentThresholdScale` per-profile** — the regime self-balancer owns it.
-- **Never add manual axis floors/caps/thresholds** (e.g. SpecialCaps in `axisEnergyEquilibratorAxisAdjustments.js`). When an axis is suppressed/dominant, diagnose WHY the responsible controller isn't working and fix its logic.
-- **Coupling matrix firewall:** never read `.couplingMatrix` from `systemDynamicsProfiler.getSnapshot()` outside the coupling engine, meta-controllers, profiler, diagnostics, or pipeline plumbing. Modules needing coupling awareness register a bias via `conductorIntelligence` and respond through the controller chain (`local/no-direct-coupling-matrix-read`).
-- **Bias bounds are locked:** 93 registrations validated against `scripts/bias-bounds-manifest.json`. Snapshot after legitimate structural changes: `node scripts/pipeline/validators/check-hypermeta-jurisdiction.js --snapshot-bias-bounds`.
-
-Enforced by `check-hypermeta-jurisdiction.js` (4 phases). Query topology via `metaControllerRegistry.getAll()` / `getById()` / `getByAxis()`.
-
-## Layer Isolation (L1/L2 Polyrhythmic Safety)
-
-Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed between layers unless explicitly per-layer.
-
-- **Per-layer globals** live in `LM.perLayerState`, saved/restored on every `activate()` call. Currently: `crossModulation, lastCrossMod, balOffset, sideBias, lBal, rBal, cBal, cBal2, cBal3, refVar, bassVar, flipBin`.
-- **Conductor recorders** tick L1-only via the registry gate. Only `conductorSignalBridge` runs on L2. Never add beat counters or ring buffers to recorders without accounting for this.
-- **Closure-based per-layer state** uses `byLayer` maps keyed by `LM.activeLayer` (e.g. `stutterTempoFeel`, `crossLayerDynamicEnvelope`, `journeyRhythmCoupler`, `emissionFeedbackListener`).
-- **Adding new mutable state:** ask "is this written per-beat and read by both layers?" If yes, it needs per-layer treatment.
+- **Fail fast.** No silent fallbacks (`|| 0`, `|| []`), no graceful degradation. Every module throws on bad input. Use the project's `validator` over raw `typeof` / `|| X` / ternary fallbacks.
+- **Comments are terse.** No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
+- **No character-spam decoration.** 4+ identical non-word, non-paren chars in a row are banned anywhere — code, comments, docs, generated output. No `====` dividers, `----` separators, `####`+ markdown headings, `||||` table-separator shortcuts, unicode `─`/`═` runs. Markdown table separators must use `| --- |` cells. Per-line opt-out: append the literal token `spam-ok`. Enforced by the `block-character-spam` policy and the `repeated-char-spam` HCI verifier.
 
 ## Hard Rules (Never Violate)
 
+- **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. `setBinaural` runs from `grandFinale` post-loop walk ONLY, never from `processBeat`.
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Never abandon a plan mid-execution.** Finish the current atomic unit before pivoting. If user feedback changes direction, explicitly acknowledge the pivot, state what was left undone, and confirm before switching. Never leave code/tools in a broken intermediate state. Clarifying questions belong BEFORE starting implementation. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed.
 
 ## Working Style
 
+- **User messages via system-reminder:** respond immediately. Do not wait for any running process or tool call to finish first. Drop everything and reply now. Resume prior work after responding, unless the message says to stop.
 - **Context budget:** when the window has headroom, be greedy — use parallel research agents, read full files, investigate deeply. Only economize when window pressure is high or the task is clearly trivial. Default to thoroughness.
 - **Act on feedback or discovered issues immediately and thoroughly.** Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
 - **Two-tier severity in reviews/audits:** findings carry exactly **blocker** or **should-fix** — never "nit" / "nice-to-have" / "could-be-clearer." Self-gate: "would this actually hurt a user or cause a real bug?" If no, drop it. A zero-finding review IS success.
-
-## HyperMeta Mandatory Workflow
-
-All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`, `i/trace`). The proxy middleware owns MCP transport; Claude no longer connects to an MCP server. Full reference: [doc/HME.md](../doc/HME.md).
-
-- **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `output/metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
-- **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The Stop chain does this at turn end automatically (post_hooks stage in the JS evaluator at `tools/HME/proxy/stop_chain/`); do it manually mid-turn.
-- **When pipeline fails:** read pipeline output, fix root cause. `i/hme-read target=<moduleName> mode=before` on the failing file.

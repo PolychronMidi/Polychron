@@ -4,6 +4,15 @@ Generative polyrhythmic composition engine. Two independent rhythmic layers inte
 
 7 feedback loops · 19 stutter variants · 12 CIM coordination dials · 27 ESLint rules
 
+## Two-Mode Codebase
+
+Development happens in two interleaving spaces, treated as synergistic-but-distinct partners:
+
+- **Composition** (`src/`) — the engine described below. Rules: [doc/SRC.md](doc/SRC.md).
+- **HME** (`tools/HME/`) — the cognitive scaffolding around it: proxy middleware that intercepts every Anthropic API call, stop-chain behavioral detectors, a vector-indexed KB, an autonomous evolution loop, and the `i/<tool>` shell wrapper surface. Rules + tool reference: [doc/HME.md](doc/HME.md).
+
+Universal principles (fail-fast, terse comments, no character-spam, hard rules, working style) live in [CLAUDE.md](CLAUDE.md). Mode-specific rules live in `doc/SRC.md` and `doc/HME.md`.
+
 ## Quick Start
 
 ```bash
