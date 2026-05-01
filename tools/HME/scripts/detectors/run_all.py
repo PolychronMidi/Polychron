@@ -44,6 +44,7 @@ DETECTORS = [
     ("exhaust_check", "exhaust_check"),
     ("scope_escape", "scope_escape"),
     ("senior_consult_debt", "senior_consult_debt"),
+    ("ignore_and_trample", "ignore_and_trample"),
 ]
 
 

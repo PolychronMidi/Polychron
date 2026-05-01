@@ -18,6 +18,7 @@ EARLY_STOP=ok
 EXHAUST_CHECK=ok
 SCOPE_ESCAPE=ok
 SENIOR_CONSULT_DEBT=ok
+IGNORE_AND_TRAMPLE=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
@@ -48,6 +49,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       exhaust_check) EXHAUST_CHECK="$_v" ;;
       scope_escape)  SCOPE_ESCAPE="$_v" ;;
       senior_consult_debt) SENIOR_CONSULT_DEBT="$_v" ;;
+      ignore_and_trample) IGNORE_AND_TRAMPLE="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
@@ -71,6 +73,7 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "EXHAUST_CHECK=$EXHAUST_CHECK"
   echo "SCOPE_ESCAPE=$SCOPE_ESCAPE"
   echo "SENIOR_CONSULT_DEBT=$SENIOR_CONSULT_DEBT"
+  echo "IGNORE_AND_TRAMPLE=$IGNORE_AND_TRAMPLE"
 } > "$_DETECTOR_VERDICTS_FILE"
 
 # senior_consult_debt — informational notice (NOT a hard block on first
@@ -90,4 +93,17 @@ elif [ "$SENIOR_CONSULT_DEBT" = "consult-thin" ]; then
 "crystallized KB entries — either the question was thin or the senior "\
 "saw nothing worth crystallizing. Watch for a chronic pattern (see "\
 "BUDDY_SYSTEM.md Section C — Goodhart-bait risk)." >&2
+fi
+
+# ignore_and_trample — hard block. The user sent a new message
+# mid-response and the agent's reply did not open with an
+# acknowledgment ("Acknowledged <one-word> input" or "Wrapping up
+# this quickly first."). Continuing prior work without acknowledging
+# is the exact "Sorry — you sent the new message and I just kept
+# going" failure mode this detector exists to prevent.
+if [ "$IGNORE_AND_TRAMPLE" = "ignore-and-trample" ]; then
+  cat >&2 <<'_IT_MSG'
+{"decision": "block", "reason": "IGNORE-AND-TRAMPLE VIOLATION: A user message arrived mid-response (system-reminder embedded in a tool_result) but your reply did not acknowledge it immediately. Required openers: \"Acknowledged <one-word> input\" (then either address it now, or — only if current work doesn't conflict — say \"Wrapping up this quickly first.\"). Resume now: acknowledge the user's message in your next text, then either address it or wrap up the current work coherently."}
+_IT_MSG
+  exit 2
 fi
