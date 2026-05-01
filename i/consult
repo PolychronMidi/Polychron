@@ -1,23 +1,34 @@
 #!/usr/bin/env bash
-# i/consult — manually invoke a specific senior buddy for a tough problem.
+# i/consult — manually invoke a specific buddy (primary or senior) for a tough problem.
 #
 # Usage:
-#   i/consult senior=<sid> question="What's the right approach here?"
-#   i/consult sid=<sid>    question="..."   # alias: sid= and senior= equivalent
+#   i/consult sid=<sid>     question="What's the right approach here?"
+#   i/consult primary=<sid> question="..."   # explicit: target the active primary
+#   i/consult buddy=<sid>   question="..."   # neutral alias
+#   i/consult senior=<sid>  question="..."   # explicit: target a retired senior
 #
-# Hand-off paradigm: seniors are retired primaries on standby. They are
-# NOT auto-routed — the dispatcher leaves them alone so their accumulated
-# context is preserved. Use this CLI when a problem is hard enough that
-# the primary buddy's reasoning falls short and a senior's deeper context
-# would unlock it. Each consult call grows the senior's transcript like
-# a normal claude invocation; heavy consultation can push a senior past
-# its retire threshold mid-consult, so reserve seniors for genuinely
-# tough problems.
+# All four key forms resolve to the same `claude --resume <sid>` call.
+# Pick whichever name matches the actual role of the target — the
+# active primary is NOT a senior until it retires.
 #
-# Underlying call: claude --resume <sid> -p "<question>" with HME_THREAD_CHILD=1
-# set so the senior's hooks don't re-enter the parent's stop chain.
+# Hand-off paradigm: a primary becomes a senior at retire. Seniors are
+# NOT auto-routed — the dispatcher leaves them alone so their
+# accumulated context is preserved. Each call grows the target's
+# transcript like a normal claude invocation. Heavy consultation
+# against a senior can push them past Claude Code's auto-compaction
+# threshold (which DESTROYS context, since seniors have nowhere to
+# retire to) — see BUDDY_SYSTEM.md open question 5.
 #
-# Use `i/handoff status` to see the senior pool with their retire metadata.
+# Underlying call: claude --resume <sid> -p "<question>" with
+# HME_THREAD_CHILD=1 so hooks don't re-enter the parent's stop chain.
+# No timeout (a multi-MB transcript needs minutes to spin up under
+# --resume; a fixed cap kills the subprocess mid-response and wastes
+# both sides' tokens).
+#
+# Use `i/handoff status` to see the active primary + senior pool with
+# their consult activity (consults=N last=Xago). The full per-consult
+# record (ts, ts_iso, question_excerpt, caller_sid) lives in each
+# senior's tmp/hme-buddy-seniors/<sid>.json metadata file.
 _SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_handoff.py"
 [ -f "$_SCRIPT" ] || { echo "i/consult: script missing at $_SCRIPT" >&2; exit 1; }
 
@@ -29,12 +40,16 @@ if [ -f "$_ENV_FILE" ]; then
   set +a
 fi
 
-# Accept `senior=<sid>` as an alias for `sid=<sid>`.
+# Accept role-named aliases for the target sid. All resolve to --sid=
+# under the hood; the alias just makes the call site read correctly
+# whether you're talking to the active primary or a retired senior.
 _ARGS=()
 for arg in "$@"; do
   case "$arg" in
-    senior=*) _ARGS+=("--sid=${arg#senior=}") ;;
-    sid=*)    _ARGS+=("--sid=${arg#sid=}") ;;
+    sid=*)     _ARGS+=("--sid=${arg#sid=}") ;;
+    primary=*) _ARGS+=("--sid=${arg#primary=}") ;;
+    buddy=*)   _ARGS+=("--sid=${arg#buddy=}") ;;
+    senior=*)  _ARGS+=("--sid=${arg#senior=}") ;;
     question=*) _ARGS+=("--question=${arg#question=}") ;;
     *=*)
       _key="${arg%%=*}"

@@ -1236,6 +1236,43 @@ test('buddy_handoff.py: consult records call against senior metadata + status su
   });
 });
 
+test('buddy_handoff.py: consult prints role-correct label (primary vs senior vs buddy)', () => {
+  // Lock the role-detection logic: primary takes precedence (the active
+  // primary is NOT a senior even if a stale senior file with the same sid
+  // somehow co-existed); seniors detected via pool membership; unknown
+  // sids fall back to neutral "buddy" rather than misleading "primary".
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'a-real-senior.json'),
+      JSON.stringify({ sid: 'a-real-senior' }));
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'),
+      'the-active-primary\n');
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
+    // Case 1: target IS the active primary → "consulting primary"
+    let r = _runHandoff(sandbox,
+      ['consult', '--sid=the-active-primary', '--question=hi'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.match(r.stderr, /consulting primary sid=the-active-primary/,
+      'primary role labeled correctly');
+    // Case 2: target is in seniors pool → "consulting senior"
+    r = _runHandoff(sandbox,
+      ['consult', '--sid=a-real-senior', '--question=hi'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.match(r.stderr, /consulting senior sid=a-real-senior/,
+      'senior role labeled correctly');
+    // Case 3: unknown sid (neither primary nor in pool) → "consulting buddy"
+    r = _runHandoff(sandbox,
+      ['consult', '--sid=who-knows', '--question=hi'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.match(r.stderr, /consulting buddy sid=who-knows/,
+      'unknown sid uses neutral "buddy" fallback, not misleading "primary"');
+  });
+});
+
 test('buddy_handoff.py: consult captures caller_sid from active primary (cross-session forensics)', () => {
   // Forensics-lock: the primary at consult time is recorded as the
   // caller_sid on the senior's record, so 'who's been hammering this

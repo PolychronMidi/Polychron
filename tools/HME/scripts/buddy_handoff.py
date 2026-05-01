@@ -357,10 +357,15 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # Identify the target's role correctly. In this paradigm a buddy
     # might be the active primary (not yet retired) or a senior in the
     # pool — the print should reflect actual state, not assume "senior".
-    role = "senior" if (SENIORS_DIR / f"{args.sid}.json").exists() else "primary"
+    # Unknown sids (neither in pool nor matching primary) get "buddy" as
+    # a neutral fallback rather than misleading "primary".
     primary = _read_primary()
     if primary is not None and primary["sid"] == args.sid:
         role = "primary"
+    elif (SENIORS_DIR / f"{args.sid}.json").exists():
+        role = "senior"
+    else:
+        role = "buddy"
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
     # No timeout: a buddy with a multi-MB transcript needs minutes to
     # spin up under `claude --resume`, and a fixed cap kills the
