@@ -359,7 +359,7 @@ def _format_report(subsystems):
     lines.append(f"  P3 (self-registration):                 not audited "
                  f"(needs full require-graph analysis)")
     lines.append(f"  P4 (single-manager hub):                {per_principle['P4']}")
-    lines.append(f"  P5 (coherent files <={_LOC_WARN} lines):      "
+    lines.append(f"  P5 (coherent files <={_LOC_CRITICAL} lines):      "
                  f"{per_principle['P5']} (oversize files, code only)")
 
     # Data file callout — if any data files are unusually large.
