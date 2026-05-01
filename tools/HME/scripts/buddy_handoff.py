@@ -535,11 +535,15 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # same senior within 1h go to debug only so we don't train the
     # operator to ignore them. mtime on tmp/hme-consult-warn-cooldown/
     # <sid> is the cool-down state (no parsing needed).
+    # Compute ctx once for both the Q9 warn check (senior-only) and the
+    # end-of-consult activity emit (any role) — saves a duplicate
+    # transcript walk and avoids the NameError if the warn branch was
+    # skipped.
     bd_for_warn = _import_dispatcher()
+    ctx_data = bd_for_warn._buddy_context_used(args.sid)
     pre_compaction_floor = 80.0
     cooldown_window_s = 3600
     if role == "senior":
-        ctx_data = bd_for_warn._buddy_context_used(args.sid)
         if ctx_data and ctx_data.get("used_pct", 0) >= pre_compaction_floor:
             cooldown_dir = TMP / "hme-consult-warn-cooldown"
             cooldown_dir.mkdir(parents=True, exist_ok=True)
@@ -606,6 +610,19 @@ def cmd_consult(args: argparse.Namespace) -> int:
             # skipped. Surfaces heavy-consultation patterns in
             # `i/handoff status`.
             _record_consult(args.sid, args.question)
+        # HME integration: emit an activity event regardless of outcome
+        # so the activity bridge can see consultation cadence
+        # (cross-session forensics, rate analytics). Best-effort,
+        # non-fatal — the consult itself already succeeded or failed.
+        # Payload kept lean: target sid, role, exit code, question
+        # excerpt. Heavy data (full Q+A) lives in transcripts.
+        _emit_activity("buddy_consult", {
+            "sid": args.sid, "role": role,
+            "rc": result.returncode,
+            "question_excerpt": (args.question or "")[:60],
+            "ctx_pct_at_call": (ctx_data.get("used_pct")
+                                if isinstance(ctx_data, dict) else None),
+        })
         return result.returncode
     finally:
         try:
