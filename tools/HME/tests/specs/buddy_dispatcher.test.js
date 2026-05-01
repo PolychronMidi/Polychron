@@ -1012,6 +1012,169 @@ test('buddy_init.sh: explicit BUDDY_MODEL_FLOORS list bypasses auto and is honor
   });
 });
 
+// ---- Hand-off paradigm: BUDDY_HANDOFF=1 ----
+
+test('buddy_init.sh: HANDOFF=1 with primary.sid present adopts it (no fresh spawn)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const tmp = path.join(sandbox, 'tmp');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-primary.sid'), 'inherited-sid-123\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-primary.effort_floor'), 'low\n');
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_HANDOFF=1\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '1', BUDDY_HANDOFF: '1',
+      BUDDY_MODEL_FLOORS: 'auto',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    // No fresh claude spawn — legacy sid should mirror primary.
+    const legacySid = fs.readFileSync(path.join(tmp, 'hme-buddy.sid'), 'utf8').trim();
+    assert.strictEqual(legacySid, 'inherited-sid-123',
+      'HANDOFF=1 + primary.sid present: legacy sid mirrors the inherited primary, NOT a fresh spawn');
+    const legacyFloor = fs.readFileSync(path.join(tmp, 'hme-buddy.floor'), 'utf8').trim();
+    assert.strictEqual(legacyFloor, 'easy', 'floor companion mirrors primary');
+  });
+});
+
+test('buddy_init.sh: HANDOFF=1 with no primary.sid spawns fresh + records as inaugural primary', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_HANDOFF=1\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '1', BUDDY_HANDOFF: '1',
+      BUDDY_MODEL_FLOORS: 'auto',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    assert.ok(_waitForFiles(sandbox,
+      ['hme-buddy.sid', 'hme-buddy-primary.sid'], 5000),
+      'fresh spawn must record both legacy and primary sid files');
+    const legacy = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'utf8').trim();
+    const primary = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'utf8').trim();
+    assert.strictEqual(primary, legacy,
+      'inaugural primary.sid must equal the freshly-spawned legacy sid');
+  });
+});
+
+function _runHandoff(sandbox, args, env = {}) {
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  const fullEnv = {
+    ...process.env, ...env, PROJECT_ROOT: sandbox, CLAUDE_PROJECT_DIR: sandbox,
+  };
+  return spawnSync('python3',
+    [path.join(repoRoot, 'tools/HME/scripts/buddy_handoff.py'), ...args],
+    { env: fullEnv, encoding: 'utf8', timeout: 10000 });
+}
+
+test('buddy_handoff.py: status reports primary + ctx % when transcript present', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const sid = 'handoff-primary-sid';
+    fs.writeFileSync(path.join(projDir, `${sid}.jsonl`),
+      JSON.stringify({ type: 'assistant',
+        message: { usage: { input_tokens: 100, cache_creation_input_tokens: 9000, cache_read_input_tokens: 0 } } }) + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), sid + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    const result = _runHandoff(sandbox, ['status'], { HOME: home, HME_BUDDY_CTX_WINDOW: '20000' });
+    assert.strictEqual(result.status, 0, `handoff status failed: ${result.stderr}`);
+    assert.match(result.stdout, /primary: sid=handoff-primary-sid/);
+    assert.match(result.stdout, /\[#####.....\]\s+45\.5%/, 'context bar reflects 9100/20000 = 45.5%');
+  });
+});
+
+test('buddy_handoff.py: retire moves primary to seniors and clears primary pointers', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'about-to-retire\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'about-to-retire\n');
+    const result = _runHandoff(sandbox, ['retire', '--reason=test_retirement']);
+    assert.strictEqual(result.status, 0, `retire failed: ${result.stderr}`);
+    // Primary pointers cleared.
+    assert.ok(!fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid')));
+    assert.ok(!fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy.sid')));
+    // Senior file written.
+    const seniorFile = path.join(sandbox, 'tmp', 'hme-buddy-seniors', 'about-to-retire.json');
+    assert.ok(fs.existsSync(seniorFile), 'senior metadata file must exist');
+    const rec = JSON.parse(fs.readFileSync(seniorFile, 'utf8'));
+    assert.strictEqual(rec.sid, 'about-to-retire');
+    assert.strictEqual(rec.reason, 'test_retirement');
+    // Index appended.
+    const indexFile = path.join(sandbox, 'tmp', 'hme-buddy-seniors', '_index.jsonl');
+    const indexLines = fs.readFileSync(indexFile, 'utf8').trim().split('\n');
+    const lastEntry = JSON.parse(indexLines[indexLines.length - 1]);
+    assert.strictEqual(lastEntry.sid, 'about-to-retire');
+  });
+});
+
+test('buddy_handoff.py: auto_retire_check no-op below threshold', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const sid = 'low-ctx-sid';
+    fs.writeFileSync(path.join(projDir, `${sid}.jsonl`),
+      JSON.stringify({ type: 'assistant',
+        message: { usage: { input_tokens: 100, cache_creation_input_tokens: 1000, cache_read_input_tokens: 0 } } }) + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), sid + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    const result = _runHandoff(sandbox, ['auto_retire_check'],
+      { HOME: home, HME_BUDDY_CTX_WINDOW: '20000', BUDDY_RETIRE_PCT: '90' });
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /no action/);
+    // Primary still present.
+    assert.ok(fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid')));
+  });
+});
+
+test('buddy_handoff.py: auto_retire_check fires above threshold', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const sid = 'over-threshold-sid';
+    fs.writeFileSync(path.join(projDir, `${sid}.jsonl`),
+      JSON.stringify({ type: 'assistant',
+        message: { usage: { input_tokens: 0, cache_creation_input_tokens: 19000, cache_read_input_tokens: 0 } } }) + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), sid + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), sid + '\n');
+    const result = _runHandoff(sandbox, ['auto_retire_check'],
+      { HOME: home, HME_BUDDY_CTX_WINDOW: '20000', BUDDY_RETIRE_PCT: '90' });
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /AUTO-RETIRED/);
+    // Primary must be cleared post-retire.
+    assert.ok(!fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid')));
+    // Senior file written.
+    assert.ok(fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy-seniors', `${sid}.json`)));
+  });
+});
+
+test('buddy_handoff.py: promote --sid sets primary pointers', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runHandoff(sandbox,
+      ['promote', '--sid=manual-promo-sid', '--floor=medium', '--effort=low']);
+    assert.strictEqual(result.status, 0);
+    const primary = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'utf8').trim();
+    const floor = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'utf8').trim();
+    const effort = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'utf8').trim();
+    assert.strictEqual(primary, 'manual-promo-sid');
+    assert.strictEqual(floor, 'medium');
+    assert.strictEqual(effort, 'low');
+  });
+});
+
 test('buddy_init.sh: BUDDY_SYSTEM=0 is a no-op (no sid files, no claude invocation)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# i/consult — manually invoke a specific senior buddy for a tough problem.
+#
+# Usage:
+#   i/consult senior=<sid> question="What's the right approach here?"
+#   i/consult sid=<sid>    question="..."   # alias: sid= and senior= equivalent
+#
+# Hand-off paradigm: seniors are retired primaries on standby. They are
+# NOT auto-routed — the dispatcher leaves them alone so their accumulated
+# context is preserved. Use this CLI when a problem is hard enough that
+# the primary buddy's reasoning falls short and a senior's deeper context
+# would unlock it. Each consult call grows the senior's transcript like
+# a normal claude invocation; heavy consultation can push a senior past
+# its retire threshold mid-consult, so reserve seniors for genuinely
+# tough problems.
+#
+# Underlying call: claude --resume <sid> -p "<question>" with HME_THREAD_CHILD=1
+# set so the senior's hooks don't re-enter the parent's stop chain.
+#
+# Use `i/handoff status` to see the senior pool with their retire metadata.
+_SCRIPT="$(dirname "$0")/../tools/HME/scripts/buddy_handoff.py"
+[ -f "$_SCRIPT" ] || { echo "i/consult: script missing at $_SCRIPT" >&2; exit 1; }
+
+_ENV_FILE="$(dirname "$0")/../.env"
+if [ -f "$_ENV_FILE" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$_ENV_FILE"
+  set +a
+fi
+
+# Accept `senior=<sid>` as an alias for `sid=<sid>`.
+_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    senior=*) _ARGS+=("--sid=${arg#senior=}") ;;
+    sid=*)    _ARGS+=("--sid=${arg#sid=}") ;;
+    question=*) _ARGS+=("--question=${arg#question=}") ;;
+    *=*)
+      _key="${arg%%=*}"
+      _val="${arg#*=}"
+      _ARGS+=("--${_key//_/-}=${_val}")
+      ;;
+    *) _ARGS+=("$arg") ;;
+  esac
+done
+exec python3 "$_SCRIPT" consult "${_ARGS[@]}"

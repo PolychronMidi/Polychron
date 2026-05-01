@@ -6,6 +6,77 @@
 > Claude Code session. Context accumulates across calls; specialization
 > emerges from accumulated commitments.
 
+## Hand-off paradigm (BUDDY_HANDOFF=1)
+
+A precision-control variant of the buddy system: rather than spawning N
+fresh buddies fanned out by floor, the system tracks ONE active primary
+buddy that's inherited across sessions, and a senior pool of retired
+primaries on standby for tough problems.
+
+**Lifecycle:**
+
+1. **Bootstrap** — at SessionStart, `buddy_init.sh` reads
+   `tmp/hme-buddy-primary.sid`. If present, that sid is the buddy
+   (no fresh `claude -p` spawn); the legacy `tmp/hme-buddy.sid` pointer
+   mirrors it for back-compat. If absent, a fresh primary is spawned and
+   its sid recorded as the inaugural primary.
+2. **Use** — the primary serves all reasoning calls normally; its
+   transcript grows like any persistent buddy.
+3. **Auto-retire** — when the primary's context % crosses
+   `BUDDY_RETIRE_PCT` (default 90), `i/handoff auto_retire_check` (or a
+   manual `i/handoff retire`) moves it to
+   `tmp/hme-buddy-seniors/<sid>.json` with retire metadata
+   (`retired_at`, `context_at_retire`, `reason`). The primary pointers
+   are cleared so the next SessionStart spawns a fresh primary.
+4. **Consult** — seniors are NOT auto-routed; their accumulated context
+   is preserved. Use `i/consult senior=<sid> question="..."` to invoke
+   a specific senior manually for a tough problem. Each consult call
+   grows the senior's transcript like a normal claude invocation.
+
+**Why this beats multi-buddy fanout for solo workflows:**
+
+- Multi-buddy spawns N fresh sessions per HME session, none with deep
+  context until they accumulate.
+- Hand-off carries the prior session's depth forward as the next
+  session's buddy — Day-N senior is bootstrapped with Day-(N-1) wisdom.
+- Auto-compaction is avoided: a senior at 90% retires before
+  compaction would wipe its context, preserving the accumulated state
+  in immutable transcript form for later consult.
+
+**CLI:**
+
+```
+i/handoff status                                      # primary + seniors + ctx %
+i/handoff retire [reason="..."]                      # promote primary -> senior
+i/handoff promote sid=<sid> [floor=easy] [effort=low] # designate primary
+i/handoff auto_retire_check                           # check threshold, retire if over
+i/consult senior=<sid> question="..."                 # manual senior invocation
+```
+
+**Bootstrap data flow (file map):**
+
+```
+tmp/hme-buddy-primary.sid          ← current primary's session id
+tmp/hme-buddy-primary.floor        ← model floor (default: easy = dynamic)
+tmp/hme-buddy-primary.effort_floor ← effort floor (default: low = dynamic)
+tmp/hme-buddy.sid                  ← legacy pointer; mirrors primary.sid
+tmp/hme-buddy-seniors/<sid>.json   ← per-senior retire metadata
+tmp/hme-buddy-seniors/_index.jsonl ← append-only retirement log
+tmp/hme-buddy-handoff-log.json     ← optional snapshot from `status --json`
+```
+
+**`.env` knobs:**
+
+```
+BUDDY_SYSTEM=1       # base toggle
+BUDDY_HANDOFF=1      # enable hand-off mode (forces BUDDY_COUNT=1)
+BUDDY_RETIRE_PCT=90  # context % threshold for auto-retirement
+```
+
+When `BUDDY_HANDOFF=1`, `BUDDY_COUNT>1` is silently coerced to 1
+(multi-buddy fanout and hand-off are mutually exclusive). Set
+`BUDDY_HANDOFF=0` to revert to the legacy multi-buddy floor model.
+
 This document captures what the buddy and the prompt-engineering
 experiments produced across a 145-iteration session — not as a static
 record, but as the living calibration surface the system evolves

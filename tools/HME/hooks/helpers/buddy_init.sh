@@ -31,6 +31,17 @@ fi
 BUDDY_SYSTEM="${BUDDY_SYSTEM:-1}"
 [ "$BUDDY_SYSTEM" = "0" ] && exit 0
 
+# Hand-off mode flag — resolved early; the short-circuit block runs
+# AFTER BUDDY_COUNT and _FLOORS are populated below (so it has access
+# to those values when forcing count=1).
+if [ -z "${BUDDY_HANDOFF:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
+  # `|| true` so pipefail doesn't abort when the .env lacks BUDDY_HANDOFF=
+  # (grep returns 1 on no-match). Same pattern any new env-fallback needs.
+  _envline=$(grep -E '^BUDDY_HANDOFF=' "$_REPO_ROOT/.env" 2>/dev/null | head -1 || true)
+  [ -n "$_envline" ] && BUDDY_HANDOFF="${_envline#BUDDY_HANDOFF=}"
+fi
+BUDDY_HANDOFF="${BUDDY_HANDOFF:-0}"
+
 # BUDDY_COUNT defaults to 1 (back-compat). Read from env or .env.
 if [ -z "${BUDDY_COUNT:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
   _envline=$(grep -E '^BUDDY_COUNT=' "$_REPO_ROOT/.env" 2>/dev/null | head -1)
@@ -83,6 +94,45 @@ fi
 
 mkdir -p "$_REPO_ROOT/tmp"
 
+# Hand-off paradigm: when BUDDY_HANDOFF=1 and tmp/hme-buddy-primary.sid
+# carries a sid, that session IS the buddy — no fresh `claude -p` spawn.
+# Bootstrap a back-compat tmp/hme-buddy.sid pointer so legacy consumers
+# see the primary. Companion .floor / .effort_floor files are preserved
+# from the primary's metadata, defaulting to easy / low when absent.
+if [ "$BUDDY_HANDOFF" = "1" ]; then
+  # Hand-off paradigm fundamentally has ONE primary at a time.
+  # Multi-buddy fanout (BUDDY_COUNT>1) is mutually exclusive — force
+  # count=1 so a fall-through fresh spawn produces one inaugural
+  # primary, not N fresh buddies.
+  if [ "$BUDDY_COUNT" -gt 1 ]; then
+    BUDDY_COUNT=1
+    _FLOORS=("${_FLOORS[0]:-easy}")
+  fi
+  _PRIMARY_FILE="$_REPO_ROOT/tmp/hme-buddy-primary.sid"
+  if [ -f "$_PRIMARY_FILE" ] && [ -s "$_PRIMARY_FILE" ]; then
+    _PRIMARY_SID=$(head -1 "$_PRIMARY_FILE" | tr -d '[:space:]')
+    if [ -n "$_PRIMARY_SID" ]; then
+      printf '%s\n' "$_PRIMARY_SID" > "$_REPO_ROOT/tmp/hme-buddy.sid"
+      _PRIMARY_FLOOR="easy"
+      _PRIMARY_EFFORT="low"
+      [ -f "${_PRIMARY_FILE%.sid}.floor" ] && \
+        _PRIMARY_FLOOR=$(head -1 "${_PRIMARY_FILE%.sid}.floor" | tr -d '[:space:]')
+      [ -f "${_PRIMARY_FILE%.sid}.effort_floor" ] && \
+        _PRIMARY_EFFORT=$(head -1 "${_PRIMARY_FILE%.sid}.effort_floor" | tr -d '[:space:]')
+      printf '%s\n' "$_PRIMARY_FLOOR" > "$_REPO_ROOT/tmp/hme-buddy.floor"
+      printf '%s\n' "$_PRIMARY_EFFORT" > "$_REPO_ROOT/tmp/hme-buddy.effort_floor"
+      if [ -x "$_REPO_ROOT/tools/HME/activity/emit.py" ]; then
+        PROJECT_ROOT="$_REPO_ROOT" python3 "$_REPO_ROOT/tools/HME/activity/emit.py" \
+          --event=buddy_handoff_primary --sid="$_PRIMARY_SID" \
+          --floor="$_PRIMARY_FLOOR" >/dev/null 2>&1 || true
+      fi
+      exit 0
+    fi
+  fi
+  # No primary recorded yet — fall through to legacy spawn path. The
+  # _spawn_buddy helper records the spawned sid as the inaugural primary.
+fi
+
 # Spawn one buddy per slot. SID filename:
 #   N=1: tmp/hme-buddy.sid (back-compat with single-buddy code paths)
 #   N>1: tmp/hme-buddy-1.sid, tmp/hme-buddy-2.sid, ...
@@ -125,6 +175,13 @@ except Exception:
       printf '%s\n' "$_sid" > "$sid_file"
       # Companion file: per-buddy floor (used by dispatcher for routing).
       printf '%s\n' "$floor" > "${sid_file%.sid}.floor"
+      # Hand-off bootstrap: when HANDOFF=1 and slot 1 spawns fresh
+      # (because primary.sid was missing), record this fresh sid as the
+      # inaugural primary so the next session inherits it as its buddy.
+      if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "$slot" = "1" ]; then
+        printf '%s\n' "$_sid" > "$_REPO_ROOT/tmp/hme-buddy-primary.sid"
+        printf '%s\n' "$floor" > "$_REPO_ROOT/tmp/hme-buddy-primary.floor"
+      fi
       if [ -x "$_REPO_ROOT/tools/HME/activity/emit.py" ]; then
         PROJECT_ROOT="$_REPO_ROOT" python3 "$_REPO_ROOT/tools/HME/activity/emit.py" \
           --event=buddy_init --sid="$_sid" --slot="$slot" --floor="$floor" >/dev/null 2>&1 || true

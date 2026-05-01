@@ -1518,6 +1518,30 @@ def cmd_status(args: argparse.Namespace) -> int:
             })
     elif _BUDDY_SYSTEM_FLAG == "1":
         print("buddy sessions: none yet (sid files not written; init may still be in progress)")
+
+    # Hand-off paradigm: if BUDDY_HANDOFF=1, surface the senior pool so
+    # the user has a single place to see retired buddies + their ctx_at_retire.
+    # Detailed metadata (reason, retired_at, threshold) lives in
+    # `i/handoff status`; this is a brief breadcrumb.
+    if os.environ.get("BUDDY_HANDOFF", "0") == "1":
+        seniors_dir = PROJECT_ROOT / "tmp" / "hme-buddy-seniors"
+        if seniors_dir.exists():
+            senior_files = sorted(p for p in seniors_dir.glob("*.json")
+                                  if not p.name.startswith("_"))
+            if senior_files:
+                print(f"seniors (hand-off): {len(senior_files)} retired "
+                      f"(see `i/handoff status` for metadata)")
+                for f in senior_files:
+                    try:
+                        rec = json.loads(f.read_text())
+                        c = rec.get("context_at_retire") or {}
+                        tk = c.get("tokens", 0) if isinstance(c, dict) else 0
+                        ts = rec.get("retired_at_iso", "?")
+                        sid_short = (rec.get("sid", "") or "")[:16]
+                        print(f"  senior sid={sid_short}... retired={ts} "
+                              f"ctx_at_retire={tk:,}")
+                    except (OSError, ValueError):
+                        continue
     # `--json` (bare) -> True; `--json=false` / `--json=0` -> falsy.
     json_flag = getattr(args, "json", False)
     if isinstance(json_flag, str):
