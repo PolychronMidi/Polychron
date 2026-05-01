@@ -17,6 +17,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
 4. **Permissive on missing state.** If the state file is missing or corrupt, the machine treats the agent as graduated (blocks relax). Losing state never gets the agent stuck.
 5. **Composition is the carrier wave; HME self-monitoring rides along.** Every walkthrough targets a composition evolution. While editing, the agent is primed to observe HME itself and report findings at `learn()` time.
 6. **Hooks enforce what the chain decider cannot.** Hooks handle `Edit`, `Bash`, `Write` — tools whose handlers live outside the HME MCP server. For HME tools, the chain decider is the authority.
+7. **Buddy continuity is orthogonal.** SessionStart's `buddy_init.sh` runs in parallel with onboarding init; when `BUDDY_HANDOFF=1` it adopts the inherited primary from `tmp/hme-buddy-primary.sid` (no fresh spawn) and the senior pool from `tmp/hme-buddy-seniors/`. Onboarding state and buddy state never read each other — graduation is per-session, the buddy lifecycle spans sessions. Full spec: [doc/BUDDY_SYSTEM.md](./BUDDY_SYSTEM.md) (Hand-off paradigm).
 
 ## State machine
 

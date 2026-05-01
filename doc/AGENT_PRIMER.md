@@ -8,6 +8,8 @@ Self-evolving algorithmic composition. A ~500-file JavaScript engine produces MI
 - This primer — the **behavior**. What you do in your first session, in what order, with what redirects. Injected once per session by `pretooluse_hme_primer.sh` on your first HME tool call.
 - [HME.md](./HME.md) — the **reference**. Full HME narrative, tool surface, Phase 1-6 subsystem detail. Read on demand when the primer points you at something specific.
 
+**Buddy continuity (`BUDDY_HANDOFF=1`).** When this paradigm is on, your session may inherit a senior buddy from the prior session via `tmp/hme-buddy-primary.sid`. The legacy `tmp/hme-buddy.sid` pointer is auto-mirrored to it at SessionStart, so reasoning calls (i/review reflection, OVERDRIVE cascades, suggest_evolution) flow through that senior's accumulated context instead of a cold-spawn. Run `i/handoff status` to see the current primary + retired seniors with their context bars; reserve `i/consult senior=<sid> question="..."` for problems the primary can't crack. Full spec: [doc/BUDDY_SYSTEM.md](./BUDDY_SYSTEM.md) (Hand-off paradigm section).
+
 If you see a rule claim here that contradicts CLAUDE.md, CLAUDE.md wins — this primer should not be restating rules, only describing behavior.
 
 ## How the walkthrough works
