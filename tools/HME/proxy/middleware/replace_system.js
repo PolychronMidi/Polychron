@@ -74,6 +74,17 @@ function _loadCanonical() {
   }
 }
 
+// Substitute ${VAR} placeholders from the canonical text. Currently expands
+// PROJECT_ROOT and CLAUDE_PROJECT_DIR. Lets the canonical file stay
+// host-agnostic (no hardcoded /home/jah/...) while the agent still receives
+// the fully-resolved working-directory string in its context.
+function _expandPlaceholders(text) {
+  return text.replace(/\$\{(PROJECT_ROOT|CLAUDE_PROJECT_DIR)\}/g, (_, name) => {
+    const v = process.env[name];
+    return (typeof v === 'string' && v.length > 0) ? v : `\${${name}}`;
+  });
+}
+
 module.exports = {
   name: 'replace_system',
   onRequest({ payload, ctx }) {
@@ -81,7 +92,8 @@ module.exports = {
     if (!payload) return;
     const canonical = _loadCanonical();
     if (canonical === null) return; // file missing/empty → no-op
-    payload.system = [{ type: 'text', text: canonical }];
+    const expanded = _expandPlaceholders(canonical);
+    payload.system = [{ type: 'text', text: expanded }];
     ctx.markDirty();
   },
 };
