@@ -1,0 +1,418 @@
+"""Code-audit verifiers — extracted cluster. Imports re-export back to
+the parent code_audits.py for stable __init__.py imports."""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+from ._base import (
+    Verifier, VerdictResult, _result, _run_subprocess,
+    PASS, WARN, FAIL, SKIP, ERROR,
+    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+)
+
+
+# Verifier classes (extracted from code_audits.py).
+
+class CorePrinciplesAuditVerifier(Verifier):
+    """Delegates to scripts/audit-core-principles.py, which surveys src/
+    against the five core principles declared in CLAUDE.md. FAILs only on
+    CRITICAL-level violations — files exceeding 400 LOC or subsystems with
+    ≥1 .js file but no index.js. WARN-level findings (files over the 200-
+    line soft target but under 400) are informational; the 200-line target
+    is aspirational and most of the codebase brushes it occasionally."""
+    name = "core-principles-audit"
+    category = "code"
+    subtag = "structural-integrity"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        script = os.path.join(_PROJECT, "scripts", "audit-core-principles.py")
+        if not os.path.isfile(script):
+            return _result(SKIP, 1.0, "audit script not found", [script])
+        rc, out, err = _run_subprocess([script, "--json"])
+        try:
+            payload = json.loads(out)
+        except Exception:
+            return _result(ERROR, 0.0, "could not parse audit output", [err[:500]])
+        crit = payload.get("critical_count", 0)
+        warn = payload.get("warn_count", 0)
+        p1 = payload.get("p1_count", 0)
+        failfast = payload.get("failfast_hits", 0)
+        detail = [f"{warn} WARN-level oversize file(s)",
+                  f"{failfast} P2 indicator hit(s)"]
+        for s in payload.get("subsystems", []):
+            for rel, n in s.get("oversize_critical", []):
+                detail.append(f"CRITICAL oversize: {rel} ({n} LOC)")
+            for item in s["violations"]["P1"]:
+                detail.append(f"P1 ({s['name']}): {item}")
+        if crit == 0 and p1 == 0:
+            return _result(PASS, 1.0,
+                           f"no critical violations ({warn} warn-level, {failfast} P2 indicators)",
+                           detail[:20])
+        # Each critical violation drops the score by 0.25; floor at 0.
+        score = max(0.0, 1.0 - 0.25 * (crit + p1))
+        return _result(FAIL, score,
+                       f"{crit} CRITICAL oversize file(s), {p1} P1 violation(s)",
+                       detail[:20])
+
+
+
+
+class AntiForkHeuristicListVerifier(Verifier):
+    """Heuristic lists tuned for false-positive bias (LIFESAVER severity
+    words, fast-path-clean signals, fabrication-check phrases, exhaust_check
+    deferral phrases) lose their failure-mode coverage if silently
+    loosened. Authors mark such lists in-place with a paired comment:
+
+        # anti-fork-begin: <name> min=N
+        ...list entries (one per non-empty/non-comment line)...
+        # anti-fork-end: <name>
+
+    On every run this verifier walks tools/HME/, scripts/, src/ for those
+    markers, counts non-empty/non-comment lines between each pair, and
+    FAILs if any block has fewer entries than its declared minimum.
+
+    To intentionally shrink a list, lower min=N in the same edit and add
+    one line to doc/_anti_fork_log.md citing the rationale (incident link
+    or spec). Forces the change to be deliberate rather than incidental."""
+    name = "anti-fork-heuristic-lists"
+    category = "code"
+    subtag = "regression-prevention"
+    weight = 2.0
+
+    _BEGIN_RE = re.compile(
+        r"^\s*(?:#|//)\s*anti-fork-begin:\s*([A-Za-z0-9_-]+)\s+min=(\d+)\b")
+    _END_RE = re.compile(
+        r"^\s*(?:#|//)\s*anti-fork-end:\s*([A-Za-z0-9_-]+)\b")
+
+    def run(self) -> VerdictResult:
+        roots = [
+            os.path.join(_PROJECT, "tools", "HME"),
+            os.path.join(_PROJECT, "scripts"),
+            os.path.join(_PROJECT, "src"),
+        ]
+        skip_dirs = {"node_modules", "__pycache__", ".git", "output", "tmp", "log"}
+        exts = (".py", ".js", ".mjs", ".cjs", ".sh", ".bash", ".ts")
+        blocks_seen = 0
+        violations = []
+        for root in roots:
+            if not os.path.isdir(root):
+                continue
+            for r, dirs, files in os.walk(root):
+                dirs[:] = [d for d in dirs if d not in skip_dirs]
+                for f in files:
+                    if not f.endswith(exts):
+                        continue
+                    path = os.path.join(r, f)
+                    try:
+                        with open(path, encoding="utf-8", errors="ignore") as fp:
+                            lines = fp.readlines()
+                    except OSError:
+                        continue
+                    open_blocks = {}  # name → (min, start_line, count)
+                    for idx, line in enumerate(lines, start=1):
+                        m_begin = self._BEGIN_RE.match(line)
+                        m_end = self._END_RE.match(line)
+                        if m_begin:
+                            name, min_str = m_begin.group(1), m_begin.group(2)
+                            open_blocks[name] = [int(min_str), idx, 0]
+                            continue
+                        if m_end:
+                            name = m_end.group(1)
+                            spec = open_blocks.pop(name, None)
+                            if spec is None:
+                                violations.append(
+                                    f"{os.path.relpath(path, _PROJECT)}:{idx}: "
+                                    f"anti-fork-end '{name}' without matching begin"
+                                )
+                                continue
+                            min_n, start, count = spec
+                            blocks_seen += 1
+                            if count < min_n:
+                                violations.append(
+                                    f"{os.path.relpath(path, _PROJECT)}:{start}-{idx}: "
+                                    f"anti-fork '{name}' has {count} entries (declared min={min_n}); "
+                                    f"if intentional, edit min= in same diff + log rationale"
+                                )
+                            continue
+                        # Inside any open block: count if non-empty + not comment-only
+                        for spec in open_blocks.values():
+                            stripped = line.strip()
+                            if not stripped:
+                                continue
+                            if stripped.startswith("#") or stripped.startswith("//"):
+                                continue
+                            spec[2] += 1
+                    # Unclosed blocks at EOF
+                    for name, (_min, start, _ct) in open_blocks.items():
+                        violations.append(
+                            f"{os.path.relpath(path, _PROJECT)}:{start}: "
+                            f"anti-fork-begin '{name}' missing matching end"
+                        )
+        if not violations:
+            if blocks_seen == 0:
+                return _result(SKIP, 1.0,
+                               "no anti-fork-marked lists found "
+                               "(annotate conservative lists with # anti-fork-begin/-end)")
+            return _result(PASS, 1.0,
+                           f"{blocks_seen} anti-fork-marked list(s) at or above declared min")
+        score = max(0.0, 1.0 - len(violations) * 0.25)
+        return _result(FAIL, score,
+                       f"{len(violations)} anti-fork violation(s)",
+                       violations[:10])
+
+
+
+
+class HardcodedToolInvocationVerifier(Verifier):
+    """Strings like `i/hme-admin action=warm`, `i/status mode=hci-diff`,
+    `i/evolve focus=design`, `i/review mode=forget`, `i/why mode=block`
+    in user-facing output paths (selftest hints, error messages, primer
+    examples, narrative output) should render through `tool_invocations.py`
+    helpers — `_action_form('warm')` or `_i_form('status', primer=True)`
+    instead of the literal. Otherwise a rename of any wrapper requires
+    hand-grepping every occurrence.
+
+    This verifier flags hardcoded `i/<wrapper> <key>=<value>` strings
+    that match the mode/action/focus invocation shape. Per-line opt-out:
+    append `# tool-form-ok` (use only when the helper genuinely doesn't
+    fit, e.g. test fixtures asserting on the literal output, or static
+    docstrings where f-strings can't go)."""
+    name = "hardcoded-tool-invocation"
+    category = "code"
+    subtag = "drift-detection"
+    weight = 1.5
+
+    # All wrapper invocation shapes that have canonical helper coverage.
+    # Each entry is `i/<wrapper> <key>=<value>`. Bare `i/<wrapper>` calls
+    # without parameters aren't flagged — those rarely drift on rename.
+    _RE = re.compile(
+        r'["\'`]i/(?:hme-admin|status|evolve|review|why|learn|trace|hme-read)'
+        r'\s+(?:action|mode|focus|target|name|query)=[a-zA-Z_][\w-]*'
+    )
+    _SKIP_FILES = {
+        # Helper itself defines the canonical mapping
+        "tool_invocations.py",
+        # Test fixtures legitimately assert on literal output
+    }
+
+    def run(self) -> VerdictResult:
+        roots = [os.path.join(_PROJECT, "tools", "HME", "service")]
+        violations = []
+        scanned = 0
+        for root in roots:
+            if not os.path.isdir(root):
+                continue
+            for r, _d, files in os.walk(root):
+                if "__pycache__" in r or "/tests/" in r:
+                    continue
+                for f in files:
+                    if not f.endswith(".py") or f in self._SKIP_FILES:
+                        continue
+                    scanned += 1
+                    p = os.path.join(r, f)
+                    try:
+                        with open(p, encoding="utf-8") as fp:
+                            file_lines = fp.readlines()
+                        for i, line in enumerate(file_lines, start=1):
+                            # Opt-out: `tool-form-ok` on this line OR within
+                            # the previous 3 lines (covers `parts.append(\n
+                            # multi-line-string\n)` shapes where the comment
+                            # naturally lands above the call).
+                            opt_out_window = "".join(
+                                file_lines[max(0, i - 4): i]
+                            )
+                            if "tool-form-ok" in opt_out_window:
+                                continue
+                            stripped = line.lstrip()
+                            # Skip Python and JS comments
+                            if stripped.startswith("#") or stripped.startswith("//"):
+                                continue
+                            m = self._RE.search(line)
+                            if m:
+                                snippet = m.group(0).strip("\"'`")
+                                violations.append(
+                                    f"{os.path.relpath(p, _PROJECT)}:{i}: "
+                                    f"hardcoded `{snippet}` "
+                                    f"(use `_action_form()` or `_i_form()` from "
+                                    f"tool_invocations; opt-out: append `# tool-form-ok`)"
+                                )
+                    except OSError:
+                        continue
+        if not violations:
+            return _result(PASS, 1.0,
+                           f"{scanned} file(s) scanned; no hardcoded tool invocations")
+        score = max(0.0, 1.0 - len(violations) * 0.15)
+        return _result(FAIL, score,
+                       f"{len(violations)} hardcoded tool-invocation(s)",
+                       violations[:10])
+
+
+
+
+class AgentLoopQualityVerifier(Verifier):
+    """Horizon IV expansion — agent loop quality wired into HCI.
+
+    Reads the activity log over the last 1h window and scores agent loop
+    quality on three axes:
+      - inference cadence: turns observed (≥1)
+      - hook-intervention rate: brief-related interventions per turn
+        (presence of ≥1 indicates the briefing chain is working)
+      - error rate: bash_error_surfaced / inference_call (lower is better)
+
+    FAILs only on hard pathologies (zero turns, error rate above 25%);
+    PASS otherwise. The seed (`i/status mode=agent-loop`) is the human
+    view; this verifier is the same data wired into HCI so degraded
+    loops degrade the aggregate score automatically."""
+    name = "agent-loop-quality"
+    category = "code"
+    subtag = "freshness"
+    weight = 1.0
+
+    def run(self) -> VerdictResult:
+        import time as _time
+        path = os.path.join(_PROJECT, "output", "metrics", "hme-activity.jsonl")
+        if not os.path.isfile(path):
+            return _result(SKIP, 1.0, "no activity log yet")
+        try:
+            with open(path) as f:
+                lines = f.readlines()[-3000:]
+        except OSError as e:
+            return _result(ERROR, 0.0, f"read failed: {e}")
+
+        cutoff = _time.time() - 3600
+        events = []
+        for ln in lines:
+            try:
+                e = json.loads(ln)
+            except ValueError:
+                continue
+            if e.get("ts", 0) >= cutoff:
+                events.append(e)
+        if not events:
+            return _result(SKIP, 1.0, "no activity in last hour")
+
+        turns = sum(1 for e in events if e.get("event") == "turn_complete")
+        infs = sum(1 for e in events if e.get("event") == "inference_call")
+        bash_errs = sum(1 for e in events if e.get("event") == "bash_error_surfaced")
+        briefs = sum(1 for e in events
+                     if e.get("event") in ("brief_recorded", "auto_brief_injected"))
+
+        if turns == 0:
+            self._write_tier_marker("YELLOW", "no turn_complete in last hour")
+            return _result(WARN, 0.5,
+                           f"no turn_complete events in last hour "
+                           f"({len(events)} events but no turn boundaries)")
+
+        err_rate = bash_errs / infs if infs > 0 else 0.0
+        if err_rate > 0.25:
+            self._write_tier_marker("RED", f"err_rate={err_rate*100:.1f}%")
+            return _result(FAIL, max(0.0, 1.0 - err_rate),
+                           f"high error rate: {err_rate*100:.1f}% "
+                           f"({bash_errs} bash errors / {infs} inferences)")
+
+        # Horizon IV maturity — adaptive priming hook. Write a tier
+        # marker the proxy/hooks can read to scale context-injection
+        # aggressiveness. GREEN = healthy, reduce injection; YELLOW =
+        # turns thin, default injection; RED = error-rate elevated,
+        # increase injection. Advisory only — consumer wiring lives
+        # in proxy middleware (any future reader can opt to scale
+        # behavior on this signal without touching the verifier).
+        self._write_tier_marker("GREEN", "healthy loop")
+        return _result(PASS, 1.0,
+                       f"healthy: {turns} turns, {infs} inferences, "
+                       f"{briefs} briefs, {bash_errs} errors "
+                       f"(err_rate={err_rate*100:.1f}%)")
+
+    def _write_tier_marker(self, tier: str, reason: str) -> None:
+        """Persist a GREEN/YELLOW/RED tier marker for downstream
+        priming-aggressiveness consumers (Horizon IV maturity)."""
+        try:
+            import json as _json
+            import time as _time
+            marker_path = os.path.join(_PROJECT, "tmp", "hme-agent-loop-tier.json")
+            tmp_path = marker_path + ".tmp"
+            with open(tmp_path, "w") as f:
+                _json.dump({
+                    "ts": _time.time(),
+                    "tier": tier,
+                    "reason": reason,
+                    "advisory": "consumer wiring optional; no behavior change unless read",
+                }, f)
+            os.replace(tmp_path, marker_path)
+        except OSError:
+            # Marker write is advisory; absence shouldn't fail the
+            # verifier itself.
+            pass
+
+
+
+
+class RepeatedCharSpamVerifier(Verifier):
+    """No character may repeat 4+ times in a row in tracked text files —
+    targets divider/box-decoration spam (runs of dashes, equals, hashes,
+    pipes, tildes, unicode box-drawing). Word characters, whitespace, and
+    paren/bracket/brace pairs are exempt so identifiers, indentation, and
+    stacked code structure don't trip the rule. Per-line opt-out via the
+    literal token `spam-ok`.
+
+    Failing the verifier is intentional: the rule is meant to BLOCK these
+    patterns. New violations should be removed — a markdown heading is
+    `## Section`, not the same with a divider tail; a code separator is a
+    single blank line, not a comment of repeated symbols."""
+    name = "repeated-char-spam"
+    category = "code"
+    subtag = "regression-prevention"
+    weight = 2.0
+
+    def run(self) -> VerdictResult:
+        violations = []
+        for root, dirs, files in os.walk(_PROJECT):
+            dirs[:] = [
+                d for d in dirs
+                if d not in _SPAM_SKIP_DIRS and not d.startswith(".")
+            ]
+            for f in files:
+                if not f.endswith(_SPAM_EXTS):
+                    continue
+                abs_path = os.path.join(root, f)
+                rel = os.path.relpath(abs_path, _PROJECT)
+                if rel in _SPAM_SKIP_FILES:
+                    continue
+                try:
+                    with open(abs_path, encoding="utf-8") as fp:
+                        for i, line in enumerate(fp, 1):
+                            if _SPAM_ALLOW in line:
+                                continue
+                            m = _SPAM_RE.search(line)
+                            if m:
+                                ch = m.group(1)
+                                run_len = len(m.group(0))
+                                violations.append(
+                                    f"{rel}:{i}  {ch!r}×{run_len}"
+                                )
+                                if len(violations) >= 200:
+                                    break
+                except (UnicodeDecodeError, OSError):
+                    pass
+                if len(violations) >= 200:
+                    break
+            if len(violations) >= 200:
+                break
+        if not violations:
+            return _result(PASS, 1.0, "no character-spam runs detected")
+        # Linear penalty: 50 violations halves the score; 100 zeros it.
+        score = max(0.0, 1.0 - len(violations) / 100.0)
+        suffix = " (showing first 200)" if len(violations) >= 200 else ""
+        return _result(
+            FAIL, score,
+            f"{len(violations)} character-spam run(s){suffix}",
+            violations[:30],
+        )
+
+
