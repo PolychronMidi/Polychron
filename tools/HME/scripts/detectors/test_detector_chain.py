@@ -420,6 +420,14 @@ _CASES = [
          _assistant_tool_use("Bash", {
              "command": "i/consult primary=abc123 question=\"is 85 right here?\"",
          }),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_consult_quality",
+                 "content": "no, keep at 90 — 10% margin needed.\n# crystallized: [decision] retire-threshold-rationale\n",
+             }]},
+         },
          _assistant_tool_use("Edit", {
              "file_path": "tools/HME/scripts/buddy_handoff.py",
              "old_string": "DEFAULT_RETIRE_PCT = 90.0",
@@ -491,9 +499,67 @@ _CASES = [
          _assistant_tool_use("Bash", {
              "command": "i/consult senior=abc question=\"is this right?\"",
          }),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_alias_quality",
+                 "content": "ship it — # crystallized: [pattern] something useful\n",
+             }]},
+         },
          _assistant_tool_use("Edit", {
              "file_path": "tools/HME/scripts/buddy_handoff.py",
              "old_string": "x", "new_string": "y",
+         }),
+         _assistant_msg("Done."),
+     ],
+     "ok"),
+
+    # consult-thin: consult invoked AND design-space edited, but the
+    # consult produced zero `# crystallized:` markers in its tool_result
+    # — surfaces the satisfy-the-detector-cheaply path the quality
+    # proxy was added to catch (Section C in 0e7fbf4d's review).
+    ("senior_consult_debt", "consult-without-crystallization-is-thin",
+     [
+         _user_msg("update the design"),
+         _assistant_tool_use("Bash", {
+             "command": "i/consult primary=abc question=\"good?\"",
+         }),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_thin_consult",
+                 "content": "fine, ship it",
+             }]},
+         },
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/buddy_handoff.py",
+             "old_string": "a", "new_string": "b",
+         }),
+         _assistant_msg("Done."),
+     ],
+     "consult-thin"),
+
+    # Consult that DID produce crystallized blocks lands as ok — the
+    # quality proxy is satisfied even on a design-space edit turn.
+    ("senior_consult_debt", "consult-with-crystallization-is-ok",
+     [
+         _user_msg("review the design"),
+         _assistant_tool_use("Bash", {
+             "command": "i/consult primary=abc question=\"deep review please\"",
+         }),
+         {
+             "type": "user",
+             "message": {"role": "user", "content": [{
+                 "type": "tool_result",
+                 "tool_use_id": "tu_quality_consult",
+                 "content": "... # crystallized: [pattern] foo\n# crystallized: [decision] bar\n",
+             }]},
+         },
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/buddy_handoff.py",
+             "old_string": "a", "new_string": "b",
          }),
          _assistant_msg("Done."),
      ],

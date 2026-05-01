@@ -85,4 +85,9 @@ if [ "$SENIOR_CONSULT_DEBT" = "consult-debt" ]; then
 "consulting the buddy. Checkpoint via i/consult OR explicitly note "\
 "why solo was right. (Currently informational — see "\
 "BUDDY_SYSTEM.md wisdom section.)" >&2
+elif [ "$SENIOR_CONSULT_DEBT" = "consult-thin" ]; then
+  echo "[senior_consult_debt] consult invoked but produced zero "\
+"crystallized KB entries — either the question was thin or the senior "\
+"saw nothing worth crystallizing. Watch for a chronic pattern (see "\
+"BUDDY_SYSTEM.md Section C — Goodhart-bait risk)." >&2
 fi
