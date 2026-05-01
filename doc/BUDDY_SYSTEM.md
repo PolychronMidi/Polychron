@@ -126,17 +126,23 @@ the rationale:
    `medium`) when ctx > 75% so the remaining quota is reserved for
    hard problems only? Mechanism could be a single read of the
    primary's context % at the start of each `_pick_buddy_for_task`.
-5. **Consult-driven retire threshold.** Now that consult activity is
+5. **Consult-driven senior protection.** Now that consult activity is
    tracked per senior (`consults: [{ts, ts_iso, question_excerpt}]`,
    capped at 50 entries; surfaced as `consults=N last=Xago` in
-   `i/handoff status`), the data exists to lower a heavily-consulted
-   senior's effective retire threshold. Question: should a senior
-   with `consults>=K within 1h` trigger an earlier warning (e.g. 80%
-   instead of 90%), since consult cadence implies the next call is
-   imminent? Open: pick K, decide whether the trigger is a warning
-   only or also forces retire. Companion to question 1
-   (hot-path auto-retire) — the answer there shapes whether seniors
-   can retire mid-session at all.
+   `i/handoff status`), the data exists to detect when consult cadence
+   is pushing a senior's transcript toward Claude Code's own
+   auto-compaction threshold. Note the asymmetry with primaries:
+   `BUDDY_RETIRE_PCT` (90%) is the threshold at which a *primary*
+   moves into the senior pool with its accumulated context preserved;
+   a senior crossing the same point has nowhere to go — auto-compaction
+   wipes the wisdom we retired them to protect. Question: when a
+   senior's ctx crosses some pre-compaction floor (e.g. 80%), should
+   `i/consult` (a) warn-and-proceed, (b) refuse new consults, or (c)
+   snapshot the transcript / migrate key findings to KB before
+   compaction eats them? Companion to question 1 (hot-path
+   auto-retire) which is about the *primary* path — this one is about
+   the *senior* path, and the answer should pick from a different
+   action set since "retire" isn't available.
 
 Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a
