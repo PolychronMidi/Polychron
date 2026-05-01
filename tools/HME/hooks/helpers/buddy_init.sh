@@ -47,15 +47,34 @@ case "$BUDDY_COUNT" in
 esac
 
 # Per-buddy model floors (comma-separated, length must equal BUDDY_COUNT).
-# Falls back to all "medium" if missing or wrong length.
+# Special value `auto` distributes one buddy per difficulty tier:
+#   count=1 -> [medium]
+#   count=2 -> [easy, hard]
+#   count=3 -> [easy, medium, hard]                (canonical case)
+#   count=N -> cycle [easy, medium, hard]
+# Explicit list (e.g. "easy,medium,hard" or "medium") is honored as-is and
+# padded with "medium" when shorter than BUDDY_COUNT (legacy behavior).
 if [ -z "${BUDDY_MODEL_FLOORS:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
   _envline=$(grep -E '^BUDDY_MODEL_FLOORS=' "$_REPO_ROOT/.env" 2>/dev/null | head -1)
   [ -n "$_envline" ] && BUDDY_MODEL_FLOORS="${_envline#BUDDY_MODEL_FLOORS=}"
 fi
-BUDDY_MODEL_FLOORS="${BUDDY_MODEL_FLOORS:-medium}"
-# Pad / trim floor list to BUDDY_COUNT.
-IFS=',' read -ra _FLOORS <<< "$BUDDY_MODEL_FLOORS"
-while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("medium"); done
+BUDDY_MODEL_FLOORS="${BUDDY_MODEL_FLOORS:-auto}"
+if [ "$BUDDY_MODEL_FLOORS" = "auto" ]; then
+  case "$BUDDY_COUNT" in
+    1) _FLOORS=(medium) ;;
+    2) _FLOORS=(easy hard) ;;
+    *)
+      _FLOORS=()
+      _CYCLE=(easy medium hard)
+      for i in $(seq 0 $((BUDDY_COUNT - 1))); do
+        _FLOORS+=("${_CYCLE[$((i % 3))]}")
+      done
+      ;;
+  esac
+else
+  IFS=',' read -ra _FLOORS <<< "$BUDDY_MODEL_FLOORS"
+  while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("medium"); done
+fi
 
 mkdir -p "$_REPO_ROOT/tmp"
 

@@ -1328,29 +1328,182 @@ def cmd_enqueue(args: argparse.Namespace) -> int:
     return 0
 
 
+def _transcript_path_for_sid(sid: str) -> Path | None:
+    """Locate the Claude Code transcript JSONL for a given session id.
+
+    Claude Code writes transcripts at
+    ~/.claude/projects/<cwd-slug>/<sid>.jsonl
+    where <cwd-slug> is the cwd path with '/' replaced by '-'. Buddies
+    are spawned from PROJECT_ROOT, so we look there first.
+    """
+    if not sid:
+        return None
+    home = Path(os.environ.get("HOME", "/home/jah"))
+    cwd_slug = "-" + str(PROJECT_ROOT).strip("/").replace("/", "-")
+    candidate = home / ".claude" / "projects" / cwd_slug / f"{sid}.jsonl"
+    if candidate.exists():
+        return candidate
+    # Fallback: scan all project dirs (covers rare cwd variations).
+    proj_root = home / ".claude" / "projects"
+    if proj_root.exists():
+        for p in proj_root.glob(f"*/{sid}.jsonl"):
+            return p
+    return None
+
+
+def _buddy_context_used(sid: str) -> dict | None:
+    """Walk a buddy's transcript JSONL and report current context use.
+
+    Returns {"tokens": int, "ctx_window": int, "used_pct": float,
+    "transcript": str, "lines": int} or None if no transcript / no usage
+    data. The "tokens" field sums input + cache_creation + cache_read
+    from the most recent assistant event with a non-empty usage block —
+    that is the authoritative count of context the model just saw.
+
+    Context window defaults to 1_000_000 (Opus 4.7 1M context). Override
+    via env HME_BUDDY_CTX_WINDOW for sessions running smaller models.
+    """
+    path = _transcript_path_for_sid(sid)
+    if path is None:
+        return None
+    try:
+        ctx_window = int(os.environ.get("HME_BUDDY_CTX_WINDOW", "1000000"))
+    except (TypeError, ValueError):
+        ctx_window = 1_000_000
+    last_usage = None
+    line_count = 0
+    try:
+        with path.open() as f:
+            for line in f:
+                line_count += 1
+                if '"type":"assistant"' not in line and '"type": "assistant"' not in line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except (ValueError, TypeError):
+                    continue
+                if ev.get("type") != "assistant":
+                    continue
+                msg = ev.get("message") or {}
+                u = msg.get("usage") or {}
+                if u and (u.get("input_tokens") is not None
+                          or u.get("cache_creation_input_tokens") is not None
+                          or u.get("cache_read_input_tokens") is not None):
+                    last_usage = u
+    except (OSError, IOError):
+        return None
+    if last_usage is None:
+        return {"tokens": 0, "ctx_window": ctx_window, "used_pct": 0.0,
+                "transcript": str(path), "lines": line_count}
+    tokens = (int(last_usage.get("input_tokens") or 0)
+              + int(last_usage.get("cache_creation_input_tokens") or 0)
+              + int(last_usage.get("cache_read_input_tokens") or 0))
+    pct = (tokens / ctx_window * 100.0) if ctx_window > 0 else 0.0
+    return {"tokens": tokens, "ctx_window": ctx_window, "used_pct": pct,
+            "transcript": str(path), "lines": line_count}
+
+
+def _discover_buddy_sessions() -> list[dict]:
+    """List ALL spawned buddy sessions from tmp/hme-buddy*.sid files,
+    independent of HME_DISPATCH_MODE. The dispatcher's task-routing view
+    (`_list_buddies`) substitutes a synthesis pseudo-worker when
+    HME_DISPATCH_MODE=synthesis, but the actual buddy sessions spawned
+    by buddy_init.sh are still running and consuming context regardless
+    of how tasks route. Status display always wants the real sessions
+    so the user can monitor compactions.
+    """
+    sessions = []
+    tmp = PROJECT_ROOT / "tmp"
+    legacy = tmp / "hme-buddy.sid"
+    if legacy.exists() and legacy.read_text().strip():
+        floor_file = legacy.with_suffix(".floor")
+        effort_file = legacy.with_suffix(".effort_floor")
+        m_floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
+        e_floor = effort_file.read_text().strip() if effort_file.exists() else m_floor
+        sessions.append({"slot": 1, "sid": legacy.read_text().strip(),
+                         "floor": m_floor, "effort_floor": e_floor,
+                         "sid_file": str(legacy)})
+        return sessions
+    for sid_file in sorted(tmp.glob("hme-buddy-[0-9]*.sid")):
+        sid = sid_file.read_text().strip() if sid_file.exists() else ""
+        if not sid:
+            continue
+        try:
+            slot = int(sid_file.stem.rsplit("-", 1)[1])
+        except (ValueError, IndexError):
+            continue
+        floor_file = sid_file.with_suffix(".floor")
+        effort_file = sid_file.with_suffix(".effort_floor")
+        m_floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
+        e_floor = effort_file.read_text().strip() if effort_file.exists() else m_floor
+        sessions.append({"slot": slot, "sid": sid,
+                         "floor": m_floor, "effort_floor": e_floor,
+                         "sid_file": str(sid_file)})
+    return sessions
+
+
 def cmd_status(args: argparse.Namespace) -> int:
-    """Print current queue state + active buddies + dispatch mode."""
+    """Print current queue state + active buddies + dispatch mode.
+
+    With --json, write a structured snapshot to tmp/hme-buddy-session-log.json
+    (and stdout) that includes per-buddy sid + used context %. The log
+    file is overwritten each call — caller can poll it to monitor every
+    buddy's context usage and prepare for compactions.
+    """
     _ensure_dirs()
     pending = list(QUEUE_PENDING.glob("*.json"))
     processing = list(QUEUE_PROCESSING.rglob("*.json"))
     done = list(QUEUE_DONE.glob("*.json"))
     failed = list(QUEUE_FAILED.glob("*.json"))
-    buddies = _list_buddies()
+    workers = _list_buddies()
+    sessions = _discover_buddy_sessions()
+    snapshot = {
+        "ts": time.time(),
+        "dispatch_mode": _DISPATCH_MODE,
+        "buddy_system": _BUDDY_SYSTEM_FLAG,
+        "queue": {"pending": len(pending), "processing": len(processing),
+                  "done": len(done), "failed": len(failed)},
+        "buddies": [],
+    }
     print(f"dispatch_mode: {_DISPATCH_MODE} (BUDDY_SYSTEM={_BUDDY_SYSTEM_FLAG})")
     print(f"queue: pending={len(pending)} processing={len(processing)} done={len(done)} failed={len(failed)}")
-    if buddies:
-        if _DISPATCH_MODE == "synthesis":
-            print(f"workers: 1 synthesis-reasoning pseudo-buddy (no SID; routes through HME synthesis cascade)")
-        else:
-            print(f"buddies: {len(buddies)} active")
-            for b in buddies:
-                sid_preview = b["sid"][:16] if b["sid"] else "<unset>"
-                print(f"  slot={b['slot']} floor={b['floor']} effort_floor={b.get('effort_floor', 'medium')} sid={sid_preview}...")
-    else:
-        if _DISPATCH_MODE == "disabled":
-            print("dispatcher disabled — set BUDDY_SYSTEM=1 OR HME_DISPATCH_MODE=synthesis in .env to activate")
-        else:
-            print("buddies: none registered (sid files missing)")
+    if _DISPATCH_MODE == "synthesis":
+        print("workers: 1 synthesis-reasoning pseudo-buddy (no SID; routes through HME synthesis cascade)")
+    elif _DISPATCH_MODE == "disabled":
+        print("dispatcher disabled — set BUDDY_SYSTEM=1 OR HME_DISPATCH_MODE=synthesis in .env to activate")
+    elif workers:
+        print(f"workers: {len(workers)} active claude-resume slot(s)")
+    if sessions:
+        print(f"buddy sessions: {len(sessions)} spawned (sid files present)")
+        for b in sessions:
+            sid_preview = b["sid"][:16] if b["sid"] else "<unset>"
+            ctx = _buddy_context_used(b["sid"]) if b["sid"] else None
+            if ctx is None:
+                ctx_str = "ctx=?  (no transcript)"
+            else:
+                bar_width = 10
+                filled = int(round(ctx["used_pct"] / 100.0 * bar_width))
+                bar = "#" * filled + "." * (bar_width - filled)
+                ctx_str = (f"ctx={ctx['tokens']:>7,}/{ctx['ctx_window']:,} "
+                           f"[{bar}] {ctx['used_pct']:5.1f}%")
+            print(f"  slot={b['slot']} floor={b['floor']:<6} effort_floor={b['effort_floor']:<6} "
+                  f"sid={sid_preview}... {ctx_str}")
+            snapshot["buddies"].append({
+                "slot": b["slot"], "floor": b["floor"],
+                "effort_floor": b["effort_floor"],
+                "sid": b["sid"], "context": ctx,
+            })
+    elif _BUDDY_SYSTEM_FLAG == "1":
+        print("buddy sessions: none yet (sid files not written; init may still be in progress)")
+    # `--json` (bare) -> True; `--json=false` / `--json=0` -> falsy.
+    json_flag = getattr(args, "json", False)
+    if isinstance(json_flag, str):
+        json_flag = json_flag.strip().lower() not in ("", "0", "false", "no", "off")
+    if json_flag:
+        log_path = PROJECT_ROOT / "tmp" / "hme-buddy-session-log.json"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(json.dumps(snapshot, indent=2, default=str))
+        print(f"session log written: {log_path.relative_to(PROJECT_ROOT)}")
     return 0
 
 
@@ -1369,6 +1522,10 @@ def main() -> int:
     p_enq.add_argument("--context", default="", help="JSON-encoded payload")
     p_enq.set_defaults(func=cmd_enqueue)
     p_stat = sub.add_parser("status", help="show queue + buddy state")
+    # nargs='?' so `i/dispatch status json=true` and bare `--json` both work
+    # (the i/dispatch wrapper rewrites k=v to --k=v).
+    p_stat.add_argument("--json", nargs="?", const=True, default=False,
+                        help="also write tmp/hme-buddy-session-log.json with per-buddy sid+ctx%%")
     p_stat.set_defaults(func=cmd_status)
     p_chain = sub.add_parser("chain", help="run a chain YAML (ordered skill sequence)")
     p_chain.add_argument("chain_name", help="chain name (matches <name>.yaml in chains/)")

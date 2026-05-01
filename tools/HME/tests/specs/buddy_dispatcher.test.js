@@ -764,3 +764,134 @@ print(repr(guidance))
     assert.strictEqual(result.stdout.trim(), "''", 'absent guidance file returns empty string');
   });
 });
+
+test('dispatcher: _discover_buddy_sessions finds legacy single-buddy sid', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'fake-sid-1\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+print(json.dumps(disp._discover_buddy_sessions(), default=str))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const sessions = JSON.parse(result.stdout.trim());
+    assert.strictEqual(sessions.length, 1, 'one legacy buddy expected');
+    assert.strictEqual(sessions[0].slot, 1);
+    assert.strictEqual(sessions[0].sid, 'fake-sid-1');
+    assert.strictEqual(sessions[0].floor, 'medium');
+  });
+});
+
+test('dispatcher: _discover_buddy_sessions enumerates multi-buddy sids with per-slot floor', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const tmp = path.join(sandbox, 'tmp');
+    // Plant 3 buddies with the canonical easy/medium/hard distribution.
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-1.sid'), 'sid-easy\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-1.floor'), 'easy\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-2.sid'), 'sid-medium\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-2.floor'), 'medium\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-3.sid'), 'sid-hard\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy-3.floor'), 'hard\n');
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+print(json.dumps(disp._discover_buddy_sessions(), default=str))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const sessions = JSON.parse(result.stdout.trim());
+    assert.strictEqual(sessions.length, 3, 'three multi-buddy slots');
+    assert.deepStrictEqual(sessions.map((s) => s.slot), [1, 2, 3]);
+    assert.deepStrictEqual(sessions.map((s) => s.floor), ['easy', 'medium', 'hard']);
+    assert.deepStrictEqual(sessions.map((s) => s.sid),
+      ['sid-easy', 'sid-medium', 'sid-hard']);
+  });
+});
+
+test('dispatcher: _discover_buddy_sessions returns [] when no sid files', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+${_dispatcherImport()}
+import json
+print(json.dumps(disp._discover_buddy_sessions(), default=str))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    assert.deepStrictEqual(JSON.parse(result.stdout.trim()), []);
+  });
+});
+
+test('dispatcher: _buddy_context_used reads usage from synthetic transcript', () => {
+  _withDispatcherSandbox((sandbox) => {
+    // Build a synthetic transcript at the path the helper expects.
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const sid = 'test-sid-ctx';
+    const transcript = path.join(projDir, `${sid}.jsonl`);
+    // Two assistant events; the LATER usage with bigger numbers is the
+    // one the helper should pick up (last assistant with usage wins).
+    const ev1 = {
+      type: 'assistant',
+      message: { usage: { input_tokens: 100, cache_creation_input_tokens: 200, cache_read_input_tokens: 0 } },
+    };
+    const ev2 = {
+      type: 'assistant',
+      message: { usage: { input_tokens: 50, cache_creation_input_tokens: 5000, cache_read_input_tokens: 100 } },
+    };
+    fs.writeFileSync(transcript, JSON.stringify(ev1) + '\n' + JSON.stringify(ev2) + '\n');
+    const result = _runPython(sandbox, `
+import os
+os.environ['HOME'] = '${home}'
+os.environ['HME_BUDDY_CTX_WINDOW'] = '10000'
+${_dispatcherImport()}
+import json
+print(json.dumps(disp._buddy_context_used('${sid}'), default=str))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const ctx = JSON.parse(result.stdout.trim());
+    assert.strictEqual(ctx.tokens, 50 + 5000 + 100, 'tokens = sum of last assistant usage');
+    assert.strictEqual(ctx.ctx_window, 10000, 'window honors HME_BUDDY_CTX_WINDOW env');
+    assert.ok(Math.abs(ctx.used_pct - 51.5) < 0.01,
+      `used_pct expected ~51.5, got ${ctx.used_pct}`);
+    assert.strictEqual(ctx.lines, 2);
+  });
+});
+
+test('dispatcher: _buddy_context_used returns null when no transcript', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const result = _runPython(sandbox, `
+import os
+os.environ['HOME'] = '${path.join(sandbox, 'no-such-home')}'
+${_dispatcherImport()}
+import json
+print(json.dumps(disp._buddy_context_used('nonexistent-sid'), default=str))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    assert.strictEqual(result.stdout.trim(), 'null');
+  });
+});
+
+test('dispatcher: _buddy_context_used handles transcript with no usage events', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const sid = 'no-usage-sid';
+    const transcript = path.join(projDir, `${sid}.jsonl`);
+    // Assistant event with no usage block.
+    fs.writeFileSync(transcript, JSON.stringify({ type: 'assistant', message: {} }) + '\n');
+    const result = _runPython(sandbox, `
+import os
+os.environ['HOME'] = '${home}'
+${_dispatcherImport()}
+import json
+print(json.dumps(disp._buddy_context_used('${sid}'), default=str))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const ctx = JSON.parse(result.stdout.trim());
+    assert.strictEqual(ctx.tokens, 0, 'tokens = 0 when no usage data found');
+    assert.strictEqual(ctx.used_pct, 0.0);
+  });
+});

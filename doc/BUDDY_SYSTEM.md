@@ -404,12 +404,53 @@ output. The specialization is the point.
 end of session start. The helper:
 
 1. Checks `.env BUDDY_SYSTEM` (default 1).
-2. Idempotency: no-op if `tmp/hme-buddy.sid` exists and is non-empty.
-3. Spawns `claude -p --output-format json` with the role prompt.
-4. Backgrounds itself (disown) so SessionStart returns immediately.
-5. Writes the sid file when init completes (~10-20s).
+2. Resolves `BUDDY_COUNT` (default 1, capped at 10).
+3. Resolves per-slot model floors via `BUDDY_MODEL_FLOORS`. The
+   special value `auto` distributes one buddy per difficulty tier:
+   `count=1 → [medium]`, `count=2 → [easy, hard]`,
+   `count=3 → [easy, medium, hard]` (canonical), `count=N` cycles
+   `[easy, medium, hard]`. Explicit lists (e.g. `easy,medium,hard`)
+   are honored as-is.
+4. Idempotency: no-op if `tmp/hme-buddy-<N>.sid` exists and is non-empty.
+5. Spawns `claude -p --output-format json` per slot with the role prompt.
+6. Backgrounds itself (disown) so SessionStart returns immediately.
+7. Writes each sid file (and companion `.floor`) when its init completes (~10-20s).
 
 Calls before init completes fall through to ephemeral dispatch.
+
+### Monitoring buddies (sids + context %)
+
+`i/dispatch status` enumerates every buddy session discovered from
+`tmp/hme-buddy*.sid`, regardless of `HME_DISPATCH_MODE`. Each line
+shows `slot`, `floor`, `effort_floor`, `sid`, and a context-used bar
+read from the buddy's own transcript JSONL (~/.claude/projects/.../
+<sid>.jsonl). The `tokens` figure sums `input_tokens +
+cache_creation_input_tokens + cache_read_input_tokens` from the most
+recent assistant event with usage data — that's the authoritative
+count of context the model just saw. Default window is 1M (Opus 4.7);
+override per-buddy via `HME_BUDDY_CTX_WINDOW` for sessions running
+smaller models.
+
+`i/dispatch status json=true` writes a structured snapshot to
+`tmp/hme-buddy-session-log.json` so a watcher (e.g. statusline,
+external dashboard, polling agent) can monitor every buddy's context
+% and prepare for compactions before they hit. Schema:
+
+```json
+{
+  "ts": <epoch>,
+  "dispatch_mode": "claude-resume" | "synthesis" | "disabled",
+  "buddy_system": "0" | "1",
+  "queue": { "pending": N, "processing": N, "done": N, "failed": N },
+  "buddies": [
+    { "slot": 1, "floor": "easy", "effort_floor": "low",
+      "sid": "...", "context": {
+        "tokens": 443198, "ctx_window": 1000000,
+        "used_pct": 44.32, "transcript": "...", "lines": 2605
+      } }, ...
+  ]
+}
+```
 
 ### Cooldown for synchronous invocations
 
