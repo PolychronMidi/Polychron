@@ -12,6 +12,7 @@ from ..synthesis import synthesis_reasoning
 from .. import _track
 from .evolution_introspect import hme_introspect  # noqa: F401
 from .evolution_selftest import hme_selftest, hme_hot_reload  # noqa: F401
+from .evolution_admin import _daemon_health_snapshot  # noqa: F401
 
 logger = logging.getLogger("HME")
 

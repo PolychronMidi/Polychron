@@ -23,6 +23,22 @@ from . import _get_compositional_context, _track
 from .synthesis_session import append_session_narrative
 from .tool_cache import cached_kb_search, cached_find_callers, _cache_set, _TTL_KB, _TTL_CALLERS
 
+# workflow.py imports US at line 106, so a top-level back-import would
+# cycle. Lazy resolution via thin shims that look up the live attributes
+# at call time, keeping the bare names usable inside our function bodies.
+def _build_edit_risks(*a, **kw):
+    from . import workflow as _w; return _w._build_edit_risks(*a, **kw)
+def _hme_self_aware_context(*a, **kw):
+    from . import workflow as _w; return _w._hme_self_aware_context(*a, **kw)
+def _persist_synthesis_cache_entry(*a, **kw):
+    from . import workflow as _w; return _w._persist_synthesis_cache_entry(*a, **kw)
+def _get_before_editing_cache():
+    from . import workflow as _w; return _w._get_before_editing_cache()
+def _get_caller_cache():
+    from . import workflow as _w; return _w._get_caller_cache()
+def _get_kb_hits_cache():
+    from . import workflow as _w; return _w._get_kb_hits_cache()
+
 logger = logging.getLogger("HME")
 
 # Synthesis cache — keyed (abs_path, mtime), eliminates repeated llama.cpp waits.

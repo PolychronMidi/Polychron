@@ -57,6 +57,9 @@ _DAEMON_URL = ENV.require("HME_LLAMACPP_DAEMON_URL")
 _ENCODEC_PATH = ENV.require("HME_MODEL_ENCODEC")
 _CLAP_PATH = ENV.require("HME_MODEL_CLAP")
 
+# Engine acquirers extracted to perceptual_engines.py.
+from .perceptual_engines import _acquire_clap, _acquire_encodec  # noqa: F401, E402
+
 
 
 

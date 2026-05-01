@@ -252,7 +252,9 @@ def _inject_context(prompt: str) -> str:
 
 
 # Re-exports — cascade dispatch extracted.
-from .synthesis_cascade_dispatch import _cascade_synthesis, dual_gpu_consensus  # noqa: F401, E402
+from .synthesis_cascade_dispatch import (  # noqa: F401, E402
+    _cascade_synthesis, dual_gpu_consensus, _quality_gate,
+)
 
 def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive",
                auto_context: bool = True, quality_check: bool = True) -> str | None:

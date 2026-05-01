@@ -76,7 +76,9 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     _pre_sources = re.findall(r'\[Source: \w+\]\n[\s\S]*?(?=\[Source:|\[Health:|\Z)', enriched_prompt)
     _pre_source_block = "\n".join(_pre_sources[:2])[:3000]
 
-    # Build arbiter module registry: fuzzy-find relevant modules so arbiter can name them
+    # Build arbiter module registry: fuzzy-find relevant modules so arbiter can name them.
+    # Lazy import — synthesis_cascade imports US, so a top-level back-import would cycle.
+    from .synthesis_cascade import _fuzzy_find_modules
     _registry_mods = _fuzzy_find_modules(prompt, max_results=12)
     _registry_hint = (
         f"\nKnown project modules (use exact names): {', '.join(_registry_mods)}"

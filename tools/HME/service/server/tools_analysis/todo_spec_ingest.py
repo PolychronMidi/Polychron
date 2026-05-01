@@ -29,7 +29,7 @@ logger = logging.getLogger("HME")
 from server.tools_analysis.todo import (
     _load_todos, _save_todos, _write_todo_entry, _allocate_id,
     _find_main, _find_any, _check_main_done, _mark_status,
-    _todo_lock,
+    _todo_lock, _normalize_tier,  # noqa: F401
 )
 
 

@@ -20,6 +20,11 @@ from .synthesis_llamacpp import (  # noqa: F401
     _LLAMACPP_ARBITER_URL, _num_ctx_for,
     _interactive_event,
 )
+# synthesis_inference imports US at line 377 — top-level back-import would
+# partial-load. Lazy lookup at call time keeps bare-name resolution working.
+def _PROSE_AND_KEYWORD_STOPWORDS():
+    from . import synthesis_inference as _si
+    return _si._PROSE_AND_KEYWORD_STOPWORDS
 
 logger = logging.getLogger("HME")
 
@@ -243,7 +248,7 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         # too: `json`, `shutil`, `os`, `sys`, `threading` etc. are real
         # module names. The stop-word list is the primary filter here;
         # structural hints (underscore/dot/case/digit) are secondary.
-        if tok.lower() in _PROSE_AND_KEYWORD_STOPWORDS:
+        if tok.lower() in _PROSE_AND_KEYWORD_STOPWORDS():
             return False
         # Drop regex-fragment / metadata noise: anything containing
         # obvious non-identifier characters is garbage from the source.

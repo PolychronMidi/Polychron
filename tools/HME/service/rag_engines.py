@@ -27,6 +27,11 @@ PROJECT_DB = ENV.require("HME_RAG_DB_PATH")
 GLOBAL_DB = ENV.require("HME_GLOBAL_KB_PATH")
 MODEL_NAME = ENV.require("HME_MODEL_TEXT_EMBED")
 MODEL_BACKEND = ENV.require("HME_RAG_BACKEND")
+# CODE_MODEL_NAME / RERANKER_NAME live in rag_reranker.py because the
+# reranker adapter needs them at instantiation, but _load_engines() and
+# reload_on_device() reference them as bare names too. Re-import here so
+# the module-level names resolve in this file's scope.
+from rag_reranker import CODE_MODEL_NAME, RERANKER_NAME  # noqa: E402, F401
 
 _engine_ready = threading.Event()
 _project_engine = None

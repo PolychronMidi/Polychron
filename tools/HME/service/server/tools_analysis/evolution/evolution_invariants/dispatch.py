@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 
 from server import context as ctx
+
+logger = logging.getLogger("HME")
 
 from ._base import METRICS_DIR, _load_invariants
 from .checks import (

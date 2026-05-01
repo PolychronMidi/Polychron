@@ -4,6 +4,7 @@ from __future__ import annotations
 import fnmatch
 import glob as globmod
 import json
+import logging
 import os
 import re
 
@@ -12,6 +13,8 @@ from server import context as ctx
 from ._base import METRICS_DIR, _CONFIG_REL, _resolve, _excluded, _is_regex
 import time
 import datetime
+
+logger = logging.getLogger("HME")
 
 
 

@@ -22,6 +22,14 @@ from ..warm_disk import (
 )
 from ..warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
 
+# synthesis_warm imports US at line 245 — top-level back-import would
+# partial-load. Bodies that reference bare-name `_priming_in_progress` /
+# `_reprime_lock` / `_warm_ctx_fresh_p` resolve via the live module at
+# call time. Use module-attribute access in the function bodies below
+# rather than top-level rebinding.
+def _warm_ctx_fresh_p(model):
+    from . import synthesis_warm as _sw; return _sw._warm_ctx_fresh_p(model)
+
 logger = logging.getLogger("HME")
 
 
@@ -41,7 +49,8 @@ def _schedule_reprime_async(delay: float = 5.0):
     after delay seconds of silence.
     """
     global _reprime_timer
-    with _reprime_lock:
+    from . import synthesis_warm as _sw
+    with _sw._reprime_lock:
         if _reprime_timer is not None:
             _reprime_timer.cancel()
         def _do_reprime():
@@ -227,10 +236,11 @@ def _prime_all_gpus() -> str:
     cancel the active priming via _interactive_event and _cancellable_urlopen.
     Reasoner priming only runs when HME_REASONER_WARM=1 (default: skip — cloud handles reasoning).
     """
-    if _priming_in_progress.is_set():
+    from . import synthesis_warm as _sw
+    if _sw._priming_in_progress.is_set():
         logger.info("_prime_all_gpus: already running, skipping duplicate")
         return "Warm context priming already in progress"
-    _priming_in_progress.set()
+    _sw._priming_in_progress.set()
     try:
         import os as _os
         from .synthesis_llamacpp import _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL
@@ -261,7 +271,7 @@ def _prime_all_gpus() -> str:
                          (f" ({ctx_len} ctx tokens)" if ok else ""))
         return "\n".join(parts)
     finally:
-        _priming_in_progress.clear()
+        _sw._priming_in_progress.clear()
 
 
 def warm_context_status() -> dict:
@@ -308,7 +318,8 @@ def ensure_warm(model: str):
     global _lazy_prime_attempted
     if model in _warm_ctx:
         return
-    if _lazy_prime_attempted or _priming_in_progress.is_set():
+    from . import synthesis_warm as _sw
+    if _lazy_prime_attempted or _sw._priming_in_progress.is_set():
         return
     import os as _os
     if _os.path.exists(ENV.require("HME_TRAINING_LOCK")):

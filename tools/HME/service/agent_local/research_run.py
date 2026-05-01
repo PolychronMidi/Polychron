@@ -23,6 +23,13 @@ from .tools import (
     _parse_tool_calls, _execute_tool, _exec_grep, _exec_glob, _exec_read,
 )
 
+# research.py imports US at line 234 (run_agent re-export), so a top-level
+# back-import would partial-load. Lazy shims keep bare-name resolution working.
+def _extract_search_terms(prompt):
+    from . import research as _r; return _r._extract_search_terms(prompt)
+def _MODE_CONFIGS():
+    from . import research as _r; return _r._MODE_CONFIGS
+
 logger = logging.getLogger("HME.agent")
 
 
@@ -38,7 +45,8 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
         # updated value. Direct rebinding of the local `PROJECT_ROOT` name
         # imported from _base wouldn't propagate across submodules.
         _base_module.PROJECT_ROOT = project_root
-    mode_cfg = _MODE_CONFIGS.get(mode, _MODE_CONFIGS["explore"])
+    _mc = _MODE_CONFIGS()
+    mode_cfg = _mc.get(mode, _mc["explore"])
 
     # Guard: trivially short/empty prompts cannot produce useful research.
     # Early-exit so we don't waste 120s on an arbiter call that can't succeed.

@@ -14,6 +14,9 @@ from ._base import (
     PASS, WARN, FAIL, SKIP, ERROR,
     _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
 )
+from .code_audits_syntax import (  # noqa: F401
+    _SPAM_RE, _SPAM_ALLOW, _SPAM_EXTS, _SPAM_SKIP_DIRS, _SPAM_SKIP_FILES,
+)
 
 
 # Verifier classes (extracted from code_audits.py).

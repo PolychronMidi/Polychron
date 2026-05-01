@@ -25,6 +25,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from buddy_dispatch_ratelimit import _detect_rate_limit  # noqa: E402
 
+# buddy_dispatch_chain and buddy_dispatch_drain participate in the same
+# import cycle as us (buddy_dispatcher → drain → lifecycle → chain → dispatcher).
+# Lazy shims keep bare-name resolution working inside our function bodies
+# without triggering the cycle at import time.
+def _compute_pause_seconds(*a, **kw):
+    import buddy_dispatch_chain as _bdc
+    return _bdc._compute_pause_seconds(*a, **kw)
+def _read_guidance(*a, **kw):
+    import buddy_dispatch_drain as _bdd
+    return _bdd._read_guidance(*a, **kw)
+
 from buddy_dispatcher import (  # noqa: E402
     PROJECT_ROOT, QUEUE_PENDING, QUEUE_PROCESSING, QUEUE_DONE, QUEUE_FAILED,
     FANOUT_ROOT, ERROR_LOG,

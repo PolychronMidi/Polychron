@@ -31,6 +31,9 @@ from server.tools_analysis.todo import (
     _find_main, _find_any, _check_main_done, _mark_status,
     _todo_lock,
 )
+from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
+    _common_prefix_len, _normalize_for_match,
+)
 
 
 # SPEC/TODO bridge — connects ephemeral i/todo state to durable

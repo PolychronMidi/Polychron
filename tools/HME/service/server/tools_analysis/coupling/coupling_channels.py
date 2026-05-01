@@ -1,10 +1,13 @@
 """L0 channel topology scanning and cascade tracing."""
+import logging
 import os
 import re
 from collections import defaultdict
 
 from server import context as ctx
 from .. import _track
+
+logger = logging.getLogger("HME")
 
 # Musical semantics for L0 channel names
 _CHANNEL_SEMANTICS: dict[str, str] = {

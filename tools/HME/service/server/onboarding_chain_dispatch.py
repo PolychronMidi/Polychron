@@ -39,6 +39,27 @@ if _mcp_root not in sys.path:
     sys.path.insert(0, _mcp_root)
 from hme_env import ENV  # noqa: E402
 
+# Sibling state-machine. Lazy module-attr access avoids the circular: when
+# onboarding_chain loads first it pulls re-exports from us at line 275, which
+# means dispatch is partially loaded by the time onboarding_chain finishes
+# defining its state functions. Top-level back-import at this point would
+# deadlock. Bare-name calls inside our function bodies resolve via these
+# thin shims, which look up the live attribute at call time.
+def state():
+    from . import onboarding_chain as _oc; return _oc.state()
+def set_state(s):
+    from . import onboarding_chain as _oc; return _oc.set_state(s)
+def target():
+    from . import onboarding_chain as _oc; return _oc.target()
+def set_target(t):
+    from . import onboarding_chain as _oc; return _oc.set_target(t)
+def step_index(s):
+    from . import onboarding_chain as _oc; return _oc.step_index(s)
+def status_line():
+    from . import onboarding_chain as _oc; return _oc.status_line()
+def is_graduated():
+    from . import onboarding_chain as _oc; return _oc.is_graduated()
+
 # Pull canonical i/<wrapper> + action= forms from the single source of
 # truth. Fallback keeps server bootable if the helper module is missing.
 # _mcp_root is tools/HME/service; helpers live at tools/HME/scripts

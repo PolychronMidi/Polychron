@@ -14,6 +14,20 @@ from .synthesis_session import append_session_narrative
 from .tool_cache import cached_kb_search, cached_find_callers
 from . import _track
 
+# workflow.py imports US too — same lazy-shim pattern as workflow_before_editing.
+def _build_edit_risks(*a, **kw):
+    from . import workflow as _w; return _w._build_edit_risks(*a, **kw)
+def _hme_self_aware_context(*a, **kw):
+    from . import workflow as _w; return _w._hme_self_aware_context(*a, **kw)
+def _persist_synthesis_cache_entry(*a, **kw):
+    from . import workflow as _w; return _w._persist_synthesis_cache_entry(*a, **kw)
+def _get_before_editing_cache():
+    from . import workflow as _w; return _w._get_before_editing_cache()
+def _get_caller_cache():
+    from . import workflow as _w; return _w._get_caller_cache()
+def _get_kb_hits_cache():
+    from . import workflow as _w; return _w._get_kb_hits_cache()
+
 logger = logging.getLogger("HME")
 
 

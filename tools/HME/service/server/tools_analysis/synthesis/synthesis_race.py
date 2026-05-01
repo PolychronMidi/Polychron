@@ -20,6 +20,11 @@ from .synthesis_llamacpp import (  # noqa: F401
     _LLAMACPP_ARBITER_URL, _num_ctx_for,
     _interactive_event,
 )
+# synthesis_inference imports US at line 371 — top-level back-import would
+# partial-load. Lazy lookup at call time keeps bare-name resolution working.
+def _local_think(*a, **kw):
+    from . import synthesis_inference as _si
+    return _si._local_think(*a, **kw)
 
 logger = logging.getLogger("HME")
 

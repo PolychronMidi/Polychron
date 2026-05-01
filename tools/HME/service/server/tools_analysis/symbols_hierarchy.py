@@ -6,7 +6,8 @@ from server import context as ctx
 from server.helpers import get_context_budget, validate_project_path, fmt_score, fmt_sim_score, BUDGET_LIMITS
 from . import _track
 from lang_registry import ext_to_lang
-from symbols import collect_all_symbols, get_type_hierarchy as _get_type_hierarchy, preview_rename as _preview_rename
+from symbols import collect_all_symbols, find_callers as _find_callers, get_type_hierarchy as _get_type_hierarchy, preview_rename as _preview_rename
+from .symbols import _get_architectural_globals  # noqa: F401
 from structure import file_summary as _file_summary, module_map as _module_map, format_module_map as _format_module_map
 from analysis import get_dependency_graph as _get_dep_graph, find_similar_code as _find_similar, trace_cross_language as _trace_cross_lang
 
