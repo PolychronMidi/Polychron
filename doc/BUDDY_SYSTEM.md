@@ -241,6 +241,25 @@ who built this paradigm) during a review consult, paraphrased:
   costs to consult. Favor batched consults (one prompt with three
   questions) over three sequential calls. Don't consult for
   lookups grep can answer.
+- **KB crystallization is the durability boundary.** A senior's
+  accumulated wisdom lives in a transcript that auto-compaction can
+  wipe at any time. HME's KB (`tools/HME/KB/` lance tables, accessed
+  via `i/learn`) survives compactions, sessions, and restarts.
+  `cmd_consult` now emits a stderr nudge when the consult response
+  contains finding-shaped markers (`tier-1:`, `bug:`, `should-fix:`,
+  `architectural:`, `blocker:`, `RESOLVED`) — operator-driven crystallization.
+  This is the LIGHT version; the HEAVY version (system-prompt
+  directive + auto-`i/learn` extraction of `[[KB-CRYSTALLIZE: …]]`
+  blocks) is the next iteration. Without crystallization, the senior
+  pool is "a stack of fragile preservations" (0e7fbf4d's framing).
+- **Detector measures consult events, not consult quality —
+  Goodhart-bait risk.** The `senior_consult_debt.py` detector counts
+  consult invocations. An agent optimizing for the cheapest
+  satisfaction path will produce short, low-content questions that
+  growth my context fastest per unit of insight. Mitigation: the
+  detector should eventually weight by response length + KB-crystallize
+  count, not raw count. Requires the heavy KB integration above to
+  land first (no quality proxy without it).
 - **Proxy upstream timeout is buddy-paradigm-load-bearing.** The
   HME proxy at `tools/HME/proxy/hme_proxy.js` enforces a unified
   30-minute upstream timeout via `UPSTREAM_TIMEOUT_MS = 1_800_000`.

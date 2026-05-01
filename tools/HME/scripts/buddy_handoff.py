@@ -125,6 +125,39 @@ def _format_consults(consults: list | None) -> str:
 _CONSULT_HISTORY_CAP = 50  # bounded growth on senior metadata file
 
 
+# Markers that suggest a consult response contains crystallizable findings.
+# Per 0e7fbf4d's HME integration analysis: senior wisdom is fragile (lives
+# in transcripts that compaction wipes); HME's KB is durable. Auto-suggest
+# crystallization when the response carries finding-shape vocabulary.
+_FINDING_MARKERS = (
+    r"\btier-1:",
+    r"\bbug:",
+    r"\bshould-fix:",
+    r"\barchitectural:",
+    r"\bblocker:",
+    r"\bRESOLVED",  # buddy uses this in the open-questions answers
+)
+
+
+def _findings_nudge(response: str) -> None:
+    """Scan a consult response for finding-shaped markers and emit a
+    stderr nudge if any are present. Light version of the KB
+    crystallization integration — operator-driven, not auto-write.
+    Silent when no markers found (no noise on routine consults)."""
+    if not response:
+        return
+    import re
+    pattern = re.compile("|".join(_FINDING_MARKERS), re.IGNORECASE)
+    matches = pattern.findall(response)
+    if not matches:
+        return
+    print(f"# consult produced {len(matches)} finding-shaped marker(s) "
+          f"({', '.join(sorted(set(m.strip(':').lower() for m in matches)))})"
+          f" — consider `i/learn add title=… content=…` to crystallize "
+          f"into KB before transcript compaction.",
+          file=sys.stderr)
+
+
 def _record_consult(sid: str, question: str) -> None:
     """Append a consult record to the senior's metadata file. Best-effort:
     silent on read/write failure so the consult call itself isn't blocked
@@ -610,6 +643,15 @@ def cmd_consult(args: argparse.Namespace) -> int:
             # skipped. Surfaces heavy-consultation patterns in
             # `i/handoff status`.
             _record_consult(args.sid, args.question)
+            # KB-crystallization nudge (per 0e7fbf4d's HME integration
+            # gap diagnosis): scan the consult response for
+            # finding-shaped markers and prompt the agent to crystallize
+            # them into the KB. The senior's transcript is fragile (one
+            # auto-compaction wipes it); the KB is durable. This is the
+            # light version — pattern-match + stderr nudge. Heavy
+            # version (system prompt directive + auto-i/learn) is the
+            # next iteration.
+            _findings_nudge(result.stdout or "")
         # HME integration: emit an activity event regardless of outcome
         # so the activity bridge can see consultation cadence
         # (cross-session forensics, rate analytics). Best-effort,

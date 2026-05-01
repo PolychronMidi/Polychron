@@ -1749,6 +1749,63 @@ test('buddy_init.sh: BUDDY_COUNT=3 + HANDOFF=1 forces count=1 (multi-buddy mutua
   });
 });
 
+test('buddy_handoff.py: consult response with finding-markers triggers KB-crystallization nudge', () => {
+  // Section B from 0e7fbf4d's deep architectural review: senior wisdom
+  // is fragile (transcript compaction wipes it); HME's KB is durable.
+  // The light-version integration emits a stderr nudge when consult
+  // responses contain finding-shaped vocabulary (tier-1, bug,
+  // should-fix, architectural, blocker, RESOLVED).
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'finder-senior.json'), JSON.stringify({
+      sid: 'finder-senior', floor: 'easy', effort_floor: 'low',
+    }));
+    // Stub claude that emits a finding-shaped response.
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\n' +
+      'cat <<EOF\n' +
+      'tier-1: race condition in _spawn_buddy short-circuit\n' +
+      'should-fix: lockfile path resolution edge case\n' +
+      'EOF\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=finder-senior', '--question=audit'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0, `consult failed: ${result.stderr}`);
+    assert.match(result.stderr, /finding-shaped marker\(s\)/,
+      'nudge fires when response contains finding markers');
+    assert.match(result.stderr, /tier-1.*should-fix|should-fix.*tier-1/,
+      'nudge enumerates which marker types matched');
+    assert.match(result.stderr, /i\/learn/,
+      'nudge points at the i/learn entry point');
+  });
+});
+
+test('buddy_handoff.py: consult response without finding-markers stays silent (no nudge noise)', () => {
+  // Inverse-case lock: routine consults without findings must NOT
+  // emit a nudge. Otherwise the nudge becomes Goodhart-bait — the
+  // detector training the agent that consult-noise satisfies it.
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'quiet-senior.json'), JSON.stringify({
+      sid: 'quiet-senior', floor: 'easy', effort_floor: 'low',
+    }));
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho "Yeah, that approach makes sense to me."\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=quiet-senior', '--question=ratify'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0);
+    assert.doesNotMatch(result.stderr, /finding-shaped marker/,
+      'no nudge for routine acknowledgment-shaped responses');
+  });
+});
+
 test('buddy_handoff.py: consult emits buddy_consult activity event (HME integration)', () => {
   // The consult cadence needs to be visible to the activity bridge so
   // analytics, alerting, and cross-session forensics can see usage
