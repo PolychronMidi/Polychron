@@ -670,8 +670,13 @@ def cmd_consult(args: argparse.Namespace) -> int:
     ctx_data = bd_for_warn._buddy_context_used(args.sid)
     pre_compaction_floor = 80.0
     cooldown_window_s = 3600
-    if role == "senior":
-        if ctx_data and ctx_data.get("used_pct", 0) >= pre_compaction_floor:
+    if role == "senior" and ctx_data:
+        used_pct = ctx_data.get("used_pct")
+        # Missing used_pct shouldn't warn (we can't measure). Per
+        # CLAUDE.md style: explicit None check rather than silent
+        # `.get(key, 0)` fallback that conflates "key absent" with
+        # "key explicitly zero".
+        if used_pct is not None and used_pct >= pre_compaction_floor:
             cooldown_dir = TMP / "hme-consult-warn-cooldown"
             cooldown_dir.mkdir(parents=True, exist_ok=True)
             cooldown_file = cooldown_dir / f"{args.sid}.warn"
