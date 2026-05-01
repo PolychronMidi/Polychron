@@ -8,10 +8,10 @@ Generative polyrhythmic composition engine. Two independent rhythmic layers inte
 
 Development happens in two interleaving spaces, treated as synergistic-but-distinct partners:
 
-- **Composition** (`src/`) — the engine described below. Rules: [doc/SRC.md](doc/SRC.md).
-- **HME** (`tools/HME/`) — the cognitive scaffolding around it: proxy middleware that intercepts every Anthropic API call, stop-chain behavioral detectors, a vector-indexed KB, an autonomous evolution loop, and the `i/<tool>` shell wrapper surface. Rules + tool reference: [doc/HME.md](doc/HME.md).
+- **Composition** (`src/`) — the engine described below. Mode-specific judgment-call rules: [doc/SRC.md](doc/SRC.md).
+- **HME** (`tools/HME/`) — the cognitive scaffolding around it: proxy middleware that intercepts every Anthropic API call, stop-chain behavioral detectors, a vector-indexed KB, an autonomous evolution loop, and the `i/<tool>` shell wrapper surface. Tool reference and workflow: [doc/HME.md](doc/HME.md).
 
-Universal principles (fail-fast, terse comments, no character-spam, hard rules, working style) live in [CLAUDE.md](CLAUDE.md). Mode-specific rules live in `doc/SRC.md` and `doc/HME.md`.
+[CLAUDE.md](CLAUDE.md) holds universal hard rules and working style. Mechanical rules (lint, validators, hooks, jurisdiction checks) are auto-enforced by the toolchain — not documented as text.
 
 ## Quick Start
 
