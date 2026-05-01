@@ -99,14 +99,17 @@ def _import_dispatcher():
     return _bd
 
 
-def _format_consults(consults: list) -> str:
+def _format_consults(consults: list | None) -> str:
     """Render a `consults=N last=Xago` suffix for cmd_status. Empty when
     no consults recorded — matches the prior status-line shape so seniors
-    that have never been called surface unchanged."""
+    that have never been called surface unchanged. Accepts None for
+    seniors whose metadata predates the consults schema."""
     if not consults:
         return ""
     last = consults[-1] if isinstance(consults[-1], dict) else {}
-    last_ts = last.get("ts") or 0
+    last_ts = last.get("ts")
+    if last_ts is None:
+        last_ts = 0
     ago_s = max(0, int(time.time() - last_ts))
     if ago_s < 60:
         ago = f"{ago_s}s"
@@ -142,7 +145,9 @@ def _record_consult(sid: str, question: str) -> None:
             pass
     try:
         rec = json.loads(senior_file.read_text())
-        consults = rec.get("consults") or []
+        consults = rec.get("consults")
+        if consults is None:
+            consults = []
         consults.append({
             "ts": time.time(),
             "ts_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -272,7 +277,7 @@ def cmd_status(args: argparse.Namespace) -> int:
         ts = s.get("retired_at_iso", "?")
         reason = s.get("reason", "?")
         sid_short = (s.get("sid", "") or "")[:16]
-        consults_str = _format_consults(s.get("consults") or [])
+        consults_str = _format_consults(s.get("consults"))
         print(f"  sid={sid_short}... retired={ts} ctx_at_retire={tk:,} "
               f"reason={reason}{consults_str}")
     if getattr(args, "json", False):
