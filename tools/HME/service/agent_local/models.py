@@ -50,9 +50,6 @@ def _infer_directories(prompt: str) -> list[str]:
     if "mcp" in lower or "server" in lower or "llamacpp" in lower or "verifier" in lower or "onboard" in lower:
         if "tools/HME/service/" not in dirs:
             dirs.append("tools/HME/service/")
-    if "chat" in lower or "typescript" in lower:
-        if "tools/HME/chat/" not in dirs:
-            dirs.append("tools/HME/chat/")
     if "skill" in lower:
         if "tools/HME/skills/" not in dirs:
             dirs.append("tools/HME/skills/")

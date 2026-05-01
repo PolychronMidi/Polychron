@@ -12,14 +12,6 @@ if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.loc
   exit 2
 fi
 
-# Block direct writes to compiled output — edit the .ts source instead.
-# JS counterpart: block-out-dir-writes (PreToolUse Write/Edit/MultiEdit).
-if _policy_enabled block-out-dir-writes && echo "$FILE" | grep -q "tools/HME/chat/out/"; then
-  cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
-  _emit_block "BLOCKED: Do NOT write files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
-  exit 2
-fi
-
 # Block writes to the auto-memory directory — HME KB is the canonical
 # place for cross-session knowledge. JS counterpart: block-memory-dir-writes.
 if _policy_enabled block-memory-dir-writes && echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then

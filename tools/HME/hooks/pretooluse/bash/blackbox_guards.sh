@@ -4,15 +4,6 @@
 # disable-doesn't-fully-disable wart documented in policies/README.md).
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../helpers/_policy_enabled.sh" 2>/dev/null || true
 
-# Block any bash access to compiled output — out/ is a black box.
-# (No JS counterpart yet — `block-out-dir-writes` covers Edit/Write but
-# this also blocks Bash commands that touch out/, which is broader.)
-if echo "$CMD" | grep -q "tools/HME/chat/out"; then
-  cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
-  _emit_block "BLOCKED: tools/HME/chat/out/ is a black box. Work with the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
-  exit 2
-fi
-
 # Block mkdir of misplaced log/, metrics/, or tmp/ directories.
 # JS counterparts: block-mkdir-misplaced-log-tmp + block-mkdir-misplaced-metrics.
 if _policy_enabled block-mkdir-misplaced-log-tmp && echo "$CMD" | grep -qE '\bmkdir\b' && echo "$CMD" | grep -qE '/(log|tmp)($|/)'; then

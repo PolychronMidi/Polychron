@@ -259,10 +259,10 @@ DEFERRAL_PHRASES = (
     "another turn",
     # "Banked / waiting-on-user-action" register. Added after a session where
     # the agent closed with "Still banked (not actionable right now): supervisor
-    # fix — takes effect on next proxy restart" and "chat-panel fix — next
-    # extension-host reload". Those ARE handoffs, but they wore technical
-    # garb and slipped every deferral pattern above. This register catches
-    # the "I did my part, waiting on you" frame.
+    # fix — takes effect on next proxy restart" and similar "needs an external
+    # action before it lands" handoffs. Those ARE handoffs, but they wore
+    # technical garb and slipped every deferral pattern above. This register
+    # catches the "I did my part, waiting on you" frame.
     "still banked",
     "banked for",
     "banked until",
@@ -288,7 +288,6 @@ DEFERRAL_PHRASES = (
     "needs a reload",
     "only takes effect",
     "once the proxy restarts",
-    "once chat restarts",
     "once the user reloads",
     "when you restart",
     "when you reload",
@@ -341,7 +340,7 @@ DEFERRAL_REGEXES = (
         re.IGNORECASE,
     ),
     re.compile(
-        r"\bonce\s+(you\s+|the\s+)?(restart|reload|proxy|chat|panel|session|user)\b",
+        r"\bonce\s+(you\s+|the\s+)?(restart|reload|proxy|session|user)\b",
         re.IGNORECASE,
     ),
     # "I can build/implement/fix that" -- offering future work instead of

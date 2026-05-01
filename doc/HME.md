@@ -194,57 +194,9 @@ worker (`tools/HME/service/worker.py`, default port 9098). RAG config lives in
 The proxy at port 9099 still intercepts inference calls for observability and
 injection — it just no longer speaks MCP to Claude Code.
 
-## HME Chat (Browser)
+## HME Worker HTTP
 
-A browser chat UI at `tools/HME/chat/` that routes every message through the HME intelligence layer. Start with `tools/HME/chat/start-browser.sh`.
-
-### Routes
-
-| Route | Backend | When to use |
--
-| `claude` | Claude CLI (long-lived stream-json pool, one process per chat session) | Architectural work, multi-file changes, security, KB-dense work |
-| `local` | llama-server (`/v1/chat/completions`, agentic tool loop) | Fast single-file edits, explanations, quick lookups |
-| `hybrid` | local model + KB context enrichment from HME shim | Codebase-aware local responses without Claude API cost |
-| `auto` | Arbiter (qwen3:4b at port 11436) classifies then routes | Let the system decide — routes to claude or local based on complexity |
-| `agent` | local + hybrid in parallel | Side-by-side comparison mode |
-
-### Key Components
-
-```
-src/
-  server.ts             Express host: SSE /api/events + POST /api/message + static browser.html
-  BrowserPanel.ts       Panel orchestrator + send pipeline + session management
-  chatStreaming.ts      runStream harness + route-specific stream functions
-  Arbiter.ts            Message classifier (qwen3:4b) + narrative synthesis
-  msgHelpers.ts         Claude config validation + llamacpp opt resolution
-  router.ts             Type barrel + re-exports
-  routers/
-    RouterInterface.ts  Normalized RouterAdapter contract + wrapLegacyStream
-    adapters.ts         Concrete adapters: claude / llamacpp / hybrid
-    routerClaude.ts     Claude adapter entrypoint + usedPct sanitization helpers
-    claudeProcessPool.ts Long-lived `claude --input-format stream-json` process pool (one per chat session)
-    routerLlamacpp.ts   llama-server SSE streaming + agentic tool loop
-    routerHme.ts        HME HTTP shim client + hybrid stream
-  session/
-    SessionStore.ts     Workspace-hashed JSON persistence (~/.config/hme-chat/)
-    TranscriptLogger.ts JSONL session transcript + narrative signals
-    chatChain.ts        Context-chain threshold + chain link creation
-    crossRouteHistory.ts History portability when switching routes
-  panel/
-    PanelHost.ts        Narrow post/postError surface exposed to components
-    ShimSupervisor.ts   Polls worker /health + reports status to the UI
-    ContextMeter.ts     Token % tracking + chain threshold detection
-    ChainPerformer.ts   Executes chain rotation (saves link, clears session)
-    StreamPersister.ts  Crash-safe partial message recovery
-    ErrorSink.ts        Structured error accumulator + disk fallback
-    webviewMessages.ts  Typed browser → server message dispatch
-webview/
-  browser.html          Single-file browser UI (CSS + DOM + SSE client)
-```
-
-### HME Worker HTTP
-
-The Python worker at `mcp/worker.py` absorbs the endpoints the chat and hooks rely on (previously split across a separate `hme_http.py` shim, now consolidated). Endpoints:
+The Python worker at `mcp/worker.py` exposes endpoints used by hooks and other HME components:
 - `POST /enrich` — KB top-k retrieval for hybrid context injection
 - `POST /enrich_prompt` — Full reasoning-model prompt enrichment (200s timeout)
 - `POST /validate` — Rule validation + constraint warnings
@@ -252,29 +204,7 @@ The Python worker at `mcp/worker.py` absorbs the endpoints the chat and hooks re
 - `POST /transcript` — Session narrative mirroring into KB
 - `GET /health` — Readiness check
 
-### Auto-routing Arbiter
-
-When route is `auto`, `classifyMessage()` in `Arbiter.ts` calls qwen3:4b (port 11436, CPU-only) with the message + recent transcript context. Decisions are cached 30s to avoid redundant calls. Low-confidence local decisions (< 65%) are automatically escalated to Claude. Falls back to Claude on any arbiter error.
-
-### Router adapter layer
-
-Tonight's unification pass introduced a normalized `RouterAdapter` interface in [tools/HME/chat/src/routers/RouterInterface.ts](../tools/HME/chat/src/routers/RouterInterface.ts). Three adapters in [adapters.ts](../tools/HME/chat/src/routers/adapters.ts):
-
-- `claudeAdapter` — pool-backed `claude --input-format stream-json` process, one per chat session
-- `llamacppAdapter` — llama.cpp agentic loop
-- `hybridAdapter` — llama.cpp + KB enrichment
-
-New code should consume routes via `getAdapterForRoute(route)` + `runAdapter(adapter, messages, opts)`. Each adapter returns a `StreamHandle { cancel(), done: Promise<StreamResult> }` — unified error shape, sessionId/token-usage callbacks, and optional `deadlineMs` wall-clock cap. The legacy `streamXxxMsg` functions in `chatStreaming.ts` still work via callbacks and will migrate to the adapter pattern incrementally.
-
-### Claude process pool (fixes 10x-context regression)
-
-Prior to this pass, the chat spawned `claude -p --resume <sessionId>` per message — cold CLI start, full session hydration from disk, no prompt cache hit on turn 2+. Observed cost: 10x the context usage and 10x the latency of VS Code's long-lived Claude Code extension (which holds the session in memory).
-
-[claudeProcessPool.ts](../tools/HME/chat/src/routers/claudeProcessPool.ts) keeps one `claude` process alive per chat session, driven by `--input-format stream-json` + `--output-format stream-json`. Turn 1 hydrates and builds the prompt cache; turn 2+ hits `cache_read_input_tokens` at full efficiency. The pool kills the process on session delete, model/effort/thinking change (CLI args can't change mid-flight — respawn with `--resume`), user cancel, or idle > 30 min (configurable via `reapIdleClaudeProcesses`).
-
-Subscription billing is preserved because we still shell out to `claude` (OAuth-based). Switching to `@anthropic-ai/claude-agent-sdk` would have required `ANTHROPIC_API_KEY` (API credits) — Anthropic blocks third-party OAuth usage in SDK apps.
-
-### Self-coherence probes (added 2026-04-23)
+## Self-coherence probes (added 2026-04-23)
 
 Selftest now runs these additional structural probes beyond the legacy 17:
 
@@ -294,7 +224,7 @@ Selftest now runs these additional structural probes beyond the legacy 17:
 
 Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert the corresponding probe catches them — `run-all.sh` runs the full battery.
 
-### Stop-hook behavioral detectors
+## Stop-hook behavioral detectors
 
 Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes nine detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop.sh) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
 
@@ -311,17 +241,6 @@ Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py),
 | `exhaust_check` | Unconditional sister of `early_stop`: ANY final text with a deferral phrase (`noted not fixed`, `remaining tools`, `TBD:`, `not yet fixed`, `for a future turn`, 30+ phrases) followed by 3+ bullet lines. Doesn't gate on user prompt — enumeration-of-deferred-work is always a violation. Born 2026-04-23 when `early_stop`'s phrase list missed the "Round complete... two minor UX gaps left as-is" closing pattern. |
 
 Add a new detector by: (1) create `tools/HME/scripts/detectors/<name>.py` with a `main()` that prints one verdict line, (2) register in `DETECTORS` in `run_all.py`, (3) add a block branch in `stop.sh`. Pair with a fixture under `scripts/detectors/fixtures/` and a chaos injector under `scripts/chaos/` — an un-chaos-verified detector decays silently into an always-PASS.
-
-### Chat invariants (tonight's pass added these guarantees)
-
-| Invariant | Where enforced | Failure mode it prevents |
-| --- | --- | --- |
-| Stream-frame parse errors surface to UI | `routerLlamacpp.ts` JSON parse → `onChunk(..., "error")` | Silent token loss when API returns partial / malformed SSE frame |
-| Agent-mode `read_file`/`write_file` paths constrained to `workingDir` | `_resolveWithinWorkdir` in `routerLlamacpp.ts` | Path-traversal escape via `../` or absolute path |
-| Message queue bounded to 10 pending | `BrowserPanel.ts` send-queue gate | Unbounded growth when stream is stuck and user spams send |
-| Transcript writes serialized through write queue | `TranscriptLogger.ts` `_flushQueue` | Interleaved JSONL lines from agent-mode parallel streams |
-| Shim POST retries once on transient failure | `routerHme.ts` `shimPost` | User-facing failure during 1-2s shim restart windows |
-| ContextMeter null-pct alert decays | `ContextMeter.ts` shouldAlert ladder (1, 10, 50, 100…) | Log spam on long sessions where usedPct is structurally absent |
 
 ## Setup
 
@@ -416,7 +335,6 @@ HME ships three smoke-test scripts and a chaos-injection battery. Run any direct
 | --- | --- |
 | `scripts/test/smoke-test-i-wrappers.sh` | Every `i/*` shell wrapper resolves + returns a non-error response |
 | `scripts/test/smoke-test-indexing-mode.sh` | Full `/indexing-mode` cycle: daemon+worker reachable → coder suspended → embedders reloaded → index runs → coder respawns healthy → selftest still READY |
-| `scripts/test/smoke-test-chat.sh` | Chat server boots → SSE subscriber attaches → POST accepted → SSE event delivered (listSessions triggers a sessionList broadcast) → all 5 assertions pass |
 | `scripts/test/test-lifecycle-writers.py` | Unit test for `server/lifecycle_writers.py` — 7 assertions covering registry load, accept/reject/unknown-domain, override rejection, idempotency |
 
 Chaos injectors live in `scripts/chaos/`:
@@ -669,7 +587,7 @@ Six agent-callable MCP tools route every public capability: `evolve`, `review`, 
 
 `hook_target` options: `pretooluse_bash`, `pretooluse_edit`, `pretooluse_read`, `pretooluse_grep`, `pretooluse_write`, `posttooluse_bash`, `stop`, `userpromptsubmit`.
 
-`enrich_prompt` is an internal function accessible via HTTP shim (`/enrich_prompt`) and HME Chat UI — not an MCP tool.
+`enrich_prompt` is an internal function accessible via HTTP shim (`/enrich_prompt`) — not an MCP tool.
 
 ## Knowledge KB
 

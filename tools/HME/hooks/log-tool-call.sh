@@ -130,7 +130,7 @@ rm -f "$_LTC_BUILD_ERR" 2>/dev/null
 # PROJECT_ROOT comes from .env via _safety.sh. Never fall back to CWD/pwd — the
 # hook's .cwd field is the TOOL's working directory (which can be anywhere in
 # the tree), and using it as PROJECT_ROOT silently spawns duplicate log/
-# directories (tools/HME/chat/log/, tools/HME/chat/webview/log/, etc.).
+# directories in subprojects.
 if [ -z "${PROJECT_ROOT:-}" ] || [ ! -d "$PROJECT_ROOT/src" ]; then
   echo "log-tool-call: PROJECT_ROOT unset or invalid ($PROJECT_ROOT) — skipping transcript write" >&2
   exit 0

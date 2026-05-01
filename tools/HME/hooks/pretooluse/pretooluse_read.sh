@@ -11,12 +11,6 @@ LIMIT=$(_safe_jq "$INPUT" '.tool_input.limit' '')
 
 [ -z "$FILE" ] && exit 0
 
-# Block reads of compiled output — out/ is a black box; read the .ts source instead
-if echo "$FILE" | grep -q "tools/HME/chat/out/"; then
-  _emit_block "BLOCKED: tools/HME/chat/out/ is a black box. Read the .ts source in tools/HME/chat/src/ instead."
-  exit 2
-fi
-
 # Block reads of the deprecated memory directory. Reading (even just to
 # "see what's there") legitimizes the abstraction; if the agent needs
 # historical context it queries HME KB via i/learn.

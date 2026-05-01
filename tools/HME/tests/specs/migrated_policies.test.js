@@ -65,19 +65,6 @@ test('secrets: allow non-credential filename containing "key" word', async () =>
   assert.strictEqual(r.decision, 'allow');
 });
 
-// ── block-out-dir-writes ─────────────────────────────────────────────
-const outDir = require('../../policies/builtin/block-out-dir-writes');
-
-test('out-dir: deny tools/HME/chat/out path', async () => {
-  const r = await outDir.fn(_ctx({ toolInput: { file_path: '/proj/tools/HME/chat/out/Panel.js' } }));
-  assert.strictEqual(r.decision, 'deny');
-});
-
-test('out-dir: allow .ts source path', async () => {
-  const r = await outDir.fn(_ctx({ toolInput: { file_path: '/proj/tools/HME/chat/src/Panel.ts' } }));
-  assert.strictEqual(r.decision, 'allow');
-});
-
 // ── block-misplaced-log-tmp ──────────────────────────────────────────
 const logTmp = require('../../policies/builtin/block-misplaced-log-tmp');
 

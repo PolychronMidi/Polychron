@@ -55,14 +55,6 @@ if _policy_enabled block-mid-pipeline-write && [ -f "${PROJECT_ROOT}/tmp/run.loc
   exit 2
 fi
 
-# Block direct edits to compiled output — edit the .ts source instead.
-# JS counterpart: block-out-dir-writes.
-if _policy_enabled block-out-dir-writes && echo "$FILE" | grep -q "tools/HME/chat/out/"; then
-  cd "${PROJECT_ROOT}/tools/HME/chat" && npx tsc 2>&1 | tail -20 >&2 || true
-  _emit_block "BLOCKED: Do NOT edit files in tools/HME/chat/out/ directly — edit the .ts source in tools/HME/chat/src/ instead. tsc has been run to compile any pending src/ changes."
-  exit 2
-fi
-
 # Block edits to the auto-memory directory (parity with pretooluse_write.sh).
 # Memories are deprecated; HME KB (i/learn) is canonical.
 if echo "$FILE" | grep -qE '\.claude/projects/.*/(memory/|MEMORY\.md)'; then

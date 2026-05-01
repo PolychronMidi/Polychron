@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect early-stop on open-ended HME/chat/tooling rounds.
+"""Detect early-stop on open-ended HME/tooling rounds.
 
 Pattern (the "enumerate-and-ceremony" antipattern from 2026-04-23):
 

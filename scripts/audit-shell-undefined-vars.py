@@ -55,7 +55,6 @@ ENV_FILE = REPO_ROOT / ".env"
 EXTRA_SCAN_DIRS = [
     REPO_ROOT / "tools" / "HME" / "launcher",
     REPO_ROOT / "tools" / "HME" / "proxy",   # test-proxy*.sh etc.
-    REPO_ROOT / "tools" / "HME" / "chat",    # start-browser.sh
     REPO_ROOT / "tools" / "HME" / "scripts", # setup_*.sh
 ]
 

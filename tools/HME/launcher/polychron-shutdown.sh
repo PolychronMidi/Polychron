@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Stop the full HME stack: chat server, proxy (which supervises worker +
-# llamacpp_daemon), and llama-server instances.
+# Stop the full HME stack: proxy (which supervises worker +
+# llamacpp_daemon) and llama-server instances.
 #
 # Strategy:
 #   1. SIGTERM to all known PIDs (from log/hme-pids if present)
@@ -54,8 +54,6 @@ _PATTERNS=(
   "hme_proxy.js"
   "worker.py"
   "llamacpp_daemon"
-  "hme-chat"
-  "out/server.js"
   "llama-server.*8080"
   "llama-server.*8081"
 )

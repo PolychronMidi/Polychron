@@ -99,7 +99,7 @@ print(json.dumps(payload))
 fi
 
 # LIFESAVER — HME Error Log Monitor
-# LIFE-OR-DEATH: The HME Chat panel writes errors to log/hme-errors.log.
+# LIFE-OR-DEATH: HME components write errors to log/hme-errors.log.
 # THIS is the ONLY mechanism that makes those errors visible to this agent.
 # Every error, everywhere, MUST be diagnosed and FIXED. Not acknowledged — FIXED.
 # An error that is seen and not fixed is WORSE than an unseen error.

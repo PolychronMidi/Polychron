@@ -1,5 +1,5 @@
 # LIFESAVER — mid-turn error detection
-# LIFE-OR-DEATH: Catch errors that fired in HME Chat DURING this turn.
+# LIFE-OR-DEATH: Catch errors that fired in HME components DURING this turn.
 # Block stopping — errors that appeared while you worked MUST be fixed before return.
 # Acknowledging without fixing is the violation this system exists to prevent.
 PROJECT="$PROJECT_ROOT"

@@ -22,7 +22,7 @@ _emit_block() {
 
 # Path / module helpers
 
-# Returns 0 if PATH is a project source file (src/ or HME chat/mcp).
+# Returns 0 if PATH is a project source file (src/ or tools/).
 _is_project_src() { echo "$1" | grep -qE "$_HME_SRC_PATTERN"; }
 
 # Returns 0 if PATH is a project editable source file (adds scripts/).

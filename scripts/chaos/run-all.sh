@@ -16,7 +16,6 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _injectors=(
   "daemon-thread-hygiene:inject-silent-thread-crash.sh"
   "llama-server-count:inject-duplicate-llama-server.sh"
-  "adapter-deadline:inject-adapter-deadline.js"
   "early-stop-detector:inject-early-stop.sh"
   "exhaust-check-detector:inject-exhaust-check.sh"
 )

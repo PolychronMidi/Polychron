@@ -261,11 +261,11 @@ _correct_check() {
 
 # Inline cd && i/tool
 _correct_check "inline cd && i/status rewrites to absolute" \
-  "cd tools/HME/chat && i/status" "" \
+  "cd tools/HME/scripts && i/status" "" \
   "/home/jah/Polychron/i/status"
 
 # tool_input.cwd to subdir
-INPUT=$(jq -n '{"tool_input":{"command":"i/status","cwd":"/home/jah/Polychron/tools/HME/chat"}}')
+INPUT=$(jq -n '{"tool_input":{"command":"i/status","cwd":"/home/jah/Polychron/tools/HME/scripts"}}')
 OUT=$(echo "$INPUT" | bash tools/HME/hooks/pretooluse/pretooluse_bash.sh 2>&1)
 if echo "$OUT" | grep -qF "/home/jah/Polychron/i/status"; then
   _ok "auto-correct: tool_input.cwd to subdir rewrites"

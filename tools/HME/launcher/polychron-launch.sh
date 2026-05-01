@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
-# Polychron launcher — starts the full HME stack (no VS Code), then opens
-# the chat UI in Chromium.
+# Polychron launcher — starts the full HME stack (no VS Code).
 #
 # Start order:
 #   1. HME proxy (supervises worker.py + llamacpp_daemon/ package automatically)
 #   2. llama-server instances (arbiter :8080, coder :8081) — if HME_AUTOLAUNCH_LLAMA=1
-#   3. HME chat server (out/server.js on HME_CHAT_PORT, default 3131)
-#   4. Health check — waits for proxy + chat to be ready
-#   5. Chromium → chat URL
+#   3. Health check — waits for proxy to be ready
 #
 # Idempotent: each component is skipped if already running on its port.
 # PID file: log/hme-pids  — records PIDs started by this launcher for
@@ -47,11 +44,8 @@ fi
 
 PROJECT_ROOT="${PROJECT_ROOT:-$_PROJECT_ROOT_FALLBACK}"
 PROXY_PORT="${HME_PROXY_PORT:-9099}"
-CHAT_PORT="${HME_CHAT_PORT:-3131}"
 PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
-CHAT_URL="http://localhost:${CHAT_PORT}"
 PROXY_STARTUP_TIMEOUT="${HME_PROXY_STARTUP_TIMEOUT:-25}"
-CHAT_STARTUP_TIMEOUT=15
 
 PID_FILE="$PROJECT_ROOT/log/hme-pids"
 mkdir -p "$PROJECT_ROOT/log"
@@ -139,51 +133,7 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ] && [ -x "${HME_LLAMA_SERVER_BIN:-}" ];
     "${HME_CODER_CTX:?HME_CODER_CTX not in .env}"
 fi
 
-# 3. HME chat server
-
-if _port_healthy "${CHAT_URL}/api/health" || _port_healthy "${CHAT_URL}"; then
-  echo "[launch] chat server already up on :${CHAT_PORT}" >&2
-else
-  # Compile TS → JS if any source file is newer than its compiled counterpart,
-  # or if out/ is missing entirely. Keeps running server untouched when no-op.
-  _chat_dir="$PROJECT_ROOT/tools/HME/chat"
-  _needs_build=0
-  if [ ! -f "$_chat_dir/out/server.js" ]; then
-    _needs_build=1
-  elif [ -n "$(find "$_chat_dir/src" -name '*.ts' -newer "$_chat_dir/out/server.js" -print -quit 2>/dev/null)" ]; then
-    _needs_build=1
-  fi
-  if [ "$_needs_build" = 1 ]; then
-    echo "[launch] compiling chat TS → JS..." >&2
-    if ! (cd "$_chat_dir" && npx tsc -p . > "$PROJECT_ROOT/log/hme-chat-build.log" 2>&1); then
-      echo "[launch] ERROR: tsc failed — see $PROJECT_ROOT/log/hme-chat-build.log" >&2
-      exit 1
-    fi
-  fi
-  echo "[launch] starting HME chat server on :${CHAT_PORT}..." >&2
-  cd "$PROJECT_ROOT/tools/HME/chat"
-  HME_CHAT_PORT="$CHAT_PORT" PROJECT_ROOT="$PROJECT_ROOT" \
-    setsid nohup node out/server.js \
-      > "$PROJECT_ROOT/log/hme-chat.out" 2>&1 < /dev/null &
-  _CHAT_PID=$!
-  disown 2>/dev/null || true
-  _record_pid chat "$_CHAT_PID"
-
-  _waited=0
-  while [ "$_waited" -lt "$CHAT_STARTUP_TIMEOUT" ]; do
-    (_port_healthy "${CHAT_URL}/api/health" || _port_healthy "${CHAT_URL}") && break
-    sleep 1
-    _waited=$((_waited + 1))
-  done
-
-  if _port_healthy "${CHAT_URL}/api/health" || _port_healthy "${CHAT_URL}"; then
-    echo "[launch] chat ready after ${_waited}s" >&2
-  else
-    echo "[launch] WARN: chat server not responding after ${CHAT_STARTUP_TIMEOUT}s — opening URL anyway" >&2
-  fi
-fi
-
-# 4. Initial health check
+# 3. Initial health check
 
 echo "[launch] health check..." >&2
 _proxy_status=$(curl -sf --max-time 3 "${PROXY_URL}/health" 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "unreachable")
@@ -198,14 +148,6 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
   echo "[launch]   arbiter llama → ${_arb_ok}" >&2
   echo "[launch]   coder llama   → ${_cod_ok}" >&2
 fi
-
-# 5. Open Chromium
-
-echo "[launch] opening ${CHAT_URL}" >&2
-(chromium --app="${CHAT_URL}" 2>/dev/null \
-  || chromium-browser --app="${CHAT_URL}" 2>/dev/null \
-  || xdg-open "${CHAT_URL}" 2>/dev/null) &
-disown 2>/dev/null || true
 
 echo "[launch] stack up — PIDs logged to ${PID_FILE}" >&2
 # Mark success so the EXIT trap leaves the stack alone.
