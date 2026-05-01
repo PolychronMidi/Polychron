@@ -240,12 +240,14 @@ def _list_buddies() -> list[dict]:
         return []
     if _DISPATCH_MODE == "synthesis":
         # Single virtual worker — synthesis_reasoning has its own
-        # provider cascade so we don't need parallel buddy slots.
+        # provider cascade. Floor=easy keeps it fully dynamic per task
+        # (effective = max(item_tier, easy) = item_tier). Pinning to
+        # medium/hard would silently escalate every easy task.
         return [{
             "slot": 1,
             "sid": "synthesis",  # sentinel: dispatch routes through synthesis_reasoning
-            "floor": "medium",
-            "effort_floor": "medium",
+            "floor": "easy",
+            "effort_floor": "low",
             "sid_file": None,
             "processing_dir": QUEUE_PROCESSING / "synthesis-1",
         }]
@@ -254,17 +256,19 @@ def _list_buddies() -> list[dict]:
     def _read_floor_pair(sid_file: Path):
         """Read companion .floor and .effort_floor files. effort_floor
         defaults to the canonical effort level for the model floor when
-        absent (e.g. model-floor=medium → effort-floor=medium)."""
+        absent (e.g. model-floor=easy → effort-floor=low). Missing/
+        invalid files default to easy/low so the buddy stays dynamic
+        rather than being silently escalated."""
         floor_file = sid_file.with_suffix(".floor")
         effort_file = sid_file.with_suffix(".effort_floor")
-        m_floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
-        m_floor = m_floor if m_floor in TIER_NAMES else "medium"
+        m_floor = floor_file.read_text().strip() if floor_file.exists() else "easy"
+        m_floor = m_floor if m_floor in TIER_NAMES else "easy"
         if effort_file.exists():
             e_floor = effort_file.read_text().strip()
             if e_floor not in EFFORT_NAMES:
-                e_floor = TIER_TO_EFFORT.get(m_floor, "medium")
+                e_floor = TIER_TO_EFFORT.get(m_floor, "low")
         else:
-            e_floor = TIER_TO_EFFORT.get(m_floor, "medium")
+            e_floor = TIER_TO_EFFORT.get(m_floor, "low")
         return m_floor, e_floor
     # Single-buddy back-compat path
     legacy_sid = tmp / "hme-buddy.sid"
@@ -1414,12 +1418,15 @@ def _discover_buddy_sessions() -> list[dict]:
     """
     sessions = []
     tmp = PROJECT_ROOT / "tmp"
+    # Missing-floor fallback is "easy" (dynamic) rather than "medium" so a
+    # buddy whose .floor companion didn't get written stays flexible per
+    # task instead of silently escalating easy tasks. Mirrors _read_floor_pair.
     legacy = tmp / "hme-buddy.sid"
     if legacy.exists() and legacy.read_text().strip():
         floor_file = legacy.with_suffix(".floor")
         effort_file = legacy.with_suffix(".effort_floor")
-        m_floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
-        e_floor = effort_file.read_text().strip() if effort_file.exists() else m_floor
+        m_floor = floor_file.read_text().strip() if floor_file.exists() else "easy"
+        e_floor = effort_file.read_text().strip() if effort_file.exists() else TIER_TO_EFFORT.get(m_floor, "low")
         sessions.append({"slot": 1, "sid": legacy.read_text().strip(),
                          "floor": m_floor, "effort_floor": e_floor,
                          "sid_file": str(legacy)})
@@ -1434,8 +1441,8 @@ def _discover_buddy_sessions() -> list[dict]:
             continue
         floor_file = sid_file.with_suffix(".floor")
         effort_file = sid_file.with_suffix(".effort_floor")
-        m_floor = floor_file.read_text().strip() if floor_file.exists() else "medium"
-        e_floor = effort_file.read_text().strip() if effort_file.exists() else m_floor
+        m_floor = floor_file.read_text().strip() if floor_file.exists() else "easy"
+        e_floor = effort_file.read_text().strip() if effort_file.exists() else TIER_TO_EFFORT.get(m_floor, "low")
         sessions.append({"slot": slot, "sid": sid,
                          "floor": m_floor, "effort_floor": e_floor,
                          "sid_file": str(sid_file)})
