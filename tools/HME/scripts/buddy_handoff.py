@@ -134,9 +134,16 @@ def _record_consult(sid: str, question: str) -> None:
     who initiated) so cross-session forensics can answer 'who's been
     hammering this senior'. Falls back to None when no primary is
     recorded (e.g. test sandbox or pre-paradigm session)."""
+    # Q8a: search active pool first, fall back to archive — archived
+    # seniors stay callable, and consult history should accrue to
+    # whichever file represents them. If neither exists, no-op (consult
+    # to active primary or unknown sid).
     senior_file = SENIORS_DIR / f"{sid}.json"
     if not senior_file.exists():
-        return
+        archive_file = SENIORS_DIR / "_archive" / f"{sid}.json"
+        if not archive_file.exists():
+            return
+        senior_file = archive_file
     caller_sid = None
     if PRIMARY_SID.exists():
         try:
@@ -292,7 +299,18 @@ def cmd_status(args: argparse.Namespace) -> int:
     if primary:
         ctx = bd._buddy_context_used(primary["sid"])
         if ctx is None:
-            ctx_str = "ctx=?  (no transcript)"
+            # Q2 resolution: distinguish three states for the primary's
+            # ctx readout. (1) known% is the normal case below. (2) When
+            # transcript_path resolves but produces no usage events, we
+            # report "transient unknown" — typical right after spawn
+            # before the first assistant turn. (3) When transcript_path
+            # is None entirely, the file has been purged — confirmed
+            # stale, mirroring the senior-pool [stale] flag from Q5.
+            transcript_path = bd._transcript_path_for_sid(primary["sid"])
+            if transcript_path is None:
+                ctx_str = "ctx=missing  (transcript purged — primary is stale)"
+            else:
+                ctx_str = "ctx=?  (transcript exists, no usage parsed yet)"
             ctx_pct = 0.0
         else:
             bar_width = 10
@@ -305,7 +323,15 @@ def cmd_status(args: argparse.Namespace) -> int:
               f"effort={primary['effort_floor']} {ctx_str}")
     else:
         print("primary: <none>  (next SessionStart will spawn a fresh primary)")
-    print(f"seniors: {len(seniors)} retired")
+    senior_hint = ""
+    if len(seniors) >= 10:
+        # Q8a: surface a hint so the operator knows they can run
+        # `i/handoff archive sid=<X>` to thin the active pool. No
+        # automatic GC — the operator picks which seniors are still
+        # worth hot-loading at status time.
+        senior_hint = ("  (consider archiving older entries via "
+                       "`i/handoff archive sid=<X>`)")
+    print(f"seniors: {len(seniors)} retired{senior_hint}")
     for s in seniors:
         c = s.get("context_at_retire") or {}
         tk = c.get("tokens", 0) if isinstance(c, dict) else 0
@@ -376,6 +402,34 @@ def cmd_ensure_primary(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_archive(args: argparse.Namespace) -> int:
+    """Q8a: move seniors/<sid>.json to seniors/_archive/<sid>.json so the
+    senior is hidden from default `i/handoff status` output but remains
+    callable via i/consult (which searches both locations). Operator-
+    driven — no automatic GC heuristic. The historical record (consults,
+    retire metadata) is preserved in archive.
+
+    Symmetric with the auto-archive `_promote()` does when promoting an
+    existing senior back to active (Q6); this is the manual variant for
+    aging out seniors that haven't been consulted in a while."""
+    if not args.sid:
+        print("--sid required", file=sys.stderr)
+        return 2
+    senior_file = SENIORS_DIR / f"{args.sid}.json"
+    if not senior_file.exists():
+        print(f"sid {args.sid} not in active senior pool "
+              f"(check seniors/_archive/ for already-archived)", file=sys.stderr)
+        return 1
+    archive_dir = SENIORS_DIR / "_archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_dir / f"{args.sid}.json"
+    if archive_path.exists():
+        archive_path = archive_dir / f"{args.sid}.{int(time.time())}.json"
+    senior_file.rename(archive_path)
+    print(f"archived sid={args.sid} -> {archive_path.relative_to(PROJECT_ROOT)}")
+    return 0
+
+
 def cmd_promote(args: argparse.Namespace) -> int:
     if not args.sid:
         print("--sid required")
@@ -419,13 +473,20 @@ def cmd_consult(args: argparse.Namespace) -> int:
     if not args.sid or not args.question:
         print("--sid=<senior-sid> AND --question=\"...\" both required")
         return 2
+    # Q8a addendum: archived seniors must remain callable via i/consult
+    # — archiving means "hidden from default status," not "removed from
+    # the consultable pool." Search both the active pool and the archive
+    # before deciding the target is unknown.
     senior_file = SENIORS_DIR / f"{args.sid}.json"
-    if not senior_file.exists():
+    archive_file = SENIORS_DIR / "_archive" / f"{args.sid}.json"
+    target_known = senior_file.exists() or archive_file.exists()
+    if not target_known:
         # Allow consulting the active primary too (sometimes useful for
         # cross-checking) but warn the user.
         primary = _read_primary()
         if primary is None or primary["sid"] != args.sid:
-            print(f"warning: sid {args.sid} is not in the senior pool", file=sys.stderr)
+            print(f"warning: sid {args.sid} is not in the senior pool "
+                  f"(active or archived)", file=sys.stderr)
     import subprocess
     cmd = ["claude", "--resume", args.sid, "-p", args.question]
     # Identify the target's role correctly. In this paradigm a buddy
@@ -472,6 +533,43 @@ def cmd_consult(args: argparse.Namespace) -> int:
     except OSError:
         pass  # best-effort lock; proceed without if filesystem refuses
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
+    # Q9 resolution: when consulting a senior whose ctx has grown past
+    # the pre-compaction floor, warn-and-proceed (NOT refuse — refuse
+    # is too aggressive without manifest harm). Cool-down: first warn
+    # for a senior at >80% goes loud (stderr); subsequent warns for the
+    # same senior within 1h go to debug only so we don't train the
+    # operator to ignore them. mtime on tmp/hme-consult-warn-cooldown/
+    # <sid> is the cool-down state (no parsing needed).
+    bd_for_warn = _import_dispatcher()
+    pre_compaction_floor = 80.0
+    cooldown_window_s = 3600
+    if role == "senior":
+        ctx_data = bd_for_warn._buddy_context_used(args.sid)
+        if ctx_data and ctx_data.get("used_pct", 0) >= pre_compaction_floor:
+            cooldown_dir = TMP / "hme-consult-warn-cooldown"
+            cooldown_dir.mkdir(parents=True, exist_ok=True)
+            cooldown_file = cooldown_dir / f"{args.sid}.warn"
+            recently_warned = False
+            if cooldown_file.exists():
+                try:
+                    age = time.time() - cooldown_file.stat().st_mtime
+                    recently_warned = age < cooldown_window_s
+                except OSError:
+                    pass
+            warn_msg = (f"senior {args.sid} ctx={ctx_data['used_pct']:.1f}% "
+                        f"is past the pre-compaction floor "
+                        f"({pre_compaction_floor:.0f}%). Each consult adds "
+                        f"tokens; auto-compaction will wipe accumulated "
+                        f"context if it crosses ~90%. Proceeding anyway — "
+                        f"see BUDDY_SYSTEM.md Q9.")
+            if recently_warned:
+                print(f"# [debug] {warn_msg}", file=sys.stderr)
+            else:
+                print(f"# WARNING: {warn_msg}", file=sys.stderr)
+                try:
+                    cooldown_file.write_text(f"{time.time()}\n")
+                except OSError:
+                    pass
     # Dynamic timeout = max(floor, resume_cost + response_budget):
     #   - floor: 1800s (30 min) for small buddies and stale-senior fallback.
     #   - resume_cost: 30s per MB of transcript (claude --resume spin-up).
@@ -545,6 +643,12 @@ def main() -> int:
     p_consult.add_argument("--sid", required=True)
     p_consult.add_argument("--question", required=True)
     p_consult.set_defaults(func=cmd_consult)
+
+    p_archive = sub.add_parser("archive",
+                               help="move a senior out of the active pool to "
+                                    "seniors/_archive/ (still callable via i/consult)")
+    p_archive.add_argument("--sid", required=True)
+    p_archive.set_defaults(func=cmd_archive)
 
     p_ensure = sub.add_parser("ensure_primary",
                               help="lazy-spawn a primary if none exists "

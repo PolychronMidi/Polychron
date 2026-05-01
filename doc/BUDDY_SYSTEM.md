@@ -134,28 +134,40 @@ be consulted on the rationale:
    tightening. (Behavior under retire mid-dispatch: in-flight
    tasks complete on the soon-to-retire primary; subsequent tasks
    get the fresh primary the next drain spawns.)
-2. **Transcript GC.** Claude Code's own session GC may rotate or
-   archive a senior's transcript JSONL. `_buddy_context_used` returns
-   `null` on missing transcripts; status shows `ctx=?`. Question:
-   should that null specifically trigger auto-retire as a safety
-   (assume archived = no longer growing) or should it surface a
-   different sentinel that the dispatcher can treat as "unknown but
-   keep using"?
-3. **Specialization carry-forward.** Inherited primaries default to
-   `floor=easy` (fully dynamic). When a primary retires after a
-   session of mostly-hard tasks, that earned specialization is lost
-   on the next primary's bootstrap. Question: should `_retire`
-   measure the actual tier distribution of the retiring primary's
-   work and stamp the next inaugural primary with a derived floor,
-   or is "fresh primary defaults dynamic" the right design?
-4. **Dynamic per-tier override near retirement.** Currently
-   `HME_DISPATCH_SYNTHESIS_TIERS` is static (e.g. `easy`). When the
-   primary's context approaches `BUDDY_RETIRE_PCT`, every routed
-   medium/hard task pushes it closer to forced retirement. Question:
-   should the dispatcher widen the synthesis tier set (e.g. add
-   `medium`) when ctx > 75% so the remaining quota is reserved for
-   hard problems only? Mechanism could be a single read of the
-   primary's context % at the start of each `_pick_buddy_for_task`.
+2. **Transcript GC — RESOLVED.** `_buddy_context_used` returning
+   None now distinguishes two states in `cmd_status`: (a) transcript
+   path resolves but no usage events parsed yet (`ctx=?  (transcript
+   exists, no usage parsed yet)` — typical right after spawn); (b)
+   transcript path doesn't resolve at all (`ctx=missing  (transcript
+   purged — primary is stale)` — mirrors Q5's senior-pool [stale]
+   flag). Decision (per 0e7fbf4d, settled): "keep using" rather than
+   auto-retire on null — silent retire on a measurement gap is
+   exactly the failure class HME exists to prevent.
+3. **Specialization carry-forward — REJECTED, "fresh dynamic" is
+   correct.** Decision (per 0e7fbf4d, settled): pinning the next
+   primary to a derived floor (medium/hard) would *reduce* its range
+   — easy=low-effort doesn't necessarily mean the buddy can't do
+   hard, but a medium-floor primary REFUSES easy work the previous
+   one happily handled. Specialization makes a senior valuable for
+   *consult*, not as a constraint on the next primary's intake. If
+   specialization carry-forward ever matters in practice, it should
+   surface as a *bootstrap-prompt hint* ("your senior specialized in
+   audio coupling") rather than a floor lock — that mechanism
+   doesn't exist yet, but rejecting the floor-derive path keeps the
+   future option open.
+4. **Dynamic per-tier override near retirement — needs operator
+   call.** Two designs surfaced in consult:
+   (a) Skip Q4 entirely, lower `BUDDY_RETIRE_PCT` default from 90 to
+   85 — one threshold, achieves "preserve quota for hard" via earlier
+   clean retire-then-fresh-primary handoff.
+   (b) Ship Q4 but tighten the band to 5% (85→90) so the
+   behavioral discontinuity window is bounded.
+   Buddy's lean is (a): the reroute mechanism's added complexity
+   isn't earning its keep against just retiring 5% sooner. This is
+   the kind of call where shipping the wrong one creates two-knob
+   complexity that's hard to remove later — operator picks. **No
+   default change yet.** When picked, this becomes the only knob to
+   change OR adds the dispatcher reroute logic.
 5. **Senior staleness vs tombstoning — RESOLVED.** `_list_seniors`
    flags `transcript_missing=True` when the senior's JSONL has been
    purged (Claude Code can rotate transcripts); status displays
@@ -183,37 +195,31 @@ be consulted on the rationale:
    single session. Question: add a per-sid lockfile
    (`tmp/hme-consult-lock/<sid>`) with stale-detection? What's the
    right TTL for "lock is stale, the prior consult must have crashed"?
-8. **Senior pool unbounded growth + expertise routing.** No GC; after
-   N retirements you have N seniors none of which were touched in
-   months. Future primary has no routing hint to pick the right
-   senior to consult. Two-part question: (a) add `i/handoff archive
-   sid=<X>` (move to `seniors/_archive/`) and a count threshold that
-   surfaces "seniors=N — consider archiving K oldest" in status; and
-   (b) record `expertise_topics: [...]` at retire time (derived from
-   tier distribution + commit history during the senior's primary
-   stint?) so `i/handoff status` can hint which senior knows which
-   subsystem.
-9. **Consult-driven senior protection.** Now that consult activity is
-   tracked per senior (`consults: [{ts, ts_iso, question_excerpt, caller_sid}]`,
-   capped at 50 entries; surfaced as `consults=N last=Xago` in
-   `i/handoff status`), the data exists to detect when consult cadence
-   is pushing a senior's transcript toward Claude Code's own
-   auto-compaction threshold. Note the asymmetry with primaries:
-   `BUDDY_RETIRE_PCT` (90%) is the threshold at which a *primary*
-   moves into the senior pool with its accumulated context preserved;
-   a senior crossing the same point has nowhere to go — auto-compaction
-   wipes the wisdom we retired them to protect. Question: when a
-   senior's ctx crosses some pre-compaction floor (e.g. 80%), should
-   `i/consult` (a) warn-and-proceed, (b) refuse new consults, or (c)
-   snapshot the transcript / migrate key findings to KB before
-   compaction eats them? Companion to question 1 (hot-path
-   auto-retire) which is about the *primary* path — this one is about
-   the *senior* path, and the answer should pick from a different
-   action set since "retire" isn't available. Critical: the protection
-   has to live in `i/consult` itself (the call site), not the
-   dispatcher — seniors aren't dispatch targets, so the dispatcher has
-   no causal lever to refuse or snapshot before tokens are added. Any
-   fix that lives in the dispatcher can't reach the right place.
+8. **Senior pool unbounded growth — RESOLVED (8a); expertise routing
+   DEFERRED (8b).** (8a, shipped) `i/handoff archive sid=<X>`
+   subcommand moves a senior to `seniors/_archive/<sid>.json` while
+   keeping it callable via `i/consult` (which now searches both
+   active pool and archive — archiving means "hidden from default
+   status," not "removed from consultable pool"). Status shows a
+   hint when seniors >= 10. No automatic GC; operator picks which
+   to age out. (8b, deferred) Auto-derived `expertise_topics` needs
+   either dispatch-log analysis (not yet built) or a structured
+   self-declaration prompt at retire time (which is its own design
+   pass). Defer until one of those mechanisms lands; without it,
+   the field would be either empty or noisy.
+9. **Consult-driven senior protection — RESOLVED.** Decision (per
+   0e7fbf4d, settled): warn-and-proceed at 80% pre-compaction floor.
+   Refuse is too aggressive without manifest harm; snapshot is
+   underspecified ("snapshot where, restored how"). `cmd_consult` now
+   checks the senior's ctx before invoking `claude --resume`; if
+   ctx ≥ 80%, prints a stderr WARNING with the cooldown-aware
+   wording. Cool-down at `tmp/hme-consult-warn-cooldown/<sid>` (mtime
+   based, 1h window): the FIRST warn for a given senior in 1h goes
+   loud; subsequent warns drop to `[debug]` so the operator isn't
+   trained to ignore the signal. Protection lives at the call site
+   (cmd_consult), not the dispatcher — seniors aren't dispatch
+   targets, so the dispatcher has no causal lever to act before
+   tokens are added.
 
 Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a

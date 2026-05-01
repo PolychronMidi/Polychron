@@ -1346,6 +1346,96 @@ test('buddy_handoff.py: consult emits caller_sid=None debug warning when no prim
   });
 });
 
+test('buddy_handoff.py: archive subcommand moves senior to _archive/ (still callable via consult)', () => {
+  // Q8a: archive hides from default status pool but keeps the senior
+  // callable via i/consult (which now searches both locations).
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    const sid = 'aging-senior';
+    fs.writeFileSync(path.join(seniorsDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low',
+      consults: [{ ts: 1, question_excerpt: 'old' }],
+    }));
+    const result = _runHandoff(sandbox, ['archive', '--sid=' + sid]);
+    assert.strictEqual(result.status, 0, `archive failed: ${result.stderr}`);
+    // Active pool is empty.
+    assert.ok(!fs.existsSync(path.join(seniorsDir, `${sid}.json`)));
+    // Archive has the file with full record preserved.
+    const archivePath = path.join(seniorsDir, '_archive', `${sid}.json`);
+    assert.ok(fs.existsSync(archivePath));
+    const rec = JSON.parse(fs.readFileSync(archivePath, 'utf8'));
+    assert.strictEqual(rec.consults[0].question_excerpt, 'old',
+      'historical record retained');
+    // Calling archive on a sid not in active pool returns nonzero.
+    const missResult = _runHandoff(sandbox, ['archive', '--sid=not-here']);
+    assert.notStrictEqual(missResult.status, 0,
+      'archive must fail loudly when sid is not in active pool');
+  });
+});
+
+test('buddy_handoff.py: cmd_consult records to archived senior file (Q8a callable-after-archive)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const archiveDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors', '_archive');
+    fs.mkdirSync(archiveDir, { recursive: true });
+    const sid = 'archived-but-callable';
+    fs.writeFileSync(path.join(archiveDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low',
+    }));
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=can you still help'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0,
+      `consult to archived senior must succeed: ${result.stderr}`);
+    assert.doesNotMatch(result.stderr, /not in the senior pool/,
+      'consult must NOT warn that an archived senior is unknown');
+    // Consult record must accrue to the archived file.
+    const rec = JSON.parse(fs.readFileSync(path.join(archiveDir, `${sid}.json`), 'utf8'));
+    assert.strictEqual(rec.consults.length, 1,
+      'consult logged on archived senior file');
+  });
+});
+
+test('buddy_handoff.py: cmd_consult lockfile prevents concurrent invocation, expires after 1h', () => {
+  // Q7: per-sid lockfile prevents racing claude --resume on same session.
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    const sid = 'busy-target';
+    fs.writeFileSync(path.join(seniorsDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low',
+    }));
+    // Plant a fresh lockfile to simulate an in-flight consult.
+    const lockDir = path.join(sandbox, 'tmp', 'hme-consult-lock');
+    fs.mkdirSync(lockDir, { recursive: true });
+    fs.writeFileSync(path.join(lockDir, `${sid}.lock`), '99999\n');
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho should-not-run\nexit 0\n', { mode: 0o755 });
+    let r = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=hi'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(r.status, 3,
+      'consult must refuse with code 3 when fresh lockfile present');
+    assert.match(r.stderr, /consult locked/, 'lock-refusal message visible');
+    // Make the lock 2 hours stale; consult should reclaim and proceed.
+    const staleMtime = (Date.now() / 1000) - 7200;
+    fs.utimesSync(path.join(lockDir, `${sid}.lock`), staleMtime, staleMtime);
+    r = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=retry after stale'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(r.status, 0, 'stale lock reclaimed; consult proceeded');
+    // Lock file released after successful consult.
+    assert.ok(!fs.existsSync(path.join(lockDir, `${sid}.lock`)),
+      'lock released after successful consult');
+  });
+});
+
 test('buddy_handoff.py: promote of a sid in senior pool archives the senior file (no double-existence)', () => {
   // Q6 resolution: _promote() must not leave the same sid as both
   // primary AND senior. Archive instead of refusing keeps workflow
