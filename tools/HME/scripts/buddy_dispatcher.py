@@ -1388,20 +1388,36 @@ def _buddy_context_used(sid: str) -> dict | None:
                     continue
                 if ev.get("type") != "assistant":
                     continue
-                msg = ev.get("message") or {}
-                u = msg.get("usage") or {}
-                if u and (u.get("input_tokens") is not None
-                          or u.get("cache_creation_input_tokens") is not None
-                          or u.get("cache_read_input_tokens") is not None):
+                # Boundary read of external transcript JSON: explicit
+                # isinstance checks so malformed entries (string instead
+                # of dict, etc.) skip the line rather than silently
+                # being coerced to {} via `or {}`.
+                msg = ev.get("message")
+                if not isinstance(msg, dict):
+                    continue
+                u = msg.get("usage")
+                if not isinstance(u, dict):
+                    continue
+                if (u.get("input_tokens") is not None
+                        or u.get("cache_creation_input_tokens") is not None
+                        or u.get("cache_read_input_tokens") is not None):
                     last_usage = u
     except (OSError, IOError):
         return None
     if last_usage is None:
         return {"tokens": 0, "ctx_window": ctx_window, "used_pct": 0.0,
                 "transcript": str(path), "lines": line_count}
-    tokens = (int(last_usage.get("input_tokens") or 0)
-              + int(last_usage.get("cache_creation_input_tokens") or 0)
-              + int(last_usage.get("cache_read_input_tokens") or 0))
+
+    def _int_or_zero(val):
+        # None / missing -> 0; numeric strings parse normally; other
+        # non-numeric values raise (fail-fast on malformed transcript).
+        if val is None:
+            return 0
+        return int(val)
+
+    tokens = (_int_or_zero(last_usage.get("input_tokens"))
+              + _int_or_zero(last_usage.get("cache_creation_input_tokens"))
+              + _int_or_zero(last_usage.get("cache_read_input_tokens")))
     pct = (tokens / ctx_window * 100.0) if ctx_window > 0 else 0.0
     return {"tokens": tokens, "ctx_window": ctx_window, "used_pct": pct,
             "transcript": str(path), "lines": line_count}
