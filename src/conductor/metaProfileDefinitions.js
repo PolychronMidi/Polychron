@@ -673,8 +673,11 @@ moduleLifecycle.declare({
   function loadCustomProfiles() {
     const fs = require('fs');
     const path = require('path');
-    const projectRoot = process.env.PROJECT_ROOT;
-    if (!projectRoot) return [];  // .env not loaded yet — nothing to do
+    // Derive from __dirname when PROJECT_ROOT is unset so the loader works
+    // outside of pipeline contexts (tests, ad-hoc node invocations).
+    // metaProfileDefinitions.js lives at <root>/src/conductor/, so up two.
+    const projectRoot = process.env.PROJECT_ROOT
+      || path.resolve(__dirname, '..', '..');
     const dirs = [
       path.join(projectRoot, 'config', 'metaprofiles'),
     ];
