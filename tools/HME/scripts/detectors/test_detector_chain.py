@@ -440,6 +440,64 @@ _CASES = [
          _assistant_msg("Renamed."),
      ],
      "ok"),
+
+    # Write tool (creating a new file in the design space) must trip
+    # the detector — same governance rule as Edit.
+    ("senior_consult_debt", "write-to-design-space-fires",
+     [
+         _user_msg("add a new spawn variant"),
+         _assistant_tool_use("Write", {
+             "file_path": "tools/HME/scripts/buddy_spawn.py",
+             "content": "# new variant",
+         }),
+         _assistant_msg("Created."),
+     ],
+     "consult-debt"),
+
+    # MultiEdit batches several edits — if any target lands in the
+    # design space, the detector should fire just like a single Edit.
+    ("senior_consult_debt", "multiedit-design-space-fires",
+     [
+         _user_msg("batch refactor"),
+         _assistant_tool_use("MultiEdit", {
+             "file_path": "tools/HME/hooks/helpers/buddy_init.sh",
+             "edits": [{"old_string": "x", "new_string": "y"}],
+         }),
+         _assistant_msg("Done."),
+     ],
+     "consult-debt"),
+
+    # BUDDY_SYSTEM.md edits without consult must trip — the doc IS the
+    # paradigm's design surface, so changes there are the most
+    # consult-relevant edits the detector watches for.
+    ("senior_consult_debt", "doc-edit-without-consult-fires",
+     [
+         _user_msg("update the open-questions list"),
+         _assistant_tool_use("Edit", {
+             "file_path": "doc/BUDDY_SYSTEM.md",
+             "old_string": "Q1",
+             "new_string": "Q1 — RESOLVED",
+         }),
+         _assistant_msg("Updated."),
+     ],
+     "consult-debt"),
+
+    # i/consult invoked via the `senior=` alias (legacy) must still
+    # count as a consult — guards against the detector regressing if
+    # the alias parsing in i/consult ever changes.
+    ("senior_consult_debt", "consult-via-senior-alias-passes",
+     [
+         _user_msg("ask the buddy"),
+         _assistant_tool_use("Bash", {
+             "command": "i/consult senior=abc question=\"is this right?\"",
+         }),
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/buddy_handoff.py",
+             "old_string": "x", "new_string": "y",
+         }),
+         _assistant_msg("Done."),
+     ],
+     "ok"),
 ]
 
 
