@@ -15,6 +15,7 @@ from .. import (
 from ..synthesis_session import (
     append_session_narrative, get_session_narrative, get_think_history_context,
 )
+from .status_modes_band import _compute_per_axis_band  # noqa: F401
 
 logger = logging.getLogger("HME")
 

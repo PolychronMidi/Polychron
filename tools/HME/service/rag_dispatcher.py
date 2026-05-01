@@ -162,6 +162,7 @@ class _RagDispatcher:
         with self._cv:
             while True:
                 gpu = self._current_gpu()
+                from rag_engines import _rag_route
                 gpu_ok = gpu is not None and _rag_route() == "gpu"
 
                 if gpu_ok and self._gpu_sem is not None:
@@ -188,7 +189,8 @@ class _RagDispatcher:
                                 # Re-check: GPU may have been offloaded or
                                 # route may have flipped to "cpu" while waiting
                                 gpu = self._current_gpu()
-                                if gpu is None or _rag_route() != "gpu":
+                                from rag_engines import _rag_route as _rr2
+                                if gpu is None or _rr2() != "gpu":
                                     break  # bail to overflow path below
                                 if self._gpu_sem.acquire(blocking=False):
                                     if self._vram is not None and self._mm is not None:

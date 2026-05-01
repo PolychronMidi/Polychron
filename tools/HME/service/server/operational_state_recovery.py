@@ -33,11 +33,22 @@ import logging
 
 logger = logging.getLogger("HME")
 
-_STATE_FILE: str = ""
-_SYNTHESIS_FILE: str = ""  # hme-synthesis.jsonl path set in init()
-_SESSIONS_FILE: str = ""   # hme-sessions.jsonl path set in init() (L30)
-_state: dict = {}
-_state_lock = threading.Lock()
+# Sibling-module state. operational_state.py imports US at line 188 AFTER
+# defining `_state`, `_state_lock`, `_save_unlocked` (line 141), and the
+# `_ops._SESSIONS_FILE` / `_ops._SYNTHESIS_FILE` paths (lines 37-38, set by init()
+# at runtime). The bare-name references throughout this file are leftover
+# from when both lived in one module before the LOC split.
+#
+# `_state` is a dict — mutations via shared reference work after a plain
+# import. `_save_unlocked` is a function — same. `_ops._SESSIONS_FILE` /
+# `_ops._SYNTHESIS_FILE` are reassigned by init() AFTER our module loads, so
+# we must look them up dynamically — accessed as `_ops._SESSIONS_FILE`
+# (module-attribute lookup is live).
+from . import operational_state as _ops
+from .operational_state import _state, _state_lock, _save_unlocked  # noqa: F401
+
+# FILE paths are read directly via _ops._SYNTHESIS_FILE / _ops._SESSIONS_FILE
+# so they reflect runtime updates from operational_state.init().
 _EMA_ALPHA = 0.2  # exponential moving average decay for rolling metrics
 
 # L23: multi-timescale EMA alphas (beat=fast, structure=glacial)
@@ -153,7 +164,7 @@ def record_synthesis_call(strategy: str, used_cascade: bool, escalated: bool,
         _state["synthesis_phantom_rate_ema"] = round(
             a * phantom_rate + (1 - a) * _state.get("synthesis_phantom_rate_ema", 0.0), 3)
         _save_unlocked()
-    if _SYNTHESIS_FILE:
+    if _ops._SYNTHESIS_FILE:
         try:
             entry = json.dumps({
                 "ts": time.time(),
@@ -167,7 +178,7 @@ def record_synthesis_call(strategy: str, used_cascade: bool, escalated: bool,
                 "elapsed_s": round(elapsed_s, 1),
                 "prompt_head": prompt_head[:60],
             })
-            with open(_SYNTHESIS_FILE, "a") as f:
+            with open(_ops._SYNTHESIS_FILE, "a") as f:
                 f.write(entry + "\n")
             _trim_synthesis_file()
         except OSError as e:
@@ -176,13 +187,13 @@ def record_synthesis_call(strategy: str, used_cascade: bool, escalated: bool,
 
 def _trim_synthesis_file() -> None:
     """Keep hme-synthesis.jsonl bounded at 1000 entries."""
-    if not _SYNTHESIS_FILE:
+    if not _ops._SYNTHESIS_FILE:
         return
     try:
-        with open(_SYNTHESIS_FILE) as f:
+        with open(_ops._SYNTHESIS_FILE) as f:
             lines = f.readlines()
         if len(lines) > 1000:
-            with open(_SYNTHESIS_FILE, "w") as f:
+            with open(_ops._SYNTHESIS_FILE, "w") as f:
                 f.writelines(lines[-1000:])
     except OSError:  # silent-ok: synthesis-log trim; failure defers compaction one cycle
         pass
@@ -277,7 +288,7 @@ def write_session_document() -> None:
     cross-session behavioral patterns (coherence degradation in long sessions,
     time-of-day effects, phantom rate correlations with run outcomes).
     """
-    if not _SESSIONS_FILE:
+    if not _ops._SESSIONS_FILE:
         return
     with _state_lock:
         synth_calls = _state.get("synthesis_calls_today", 0)
@@ -302,7 +313,7 @@ def write_session_document() -> None:
         session_start = _state.get("session_start") or time.time()
         doc["session_duration_s"] = round(time.time() - session_start, 1)
     try:
-        with open(_SESSIONS_FILE, "a") as f:
+        with open(_ops._SESSIONS_FILE, "a") as f:
             f.write(json.dumps(doc) + "\n")
         _trim_sessions_file()
     except OSError as e:
@@ -311,12 +322,12 @@ def write_session_document() -> None:
 
 def load_recent_sessions(max_age_days: int = 7) -> list[dict]:
     """Load session documents from the last N days for cross-session pattern detection."""
-    if not _SESSIONS_FILE:
+    if not _ops._SESSIONS_FILE:
         return []
     cutoff = time.time() - max_age_days * 86400
     sessions = []
     try:
-        with open(_SESSIONS_FILE) as f:
+        with open(_ops._SESSIONS_FILE) as f:
             for line in f:
                 try:
                     doc = json.loads(line.strip())
@@ -330,13 +341,13 @@ def load_recent_sessions(max_age_days: int = 7) -> list[dict]:
 
 
 def _trim_sessions_file() -> None:
-    if not _SESSIONS_FILE:
+    if not _ops._SESSIONS_FILE:
         return
     try:
-        with open(_SESSIONS_FILE) as f:
+        with open(_ops._SESSIONS_FILE) as f:
             lines = f.readlines()
         if len(lines) > 500:
-            with open(_SESSIONS_FILE, "w") as f:
+            with open(_ops._SESSIONS_FILE, "w") as f:
                 f.writelines(lines[-500:])
     except OSError:  # silent-ok: sessions-file trim; failure defers compaction one cycle
         pass
