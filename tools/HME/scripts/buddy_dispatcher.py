@@ -166,6 +166,26 @@ if not _DISPATCH_MODE:
 if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
     _DISPATCH_MODE = "disabled"
 
+# Per-tier routing override: tasks at tiers in this set route through
+# synthesis_reasoning (free cascade) regardless of HME_DISPATCH_MODE,
+# while remaining tiers go to whichever worker the mode selects. The
+# canonical use case is `easy` — quotas on the buddy session are
+# precious, easy tasks don't need them. Empty (default) = no per-tier
+# override; HME_DISPATCH_MODE alone decides routing.
+def _parse_tier_set(raw: str) -> set:
+    out = set()
+    for t in (raw or "").split(","):
+        t = t.strip().lower()
+        if t in TIER_NAMES:
+            out.add(t)
+    return out
+
+_SYNTHESIS_TIERS = _parse_tier_set(os.environ.get("HME_DISPATCH_SYNTHESIS_TIERS", ""))
+# When HME_DISPATCH_MODE=synthesis is set explicitly, treat it as
+# "all tiers go to synthesis" — equivalent to TIERS=easy,medium,hard.
+if _DISPATCH_MODE == "synthesis":
+    _SYNTHESIS_TIERS = set(TIER_NAMES)
+
 
 def _ensure_dirs() -> None:
     for p in (QUEUE_PENDING, QUEUE_PROCESSING, QUEUE_DONE, QUEUE_FAILED, FANOUT_ROOT):
@@ -238,19 +258,23 @@ def _list_buddies() -> list[dict]:
     """
     if _DISPATCH_MODE == "disabled":
         return []
+    # Synthesis pseudo-buddy: present when (a) full-synthesis mode OR
+    # (b) per-tier override is non-empty. In the per-tier case it
+    # coexists with real buddies — `_pick_buddy_for_task` routes each
+    # task to the right worker based on the task's tier.
+    synthesis_buddy = {
+        "slot": 0,  # 0 distinguishes from real-buddy slots (1..N)
+        "sid": "synthesis",  # sentinel: dispatch routes through synthesis_reasoning
+        "floor": "easy",
+        "effort_floor": "low",
+        "sid_file": None,
+        "processing_dir": QUEUE_PROCESSING / "synthesis-1",
+    }
     if _DISPATCH_MODE == "synthesis":
-        # Single virtual worker — synthesis_reasoning has its own
-        # provider cascade. Floor=easy keeps it fully dynamic per task
-        # (effective = max(item_tier, easy) = item_tier). Pinning to
-        # medium/hard would silently escalate every easy task.
-        return [{
-            "slot": 1,
-            "sid": "synthesis",  # sentinel: dispatch routes through synthesis_reasoning
-            "floor": "easy",
-            "effort_floor": "low",
-            "sid_file": None,
-            "processing_dir": QUEUE_PROCESSING / "synthesis-1",
-        }]
+        # Pure-synthesis: only the pseudo-buddy. `_pick_buddy_for_task`
+        # will route every tier through it (since _SYNTHESIS_TIERS was
+        # set to the full TIER_NAMES set above).
+        return [synthesis_buddy]
     buddies = []
     tmp = PROJECT_ROOT / "tmp"
     def _read_floor_pair(sid_file: Path):
@@ -282,26 +306,32 @@ def _list_buddies() -> list[dict]:
             "sid_file": legacy_sid,
             "processing_dir": QUEUE_PROCESSING / "buddy-1",
         })
-        return buddies
-    # Multi-buddy fanout path
-    for sid_file in sorted(tmp.glob("hme-buddy-[0-9]*.sid")):
-        sid = sid_file.read_text().strip() if sid_file.exists() else ""
-        if not sid:
-            continue
-        # Slot from filename: hme-buddy-N.sid -> N
-        try:
-            slot = int(sid_file.stem.rsplit("-", 1)[1])
-        except (ValueError, IndexError):
-            continue
-        m_floor, e_floor = _read_floor_pair(sid_file)
-        buddies.append({
-            "slot": slot,
-            "sid": sid,
-            "floor": m_floor,
-            "effort_floor": e_floor,
-            "sid_file": sid_file,
-            "processing_dir": QUEUE_PROCESSING / f"buddy-{slot}",
-        })
+    else:
+        # Multi-buddy fanout path
+        for sid_file in sorted(tmp.glob("hme-buddy-[0-9]*.sid")):
+            sid = sid_file.read_text().strip() if sid_file.exists() else ""
+            if not sid:
+                continue
+            # Slot from filename: hme-buddy-N.sid -> N
+            try:
+                slot = int(sid_file.stem.rsplit("-", 1)[1])
+            except (ValueError, IndexError):
+                continue
+            m_floor, e_floor = _read_floor_pair(sid_file)
+            buddies.append({
+                "slot": slot,
+                "sid": sid,
+                "floor": m_floor,
+                "effort_floor": e_floor,
+                "sid_file": sid_file,
+                "processing_dir": QUEUE_PROCESSING / f"buddy-{slot}",
+            })
+    # Per-tier override: append the synthesis pseudo so
+    # _pick_buddy_for_task can route easy-tier (or whichever tiers are
+    # listed) through the free cascade alongside the real buddies. With
+    # an empty _SYNTHESIS_TIERS set this is a no-op.
+    if _SYNTHESIS_TIERS:
+        buddies.append(synthesis_buddy)
     return buddies
 
 
@@ -329,9 +359,20 @@ def _effective_effort(item_tier: str, effort_floor: str) -> str:
 
 def _pick_buddy_for_task(task: dict, buddies: list[dict], busy: set[int]) -> dict | None:
     """Select a non-busy buddy whose effective tier (after floor
-    escalation) best matches the task tier. Strategy: prefer the buddy
-    whose floor exactly matches the task tier (no escalation needed);
-    fall back to lowest-floor buddy that's free (cheapest option that
+    escalation) best matches the task tier.
+
+    Per-tier synthesis routing: if the task's tier is in
+    `HME_DISPATCH_SYNTHESIS_TIERS`, prefer the synthesis pseudo-buddy
+    (sid='synthesis', slot=0) — it routes through the free cascade
+    without burning the buddy session's quota. The real buddy is the
+    fallback when synthesis is busy or not present.
+
+    For tiers NOT in the per-tier set, route to the real buddies and
+    explicitly skip synthesis (otherwise easy work could starve the
+    free path while medium/hard floods the buddy).
+
+    Strategy among real buddies: prefer floor == item_tier (no
+    escalation), else lowest floor that's free (cheapest option that
     doesn't downgrade)."""
     item_tier = task.get("tier", "medium")
     if item_tier not in TIER_NAMES:
@@ -340,9 +381,26 @@ def _pick_buddy_for_task(task: dict, buddies: list[dict], busy: set[int]) -> dic
     free = [b for b in buddies if b["slot"] not in busy]
     if not free:
         return None
-    # Score: prefer floor == item_tier (cost 0), else prefer floor < item_tier
-    # (escalation upward; cost = item_n - floor_n), else floor > item_tier
-    # (waste; cost = floor_n - item_n + 10 to deprioritize).
+    routes_to_synthesis = item_tier in _SYNTHESIS_TIERS
+    if routes_to_synthesis:
+        # Prefer the synthesis worker first; fall back to a real buddy
+        # if synthesis is busy (slot 0 in `busy`).
+        for b in free:
+            if b.get("sid") == "synthesis":
+                return b
+        # Synthesis not available — fall through to real-buddy selection
+        # rather than refusing the task. Logged in stats by the caller.
+        free = [b for b in free if b.get("sid") != "synthesis"]
+        if not free:
+            return None
+    else:
+        # Tier doesn't route to synthesis — exclude synthesis pseudo
+        # from candidates so a medium/hard task never lands on the
+        # free cascade unintentionally.
+        free = [b for b in free if b.get("sid") != "synthesis"]
+        if not free:
+            return None
+
     def _cost(b):
         f = TIER_ORDER.get(b["floor"], 1)
         if f == item_n:
@@ -1495,7 +1553,14 @@ def cmd_status(args: argparse.Namespace) -> int:
     elif _DISPATCH_MODE == "disabled":
         print("dispatcher disabled — set BUDDY_SYSTEM=1 OR HME_DISPATCH_MODE=synthesis in .env to activate")
     elif workers:
-        print(f"workers: {len(workers)} active claude-resume slot(s)")
+        real = [w for w in workers if w.get("sid") != "synthesis"]
+        synth_present = any(w.get("sid") == "synthesis" for w in workers)
+        if synth_present and _SYNTHESIS_TIERS:
+            tiers = ",".join(sorted(_SYNTHESIS_TIERS))
+            print(f"workers: {len(real)} claude-resume + 1 synthesis pseudo "
+                  f"(per-tier routing: synthesis={tiers}, others=claude-resume)")
+        else:
+            print(f"workers: {len(real)} active claude-resume slot(s)")
     if sessions:
         print(f"buddy sessions: {len(sessions)} spawned (sid files present)")
         for b in sessions:

@@ -68,14 +68,29 @@ tmp/hme-buddy-handoff-log.json     ← optional snapshot from `status --json`
 **`.env` knobs:**
 
 ```
-BUDDY_SYSTEM=1       # base toggle
-BUDDY_HANDOFF=1      # enable hand-off mode (forces BUDDY_COUNT=1)
-BUDDY_RETIRE_PCT=90  # context % threshold for auto-retirement
+BUDDY_SYSTEM=1                       # base toggle
+BUDDY_HANDOFF=1                      # enable hand-off mode (forces BUDDY_COUNT=1)
+BUDDY_RETIRE_PCT=90                  # context % threshold for auto-retirement
+HME_DISPATCH_SYNTHESIS_TIERS=easy    # tiers that route to free cascade instead of buddy
 ```
 
 When `BUDDY_HANDOFF=1`, `BUDDY_COUNT>1` is silently coerced to 1
 (multi-buddy fanout and hand-off are mutually exclusive). Set
 `BUDDY_HANDOFF=0` to revert to the legacy multi-buddy floor model.
+
+**Per-tier dispatch routing.** `HME_DISPATCH_SYNTHESIS_TIERS` is a
+comma-separated list of task tiers that route through the free
+synthesis cascade (NVIDIA/Cerebras/Groq/Gemini) instead of the buddy.
+Tiers NOT in the list still go to the buddy (claude-resume), conserving
+session quota for work that actually needs it. The canonical setting
+is `easy` — easy work doesn't need Opus/Sonnet reasoning, so it
+shouldn't burn the buddy's transcript. Empty (default) = no override
+and `HME_DISPATCH_MODE` alone decides routing. Setting
+`HME_DISPATCH_MODE=synthesis` is equivalent to listing every tier (all
+work to free cascade), which usually isn't what you want — leaves the
+primary buddy idle. The `i/dispatch status` line surfaces the active
+split: `workers: 1 claude-resume + 1 synthesis pseudo (per-tier
+routing: synthesis=easy, others=claude-resume)`.
 
 **Open prototype questions** — known-fuzzy areas worth iterating on
 with the inheriting agent. Each is a concrete decision the design

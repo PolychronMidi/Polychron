@@ -1286,6 +1286,114 @@ test('buddy_init.sh: SessionStart auto-retires over-threshold primary then spawn
   });
 });
 
+test('dispatcher: HME_DISPATCH_SYNTHESIS_TIERS=easy routes easy tasks to synthesis pseudo', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'real-buddy-sid\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'easy\n');
+    const result = _runPython(sandbox, `
+import os
+os.environ['BUDDY_SYSTEM'] = '1'
+os.environ['HME_DISPATCH_MODE'] = 'claude-resume'
+os.environ['HME_DISPATCH_SYNTHESIS_TIERS'] = 'easy'
+${_dispatcherImport()}
+import json
+buddies = disp._list_buddies()
+easy_pick = disp._pick_buddy_for_task({'tier': 'easy'}, buddies, set())
+medium_pick = disp._pick_buddy_for_task({'tier': 'medium'}, buddies, set())
+hard_pick = disp._pick_buddy_for_task({'tier': 'hard'}, buddies, set())
+print(json.dumps({
+  'has_synthesis_in_buddies': any(b.get('sid') == 'synthesis' for b in buddies),
+  'easy': easy_pick.get('sid') if easy_pick else None,
+  'medium': medium_pick.get('sid') if medium_pick else None,
+  'hard': hard_pick.get('sid') if hard_pick else None,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.has_synthesis_in_buddies, true,
+      'with TIERS=easy set, synthesis pseudo must be in the buddy list alongside real buddy');
+    assert.strictEqual(parsed.easy, 'synthesis',
+      'easy task must route to synthesis when easy is in TIERS');
+    assert.strictEqual(parsed.medium, 'real-buddy-sid',
+      'medium task must route to real buddy (NOT synthesis)');
+    assert.strictEqual(parsed.hard, 'real-buddy-sid',
+      'hard task must route to real buddy (NOT synthesis)');
+  });
+});
+
+test('dispatcher: empty HME_DISPATCH_SYNTHESIS_TIERS = synthesis pseudo absent', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'real-buddy-sid\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'easy\n');
+    const result = _runPython(sandbox, `
+import os
+os.environ['BUDDY_SYSTEM'] = '1'
+os.environ['HME_DISPATCH_MODE'] = 'claude-resume'
+os.environ['HME_DISPATCH_SYNTHESIS_TIERS'] = ''
+${_dispatcherImport()}
+import json
+buddies = disp._list_buddies()
+print(json.dumps({
+  'count': len(buddies),
+  'has_synthesis': any(b.get('sid') == 'synthesis' for b in buddies),
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.has_synthesis, false,
+      'no per-tier override = synthesis pseudo absent (legacy behavior preserved)');
+    assert.strictEqual(parsed.count, 1, 'only the real buddy is registered');
+  });
+});
+
+test('dispatcher: HME_DISPATCH_MODE=synthesis still routes everything through synthesis (back-compat)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'real-buddy-sid\n');
+    const result = _runPython(sandbox, `
+import os
+os.environ['BUDDY_SYSTEM'] = '1'
+os.environ['HME_DISPATCH_MODE'] = 'synthesis'
+${_dispatcherImport()}
+import json
+buddies = disp._list_buddies()
+hard_pick = disp._pick_buddy_for_task({'tier': 'hard'}, buddies, set())
+print(json.dumps({
+  'count': len(buddies),
+  'hard': hard_pick.get('sid') if hard_pick else None,
+}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.count, 1, 'pure-synthesis mode lists only synthesis pseudo');
+    assert.strictEqual(parsed.hard, 'synthesis',
+      'pure-synthesis mode routes hard tasks through synthesis (back-compat)');
+  });
+});
+
+test('dispatcher: synthesis-tier task falls back to real buddy when synthesis is busy', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'real-buddy-sid\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'easy\n');
+    const result = _runPython(sandbox, `
+import os
+os.environ['BUDDY_SYSTEM'] = '1'
+os.environ['HME_DISPATCH_MODE'] = 'claude-resume'
+os.environ['HME_DISPATCH_SYNTHESIS_TIERS'] = 'easy'
+${_dispatcherImport()}
+import json
+buddies = disp._list_buddies()
+# Mark synthesis (slot=0) busy.
+busy = {0}
+pick = disp._pick_buddy_for_task({'tier': 'easy'}, buddies, busy)
+print(json.dumps({'pick': pick.get('sid') if pick else None}))
+`);
+    if (result.status !== 0) throw new Error(`python failed: ${result.stderr}`);
+    const parsed = JSON.parse(result.stdout.trim().split('\n').pop());
+    assert.strictEqual(parsed.pick, 'real-buddy-sid',
+      'when synthesis is busy, easy task falls back to the real buddy');
+  });
+});
+
 test('dispatcher: status surfaces senior pool when BUDDY_HANDOFF=1', () => {
   _withDispatcherSandbox((sandbox) => {
     const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
