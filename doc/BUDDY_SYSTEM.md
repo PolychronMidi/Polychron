@@ -241,25 +241,41 @@ who built this paradigm) during a review consult, paraphrased:
   costs to consult. Favor batched consults (one prompt with three
   questions) over three sequential calls. Don't consult for
   lookups grep can answer.
-- **KB crystallization is the durability boundary.** A senior's
-  accumulated wisdom lives in a transcript that auto-compaction can
-  wipe at any time. HME's KB (`tools/HME/KB/` lance tables, accessed
-  via `i/learn`) survives compactions, sessions, and restarts.
-  `cmd_consult` now emits a stderr nudge when the consult response
-  contains finding-shaped markers (`tier-1:`, `bug:`, `should-fix:`,
-  `architectural:`, `blocker:`, `RESOLVED`) — operator-driven crystallization.
-  This is the LIGHT version; the HEAVY version (system-prompt
-  directive + auto-`i/learn` extraction of `[[KB-CRYSTALLIZE: …]]`
-  blocks) is the next iteration. Without crystallization, the senior
-  pool is "a stack of fragile preservations" (0e7fbf4d's framing).
+- **KB crystallization is the durability boundary — both versions
+  shipped.** A senior's accumulated wisdom lives in a transcript that
+  auto-compaction can wipe at any time. HME's KB (`tools/HME/KB/`
+  lance tables, accessed via `i/learn`) survives compactions,
+  sessions, and restarts. `cmd_consult` now ships **two crystallization
+  paths**:
+  1. **Heavy (active):** every consult prepends a `[FRAMEWORK
+     DIRECTIVE]` to the question instructing the senior to emit
+     `[[KB-CRYSTALLIZE]]` blocks (with `title:`, `category:`,
+     `content:` fields) for findings worth preserving. Post-response,
+     `_extract_and_crystallize` parses the blocks and auto-invokes
+     `i/learn add` for each. Stderr surfaces `# crystallized:
+     [<category>] <title>` per block. Best-effort: failed `i/learn`
+     calls log but don't abort the loop.
+  2. **Light (fallback):** if no structured blocks landed (older
+     transcripts that haven't seen the directive yet, or the senior
+     chose unstructured findings), `_findings_nudge` scans the
+     response for finding-shaped markers (`tier-1:`, `bug:`,
+     `should-fix:`, `architectural:`, `blocker:`, `RESOLVED`) and
+     emits an operator nudge.
+  Heavy fires first; light only runs when heavy produced zero blocks
+  (avoids double-prompting). Without crystallization, the senior pool
+  is "a stack of fragile preservations" (0e7fbf4d's framing).
 - **Detector measures consult events, not consult quality —
-  Goodhart-bait risk.** The `senior_consult_debt.py` detector counts
-  consult invocations. An agent optimizing for the cheapest
-  satisfaction path will produce short, low-content questions that
-  growth my context fastest per unit of insight. Mitigation: the
-  detector should eventually weight by response length + KB-crystallize
-  count, not raw count. Requires the heavy KB integration above to
-  land first (no quality proxy without it).
+  Goodhart-bait risk; quality proxy now available.** The
+  `senior_consult_debt.py` detector counts consult invocations. An
+  agent optimizing for the cheapest satisfaction path produces
+  short, low-content questions that satisfy the detector cheaply.
+  With the heavy KB-crystallization integration shipped (above),
+  the activity bridge now sees per-consult crystallized-block counts
+  (via the `# crystallized: ...` stderr lines). Future iteration:
+  weight the detector verdict by response length + crystallize count
+  so a consult that produced no KB anchors counts less than one that
+  did. Not yet implemented — the detector quality proxy is the
+  next concrete step in the chain.
 - **Proxy upstream timeout is buddy-paradigm-load-bearing.** The
   HME proxy at `tools/HME/proxy/hme_proxy.js` enforces a unified
   30-minute upstream timeout via `UPSTREAM_TIMEOUT_MS = 1_800_000`.

@@ -139,6 +139,94 @@ _FINDING_MARKERS = (
 )
 
 
+# KB-crystallization directive prefixed to every consult question. Per
+# 0e7fbf4d's HME integration analysis — this is the "heavy" version
+# that converts the senior into an active KB contributor rather than
+# just emitting findings into a fragile transcript. Each extracted
+# block calls `i/learn add` automatically post-consult.
+_KB_DIRECTIVE = (
+    "[FRAMEWORK DIRECTIVE — KB CRYSTALLIZATION]\n"
+    "If your response contains findings worth preserving in HME's "
+    "durable KB (calibration anchors, design decisions, gotchas, "
+    "architectural patterns), append one or more crystallization "
+    "blocks to the END of your response, AFTER your main reply. "
+    "Format exactly:\n"
+    "  [[KB-CRYSTALLIZE]]\n"
+    "  title: <short title>\n"
+    "  category: pattern | decision | architectural | gotcha\n"
+    "  content: <one-paragraph finding worth keeping>\n"
+    "  [[/KB-CRYSTALLIZE]]\n"
+    "The parent agent auto-extracts these blocks and calls "
+    "`i/learn add` for each. Skip blocks if no crystallization-worthy "
+    "finding exists — don't manufacture them. The transcript dies on "
+    "compaction; the KB doesn't.\n"
+    "[/FRAMEWORK DIRECTIVE]\n\n"
+)
+
+
+_KB_BLOCK_RE = (
+    r"\[\[KB-CRYSTALLIZE\]\]\s*"
+    r"title:\s*(?P<title>.+?)\s*"
+    r"category:\s*(?P<category>pattern|decision|architectural|gotcha)\s*"
+    r"content:\s*(?P<content>.+?)\s*"
+    r"\[\[/KB-CRYSTALLIZE\]\]"
+)
+
+
+def _extract_and_crystallize(response: str) -> int:
+    """Extract [[KB-CRYSTALLIZE]] blocks from a consult response and
+    call `i/learn add` for each. Returns the count of blocks that were
+    successfully crystallized. Best-effort: i/learn failures are
+    logged but don't abort the loop (one bad block shouldn't lose the
+    others)."""
+    if not response:
+        return 0
+    import re
+    blocks = re.findall(_KB_BLOCK_RE, response, flags=re.DOTALL)
+    if not blocks:
+        return 0
+    # Anchor to PROJECT_ROOT so sandbox tests can stub `i/learn`
+    # by planting their own shim under the test PROJECT_ROOT. In
+    # production, PROJECT_ROOT IS the repo root, so this matches
+    # the canonical i/ wrapper location.
+    learn_script = (PROJECT_ROOT / "i" / "learn").resolve()
+    if not learn_script.exists():
+        # Couldn't find the wrapper — fall back to the underlying CLI.
+        learn_script = None
+    crystallized = 0
+    import subprocess as _sp
+    for title, category, content in blocks:
+        title = title.strip()
+        category = category.strip()
+        content = content.strip()
+        if not title or not content:
+            continue
+        try:
+            cmd = ["bash", str(learn_script)] if learn_script else [
+                "node",
+                str(Path(__file__).parent.parent / "scripts" / "hme-cli.js"),
+                "learn",
+            ]
+            cmd += [
+                f"title={title}",
+                f"content={content}",
+                f"category={category}",
+            ]
+            result = _sp.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                crystallized += 1
+                print(f"# crystallized: [{category}] {title[:60]}",
+                      file=sys.stderr)
+            else:
+                print(f"# crystallize failed for '{title[:40]}': "
+                      f"rc={result.returncode} stderr={result.stderr[:120]}",
+                      file=sys.stderr)
+        except (OSError, _sp.TimeoutExpired) as e:
+            print(f"# crystallize error for '{title[:40]}': {e}",
+                  file=sys.stderr)
+    return crystallized
+
+
 def _findings_nudge(response: str) -> None:
     """Scan a consult response for finding-shaped markers and emit a
     stderr nudge if any are present. Light version of the KB
@@ -516,7 +604,13 @@ def cmd_consult(args: argparse.Namespace) -> int:
             print(f"warning: sid {args.sid} is not in the senior pool "
                   f"(active or archived)", file=sys.stderr)
     import subprocess
-    cmd = ["claude", "--resume", args.sid, "-p", args.question]
+    # Prepend the KB-crystallization directive so the senior knows to
+    # emit structured [[KB-CRYSTALLIZE]] blocks for findings worth
+    # preserving. The parent extracts those blocks post-response and
+    # calls `i/learn add` for each — converting fragile transcript
+    # wisdom into durable KB entries.
+    framed_question = _KB_DIRECTIVE + args.question
+    cmd = ["claude", "--resume", args.sid, "-p", framed_question]
     # Identify the target's role correctly. In this paradigm a buddy
     # might be the active primary (not yet retired) or a senior in the
     # pool — the print should reflect actual state, not assume "senior".
@@ -643,15 +737,17 @@ def cmd_consult(args: argparse.Namespace) -> int:
             # skipped. Surfaces heavy-consultation patterns in
             # `i/handoff status`.
             _record_consult(args.sid, args.question)
-            # KB-crystallization nudge (per 0e7fbf4d's HME integration
-            # gap diagnosis): scan the consult response for
-            # finding-shaped markers and prompt the agent to crystallize
-            # them into the KB. The senior's transcript is fragile (one
-            # auto-compaction wipes it); the KB is durable. This is the
-            # light version — pattern-match + stderr nudge. Heavy
-            # version (system prompt directive + auto-i/learn) is the
-            # next iteration.
-            _findings_nudge(result.stdout or "")
+            # KB crystallization (heavy): extract [[KB-CRYSTALLIZE]]
+            # blocks from the response and auto-call `i/learn add` for
+            # each. Converts fragile transcript wisdom into durable KB
+            # entries before the senior's transcript hits compaction.
+            crystallized = _extract_and_crystallize(result.stdout or "")
+            # Light fallback: if no structured blocks landed (older
+            # transcripts that haven't seen the directive yet, or the
+            # senior chose to emit unstructured findings), still nudge
+            # the operator with the legacy pattern-match.
+            if crystallized == 0:
+                _findings_nudge(result.stdout or "")
         # HME integration: emit an activity event regardless of outcome
         # so the activity bridge can see consultation cadence
         # (cross-session forensics, rate analytics). Best-effort,

@@ -1749,6 +1749,103 @@ test('buddy_init.sh: BUDDY_COUNT=3 + HANDOFF=1 forces count=1 (multi-buddy mutua
   });
 });
 
+test('buddy_handoff.py: consult auto-extracts [[KB-CRYSTALLIZE]] blocks and calls i/learn', () => {
+  // Heavy version of KB crystallization (per 0e7fbf4d's Section B).
+  // The directive is prepended to every consult prompt; if the senior
+  // emits structured [[KB-CRYSTALLIZE]] blocks, cmd_consult extracts
+  // them and calls i/learn add for each. Stub i/learn under the
+  // sandbox PROJECT_ROOT so we can verify the invocation args without
+  // touching the real KB.
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'crystal-senior.json'), JSON.stringify({
+      sid: 'crystal-senior', floor: 'easy', effort_floor: 'low',
+    }));
+    // Plant a shim at <sandbox>/i/learn that records its argv.
+    const iDir = path.join(sandbox, 'i');
+    fs.mkdirSync(iDir, { recursive: true });
+    const learnShim = path.join(iDir, 'learn');
+    fs.writeFileSync(learnShim,
+      '#!/usr/bin/env bash\n' +
+      'log="$PROJECT_ROOT/tmp/test-learn-log.txt"\n' +
+      'printf "%s\\n" "$*" >> "$log"\n' +
+      'exit 0\n',
+      { mode: 0o755 });
+    // Stub claude that emits a structured crystallize block + main reply.
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\n' +
+      'cat <<\'EOF\'\n' +
+      'Main answer: looks fine.\n' +
+      '\n' +
+      '[[KB-CRYSTALLIZE]]\n' +
+      'title: Buddy paradigm KB crystallization heavy version\n' +
+      'category: architectural\n' +
+      'content: Consult responses can emit structured blocks that the parent auto-extracts and persists via i/learn, converting fragile transcript wisdom into durable KB.\n' +
+      '[[/KB-CRYSTALLIZE]]\n' +
+      'EOF\n',
+      { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=crystal-senior', '--question=audit'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0, `consult failed: ${result.stderr}`);
+    // The shim should have been invoked once with the extracted block's args.
+    const learnLog = path.join(sandbox, 'tmp', 'test-learn-log.txt');
+    assert.ok(fs.existsSync(learnLog),
+      'i/learn shim should have been invoked with the extracted block');
+    const logContent = fs.readFileSync(learnLog, 'utf8');
+    assert.match(logContent, /title=Buddy paradigm KB crystallization heavy version/,
+      'i/learn called with the title from the extracted block');
+    assert.match(logContent, /category=architectural/,
+      'i/learn called with the category from the extracted block');
+    assert.match(logContent, /content=Consult responses can emit structured blocks/,
+      'i/learn called with the content from the extracted block');
+    // Stderr should announce the crystallization.
+    assert.match(result.stderr, /# crystallized: \[architectural\]/,
+      'stderr surfaces the crystallization with category prefix');
+    // When heavy crystallization fired, the legacy nudge should NOT
+    // also fire (avoids double-prompting the operator).
+    assert.doesNotMatch(result.stderr, /finding-shaped marker/,
+      'legacy light-nudge skipped when heavy crystallization succeeded');
+  });
+});
+
+test('buddy_handoff.py: consult prepends KB-CRYSTALLIZE directive to the question', () => {
+  // The directive must arrive at the senior so they know to emit
+  // structured blocks. Stub claude to echo back its prompt arg; the
+  // test then asserts the directive prefix is present in what the
+  // senior received.
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'echo-target.json'), JSON.stringify({
+      sid: 'echo-target', floor: 'easy', effort_floor: 'low',
+    }));
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\n' +
+      '# Find the -p arg and echo it back so the test can grep for the directive.\n' +
+      'while [ "$#" -gt 0 ]; do\n' +
+      '  if [ "$1" = "-p" ]; then echo "$2"; break; fi\n' +
+      '  shift\n' +
+      'done\n',
+      { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=echo-target', '--question=this-is-the-real-question'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /FRAMEWORK DIRECTIVE — KB CRYSTALLIZATION/,
+      'directive prefix present in the prompt sent to senior');
+    assert.match(result.stdout, /\[\[KB-CRYSTALLIZE\]\]/,
+      'directive includes the canonical block markers');
+    assert.match(result.stdout, /this-is-the-real-question/,
+      'original question still present after the directive prefix');
+  });
+});
+
 test('buddy_handoff.py: consult response with finding-markers triggers KB-crystallization nudge', () => {
   // Section B from 0e7fbf4d's deep architectural review: senior wisdom
   // is fragile (transcript compaction wipes it); HME's KB is durable.
