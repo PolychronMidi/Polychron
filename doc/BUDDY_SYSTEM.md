@@ -38,10 +38,15 @@ primaries on standby for tough problems.
 - Multi-buddy spawns N fresh sessions per HME session, none with deep
   context until they accumulate.
 - Hand-off carries the prior session's depth forward as the next
-  session's buddy — Day-N senior is bootstrapped with Day-(N-1) wisdom.
-- Auto-compaction is avoided: a senior at 90% retires before
-  compaction would wipe its context, preserving the accumulated state
-  in immutable transcript form for later consult.
+  session's *primary* — Day-N's primary is the prior day's primary,
+  inherited with full transcript. The primary becomes a senior only
+  after retirement.
+- Auto-compaction is avoided for primaries: a primary at 90% retires
+  INTO the senior pool before compaction would wipe its context,
+  preserving the accumulated state in immutable transcript form for
+  later consult. (Seniors face a different risk — heavy consult load
+  can push them past auto-compaction with nowhere to retire to. See
+  open question 5.)
 
 **CLI:**
 
@@ -50,7 +55,9 @@ i/handoff status                                      # primary + seniors + ctx 
 i/handoff retire [reason="..."]                      # promote primary -> senior
 i/handoff promote sid=<sid> [floor=easy] [effort=low] # designate primary
 i/handoff auto_retire_check                           # check threshold, retire if over
-i/consult senior=<sid> question="..."                 # manual senior invocation
+i/consult sid=<sid> question="..."                    # consult primary or senior
+i/consult primary=<sid> question="..."                # explicit: target active primary
+i/consult senior=<sid> question="..."                 # explicit: target retired senior
 ```
 
 **Bootstrap data flow (file map):**
@@ -95,8 +102,9 @@ routing: synthesis=easy, others=claude-resume)`.
 **Open prototype questions** — known-fuzzy areas worth iterating on
 with the inheriting agent. Each is a concrete decision the design
 hasn't pinned down yet; the next session can pick one up when there's
-idle time and the inherited senior should expect to be consulted on
-the rationale:
+idle time and the inherited buddy (whether they're still the active
+primary or have since retired into the senior pool) should expect to
+be consulted on the rationale:
 
 1. **Hot-path auto-retire (primary path).** Currently
    `auto_retire_check` runs only at SessionStart. A primary serving

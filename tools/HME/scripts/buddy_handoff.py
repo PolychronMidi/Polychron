@@ -5,7 +5,9 @@ Replaces the multi-buddy floor-pinning model with a single dynamic
 primary that retires to a senior pool when its context approaches
 auto-compaction. Senior buddies are on standby — their accumulated
 context is preserved and only consulted manually for tough problems
-(via `i/consult senior=<sid> question="..."`).
+(via `i/consult sid=<sid>` — works for both the active primary and
+retired seniors; role-named aliases `primary=`, `buddy=`, `senior=`
+are equivalent).
 
 Files (under PROJECT_ROOT/tmp/):
   hme-buddy-primary.sid          — current primary buddy's session id

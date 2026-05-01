@@ -348,11 +348,12 @@
       ]
     },
     "consult": {
-      "description": "Manually invoke a specific senior buddy for a tough problem (BUDDY_HANDOFF=1). Senior context is precious; reserve consult calls for problems the primary can't crack. Each call grows the senior's transcript.",
+      "description": "Manually invoke a specific buddy (active primary OR retired senior) for a tough problem (BUDDY_HANDOFF=1). The primary is the inherited active buddy from the prior session; seniors are retired primaries in tmp/hme-buddy-seniors/. Each call grows the target's transcript — reserve for problems where their depth would unlock the answer.",
       "category": "orchestration",
-      "usage": "i/consult senior=<senior-sid> question=\"...\"",
+      "usage": "i/consult sid=<sid> question=\"...\"  (or primary=<sid>, buddy=<sid>, senior=<sid> as role-named aliases)",
       "examples": [
-        "i/consult senior=abc123def question=\"why does feature X behave that way under load?\""
+        "i/consult sid=abc123def question=\"why does feature X behave that way under load?\"",
+        "i/consult primary=$(cat tmp/hme-buddy-primary.sid) question=\"is this approach right?\""
       ]
     },
     "audit-tools": {
