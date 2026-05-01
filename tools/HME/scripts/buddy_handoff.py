@@ -394,15 +394,20 @@ def cmd_consult(args: argparse.Namespace) -> int:
     else:
         role = "buddy"
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
-    # Dynamic timeout scaled to transcript size. A multi-MB transcript
-    # needs minutes to spin up under `claude --resume`; a fixed 300s
-    # killed valid consults mid-response. But timeout=None is a footgun
-    # — a wedged subprocess (claude crashes, network half-open, stdin
-    # buffer deadlocks) would hold the call forever. Compromise: floor
-    # of 1800s (30 min) plus 30s per MB of transcript, so a known-large
-    # buddy gets proportional headroom while hung processes still die.
-    # (Better fix is an idle watchdog via Popen+select that resets on
-    # every byte received — leaving for a future iteration.)
+    # Dynamic timeout = max(floor, resume_cost + response_budget):
+    #   - floor: 1800s (30 min) for small buddies and stale-senior fallback.
+    #   - resume_cost: 30s per MB of transcript (claude --resume spin-up).
+    #   - response_budget: 600s (10 min) for Opus + extended thinking on
+    #     a substantive consult question.
+    # Total formula: max(1800, transcript_mb * 30 + 600).
+    # Asymmetry argues bias-generous: a too-loose timeout makes the user
+    # wait on a rare hung process; too-tight silently wastes tokens on
+    # every long consult. timeout=None was a footgun; fixed-300s killed
+    # valid consults mid-response. Idle watchdog via Popen+select that
+    # resets on every byte received is the better primitive — open
+    # follow-up if the formula tuning turns out to be load-bearing.
+    # If transcript_path is None (stale senior, transcript purged),
+    # transcript_mb stays 0 and consult_timeout falls back to the floor.
     transcript_mb = 0.0
     bd = _import_dispatcher()
     transcript_path = bd._transcript_path_for_sid(args.sid)
@@ -411,7 +416,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
             transcript_mb = Path(transcript_path).stat().st_size / (1024 * 1024)
         except OSError:
             pass
-    consult_timeout = max(1800, int(transcript_mb * 30))
+    consult_timeout = max(1800, int(transcript_mb * 30 + 600))
     result = subprocess.run(cmd, capture_output=True, text=True,
                             env={**os.environ, "HME_THREAD_CHILD": "1"},
                             timeout=consult_timeout)

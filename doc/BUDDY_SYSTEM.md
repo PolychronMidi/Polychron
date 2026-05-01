@@ -142,12 +142,17 @@ be consulted on the rationale:
    `medium`) when ctx > 75% so the remaining quota is reserved for
    hard problems only? Mechanism could be a single read of the
    primary's context % at the start of each `_pick_buddy_for_task`.
-5. **Senior staleness vs tombstoning.** `_list_seniors` now flags
-   `transcript_missing=True` when the senior's JSONL has been purged
-   (Claude Code can rotate transcripts); status displays `[stale:
-   transcript missing]`. Open question: should `i/consult` to a stale
-   senior refuse outright, or attempt the call (it will fail) and
-   surface the failure clearly? Today it just warns and tries.
+5. **Senior staleness vs tombstoning — direction settled, opt-out
+   pending.** `_list_seniors` now flags `transcript_missing=True` when
+   the senior's JSONL has been purged (Claude Code can rotate
+   transcripts); status displays `[stale: transcript missing]`.
+   Direction (per 0e7fbf4d): warn-and-try is correct, NOT refuse —
+   caller may have local knowledge (backup transcript path, transient
+   network blip, just-purged-but-recoverable). Refusing creates a
+   hard wall; warn-and-try preserves agency and lets `claude --resume`'s
+   own error surface the actual cause. Open piece: if false-positives
+   accumulate, add `--ignore-stale` flag to bypass loud warnings; the
+   loud-warn-then-attempt should remain the default.
 6. **Promotion-from-senior coherence.** `i/handoff promote sid=<X>`
    doesn't check whether `<X>` is currently in the senior pool. If it
    is, the same sid becomes both primary AND senior — incoherent.
