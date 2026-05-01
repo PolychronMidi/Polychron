@@ -1749,6 +1749,51 @@ test('buddy_init.sh: BUDDY_COUNT=3 + HANDOFF=1 forces count=1 (multi-buddy mutua
   });
 });
 
+test('buddy_handoff.py: consult emits buddy_consult activity event (HME integration)', () => {
+  // The consult cadence needs to be visible to the activity bridge so
+  // analytics, alerting, and cross-session forensics can see usage
+  // patterns. Without this emit, consults are invisible to the rest of
+  // HME and only surface in the senior's metadata file (which a
+  // future archive or compaction can hide).
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'event-target.json'), JSON.stringify({
+      sid: 'event-target', floor: 'easy', effort_floor: 'low',
+    }));
+    // Stub emit.py to log every invocation.
+    const shimDir = path.join(sandbox, 'tools/HME/activity');
+    fs.mkdirSync(shimDir, { recursive: true });
+    fs.writeFileSync(path.join(shimDir, 'emit.py'),
+      '#!/usr/bin/env python3\nimport sys, os, json\n' +
+      'log = os.path.join(os.environ.get("PROJECT_ROOT", "."), "tmp", "test-emit-log.jsonl")\n' +
+      'with open(log, "a") as f: f.write(json.dumps({"argv": sys.argv[1:]}) + "\\n")\n',
+      { mode: 0o755 });
+    // Stub claude on PATH so the consult itself "succeeds".
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=event-target', '--question=ping'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0, `consult failed: ${result.stderr}`);
+    const logFile = path.join(sandbox, 'tmp', 'test-emit-log.jsonl');
+    assert.ok(fs.existsSync(logFile),
+      'activity emit shim should have logged the consult event');
+    const entries = fs.readFileSync(logFile, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    const consultEvent = entries.find((e) => e.argv.some((a) => a === '--event=buddy_consult'));
+    assert.ok(consultEvent,
+      `expected buddy_consult event; got entries=${JSON.stringify(entries)}`);
+    assert.ok(consultEvent.argv.some((a) => a === '--sid=event-target'),
+      'consult event must include the target sid');
+    assert.ok(consultEvent.argv.some((a) => a === '--role=senior'),
+      'consult event must include the role label');
+    assert.ok(consultEvent.argv.some((a) => a === '--rc=0'),
+      'consult event must include the subprocess exit code');
+  });
+});
+
 test('buddy_handoff.py: retire emits buddy_handoff_retire activity event', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'event-test-sid\n');
