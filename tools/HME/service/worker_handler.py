@@ -137,7 +137,13 @@ class _Handler(BaseHTTPRequestHandler):
         return json.loads(raw)
 
     def _post_tool(self, name: str, args: dict):
+        # Lazy imports — these symbols live on the worker module (which
+        # imports US for _Handler), so a top-level import would cycle.
+        # Resolving at call time also matches the "lazy import in hot path"
+        # comment that surrounds _post_validate / _post_audit.
         from worker_post_handlers import post_tool
+        from server.tool_registry import call as tool_call
+        from worker import _active_tool_register, _active_tool_unregister
         post_tool(self, name, args, tool_call=tool_call,
                   active_register=_active_tool_register,
                   active_unregister=_active_tool_unregister)
@@ -172,6 +178,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post_validate(self, body: dict):
         from worker_post_handlers import post_validate
+        from worker import _bounded_validate
         post_validate(self, body, executor=_VALIDATE_EXECUTOR,
                       bounded_validate=_bounded_validate)
 
