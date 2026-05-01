@@ -108,6 +108,17 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
     BUDDY_COUNT=1
     _FLOORS=("${_FLOORS[0]:-easy}")
   fi
+  # Auto-retire the previous primary if its context already crosses
+  # BUDDY_RETIRE_PCT — fires BEFORE the HANDOFF short-circuit so a
+  # too-full primary can't be inherited; the script then falls through
+  # to a fresh spawn. Best-effort (silent on failure); manual
+  # `i/handoff auto_retire_check` is always available as the explicit
+  # path. The python helper's own `set -e` is kept in-script via `|| true`.
+  if [ -x "$_REPO_ROOT/tools/HME/scripts/buddy_handoff.py" ]; then
+    PROJECT_ROOT="$_REPO_ROOT" python3 \
+      "$_REPO_ROOT/tools/HME/scripts/buddy_handoff.py" auto_retire_check \
+      >/dev/null 2>&1 || true
+  fi
   _PRIMARY_FILE="$_REPO_ROOT/tmp/hme-buddy-primary.sid"
   if [ -f "$_PRIMARY_FILE" ] && [ -s "$_PRIMARY_FILE" ]; then
     _PRIMARY_SID=$(head -1 "$_PRIMARY_FILE" | tr -d '[:space:]')

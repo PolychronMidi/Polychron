@@ -1175,6 +1175,91 @@ test('buddy_handoff.py: promote --sid sets primary pointers', () => {
   });
 });
 
+test('buddy_init.sh: BUDDY_COUNT=3 + HANDOFF=1 forces count=1 (multi-buddy mutually exclusive with handoff)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=3\nBUDDY_HANDOFF=1\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '3', BUDDY_HANDOFF: '1',
+      BUDDY_MODEL_FLOORS: 'auto',
+    });
+    assert.strictEqual(result.status, 0,
+      `buddy_init.sh failed: stderr=${result.stderr}`);
+    // No primary present + handoff=1 → fall through to spawn ONE fresh,
+    // not three. The hme-buddy-1.sid / -2.sid / -3.sid multi-buddy paths
+    // must NOT be created.
+    assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid'], 5000),
+      'inaugural primary spawned in single-buddy back-compat path');
+    const tmp = path.join(sandbox, 'tmp');
+    const multiSlots = fs.readdirSync(tmp)
+      .filter((f) => /^hme-buddy-\d+\.sid$/.test(f));
+    assert.deepStrictEqual(multiSlots, [],
+      `HANDOFF=1 must force count=1; got multi-buddy slots: ${multiSlots.join(', ')}`);
+  });
+});
+
+test('buddy_handoff.py: retire emits buddy_handoff_retire activity event', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'event-test-sid\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    // Stub the activity emit script so the test doesn't depend on
+    // running infrastructure. Replace tools/HME/activity/emit.py with a
+    // shim that records its argv to tmp/test-emit-log.
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const realEmit = path.join(repoRoot, 'tools/HME/activity/emit.py');
+    if (fs.existsSync(realEmit)) {
+      // Drop a shim INTO the sandbox layout so the script's
+      // PROJECT_ROOT/tools path resolves to the shim.
+      const shimDir = path.join(sandbox, 'tools/HME/activity');
+      fs.mkdirSync(shimDir, { recursive: true });
+      const shim = path.join(shimDir, 'emit.py');
+      fs.writeFileSync(shim,
+        '#!/usr/bin/env python3\nimport sys, os, json, time\n' +
+        'log = os.path.join(os.environ.get("PROJECT_ROOT", "."), "tmp", "test-emit-log.jsonl")\n' +
+        'with open(log, "a") as f: f.write(json.dumps({"argv": sys.argv[1:]}) + "\\n")\n',
+        { mode: 0o755 });
+    }
+    const result = _runHandoff(sandbox, ['retire', '--reason=test_evt']);
+    assert.strictEqual(result.status, 0);
+    const logFile = path.join(sandbox, 'tmp', 'test-emit-log.jsonl');
+    assert.ok(fs.existsSync(logFile), 'activity emit shim should have logged the retire event');
+    const entries = fs.readFileSync(logFile, 'utf8').trim().split('\n').map((l) => JSON.parse(l));
+    const retireEvent = entries.find((e) => e.argv.some((a) => a === '--event=buddy_handoff_retire'));
+    assert.ok(retireEvent, `expected buddy_handoff_retire event; got entries=${JSON.stringify(entries)}`);
+    assert.ok(retireEvent.argv.some((a) => a === '--sid=event-test-sid'),
+      'event must include the retired sid');
+    assert.ok(retireEvent.argv.some((a) => a === '--reason=test_evt'),
+      'event must include the reason');
+  });
+});
+
+test('dispatcher: status surfaces senior pool when BUDDY_HANDOFF=1', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'retired-1.json'), JSON.stringify({
+      sid: 'retired-1', retired_at: 1000, retired_at_iso: '2026-04-30T12:00:00Z',
+      reason: 'auto_retire_at_91.0%',
+      context_at_retire: { tokens: 910000, ctx_window: 1000000, used_pct: 91.0 },
+    }, null, 2));
+    fs.writeFileSync(path.join(seniorsDir, 'retired-2.json'), JSON.stringify({
+      sid: 'retired-2', retired_at: 2000, retired_at_iso: '2026-04-30T13:00:00Z',
+      reason: 'manual',
+      context_at_retire: { tokens: 850000, ctx_window: 1000000, used_pct: 85.0 },
+    }, null, 2));
+    const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+    const result = spawnSync('python3',
+      [path.join(repoRoot, 'tools/HME/scripts/buddy_dispatcher.py'), 'status'],
+      { env: { ...process.env, PROJECT_ROOT: sandbox, BUDDY_HANDOFF: '1' },
+        encoding: 'utf8', timeout: 10000 });
+    assert.strictEqual(result.status, 0, `status failed: ${result.stderr}`);
+    assert.match(result.stdout, /seniors \(hand-off\): 2 retired/);
+    assert.match(result.stdout, /senior sid=retired-1\.\.\. retired=2026-04-30T12:00:00Z/);
+    assert.match(result.stdout, /senior sid=retired-2\.\.\. retired=2026-04-30T13:00:00Z/);
+  });
+});
+
 test('buddy_init.sh: BUDDY_SYSTEM=0 is a no-op (no sid files, no claude invocation)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),

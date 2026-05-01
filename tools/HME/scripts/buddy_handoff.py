@@ -136,7 +136,31 @@ def _retire(primary: dict, reason: str = "") -> dict:
               LEGACY_SID, LEGACY_FLOOR, LEGACY_EFFORT):
         if p.exists():
             p.unlink()
+    _emit_activity("buddy_handoff_retire", {
+        "sid": primary["sid"], "reason": record["reason"],
+        "context_at_retire": ctx,
+    })
     return record
+
+
+def _emit_activity(event: str, payload: dict) -> None:
+    """Best-effort activity emit. Matches the convention used by
+    buddy_init.sh's _spawn_buddy and the dispatcher's manifest writes."""
+    emit = PROJECT_ROOT / "tools" / "HME" / "activity" / "emit.py"
+    if not emit.exists():
+        return
+    args = ["--event=" + event]
+    for k, v in payload.items():
+        if v is None:
+            continue
+        args.append(f"--{k}={v}")
+    import subprocess as _sp
+    try:
+        _sp.run(["python3", str(emit), *args],
+                capture_output=True, timeout=5,
+                env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)})
+    except (OSError, _sp.TimeoutExpired):
+        pass
 
 
 def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
@@ -144,6 +168,8 @@ def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
     PRIMARY_SID.write_text(sid + "\n")
     PRIMARY_FLOOR.write_text(floor + "\n")
     PRIMARY_EFFORT.write_text(effort + "\n")
+    _emit_activity("buddy_handoff_promote",
+                   {"sid": sid, "floor": floor, "effort_floor": effort})
 
 
 def cmd_status(args: argparse.Namespace) -> int:
