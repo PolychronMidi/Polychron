@@ -106,20 +106,26 @@ idle time and the inherited buddy (whether they're still the active
 primary or have since retired into the senior pool) should expect to
 be consulted on the rationale:
 
-1. **Hot-path auto-retire (primary path) — partial resolution.**
-   `auto_retire_check` previously had no caller — defined but never
-   fired except at SessionStart, so the 90% safety claim was
-   documentation, not enforcement. Now wired into the Stop-hook chain
-   (`tools/HME/hooks/lifecycle/stop/post_hooks.sh`) so it fires
-   per-turn under `BUDDY_HANDOFF=1`. Per-turn is safe because the
-   turn just finished — no in-flight tasks to disrupt. Open piece:
-   should the dispatcher's drain path ALSO check between tasks (a
-   stronger guarantee for long-running pipeline runs that span
-   multiple Claude turns), and what happens to in-flight tasks if
-   the primary retires mid-dispatch — do they fall back to
-   ephemeral, or wait for the next SessionStart's fresh primary to
-   spawn? See question 9 below for the *senior* consult path, which
-   needs a different action set since seniors don't retire.
+1. **Hot-path auto-retire (primary path) — partial resolution + D
+   direction settled.** `auto_retire_check` previously had no caller
+   — defined but never fired except at SessionStart, so the 90%
+   safety claim was documentation, not enforcement. Now wired into
+   the Stop-hook chain (`tools/HME/hooks/lifecycle/stop/post_hooks.sh`)
+   so it fires per-turn under `BUDDY_HANDOFF=1`. Per-turn is safe
+   because the turn just finished — no in-flight tasks to disrupt.
+   **Replacement-on-retire — direction (D, per 0e7fbf4d):** when
+   primary retires, pointer is cleared (status quo); the *next* task
+   to arrive without a primary triggers a lazy fresh spawn. This is
+   pareto-better than spawn-at-retire (no spawn cost if session ends
+   quietly), pareto-better than wait-for-SessionStart (no coverage
+   gap once work resumes), and avoids parent-becomes-primary (which
+   collapses two timelines and defeats the persistence-across-parent
+   premise of the paradigm). Implementation: extract the spawn block
+   from `buddy_init.sh` into a shared `_ensure_primary()` helper;
+   call from both SessionStart and the dispatcher's pre-task check
+   (`_pick_buddy_for_task` or upstream of it). Not yet built — open
+   piece. The 22MB-transcript spin-up cost (~10-20s) becomes the
+   first task's latency rather than reaching dispatcher fall-through.
 2. **Transcript GC.** Claude Code's own session GC may rotate or
    archive a senior's transcript JSONL. `_buddy_context_used` returns
    `null` on missing transcripts; status shows `ctx=?`. Question:
