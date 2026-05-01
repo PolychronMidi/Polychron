@@ -41,8 +41,31 @@ canonical:
 2. Restart proxy
 3. Fire any request through the proxy (e.g.,
    `ANTHROPIC_BASE_URL=http://127.0.0.1:9099 claude -p "ping"`)
-4. Inspect `tmp/claude-system-prompt.txt`
+4. Inspect `tmp/claude-system-prompt.txt` (system block only) AND
+   `tmp/claude-full-payload.json` (full request: system + tools + params)
 5. Restore `HME_DUMP_SYSTEM_PROMPT=0`
 
 The dump captures pre-replacement state (dump_system runs before
 replace_system in the middleware order).
+
+## Filtering tools (separate, bigger lever)
+
+The `tools` array on every request is ~60KB+ — bigger than the system
+prompt. If you have tools you never use (`mcp__claude_ai_Google_Drive__*`,
+`EnterWorktree`/`ExitWorktree`, `Monitor`, `RemoteTrigger`, `WebFetch`,
+`WebSearch`, `CronCreate`/`Delete`/`List`, `PushNotification`, etc.),
+drop them via [`filter_tools.js`](middleware/filter_tools.js):
+
+```
+# In .env — comma-separated, exact tool names
+HME_FILTER_TOOLS_DROP=mcp__claude_ai_Google_Drive__authenticate,mcp__claude_ai_Google_Drive__complete_authentication,EnterWorktree,ExitWorktree,Monitor,RemoteTrigger,WebFetch,WebSearch,CronCreate,CronDelete,CronList,PushNotification
+```
+
+**Removing a tool means the agent cannot call it** — verify your
+workflow doesn't need it before adding to the list. To see the current
+tool surface, run the inspection workflow above and check the
+`tools[].name` list in `tmp/claude-full-payload.json`.
+
+Empirical baseline: dropping the 12 listed above saved 23,316 bytes
+(~23KB) per request when measured against a captured Claude Code
+payload — roughly 2x the savings of pruning the `# auto memory` section.

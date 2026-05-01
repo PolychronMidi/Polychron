@@ -9,6 +9,7 @@
   "order": [
     "dump_system.js",
     "replace_system.js",
+    "filter_tools.js",
     "memory_redirect.js",
     "dominance_prefetch.js",
     "secret_sanitizer.js",
