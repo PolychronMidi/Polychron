@@ -8,17 +8,26 @@
 #   - tools/HME/service/.../evolution_evolve.py (i/evolve focus=loc)
 #   - scripts/report-src-loc.js (LOC report)
 
-# Architecturally required single-file modules. Splitting these would
-# scatter one coherent map across multiple files for no readability gain.
+# Architecturally required single-file modules.
 src/play/fullBootstrap.js
 src/conductor/config.js
 
-# Bulk data files (constants, lookup tables, prior distributions). These
-# are data-by-density, not executable logic — the LOC target doesn't
-# apply.
+# Bulk data files — constants, lookup tables, prior distributions.
 *PriorsData.js
 *Pairs.js
 *Table.js
 *Tables.js
 *Constants.js
 *Manifest.js
+
+# TypeScript declaration aggregator — one source of truth for global types.
+*.d.ts
+
+# Test specs — inherently fixture-heavy; co-locating cases for one
+# subject is the design.
+tools/HME/tests/specs/*.test.js
+tools/HME/scripts/detectors/test_*.py
+
+# Pipeline phase scripts — single-phase orchestrators end-to-end.
+scripts/pipeline/*.js
+scripts/pipeline/validators/*.js
