@@ -27,6 +27,19 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+# `logger` and `ENV` were referenced as bare module globals in the original
+# split — they're cheap module-level resolves with no circular-import risk
+# (hme_env is leaf-level, logging is stdlib), so import them at top.
+# worker.py-side state (_sp, _startup_done, WORKER_VERSION, CLI_COMPAT_VERSION,
+# names, list_schemas, _bounded_validate, _active_tool_register / _unregister)
+# is resolved lazily inside method bodies because worker.py imports US for
+# _Handler — a top-level back-import would cycle.
+logger = logging.getLogger("HME")
+_tool_root = os.path.dirname(os.path.abspath(__file__))
+if _tool_root not in sys.path:
+    sys.path.insert(0, _tool_root)
+from hme_env import ENV  # noqa: E402
+
 # Shared thread pool for /validate requests. Previous implementation
 # spawned a fresh ThreadPoolExecutor per request with cancel_futures=True,
 # but Python threads can't be interrupted — on timeout, the running
@@ -95,6 +108,9 @@ class _Handler(BaseHTTPRequestHandler):
         # Unified health: worker tool-registry status + shim-absorbed RAG status.
         import rag_engines
         from hme_http_store import _get_recent_errors, _transcript_entries
+        from server.tool_registry import names
+        from server import system_phase as _sp
+        from worker import _startup_done
         _training_lock = ENV.optional("HME_TRAINING_LOCK", "")
         _training_locked = bool(_training_lock) and os.path.exists(_training_lock)
         rag_ready = rag_engines._engine_ready.is_set() and rag_engines._project_engine is not None
@@ -111,12 +127,15 @@ class _Handler(BaseHTTPRequestHandler):
         })
 
     def _get_version(self):
+        from worker import WORKER_VERSION, CLI_COMPAT_VERSION
         self._json(200, {"version": WORKER_VERSION, "cli_compat": CLI_COMPAT_VERSION})
 
     def do_GET(self):
         if self.path == "/health":            return self._get_health()
         if self.path == "/version":           return self._get_version()
-        if self.path == "/tools/list":        return self._json(200, {"tools": list_schemas()})
+        if self.path == "/tools/list":
+            from server.tool_registry import list_schemas
+            return self._json(200, {"tools": list_schemas()})
         if self.path == "/capabilities":      return self._get_capabilities()
         if self.path == "/rag/lib-list":      return self._get_rag_lib_list()
         if self.path == "/narrative":         return self._get_narrative()
