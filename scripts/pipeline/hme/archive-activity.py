@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Archive stale activity events so downstream slicers stop tripping over
-pre-pipeline-era chat-turn round_complete markers and other historical noise.
+pre-pipeline-era round_complete markers and other historical noise.
 
 Strategy: events older than HME_ACTIVITY_KEEP_DAYS (default 14) go into
 metrics/hme-activity-archive.jsonl. The live file keeps everything more

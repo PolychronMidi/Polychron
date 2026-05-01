@@ -462,7 +462,7 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
       end_event      — name of the "end" event (e.g. pipeline_run)
       require_field  — optional: events must have this field present to count
                         (useful for round_complete which was pre-rename emitted
-                        without verdict field from chat-turn Stop hooks)
+                        without verdict field from pre-pipeline-era Stop hooks)
       window_events  — consider only the last N events (default 2000)
       min_occurrences — only evaluate when >= this many start_events observed
                         (default 2 — cold-start tolerance)

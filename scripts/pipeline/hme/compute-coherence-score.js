@@ -68,7 +68,7 @@ function indexByEvent(events) {
 function sliceToRound(events) {
   // Return the window between the two most recent PIPELINE-emitted
   // round_complete events. Pipeline rounds carry a 'verdict' field;
-  // chat-turn markers (historical, pre-rename) don't -- those are excluded.
+  // pre-rename markers (historical, no verdict field) don't — those are excluded.
   //
   // ALWAYS use the most recent pair, even if empty. An empty window
   // correctly signals "this round had no relevant writes" rather than

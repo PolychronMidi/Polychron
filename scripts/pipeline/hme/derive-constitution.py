@@ -167,7 +167,7 @@ def extract_claims_from_pipeline() -> list[dict]:
         ("pipeline_emits_run",
          "Every pipeline run emits exactly one `pipeline_run` activity event at finish, carrying verdict + hci — agent-independent"),
         ("pipeline_emits_round_complete",
-         "Every pipeline run emits exactly one `round_complete` activity event at finish, carrying verdict (distinguishes it from chat-turn markers)"),
+         "Every pipeline run emits exactly one `round_complete` activity event at finish, carrying verdict (distinguishes it from pre-pipeline-era markers without verdict)"),
         ("pipeline_writes_summary",
          "Every pipeline run writes metrics/pipeline-summary.json with verdict + hci + wallTimeSeconds + per-step ok flags"),
         ("pipeline_writes_fingerprint",
