@@ -249,6 +249,11 @@ def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
                    {"sid": sid, "floor": floor, "effort_floor": effort})
 
 
+
+# Re-export of cmd_consult only.
+from buddy_handoff_consult import cmd_consult  # noqa: F401, E402
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     bd = _import_dispatcher()
     primary = _read_primary()
@@ -424,6 +429,8 @@ def cmd_auto_retire_check(args: argparse.Namespace) -> int:
 
 # Re-export of cmd_consult (extracted to sibling).
 from buddy_handoff_consult import cmd_consult  # noqa: F401, E402
+
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Buddy hand-off lifecycle manager")
