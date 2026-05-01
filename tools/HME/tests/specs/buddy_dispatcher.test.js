@@ -1056,6 +1056,22 @@ test('buddy_init.sh: HANDOFF=1 with no primary.sid spawns fresh + records as ina
     const primary = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'utf8').trim();
     assert.strictEqual(primary, legacy,
       'inaugural primary.sid must equal the freshly-spawned legacy sid');
+    // Symmetry rule: inaugural primary path MUST write the full trio
+    // (sid + floor + effort_floor). Previously only sid + floor were
+    // written, leaving _promote() and inaugural-spawn divergent —
+    // _read_primary fell back to "low" effort, so functionally OK but
+    // structurally violated the writer-symmetry invariant documented
+    // in BUDDY_SYSTEM.md's wisdom section.
+    assert.ok(fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor')),
+      'inaugural primary.floor written');
+    assert.ok(fs.existsSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor')),
+      'inaugural primary.effort_floor written (writer-symmetry with _promote)');
+    const primaryFloor = fs.readFileSync(
+      path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'utf8').trim();
+    const primaryEffort = fs.readFileSync(
+      path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'utf8').trim();
+    assert.strictEqual(primaryFloor, 'easy', 'inaugural floor matches BUDDY_MODEL_FLOORS=auto for count=1');
+    assert.strictEqual(primaryEffort, 'low', 'effort_floor follows canonical easy→low mapping');
   });
 });
 

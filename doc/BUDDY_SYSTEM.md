@@ -225,14 +225,23 @@ who built this paradigm) during a review consult, paraphrased:
   costs to consult. Favor batched consults (one prompt with three
   questions) over three sequential calls. Don't consult for
   lookups grep can answer.
-- **HANDOFF mirror order invariant.** `_promote()` writes both the
-  primary pointer trio AND the legacy mirror trio inline at promote
-  time. `buddy_init.sh`'s HANDOFF mirror block at SessionStart is a
-  *safety net*, not the canonical actuator — it catches edge cases
-  like a manual edit of `primary.sid` or a primary written by a
-  future writer that doesn't go through `_promote()`. If you add
-  another writer of `primary.sid`, follow the symmetry: write both
-  trios, atomically.
+- **HANDOFF mirror + writer-symmetry invariant.** `_promote()` writes
+  both the primary pointer trio (sid + floor + effort_floor) AND the
+  legacy mirror trio inline at promote time. `buddy_init.sh`'s
+  HANDOFF mirror block at SessionStart is a *safety net*, not the
+  canonical actuator — it catches edge cases like a manual edit of
+  `primary.sid` or a primary written by a future writer that doesn't
+  go through `_promote()`. **Two-part rule for new writers of
+  `primary.sid`:** (a) write the full trio (sid + floor + effort_floor)
+  for the role being established — falling back to default values for
+  any field is fine but the file must exist; (b) if writing during a
+  fresh spawn (inaugural primary path), also mirror to the legacy
+  trio for the dispatcher's back-compat path. The
+  `cmd_ensure_primary` helper (option D in Q1) currently *wraps*
+  `buddy_init.sh` rather than extracting the spawn block into a
+  shared helper; functionally equivalent but structurally
+  duplicates a subprocess. If you touch this code path, the
+  extraction is the cleaner endgame.
 - **No expertise routing across handoffs.** The senior pool has no
   concept of "this senior knows about subsystem X". A future primary
   with N seniors has no routing hint — they pick whichever sid feels

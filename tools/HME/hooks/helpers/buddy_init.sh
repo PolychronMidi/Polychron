@@ -211,9 +211,24 @@ except Exception:
       # Hand-off bootstrap: when HANDOFF=1 and slot 1 spawns fresh
       # (because primary.sid was missing), record this fresh sid as the
       # inaugural primary so the next session inherits it as its buddy.
+      # Symmetry rule (per BUDDY_SYSTEM.md "wisdom" section): writers of
+      # the primary pointer trio MUST write all three files. _promote()
+      # writes sid + floor + effort_floor; this path must too. Effort
+      # floor is the canonical default for the model floor.
       if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "$slot" = "1" ]; then
         printf '%s\n' "$_sid" > "$_REPO_ROOT/tmp/hme-buddy-primary.sid"
         printf '%s\n' "$floor" > "$_REPO_ROOT/tmp/hme-buddy-primary.floor"
+        # Effort floor follows the canonical mapping for the model floor.
+        # (TIER_TO_EFFORT in buddy_dispatcher.py: easy→low, medium→medium,
+        # hard→high — but we write the literal here to avoid a python
+        # import in the hot path.)
+        case "$floor" in
+          easy)   _effort=low ;;
+          medium) _effort=medium ;;
+          hard)   _effort=high ;;
+          *)      _effort=low ;;
+        esac
+        printf '%s\n' "$_effort" > "$_REPO_ROOT/tmp/hme-buddy-primary.effort_floor"
       fi
       if [ -x "$_REPO_ROOT/tools/HME/activity/emit.py" ]; then
         PROJECT_ROOT="$_REPO_ROOT" python3 "$_REPO_ROOT/tools/HME/activity/emit.py" \
