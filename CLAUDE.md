@@ -14,6 +14,10 @@ Polychron development has two interleaving modes; mode-specific rules live in co
 
 `npm run main` — full pipeline.
 
+## Universal Principles
+
+- **Fail fast.** Every module throws on bad input. No silent early returns. No `|| 0` / `|| []` fallbacks. No graceful degradation.
+
 ## Hard Rules (Never Violate)
 
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement.
