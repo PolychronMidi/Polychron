@@ -1,0 +1,247 @@
+"""Conjugate-channel coherence verifier — extracted from code_audits_runtime.py.
+Includes _count_legendary_streak helper. code_audits.py re-exports.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+from ._base import (
+    Verifier, VerdictResult, _result, _run_subprocess,
+    PASS, WARN, FAIL, SKIP, ERROR,
+    _PROJECT, _HOOKS_DIR, _SERVER_DIR, _SCRIPTS_DIR, _DOC_DIRS, METRICS_DIR,
+)
+
+
+def _count_legendary_streak(project_root: str) -> int:
+    """Count consecutive 'legendary' ground-truth verdicts ending at the
+    most recent verdict. Used by ConjugateChannelVerifier's license-to-
+    explore branch to scale band-widening proportionally to recent
+    productive-territory evidence (V × VIII × IX compounding)."""
+    gt_path = os.path.join(project_root, "output", "metrics",
+                           "hme-ground-truth.jsonl")
+    if not os.path.isfile(gt_path):
+        return 0
+    try:
+        with open(gt_path) as f:
+            rows = [json.loads(ln) for ln in f if ln.strip()]
+    except (OSError, ValueError):
+        return 0
+    streak = 0
+    for r in reversed(rows):
+        if r.get("sentiment") == "legendary":
+            streak += 1
+        else:
+            break
+    return streak
+
+
+class ConjugateChannelVerifier(Verifier):
+    """Horizon V expansion — composition⇔HME conjugate-channel feedback.
+
+    Couples HCI to perceptual coherence by reading the latest
+    musical-correlation row and FAILing when the system is in the
+    'lost' quadrant (low HCI AND low perceptual). PASS when in any
+    other quadrant. The `perceptual_complexity_avg` and `hme_coherence`
+    fields exist in `output/metrics/hme-musical-correlation.json`.
+
+    This is the FIRST verifier whose status depends on the composition
+    signal — the conjugate channel previously was a passive view
+    (`i/status mode=conjugate`) but didn't feed back into HCI. With
+    this verifier the two coherences become a coupled system: a
+    sustained 'lost' state degrades HCI, which signals the agent to
+    investigate.
+
+    Threshold: 'lost' = HCI < median AND perceptual < median (data-driven)."""
+    name = "conjugate-channel"
+    category = "code"
+    subtag = "regression-prevention"
+    weight = 1.5
+
+    def run(self) -> VerdictResult:
+        path = os.path.join(_PROJECT, "output", "metrics",
+                            "hme-musical-correlation.json")
+        if not os.path.isfile(path):
+            return _result(SKIP, 1.0,
+                           "no musical-correlation file yet; pipeline hasn't produced one")
+        try:
+            with open(path) as f:
+                d = json.load(f)
+        except (OSError, ValueError) as e:
+            return _result(ERROR, 0.0, f"could not read: {e}")
+        latest = d.get("latest") or {}
+        history = d.get("history") or []
+        all_rounds = [r for r in (history + [latest])
+                      if isinstance(r.get("hme_coherence"), (int, float))
+                      and isinstance(r.get("perceptual_complexity_avg"), (int, float))]
+        if not all_rounds:
+            return _result(SKIP, 1.0, "no rounds carry both signals")
+        if not isinstance(latest.get("hme_coherence"), (int, float)) or \
+           not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
+            # SKIP path — but DON'T let the streak-aware license signal go
+            # stale just because the quantitative signals are pending.
+            # If a ground-truth legendary streak exists, keep the band-
+            # widening proposal fresh based on streak alone (composition-
+            # aware fast feedback: listener verdicts update the license
+            # immediately, not waiting for the next pipeline correlation).
+            try:
+                _streak = _count_legendary_streak(_PROJECT)
+                if _streak >= 2:
+                    _delta = min(0.10, 0.05 + max(0, _streak - 1) * 0.025)
+                    _expiry = min(4, 1 + max(0, _streak - 1))
+                    _refresh_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
+                    _refresh = {
+                        "ts": time.time(),
+                        "trigger": "streak-aware-skip-refresh",
+                        "reason": (f"latest round missing quantitative signals "
+                                   f"but {_streak}-round legendary streak active"),
+                        "recommended_action": "widen_band",
+                        "band_delta": _delta,
+                        "expires_after_rounds": _expiry,
+                        "streak": {
+                            "legendary_consecutive": _streak,
+                            "policy": "magnitude +0.025/streak (cap +0.10) · duration +1/streak (cap 4)",
+                        },
+                    }
+                    _refresh_tmp = _refresh_path + ".tmp"
+                    with open(_refresh_tmp, "w") as _rf:
+                        json.dump(_refresh, _rf, indent=2)
+                    os.replace(_refresh_tmp, _refresh_path)
+            except OSError:
+                # Marker write is advisory; SKIP returns successfully
+                # regardless.
+                pass
+            return _result(SKIP, 1.0, "latest round missing one of the two signals")
+        # Data-driven thresholds — medians across history
+        sorted_h = sorted(r["hme_coherence"] for r in all_rounds)
+        sorted_p = sorted(r["perceptual_complexity_avg"] for r in all_rounds)
+        h_thr = sorted_h[len(sorted_h) // 2]
+        p_thr = sorted_p[len(sorted_p) // 2]
+        cur_h = float(latest["hme_coherence"])
+        cur_p = float(latest["perceptual_complexity_avg"])
+        if cur_h < h_thr and cur_p < p_thr:
+            # Bidirectional V-coupling (Horizon V asymptote): on lost-
+            # quadrant FAIL, write a band-tightening proposal so the
+            # NEXT round's coherence-budget consumer can opt to narrow
+            # the chaordic edge. Composition→HCI was the seed; this
+            # closes the HCI→composition direction. The marker file is
+            # advisory — composition behavior remains driven by the
+            # configured band until a consumer explicitly reads this.
+            try:
+                tightening = {
+                    "ts": time.time(),
+                    "trigger": "conjugate-channel-lost-quadrant",
+                    "reason": (f"HCI={cur_h:.2f} < {h_thr:.2f} AND "
+                               f"perc={cur_p:.2f} < {p_thr:.2f}"),
+                    "recommended_action": "narrow_band",
+                    "band_delta": -0.05,  # advisory: contract by 5pp
+                    "expires_after_rounds": 1,
+                }
+                tightening_path = os.path.join(
+                    _PROJECT, "tmp", "hme-band-tightening.json")
+                tightening_tmp = tightening_path + ".tmp"
+                with open(tightening_tmp, "w") as _tf:
+                    json.dump(tightening, _tf, indent=2)
+                os.replace(tightening_tmp, tightening_path)
+            except OSError:
+                pass
+            return _result(FAIL, 0.0,
+                           f"latest round in 'lost' quadrant "
+                           f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
+                           f"perc={cur_p:.2f} < {p_thr:.2f})",
+                           ["wrote tmp/hme-band-tightening.json (V→IX bidirectional coupling)",
+                            "consider: i/status mode=conjugate for full quadrant view",
+                            "consider: i/why mode=hci-drop to identify regressed axes",
+                            "consider: i/why mode=conscience for ground-truth context"])
+        # Bidirectional cleanup: if we're NOT in lost quadrant, clear any
+        # stale tightening proposal so it doesn't persist past its trigger.
+        try:
+            tightening_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
+            if os.path.isfile(tightening_path):
+                os.remove(tightening_path)
+        except OSError:
+            pass
+        # Otherwise: PASS, with quadrant label in summary.
+        # Plus check for the symmetric "license to explore" condition:
+        # when most subtags are ABOVE band (system over-coherent), write
+        # a band-LOOSENING marker so the next pipeline run gets a wider
+        # chaordic edge. Mirrors the tightening branch above. The
+        # composition consumer (compute-coherence-budget.js) reads the
+        # same file via tmp/hme-band-tightening.json convention and
+        # applies the delta. Pure logic enhancement, no constant tuning.
+        try:
+            snap_path = os.path.join(_PROJECT, "output", "metrics",
+                                     "hci-verifier-snapshot.json")
+            if os.path.isfile(snap_path):
+                with open(snap_path) as _sf:
+                    _snap = json.load(_sf)
+                # Compute per-subtag mean score; count ABOVE band
+                from collections import defaultdict
+                _by_subtag: dict = defaultdict(list)
+                _scripts2 = os.path.join(_PROJECT, "tools", "HME", "scripts")
+                if _scripts2 not in sys.path:
+                    sys.path.insert(0, _scripts2)
+                from verify_coherence import REGISTRY as _REG
+                _name_to_subtag = {v.name: getattr(v, "subtag", "(none)") for v in _REG}
+                for name, info in (_snap.get("verifiers") or {}).items():
+                    subtag = _name_to_subtag.get(name, "(none)")
+                    _by_subtag[subtag].append(float(info.get("score", 0.0)))
+                _LO, _HI = 0.55, 0.85
+                _above = sum(1 for vals in _by_subtag.values()
+                             if vals and (sum(vals) / len(vals)) > _HI)
+                _total = sum(1 for vals in _by_subtag.values() if vals)
+                # ≥ 5 of 7 axes saturated → license-to-explore signal.
+                # Persist a loosening proposal mirroring the tightening
+                # one. Composition consumer applies opposite-sign delta.
+                # Streak-aware sizing (V × VIII × IX compounding): consecutive
+                # legendary ground-truth verdicts indicate the wider band
+                # is producing real composition wins, so the license should
+                # extend in both magnitude and duration. Without this, every
+                # legendary round would re-derive a 1-round license that
+                # expires before the next pipeline run inherits it.
+                if _total >= 6 and _above >= 5:
+                    legendary_streak = _count_legendary_streak(_PROJECT)
+                    # Magnitude: +0.05 base, +0.025 per additional streak round, capped at +0.10
+                    streak_delta = min(0.10, 0.05 + max(0, legendary_streak - 1) * 0.025)
+                    # Duration: 1 round base, +1 per additional streak round, capped at 4
+                    streak_expiry = min(4, 1 + max(0, legendary_streak - 1))
+                    loosen_path = os.path.join(_PROJECT, "tmp", "hme-band-tightening.json")
+                    loosen_proposal = {
+                        "ts": time.time(),
+                        "trigger": "conjugate-channel-license-to-explore",
+                        "reason": (f"{_above} of {_total} subtags ABOVE band "
+                                   f"(saturated → license to explore)"),
+                        "recommended_action": "widen_band",
+                        "band_delta": streak_delta,
+                        "expires_after_rounds": streak_expiry,
+                        "streak": {
+                            "legendary_consecutive": legendary_streak,
+                            "policy": "magnitude +0.025/streak (cap +0.10) · duration +1/streak (cap 4)",
+                        },
+                    }
+                    loosen_tmp = loosen_path + ".tmp"
+                    with open(loosen_tmp, "w") as _lf:
+                        json.dump(loosen_proposal, _lf, indent=2)
+                    os.replace(loosen_tmp, loosen_path)
+        except (OSError, ImportError, ValueError):
+            # Loosening signal is advisory; absence of the marker is
+            # equivalent to "no exploration license." Don't fail the
+            # verifier on bookkeeping issues.
+            pass
+        if cur_h >= h_thr and cur_p >= p_thr:
+            quad = "mature stability"
+        elif cur_h >= h_thr:
+            quad = "sterile rigor"
+        else:
+            quad = "lucky chaos"
+        return _result(PASS, 1.0,
+                       f"latest round: '{quad}' "
+                       f"(HCI={cur_h:.2f}, perc={cur_p:.2f}; medians {h_thr:.2f}/{p_thr:.2f})")
+
+
+
+

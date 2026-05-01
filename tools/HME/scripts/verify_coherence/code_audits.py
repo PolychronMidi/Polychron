@@ -14,7 +14,6 @@ from .code_audits_style import (  # noqa: F401
     RepeatedCharSpamVerifier,
 )
 from .code_audits_state import (  # noqa: F401
-    AtomicStateWritesVerifier,
     StateFileOwnershipVerifier,
     ClaudeSettingsJsonVerifier,
     HumanDeferredAuditVerifier,
@@ -23,14 +22,19 @@ from .code_audits_state import (  # noqa: F401
     ShellHookAuditVerifier,
     ActivityEventsDocSyncVerifier,
 )
+from .code_audits_atomic import (  # noqa: F401
+    AtomicStateWritesVerifier,
+)
 from .code_audits_runtime import (  # noqa: F401
     SilentFailureClassVerifier,
     TestIsolationVerifier,
     TestEnvUndefinedVerifier,
-    ConjugateChannelVerifier,
-    _count_legendary_streak,
     ShellUndefinedVarsVerifier,
     PythonSyntaxVerifier,
     ShellSyntaxVerifier,
     StalePathRenameVerifier,
+)
+from .code_audits_conjugate import (  # noqa: F401
+    ConjugateChannelVerifier,
+    _count_legendary_streak,
 )
