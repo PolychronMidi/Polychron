@@ -145,7 +145,10 @@ def _retire(primary: dict, reason: str = "") -> dict:
 
 def _emit_activity(event: str, payload: dict) -> None:
     """Best-effort activity emit. Matches the convention used by
-    buddy_init.sh's _spawn_buddy and the dispatcher's manifest writes."""
+    buddy_init.sh's _spawn_buddy and the dispatcher's manifest writes.
+    Complex values (dict/list) are JSON-encoded so they round-trip
+    through emit.py's scalar-only --key=value parser without becoming
+    Python-repr strings."""
     emit = PROJECT_ROOT / "tools" / "HME" / "activity" / "emit.py"
     if not emit.exists():
         return
@@ -153,6 +156,8 @@ def _emit_activity(event: str, payload: dict) -> None:
     for k, v in payload.items():
         if v is None:
             continue
+        if isinstance(v, (dict, list)):
+            v = json.dumps(v, default=str)
         args.append(f"--{k}={v}")
     import subprocess as _sp
     try:

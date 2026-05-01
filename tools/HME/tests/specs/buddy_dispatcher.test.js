@@ -1231,6 +1231,17 @@ test('buddy_handoff.py: retire emits buddy_handoff_retire activity event', () =>
       'event must include the retired sid');
     assert.ok(retireEvent.argv.some((a) => a === '--reason=test_evt'),
       'event must include the reason');
+    // The context_at_retire payload is a dict; _emit_activity must
+    // JSON-encode it (not Python-repr it) so it round-trips through
+    // emit.py's --key=value scalar parser as parseable JSON later.
+    const ctxArg = retireEvent.argv.find((a) => a.startsWith('--context_at_retire='));
+    if (ctxArg !== undefined) {
+      const ctxValue = ctxArg.slice('--context_at_retire='.length);
+      // Either valid JSON (dict serialized correctly) OR empty (transcript
+      // not present in the sandbox so ctx is null and the field was skipped).
+      assert.doesNotThrow(() => JSON.parse(ctxValue),
+        `context_at_retire must be valid JSON, got: ${ctxValue}`);
+    }
   });
 });
 
