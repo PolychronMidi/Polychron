@@ -214,8 +214,18 @@ NEXUS_FILE="$PROJECT_ROOT/tmp/hme-nexus.state"
 OVERRIDE_REMINDER=""
 
 # Many edits but no REVIEW marker → nudge toward i/review
-_EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" 2>/dev/null || echo 0)
-_REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" 2>/dev/null || echo 0)
+# `grep -c` always prints a number to stdout AND exits 1 on no-match.
+# The previous `|| echo 0` form added a SECOND "0" to stdout when grep
+# exited nonzero, producing multiline `_EDIT_CT="0\n0"` that broke the
+# `-gt` integer test. Handle missing-file separately so grep's stdout
+# is always single-line.
+if [ -f "$NEXUS_FILE" ]; then
+  _EDIT_CT=$(grep -c '^EDIT:' "$NEXUS_FILE" || true)
+  _REVIEW_CT=$(grep -c '^REVIEW:' "$NEXUS_FILE" || true)
+else
+  _EDIT_CT=0
+  _REVIEW_CT=0
+fi
 if [ "$_EDIT_CT" -gt 3 ] && [ "$_REVIEW_CT" -eq 0 ]; then
   OVERRIDE_REMINDER="$_EDIT_CT unreviewed edits — run \`i/review mode=forget\` before stopping."
 fi
