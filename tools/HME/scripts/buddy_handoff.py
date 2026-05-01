@@ -143,6 +143,14 @@ def _record_consult(sid: str, question: str) -> None:
             caller_sid = PRIMARY_SID.read_text().strip() or None
         except OSError:
             pass
+    if caller_sid is None:
+        # Visible-by-default debug: caller resolved to None means consult
+        # was invoked outside an active session (cron, manual shell), or
+        # PRIMARY_SID is missing. Surfacing the gap beats silently
+        # absorbing it.
+        print(f"# debug: caller_sid resolved to None (no active primary "
+              f"recorded at consult time) — record will lack caller info",
+              file=sys.stderr)
     try:
         rec = json.loads(senior_file.read_text())
         consults = rec.get("consults")
@@ -161,16 +169,27 @@ def _record_consult(sid: str, question: str) -> None:
 
 
 def _list_seniors() -> list[dict]:
+    """List retired seniors, annotating each with `transcript_missing` when
+    the senior's JSONL is gone (Claude Code may purge old transcripts).
+    A consult against a stale senior fails opaquely; surfacing the state
+    upstream lets cmd_status display [stale] and lets future tooling
+    refuse consults to dead targets rather than silently failing."""
     if not SENIORS_DIR.exists():
         return []
+    bd = _import_dispatcher()
     out = []
     for f in sorted(SENIORS_DIR.glob("*.json")):
         if f.name.startswith("_"):
             continue
         try:
-            out.append(json.loads(f.read_text()))
+            rec = json.loads(f.read_text())
         except (OSError, ValueError):
             continue
+        sid = rec.get("sid") or ""
+        rec["transcript_missing"] = (
+            sid != "" and bd._transcript_path_for_sid(sid) is None
+        )
+        out.append(rec)
     return out
 
 
@@ -278,8 +297,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         reason = s.get("reason", "?")
         sid_short = (s.get("sid", "") or "")[:16]
         consults_str = _format_consults(s.get("consults"))
+        stale_str = "  [stale: transcript missing]" if s.get("transcript_missing") else ""
         print(f"  sid={sid_short}... retired={ts} ctx_at_retire={tk:,} "
-              f"reason={reason}{consults_str}")
+              f"reason={reason}{consults_str}{stale_str}")
     if getattr(args, "json", False):
         snapshot = {
             "ts": time.time(),
@@ -374,14 +394,27 @@ def cmd_consult(args: argparse.Namespace) -> int:
     else:
         role = "buddy"
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
-    # No timeout: a buddy with a multi-MB transcript needs minutes to
-    # spin up under `claude --resume`, and a fixed cap kills the
-    # subprocess mid-response — wasting the buddy's transcript tokens
-    # plus forcing a re-send that doubles the cost. The user can Ctrl-C
-    # the i/consult wrapper to abort if a hang is genuinely stuck.
+    # Dynamic timeout scaled to transcript size. A multi-MB transcript
+    # needs minutes to spin up under `claude --resume`; a fixed 300s
+    # killed valid consults mid-response. But timeout=None is a footgun
+    # — a wedged subprocess (claude crashes, network half-open, stdin
+    # buffer deadlocks) would hold the call forever. Compromise: floor
+    # of 1800s (30 min) plus 30s per MB of transcript, so a known-large
+    # buddy gets proportional headroom while hung processes still die.
+    # (Better fix is an idle watchdog via Popen+select that resets on
+    # every byte received — leaving for a future iteration.)
+    transcript_mb = 0.0
+    bd = _import_dispatcher()
+    transcript_path = bd._transcript_path_for_sid(args.sid)
+    if transcript_path is not None:
+        try:
+            transcript_mb = Path(transcript_path).stat().st_size / (1024 * 1024)
+        except OSError:
+            pass
+    consult_timeout = max(1800, int(transcript_mb * 30))
     result = subprocess.run(cmd, capture_output=True, text=True,
                             env={**os.environ, "HME_THREAD_CHILD": "1"},
-                            timeout=None)
+                            timeout=consult_timeout)
     if result.stdout:
         sys.stdout.write(result.stdout)
     if result.stderr:

@@ -1302,6 +1302,43 @@ test('buddy_handoff.py: consult captures caller_sid from active primary (cross-s
   });
 });
 
+test('buddy_handoff.py: status flags senior as [stale] when transcript JSONL is missing', () => {
+  // Claude Code rotates / purges old session transcripts. Without
+  // detection, _list_seniors returns dead seniors as if alive and
+  // i/consult fails opaquely. Status must surface the stale state.
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    // Senior A has a live transcript; Senior B does not.
+    fs.writeFileSync(path.join(projDir, 'live-senior.jsonl'),
+      JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: 100 } } }) + '\n');
+    fs.writeFileSync(path.join(seniorsDir, 'live-senior.json'), JSON.stringify({
+      sid: 'live-senior', floor: 'easy', effort_floor: 'low',
+      retired_at_iso: '2026-04-30T00:00:00Z', reason: 'test',
+    }));
+    fs.writeFileSync(path.join(seniorsDir, 'purged-senior.json'), JSON.stringify({
+      sid: 'purged-senior', floor: 'easy', effort_floor: 'low',
+      retired_at_iso: '2026-04-30T00:00:00Z', reason: 'test',
+    }));
+    const result = _runHandoff(sandbox, ['status'], { HOME: home });
+    assert.strictEqual(result.status, 0);
+    // Live senior must NOT be marked stale.
+    const liveLine = result.stdout.split('\n').find((l) => l.includes('live-senior'));
+    assert.ok(liveLine, 'live senior appears in status');
+    assert.doesNotMatch(liveLine, /\[stale/,
+      'live senior must not be flagged stale');
+    // Purged senior MUST be marked stale.
+    const purgedLine = result.stdout.split('\n').find((l) => l.includes('purged-senior'));
+    assert.ok(purgedLine, 'purged senior appears in status');
+    assert.match(purgedLine, /\[stale: transcript missing\]/,
+      'senior with no transcript JSONL flagged as stale');
+  });
+});
+
 test('buddy_handoff.py: status omits consults suffix for a senior with no consult history', () => {
   // Inverse-case lock: prevents drift where _format_consults starts
   // emitting `consults=0 last=...ago` for never-consulted seniors. The

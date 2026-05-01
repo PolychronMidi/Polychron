@@ -106,17 +106,20 @@ idle time and the inherited buddy (whether they're still the active
 primary or have since retired into the senior pool) should expect to
 be consulted on the rationale:
 
-1. **Hot-path auto-retire (primary path).** Currently
-   `auto_retire_check` runs only at SessionStart. A primary serving
-   dispatcher tasks mid-session could cross `BUDDY_RETIRE_PCT` (90%)
-   before the next SessionStart and hit auto-compaction anyway,
-   destroying the context we wanted to preserve via retire. Question:
-   should the dispatcher's drain path call `auto_retire_check` lazily
-   (e.g. between tasks), and what happens to in-flight tasks if the
-   primary retires mid-dispatch — do they fall back to ephemeral, or
-   wait for the next SessionStart's fresh primary to spawn? Note: the
-   *senior* consult path is covered by question 5 below; this one is
-   strictly about the primary serving the dispatcher.
+1. **Hot-path auto-retire (primary path) — partial resolution.**
+   `auto_retire_check` previously had no caller — defined but never
+   fired except at SessionStart, so the 90% safety claim was
+   documentation, not enforcement. Now wired into the Stop-hook chain
+   (`tools/HME/hooks/lifecycle/stop/post_hooks.sh`) so it fires
+   per-turn under `BUDDY_HANDOFF=1`. Per-turn is safe because the
+   turn just finished — no in-flight tasks to disrupt. Open piece:
+   should the dispatcher's drain path ALSO check between tasks (a
+   stronger guarantee for long-running pipeline runs that span
+   multiple Claude turns), and what happens to in-flight tasks if
+   the primary retires mid-dispatch — do they fall back to
+   ephemeral, or wait for the next SessionStart's fresh primary to
+   spawn? See question 9 below for the *senior* consult path, which
+   needs a different action set since seniors don't retire.
 2. **Transcript GC.** Claude Code's own session GC may rotate or
    archive a senior's transcript JSONL. `_buddy_context_used` returns
    `null` on missing transcripts; status shows `ctx=?`. Question:
@@ -139,8 +142,35 @@ be consulted on the rationale:
    `medium`) when ctx > 75% so the remaining quota is reserved for
    hard problems only? Mechanism could be a single read of the
    primary's context % at the start of each `_pick_buddy_for_task`.
-5. **Consult-driven senior protection.** Now that consult activity is
-   tracked per senior (`consults: [{ts, ts_iso, question_excerpt}]`,
+5. **Senior staleness vs tombstoning.** `_list_seniors` now flags
+   `transcript_missing=True` when the senior's JSONL has been purged
+   (Claude Code can rotate transcripts); status displays `[stale:
+   transcript missing]`. Open question: should `i/consult` to a stale
+   senior refuse outright, or attempt the call (it will fail) and
+   surface the failure clearly? Today it just warns and tries.
+6. **Promotion-from-senior coherence.** `i/handoff promote sid=<X>`
+   doesn't check whether `<X>` is currently in the senior pool. If it
+   is, the same sid becomes both primary AND senior — incoherent.
+   Question: should `_promote()` move `seniors/<sid>.json` to
+   `seniors/_archive/<sid>.json` when promoting an existing senior
+   back to active, or refuse the promote with a clear error?
+7. **Concurrent consult races.** Two `i/consult` calls to the same sid
+   both invoke `claude --resume` — the CLI may not be re-entrant on a
+   single session. Question: add a per-sid lockfile
+   (`tmp/hme-consult-lock/<sid>`) with stale-detection? What's the
+   right TTL for "lock is stale, the prior consult must have crashed"?
+8. **Senior pool unbounded growth + expertise routing.** No GC; after
+   N retirements you have N seniors none of which were touched in
+   months. Future primary has no routing hint to pick the right
+   senior to consult. Two-part question: (a) add `i/handoff archive
+   sid=<X>` (move to `seniors/_archive/`) and a count threshold that
+   surfaces "seniors=N — consider archiving K oldest" in status; and
+   (b) record `expertise_topics: [...]` at retire time (derived from
+   tier distribution + commit history during the senior's primary
+   stint?) so `i/handoff status` can hint which senior knows which
+   subsystem.
+9. **Consult-driven senior protection.** Now that consult activity is
+   tracked per senior (`consults: [{ts, ts_iso, question_excerpt, caller_sid}]`,
    capped at 50 entries; surfaced as `consults=N last=Xago` in
    `i/handoff status`), the data exists to detect when consult cadence
    is pushing a senior's transcript toward Claude Code's own
@@ -164,6 +194,39 @@ be consulted on the rationale:
 Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a
 regression test that locks the new behavior in.
+
+**Wisdom for inheriting primaries** — non-obvious things the docs
+don't otherwise capture. Surfaced by 0e7fbf4d (the inaugural primary
+who built this paradigm) during a review consult, paraphrased:
+
+- **Reflexive consult cost.** A multi-MB transcript is the binding
+  cost in the consult loop. Each consult to a buddy grows their
+  transcript by ~prompt+response, and the next `claude --resume`
+  spin-up cost rises with it. The more you consult, the more it
+  costs to consult. Favor batched consults (one prompt with three
+  questions) over three sequential calls. Don't consult for
+  lookups grep can answer.
+- **HANDOFF mirror order invariant.** `_promote()` writes both the
+  primary pointer trio AND the legacy mirror trio inline at promote
+  time. `buddy_init.sh`'s HANDOFF mirror block at SessionStart is a
+  *safety net*, not the canonical actuator — it catches edge cases
+  like a manual edit of `primary.sid` or a primary written by a
+  future writer that doesn't go through `_promote()`. If you add
+  another writer of `primary.sid`, follow the symmetry: write both
+  trios, atomically.
+- **No expertise routing across handoffs.** The senior pool has no
+  concept of "this senior knows about subsystem X". A future primary
+  with N seniors has no routing hint — they pick whichever sid feels
+  right. If specialization matters across handoffs (it likely will
+  once the pool grows), record `expertise_topics: [...]` at retire
+  time (see open question 8).
+- **Consulting is opt-out for design-space changes, not opt-in.**
+  When the turn touches files in the buddy paradigm's own design
+  space (this doc, `buddy_handoff.py`, `buddy_init.sh`, `i/consult`,
+  `i/handoff`), checkpoint with a consult before declaring done.
+  Solo work in this code area is the failure mode. (Detector:
+  `tools/HME/scripts/senior_consult_debt.py` — proposed but not
+  built; fire is meant to be soft/informational at first.)
 
 This document captures what the buddy and the prompt-engineering
 experiments produced across a 145-iteration session — not as a static

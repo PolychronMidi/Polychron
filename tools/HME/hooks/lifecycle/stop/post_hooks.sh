@@ -34,3 +34,17 @@ if [ -n "$_EDIT_FILES" ]; then
   echo "[turn audit] $_EDIT_COUNT file(s) edited this turn:" >&2
   echo "$_EDIT_FILES" | sed 's/^/  /' >&2
 fi
+
+# Buddy hand-off paradigm: per-turn auto_retire_check. Without this, the
+# 90% retire threshold was documentation-only — `auto_retire_check` was
+# defined but had no caller, so a primary that crossed BUDDY_RETIRE_PCT
+# during a turn would just sit there until the next SessionStart (or
+# never, if compaction hit first). Per-turn fire is safe because the
+# turn just finished — no in-flight tasks to disrupt. Best-effort,
+# silent on failure (`|| true`) so a hiccup doesn't break Stop.
+if [ "${BUDDY_HANDOFF:-0}" = "1" ]; then
+  _HANDOFF_SCRIPT="$PROJECT/tools/HME/scripts/buddy_handoff.py"
+  [ -f "$_HANDOFF_SCRIPT" ] && \
+    PROJECT_ROOT="$PROJECT" python3 "$_HANDOFF_SCRIPT" auto_retire_check \
+      >/dev/null 2>&1 || true
+fi
