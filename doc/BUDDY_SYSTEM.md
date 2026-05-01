@@ -77,6 +77,44 @@ When `BUDDY_HANDOFF=1`, `BUDDY_COUNT>1` is silently coerced to 1
 (multi-buddy fanout and hand-off are mutually exclusive). Set
 `BUDDY_HANDOFF=0` to revert to the legacy multi-buddy floor model.
 
+**Open prototype questions** — known-fuzzy areas worth iterating on
+with the inheriting agent. Each is a concrete decision the design
+hasn't pinned down yet; the next session can pick one up when there's
+idle time and the inherited senior should expect to be consulted on
+the rationale:
+
+1. **Hot-path auto-retire.** Currently `auto_retire_check` runs only
+   at SessionStart. A senior who serves heavy consultation mid-session
+   could cross 90% before the next SessionStart and hit auto-compaction
+   anyway. Question: should the dispatcher's drain path (or the
+   `i/consult` wrapper) also call `auto_retire_check` lazily, and what
+   happens to in-flight tasks if the primary retires mid-dispatch?
+2. **Transcript GC.** Claude Code's own session GC may rotate or
+   archive a senior's transcript JSONL. `_buddy_context_used` returns
+   `null` on missing transcripts; status shows `ctx=?`. Question:
+   should that null specifically trigger auto-retire as a safety
+   (assume archived = no longer growing) or should it surface a
+   different sentinel that the dispatcher can treat as "unknown but
+   keep using"?
+3. **Consult tracking.** `i/consult` doesn't currently record
+   call-count or last-used-at per senior. Heavy consultation patterns
+   are invisible to the operator until the senior crosses threshold.
+   Question: should `i/handoff status` surface consult activity per
+   senior (e.g. `consults=12 last=5m ago`), and should that data
+   affect retire decisions (a heavily-consulted senior might warrant
+   a lower threshold)?
+4. **Specialization carry-forward.** Inherited primaries default to
+   `floor=easy` (fully dynamic). When a primary retires after a
+   session of mostly-hard tasks, that earned specialization is lost
+   on the next primary's bootstrap. Question: should `_retire`
+   measure the actual tier distribution of the retiring primary's
+   work and stamp the next inaugural primary with a derived floor,
+   or is "fresh primary defaults dynamic" the right design?
+
+Anyone implementing one of these should update both this section
+(remove the question, document the answer) and the test file with a
+regression test that locks the new behavior in.
+
 This document captures what the buddy and the prompt-engineering
 experiments produced across a 145-iteration session — not as a static
 record, but as the living calibration surface the system evolves
