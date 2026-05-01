@@ -219,6 +219,10 @@ def _archive_set(set_name: str = "") -> dict:
     }
 
 
+
+
+# Reset / trim / overflow archival functions.
+
 def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: str) -> None:
     """After archiving a set, replace BOTH the preamble AND the Phase
     blocks in doc/SPEC.md with generic-initiative placeholders pointing

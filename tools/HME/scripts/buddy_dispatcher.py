@@ -495,8 +495,9 @@ from buddy_dispatch_drain import (  # noqa: F401, E402
 )
 from buddy_dispatch_lifecycle import (  # noqa: F401, E402
     _write_manifest, _claim_task, _dispatch_to_buddy,
-    _detect_rate_limit, _archive_task, _sweep_orphans, _write_verdict,
+    _archive_task, _sweep_orphans, _write_verdict,
 )
+from buddy_dispatch_ratelimit import _detect_rate_limit  # noqa: F401, E402
 from buddy_dispatch_chain import (  # noqa: F401, E402
     _load_chain_yaml, _parse_minimal_yaml, _validate_chain,
     cmd_chain, _run_skill, _compute_pause_seconds,

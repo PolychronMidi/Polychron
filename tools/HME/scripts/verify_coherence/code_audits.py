@@ -8,10 +8,12 @@ sibling modules — this file re-exports them so existing
 """
 from .code_audits_style import (  # noqa: F401
     CorePrinciplesAuditVerifier,
-    AntiForkHeuristicListVerifier,
     HardcodedToolInvocationVerifier,
     AgentLoopQualityVerifier,
     RepeatedCharSpamVerifier,
+)
+from .code_audits_antifork import (  # noqa: F401
+    AntiForkHeuristicListVerifier,
 )
 from .code_audits_state import (  # noqa: F401
     StateFileOwnershipVerifier,
