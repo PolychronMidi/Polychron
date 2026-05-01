@@ -27,10 +27,12 @@ from .code_audits_state import (  # noqa: F401
 from .code_audits_atomic import (  # noqa: F401
     AtomicStateWritesVerifier,
 )
-from .code_audits_runtime import (  # noqa: F401
+from .code_audits_test import (  # noqa: F401
     SilentFailureClassVerifier,
     TestIsolationVerifier,
     TestEnvUndefinedVerifier,
+)
+from .code_audits_syntax import (  # noqa: F401
     ShellUndefinedVarsVerifier,
     PythonSyntaxVerifier,
     ShellSyntaxVerifier,

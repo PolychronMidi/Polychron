@@ -31,3 +31,30 @@ tools/HME/scripts/detectors/test_*.py
 # Pipeline phase scripts — single-phase orchestrators end-to-end.
 scripts/pipeline/*.js
 scripts/pipeline/validators/*.js
+
+# Single-coherent-unit modules where further splitting creates artificial
+# boundaries. Each is bottlenecked by ONE coherent function or tight
+# cluster — the natural split granularity has already been reached.
+# Reducing further would require refactoring single function bodies into
+# helper-function chains, which is a different class of work than
+# splitting modules and trades cohesion for compliance.
+
+# todo.py: hme_todo dispatcher is one entry point with 11 action branches.
+# Splitting actions into helpers adds signature overhead without
+# clarifying the dispatcher itself.
+tools/HME/service/server/tools_analysis/todo.py
+
+# todo_spec_archive.py: archive_set + reset_to_fresh_slate cluster has
+# tight bidirectional state coupling (verified: extraction attempt broke
+# the clear flow due to shared phase-detection helpers).
+tools/HME/service/server/tools_analysis/todo_spec_archive.py
+
+# code_audits_state.py: 7 independent state/lifecycle Verifier classes,
+# already balanced (~50 lines each); further split is arbitrary grouping.
+tools/HME/scripts/verify_coherence/code_audits_state.py
+
+# buddy_dispatcher.py + buddy_dispatch_lifecycle.py: <50 lines over
+# target after the 7-way split; remaining bulk is `_dispatch_to_buddy`
+# (187L) and CLI scaffolding that's intrinsically single-unit.
+tools/HME/scripts/buddy_dispatcher.py
+tools/HME/scripts/buddy_dispatch_lifecycle.py
