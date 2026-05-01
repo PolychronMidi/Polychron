@@ -683,17 +683,18 @@ function handleRequest(clientReq, clientRes) {
     });
 
     const isStreaming = payload && payload.stream === true;
-    // Sync timeout was 120s; that's too short for `claude --resume`
-    // calls on multi-MB transcripts (the buddy paradigm's primary case).
-    // A 22MB transcript resume needs 3-5 minutes for the initial
-    // response, well past 120s. Three back-to-back timeouts trip the
-    // emergency valve and disable the proxy. Bumping sync to 600s
-    // (matching streaming) — the request budget IS bounded by claude's
-    // own subprocess timeout (computed dynamically in
-    // buddy_handoff.py:cmd_consult), so the proxy's role is to NOT
-    // be the tighter bound. A truly hung call still dies at the
-    // claude subprocess level.
-    upstreamReq.setTimeout(isStreaming ? 600_000 : 600_000, () => {
+    // Unified 10-min upstream timeout. Sync was 120s; that's too short
+    // for `claude --resume` calls on multi-MB transcripts (the buddy
+    // paradigm's primary case). A 22MB transcript resume needs 3-5
+    // minutes for the initial response — well past 120s. Three
+    // back-to-back timeouts trip the emergency valve and disable the
+    // proxy. The request budget IS bounded by claude's own subprocess
+    // timeout (computed dynamically in buddy_handoff.py:cmd_consult,
+    // max(1800, transcript_mb * 30 + 600)), so the proxy's role is
+    // NOT to be the tighter bound. A truly hung call still dies at
+    // the claude-subprocess level.
+    const UPSTREAM_TIMEOUT_MS = 600_000;
+    upstreamReq.setTimeout(UPSTREAM_TIMEOUT_MS, () => {
       console.error(`[hme-proxy] upstream timeout (${isStreaming ? 'streaming' : 'sync'})`);
       upstreamReq.destroy(new Error('upstream timeout'));
     });
