@@ -18,7 +18,7 @@ from ._base import (
 
 
 class ShellUndefinedVarsVerifier(Verifier):
-    """Delegates to scripts/audit-shell-undefined-vars.py, which statically
+    """Delegates to scripts/audit_shell_undefined_vars.py, which statically
     scans tools/HME/hooks/**/*.sh for `$VAR` references that have no
     matching definition anywhere in scope (the file, any file it sources,
     or the dispatcher chain that sources it). Catches the exact bug class
@@ -33,7 +33,7 @@ class ShellUndefinedVarsVerifier(Verifier):
     weight = 2.0  # any violation is silent-disable class, rank high
 
     def run(self) -> VerdictResult:
-        script = os.path.join(_PROJECT, "scripts", "audit-shell-undefined-vars.py")
+        script = os.path.join(_PROJECT, "scripts", "audit_shell_undefined_vars.py")
         if not os.path.isfile(script):
             return _result(SKIP, 1.0, "audit script not found", [script])
         rc, out, err = _run_subprocess([script, "--json"])

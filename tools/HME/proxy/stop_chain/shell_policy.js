@@ -71,7 +71,7 @@ function spawnStage(stageName, stdinJson, timeoutMs) {
     // lifesaver.sh set PROJECT in its scope and post_hooks.sh inherited it.
     // Under subprocess isolation each stage runs in its own shell, so we
     // export the alias from the wrapper. Catches the broken cross-stage
-    // dependency the audit-shell-undefined-vars verifier surfaced.
+    // dependency the audit_shell_undefined_vars verifier surfaced.
     // Set _HME_HOOK_NAME explicitly to the stage name BEFORE sourcing
     // _safety.sh -- _safety.sh's name resolution does
     // `_HME_HOOK_NAME="$(basename "${BASH_SOURCE[1]:-unknown}" .sh)"`,

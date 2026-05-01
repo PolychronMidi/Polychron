@@ -115,7 +115,7 @@ def perturb_shell_undefined() -> dict:
     test_file = test_dir / "_perturbation_test.sh"
     try:
         test_file.write_text('#!/usr/bin/env bash\necho "$UNDEFINED_VAR_FOR_PERTURBATION_XYZ"\n')
-        audit = ROOT / "scripts" / "audit-shell-undefined-vars.py"
+        audit = ROOT / "scripts" / "audit_shell_undefined_vars.py"
         r = subprocess.run([sys.executable, str(audit), "--json"],
                            capture_output=True, text=True, timeout=15)
         try:

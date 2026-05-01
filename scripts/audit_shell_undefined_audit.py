@@ -41,6 +41,23 @@ import re
 import sys
 from pathlib import Path
 
+# Helpers (_strip_*, _find_refs, _load_env_vars, _transitive_defs) and
+# constants (_SAFETY_SH, _DISPATCHER_FOR) live in the partner module
+# audit_shell_undefined_vars.py, which imports US at its bottom for
+# re-export of main/audit_file/_dispatcher_defs. A top-level back-import
+# here would cycle. _vars() resolves the partner at call time — by then
+# the parent has fully loaded under either its module name (when imported)
+# or __main__ (when invoked as a script).
+def _vars():
+    mod = sys.modules.get("audit_shell_undefined_vars")
+    if mod is not None and hasattr(mod, "_load_env_vars"):
+        return mod
+    main_mod = sys.modules.get("__main__")
+    if main_mod is not None and hasattr(main_mod, "_load_env_vars"):
+        return main_mod
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import audit_shell_undefined_vars as _v
+    return _v
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
@@ -146,14 +163,12 @@ def _dispatcher_defs(path: Path, env_vars: set[str]) -> set[str]:
     of defs from the dispatcher (transitively) and every SIBLING sub-file
     that's loaded before it. Our dispatchers source sub-files in a fixed
     order; a sub-file inherits everything its predecessors set."""
+    v = _vars()
     parent = path.parent
-    dispatcher = _DISPATCHER_FOR.get(parent)
+    dispatcher = v._DISPATCHER_FOR.get(parent)
     if not dispatcher or not dispatcher.is_file():
         return set()
-    # Dispatcher's own defs (including defs from whatever IT sources).
-    defs = _transitive_defs(dispatcher, env_vars)
-    # Plus defs from sibling sub-files that run before this one in the
-    # dispatcher's ordered `for _part in …; do source …; done` loop.
+    defs = v._transitive_defs(dispatcher, env_vars)
     disp_text = dispatcher.read_text(encoding="utf-8", errors="replace")
     m = re.search(r"for\s+\w+\s+in\s+([^;]+);\s*do", disp_text)
     if m:
@@ -165,33 +180,23 @@ def _dispatcher_defs(path: Path, env_vars: set[str]) -> set[str]:
         for name in order[:idx]:
             sibling = parent / f"{name}.sh"
             if sibling.is_file():
-                defs |= _transitive_defs(sibling, env_vars)
+                defs |= v._transitive_defs(sibling, env_vars)
     return defs
 
 
 def audit_file(path: Path, env_vars: set[str]) -> list[dict]:
     """Run the audit on one file. Returns list of violation dicts."""
+    v = _vars()
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError as e:
         return [{"line": 0, "var": "", "snippet": f"read failed: {e}", "rule": "R1"}]
-    # Order matters: comments BEFORE single-quote stripping — comments may
-    # contain stray apostrophes (e.g. "Claude's") that would otherwise put
-    # the single-quote walker into a multi-line "inside quotes" state and
-    # mangle unrelated code downstream.
-    cleaned = _strip_single_quoted(_strip_comments(_strip_heredocs(text)))
-    # Collect defs reachable from THIS entry.
-    defs = _transitive_defs(path, env_vars)
-    # Every HME hook is sourced after _safety.sh has been loaded (directly or
-    # via a dispatcher); sub-files under helpers/safety/ are sourced BY
-    # _safety.sh. _safety.sh's defs are in scope whenever the file itself
-    # doesn't already source it directly.
-    if path.resolve() != _SAFETY_SH.resolve():
-        defs |= _transitive_defs(_SAFETY_SH, env_vars)
-    # Dispatcher-scoped sub-files inherit the dispatcher's + earlier-
-    # sibling-sub-files' defs.
+    cleaned = v._strip_single_quoted(v._strip_comments(v._strip_heredocs(text)))
+    defs = v._transitive_defs(path, env_vars)
+    if path.resolve() != v._SAFETY_SH.resolve():
+        defs |= v._transitive_defs(v._SAFETY_SH, env_vars)
     defs |= _dispatcher_defs(path, env_vars)
-    refs = _find_refs(cleaned, defs, env_vars)
+    refs = v._find_refs(cleaned, defs, env_vars)
     return [
         {"line": ln, "var": var, "snippet": snip, "rule": "R1"}
         for ln, var, snip in refs
@@ -203,7 +208,7 @@ def main() -> int:
     ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
     args = ap.parse_args()
 
-    env_vars = _load_env_vars(ENV_FILE)
+    env_vars = _vars()._load_env_vars(ENV_FILE)
     files = list(HOOKS_DIR.rglob("*.sh"))
     for extra_dir in EXTRA_SCAN_DIRS:
         if extra_dir.is_dir():

@@ -18,6 +18,7 @@ from .coupling_data import (
     ALL_RHYTHM_FIELDS, ALL_MELODIC_DIMS,
 )
 from .coupling_clusters import _compute_clusters
+from .coupling_bridges import _archetype  # noqa: F401
 
 # Module archetype inference for musical effect descriptions
 _ARCHETYPES = {
