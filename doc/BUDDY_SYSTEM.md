@@ -241,6 +241,19 @@ who built this paradigm) during a review consult, paraphrased:
   costs to consult. Favor batched consults (one prompt with three
   questions) over three sequential calls. Don't consult for
   lookups grep can answer.
+- **Proxy upstream timeout is buddy-paradigm-load-bearing.** The
+  HME proxy at `tools/HME/proxy/hme_proxy.js` enforces a unified
+  30-minute upstream timeout via `UPSTREAM_TIMEOUT_MS = 1_800_000`.
+  This was previously 120s sync / 600s streaming and tripped the
+  emergency valve repeatedly when `claude --resume` calls on
+  multi-MB buddy transcripts hit Anthropic's API — Anthropic's
+  worst-case turnaround on a 22MB resume can exceed 600s. Three
+  consecutive timeouts disable the proxy via `HME_PROXY_ENABLED=0`,
+  forcing manual recovery. **DO NOT tighten this timeout** unless
+  the buddy paradigm is decommissioned or `claude --resume` gets a
+  faster path. The claude subprocess timeout in
+  `cmd_consult` (max(1800, transcript_mb * 30 + 600)) is the
+  agent-side bound; the proxy must never be the tighter bound.
 - **HANDOFF mirror + writer-symmetry invariant.** `_promote()` writes
   both the primary pointer trio (sid + floor + effort_floor) AND the
   legacy mirror trio inline at promote time. `buddy_init.sh`'s
