@@ -7,8 +7,8 @@
     "lifecycle": "Boundary actions like autocommit"
   },
   "order": [
-    "dump_system.js",
     "replace_system.js",
+    "dump_system.js",
     "memory_redirect.js",
     "dominance_prefetch.js",
     "secret_sanitizer.js",
