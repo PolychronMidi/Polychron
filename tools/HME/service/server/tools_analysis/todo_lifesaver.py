@@ -229,6 +229,8 @@ def _prune_done_lifesavers(meta: dict, todos: list) -> int:
     return pruned
 
 
+
+
 def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
     """LIFESAVER entry point — dedup-aware with store-protection caps.
 
@@ -461,4 +463,5 @@ def _expire_stale_lifesavers(meta: dict, todos: list) -> int:
             t["resolved_reason"] = "stale"
             expired += 1
     return expired
+
 

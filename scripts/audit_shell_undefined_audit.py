@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+"""Shell undefined-variable audit — static analysis for tools/HME/hooks/**/*.sh.
+
+Scans every hook script for `$VAR` / `${VAR}` references that have no
+assignment anywhere in scope (the file itself, any file it sources, or the
+`.env` / system defaults set by `_safety.sh`). Catches the exact bug class
+that silently broke auto-completeness-inject for months: `$_AC_PROJECT`
+referenced in `holograph.sh` had never been defined anywhere in the repo's
+history, and under `set -u` in `_safety.sh`, it crashed `stop.sh` before the
+completeness gate (in `work_checks.sh`) ever got a chance to run.
+
+Why not shellcheck: shellcheck isn't in the HME baseline toolchain (the
+audit-shell-hooks.py sister script chose the same path — custom Python
+analyzer tailored to this project's source chain). This script follows
+`source X/Y.sh` references transitively so a var defined in `_safety.sh`
+is visible in every hook that sources it.
+
+Rules:
+  R1 — REF without DEFN in scope
+       `$VAR` / `${VAR}` reference with no matching `VAR=…`, `local VAR=`,
+       `readonly VAR=`, `export VAR=`, `declare VAR=`, `typeset VAR=`,
+       loop-var `for VAR in`, `while read VAR`, arithmetic
+       `for ((VAR=…))`, `[[ -v VAR ]]`, case-setup assignments, nor
+       function-parameter bind, nor `.env` entry.
+       Exempt: references with an explicit default (`${VAR:-…}`,
+       `${VAR-…}`, `${VAR:?…}`, `${VAR:+…}`) — bash expands those safely
+       even under `set -u`. Exempt: positional args `$0..$9 $@ $* $#`,
+       special `$? $$ $! $_ $-`, special env `HOME PATH PWD …`.
+
+Output:
+  Default: human-readable summary to stdout, exit 0 on clean, 1 on
+  violations.
+  --json:  JSON to stdout for the HCI verifier.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+HOOKS_DIR = REPO_ROOT / "tools" / "HME" / "hooks"
+ENV_FILE = REPO_ROOT / ".env"
+
+# Additional shell-script trees that run under the same `set -u` risk
+# class as hooks/. Launcher scripts, proxy test scripts, and one-shot
+# setup scripts all use the same bash + may also use `set -euo pipefail`
+# — an undefined variable there crashes the same way and is equally
+# undetected until runtime. Scope expanded April 2026 after observing
+# that the _AC_PROJECT-class bug isn't hooks-specific.
+EXTRA_SCAN_DIRS = [
+    REPO_ROOT / "tools" / "HME" / "launcher",
+    REPO_ROOT / "tools" / "HME" / "proxy",   # test-proxy*.sh etc.
+    REPO_ROOT / "tools" / "HME" / "scripts", # setup_*.sh
+]
+
+# Bash specials / positional args / standard env never to flag.
+_BUILTIN_VARS = {
+    # Positional and special
+    *{str(i) for i in range(10)},
+    "@", "*", "#", "?", "!", "$", "-", "_", "0",
+    # Bash internal
+    "BASH", "BASH_ARGC", "BASH_ARGV", "BASH_COMMAND", "BASH_LINENO",
+    "BASH_SOURCE", "BASH_SUBSHELL", "BASH_VERSION", "BASHOPTS",
+    "BASHPID", "COLUMNS", "COMP_CWORD", "COMP_KEY", "COMP_LINE",
+    "COMP_POINT", "COMP_TYPE", "COMP_WORDBREAKS", "COMP_WORDS",
+    "DIRSTACK", "EPOCHREALTIME", "EPOCHSECONDS", "EUID", "FUNCNAME",
+    "GROUPS", "HISTCMD", "HOSTNAME", "HOSTTYPE", "IFS", "LINENO",
+    "MACHTYPE", "OLDPWD", "OPTARG", "OPTERR", "OPTIND", "OSTYPE",
+    "PIPESTATUS", "PPID", "PS1", "PS2", "PS3", "PS4", "PWD",
+    "RANDOM", "READLINE_LINE", "READLINE_POINT", "REPLY", "SECONDS",
+    "SHELL", "SHELLOPTS", "SHLVL", "UID",
+    # Common environment
+    "HOME", "PATH", "USER", "LOGNAME", "TERM", "LANG", "LC_ALL",
+    "LC_CTYPE", "TMPDIR", "EDITOR", "VISUAL", "DISPLAY", "XDG_CACHE_HOME",
+    "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_RUNTIME_DIR",
+    # Claude Code / plugin hooks
+    "CLAUDE_PROJECT_DIR", "CLAUDE_ENV_FILE",
+}
+
+_ASSIGNMENT_RE = re.compile(
+    r"""(?x)
+    (?:^|[\s;&|(])                      # start / boundary
+    (?:local\s+|readonly\s+|export\s+|declare\s+(?:-\S+\s+)*|typeset\s+(?:-\S+\s+)*)?
+    ([A-Za-z_][A-Za-z0-9_]*)           # VAR
+    (?:\[[^\]]*\])?                     # optional array index
+    =
+    """
+)
+_FOR_VAR_RE     = re.compile(r"\bfor\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b")
+_FOR_ARITH_RE   = re.compile(r"\bfor\s+\(\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*=")
+_WHILE_READ_RE  = re.compile(r"\bread\s+(?:-[A-Za-z]+\s+)*(?:-[A-Za-z]+\s+\S+\s+)*([A-Za-z_][A-Za-z0-9_]*(?:\s+[A-Za-z_][A-Za-z0-9_]*)*)")
+_LET_RE         = re.compile(r"\blet\s+['\"]?([A-Za-z_][A-Za-z0-9_]*)")
+_TESTV_RE       = re.compile(r"\[\[\s+-v\s+([A-Za-z_][A-Za-z0-9_]*)\s+\]\]")
+_GETOPTS_RE     = re.compile(r"\bgetopts\s+\S+\s+([A-Za-z_][A-Za-z0-9_]*)")
+_FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional — always defined
+
+# Variable REFERENCES. Captures:
+#   $VAR
+#   ${VAR}
+#   ${VAR:-default}  — flagged as SAFE (default)
+#   ${VAR:+value}    — flagged as SAFE (conditional)
+#   ${VAR:?err}      — flagged as SAFE (explicit-error)
+#   ${VAR%pattern}   — flagged as SAFE (expansion that doesn't crash under set -u if var is set)
+_REF_RE = re.compile(
+    r"""(?x)
+    \$
+    (?:
+      \{
+        (?P<brace>[A-Za-z_][A-Za-z0-9_]*)
+        (?P<suffix>[^{}]*)
+      \}
+      |
+      (?P<bare>[A-Za-z_][A-Za-z0-9_]*)
+    )
+    """
+)
+
+# Suffixes that provide a safe default — reference never crashes under set -u.
+_SAFE_SUFFIX_RE = re.compile(r"^(?::-|:=|:\?|:\+|-|=|\?|\+)")
+
+# Source-line extraction. Matches `source X`, `. X`, handling quoted paths.
+_SOURCE_RE = re.compile(
+    r'(?m)^\s*(?:source|\.)\s+("([^"]+)"|\x27([^\x27]+)\x27|([^\s#;&|]+))'
+)
+
+# Heredoc body extraction — skip var references inside `<<EOF`/`<<-EOF` bodies
+# because those are payloads to other interpreters (python/jq/etc.), not the
+# shell's own expansions. Bash only expands heredoc contents when the tag is
+# unquoted; skip both cases conservatively to avoid false positives from
+# Python/jq programs that reference `$VAR` as part of their own syntax.
+_HEREDOC_RE = re.compile(
+    r'<<-?\s*([\'"]?)(\w+)\1\s*\n(.*?)(?=^\s*\2\s*$)',
+    re.DOTALL | re.MULTILINE,
+)
+
+
+
+
+def _dispatcher_defs(path: Path, env_vars: set[str]) -> set[str]:
+    """If `path` is a sub-file of a known dispatcher dir, return the union
+    of defs from the dispatcher (transitively) and every SIBLING sub-file
+    that's loaded before it. Our dispatchers source sub-files in a fixed
+    order; a sub-file inherits everything its predecessors set."""
+    parent = path.parent
+    dispatcher = _DISPATCHER_FOR.get(parent)
+    if not dispatcher or not dispatcher.is_file():
+        return set()
+    # Dispatcher's own defs (including defs from whatever IT sources).
+    defs = _transitive_defs(dispatcher, env_vars)
+    # Plus defs from sibling sub-files that run before this one in the
+    # dispatcher's ordered `for _part in …; do source …; done` loop.
+    disp_text = dispatcher.read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"for\s+\w+\s+in\s+([^;]+);\s*do", disp_text)
+    if m:
+        order = m.group(1).split()
+        try:
+            idx = order.index(path.stem)
+        except ValueError:
+            idx = len(order)
+        for name in order[:idx]:
+            sibling = parent / f"{name}.sh"
+            if sibling.is_file():
+                defs |= _transitive_defs(sibling, env_vars)
+    return defs
+
+
+def audit_file(path: Path, env_vars: set[str]) -> list[dict]:
+    """Run the audit on one file. Returns list of violation dicts."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as e:
+        return [{"line": 0, "var": "", "snippet": f"read failed: {e}", "rule": "R1"}]
+    # Order matters: comments BEFORE single-quote stripping — comments may
+    # contain stray apostrophes (e.g. "Claude's") that would otherwise put
+    # the single-quote walker into a multi-line "inside quotes" state and
+    # mangle unrelated code downstream.
+    cleaned = _strip_single_quoted(_strip_comments(_strip_heredocs(text)))
+    # Collect defs reachable from THIS entry.
+    defs = _transitive_defs(path, env_vars)
+    # Every HME hook is sourced after _safety.sh has been loaded (directly or
+    # via a dispatcher); sub-files under helpers/safety/ are sourced BY
+    # _safety.sh. _safety.sh's defs are in scope whenever the file itself
+    # doesn't already source it directly.
+    if path.resolve() != _SAFETY_SH.resolve():
+        defs |= _transitive_defs(_SAFETY_SH, env_vars)
+    # Dispatcher-scoped sub-files inherit the dispatcher's + earlier-
+    # sibling-sub-files' defs.
+    defs |= _dispatcher_defs(path, env_vars)
+    refs = _find_refs(cleaned, defs, env_vars)
+    return [
+        {"line": ln, "var": var, "snippet": snip, "rule": "R1"}
+        for ln, var, snip in refs
+    ]
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--json", action="store_true", help="emit JSON instead of text")
+    args = ap.parse_args()
+
+    env_vars = _load_env_vars(ENV_FILE)
+    files = list(HOOKS_DIR.rglob("*.sh"))
+    for extra_dir in EXTRA_SCAN_DIRS:
+        if extra_dir.is_dir():
+            # Shallow + one-level deep, not recursive — avoid grabbing node_modules,
+            # venvs, or output/ files that happen to be named .sh.
+            files.extend(extra_dir.glob("*.sh"))
+            for sub in extra_dir.iterdir():
+                if sub.is_dir() and sub.name not in {"node_modules", "dist", "out", ".git"}:
+                    files.extend(sub.glob("*.sh"))
+    files = sorted(set(files))
+    results = []
+    total_viol = 0
+    for f in files:
+        viols = audit_file(f, env_vars)
+        if viols:
+            total_viol += len(viols)
+            results.append({
+                "file": str(f.relative_to(REPO_ROOT)),
+                "findings": viols,
+            })
+
+    if args.json:
+        print(json.dumps({
+            "violation_count": total_viol,
+            "files_scanned": len(files),
+            "files_with_violations": len(results),
+            "files": results,
+        }, indent=2))
+    else:
+        if total_viol == 0:
+            print(f"✓ {len(files)} shell hook(s) scanned — no undefined-variable references")
+            return 0
+        print(f"✗ {total_viol} undefined-var reference(s) across {len(results)} file(s):\n")
+        for f in results:
+            print(f"  {f['file']}:")
+            for v in f["findings"][:10]:
+                print(f"    line {v['line']}: ${v['var']}  —  {v['snippet']}")
+            if len(f["findings"]) > 10:
+                print(f"    ... and {len(f['findings']) - 10} more")
+            print()
+    return 0 if total_viol == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
