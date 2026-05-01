@@ -125,6 +125,14 @@ the rationale:
    measure the actual tier distribution of the retiring primary's
    work and stamp the next inaugural primary with a derived floor,
    or is "fresh primary defaults dynamic" the right design?
+5. **Dynamic per-tier override near retirement.** Currently
+   `HME_DISPATCH_SYNTHESIS_TIERS` is static (e.g. `easy`). When the
+   primary's context approaches `BUDDY_RETIRE_PCT`, every routed
+   medium/hard task pushes it closer to forced retirement. Question:
+   should the dispatcher widen the synthesis tier set (e.g. add
+   `medium`) when ctx > 75% so the remaining quota is reserved for
+   hard problems only? Mechanism could be a single read of the
+   primary's context % at the start of each `_pick_buddy_for_task`.
 
 Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a
