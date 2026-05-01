@@ -1346,6 +1346,72 @@ test('buddy_handoff.py: consult emits caller_sid=None debug warning when no prim
   });
 });
 
+test('buddy_handoff.py: status shows ctx=missing for primary with purged transcript (Q2 stale signal)', () => {
+  // Q2 resolution: _buddy_context_used returns None ONLY when the
+  // transcript file is gone. The "transcript exists with no usage"
+  // case naturally returns 0-tokens (post-spawn pre-first-turn), so
+  // that's already distinguishable as ctx=0.0% via the bar; no
+  // separate sentinel needed. The new state to lock is the genuine
+  // staleness signal.
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    fs.mkdirSync(path.join(home, '.claude', 'projects'), { recursive: true });
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'),
+      'no-transcript-sid\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    const r = _runHandoff(sandbox, ['status'], { HOME: home });
+    assert.strictEqual(r.status, 0);
+    assert.match(r.stdout, /ctx=missing\s+\(transcript purged/,
+      'no-transcript-file case shows ctx=missing with stale label');
+    assert.doesNotMatch(r.stdout, /ctx=\?/,
+      'should not use the old "ctx=?" sentinel — purged is now distinct');
+  });
+});
+
+test('buddy_handoff.py: consult to senior over 80% emits loud WARNING; cooldown drops to debug', () => {
+  // Q9 resolution: warn-and-proceed at >=80%, with 1h cooldown so
+  // repeated consults don't train the operator to ignore the signal.
+  _withDispatcherSandbox((sandbox) => {
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    // Synthesize a transcript with usage at 85% of a 20k window.
+    const sid = 'over-floor-senior';
+    fs.writeFileSync(path.join(projDir, `${sid}.jsonl`),
+      JSON.stringify({ type: 'assistant',
+        message: { usage: { input_tokens: 0, cache_creation_input_tokens: 17000, cache_read_input_tokens: 0 } } }) + '\n');
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low',
+    }));
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
+    // First consult: loud WARNING.
+    let r = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=first'],
+      { PATH: `${stubBin}:${process.env.PATH}`,
+        HOME: home, HME_BUDDY_CTX_WINDOW: '20000' });
+    assert.strictEqual(r.status, 0, `consult failed: ${r.stderr}`);
+    assert.match(r.stderr, /WARNING:.*past the pre-compaction floor/,
+      'first consult past floor emits loud WARNING');
+    // Second consult within cooldown: drops to [debug].
+    r = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=second'],
+      { PATH: `${stubBin}:${process.env.PATH}`,
+        HOME: home, HME_BUDDY_CTX_WINDOW: '20000' });
+    assert.strictEqual(r.status, 0);
+    assert.doesNotMatch(r.stderr, /^# WARNING:/m,
+      'second consult within cooldown does NOT repeat loud WARNING');
+    assert.match(r.stderr, /\[debug\].*past the pre-compaction floor/,
+      'second consult drops to [debug] level');
+  });
+});
+
 test('buddy_handoff.py: archive subcommand moves senior to _archive/ (still callable via consult)', () => {
   // Q8a: archive hides from default status pool but keeps the senior
   // callable via i/consult (which now searches both locations).

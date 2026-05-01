@@ -58,7 +58,7 @@ LEGACY_EFFORT = TMP / "hme-buddy.effort_floor"
 SENIORS_DIR = TMP / "hme-buddy-seniors"
 SENIORS_INDEX = SENIORS_DIR / "_index.jsonl"
 
-DEFAULT_RETIRE_PCT = 90.0
+DEFAULT_RETIRE_PCT = 90.0 # don't lower this, there is already a 10% margin between this point and auto-compaction which happens at 100%
 
 
 def _retire_threshold() -> float:
@@ -299,18 +299,13 @@ def cmd_status(args: argparse.Namespace) -> int:
     if primary:
         ctx = bd._buddy_context_used(primary["sid"])
         if ctx is None:
-            # Q2 resolution: distinguish three states for the primary's
-            # ctx readout. (1) known% is the normal case below. (2) When
-            # transcript_path resolves but produces no usage events, we
-            # report "transient unknown" — typical right after spawn
-            # before the first assistant turn. (3) When transcript_path
-            # is None entirely, the file has been purged — confirmed
-            # stale, mirroring the senior-pool [stale] flag from Q5.
-            transcript_path = bd._transcript_path_for_sid(primary["sid"])
-            if transcript_path is None:
-                ctx_str = "ctx=missing  (transcript purged — primary is stale)"
-            else:
-                ctx_str = "ctx=?  (transcript exists, no usage parsed yet)"
+            # Q2 resolution: _buddy_context_used returns None ONLY when
+            # the transcript file doesn't exist (Claude Code purged it
+            # or it never existed). When the file exists with no
+            # assistant events, it returns a 0-token dict — that's the
+            # "right after spawn" state and falls into the known%=0
+            # branch below, not here. So None means definitively stale.
+            ctx_str = "ctx=missing  (transcript purged — primary is stale)"
             ctx_pct = 0.0
         else:
             bar_width = 10
@@ -593,26 +588,31 @@ def cmd_consult(args: argparse.Namespace) -> int:
         except OSError:
             pass
     consult_timeout = max(1800, int(transcript_mb * 30 + 600))
-    result = subprocess.run(cmd, capture_output=True, text=True,
-                            env={**os.environ, "HME_THREAD_CHILD": "1"},
-                            timeout=consult_timeout)
-    if result.stdout:
-        sys.stdout.write(result.stdout)
-    if result.stderr:
-        sys.stderr.write(result.stderr)
-    if result.returncode == 0:
-        # Track only successful senior consults — failed invocations and
-        # consults to the active primary (no metadata file) are skipped.
-        # Surfaces heavy-consultation patterns in `i/handoff status`.
-        _record_consult(args.sid, args.question)
-    # Release lock regardless of outcome (success, claude failure, timeout
-    # — all should free the slot for retry).
+    # try/finally so the lockfile is released even on subprocess.run
+    # timeout (TimeoutExpired raised) or unexpected error. Without this,
+    # a timeout would orphan the lock for 1h until stale-detection
+    # reclaims it — blocking legitimate retries in the meantime.
     try:
-        if lock_file.exists():
-            lock_file.unlink()
-    except OSError:
-        pass
-    return result.returncode
+        result = subprocess.run(cmd, capture_output=True, text=True,
+                                env={**os.environ, "HME_THREAD_CHILD": "1"},
+                                timeout=consult_timeout)
+        if result.stdout:
+            sys.stdout.write(result.stdout)
+        if result.stderr:
+            sys.stderr.write(result.stderr)
+        if result.returncode == 0:
+            # Track only successful senior consults — failed invocations
+            # and consults to the active primary (no metadata file) are
+            # skipped. Surfaces heavy-consultation patterns in
+            # `i/handoff status`.
+            _record_consult(args.sid, args.question)
+        return result.returncode
+    finally:
+        try:
+            if lock_file.exists():
+                lock_file.unlink()
+        except OSError:
+            pass
 
 
 def main() -> int:

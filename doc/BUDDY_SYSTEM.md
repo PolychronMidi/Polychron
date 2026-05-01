@@ -134,15 +134,18 @@ be consulted on the rationale:
    tightening. (Behavior under retire mid-dispatch: in-flight
    tasks complete on the soon-to-retire primary; subsequent tasks
    get the fresh primary the next drain spawns.)
-2. **Transcript GC — RESOLVED.** `_buddy_context_used` returning
-   None now distinguishes two states in `cmd_status`: (a) transcript
-   path resolves but no usage events parsed yet (`ctx=?  (transcript
-   exists, no usage parsed yet)` — typical right after spawn); (b)
-   transcript path doesn't resolve at all (`ctx=missing  (transcript
-   purged — primary is stale)` — mirrors Q5's senior-pool [stale]
-   flag). Decision (per 0e7fbf4d, settled): "keep using" rather than
-   auto-retire on null — silent retire on a measurement gap is
-   exactly the failure class HME exists to prevent.
+2. **Transcript GC — RESOLVED.** `_buddy_context_used` returns None
+   ONLY when the transcript file is gone (Claude Code purged it or
+   it never existed); when the file exists with no assistant events
+   yet, it returns a 0-token dict — that's the post-spawn
+   pre-first-turn state and shows up cleanly as `ctx=0.0%` already.
+   So the only new state to surface is the genuine staleness signal.
+   `cmd_status` now prints `ctx=missing  (transcript purged —
+   primary is stale)` when the path resolution fails, mirroring
+   Q5's senior-pool `[stale]` flag. Decision (per 0e7fbf4d):
+   "keep using" rather than auto-retire on null — silent retire on
+   a measurement gap is exactly the failure class HME exists to
+   prevent.
 3. **Specialization carry-forward — REJECTED, "fresh dynamic" is
    correct.** Decision (per 0e7fbf4d, settled): pinning the next
    primary to a derived floor (medium/hard) would *reduce* its range
@@ -155,19 +158,21 @@ be consulted on the rationale:
    audio coupling") rather than a floor lock — that mechanism
    doesn't exist yet, but rejecting the floor-derive path keeps the
    future option open.
-4. **Dynamic per-tier override near retirement — needs operator
-   call.** Two designs surfaced in consult:
-   (a) Skip Q4 entirely, lower `BUDDY_RETIRE_PCT` default from 90 to
-   85 — one threshold, achieves "preserve quota for hard" via earlier
-   clean retire-then-fresh-primary handoff.
-   (b) Ship Q4 but tighten the band to 5% (85→90) so the
-   behavioral discontinuity window is bounded.
-   Buddy's lean is (a): the reroute mechanism's added complexity
-   isn't earning its keep against just retiring 5% sooner. This is
-   the kind of call where shipping the wrong one creates two-knob
-   complexity that's hard to remove later — operator picks. **No
-   default change yet.** When picked, this becomes the only knob to
-   change OR adds the dispatcher reroute logic.
+4. **Dynamic per-tier override near retirement — option (a) rejected
+   on operator correction; (b) on hold.** The buddy's lean was
+   option (a) — lower `BUDDY_RETIRE_PCT` default 90→85 — based on
+   an assumed auto-compaction threshold of ~90%. **Operator
+   correction:** auto-compaction sits at 100%, not 90%. The existing
+   90% retire threshold already gives a 10% safety margin, which is
+   adequate; lowering further would just retire too early without
+   solving the "preserve quota for hard" problem. Option (b) — ship
+   the dispatcher reroute when ctx > 75% (or some configurable
+   threshold), widening `HME_DISPATCH_SYNTHESIS_TIERS` to include
+   medium — remains a real but complex design call. Operator hold;
+   `DEFAULT_RETIRE_PCT = 90.0` per the explicit comment in
+   buddy_handoff.py: "don't lower this, there is already a 10%
+   margin between this point and auto-compaction which happens at
+   100%."
 5. **Senior staleness vs tombstoning — RESOLVED.** `_list_seniors`
    flags `transcript_missing=True` when the senior's JSONL has been
    purged (Claude Code can rotate transcripts); status displays
