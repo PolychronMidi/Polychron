@@ -98,12 +98,17 @@ hasn't pinned down yet; the next session can pick one up when there's
 idle time and the inherited senior should expect to be consulted on
 the rationale:
 
-1. **Hot-path auto-retire.** Currently `auto_retire_check` runs only
-   at SessionStart. A senior who serves heavy consultation mid-session
-   could cross 90% before the next SessionStart and hit auto-compaction
-   anyway. Question: should the dispatcher's drain path (or the
-   `i/consult` wrapper) also call `auto_retire_check` lazily, and what
-   happens to in-flight tasks if the primary retires mid-dispatch?
+1. **Hot-path auto-retire (primary path).** Currently
+   `auto_retire_check` runs only at SessionStart. A primary serving
+   dispatcher tasks mid-session could cross `BUDDY_RETIRE_PCT` (90%)
+   before the next SessionStart and hit auto-compaction anyway,
+   destroying the context we wanted to preserve via retire. Question:
+   should the dispatcher's drain path call `auto_retire_check` lazily
+   (e.g. between tasks), and what happens to in-flight tasks if the
+   primary retires mid-dispatch — do they fall back to ephemeral, or
+   wait for the next SessionStart's fresh primary to spawn? Note: the
+   *senior* consult path is covered by question 5 below; this one is
+   strictly about the primary serving the dispatcher.
 2. **Transcript GC.** Claude Code's own session GC may rotate or
    archive a senior's transcript JSONL. `_buddy_context_used` returns
    `null` on missing transcripts; status shows `ctx=?`. Question:
