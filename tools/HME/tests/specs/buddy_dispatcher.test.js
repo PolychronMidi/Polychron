@@ -1346,6 +1346,37 @@ test('buddy_handoff.py: consult emits caller_sid=None debug warning when no prim
   });
 });
 
+test('buddy_handoff.py: promote of a sid in senior pool archives the senior file (no double-existence)', () => {
+  // Q6 resolution: _promote() must not leave the same sid as both
+  // primary AND senior. Archive instead of refusing keeps workflow
+  // unblocked (e.g. operator manually promoting a senior back into
+  // service after compaction recovery).
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    const sid = 'returning-buddy';
+    fs.writeFileSync(path.join(seniorsDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low', reason: 'test_retire',
+      consults: [{ ts: 12345, ts_iso: 'old', question_excerpt: 'historical' }],
+    }));
+    const result = _runHandoff(sandbox,
+      ['promote', '--sid=' + sid, '--floor=easy', '--effort=low']);
+    assert.strictEqual(result.status, 0, `promote failed: ${result.stderr}`);
+    // Original senior file must be gone.
+    assert.ok(!fs.existsSync(path.join(seniorsDir, `${sid}.json`)),
+      'senior file moved out of pool root');
+    // Archive must contain the historical record (consults preserved).
+    const archivePath = path.join(seniorsDir, '_archive', `${sid}.json`);
+    assert.ok(fs.existsSync(archivePath), 'archived senior metadata preserved');
+    const archived = JSON.parse(fs.readFileSync(archivePath, 'utf8'));
+    assert.strictEqual(archived.consults[0].question_excerpt, 'historical',
+      'consults history retained in archive');
+    // Primary trio established.
+    const primary = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'utf8').trim();
+    assert.strictEqual(primary, sid);
+  });
+});
+
 test('buddy_handoff.py: ensure_primary is idempotent when primary already alive', () => {
   // Option D from BUDDY_SYSTEM.md Q1: lazy-spawn helper. The "already
   // alive" path must short-circuit without invoking buddy_init.sh —
@@ -1378,7 +1409,7 @@ test('buddy_handoff.py: ensure_primary spawns and records new primary when none 
       'cat <<EOF\n' +
       '[{"type":"system","subtype":"init","session_id":"lazy-spawned-$$"}]\n' +
       'EOF\n', { mode: 0o755 });
-    const result = _runHandoff(sandbox, ['ensure_primary', '--wait=10'],
+    const result = _runHandoff(sandbox, ['ensure_primary'],
       { PATH: `${stubBin}:${process.env.PATH}`,
         BUDDY_SYSTEM: '1', BUDDY_HANDOFF: '1', BUDDY_COUNT: '1',
         BUDDY_MODEL_FLOORS: 'auto' });

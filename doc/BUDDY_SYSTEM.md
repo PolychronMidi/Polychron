@@ -156,23 +156,28 @@ be consulted on the rationale:
    `medium`) when ctx > 75% so the remaining quota is reserved for
    hard problems only? Mechanism could be a single read of the
    primary's context % at the start of each `_pick_buddy_for_task`.
-5. **Senior staleness vs tombstoning — direction settled, opt-out
-   pending.** `_list_seniors` now flags `transcript_missing=True` when
-   the senior's JSONL has been purged (Claude Code can rotate
-   transcripts); status displays `[stale: transcript missing]`.
-   Direction (per 0e7fbf4d): warn-and-try is correct, NOT refuse —
-   caller may have local knowledge (backup transcript path, transient
-   network blip, just-purged-but-recoverable). Refusing creates a
-   hard wall; warn-and-try preserves agency and lets `claude --resume`'s
-   own error surface the actual cause. Open piece: if false-positives
-   accumulate, add `--ignore-stale` flag to bypass loud warnings; the
-   loud-warn-then-attempt should remain the default.
-6. **Promotion-from-senior coherence.** `i/handoff promote sid=<X>`
-   doesn't check whether `<X>` is currently in the senior pool. If it
-   is, the same sid becomes both primary AND senior — incoherent.
-   Question: should `_promote()` move `seniors/<sid>.json` to
-   `seniors/_archive/<sid>.json` when promoting an existing senior
-   back to active, or refuse the promote with a clear error?
+5. **Senior staleness vs tombstoning — RESOLVED.** `_list_seniors`
+   flags `transcript_missing=True` when the senior's JSONL has been
+   purged (Claude Code can rotate transcripts); status displays
+   `[stale: transcript missing]`. Direction (per 0e7fbf4d, settled):
+   warn-and-try, NOT refuse — caller may have local knowledge (backup
+   transcript path, transient network blip, just-purged-but-recoverable).
+   Refusing creates a hard wall; warn-and-try preserves agency and
+   lets `claude --resume`'s own error surface the actual cause. The
+   only open piece would be a `--ignore-stale` opt-out for a
+   false-positive problem that hasn't manifested — defer until it
+   does.
+6. **Promotion-from-senior coherence — RESOLVED.** `_promote()` now
+   checks whether the target sid is currently in the senior pool;
+   if so, it moves `seniors/<sid>.json` to
+   `seniors/_archive/<sid>.json` before establishing the new primary
+   pointers. Historical record (consults log, retire metadata) is
+   preserved in archive; `_list_seniors` (which globs `*.json` at the
+   directory root) naturally excludes the subdirectory. Multiple
+   promote/retire cycles for the same sid get timestamp-suffixed
+   archive paths to avoid overwrite. Choice was move-not-refuse so
+   the workflow stays unblocked (e.g. an operator manually promoting
+   a senior back into service after compaction recovery).
 7. **Concurrent consult races.** Two `i/consult` calls to the same sid
    both invoke `claude --resume` — the CLI may not be re-entrant on a
    single session. Question: add a per-sid lockfile
@@ -236,12 +241,11 @@ who built this paradigm) during a review consult, paraphrased:
   for the role being established — falling back to default values for
   any field is fine but the file must exist; (b) if writing during a
   fresh spawn (inaugural primary path), also mirror to the legacy
-  trio for the dispatcher's back-compat path. The
-  `cmd_ensure_primary` helper (option D in Q1) currently *wraps*
-  `buddy_init.sh` rather than extracting the spawn block into a
-  shared helper; functionally equivalent but structurally
-  duplicates a subprocess. If you touch this code path, the
-  extraction is the cleaner endgame.
+  trio for the dispatcher's back-compat path. Spawn implementation
+  lives in [`tools/HME/scripts/buddy_spawn.py`](../tools/HME/scripts/buddy_spawn.py)
+  and is shared by both `buddy_init.sh` (backgrounded at SessionStart)
+  and `cmd_ensure_primary` (synchronous from the dispatcher's lazy
+  spawn) — single source of truth for the spawn semantics.
 - **No expertise routing across handoffs.** The senior pool has no
   concept of "this senior knows about subsystem X". A future primary
   with N seniors has no routing hint — they pick whichever sid feels

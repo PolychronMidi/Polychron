@@ -947,9 +947,8 @@ def cmd_drain(args: argparse.Namespace) -> int:
             if handoff_script.exists():
                 try:
                     subprocess.run(
-                        ["python3", str(handoff_script),
-                         "ensure_primary", "--wait=30"],
-                        capture_output=True, timeout=35,
+                        ["python3", str(handoff_script), "ensure_primary"],
+                        capture_output=True, timeout=180,
                         env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
                     )
                 except (OSError, subprocess.TimeoutExpired):

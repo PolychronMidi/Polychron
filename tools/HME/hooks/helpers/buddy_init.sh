@@ -175,69 +175,34 @@ _spawn_buddy() {
   if [ -f "$sid_file" ] && [ -s "$sid_file" ]; then
     return 0
   fi
-  # Per-buddy role prompt: same shape as the proven single-buddy init,
-  # with floor + slot annotated so the buddy knows its role from the
-  # outset. The dispatcher routes by tier; the prompt frames the buddy
-  # as a peer that may receive any-tier work but never below its floor.
-  local prompt
-  prompt="You are co-buddy ${slot}/${BUDDY_COUNT} (model floor: ${floor}) — a persistent peer subagent for the Polychron codebase across this entire HME session. Reasoning tasks (review reflection, OVERDRIVE cascades, suggest_evolution, what_did_i_forget) arrive here as user messages; you reply with grounded reasoning. Accumulate context across tasks: a later task can build on what an earlier task surfaced. You MAY run read-only commands (Bash with \`git diff\`, \`git show\`, \`git log\`, \`cat\`, \`grep\`, the Read tool) to inspect the codebase when a prompt omits diff content. Do NOT edit files, run tests, or invoke long-running commands. Keep responses tight: max 4 concrete items per task. Cite file:line for every quoted finding. When your task is complete AND the queue is drained, emit a single line on stdout: [no-work] <one-line reason>. The dispatcher reads this as your idle declaration."
+  # Spawn delegated to tools/HME/scripts/buddy_spawn.py (the canonical
+  # spawn implementation, shared with cmd_ensure_primary in
+  # buddy_handoff.py). SessionStart wants fire-and-forget — we
+  # background and disown so the SessionStart hook returns
+  # immediately. The synchronous-spawn caller (ensure_primary) imports
+  # buddy_spawn.spawn_buddy directly for a blocking call.
+  # Path resolved relative to THIS file (not $_REPO_ROOT) so the helper
+  # works under sandboxed tests where the repo's script tree isn't
+  # mirrored into the test PROJECT_ROOT.
+  local _self_dir _spawn_script
+  _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  _spawn_script="$_self_dir/../../scripts/buddy_spawn.py"
+  local _flag=""
+  if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "$slot" = "1" ]; then
+    _flag="--mark-inaugural-primary"
+  fi
   {
-    local _out _sid
-    _out=$(HME_THREAD_CHILD=1 claude -p --output-format json "$prompt" 2>/dev/null)
-    _sid=$(printf '%s' "$_out" | python3 -c "
-import sys, json
-try:
-    data = json.loads(sys.stdin.read())
-    if isinstance(data, list):
-        for ev in data:
-            if isinstance(ev, dict) and ev.get('type') == 'system' and ev.get('subtype') == 'init':
-                sid = ev.get('session_id', '')
-                if sid:
-                    print(sid)
-                    sys.exit(0)
-        for ev in data:
-            if isinstance(ev, dict) and ev.get('session_id'):
-                print(ev['session_id'])
-                sys.exit(0)
-    elif isinstance(data, dict):
-        print(data.get('session_id', ''))
-except Exception:
-    pass
-" 2>/dev/null)
-    if [ -n "$_sid" ]; then
-      printf '%s\n' "$_sid" > "$sid_file"
-      # Companion file: per-buddy floor (used by dispatcher for routing).
-      printf '%s\n' "$floor" > "${sid_file%.sid}.floor"
-      # Hand-off bootstrap: when HANDOFF=1 and slot 1 spawns fresh
-      # (because primary.sid was missing), record this fresh sid as the
-      # inaugural primary so the next session inherits it as its buddy.
-      # Symmetry rule (per BUDDY_SYSTEM.md "wisdom" section): writers of
-      # the primary pointer trio MUST write all three files. _promote()
-      # writes sid + floor + effort_floor; this path must too. Effort
-      # floor is the canonical default for the model floor.
-      if [ "${BUDDY_HANDOFF:-0}" = "1" ] && [ "$slot" = "1" ]; then
-        printf '%s\n' "$_sid" > "$_REPO_ROOT/tmp/hme-buddy-primary.sid"
-        printf '%s\n' "$floor" > "$_REPO_ROOT/tmp/hme-buddy-primary.floor"
-        # Effort floor follows the canonical mapping for the model floor.
-        # (TIER_TO_EFFORT in buddy_dispatcher.py: easy→low, medium→medium,
-        # hard→high — but we write the literal here to avoid a python
-        # import in the hot path.)
-        case "$floor" in
-          easy)   _effort=low ;;
-          medium) _effort=medium ;;
-          hard)   _effort=high ;;
-          *)      _effort=low ;;
-        esac
-        printf '%s\n' "$_effort" > "$_REPO_ROOT/tmp/hme-buddy-primary.effort_floor"
-      fi
-      if [ -x "$_REPO_ROOT/tools/HME/activity/emit.py" ]; then
-        PROJECT_ROOT="$_REPO_ROOT" python3 "$_REPO_ROOT/tools/HME/activity/emit.py" \
-          --event=buddy_init --sid="$_sid" --slot="$slot" --floor="$floor" >/dev/null 2>&1 || true
-      fi
-    fi
+    PROJECT_ROOT="$_REPO_ROOT" python3 \
+      "$_spawn_script" \
+      --slot="$slot" --floor="$floor" \
+      --buddy-count="$BUDDY_COUNT" \
+      --sid-file="$sid_file" \
+      $_flag \
+      --project-root="$_REPO_ROOT" \
+      >/dev/null 2>&1
     # silent-ok on init failure: server-side dispatch falls through to
     # ephemeral path; a future SessionStart will retry the missing slot.
-  } >/dev/null 2>&1 &
+  } &
   disown 2>/dev/null || true
 }
 
