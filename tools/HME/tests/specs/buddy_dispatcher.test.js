@@ -933,7 +933,7 @@ test('buddy_init.sh: BUDDY_COUNT=3 + BUDDY_MODEL_FLOORS=auto distributes easy/me
   });
 });
 
-test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single medium-floor buddy', () => {
+test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single easy-floor (fully dynamic)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),
       'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_MODEL_FLOORS=auto\n');
@@ -947,11 +947,15 @@ test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single medium-floor buddy'
     assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid'], 5000),
       'legacy single-buddy sid file should appear');
     const floor = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'utf8').trim();
-    assert.strictEqual(floor, 'medium', 'count=1 default floor is medium');
+    // Floor=easy lets the single buddy handle any tier dynamically per
+    // task (effective = max(item_tier, easy) = item_tier). Pinning to
+    // medium would lock easy tasks out of being run at the easy tier.
+    assert.strictEqual(floor, 'easy',
+      'count=1 + auto must default to easy (fully dynamic per task)');
   });
 });
 
-test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [easy, hard]', () => {
+test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [easy, easy] (dynamic, no escalation)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),
       'BUDDY_SYSTEM=1\nBUDDY_COUNT=2\nBUDDY_MODEL_FLOORS=auto\n');
@@ -964,7 +968,29 @@ test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [easy, hard]', () => {
     assert.ok(_waitForFiles(sandbox, ['hme-buddy-1.sid', 'hme-buddy-2.sid'], 5000));
     const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor']
       .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
-    assert.deepStrictEqual(floors, ['easy', 'hard']);
+    // With fewer buddies than tiers, both stay dynamic. Pinning one to
+    // hard would waste Opus on easy tasks routed to that slot.
+    assert.deepStrictEqual(floors, ['easy', 'easy'],
+      'count<3 + auto must default both slots to easy for dynamic per-task tier');
+  });
+});
+
+test('buddy_init.sh: BUDDY_COUNT=4 with auto produces [easy, medium, hard, easy] (specialized + dynamic backfill)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=4\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '4', BUDDY_MODEL_FLOORS: 'auto',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    assert.ok(_waitForFiles(sandbox,
+      ['hme-buddy-1.sid', 'hme-buddy-2.sid', 'hme-buddy-3.sid', 'hme-buddy-4.sid'], 5000));
+    const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor', 'hme-buddy-3.floor', 'hme-buddy-4.floor']
+      .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
+    assert.deepStrictEqual(floors, ['easy', 'medium', 'hard', 'easy'],
+      'count>3 + auto: first 3 slots specialized, extras dynamic (easy)');
   });
 });
 

@@ -405,12 +405,18 @@ end of session start. The helper:
 
 1. Checks `.env BUDDY_SYSTEM` (default 1).
 2. Resolves `BUDDY_COUNT` (default 1, capped at 10).
-3. Resolves per-slot model floors via `BUDDY_MODEL_FLOORS`. The
-   special value `auto` distributes one buddy per difficulty tier:
-   `count=1 → [medium]`, `count=2 → [easy, hard]`,
-   `count=3 → [easy, medium, hard]` (canonical), `count=N` cycles
-   `[easy, medium, hard]`. Explicit lists (e.g. `easy,medium,hard`)
-   are honored as-is.
+3. Resolves per-slot model floors via `BUDDY_MODEL_FLOORS`. Floor is
+   the MINIMUM tier the buddy runs at — `effective = max(item_tier,
+   buddy_floor)`. `floor=easy` keeps the buddy fully dynamic (accept
+   any tier the task carries); higher floors force escalation. The
+   special value `auto`:
+   - `count<3` (fewer buddies than tiers): all floors default to
+     `easy` so each buddy stays dynamic per task.
+   - `count>=3`: specialize the first three slots as
+     `[easy, medium, hard]`, extras default to `easy` to backfill
+     dynamically without escalation.
+   Explicit lists (e.g. `easy,medium,hard`) are honored as-is and
+   padded with `easy` when shorter than `BUDDY_COUNT`.
 4. Idempotency: no-op if `tmp/hme-buddy-<N>.sid` exists and is non-empty.
 5. Spawns `claude -p --output-format json` per slot with the role prompt.
 6. Backgrounds itself (disown) so SessionStart returns immediately.

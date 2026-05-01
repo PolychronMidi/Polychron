@@ -47,33 +47,38 @@ case "$BUDDY_COUNT" in
 esac
 
 # Per-buddy model floors (comma-separated, length must equal BUDDY_COUNT).
-# Special value `auto` distributes one buddy per difficulty tier:
-#   count=1 -> [medium]
-#   count=2 -> [easy, hard]
-#   count=3 -> [easy, medium, hard]                (canonical case)
-#   count=N -> cycle [easy, medium, hard]
-# Explicit list (e.g. "easy,medium,hard" or "medium") is honored as-is and
-# padded with "medium" when shorter than BUDDY_COUNT (legacy behavior).
+# Floor is the MINIMUM tier the buddy will run at — `effective =
+# max(item_tier, buddy_floor)` per task. floor=easy means "stay dynamic,
+# accept whatever tier the task carries"; floor=medium forces every easy
+# task UP to medium; floor=hard wastes Opus on every easy task.
+#
+# Special value `auto`:
+#   - When count < 3 (fewer buddies than difficulty levels), all floors
+#     default to `easy` so each buddy stays fully dynamic per task — the
+#     dispatcher picks the model from the task's tier, not the buddy's.
+#   - When count >= 3 (at least one slot per tier), specialize the first
+#     three slots as [easy, medium, hard] and default extras to `easy`
+#     so they backfill dynamically without escalation.
+#
+# Explicit list (e.g. "easy,medium,hard" or "medium") is honored as-is
+# and padded with `easy` when shorter than BUDDY_COUNT (preserves dynamic
+# behavior for unspecified slots).
 if [ -z "${BUDDY_MODEL_FLOORS:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
   _envline=$(grep -E '^BUDDY_MODEL_FLOORS=' "$_REPO_ROOT/.env" 2>/dev/null | head -1)
   [ -n "$_envline" ] && BUDDY_MODEL_FLOORS="${_envline#BUDDY_MODEL_FLOORS=}"
 fi
 BUDDY_MODEL_FLOORS="${BUDDY_MODEL_FLOORS:-auto}"
 if [ "$BUDDY_MODEL_FLOORS" = "auto" ]; then
-  case "$BUDDY_COUNT" in
-    1) _FLOORS=(medium) ;;
-    2) _FLOORS=(easy hard) ;;
-    *)
-      _FLOORS=()
-      _CYCLE=(easy medium hard)
-      for i in $(seq 0 $((BUDDY_COUNT - 1))); do
-        _FLOORS+=("${_CYCLE[$((i % 3))]}")
-      done
-      ;;
-  esac
+  if [ "$BUDDY_COUNT" -lt 3 ]; then
+    _FLOORS=()
+    for i in $(seq 1 "$BUDDY_COUNT"); do _FLOORS+=("easy"); done
+  else
+    _FLOORS=(easy medium hard)
+    while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("easy"); done
+  fi
 else
   IFS=',' read -ra _FLOORS <<< "$BUDDY_MODEL_FLOORS"
-  while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("medium"); done
+  while [ "${#_FLOORS[@]}" -lt "$BUDDY_COUNT" ]; do _FLOORS+=("easy"); done
 fi
 
 mkdir -p "$_REPO_ROOT/tmp"
