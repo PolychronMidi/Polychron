@@ -335,6 +335,26 @@
         "i/dispatch chain review-then-test"
       ]
     },
+    "handoff": {
+      "description": "Buddy hand-off lifecycle CLI (BUDDY_HANDOFF=1). Manages a single dynamic primary + a senior pool of retired primaries. Subactions: status / retire / promote / auto_retire_check / consult.",
+      "category": "orchestration",
+      "usage": "i/handoff <status|retire|promote|auto_retire_check|consult> [key=value ...]",
+      "examples": [
+        "i/handoff status",
+        "i/handoff status json=true",
+        "i/handoff retire reason=\"too close to compaction\"",
+        "i/handoff promote sid=<new-sid> floor=easy",
+        "i/handoff auto_retire_check"
+      ]
+    },
+    "consult": {
+      "description": "Manually invoke a specific senior buddy for a tough problem (BUDDY_HANDOFF=1). Senior context is precious; reserve consult calls for problems the primary can't crack. Each call grows the senior's transcript.",
+      "category": "orchestration",
+      "usage": "i/consult senior=<senior-sid> question=\"...\"",
+      "examples": [
+        "i/consult senior=abc123def question=\"why does feature X behave that way under load?\""
+      ]
+    },
     "audit-tools": {
       "description": "UX stress test for i/* CLI surface. Each probe runs inside a transient systemd-run --scope cgroup (MemoryMax=512M, TasksMax=64) so disown'd/double-forked descendants of HME posttooluse hooks die atomically with the scope. Crashed the host twice before this isolation landed; treat with caution on first re-enable.",
       "category": "meta",

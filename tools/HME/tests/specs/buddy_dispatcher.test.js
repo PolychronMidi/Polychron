@@ -1234,6 +1234,47 @@ test('buddy_handoff.py: retire emits buddy_handoff_retire activity event', () =>
   });
 });
 
+test('buddy_init.sh: SessionStart auto-retires over-threshold primary then spawns fresh', () => {
+  _withDispatcherSandbox((sandbox) => {
+    // Plant a primary whose transcript is over 90%.
+    const home = path.join(sandbox, 'fake-home');
+    const cwdSlug = '-' + sandbox.replace(/^\//, '').replace(/\//g, '-');
+    const projDir = path.join(home, '.claude', 'projects', cwdSlug);
+    fs.mkdirSync(projDir, { recursive: true });
+    const oldSid = 'incumbent-over-threshold';
+    fs.writeFileSync(path.join(projDir, `${oldSid}.jsonl`),
+      JSON.stringify({ type: 'assistant',
+        message: { usage: { input_tokens: 0, cache_creation_input_tokens: 950000, cache_read_input_tokens: 0 } } }) + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), oldSid + '\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_HANDOFF=1\nBUDDY_RETIRE_PCT=90\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '1', BUDDY_HANDOFF: '1',
+      BUDDY_RETIRE_PCT: '90', HOME: home,
+    });
+    assert.strictEqual(result.status, 0,
+      `buddy_init.sh failed: stderr=${result.stderr}`);
+    // Auto-retire fires synchronously inside buddy_init.sh, so the
+    // senior file should already be present by the time the script
+    // returns. The fresh spawn happens async (disowned), so we wait.
+    const seniorFile = path.join(sandbox, 'tmp', 'hme-buddy-seniors',
+      `${oldSid}.json`);
+    assert.ok(fs.existsSync(seniorFile),
+      `auto_retire should have moved ${oldSid} to seniors/ before fresh spawn`);
+    const rec = JSON.parse(fs.readFileSync(seniorFile, 'utf8'));
+    assert.strictEqual(rec.sid, oldSid);
+    assert.match(rec.reason, /^auto_retire_at_/);
+    // Fresh primary must replace the retired one within 5s.
+    assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid', 'hme-buddy-primary.sid'], 5000),
+      'fresh primary must spawn and record itself after auto-retire');
+    const newSid = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'utf8').trim();
+    assert.notStrictEqual(newSid, oldSid,
+      'new primary sid must differ from the retired sid');
+  });
+});
+
 test('dispatcher: status surfaces senior pool when BUDDY_HANDOFF=1', () => {
   _withDispatcherSandbox((sandbox) => {
     const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');

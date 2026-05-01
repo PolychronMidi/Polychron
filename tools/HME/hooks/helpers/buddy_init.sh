@@ -25,7 +25,8 @@ _REPO_ROOT="${CLAUDE_PROJECT_DIR:-${PROJECT_ROOT:-/home/jah/Polychron}}"
 
 # Honor the .env toggle. BUDDY_SYSTEM defaults to 1; explicit 0 disables.
 if [ -z "${BUDDY_SYSTEM:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
-  _envline=$(grep -E '^BUDDY_SYSTEM=' "$_REPO_ROOT/.env" 2>/dev/null | head -1)
+  # `|| true` so pipefail doesn't abort when the .env lacks BUDDY_SYSTEM=.
+  _envline=$(grep -E '^BUDDY_SYSTEM=' "$_REPO_ROOT/.env" 2>/dev/null | head -1 || true)
   [ -n "$_envline" ] && BUDDY_SYSTEM="${_envline#BUDDY_SYSTEM=}"
 fi
 BUDDY_SYSTEM="${BUDDY_SYSTEM:-1}"
@@ -44,7 +45,8 @@ BUDDY_HANDOFF="${BUDDY_HANDOFF:-0}"
 
 # BUDDY_COUNT defaults to 1 (back-compat). Read from env or .env.
 if [ -z "${BUDDY_COUNT:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
-  _envline=$(grep -E '^BUDDY_COUNT=' "$_REPO_ROOT/.env" 2>/dev/null | head -1)
+  # `|| true` so pipefail doesn't abort when the .env lacks BUDDY_COUNT=.
+  _envline=$(grep -E '^BUDDY_COUNT=' "$_REPO_ROOT/.env" 2>/dev/null | head -1 || true)
   [ -n "$_envline" ] && BUDDY_COUNT="${_envline#BUDDY_COUNT=}"
 fi
 BUDDY_COUNT="${BUDDY_COUNT:-1}"
@@ -75,7 +77,8 @@ esac
 # and padded with `easy` when shorter than BUDDY_COUNT (preserves dynamic
 # behavior for unspecified slots).
 if [ -z "${BUDDY_MODEL_FLOORS:-}" ] && [ -f "$_REPO_ROOT/.env" ]; then
-  _envline=$(grep -E '^BUDDY_MODEL_FLOORS=' "$_REPO_ROOT/.env" 2>/dev/null | head -1)
+  # `|| true` so pipefail doesn't abort when the .env lacks BUDDY_MODEL_FLOORS=.
+  _envline=$(grep -E '^BUDDY_MODEL_FLOORS=' "$_REPO_ROOT/.env" 2>/dev/null | head -1 || true)
   [ -n "$_envline" ] && BUDDY_MODEL_FLOORS="${_envline#BUDDY_MODEL_FLOORS=}"
 fi
 BUDDY_MODEL_FLOORS="${BUDDY_MODEL_FLOORS:-auto}"
@@ -113,10 +116,13 @@ if [ "$BUDDY_HANDOFF" = "1" ]; then
   # too-full primary can't be inherited; the script then falls through
   # to a fresh spawn. Best-effort (silent on failure); manual
   # `i/handoff auto_retire_check` is always available as the explicit
-  # path. The python helper's own `set -e` is kept in-script via `|| true`.
-  if [ -x "$_REPO_ROOT/tools/HME/scripts/buddy_handoff.py" ]; then
-    PROJECT_ROOT="$_REPO_ROOT" python3 \
-      "$_REPO_ROOT/tools/HME/scripts/buddy_handoff.py" auto_retire_check \
+  # path. The script path is derived relative to THIS file (not
+  # $_REPO_ROOT) so it works under sandboxed tests where the repo's
+  # script tree isn't mirrored into the test PROJECT_ROOT.
+  _HANDOFF_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  _HANDOFF_SCRIPT="$_HANDOFF_SELF_DIR/../../scripts/buddy_handoff.py"
+  if [ -f "$_HANDOFF_SCRIPT" ]; then
+    PROJECT_ROOT="$_REPO_ROOT" python3 "$_HANDOFF_SCRIPT" auto_retire_check \
       >/dev/null 2>&1 || true
   fi
   _PRIMARY_FILE="$_REPO_ROOT/tmp/hme-buddy-primary.sid"

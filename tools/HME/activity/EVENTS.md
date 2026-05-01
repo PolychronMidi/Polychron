@@ -74,6 +74,9 @@ file's listed events and FAILs if they drift.
 ## Buddy / synthesis
 
 - **`buddy_init`** — buddy subagent session initialized.
+- **`buddy_handoff_primary`** — hand-off paradigm adopted an existing primary at SessionStart (no fresh spawn). Payload: `sid`, `floor`.
+- **`buddy_handoff_promote`** — sid manually designated as the primary buddy via `i/handoff promote`. Payload: `sid`, `floor`, `effort_floor`.
+- **`buddy_handoff_retire`** — primary buddy retired to the senior pool (manual via `i/handoff retire`, or auto when context ≥ `BUDDY_RETIRE_PCT`). Payload: `sid`, `reason`, `context_at_retire`.
 
 ## Drift / regression signals
 
