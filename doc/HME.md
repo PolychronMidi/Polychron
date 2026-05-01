@@ -1270,6 +1270,7 @@ File watcher auto-reindexes on save (5s debounce, 5min cooldown). For batch chan
 hme_admin(action='index')    # incremental reindex
 hme_admin(action='clear_index')  # full rebuild from scratch
 ```
+**Concurrent reindex coalesces.** The watcher, scheduled refresh, and manual `hme_admin(action='index')` triggers all fire independently and regularly overlap. The daemon's `/indexing-mode` endpoint serializes them through a single lock and the second caller waits for the first to finish, then returns the in-flight result tagged `coalesced=True`. No "already in progress" error, no warning log; overlap is the design. User-visible output renders the coalesced case as `[main] files=N indexed=N ... (coalesced into in-progress reindex)`. See `tools/HME/service/llamacpp_daemon/indexing.py` and the regression test at `tools/HME/tests/specs/indexing_mode_coalesce.test.js`.
 
 ### KB Maintenance
 - Periodic: `learn(action='health')` — find stale refs, wrong line counts
