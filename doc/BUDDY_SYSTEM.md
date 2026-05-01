@@ -147,7 +147,11 @@ the rationale:
    compaction eats them? Companion to question 1 (hot-path
    auto-retire) which is about the *primary* path — this one is about
    the *senior* path, and the answer should pick from a different
-   action set since "retire" isn't available.
+   action set since "retire" isn't available. Critical: the protection
+   has to live in `i/consult` itself (the call site), not the
+   dispatcher — seniors aren't dispatch targets, so the dispatcher has
+   no causal lever to refuse or snapshot before tokens are added. Any
+   fix that lives in the dispatcher can't reach the right place.
 
 Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a

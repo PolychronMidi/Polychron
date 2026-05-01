@@ -102,6 +102,13 @@ mkdir -p "$_REPO_ROOT/tmp"
 # Bootstrap a back-compat tmp/hme-buddy.sid pointer so legacy consumers
 # see the primary. Companion .floor / .effort_floor files are preserved
 # from the primary's metadata, defaulting to easy / low when absent.
+#
+# Note: this mirror is a SAFETY NET, not the canonical actuator.
+# `_promote()` (in buddy_handoff.py) writes the legacy pointer trio
+# inline at promote time so the dispatcher sees a swap immediately
+# without waiting for SessionStart. This block catches edge cases like
+# a manual edit of primary.sid or a primary written by an older
+# code path that didn't include the inline mirror.
 if [ "$BUDDY_HANDOFF" = "1" ]; then
   # Hand-off paradigm fundamentally has ONE primary at a time.
   # Multi-buddy fanout (BUDDY_COUNT>1) is mutually exclusive — force

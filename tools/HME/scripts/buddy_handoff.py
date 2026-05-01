@@ -123,10 +123,21 @@ _CONSULT_HISTORY_CAP = 50  # bounded growth on senior metadata file
 def _record_consult(sid: str, question: str) -> None:
     """Append a consult record to the senior's metadata file. Best-effort:
     silent on read/write failure so the consult call itself isn't blocked
-    by a metadata write. Caps list at _CONSULT_HISTORY_CAP entries."""
+    by a metadata write. Caps list at _CONSULT_HISTORY_CAP entries.
+
+    Records caller_sid (the active primary at consult time, since that's
+    who initiated) so cross-session forensics can answer 'who's been
+    hammering this senior'. Falls back to None when no primary is
+    recorded (e.g. test sandbox or pre-paradigm session)."""
     senior_file = SENIORS_DIR / f"{sid}.json"
     if not senior_file.exists():
         return
+    caller_sid = None
+    if PRIMARY_SID.exists():
+        try:
+            caller_sid = PRIMARY_SID.read_text().strip() or None
+        except OSError:
+            pass
     try:
         rec = json.loads(senior_file.read_text())
         consults = rec.get("consults") or []
@@ -134,6 +145,7 @@ def _record_consult(sid: str, question: str) -> None:
             "ts": time.time(),
             "ts_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "question_excerpt": (question or "")[:60],
+            "caller_sid": caller_sid,
         })
         rec["consults"] = consults[-_CONSULT_HISTORY_CAP:]
         senior_file.write_text(json.dumps(rec, indent=2, default=str))
@@ -342,10 +354,22 @@ def cmd_consult(args: argparse.Namespace) -> int:
             print(f"warning: sid {args.sid} is not in the senior pool", file=sys.stderr)
     import subprocess
     cmd = ["claude", "--resume", args.sid, "-p", args.question]
-    print(f"# consulting senior sid={args.sid}", file=sys.stderr)
+    # Identify the target's role correctly. In this paradigm a buddy
+    # might be the active primary (not yet retired) or a senior in the
+    # pool — the print should reflect actual state, not assume "senior".
+    role = "senior" if (SENIORS_DIR / f"{args.sid}.json").exists() else "primary"
+    primary = _read_primary()
+    if primary is not None and primary["sid"] == args.sid:
+        role = "primary"
+    print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
+    # No timeout: a buddy with a multi-MB transcript needs minutes to
+    # spin up under `claude --resume`, and a fixed cap kills the
+    # subprocess mid-response — wasting the buddy's transcript tokens
+    # plus forcing a re-send that doubles the cost. The user can Ctrl-C
+    # the i/consult wrapper to abort if a hang is genuinely stuck.
     result = subprocess.run(cmd, capture_output=True, text=True,
                             env={**os.environ, "HME_THREAD_CHILD": "1"},
-                            timeout=300)
+                            timeout=None)
     if result.stdout:
         sys.stdout.write(result.stdout)
     if result.stderr:
