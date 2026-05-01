@@ -173,6 +173,13 @@ def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
     PRIMARY_SID.write_text(sid + "\n")
     PRIMARY_FLOOR.write_text(floor + "\n")
     PRIMARY_EFFORT.write_text(effort + "\n")
+    # Mirror to legacy pointers so the dispatcher (which reads the legacy
+    # path) sees the new primary immediately, without waiting for the next
+    # SessionStart to re-run buddy_init.sh's mirror. Symmetric with
+    # _retire(), which clears both pointer trios.
+    LEGACY_SID.write_text(sid + "\n")
+    LEGACY_FLOOR.write_text(floor + "\n")
+    LEGACY_EFFORT.write_text(effort + "\n")
     _emit_activity("buddy_handoff_promote",
                    {"sid": sid, "floor": floor, "effort_floor": effort})
 

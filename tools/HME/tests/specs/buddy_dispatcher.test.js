@@ -1175,6 +1175,62 @@ test('buddy_handoff.py: promote --sid sets primary pointers', () => {
   });
 });
 
+test('buddy_handoff.py: promote mirrors to legacy pointer trio (dispatcher visibility)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    // Plant a stale legacy pointer to simulate a pre-paradigm carry-over.
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'stale-from-prior-era\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'medium\n');
+    const result = _runHandoff(sandbox,
+      ['promote', '--sid=fresh-promo', '--floor=hard', '--effort=high']);
+    assert.strictEqual(result.status, 0, `promote failed: ${result.stderr}`);
+    // Legacy trio must mirror the new primary, not retain the stale value.
+    // The dispatcher reads tmp/hme-buddy.sid; if mirroring is missing,
+    // status will continue to display 'stale-from-prior-era' until the
+    // next SessionStart re-runs buddy_init.sh's mirror.
+    const legacySid = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.sid'), 'utf8').trim();
+    const legacyFloor = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'utf8').trim();
+    const legacyEffort = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.effort_floor'), 'utf8').trim();
+    assert.strictEqual(legacySid, 'fresh-promo',
+      'promote must overwrite stale legacy sid so the dispatcher sees the new primary immediately');
+    assert.strictEqual(legacyFloor, 'hard', 'legacy floor mirrors promoted floor');
+    assert.strictEqual(legacyEffort, 'high', 'legacy effort_floor mirrors promoted effort');
+  });
+});
+
+test('buddy_init.sh: HANDOFF=1 + no primary.sid + stale legacy.sid spawns fresh anyway', () => {
+  // Regression: previously, a stale tmp/hme-buddy.sid from a pre-paradigm
+  // session wedged the inaugural spawn — _spawn_buddy short-circuited on
+  // the existing legacy file (line 159 guard), so no fresh buddy was
+  // spawned and no primary.sid was recorded. State stayed wedged across
+  // SessionStarts. The fall-through path now clears stale legacy pointers
+  // before invoking _spawn_buddy when HANDOFF=1 + no primary.sid.
+  _withDispatcherSandbox((sandbox) => {
+    const tmp = path.join(sandbox, 'tmp');
+    // Stale legacy from before the paradigm shipped — would short-circuit
+    // _spawn_buddy under the buggy code path.
+    fs.writeFileSync(path.join(tmp, 'hme-buddy.sid'), 'stale-pre-paradigm-buddy\n');
+    fs.writeFileSync(path.join(tmp, 'hme-buddy.floor'), 'medium\n');
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_HANDOFF=1\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '1', BUDDY_HANDOFF: '1',
+      BUDDY_MODEL_FLOORS: 'auto',
+    });
+    assert.strictEqual(result.status, 0, `buddy_init.sh failed: ${result.stderr}`);
+    // Wait for the disowned spawn to land its sid file. The new sid must
+    // overwrite the stale one — match `fake-sid-<pid>` from the stub.
+    assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid', 'hme-buddy-primary.sid'], 5000),
+      'fresh inaugural spawn must record both legacy and primary sid files');
+    const legacy = fs.readFileSync(path.join(tmp, 'hme-buddy.sid'), 'utf8').trim();
+    const primary = fs.readFileSync(path.join(tmp, 'hme-buddy-primary.sid'), 'utf8').trim();
+    assert.notStrictEqual(legacy, 'stale-pre-paradigm-buddy',
+      'stale legacy sid must NOT survive the fall-through spawn');
+    assert.match(legacy, /^fake-sid-\d+$/, 'legacy sid is the freshly-spawned stub sid');
+    assert.strictEqual(primary, legacy,
+      'inaugural primary.sid equals the freshly-spawned legacy sid');
+  });
+});
+
 test('buddy_init.sh: BUDDY_COUNT=3 + HANDOFF=1 forces count=1 (multi-buddy mutually exclusive with handoff)', () => {
   _withDispatcherSandbox((sandbox) => {
     fs.writeFileSync(path.join(sandbox, '.env'),
