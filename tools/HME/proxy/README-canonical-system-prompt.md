@@ -22,27 +22,40 @@ Mechanism: [`tools/HME/proxy/middleware/replace_system.js`](middleware/replace_s
 mtime-cached, so edits to the canonical file take effect on the next
 proxy-routed request after save (no proxy restart needed).
 
-## Bootstrap origin
+## What's in the canonical (and why)
 
-Bootstrapped from a captured dump of Claude Code's default prompt with
-the following sections removed (each was identified as either
-HME-superseded, unrelated to this project, or pure boilerplate that
-doesn't shape behavior):
+15 lines / ~1.8KB — down 93% from Claude Code's ~28KB default block 2.
+Only content that the system-prompt layer can do (because CLAUDE.md and
+HME hooks can't):
 
-- `# auto memory` section (~12.5KB) — HME's KB (`i/learn`) supersedes
-- `gitStatus:` trailing block — agent has the `git` tool, can pull current state directly
-- `/schedule` offer bullet — quasi-promotional, the agent can `/schedule` itself
-- `/ultrareview` explainer — feature mention without behavioral effect
-- UI/frontend dev-server bullet — Polychron is audio synthesis, no browser UI
-- `/help` + feedback-URL bullets — onboarding boilerplate
-- Fast mode (Opus 4.6) line — model-specific footnote
-- "Claude Code is available as a CLI/desktop/..." marketing line
-- Model-ID enumeration — agent IS one of these models, redundant
+1. Identity statement + pointer to CLAUDE.md and HME hooks as the
+   authority for project-specific behavior
+2. Two `IMPORTANT:` security directives — refusal-policy text from
+   Anthropic that triggers refusals during reasoning, not just shaping
+3. Output channel awareness (text outside tool calls is user-facing,
+   markdown rendering, no-colon-before-tool-call convention)
+4. `<system-reminder>` tag awareness — load-bearing for HME hooks to
+   inject directives the agent will act on
+5. Hook-as-user-input mapping — without this the agent doesn't know how
+   to interpret hook block messages
+6. Prompt-injection awareness on tool_results from external sources
+7. Permission-mode awareness (denied calls shouldn't be retried verbatim)
+8. Auto-compaction awareness (older context may be summarized)
+
+Everything else (style, code conventions, refactor discipline, comment
+policy, end-of-turn discipline, system-reminder priority, plan
+adherence, Hyperneta workflow, etc.) is owned by `CLAUDE.md` (auto-loaded
+into context) and HME's hook layer (proxy middleware + stop-chain
+detectors like `exhaust_check`, `psycho_stop`, `ignore_and_trample`,
+`senior_consult_debt`).
 
 ## Editing
 
 Edit `canonical-system-prompt.md` directly. Every byte goes verbatim to
 the model as the system prompt — no comments, no markers, no header.
+Keep additions narrow: anything CLAUDE.md or a hook can enforce belongs
+there, not here. The system prompt is reserved for things only the
+system prompt can do.
 
 ## Inspecting Claude Code's current default
 
@@ -78,6 +91,11 @@ workflow doesn't need it before adding to the list. To see the current
 tool surface, run the inspection workflow above and check the
 `tools[].name` list in `tmp/claude-full-payload.json`.
 
-Empirical baseline: dropping the 12 listed above saved 23,316 bytes
-(~23KB) per request when measured against a captured Claude Code
-payload — roughly 2x the savings of pruning the `# auto memory` section.
+Empirical baseline (current setup, measured end-to-end against a real
+captured Claude Code request):
+
+| | Raw default | Trimmed canonical + filter_tools |
+|---|---|---|
+| `system` block | 27,785B | 1,817B (93% smaller) |
+| `tools` array | 79,566B (26 entries) | 57,061B (14 entries — 12 dropped) |
+| **Total payload** | **134,596B** | **~92KB (32% smaller)** |
