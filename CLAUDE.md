@@ -1,12 +1,14 @@
 # Polychron — Coding Rules
 
-Keep this file focused, concise, lean - docs and auto-enforcement handle the rest. If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
+Keep this file focused, concise, lean - docs and auto-enforcement handle the rest.
+
+If something potentially auto-enforced would need to be mentioned here, make its enforcement better instead.
 
 > Imperative-only rule guide. For *what things are*, see [README.md](../README.md), [doc/HME_MENTAL_MODEL.md](../doc/HME_MENTAL_MODEL.md), [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md), [doc/HME.md](../doc/HME.md), [doc/HME_HORIZONS.md](../doc/HME_HORIZONS.md), [doc/TUNING_MAP.md](../doc/TUNING_MAP.md), [doc/SUBSYSTEMS.md](../doc/SUBSYSTEMS.md).
 
 ## Run
 
-`npm run main` — full pipeline. **Never run individual pipeline scripts directly.**
+`npm run main` — full pipeline.
 
 ## Five Core Principles
 
@@ -18,12 +20,10 @@ Keep this file focused, concise, lean - docs and auto-enforcement handle the res
 
 ## Code Style
 
-- JavaScript (CommonJS); TypeScript checking via `tsc --noEmit`.
-- Console output: script start, successful output, temporary debug traces only. `console.warn` must use `'Acceptable warning: ...'` format.
 - No ad-hoc validation: use `validator`, never raw `typeof` / `|| []` / `|| 0` / ternary fallbacks.
 - Globals are truth: initialize correctly at the source. Never sanitize downstream.
 - Comments are terse. No essay comments, no verbose JSDoc. One-line inline only where logic isn't self-evident.
-- No character-spam decoration: 4+ identical non-word, non-whitespace, non-paren/bracket characters in a row are banned anywhere — code, comments, docs, generated output. No `====` dividers, `----` separators, `####`+ markdown headings, `||||` table-separator shortcuts, unicode `─`/`═` runs. Markdown table separators must use `| --- |` cells. Enforced by the `block-character-spam` policy (Write/Edit/MultiEdit) and the `repeated-char-spam` HCI verifier. Per-line opt-out: append the literal token `spam-ok`.
+
 
 ## Load Order
 
@@ -64,22 +64,14 @@ Two polyrhythmic layers alternate via `LM.activate()`. Mutable globals bleed bet
 - **Closure-based per-layer state** uses `byLayer` maps keyed by `LM.activeLayer` (e.g. `stutterTempoFeel`, `crossLayerDynamicEnvelope`, `journeyRhythmCoupler`, `emissionFeedbackListener`).
 - **Adding new mutable state:** ask "is this written per-beat and read by both layers?" If yes, it needs per-layer treatment.
 
-## Pipeline Discipline
-
-- **Lab runner** at `lab/run.js` uses isolated temp working directories — never touches `output/`. 180s timeout.
-- **Non-fatal step error scanning:** `main-pipeline.js` captures stdout+stderr from post-composition steps and scans for error keywords. Detected errors are written to `output/metrics/pipeline-summary.json` under `errorPatterns`. **A non-fatal step marked OK with exit code 0 can still contain real failures** — always check `errorPatterns` in the summary.
-- **Lab sketches:** every `postBoot()` must contain real implementation code that creates the described behavior. A `setActiveProfile()`-only postBoot is empty and tests nothing. Monkey-patching globals/functions in postBoot is the integration prototyping mechanism.
-
 ## Hard Rules (Never Violate)
 
-- **Binaural is imperceptible neurostimulation only.** Alpha range 8-12Hz. Never go below 8Hz or above 12Hz. Never experiment with binaural frequency. `setBinaural` runs from `grandFinale` post-loop walk ONLY, never from `processBeat`.
 - **Never delete unused code/config before checking if it should be implemented.** Only delete code that can't be reasonably adapted and whose concerns are already covered elsewhere. Otherwise, wire it up and implement.
 - **"Review" = read-only analysis.** No code changes unless explicitly asked.
 - **Never abandon a plan mid-execution.** Finish the current atomic unit before pivoting. If user feedback changes direction, explicitly acknowledge the pivot, state what was left undone, and confirm before switching. Never leave code/tools in a broken intermediate state. Clarifying questions belong BEFORE starting implementation. Atomic units: a file sweep is not done until every file in scope is fixed; a merge is not done until the routing logic exists; a KB cleanup is not done until every candidate entry has been processed.
 
 ## Working Style
 
-- **User messages via system-reminder:** respond immediately. Do not wait for any running process or tool call to finish first. Drop everything and reply now. Resume prior work after responding, unless the message says to stop.
 - **Context budget:** when the window has headroom, be greedy — use parallel research agents, read full files, investigate deeply. Only economize when window pressure is high or the task is clearly trivial. Default to thoroughness.
 - **Act on feedback or discovered issues immediately and thoroughly.** Never summarize without fixing. Never make token changes when thorough investigation is needed. When given direction ("clear lab and build next round"), do the entire sequence without pausing. Investigate root causes of every bug surfaced — don't cherry-pick one and ignore the rest.
 - **Two-tier severity in reviews/audits:** findings carry exactly **blocker** or **should-fix** — never "nit" / "nice-to-have" / "could-be-clearer." Self-gate: "would this actually hurt a user or cause a real bug?" If no, drop it. A zero-finding review IS success.
@@ -91,4 +83,3 @@ All HME tools are invoked via executable shell wrappers in `i/` (e.g. `i/review`
 - **After each listen-confirmed round:** `i/learn title="…" content="…" category=pattern` for calibration anchors. Do NOT add until user confirms task complete. If the user gives a listening verdict, also record it as ground truth: `i/learn action=ground_truth title=<SECTION> tags=[moment_type,sentiment] content=<COMMENT> query=<ROUND>` — lands in `output/metrics/hme-ground-truth.jsonl`, mirrored into KB with unconditional HIGH trust tier.
 - **Close the round window:** between the user's pipeline run and querying `i/status` (budget/coherence/trajectory modes), emit `python3 tools/HME/activity/emit.py --event=round_complete --session=RNN --verdict=STABLE` so the activity bridge's coherence score isn't polluted by pre-round instrumentation edits. The Stop chain does this at turn end automatically (post_hooks stage in the JS evaluator at `tools/HME/proxy/stop_chain/`); do it manually mid-turn.
 - **When pipeline fails:** read pipeline output, fix root cause. `i/hme-read target=<moduleName> mode=before` on the failing file.
-
