@@ -17,6 +17,7 @@ FABRICATION_CHECK=ok
 EARLY_STOP=ok
 EXHAUST_CHECK=ok
 SCOPE_ESCAPE=ok
+SENIOR_CONSULT_DEBT=ok
 if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
   # run_all.py prints one `name=verdict` line per detector. Parse into bash vars.
   # If run_all crashes we fall back to defaults above (equivalent to old
@@ -46,6 +47,7 @@ if [[ -n "$TRANSCRIPT_PATH" && -f "$TRANSCRIPT_PATH" ]]; then
       early_stop)    EARLY_STOP="$_v" ;;
       exhaust_check) EXHAUST_CHECK="$_v" ;;
       scope_escape)  SCOPE_ESCAPE="$_v" ;;
+      senior_consult_debt) SENIOR_CONSULT_DEBT="$_v" ;;
     esac
   done <<< "$_RUN_ALL_OUT"
   # Sanity: poll_count must be numeric for the -ge test below.
@@ -68,4 +70,19 @@ mkdir -p "$(dirname "$_DETECTOR_VERDICTS_FILE")" 2>/dev/null
   echo "EARLY_STOP=$EARLY_STOP"
   echo "EXHAUST_CHECK=$EXHAUST_CHECK"
   echo "SCOPE_ESCAPE=$SCOPE_ESCAPE"
+  echo "SENIOR_CONSULT_DEBT=$SENIOR_CONSULT_DEBT"
 } > "$_DETECTOR_VERDICTS_FILE"
+
+# senior_consult_debt — informational notice (NOT a hard block on first
+# fire, per the buddy paradigm's gradual-tightening discipline). When
+# the turn touched buddy-paradigm design-space files without an
+# i/consult invocation, surface a stderr reminder so the operator and
+# the agent both see the gap. If this fires repeatedly across sessions
+# the verdict can be elevated to a hard block in stop chain hooks
+# downstream of detectors.sh.
+if [ "$SENIOR_CONSULT_DEBT" = "consult-debt" ]; then
+  echo "[senior_consult_debt] design-space changes shipped without "\
+"consulting the buddy. Checkpoint via i/consult OR explicitly note "\
+"why solo was right. (Currently informational — see "\
+"BUDDY_SYSTEM.md wisdom section.)" >&2
+fi

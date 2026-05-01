@@ -43,6 +43,7 @@ DETECTORS = [
     ("early_stop", "early_stop"),
     ("exhaust_check", "exhaust_check"),
     ("scope_escape", "scope_escape"),
+    ("senior_consult_debt", "senior_consult_debt"),
 ]
 
 

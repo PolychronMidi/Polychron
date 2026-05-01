@@ -265,11 +265,17 @@ who built this paradigm) during a review consult, paraphrased:
   time (see open question 8).
 - **Consulting is opt-out for design-space changes, not opt-in.**
   When the turn touches files in the buddy paradigm's own design
-  space (this doc, `buddy_handoff.py`, `buddy_init.sh`, `i/consult`,
+  space (this doc, `buddy_handoff.py`, `buddy_dispatcher.py`,
+  `buddy_spawn.py`, `buddy_init.sh`, `post_hooks.sh`, `i/consult`,
   `i/handoff`), checkpoint with a consult before declaring done.
-  Solo work in this code area is the failure mode. (Detector:
-  `tools/HME/scripts/senior_consult_debt.py` — proposed but not
-  built; fire is meant to be soft/informational at first.)
+  Solo work in this code area is the failure mode. **Detector:**
+  `tools/HME/scripts/detectors/senior_consult_debt.py` — wired into
+  the Stop-hook chain via `run_all.py`'s detector list and
+  `detectors.sh`'s verdict parser. Fires informational on first
+  hit (stderr reminder); elevate to a hard block if the pattern
+  recurs. The detector matches `i/consult` invocations across the
+  turn's tool_use events; an absent invocation against a
+  design-space edit is what trips the verdict.
 
 This document captures what the buddy and the prompt-engineering
 experiments produced across a 145-iteration session — not as a static

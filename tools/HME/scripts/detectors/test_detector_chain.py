@@ -397,6 +397,49 @@ _CASES = [
          ),
      ],
      "ok"),
+
+    # senior_consult_debt — fires when buddy-paradigm design-space files
+    # are edited without an i/consult invocation in the same turn.
+    # Detector matches path.endswith(target), so relative paths in
+    # fixtures hit the same suffix the absolute-path edits would.
+    ("senior_consult_debt", "edit-without-consult-fires",
+     [
+         _user_msg("update the retire threshold"),
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/buddy_handoff.py",
+             "old_string": "DEFAULT_RETIRE_PCT = 90.0",
+             "new_string": "DEFAULT_RETIRE_PCT = 85.0",
+         }),
+         _assistant_msg("Done."),
+     ],
+     "consult-debt"),
+
+    ("senior_consult_debt", "edit-with-consult-passes",
+     [
+         _user_msg("update the retire threshold"),
+         _assistant_tool_use("Bash", {
+             "command": "i/consult primary=abc123 question=\"is 85 right here?\"",
+         }),
+         _assistant_tool_use("Edit", {
+             "file_path": "tools/HME/scripts/buddy_handoff.py",
+             "old_string": "DEFAULT_RETIRE_PCT = 90.0",
+             "new_string": "DEFAULT_RETIRE_PCT = 85.0",
+         }),
+         _assistant_msg("Done."),
+     ],
+     "ok"),
+
+    ("senior_consult_debt", "non-design-space-edit-passes",
+     [
+         _user_msg("rename a variable in unrelated file"),
+         _assistant_tool_use("Edit", {
+             "file_path": "src/some/unrelated.js",
+             "old_string": "x",
+             "new_string": "y",
+         }),
+         _assistant_msg("Renamed."),
+     ],
+     "ok"),
 ]
 
 
