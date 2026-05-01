@@ -42,6 +42,9 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from loc_ignore import load_patterns, is_exempt  # noqa: E402
+
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..")
 )
@@ -58,39 +61,13 @@ _LOAD_ORDER = [
     "composers", "fx", "crossLayer", "writer", "play",
 ]
 
-# Filename suffixes that mark a file as bulk data rather than executable
-# logic. These are exempt from the 200-line code-size rule but are still
-# tracked so an unusually large data file is visible.
-_DATA_SUFFIXES = (
-    "PriorsData.js",
-    "Pairs.js",
-    "Table.js",
-    "Tables.js",
-    "Constants.js",
-    "Manifest.js",
-)
+# LOC exemptions live in config/loc-ignore.txt — single source of truth
+# shared with i/evolve focus=loc and scripts/report-src-loc.js. Edit there.
+_LOC_IGNORE_PATTERNS = load_patterns()
 
 
-# Explicit per-file exemptions from the P5 (≤200 lines) rule. These files
-# are architecturally required to be single-file and bigger than the rule
-# would target — splitting them would create a worse problem than the
-# length.
-#   fullBootstrap.js  — the single entry point orchestrating the boot
-#                       sequence; helpers are declared here so the order
-#                       is read top-to-bottom in one file.
-#   config.js         — conductor configuration surface; extracting
-#                       sections would scatter one coherent map across
-#                       multiple files for no readability gain.
-# Paths are project-relative, same form as the audit's output.
-_P5_EXEMPT = {
-    "src/play/fullBootstrap.js",
-    "src/conductor/config.js",
-}
-
-
-def _is_data_file(path):
-    name = os.path.basename(path)
-    return name.endswith(_DATA_SUFFIXES)
+def _is_loc_exempt(rel_path):
+    return is_exempt(rel_path, _LOC_IGNORE_PATTERNS)
 
 # Directories we do not walk when counting files.
 _SKIP_DIRS = {"node_modules", ".git", "__pycache__"}
@@ -197,12 +174,12 @@ def audit_subsystem(subsystem_dir):
     # Separate data files from code files — the 200-line rule is about code
     # coherence, not about data-table size. Data files are tracked so the
     # large ones are still visible to a reader.
-    code_sizes = [(p, n) for p, n in sizes if not _is_data_file(p)]
-    data_files = [(_rel(p), n) for p, n in sizes if _is_data_file(p)]
+    code_sizes = [(p, n) for p, n in sizes if not _is_loc_exempt(_rel(p))]
+    data_files = [(_rel(p), n) for p, n in sizes if _is_loc_exempt(_rel(p))]
     oversize_warn = [(_rel(p), n) for p, n in code_sizes
-                     if _LOC_WARN < n <= _LOC_CRITICAL and _rel(p) not in _P5_EXEMPT]
+                     if _LOC_WARN < n <= _LOC_CRITICAL]
     oversize_critical = [(_rel(p), n) for p, n in code_sizes
-                         if n > _LOC_CRITICAL and _rel(p) not in _P5_EXEMPT]
+                         if n > _LOC_CRITICAL]
 
     index_path = os.path.join(subsystem_dir, "index.js")
     has_index = os.path.isfile(index_path)

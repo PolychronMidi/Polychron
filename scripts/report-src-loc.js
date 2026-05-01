@@ -1,8 +1,42 @@
-// Walks the `src` directory and prints files sorted by lines of code (descending).
+// Walks the `src` directory and prints files sorted by lines of code.
+// Honors `config/loc-ignore.txt` (gitignore-style) — same source consumed
+// by `scripts/audit-core-principles.py` and `i/evolve focus=loc`. Exempt
+// files print with an `[exempt]` tag instead of being hidden so the report
+// stays visible while explicit waivers are obvious.
 
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+
+function _loadLocIgnorePatterns() {
+  const ignoreFile = path.resolve(__dirname, '..', 'config', 'loc-ignore.txt');
+  if (!fs.existsSync(ignoreFile)) return [];
+  const out = [];
+  for (const raw of fs.readFileSync(ignoreFile, 'utf8').split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const negate = line.startsWith('!');
+    const body = negate ? line.slice(1) : line;
+    let regex;
+    if (body.endsWith('/')) {
+      const escaped = body.slice(0, -1).replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*');
+      regex = new RegExp('(^|/)' + escaped + '(/|$)');
+    } else {
+      const escaped = body.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*');
+      regex = new RegExp('(^|/)' + escaped + '$');
+    }
+    out.push({ regex, negate });
+  }
+  return out;
+}
+
+function _isLocExempt(relPath, patterns) {
+  let matched = false;
+  for (const { regex, negate } of patterns) {
+    if (regex.test(relPath)) matched = !negate;
+  }
+  return matched;
+}
 
 async function walk(dir, fileList = []) {
   const entries = await fs.promises.readdir(dir, { withFileTypes: true });
@@ -72,16 +106,18 @@ async function main() {
   const concurrency = 8;
   const counts = await countLinesForFiles(files, concurrency);
 
+  const ignorePatterns = _loadLocIgnorePatterns();
   const report = files.map((f, i) => {
     const rel = path.relative(process.cwd(), f).replace(/\\+/g, '/');
-    return { file: rel, lines: counts[i] };
+    return { file: rel, lines: counts[i], exempt: _isLocExempt(rel, ignorePatterns) };
   });
 
   // Sort ascending by line count, then alphabetically by file path for ties
   report.sort((a, b) => a.lines - b.lines || a.file.localeCompare(b.file));
 
   for (const r of report) {
-    console.log(`${r.file} - ${r.lines} ${r.lines === 1 ? 'line' : 'lines'}`);
+    const tag = r.exempt ? ' [exempt]' : '';
+    console.log(`${r.file} - ${r.lines} ${r.lines === 1 ? 'line' : 'lines'}${tag}`);
   }
 }
 

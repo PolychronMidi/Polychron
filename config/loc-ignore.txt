@@ -1,8 +1,24 @@
-# Files / directory globs exempt from the 150-350 LOC target declared in
+# Files / glob patterns exempt from the LOC target declared in
 # CLAUDE.md `Universal Principles`. Syntax: gitignore-style — one pattern
 # per line, comments start with `#`, leading `!` negates a prior match,
 # trailing `/` means directory.
 #
-# Add entries when a file genuinely earns the exemption (large data
-# manifests, generated files, vendored code, intentionally-comprehensive
-# reference docs). Default state is empty: every file targets 150-350.
+# Consumers:
+#   - scripts/audit-core-principles.py (P5 audit)
+#   - tools/HME/service/.../evolution_evolve.py (i/evolve focus=loc)
+#   - scripts/report-src-loc.js (LOC report)
+
+# Architecturally required single-file modules. Splitting these would
+# scatter one coherent map across multiple files for no readability gain.
+src/play/fullBootstrap.js
+src/conductor/config.js
+
+# Bulk data files (constants, lookup tables, prior distributions). These
+# are data-by-density, not executable logic — the LOC target doesn't
+# apply.
+*PriorsData.js
+*Pairs.js
+*Table.js
+*Tables.js
+*Constants.js
+*Manifest.js

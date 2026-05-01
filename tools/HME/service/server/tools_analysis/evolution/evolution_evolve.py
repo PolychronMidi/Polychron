@@ -137,11 +137,20 @@ def _loc_offenders(top_n: int = 8) -> str:
 
     from file_walker import walk_code_files
     from server.helpers import LINE_COUNT_TARGET, LINE_COUNT_CRITICAL
+    # Project loc-ignore list — same source consumed by audit-core-principles.py.
+    import sys as _sys, os as _os
+    _scripts_dir = _os.path.join(ctx.PROJECT_ROOT, "scripts")
+    if _scripts_dir not in _sys.path:
+        _sys.path.insert(0, _scripts_dir)
+    from loc_ignore import load_patterns as _load_loc_ignore, is_exempt as _loc_is_exempt
+    _loc_patterns = _load_loc_ignore()
 
     oversize = []
     for fpath in walk_code_files():
         rel = str(fpath).replace(ctx.PROJECT_ROOT + "/", "")
         if not rel.startswith("src/"):
+            continue
+        if _loc_is_exempt(rel, _loc_patterns):
             continue
         try:
             lc = sum(1 for _ in open(fpath, encoding="utf-8", errors="ignore"))
