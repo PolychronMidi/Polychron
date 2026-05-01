@@ -97,6 +97,50 @@ def _import_dispatcher():
     return _bd
 
 
+def _format_consults(consults: list) -> str:
+    """Render a `consults=N last=Xago` suffix for cmd_status. Empty when
+    no consults recorded — matches the prior status-line shape so seniors
+    that have never been called surface unchanged."""
+    if not consults:
+        return ""
+    last = consults[-1] if isinstance(consults[-1], dict) else {}
+    last_ts = last.get("ts") or 0
+    ago_s = max(0, int(time.time() - last_ts))
+    if ago_s < 60:
+        ago = f"{ago_s}s"
+    elif ago_s < 3600:
+        ago = f"{ago_s // 60}m"
+    elif ago_s < 86400:
+        ago = f"{ago_s // 3600}h"
+    else:
+        ago = f"{ago_s // 86400}d"
+    return f" consults={len(consults)} last={ago}ago"
+
+
+_CONSULT_HISTORY_CAP = 50  # bounded growth on senior metadata file
+
+
+def _record_consult(sid: str, question: str) -> None:
+    """Append a consult record to the senior's metadata file. Best-effort:
+    silent on read/write failure so the consult call itself isn't blocked
+    by a metadata write. Caps list at _CONSULT_HISTORY_CAP entries."""
+    senior_file = SENIORS_DIR / f"{sid}.json"
+    if not senior_file.exists():
+        return
+    try:
+        rec = json.loads(senior_file.read_text())
+        consults = rec.get("consults") or []
+        consults.append({
+            "ts": time.time(),
+            "ts_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "question_excerpt": (question or "")[:60],
+        })
+        rec["consults"] = consults[-_CONSULT_HISTORY_CAP:]
+        senior_file.write_text(json.dumps(rec, indent=2, default=str))
+    except (OSError, ValueError):
+        pass
+
+
 def _list_seniors() -> list[dict]:
     if not SENIORS_DIR.exists():
         return []
@@ -214,7 +258,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         ts = s.get("retired_at_iso", "?")
         reason = s.get("reason", "?")
         sid_short = (s.get("sid", "") or "")[:16]
-        print(f"  sid={sid_short}... retired={ts} ctx_at_retire={tk:,} reason={reason}")
+        consults_str = _format_consults(s.get("consults") or [])
+        print(f"  sid={sid_short}... retired={ts} ctx_at_retire={tk:,} "
+              f"reason={reason}{consults_str}")
     if getattr(args, "json", False):
         snapshot = {
             "ts": time.time(),
@@ -304,6 +350,11 @@ def cmd_consult(args: argparse.Namespace) -> int:
         sys.stdout.write(result.stdout)
     if result.stderr:
         sys.stderr.write(result.stderr)
+    if result.returncode == 0:
+        # Track only successful senior consults — failed invocations and
+        # consults to the active primary (no metadata file) are skipped.
+        # Surfaces heavy-consultation patterns in `i/handoff status`.
+        _record_consult(args.sid, args.question)
     return result.returncode
 
 

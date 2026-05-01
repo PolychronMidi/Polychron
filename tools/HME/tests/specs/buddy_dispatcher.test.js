@@ -1197,6 +1197,95 @@ test('buddy_handoff.py: promote mirrors to legacy pointer trio (dispatcher visib
   });
 });
 
+test('buddy_handoff.py: consult records call against senior metadata + status surfaces it', () => {
+  _withDispatcherSandbox((sandbox) => {
+    // Plant a retired senior with the schema _retire() produces.
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    const sid = 'consultable-senior';
+    fs.writeFileSync(path.join(seniorsDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low',
+      retired_at: Date.now() / 1000,
+      retired_at_iso: '2026-04-30T00:00:00Z',
+      reason: 'manual', context_at_retire: { tokens: 850000 },
+    }));
+    // Stub `claude` on PATH so we don't actually spawn a subprocess.
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho "stub-response"\nexit 0\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=is this thing on'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0, `consult failed: ${result.stderr}`);
+    // Senior metadata must now carry the consult record.
+    const rec = JSON.parse(fs.readFileSync(path.join(seniorsDir, `${sid}.json`), 'utf8'));
+    assert.ok(Array.isArray(rec.consults), 'consults array recorded on senior file');
+    assert.strictEqual(rec.consults.length, 1, 'one consult appended');
+    assert.strictEqual(rec.consults[0].question_excerpt, 'is this thing on',
+      'question excerpt captured (≤60 chars)');
+    assert.ok(typeof rec.consults[0].ts === 'number', 'consult ts is a numeric epoch');
+    // status output must surface the consults count + recency suffix.
+    const statusResult = _runHandoff(sandbox, ['status']);
+    assert.strictEqual(statusResult.status, 0);
+    assert.match(statusResult.stdout, /consults=1 last=\d+[smhd]ago/,
+      'status surfaces consults count + relative-time-ago for the senior');
+  });
+});
+
+test('buddy_handoff.py: consult to unknown sid does not create a metadata file (no spurious record)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    // No senior file exists. Consult should warn, invoke claude, and skip
+    // the metadata write (we don't fabricate a senior record).
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho "stub-response"\nexit 0\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=nobody-knows-this-sid', '--question=hi'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0);
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    if (fs.existsSync(seniorsDir)) {
+      const files = fs.readdirSync(seniorsDir).filter((f) => f.endsWith('.json'));
+      assert.deepStrictEqual(files, [],
+        'no senior metadata file created for unknown sid');
+    }
+  });
+});
+
+test('buddy_handoff.py: consult history is capped at 50 entries (bounded growth)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    const sid = 'busy-senior';
+    // Pre-populate with 50 prior consults so the next call should rotate
+    // the oldest off rather than grow to 51.
+    const prior = [];
+    for (let i = 0; i < 50; i += 1) {
+      prior.push({ ts: 1000 + i, ts_iso: 'old', question_excerpt: `q${i}` });
+    }
+    fs.writeFileSync(path.join(seniorsDir, `${sid}.json`), JSON.stringify({
+      sid, floor: 'easy', effort_floor: 'low', consults: prior,
+    }));
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=' + sid, '--question=will this push past the cap'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0);
+    const rec = JSON.parse(fs.readFileSync(path.join(seniorsDir, `${sid}.json`), 'utf8'));
+    assert.strictEqual(rec.consults.length, 50, 'consults array capped at 50');
+    // Oldest entry must have rotated off — q0 is gone, q1 is now first.
+    assert.strictEqual(rec.consults[0].question_excerpt, 'q1',
+      'oldest consult rotated off when cap reached');
+    assert.strictEqual(rec.consults[49].question_excerpt, 'will this push past the cap',
+      'newest consult appended at end');
+  });
+});
+
 test('buddy_init.sh: HANDOFF=1 + no primary.sid + stale legacy.sid spawns fresh anyway', () => {
   // Regression: previously, a stale tmp/hme-buddy.sid from a pre-paradigm
   // session wedged the inaugural spawn — _spawn_buddy short-circuited on

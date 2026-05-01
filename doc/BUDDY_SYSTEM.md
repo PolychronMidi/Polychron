@@ -111,13 +111,17 @@ the rationale:
    (assume archived = no longer growing) or should it surface a
    different sentinel that the dispatcher can treat as "unknown but
    keep using"?
-3. **Consult tracking.** `i/consult` doesn't currently record
-   call-count or last-used-at per senior. Heavy consultation patterns
-   are invisible to the operator until the senior crosses threshold.
-   Question: should `i/handoff status` surface consult activity per
-   senior (e.g. `consults=12 last=5m ago`), and should that data
-   affect retire decisions (a heavily-consulted senior might warrant
-   a lower threshold)?
+3. **Consult tracking — feed-into-retire still open.** Resolved (first
+   half): `i/consult` now appends `{ts, ts_iso, question_excerpt}` to
+   the senior's `consults` array (cap 50, bounded growth) on every
+   successful invocation. `i/handoff status` surfaces a
+   `consults=N last=Xago` suffix per senior. Open question
+   (downstream): should heavy consultation lower the senior's effective
+   retire threshold? Now that the data is captured, the controller can
+   be designed against real usage rather than guesses. Suggested
+   shape: a senior with `consults>=10 within 1h` could trigger a
+   warning at 80% rather than 90%, since the consult cadence implies
+   the next call is imminent.
 4. **Specialization carry-forward.** Inherited primaries default to
    `floor=easy` (fully dynamic). When a primary retires after a
    session of mostly-hard tasks, that earned specialization is lost
