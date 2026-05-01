@@ -930,6 +930,30 @@ def cmd_drain(args: argparse.Namespace) -> int:
     swept = _sweep_orphans(sweep_run_id)
     if swept:
         print(f"buddy_dispatcher: recovered {swept} orphan task(s) from prior run(s)")
+    # Lazy-spawn (BUDDY_SYSTEM.md option D for Q1): under HANDOFF=1, if
+    # primary.sid is empty (e.g. just retired mid-session), trigger
+    # ensure_primary BEFORE discovery so drain has a buddy to route to.
+    # Status-only callers (`i/dispatch status` at the other call site,
+    # line ~1539) deliberately skip this — they should reflect actual
+    # state, not silently mutate it. The 10-30s spawn cost lands as
+    # first-task latency, which would otherwise be paid through ephemeral
+    # fall-through anyway — same total cost, different code path.
+    if os.environ.get("BUDDY_HANDOFF") == "1":
+        primary_sid_file = PROJECT_ROOT / "tmp" / "hme-buddy-primary.sid"
+        primary_alive = (primary_sid_file.exists()
+                         and primary_sid_file.read_text().strip() != "")
+        if not primary_alive:
+            handoff_script = Path(__file__).parent / "buddy_handoff.py"
+            if handoff_script.exists():
+                try:
+                    subprocess.run(
+                        ["python3", str(handoff_script),
+                         "ensure_primary", "--wait=30"],
+                        capture_output=True, timeout=35,
+                        env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
+                    )
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
     buddies = _list_buddies()
     if not buddies:
         _log_error("drain: no buddies registered (no tmp/hme-buddy*.sid found)")

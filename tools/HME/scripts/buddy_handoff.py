@@ -329,6 +329,54 @@ def cmd_retire(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ensure_primary(args: argparse.Namespace) -> int:
+    """Lazy-spawn a primary if none exists. Idempotent — when primary.sid
+    is already alive, returns 0 immediately without invoking buddy_init.sh.
+
+    Otherwise runs buddy_init.sh under BUDDY_HANDOFF=1 (which spawns a
+    fresh `claude -p` and records the new sid as the inaugural primary)
+    and polls primary.sid up to --wait seconds for it to appear.
+
+    This is option D from BUDDY_SYSTEM.md Q1: lazy spawn at next-task
+    rather than spawn-at-retire (option B) or wait-for-SessionStart
+    (option A). Pareto-better than both: no spawn cost if the session
+    ends quietly; no coverage gap once work resumes."""
+    primary = _read_primary()
+    if primary is not None:
+        print(f"primary already alive: sid={primary['sid']}")
+        return 0
+    # Resolve relative to THIS script file (not PROJECT_ROOT) so the
+    # helper works under sandboxed tests where the repo's script tree
+    # isn't mirrored into the test PROJECT_ROOT. Same pattern
+    # buddy_init.sh uses to find buddy_handoff.py.
+    init_script = (Path(__file__).parent.parent / "hooks"
+                   / "helpers" / "buddy_init.sh").resolve()
+    if not init_script.exists():
+        print(f"buddy_init.sh missing at {init_script}", file=sys.stderr)
+        return 1
+    import subprocess
+    spawn_env = {**os.environ,
+                 "BUDDY_HANDOFF": "1",
+                 "BUDDY_SYSTEM": "1",
+                 "PROJECT_ROOT": str(PROJECT_ROOT)}
+    # buddy_init.sh disowns the spawn so it returns immediately; the sid
+    # file appears asynchronously when the claude -p call completes.
+    subprocess.run(["bash", str(init_script)], env=spawn_env,
+                   capture_output=True, timeout=30)
+    wait_seconds = args.wait if getattr(args, "wait", None) else 30
+    deadline = time.time() + wait_seconds
+    while time.time() < deadline:
+        primary = _read_primary()
+        if primary is not None:
+            print(f"spawned primary: sid={primary['sid']} "
+                  f"floor={primary['floor']} effort={primary['effort_floor']}")
+            return 0
+        time.sleep(0.5)
+    print(f"timed out after {wait_seconds}s waiting for primary.sid to "
+          f"appear; spawn may still be in flight", file=sys.stderr)
+    return 1
+
+
 def cmd_promote(args: argparse.Namespace) -> int:
     if not args.sid:
         print("--sid required")
@@ -460,6 +508,13 @@ def main() -> int:
     p_consult.add_argument("--sid", required=True)
     p_consult.add_argument("--question", required=True)
     p_consult.set_defaults(func=cmd_consult)
+
+    p_ensure = sub.add_parser("ensure_primary",
+                              help="lazy-spawn a primary if none exists "
+                                   "(idempotent; option D from BUDDY_SYSTEM.md)")
+    p_ensure.add_argument("--wait", type=int, default=30,
+                          help="seconds to wait for spawn before timing out (default 30)")
+    p_ensure.set_defaults(func=cmd_ensure_primary)
 
     args = parser.parse_args()
     return args.func(args)

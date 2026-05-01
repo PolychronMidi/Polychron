@@ -106,26 +106,34 @@ idle time and the inherited buddy (whether they're still the active
 primary or have since retired into the senior pool) should expect to
 be consulted on the rationale:
 
-1. **Hot-path auto-retire (primary path) — partial resolution + D
-   direction settled.** `auto_retire_check` previously had no caller
-   — defined but never fired except at SessionStart, so the 90%
-   safety claim was documentation, not enforcement. Now wired into
-   the Stop-hook chain (`tools/HME/hooks/lifecycle/stop/post_hooks.sh`)
-   so it fires per-turn under `BUDDY_HANDOFF=1`. Per-turn is safe
-   because the turn just finished — no in-flight tasks to disrupt.
-   **Replacement-on-retire — direction (D, per 0e7fbf4d):** when
-   primary retires, pointer is cleared (status quo); the *next* task
-   to arrive without a primary triggers a lazy fresh spawn. This is
-   pareto-better than spawn-at-retire (no spawn cost if session ends
-   quietly), pareto-better than wait-for-SessionStart (no coverage
-   gap once work resumes), and avoids parent-becomes-primary (which
-   collapses two timelines and defeats the persistence-across-parent
-   premise of the paradigm). Implementation: extract the spawn block
-   from `buddy_init.sh` into a shared `_ensure_primary()` helper;
-   call from both SessionStart and the dispatcher's pre-task check
-   (`_pick_buddy_for_task` or upstream of it). Not yet built — open
-   piece. The 22MB-transcript spin-up cost (~10-20s) becomes the
-   first task's latency rather than reaching dispatcher fall-through.
+1. **Hot-path auto-retire (primary path) — RESOLVED.**
+   `auto_retire_check` previously had no caller; the 90% safety
+   claim was documentation, not enforcement. Now wired into the
+   Stop-hook chain at
+   [`tools/HME/hooks/lifecycle/stop/post_hooks.sh`](../tools/HME/hooks/lifecycle/stop/post_hooks.sh)
+   (per-turn fire under `BUDDY_HANDOFF=1`, subshell-isolated with
+   `|| true` so optional-check failure can't block turn end).
+   **Replacement-on-retire — option D shipped:** when primary
+   retires, pointer is cleared. The next dispatcher drain (or a
+   manual `i/handoff ensure_primary` call) lazily spawns a fresh
+   primary via `cmd_ensure_primary` in
+   [`buddy_handoff.py`](../tools/HME/scripts/buddy_handoff.py),
+   which invokes `buddy_init.sh` and polls `primary.sid` for up to
+   `--wait` seconds. The 10-30s spawn cost lands as first-task
+   latency, which would otherwise be paid through ephemeral
+   fall-through anyway — same total cost, different code path.
+   Buddy_dispatcher's drain (line 933 onward) now performs the
+   ensure_primary check before discovery.
+
+   Open follow-ups (not blockers): cross-turn pipeline runs that
+   span multiple Claude turns may still want a dispatcher-internal
+   between-tasks check (currently the per-turn Stop-hook fire is
+   the only mid-session retire trigger); and `_pick_buddy_for_task`
+   itself doesn't ensure_primary — only the drain entry does. If
+   tasks arrive faster than a drain cycle's reset, that's the next
+   tightening. (Behavior under retire mid-dispatch: in-flight
+   tasks complete on the soon-to-retire primary; subsequent tasks
+   get the fresh primary the next drain spawns.)
 2. **Transcript GC.** Claude Code's own session GC may rotate or
    archive a senior's transcript JSONL. `_buddy_context_used` returns
    `null` on missing transcripts; status shows `ctx=?`. Question:

@@ -1330,6 +1330,53 @@ test('buddy_handoff.py: consult emits caller_sid=None debug warning when no prim
   });
 });
 
+test('buddy_handoff.py: ensure_primary is idempotent when primary already alive', () => {
+  // Option D from BUDDY_SYSTEM.md Q1: lazy-spawn helper. The "already
+  // alive" path must short-circuit without invoking buddy_init.sh —
+  // calling it from the dispatcher's pre-task path means it fires on
+  // every drain; unnecessary spawn-attempts there would be wasteful.
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'),
+      'already-alive\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.floor'), 'easy\n');
+    fs.writeFileSync(path.join(sandbox, 'tmp', 'hme-buddy-primary.effort_floor'), 'low\n');
+    const result = _runHandoff(sandbox, ['ensure_primary']);
+    assert.strictEqual(result.status, 0, `ensure_primary failed: ${result.stderr}`);
+    assert.match(result.stdout, /primary already alive: sid=already-alive/,
+      'idempotent: existing primary is reported, not respawned');
+  });
+});
+
+test('buddy_handoff.py: ensure_primary spawns and records new primary when none exists', () => {
+  // The "no primary" path: ensure_primary invokes buddy_init.sh which
+  // (under HANDOFF=1 fall-through) spawns fresh and records the new sid
+  // as the inaugural primary. Polls primary.sid up to --wait seconds.
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_HANDOFF=1\nBUDDY_MODEL_FLOORS=auto\n');
+    // Stub claude on PATH so the spawn appears to succeed quickly.
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\n' +
+      'cat <<EOF\n' +
+      '[{"type":"system","subtype":"init","session_id":"lazy-spawned-$$"}]\n' +
+      'EOF\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox, ['ensure_primary', '--wait=10'],
+      { PATH: `${stubBin}:${process.env.PATH}`,
+        BUDDY_SYSTEM: '1', BUDDY_HANDOFF: '1', BUDDY_COUNT: '1',
+        BUDDY_MODEL_FLOORS: 'auto' });
+    assert.strictEqual(result.status, 0,
+      `ensure_primary failed: stderr=${result.stderr} stdout=${result.stdout}`);
+    assert.match(result.stdout, /spawned primary: sid=lazy-spawned-\d+/,
+      'fresh sid recorded as the inaugural primary');
+    // Primary pointers must be present after the spawn.
+    const primary = fs.readFileSync(
+      path.join(sandbox, 'tmp', 'hme-buddy-primary.sid'), 'utf8').trim();
+    assert.match(primary, /^lazy-spawned-\d+$/);
+  });
+});
+
 test('buddy_handoff.py: status flags senior as [stale] when transcript JSONL is missing', () => {
   // Claude Code rotates / purges old session transcripts. Without
   // detection, _list_seniors returns dead seniors as if alive and
