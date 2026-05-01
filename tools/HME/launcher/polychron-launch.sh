@@ -149,6 +149,72 @@ if [ "${HME_AUTOLAUNCH_LLAMA:-0}" = "1" ]; then
   echo "[launch]   coder llama   → ${_cod_ok}" >&2
 fi
 
+# 4. ANTHROPIC_BASE_URL bridge
+#
+# .env's ANTHROPIC_BASE_URL is sourced by HME's own scripts but NOT by the
+# VSCode Claude Code extension (or any GUI process not launched from a
+# .env-aware shell). Without this bridge, the extension's child claude
+# binary goes directly to api.anthropic.com, bypassing the proxy and all
+# of HME's middleware (status injection, jurisdiction, lifesaver, etc.).
+#
+# Two-pronged fix:
+#   a) Merge ANTHROPIC_BASE_URL into .vscode/settings.json's
+#      terminal.integrated.env.{linux,osx,windows} — covers integrated
+#      terminal launches of claude (e.g. `claude -p` from VSCode terminal).
+#   b) Detect already-running claude binaries that lack the var in their
+#      env and warn with a one-line fix command. Covers the case where
+#      VSCode itself was launched without sourcing .env, so the extension
+#      inherits a clean env and child binaries do too.
+
+if [ -n "${ANTHROPIC_BASE_URL:-}" ]; then
+  _vscode_dir="$PROJECT_ROOT/.vscode"
+  mkdir -p "$_vscode_dir"
+  python3 - "$_vscode_dir/settings.json" "$ANTHROPIC_BASE_URL" <<'PYEOF' || true
+import json, sys
+path, base_url = sys.argv[1], sys.argv[2]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    data = {}
+changed = False
+for key in ("terminal.integrated.env.linux",
+            "terminal.integrated.env.osx",
+            "terminal.integrated.env.windows"):
+    env_block = data.setdefault(key, {})
+    if env_block.get("ANTHROPIC_BASE_URL") != base_url:
+        env_block["ANTHROPIC_BASE_URL"] = base_url
+        changed = True
+if changed:
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"[launch] .vscode/settings.json updated — "
+          f"terminal env injects ANTHROPIC_BASE_URL={base_url}",
+          file=sys.stderr)
+else:
+    print(f"[launch] .vscode/settings.json already injects "
+          f"ANTHROPIC_BASE_URL", file=sys.stderr)
+PYEOF
+
+  # Detection: any running claude binary missing the env var?
+  _bypass_pids=""
+  for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do
+    if ! tr '\0' '\n' < "/proc/$_pid/environ" 2>/dev/null | \
+         grep -q "^ANTHROPIC_BASE_URL="; then
+      _bypass_pids="$_bypass_pids $_pid"
+    fi
+  done
+  if [ -n "$_bypass_pids" ]; then
+    echo "[launch] WARN: claude binary(s) running WITHOUT" \
+         "ANTHROPIC_BASE_URL — bypassing proxy:" >&2
+    echo "[launch]   PIDs:$_bypass_pids" >&2
+    echo "[launch]   These won't route through HME middleware." >&2
+    echo "[launch]   Fix: close VSCode, then relaunch from a shell" \
+         "with .env sourced:" >&2
+    echo "[launch]     set -a; source .env; set +a; code ." >&2
+  fi
+fi
+
 echo "[launch] stack up — PIDs logged to ${PID_FILE}" >&2
 # Mark success so the EXIT trap leaves the stack alone.
 _LAUNCH_OK=1
