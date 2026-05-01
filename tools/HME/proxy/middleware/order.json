@@ -1,5 +1,5 @@
 {
-  "_comment": "Explicit middleware load order — replaces filesystem-inode-dependent readdirSync order. Earlier entries run first within each phase (onRequest, onToolResult). Files not listed here are loaded AFTER the manifest, alphabetically, with a warning. Add new middleware to this list at the position that matches its dependencies.",
+  "_comment": "Explicit middleware load order \u2014 replaces filesystem-inode-dependent readdirSync order. Earlier entries run first within each phase (onRequest, onToolResult). Files not listed here are loaded AFTER the manifest, alphabetically, with a warning. Add new middleware to this list at the position that matches its dependencies.",
   "_categories": {
     "context-injection": "Builds the prompt before request hits Anthropic",
     "post-tool-trace": "Records what just happened (state, KB, activity)",
@@ -7,8 +7,8 @@
     "lifecycle": "Boundary actions like autocommit"
   },
   "order": [
-    "dump_system.js",
     "replace_system.js",
+    "dump_system.js",
     "memory_redirect.js",
     "dominance_prefetch.js",
     "secret_sanitizer.js",
