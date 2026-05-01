@@ -1233,6 +1233,28 @@ test('buddy_handoff.py: consult records call against senior metadata + status su
   });
 });
 
+test('buddy_handoff.py: status omits consults suffix for a senior with no consult history', () => {
+  // Inverse-case lock: prevents drift where _format_consults starts
+  // emitting `consults=0 last=...ago` for never-consulted seniors. The
+  // suffix must only appear when there's real activity to surface.
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'never-called-senior.json'), JSON.stringify({
+      sid: 'never-called-senior', floor: 'easy', effort_floor: 'low',
+      retired_at_iso: '2026-04-30T00:00:00Z', reason: 'manual',
+      context_at_retire: { tokens: 700000 },
+      // No `consults` key — matches the schema before the field existed.
+    }));
+    const result = _runHandoff(sandbox, ['status']);
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /sid=never-called-sen/,
+      'senior must appear in status listing');
+    assert.doesNotMatch(result.stdout, /consults=/,
+      'status must NOT show consults= suffix for a senior with no recorded consults');
+  });
+});
+
 test('buddy_handoff.py: consult to unknown sid does not create a metadata file (no spurious record)', () => {
   _withDispatcherSandbox((sandbox) => {
     // No senior file exists. Consult should warn, invoke claude, and skip

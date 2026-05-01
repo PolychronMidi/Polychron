@@ -111,25 +111,14 @@ the rationale:
    (assume archived = no longer growing) or should it surface a
    different sentinel that the dispatcher can treat as "unknown but
    keep using"?
-3. **Consult tracking — feed-into-retire still open.** Resolved (first
-   half): `i/consult` now appends `{ts, ts_iso, question_excerpt}` to
-   the senior's `consults` array (cap 50, bounded growth) on every
-   successful invocation. `i/handoff status` surfaces a
-   `consults=N last=Xago` suffix per senior. Open question
-   (downstream): should heavy consultation lower the senior's effective
-   retire threshold? Now that the data is captured, the controller can
-   be designed against real usage rather than guesses. Suggested
-   shape: a senior with `consults>=10 within 1h` could trigger a
-   warning at 80% rather than 90%, since the consult cadence implies
-   the next call is imminent.
-4. **Specialization carry-forward.** Inherited primaries default to
+3. **Specialization carry-forward.** Inherited primaries default to
    `floor=easy` (fully dynamic). When a primary retires after a
    session of mostly-hard tasks, that earned specialization is lost
    on the next primary's bootstrap. Question: should `_retire`
    measure the actual tier distribution of the retiring primary's
    work and stamp the next inaugural primary with a derived floor,
    or is "fresh primary defaults dynamic" the right design?
-5. **Dynamic per-tier override near retirement.** Currently
+4. **Dynamic per-tier override near retirement.** Currently
    `HME_DISPATCH_SYNTHESIS_TIERS` is static (e.g. `easy`). When the
    primary's context approaches `BUDDY_RETIRE_PCT`, every routed
    medium/hard task pushes it closer to forced retirement. Question:
@@ -137,6 +126,17 @@ the rationale:
    `medium`) when ctx > 75% so the remaining quota is reserved for
    hard problems only? Mechanism could be a single read of the
    primary's context % at the start of each `_pick_buddy_for_task`.
+5. **Consult-driven retire threshold.** Now that consult activity is
+   tracked per senior (`consults: [{ts, ts_iso, question_excerpt}]`,
+   capped at 50 entries; surfaced as `consults=N last=Xago` in
+   `i/handoff status`), the data exists to lower a heavily-consulted
+   senior's effective retire threshold. Question: should a senior
+   with `consults>=K within 1h` trigger an earlier warning (e.g. 80%
+   instead of 90%), since consult cadence implies the next call is
+   imminent? Open: pick K, decide whether the trigger is a warning
+   only or also forces retire. Companion to question 1
+   (hot-path auto-retire) — the answer there shapes whether seniors
+   can retire mid-session at all.
 
 Anyone implementing one of these should update both this section
 (remove the question, document the answer) and the test file with a
