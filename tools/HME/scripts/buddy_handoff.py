@@ -440,6 +440,37 @@ def cmd_consult(args: argparse.Namespace) -> int:
         role = "senior"
     else:
         role = "buddy"
+    # Q7 resolution: per-sid lockfile prevents concurrent consults from
+    # invoking `claude --resume` on the same session simultaneously
+    # (re-entrancy not guaranteed). Stale-detection: if a lockfile is
+    # older than the maximum reasonable consult duration (1 hour —
+    # well past the dynamic timeout's worst case), assume the prior
+    # holder crashed and reclaim. Lockfile is best-effort: a TOCTOU
+    # race between two consults ~1ms apart could let both through, but
+    # the rare case is no worse than the pre-lockfile baseline.
+    lock_dir = TMP / "hme-consult-lock"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    lock_file = lock_dir / f"{args.sid}.lock"
+    if lock_file.exists():
+        try:
+            lock_age = time.time() - lock_file.stat().st_mtime
+        except OSError:
+            lock_age = 0
+        if lock_age < 3600:
+            print(f"# consult locked: another consult to {args.sid} in "
+                  f"flight (lock age {int(lock_age)}s); refuse to "
+                  f"double-invoke claude --resume on the same session",
+                  file=sys.stderr)
+            return 3
+        # Stale lock — prior consult must have crashed.
+        try:
+            lock_file.unlink()
+        except OSError:
+            pass
+    try:
+        lock_file.write_text(f"{os.getpid()}\n{time.time()}\n")
+    except OSError:
+        pass  # best-effort lock; proceed without if filesystem refuses
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
     # Dynamic timeout = max(floor, resume_cost + response_budget):
     #   - floor: 1800s (30 min) for small buddies and stale-senior fallback.
@@ -476,6 +507,13 @@ def cmd_consult(args: argparse.Namespace) -> int:
         # consults to the active primary (no metadata file) are skipped.
         # Surfaces heavy-consultation patterns in `i/handoff status`.
         _record_consult(args.sid, args.question)
+    # Release lock regardless of outcome (success, claude failure, timeout
+    # — all should free the slot for retry).
+    try:
+        if lock_file.exists():
+            lock_file.unlink()
+    except OSError:
+        pass
     return result.returncode
 
 

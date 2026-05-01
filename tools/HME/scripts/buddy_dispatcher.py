@@ -989,6 +989,31 @@ def cmd_drain(args: argparse.Namespace) -> int:
         pending = sorted(QUEUE_PENDING.glob("*.json"))
         if not pending:
             break
+        # Mid-drain re-check (BUDDY_SYSTEM.md Q1 followup): re-list
+        # buddies each iteration so a primary that went away between
+        # iterations (manual retire, claude-cli crash) doesn't leave the
+        # drain dispatching to a dead session. Cheap — _list_buddies
+        # reads a handful of files. If empty under HANDOFF=1, lazy-spawn
+        # a fresh primary and re-list. If still empty, abort the drain
+        # cleanly and let the next drain pick up the remaining tasks.
+        buddies = _list_buddies()
+        if not buddies and os.environ.get("BUDDY_HANDOFF") == "1":
+            handoff_script = Path(__file__).parent / "buddy_handoff.py"
+            if handoff_script.exists():
+                try:
+                    subprocess.run(
+                        ["python3", str(handoff_script), "ensure_primary"],
+                        capture_output=True, timeout=180,
+                        env={**os.environ, "PROJECT_ROOT": str(PROJECT_ROOT)},
+                    )
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+            buddies = _list_buddies()
+        if not buddies:
+            _log_error("drain: buddies list empty mid-drain after lazy "
+                       "spawn attempt; aborting cleanly so the next drain "
+                       "can retry")
+            break
         progressed = False
         for task_path in pending:
             try:
