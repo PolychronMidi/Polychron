@@ -267,7 +267,13 @@ test('i/learn action=suggest_predecessors returns ranked similarity matches', ()
     'content=per-subtag verifier scores tracked against bands proposed from ground-truth verdicts',
   ], {
     encoding: 'utf8',
-    timeout: 30000,
+    // 30s timeout flaked at the edge whenever the embedder wasn't
+    // already warm (e.g. immediately after a `clear_index` rebuild
+    // or worker restart — first call costs ~25-30s for embedder
+    // cold-start). 60s buys headroom while still failing fast on
+    // real hangs. Direct manual invocation confirms the call itself
+    // returns within ~30s when the embedder warms.
+    timeout: 60000,
     cwd: PROJECT_ROOT,
     env: { ...process.env, PROJECT_ROOT },
   });
