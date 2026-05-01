@@ -40,10 +40,9 @@ moduleLifecycle.declare({
     throw new Error('metaProfiles: metaProfileDefinitions must define a "default" profile (scaleFactor neutral point)');
   }
 
-  // Load three-scope custom profiles from .hme/metaprofiles/. Project
-  // overrides global; built-ins are baseline. New names register; same
-  // names override (lets a project tweak a built-in's axis values
-  // without forking the codebase).
+  // Load custom profiles from config/metaprofiles/. Built-ins are
+  // baseline; new names register; same names override (lets a project
+  // tweak a built-in's axis values without forking the codebase).
   if (typeof metaProfileDefinitions.loadCustomProfiles === 'function') {
     metaProfileDefinitions.loadCustomProfiles();
   }

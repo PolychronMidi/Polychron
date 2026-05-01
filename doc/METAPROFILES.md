@@ -210,13 +210,13 @@ The 6 axes (regime / coupling / trust / tension / energy / phase) are scaling la
 | `disableControllers` | `string[]` | `pairGainCeilingController.updatePair` short-circuits when `metaProfiles.isControllerDisabled('pair_gain_ceiling')` returns true. `meditative` lists both `antagonism_bridges` (Python-side via metaprofile-active.json) and `pair_gain_ceiling` (JS-side gated). | Subtractive — silences entire subsystems instead of just damping them. |
 | `couplingPairs` | `[[axisA, axisB], ...]` | `pairGainCeilingController.getPairState` lerps prescribed pairs' initial ceiling 50% toward maxCeiling. Persisted in `output/metrics/metaprofile-active.json` so `coupling_bridges.py` can consult. | Prescribes coupling topology directly instead of letting it emerge from runtime correlation. |
 
-### Three-scope custom registries
+### Custom registries
 
-`metaProfileDefinitions.loadCustomProfiles()` reads `*.json` from `.hme/metaprofiles/` (project-local) at module load. Custom profiles register new names or override built-in axis values without forking the codebase. Each file is a single profile object using the same schema (including `inherits` / `compose`).
+`metaProfileDefinitions.loadCustomProfiles()` reads `*.json` from `config/metaprofiles/` at module load. Custom profiles register new names or override built-in axis values without forking the codebase. Each file is a single profile object using the same schema (including `inherits` / `compose`).
 
 ```bash
-mkdir -p .hme/metaprofiles
-echo '{"name":"my_drift","inherits":"atmospheric","tension":{"shape":"flat","floor":0.10,"ceiling":0.50}}' > .hme/metaprofiles/my_drift.json
+mkdir -p config/metaprofiles
+echo '{"name":"my_drift","inherits":"atmospheric","tension":{"shape":"flat","floor":0.10,"ceiling":0.50}}' > config/metaprofiles/my_drift.json
 ```
 
 ## Implementation
@@ -226,7 +226,7 @@ echo '{"name":"my_drift","inherits":"atmospheric","tension":{"shape":"flat","flo
 ```
 src/conductor/metaProfiles.js                  — registry, loader, scaleFactor, dwell, envelope/trigger/attribution
 src/conductor/metaProfileDefinitions.js        — built-in definitions + schema validator + resolver
-.hme/metaprofiles/*.json                       — project-local custom profiles (loaded at boot)
+config/metaprofiles/*.json                     — project-local custom profiles (loaded at boot)
 output/metrics/metaprofile-active.json         — current active profile (atomic write)
 output/metrics/metaprofile-history.jsonl       — every transition this run, append-only
 output/metrics/metaprofile-attribution.jsonl   — per-section attribution (profile + score) for empirical tuning

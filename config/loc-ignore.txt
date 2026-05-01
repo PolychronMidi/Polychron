@@ -1,0 +1,8 @@
+# Files / directory globs exempt from the 150-350 LOC target declared in
+# CLAUDE.md `Universal Principles`. Syntax: gitignore-style — one pattern
+# per line, comments start with `#`, leading `!` negates a prior match,
+# trailing `/` means directory.
+#
+# Add entries when a file genuinely earns the exemption (large data
+# manifests, generated files, vendored code, intentionally-comprehensive
+# reference docs). Default state is empty: every file targets 150-350.

@@ -8,7 +8,7 @@ const os = require('os');
 const config = require('../../policies/config');
 
 // Tests use a sandboxed PROJECT_ROOT under /tmp so they don't touch the
-// real .hme/ directory. Each test resets module-level cache afterwards.
+// real config/ directory. Each test resets module-level cache afterwards.
 
 function _withSandbox(fn) {
   return async () => {
@@ -47,42 +47,42 @@ test('config: empty config defaults to defaultEnabled', _withSandbox(async (sand
 }));
 
 test('config: project file enables a policy', _withSandbox(async (sandbox, cfg) => {
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'), { enabled: ['foo'] });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), { enabled: ['foo'] });
   cfg.reset();
   assert.strictEqual(cfg.isEnabled('foo', false), true, 'enable list overrides defaultEnabled=false');
 }));
 
 test('config: project file disables a policy', _withSandbox(async (sandbox, cfg) => {
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'), { disabled: ['foo'] });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), { disabled: ['foo'] });
   cfg.reset();
   assert.strictEqual(cfg.isEnabled('foo', true), false, 'disable list overrides defaultEnabled=true');
 }));
 
 test('config: disable wins over enable when same name in both lists', _withSandbox(async (sandbox, cfg) => {
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'), { enabled: ['foo'], disabled: ['foo'] });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), { enabled: ['foo'], disabled: ['foo'] });
   cfg.reset();
   assert.strictEqual(cfg.isEnabled('foo', true), false, 'disable wins (defensive default for ambiguity)');
 }));
 
 test('config: local file overrides project file', _withSandbox(async (sandbox, cfg) => {
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'),       { enabled: ['shared'] });
-  _writeJson(path.join(sandbox, '.hme', 'policies.local.json'), { disabled: ['shared'] });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'),       { enabled: ['shared'] });
+  _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { disabled: ['shared'] });
   cfg.reset();
   // Both files merge by union; disable wins → effectively disabled.
   assert.strictEqual(cfg.isEnabled('shared', true), false);
 }));
 
 test('config: params first-defined-wins (project before local? local before project?)', _withSandbox(async (sandbox, cfg) => {
-  // Lookup order: local → project → global. First-defined-wins.
-  _writeJson(path.join(sandbox, '.hme', 'policies.local.json'), { params: { foo: { x: 'local-value' } } });
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'),       { params: { foo: { x: 'project-value' } } });
+  // Lookup order: local → project. First-defined-wins.
+  _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { params: { foo: { x: 'local-value' } } });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'),       { params: { foo: { x: 'project-value' } } });
   cfg.reset();
   const p = cfg.paramsFor('foo', { x: 'default' });
   assert.strictEqual(p.x, 'local-value', 'local scope wins over project');
 }));
 
 test('config: params merge with defaults', _withSandbox(async (sandbox, cfg) => {
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'), { params: { foo: { override: 'set' } } });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'), { params: { foo: { override: 'set' } } });
   cfg.reset();
   const p = cfg.paramsFor('foo', { defaultKey: 'kept', override: 'default' });
   assert.strictEqual(p.defaultKey, 'kept');
@@ -90,17 +90,17 @@ test('config: params merge with defaults', _withSandbox(async (sandbox, cfg) => 
 }));
 
 test('config: malformed JSON in one file does not crash; other scopes still merge', _withSandbox(async (sandbox, cfg) => {
-  fs.mkdirSync(path.join(sandbox, '.hme'), { recursive: true });
-  fs.writeFileSync(path.join(sandbox, '.hme', 'policies.json'), '{ not valid json');
-  _writeJson(path.join(sandbox, '.hme', 'policies.local.json'), { enabled: ['foo'] });
+  fs.mkdirSync(path.join(sandbox, 'config'), { recursive: true });
+  fs.writeFileSync(path.join(sandbox, 'config', 'policies.json'), '{ not valid json');
+  _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { enabled: ['foo'] });
   cfg.reset();
   // Malformed file is logged and skipped; local scope still applies.
   assert.strictEqual(cfg.isEnabled('foo', false), true);
 }));
 
 test('config: customPoliciesPath first-defined-wins', _withSandbox(async (sandbox, cfg) => {
-  _writeJson(path.join(sandbox, '.hme', 'policies.local.json'), { customPoliciesPath: 'local/path' });
-  _writeJson(path.join(sandbox, '.hme', 'policies.json'),       { customPoliciesPath: 'project/path' });
+  _writeJson(path.join(sandbox, 'config', 'policies.local.json'), { customPoliciesPath: 'local/path' });
+  _writeJson(path.join(sandbox, 'config', 'policies.json'),       { customPoliciesPath: 'project/path' });
   cfg.reset();
   const c = cfg.get();
   assert.strictEqual(c.customPoliciesPath, 'local/path');

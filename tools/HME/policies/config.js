@@ -1,12 +1,10 @@
 'use strict';
 /**
- * Three-scope policy configuration. Adapted from FailproofAI's hooks-config
- * shape. Lookup order (first-defined-wins for scalars; deduplicated union
- * for `enabledOverrides` arrays):
+ * Two-scope policy configuration. Lookup order (first-defined-wins for
+ * scalars; deduplicated union for `enabledOverrides` arrays):
  *
- *   1. {project}/.hme/policies.local.json   (developer-local overrides)
- *   2. {project}/.hme/policies.json         (project-shared config, checked in)
- *   3. ~/.hme/policies.json                 (user-global defaults)
+ *   1. {project}/config/policies.local.json (developer-local overrides; gitignored)
+ *   2. {project}/config/policies.json       (project-shared config, checked in)
  *
  * Schema:
  *   {
@@ -22,16 +20,14 @@
 
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT
   || path.resolve(__dirname, '..', '..', '..');
 
 function _scopeFiles() {
   return [
-    path.join(PROJECT_ROOT, '.hme', 'policies.local.json'),
-    path.join(PROJECT_ROOT, '.hme', 'policies.json'),
-    path.join(os.homedir(), '.hme', 'policies.json'),
+    path.join(PROJECT_ROOT, 'config', 'policies.local.json'),
+    path.join(PROJECT_ROOT, 'config', 'policies.json'),
   ];
 }
 

@@ -18,7 +18,7 @@ cross-layer discovery story.
 ```bash
 i/policies list                       # Show every registered policy
 i/policies show block-curl-pipe-sh    # Detail for one policy
-i/policies disable block-curl-pipe-sh # Disable (writes .hme/policies.json)
+i/policies disable block-curl-pipe-sh # Disable (writes config/policies.json)
 i/policies enable  block-curl-pipe-sh # Enable
 i/policies reset   block-curl-pipe-sh # Revert to defaultEnabled
 i/policies paths                      # Print three config-scope paths
@@ -56,12 +56,11 @@ for side effects (mirrors `stop_chain/index.js`).
 
 ## Configuration
 
-Three-scope JSON, first-defined-wins for scalars, deduplicated union for
+Two-scope JSON, first-defined-wins for scalars, deduplicated union for
 `enabled` / `disabled` arrays. Lookup order:
 
-1. `<project>/.hme/policies.local.json` — developer-local
-2. `<project>/.hme/policies.json` — project-shared (commit this)
-3. `~/.hme/policies.json` — user-global defaults
+1. `<project>/config/policies.local.json` — developer-local (gitignored)
+2. `<project>/config/policies.json` — project-shared (commit this)
 
 Schema:
 
@@ -117,7 +116,7 @@ The wart: `i/policies disable <name>` only disables the JS version.
 The bash version still fires. To fully disable a duplicated rule,
 edit the bash file as well. Future migration work should either move
 each rule fully to JS (deleting the bash) or extend the bash gates to
-read the same `.hme/policies.json`.
+read the same `config/policies.json`.
 
 ## Meta-registry (step 2)
 

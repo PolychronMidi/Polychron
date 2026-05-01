@@ -139,7 +139,7 @@ test('distributions: getAxisValue collapses {mean, std} to mean', () => {
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_dist.json');
   fs.mkdirSync(customDir, { recursive: true });
   fs.writeFileSync(customFile, JSON.stringify({
@@ -257,7 +257,7 @@ test('distributions: schema rejects negative std', () => {
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_bad_dist.json');
   fs.mkdirSync(customDir, { recursive: true });
   fs.writeFileSync(customFile, JSON.stringify({
@@ -452,7 +452,7 @@ test('substrate fields: schema rejects malformed declarations', () => {
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_bad_substrate.json');
   fs.mkdirSync(customDir, { recursive: true });
   // Negative composer family weight should be rejected.
@@ -477,7 +477,7 @@ test('sectionArc: schema rejects unknown section types', () => {
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_bad_arc.json');
   fs.mkdirSync(customDir, { recursive: true });
   fs.writeFileSync(customFile, JSON.stringify({
@@ -548,7 +548,7 @@ test('layerVariants: child profile inherits parent layerVariants when not declar
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_inherit_layer.json');
   fs.mkdirSync(customDir, { recursive: true });
   // Inherits polyrhythmic_split which has layerVariants. Child doesn't
@@ -577,7 +577,7 @@ test('layerVariants: schema accepts L1/L2 keys, rejects others', () => {
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_bad_layer.json');
   fs.mkdirSync(customDir, { recursive: true });
   fs.writeFileSync(customFile, JSON.stringify({
@@ -601,7 +601,7 @@ test('loadCustomProfiles: project file overrides built-in axis values', () => {
   const fs = require('fs');
   const path = require('path');
   const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-  const customDir = path.join(projectRoot, '.hme', 'metaprofiles');
+  const customDir = path.join(projectRoot, 'config', 'metaprofiles');
   const customFile = path.join(customDir, '_test_custom.json');
 
   // Define a custom profile that inherits atmospheric and bumps a key.

@@ -6,14 +6,14 @@
  * Subcommands:
  *   list                       List every registered policy with status (en/dis/default).
  *   show <name>                Detailed view of one policy.
- *   enable <name>              Add to project-shared .hme/policies.json `enabled` list.
- *   disable <name>              Add to project-shared .hme/policies.json `disabled` list.
+ *   enable <name>              Add to project-shared config/policies.json `enabled` list.
+ *   disable <name>              Add to project-shared config/policies.json `disabled` list.
  *   reset <name>               Remove name from both lists (revert to defaultEnabled).
  *   paths                      Print the three config-scope file paths.
  *   eval <name>                Run a single policy against stdin JSON ({toolInput,...}); print decision.
  *
- * Config writes go to the PROJECT-shared file by default. Pass `--scope=local`
- * to write to .hme/policies.local.json or `--scope=global` for ~/.hme/policies.json.
+ * Config writes go to the PROJECT-shared `config/policies.json` by default.
+ * Pass `--scope=local` to write to `config/policies.local.json` (gitignored).
  */
 
 const fs = require('fs');
@@ -120,9 +120,12 @@ function cmdShow(name) {
 
 function _scopeFile(scope) {
   const files = config._scopeFiles();
-  // Indices: 0=local, 1=project, 2=global
-  if (scope === 'local')  return files[0];
-  if (scope === 'global') return files[2];
+  // Indices: 0=local, 1=project. Global scope was dropped — config is
+  // project-only now.
+  if (scope === 'local') return files[0];
+  if (scope === 'global') {
+    throw new Error('global scope removed — use --scope=project (default) or --scope=local');
+  }
   return files[1]; // project (default)
 }
 
@@ -227,11 +230,11 @@ async function main() {
     case '--help':
     case '-h':
     case 'help':
-      console.log('Usage: i/policies <list|show|enable|disable|reset|paths|eval> [args] [--scope=local|project|global]');
+      console.log('Usage: i/policies <list|show|enable|disable|reset|paths|eval> [args] [--scope=local|project]');
       console.log('');
       console.log('  list              Show every registered policy with status.');
       console.log('  show NAME         Detailed view of one policy.');
-      console.log('  enable NAME       Enable a policy (writes to .hme/policies.json by default).');
+      console.log('  enable NAME       Enable a policy (writes to config/policies.json by default).');
       console.log('  disable NAME      Disable a policy.');
       console.log('  reset NAME        Revert to defaultEnabled (remove from both enable/disable lists).');
       console.log('  paths             Print the three config-scope file paths.');

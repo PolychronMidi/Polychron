@@ -664,24 +664,19 @@ moduleLifecycle.declare({
   // Three-scope custom-profile loader. Reads project + global directories,
   // resolves inheritance/composition (parent must already exist in
   // `profiles` -- built-ins or earlier-loaded customs), validates, registers.
-  // Conflict resolution: project beats global; built-ins are baseline (a
-  // custom profile with the same name overrides the built-in). Returns
-  // an array of newly-registered names.
+  // Built-ins are baseline; a custom profile with the same name overrides
+  // the built-in. Returns an array of newly-registered names.
   //
   // File layout:
-  //   <project>/.hme/metaprofiles/*.json    (project scope; commit this)
-  //   ~/.hme/metaprofiles/*.json            (user-global)
+  //   <project>/config/metaprofiles/*.json    (project scope; commit this)
   // Each file is either a single profile object, or an array of them.
   function loadCustomProfiles() {
     const fs = require('fs');
     const path = require('path');
-    const os = require('os');
-    const projectRoot = process.env.PROJECT_ROOT || '/home/jah/Polychron';
-    // User-scope (~/.hme) loaded first; project-scope (.hme/) loaded second
-    // and overrides user-scope on name collision. Built-ins are baseline.
+    const projectRoot = process.env.PROJECT_ROOT;
+    if (!projectRoot) return [];  // .env not loaded yet — nothing to do
     const dirs = [
-      path.join(os.homedir(), '.hme', 'metaprofiles'),
-      path.join(projectRoot, '.hme', 'metaprofiles'),
+      path.join(projectRoot, 'config', 'metaprofiles'),
     ];
     const registered = [];
     for (const dir of dirs) {

@@ -30,9 +30,8 @@ _policy_enabled() {
 
   local project_root="${PROJECT_ROOT:-/home/jah/Polychron}"
   local files=(
-    "$project_root/.hme/policies.local.json"
-    "$project_root/.hme/policies.json"
-    "${HOME}/.hme/policies.json"
+    "$project_root/config/policies.local.json"
+    "$project_root/config/policies.json"
   )
 
   # Disabled wins over enabled (matches policies/config.js).

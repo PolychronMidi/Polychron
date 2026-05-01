@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Example custom policy. Drop this file (or a directory containing files
- * like it) and point `.hme/policies.json` at it via `customPoliciesPath`:
+ * like it) and point `config/policies.json` at it via `customPoliciesPath`:
  *
  *   {
  *     "customPoliciesPath": "tools/HME/policies/examples"
