@@ -872,6 +872,136 @@ print(json.dumps(disp._buddy_context_used('nonexistent-sid'), default=str))
   });
 });
 
+// ---- buddy_init.sh integration tests ----
+
+function _runBuddyInit(sandbox, env) {
+  // Run buddy_init.sh with a stubbed `claude` binary on PATH that prints
+  // a fake init event and exits 0. The script disowns its subprocesses,
+  // so we poll for the sid files for up to 5s after invocation.
+  const repoRoot = path.resolve(__dirname, '..', '..', '..', '..');
+  const stubBin = path.join(sandbox, 'stub-bin');
+  fs.mkdirSync(stubBin, { recursive: true });
+  // Each spawn gets a unique fake sid via $$ (the stub's pid).
+  fs.writeFileSync(path.join(stubBin, 'claude'),
+    '#!/bin/bash\n' +
+    'cat <<EOF\n' +
+    '[{"type":"system","subtype":"init","session_id":"fake-sid-$$"}]\n' +
+    'EOF\n', { mode: 0o755 });
+  const fullEnv = {
+    ...process.env,
+    ...env,
+    PATH: `${stubBin}:${process.env.PATH}`,
+    PROJECT_ROOT: sandbox,
+    CLAUDE_PROJECT_DIR: sandbox,
+  };
+  return spawnSync('bash', [path.join(repoRoot, 'tools/HME/hooks/helpers/buddy_init.sh')],
+    { env: fullEnv, encoding: 'utf8', timeout: 30000 });
+}
+
+function _waitForFiles(sandbox, names, timeoutMs = 5000) {
+  const start = Date.now();
+  const tmp = path.join(sandbox, 'tmp');
+  while (Date.now() - start < timeoutMs) {
+    const allPresent = names.every((n) => {
+      const p = path.join(tmp, n);
+      return fs.existsSync(p) && fs.readFileSync(p, 'utf8').trim().length > 0;
+    });
+    if (allPresent) return true;
+    spawnSync('sleep', ['0.05']);
+  }
+  return false;
+}
+
+test('buddy_init.sh: BUDDY_COUNT=3 + BUDDY_MODEL_FLOORS=auto distributes easy/medium/hard', () => {
+  _withDispatcherSandbox((sandbox) => {
+    // Provide a minimal .env so the script's .env-fallback paths are happy.
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=3\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '3', BUDDY_MODEL_FLOORS: 'auto',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    const sidFiles = ['hme-buddy-1.sid', 'hme-buddy-2.sid', 'hme-buddy-3.sid'];
+    assert.ok(_waitForFiles(sandbox, sidFiles, 5000),
+      'all 3 sid files should appear within 5s');
+    const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor', 'hme-buddy-3.floor']
+      .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
+    assert.deepStrictEqual(floors, ['easy', 'medium', 'hard'],
+      `floors must be [easy, medium, hard], got [${floors.join(', ')}]`);
+  });
+});
+
+test('buddy_init.sh: BUDDY_COUNT=1 with auto produces single medium-floor buddy', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=1\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '1', BUDDY_MODEL_FLOORS: 'auto',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    // count=1 uses legacy filename hme-buddy.sid (back-compat path).
+    assert.ok(_waitForFiles(sandbox, ['hme-buddy.sid'], 5000),
+      'legacy single-buddy sid file should appear');
+    const floor = fs.readFileSync(path.join(sandbox, 'tmp', 'hme-buddy.floor'), 'utf8').trim();
+    assert.strictEqual(floor, 'medium', 'count=1 default floor is medium');
+  });
+});
+
+test('buddy_init.sh: BUDDY_COUNT=2 with auto produces [easy, hard]', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=2\nBUDDY_MODEL_FLOORS=auto\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '2', BUDDY_MODEL_FLOORS: 'auto',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    assert.ok(_waitForFiles(sandbox, ['hme-buddy-1.sid', 'hme-buddy-2.sid'], 5000));
+    const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor']
+      .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
+    assert.deepStrictEqual(floors, ['easy', 'hard']);
+  });
+});
+
+test('buddy_init.sh: explicit BUDDY_MODEL_FLOORS list bypasses auto and is honored', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=1\nBUDDY_COUNT=3\nBUDDY_MODEL_FLOORS=hard,hard,easy\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '1', BUDDY_COUNT: '3', BUDDY_MODEL_FLOORS: 'hard,hard,easy',
+    });
+    if (result.status !== 0) {
+      throw new Error(`buddy_init.sh failed: status=${result.status} stderr=${result.stderr}`);
+    }
+    assert.ok(_waitForFiles(sandbox, ['hme-buddy-1.sid', 'hme-buddy-2.sid', 'hme-buddy-3.sid'], 5000));
+    const floors = ['hme-buddy-1.floor', 'hme-buddy-2.floor', 'hme-buddy-3.floor']
+      .map((f) => fs.readFileSync(path.join(sandbox, 'tmp', f), 'utf8').trim());
+    assert.deepStrictEqual(floors, ['hard', 'hard', 'easy'],
+      'explicit floor list must be honored as-is, no auto-distribution');
+  });
+});
+
+test('buddy_init.sh: BUDDY_SYSTEM=0 is a no-op (no sid files, no claude invocation)', () => {
+  _withDispatcherSandbox((sandbox) => {
+    fs.writeFileSync(path.join(sandbox, '.env'),
+      'BUDDY_SYSTEM=0\nBUDDY_COUNT=3\n');
+    const result = _runBuddyInit(sandbox, {
+      BUDDY_SYSTEM: '0', BUDDY_COUNT: '3',
+    });
+    assert.strictEqual(result.status, 0, 'should exit 0 cleanly');
+    // Give any disowned process time to settle (none should fire).
+    spawnSync('sleep', ['0.5']);
+    const sidFiles = fs.readdirSync(path.join(sandbox, 'tmp'))
+      .filter((f) => f.startsWith('hme-buddy') && f.endsWith('.sid'));
+    assert.deepStrictEqual(sidFiles, [], 'no buddy sid files when BUDDY_SYSTEM=0');
+  });
+});
+
 test('dispatcher: _buddy_context_used handles transcript with no usage events', () => {
   _withDispatcherSandbox((sandbox) => {
     const home = path.join(sandbox, 'fake-home');
