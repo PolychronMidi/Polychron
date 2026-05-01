@@ -1,0 +1,429 @@
+"""HME onboarding chain — per-session walkthrough state machine.
+
+The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
+MCP server so tool handlers can invoke each other directly (hooks cannot).
+
+Linear state machine with silent prerequisite auto-chaining:
+
+    boot            fresh session — waiting for selftest
+    selftest_ok     selftest passed — waiting for evolve(focus='design')
+    targeted        target picked — waiting for read(target, mode='before')
+    briefed         KB briefing absorbed — waiting for Edit(s) on target
+    edited          Edit done — waiting for review(mode='forget')
+    reviewed        review clean — waiting for npm run main
+    piped           pipeline running in background — waiting for verdict
+    verified        STABLE/EVOLVED — waiting for learn(title=, content=)
+    graduated       loop complete — blocks relax, state file deleted
+
+Design rules:
+  * Agents see ONE tool call per logical step. Prerequisites run silently
+    inside the tool handler and their output is prepended to the result.
+  * Advancement is automatic — tools and hooks write state, agent never does.
+  * Missing state file = graduated (permissive). Hooks create it on SessionStart.
+  * Chain never HARD-blocks a tool. Failures are reported, tool still runs.
+    Hard gates live in shell hooks (for Edit/Bash, which this module can't reach).
+  * Graduation is irreversible within a session. Next SessionStart re-arms boot.
+
+State persists across auto-compaction (tmp/ survives). PreCompact/PostCompact
+handle edge cases.
+"""
+import functools
+import logging
+import os
+import re
+import sys
+from typing import Callable, Optional
+
+_mcp_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _mcp_root not in sys.path:
+    sys.path.insert(0, _mcp_root)
+from hme_env import ENV  # noqa: E402
+
+# Pull canonical i/<wrapper> + action= forms from the single source of
+# truth. Fallback keeps server bootable if the helper module is missing.
+# _mcp_root is tools/HME/service; helpers live at tools/HME/scripts
+# (one dirname up from _mcp_root, then "scripts").
+try:
+    _scripts_dir = os.path.join(
+        os.path.dirname(_mcp_root), "scripts"
+    )
+    if _scripts_dir not in sys.path:
+        sys.path.insert(0, _scripts_dir)
+    from tool_invocations import i_form as _i_form, action_form as _action_form  # type: ignore
+except Exception:
+    def _i_form(name, primer=False):
+        return f"i/{name.replace('_', '-')}"
+    def _action_form(action):
+        return f"i/hme-admin action={action}"
+
+logger = logging.getLogger("HME.onboarding")
+
+STATES = [
+    "boot",
+    "selftest_ok",
+    "targeted",
+    "edited",
+    "reviewed",
+    "piped",
+    "verified",
+    "graduated",
+]
+
+STEP_LABELS = {
+    "boot":        f"1/7 boot check (run {_action_form('selftest')})",
+    "selftest_ok": f"2/7 pick evolution target (run {_i_form('evolve', primer=True)})",
+    "targeted":    "3/7 edit target module (Edit tool — briefing auto-chains)",
+    "edited":      f"4/7 audit changes (run {_i_form('review', primer=True)})",
+    "reviewed":    "5/7 run pipeline (Bash: npm run main)",
+    "piped":       "6/7 await verdict (hooks advance automatically)",
+    "verified":    f"7/7 persist learning (run {_i_form('learn', primer=True)})",
+    "graduated":   "graduated — blocks relax",
+}
+
+# Ordered step list for the todo tree mirror — index matches STATES order
+STEP_SHORT = [
+    f"boot check ({_action_form('selftest')})",
+    f"pick evolution target ({_i_form('evolve', primer=True)})",
+    "edit target module (KB briefing auto-chains)",
+    f"audit changes ({_i_form('review', primer=True)})",
+    "run pipeline (Bash: npm run main)",
+    "await pipeline verdict",
+    f"persist learning ({_i_form('learn', primer=True)})",
+]
+
+_PROJECT_ROOT = ENV.require("PROJECT_ROOT")
+# Flat per-field state files — kept separate (not merged into JSON) so shell
+# helpers can read them via `cat` without pulling in `jq` or Python. The
+# tradeoff: two files instead of one, but much simpler hook code.
+_STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
+_TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
+
+
+
+# State I/O — single-file flat storage, never raises
+
+
+
+
+def chain_enter(tool: str, args: dict) -> Optional[str]:
+    """Auto-run prerequisites for `tool` based on current state.
+
+    Returns prereq output text to be prepended to the tool's own result, or
+    None if no chaining needed. Never raises. Never hard-aborts the tool —
+    if a prereq fails, the output is still prepended but the tool runs.
+    """
+    s = state()
+    if s == "graduated":
+        return None
+
+    # Prerequisite rule: every HME tool except selftest auto-runs selftest
+    # when state is 'boot'. This is the single chaining rule — everything
+    # else is state advancement, not prerequisite chaining.
+    if s == "boot":
+        needs_selftest = not (
+            tool == "hme_admin" and args.get("action") == "selftest"
+        )
+        if needs_selftest:
+            return _run_selftest_prereq()
+
+    return None
+
+
+def chain_exit(tool: str, args: dict, output: str) -> str:
+    """Advance state based on tool completion. Append status line.
+
+    Never raises. Advancement is strictly forward — never moves state
+    backwards, never skips steps it doesn't understand.
+    """
+    if not isinstance(output, str):
+        output = str(output)
+
+    s = state()
+    if s == "graduated":
+        return output
+
+    try:
+        _advance(tool, args, output, s)
+    except Exception as e:
+        logger.warning(f"onboarding: advance failed for {tool}: {e}")
+
+    return output + status_line()
+
+
+def _advance(tool: str, args: dict, output: str, s: str) -> None:
+    """State transition table. Each branch only advances FORWARD."""
+    idx = step_index(s)
+
+    # hme_admin(action='selftest') passes -> selftest_ok
+    if tool == "hme_admin" and args.get("action") == "selftest":
+        if idx <= step_index("selftest_ok") and _selftest_clean(output):
+            set_state("selftest_ok")
+            return
+
+    # evolve(focus=<target-picking>) -> targeted. Diagnostic foci
+    # (stress, invariants, coupling, loc, patterns) are forensic — they
+    # don't pick a target, so they MUST NOT advance onboarding state.
+    # Advancing on them skips the "pick evolution target" step entirely.
+    if tool == "evolve":
+        focus = args.get("focus", "all")
+        if focus in ("design", "forge", "curate"):
+            if idx < step_index("targeted"):
+                picked = _extract_target_from_evolve(output)
+                if picked:
+                    set_target(picked)
+                set_state("targeted")
+                return
+
+    # read(mode='before') on a module -> captures target if missing (the hook
+    # auto-chains read() into Edit, so this is a passive capture, not a state
+    # transition). State advances on Edit, not on read.
+    if tool == "read" and args.get("mode") == "before":
+        tgt = args.get("target", "") or ""
+        if tgt and not target():
+            set_target(tgt)
+
+    # review(mode='forget') clean -> reviewed
+    # Only advances from 'edited' state; can't jump over Edit.
+    if tool == "review" and args.get("mode") == "forget":
+        if idx == step_index("edited") and _review_clean(output):
+            set_state("reviewed")
+            return
+
+    # learn(title=, content=) while verified -> graduated
+    if tool == "learn" and args.get("title") and args.get("content"):
+        if idx >= step_index("verified"):
+            set_state("graduated")
+            return
+
+
+
+# Decorator — the clean wrap point for @ctx.mcp.tool() functions
+
+
+def chained(tool_name: str) -> Callable:
+    """Decorator that wraps an HME tool handler with chain_enter/chain_exit.
+
+    Usage:
+        @ctx.mcp.tool()
+        @chained("evolve")
+        def evolve(focus: str = "all", query: str = "") -> str:
+            ...
+
+    Decorator order matters — @ctx.mcp.tool() must be OUTERMOST so FastMCP
+    registers the wrapped function. functools.wraps preserves __wrapped__ so
+    inspect.signature() still sees the original signature for MCP schema.
+    """
+    def decorator(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            # Build arg dict from kwargs — positional args rare for MCP tools
+            arg_dict = dict(kwargs)
+            prereq = None
+            try:
+                prereq = chain_enter(tool_name, arg_dict)
+            except Exception as e:
+                logger.warning(f"onboarding: chain_enter failed for {tool_name}: {e}")
+
+            try:
+                result = fn(*args, **kwargs)
+            except Exception as _err:
+                logger.debug(f"unnamed-except onboarding_chain.py:323: {type(_err).__name__}: {_err}")
+                import traceback
+                result = f"Error: {traceback.format_exc()}"
+
+            if not isinstance(result, str):
+                result = str(result)
+
+            if prereq:
+                result = prereq + "\n" + result
+
+            try:
+                return chain_exit(tool_name, arg_dict, result)
+            except Exception as e:
+                logger.warning(f"onboarding: chain_exit failed for {tool_name}: {e}")
+                return result
+
+        return wrapper
+    return decorator
+
+
+
+# External API — for shell hooks to drive Edit/Bash state transitions
+
+
+def force_state(s: str) -> bool:
+    """External state advance — used by hooks via `python3 -c`.
+    Only advances forward; refuses backward moves. Returns True on success.
+    """
+    if s not in STATES:
+        return False
+    cur = state()
+    if step_index(s) <= step_index(cur):
+        return False
+    set_state(s)
+    return True
+
+
+
+# Helpers
+
+
+def _run_selftest_prereq() -> str:
+    """Run selftest in-process and format its output.
+
+    Calls the undecorated hme_selftest directly — going through the
+    @chained hme_admin dispatcher would append another status_line, which
+    the outer tool's chain_exit also appends, causing a duplicate banner.
+    Advances state to 'selftest_ok' manually on clean pass (the side
+    effect the decorator would have performed).
+    """
+    try:
+        from server.tools_analysis.evolution.evolution_admin import hme_selftest
+        result = hme_selftest(verbose=False)
+        if _selftest_clean(result) and step_index(state()) <= step_index("selftest_ok"):
+            set_state("selftest_ok")
+        header = (
+            "[AUTO-CHAIN] Onboarding step 1/8: ran selftest as prerequisite.\n"
+            " selftest output "
+        )
+        footer = " prerequisite done, continuing with your original call \n"
+        return f"{header}\n{result}\n{footer}"
+    except Exception as e:
+        return f"[AUTO-CHAIN] selftest prerequisite error: {e}\n"
+
+
+def _selftest_clean(output: str) -> bool:
+    """Return True if selftest output indicates 0 FAILs. Checks ONLY the
+    structured 'FAIL:' check lines (e.g. '  FAIL: doc sync -- OUT OF SYNC'),
+    not substring matches on the word 'fail' which triggered false negatives
+    from historical WARN log summaries ('default backend failed' inside a
+    benign ONNX-fallback WARNING was blocking onboarding graduation)."""
+    # Look for explicit FAIL-status lines in the structured selftest output.
+    # These have the form "  FAIL: <check name> -- <detail>" — case-sensitive
+    # "FAIL:" distinguishes them from the word "failed" in prose.
+    import re as _re
+    if _re.search(r'^\s*FAIL:\s', output, flags=_re.MULTILINE):
+        return False
+    # No explicit FAIL lines — READY verdict or only WARN/INFO.
+    return True
+
+
+def _review_clean(output: str) -> bool:
+    """Return True if review(mode='forget') reports clean status.
+
+    Preferred path: structured `<!-- HME_REVIEW_VERDICT: clean -->` marker.
+    Fallback: text heuristics matching current review output format. The
+    fallback becomes unnecessary once review_unified.py starts emitting
+    markers via emit_review_verdict_marker().
+    """
+    # Preferred: structured marker
+    m = re.search(r'<!--\s*HME_REVIEW_VERDICT:\s*(clean|warnings|error)\s*-->', output)
+    if m:
+        return m.group(1) == "clean"
+    # Fallback: text heuristics
+    lo = output.lower()
+    if "warnings: none" in lo:
+        return True
+    if "no changed files detected" in lo:
+        return True
+    return False
+
+
+def _extract_target_from_evolve(output: str) -> str:
+    """Parse a target module name out of evolve() output.
+
+    Robust layered lookup — tries structured markers first, falls back to
+    regex heuristics. When upstream generators start emitting markers via
+    `emit_target_marker()`, the structured path takes over and brittle
+    regex fallbacks become unnecessary.
+    """
+    # Layer 1 (preferred): structured HTML-comment marker
+    #   <!-- HME_TARGET: moduleName -->
+    m = re.search(r'<!--\s*HME_TARGET:\s*([a-zA-Z_][a-zA-Z0-9_]+)\s*-->', output)
+    if m:
+        return m.group(1)
+    # Layer 2: fenced marker — used when HTML comments would break rendering
+    #   [HME_TARGET:moduleName]
+    m = re.search(r'\[HME_TARGET:\s*([a-zA-Z_][a-zA-Z0-9_]+)\s*\]', output)
+    if m:
+        return m.group(1)
+    # Layer 3: explicit "target: crossLayerClimaxEngine" or similar
+    m = re.search(r'(?:target|module|file|focus)[:\s]+`?([a-zA-Z_][a-zA-Z0-9_]+)`?',
+                  output, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    # Layer 4: backtick-wrapped camelCase identifier
+    m = re.search(r'`([a-z][a-zA-Z0-9]+[A-Z][a-zA-Z0-9_]*)`', output)
+    if m:
+        return m.group(1)
+    return ""
+
+
+def emit_target_marker(module_name: str) -> str:
+    """Format a structured target marker for embedding in evolve() output.
+
+    Producers should append this line to their output when they want the
+    chain decider to reliably pick up a target module regardless of text
+    formatting. Example:
+        result = build_design_report(...)
+        result += "\\n" + emit_target_marker("crossLayerClimaxEngine")
+        return result
+    """
+    if not module_name or not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]+$', module_name):
+        return ""
+    return f"<!-- HME_TARGET: {module_name} -->"
+
+
+def emit_review_verdict_marker(verdict: str) -> str:
+    """Format a structured review verdict marker.
+
+    Producers should append this line to `review(mode='forget')` output so
+    the chain decider can advance state deterministically:
+        clean:      agent may proceed (edited → reviewed)
+        warnings:   agent must fix warnings first (stay at edited)
+        error:      verifier itself failed (stay at edited, surface error)
+    """
+    if verdict not in ("clean", "warnings", "error"):
+        return ""
+    return f"<!-- HME_REVIEW_VERDICT: {verdict} -->"
+
+
+
+# CLI — callable from shell hooks via `python3 -m server.onboarding_chain ...`
+
+
+def _cli():
+    """CLI for shell hooks. Usage:
+        python3 -m server.onboarding_chain state
+        python3 -m server.onboarding_chain target
+        python3 -m server.onboarding_chain set <state>
+        python3 -m server.onboarding_chain advance <state>
+        python3 -m server.onboarding_chain graduated
+        python3 -m server.onboarding_chain status_line
+    """
+    if len(sys.argv) < 2:
+        print(state())
+        return
+    cmd = sys.argv[1]
+    if cmd == "state":
+        print(state())
+    elif cmd == "target":
+        print(target())
+    elif cmd == "set" and len(sys.argv) > 2:
+        set_state(sys.argv[2])
+    elif cmd == "advance" and len(sys.argv) > 2:
+        print("ok" if force_state(sys.argv[2]) else "no-op")
+    elif cmd == "graduated":
+        print("yes" if is_graduated() else "no")
+    elif cmd == "status_line":
+        print(status_line().strip())
+    elif cmd == "step":
+        s = state()
+        print(STEP_LABELS.get(s, s))
+    else:
+        sys.stderr.write(f"unknown command: {cmd}\n")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    _cli()
