@@ -1299,6 +1299,34 @@ test('buddy_handoff.py: consult captures caller_sid from active primary (cross-s
     const rec = JSON.parse(fs.readFileSync(path.join(seniorsDir, 'target-senior.json'), 'utf8'));
     assert.strictEqual(rec.consults[0].caller_sid, 'caller-primary-sid',
       'caller_sid is the active primary at consult time');
+    // No debug warning expected when caller resolves cleanly.
+    assert.doesNotMatch(result.stderr, /caller_sid resolved to None/,
+      'no debug warning when primary is recorded');
+  });
+});
+
+test('buddy_handoff.py: consult emits caller_sid=None debug warning when no primary recorded', () => {
+  // Visible-by-default debug surfaces the gap rather than silently
+  // recording caller_sid=null. Otherwise consults from cron / manual
+  // shells / pre-paradigm sessions would record null without the
+  // operator knowing why.
+  _withDispatcherSandbox((sandbox) => {
+    const seniorsDir = path.join(sandbox, 'tmp', 'hme-buddy-seniors');
+    fs.mkdirSync(seniorsDir, { recursive: true });
+    fs.writeFileSync(path.join(seniorsDir, 'orphan-target.json'), JSON.stringify({
+      sid: 'orphan-target', floor: 'easy', effort_floor: 'low',
+    }));
+    // No primary.sid in sandbox → caller_sid will resolve to None.
+    const stubBin = path.join(sandbox, 'stub-bin');
+    fs.mkdirSync(stubBin, { recursive: true });
+    fs.writeFileSync(path.join(stubBin, 'claude'),
+      '#!/bin/bash\necho ok\nexit 0\n', { mode: 0o755 });
+    const result = _runHandoff(sandbox,
+      ['consult', '--sid=orphan-target', '--question=hi'],
+      { PATH: `${stubBin}:${process.env.PATH}` });
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stderr, /caller_sid resolved to None/,
+      'debug line visible when no primary recorded');
   });
 });
 

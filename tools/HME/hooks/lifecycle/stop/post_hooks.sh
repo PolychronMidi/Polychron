@@ -40,11 +40,16 @@ fi
 # defined but had no caller, so a primary that crossed BUDDY_RETIRE_PCT
 # during a turn would just sit there until the next SessionStart (or
 # never, if compaction hit first). Per-turn fire is safe because the
-# turn just finished — no in-flight tasks to disrupt. Best-effort,
-# silent on failure (`|| true`) so a hiccup doesn't break Stop.
+# turn just finished — no in-flight tasks to disrupt. Wrapped in a
+# subshell with `|| true` so any failure mode (file missing, python
+# import error, transcript read error, retire write error) reduces to
+# a no-op-pass — a hook that fail-loud on optional checks would
+# become the new silent-failure-class the audit-silent-failure-class
+# verifier exists to catch.
 if [ "${BUDDY_HANDOFF:-0}" = "1" ]; then
   _HANDOFF_SCRIPT="$PROJECT/tools/HME/scripts/buddy_handoff.py"
-  [ -f "$_HANDOFF_SCRIPT" ] && \
-    PROJECT_ROOT="$PROJECT" python3 "$_HANDOFF_SCRIPT" auto_retire_check \
-      >/dev/null 2>&1 || true
+  if [ -f "$_HANDOFF_SCRIPT" ]; then
+    (PROJECT_ROOT="$PROJECT" python3 "$_HANDOFF_SCRIPT" auto_retire_check \
+       >/dev/null 2>&1) || true
+  fi
 fi
