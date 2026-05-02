@@ -562,3 +562,70 @@ These aren't independent features. Each feeds the next:
 - All 9 signals feed evolution priority (ranked self-direction)
 
 The system's output at full expression: a ranked list of what it thinks should change, derived from its own assessment of where its knowledge is wrong, where its predictions fail, where the music is stalling, and where the architecture has structural gaps nobody designed into it.
+
+---
+
+## Phase 7: Four-Arc Framework (R18-R31, 2026-04-19 -> 2026-04-20)
+
+> Migrated from HME.md as part of the brief-overview restructure.
+
+
+Phases 1-6 produced seven independent observability substrates. Phase 7 made them interlock. Four arcs + seven emergent behaviors + tool-surface rebuild:
+
+**Arc I -- Cross-Substrate Consensus** (R18, `scripts/pipeline/hme/compute-consensus.js`). Seven voters (hci / invariants / prediction_recall / verdict / axis_cost_trend / clap / listening_verdict) each produce a scalar in [-1, +1]. Mean = consensus; stdev = divergence signal. Since R29, a `composition_reality_overrides_substrate_divergence` rule demotes divergence to `low_override_by_reality` when the user verdict has been legendary for 3+ rounds AND HCI >= 95.
+
+**Arc II -- Pattern Registry** (R20, `tools/HME/patterns/*.json`). Meta-patterns as declarative JSON: trigger.check (shell expression), action.steps, action.auto_apply flag, history of instantiations. Matcher at `scripts/pipeline/hme/match-patterns.py` evaluates all patterns each round. R25 added auto-apply -- matched patterns with `auto_apply: true` run their action script automatically (non-destructive only).
+
+**Arc III -- Inverse Reasoning** (R21, `scripts/pipeline/hme/compute-legendary-drift.py`). Each round snapshots 14 state dimensions into `output/metrics/hme-legendary-states.jsonl`. Envelope = exponentially-weighted (decay 0.85) median + stdev per field. Current round's per-field z-score flags outliers; mean |z| is the drift score. Fires BEFORE verdict fails, catching drift toward non-legendary territory. R29 added `legendary_confirmed` filter + HCI>=95 envelope membership.
+
+**Arc IV -- Meta-Measurement** (R19, `scripts/pipeline/hme/compute-invariant-efficacy.py`). Classifies every invariant as load-bearing (cited in commits + firing), load-bearing-historical (cited + passing), structural (existence checks), decorative (never fired / never cited), or flappy (fires without citation). R23's structural-subclass heuristic splits legitimately-decorative-forever from retirement-worthy. Retirement log at `output/metrics/hme-invariant-retirement-log.jsonl` codifies removal decisions.
+
+**Emergent behaviors** (not explicitly built):
+1. Consensus synthesis (Arc I direct)
+2. Pattern matching (Arc II direct)
+3. Drift detection (Arc III direct)
+4. Efficacy classification (Arc IV direct)
+5. Action synthesis -- `scripts/pipeline/hme/propose-next-actions.py` reads all four arcs and produces prioritized action queue at `output/metrics/hme-next-actions.json`. Empty queue = healthy quiescent state.
+6. Auto-diagnosis -- `scripts/pipeline/hme/auto-investigate.py` runs read-only diagnostic steps for matched patterns; findings at `output/metrics/hme-investigation-reports.jsonl`.
+7. Auto-apply -- matched patterns with `auto_apply: true` run their action script automatically (R25).
+
+**Arc-freeze discipline** (R29, `tools/HME/config/arc-freeze.json`): no new voters, patterns, invariants, or arc scripts for N pipeline runs. Thaw conditions: runs elapse OR user verdict changes OR HCI drops <95 for 2+ rounds. Prevents substrate-self-iteration drift.
+
+**Agent-facing tool surface** (R30, `i/substrate` + helpers):
+
+| Tool | Purpose |
+| --- | --- |
+| `i/substrate [mode]` | Unified four-arc view. Modes: brief, detail, actions, drift, consensus, efficacy, patterns, diff |
+| `i/why <invariant-id>` | Explain an invariant's class, streak, commit citations, recent history |
+| `i/freeze [query]` | Show arc-freeze marker; check query against forbidden list |
+| `i/pattern [list\|matched\|<id>]` | Query pattern registry |
+| `i/help` | List all i/ tools with descriptions |
+| `i/evolve` (no args) | Routes to substrate-view actions (data-first) |
+| `i/status` (no args) | Routes to substrate-view brief (replaces legacy 20-section dump) |
+
+`userpromptsubmit.sh` auto-captures `listening verdict: X` from user messages -> ground-truth entry (listening voter in Arc I becomes automatic). `posttooluse_bash.sh` auto-fires `i/review mode=forget` after git commits.
+
+Full narrative of each round and the meta-lessons: see [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) Rounds 8-14.
+
+
+## Self-coherence probes (added 2026-04-23)
+
+
+Selftest now runs these additional structural probes beyond the legacy 17:
+
+| Probe | Catches |
+| --- | --- |
+| daemon uniqueness | more than one `llamacpp_daemon` process visible to pgrep |
+| llama-server count | more than 2 running (declared topology = arbiter + coder) |
+| daemon thread hygiene | `Exception in thread` in recent daemon log = silent thread crash |
+| GPU attribution | >200 MB VRAM used but not attributed to a declared process |
+| single-writer registry | `_OWNERS` empty or module unimportable (invariants disabled) |
+| invariant enforcement coverage | every registered owner's source contains `assert_writer(<domain>, ...)` |
+| version consistency | daemon + worker + canonical `versions.json` all agree |
+| meta-invariant coverage | non-owner module calls a protected mutation (runs `scripts/check-single-writer-coverage.py`) |
+| HME dogfooding | HME's own Python obeys the no-silent-catch rule (runs `scripts/check-hme-dogfooding.py`) |
+| invariant genealogy | share of invariants with `born_from` origin citation |
+| temporal drift | selftest result flips PASS->FAIL after >=3 PASSes (from `hme-coherence-timeseries.jsonl`) |
+
+Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert the corresponding probe catches them -- `run-all.sh` runs the full battery.
+

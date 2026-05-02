@@ -20,7 +20,13 @@
 
 | Topic | File |
 |---|---|
-| Self-coherence verifier substrate, HCI engine, LIFESAVER no-dilution rule, detector calibration philosophy, session evolutions log | [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) |
+| Installation topology (directory tree, lance tables), Worker HTTP endpoints, Operator commands (selftest/health/reload/index/clear_index, indexing-mode R97), maintenance | [HME_INSTALLATION.md](HME_INSTALLATION.md) |
+| Public tool surface — full mode tables for evolve / review / read / learn / trace / hme_admin, "when to use what" lookup, Knowledge KB categories | [HME_TOOLS.md](HME_TOOLS.md) |
+| Hooks integration & Phase 1-6 subsystems (activity bridge, inference proxy, pipeline policy gate, KB staleness, coherence score, blind-spots, cascade, jurisdiction injection, hypotheses, drift, prediction accuracy, crystallization, music truth, trust-weighted KB, intention gap, self-audit, adversarial probes, trajectory, coherence budget, negative space, cognitive load, reflexivity, constitutional identity, doc drift, generalizations, multi-agent scaffold, human ground truth, hook scripts) | [HME_SUBSYSTEMS.md](HME_SUBSYSTEMS.md) |
+| Polychron-specific RAG/synthesis stack (IIFE chunking, embedding model, symbol indexing, two-local arbiter fleet, warm KV contexts, five-stage synthesis pipeline, think-session memory, unified narrative, context-budget awareness, temporal decay, knowledge relationships) | [HME_RAG_STACK.md](HME_RAG_STACK.md) |
+| Evolution loop integration, mandatory per-session workflow, lab governance, autonomous ralph-loop | [HME_EVOLUTION_LOOP.md](HME_EVOLUTION_LOOP.md) |
+| Testing & chaos battery (smoke tests + chaos injectors) | [HME_TESTING.md](HME_TESTING.md) |
+| Self-coherence verifier substrate, HCI engine, LIFESAVER no-dilution rule, detector calibration, session evolutions log, Phase 7 four-arc framework | [HME_SELF_COHERENCE.md](HME_SELF_COHERENCE.md) |
 | Onboarding state machine + per-session walkthrough | [HME_ONBOARDING_FLOW.md](HME_ONBOARDING_FLOW.md) |
 | Architectural trajectory each `i/state` / `i/why` / `i/timeline` tool advances | [HME_HORIZONS.md](HME_HORIZONS.md) |
 | Mental model for HME's role in evolution | [HME_MENTAL_MODEL.md](HME_MENTAL_MODEL.md) |
