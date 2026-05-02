@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""Detect missing advisor calls at commitment boundaries — PAI Verification
+Doctrine Rule 2 + Rule 3 (conflict-cap).
+
+PAI v6.3.0 doctrine: on Extended+ effort (E2+) tasks, the advisor MUST be
+consulted at:
+  (1) before committing to an approach (after PLAN, before BUILD)
+  (2) when stuck or diverging (after two failed attempts)
+  (3) once after a durable deliverable (before phase: complete)
+
+Polychron analog: the advisor IS the buddy. `i/consult` invocations are
+the wire format.
+
+Rule 3 hard cap: max 2 re-calls of the advisor on the SAME conflict. The
+third re-call is a violation — escalate to the user instead.
+
+This detector fires post-turn. Inputs:
+  - tier (from mode-classifier.jsonl most-recent line, or override env)
+  - tool_use list this turn (Bash invocations of `i/consult`)
+  - the assistant's closing summary (looks for commitment markers)
+  - tmp/hme-advisor-conflicts.jsonl (project-local advisor history;
+    enables Rule 3 cap detection across turns)
+
+Verdicts:
+  ok                              tier < E2 OR all required calls present
+  advisor_missing_pre_build       phase signal "BUILD" without prior consult
+  advisor_missing_post_deliver    phase signal "complete" without final consult
+  advisor_conflict_cap_exceeded   third re-call on same conflict
+  advisor_silently_skipped        E4/E5 turn with no advisor call AND no
+                                  rescue clause justifying solo
+
+Rescue: "solo was right" / "no decision to crystallize" / "(b)-clause"
+language in assistant text suppresses the gate (consistent with the
+solo-rationale rescue we added to senior_consult_debt).
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _transcript import (  # noqa: E402
+    _parse_all, event_content, is_user, iter_tool_uses,
+)
+
+_PROJECT = Path(os.environ.get("PROJECT_ROOT") or
+                Path(__file__).resolve().parent.parent.parent.parent)
+_MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
+_ADVISOR_LOG = _PROJECT / "tmp" / "hme-advisor-conflicts.jsonl"
+
+# Phase markers in assistant text (PAI emits these; Polychron may emit a
+# subset). Detection is best-effort: if the agent doesn't emit the
+# markers, this detector falls back to soft signals (commitment verbs).
+_PRE_BUILD_RE = re.compile(
+    r"━━━ 🛠️ BUILD ━━━|^\s*phase:\s*build\b|"
+    r"\b(committing to (the )?approach|going with this approach)\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+_POST_DELIVER_RE = re.compile(
+    r"━━━ 📚 LEARN ━━━|^\s*phase:\s*complete\b|"
+    r"\bbefore (setting|marking) phase: complete\b|"
+    r"\bdurable deliverable\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+_CONSULT_INVOKE_RE = re.compile(
+    r"\bi/consult\b|\bAdvisor\b\s*\(|"
+    r"buddy_handoff(_consult)?\.py.*\bconsult\b",
+    re.IGNORECASE,
+)
+
+# Solo-rationale rescue (mirrors senior_consult_debt).
+_SOLO_RES = (
+    re.compile(r"\bsolo\s+(was|is)\s+(the\s+)?right\b", re.IGNORECASE),
+    re.compile(r"\bno\s+decision\s+to\s+crystallize\b", re.IGNORECASE),
+    re.compile(r"\bmechanical\s+(rename|edit|change)\b", re.IGNORECASE),
+)
+
+
+def _last_assistant_text(events: list) -> str:
+    last = None
+    for ev in events:
+        if (ev.get("type") == "assistant"
+                or (ev.get("role") == "assistant" and ev.get("content"))):
+            last = ev
+    if last is None:
+        return ""
+    parts = []
+    for block in event_content(last):
+        if isinstance(block, dict) and block.get("type") == "text":
+            t = block.get("text", "")
+            if isinstance(t, str):
+                parts.append(t)
+    return "\n".join(parts)
+
+
+def _read_tier() -> str | None:
+    """Most-recent tier from mode-classifier.jsonl. Returns None if no
+    classifier output exists."""
+    if os.environ.get("ADVISOR_DOCTRINE_TIER"):
+        return os.environ["ADVISOR_DOCTRINE_TIER"]
+    if not _MODE_LOG.is_file():
+        return None
+    try:
+        last = None
+        with open(_MODE_LOG, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    last = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+        return last.get("tier") if last else None
+    except OSError:
+        return None
+
+
+def _solo_rescue(text: str) -> bool:
+    return any(pat.search(text) for pat in _SOLO_RES)
+
+
+def _consult_invocations(events: list) -> int:
+    """Count this turn's `i/consult` Bash invocations (proxy for
+    advisor calls). Polychron-side wire format."""
+    count = 0
+    for ev in events:
+        for tu in iter_tool_uses(ev):
+            if tu["name"] != "Bash":
+                continue
+            cmd = tu["input"].get("command", "") or ""
+            if _CONSULT_INVOKE_RE.search(cmd):
+                count += 1
+    return count
+
+
+def _conflict_cap_exceeded() -> bool:
+    """Read tmp/hme-advisor-conflicts.jsonl for any conflict_id with
+    re-call count ≥ 3 (violates Rule 3's max-2 cap). Best-effort: the
+    log file may not exist yet."""
+    if not _ADVISOR_LOG.is_file():
+        return False
+    try:
+        from collections import defaultdict
+        recalls: dict = defaultdict(int)
+        with open(_ADVISOR_LOG, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if e.get("kind") == "recall":
+                    recalls[e.get("conflict_id", "?")] += 1
+        return any(v >= 3 for v in recalls.values())
+    except OSError:
+        return False
+
+
+def _load_current_turn(transcript_path: str) -> list[dict]:
+    """Slice from the last REAL user prompt onward — same pattern as
+    senior_consult_debt, so tool_result wrapper events don't lose the
+    consult tool_use that preceded them."""
+    events = _parse_all(transcript_path)
+    last_real_user_idx = -1
+    for i, ev in enumerate(events):
+        if not is_user(ev):
+            continue
+        msg = ev.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else ev.get("content")
+        if isinstance(content, str):
+            last_real_user_idx = i
+    if last_real_user_idx == -1:
+        return events
+    return events[last_real_user_idx:]
+
+
+def main() -> int:
+    if len(sys.argv) < 2:
+        print("ok")
+        return 0
+
+    tier = _read_tier()
+    if tier in (None, "MINIMAL", "NATIVE", "E1"):
+        # Doctrine only fires at E2+.
+        print("ok")
+        return 0
+
+    events = _load_current_turn(sys.argv[1])
+    text = _last_assistant_text(events)
+    n_consults = _consult_invocations(events)
+    text_lower = text.lower()
+
+    # Rule 3 cap — historic violation across turns.
+    if _conflict_cap_exceeded():
+        print("advisor_conflict_cap_exceeded")
+        return 0
+
+    # Rule 2 (1): pre-BUILD commitment requires a consult.
+    if _PRE_BUILD_RE.search(text) and n_consults == 0:
+        if not _solo_rescue(text):
+            print("advisor_missing_pre_build")
+            return 0
+
+    # Rule 2 (3): post-durable-deliverable consult before phase: complete.
+    if _POST_DELIVER_RE.search(text) and n_consults == 0:
+        if not _solo_rescue(text):
+            print("advisor_missing_post_deliver")
+            return 0
+
+    # E4/E5 floor: silently skipping advisor on Deep/Comprehensive work
+    # warrants a flag even when no explicit phase markers fired.
+    if tier in ("E4", "E5") and n_consults == 0 and not _solo_rescue(text):
+        print("advisor_silently_skipped")
+        return 0
+
+    print("ok")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -258,6 +258,36 @@ _CASES = [
      ],
      "ok"),
 
+    # phantom_capability — declared name not in closed enumeration
+    ("phantom_capability", "phantom-name",
+     [
+         _user_msg("do the work"),
+         _assistant_msg(
+             "Used 🏹 **DeepStructuredReasoning** → THINK to handle this."
+         ),
+     ],
+     "phantom_capability"),
+
+    # phantom_capability — known name passes
+    ("phantom_capability", "known-passes",
+     [
+         _user_msg("do the work"),
+         _assistant_msg(
+             "Used 🏹 **FirstPrinciples** → THINK and 🏹 **Council** → REVIEW."
+         ),
+     ],
+     "ok"),
+
+    # phantom_capability — paraphrase of a real capability
+    ("phantom_capability", "paraphrase-soft-flag",
+     [
+         _user_msg("do the work"),
+         _assistant_msg(
+             "I used first-principles decomposition to break this down."
+         ),
+     ],
+     "phantom_paraphrase"),
+
     # psycho_stop — Pattern C: survey-and-ask after being told to fix
     ("psycho_stop", "survey-and-ask",
      [
