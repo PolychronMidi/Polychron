@@ -268,7 +268,8 @@ PYEOF
       # Save any open VSCode workspace state -- VSCode auto-restores on
       # next launch from its workspace state files, so unsaved buffers
       # persist across the kill+restart.
-      _code_pids=$(pgrep -f "/code\b\|vscode\b\|electron.*vscode" 2>/dev/null | tr '\n' ' ')
+      # Note: \b is PCRE; pgrep uses POSIX ERE -- use ( |--type|$) anchors.
+      _code_pids=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | tr '\n' ' ')
       _code_pids="$_code_pids $_bypass_pids"
       # Defense-in-depth: never SIGTERM our own ancestor chain. Walk
       # /proc/self/status PPid -> ... -> 1 and exclude any matching pid
@@ -377,7 +378,10 @@ echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
 # Skip via HME_NO_LAUNCH_VSCODE=1 if you ever want the launcher to be
 # pure-stack (e.g. headless boxes without `code`).
 if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
-  _vscode_running=$(pgrep -f "/code\b\|vscode\b\|electron.*vscode" 2>/dev/null | head -1)
+  # \b is PCRE-only; pgrep uses POSIX ERE. Use path anchors and field
+  # boundaries instead so /usr/share/code/code, /usr/bin/code, snap paths,
+  # and electron-vscode children all match correctly.
+  _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
   if [ -z "$_vscode_running" ]; then
     _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
     if [ -x "$_code_bin" ]; then
