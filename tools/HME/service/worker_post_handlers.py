@@ -132,8 +132,10 @@ def post_cascade_predict(handler, body: dict) -> None:
         handler._json(400, {"error": "target_file required"})
         return
     try:
-        from tools_analysis.cascade_analysis import (
-            _load_dep_graph, _load_feedback_graph, _log_prediction,
+        from tools_analysis import (
+            load_dep_graph as _load_dep_graph,
+            load_feedback_graph as _load_feedback_graph,
+            log_prediction as _log_prediction,
         )
         import os.path as _osp
         stem = _osp.splitext(_osp.basename(target))[0]

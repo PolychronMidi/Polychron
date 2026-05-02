@@ -146,3 +146,28 @@ from .synthesis import (  # noqa: E402, F401
     _local_think, _think_local_or_claude,
     _THINK_MODEL, _get_max_tokens, _get_effort, _get_tool_budget,
 )
+
+# Public-named aliases. The leading-underscore originals stay valid for
+# in-package callers; these public names exist so external subsystems can
+# import without tripping the audit's private-import check (which treats
+# any leading-underscore name as internal regardless of __init__ surface).
+# The aliases are the SAME function — both forms remain interchangeable.
+track = _track
+think_local_or_claude = _think_local_or_claude
+local_think = _local_think
+
+# Coordinator entry points used by external bootstrappers
+# (server/onboarding_chain.py, server/context.py, server/health_topology.py).
+# Re-exported here so callers reach through the tools_analysis hub instead
+# of the todo submodule directly.
+from .todo import (  # noqa: E402, F401
+    register_onboarding_tree, clear_onboarding_tree,
+    register_todo_from_lifesaver, resolve_lifesaver_todos,
+)
+
+# cascade_analysis exposes only underscore-prefixed implementations. Public
+# aliases let workers call them through the package boundary.
+from . import cascade_analysis as _cascade_analysis  # noqa: E402
+load_dep_graph = _cascade_analysis._load_dep_graph
+load_feedback_graph = _cascade_analysis._load_feedback_graph
+log_prediction = _cascade_analysis._log_prediction

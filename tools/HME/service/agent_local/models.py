@@ -80,7 +80,7 @@ def _infer_directories(prompt: str) -> list[str]:
 
 def _strip_think(text: str) -> str:
     """Strip thinking tags + dedup."""
-    from server.tools_analysis.synthesis.synthesis_config import strip_thinking_tags
+    from server.tools_analysis.synthesis import strip_thinking_tags
     return _dedup_output(strip_thinking_tags(text))
 
 

@@ -318,7 +318,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                 return
             _reload_pending[0] = False
         try:
-            from tools_analysis.evolution.evolution_selftest.hot_reload \
+            from tools_analysis.evolution.evolution_selftest \
                 import hme_hot_reload as _reload
             # hme_hot_reload writes tmp/hme-last-reload.json itself.
             # Pass _trigger='auto' AND _caused_by=<file_path> for real

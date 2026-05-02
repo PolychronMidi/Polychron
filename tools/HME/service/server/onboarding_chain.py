@@ -152,7 +152,7 @@ def _mirror_to_todo_tree(current_state: str) -> None:
     per step. Called on every state transition. Soft-fails if the todo module
     can't be loaded (e.g., during early server bootstrap)."""
     try:
-        from server.tools_analysis.todo import register_onboarding_tree
+        from server.tools_analysis import register_onboarding_tree
     except Exception as _err:
         logger.debug(f"unnamed-except onboarding_chain.py:133: {type(_err).__name__}: {_err}")
         return
@@ -174,7 +174,7 @@ def _mirror_to_todo_tree(current_state: str) -> None:
 
 def _mirror_to_todo_tree_graduated() -> None:
     try:
-        from server.tools_analysis.todo import clear_onboarding_tree
+        from server.tools_analysis import clear_onboarding_tree
         clear_onboarding_tree()
     except (ImportError, AttributeError) as _clr_err:
         logger.debug(f"onboarding: clear_onboarding_tree unavailable: {_clr_err}")

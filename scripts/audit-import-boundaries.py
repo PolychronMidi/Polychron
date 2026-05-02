@@ -72,6 +72,27 @@ def _find_subsystems(roots):
     return subsystems
 
 
+def _is_flat_package(subsystem_dir: Path) -> bool:
+    """A subsystem opts out of strict-boundary checks by writing the
+    sentinel `# audit: flat-package` in its __init__.py. Used for runtime
+    packages that are architecturally a flat namespace (sibling-to-sibling
+    imports are normal, no public/private API split). The audit treats
+    every name in such a package as public — in-package imports from
+    outside the directory are still allowed, but submodule names aren't
+    checked against a surface.
+
+    Why a sentinel comment rather than an attribute: the marker has to be
+    parseable WITHOUT importing the module (audit runs over hundreds of
+    files, importing each one is too expensive and would trigger side
+    effects). A comment-form marker is read-only and safe."""
+    init = subsystem_dir / "__init__.py"
+    try:
+        text = init.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return "# audit: flat-package" in text
+
+
 def _public_surface(subsystem_dir: Path) -> set:
     """Names re-exported from __init__.py via `from .submodule import X`
     or `from .submodule import X as Y`. These are the subsystem's public
@@ -192,7 +213,9 @@ def main(argv: list) -> int:
     if only_sub is not None:
         subsystems = [s for s in subsystems if s.name == only_sub]
 
-    # Build subsystem -> public surface map.
+    # Build subsystem -> public surface map. Flat-packages opt out of
+    # strict-boundary checks entirely (see _is_flat_package).
+    flat_packages = {s for s in subsystems if _is_flat_package(s)}
     surfaces = {s: _public_surface(s) for s in subsystems}
 
     # Index search roots so we can resolve dotted module paths to files.
@@ -234,6 +257,11 @@ def main(argv: list) -> int:
                         continue  # target isn't part of any subsystem
                     # Same subsystem? OK.
                     if _is_within(fp, target_subsystem):
+                        continue
+                    # Flat-package: target subsystem opted out of strict
+                    # boundary checks. Anything inside it is implicitly
+                    # public; sibling and external access both allowed.
+                    if target_subsystem in flat_packages:
                         continue
                     # Target IS a subsystem boundary. Two cases:
                     # (a) `from <target_subsystem package> import name` — name

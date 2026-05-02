@@ -65,7 +65,7 @@ def register_critical_failure(
         except Exception as _opse:
             logger.warning(f"LIFESAVER ops.record_shim_crash failed: {_opse}")
     try:
-        from server.tools_analysis.todo import register_todo_from_lifesaver
+        from server.tools_analysis import register_todo_from_lifesaver
         register_todo_from_lifesaver(source, error, severity)
     except Exception as _te:
         logger.error(f"LIFESAVER todo append failed (failure still queued): {_te}")

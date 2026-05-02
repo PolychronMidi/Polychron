@@ -240,7 +240,7 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
         # don't remain as dangling [pending] items after the underlying
         # component recovered.
         try:
-            from server.tools_analysis.todo import resolve_lifesaver_todos
+            from server.tools_analysis import resolve_lifesaver_todos
             for src in resolved_sources:
                 resolve_lifesaver_todos(src)
         except (ImportError, AttributeError) as _tl_err:

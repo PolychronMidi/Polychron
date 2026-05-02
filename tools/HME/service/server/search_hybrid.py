@@ -3,7 +3,7 @@ import logging
 import os
 
 from server import context as ctx
-from server.tools_analysis import _track
+from server.tools_analysis import track as _track
 from server.helpers import fmt_sim_score, format_knowledge_results
 from rag_engine import summarize_chunk
 from tools_index import _resolve_lib_engine

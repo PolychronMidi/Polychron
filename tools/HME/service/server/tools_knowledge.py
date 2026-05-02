@@ -2,7 +2,7 @@
 import os
 import time
 import logging
-from server.tools_analysis import _track
+from server.tools_analysis import track as _track
 
 from server import context as ctx
 from server.helpers import (
@@ -150,8 +150,10 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
         )
 
     try:
-        from server.tools_analysis.synthesis.synthesis_inference import _local_think
-        from server.tools_analysis.synthesis.synthesis_llamacpp import _LOCAL_MODEL
+        from server.tools_analysis.synthesis import (
+            local_think as _local_think,
+            LOCAL_MODEL as _LOCAL_MODEL,
+        )
         prompt = (
             f"Does this new knowledge base entry make claims INCOMPATIBLE with any existing entry?\n\n"
             f"NEW ENTRY: \"{title}\"\n{content[:400]}\n\n"

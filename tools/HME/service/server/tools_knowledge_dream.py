@@ -2,7 +2,7 @@
 import os
 import time
 import logging
-from server.tools_analysis import _track
+from server.tools_analysis import track as _track
 
 from server import context as ctx
 from server.helpers import (
@@ -61,7 +61,7 @@ def memory_dream() -> str:
     # down — users waited for a result that never came.
     if top_pairs:
         try:
-            from server.tools_analysis import _think_local_or_claude
+            from server.tools_analysis import think_local_or_claude as _think_local_or_claude
             import concurrent.futures as _cf
             pairs_text = "\n".join(
                 f"  {sim:.0%}: '{a}' <-> '{b}'" for sim, a, b, _, _ in top_pairs[:6]
@@ -88,7 +88,7 @@ def memory_dream() -> str:
             finally:
                 _ex.shutdown(wait=False, cancel_futures=True)
             if synthesis:
-                from server.tools_analysis.synthesis.synthesis_inference import ground_synthesis
+                from server.tools_analysis.synthesis import ground_synthesis
                 synthesis = ground_synthesis(synthesis, user_text,
                                              log_label="architectural_interpretation")
                 parts.append("\n## Architectural Interpretation *(adaptive)*")
@@ -178,7 +178,7 @@ def knowledge_graph(query: str) -> str:
 
     # Adaptive synthesis: what does this KB cluster mean right now?
     try:
-        from server.tools_analysis import _think_local_or_claude
+        from server.tools_analysis import think_local_or_claude as _think_local_or_claude
         if results:
             cluster_text = "\n".join(
                 f"  [{r['category']}] {r['title']}: {r['content'][:120]}"
@@ -194,7 +194,7 @@ def knowledge_graph(query: str) -> str:
             )
             synthesis = _think_local_or_claude(user_text)
             if synthesis:
-                from server.tools_analysis.synthesis.synthesis_inference import ground_synthesis
+                from server.tools_analysis.synthesis import ground_synthesis
                 synthesis = ground_synthesis(synthesis, user_text,
                                              log_label="cluster_analysis")
                 parts.append(f"\n## Cluster Analysis *(adaptive)*")

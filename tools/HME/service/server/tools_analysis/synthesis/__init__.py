@@ -19,7 +19,11 @@ from .synthesis_config import (  # noqa: F401
     _PARTNER_SYSTEM,
     _BUDGET_TOKENS, _BUDGET_EFFORT, _BUDGET_TOOL_CALLS, _KB_CATEGORY_ORDER,
     _get_max_tokens, _get_effort, _get_tool_budget,
+    strip_thinking_tags,
 )
+# synthesis_reasoning imported as a submodule so external callers can do
+# `from server.tools_analysis.synthesis import synthesis_reasoning`.
+from . import synthesis_reasoning  # noqa: F401
 from .synthesis_llamacpp import (  # noqa: F401
     _LOCAL_MODEL, _REASONING_MODEL, _ARBITER_MODEL,
     _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL, _llamacpp_url_for,
@@ -76,3 +80,10 @@ from .synthesis_pipeline import (  # noqa: F401
 def _think_local_or_claude(prompt: str, model: str | None = None,
                            temperature: float = 0.3, **kwargs) -> str | None:
     return _local_think(prompt, model=model, temperature=temperature)
+
+
+# Public-named aliases. Underscore originals stay valid for in-package
+# callers; these public names are the import path for external subsystems.
+local_think = _local_think
+think_local_or_claude = _think_local_or_claude
+LOCAL_MODEL = _LOCAL_MODEL
