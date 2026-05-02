@@ -152,9 +152,79 @@ function loadPolicy(name) {
  * Run the Stop chain. Returns the proxy-bridge response shape:
  *   { stdout: <decision-json or empty>, stderr: <accumulated>, exit_code: 0 }
  */
+// Cascade-break: when the prior user message is a stop-hook deny payload
+// AND the assistant's reply is a bare ack, every detector in the chain
+// will fire on something (advisor doctrine, stop_work TEXT_ONLY_SHORT,
+// auto-completeness, etc.) -- producing endless "you must respond" loops
+// the agent cannot exit because every shape of output triggers a fresh
+// fire. Short-circuit the entire chain to `allow` for that exact pattern.
+// Silence is achieved by recognizing the silence-equivalent.
+function _isCascadeBreakConditions(stdinJson) {
+  let payload;
+  try { payload = JSON.parse(stdinJson || '{}'); } catch (_e) { return false; }
+  const transcript = payload && payload.transcript_path;
+  if (!transcript) return false;
+  let lines;
+  try { lines = fs.readFileSync(transcript, 'utf8').split('\n'); }
+  catch (_e) { return false; }
+  let lastUserText = '';
+  let lastAssistantText = '';
+  let lastAssistantHadToolUse = false;
+  for (const line of lines) {
+    if (!line) continue;
+    let entry;
+    try { entry = JSON.parse(line); } catch (_e) { continue; }
+    const role = entry.type || entry.role;
+    const content = (entry.message && entry.message.content) || entry.content;
+    if (role === 'user') {
+      let text = '';
+      if (typeof content === 'string') text = content;
+      else if (Array.isArray(content)) {
+        text = content
+          .filter((b) => b && b.type === 'text')
+          .map((b) => b.text || '')
+          .join(' ');
+      }
+      if (text.trim()) lastUserText = text;
+    } else if (role === 'assistant') {
+      let text = '';
+      let hasToolUse = false;
+      if (Array.isArray(content)) {
+        for (const b of content) {
+          if (!b || typeof b !== 'object') continue;
+          if (b.type === 'tool_use') hasToolUse = true;
+          if (b.type === 'text' && typeof b.text === 'string') text += b.text;
+        }
+      } else if (typeof content === 'string') {
+        text = content;
+      }
+      lastAssistantText = text;
+      lastAssistantHadToolUse = hasToolUse;
+    }
+  }
+  const userIsDeny = lastUserText && [
+    'Stop hook feedback:',
+    'Stop hook blocking error from command:',
+    'AUTO-COMPLETENESS',
+    'PreToolUse:',
+    'PostToolUse:',
+  ].some((m) => lastUserText.includes(m));
+  if (!userIsDeny) return false;
+  if (lastAssistantHadToolUse) return false;
+  const trimmed = (lastAssistantText || '').trim().toLowerCase().replace(/[.!]+$/, '');
+  return ['ok', 'done', 'noted', 'got it', 'ack', 'acknowledged'].includes(trimmed);
+}
+
 async function runStopChain(stdinJson) {
   resetTrace();
   appendTrace('chain_start');
+
+  // Cascade-break: silence-equivalent ack of a deny payload short-circuits
+  // the entire chain. No policies run, no detectors fire, turn ends.
+  if (_isCascadeBreakConditions(stdinJson)) {
+    appendTrace('cascade_break');
+    return { stdout: '', stderr: '', exit_code: 0 };
+  }
 
   // Clear stale detector-verdicts file so a crashed prior run can't leak
   // verdicts into this run. detectors policy will re-create it.
