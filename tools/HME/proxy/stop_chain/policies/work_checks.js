@@ -49,6 +49,12 @@ const REASONS = {
     'STOP-THE-LINE FORMAT VIOLATION: Tier E5 (Comprehensive) work closed without the required === SUMMARY === block. Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier -- if no summary is needed, this work was lighter than E5 and the classifier should reflect that.',
   SUMMARY_MALFORMED:
     'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every E5 turn must include all 7 elements: === SUMMARY === banner, [ITERATION]:, [CONTENT]:, [STORY]: with all 4 bullets (problem, what we did, how it went, what\'s next), and [VOICE] <name>: <8-16 word closing line>. Re-emit the block with every field populated.',
+  LIVE_PROBE_MISSING:
+    'LIVE-PROBE VIOLATION (PAI Verification Doctrine Rule 1): An ISA you edited this turn now has [x] criteria without corresponding entries in the Verification section. Every ISC marked done MUST carry tool-probe evidence (command output, Read content, screenshot) in the same ISA\'s Verification block. Either (a) add the Verification entry now -- one row per [x] ISC with the probe evidence -- or (b) revert the [x] back to [ ] / [DEFERRED-VERIFY:<task>] until the probe runs. The audit at tools/HME/scripts/isa/audit-isa.py reports the specific unverified ISC ids.',
+  PHASE_SKIPPED:
+    'PHASE GATE VIOLATION: Tier >= E3 (Algorithm) work made Edit/Write/MultiEdit calls this turn without declaring a BUILD or EXECUTE phase first. The 7-phase loop (OBSERVE -> THINK -> PLAN -> BUILD -> EXECUTE -> VERIFY -> LEARN) requires explicit transition markers so the design intent is articulated before code lands. Either (a) emit "=== BUILD ===" or "phase: build" in your text before the next edit, or (b) re-classify the tier -- if no PLAN ceremony is needed, this work was lighter than E3.',
+  MINIMAL_FORMAT_VIOLATION:
+    'MINIMAL MODE FORMAT VIOLATION: The classifier detected a MINIMAL-mode prompt (one-line acknowledgment expected) but your response was long-form OR carried an ALGORITHM-style === SUMMARY === block. Match the mode: terse one-liner, no boilerplate. If the work was actually substantive (warranting NATIVE/ALGORITHM), ask the classifier to re-evaluate or escalate the tier explicitly.',
   CEREMONY_DODGE:
     'CEREMONY-DODGE VIOLATION: Your last turn was text-only and dominated by rescue-clause language ("solo was right", "Nothing missed", "Acknowledged X input", "=== SUMMARY ===" block, "(verified)" stamps, "Re-evaluating tier", etc.) following a stop-hook deny. This is the failure mode where each turn writes ceremony to satisfy the prior turn\'s detector instead of doing real work. The fix is NOT more rescue text. Either (a) actually do work this turn -- ANY tool call (Read, Edit, Bash) demonstrating substantive action defeats this gate, or (b) if there is genuinely nothing to do and the prior detector fired wrongly, the response should be silent / empty rather than a verbose dodge. Stop emitting boilerplate to satisfy regexes; do the work or stop.',
   COMPL_ROUND_1:
@@ -81,6 +87,8 @@ function readVerdicts() {
     ADVISOR_DOCTRINE: 'ok',
     SUMMARY_FORMAT: 'ok',
     CEREMONY_DODGE: 'ok',
+    LIVE_PROBE: 'ok',
+    PHASE_GATE: 'ok',
   };
   if (!fs.existsSync(VERDICTS_FILE)) return out;
   let text = '';
@@ -269,7 +277,10 @@ module.exports = {
       v.ADVISOR_DOCTRINE === 'advisor_silently_skipped' ||
       v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded' ||
       v.SUMMARY_FORMAT === 'summary_missing' ||
-      v.SUMMARY_FORMAT === 'summary_malformed';
+      v.SUMMARY_FORMAT === 'summary_malformed' ||
+      v.SUMMARY_FORMAT === 'minimal_format_violation' ||
+      v.LIVE_PROBE === 'live_probe_missing' ||
+      v.PHASE_GATE === 'phase_skipped';
     if (!willDeny) {
       process.stderr.write(ENFORCEMENT_REMINDER + '\n');
     }
@@ -291,6 +302,9 @@ module.exports = {
     if (v.ADVISOR_DOCTRINE === 'advisor_conflict_cap_exceeded') return ctx.deny(REASONS.ADVISOR_CONFLICT_CAP);
     if (v.SUMMARY_FORMAT === 'summary_missing')   return ctx.deny(REASONS.SUMMARY_MISSING);
     if (v.SUMMARY_FORMAT === 'summary_malformed') return ctx.deny(REASONS.SUMMARY_MALFORMED);
+    if (v.SUMMARY_FORMAT === 'minimal_format_violation') return ctx.deny(REASONS.MINIMAL_FORMAT_VIOLATION);
+    if (v.LIVE_PROBE === 'live_probe_missing') return ctx.deny(REASONS.LIVE_PROBE_MISSING);
+    if (v.PHASE_GATE === 'phase_skipped')      return ctx.deny(REASONS.PHASE_SKIPPED);
 
     // Auto-completeness inject -- fires up to COMPL_MAX times per user-turn.
     // PRIOR FIX REMOVED: previously this skipped when any earlier policy

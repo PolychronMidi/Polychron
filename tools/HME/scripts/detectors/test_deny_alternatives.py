@@ -53,6 +53,9 @@ _DETECTOR_FOR_KEY = {
     "SUMMARY_MISSING":            "summary_format",
     "SUMMARY_MALFORMED":          "summary_format",
     "CEREMONY_DODGE":             "ceremony_dodge",
+    "LIVE_PROBE_MISSING":         "live_probe",
+    "PHASE_SKIPPED":              "phase_gate",
+    "MINIMAL_FORMAT_VIOLATION":   "summary_format",
 }
 
 # Per-alternative representative sentence + which detector test must accept
@@ -164,6 +167,21 @@ _PROBES = {
         # lives in test_detector_chain.py (ceremony_dodge fixtures).
         ("do-real-work", None),
         ("genuinely-empty", None),
+    ],
+    "LIVE_PROBE_MISSING": [
+        # Requires Edit tool_use on an ISA file; chain fixtures cover.
+        ("add-verification", None),
+        ("revert-to-deferred", None),
+    ],
+    "PHASE_SKIPPED": [
+        # Requires Edit tool_use + tier env; chain fixtures cover.
+        ("emit-build-marker", None),
+        ("re-classify-tier", None),
+    ],
+    "MINIMAL_FORMAT_VIOLATION": [
+        # Requires SUMMARY_FORMAT_MODE=MINIMAL env; chain fixtures cover.
+        ("match-mode", None),
+        ("escalate-tier", None),
     ],
 }
 

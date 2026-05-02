@@ -118,11 +118,18 @@ def _last_assistant_text(events: list) -> str:
     return "\n".join(parts)
 
 
-def _read_tier() -> str | None:
-    if os.environ.get("SUMMARY_FORMAT_TIER"):
-        return os.environ["SUMMARY_FORMAT_TIER"]
+def _read_tier_and_mode() -> tuple[str | None, str | None]:
+    """Return (tier, mode) from the most recent classifier line, or env
+    overrides. Mode is MINIMAL/NATIVE/ALGORITHM; tier is E1-E5 within
+    ALGORITHM. PAI's three output formats map: MINIMAL turn -> one-line
+    ack; NATIVE -> single artifact / no structural requirement;
+    ALGORITHM at E5 -> the structured SUMMARY block."""
+    env_tier = os.environ.get("SUMMARY_FORMAT_TIER")
+    env_mode = os.environ.get("SUMMARY_FORMAT_MODE")
+    if env_tier or env_mode:
+        return env_tier, env_mode
     if not _MODE_LOG.is_file():
-        return None
+        return None, None
     try:
         last = None
         with open(_MODE_LOG, encoding="utf-8") as f:
@@ -131,9 +138,29 @@ def _read_tier() -> str | None:
                     last = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-        return last.get("tier") if last else None
+        if not last:
+            return None, None
+        return last.get("tier"), last.get("mode")
     except OSError:
-        return None
+        return None, None
+
+
+def _read_tier() -> str | None:
+    """Backwards-compat shim for older callers."""
+    tier, _ = _read_tier_and_mode()
+    return tier
+
+
+def _minimal_violation(text: str) -> bool:
+    """MINIMAL mode mandates a short, focused response. Fire if the text
+    is long-form (>5 non-blank lines) OR contains a structured SUMMARY
+    block (which belongs only in ALGORITHM mode). The threshold matches
+    PAI's "one-line ack" intent with reasonable slack for natural
+    sentence wrapping."""
+    if _BANNER_RE.search(text):
+        return True
+    nonblank = [ln for ln in text.splitlines() if ln.strip()]
+    return len(nonblank) > 5
 
 
 def _validate_block(text: str) -> str:
@@ -157,32 +184,42 @@ def main() -> int:
         print("ok")
         return 0
 
-    tier = _read_tier()
-    if tier not in _TRIGGER_TIERS:
-        print("ok")
-        return 0
-
+    tier, mode = _read_tier_and_mode()
     events = load_turn_events(sys.argv[1])
     text = _last_assistant_text(events)
     if not text:
         print("ok")
         return 0
 
-    # No substantive work this turn -> nothing to summarize. The doctrine
-    # demanding a SUMMARY block on a text-only turn is the failure mode
-    # ceremony_dodge catches; we resolve the cycle by only requiring the
-    # block when there's actual work that the closing summary describes.
-    if not _has_substantive_work(events):
-        print("ok")
+    # MINIMAL mode (one-line ack expected) -- fire if response is
+    # long-form or carries an ALGORITHM-style SUMMARY block.
+    if mode == "MINIMAL" and _minimal_violation(text):
+        print("minimal_format_violation")
         return 0
 
-    verdict = _validate_block(text)
-    if verdict == "ok":
-        print("ok")
-    elif verdict == "missing":
-        print("summary_missing")
-    else:
-        print("summary_malformed")
+    # ALGORITHM at E5 -- structured SUMMARY block required when the
+    # turn did substantive work.
+    if tier in _TRIGGER_TIERS:
+        # No substantive work this turn -> nothing to summarize.
+        # The doctrine demanding a SUMMARY block on a text-only turn is
+        # the failure mode ceremony_dodge catches; we resolve the cycle
+        # by only requiring the block when there's actual work the
+        # closing summary describes.
+        if not _has_substantive_work(events):
+            print("ok")
+            return 0
+        verdict = _validate_block(text)
+        if verdict == "ok":
+            print("ok")
+        elif verdict == "missing":
+            print("summary_missing")
+        else:
+            print("summary_malformed")
+        return 0
+
+    # NATIVE mode + below-E5 ALGORITHM tiers -- no structural format
+    # demand. The agent's natural prose is the deliverable.
+    print("ok")
     return 0
 
 

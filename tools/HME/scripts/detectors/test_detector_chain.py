@@ -463,6 +463,79 @@ _CASES = [
      "ok",
      {"SUMMARY_FORMAT_TIER": "E1"}),
 
+    # live_probe -- ISA edit + simulated unverified verdict via env
+    # override (mirrors ADVISOR_DOCTRINE_TIER pattern). Real-ISA
+    # parsing exercised by audit-isa.py's own tests.
+    ("live_probe", "isa-with-unverified-isc-fires",
+     [
+         _user_msg("mark the criterion done"),
+         _assistant_tool_use("Edit", {
+             "file_path": "tmp/_lp_test/ISA.md",
+             "old_string": "x", "new_string": "y",
+         }),
+     ],
+     "live_probe_missing",
+     {"LIVE_PROBE_FORCE": "live_probe_missing"}),
+    # live_probe -- forced-ok matches the no-fire path.
+    ("live_probe", "no-isa-edit-passes",
+     [
+         _user_msg("just edit a python file"),
+         _assistant_tool_use("Edit", {
+             "file_path": "some_file.py",
+             "old_string": "x", "new_string": "y",
+         }),
+     ],
+     "ok",
+     {"LIVE_PROBE_FORCE": "ok"}),
+
+    # phase_gate -- E3+ Edit without BUILD/EXECUTE marker fires.
+    ("phase_gate", "edit-without-build-marker-fires",
+     [
+         _user_msg("ship the change"),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "a", "new_string": "b"}),
+     ],
+     "phase_skipped",
+     {"PHASE_GATE_TIER": "E3"}),
+    # phase_gate -- BUILD marker present allows the edit.
+    ("phase_gate", "build-marker-allows-edit",
+     [
+         _user_msg("ship the change"),
+         _assistant_msg("=== BUILD ===\nGoing with this approach."),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "a", "new_string": "b"}),
+     ],
+     "ok",
+     {"PHASE_GATE_TIER": "E3"}),
+    # phase_gate -- below E3 short-circuits.
+    ("phase_gate", "below-tier-passes",
+     [
+         _user_msg("trivial"),
+         _assistant_tool_use("Edit", {"file_path": "/x.py",
+                                      "old_string": "a", "new_string": "b"}),
+     ],
+     "ok",
+     {"PHASE_GATE_TIER": "E1"}),
+
+    # summary_format MINIMAL violation: long-form response in MINIMAL mode.
+    ("summary_format", "minimal-long-response-fires",
+     [
+         _user_msg("ack"),
+         _assistant_msg(
+             "Line 1.\nLine 2.\nLine 3.\nLine 4.\nLine 5.\nLine 6.\nLine 7."
+         ),
+     ],
+     "minimal_format_violation",
+     {"SUMMARY_FORMAT_MODE": "MINIMAL"}),
+    # summary_format MINIMAL ok: terse response.
+    ("summary_format", "minimal-terse-passes",
+     [
+         _user_msg("ack"),
+         _assistant_msg("Done."),
+     ],
+     "ok",
+     {"SUMMARY_FORMAT_MODE": "MINIMAL"}),
+
     # ceremony_dodge -- text-only response to hook deny, dominated by
     # rescue patterns from sibling detectors. This is the exact failure
     # shape: solo-rationale + SUMMARY block emitted purely to satisfy

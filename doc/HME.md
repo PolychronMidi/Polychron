@@ -226,7 +226,7 @@ Chaos verifiers at [scripts/chaos/](../scripts/chaos/) inject faults and assert 
 
 ## Stop-hook behavioral detectors
 
-Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes nine detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop.sh) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
+Every `Stop` event runs [run_all.py](../tools/HME/scripts/detectors/run_all.py), which invokes nine detectors against the current-turn transcript. Each prints a single verdict line; [stop.sh](../tools/HME/hooks/lifecycle/stop/) parses the verdicts and emits `decision: block` when any fires. Per-fire telemetry goes to `output/metrics/detector-stats.jsonl`; query via `scripts/analyze-detector-stats.py [--coverage|--json]`.
 
 | Detector | Catches |
 | --- | --- |
@@ -608,7 +608,7 @@ All hooks live in `tools/HME/hooks/` as standalone scripts, registered in `hooks
 
 ### Activity Bridge
 
-Phase 1 of the [openshell feature mapping](openshell_features_to_mimic.md). Hooks emit structured events into `output/metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` -- a zero-dependency CLI invoked from bash hooks in the background.
+Phase 1 of the openshell feature mapping (planning doc archived post-delivery). Hooks emit structured events into `output/metrics/hme-activity.jsonl` (gitignored, append-only). Every line is one JSON object: `{event, ts, session, ...}`. The shared writer is `tools/HME/activity/emit.py` -- a zero-dependency CLI invoked from bash hooks in the background.
 
 | Event | Source | Agent-independent? | Fields |
 | --- | --- | --- | --- |

@@ -56,6 +56,12 @@ DETECTORS = [
     # Anti-ceremony: blocks text-only responses to a prior stop-hook deny
     # that are dominated by rescue-clause patterns instead of doing work.
     ("ceremony_dodge", "ceremony_dodge"),
+    # PAI-import #2: Live-Probe enforcement. ISA edits this turn that
+    # leave [x] ISCs without Verification entries are blocked.
+    ("live_probe", "live_probe"),
+    # PAI-import #3: Algorithm 7-phase tracking. E3+ edits without a
+    # declared BUILD/EXECUTE phase marker are blocked.
+    ("phase_gate", "phase_gate"),
 ]
 
 

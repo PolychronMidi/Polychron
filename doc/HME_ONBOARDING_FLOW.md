@@ -57,7 +57,7 @@ This document is the design spec. Edit it when the flow changes; the code follow
 - **verified** -- pipeline passed. Transition: `learn(title=, content=)`. Forward when: both `title` and `content` non-empty.
 - **graduated** -- loop complete. State file is deleted.
 
-The `briefed` state was removed: the KB briefing that used to be its own step is now auto-chained into every Edit via `_hme_validate` in [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh), so the agent never needs to call `read(target, mode='before')` explicitly. The `read` tool still exists as a hidden internal utility called by the hook.
+The `briefed` state was removed: the KB briefing that used to be its own step is now auto-chained into every Edit via `_hme_validate` in [pretooluse_edit.sh](../tools/HME/hooks/pretooluse/pretooluse_edit.sh), so the agent never needs to call `read(target, mode='before')` explicitly. The `read` tool still exists as a hidden internal utility called by the hook.
 
 ## Auto-chaining rules
 
@@ -75,10 +75,10 @@ This is the only rule because the other transitions already describe natural wor
 
 For tools outside the HME MCP server, hooks are the gatekeepers. Gates fire only during onboarding -- graduated agents bypass them and hit the pre-existing soft warnings.
 
-- [pretooluse_edit.sh](../tools/HME/hooks/pretooluse_edit.sh) -- block `Edit` on `/src/` when state is earlier than `briefed`. Forces agent through read(mode='before') first.
-- [pretooluse_bash.sh](../tools/HME/hooks/pretooluse_bash.sh) -- block `Bash: npm run main` when state is earlier than `reviewed`. Forces agent through review(mode='forget') first.
-- [posttooluse_edit.sh](../tools/HME/hooks/posttooluse_edit.sh) -- advance `briefed` -> `edited` on successful src/ Edit. Automatic state bookkeeping.
-- [posttooluse_bash.sh](../tools/HME/hooks/posttooluse_bash.sh) -- advance `reviewed` -> `piped` on npm launch; `piped` -> `verified` on clean STABLE/EVOLVED verdict.
+- [pretooluse_edit.sh](../tools/HME/hooks/pretooluse/pretooluse_edit.sh) -- block `Edit` on `/src/` when state is earlier than `briefed`. Forces agent through read(mode='before') first.
+- [pretooluse_bash.sh](../tools/HME/hooks/pretooluse/pretooluse_bash.sh) -- block `Bash: npm run main` when state is earlier than `reviewed`. Forces agent through review(mode='forget') first.
+- [posttooluse_edit.sh](../tools/HME/hooks/posttooluse/posttooluse_edit.sh) -- advance `briefed` -> `edited` on successful src/ Edit. Automatic state bookkeeping.
+- [posttooluse_bash.sh](../tools/HME/hooks/posttooluse/posttooluse_bash.sh) -- advance `reviewed` -> `piped` on npm launch; `piped` -> `verified` on clean STABLE/EVOLVED verdict.
 
 ## Tool handler wiring
 
@@ -123,7 +123,7 @@ Graduation fires when `learn(title=, content=)` is called with both `title` and 
 3. Appends `🎓 HME ONBOARDING COMPLETE` to the learn() result
 4. All subsequent tool calls bypass onboarding gates
 
-Graduation is per-session. The next `SessionStart` re-initializes state to `boot` via [sessionstart.sh](../tools/HME/hooks/sessionstart.sh):`_onb_init`.
+Graduation is per-session. The next `SessionStart` re-initializes state to `boot` via [sessionstart.sh](../tools/HME/hooks/lifecycle/sessionstart.sh):`_onb_init`.
 
 ## Compaction resilience
 
@@ -137,7 +137,7 @@ Flow:
 
 1. `set_state(new_state)` writes the state file AND calls `register_onboarding_tree(steps)` in [tools/HME/service/server/tools_analysis/todo.py](../tools/HME/service/server/tools_analysis/todo.py)
 2. The todo module rebuilds the parent's sub list, preserving existing sub IDs by matching on step text (no ID churn across transitions)
-3. On the next `TodoWrite` call, [pretooluse_todowrite.sh](../tools/HME/hooks/pretooluse_todowrite.sh) reads the HME store, calls `merge_native_todowrite()`, and returns the merged flat list as `hookSpecificOutput.updatedInput`
+3. On the next `TodoWrite` call, [pretooluse_todowrite.sh](../tools/HME/hooks/pretooluse/pretooluse_todowrite.sh) reads the HME store, calls `merge_native_todowrite()`, and returns the merged flat list as `hookSpecificOutput.updatedInput`
 4. Native TodoWrite runs with the merged list -- the agent sees the walkthrough as indented sub-items under a parent `[HME onboarding] walkthrough`
 5. On graduation, `clear_onboarding_tree()` removes the parent + all subs
 
@@ -160,7 +160,7 @@ To add a state to the machine:
 1. Add it to `STATES` in [onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py)
 2. Add a `STEP_LABELS` entry
 3. Add a transition branch in `_advance()`
-4. Add the matching state to `_ONB_STATES` in [_onboarding.sh](../tools/HME/hooks/_onboarding.sh)
+4. Add the matching state to `_ONB_STATES` in [_onboarding.sh](../tools/HME/hooks/helpers/_onboarding.sh)
 5. Add its step-label case in `_onb_step_label`
 6. Update this table
 
@@ -181,6 +181,6 @@ To add a new gate for an external tool:
 - [doc/AGENT_PRIMER.md](./AGENT_PRIMER.md) -- what the primer hook injects on first HME call
 - [doc/HME.md](./HME.md) -- the broader HME reference
 - [tools/HME/service/server/onboarding_chain.py](../tools/HME/service/server/onboarding_chain.py) -- Python state machine
-- [tools/HME/hooks/_onboarding.sh](../tools/HME/hooks/_onboarding.sh) -- shell helpers
-- [tools/HME/hooks/sessionstart.sh](../tools/HME/hooks/sessionstart.sh) -- initializes state to `boot`
-- [tools/HME/hooks/pretooluse_hme_primer.sh](../tools/HME/hooks/pretooluse_hme_primer.sh) -- injects primer on first HME call
+- [tools/HME/hooks/_onboarding.sh](../tools/HME/hooks/helpers/_onboarding.sh) -- shell helpers
+- [tools/HME/hooks/sessionstart.sh](../tools/HME/hooks/lifecycle/sessionstart.sh) -- initializes state to `boot`
+- [tools/HME/hooks/pretooluse_hme_primer.sh](../tools/HME/hooks/pretooluse/pretooluse_hme_primer.sh) -- injects primer on first HME call

@@ -55,6 +55,10 @@ run "audit-import-boundaries"    python3 scripts/audit-import-boundaries.py $([ 
 # docstrings vs. actual stop_chain runtime ordering. Acyclic-graph check.
 run "audit-hook-coordination"    python3 scripts/audit-hook-coordination.py $([ "$STRICT" = "1" ] && echo --strict)
 
+# DocIntegrity -- cross-reference audit on markdown files. Every
+# [text](path) link must resolve, every #anchor must match a heading.
+run "audit-doc-integrity"        python3 scripts/audit-doc-integrity.py $([ "$STRICT" = "1" ] && echo --strict)
+
 # Detector <-> deny-prompt link integrity (each prompt's advertised
 # alternative paths must be honored by the paired detector).
 run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_alternatives.py
