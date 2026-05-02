@@ -944,7 +944,7 @@ function handleRequest(clientReq, clientRes) {
                   if (userIsDeny) {
                     parsed.content = parsed.content.filter((b) => {
                       if (!b || b.type !== 'text' || typeof b.text !== 'string') return true;
-                      return !ackPats.some((p) => p.test(b.text));
+                      return !_isBareAck(b.text);
                     });
                     const newBuf = Buffer.from(JSON.stringify(parsed), 'utf8');
                     clientRes.end(newBuf);
