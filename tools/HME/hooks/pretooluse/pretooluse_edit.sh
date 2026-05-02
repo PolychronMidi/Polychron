@@ -154,7 +154,13 @@ if echo "$FILE" | grep -qE '/Polychron/src/.*\.(js|ts|tsx|mjs|cjs)$'; then
     HASH=$(printf '%s' "$NEW_STRING" | sha1sum | cut -c1-16)
     CACHE="/tmp/hme-edit-validate-$HASH.json"
     if [ ! -f "$CACHE" ]; then
-      curl -s -m 2 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
+      # Tight 500ms timeout (was 2s). Worker CPU-saturation alerts show
+      # the worker can be slow; the hook used to wait the full 2s on
+      # every cache miss (-> p95=2065ms latency warnings). 500ms is
+      # plenty for a healthy worker; degraded worker just means we
+      # write {} and skip the KB-block check this turn (next edit picks
+      # it back up via cache).
+      curl -s -m 0.5 -X POST "http://127.0.0.1:${HME_MCP_PORT:-9098}/validate" \
         -H 'Content-Type: application/json' \
         -d "{\"query\":\"$MODULE\"}" > "$CACHE" 2>/dev/null || echo '{}' > "$CACHE"
     fi
@@ -230,7 +236,10 @@ if echo "$FILE" | grep -qE '/(src|tools/HME/(mcp|chat|activity|hooks|scripts|pro
       # Fast path: /enrich (~70ms) for KB hits + head of target file for
       # docstring/imports. Stays under the PreToolUse latency budget that
       # i/hme-read (15s LLM synthesis) blew. Brief is compact (<2 KB).
-      _kb_hits=$(curl -sf --max-time 2 -X POST -H 'Content-Type: application/json' \
+      # 500ms timeout (was 2s). Same rationale as /validate above:
+      # worker can be CPU-saturated, hook should not block 2s every
+      # time. Healthy /enrich is ~70ms so the new ceiling is 7x headroom.
+      _kb_hits=$(curl -sf --max-time 0.5 -X POST -H 'Content-Type: application/json' \
         --data-binary "{\"query\":\"${_auto_module}\",\"top_k\":3}" \
         "http://127.0.0.1:${HME_MCP_PORT:-9098}/enrich" 2>/dev/null \
         | python3 -c "

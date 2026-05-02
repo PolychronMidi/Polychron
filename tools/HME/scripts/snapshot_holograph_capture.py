@@ -85,7 +85,9 @@ def capture_tool_surface() -> dict:
             try:
                 with open(path) as fp:
                     tree = ast.parse(fp.read())
-            except Exception:
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                # Read failure or unparseable Python -- skip the file
+                # (capture is best-effort, holograph still useful without).
                 continue
             for node in ast.walk(tree):
                 if not isinstance(node, ast.FunctionDef):
@@ -174,8 +176,8 @@ def capture_kb_summary() -> dict:
             with open(fh) as f:
                 hashes = json.load(f)
             info["indexed_file_count"] = len(hashes)
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as e:
+            info["indexed_file_count_error"] = f"{type(e).__name__}: {e}"
     return info
 
 
@@ -245,8 +247,10 @@ def capture_codebase() -> dict:
                     try:
                         with open(os.path.join(root, f)) as fp:
                             loc += sum(1 for _ in fp)
-                    except Exception:
-                        pass
+                    except (OSError, UnicodeDecodeError):
+                        # Read failure -- LOC count remains 0 for this
+                        # file; subsystem total still meaningful.
+                        continue
         counts[entry] = {"files": files, "loc": loc}
         total_loc += loc
         total_files += files
