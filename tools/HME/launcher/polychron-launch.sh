@@ -357,5 +357,34 @@ fi
 
 echo "[launch] stack up -- PIDs logged to ${PID_FILE}" >&2
 
+# Spawn VS Code as a child of this launcher so it inherits ANTHROPIC_BASE_URL.
+# Only when no VS Code is currently running -- if one is, the user already
+# has it (with or without env, but we won't kill an active session). Skip
+# entirely with HME_NO_LAUNCH_VSCODE=1.
+if [ "${HME_NO_LAUNCH_VSCODE:-0}" != "1" ]; then
+  _vscode_running=$(pgrep -f "(^|/)code( |--type|$)|electron.*vscode" 2>/dev/null | head -1)
+  if [ -z "$_vscode_running" ]; then
+    _code_bin=$(command -v code 2>/dev/null || echo "/usr/bin/code")
+    if [ -x "$_code_bin" ]; then
+      _env_prefix=("ANTHROPIC_BASE_URL=$ANTHROPIC_BASE_URL" "PROJECT_ROOT=$PROJECT_ROOT")
+      [ -n "${DISPLAY:-}" ]                  && _env_prefix+=("DISPLAY=$DISPLAY")
+      [ -n "${WAYLAND_DISPLAY:-}" ]          && _env_prefix+=("WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
+      [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && _env_prefix+=("DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS")
+      [ -n "${XDG_RUNTIME_DIR:-}" ]          && _env_prefix+=("XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR")
+      [ -n "${XAUTHORITY:-}" ]               && _env_prefix+=("XAUTHORITY=$XAUTHORITY")
+      [ -n "${HOME:-}" ]                     && _env_prefix+=("HOME=$HOME")
+      [ -n "${USER:-}" ]                     && _env_prefix+=("USER=$USER")
+      [ -n "${PATH:-}" ]                     && _env_prefix+=("PATH=$PATH")
+      env "${_env_prefix[@]}" \
+        setsid nohup "$_code_bin" "$PROJECT_ROOT" \
+          > "$PROJECT_ROOT/log/vscode-launch.out" 2>&1 < /dev/null &
+      disown
+      echo "[launch] spawned VS Code (log: $PROJECT_ROOT/log/vscode-launch.out)" >&2
+    else
+      echo "[launch] note: 'code' binary not found at $_code_bin -- skip VS Code spawn" >&2
+    fi
+  fi
+fi
+
 # Mark success so the EXIT trap leaves the stack alone.
 _LAUNCH_OK=1
