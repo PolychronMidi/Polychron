@@ -23,4 +23,11 @@ done
 echo "[restart] ports clear after ${_waited}s" >&2
 
 echo "[restart] launching..." >&2
+# A restart implies the env was already configured before this run -- the
+# launcher's auto-kill of "bypassing" VSCode/claude-code processes is for
+# first-boot scenarios, not restarts. From inside a Claude Code session
+# the auto-kill SIGTERMs the parent that asked for the restart (exit 143).
+# Force the safer no-autofix path and tolerate any false-positive bypass.
+export HME_NO_AUTOFIX_VSCODE=1
+export HME_ALLOW_PROXY_BYPASS=1
 exec "$_LAUNCHER_DIR/polychron-launch.sh" "$@"

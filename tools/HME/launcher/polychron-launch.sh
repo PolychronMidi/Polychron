@@ -263,13 +263,41 @@ PYEOF
       # persist across the kill+restart.
       _code_pids=$(pgrep -f "/code\b\|vscode\b\|electron.*vscode" 2>/dev/null | tr '\n' ' ')
       _code_pids="$_code_pids $_bypass_pids"
+      # Defense-in-depth: never SIGTERM our own ancestor chain. Walk
+      # /proc/self/status PPid -> ... -> 1 and exclude any matching pid
+      # from the kill list. Without this, invoking the launcher from
+      # inside the very VSCode/claude-code session it's about to "fix"
+      # SIGTERMs the caller (exit 143) -- the same failure mode
+      # polychron-restart.sh now tries to head off via HME_NO_AUTOFIX_VSCODE.
+      _ancestor_pids=" "
+      _walk_pid=$$
+      while [ -n "$_walk_pid" ] && [ "$_walk_pid" != "0" ] && [ "$_walk_pid" != "1" ]; do
+        _ancestor_pids="$_ancestor_pids$_walk_pid "
+        _walk_pid=$(awk '/^PPid:/ {print $2}' "/proc/$_walk_pid/status" 2>/dev/null)
+      done
       for _pid in $_code_pids; do
-        [ -n "$_pid" ] && kill "$_pid" 2>/dev/null || true
+        if [ -n "$_pid" ]; then
+          case "$_ancestor_pids" in
+            *" $_pid "*)
+              echo "[launch] SKIP kill on ancestor pid $_pid" \
+                   "(would SIGTERM the caller)" >&2
+              ;;
+            *)
+              kill "$_pid" 2>/dev/null || true
+              ;;
+          esac
+        fi
       done
       sleep 2
       # Hard kill anything still alive after SIGTERM grace period.
+      # Same ancestor-skip rule as the SIGTERM pass above.
       for _pid in $_code_pids; do
-        [ -n "$_pid" ] && kill -9 "$_pid" 2>/dev/null || true
+        if [ -n "$_pid" ]; then
+          case "$_ancestor_pids" in
+            *" $_pid "*) ;;  # skip ancestor
+            *) kill -9 "$_pid" 2>/dev/null || true ;;
+          esac
+        fi
       done
       sleep 1
 
