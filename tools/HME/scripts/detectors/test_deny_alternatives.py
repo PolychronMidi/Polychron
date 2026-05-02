@@ -162,7 +162,7 @@ _PROBES = {
          "- how it went: cleanly\n"
          "- what's next: stop\n"
          "[VOICE] Polychron: probe demonstrates closing block format works correctly.",
-         {"SUMMARY_FORMAT_TIER": "E3"}),
+         {"SUMMARY_FORMAT_TIER": "E5"}),
         # (b) tier below threshold -- detector short-circuits to ok regardless.
         ("re-classify-tier",
          _PADDING + "Done.",
@@ -182,7 +182,7 @@ _PROBES = {
          "- how it went: z\n"
          "- what's next: w\n"
          "[VOICE] Polychron: full closing block with every required field populated cleanly.",
-         {"SUMMARY_FORMAT_TIER": "E3"}),
+         {"SUMMARY_FORMAT_TIER": "E5"}),
     ],
     "CEREMONY_DODGE": [
         # The detector requires a transcript with a prior hook-deny user

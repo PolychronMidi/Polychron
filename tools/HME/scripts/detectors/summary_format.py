@@ -46,8 +46,12 @@ _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
 _MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 
-# Trigger tiers - E3+ is the Algorithm floor where the format is required.
-_TRIGGER_TIERS = {"E3", "E4", "E5"}
+# Trigger tiers - E5 only. E3 (multi-file algorithm) and E4 (deep work)
+# fire too frequently for the literal closing block to be useful; emitting
+# the block to satisfy the gate became the ceremony-spam pattern the user
+# called out. E5 (Comprehensive sweep / cross-cutting refactor) is the
+# narrow case where the structured close is genuinely worth the ceremony.
+_TRIGGER_TIERS = {"E5"}
 
 _BANNER_RE = re.compile(r"={3,}\s*SUMMARY\s*={3,}")
 _ITER_RE   = re.compile(r"\[ITERATION\]\s*:", re.IGNORECASE)

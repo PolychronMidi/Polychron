@@ -104,7 +104,7 @@ CORPUS = (
     ("summary_format", "e3-missing-block", "summary_missing",
      "do the sweep",
      _PADDING + "All checks green. Stopping.",
-     {"SUMMARY_FORMAT_TIER": "E3"}),
+     {"SUMMARY_FORMAT_TIER": "E5"}),
     # summary_format -- E3 with full block passes.
     ("summary_format", "e3-complete-block", "ok",
      "do the sweep",
@@ -118,7 +118,7 @@ CORPUS = (
      "- how it went: clean pass\n"
      "- what's next: monitor enforcement signal\n"
      "[VOICE] Polychron: PAI summary block now mandatory at tier E3 and above.",
-     {"SUMMARY_FORMAT_TIER": "E3"}),
+     {"SUMMARY_FORMAT_TIER": "E5"}),
     # summary_format -- below threshold passes regardless of text.
     ("summary_format", "e1-below-passes", "ok",
      "trivial fix",

@@ -370,7 +370,7 @@ _CASES = [
          ),
      ],
      "summary_missing",
-     {"SUMMARY_FORMAT_TIER": "E3"}),
+     {"SUMMARY_FORMAT_TIER": "E5"}),
 
     # summary_format -- tier >= E3 with complete block passes.
     ("summary_format", "complete-block-passes",
@@ -390,7 +390,7 @@ _CASES = [
          ),
      ],
      "ok",
-     {"SUMMARY_FORMAT_TIER": "E3"}),
+     {"SUMMARY_FORMAT_TIER": "E5"}),
 
     # summary_format -- block present but missing fields fires malformed.
     ("summary_format", "malformed-fires",
@@ -403,7 +403,7 @@ _CASES = [
          ),
      ],
      "summary_malformed",
-     {"SUMMARY_FORMAT_TIER": "E3"}),
+     {"SUMMARY_FORMAT_TIER": "E5"}),
 
     # summary_format -- tier below threshold short-circuits to ok regardless.
     ("summary_format", "tier-below-passes",
