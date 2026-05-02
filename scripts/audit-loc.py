@@ -26,7 +26,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from loc_ignore import load_patterns, is_exempt  # noqa: E402
+from loc_ignore import load_patterns, is_exempt, load_with_rationale  # noqa: E402
 
 _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..")
@@ -46,26 +46,42 @@ _EXTS = {".py", ".js", ".ts", ".sh"}
 
 
 def _load_thresholds():
-    """Single source of truth — same file audit-core-principles reads."""
+    """Single source of truth — same file audit-core-principles reads.
+
+    Fail-fast: a malformed or missing config file used to silently
+    fall back to (250, 350) defaults. That hid drift — if someone
+    accidentally deleted line_count_thresholds the audit would keep
+    reporting "0 critical" against the wrong threshold. The agent-layer
+    rule is "fail-fast, no silent fallbacks" — apply it to the audit.
+    """
     path = os.path.join(_PROJECT, "tools", "HME", "config", "project-rules.json")
-    try:
-        with open(path, encoding="utf-8") as f:
-            cfg = json.load(f).get("line_count_thresholds", {})
-        return cfg.get("warn", 250), cfg.get("critical", 350)
-    except (OSError, ValueError):
-        return 250, 350
+    if not os.path.isfile(path):
+        raise SystemExit(
+            f"audit-loc: project-rules.json missing at {path!r}. "
+            f"Refusing to use baked-in defaults — that's the silent "
+            f"fallback this audit exists to prevent."
+        )
+    with open(path, encoding="utf-8") as f:
+        cfg = json.load(f).get("line_count_thresholds", {})
+    if "warn" not in cfg or "critical" not in cfg:
+        raise SystemExit(
+            f"audit-loc: project-rules.json missing line_count_thresholds. "
+            f"Found keys: {list(cfg.keys())}"
+        )
+    return cfg["warn"], cfg["critical"]
 
 
 def _loc(path: str) -> int:
+    """Count non-blank, non-comment lines. Loud on read failures —
+    silent 0 used to hide files we couldn't read (perm errors, encoding
+    explosions); the audit reported "0 LOC" and the file silently
+    skipped the threshold check."""
     n = 0
-    try:
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                s = line.strip()
-                if s and not s.startswith(("#", "//")):
-                    n += 1
-    except OSError:
-        return 0
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            s = line.strip()
+            if s and not s.startswith(("#", "//")):
+                n += 1
     return n
 
 
@@ -88,6 +104,7 @@ def _walk(roots, ignore_patterns):
 def main(argv: list) -> int:
     as_json = False
     strict = False
+    show_rationale = False
     paths = list(_DEFAULT_ROOTS)
     i = 0
     while i < len(argv):
@@ -96,6 +113,8 @@ def main(argv: list) -> int:
             as_json = True
         elif a == "--strict":
             strict = True
+        elif a == "--rationale":
+            show_rationale = True
         elif a == "--path":
             i += 1
             if i >= len(argv):
@@ -122,18 +141,54 @@ def main(argv: list) -> int:
     crit.sort(reverse=True)
     warn.sort(reverse=True)
 
+    # Build rationale lookup. Each exemption may carry a structured
+    # rationale token (see config/loc-ignore.txt). When --rationale
+    # is set we emit a separate report listing exempted files with
+    # their declared intent + revisit-when triggers — the architectural
+    # rationale diary, queryable instead of buried in prose comments.
+    exemption_records = load_with_rationale()
+
     if as_json:
-        print(json.dumps({
+        out = {
             "thresholds": {"warn": warn_t, "critical": crit_t},
             "critical": [{"loc": l, "path": p} for l, p in crit],
             "warn": [{"loc": l, "path": p} for l, p in warn],
-        }, indent=2))
+        }
+        if show_rationale:
+            out["exemptions"] = exemption_records
+        print(json.dumps(out, indent=2))
     else:
         print(f"audit-loc: WARN > {warn_t}, CRITICAL > {crit_t}")
         print(f"  CRITICAL: {len(crit)}")
         for loc, p in crit:
             print(f"    {loc:5d}  {p}")
         print(f"  WARN:     {len(warn)}")
+        if show_rationale:
+            with_r = [r for r in exemption_records if r["rationale"]]
+            without = [r for r in exemption_records if not r["rationale"]]
+            print(f"\n  Exemptions: {len(exemption_records)} total, "
+                  f"{len(with_r)} with rationale, {len(without)} without")
+            if with_r:
+                print("  By intent:")
+                by_intent: dict[str, list] = {}
+                for r in with_r:
+                    intent = r["rationale"].get("intent", "<unspecified>")
+                    by_intent.setdefault(intent, []).append(r)
+                for intent in sorted(by_intent):
+                    items = by_intent[intent]
+                    print(f"    {intent}: {len(items)}")
+                    for r in items[:3]:
+                        revisit = r["rationale"].get("revisit-when", "—")
+                        print(f"      {r['pattern']}  (revisit: {revisit})")
+                    if len(items) > 3:
+                        print(f"      … (+{len(items) - 3} more)")
+            if without:
+                print(f"  Exemptions WITHOUT rationale tokens "
+                      f"({len(without)}) — consider declaring intent:")
+                for r in without[:5]:
+                    print(f"    {r['pattern']}")
+                if len(without) > 5:
+                    print(f"    … (+{len(without) - 5} more)")
 
     if strict and crit:
         return 1

@@ -270,3 +270,74 @@ def capture_streak() -> dict:
             except Exception:
                 continue
     return {"non_hme_streak": streak}
+
+
+def capture_audit_state() -> dict:
+    """Snapshot of the project audit suite — LOC, undefined-name, shell,
+    import-boundary, deny-link, and detector-test verdicts.
+
+    Why this lives in the holograph: each audit alone is point-in-time.
+    Diffing two holographs across days surfaces architectural DRIFT
+    (boundary findings climbing, undefined-names creeping back, LOC
+    pressure migrating between subsystems). The static audits answer
+    'how dirty is the codebase right now'; the holograph series
+    answers 'which axis is leaking'.
+    """
+    scripts = os.path.join(_PROJECT, "scripts")
+    detectors = os.path.join(_PROJECT, "tools", "HME", "scripts", "detectors")
+    out = {}
+
+    def _json_audit(name: str, cmd: list) -> dict:
+        try:
+            rc = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30,
+                env={**os.environ, "PROJECT_ROOT": _PROJECT},
+            )
+            return json.loads(rc.stdout)
+        except (subprocess.TimeoutExpired, json.JSONDecodeError, OSError) as e:
+            return {"_error": f"{type(e).__name__}: {e}", "_audit": name}
+
+    out["loc"] = _json_audit("loc",
+        ["python3", os.path.join(scripts, "audit-loc.py"), "--json"])
+    out["python_undefined"] = _json_audit("python_undefined",
+        ["python3", os.path.join(scripts, "audit-python-undefined-names.py"), "--json"])
+    out["import_boundaries"] = _json_audit("import_boundaries",
+        ["python3", os.path.join(scripts, "audit-import-boundaries.py"), "--json"])
+
+    # Tests with text-only output — record exit code and a parsed summary.
+    def _text_audit(name: str, cmd: list, summary_pat: str = r"(\d+)\s*[/]\s*(\d+)\s*PASS|(\d+)\s+passes|(\d+)\s+findings") -> dict:
+        try:
+            rc = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=60,
+                env={**os.environ, "PROJECT_ROOT": _PROJECT},
+            )
+            tail = (rc.stdout or "")[-400:]
+            m = re.search(summary_pat, tail)
+            return {
+                "exit": rc.returncode,
+                "summary_tail": tail.strip().split("\n")[-3:],
+                "match": m.groups() if m else None,
+            }
+        except (subprocess.TimeoutExpired, OSError) as e:
+            return {"_error": f"{type(e).__name__}: {e}", "_audit": name}
+
+    out["shell_undefined"] = _text_audit("shell_undefined",
+        ["python3", os.path.join(scripts, "audit_shell_undefined_vars.py")])
+    out["deny_alternatives"] = _text_audit("deny_alternatives",
+        ["python3", os.path.join(detectors, "test_deny_alternatives.py")])
+    out["detector_chain"] = _text_audit("detector_chain",
+        ["python3", os.path.join(detectors, "test_detector_chain.py")])
+
+    # Boil down to a coupling-friendly numeric panel — one scalar per axis,
+    # so future cross-dimensional analysis (Rung 2) has a vector to work
+    # against without re-running the audits each time.
+    panel = {}
+    if isinstance(out.get("loc"), dict) and "critical" in out["loc"]:
+        panel["loc_critical"] = len(out["loc"].get("critical", []))
+        panel["loc_warn"] = len(out["loc"].get("warn", []))
+    if isinstance(out.get("python_undefined"), dict):
+        panel["py_undefined"] = out["python_undefined"].get("count", 0)
+    if isinstance(out.get("import_boundaries"), dict):
+        panel["boundary_findings"] = out["import_boundaries"].get("count", 0)
+    out["panel"] = panel
+    return out

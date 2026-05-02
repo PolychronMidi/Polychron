@@ -104,11 +104,18 @@ def _public_surface(subsystem_dir: Path) -> set:
 def _scan_imports(file_path: Path) -> list:
     """Return list of (line_no, target_module, imported_names) for every
     `from X import Y, Z` in the file. Skips relative imports — they're
-    intra-subsystem by definition."""
+    intra-subsystem by definition.
+
+    Loud on parse error: silently swallowing a SyntaxError used to mean
+    a broken file got "0 imports flagged" and slipped through every
+    boundary check. The agent rule that catches the same pattern at
+    higher levels (no silent fallbacks) applies here."""
     try:
         tree = ast.parse(file_path.read_text(encoding="utf-8"))
-    except (OSError, SyntaxError):
-        return []
+    except (OSError, SyntaxError) as e:
+        # Surface as a sentinel finding, not a silent skip. Caller's
+        # findings list will carry it through to the report.
+        return [(-1, "<parse-error>", [f"{type(e).__name__}: {e}"])]
     out = []
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):

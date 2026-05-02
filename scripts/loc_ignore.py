@@ -55,6 +55,67 @@ def load_patterns(ignore_file: Path | None = None) -> list[tuple[re.Pattern[str]
     return out
 
 
+_RATIONALE_RE = re.compile(
+    r"#\s*rationale:\s*(.+?)\s*$",
+    re.IGNORECASE,
+)
+
+
+def _parse_kv(s: str) -> dict[str, str]:
+    """Parse `key=value; key=value` into a dict."""
+    out: dict[str, str] = {}
+    for chunk in s.split(";"):
+        chunk = chunk.strip()
+        if not chunk or "=" not in chunk:
+            continue
+        k, v = chunk.split("=", 1)
+        out[k.strip()] = v.strip()
+    return out
+
+
+def load_with_rationale(
+    ignore_file: Path | None = None,
+) -> list[dict]:
+    """Return [{pattern, negate, rationale}] for every non-comment line.
+
+    `rationale` is a dict parsed from the most-recent `# rationale: ...`
+    comment line preceding the pattern. Empty dict if no rationale was
+    declared. Used by audit-loc.py to surface intent + revisit-when
+    triggers in the report — see the architectural-rationale-diary
+    rationale at the top of loc-ignore.txt.
+
+    Decoupled from load_patterns() so callers that only need match
+    behavior don't pay the cost of comment scanning.
+    """
+    if ignore_file is None:
+        ignore_file = _project_root() / "config" / "loc-ignore.txt"
+    if not ignore_file.exists():
+        return []
+    out: list[dict] = []
+    pending_rationale: dict[str, str] = {}
+    for raw in ignore_file.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line:
+            # Blank line — clears any pending rationale that wasn't paired
+            # to a pattern. Prevents rationale leakage between unrelated
+            # blocks.
+            pending_rationale = {}
+            continue
+        if line.startswith("#"):
+            m = _RATIONALE_RE.match(line)
+            if m:
+                pending_rationale = _parse_kv(m.group(1))
+            continue
+        negate = line.startswith("!")
+        body = line[1:] if negate else line
+        out.append({
+            "pattern": body,
+            "negate": negate,
+            "rationale": dict(pending_rationale),
+        })
+    return out
+
+
 def is_exempt(rel_path: str, patterns: list[tuple[re.Pattern[str], bool]]) -> bool:
     """Test if rel_path matches any non-negated pattern. Negations
     reverse a prior match (last-wins, gitignore-style)."""

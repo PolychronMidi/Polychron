@@ -54,6 +54,11 @@ run "test-deny-alternatives"     python3 tools/HME/scripts/detectors/test_deny_a
 # verdicts in place so rescue-clause changes can't silently regress.
 run "test-detector-chain"        python3 tools/HME/scripts/detectors/test_detector_chain.py
 
+# Meta-detector: corpus mode reports recall/precision per detector.
+# The corpus is small (7 probes today) but every probe is a regression
+# contract — adding probes after every incident locks behavior in.
+run "audit-detectors-corpus"     python3 tools/HME/scripts/detectors/audit_detectors.py --corpus
+
 if [ "$failures" -gt 0 ]; then
   echo "audit-all: $failures audit(s) reported findings" >&2
   [ "$STRICT" = "1" ] && exit 1

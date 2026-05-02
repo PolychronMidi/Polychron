@@ -43,23 +43,43 @@ tools/bin/
 # helper-function chains, which is a different class of work than
 # splitting modules and trades cohesion for compliance.
 
+# Rationale tokens (machine-parsed by scripts/loc_ignore.py):
+#   rationale: intent=<class>; revisit-when=<condition>; decided=<YYYY-MM-DD>
+# `intent` values:
+#   mega-function-dispatcher  one entry-point with N branches; helpers add
+#                             signature overhead without clarifying intent
+#   coupled-state             tight bidirectional state coupling; extraction
+#                             would split a single coherent surface
+#   already-balanced          extraction already done; remaining is one
+#                             coherent unit
+#   mega-function             single function body needing helper-function
+#                             decomposition (different class than module split)
+#   lifecycle-wrapped-data    giant data inside moduleLifecycle.declare();
+#                             can't move without restructuring the wrapper
+#   closure-coupled           extensive shared closure state; can't safely
+#                             module-split
+
 # todo.py: hme_todo dispatcher is one entry point with 11 action branches.
 # Splitting actions into helpers adds signature overhead without
 # clarifying the dispatcher itself.
+# rationale: intent=mega-function-dispatcher; revisit-when=branches>15; decided=2026-04-30
 tools/HME/service/server/tools_analysis/todo.py
 
 # todo_spec_archive.py: archive_set + reset_to_fresh_slate cluster has
 # tight bidirectional state coupling (verified: extraction attempt broke
 # the clear flow due to shared phase-detection helpers).
+# rationale: intent=coupled-state; revisit-when=phase-detection-decoupled; decided=2026-04-30
 tools/HME/service/server/tools_analysis/todo_spec_archive.py
 
 # code_audits_state.py: 7 independent state/lifecycle Verifier classes,
 # already balanced (~50 lines each); further split is arbitrary grouping.
+# rationale: intent=already-balanced; revisit-when=verifier-count>10; decided=2026-04-30
 tools/HME/scripts/verify_coherence/code_audits_state.py
 
 # buddy_dispatcher.py + buddy_dispatch_lifecycle.py: <50 lines over
 # target after the 7-way split; remaining bulk is `_dispatch_to_buddy`
 # (187L) and CLI scaffolding that's intrinsically single-unit.
+# rationale: intent=already-balanced; revisit-when=growth>50loc; decided=2026-04-30
 tools/HME/scripts/buddy_dispatcher.py
 tools/HME/scripts/buddy_dispatch_lifecycle.py
 
@@ -68,17 +88,21 @@ tools/HME/scripts/buddy_dispatch_lifecycle.py
 # (different class of work than module split).
 
 # selftest.py: `hme_selftest` is one ~1000-line sequential probe pipeline.
+# rationale: intent=mega-function; revisit-when=probe-restructure; decided=2026-04-30
 tools/HME/service/server/tools_analysis/evolution/evolution_selftest/selftest.py
 
 # what_did_i_forget is one ~460-line analysis function.
+# rationale: intent=mega-function; revisit-when=analysis-restructure; decided=2026-04-30
 tools/HME/service/server/tools_analysis/workflow_audit.py
 
 # _adversarial_stress is one ~430-line probe function.
+# rationale: intent=mega-function; revisit-when=stress-probe-restructure; decided=2026-04-30
 tools/HME/service/server/tools_analysis/evolution/evolution_stress.py
 
 # JS module-lifecycle wrapped giant data structures. These can't move
 # without restructuring the lifecycle.declare() pattern that anchors them
 # — different class of work than module split.
+# rationale: intent=lifecycle-wrapped-data; revisit-when=lifecycle-pattern-changes; decided=2026-04-30
 src/conductor/metaProfileDefinitions.js
 src/conductor/metaProfiles.js
 src/utils/moduleLifecycle.js

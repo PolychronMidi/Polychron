@@ -28,9 +28,10 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from snapshot_holograph_capture import (  # noqa: E402
     METRICS_DIR, _PROJECT,
-    capture_codebase, capture_git_state, capture_hci, capture_hook_surface,
-    capture_kb_summary, capture_onboarding, capture_pipeline_history,
-    capture_streak, capture_todo_store, capture_tool_surface,
+    capture_audit_state, capture_codebase, capture_git_state,
+    capture_hci, capture_hook_surface, capture_kb_summary,
+    capture_onboarding, capture_pipeline_history, capture_streak,
+    capture_todo_store, capture_tool_surface,
 )
 from snapshot_holograph_diff import _diff, _replay  # noqa: E402
 
@@ -60,6 +61,7 @@ def build_holograph() -> dict:
         "codebase": _safe(capture_codebase),
         "git_state": _safe(capture_git_state),
         "streak": _safe(capture_streak),
+        "audit_state": _safe(capture_audit_state),
     }
 
 
