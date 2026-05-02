@@ -26,7 +26,6 @@
     "context_budget.js",
     "activity_log.js",
     "mcp_fail_scan.js",
-    "lifesaver_inject.js",
     "hme_log_watermark.js",
     "dominance_response_rewriter.js",
     "proxy_autocommit.js"
