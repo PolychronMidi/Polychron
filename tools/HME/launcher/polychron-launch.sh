@@ -211,6 +211,15 @@ else:
 PYEOF
 
   # Detection: any running claude binary missing the env var?
+  # PROXY-BYPASS is now a HARD FAIL. Previously this was a soft WARN that
+  # let the launcher declare success even when /v1/messages traffic was
+  # going direct to api.anthropic.com -- meaning every HME middleware
+  # (lifesaver_inject, ack-strip, dominance, etc.) silently never ran.
+  # The user diagnosed this from the symptom side: "the proxy isn't in
+  # the path" / "OUR PROXY OWNS THE ENTIRE CONVERSATION STREAM" -- but
+  # the launcher's WARN-and-continue pattern hid the breakage. The fix
+  # path (close VSCode + relaunch from .env-sourced shell) is mechanical
+  # and known; failing loud forces it to actually happen.
   _bypass_pids=""
   for _pid in $(pgrep -f "anthropic.claude-code.*native-binary/claude" 2>/dev/null); do
     if ! tr '\0' '\n' < "/proc/$_pid/environ" 2>/dev/null | \
@@ -219,13 +228,31 @@ PYEOF
     fi
   done
   if [ -n "$_bypass_pids" ]; then
-    echo "[launch] WARN: claude binary(s) running WITHOUT" \
+    echo "[launch] FATAL: claude binary(s) running WITHOUT" \
          "ANTHROPIC_BASE_URL -- bypassing proxy:" >&2
     echo "[launch]   PIDs:$_bypass_pids" >&2
-    echo "[launch]   These won't route through HME middleware." >&2
-    echo "[launch]   Fix: close VSCode, then relaunch from a shell" \
-         "with .env sourced:" >&2
-    echo "[launch]     set -a; source .env; set +a; code ." >&2
+    echo "[launch]   /v1/messages traffic from these processes goes" \
+         "DIRECT to api.anthropic.com." >&2
+    echo "[launch]   Every HME middleware (lifesaver_inject, ack-strip," \
+         "dominance, jurisdiction, etc.) is bypassed." >&2
+    echo "[launch]   This was previously a silent WARN; the failure" \
+         "modes (LIFESAVER alerts not landing in chat, ack-strip not" >&2
+    echo "[launch]   running, response-rewriter dead code) traced back" \
+         "to this bypass. Now hard-failing so the fix actually happens." >&2
+    echo "" >&2
+    echo "[launch]   FIX:" >&2
+    echo "[launch]     1. Close VSCode (and any other claude-code clients)" >&2
+    echo "[launch]     2. Confirm no rogue claude binaries:" >&2
+    echo "[launch]          pgrep -af 'anthropic.claude-code.*native-binary/claude'" >&2
+    echo "[launch]     3. Relaunch from a shell with .env sourced:" >&2
+    echo "[launch]          set -a; source .env; set +a; code ." >&2
+    echo "[launch]     4. Re-run this launcher" >&2
+    echo "" >&2
+    echo "[launch]   Override (NOT RECOMMENDED): HME_ALLOW_PROXY_BYPASS=1" >&2
+    if [ "${HME_ALLOW_PROXY_BYPASS:-0}" != "1" ]; then
+      exit 1
+    fi
+    echo "[launch] HME_ALLOW_PROXY_BYPASS=1 set -- continuing despite bypass" >&2
   fi
 fi
 
