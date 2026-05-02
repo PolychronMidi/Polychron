@@ -60,33 +60,8 @@ RESCUE_BACKWARD_RES = (
 
 # (b)-clause rescue: the SCOPE_ESCAPE deny message itself enumerates the
 # valid alternative — "say so explicitly and explain why fixing is the
-# wrong move". If the agent did exactly that, the detector must NOT
-# fire. Recognize the explicit-justification SHAPE: the escape phrase
-# accompanied by reasoning that fixing would be wrong, duplicative, or
-# unauthorized. Window: 240 chars after the phrase (longer than the
-# fix-claim rescue because justifications are sentence-shaped).
-RESCUE_B_CLAUSE_RES = (
-    # explicit "not doing X is the right (call|move|thing|choice)" pattern
-    re.compile(r"\b(not\s+doing\s+(this|that|it|these)|skipping\s+(this|that|it))\s+is\s+(the\s+)?(right|correct|better)\s+(call|move|thing|choice|approach|decision)\b", re.IGNORECASE),
-    # "the right (call|move|thing) is to (skip|not fix|leave it)"
-    re.compile(r"\bthe\s+(right|correct)\s+(call|move|thing|choice)\s+is\s+to\s+(skip|not\s+(fix|do)|leave|punt)\b", re.IGNORECASE),
-    # "fixing (this|X) (would|will) (break|cause|require|...)"
-    re.compile(r"\bfixing\s+(this|it|that|them)\s+(would|will|might)\s+(break|cause|require|introduce|conflict|regress)\b", re.IGNORECASE),
-    # "duplicates X" / "redundant with X" — the next 1-3 words are the
-    # thing being duplicated; the regex is intentionally loose because
-    # naming the duplicate target is the legitimate (b)-clause shape.
-    re.compile(r"\b(duplicates?|redundant\s+with|already\s+provides?)\s+\w+", re.IGNORECASE),
-    # "buys nothing (the|that) X doesn't already (buy|provide|catch)"
-    re.compile(r"\bbuys?\s+(nothing|no\s+\w+)\s+(the|that)\s+\S+\s+\S*\s*(doesn'?t|does\s+not)\s+(already\s+)?(buy|provide|catch|cover)\b", re.IGNORECASE),
-    # "already (covered|caught|handled) by"
-    re.compile(r"\balready\s+(covered|caught|handled|addressed|guaranteed)\s+by\b", re.IGNORECASE),
-    # explicit (b)-clause label
-    re.compile(r"\(b\)[\s-]*clause\b", re.IGNORECASE),
-    # "would (be|require) (a |an )?(unrelated|out-of-scope|breaking)"
-    re.compile(r"\bwould\s+(be|require)\s+(an?\s+)?(unrelated|out-of-scope|breaking|destructive|risky|unsafe)\b", re.IGNORECASE),
-    # "shouldn't (do|fix|touch)" with reasoning
-    re.compile(r"\b(shouldn'?t|should\s+not|won'?t)\s+(do|fix|touch|change|modify|implement)\s+(this|that|it)\b[^.\n]{0,40}\b(because|since|as|—)", re.IGNORECASE),
-)
+# wrong move". Shared with exhaust_check / psycho_stop via _rescue_clauses.
+from _rescue_clauses import b_clause_within_window  # noqa: E402
 
 
 def _is_assistant(event: dict) -> bool:
@@ -177,19 +152,9 @@ def _rescue_backward(text: str, start: int, window: int = 80) -> bool:
 
 
 def _rescue_b_clause(text: str, start: int, window: int = 320) -> bool:
-    """Rescue when the agent gave an explicit (b)-clause justification —
-    the deny message itself sanctions this path. Window scans BOTH
-    directions: justifications can land before the escape phrase ("Not
-    doing this is the right call ... pre-existing complexity") OR after
-    ("pre-existing — duplicates the existing audit"). Sentence-length
-    window because (b)-clause reasoning is rarely terse."""
-    fwd_end = min(len(text), start + window)
-    back_begin = max(0, start - window)
-    chunk = text[back_begin:fwd_end]
-    for pat in RESCUE_B_CLAUSE_RES:
-        if pat.search(chunk):
-            return True
-    return False
+    """Delegate to the shared (b)-clause recognizer. Kept as a thin
+    wrapper so callers in this file have a single name to use."""
+    return b_clause_within_window(text, start, window)
 
 
 def main() -> int:

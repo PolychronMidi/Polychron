@@ -32,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from _transcript import is_user, event_content, load_full_turn_with_user  # noqa: E402
+from _rescue_clauses import b_clause_within_window  # noqa: E402
 
 
 # User-prompt phrases that explicitly invite evaluation/enumeration as the
@@ -372,6 +373,24 @@ def main() -> int:
                 "ok",
                 f"research_exemption deferral={deferral_label!r} "
                 f"user_invited_enumeration=True always_fire=None"
+            )
+            print("ok")
+            return 0
+        # (b)-clause rescue: the EXHAUST deny message says "Every
+        # enumerated item must be fixed in the same turn." But the
+        # SCOPE_ESCAPE deny — same gate family — explicitly sanctions
+        # "explain why fixing is the wrong move" as an alternative path.
+        # When the agent enumerates items WITH a refusal-with-reason
+        # (b)-clause justification, that's the sanctioned path, not a
+        # punt. Suppress to keep the detector consistent with the
+        # advertised rule. ALWAYS_FIRE_PHRASES still disqualify because
+        # those are agent-initiated punts ("want me to", "noted not
+        # fixed") that no reasoning rescues.
+        if always_fire_hit is None and b_clause_within_window(text, deferral_pos):
+            _emit_stats(
+                "ok",
+                f"b_clause_rescue deferral={deferral_label!r} "
+                f"pos={deferral_pos}/{text_len}"
             )
             print("ok")
             return 0

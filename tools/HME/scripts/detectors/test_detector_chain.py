@@ -204,6 +204,60 @@ _CASES = [
      ],
      "exhaust_violation"),
 
+    # exhaust_check (b)-clause rescue: agent enumerates remaining items
+    # but each one carries an explicit refusal-with-reason. The deny
+    # message family explicitly sanctions this path; detector must NOT
+    # fire when the agent took the sanctioned alternative.
+    ("exhaust_check", "b-clause-rescue-suppresses-enumeration",
+     [
+         _user_msg("address every item from the suggestion list"),
+         _assistant_msg(
+             "Items 1-4 implemented and tested. Items 5 and 6 explicitly "
+             "skipped:\n\n"
+             "- #5 (shellcheck): not doing this is the right call — "
+             "the underlying gap is already covered by the existing "
+             "audit, so adding shellcheck duplicates the existing "
+             "guarantee.\n"
+             "- #6 (centralize logger): duplicates a guarantee the "
+             "audit-python-undefined-names script already provides. "
+             "Touching 157 files for a guarantee already enforced is "
+             "pure churn for zero defensive gain.\n\n"
+             "Final state: 4/6 implemented, 2/6 explicitly justified-refusal."
+         ),
+     ],
+     "ok"),
+
+    # exhaust_check ALWAYS_FIRE override still wins: even WITH (b)-clause
+    # justification, "want me to" is a permission-ask that the rescue
+    # must not suppress. Negative control for the rescue.
+    ("exhaust_check", "b-clause-with-want-me-to-still-fires",
+     [
+         _user_msg("address every item"),
+         _assistant_msg(
+             "## Items I'm skipping for now\n\n"
+             "- #5: not doing this is the right call (duplicates existing audit).\n"
+             "- #6: shouldn't change this because of cross-module risk.\n\n"
+             "Want me to land any of those anyway?"
+         ),
+     ],
+     "exhaust_violation"),
+
+    # psycho_stop pattern B (b)-clause rescue: agent uses an admit
+    # phrase ("not fixed", "skipped") but with explicit reasoning. Same
+    # sanctioned path as scope_escape's rescue.
+    ("psycho_stop", "pattern-b-b-clause-rescue",
+     [
+         _user_msg("address all the leftover items"),
+         _assistant_msg(
+             "Items 1-4 done. Items 5-6 skipped: not doing #5 is the "
+             "right call — duplicates the existing audit. #6 is "
+             "already covered by audit-python-undefined-names. The "
+             "right move is to skip both — fixing them would just "
+             "be pure churn."
+         ),
+     ],
+     "ok"),
+
     # psycho_stop — Pattern C: survey-and-ask after being told to fix
     ("psycho_stop", "survey-and-ask",
      [
