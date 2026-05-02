@@ -214,11 +214,22 @@ function saveComplStore(store) {
 module.exports = {
   name: 'work_checks',
   async run(ctx) {
-    // Default enforcement reminder always goes to stderr (informational; not
-    // a deny — Claude Code surfaces stderr on Stop without blocking).
-    process.stderr.write(ENFORCEMENT_REMINDER + '\n');
-
     const v = readVerdicts();
+    // Substantive denies carry their own actionable message. The
+    // generic ENFORCEMENT_REMINDER on top of those is noise — the
+    // "8x STOP. Re-read CLAUDE.md" pattern visible in test runs
+    // before this gate. Emit the reminder ONLY when no specific
+    // deny will fire below, so the agent gets a single coherent
+    // signal per Stop event instead of (deny + boilerplate).
+    const willDeny =
+      v.STOP_WORK === 'DISMISSIVE' ||
+      v.STOP_WORK === 'TEXT_ONLY_SHORT' ||
+      v.EXHAUST_CHECK === 'exhaust_violation' ||
+      v.SCOPE_ESCAPE === 'scope_escape_violation';
+    if (!willDeny) {
+      process.stderr.write(ENFORCEMENT_REMINDER + '\n');
+    }
+
     if (v.STOP_WORK === 'DISMISSIVE')      return ctx.deny(REASONS.STOP_WORK_DISMISSIVE);
     if (v.STOP_WORK === 'TEXT_ONLY_SHORT') return ctx.deny(REASONS.STOP_WORK_TEXT_ONLY);
     if (v.EXHAUST_CHECK === 'exhaust_violation') return ctx.deny(REASONS.EXHAUST);

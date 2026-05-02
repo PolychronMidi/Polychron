@@ -11,21 +11,56 @@ const { test, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const { withGlobals } = require('../with_globals');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 const SET_RHYTHM = path.join(REPO, 'src', 'rhythm', 'setRhythm.js');
 const RHYTHM_VALUES = path.join(REPO, 'src', 'rhythm', 'rhythmValues.js');
 
-// loadRhythmValues stubs global.validator with a thin shim that lacks
-// optionalFinite/optionalType. Capture the real validator now and restore
-// after this file's tests so later specs (metaprofile_next_level loads
-// src/index, which calls validator.create(...).optionalFinite) don't pick
-// up the stub.
+// rhythmValues.swingOffset() re-reads `rf` and `m` at CALL time, so we
+// can't withGlobals-scope them around the loader — the test body needs
+// them visible AFTER load. Validator IS the leak class (its replacement
+// breaks unrelated specs); scope just that one per loader call. The
+// indices/rf/m are legitimately registered as globals by src/utils —
+// our test stubs OVERRIDE them per loadRhythmValues call. After-hook
+// restores the real bindings; `_setRfQueue` is test-only so deleted.
 require('../../../../src/utils');
 const _REAL_VALIDATOR = global.validator;
+const _REAL_RF = global.rf;
+const _REAL_M = global.m;
 after(() => {
   if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+  if (_REAL_RF) global.rf = _REAL_RF;
+  if (_REAL_M) global.m = _REAL_M;
+  delete global._setRfQueue;
 });
+
+const _STUB_VALIDATOR = {
+  create: () => ({
+    requireFinite: (v, n) => { if (!Number.isFinite(v)) throw new Error(n); return v; },
+    assertArray: (v, n) => { if (!Array.isArray(v)) throw new Error(n); return v; }
+  })
+};
+
+function loadRhythmValues() {
+  return withGlobals(
+    { validator: _STUB_VALIDATOR },
+    () => {
+      let _rfQueue = [];
+      global._setRfQueue = (q) => { _rfQueue = q.slice(); };
+      global.rf = (a, b) => {
+        if (_rfQueue.length > 0) return _rfQueue.shift();
+        if (a === undefined) return 0.5;
+        if (b === undefined) return a * 0.5;
+        return (a + b) / 2;
+      };
+      global.m = Math;
+      delete require.cache[require.resolve(RHYTHM_VALUES)];
+      require(RHYTHM_VALUES);
+      return global.rhythmValues;
+    }
+  );
+}
 
 test('setRhythm: PHRASE_DENSITY_FACTORS array exists and centers near 1.0', () => {
   const src = fs.readFileSync(SET_RHYTHM, 'utf8');
@@ -69,34 +104,8 @@ test('setRhythm: clamp guards still wrap the density expression', () => {
 
 // ---- swingOffset jitter tests ----
 
-function loadRhythmValues() {
-  global.validator = {
-    create: () => ({
-      requireFinite: (v, n) => { if (!Number.isFinite(v)) throw new Error(n); return v; },
-      assertArray: (v, n) => { if (!Array.isArray(v)) throw new Error(n); return v; }
-    })
-  };
-  // rf is the project's rng helper; provide a stub we can drive deterministically.
-  let _rfQueue = [];
-  global._setRfQueue = (q) => { _rfQueue = q.slice(); };
-  global.rf = (a, b) => {
-    if (_rfQueue.length > 0) return _rfQueue.shift();
-    if (a === undefined) return 0.5;
-    if (b === undefined) return a * 0.5;
-    return (a + b) / 2;
-  };
-  global.m = Math;
-  delete require.cache[require.resolve(RHYTHM_VALUES)];
-  require(RHYTHM_VALUES);
-  const rv = global.rhythmValues;
-  // Restore real validator — see comment in drum_kit_rotator.test.js.
-  if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
-  return rv;
-}
-
 test('swingOffset: foundation behavior on most calls (90% baseline path)', () => {
   const rv = loadRhythmValues();
-  // Drive rf() < 0.10 to FALSE (baseline path) by queueing 0.5.
   global._setRfQueue([0.5]);
   const oddBeat = rv.swingOffset(1, 0.4);
   assert.strictEqual(oddBeat, 0.2, 'odd beat with no jitter must be +amount/2');
@@ -108,18 +117,15 @@ test('swingOffset: foundation behavior on most calls (90% baseline path)', () =>
 
 test('swingOffset: jitter fires on ~10% path with bounded magnitude', () => {
   const rv = loadRhythmValues();
-  // Force jitter path: first rf() < 0.10, second rf() returns midpoint of [-amount*0.25, amount*0.25] = 0.
   global._setRfQueue([0.05, 0]);
   const result = rv.swingOffset(1, 0.4);
   assert.strictEqual(result, 0.2, 'midpoint jitter (0) leaves base unchanged');
 
-  // Force max jitter UP.
   global._setRfQueue([0.05, 0.4 * 0.25]);
   const upJittered = rv.swingOffset(1, 0.4);
   assert.ok(Math.abs(upJittered - 0.3) < 1e-9,
     `max-up jitter on odd beat: expected 0.3, got ${upJittered}`);
 
-  // Force max jitter DOWN — must not cross zero (jitter bounded to amount/4).
   global._setRfQueue([0.05, -0.4 * 0.25]);
   const downJittered = rv.swingOffset(1, 0.4);
   assert.ok(downJittered > 0,
@@ -128,9 +134,6 @@ test('swingOffset: jitter fires on ~10% path with bounded magnitude', () => {
 
 test('swingOffset: jitter bound never inverts swing direction', () => {
   const rv = loadRhythmValues();
-  // For amount=0.4, base=±0.2. Jitter range is [-0.1, 0.1]. Worst case
-  // odd-beat: 0.2 + (-0.1) = 0.1 (still positive). Even: -0.2 + 0.1 = -0.1
-  // (still negative). Sweep both extremes.
   for (const beat of [1, 2]) {
     for (const jitterTrigger of [0.05]) {
       for (const jitterMag of [-0.4 * 0.25, 0.4 * 0.25]) {

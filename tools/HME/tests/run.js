@@ -39,6 +39,67 @@ if (files.length === 0) {
   process.exit(1);
 }
 
+// Default-on guard against test-stub global pollution.
+//
+// The 2026-05-01 incident: drum_kit_rotator and rhythm_flair both stub
+// `global.validator` inside their loaders; a missing restore left the
+// stub on globalThis, and metaprofile_next_level's pair_gain_ceiling
+// test then loaded src/index — which called validator.create(...)
+// .optionalFinite, which the stub didn't carry. Crash. The fix at the
+// time was per-callsite save/restore; this tripwire is the structural
+// guarantee it can't recur.
+//
+// Watching only the small set of keys tests are KNOWN to stub. (Watching
+// every key on globalThis is a non-starter — src/index legitimately
+// registers ~500 modules as globals during DI bootstrap.)
+//
+// Critically, baseline is captured AFTER loading src/utils so the REAL
+// `validator` binding lands in the snapshot. Subsequent test stubs that
+// replace `validator` and don't restore = tripwire fires. Test stubs
+// that DO restore (back to the same real validator object) = tripwire
+// stays silent. Without this pre-load, validator-real-after looks like
+// a leak vs validator-undef-before.
+const _STUB_PRONE_KEYS = [
+  'validator',
+  'rf',
+  'm',
+  'sectionIndex',
+  'phraseIndex',
+  'measureIndex',
+  'beatIndex',
+];
+require('../../../src/utils');  // load real bindings before snapshot
+const _stubBaseline = {};
+for (const k of _STUB_PRONE_KEYS) {
+  _stubBaseline[k] = {
+    had: Object.prototype.hasOwnProperty.call(global, k),
+    value: global[k],
+  };
+}
+
 for (const f of files) {
   require(path.join(TESTS_DIR, f));
 }
+
+process.on('exit', () => {
+  const leaks = [];
+  for (const k of _STUB_PRONE_KEYS) {
+    const before = _stubBaseline[k];
+    const hasNow = Object.prototype.hasOwnProperty.call(global, k);
+    if (!before.had && hasNow) {
+      leaks.push(`  ${k}: was unset, now present (type=${typeof global[k]})`);
+    } else if (before.had && hasNow && global[k] !== before.value) {
+      leaks.push(`  ${k}: replaced (was ${typeof before.value}, now ${typeof global[k]})`);
+    } else if (before.had && !hasNow) {
+      leaks.push(`  ${k}: was present, now deleted`);
+    }
+  }
+  if (leaks.length > 0) {
+    console.error(
+      `\n[run.js] test-stub global pollution detected — ${leaks.length} ` +
+      `known-stub-prone key(s) diverged across the suite:\n` +
+      leaks.join('\n') +
+      `\nUse tools/HME/tests/with_globals.js to scope mutations.\n`
+    );
+  }
+});

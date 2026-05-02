@@ -17,20 +17,37 @@ const { test, after } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const { withGlobals } = require('../with_globals');
 
 const REPO = path.resolve(__dirname, '..', '..', '..', '..');
 const ROTATOR = path.join(REPO, 'src', 'rhythm', 'drums', 'drumKitRotator.js');
 
-// Capture the real validator BEFORE any test stubs it, so the file-level
-// teardown can restore it for tests that run later in the same Node
-// process (e.g. metaprofile_next_level which loads src/index and calls
-// validator.create(...).optionalFinite — our stub doesn't carry that
-// surface, so leaving it installed pollutes the rest of the suite).
+// drumKitRotator's getL1Preset/getL2Preset re-read global.measureIndex /
+// .beatIndex at CALL time, so we can't withGlobals-scope the indices
+// around just the loader. Scope only the validator stub per-call
+// (its replacement is the actual leak class), and snapshot+restore the
+// indices at end-of-file. src/utils legitimately registers the indices
+// as globals — the test stubs OVERRIDE them per loadRotator call, but
+// we restore the originals at suite end so the tripwire reads zero drift.
 require('../../../../src/utils');
 const _REAL_VALIDATOR = global.validator;
+const _REAL_INDICES = {
+  sectionIndex: global.sectionIndex,
+  phraseIndex: global.phraseIndex,
+  measureIndex: global.measureIndex,
+  beatIndex: global.beatIndex,
+};
 after(() => {
   if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
+  for (const [k, v] of Object.entries(_REAL_INDICES)) global[k] = v;
 });
+
+const _STUB_VALIDATOR = {
+  create: () => ({
+    requireFinite: (v, n) => { if (!Number.isFinite(v)) throw new Error(n); return v; },
+    assertArray: (v, n) => { if (!Array.isArray(v)) throw new Error(n); return v; }
+  })
+};
 
 // L1 foundation: every preset must use kick1 + kick3 in the kicks slot,
 // in some order, with no other kick identities permitted.
@@ -44,25 +61,22 @@ const L1_FOUNDATION_LEAD_SNARES = new Set(['snare1', 'snare4']);
 const L2_FOUNDATION_LEAD_SNARES = new Set(['snare2', 'snare3']);
 
 function loadRotator(sectionIdx, phraseIdx, measureIdx = 0, beatIdx = 0) {
-  global.validator = {
-    create: () => ({
-      requireFinite: (v, n) => { if (!Number.isFinite(v)) throw new Error(n); return v; },
-      assertArray: (v, n) => { if (!Array.isArray(v)) throw new Error(n); return v; }
-    })
-  };
-  global.sectionIndex = sectionIdx;
-  global.phraseIndex = phraseIdx;
-  global.measureIndex = measureIdx;
-  global.beatIndex = beatIdx;
-  delete require.cache[require.resolve(ROTATOR)];
-  require(ROTATOR);
-  const rotator = global.drumKitRotator;
-  // Restore the real validator now that the rotator has captured the
-  // stub it needs. Leaving the stub installed pollutes later specs in
-  // the run.js single-process suite (metaprofile loads validator surface
-  // we don't carry: optionalFinite, optionalType).
-  if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
-  return rotator;
+  // Scope ONLY validator — its replacement is the leak class run.js
+  // tracks. The indices stay set across the test body because the
+  // rotator's getL1Preset/getL2Preset re-read them at call time.
+  // File-level after() cleans the indices on suite end.
+  return withGlobals(
+    { validator: _STUB_VALIDATOR },
+    () => {
+      global.sectionIndex = sectionIdx;
+      global.phraseIndex = phraseIdx;
+      global.measureIndex = measureIdx;
+      global.beatIndex = beatIdx;
+      delete require.cache[require.resolve(ROTATOR)];
+      require(ROTATOR);
+      return global.drumKitRotator;
+    }
+  );
 }
 
 function asSet(arr) { return new Set(arr); }
@@ -163,21 +177,16 @@ test('layer separation: L1 and L2 pick different presets in same phrase', () => 
 });
 
 test('missing globals fail loud (no silent fallback)', () => {
-  global.validator = {
-    create: () => ({
-      requireFinite: (v, n) => { if (!Number.isFinite(v)) throw new Error(n); return v; },
-      assertArray: (v, n) => { if (!Array.isArray(v)) throw new Error(n); return v; }
-    })
-  };
-  global.sectionIndex = NaN;
-  global.phraseIndex = 0;
-  delete require.cache[require.resolve(ROTATOR)];
-  require(ROTATOR);
-  try {
-    assert.throws(() => global.drumKitRotator.getL1Preset(), /sectionIndex/);
-  } finally {
-    if (_REAL_VALIDATOR) global.validator = _REAL_VALIDATOR;
-  }
+  withGlobals(
+    { validator: _STUB_VALIDATOR },
+    () => {
+      global.sectionIndex = NaN;
+      global.phraseIndex = 0;
+      delete require.cache[require.resolve(ROTATOR)];
+      require(ROTATOR);
+      assert.throws(() => global.drumKitRotator.getL1Preset(), /sectionIndex/);
+    }
+  );
 });
 
 test('flair: per-beat rotation hits multiple presets within one phrase', () => {
