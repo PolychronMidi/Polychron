@@ -102,13 +102,16 @@ if [ -n "$_AC_HEAD_BEFORE" ] && [ -n "$_AC_HEAD_AFTER" ] && [ "$_AC_HEAD_BEFORE"
     echo "[$_AC_TS] [autocommit-direct] WARN spec-drift: src/ changed but doc/SPEC.md + doc/TODO.md untouched (commit ${_AC_HEAD_AFTER:0:8})" \
       >> "$_DIRECT_ROOT/log/hme-errors.log"
   fi
-  if [ -x "$_DIRECT_ROOT/i/review" ]; then
+  # Auto-fire of `i/review mode=forget` after every commit was burning
+  # Anthropic rate budget -- the synthesis pipeline's final-stage routes
+  # through `_reasoning_think` which prefers cloud cascade, and 8+ commits
+  # an hour produced 8+ Anthropic /v1/messages calls per hour PURELY from
+  # this background path. Disabled by default; opt back in by setting
+  # HME_AUTOCOMMIT_REVIEW=1 in .env. When you want a review, run
+  # `i/review mode=forget` manually -- it's still wired up as a tool.
+  if [ "${HME_AUTOCOMMIT_REVIEW:-0}" = "1" ] && [ -x "$_DIRECT_ROOT/i/review" ]; then
     if git -C "$_DIRECT_ROOT" diff --name-only "$_AC_HEAD_BEFORE" "$_AC_HEAD_AFTER" 2>/dev/null \
          | /usr/bin/grep -qE '^(src|tools/HME|scripts|lab)/'; then
-      # _lifesaver_bg backgrounds with timeout + LIFESAVER-on-failure.
-      # Source it from helpers (it's defined in misc_safe.sh, sourced via
-      # _safety.sh -- but _safety.sh isn't sourced in direct mode).
-      # Safe inline equivalent: backgrounded subshell with timeout.
       (
         timeout 600 "$_DIRECT_ROOT/i/review" mode=forget \
           > "$_DIRECT_ROOT/tmp/hme-review-auto.out" 2>&1
