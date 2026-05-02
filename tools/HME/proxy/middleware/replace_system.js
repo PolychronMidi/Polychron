@@ -84,19 +84,15 @@ module.exports = {
     if (canonical === null) return; // file missing/empty -> no-op
     // Attach an ephemeral cache_control breakpoint so Anthropic caches
     // our canonical text. Without this, every request re-bills the full
-    // system prefix at 100% rate (Claude Code attaches its own
-    // cache_control to its system; replace_system wipes that, and
-    // previously left the new system unmarked -> no cache breakpoint ->
-    // no cache hit -> 10x billing per turn).
-    //
-    // ttl MUST be '1h' (not the 5m default). Claude Code stamps a
-    // ttl='1h' breakpoint on the user prompt's final content block; the
-    // Anthropic order rule is "no 1h after 5m" across tools->system->messages.
-    // A 5m here precedes the 1h on messages and trips a 400.
+    // system prefix at 100% rate. We omit `ttl` because the late-pass
+    // normalizeCacheControlTtls strips it anyway -- the OAuth-public
+    // endpoint doesn't permit per-block ttl. Default-ttl (5m) is what
+    // every block ends up with after the strip; that's the same cache
+    // behavior horselock/claude-code-proxy uses successfully.
     payload.system = [{
       type: 'text',
       text: canonical,
-      cache_control: { type: 'ephemeral', ttl: '1h' },
+      cache_control: { type: 'ephemeral' },
     }];
     ctx.markDirty();
   },

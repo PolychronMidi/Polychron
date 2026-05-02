@@ -50,43 +50,32 @@ function stripSystemCacheControl(payload) {
   return stripped;
 }
 
-// Enforce Anthropic's cache_control ordering rule: no ttl='1h' breakpoint
-// may come after a ttl='5m' breakpoint across processing-order
-// tools->system->messages. Walk every block in that order, find the
-// position of the LAST 1h breakpoint, and promote any 5m (or
-// unspecified-ttl, which defaults to 5m) that appears BEFORE it to 1h.
-// Promotion is the safe direction -- tools/system/early-message content
-// is stable enough to cache for an hour, and Claude Code itself stamps
-// 1h on the user prompt. Demoting 1h to 5m would shorten valid cache
-// windows; dropping a breakpoint would orphan an in-flight cache.
+// Strip the `ttl` field from every cache_control object. The OAuth-public
+// endpoint we forward to does not permit per-block ttl on cache_control;
+// any cache_control with a ttl set causes Anthropic to enforce the
+// "no ttl='1h' after ttl='5m'" ordering rule and 400 the request when
+// Claude Code's payload (which stamps 1h on user-prompt blocks) follows
+// any 5m-tagged earlier block. Approach modeled on horselock/claude-code-
+// proxy: instead of normalizing ttls (fragile), just delete the ttl key
+// so every breakpoint becomes default-ttl (5m) and the ordering rule is
+// trivially satisfied (no 1h breakpoints exist to violate it).
+// Function name kept as normalizeCacheControlTtls for callers' sake.
 function normalizeCacheControlTtls(payload) {
-  const blocks = [];
-  if (Array.isArray(payload.tools)) for (const t of payload.tools) blocks.push(t);
-  if (Array.isArray(payload.system)) for (const b of payload.system) blocks.push(b);
+  let changed = 0;
+  const stripTtl = (block) => {
+    if (!block || !block.cache_control) return;
+    if (block.cache_control.ttl != null) {
+      delete block.cache_control.ttl;
+      changed++;
+    }
+  };
+  if (Array.isArray(payload.tools)) for (const t of payload.tools) stripTtl(t);
+  if (Array.isArray(payload.system)) for (const b of payload.system) stripTtl(b);
   if (Array.isArray(payload.messages)) {
     for (const m of payload.messages) {
-      if (!m) continue;
-      if (Array.isArray(m.content)) for (const b of m.content) blocks.push(b);
+      if (!m || !Array.isArray(m.content)) continue;
+      for (const b of m.content) stripTtl(b);
     }
-  }
-  let lastOneHourIdx = -1;
-  for (let i = 0; i < blocks.length; i++) {
-    const b = blocks[i];
-    if (b && b.cache_control && b.cache_control.type === 'ephemeral'
-        && b.cache_control.ttl === '1h') {
-      lastOneHourIdx = i;
-    }
-  }
-  if (lastOneHourIdx < 0) return 0;
-  let changed = 0;
-  for (let i = 0; i < lastOneHourIdx; i++) {
-    const b = blocks[i];
-    if (!b || !b.cache_control) continue;
-    const cc = b.cache_control;
-    if (cc.type !== 'ephemeral') continue;
-    if (cc.ttl === '1h') continue;
-    cc.ttl = '1h';
-    changed++;
   }
   return changed;
 }
