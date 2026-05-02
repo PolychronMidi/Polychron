@@ -508,18 +508,35 @@ function handleRequest(clientReq, clientRes) {
       delete upstreamHeaders['accept-encoding'];
     }
 
-    // OAuth Bearer pass-through. PRIOR behavior: hardcoded
-    // anthropic-beta='oauth-2025-04-20' and stripped `context_management`
-    // from the payload, on the theory that the public OAuth endpoint
-    // rejected Claude Code's `claude-code-*` beta and `context_management`
-    // body field. That was true at one point but Anthropic's subscription-
-    // billing path now relies on Claude Code's headers being intact --
-    // overriding them caused subscription requests to fall back to
-    // API-key billing ("credit balance too low" 400 with no credits on a
-    // Max-subscription account). Pass Claude Code's headers and body
-    // through unchanged. If a future Anthropic change breaks this path
-    // again, gate the override behind an env flag rather than restoring
-    // unconditional clobbering.
+    // OAuth Bearer + Claude-Code body-shape fix-up. The public
+    // api.anthropic.com OAuth endpoint requires:
+    //   1. anthropic-beta = `oauth-2025-04-20`. Claude Code's native
+    //      `claude-code-20250908` tag is rejected with 401
+    //      "OAuth authentication is currently not supported."
+    //      No beta header at all => same 401.
+    //   2. payload MUST NOT contain `context_management` (a
+    //      Claude-Code-only field). Including it => 400
+    //      "context_management: Extra inputs are not permitted".
+    // Both verified live with curl against the running proxy on
+    // 2026-05-02 -- removing either override breaks subscription auth.
+    if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
+        && upstreamHeaders['authorization'].startsWith('Bearer ')) {
+      upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+      if (payload && typeof payload === 'object') {
+        const _CC_ONLY_FIELDS = ['context_management'];
+        let _stripped = false;
+        for (const k of _CC_ONLY_FIELDS) {
+          if (k in payload) {
+            delete payload[k];
+            _stripped = true;
+          }
+        }
+        if (_stripped) {
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          upstreamHeaders['content-length'] = String(outBody.length);
+        }
+      }
+    }
 
     // Out-of-band auth injection. Loopback callers (e.g. the MCP
     // server's overdrive path) POST to the proxy without auth -- they
@@ -543,11 +560,11 @@ function handleRequest(clientReq, clientRes) {
           const token = creds && creds.claudeAiOauth && creds.claudeAiOauth.accessToken;
           if (token) {
             upstreamHeaders['authorization'] = `Bearer ${token}`;
-            // Do NOT inject a default anthropic-beta. The previous
-            // hardcoded `oauth-2025-04-20` made subscription-billing
-            // fall back to API-key billing once Anthropic changed
-            // their requirements; let the upstream complain explicitly
-            // if a beta tag is genuinely required for a given path.
+            // Match the Bearer fix-up block above: OAuth public endpoint
+            // requires this beta tag; no other tag works for /v1/messages.
+            if (!upstreamHeaders['anthropic-beta']) {
+              upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+            }
             console.error(`[hme-proxy] injected OAuth token for loopback out-of-band request (path=${clientReq.url})`);
           }
         } catch (_err) {
