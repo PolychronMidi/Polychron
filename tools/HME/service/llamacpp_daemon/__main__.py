@@ -1,6 +1,5 @@
 """Entry point -- `python3 -m llamacpp_daemon [--port N]`."""
 from __future__ import annotations
-
 import argparse
 import os
 import signal
@@ -14,6 +13,7 @@ from .http_server import _ThreadingHTTPServer, make_handler, health_loop
 
 def _logged_thread(name: str, fn):
     """Wrap a thread target so exceptions get logged with traceback.
+
     Bare threading.Thread(target=fn) silently swallows exceptions --
     this is the pattern behind the original 'not started' indexing-mode
     bug that went unnoticed for so long. Every thread surfaces its
@@ -47,6 +47,26 @@ def main():
     supervisor = Supervisor()
     supervisor.configure()
 
+    # ── Initialize file_walker for indexing-mode (R??) ───────────────────────
+    # Daemon runs in its own process, so it has its own copy of
+    # file_walker._config. Without this call, walk_code_files() bails out
+    # with "project_root not initialized -- call init_config() before walking"
+    # every time the worker's watcher fires /indexing-mode here. The worker
+    # initializes its own copy at startup (worker.py); this is the daemon's
+    # equivalent. Must run before any indexing thread or HTTP handler can
+    # invoke the walker.
+    try:
+        from file_walker import init_config as _walker_init_config
+        _project_root = os.environ.get("PROJECT_ROOT") or os.environ.get("CLAUDE_PROJECT_DIR")
+        if _project_root:
+            _walker_init_config(_project_root)
+            logger.info(f"file_walker initialized with project_root={_project_root}")
+        else:
+            logger.error("PROJECT_ROOT not set in daemon env -- indexing-mode will fail")
+    except Exception as _walker_err:
+        logger.error(f"file_walker init failed: {_walker_err}")
+    # ─────────────────────────────────────────────────────────────────────────
+
     logger.info(f"llamacpp daemon starting on port {args.port} (pid={os.getpid()})")
 
     # Pre-boot topology assertion: catch environment problems at startup
@@ -66,6 +86,7 @@ def main():
 
     server = _ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(supervisor))
     logger.info(f"llamacpp daemon listening on 127.0.0.1:{args.port}")
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:  # silent-ok: normal CTRL-C shutdown
