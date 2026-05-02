@@ -820,6 +820,27 @@ _CASES = [
      ],
      "ok"),
 
+    # scope_escape -- substantive-work rescue. >= 3 substantive tool
+    # calls bypass the gate even when closing prose mentions
+    # "pre-existing"; the work itself shows the agent didn't punt.
+    ("scope_escape", "substantive-work-suppresses",
+     [
+         _user_msg("apply project-wide fix"),
+         _assistant_tool_use("Edit", {"file_path": "/a.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Edit", {"file_path": "/b.py",
+                                      "old_string": "x", "new_string": "y"}),
+         _assistant_tool_use("Write", {"file_path": "/c.py",
+                                       "content": "z"}),
+         _assistant_msg(
+             "Done. The audit-import-boundaries failures shown by "
+             "audit-all are pre-existing and not introduced by these "
+             "changes -- they live in unrelated files. All my new "
+             "files are clean."
+         ),
+     ],
+     "ok"),
+
     # Negative control: a pre-existing label WITHOUT any rescue-clause
     # justification still fires. Guarantees we didn't accidentally make
     # the rescue-clause regex fire on benign nearby words.

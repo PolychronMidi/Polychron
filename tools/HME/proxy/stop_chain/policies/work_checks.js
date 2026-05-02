@@ -45,10 +45,11 @@ const REASONS = {
     'ADVISOR DOCTRINE (E4/E5 floor): Tier >= E4 work completed with zero `i/consult` invocations and no solo-rationale clause. At Deep/Comprehensive effort, the advisor must fire at least once OR the agent must explicitly justify why solo was right. Re-evaluate tier or add the consult.',
   ADVISOR_CONFLICT_CAP:
     'ADVISOR DOCTRINE (Rule 3 -- conflict cap): The advisor was re-called more than 2 times on the same conflict_id (see tmp/hme-advisor-conflicts.jsonl). Hard cap exceeded. Escalate to the user instead of re-calling -- keep the loop bounded.',
-  SUMMARY_MISSING:
-    'STOP-THE-LINE FORMAT VIOLATION: Tier >= E3 (Algorithm) work closed without the required === SUMMARY === block. PAI v6.3.0 doctrine: "Format violations outrank output length, output quality, and output detail." Append the closing block before stopping. Required fields: [ITERATION], [CONTENT], [STORY] (4 bullets: problem | what we did | how it went | what\'s next), and [VOICE] <name>: <8-16 word summary>. Either (a) emit the block now, or (b) re-classify the tier -- if no summary is needed, this work was lighter than E3 and the classifier should reflect that.',
-  SUMMARY_MALFORMED:
-    'STOP-THE-LINE FORMAT VIOLATION: Closing summary block is present but missing required fields. Every Algorithm-tier turn must include all 7 elements: === SUMMARY === banner, [ITERATION]:, [CONTENT]:, [STORY]: with all 4 bullets (problem, what we did, how it went, what\'s next), and [VOICE] <name>: <8-16 word closing line>. Re-emit the block with every field populated; this is a structural gate, not a soft preference.',
+  // SUMMARY_MISSING / SUMMARY_MALFORMED removed from the deny chain
+  // (detector disabled at the python layer; see summary_format.py for
+  // re-enable instructions). REASONS entries kept here as historical
+  // reference for the doctrine wording and would be re-wired by
+  // adding the verdict-checking lines back to run() below.
   CEREMONY_DODGE:
     'CEREMONY-DODGE VIOLATION: Your last turn was text-only and dominated by rescue-clause language ("solo was right", "Nothing missed", "Acknowledged X input", "=== SUMMARY ===" block, "(verified)" stamps, "Re-evaluating tier", etc.) following a stop-hook deny. This is the failure mode where each turn writes ceremony to satisfy the prior turn\'s detector instead of doing real work. The fix is NOT more rescue text. Either (a) actually do work this turn -- ANY tool call (Read, Edit, Bash) demonstrating substantive action defeats this gate, or (b) if there is genuinely nothing to do and the prior detector fired wrongly, the response should be silent / empty rather than a verbose dodge. Stop emitting boilerplate to satisfy regexes; do the work or stop.',
   COMPL_ROUND_1:

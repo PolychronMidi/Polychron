@@ -76,8 +76,10 @@ _RESCUE_PATTERNS = (
 
 def _last_real_user_or_deny(events: list) -> tuple[bool, int]:
     """Walk backward to find the most recent USER event. Return
-    (is_deny_payload, index). A deny payload starts with one of the
-    _DENY_MARKERS; a real user message doesn't."""
+    (is_deny_payload, index). A deny payload contains one of the
+    _DENY_MARKERS anywhere in the text (real Claude Code transcripts
+    wrap stop-hook payloads in <system-reminder> tags, so the marker
+    isn't always at character 0)."""
     for i in range(len(events) - 1, -1, -1):
         ev = events[i]
         if not is_user(ev):
@@ -93,8 +95,10 @@ def _last_real_user_or_deny(events: list) -> tuple[bool, int]:
                     t = block.get("text", "")
                     if isinstance(t, str):
                         text += t
-        text = text.lstrip()
-        is_deny = any(text.startswith(m) for m in _DENY_MARKERS)
+        # Substring match -- handles both the bare-prefix shape (test
+        # fixtures) and the <system-reminder>-wrapped shape (real
+        # transcripts). Cheap; the marker strings are distinctive.
+        is_deny = any(m in text for m in _DENY_MARKERS)
         return (is_deny, i)
     return (False, -1)
 

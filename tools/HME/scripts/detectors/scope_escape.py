@@ -157,6 +157,37 @@ def _rescue_b_clause(text: str, start: int, window: int = 320) -> bool:
     return b_clause_within_window(text, start, window)
 
 
+_WORK_TOOLS = {"Edit", "MultiEdit", "Write", "NotebookEdit"}
+_BASH_WORK_RE = re.compile(
+    r"\b(?:sed\s|awk\s|perl\s+-i|python3?\s+-c\b.*?\bopen\s*\(|"
+    r"git\s+(?:apply|commit|merge|rebase|cherry-pick)|"
+    r"\bmv\s|\bcp\s|\brm\s|\btee\s|>\s*\S|>>\s*\S)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _substantive_work_count(events: list) -> int:
+    """Mirrors advisor_doctrine + exhaust_check. Threshold downstream: 3."""
+    n = 0
+    for ev in events:
+        msg = ev.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else ev.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            name = block.get("name", "")
+            if name in _WORK_TOOLS:
+                n += 1
+                continue
+            if name == "Bash":
+                cmd = (block.get("input") or {}).get("command", "") or ""
+                if _BASH_WORK_RE.search(cmd):
+                    n += 1
+    return n
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("ok")
@@ -165,6 +196,18 @@ def main() -> int:
     raw_text = _last_assistant_text(events)
     if not raw_text:
         _emit_stats("ok", "no_final_text")
+        print("ok")
+        return 0
+
+    # Implicit-solo / substantive-work rescue. A turn with >= 3 concrete
+    # code-changing tool calls is fixing things, not punting via labels.
+    # The "pre-existing" / "out of scope" phrases in legitimate completion
+    # narration ("the existing failures are pre-existing and unrelated")
+    # are observations, not deferrals, when the agent simultaneously did
+    # substantive work this turn. Mirrors advisor_doctrine + exhaust_check.
+    n_work = _substantive_work_count(events)
+    if n_work >= 3:
+        _emit_stats("ok", f"implicit_solo_work_count={n_work}")
         print("ok")
         return 0
 
