@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refactor-amplification tracker — surfaces missing abstractions.
+"""Refactor-amplification tracker -- surfaces missing abstractions.
 
 Thesis: when a single source change (`foo.py` split, function rename,
 interface reshape) cascades into N follow-up callsite fixes across
@@ -8,7 +8,7 @@ the call sites are to an internal detail that SHOULD have been a stable
 interface.
 
 This session's canonical example: `_local_think` moved from
-synthesis_llamacpp.py → synthesis_inference.py. Five separate commits
+synthesis_llamacpp.py -> synthesis_inference.py. Five separate commits
 chased the followers (evolution_strategies, synthesis_warm, synthesis_pipeline
 x2, tools_knowledge). The refactor commit said "split _local_think"; the
 followers each said "fix X import". If we tracked this, a >3x
@@ -27,10 +27,10 @@ Algorithm:
      follower_commits, amplification_class}.
 
 Classification:
-  none (0) — refactor landed clean, no follower fixes needed.
-  mild (1-2) — expected minor adjustments.
-  concerning (3-5) — missing abstraction suspected; investigate.
-  structural (>5) — clear "should have been an interface" signal.
+  none (0) -- refactor landed clean, no follower fixes needed.
+  mild (1-2) -- expected minor adjustments.
+  concerning (3-5) -- missing abstraction suspected; investigate.
+  structural (>5) -- clear "should have been an interface" signal.
 
 Emits `metrics/refactor-amplification.jsonl` and summary stdout.
 
@@ -174,7 +174,7 @@ def main() -> int:
                 print(f"  [{f['refactor_sha']}] {f['refactor_msg']}")
                 print(f"    amplified {f['followers_count']}x across {len(f['follower_commits'])} follower commits:")
                 for fc in f["follower_commits"][:3]:
-                    print(f"      → [{fc['sha']}] {fc['msg']}")
+                    print(f"      -> [{fc['sha']}] {fc['msg']}")
                     if fc.get("shared_files"):
                         print(f"         shared: {', '.join(fc['shared_files'][:3])}")
                 if len(f["follower_commits"]) > 3:

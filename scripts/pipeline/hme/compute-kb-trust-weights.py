@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 4.2 — KB trust weight computation.
+"""Phase 4.2 -- KB trust weight computation.
 
 Every KB entry gains an epistemic trust weight derived from the round it
 was written in. Formula:
@@ -10,7 +10,7 @@ was written in. Formula:
           + 0.1 * age_decay
 
 Each component is 0..1, bounded; total is clamped. Components default to
-0.5 (uniform prior) when unavailable — so entries predating the metric
+0.5 (uniform prior) when unavailable -- so entries predating the metric
 are not unfairly penalized.
 
     coherence_at_write   = round coherence score for the closest-in-time
@@ -54,7 +54,7 @@ def _load_json(path: str):
         return None
 
 
-MAX_MATCH_DELTA_S = 14 * 86400  # 14 days — beyond this, prefer the uniform prior
+MAX_MATCH_DELTA_S = 14 * 86400  # 14 days -- beyond this, prefer the uniform prior
 
 
 def _closest_history_entry(
@@ -62,7 +62,7 @@ def _closest_history_entry(
 ) -> dict | None:
     """Return the history record closest to target_ts (seconds since epoch),
     but only if it's within MAX_MATCH_DELTA_S of the target. Otherwise return
-    None so the caller falls back to the uniform prior — we don't want a
+    None so the caller falls back to the uniform prior -- we don't want a
     single distant record dominating every entry's weight."""
     if not history:
         return None
@@ -106,7 +106,7 @@ def _age_decay(entry_ts: float, now: float) -> float:
         return 1.0
     if age_days >= 180:
         return 0.5
-    # Linear 30→180 days, 1.0→0.5
+    # Linear 30->180 days, 1.0->0.5
     frac = (age_days - 30) / (180 - 30)
     return 1.0 - frac * 0.5
 
@@ -119,11 +119,11 @@ def compute_trust(
     now: float,
 ) -> dict:
     # History-based components require at least MIN_HISTORY points to be
-    # statistically meaningful — otherwise a single degenerate data point
+    # statistically meaningful -- otherwise a single degenerate data point
     # (e.g. a degraded session) drags every entry to the floor.
     MIN_HISTORY = 3
 
-    # Coherence at write time — pull from musical-correlation history which
+    # Coherence at write time -- pull from musical-correlation history which
     # records hme_coherence per round with a timestamp.
     coh = 0.5
     if len(musical_hist) >= MIN_HISTORY:
@@ -131,14 +131,14 @@ def compute_trust(
         if rec and isinstance(rec.get("hme_coherence"), (int, float)):
             coh = float(rec["hme_coherence"])
 
-    # Accuracy at write time — from accuracy history
+    # Accuracy at write time -- from accuracy history
     acc = 0.5
     if len(accuracy_hist) >= MIN_HISTORY:
         rec = _closest_history_entry(accuracy_hist, entry_ts)
         if rec and isinstance(rec.get("ema_after"), (int, float)):
             acc = float(rec["ema_after"])
 
-    # Verdict bonus — also from musical history snapshot
+    # Verdict bonus -- also from musical history snapshot
     verdict = None
     if len(musical_hist) >= MIN_HISTORY:
         rec = _closest_history_entry(musical_hist, entry_ts)
@@ -205,7 +205,7 @@ def main() -> int:
         if entry_ts <= 0:
             entry_ts = now  # fall back to now for entries without timestamps
 
-        # Phase 5.5 — human ground-truth entries always inherit HIGH tier
+        # Phase 5.5 -- human ground-truth entries always inherit HIGH tier
         # regardless of the normal trust formula.
         tags_str = str(row.get("tags", "") or "")
         is_ground_truth = "human_ground_truth" in tags_str

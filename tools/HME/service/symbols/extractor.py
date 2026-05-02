@@ -322,7 +322,7 @@ def extract_symbols(file_path: str, content: str = "") -> list[dict]:
 
 
 # Worker-lifetime cache keyed by (file-count, sum-of-mtimes). Same
-# signature approach as find_callers — cheap to compute, changes whenever
+# signature approach as find_callers -- cheap to compute, changes whenever
 # any code file is touched. Before this cache, module_story called
 # collect_all_symbols once per invocation and walked ~819 files +
 # ran extract_symbols on every one (tens of seconds for large projects).

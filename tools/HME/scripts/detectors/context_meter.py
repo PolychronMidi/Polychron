@@ -3,7 +3,7 @@
 
 The statusLine hook writes authoritative used_pct/remaining_pct/size from the
 Claude API. This script only adds input_tokens/output_tokens from the most
-recent assistant event's usage dict — NEVER overwrites used_pct (which would
+recent assistant event's usage dict -- NEVER overwrites used_pct (which would
 replace real API data with a fabricated estimate).
 
 Usage: context_meter.py <transcript_path> <ctx_out_path>
@@ -13,7 +13,7 @@ Usage: context_meter.py <transcript_path> <ctx_out_path>
   in the ctx file untouched.
 
 Failure mode: any error (missing file, parse error, no usage found) is silent
-— the statusLine display just shows its existing data without the merge.
+-- the statusLine display just shows its existing data without the merge.
 """
 from __future__ import annotations
 

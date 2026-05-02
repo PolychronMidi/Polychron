@@ -62,7 +62,7 @@ class TransientErrorFilterVerifier(Verifier):
         if has_url_path_match:
             return _result(
                 FAIL, 0.0,
-                "_log_error uses URL-path substring matching on message — "
+                "_log_error uses URL-path substring matching on message -- "
                 "drift-prone, will silently break when message format changes",
                 ['refactor to source-based: "if source in _transient_sources and \'timeout\' in message"'],
             )
@@ -106,18 +106,18 @@ class ContextBudgetVerifier(Verifier):
             try:
                 link_age_s = time.time() - os.path.getmtime(link_latest)
             except OSError:
-                # Broken symlink or race with deletion — leave link_age_s
+                # Broken symlink or race with deletion -- leave link_age_s
                 # at its pre-check value. Narrow catch so unexpected
                 # errors propagate.
                 pass
 
         # Policy:
-        #   used < 50%          → fine, no link needed
-        #   50-70%               → WARN if no link in last 30 min
-        #   70-85%               → FAIL if no link in last 10 min
-        #   > 85%                → FAIL if no link in last 5 min (compaction imminent)
+        #   used < 50%          -> fine, no link needed
+        #   50-70%               -> WARN if no link in last 30 min
+        #   70-85%               -> FAIL if no link in last 10 min
+        #   > 85%                -> FAIL if no link in last 5 min (compaction imminent)
         if used < 50:
-            return _result(PASS, 1.0, f"context at {used}% — safe")
+            return _result(PASS, 1.0, f"context at {used}% -- safe")
         if used < 70:
             if link_age_s is None or link_age_s > 1800:
                 return _result(WARN, 0.7,
@@ -131,10 +131,10 @@ class ContextBudgetVerifier(Verifier):
                                ["statusline preemption should have fired at 70%",
                                 "run: python3 tools/HME/scripts/chain-snapshot.py --imminent"])
             return _result(WARN, 0.6, f"context {used}%, link age {link_age_s:.0f}s")
-        # > 85% — compaction imminent
+        # > 85% -- compaction imminent
         if link_age_s is None or link_age_s > 300:
             return _result(FAIL, 0.0,
-                           f"context {used}% — COMPACTION IMMINENT with no fresh chain link",
+                           f"context {used}% -- COMPACTION IMMINENT with no fresh chain link",
                            ["CRITICAL: take a snapshot NOW before auto-compaction destroys state"])
         return _result(WARN, 0.5, f"context {used}%, link age {link_age_s:.0f}s")
 
@@ -144,7 +144,7 @@ class WarmContextFreshnessVerifier(Verifier):
 
     The HME synthesis stack primes warm KV contexts per model so tools get
     fast first-token latency. These contexts DECAY over time (models get
-    evicted, KB changes, days pass). Currently nothing watches them — the
+    evicted, KB changes, days pass). Currently nothing watches them -- the
     selftest flagged 36-hour-old contexts that had been silently stale.
 
     This verifier:
@@ -180,7 +180,7 @@ class WarmContextFreshnessVerifier(Verifier):
             return _result(PASS, 1.0,
                            f"warmest cache fresh ({age_hours:.1f}h), oldest={oldest_file}")
         if age_hours < 24:
-            # Attempt background auto-reprime — fire-and-forget
+            # Attempt background auto-reprime -- fire-and-forget
             _trigger_warm_reprime()
             return _result(
                 WARN, 0.7,
@@ -191,7 +191,7 @@ class WarmContextFreshnessVerifier(Verifier):
         _trigger_warm_reprime()
         return _result(
             FAIL, 0.3,
-            f"oldest warm cache {age_hours:.1f}h — priming bitrot",
+            f"oldest warm cache {age_hours:.1f}h -- priming bitrot",
             [f"oldest: {oldest_file}",
              "auto-reprime triggered; if this persists, selftest warm ctx check is broken"],
         )
@@ -213,7 +213,7 @@ def _trigger_warm_reprime() -> None:
             with open(sentinel, "w") as f:
                 f.write(str(time.time()))
         except OSError:
-            # tmp/ unwritable — the background re-prime request is a
+            # tmp/ unwritable -- the background re-prime request is a
             # best-effort nudge. Narrow catch; unexpected errors propagate.
             pass
     threading.Thread(target=_bg, daemon=True).start()
@@ -224,7 +224,7 @@ class PlanOutputValidityVerifier(Verifier):
     real files only. Plans live in /tmp/hme-agent-*.md when emitted via the
     hook. Scan recent plans for file paths and confirm each exists.
     Hallucinated file paths in plans are the plan-mode analog of
-    hallucinated code in edit mode — both are capability failures."""
+    hallucinated code in edit mode -- both are capability failures."""
     name = "plan-output-validity"
     category = "runtime"
     subtag = "drift-detection"
@@ -252,7 +252,7 @@ class PlanOutputValidityVerifier(Verifier):
                     continue
                 full = os.path.join(_PROJECT, pth)
                 if not os.path.isfile(full):
-                    bad.append(f"{os.path.basename(p)}: claims {pth} — not found")
+                    bad.append(f"{os.path.basename(p)}: claims {pth} -- not found")
         if checked == 0:
             return _result(SKIP, 1.0, "no readable plan outputs")
         if not bad:

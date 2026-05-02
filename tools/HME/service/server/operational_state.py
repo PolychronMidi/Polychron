@@ -1,4 +1,4 @@
-"""HME persistent operational memory — Layer 2 of the self-coherence stack.
+"""HME persistent operational memory -- Layer 2 of the self-coherence stack.
 
 Tracks system health metrics that survive across MCP server restarts:
   - restart count per day
@@ -20,7 +20,7 @@ rolling EMAs so long-term trends survive day boundaries.
 Layer 5 (Temporal Rhythm) reads is_crash_loop() and restarts_today to adapt
 the startup chain aggressiveness. Layer 7 (Predictive Health) updates EMAs here.
 Layer 19 (Synthesis Observability) records routing decisions + quality outcomes.
-Layer 21 (CB Flap Detection) tracks HALF_OPEN→OPEN transitions per model.
+Layer 21 (CB Flap Detection) tracks HALF_OPEN->OPEN transitions per model.
 Layer 23 (Multi-Timescale) maintains coherence EMAs at beat/phrase/section/structure scales.
 Layer 29 (Second-Order Accuracy) tracks Brier score of prediction calibration.
 Layer 34 (Thermodynamic) models information-theoretic efficiency of synthesis.
@@ -51,7 +51,7 @@ def init(project_root: str) -> dict:
     """Initialize operational state from disk. Returns the loaded state snapshot.
 
     Increments restarts_today; preserves EMAs and long-term metrics across day boundaries.
-    Safe to call multiple times — subsequent calls are no-ops (STATE_FILE already set).
+    Safe to call multiple times -- subsequent calls are no-ops (STATE_FILE already set).
     """
     global _STATE_FILE, _SYNTHESIS_FILE, _SESSIONS_FILE, _state
     if _STATE_FILE:
@@ -66,7 +66,7 @@ def init(project_root: str) -> dict:
         with open(_STATE_FILE) as f:
             loaded = json.load(f)
         if loaded.get("date") != today:
-            # New day — preserve rolling EMAs, reset daily counters
+            # New day -- preserve rolling EMAs, reset daily counters
             _state = {
                 "date": today,
                 "restarts_today": 0,
@@ -184,5 +184,5 @@ def update_ema(key: str, value: float, alpha: float = _EMA_ALPHA) -> float:
 
 
 
-# Re-exports — recovery/derived stats extracted.
+# Re-exports -- recovery/derived stats extracted.
 from .operational_state_recovery import record_recovery, record_startup_ms, record_shim_crash, is_crash_loop, record_circuit_breaker_trip, record_circuit_breaker_flap, record_synthesis_call, _trim_synthesis_file, record_coherence_multiscale, get_multiscale_coherence, is_coherence_ceiling, record_prediction_brier, write_session_document, load_recent_sessions, _trim_sessions_file, record_thermodynamic  # noqa: F401, E402

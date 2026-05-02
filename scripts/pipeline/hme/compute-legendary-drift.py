@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Arc III: Inverse Reasoning — outcome -> state.
+"""Arc III: Inverse Reasoning -- outcome -> state.
 
 Every pipeline round so far has carried `listening verdict: legendary`. That
-makes every round a data point in the "legendary state distribution" — the
+makes every round a data point in the "legendary state distribution" -- the
 envelope of HME states that produced legendary output. This script:
 
 1. Snapshots the current round's full HME state into
@@ -14,7 +14,7 @@ envelope of HME states that produced legendary output. This script:
 4. Writes metrics/hme-legendary-drift.json with drift score + per-field
    outliers.
 5. Emits legendary_drift_preemptive activity event when drift exceeds
-   threshold — PREEMPTIVE because it fires while substrates still say
+   threshold -- PREEMPTIVE because it fires while substrates still say
    healthy, catching drift toward non-legendary territory before the
    listening verdict fails.
 
@@ -24,7 +24,7 @@ produced it?" and flags deviation from that state distribution.
 
 Non-fatal. Runs POST_COMPOSITION after other Arc scripts.
 
-NOTE: The snapshot here is UNCONFIRMED-legendary — we assume any completed
+NOTE: The snapshot here is UNCONFIRMED-legendary -- we assume any completed
 pipeline was legendary unless later marked otherwise. The user can tag
 rounds as non-legendary via metrics/hme-ground-truth.jsonl (already feeds
 consensus voter). Future refinement: filter snapshots by ground-truth
@@ -43,7 +43,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 SNAPSHOTS = os.path.join(METRICS_DIR, "hme-legendary-states.jsonl")
 DRIFT_OUT = os.path.join(METRICS_DIR, "hme-legendary-drift.json")
-DRIFT_THRESHOLD = 2.0  # mean |z-score| above this → drift alert
+DRIFT_THRESHOLD = 2.0  # mean |z-score| above this -> drift alert
 MIN_SNAPSHOTS_FOR_ENVELOPE = 5
 
 
@@ -169,7 +169,7 @@ def main() -> int:
 
     # R22 #4: ground-truth integration. Default assumption: legendary. If the
     # user tagged a recent round with a non-legendary sentiment in
-    # hme-ground-truth.jsonl, mark the snapshot accordingly — envelope
+    # hme-ground-truth.jsonl, mark the snapshot accordingly -- envelope
     # computation excludes non-legendary snapshots from the baseline.
     gt_path = os.path.join(METRICS_DIR, "hme-ground-truth.jsonl")
     current["legendary_confirmed"] = True  # default
@@ -205,7 +205,7 @@ def main() -> int:
         with open(DRIFT_OUT, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2)
             f.write("\n")
-        print(f"compute-legendary-drift: {len(snaps)}/{MIN_SNAPSHOTS_FOR_ENVELOPE} snapshots — "
+        print(f"compute-legendary-drift: {len(snaps)}/{MIN_SNAPSHOTS_FOR_ENVELOPE} snapshots -- "
               "envelope not yet computable")
         return 0
 
@@ -214,7 +214,7 @@ def main() -> int:
     # (legendary_confirmed=False). Default True for backfilled snapshots.
     # R24 #3: also exclude snapshots where HCI < 95 (when HCI is recorded).
     # Arc III's "legendary envelope" is specifically the TOP-TIER legendary
-    # distribution — ramp-up rounds and rounds with verifier regressions
+    # distribution -- ramp-up rounds and rounds with verifier regressions
     # shouldn't pollute the baseline.
     HCI_MIN = 95
     def _include(s):
@@ -252,7 +252,7 @@ def main() -> int:
     # Preemptive alert: emit activity event when drift exceeds threshold.
     # R24 #9: epoch-transition detection. If drift stayed elevated for 3+
     # consecutive rounds while verdict remained legendary, log an epoch
-    # transition. Marks a regime change — future drift measurements can
+    # transition. Marks a regime change -- future drift measurements can
     # use per-epoch envelopes to avoid mixing fundamentally different
     # composition eras.
     try:

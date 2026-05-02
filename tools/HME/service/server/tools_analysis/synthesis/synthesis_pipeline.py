@@ -1,4 +1,4 @@
-"""HME five-stage synthesis pipeline — arbiter triage, conflict resolution, parallel two-stage think."""
+"""HME five-stage synthesis pipeline -- arbiter triage, conflict resolution, parallel two-stage think."""
 import json as _json
 import os as _os
 import re
@@ -14,7 +14,7 @@ logger = logging.getLogger("HME")
 _ARBITER_LOG = None
 _TRACE_LOG = None
 
-# Shared bounded-log helper — single source of truth across the worker.
+# Shared bounded-log helper -- single source of truth across the worker.
 from common import maybe_trim_append as _maybe_trim_log  # noqa: E402
 
 
@@ -60,9 +60,9 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
     """Triage arbiter: contrast GPU0/GPU1 outputs and classify conflict severity.
 
     Severity levels:
-      ALIGNED  — no conflicts, proceed directly to Stage 2
-      MINOR    — name mismatch or scope gap, inject as advisory note
-      COMPLEX  — fundamental contradiction requiring escalation to Stage 1.75
+      ALIGNED  -- no conflicts, proceed directly to Stage 2
+      MINOR    -- name mismatch or scope gap, inject as advisory note
+      COMPLEX  -- fundamental contradiction requiring escalation to Stage 1.75
     Returns None on ALIGNED or unavailable.
     """
     if not gpu0_out or not gpu1_out or len(gpu0_out) < 30 or len(gpu1_out) < 30:
@@ -82,7 +82,7 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
         "2. Contradicting claims about the same module (e.g. coupled vs uncoupled)\n"
         "3. Facts the extractor found that the reasoner completely ignored\n\n"
         "Classify and respond with EXACTLY one of these formats:\n"
-        "ALIGNED — if no conflicts or gaps\n"
+        "ALIGNED -- if no conflicts or gaps\n"
         "MINOR: <one sentence describing the mismatch>\n"
         "COMPLEX: <one sentence describing the fundamental contradiction>"
     )
@@ -105,11 +105,11 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
                               len(gpu0_out or ""), len(gpu1_out or ""))
         return None
     if "COMPLEX" in text_upper:
-        logger.info(f"arbiter: COMPLEX — {text[:200]}")
+        logger.info(f"arbiter: COMPLEX -- {text[:200]}")
         _log_arbiter_decision("arbiter", question, "COMPLEX",
                               len(gpu0_out or ""), len(gpu1_out or ""))
         return {"severity": "complex", "report": text}
-    logger.info(f"arbiter: MINOR — {text[:200]}")
+    logger.info(f"arbiter: MINOR -- {text[:200]}")
     _log_arbiter_decision("arbiter", question, "MINOR",
                           len(gpu0_out or ""), len(gpu1_out or ""))
     return {"severity": "minor", "report": text}
@@ -117,7 +117,7 @@ def _arbiter_check(gpu0_out: str | None, gpu1_out: str | None,
 
 def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
                                arbiter_report: str, question: str) -> str | None:
-    """Stage 1.75: resolve COMPLEX arbiter conflict — escalate to OVERDRIVE.
+    """Stage 1.75: resolve COMPLEX arbiter conflict -- escalate to OVERDRIVE.
 
     Arbitration between two competing analyses is frontier-class reasoning
     (which model hallucinated a module name? which missed a signal?). The
@@ -150,11 +150,11 @@ def _resolve_complex_conflict(gpu0_out: str, gpu1_out: str,
 
 def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
                      answer_format: str | None = None) -> str | None:
-    """Sequential two-stage synthesis: extract → gap-fill → reason. Fallback for _parallel_two_stage_think.
+    """Sequential two-stage synthesis: extract -> gap-fill -> reason. Fallback for _parallel_two_stage_think.
 
     Extraction + gap-analysis stages stay local (qwen3-coder excels at the
     pattern-matching these require). The reasoning/synthesis stages now
-    escalate to OVERDRIVE — answer quality is user-facing and the local
+    escalate to OVERDRIVE -- answer quality is user-facing and the local
     reasoner's synthesis ceiling was the bottleneck.
     """
     from .synthesis_inference import _local_think, _reasoning_think
@@ -182,7 +182,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
 
     if not frame or len(frame) < 40 or "src/" not in frame:
         # No-brief fallback: Stage 1 extraction failed, we're doing full
-        # synthesis from raw context. Answer quality is fully exposed —
+        # synthesis from raw context. Answer quality is fully exposed --
         # escalate to OVERDRIVE cascade.
         return _reasoning_think(raw_context[:6000] + "\n\n" + question,
                                 max_tokens=max_tokens, system=_THINK_SYSTEM)
@@ -206,7 +206,7 @@ def _two_stage_think(raw_context: str, question: str, max_tokens: int = 8192,
         "Answer using ONLY modules, files, signals named in the brief. Do NOT invent names.\n"
         "Format: FILE: path, FUNCTION: name, SIGNAL: field, EFFECT: one sentence. Max 4 items."
     )
-    # Final synthesis stage — user-facing answer. Escalate to OVERDRIVE; the
+    # Final synthesis stage -- user-facing answer. Escalate to OVERDRIVE; the
     # brief and gap-fill stages have already bounded the context, so cloud
     # latency is the only tradeoff and quality gain is substantial.
     return _reasoning_think(
@@ -220,7 +220,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     """Five-stage parallel synthesis pipeline.
 
     1A (GPU0 extract) + 1B (GPU1 analyze) run simultaneously.
-    1.5 Arbiter triage → ALIGNED / MINOR / COMPLEX.
+    1.5 Arbiter triage -> ALIGNED / MINOR / COMPLEX.
     1.75 GPU1 conflict resolution (COMPLEX only).
     2 GPU1 final synthesis via /api/chat.
     Falls back to _two_stage_think if both Stage 1 branches fail.
@@ -312,7 +312,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
 
     _fmt_instruction = (
         "Format each recommendation as:\n"
-        "  PAIR: moduleA↔moduleB (r=value), SIGNAL: fieldName, "
+        "  PAIR: moduleA<->moduleB (r=value), SIGNAL: fieldName, "
         "DIRECTION: moduleA raises X when field high / moduleB lowers Y when field high."
     ) if _is_evolution_q else (
         "Format each finding as:\n  FILE: path, SIGNAL: field, EFFECT: one sentence."
@@ -335,7 +335,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     ]
     result = _local_chat(chat_messages, model=_REASONING_MODEL, max_tokens=max_tokens, temperature=0.15)
     if not result:
-        # Local chat path failed — escalate the final synthesis to OVERDRIVE
+        # Local chat path failed -- escalate the final synthesis to OVERDRIVE
         # instead of retrying the same local reasoner with different phrasing.
         fallback_prompt = ("Based on this analysis:\n\n" + merged + "\n\nAnswer: " + question +
                            "\n\n" + _fmt_instruction + "\nMax 4 items.")
@@ -348,7 +348,7 @@ def _parallel_two_stage_think(raw_context: str, question: str, max_tokens: int =
     if _arbiter_class == "COMPLEX":
         _trace_parts.append("1.75:resolved" if _resolved else "1.75:failed")
     _trace_parts.append(f"2:{len(result or '')}c")
-    _trace = " → ".join(_trace_parts)
+    _trace = " -> ".join(_trace_parts)
 
     _trace_data = {
         "stage_1a_chars": len(gpu0_out or ""), "stage_1b_chars": len(gpu1_out or ""),

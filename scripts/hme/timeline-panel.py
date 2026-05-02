@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""i/timeline — unified audit trail of HME's silent automations.
+"""i/timeline -- unified audit trail of HME's silent automations.
 
 HME has many invisible side-effects per turn: auto-reload (watcher),
 KB draft writes (posttooluse_bash on STABLE/EVOLVED), reindex (fs_watcher
 debounce), brief recordings (posttooluse_read_kb), pipeline lock
-transitions, NEXUS state advancement. Each leaves a trace SOMEWHERE —
+transitions, NEXUS state advancement. Each leaves a trace SOMEWHERE --
 activity log, marker files, state files. This view joins them into one
 chronological list so an agent can answer "what has HME done in the last
 N minutes?" without reading 5+ files.
@@ -25,7 +25,7 @@ from _common import PROJECT_ROOT
 
 
 def _parse_window(arg: str) -> float:
-    """'5m' → 300, '1h' → 3600, '30s' → 30, default 30m."""
+    """'5m' -> 300, '1h' -> 3600, '30s' -> 30, default 30m."""
     if not arg:
         return 1800.0
     arg = arg.strip().lower()
@@ -54,7 +54,7 @@ def _gather_marker_events(now: float, window_s: float) -> list[dict]:
     in window. Markers track silent automations the activity log doesn't
     necessarily capture (auto-reload, draft-write, accept).
 
-    These are SYNTHESIZED events — derived from file existence/mtime
+    These are SYNTHESIZED events -- derived from file existence/mtime
     rather than emit() calls into hme-activity.jsonl. So they will NOT
     appear in EVENTS.md (which catalogues real activity events) and the
     activity-events-doc-sync verifier won't see them as drift."""
@@ -143,7 +143,7 @@ def main(argv):
         if last_key is None:
             return
         ev, src = last_key
-        prefix = f"{count}× " if count > 1 else ""
+        prefix = f"{count}* " if count > 1 else ""
         det = f"  ({last_detail})" if last_detail else ""
         collapsed.append((last_ts, f"  {prefix}{ev:24}  {src}{det}"))
     for e in events:
@@ -159,7 +159,7 @@ def main(argv):
             count = 1
     _flush()
 
-    out = [f"# HME timeline (window={window_s/60:.0f}m, {len(events)} raw events → {len(collapsed)} grouped)"]
+    out = [f"# HME timeline (window={window_s/60:.0f}m, {len(events)} raw events -> {len(collapsed)} grouped)"]
     out.append("")
     if not collapsed:
         out.append("  (no automations or activity in this window)")

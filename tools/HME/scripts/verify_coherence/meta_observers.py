@@ -17,7 +17,7 @@ from ._base import (
 
 class MetaObserverCoherenceVerifier(Verifier):
     """Scores meta-observer L14 alerts using the ACUTE (1h) window. Historical
-    alerts in the 6h and 24h windows contribute weakly — the focus is on
+    alerts in the 6h and 24h windows contribute weakly -- the focus is on
     whether HME is currently unstable."""
     name = "meta-observer-coherence"
     category = "runtime"
@@ -51,7 +51,7 @@ class MetaObserverCoherenceVerifier(Verifier):
         if acute_worst >= 5:
             return _result(
                 FAIL, score, summary,
-                ["HME unstable RIGHT NOW — 5+ alerts in last hour",
+                ["HME unstable RIGHT NOW -- 5+ alerts in last hour",
                  "check meta-observer recovery logic"],
             )
         if acute_worst >= 2:
@@ -62,7 +62,7 @@ class MetaObserverCoherenceVerifier(Verifier):
 
 class VerifierCoverageGapVerifier(Verifier):
     """H13 consumer: reads metrics/hme-verifier-coverage.json and flags
-    gaps — fix commits with no matching verifier. Low weight because
+    gaps -- fix commits with no matching verifier. Low weight because
     this is aspirational."""
     name = "verifier-coverage-gap"
     category = "runtime"
@@ -72,7 +72,7 @@ class VerifierCoverageGapVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-verifier-coverage.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no coverage report — run suggest-verifiers.py")
+            return _result(SKIP, 1.0, "no coverage report -- run suggest-verifiers.py")
         try:
             with open(data_path) as f:
                 data = json.load(f)
@@ -128,7 +128,7 @@ class MemeticDriftVerifier(Verifier):
 
 class PredictiveHCIVerifier(Verifier):
     """H9: consumes metrics/hme-hci-forecast.json (produced by predict-hci.py)
-    and scores based on predicted drift. This is the forward-looking layer —
+    and scores based on predicted drift. This is the forward-looking layer --
     fire a WARN when HCI is projected to cross the 80 threshold before it
     actually does, so the agent has time to fix whatever's driving the drop."""
     name = "predictive-hci"
@@ -148,7 +148,7 @@ class PredictiveHCIVerifier(Verifier):
                 )
             except (subprocess.SubprocessError, OSError):
                 # Subprocess failed (timeout, missing interpreter, etc.)
-                # — forecast data stays as-is; the next SKIP branch
+                # -- forecast data stays as-is; the next SKIP branch
                 # handles absence. Narrow catch so unexpected errors
                 # propagate visibly.
                 pass

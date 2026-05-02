@@ -17,7 +17,7 @@ from .instance_spec import InstanceSpec
 
 
 def vulkan_to_cuda_index(device: str) -> int | None:
-    """Vulkan1 = CUDA 0, Vulkan2 = CUDA 1. Unknown → None (invariant violation)."""
+    """Vulkan1 = CUDA 0, Vulkan2 = CUDA 1. Unknown -> None (invariant violation)."""
     if device == "Vulkan1":
         return 0
     if device == "Vulkan2":
@@ -59,7 +59,7 @@ def probe_health(spec: InstanceSpec, health_timeout_s: float) -> bool:
 
 def is_listening(spec: InstanceSpec, health_timeout_s: float) -> bool:
     """Distinguish 'loading' (port bound but /health not ok) from 'truly dead'.
-    Any HTTP response — 200, 503 with status=loading, etc. — counts as
+    Any HTTP response -- 200, 503 with status=loading, etc. -- counts as
     listening. Only ConnectionRefused / timeout counts as dead."""
     try:
         urllib.request.urlopen(
@@ -98,14 +98,14 @@ def check_gpu_fits(spec: InstanceSpec, health_timeout_s: float) -> tuple[bool, s
     with headroom, else (False, reason). Conservative: model file size
     plus ctx_size * 0.5 MB KV budget plus 256 MB headroom.
 
-    Credits back model_mb if the port is already bound — the existing
+    Credits back model_mb if the port is already bound -- the existing
     loading process is OCCUPYING that VRAM, not competing for it, so
     we don't double-count it. Without this credit, self-respawn during
     model load fires a false offload-invariant CRITICAL.
     """
     cuda_idx = vulkan_to_cuda_index(spec.device)
     if cuda_idx is None:
-        return False, f"unknown Vulkan device {spec.device!r} — cannot guarantee full offload"
+        return False, f"unknown Vulkan device {spec.device!r} -- cannot guarantee full offload"
     free_mb = gpu_free_mb(cuda_idx)
     if free_mb is None:
         return False, f"could not probe free VRAM on cuda:{cuda_idx} ({spec.device})"
@@ -131,12 +131,12 @@ def fire_offload_violation(spec: InstanceSpec, reason: str) -> None:
     """ARCHITECTURE INVARIANT VIOLATION: model would offload to CPU.
 
     Each model owns its GPU end-to-end. Partial offload is a hard failure
-    — never a graceful degradation. Registers a CRITICAL LIFESAVER so
+    -- never a graceful degradation. Registers a CRITICAL LIFESAVER so
     the operator knows to free the assigned GPU.
     """
     msg = (
         f"GPU offload invariant violated: {spec.name} "
-        f"({os.path.basename(spec.model_path)}) on {spec.device} — {reason}. "
+        f"({os.path.basename(spec.model_path)}) on {spec.device} -- {reason}. "
         f"Each HME model OWNS its GPU. Free the assigned device and restart the daemon."
     )
     logger.error(f"supervisor: {msg}")
@@ -167,7 +167,7 @@ def assert_topology_ready(instances: list[InstanceSpec], health_timeout_s: float
         )
     except FileNotFoundError as e:
         raise RuntimeError(
-            f"daemon: nvidia-smi binary not found ({e}) — cannot probe GPUs. "
+            f"daemon: nvidia-smi binary not found ({e}) -- cannot probe GPUs. "
             f"Install the NVIDIA driver or adjust PATH."
         )
     except subprocess.CalledProcessError as e:
@@ -176,7 +176,7 @@ def assert_topology_ready(instances: list[InstanceSpec], health_timeout_s: float
             f"{e.stderr.decode(errors='replace')[:300]}"
         )
     except subprocess.TimeoutExpired:
-        raise RuntimeError("daemon: nvidia-smi timed out after 3s — driver hung?")
+        raise RuntimeError("daemon: nvidia-smi timed out after 3s -- driver hung?")
 
     for spec in instances:
         cuda_idx = vulkan_to_cuda_index(spec.device)
@@ -203,7 +203,7 @@ def assert_topology_ready(instances: list[InstanceSpec], health_timeout_s: float
                     f"process) then restart the daemon."
                 )
         logger.info(
-            f"daemon: topology OK — {spec.name} on {spec.device} "
+            f"daemon: topology OK -- {spec.name} on {spec.device} "
             f"(free={free} MB, port={spec.port}"
             f"{', adopted' if is_listening(spec, health_timeout_s) else ''})"
         )

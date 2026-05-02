@@ -97,7 +97,7 @@ def _scan_hits(root, pattern, ignore_comments=True):
                     if rx.search(raw):
                         hits.append((rel, ln, raw.rstrip('\n')))
         except (OSError, UnicodeDecodeError) as err:
-            # Fail loudly — the scan is the whole point; silent skips hide bugs.
+            # Fail loudly -- the scan is the whole point; silent skips hide bugs.
             print(f"[prove] read failed {abs_p}: {err}", file=sys.stderr)
     return hits
 

@@ -1,4 +1,4 @@
-"""HME perceptual engines — EnCodec and CLAP model inference, called by audio_analyze.
+"""HME perceptual engines -- EnCodec and CLAP model inference, called by audio_analyze.
 
 Placement contract:
   - Audio models are pinned to the audio GPU (HME_AUDIO_GPU env, default 1)
@@ -10,7 +10,7 @@ Placement contract:
   - Each model registers with a shared VramManager for the audio GPU;
     under VRAM pressure (coder KV cache growing), lower-priority audio
     models are offloaded first (EnCodec before CLAP) to free room, and a
-    background poller reloads them on busy→idle edges of the daemon's
+    background poller reloads them on busy->idle edges of the daemon's
     per-GPU flag.
   - Audio generations flip the daemon's per-GPU busy flag for the audio
     GPU so any coder generate concurrently scheduled there routes
@@ -27,7 +27,7 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-# Perceptual confidence starts low — earns trust through verified accuracy
+# Perceptual confidence starts low -- earns trust through verified accuracy
 _PERCEPTUAL_CONFIDENCE = 0.15  # raised as predictions correlate with verdicts
 
 # VramManager integration
@@ -41,7 +41,7 @@ _audio_lock = threading.Lock()                    # serialize audio_analyze call
 _audio_init_lock = threading.Lock()               # one-shot eager init gate
 _audio_init_done = False
 
-# Device selection — read from central .env via ENV.require (fail-fast).
+# Device selection -- read from central .env via ENV.require (fail-fast).
 # The hme_env module lives at tools/HME/service/hme_env.py; add the mcp dir to
 # sys.path so we can import it from server/tools_analysis/ without a
 # cross-package relative import.
@@ -64,7 +64,7 @@ from .perceptual_engines import _acquire_clap, _acquire_encodec  # noqa: F401, E
 
 
 def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
-    """EnCodec analysis implementation — called by audio_analyze."""
+    """EnCodec analysis implementation -- called by audio_analyze."""
     try:
         import torch
         import torchaudio
@@ -137,7 +137,7 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
         unique, counts = np.unique(sec_tokens, return_counts=True)
         probs = counts / counts.sum()
         ent = -np.sum(probs * np.log2(probs + 1e-10))
-        bar = "█" * int(ent) + "░" * (10 - int(ent))
+        bar = "#" * int(ent) + "." * (10 - int(ent))
         section_entropies.append((sec_num, ent))
         parts.append(f"  S{sec_num}: {ent:.2f} bits [{bar}]")
 
@@ -148,14 +148,14 @@ def _run_encodec(wav_path: str, top_sections: int = 3) -> str:
             s1, e1 = section_entropies[i]
             s2, e2 = section_entropies[i + 1]
             delta = abs(e2 - e1)
-            direction = "▲" if e2 > e1 else "▼"
-            parts.append(f"  S{s1}→S{s2}: {direction}{delta:.2f} bits")
+            direction = "^" if e2 > e1 else "v"
+            parts.append(f"  S{s1}->S{s2}: {direction}{delta:.2f} bits")
 
     return "\n".join(parts)
 
 
 def _run_clap(wav_path: str, queries: str = "") -> str:
-    """CLAP analysis implementation — called by audio_analyze."""
+    """CLAP analysis implementation -- called by audio_analyze."""
     try:
         import torch
         import librosa
@@ -242,7 +242,7 @@ def _run_clap(wav_path: str, queries: str = "") -> str:
         sampled = scores[::step]
         s_min, s_max = sampled.min(), sampled.max()
         s_range = s_max - s_min if s_max > s_min else 0.001
-        spark = "".join("▁▂▃▄▅▆▇█"[min(7, int((v - s_min) / s_range * 7))] for v in sampled)
+        spark = "".join("...#####"[min(7, int((v - s_min) / s_range * 7))] for v in sampled)
         parts.append(f"  \"{query}\"")
         parts.append(f"    peak={best_score:.3f} at {best_chunk*chunk_seconds}s | avg={avg_score:.3f} [{spark}]")
 

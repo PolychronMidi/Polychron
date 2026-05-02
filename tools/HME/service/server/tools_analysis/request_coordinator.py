@@ -1,4 +1,4 @@
-"""Request coordinator — priority-queued dispatch to llama-server instances.
+"""Request coordinator -- priority-queued dispatch to llama-server instances.
 
 Replaces the llamacpp-era threading.Event + preemption-flag design with an
 explicit per-endpoint queue. One `CoordinatorInstance` per llama-server
@@ -7,11 +7,11 @@ and get back a `Future` that resolves when the request completes, times out,
 or is preempted.
 
 Priority levels (higher number = higher priority):
-  BACKGROUND  = 1   — evict-on-preempt, yields to interactive/parallel
-  BULK        = 2   — same tier as background but doesn't yield; used for batch index
-  PARALLEL    = 3   — cross-GPU work that must not preempt itself
-  INTERACTIVE = 4   — foreground user-visible calls
-  CRITICAL    = 5   — onboarding/lifesaver probes; bypass circuit breaker backoff
+  BACKGROUND  = 1   -- evict-on-preempt, yields to interactive/parallel
+  BULK        = 2   -- same tier as background but doesn't yield; used for batch index
+  PARALLEL    = 3   -- cross-GPU work that must not preempt itself
+  INTERACTIVE = 4   -- foreground user-visible calls
+  CRITICAL    = 5   -- onboarding/lifesaver probes; bypass circuit breaker backoff
 
 Stacking semantics:
 - Within a priority tier: FIFO.
@@ -24,7 +24,7 @@ Stacking semantics:
   the interactive is the next pop (not the next-queued interactive).
 
 No llama-server backend assumed; just HTTP + OpenAI chat-completions shape.
-Wall-clock enforcement is thread-abandon — mirrors _llamacpp_generate pattern.
+Wall-clock enforcement is thread-abandon -- mirrors _llamacpp_generate pattern.
 """
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ from typing import Any, Callable
 
 logger = logging.getLogger("HME")
 
-# Priority constants — higher = higher priority
+# Priority constants -- higher = higher priority
 CRITICAL    = 5
 INTERACTIVE = 4
 PARALLEL    = 3
@@ -67,7 +67,7 @@ class CoordinatorOverloaded(Exception):
 
 @dataclass(order=True)
 class _QueuedRequest:
-    # heap key: (-priority, seq) → higher priority pops first, FIFO within tier
+    # heap key: (-priority, seq) -> higher priority pops first, FIFO within tier
     _sort_key: tuple = field(init=False, repr=False)
     priority: int
     seq: int
@@ -82,7 +82,7 @@ class _QueuedRequest:
 
 
 class _Future:
-    """Minimal future — single-producer single-consumer, result or exception."""
+    """Minimal future -- single-producer single-consumer, result or exception."""
     __slots__ = ("_done", "_result", "_exc", "_preempted")
 
     def __init__(self):
@@ -154,7 +154,7 @@ class CoordinatorInstance:
         """Enqueue a request. Returns a _Future the caller can block on."""
         future = _Future()
         with self._heap_lock:
-            # Overload gate — reject new submits when queue is saturated
+            # Overload gate -- reject new submits when queue is saturated
             if len(self._heap) >= MAX_QUEUE_DEPTH:
                 self._stats["overloaded"] += 1
                 raise CoordinatorOverloaded(
@@ -180,7 +180,7 @@ class CoordinatorInstance:
             ):
                 logger.info(
                     f"coord[{self.name}]: preempt {_PRIORITY_NAMES.get(inflight.priority)} "
-                    f"→ incoming {_PRIORITY_NAMES.get(priority)}"
+                    f"-> incoming {_PRIORITY_NAMES.get(priority)}"
                 )
                 inflight.cancel_event.set()
 
@@ -262,7 +262,7 @@ class CoordinatorInstance:
             t.join(timeout=min(0.5, remaining))
 
         if req.cancel_event.is_set() and t.is_alive():
-            # Preempted — abandon the thread (llama-server will finish and drop
+            # Preempted -- abandon the thread (llama-server will finish and drop
             # its response). Mark future preempted so caller knows.
             logger.info(
                 f"coord[{self.name}]: {_PRIORITY_NAMES.get(req.priority)} preempted "
@@ -320,7 +320,7 @@ def get_instance(name: str, base_url: str) -> CoordinatorInstance:
         if inst is None:
             inst = CoordinatorInstance(name, base_url)
             _instances[name] = inst
-            logger.info(f"coord: started {name} → {base_url}")
+            logger.info(f"coord: started {name} -> {base_url}")
         return inst
 
 

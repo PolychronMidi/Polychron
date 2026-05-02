@@ -1,19 +1,19 @@
-"""llama.cpp persistence daemon — supervisor, RAG router, health proxy.
+"""llama.cpp persistence daemon -- supervisor, RAG router, health proxy.
 
 Runs on port 7735, writes PID to /tmp/hme-llamacpp-daemon.pid.
 
 Owns:
-  1. llama-server supervisor — spawn/adopt/restart arbiter + coder
+  1. llama-server supervisor -- spawn/adopt/restart arbiter + coder
      instances. Enforces the architecture invariant: each model owns
      its GPU end-to-end. Full offload only (n_gpu_layers=999).
      Refuses spawn + registers CRITICAL LIFESAVER on offload violation.
-  2. RAG routing flag — GET /rag-route returns "gpu" or "cpu" based
+  2. RAG routing flag -- GET /rag-route returns "gpu" or "cpu" based
      on the per-GPU busy flag. Callers on a given GPU route to the
      CPU mirror while its instance is generating.
-  3. Generation proxy — POST /generate translates llamacpp-shape
+  3. Generation proxy -- POST /generate translates llamacpp-shape
      /api/generate calls into llama-server OpenAI /v1/chat/completions,
      enforcing a hard wall-clock cap.
-  4. Health aggregation — GET /health returns combined supervisor +
+  4. Health aggregation -- GET /health returns combined supervisor +
      instance status. Used by the MCP shim startup probe.
 
 Usage: python3 -m llamacpp_daemon [--port 7735]

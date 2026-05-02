@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """H10: QLoRA fine-tune scaffold for the HME arbiter (qwen3:4b).
 
-This is SCAFFOLDING — the actual training requires `unsloth` or `axolotl`
+This is SCAFFOLDING -- the actual training requires `unsloth` or `axolotl`
 plus a GPU with enough VRAM for the chosen base model. This script:
 
   1. Exports the project KB as a JSONL training corpus
@@ -69,7 +69,7 @@ def export_corpus() -> int:
     """
     entries = _query("list_knowledge")
     if not entries:
-        sys.stderr.write("no KB entries — shim down or KB empty\n")
+        sys.stderr.write("no KB entries -- shim down or KB empty\n")
         return 2
     examples = []
     for e in entries:
@@ -78,13 +78,13 @@ def export_corpus() -> int:
         if not title or not content:
             continue
         # Turn each KB entry into 2-3 training examples
-        # 1. Definition: "what is X" → title + content
+        # 1. Definition: "what is X" -> title + content
         examples.append({
             "instruction": "Explain this module/concept in the Polychron codebase.",
-            "input": f"What is {title.split(' — ')[0].split(':')[0]}?",
+            "input": f"What is {title.split(' -- ')[0].split(':')[0]}?",
             "output": content,
         })
-        # 2. Search plan: "how do I research X" → search terms
+        # 2. Search plan: "how do I research X" -> search terms
         identifiers = [w for w in content.split() if "_" in w or
                        (w and w[0].islower() and any(c.isupper() for c in w))]
         if identifiers:
@@ -99,7 +99,7 @@ def export_corpus() -> int:
                     "codebase. Format: {terms, grep_patterns, glob_patterns, directories}. "
                     "Output ONLY valid JSON."
                 ),
-                "input": f"How do I find {title.split(' — ')[0][:60]}?",
+                "input": f"How do I find {title.split(' -- ')[0][:60]}?",
                 "output": json.dumps(plan),
             })
     os.makedirs(os.path.dirname(_CORPUS), exist_ok=True)
@@ -207,7 +207,7 @@ def show_plan() -> int:
     print("  - Plan mode becomes noticeably more grounded")
     print()
     print("## Training time estimate")
-    print("  - 112 KB entries × 2 examples = ~224 training samples")
+    print("  - 112 KB entries * 2 examples = ~224 training samples")
     print("  - 3 epochs on 8GB GPU: ~20-40 minutes wall time")
     return 0
 

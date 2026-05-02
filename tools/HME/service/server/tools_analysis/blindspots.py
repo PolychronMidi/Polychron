@@ -1,4 +1,4 @@
-"""HME Evolver blind-spot surfacing — Phase 2.4 of openshell_features_to_mimic.md.
+"""HME Evolver blind-spot surfacing -- Phase 2.4 of openshell_features_to_mimic.md.
 
 Reads `metrics/hme-activity.jsonl` across a configurable rolling window of
 rounds and computes what the Evolver has *systematically avoided*:
@@ -9,7 +9,7 @@ rounds and computes what the Evolver has *systematically avoided*:
 
 Surfaced via `status(mode='blindspots')` so the Evolver can query it during
 Phase 1 perception. Intentionally factual ("never touched") rather than
-judgmental ("should touch") — the data is coverage, the decision is the
+judgmental ("should touch") -- the data is coverage, the decision is the
 Evolver's.
 
 A "round" is the window between two `round_complete` events. The rolling
@@ -141,7 +141,7 @@ def blindspots(window: int = 0) -> str:
     if not events:
         return (
             "# Blind Spot Report\n\n"
-            "output/metrics/hme-activity.jsonl is empty. Nothing to analyse — "
+            "output/metrics/hme-activity.jsonl is empty. Nothing to analyse -- "
             "activity stream must run for at least one round first."
         )
 
@@ -223,7 +223,7 @@ def blindspots(window: int = 0) -> str:
         for mod, count in chronic_no_read[:15]:
             lines.append(f"  - {mod:<30} {count} write(s) without prior read")
     else:
-        lines.append("  None — every repeated write preceded by at least one HME read.")
+        lines.append("  None -- every repeated write preceded by at least one HME read.")
 
     lines.append("")
     lines.append("## Touched modules with no KB coverage")

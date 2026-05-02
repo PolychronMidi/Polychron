@@ -1,4 +1,4 @@
-"""Invariant dispatcher — binds evaluator names to check handlers."""
+"""Invariant dispatcher -- binds evaluator names to check handlers."""
 from __future__ import annotations
 
 import json
@@ -81,7 +81,7 @@ def _persist_invariant_history(results: list) -> None:
     fail_streaks = history.get("fail_streaks") or {}
     last_result = history.get("last_result") or {}
     # R22 #3: prune entries for invariants that no longer exist in current
-    # config — otherwise retired invariants linger forever with stale fail
+    # config -- otherwise retired invariants linger forever with stale fail
     # status, polluting the efficacy report. file-written-has-source-majority
     # was the first retired invariant (R22); this prune makes the retirement
     # actually clean. Note: results is list of (inv, ok, detail) tuples.
@@ -182,10 +182,10 @@ def check_invariants(verbose: bool = False) -> str:
                 line += f" ({detail})"
             parts.append(line)
     elif passes:
-        parts.append(f"## Verified ({len(passes)} — detail suppressed; use `evolve(focus='invariants', query='verbose')` for full listing)")
+        parts.append(f"## Verified ({len(passes)} -- detail suppressed; use `evolve(focus='invariants', query='verbose')` for full listing)")
 
     parts.append(f"\n## Extending")
-    parts.append(f"Add to `tools/HME/config/invariants.json` — no Python changes needed.")
+    parts.append(f"Add to `tools/HME/config/invariants.json` -- no Python changes needed.")
     parts.append(f"Types: files_executable, files_referenced, file_exists, symlink_valid,")
     parts.append(f"json_valid, glob_count_gte, pattern_in_file, patterns_all_in_file,")
     parts.append(f"pattern_count_gte, symbols_used, symbols_have_kb, files_mtime_window,")

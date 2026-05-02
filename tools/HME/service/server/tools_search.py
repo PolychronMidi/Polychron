@@ -1,4 +1,4 @@
-"""HME search tools — re-export shim for backward compatibility."""
+"""HME search tools -- re-export shim for backward compatibility."""
 from .search_basic import grep, file_lines, count_lines
 from .search_context import get_context
 from .search_hybrid import search_code

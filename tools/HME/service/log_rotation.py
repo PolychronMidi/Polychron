@@ -1,4 +1,4 @@
-"""Log rotation — keeps log/*.log and log/*.out bounded without a cron.
+"""Log rotation -- keeps log/*.log and log/*.out bounded without a cron.
 
 The selftest probe surfaces log-size ceiling violations as WARN; the
 actual trim happens here on a best-effort basis called at worker boot
@@ -6,12 +6,12 @@ and periodically via the meta-observer.
 
 Policy (conservative; favours keeping recent history over aggressive trim):
 
-  hme.log                     cap 50 MB → trim to last 40 MB
-  hme-worker.out              cap 50 MB → trim to last 40 MB
-  hme-llamacpp_daemon.out     cap 50 MB → trim to last 40 MB
-  hme-errors.log              cap 10 MB → trim to last 8 MB
-  session-transcript.jsonl    cap 100 MB → trim to last 80 MB
-  llama-server-*.log          cap 100 MB → trim to last 80 MB
+  hme.log                     cap 50 MB -> trim to last 40 MB
+  hme-worker.out              cap 50 MB -> trim to last 40 MB
+  hme-llamacpp_daemon.out     cap 50 MB -> trim to last 40 MB
+  hme-errors.log              cap 10 MB -> trim to last 8 MB
+  session-transcript.jsonl    cap 100 MB -> trim to last 80 MB
+  llama-server-*.log          cap 100 MB -> trim to last 80 MB
 
 The trim is line-preserving: read the last N bytes, skip to the next
 newline, rewrite the file atomically. Archived tail goes to
@@ -81,7 +81,7 @@ def _rotate_file(path: str, cap_bytes: int, keep_bytes: int) -> tuple[bool, str]
             pass
         return False, f"atomic rewrite failed: {e}"
 
-    return True, f"rotated {size}B → {len(tail)}B (archived {archive})"
+    return True, f"rotated {size}B -> {len(tail)}B (archived {archive})"
 
 
 def rotate_all(log_dir: str) -> dict:
@@ -95,7 +95,7 @@ def rotate_all(log_dir: str) -> dict:
         rotated, detail = _rotate_file(path, cap_mb * 1024 * 1024, keep_mb * 1024 * 1024)
         outcomes[fname] = ("ROTATED: " if rotated else "skipped: ") + detail
         if rotated:
-            logger.info(f"log_rotation: {fname} — {detail}")
+            logger.info(f"log_rotation: {fname} -- {detail}")
     # Also trim large llama-server-*.log files (pattern, not fixed name).
     try:
         for entry in os.listdir(log_dir):
@@ -104,7 +104,7 @@ def rotate_all(log_dir: str) -> dict:
                 rotated, detail = _rotate_file(path, 100 * 1024 * 1024, 80 * 1024 * 1024)
                 if rotated:
                     outcomes[entry] = "ROTATED: " + detail
-                    logger.info(f"log_rotation: {entry} — {detail}")
+                    logger.info(f"log_rotation: {entry} -- {detail}")
     except OSError as _list_err:
         logger.debug(f"log_rotation: listdir failed for llama-server logs: {_list_err}")
     return outcomes

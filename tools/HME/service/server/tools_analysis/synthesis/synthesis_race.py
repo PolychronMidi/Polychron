@@ -1,4 +1,4 @@
-"""Local model inference API — _local_think, _local_chat, compress_for_claude.
+"""Local model inference API -- _local_think, _local_chat, compress_for_claude.
 
 Split from synthesis_llamacpp.py for maintainability. All functions here
 use the core infrastructure (circuit breaker, daemon routing, env config)
@@ -20,7 +20,7 @@ from .synthesis_llamacpp import (  # noqa: F401
     _LLAMACPP_ARBITER_URL, _num_ctx_for,
     _interactive_event,
 )
-# synthesis_inference imports US at line 371 — top-level back-import would
+# synthesis_inference imports US at line 371 -- top-level back-import would
 # partial-load. Lazy lookup at call time keeps bare-name resolution working.
 def _local_think(*a, **kw):
     from . import synthesis_inference as _si
@@ -90,7 +90,7 @@ def _adaptive_cloud_delay() -> float:
         return _RACE_CLOUD_DELAY_DEFAULT_SEC
 
 
-# Legacy constant name — now defers to _adaptive_cloud_delay() at call site.
+# Legacy constant name -- now defers to _adaptive_cloud_delay() at call site.
 _RACE_CLOUD_DELAY_SEC = _RACE_CLOUD_DELAY_DEFAULT_SEC
 
 
@@ -98,7 +98,7 @@ def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
                      temperature: float = 0.2, profile: str = "reasoning",
                      race_short: bool = True,
                      **kwargs) -> str | None:
-    """Cloud cascade — quality-ranked fallback across free providers, with
+    """Cloud cascade -- quality-ranked fallback across free providers, with
     optional race-mode for short requests.
 
     profile='reasoning' (default): deep think, architecture, analysis.
@@ -111,7 +111,7 @@ def _reasoning_think(prompt: str, max_tokens: int = 8192, system: str = "",
         ranked cloud list. Falls back to local when every cloud slot is
         exhausted. Pays cloud latency (10-15s) but gets frontier quality.
 
-    Race path (race_short=True AND max_tokens ≤ _RACE_MAX_TOKENS):
+    Race path (race_short=True AND max_tokens <= _RACE_MAX_TOKENS):
         Fires local + cloud in parallel with a cloud head-start delay.
         Returns whichever finishes first; cancellation of the loser is
         best-effort (the winner's thread completes its response, the
@@ -148,7 +148,7 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
     delayed by _RACE_CLOUD_DELAY_SEC so it only kicks in when local
     genuinely stalls. Returns the first non-empty result. Emits a
     telemetry line to hme-race-outcomes.jsonl so the 2.5s cloud-delay
-    tuning is visible over time — previously we fired races blind."""
+    tuning is visible over time -- previously we fired races blind."""
     import threading
     import queue
     import time as _t
@@ -202,12 +202,12 @@ def _race_local_vs_cloud(prompt: str, system: str, max_tokens: int,
             winner_source = source
             winner_result = result
             break
-        # Empty result from this racer — keep waiting for the other.
+        # Empty result from this racer -- keep waiting for the other.
     if winner_result:
         logger.info(f"race winner: {winner_source} ({len(winner_result)}c, profile={profile})")
         _emit_race_outcome(profile, max_tokens, winner_source, latencies, bool(winner_result))
         return winner_result
-    # Both racers returned empty — final safety-net local call (no delay,
+    # Both racers returned empty -- final safety-net local call (no delay,
     # no parallel fire, direct path). Fires if both workers returned None.
     logger.warning(f"race both-empty fallback (profile={profile})")
     _emit_race_outcome(profile, max_tokens, "both_empty", latencies, False)
@@ -236,7 +236,7 @@ def _emit_race_outcome(profile: str, max_tokens: int, winner: str | None,
             "max_tokens": max_tokens,
             "winner": winner or "unknown",
             "had_result": had_result,
-            # Presence-first then index — avoids the .get-with-default pattern
+            # Presence-first then index -- avoids the .get-with-default pattern
             # that hides a missing key as 0 (would be indistinguishable from
             # a legitimate ~0ms latency).
             "local_ms": int(latencies["local"] * 1000) if "local" in latencies else None,
@@ -256,7 +256,7 @@ def _local_think_with_system(prompt: str, system: str, max_tokens: int = 1024,
     _m = model or _LOCAL_MODEL
     _cb = _get_circuit_breaker(_m)
     if not _cb.allow():
-        logger.warning(f"_local_think_with_system REFUSED — circuit breaker OPEN for {_m}")
+        logger.warning(f"_local_think_with_system REFUSED -- circuit breaker OPEN for {_m}")
         return None
 
     payload = {

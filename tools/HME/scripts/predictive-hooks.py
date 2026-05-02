@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Predictive hooks — rank hooks by signal value.
+"""Predictive hooks -- rank hooks by signal value.
 
 For each hook in `log/hme-hook-latency.jsonl`, correlate its verdicts
 (captured via stderr in `stop.sh` crash logger + `_HME_HOOK_VERDICT`)
@@ -8,7 +8,7 @@ against whether the session ACTED on that verdict.
 MVP: compute per-hook "prediction accuracy" as the rate at which a
 hook's verdict can be predicted from a simple prior (e.g., "always
 passes" for hooks that fire on >95% benign inputs). Hooks with high
-predictability are candidates for retirement — their signal is redundant
+predictability are candidates for retirement -- their signal is redundant
 with the trivial prior. Hooks with low predictability are load-bearing.
 
 Output: output/metrics/hme-hook-signal-value.json
@@ -77,7 +77,7 @@ def _score(entries: list[dict]) -> dict:
         # MVP predictability heuristic: rate at which duration falls in
         # the dominant half-decade bucket (under-100ms, 100ms-1s, >1s).
         # Hooks that always land in the same bucket have predictable
-        # latency → candidate signal-redundant. This is a proxy — real
+        # latency -> candidate signal-redundant. This is a proxy -- real
         # prediction accuracy requires verdict capture, which the
         # next iteration of the stderr-capture stop-chain can provide.
         buckets = defaultdict(int)
@@ -89,11 +89,11 @@ def _score(entries: list[dict]) -> dict:
             buckets[b] += 1
         dominant = max(buckets.values()) / n if buckets else 0.0
         if dominant > 0.95:
-            rec = "retire"  # always same bucket → low variance → redundant
+            rec = "retire"  # always same bucket -> low variance -> redundant
         elif dominant > 0.80:
             rec = "keep"
         else:
-            rec = "promote"  # high variance → real signal
+            rec = "promote"  # high variance -> real signal
         out[hook] = {
             "n": n,
             "predictability": round(dominant, 3),

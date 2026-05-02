@@ -1,4 +1,4 @@
-"""HME search tools — similarity: find_similar_code."""
+"""HME search tools -- similarity: find_similar_code."""
 import logging
 import os
 

@@ -1,4 +1,4 @@
-"""HME section comparison — drill into what changed between two sections."""
+"""HME section comparison -- drill into what changed between two sections."""
 import json
 import os
 import logging
@@ -15,7 +15,7 @@ logger = logging.getLogger("HME")
 def section_compare(section_a: int, section_b: int) -> str:
     """Compare two sections head-to-head: regime shift, tension delta, trust system
     winners/losers, coupling label changes, note density change. Reveals what drove
-    the transition between sections — useful after composition_arc highlights an
+    the transition between sections -- useful after composition_arc highlights an
     interesting section pair."""
     ctx.ensure_ready_sync()
     _track("section_compare")
@@ -94,13 +94,13 @@ def section_compare(section_a: int, section_b: int) -> str:
     avg_a = sum(sa["tensions"]) / len(sa["tensions"]) if sa["tensions"] else 0
     avg_b = sum(sb["tensions"]) / len(sb["tensions"]) if sb["tensions"] else 0
     delta = avg_b - avg_a
-    direction = "▲" if delta > 0.01 else ("▼" if delta < -0.01 else "→")
-    parts_out.append(f"\n## Tension: {avg_a:.3f} → {avg_b:.3f} ({direction}{delta:+.3f})")
+    direction = "^" if delta > 0.01 else ("v" if delta < -0.01 else "->")
+    parts_out.append(f"\n## Tension: {avg_a:.3f} -> {avg_b:.3f} ({direction}{delta:+.3f})")
 
     # Note density
     avg_notes_a = sum(sa["note_counts"]) / len(sa["note_counts"]) if sa["note_counts"] else 0
     avg_notes_b = sum(sb["note_counts"]) / len(sb["note_counts"]) if sb["note_counts"] else 0
-    parts_out.append(f"## Notes: {avg_notes_a:.0f} → {avg_notes_b:.0f} avg/beat")
+    parts_out.append(f"## Notes: {avg_notes_a:.0f} -> {avg_notes_b:.0f} avg/beat")
 
     # Trust winners and losers (biggest weight changes)
     trust_deltas: list = []
@@ -118,13 +118,13 @@ def section_compare(section_a: int, section_b: int) -> str:
         winners = [(d, n, wa, wb) for d, n, wa, wb in trust_deltas if d > 0.01][:3]
         losers = [(d, n, wa, wb) for d, n, wa, wb in trust_deltas if d < -0.01][:3]
         if winners:
-            parts_out.append(f"\n## Trust Winners (S{section_a}→S{section_b})")
+            parts_out.append(f"\n## Trust Winners (S{section_a}->S{section_b})")
             for d, n, wa, wb in winners:
-                parts_out.append(f"  ▲ {n}: {wa:.3f}→{wb:.3f} (+{d:.3f})")
+                parts_out.append(f"  ^ {n}: {wa:.3f}->{wb:.3f} (+{d:.3f})")
         if losers:
             parts_out.append(f"\n## Trust Losers")
             for d, n, wa, wb in losers:
-                parts_out.append(f"  ▼ {n}: {wa:.3f}→{wb:.3f} ({d:.3f})")
+                parts_out.append(f"  v {n}: {wa:.3f}->{wb:.3f} ({d:.3f})")
 
     # Hotspot dominance per section (which trust system had most hotspot pressure)
     all_hotspot_systems = set(sa["hotspot_counts"].keys()) | set(sb["hotspot_counts"].keys())
@@ -138,7 +138,7 @@ def section_compare(section_a: int, section_b: int) -> str:
             else:
                 parts_out.append(f"  {sec_label}: no hotspot pressure")
 
-    # Coupling label changes — with musical semantics
+    # Coupling label changes -- with musical semantics
     labels_a = set(sa["coupling"].keys())
     labels_b = set(sb["coupling"].keys())
     new_labels = labels_b - labels_a
@@ -150,7 +150,7 @@ def section_compare(section_a: int, section_b: int) -> str:
         for lbl in sorted(lost_labels)[:5]:
             parts_out.append(f"  - {_coupling_label_display(lbl)}")
 
-    # Persistent coupling — labels present in both sections (stable relationships)
+    # Persistent coupling -- labels present in both sections (stable relationships)
     shared_labels = labels_a & labels_b
     if shared_labels:
         # Show top 3 most frequent shared labels
@@ -159,7 +159,7 @@ def section_compare(section_a: int, section_b: int) -> str:
         for lbl in shared_sorted:
             parts_out.append(f"  = {_coupling_label_display(lbl)}")
 
-    # Narrative synthesis — one sentence distilling what the listener hears at this transition
+    # Narrative synthesis -- one sentence distilling what the listener hears at this transition
     from .synthesis import _two_stage_think
     from .trust_analysis import TRUST_MUSICAL_MEANING as _TMM
     top_winner = winners[0] if winners else None
@@ -179,7 +179,7 @@ def section_compare(section_a: int, section_b: int) -> str:
     )
     narrative = _two_stage_think(
         syn_ctx,
-        f"Write ONE sentence (max 40 words) describing what a listener would HEAR at the S{section_a}→S{section_b} transition. Be specific about texture, tension feel, and sonic character."
+        f"Write ONE sentence (max 40 words) describing what a listener would HEAR at the S{section_a}->S{section_b} transition. Be specific about texture, tension feel, and sonic character."
     )
     if narrative and len(narrative.strip()) > 10:
         parts_out.append(f"\n## What You Hear")
@@ -189,7 +189,7 @@ def section_compare(section_a: int, section_b: int) -> str:
     parts_out.append(f"\n")
     parts_out.append(f"See also: regime_report(mode='drama') for tension spikes and trust reversals")
     if abs(delta) > 0.05:
-        parts_out.append(f"Large tension delta — try trust_rivalry to trace which system drove the shift")
+        parts_out.append(f"Large tension delta -- try trust_rivalry to trace which system drove the shift")
 
     return "\n".join(parts_out)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/freeze check — does the arc-freeze marker permit a proposed action?"""
+"""i/freeze check -- does the arc-freeze marker permit a proposed action?"""
 from __future__ import annotations
 import json
 import os
@@ -12,7 +12,7 @@ FREEZE = os.path.join(PROJECT_ROOT, "tools", "HME", "config", "arc-freeze.json")
 
 def main(argv):
     if not os.path.isfile(FREEZE):
-        print("No arc-freeze marker present — all actions permitted.")
+        print("No arc-freeze marker present -- all actions permitted.")
         return 0
     with open(FREEZE) as f:
         m = json.load(f)

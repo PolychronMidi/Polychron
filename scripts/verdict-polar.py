@@ -3,16 +3,16 @@
 as polar coordinates on (distance, direction).
 
 The antagonism-bridge insight: STABLE and LEGENDARY don't differ by "amount
-of good" — they differ by DISTANCE from baseline at the same DIRECTION.
-DRIFTED isn't "opposite of STABLE" — it's far from baseline in the UNAPPEALING
+of good" -- they differ by DISTANCE from baseline at the same DIRECTION.
+DRIFTED isn't "opposite of STABLE" -- it's far from baseline in the UNAPPEALING
 direction. EVOLVED is medium-distance, appealing. The 4 bins are a collapsed
 polar grid.
 
 Bin -> (distance, direction):
-  STABLE:    (low,    +  )   — close to baseline, appealing
-  EVOLVED:   (medium, +  )   — meaningful move, appealing
-  LEGENDARY: (high,   + +)   — breakthrough, appealing
-  DRIFTED:   (high,   -  )   — meaningful move, unappealing
+  STABLE:    (low,    +  )   -- close to baseline, appealing
+  EVOLVED:   (medium, +  )   -- meaningful move, appealing
+  LEGENDARY: (high,   + +)   -- breakthrough, appealing
+  DRIFTED:   (high,   -  )   -- meaningful move, unappealing
 
 Why this matters:
   - The evolution loop can now say "keep the direction, push the distance"
@@ -84,7 +84,7 @@ def compute_appetite(recent_verdicts: list[str]) -> dict:
 
 def trajectory_vector(prev: tuple[float, float], curr: tuple[float, float]) -> dict:
     """Direction of motion in verdict space. Returns delta_distance and
-    delta_direction — the per-round move that the evolution loop could
+    delta_direction -- the per-round move that the evolution loop could
     target as a trajectory rather than a bin transition."""
     return {
         "delta_distance": round(curr[0] - prev[0], 3),
@@ -106,8 +106,8 @@ def main() -> None:
         print("  direction: -1=unappealing, +1=appealing")
         print()
         for v, (d, dr) in VERDICT_POLAR.items():
-            bar_dist = "█" * int(d * 20)
-            bar_dir = ("█" * int(abs(dr) * 10)).rjust(10) if dr >= 0 else ("█" * int(abs(dr) * 10)).ljust(10)
+            bar_dist = "#" * int(d * 20)
+            bar_dir = ("#" * int(abs(dr) * 10)).rjust(10) if dr >= 0 else ("#" * int(abs(dr) * 10)).ljust(10)
             print(f"  {v:<10} ({d:.2f}, {dr:+.2f})  dist {bar_dist:<20} dir {bar_dir}")
         return
 

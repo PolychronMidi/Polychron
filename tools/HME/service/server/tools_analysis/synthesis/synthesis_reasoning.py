@@ -1,13 +1,13 @@
-"""Reasoning/coder tier dispatcher — two quality-ranked cascades across providers.
+"""Reasoning/coder tier dispatcher -- two quality-ranked cascades across providers.
 
-Two profiles — callers pass `profile="reasoning"` (default) or `profile="coder"`.
+Two profiles -- callers pass `profile="reasoning"` (default) or `profile="coder"`.
 Each profile has its own ordered (provider, model) list so reasoning fallbacks
 pick reasoning-strong models and coder fallbacks pick code-strong models.
 
-Both rankings share the same provider modules and quota pools — splitting the
+Both rankings share the same provider modules and quota pools -- splitting the
 order only changes which slot fires first, not which free tiers are consumed.
 
-profile="reasoning" — general analysis, architecture, deep think:
+profile="reasoning" -- general analysis, architecture, deep think:
      1. nvidia     deepseek-ai/deepseek-v3.2              full DeepSeek V3.2
      2. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
      3. openrouter deepseek/deepseek-r1:free              R1 reasoning
@@ -31,7 +31,7 @@ profile="reasoning" — general analysis, architecture, deep think:
     21. cerebras   llama3.1-8b                            weak fallback
     22. gemini     gemini-2.5-flash-lite                  last before local
 
-profile="coder" — structural code extraction, verified facts, file-aware work:
+profile="coder" -- structural code extraction, verified facts, file-aware work:
      1. nvidia     qwen/qwen3-coder-480b-a35b-instruct    480B Qwen3 coder flagship
      2. nvidia     mistralai/devstral-2-123b-instruct     123B agentic coder
      3. nvidia     deepseek-ai/deepseek-v3.2              strong all-round coder
@@ -60,7 +60,7 @@ because they waste output tokens on chain-of-thought that then gets discarded
 when the caller only wants file paths and function names.
 
 Z.ai provider omitted: all GLM models on z.ai are paywalled despite "free tier"
-marketing — API returns "insufficient balance" on every request.
+marketing -- API returns "insufficient balance" on every request.
 
 Local qwen3-coder:30b-a3b is the final fallback handled by the caller.
 """
@@ -227,7 +227,7 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
 
 # Overdrive budget and timeout tuning.
 #
-# Defaults are "max effort" — 64k thinking, 240s wall clock — because
+# Defaults are "max effort" -- 64k thinking, 240s wall clock -- because
 # that's what OVERDRIVE_MODE exists for. Callers who want true
 # ceiling-level reasoning (up to 128k budget) can bump both knobs in
 # .env without code changes. The two are coupled: Opus generates
@@ -235,14 +235,14 @@ def _call_specific(mod, provider_key: str, model: str, prompt: str,
 # time produces spurious 504/timeout failures mid-thought.
 #
 # Rough timing math for capacity planning:
-#   32k budget → ~64s   → fits well under 180s
-#   64k budget → ~128s  → default; fits under 240s with headroom
-#   96k budget → ~192s  → needs timeout ≥ 240s
-#   128k budget → ~256s → needs timeout ≥ 300s (Anthropic ceiling)
+#   32k budget -> ~64s   -> fits well under 180s
+#   64k budget -> ~128s  -> default; fits under 240s with headroom
+#   96k budget -> ~192s  -> needs timeout >= 240s
+#   128k budget -> ~256s -> needs timeout >= 300s (Anthropic ceiling)
 #
 # Env vars:
-#   OVERDRIVE_THINK_BUDGET  — int, thinking budget in tokens (default 64000)
-#   OVERDRIVE_TIMEOUT       — int, wall-clock seconds per model call (default 240)
+#   OVERDRIVE_THINK_BUDGET  -- int, thinking budget in tokens (default 64000)
+#   OVERDRIVE_TIMEOUT       -- int, wall-clock seconds per model call (default 240)
 #
 # _OVERDRIVE_MAX_TOKENS_SLACK is a code constant (not env-tunable): Anthropic
 # requires max_tokens > thinking.budget_tokens, so the effective max_tokens
@@ -270,7 +270,7 @@ def _overdrive_timeout() -> int:
 # Source-of-last-answer tracking. synthesis_reasoning.call() writes this
 # on every non-None return. Callers that care (e.g. agent_local.py's
 # _call_synthesizer, which reports a per-call source tag upstream) can
-# read last_source() after the call. Not thread-safe — one-shot per
+# read last_source() after the call. Not thread-safe -- one-shot per
 # caller context.
 _last_source: str | None = None
 
@@ -278,16 +278,16 @@ _last_source: str | None = None
 def last_source() -> str | None:
     """Return a short string identifying which path produced the most
     recent non-None result from synthesis_reasoning.call(). Values:
-        'overdrive/opus'                 — Opus answered under OVERDRIVE_MODE
-        'overdrive/sonnet'               — Opus rate-limited, Sonnet took over
-        '<provider>/<model>'             — free-cascade slot fired
-        None                             — last call returned None OR
+        'overdrive/opus'                 -- Opus answered under OVERDRIVE_MODE
+        'overdrive/sonnet'               -- Opus rate-limited, Sonnet took over
+        '<provider>/<model>'             -- free-cascade slot fired
+        None                             -- last call returned None OR
                                            no call made yet this process
     """
     return _last_source
 
 
-# Overdrive model chain — env-tunable via OVERDRIVE_CHAIN.
+# Overdrive model chain -- env-tunable via OVERDRIVE_CHAIN.
 #
 # Default chain: Opus first (max quality on user's subscription), Sonnet on
 # Opus rate-limit (still Anthropic, still extended thinking). Only when every
@@ -306,7 +306,7 @@ _OVERDRIVE_CHAIN_DEFAULT = (
 
 
 
-# Re-exports — overdrive logic extracted to sibling.
+# Re-exports -- overdrive logic extracted to sibling.
 from .synthesis_overdrive import (  # noqa: F401, E402
     _label_for_model, _resolve_overdrive_chain, _circuit_cooldown_secs,
     _circuit_open, _circuit_trip, _emit_overdrive_activity,
@@ -316,27 +316,27 @@ from .synthesis_overdrive import (  # noqa: F401, E402
 def call(prompt: str, system: str = "", max_tokens: int = 2048,
          temperature: float = 0.3, profile: str = "reasoning",
          tier: str = "medium") -> str | None:
-    """Walk the ranking for the given profile best→worst, returning the first success.
+    """Walk the ranking for the given profile best->worst, returning the first success.
 
-    profile='reasoning' (default) — deep think, architecture, analysis.
-    profile='coder'                — structural code extraction, verified facts.
+    profile='reasoning' (default) -- deep think, architecture, analysis.
+    profile='coder'                -- structural code extraction, verified facts.
 
     Returns None only when every ranked slot is exhausted OR the wall-clock
-    ceiling is hit — caller falls back to local qwen3-coder:30b-a3b.
+    ceiling is hit -- caller falls back to local qwen3-coder:30b-a3b.
 
     Wall-clock ceiling (HME_REASONING_WALL_SECS, default 300s). Protects
     against cascade pathologies where multiple slots hang and each burns
     its per-call timeout serially. INVARIANT: wall_secs must be at least
-    3× the longest per-provider timeout, or the cascade can't actually
-    try multiple providers — we'd time out inside the first provider's
+    3* the longest per-provider timeout, or the cascade can't actually
+    try multiple providers -- we'd time out inside the first provider's
     thinking pass. NVIDIA's per-call timeout is 120s (thinking models
-    legitimately take 30-90s), so 300s gives 2–3 fair attempts. Raising
+    legitimately take 30-90s), so 300s gives 2-3 fair attempts. Raising
     the default from the legacy 45s after the user reported cascade
     exhaustion with Anthropic rate-limited: 45s wasn't enough for even
     one NVIDIA deepseek-v3.2 call to finish.
 
     HME_REASONING_OFFLINE=1 skips the external cascade entirely and returns
-    None immediately — caller falls straight to local fallback. Useful when
+    None immediately -- caller falls straight to local fallback. Useful when
     Anthropic is having an outage, when rate-limited, or for offline dev.
 
     OVERDRIVE_MODE=1 in .env short-circuits this walk and calls Claude Opus
@@ -344,7 +344,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     we fall through to the normal cascade so an API blip doesn't block work.
     OVERDRIVE_VIA_SUBAGENT=1 additionally routes the Claude calls through a
     Claude-Code Agent subagent (via proxy's subagent_bridge middleware)
-    instead of hitting api.anthropic.com directly — moves reasoning cost
+    instead of hitting api.anthropic.com directly -- moves reasoning cost
     off raw per-minute RPM onto session-budget, which has far more headroom.
     """
     import time as _time
@@ -356,7 +356,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
 
     # Offline mode: skip the whole external cascade.
     if _ENV.optional("HME_REASONING_OFFLINE", "0") == "1":
-        logger.info("reasoning: HME_REASONING_OFFLINE=1 — skipping external cascade")
+        logger.info("reasoning: HME_REASONING_OFFLINE=1 -- skipping external cascade")
         return None
 
     # OVERDRIVE_MODE: route through Claude Code subscription for higher-
@@ -366,12 +366,12 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     #
     # Mode 1: Opus-then-Sonnet chain regardless of task tier. Original
     #         behavior. Same chain for every call.
-    # Mode 2: tier-aware routing —
-    #           hard   → Opus chain (Opus, fallback Sonnet on rate-limit)
-    #           medium → Sonnet-only chain (skip Opus to preserve quota
+    # Mode 2: tier-aware routing --
+    #           hard   -> Opus chain (Opus, fallback Sonnet on rate-limit)
+    #           medium -> Sonnet-only chain (skip Opus to preserve quota
     #                    for hard tasks; force direct API since subagent
     #                    can't pin a specific model independent of /model)
-    #           easy   → skip overdrive entirely → fall through to free
+    #           easy   -> skip overdrive entirely -> fall through to free
     #                    cascade (NVIDIA/Cerebras/Groq/Gemini)
     # Mode 0 (or unset): no-op; cascade is the only path.
     #
@@ -392,7 +392,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
         if _normalized_tier == "hard":
             _overdrive_result = _call_opus_overdrive(prompt, system, max_tokens)
         elif _normalized_tier == "medium":
-            # Pin Sonnet — force direct API since subagent dispatch
+            # Pin Sonnet -- force direct API since subagent dispatch
             # can't honor a model-specific chain (it runs at /model).
             _overdrive_result = _call_opus_overdrive(
                 prompt, system, max_tokens,
@@ -400,7 +400,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
                 allow_subagent=False,
             )
         else:  # easy
-            _overdrive_result = None  # skip overdrive → cascade handles it
+            _overdrive_result = None  # skip overdrive -> cascade handles it
         if _overdrive_result:
             _text, _source = _overdrive_result
             _last_source = _source
@@ -418,7 +418,7 @@ def call(prompt: str, system: str = "", max_tokens: int = 2048,
     for provider_key, model in ranking:
         if _time.monotonic() >= deadline:
             logger.warning(
-                f"reasoning cascade wall-clock ceiling hit ({wall_secs:.0f}s) — "
+                f"reasoning cascade wall-clock ceiling hit ({wall_secs:.0f}s) -- "
                 f"exhausting to local fallback. Last attempted: {provider_key}/{model}"
             )
             return None

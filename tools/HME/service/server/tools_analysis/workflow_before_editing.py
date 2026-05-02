@@ -41,7 +41,7 @@ def _get_kb_hits_cache():
 
 logger = logging.getLogger("HME")
 
-# Synthesis cache — keyed (abs_path, mtime), eliminates repeated llama.cpp waits.
+# Synthesis cache -- keyed (abs_path, mtime), eliminates repeated llama.cpp waits.
 # Persisted to disk so cache survives server restarts. Stale entries (mtime mismatch)
 # are silently dropped on load; valid entries are used immediately without re-synthesis.
 _SYNTHESIS_CACHE_PATH = os.path.join(
@@ -106,7 +106,7 @@ def before_editing(file_path: str) -> str:
     except Exception as _err2:
         logger.debug(f"_git.stdout.strip: {type(_err2).__name__}: {_err2}")
 
-    # KB constraints + callers — cached parallel fetch
+    # KB constraints + callers -- cached parallel fetch
     from . import _filter_kb_relevance
     _caller_cache = _get_caller_cache()
     _kb_cache = _get_kb_hits_cache()
@@ -128,12 +128,12 @@ def before_editing(file_path: str) -> str:
             try:
                 kb_results = _kb_fut.result(timeout=30)
             except _cf.TimeoutError:
-                logger.warning(f"before_editing: search_knowledge({module_name}) >30s — empty KB fallback")
+                logger.warning(f"before_editing: search_knowledge({module_name}) >30s -- empty KB fallback")
                 kb_results = []
             try:
                 _all_callers = _cal_fut.result(timeout=30)
             except _cf.TimeoutError:
-                logger.warning(f"before_editing: _find_callers({module_name}) >30s — empty callers fallback")
+                logger.warning(f"before_editing: _find_callers({module_name}) >30s -- empty callers fallback")
                 _all_callers = []
         _caller_cache[_caller_key] = _all_callers
         _kb_cache[_kb_key] = kb_results
@@ -208,7 +208,7 @@ def before_editing(file_path: str) -> str:
 
     parts = [f"# Before Editing: {rel_path} (context: {budget})\n"]
 
-    # P1. KB Constraints — what you MUST NOT violate
+    # P1. KB Constraints -- what you MUST NOT violate
     if relevant_kb:
         parts.append(f"## KB Constraints ({len(relevant_kb)} entries)")
         for k in relevant_kb:
@@ -218,7 +218,7 @@ def before_editing(file_path: str) -> str:
     else:
         parts.append("## KB Constraints: none found\n")
 
-    # P2. Warnings — boundary violations you're at risk of
+    # P2. Warnings -- boundary violations you're at risk of
     if warnings:
         parts.append("## Warnings")
         for w in warnings:
@@ -230,7 +230,7 @@ def before_editing(file_path: str) -> str:
         parts.append(f"\n## HME Internal Context")
         parts.append(hme_ctx)
 
-    # P3. Antagonism Bridges — active coupling you must preserve
+    # P3. Antagonism Bridges -- active coupling you must preserve
     try:
         from .coupling import get_top_bridges, _TRUST_FILE_ALIASES, _FILE_TRUST_ALIASES
         trust_alias = _FILE_TRUST_ALIASES.get(module_name, module_name)
@@ -247,16 +247,16 @@ def before_editing(file_path: str) -> str:
                 if b["already_bridged"]:
                     parts.append(f"  BRIDGED r={b['r']:+.3f} vs {partner} (via {', '.join(b['already_bridged'])})")
                 else:
-                    parts.append(f"  OPPORTUNITY r={b['r']:+.3f} vs {partner} — bridge via `{b['field']}`")
+                    parts.append(f"  OPPORTUNITY r={b['r']:+.3f} vs {partner} -- bridge via `{b['field']}`")
                     parts.append(f"    {b['eff_a']} | opposite: {b['eff_b']}")
                     parts.append(f"    {b['why']}")
     except Exception as _err4:
         logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
-    # P4. Edit Risks — synthesized danger zones
+    # P4. Edit Risks -- synthesized danger zones
     # Moved behind HME_READ_VERBOSE=1 because this is an LLM-synthesized
     # speculation about risks (not grounded in the session's intent) and
-    # frequently dumps pages of "maybe this could…" content unrelated to
+    # frequently dumps pages of "maybe this could..." content unrelated to
     # the actual edit. The KB Constraints + Warnings + Bridges above
     # already cover real defects. Opt-in when deeply auditing a module.
     _verbose = os.environ.get("HME_READ_VERBOSE", "0") == "1"
@@ -265,7 +265,7 @@ def before_editing(file_path: str) -> str:
         parts.append(compress_for_claude(synthesis, max_chars=800,
                                          hint=f"edit risks for {rel_path}"))
 
-    # Reference zone — dependents/structure/signals/evolutionary/musical/commits
+    # Reference zone -- dependents/structure/signals/evolutionary/musical/commits
     # all gated behind HME_READ_VERBOSE=1. Default output keeps only the
     # priority zone (KB constraints + warnings + HME internal context +
     # antagonism bridges) which is ~15 lines vs the prior 80+. Agents that
@@ -328,7 +328,7 @@ def before_editing(file_path: str) -> str:
         # Terse footer so the agent knows there's more on demand.
         parts.append(
             f"\n_Reference sections (dependents/structure/L0/musical/commits) "
-            f"suppressed by default — set HME_READ_VERBOSE=1 to include them._"
+            f"suppressed by default -- set HME_READ_VERBOSE=1 to include them._"
         )
 
     return "\n".join(parts)

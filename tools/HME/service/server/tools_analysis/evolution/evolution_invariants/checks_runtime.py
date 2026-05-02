@@ -21,15 +21,15 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
     pipeline emission silently.
 
     Config:
-      path           — activity jsonl file (default metrics/hme-activity.jsonl)
-      start_event    — name of the "begin" event (e.g. pipeline_start)
-      end_event      — name of the "end" event (e.g. pipeline_run)
-      require_field  — optional: events must have this field present to count
+      path           -- activity jsonl file (default metrics/hme-activity.jsonl)
+      start_event    -- name of the "begin" event (e.g. pipeline_start)
+      end_event      -- name of the "end" event (e.g. pipeline_run)
+      require_field  -- optional: events must have this field present to count
                         (useful for round_complete which was pre-rename emitted
                         without verdict field from pre-pipeline-era Stop hooks)
-      window_events  — consider only the last N events (default 2000)
-      min_occurrences — only evaluate when >= this many start_events observed
-                        (default 2 — cold-start tolerance)
+      window_events  -- consider only the last N events (default 2000)
+      min_occurrences -- only evaluate when >= this many start_events observed
+                        (default 2 -- cold-start tolerance)
     """
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT, inv.get("path", os.path.join(METRICS_DIR, "hme-activity.jsonl")))
@@ -40,7 +40,7 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
     min_occ = int(inv.get("min_occurrences", 2))
 
     if not os.path.isfile(path):
-        return True, f"activity log {inv.get('path',os.path.join(METRICS_DIR, 'hme-activity.jsonl'))} missing — can't check"
+        return True, f"activity log {inv.get('path',os.path.join(METRICS_DIR, 'hme-activity.jsonl'))} missing -- can't check"
     tail: list = []
     try:
         with open(path, encoding="utf-8") as f:
@@ -64,7 +64,7 @@ def _check_activity_events_balanced(inv: dict) -> tuple[bool, str]:
     starts = sum(1 for e in tail if _matches(e, start_event))
     ends = sum(1 for e in tail if _matches(e, end_event))
     if starts < min_occ:
-        return True, f"only {starts} {start_event!r} in last {window} events, need ≥{min_occ}"
+        return True, f"only {starts} {start_event!r} in last {window} events, need >={min_occ}"
     if starts != ends:
         return False, (
             f"{start_event!r}={starts}  {end_event!r}={ends}  delta={abs(starts-ends)}. "
@@ -79,18 +79,18 @@ def _check_invariant_chronically_failing(inv: dict) -> tuple[bool, str]:
     """Escalation check: warn when ANOTHER invariant has been failing for
     N consecutive invariant runs. Catches the meta-pattern where a FAIL
     becomes background noise. Requires metrics/hme-invariant-history.json
-    (maintained by the invariants runner itself — not wired here yet).
+    (maintained by the invariants runner itself -- not wired here yet).
 
     Config:
-      path         — history file (default metrics/hme-invariant-history.json)
-      min_streak   — minimum consecutive-FAIL runs to trigger (default 10)
+      path         -- history file (default metrics/hme-invariant-history.json)
+      min_streak   -- minimum consecutive-FAIL runs to trigger (default 10)
     """
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT,
                         inv.get("path", os.path.join(METRICS_DIR, "hme-invariant-history.json")))
     min_streak = int(inv.get("min_streak", 10))
     if not os.path.isfile(path):
-        return True, "no invariant history yet — chronic-failure check inert"
+        return True, "no invariant history yet -- chronic-failure check inert"
     try:
         with open(path, encoding="utf-8") as f:
             data = _json.load(f)
@@ -115,11 +115,11 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
     clock-dependent verifier) or cached state leaks between runs.
 
     Config:
-      activity_path       — activity jsonl (default metrics/hme-activity.jsonl)
-      correlation_path    — musical-correlation.json (default)
-      field               — field to check (default 'hme_coherence')
-      tolerance           — absolute difference tolerance (default 0.01)
-      window_events       — tail to scan (default 2000)
+      activity_path       -- activity jsonl (default metrics/hme-activity.jsonl)
+      correlation_path    -- musical-correlation.json (default)
+      field               -- field to check (default 'hme_coherence')
+      tolerance           -- absolute difference tolerance (default 0.01)
+      window_events       -- tail to scan (default 2000)
     """
     import json as _json
     activity_path = os.path.join(
@@ -134,7 +134,7 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
     tolerance = float(inv.get("tolerance", 0.01))
 
     if not (os.path.isfile(activity_path) and os.path.isfile(corr_path)):
-        return True, "activity log or correlation file missing — can't check"
+        return True, "activity log or correlation file missing -- can't check"
     # Find consecutive pipeline_baseline_delta events with same_commit=1
     baselines: list[dict] = []
     try:
@@ -156,11 +156,11 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
         with open(corr_path, encoding="utf-8") as f:
             corr = _json.load(f)
     except (OSError, _json.JSONDecodeError):
-        return True, "correlation file unparseable — can't check"
+        return True, "correlation file unparseable -- can't check"
     hist = corr.get("history") or []
 
     # Build {tree_hash_or_sha: [values]}
-    # tree_hash is preferred — it's stable across auto-commits that don't change
+    # tree_hash is preferred -- it's stable across auto-commits that don't change
     # file content, so two same-source-tree runs can be compared. Falls back to
     # SHA extracted from round_id for older history entries that lack tree_hash.
     by_sha: dict = {}
@@ -194,10 +194,10 @@ def _check_same_commit_determinism(inv: dict) -> tuple[bool, str]:
             f"{len(violations)} same-commit spread violation(s) above tol={tolerance}: "
             + "; ".join(violations[:3])
         )
-    # Count how many shas had ≥2 rounds (any at all) as evidence the check ran
+    # Count how many shas had >=2 rounds (any at all) as evidence the check ran
     with_enough = sum(1 for vals in by_sha.values() if len(vals) >= 2)
     if with_enough == 0:
-        return True, f"no commit has ≥2 rounds yet — check inert"
+        return True, f"no commit has >=2 rounds yet -- check inert"
     return True, f"{with_enough} commit(s) evaluated, all within tol={tolerance}"
 
 
@@ -207,16 +207,16 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
     module='18446744073709550176' from LanceDB internal files, for example).
 
     Config:
-      path            — activity jsonl (default metrics/hme-activity.jsonl)
-      event           — event type to check (e.g. 'file_written')
-      field           — field name to validate (e.g. 'module')
-      pattern         — regex that the field value must match
-      window_events   — consider only the last N events (default 2000)
-      max_violations  — fail threshold (default 10 — tolerate legacy noise)
-      exclude_values  — field values to skip (e.g. empty strings)
-      require_fields  — event must have ALL these fields (non-empty) to count;
+      path            -- activity jsonl (default metrics/hme-activity.jsonl)
+      event           -- event type to check (e.g. 'file_written')
+      field           -- field name to validate (e.g. 'module')
+      pattern         -- regex that the field value must match
+      window_events   -- consider only the last N events (default 2000)
+      max_violations  -- fail threshold (default 10 -- tolerate legacy noise)
+      exclude_values  -- field values to skip (e.g. empty strings)
+      require_fields  -- event must have ALL these fields (non-empty) to count;
                         skips legacy events that predate a schema extension
-                        (e.g. 'source' was added post-R09 — pre-R09 events
+                        (e.g. 'source' was added post-R09 -- pre-R09 events
                         without it are legacy noise, not current violations)
     """
     import json as _json
@@ -232,7 +232,7 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
     require_fields = inv.get("require_fields", [])
 
     if not os.path.isfile(path):
-        return True, f"activity log missing — can't check"
+        return True, f"activity log missing -- can't check"
     tail: list = []
     try:
         with open(path, encoding="utf-8") as f:
@@ -268,6 +268,6 @@ def _check_activity_field_sanity(inv: dict) -> tuple[bool, str]:
             f"values (max {max_violations}). Samples: {sample}. "
             f"Pattern: {inv['pattern']}"
         )
-    return True, f"{len(violations)} invalid (≤{max_violations} tolerance)"
+    return True, f"{len(violations)} invalid (<={max_violations} tolerance)"
 
 

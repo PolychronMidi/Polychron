@@ -2,7 +2,7 @@
 """Run the HME declarative invariant battery from the pipeline.
 
 Wraps check_invariants() so fail_streaks in metrics/hme-invariant-history.json
-update every pipeline run — agent-independent. Without this, streaks only
+update every pipeline run -- agent-independent. Without this, streaks only
 refresh when an agent calls evolve(focus='invariants'), leaving chronic-failing
 invariants stale for long stretches.
 
@@ -31,6 +31,6 @@ try:
     first_line = out.split("\n", 1)[0]
     print(f"run-invariant-battery: {first_line.lstrip('# ').strip()}")
 except Exception as e:
-    print(f"run-invariant-battery: skipped — {type(e).__name__}: {e}")
+    print(f"run-invariant-battery: skipped -- {type(e).__name__}: {e}")
 
 sys.exit(0)

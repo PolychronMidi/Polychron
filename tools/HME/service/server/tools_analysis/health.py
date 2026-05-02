@@ -53,11 +53,11 @@ def codebase_health() -> str:
         for dry in DRY_PATTERNS:
             if dry["pattern"] in content and "crossLayerHelpers" not in rel:
                 issues_by_severity["WARN"].append(f"{rel}: {dry['message']}")
-        # Coupling firewall — driven by project-rules.json (COUPLING_MATRIX_EXEMPT/LEGACY_PATHS)
+        # Coupling firewall -- driven by project-rules.json (COUPLING_MATRIX_EXEMPT/LEGACY_PATHS)
         if ".couplingMatrix" in content:
             if not any(a in rel for a in COUPLING_MATRIX_EXEMPT_PATHS):
                 if any(l in rel for l in COUPLING_MATRIX_LEGACY_PATHS):
-                    issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix) [legacy — tracked for refactor]")
+                    issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix) [legacy -- tracked for refactor]")
                 else:
                     issues_by_severity["WARN"].append(f"{rel}: coupling firewall violation (.couplingMatrix)")
     # Partition CRITICAL issues: expected-large (data/generated) vs actionable
@@ -73,20 +73,20 @@ def codebase_health() -> str:
         return "\n".join(parts)
 
     if actionable_critical:
-        # Sort by line count descending — worst offenders first
+        # Sort by line count descending -- worst offenders first
         def _extract_line_count(item: str) -> int:
             import re as _re
             m = _re.search(r"(\d+) lines", item)
             return int(m.group(1)) if m else 0
         actionable_critical_sorted = sorted(actionable_critical, key=_extract_line_count, reverse=True)
-        parts.append(f"## CRITICAL — Actionable ({len(actionable_critical_sorted)})")
+        parts.append(f"## CRITICAL -- Actionable ({len(actionable_critical_sorted)})")
         for item in actionable_critical_sorted:
             # Hot-path annotation: flag files that run on every beat
             hot = " [HOT PATH]" if any(h in item for h in _HOT_PATH_FILES) else ""
             parts.append(f"  - {item}{hot}")
         parts.append("")
     if expected_large:
-        parts.append(f"## CRITICAL — Expected Large ({len(expected_large)}, data/generated — not split targets)")
+        parts.append(f"## CRITICAL -- Expected Large ({len(expected_large)}, data/generated -- not split targets)")
         for item in sorted(expected_large):
             parts.append(f"  - {item}")
         parts.append("")
@@ -154,7 +154,7 @@ def codebase_health() -> str:
 
 
 def find_dead_code(path: str = "src") -> str:
-    """Scan all IIFE globals for zero external callers AND no conductor self-registration (truly dormant modules). Modules that self-register via conductorIntelligence.register* are active even without direct callers — their biases flow through the conductor signal pipeline via callbacks."""
+    """Scan all IIFE globals for zero external callers AND no conductor self-registration (truly dormant modules). Modules that self-register via conductorIntelligence.register* are active even without direct callers -- their biases flow through the conductor signal pipeline via callbacks."""
     src_root = os.path.join(ctx.PROJECT_ROOT, path) if not os.path.isabs(path) else path
     sym_files, caller_counts, sym_registrations = _compute_iife_caller_counts(src_root, ctx.PROJECT_ROOT)
 
@@ -239,7 +239,7 @@ def doc_sync_check(doc_path: str = "") -> str:
                 logger.debug(f"server_content_parts.append: {type(_err5).__name__}: {_err5}")
     if count_match:
         claimed = int(count_match.group(1))
-        # Accept "50+" style — only flag if exact count AND it's wrong
+        # Accept "50+" style -- only flag if exact count AND it's wrong
         if "50+" not in doc_content and claimed != actual_tools:
             issues.append(f"STALE: doc claims {claimed} tools, server has {actual_tools}")
     # Check file/chunk/symbol counts

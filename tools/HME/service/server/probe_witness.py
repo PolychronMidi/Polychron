@@ -1,4 +1,4 @@
-"""Observability-of-observability — witness structure for probes.
+"""Observability-of-observability -- witness structure for probes.
 
 Today a probe's PASS means only "it ran and didn't find its target
 failure." That's weak: many coincidental conditions can produce the
@@ -50,7 +50,7 @@ class Witness:
             self.positive_evidence.append(positive_evidence)
 
     def caveat(self, text: str) -> None:
-        """Register a known coincidental-pass pattern — a condition that
+        """Register a known coincidental-pass pattern -- a condition that
         would yield the same PASS signal without corresponding to real
         health. Future selftests can use this to flag low-confidence
         passes."""

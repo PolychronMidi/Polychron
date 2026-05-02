@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Buddy hand-off paradigm — primary/senior lifecycle management.
+"""Buddy hand-off paradigm -- primary/senior lifecycle management.
 
 Replaces the multi-buddy floor-pinning model with a single dynamic
 primary that retires to a senior pool when its context approaches
-auto-compaction. Senior buddies are on standby — their accumulated
+auto-compaction. Senior buddies are on standby -- their accumulated
 context is preserved and only consulted manually for tough problems
-(via `i/consult sid=<sid>` — works for both the active primary and
+(via `i/consult sid=<sid>` -- works for both the active primary and
 retired seniors; role-named aliases `primary=`, `buddy=`, `senior=`
 are equivalent).
 
 Files (under PROJECT_ROOT/tmp/):
-  hme-buddy-primary.sid          — current primary buddy's session id
-  hme-buddy-primary.floor        — primary's model floor (default: easy)
-  hme-buddy-primary.effort_floor — primary's effort floor (default: low)
-  hme-buddy-seniors/<sid>.json   — one file per retired senior with metadata
-  hme-buddy-seniors/_index.jsonl — append-only retirement log
+  hme-buddy-primary.sid          -- current primary buddy's session id
+  hme-buddy-primary.floor        -- primary's model floor (default: easy)
+  hme-buddy-primary.effort_floor -- primary's effort floor (default: low)
+  hme-buddy-seniors/<sid>.json   -- one file per retired senior with metadata
+  hme-buddy-seniors/_index.jsonl -- append-only retirement log
 
 Lifecycle:
   - SessionStart: buddy_init.sh reads primary.sid and points the legacy
@@ -28,7 +28,7 @@ Lifecycle:
   - Consult: senior sessions are NOT auto-routed. They're invoked
     manually via `claude --resume <senior-sid> -p "<question>"` (the
     `consult` command here wraps that). Each consult call grows the
-    senior's transcript like normal — beware of pushing a senior past
+    senior's transcript like normal -- beware of pushing a senior past
     its retire threshold during heavy consultation.
 
 Usage:
@@ -104,7 +104,7 @@ def _import_dispatcher():
 
 def _format_consults(consults: list | None) -> str:
     """Render a `consults=N last=Xago` suffix for cmd_status. Empty when
-    no consults recorded — matches the prior status-line shape so seniors
+    no consults recorded -- matches the prior status-line shape so seniors
     that have never been called surface unchanged. Accepts None for
     seniors whose metadata predates the consults schema."""
     if not consults:
@@ -129,7 +129,7 @@ def _format_consults(consults: list | None) -> str:
 
 
 
-# Re-exports — KB crystallization helpers live in buddy_handoff_kb.py.
+# Re-exports -- KB crystallization helpers live in buddy_handoff_kb.py.
 from buddy_handoff_kb import (  # noqa: F401, E402
     _extract_and_crystallize, _findings_nudge, _record_consult,
     _KB_DIRECTIVE, _KB_BLOCK_RE, _CONSULT_HISTORY_CAP, _FINDING_MARKERS,
@@ -219,7 +219,7 @@ def _emit_activity(event: str, payload: dict) -> None:
 
 def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
     # Promotion-from-senior coherence: if `sid` is currently in the
-    # senior pool, the same sid would become both primary AND senior —
+    # senior pool, the same sid would become both primary AND senior --
     # incoherent. Move the senior metadata to seniors/_archive/<sid>.json
     # so the historical record is preserved (consults log, retire
     # metadata) but `_list_seniors` no longer surfaces it.
@@ -229,7 +229,7 @@ def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
         archive_dir.mkdir(parents=True, exist_ok=True)
         archive_path = archive_dir / f"{sid}.json"
         # If a prior archive exists (multiple promote/retire cycles for
-        # same sid — unusual but possible), suffix with timestamp to
+        # same sid -- unusual but possible), suffix with timestamp to
         # avoid overwrite.
         if archive_path.exists():
             archive_path = archive_dir / f"{sid}.{int(time.time())}.json"
@@ -250,7 +250,7 @@ def _promote(sid: str, floor: str = "easy", effort: str = "low") -> None:
 
 
 
-# Re-exports — cmd_consult lives in buddy_handoff_consult, all other
+# Re-exports -- cmd_consult lives in buddy_handoff_consult, all other
 # cmd_* handlers in buddy_handoff_commands. Imported AFTER helpers so
 # the commands module can import-back without hitting partially-loaded
 # state.

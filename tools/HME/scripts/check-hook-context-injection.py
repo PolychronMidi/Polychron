@@ -17,8 +17,8 @@ emit `additionalContext` (or `permissionDecisionReason` for deny-path).
 If only systemMessage is present, the briefing is display-only.
 
 Exit codes:
-    0 — all briefing-content hooks reach Claude
-    non-0 — hook emits briefing text via user-only channel
+    0 -- all briefing-content hooks reach Claude
+    non-0 -- hook emits briefing text via user-only channel
 """
 from __future__ import annotations
 
@@ -91,7 +91,7 @@ def scan_file(path: Path) -> list[str]:
             if has_briefing_marker and not reaches_claude:
                 first_marker = next((kw for kw in BRIEFING_MARKERS if kw in block), "?")
                 violations.append(
-                    f"{path}:{i + 1}: hook emits briefing ('{first_marker}') via systemMessage only — "
+                    f"{path}:{i + 1}: hook emits briefing ('{first_marker}') via systemMessage only -- "
                     f"add additionalContext or permissionDecisionReason so Claude sees it."
                 )
         i = max(j + 1, i + 1)

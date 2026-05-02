@@ -12,12 +12,12 @@ Currently ONE bridge exists in the codebase:
 
 This script scans metrics/trace.jsonl for other strong negative correlations
 between trust-system scores. Each strong negative correlation is a CANDIDATE
-bridge — a pair that may be measuring the same axis antagonistically but
+bridge -- a pair that may be measuring the same axis antagonistically but
 hasn't been identified yet.
 
 Output: candidates ranked by |r|, with the strongest shown. The existing
 bridge (convergenceHarmonicTrigger <-> verticalIntervalMonitor) should
-appear in the results as ground truth — if it doesn't, the detector or
+appear in the results as ground truth -- if it doesn't, the detector or
 the data is wrong.
 
 Usage:
@@ -112,13 +112,13 @@ def main() -> None:
     args = ap.parse_args()
 
     if not TRACE_PATH.is_file():
-        print(f"No trace at {TRACE_PATH} — run a pipeline first.", file=sys.stderr)
+        print(f"No trace at {TRACE_PATH} -- run a pipeline first.", file=sys.stderr)
         sys.exit(1)
 
     series = load_trust_series(TRACE_PATH, args.max_rows)
     mods = sorted(series.keys())
     n_rows = len(next(iter(series.values()))) if series else 0
-    print(f"Loaded {len(mods)} trust modules × {n_rows} rows")
+    print(f"Loaded {len(mods)} trust modules * {n_rows} rows")
 
     known = set(_canon_pair(*p) for p in load_known_bridges())
     registry = load_registry()
@@ -153,7 +153,7 @@ def main() -> None:
             status = "*** candidate ***"
         print(f"{i:>3}  {a:<35} {b:<35} {r:>7.3f}  {status}")
 
-    # Strong positive = likely measuring same axis, same side — less interesting
+    # Strong positive = likely measuring same axis, same side -- less interesting
     # but worth noting for the "is this pair redundant" question.
     strong_pos.sort(key=lambda p: -p[2])
     print(f"\n{len(strong_pos)} pair(s) with r >= {args.threshold} (co-moving, informational):")

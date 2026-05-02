@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HCI Trajectory Analyzer — time-series analysis over holograph snapshots.
+"""HCI Trajectory Analyzer -- time-series analysis over holograph snapshots.
 
 Reads all holograph snapshots in metrics/holograph/, extracts HCI scores and
 per-verifier scores, computes trend/volatility/delta, and writes a trajectory
@@ -137,7 +137,7 @@ def compute_trajectory(window_size: int = _DEFAULT_WINDOW) -> dict:
             "generated_at": now,
             "holograph_count": 0,
             "window_size": 0,
-            "_warning": "no holographs available — run snapshot-holograph.py to seed",
+            "_warning": "no holographs available -- run snapshot-holograph.py to seed",
         }
 
     window = snapshots[-window_size:] if count > window_size else snapshots
@@ -168,7 +168,7 @@ def compute_trajectory(window_size: int = _DEFAULT_WINDOW) -> dict:
         if predicted < 80:
             warning = f"predicted HCI {predicted:.1f} below threshold 80"
         elif direction == "down" and current["hci"] > 90 and predicted < current["hci"] - 5:
-            warning = f"sustained downward trend — drift projected from {current['hci']:.1f} to {predicted:.1f}"
+            warning = f"sustained downward trend -- drift projected from {current['hci']:.1f} to {predicted:.1f}"
         prediction = {
             "next_hci_predicted": round(predicted, 1),
             "confidence": round(confidence, 3),
@@ -223,7 +223,7 @@ def compute_trajectory(window_size: int = _DEFAULT_WINDOW) -> dict:
 
 def format_summary(traj: dict) -> str:
     if traj.get("holograph_count", 0) == 0:
-        return "[HCI trajectory] no snapshots yet — run snapshot-holograph.py"
+        return "[HCI trajectory] no snapshots yet -- run snapshot-holograph.py"
     cur = traj["current"]["hci"]
     count = traj["holograph_count"]
     trend = traj["trend"]

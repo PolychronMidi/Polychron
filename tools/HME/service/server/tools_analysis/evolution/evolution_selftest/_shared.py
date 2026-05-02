@@ -1,4 +1,4 @@
-"""HME self-test and hot-reload — tool registration, doc sync, index integrity, llama.cpp health."""
+"""HME self-test and hot-reload -- tool registration, doc sync, index integrity, llama.cpp health."""
 import os
 import logging
 import sys
@@ -12,7 +12,7 @@ if _mcp_root not in sys.path:
 from hme_env import ENV  # noqa: E402
 
 from server import context as ctx
-# Post-split: depth increased by 1, so `..` → `...` for cross-package refs.
+# Post-split: depth increased by 1, so `..` -> `...` for cross-package refs.
 from ...synthesis import _local_think
 from ... import _track
 
@@ -21,7 +21,7 @@ logger = logging.getLogger("HME")
 # All reloadable tool modules (kept here so hme_selftest can inspect coverage via getsource).
 RELOADABLE = [
     # NOTE: the three subpackage names (synthesis / evolution / coupling)
-    # are deliberately absent — these subpackages ARE their hub (hub code
+    # are deliberately absent -- these subpackages ARE their hub (hub code
     # lives in __init__.py, not a sibling .py file), so reloading them
     # happens via reload of the subpackage itself which is not a typical
     # hot-reload target. Reloading individual submodules inside the

@@ -14,7 +14,7 @@ Each row captures:
 
 Also computes envelope-shift score: how much the legendary envelope's
 center-of-mass has moved across the last N snapshots. Large envelope shift
-means the "normal" state distribution itself is drifting — distinct from
+means the "normal" state distribution itself is drifting -- distinct from
 single-round drift.
 
 Writes:

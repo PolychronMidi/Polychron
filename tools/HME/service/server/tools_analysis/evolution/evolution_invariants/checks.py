@@ -65,8 +65,8 @@ def _check_symlink_valid(inv: dict) -> tuple[bool, str]:
         return False, f"not found: {inv['path']}"
     target = os.path.realpath(path)
     if os.path.exists(target):
-        return True, f"→ {os.path.basename(target)}"
-    return False, f"broken symlink → {os.readlink(path)}"
+        return True, f"-> {os.path.basename(target)}"
+    return False, f"broken symlink -> {os.readlink(path)}"
 
 
 def _check_json_valid(inv: dict) -> tuple[bool, str]:
@@ -186,7 +186,7 @@ def _check_files_mtime_window(inv: dict) -> tuple[bool, str]:
 
 
 
-# Re-exports from sibling cluster modules — preserves the import surface
+# Re-exports from sibling cluster modules -- preserves the import surface
 # in dispatch.py (`from .checks import _check_kb_freshness, ...`).
 from .checks_kb import (  # noqa: F401, E402
     _check_symbols_have_kb, _is_regex, _check_kb_freshness,

@@ -8,13 +8,13 @@ This script rotates files exceeding a size or line-count cap by:
   1. Moving the head (oldest entries) into output/metrics/archive/.
   2. Keeping the most recent N entries in the live file.
   3. Atomic via temp-file + os.replace (project's data-integrity
-     invariant — `atomic-state-writes` verifier enforces this for
+     invariant -- `atomic-state-writes` verifier enforces this for
      state files; we follow the same pattern here).
 
 Default policy:
   - hme-activity.jsonl: keep last 5000 lines (currently grows to
     10k+ lines per active week)
-  - hme-coherence-timeseries.jsonl: keep last 500 (≈30 days at
+  - hme-coherence-timeseries.jsonl: keep last 500 (~=30 days at
     typical pipeline cadence)
   - hme-fractal-history.jsonl: keep last 200
   - hme-holograph-history.jsonl: keep last 200
@@ -110,7 +110,7 @@ def main(argv):
     if total_archived > 0 and not dry_run:
         print(f"  Total {total_archived} line(s) archived to output/metrics/archive/")
     elif total_archived > 0 and dry_run:
-        print(f"  Would archive {total_archived} line(s) (no changes made — dry run)")
+        print(f"  Would archive {total_archived} line(s) (no changes made -- dry run)")
     else:
         print(f"  All files under cap; nothing rotated.")
     return 0

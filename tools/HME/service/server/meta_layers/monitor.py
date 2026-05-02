@@ -1,4 +1,4 @@
-"""Layer 13: self-observing monitor — heartbeat + watchdog + observation gap."""
+"""Layer 13: self-observing monitor -- heartbeat + watchdog + observation gap."""
 from __future__ import annotations
 
 import json
@@ -70,5 +70,5 @@ def _detect_observation_gap() -> str | None:
     # between sessions trip 3x repeatedly (131s, 153s, 247s gaps all benign).
     # 5min catches real downtime without the 455-entry log noise observed.
     if age > _HEARTBEAT_INTERVAL * 10:
-        return f"{age:.0f}s since last heartbeat (pid {old_pid}) — meta-observer was down"
+        return f"{age:.0f}s since last heartbeat (pid {old_pid}) -- meta-observer was down"
     return None

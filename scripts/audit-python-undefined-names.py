@@ -33,7 +33,7 @@ silently until the worker crashed on first request.
 Limitations:
   - We don't trace cross-module imports. A name imported from a sibling
     will be flagged if the local file doesn't have an import for it,
-    even if it's "available via the package init." That's the point —
+    even if it's "available via the package init." That's the point --
     those are exactly the bugs that bit us.
   - Nested-tuple unpack in `for` targets (`for a, (b, c) in xs`) is handled
     one level deep; deeper nesting may produce false positives. Add such
@@ -49,9 +49,9 @@ Usage:
     python3 scripts/audit-python-undefined-names.py --strict   # exit 1 on any
 
 Exit codes:
-    0 — no findings (or every finding is in the false-positive ignore list)
-    1 — at least one suspect undefined name found
-    2 — usage error
+    0 -- no findings (or every finding is in the false-positive ignore list)
+    1 -- at least one suspect undefined name found
+    2 -- usage error
 """
 import ast
 import builtins
@@ -142,7 +142,7 @@ def _audit_file(path: str) -> list:
     except (OSError, SyntaxError) as e:
         return [{"path": path, "error": f"{type(e).__name__}: {e}"}]
 
-    # File-level suppression — for partner-script "shared closure between
+    # File-level suppression -- for partner-script "shared closure between
     # two .py files" patterns where one file legitimately references names
     # bound on the other module, see scripts/audit_shell_undefined_audit.py.
     if _IGNORE_FILE_MARKER in src:

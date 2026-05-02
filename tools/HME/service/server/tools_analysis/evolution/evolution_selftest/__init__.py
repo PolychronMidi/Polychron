@@ -1,12 +1,12 @@
-"""HME self-test and hot-reload — package split R102.
+"""HME self-test and hot-reload -- package split R102.
 
 Original 1138-line evolution_selftest.py split into:
   _shared.py     RELOADABLE module list (single source of truth)
-  hot_reload.py  hme_hot_reload — reload reloadable modules mid-session
-  selftest.py    hme_selftest — 30+ probes across tool surface / llama / KB
+  hot_reload.py  hme_hot_reload -- reload reloadable modules mid-session
+  selftest.py    hme_selftest -- 30+ probes across tool surface / llama / KB
 
 Note: selftest.py stays at ~940 LOC because the probe function is one
-cohesive sequence — each probe shares state (results list, warning
+cohesive sequence -- each probe shares state (results list, warning
 context) with the outer function. Extracting probes to helpers is a
 bigger refactor than this split was scoped for.
 """

@@ -1,4 +1,4 @@
-"""Layer 14: correlation + narration — synthesis/coherence history, correlate, narrate."""
+"""Layer 14: correlation + narration -- synthesis/coherence history, correlate, narrate."""
 from __future__ import annotations
 
 import json
@@ -102,9 +102,9 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
     if monitor_state == "alive":
         parts.append("Health monitor is alive and watching.")
     elif monitor_state == "dead":
-        parts.append(f"Health monitor was DEAD — restarted (attempt #{monitor_status.get('restart_attempt', '?')}).")
+        parts.append(f"Health monitor was DEAD -- restarted (attempt #{monitor_status.get('restart_attempt', '?')}).")
     elif monitor_state == "unregistered":
-        parts.append("Health monitor not yet registered — early startup or proxy not initialized.")
+        parts.append("Health monitor not yet registered -- early startup or proxy not initialized.")
 
     # Correlation insights
     if correlations.get("status") == "active":
@@ -117,14 +117,14 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
             for alert in alerts[:3]:
                 parts.append(f"ALERT: {alert['message']}")
         else:
-            parts.append("No anomalies detected — system operating within normal parameters.")
+            parts.append("No anomalies detected -- system operating within normal parameters.")
 
         dips = correlations.get("dip_count", 0)
         if dips > 0:
             parts.append(f"Recommendation: {dips} instability dips detected. "
                          "If recurring, investigate llama.cpp memory pressure or shim resource exhaustion.")
     elif correlations.get("status") == "insufficient_data":
-        parts.append(f"Only {correlations.get('samples', 0)} coherence samples — too early for pattern detection.")
+        parts.append(f"Only {correlations.get('samples', 0)} coherence samples -- too early for pattern detection.")
 
     # L16: environmental context
     if _shared._last_env_snapshot:
@@ -197,19 +197,19 @@ def _narrate(monitor_status: dict, correlations: dict) -> str:
     if any(a.get("type") == "shim_decay_precursor" for a in correlations.get("alerts", [])):
         parts.append("ACTION: Preemptively restart shim before the next crash to avoid cascade disruption.")
     elif any(a.get("type") == "restart_churn" for a in correlations.get("alerts", [])):
-        parts.append("ACTION: Investigate root cause of restart churn — check OOM, port conflicts, or hanging threads.")
+        parts.append("ACTION: Investigate root cause of restart churn -- check OOM, port conflicts, or hanging threads.")
     elif any(a.get("type") == "coherence_declining" for a in correlations.get("alerts", [])):
         parts.append("ACTION: Monitor closely. If decline continues, run status(mode='health') for full diagnostic.")
     elif any(a.get("type") == "gpu_memory_pressure" for a in _shared._last_env_snapshot.get("alerts", [])):
-        parts.append("ACTION: GPU memory critical — consider unloading unused models or reducing batch size.")
+        parts.append("ACTION: GPU memory critical -- consider unloading unused models or reducing batch size.")
     elif any(a.get("type") == "cb_flapping" for a in correlations.get("alerts", [])):
-        parts.append("ACTION: Circuit breaker flapping — model is oscillating between available/unavailable. Check GPU OOM pressure or thermal throttling.")
+        parts.append("ACTION: Circuit breaker flapping -- model is oscillating between available/unavailable. Check GPU OOM pressure or thermal throttling.")
     elif any(a.get("type") == "synthesis_phantom_surge" for a in correlations.get("alerts", [])):
         try:
             from tool_invocations import action_form as _action_form
         except ImportError:
             def _action_form(a): return f"i/hme-admin action={a}"
-        parts.append(f"ACTION: High phantom rate in synthesis outputs — consider running `{_action_form('index')}` to refresh module index.")
+        parts.append(f"ACTION: High phantom rate in synthesis outputs -- consider running `{_action_form('index')}` to refresh module index.")
 
     return " ".join(parts)
 
@@ -263,7 +263,7 @@ def read_startup_narrative() -> str | None:
     if last is None:
         return None
     age = time.time() - last.get("ts", 0)
-    if age > 7200:  # older than 2 hours — too stale
+    if age > 7200:  # older than 2 hours -- too stale
         return None
     return last.get("narrative")
 

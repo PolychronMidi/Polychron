@@ -1,4 +1,4 @@
-"""Generation proxy (llamacpp-shape → llama-server OpenAI-shape).
+"""Generation proxy (llamacpp-shape -> llama-server OpenAI-shape).
 
 Translates legacy llamacpp /api/generate calls into llama-server
 /v1/chat/completions, enforcing a hard wall-clock cap. Keeps HME's
@@ -102,7 +102,7 @@ def _generate_with_timeout(payload: dict, wall_timeout: float,
             return {"error": f"wall timeout after {wall_timeout}s", "timeout": True}
         if result_box[1]:
             return {"error": result_box[1], "timeout": "timed out" in result_box[1].lower()}
-        # Translate OpenAI response → llamacpp shape for legacy callers.
+        # Translate OpenAI response -> llamacpp shape for legacy callers.
         resp_body = result_box[0] or {}
         choices = resp_body.get("choices") or []
         text = (choices[0].get("message") or {}).get("content", "") if choices else ""

@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Inter-controller coherence — are hypermeta controllers reinforcing
+"""Inter-controller coherence -- are hypermeta controllers reinforcing
 or cancelling each other?
 
 Reads `output/metrics/runtime-snapshots.json` for per-controller effects
 on each of the 6 composition axes (trust, coupling, flicker, coherent,
 entropy, progressive). Computes pairwise cancellation:
 
-  cancellation_score(A, B) = Σ_axis |effect_A(axis) * effect_B(axis)
-                              where sign(A) ≠ sign(B)|
+  cancellation_score(A, B) = Sigma_axis |effect_A(axis) * effect_B(axis)
+                              where sign(A) != sign(B)|
 
 Pairs with high cancellation are controllers working at cross-purposes.
 Emits JSON with top-N cancelling pairs + recommendation (unified direction
 or controller-specific axis exclusion).
 
-This is the L∞∞∞ layer: observing the observation apparatus (controllers
+This is the Linfinfinf layer: observing the observation apparatus (controllers
 are the apparatus; this audit observes THEIR mutual consistency).
 
 MVP: if the runtime-snapshots file is absent or malformed, emit an empty
-report with status=no_data and exit 0 — no false alarms on fresh setups.
+report with status=no_data and exit 0 -- no false alarms on fresh setups.
 """
 from __future__ import annotations
 
@@ -121,7 +121,7 @@ def main() -> int:
                   f"{report['total_pairs_with_cancellation']} cancelling pair(s)")
             for p in report.get("cancelling_pairs", [])[:5]:
                 a, b = p["controllers"]
-                print(f"  {a} ↔ {b}: score={p['cancellation_score']} on {len(p['opposing_axes'])} axis/axes")
+                print(f"  {a} <-> {b}: score={p['cancellation_score']} on {len(p['opposing_axes'])} axis/axes")
 
     return 0
 

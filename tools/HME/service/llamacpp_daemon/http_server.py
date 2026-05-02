@@ -1,4 +1,4 @@
-"""HTTP daemon — _ThreadingHTTPServer + _Handler + health loop.
+"""HTTP daemon -- _ThreadingHTTPServer + _Handler + health loop.
 
 Exposes the daemon's control surface on 127.0.0.1:<port>.
 """

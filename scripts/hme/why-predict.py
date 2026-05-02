@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=predict <file_path> — Horizon I seed.
+"""i/why mode=predict <file_path> -- Horizon I seed.
 
 Given a file path the agent is about to edit, predict which verifiers
 have historically flipped when files in similar paths were edited.
@@ -12,12 +12,12 @@ Algorithm:
   1. Walk timeseries, detect status flips per verifier per row.
   2. For each flip event, look back N seconds in the activity log,
      collect the directories of file_written events.
-  3. Aggregate: directory → verifier → flip-correlation count.
+  3. Aggregate: directory -> verifier -> flip-correlation count.
   4. Given a query path, look up its directory and report:
      "verifiers that have flipped within 1h of edits to this dir"
 
 Honest about limitations:
-  - Correlation ≠ causation; many verifiers have very few flips.
+  - Correlation != causation; many verifiers have very few flips.
   - The activity log's tool_call instrumentation is degraded
     (a known regression); fs_watcher file_written carries us.
   - First version is path-prefix only; richer features (file-shape
@@ -83,7 +83,7 @@ def _build_correlation(rows, file_events):
     """For each verifier flip in the timeseries, attribute BOTH the
     directories AND the specific files most-recently edited in the prior
     1h window. Returns {scope: {key: {verifier: count}}} where scope is
-    'dir' or 'file' — Horizon I maturity: per-file resolution alongside
+    'dir' or 'file' -- Horizon I maturity: per-file resolution alongside
     per-dir for finer-grained predictions."""
     correlation: dict[str, dict[str, dict[str, int]]] = {
         "dir": defaultdict(lambda: defaultdict(int)),
@@ -112,7 +112,7 @@ def _build_correlation(rows, file_events):
             cur = info.get("status", "?")
             prev = prev_status.get(name)
             if prev is not None and prev != cur:
-                # Status flipped — credit each recent dir + file
+                # Status flipped -- credit each recent dir + file
                 for d in recent_dirs:
                     correlation["dir"][d][name] += 1
                 for f in recent_files:
@@ -139,7 +139,7 @@ def main(argv):
     rows = _load_timeseries()
     if not rows:
         print(f"# i/why mode=predict {query_path}")
-        print("No timeseries data — predictions need history to learn from.")
+        print("No timeseries data -- predictions need history to learn from.")
         return 1
     file_events = _load_activity_files()
     correlation = _build_correlation(rows, file_events)
@@ -153,11 +153,11 @@ def main(argv):
         if qd:
             parents.append(qd)
 
-    print(f"# i/why mode=predict — {rel}")
+    print(f"# i/why mode=predict -- {rel}")
     print(f"  query dir: {parents[0] or '(root)'}")
     print()
 
-    # Per-file correlation first (Horizon I maturity — finest-grain signal)
+    # Per-file correlation first (Horizon I maturity -- finest-grain signal)
     file_verifiers: dict[str, int] = {}
     if rel in correlation["file"]:
         file_verifiers = dict(correlation["file"][rel])
@@ -182,10 +182,10 @@ def main(argv):
             for d, vmap in ranked[:8]:
                 top_v = sorted(vmap.items(), key=lambda kv: -kv[1])[:2]
                 top_s = ", ".join(f"{v}({c})" for v, c in top_v)
-                print(f"  {d:32}  total flips correlated: {sum(vmap.values())}  · top: {top_s}")
+                print(f"  {d:32}  total flips correlated: {sum(vmap.values())}  . top: {top_s}")
         return 0
 
-    # Per-file (highest specificity) — show first if any
+    # Per-file (highest specificity) -- show first if any
     if file_verifiers:
         print(f"## Per-file flips (highest-specificity prediction for '{rel}'):")
         ranked = sorted(file_verifiers.items(), key=lambda kv: -kv[1])
@@ -204,9 +204,9 @@ def main(argv):
     print("# Note:")
     print("  Correlation, not causation. A verifier appearing here means")
     print("  it has flipped status during a 1h window after edits to this")
-    print("  directory — could be coincidence, especially with low counts.")
+    print("  directory -- could be coincidence, especially with low counts.")
     print("  Useful as a heads-up: 'when I edit here, verifier X tends to")
-    print("  move' — verify the actual run() to know what it checks.")
+    print("  move' -- verify the actual run() to know what it checks.")
     print()
     print("# Drill-in:")
     print("  i/why mode=verifier <name>     what does this verifier check?")

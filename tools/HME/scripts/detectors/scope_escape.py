@@ -59,7 +59,7 @@ RESCUE_BACKWARD_RES = (
 )
 
 # (b)-clause rescue: the SCOPE_ESCAPE deny message itself enumerates the
-# valid alternative — "say so explicitly and explain why fixing is the
+# valid alternative -- "say so explicitly and explain why fixing is the
 # wrong move". Shared with exhaust_check / psycho_stop via _rescue_clauses.
 from _rescue_clauses import b_clause_within_window  # noqa: E402
 
@@ -97,7 +97,7 @@ def _last_assistant_text(events: list) -> str:
 
 
 _ANY_HANDOFF_MARKER = re.compile(
-    r"^\s*(?:[-*•]\s+\S|\d+[.)]\s+\S|\*\*[A-Z][^*]*\*\*\s*[:—\-])",
+    r"^\s*(?:[-**]\s+\S|\d+[.)]\s+\S|\*\*[A-Z][^*]*\*\*\s*[:\-])",
     re.MULTILINE,
 )
 
@@ -142,7 +142,7 @@ def _rescue_within_window(text: str, start: int, window: int = 120) -> bool:
 
 def _rescue_backward(text: str, start: int, window: int = 80) -> bool:
     """Rescue when fix-language appears within `window` chars BEFORE the
-    escape phrase ("Fixed pre-existing X" — past-tense report)."""
+    escape phrase ("Fixed pre-existing X" -- past-tense report)."""
     begin = max(0, start - window)
     chunk = text[begin:start]
     for pat in RESCUE_BACKWARD_RES:
@@ -209,7 +209,7 @@ def main() -> int:
 
     # Rescue (b)-clause: the deny message explicitly sanctions
     # "say so explicitly and explain why fixing is the wrong move".
-    # When the agent does exactly that, the detector must NOT fire —
+    # When the agent does exactly that, the detector must NOT fire --
     # otherwise the "valid alternative" the rule offers doesn't exist.
     # Without this, every legitimate refusal-with-reason gets flagged
     # the same as a lazy punt, and the agent learns to never refuse

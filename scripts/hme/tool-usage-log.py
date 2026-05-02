@@ -2,7 +2,7 @@
 """Append one row per i/* tool invocation to metrics/hme-tool-usage.jsonl.
 
 Called by i/ wrappers as a side effect. Over time this produces the Arc IV
-equivalent for tools — which `i/` commands get used, which are decorative.
+equivalent for tools -- which `i/` commands get used, which are decorative.
 """
 from __future__ import annotations
 import json

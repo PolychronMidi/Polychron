@@ -2,23 +2,23 @@
 """Detect "enumerated remaining items as deferral" antipattern.
 
 Sister of early_stop.py. early_stop is *gated* on an open-ended user prompt
-("do all", "anything missing", etc.) — it catches the historical pattern
+("do all", "anything missing", etc.) -- it catches the historical pattern
 where the agent enumerates work and then stops in response to those prompts.
 
 This detector is *unconditional*: ANY final assistant text that punts work
-with a deferral phrase — substring OR structural — gets flagged.
+with a deferral phrase -- substring OR structural -- gets flagged.
 
 Trigger: assistant's FINAL text contains a deferral signal from *either*:
-  (a) DEFERRAL_PHRASES — exact substring match, or
-  (b) DEFERRAL_REGEXES — structural patterns like "Remaining <X> gap/work",
+  (a) DEFERRAL_PHRASES -- exact substring match, or
+  (b) DEFERRAL_REGEXES -- structural patterns like "Remaining <X> gap/work",
       "still haven't fix...", bold-header "## Backlog", "worth another pass",
       etc. (catches phrasings the substring list misses).
 AND either:
-  (x) ≥1 list marker (bullet or numbered) follows the deferral — even one
+  (x) >=1 list marker (bullet or numbered) follows the deferral -- even one
       is a literal handoff; the pre-patch threshold of 3+ let single-item
       punts slip through, which was the exact evasion motivating this patch,
       or
-  (y) the deferral is in the last 40% of the text (≥200 chars total) —
+  (y) the deferral is in the last 40% of the text (>=200 chars total) --
       closing-summary handoffs don't need bullets to count as a punt.
 
 Usage: exhaust_check.py <transcript_path>
@@ -39,11 +39,11 @@ from _rescue_clauses import b_clause_within_window  # noqa: E402
 # deliverable. When the user's prompt this turn matches one of these AND the
 # assistant's closing text is a structural enumeration (bullets, ## Future
 # headers, etc.) WITHOUT survey-and-ask language ("want me to", "should I"),
-# the enumeration IS the answer — not a punt. Suppress the violation in that
+# the enumeration IS the answer -- not a punt. Suppress the violation in that
 # case so the agent can end the turn silently.
 #
 # Conservative: this list only contains UNAMBIGUOUS evaluation invitations.
-# A request that mixes "evaluate AND fix" doesn't get exemption — the user
+# A request that mixes "evaluate AND fix" doesn't get exemption -- the user
 # wants the fix done, the enumeration is incidental.
 RESEARCH_INVITATION_PATTERNS = (
     re.compile(r"\bwhat\s+(does|do|might)\b[^?\n]{0,80}\b(have\s+to\s+offer|offer)\b", re.IGNORECASE),
@@ -71,7 +71,7 @@ RESEARCH_INVITATION_PATTERNS = (
     # allowed to enumerate out-of-scope / not-implemented items as long
     # as each carries a stated reason. Without this exemption, the
     # legitimate-deferral list (with reasons) fires the same gate as a
-    # silent punt — forcing the agent to either implement out-of-scope
+    # silent punt -- forcing the agent to either implement out-of-scope
     # items or restructure responses to hide what wasn't done. Both
     # waste effort. The implementation-done items in the same response
     # carry their own evidence (tests, file paths) so a real silent
@@ -85,7 +85,7 @@ RESEARCH_INVITATION_PATTERNS = (
 
 
 # Phrases that ALWAYS fire regardless of research-context exemption. These
-# are agent-initiated punts that the user did not invite — survey-and-ask,
+# are agent-initiated punts that the user did not invite -- survey-and-ask,
 # I-can-do-X-later, etc. Even on a research turn, asking permission instead
 # of executing or offering future work instead of doing it now is a punt.
 ALWAYS_FIRE_PHRASES = (
@@ -148,7 +148,7 @@ def _is_research_evaluation_request(user_text: str) -> bool:
     """True if the user's prompt this turn is unambiguously inviting
     enumeration/evaluation as the deliverable. Scoped narrowly to avoid
     false-suppression: a prompt that mixes "evaluate AND fix" does not
-    qualify — the user wants the fix done, not just analyzed."""
+    qualify -- the user wants the fix done, not just analyzed."""
     if not user_text:
         return False
     # Disqualify if the prompt also explicitly asks for implementation. A
@@ -170,26 +170,26 @@ def _is_research_evaluation_request(user_text: str) -> bool:
 
 
 # Phrases that explicitly mark an item as "not done in this turn".
-# These should never appear in a closing summary — every enumerated item
+# These should never appear in a closing summary -- every enumerated item
 # must be either completed or punted with explicit user agreement.
 
 # Import phrase tables from sibling.
 from exhaust_check_phrases import DEFERRAL_PHRASES, DEFERRAL_REGEXES  # noqa: E402
 
-_BULLET_LINE = re.compile(r"^\s*[-*•]\s+\S", re.MULTILINE)
-# Any list-ish marker after the deferral — bullets, numbered items, OR
+_BULLET_LINE = re.compile(r"^\s*[-**]\s+\S", re.MULTILINE)
+# Any list-ish marker after the deferral -- bullets, numbered items, OR
 # bold-header paragraphs like "**Remaining X:** ..." which are structurally
 # equivalent to a bullet in a closing-summary handoff. A one-line punt does
 # NOT need markdown list syntax to count.
 _ANY_HANDOFF_MARKER = re.compile(
-    r"^\s*(?:[-*•]\s+\S|\d+[.)]\s+\S|\*\*[A-Z][^*]*\*\*\s*[:—\-])",
+    r"^\s*(?:[-**]\s+\S|\d+[.)]\s+\S|\*\*[A-Z][^*]*\*\*\s*[:\-])",
     re.MULTILINE,
 )
 
 
 def _is_assistant(event: dict) -> bool:
     """Real Claude Code transcripts use `type="assistant"` at the top level
-    with the message payload nested under `.message` — NOT `role="assistant"`
+    with the message payload nested under `.message` -- NOT `role="assistant"`
     at the top level (that shape never appears in practice). The old check
     returned False on every real event, which meant the detector silently
     emitted "ok" on every turn regardless of closing text content. Caught
@@ -255,7 +255,7 @@ def _emit_stats(verdict: str, detail: str) -> None:
                 "detail": detail,
             }) + "\n")
     except (OSError, TypeError, ValueError) as _emit_err:
-        # Telemetry only, never block hook — but narrow the catch so real
+        # Telemetry only, never block hook -- but narrow the catch so real
         # bugs (NameError from missing imports, AttributeError from schema
         # drift) propagate to stderr instead of silently hiding for months.
         import sys as _sys
@@ -276,7 +276,7 @@ def main() -> int:
 
     # Strip quoted / code-fenced content before phrase-matching. Without
     # this, a response that quoted user prompts or test fixtures
-    # (e.g. `Directive markers still dominate — "fix"/"implement"/"do all"`)
+    # (e.g. `Directive markers still dominate -- "fix"/"implement"/"do all"`)
     # tripped the `still ... fix|implement|do` regex even though the verbs
     # were inside quotes describing behavior, not the agent's own deferral.
     # Strip targets: ```fenced```, `inline`, "double" and 'single' quoted
@@ -298,7 +298,7 @@ def main() -> int:
             matched_pos = idx
 
     # Phase 2: regex patterns catch the structural cases the phrase list
-    # misses (e.g. "Remaining Part A gap I didn't fix" — the word between
+    # misses (e.g. "Remaining Part A gap I didn't fix" -- the word between
     # "Remaining" and "gap" defeats substring matching).
     regex_match_label = None
     regex_match_pos = -1
@@ -307,7 +307,7 @@ def main() -> int:
         if m is None:
             continue
         if regex_match_pos == -1 or m.start() < regex_match_pos:
-            regex_match_label = f"regex:{pat.pattern[:40]}…"
+            regex_match_label = f"regex:{pat.pattern[:40]}..."
             regex_match_pos = m.start()
 
     # Take the earliest of the two signals as the effective deferral point.
@@ -327,8 +327,8 @@ def main() -> int:
     # Position check: a deferral appearing in the *closing* portion of the
     # text is almost certainly a handoff-summary, even without a bullet list.
     # Two overlapping heuristics:
-    #   (a) last 40% of text (was 60% → tightened to 60% prefix / 40% suffix),
-    #   (b) within the last 400 chars regardless of ratio — catches "closing
+    #   (a) last 40% of text (was 60% -> tightened to 60% prefix / 40% suffix),
+    #   (b) within the last 400 chars regardless of ratio -- catches "closing
     #       paragraph" handoffs in shorter messages where 40% would exclude.
     # Mid-text passing mentions ("previously TBD but I just fixed it") need
     # to survive BOTH checks to escape, which requires them to appear in the
@@ -341,7 +341,7 @@ def main() -> int:
 
     # Count ANY handoff markers after the deferral point. Bullets (`- `,
     # `* `) or numbered items (`1.`). Even one is enough to prove a literal
-    # enumerated punt — the old 3+ threshold made single-item deferrals
+    # enumerated punt -- the old 3+ threshold made single-item deferrals
     # invisible, which was the exact evasion that motivated this patch.
     after = text[deferral_pos:]
     bullet_count = sum(1 for _ in _BULLET_LINE.finditer(after))
@@ -357,7 +357,7 @@ def main() -> int:
         #
         # Conservative guardrails: any "want me to" / "should I" / "I can
         # build" / "noted but not fixed" / etc. in the response immediately
-        # disqualifies — those are agent-initiated punts the user did not
+        # disqualifies -- those are agent-initiated punts the user did not
         # invite, fire regardless of research framing. Likewise a prompt
         # that mixes "evaluate AND implement" does not qualify (handled in
         # _is_research_evaluation_request).
@@ -378,7 +378,7 @@ def main() -> int:
             return 0
         # (b)-clause rescue: the EXHAUST deny message says "Every
         # enumerated item must be fixed in the same turn." But the
-        # SCOPE_ESCAPE deny — same gate family — explicitly sanctions
+        # SCOPE_ESCAPE deny -- same gate family -- explicitly sanctions
         # "explain why fixing is the wrong move" as an alternative path.
         # When the agent enumerates items WITH a refusal-with-reason
         # (b)-clause justification, that's the sanctioned path, not a

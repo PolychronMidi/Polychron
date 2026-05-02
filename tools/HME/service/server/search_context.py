@@ -1,4 +1,4 @@
-"""HME search tools — context assembly: get_context."""
+"""HME search tools -- context assembly: get_context."""
 import logging
 
 from server import context as ctx
@@ -9,7 +9,7 @@ logger = logging.getLogger("HME")
 
 def get_context(query: str, max_tokens: int = 0, language: str = "", path: str = "") -> str:
     """Token-budgeted context assembly with auto context-window awareness.
-    query is a natural-language description of what you need (NOT a file path — use file_lines for reading files, or pass file paths via the path parameter to scope results).
+    query is a natural-language description of what you need (NOT a file path -- use file_lines for reading files, or pass file paths via the path parameter to scope results).
     max_tokens=0 means AUTO: reads /tmp/claude-context.json (from status line) to determine budget.
     >75% remaining = greedy (16000), 50-75% = moderate (8000), 25-50% = conservative (3000), <25% = minimal (800).
     max_tokens>0 means MANUAL override."""

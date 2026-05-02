@@ -74,7 +74,7 @@ def _session_archaeology() -> dict | None:
     return result
 
 
-# Layer 35: Gödel Awareness
+# Layer 35: Godel Awareness
 
 _UNPROVABLE_CLAIMS = [
     {
@@ -84,12 +84,12 @@ _UNPROVABLE_CLAIMS = [
     },
     {
         "claim": "Phantom detection doesn't itself introduce phantom detections",
-        "reason": "Self-referentially unprovable — the detector can't validate its own false positive rate",
+        "reason": "Self-referentially unprovable -- the detector can't validate its own false positive rate",
         "validation": "chaos_testing",
     },
     {
         "claim": "Coherence score measures actual system coherence",
-        "reason": "Coherence is computed from its own inputs — circular validation",
+        "reason": "Coherence is computed from its own inputs -- circular validation",
         "validation": "external_audit",
     },
     {
@@ -111,7 +111,7 @@ _UNPROVABLE_CLAIMS = [
 
 
 def _enumerate_unprovable_claims() -> list[dict]:
-    """Return the system's known Gödelian blind spots.
+    """Return the system's known Godelian blind spots.
 
     These are statements the self-model makes that cannot be verified from
     within the system. They become targets for external validation.
@@ -125,14 +125,14 @@ def _enumerate_unprovable_claims() -> list[dict]:
             if patterns.get("quality_gate_rate", 0) > 0 and patterns.get("total_calls_analyzed", 0) > 50:
                 claims.append({
                     "claim": f"Quality gate fires at the right rate ({patterns['quality_gate_rate']:.0%})",
-                    "reason": "Optimal gate rate unknown — too high = false alarms, too low = missed phantoms",
+                    "reason": "Optimal gate rate unknown -- too high = false alarms, too low = missed phantoms",
                     "validation": "A/B_comparison",
                 })
     except (OSError, json.JSONDecodeError) as _pat_err:
         # Synthesis-patterns read failure = quality-gate claim silently
         # missing from the reflexivity report. Register as CRITICAL so
         # the LIFESAVER banner surfaces observability loss on the very
-        # next tool response — not left to be noticed via "report looks healthy."
+        # next tool response -- not left to be noticed via "report looks healthy."
         logger.error(f"synthesis_patterns read FAILED: {type(_pat_err).__name__}: {_pat_err}")
         try:
             from server import context as _ctx
@@ -146,7 +146,7 @@ def _enumerate_unprovable_claims() -> list[dict]:
     return claims
 
 
-# Layer ∞∞: Coherence Ceiling Detector
+# Layer infinf: Coherence Ceiling Detector
 
 def _check_coherence_ceiling() -> dict | None:
     """Detect when the self-model's predictions have become too reliable to
@@ -154,7 +154,7 @@ def _check_coherence_ceiling() -> dict | None:
 
     Uses the Brier-score EMA (L29) as the ground-truth calibration signal:
     predictions that resolve near their predicted probability drive Brier
-    toward 0. When Brier EMA < 0.05 with ≥10 resolved predictions today,
+    toward 0. When Brier EMA < 0.05 with >=10 resolved predictions today,
     the system has effectively memorized its own behavior space and can't
     learn anything new without a perturbation.
 
@@ -179,7 +179,7 @@ def _check_coherence_ceiling() -> dict | None:
             "brier_score_ema": brier,
             "prediction_outcomes_today": outcomes,
             "recommendation": (
-                f"Brier score EMA {brier} over {outcomes} predictions today — "
+                f"Brier score EMA {brier} over {outcomes} predictions today -- "
                 "predictions are saturating. Self-model may be over-fit. "
                 "Consider: explore under-modeled operational states, "
                 "try synthesis strategies not used recently, "

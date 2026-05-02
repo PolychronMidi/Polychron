@@ -41,7 +41,7 @@ def is_assistant(event: dict) -> bool:
     Historical bug: detectors checked only the fixture shape (`role="assistant"`
     at top level). Every real event has `role=None` at top level and
     `type="assistant"` instead, so the check returned False on 100% of real
-    events — silently disabling exhaust_check / early_stop / fabrication_check
+    events -- silently disabling exhaust_check / early_stop / fabrication_check
     / anyone else that used the same test. Caught April 2026.
     """
     if event.get("type") == "assistant":
@@ -83,7 +83,7 @@ def _parse_all(transcript_path: str | Path) -> list[dict]:
         import sys as _sys
         _sys.stderr.write(
             f"[_transcript._parse_all] read failed for {transcript_path!r}: "
-            f"{type(e).__name__}: {e} — proceeding with empty event list\n"
+            f"{type(e).__name__}: {e} -- proceeding with empty event list\n"
         )
         _PARSE_CACHE[key] = []
         return []
@@ -107,7 +107,7 @@ def load_turn_events(transcript_path: str | Path) -> list[dict]:
     boundary) and ends at the most recent assistant message. Events outside
     that window are excluded.
 
-    Returns [] on any read/parse failure — callers then short-circuit to
+    Returns [] on any read/parse failure -- callers then short-circuit to
     the safe "ok" status.
     """
     events = _parse_all(transcript_path)
@@ -186,7 +186,7 @@ def last_assistant_event(transcript_path: str | Path) -> dict | None:
     Prior implementation contained a promise-vs-delivers bug: it early-
     returned on the first user-after-assistant, which meant given a
     transcript of [user1, asst1, user2, asst2], it returned asst1
-    instead of asst2 — the OLDEST completed assistant, not the most
+    instead of asst2 -- the OLDEST completed assistant, not the most
     recent. stop_work.py consumes this and was evaluating the previous
     turn's message in any session where the transcript contains more
     than one completed turn. Fixed to walk the full event stream and
@@ -198,7 +198,7 @@ def last_assistant_event(transcript_path: str | Path) -> dict | None:
         import sys as _sys
         _sys.stderr.write(
             f"[_transcript.last_assistant] read failed for {transcript_path!r}: "
-            f"{type(e).__name__}: {e} — proceeding without last-assistant\n"
+            f"{type(e).__name__}: {e} -- proceeding without last-assistant\n"
         )
         return None
     last_assistant: dict | None = None

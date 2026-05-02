@@ -1,4 +1,4 @@
-"""HME find — unified search tool that auto-routes by intent.
+"""HME find -- unified search tool that auto-routes by intent.
 
 Merges search_code (semantic), grep (exact), find_callers (call graph),
 and find_anti_pattern (boundary check) into one tool with auto-detection.
@@ -21,7 +21,7 @@ _FIND_DEDUP_MAX = 50  # max entries before pruning
 
 
 def find(query: str, path: str = "", mode: str = "auto") -> str:
-    """Deprecated — absorbed into grep (search modes), glob_search (structural modes),
+    """Deprecated -- absorbed into grep (search modes), glob_search (structural modes),
     and evolve (analysis modes). Kept as internal function for backward compatibility."""
     _track("find")
     ctx.ensure_ready_sync()
@@ -34,8 +34,8 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
     _cached = _recent_finds.get(_dedup_key)
     if _cached and (_now - _cached[0]) < _FIND_DEDUP_WINDOW_S:
         _age = int(_now - _cached[0])
-        logger.info(f"find() dedup hit: '{query[:40]}' mode={mode} — returning cached result ({_age}s old)")
-        return _cached[1] + f"\n\n(cached result from {_age}s ago — identical query)"
+        logger.info(f"find() dedup hit: '{query[:40]}' mode={mode} -- returning cached result ({_age}s old)")
+        return _cached[1] + f"\n\n(cached result from {_age}s ago -- identical query)"
 
     append_session_narrative("find", f"{mode}: {query[:80]}")
 
@@ -72,11 +72,11 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
         return _th2(query)
 
     if mode == "rename":
-        parts = query.split("→") if "→" in query else query.split("->")
+        parts = query.split("->") if "->" in query else query.split("->")
         if len(parts) == 2:
             from .symbols import bulk_rename_preview as _brp
             return _brp(parts[0].strip(), parts[1].strip())
-        return "Error: rename mode needs 'old_name→new_name' format."
+        return "Error: rename mode needs 'old_name->new_name' format."
 
     if mode == "xref":
         from .symbols import cross_language_trace as _clt
@@ -121,7 +121,7 @@ def find(query: str, path: str = "", mode: str = "auto") -> str:
         from server.tools_search import grep as _grep
         return _cache_and_return(_grep(query, path=path, regex=True))
 
-    # Default: semantic search — prepend session thread for investigation continuity
+    # Default: semantic search -- prepend session thread for investigation continuity
     from server.tools_search import search_code as _sc
     result = _sc(query, path=path, response_format="detailed")
     narrative = get_session_narrative(max_entries=20)

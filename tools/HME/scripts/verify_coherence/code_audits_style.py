@@ -1,4 +1,4 @@
-"""Code-audit verifiers — extracted cluster. Imports re-export back to
+"""Code-audit verifiers -- extracted cluster. Imports re-export back to
 the parent code_audits.py for stable __init__.py imports."""
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ from .code_audits_syntax import (  # noqa: F401
 class CorePrinciplesAuditVerifier(Verifier):
     """Delegates to scripts/audit-core-principles.py, which surveys src/
     against the five core principles declared in CLAUDE.md. FAILs only on
-    CRITICAL-level violations — files exceeding 400 LOC or subsystems with
-    ≥1 .js file but no index.js. WARN-level findings (files over the 200-
+    CRITICAL-level violations -- files exceeding 400 LOC or subsystems with
+    >=1 .js file but no index.js. WARN-level findings (files over the 200-
     line soft target but under 400) are informational; the 200-line target
     is aspirational and most of the codebase brushes it occasionally."""
     name = "core-principles-audit"
@@ -71,7 +71,7 @@ class HardcodedToolInvocationVerifier(Verifier):
     `i/evolve focus=design`, `i/review mode=forget`, `i/why mode=block`
     in user-facing output paths (selftest hints, error messages, primer
     examples, narrative output) should render through `tool_invocations.py`
-    helpers — `_action_form('warm')` or `_i_form('status', primer=True)`
+    helpers -- `_action_form('warm')` or `_i_form('status', primer=True)`
     instead of the literal. Otherwise a rename of any wrapper requires
     hand-grepping every occurrence.
 
@@ -87,7 +87,7 @@ class HardcodedToolInvocationVerifier(Verifier):
 
     # All wrapper invocation shapes that have canonical helper coverage.
     # Each entry is `i/<wrapper> <key>=<value>`. Bare `i/<wrapper>` calls
-    # without parameters aren't flagged — those rarely drift on rename.
+    # without parameters aren't flagged -- those rarely drift on rename.
     _RE = re.compile(
         r'["\'`]i/(?:hme-admin|status|evolve|review|why|learn|trace|hme-read)'
         r'\s+(?:action|mode|focus|target|name|query)=[a-zA-Z_][\w-]*'
@@ -153,13 +153,13 @@ class HardcodedToolInvocationVerifier(Verifier):
 
 
 class AgentLoopQualityVerifier(Verifier):
-    """Horizon IV expansion — agent loop quality wired into HCI.
+    """Horizon IV expansion -- agent loop quality wired into HCI.
 
     Reads the activity log over the last 1h window and scores agent loop
     quality on three axes:
-      - inference cadence: turns observed (≥1)
+      - inference cadence: turns observed (>=1)
       - hook-intervention rate: brief-related interventions per turn
-        (presence of ≥1 indicates the briefing chain is working)
+        (presence of >=1 indicates the briefing chain is working)
       - error rate: bash_error_surfaced / inference_call (lower is better)
 
     FAILs only on hard pathologies (zero turns, error rate above 25%);
@@ -213,11 +213,11 @@ class AgentLoopQualityVerifier(Verifier):
                            f"high error rate: {err_rate*100:.1f}% "
                            f"({bash_errs} bash errors / {infs} inferences)")
 
-        # Horizon IV maturity — adaptive priming hook. Write a tier
+        # Horizon IV maturity -- adaptive priming hook. Write a tier
         # marker the proxy/hooks can read to scale context-injection
         # aggressiveness. GREEN = healthy, reduce injection; YELLOW =
         # turns thin, default injection; RED = error-rate elevated,
-        # increase injection. Advisory only — consumer wiring lives
+        # increase injection. Advisory only -- consumer wiring lives
         # in proxy middleware (any future reader can opt to scale
         # behavior on this signal without touching the verifier).
         self._write_tier_marker("GREEN", "healthy loop")
@@ -251,7 +251,7 @@ class AgentLoopQualityVerifier(Verifier):
 
 
 class RepeatedCharSpamVerifier(Verifier):
-    """No character may repeat 4+ times in a row in tracked text files —
+    """No character may repeat 4+ times in a row in tracked text files --
     targets divider/box-decoration spam (runs of dashes, equals, hashes,
     pipes, tildes, unicode box-drawing). Word characters, whitespace, and
     paren/bracket/brace pairs are exempt so identifiers, indentation, and
@@ -259,7 +259,7 @@ class RepeatedCharSpamVerifier(Verifier):
     literal token `spam-ok`.
 
     Failing the verifier is intentional: the rule is meant to BLOCK these
-    patterns. New violations should be removed — a markdown heading is
+    patterns. New violations should be removed -- a markdown heading is
     `## Section`, not the same with a divider tail; a code separator is a
     single blank line, not a comment of repeated symbols."""
     name = "repeated-char-spam"
@@ -291,7 +291,7 @@ class RepeatedCharSpamVerifier(Verifier):
                                 ch = m.group(1)
                                 run_len = len(m.group(0))
                                 violations.append(
-                                    f"{rel}:{i}  {ch!r}×{run_len}"
+                                    f"{rel}:{i}  {ch!r}*{run_len}"
                                 )
                                 if len(violations) >= 200:
                                     break

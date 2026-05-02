@@ -44,7 +44,7 @@ def _get_architectural_globals() -> list[str]:
 
 
 def get_dependency_graph(file_path: str) -> str:
-    """Map import/require dependency graph for a file. Internal — call via file_intel(path, mode='deps')."""
+    """Map import/require dependency graph for a file. Internal -- call via file_intel(path, mode='deps')."""
     import re as _re
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
@@ -71,7 +71,7 @@ def get_dependency_graph(file_path: str) -> str:
     else:
         parts.append("Imported by: none")
 
-    # Referenced globals — architectural globals (>=10 chars) referenced in this file.
+    # Referenced globals -- architectural globals (>=10 chars) referenced in this file.
     # Require-based deps miss all globals; this surfaces the actual module dependencies.
     if abs_path and os.path.isfile(abs_path):
         try:
@@ -131,7 +131,7 @@ def search_symbols(query: str, top_k: int = 20, kind: str = "") -> str:
 
 
 def get_file_summary(file_path: str) -> str:
-    """Structural overview of a file: line count, symbols, signatures. Internal — call via file_intel(path, mode='summary')."""
+    """Structural overview of a file: line count, symbols, signatures. Internal -- call via file_intel(path, mode='summary')."""
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:
         return f"Error: path '{file_path}' is outside the project root."
@@ -183,7 +183,7 @@ def get_module_map(directory: str = "", max_depth: int = 3) -> str:
 
 
 
-# Re-exports — hierarchy/trace extracted to sibling.
+# Re-exports -- hierarchy/trace extracted to sibling.
 from .symbols_hierarchy import type_hierarchy, cross_language_trace  # noqa: F401, E402
 
 def bulk_rename_preview(old_name: str, new_name: str, language: str = "") -> str:
@@ -342,11 +342,11 @@ def l0_channel_map(channel: str = "") -> str:
 
 def file_intel(file_path: str, mode: str = "both") -> str:
     """Unified file intelligence. Replaces get_file_summary + get_dependency_graph in one call.
-    mode='both' (default): structural overview AND dependency graph — use before editing a file
+    mode='both' (default): structural overview AND dependency graph -- use before editing a file
     you haven't read yet to understand its API surface and its position in the dependency tree.
     mode='summary': line count, symbol kinds, all definitions with line numbers and signatures.
     Use to quickly understand a file's API surface without reading the full source.
-    mode='deps': import/require dependency graph — what the file imports (with resolved paths)
+    mode='deps': import/require dependency graph -- what the file imports (with resolved paths)
     and which files import it. Use to assess refactor scope or understand load order.
     Accepts relative or absolute paths."""
     ctx.ensure_ready_sync()

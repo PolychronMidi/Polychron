@@ -1,4 +1,4 @@
-"""Buddy task lifecycle — claim, dispatch, rate-limit, archive, sweep, verdict.
+"""Buddy task lifecycle -- claim, dispatch, rate-limit, archive, sweep, verdict.
 
 Extracted from buddy_dispatcher.py (was lines 424-856). The "what happens
 to one task from claim to verdict" cluster, separated from the drain
@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from buddy_dispatch_ratelimit import _detect_rate_limit  # noqa: E402
 
 # buddy_dispatch_chain and buddy_dispatch_drain participate in the same
-# import cycle as us (buddy_dispatcher → drain → lifecycle → chain → dispatcher).
+# import cycle as us (buddy_dispatcher -> drain -> lifecycle -> chain -> dispatcher).
 # Lazy shims keep bare-name resolution working inside our function bodies
 # without triggering the cycle at import time.
 def _compute_pause_seconds(*a, **kw):
@@ -53,7 +53,7 @@ from buddy_dispatcher import (  # noqa: E402
 def _write_manifest(run_id: str, manifest: dict, in_progress: bool = True) -> None:
     """Snapshot-write per-task. The `in_progress: true` flag tells any
     mid-run reader (a verifier, a sibling buddy) that the canonical
-    record isn't complete — preventing false-positive "this task is
+    record isn't complete -- preventing false-positive "this task is
     missing!" findings while the run is still draining.
     Uses atomic write so a sibling reader never sees a half-written
     JSON file (would make the in_progress flag itself unreliable)."""
@@ -107,14 +107,14 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
         f"Effort tier (item={item_tier}, floor={buddy.get('effort_floor', 'medium')}, effective={effective_effort})\n\n"
         f"{task.get('text', '')}\n\n"
         f"Citation rule: every proposed change MUST cite the motivating line "
-        f"(file:line). Unmotivated suggestions are scope creep — drop them.\n"
+        f"(file:line). Unmotivated suggestions are scope creep -- drop them.\n"
         f"When complete AND the queue is drained, emit `{NO_WORK_SENTINEL} <reason>` on stdout."
     )
     timeout_s = {"easy": 60, "medium": 300, "hard": 900}.get(effective, 300)
     pause_count = 0
     # Synthesis-routed dispatch: when buddy["sid"] is the "synthesis"
     # sentinel, route through synthesis_reasoning.call() instead of
-    # claude --resume. No Anthropic-API rate-limit pause loop needed —
+    # claude --resume. No Anthropic-API rate-limit pause loop needed --
     # synthesis_reasoning has its own provider cascade + circuit
     # breakers that handle quota internally. Returns the response text
     # as stdout-equivalent for the verdict; no stderr (synthesis has no
@@ -142,7 +142,7 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
         try:
             # Pass `tier=effective` so synthesis_reasoning's
             # OVERDRIVE_MODE=2 (tier-aware routing) can pick the right
-            # chain: hard→Opus, medium→Sonnet, easy→cascade. With
+            # chain: hard->Opus, medium->Sonnet, easy->cascade. With
             # OVERDRIVE_MODE=0 or =1, the tier parameter is harmless.
             response = synthesis_reasoning.call(
                 prompt=prompt,
@@ -192,7 +192,7 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
                 "buddy_floor": buddy["floor"],
                 "dispatch_mode": "synthesis",
             }
-    # claude-resume path (original buddy fanout — requires BUDDY_SYSTEM=1).
+    # claude-resume path (original buddy fanout -- requires BUDDY_SYSTEM=1).
     try:
         while True:
             proc = subprocess.run(
@@ -204,7 +204,7 @@ def _dispatch_to_buddy(task: dict, claimed_path: Path, buddy: dict, run_id: str)
             stderr = proc.stderr or ""
             rc = proc.returncode
             # Rate-limit detection: when buddy hits Anthropic quota,
-            # don't burn the task as failed — pause until reset, then
+            # don't burn the task as failed -- pause until reset, then
             # retry. Honors HME_BUDDY_ON_RATE_LIMIT and per-task pause
             # cap (skill-set Phase 13 semantics).
             if rc != 0 and _RATE_LIMIT_MODE != "fail":
@@ -294,7 +294,7 @@ def _archive_task(claimed_path: Path, verdict: dict) -> Path:
                     pass
                 break
             n += 1
-            if n > 100:  # safety bound — something's wrong if we hit this
+            if n > 100:  # safety bound -- something's wrong if we hit this
                 break
     # Embed verdict alongside the original task payload for audit trail.
     try:
@@ -345,7 +345,7 @@ def _sweep_orphans(run_id: str) -> int:
 
 
 def _write_verdict(run_id: str, manifest: dict) -> Path:
-    """Phase 2.2: per-run verdict file. Required exit-contract artifact —
+    """Phase 2.2: per-run verdict file. Required exit-contract artifact --
     if the dispatcher returns without writing one, the next run's sweep
     flags it as a contract violation. Lists every task dispatched with
     outcome, plus any deferred items (claimed-but-unfinished)."""
@@ -360,7 +360,7 @@ def _write_verdict(run_id: str, manifest: dict) -> Path:
         for f in buddy_dir.glob("*.json"):
             deferred.append({"buddy": buddy_dir.name, "task": f.name})
     lines = [
-        f"# Buddy fanout verdict — {run_id}",
+        f"# Buddy fanout verdict -- {run_id}",
         "",
         f"**Started:** {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(manifest.get('started_ts', 0)))}",
         f"**Finished:** {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(manifest.get('finished_ts', 0)))}",
@@ -380,7 +380,7 @@ def _write_verdict(run_id: str, manifest: dict) -> Path:
         lines.append("## [deferred]")
         lines.append("")
         for d in deferred:
-            lines.append(f"- {d['buddy']}/{d['task']} — claimed but not completed; next sweep will recover")
+            lines.append(f"- {d['buddy']}/{d['task']} -- claimed but not completed; next sweep will recover")
         lines.append("")
     if failed or timeouts:
         lines.append("## Failed / timed-out tasks")

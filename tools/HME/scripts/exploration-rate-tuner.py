@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exploration-rate tuner — generalizes `productive_incoherence` into a
+"""Exploration-rate tuner -- generalizes `productive_incoherence` into a
 session-level exploration/exploitation balance signal.
 
 Inputs from output/metrics/hme-activity.jsonl:
@@ -12,10 +12,10 @@ the current round. Writes tmp/hme-exploration-rate.txt that the
 compose-time heuristics (e.g. `adaptive-config.sh`) can source.
 
 Meta-controller side: three regimes:
-  - rate < 0.1 → EXPLOIT-heavy → suggest: hit KB-uncovered modules, run
+  - rate < 0.1 -> EXPLOIT-heavy -> suggest: hit KB-uncovered modules, run
     `learn()` on previous novel territory.
-  - 0.1 ≤ rate ≤ 0.4 → BALANCED → no steer.
-  - rate > 0.4 → EXPLORE-heavy → suggest: consolidate, run `learn()` to
+  - 0.1 <= rate <= 0.4 -> BALANCED -> no steer.
+  - rate > 0.4 -> EXPLORE-heavy -> suggest: consolidate, run `learn()` to
     capture findings; re-read KB for modules you've been editing.
 
 Written as a one-liner file so _safety.sh can `source` it or a hook can
@@ -67,7 +67,7 @@ def main() -> int:
         suggestion = "Exploration rate low. Consider targeting KB-uncovered modules or running `learn()` on recent edits."
     elif rate > 0.4:
         regime = "explore"
-        suggestion = "Exploration rate high. Consider consolidating — run `learn()` to capture findings; re-read KB for recently-edited modules."
+        suggestion = "Exploration rate high. Consider consolidating -- run `learn()` to capture findings; re-read KB for recently-edited modules."
     else:
         regime = "balanced"
         suggestion = ""
@@ -87,7 +87,7 @@ def main() -> int:
 
     print(f"exploration-rate: {rate:.3f} ({regime})  writes={len(writes)} productive={len(prods)}")
     if suggestion:
-        print(f"  → {suggestion}")
+        print(f"  -> {suggestion}")
     return 0
 
 

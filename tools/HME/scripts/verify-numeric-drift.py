@@ -15,7 +15,7 @@ Keep patterns tight. A loose pattern matches unrelated prose and produces
 false positives the agent will have to manually triage.
 
 Exit codes:
-    0 - all claims match (or no claims found — trivially clean)
+    0 - all claims match (or no claims found -- trivially clean)
     1 - drift detected (report printed)
     2 - unexpected error
 
@@ -44,7 +44,7 @@ _DOC_FILES_EXTRA = [
 _SKIP_DIRS = {"node_modules", ".git", "metrics", "output"}
 
 
-# ── English number-word map (1-99). Keeps scanning cheap; anything larger
+# -- English number-word map (1-99). Keeps scanning cheap; anything larger
 # in the docs is rare enough to write as digits.
 _WORD_UNITS = {
     "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
@@ -83,7 +83,7 @@ def _parse_count(raw: str):
 # "twenty-eight" rather than just "twenty".
 #
 # The lookbehind excludes matches immediately preceded by `.`, `-`, or a
-# digit — so "weight-5.0 verifier" does not match as "0 verifier" and
+# digit -- so "weight-5.0 verifier" does not match as "0 verifier" and
 # "v3.14 dials" does not match as "14 dials". The leading \b still requires
 # a word boundary, but \b alone permits matches after `.` or `-` because
 # those are non-word characters.
@@ -102,7 +102,7 @@ _NUM = (
 )
 
 
-# ── Ground-truth counters. Each returns an int or raises.
+# -- Ground-truth counters. Each returns an int or raises.
 
 def count_hypermeta_controllers():
     path = os.path.join(
@@ -171,12 +171,12 @@ def count_eslint_rules():
     )
 
 
-# ── Claims manifest. Each entry:
-#   name     — identifier for reports.
-#   counter  — callable returning the current integer value.
-#   patterns — list of compiled regexes. Each must contain _NUM exactly once
+# -- Claims manifest. Each entry:
+#   name     -- identifier for reports.
+#   counter  -- callable returning the current integer value.
+#   patterns -- list of compiled regexes. Each must contain _NUM exactly once
 #              so match.group(1) yields the stated number.
-#   context  — human-readable description of what the regexes match.
+#   context  -- human-readable description of what the regexes match.
 
 CLAIMS = [
     {
@@ -336,7 +336,7 @@ def _print_report(drifts, filtered, scanned, truth, show_filtered):
     # Filtered matches surface only when explicitly requested (--noisy).
     # The default-summary noise of "N implausible match(es) filtered" was
     # surfacing every pipeline run for false-positive prose hits like
-    # "one verifier added" — the filter handled them correctly but the
+    # "one verifier added" -- the filter handled them correctly but the
     # persistent message read as a problem. If the filter mis-fires,
     # `--noisy` shows everything.
     if show_filtered == "verbose" and filtered:

@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger("HME")
 
 
-# Project rules — loaded from config/project-rules.json at import time.
+# Project rules -- loaded from config/project-rules.json at import time.
 # Logic stays in Python; declarations live in config. Add new rules there.
 
 def _load_project_rules() -> dict:
@@ -49,7 +49,7 @@ LINE_COUNT_TARGET: int = _lct.get("target", 200)
 LINE_COUNT_WARN: int = _lct.get("warn", 250)
 LINE_COUNT_CRITICAL: int = _lct.get("critical", 300)
 
-# Budget-aware limits for composite tool output — full 4-step scaling
+# Budget-aware limits for composite tool output -- full 4-step scaling
 BUDGET_LIMITS = {
     "greedy":       {"kb_entries": 10, "callers": 20, "symbols": 25, "kb_content": 400, "similar": 5},
     "moderate":     {"kb_entries": 5,  "callers": 10, "symbols": 15, "kb_content": 200, "similar": 3},
@@ -71,7 +71,7 @@ def get_context_budget() -> str:
         logger.debug(f"unnamed-except helpers.py:70: {type(_err).__name__}: {_err}")
         remaining = 50
 
-    # Session intent adjustment (soft signal — safe to skip if session module
+    # Session intent adjustment (soft signal -- safe to skip if session module
     # isn't loaded yet, but we surface parse/attribute errors at debug so they
     # don't silently persist).
     try:
@@ -116,7 +116,7 @@ def fmt_score(score) -> str:
         return "?"
     if score <= 0:
         return "0%"
-    # Sigmoid maps raw logits to [0,1]: logit 9 → ~100%, logit 2 → ~88%, logit 0.1 → ~52%
+    # Sigmoid maps raw logits to [0,1]: logit 9 -> ~100%, logit 2 -> ~88%, logit 0.1 -> ~52%
     sig = 1.0 / (1.0 + math.exp(-float(score)))
     return f"{sig:.0%}"
 
@@ -129,7 +129,7 @@ def fmt_sim_score(score) -> str:
 
 
 def format_knowledge_results(results: list[dict], label: str, min_score: float = 0.01) -> list[str]:
-    # Filter out zero-score results — these are negative cross-encoder scores clamped to 0,
+    # Filter out zero-score results -- these are negative cross-encoder scores clamped to 0,
     # meaning the entry is irrelevant to this query. Showing them is pure noise.
     results = [r for r in results if r.get("score", 0) >= min_score]
     if not results:

@@ -1,4 +1,4 @@
-"""HME evolution intelligence — next-evolution suggestions via algorithmic cluster ranking."""
+"""HME evolution intelligence -- next-evolution suggestions via algorithmic cluster ranking."""
 import json
 import os
 import logging
@@ -14,7 +14,7 @@ def _rank_by_cluster_pull(coupling_state: dict, trace_records: list, top_n: int 
     """Rank uncoupled modules by correlation strength with melodically-coupled neighbors.
 
     Returns list of (module_name, pull_score) sorted descending. pull_score is the
-    mean |r| across all coupled modules with |r| >= 0.25 — a direct measure of
+    mean |r| across all coupled modules with |r| >= 0.25 -- a direct measure of
     how strongly the coupled network is 'pulling' this module into shared musical logic.
     uncoupled_override: if provided, rank these specific module names instead of auto-detecting.
     """
@@ -115,8 +115,8 @@ def evolution_momentum() -> str:
     )
 
     all_kb = ctx.project_engine.list_knowledge_full()
-    momentum_by_round: dict[str, list[str]] = {}  # round_str → list of categories
-    dimension_by_round: dict[str, list[str]] = {}  # round_str → list of melodic dims used
+    momentum_by_round: dict[str, list[str]] = {}  # round_str -> list of categories
+    dimension_by_round: dict[str, list[str]] = {}  # round_str -> list of melodic dims used
     _ROUND_PAT = _re.compile(r'\bR(\d+)\b')
     _DIM_PAT = _re.compile(r'\b(contourShape|counterpoint|thematicDensity|tessituraPressure|'
                             r'intervalFreshness|contourCoherence|phraseBreath)\b', _re.IGNORECASE)
@@ -158,16 +158,16 @@ def evolution_momentum() -> str:
             cats = momentum_by_round.get(r, [])
             dominant = max(set(cats), key=cats.count) if cats else "unknown"
             verdict = verdict_map.get(r, "?")
-            verdict_short = "✓" if any(k in verdict for k in ("stable", "evolved", "legendary")) else ("✗" if any(k in verdict for k in ("drift", "refut")) else "?")
+            verdict_short = "[ok]" if any(k in verdict for k in ("stable", "evolved", "legendary")) else ("[no]" if any(k in verdict for k in ("drift", "refut")) else "?")
             run_entries.append(f"R{r}[{verdict_short}]")
             if dominant != current_cat:
                 if current_cat and run_start:
-                    timeline_parts.append(f"  R{run_start}–R{all_rounds[all_rounds.index(r)-1]}: {current_cat} ({len(run_entries)-1} rounds)")
+                    timeline_parts.append(f"  R{run_start}-R{all_rounds[all_rounds.index(r)-1]}: {current_cat} ({len(run_entries)-1} rounds)")
                 current_cat = dominant
                 run_start = r
                 run_entries = [f"R{r}[{verdict_short}]"]
         if current_cat and run_start:
-            timeline_parts.append(f"  R{run_start}–R{all_rounds[-1]}: **{current_cat}** ← current")
+            timeline_parts.append(f"  R{run_start}-R{all_rounds[-1]}: **{current_cat}** <- current")
 
         out.append("## Evolution Arc")
         _banner = _journal_freshness_banner()
@@ -193,7 +193,7 @@ def evolution_momentum() -> str:
                     else:
                         break
                 if streak > 1:
-                    out.append(f"  Current streak: {streak} consecutive LEGENDARYs (R{legendary_rounds[-streak]}–R{legendary_rounds[-1]})")
+                    out.append(f"  Current streak: {streak} consecutive LEGENDARYs (R{legendary_rounds[-streak]}-R{legendary_rounds[-1]})")
             out.append("")
 
         #  3c. Bridge saturation narrative
@@ -208,18 +208,18 @@ def evolution_momentum() -> str:
                     from ..coupling import _TRUST_FILE_ALIASES
                     a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
                     bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
-                    out.append(f"  SATURATED: {a}↔{bn} ({len(b['already_bridged'])} fields: {', '.join(b['already_bridged'])})")
+                    out.append(f"  SATURATED: {a}<->{bn} ({len(b['already_bridged'])} fields: {', '.join(b['already_bridged'])})")
                 for b in virgin[:3]:
                     from ..coupling import _TRUST_FILE_ALIASES
                     a = _TRUST_FILE_ALIASES.get(b["pair_a"], b["pair_a"])
                     bn = _TRUST_FILE_ALIASES.get(b["pair_b"], b["pair_b"])
-                    out.append(f"  VIRGIN: {a}↔{bn} r={b['r']:+.3f} → bridge on `{b['field']}`")
+                    out.append(f"  VIRGIN: {a}<->{bn} r={b['r']:+.3f} -> bridge on `{b['field']}`")
                 out.append("")
         except Exception as _err1:
             logger.debug(f"out.append: {type(_err1).__name__}: {_err1}")
 
     #  4. Subsystem receptivity from journal
-    # Split into lines for ±5-line window search (subsystem name and verdict rarely co-occur on same line)
+    # Split into lines for +/-5-line window search (subsystem name and verdict rarely co-occur on same line)
     journal_lines = journal_text.splitlines()
     subsystem_counts: dict[str, dict[str, int]] = {}
     _VERDICT_PAT = _re.compile(r'\b(STABLE|EVOLVED|LEGENDARY|stable|evolved|legendary)\b')
@@ -229,7 +229,7 @@ def evolution_momentum() -> str:
         sub_pat = _re.compile(rf'\b{sub}\b', _re.IGNORECASE)
         for i, line in enumerate(journal_lines):
             if sub_pat.search(line):
-                # Look in ±5 line window for a verdict
+                # Look in +/-5 line window for a verdict
                 window_start = max(0, i - 5)
                 window_end = min(len(journal_lines), i + 6)
                 window_text = "\n".join(journal_lines[window_start:window_end])
@@ -243,7 +243,7 @@ def evolution_momentum() -> str:
             if counts["mentions"] < 3:
                 continue
             rate = counts["confirmed"] / counts["mentions"] if counts["mentions"] > 0 else 0
-            bar = "█" * int(rate * 10) + "░" * (10 - int(rate * 10))
+            bar = "#" * int(rate * 10) + "." * (10 - int(rate * 10))
             out.append(f"  {sub:<15} {bar} {counts['confirmed']}/{counts['mentions']}")
         out.append("")
 
@@ -267,23 +267,23 @@ def evolution_momentum() -> str:
         for dim in sorted(all_dim_names, key=lambda d: -all_counts[d]):
             recent_n = recent_counts.get(dim, 0)
             total_n = all_counts[dim]
-            recency_flag = " ◄ RECENT RUT" if recent_n >= 3 else (" ◄ UNTOUCHED RECENTLY" if total_n > 0 and recent_n == 0 else "")
+            recency_flag = " < RECENT RUT" if recent_n >= 3 else (" < UNTOUCHED RECENTLY" if total_n > 0 and recent_n == 0 else "")
             out.append(f"  {dim:<28} all-time: {total_n:2d}  recent: {recent_n:2d}{recency_flag}")
         out.append("")
 
         # Identify the least-used dimension in recent rounds (opportunity)
         untouched = [d for d in all_dim_names if recent_counts.get(d, 0) == 0 and all_counts[d] > 0]
         if untouched:
-            out.append(f"**Dimension opportunity:** {', '.join(untouched)} — used historically but absent in last {len(recent_rounds)} rounds")
+            out.append(f"**Dimension opportunity:** {', '.join(untouched)} -- used historically but absent in last {len(recent_rounds)} rounds")
             out.append("")
 
     result = "\n".join(out)
-    # Cap at 4000 chars (~1000 tokens) — momentum is a strategic summary, not a data dump
+    # Cap at 4000 chars (~1000 tokens) -- momentum is a strategic summary, not a data dump
     if len(result) > 4000:
-        result = result[:4000] + f"\n*(truncated — {len(result) - 4000} chars omitted for token budget)*"
+        result = result[:4000] + f"\n*(truncated -- {len(result) - 4000} chars omitted for token budget)*"
     return result
 
 
 
-# Re-exports — description helpers extracted to evolution_descriptions.py.
+# Re-exports -- description helpers extracted to evolution_descriptions.py.
 from .evolution_descriptions import _describe_musical_role, _describe_rhythm_effect  # noqa: F401, E402

@@ -68,7 +68,7 @@ def _run_hook(tool_response: str) -> tuple[str, str, int]:
     with tempfile.TemporaryDirectory(prefix="hme-hook-test-") as td:
         env = dict(os.environ)
         env["PROJECT_ROOT"] = str(PROJECT_ROOT)  # hook needs real PROJECT_ROOT for _safety.sh
-        # tmp/ inside a temp project root is what _nexus.sh writes to — but the
+        # tmp/ inside a temp project root is what _nexus.sh writes to -- but the
         # hook sources helpers that assume PROJECT_ROOT has the real src/
         # structure. Keep PROJECT_ROOT real; we just verify stdout+stderr.
         result = subprocess.run(
@@ -94,14 +94,14 @@ for v in ("clean", "warnings", "error"):
     _check(f"emit_review_verdict_marker({v!r}) contains the verdict word",
            v in marker)
 
-# Invalid verdict returns "" (contract — reject gracefully).
+# Invalid verdict returns "" (contract -- reject gracefully).
 _check("emit_review_verdict_marker('bogus') returns empty string",
        emit_review_verdict_marker("bogus") == "")
 _check("emit_review_verdict_marker('') returns empty string",
        emit_review_verdict_marker("") == "")
 
 
-# hook parses emitter output — the actual contract check
+# hook parses emitter output -- the actual contract check
 def _hook_for_verdict(v: str) -> tuple[str, str, int]:
     body = "## Warnings: none found\n" + emit_review_verdict_marker(v)
     return _run_hook(body)
@@ -150,7 +150,7 @@ _check("empty response: emits drift warning",
 
 # CLI transport failure: ^hme-cli: prefix
 out, err, code = _run_hook("hme-cli: request failed -- connection refused")
-_check("hme-cli: prefix → CLI_FAILURE advice",
+_check("hme-cli: prefix -> CLI_FAILURE advice",
        "review CLI call failed" in err or "worker down" in err,
        f"stderr={err!r}")
 

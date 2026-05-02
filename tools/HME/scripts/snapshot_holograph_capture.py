@@ -1,4 +1,4 @@
-"""Capture functions for snapshot-holograph.py — extracted to keep the
+"""Capture functions for snapshot-holograph.py -- extracted to keep the
 top-level orchestrator under the LOC target.
 
 Each capture_* function reads one observable dimension of HME state and
@@ -273,7 +273,7 @@ def capture_streak() -> dict:
 
 
 def capture_audit_state() -> dict:
-    """Snapshot of the project audit suite — LOC, undefined-name, shell,
+    """Snapshot of the project audit suite -- LOC, undefined-name, shell,
     import-boundary, deny-link, and detector-test verdicts.
 
     Why this lives in the holograph: each audit alone is point-in-time.
@@ -304,7 +304,7 @@ def capture_audit_state() -> dict:
     out["import_boundaries"] = _json_audit("import_boundaries",
         ["python3", os.path.join(scripts, "audit-import-boundaries.py"), "--json"])
 
-    # Tests with text-only output — record exit code and a parsed summary.
+    # Tests with text-only output -- record exit code and a parsed summary.
     def _text_audit(name: str, cmd: list, summary_pat: str = r"(\d+)\s*[/]\s*(\d+)\s*PASS|(\d+)\s+passes|(\d+)\s+findings") -> dict:
         try:
             rc = subprocess.run(
@@ -328,7 +328,7 @@ def capture_audit_state() -> dict:
     out["detector_chain"] = _text_audit("detector_chain",
         ["python3", os.path.join(detectors, "test_detector_chain.py")])
 
-    # Boil down to a coupling-friendly numeric panel — one scalar per axis,
+    # Boil down to a coupling-friendly numeric panel -- one scalar per axis,
     # so future cross-dimensional analysis (Rung 2) has a vector to work
     # against without re-running the audits each time.
     panel = {}

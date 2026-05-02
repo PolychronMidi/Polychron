@@ -11,7 +11,7 @@ tools_analysis package __init__.py (which requires a live FastMCP instance)
 by loading todo.py directly via importlib.util.
 
 Env required:
-  PROJECT_ROOT  — absolute path to the Polychron project root
+  PROJECT_ROOT  -- absolute path to the Polychron project root
 """
 import importlib.util
 import json
@@ -24,14 +24,14 @@ _PROJECT = os.environ["PROJECT_ROOT"]  # env-ok: set by _safety.sh from .env
 _TODO_PY = os.path.join(_PROJECT, "tools", "HME", "service", "server", "tools_analysis", "todo.py")
 
 # Prefixes the hook adds when returning merged items back to native TodoWrite.
-# When the agent echoes them on the next TodoWrite call, we strip them — they
+# When the agent echoes them on the next TodoWrite call, we strip them -- they
 # are not the agent's fresh intent, they're previous-round echoes.
 _ECHO_PREFIXES = (
     "[CRITICAL] ",
     "[HME onboarding] ",
     "[LIFESAVER] ",
-    "  └ ",
-    "  └ [HME] ",
+    "  + ",
+    "  + [HME] ",
 )
 
 
@@ -105,7 +105,7 @@ def main() -> int:
     except Exception as e:
         sys.stderr.write(f"HME todo merge error: {e}\n{traceback.format_exc()}")
         print(fallback)
-        return 0  # Never fail — TodoWrite must still run
+        return 0  # Never fail -- TodoWrite must still run
 
 
 if __name__ == "__main__":

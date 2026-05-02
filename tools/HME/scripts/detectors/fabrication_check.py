@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Detect FABRICATION — asserting quantitative invariants about pipeline
+"""Detect FABRICATION -- asserting quantitative invariants about pipeline
 state without the turn having observed the artifact that proves it.
 
 Origin incident: R36 post-pipeline analysis. Agent asserted "total beats
 held steady" as a bridge premise to justify a theory about stochastic
 setBalanceAndFX gating, despite never having read the actual beat counts.
 The claim was factually wrong (recent runs: 781, 954, 1043, 1155, 1106,
-812, 1207, 1047, 1409, 996, 1171, 1056 — range 781-1409) and misled the
+812, 1207, 1047, 1409, 996, 1171, 1056 -- range 781-1409) and misled the
 subsequent suggestion chain. User's framing: psychopathic fabrication to
 subvert and distract. This detector is the stiffarm.
 
 The antipattern shape: in a stochastic music generator, asserting that
 some run-level metric held constant across runs without Reading the
 artifact. The verbal fingerprint is a closed set of "steady/constant/
-unchanged/same-as" phrases. Each run IS random — invariance is the
+unchanged/same-as" phrases. Each run IS random -- invariance is the
 claim that needs proof, not the default.
 
 Fires when final assistant text contains a fabrication phrase AND the
@@ -138,7 +138,7 @@ def _emit_stats(verdict: str, detail: str) -> None:
                 "detail": detail,
             }) + "\n")
     except (OSError, TypeError, ValueError) as _emit_err:
-        # Telemetry only — can't bubble (detector writes to stdout),
+        # Telemetry only -- can't bubble (detector writes to stdout),
         # but narrow the type so real bugs (import errors, schema drift)
         # still propagate instead of being swallowed.
         import sys as _sys
@@ -154,7 +154,7 @@ def main() -> int:
     # payload, which is in principle attacker-influenced. A crafted
     # session state could point at /etc/shadow / ~/.ssh/id_rsa / etc.,
     # the detector would read it, regex-match against FABRICATION_PHRASES,
-    # and log matched-phrase snippets to detector-stats.jsonl — leaking
+    # and log matched-phrase snippets to detector-stats.jsonl -- leaking
     # secret excerpts into a metrics file. Allow only paths under either
     # ~/.claude/projects/ or $PROJECT_ROOT/tmp/.
     import os.path as _osp
@@ -173,7 +173,7 @@ def main() -> int:
         return 0
     events = load_turn_events(sys.argv[1])
     # Strip code-fenced / backticked / quoted spans before phrase-
-    # matching — same discipline stop_work + exhaust_check + psycho_stop
+    # matching -- same discipline stop_work + exhaust_check + psycho_stop
     # apply. Without this, an agent response that DESCRIBES an
     # invariance claim (regex example, quoted user prompt, code block
     # showing the antipattern) false-fires as if the agent declared it.
@@ -194,7 +194,7 @@ def main() -> int:
         return 0
 
     # Verification disclosure waives the block. The agent must CHOOSE to
-    # claim certainty or claim ignorance — silent fabrication is what's
+    # claim certainty or claim ignorance -- silent fabrication is what's
     # caught.
     for marker in VERIFICATION_MARKERS:
         if marker in final_text:

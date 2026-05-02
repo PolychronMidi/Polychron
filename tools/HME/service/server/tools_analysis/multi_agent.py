@@ -1,7 +1,7 @@
-"""HME multi-agent observability scaffold — Phase 6.5.
+"""HME multi-agent observability scaffold -- Phase 6.5.
 
 HME can't unilaterally split the Evolver into Perceiver / Proposer /
-Implementer agents — that's a process-level decision outside HME's
+Implementer agents -- that's a process-level decision outside HME's
 jurisdiction. What HME CAN do is provide the observability scaffold so
 that IF the loop is run multi-agent, HME tracks inter-agent coherence
 and can score whether the agents' outputs actually flow into each
@@ -19,7 +19,7 @@ The scaffold:
          that target a module mentioned in a proposer-role todo/hypothesis
 
   4. When all events in a round carry role=single, inter-agent coherence
-     is N/A — single-agent operation isn't broken, it just can't be
+     is N/A -- single-agent operation isn't broken, it just can't be
      scored against the multi-agent ideal.
 
 Surfaced via status(mode='multi_agent').
@@ -95,7 +95,7 @@ def compute_inter_agent_coherence() -> dict:
         role_counts.get("perceiver") or role_counts.get("proposer") or role_counts.get("implementer")
     )
 
-    # Perceiver events — tag-like tokens in their module/file fields
+    # Perceiver events -- tag-like tokens in their module/file fields
     perceiver_modules: set[str] = set()
     for ev in events:
         if ev.get("role") != "perceiver":
@@ -193,12 +193,12 @@ def multi_agent_report() -> str:
     p2p = coh["perceiver_to_proposer"]
     pr2i = coh["proposer_to_implementer"]
     lines.append(
-        f"  perceiver → proposer:    "
+        f"  perceiver -> proposer:    "
         f"{f'{p2p * 100:.0f}%' if isinstance(p2p, (int, float)) else 'n/a'}  "
         f"({meta['proposer_hypotheses']} proposer hypotheses)"
     )
     lines.append(
-        f"  proposer → implementer:  "
+        f"  proposer -> implementer:  "
         f"{f'{pr2i * 100:.0f}%' if isinstance(pr2i, (int, float)) else 'n/a'}  "
         f"({meta['implementer_writes']} implementer writes)"
     )

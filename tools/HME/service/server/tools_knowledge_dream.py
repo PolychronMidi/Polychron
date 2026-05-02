@@ -58,7 +58,7 @@ def memory_dream() -> str:
     # the discoveries always return quickly even when the local coder model
     # is unreachable. Previously the synchronous call blocked the entire
     # dream output for the full 60s llama.cpp timeout when the coder was
-    # down — users waited for a result that never came.
+    # down -- users waited for a result that never came.
     if top_pairs:
         try:
             from server.tools_analysis import think_local_or_claude as _think_local_or_claude
@@ -74,7 +74,7 @@ def memory_dream() -> str:
                 "Are any of these connections surprising given the codebase design?"
             )
             # ThreadPoolExecutor.__exit__ blocks on shutdown(wait=True) even
-            # after our future timed out — which defeats the entire purpose of
+            # after our future timed out -- which defeats the entire purpose of
             # the timeout. Submit then shut down immediately with wait=False
             # so the hung future is abandoned cleanly.
             _ex = _cf.ThreadPoolExecutor(max_workers=1)
@@ -84,7 +84,7 @@ def memory_dream() -> str:
             except _cf.TimeoutError:
                 synthesis = None
                 parts.append("\n## Architectural Interpretation")
-                parts.append("  (skipped — local coder model did not respond within 15s)")
+                parts.append("  (skipped -- local coder model did not respond within 15s)")
             finally:
                 _ex.shutdown(wait=False, cancel_futures=True)
             if synthesis:
@@ -215,7 +215,7 @@ def kb_health() -> str:
     if not rows:
         return "KB is empty."
     parts = ["# KB Health Report"]
-    # Category / age distribution summary — always useful even when no staleness.
+    # Category / age distribution summary -- always useful even when no staleness.
     cat_counts = Counter(e.get("category", "general") for e in rows)
     now_ts = time.time()
     ages = [((now_ts - _ts) / 86400) for e in rows

@@ -1,4 +1,4 @@
-"""Mistral La Plateforme synthesis tier — free Experiment tier cascade.
+"""Mistral La Plateforme synthesis tier -- free Experiment tier cascade.
 
 1B tokens/month across all models. 6-tier cascade best-first.
     T1: magistral-medium-latest    T2: mistral-large-latest

@@ -8,9 +8,9 @@ and reports mismatches. Intended to run as a pipeline step so doc drift
 caught at CI time rather than confusing agents months later.
 
 Exit codes:
-    0 — all references valid
-    1 — drift detected (prints the report)
-    2 — unexpected error (malformed source, etc.)
+    0 -- all references valid
+    1 -- drift detected (prints the report)
+    2 -- unexpected error (malformed source, etc.)
 
 Usage:
     python3 tools/HME/scripts/verify-doc-sync.py
@@ -148,7 +148,7 @@ def _line_is_allowed(line: str) -> bool:
     lo = line.lower()
     if any(ctx in lo for ctx in _ALLOW_CONTEXTS):
         return True
-    # Allow if line mentions a dispatching tool name — the legacy word is
+    # Allow if line mentions a dispatching tool name -- the legacy word is
     # likely being described as a sub-action under that dispatcher, e.g.,
     # `hme_admin(action) | selftest / reload / index / clear_index / ...`
     if any(dispatcher in line for dispatcher in ("hme_admin(", "review(mode", "learn(action", "evolve(focus")):
@@ -168,7 +168,7 @@ def _scan_file(path: str) -> list:
         if _line_is_allowed(line):
             continue
         for legacy, replacement in _LEGACY_MAP.items():
-            # Word-boundary match — legacy name must not be preceded by an
+            # Word-boundary match -- legacy name must not be preceded by an
             # identifier character, so `todo(` doesn't match inside `hme_todo(`.
             pattern = r'(?<![\w.])' + re.escape(legacy)
             m = re.search(pattern, line)
@@ -176,7 +176,7 @@ def _scan_file(path: str) -> list:
                 continue
             # If the match is wrapped in quotes or backticks as a literal
             # string token (e.g., "clear_index" or `add_knowledge`), it's a
-            # LITERAL name in a table cell or code fence — not a callable ref.
+            # LITERAL name in a table cell or code fence -- not a callable ref.
             # Check the character immediately before the match.
             start = m.start()
             before = line[start - 1] if start > 0 else ""
@@ -189,8 +189,8 @@ def _scan_file(path: str) -> list:
 def _discover_declared_env_keys() -> tuple:
     """Walk all HME python sources AND scripts/ to classify env-key references.
     Returns (required, optional):
-      required = ENV.require* calls — fail at boot if missing
-      optional = ENV.optional*, os.environ.get, os.getenv — have defaults
+      required = ENV.require* calls -- fail at boot if missing
+      optional = ENV.optional*, os.environ.get, os.getenv -- have defaults
     """
     required: set = set()
     optional: set = set()
@@ -231,11 +231,11 @@ def _classify_env_call(node) -> tuple:
     """Given an ast.Call, return (env_key, kind) if it's an env-read, else (None, None).
     kind is 'required' or 'optional'.
     Recognized forms:
-      ENV.require*('KEY')                       → required
-      ENV.optional*('KEY', default)             → optional
-      os.environ.get('KEY', default)            → optional
-      os.getenv('KEY', default)                 → optional
-      os.environ['KEY']                         → (subscript, not handled here)
+      ENV.require*('KEY')                       -> required
+      ENV.optional*('KEY', default)             -> optional
+      os.environ.get('KEY', default)            -> optional
+      os.getenv('KEY', default)                 -> optional
+      os.environ['KEY']                         -> (subscript, not handled here)
     """
     func = node.func
     # Method-call forms: root.attr(...)
@@ -250,13 +250,13 @@ def _classify_env_call(node) -> tuple:
             if attr in ("optional", "optional_int", "optional_float", "optional_bool"):
                 if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                     return node.args[0].value, "optional"
-        # os.environ.get('KEY', ...) — the attr is 'get', root is an Attribute (os.environ)
+        # os.environ.get('KEY', ...) -- the attr is 'get', root is an Attribute (os.environ)
         if attr == "get" and isinstance(root, ast.Attribute):
             if (isinstance(root.value, ast.Name) and root.value.id == "os"
                     and root.attr == "environ"):
                 if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                     return node.args[0].value, "optional"
-        # os.getenv('KEY', ...) — func.attr is 'getenv', root is 'os'
+        # os.getenv('KEY', ...) -- func.attr is 'getenv', root is 'os'
         if attr == "getenv" and isinstance(root, ast.Name) and root.id == "os":
             if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                 return node.args[0].value, "optional"
@@ -284,7 +284,7 @@ def _discover_env_keys_in_file(path: str) -> set:
 def _check_env_schema() -> list:
     """Return a list of (rel_path, message) tuples for env schema drift.
     Two checks:
-      1. Every ENV.require() key must exist in .env (or fail at boot — but
+      1. Every ENV.require() key must exist in .env (or fail at boot -- but
          we surface at lint time too).
       2. Backtick-fenced HME_* tokens in docs should match real .env keys.
     """
@@ -296,13 +296,13 @@ def _check_env_schema() -> list:
     code_required, code_optional = _discover_declared_env_keys()
     code_total = code_required | code_optional
 
-    # Code REQUIRES env key → must exist in .env (fail-fast means ENV.require
+    # Code REQUIRES env key -> must exist in .env (fail-fast means ENV.require
     # throws at boot if missing, so drift here is always a real bug).
     missing_in_env = sorted(code_required - declared)
     for k in missing_in_env:
-        issues.append((".env", f"ENV.require(`{k}`) has no matching .env entry — will throw at boot"))
+        issues.append((".env", f"ENV.require(`{k}`) has no matching .env entry -- will throw at boot"))
 
-    # Docs backtick-mention HME_* token → should be a real env key OR
+    # Docs backtick-mention HME_* token -> should be a real env key OR
     # be referenced by code as optional. Unknown-everywhere tokens are stale
     # doc references.
     import glob as _glob
@@ -322,7 +322,7 @@ def _check_env_schema() -> list:
                     if token in declared or token in code_total:
                         continue
                     rel = os.path.relpath(md, _PROJECT)
-                    issues.append((rel, f"line {lineno}: `{token}` referenced but not in .env or ENV.* calls — stale doc reference"))
+                    issues.append((rel, f"line {lineno}: `{token}` referenced but not in .env or ENV.* calls -- stale doc reference"))
     return issues
 
 
@@ -352,13 +352,13 @@ def main(argv: list) -> int:
     print()
 
     if total_hits == 0:
-        print("OK — no stale tool references or env drift detected.")
+        print("OK -- no stale tool references or env drift detected.")
         return 0
 
     for rel, hits in sorted(reports.items()):
         print(f"## {rel}")
         for lineno, legacy, replacement, line_text in hits:
-            print(f"  {rel}:{lineno} — `{legacy}` → `{replacement}`")
+            print(f"  {rel}:{lineno} -- `{legacy}` -> `{replacement}`")
             if fix_mode:
                 trimmed = line_text.strip()[:80]
                 print(f"    (line: {trimmed!r})")
@@ -372,7 +372,7 @@ def main(argv: list) -> int:
 
     if fix_mode:
         print("Fix mode: review each hit above and update the doc.")
-        print("Not all legacy mentions are wrong — check context before editing.")
+        print("Not all legacy mentions are wrong -- check context before editing.")
         print("If a mention describes HISTORY or INTERNAL helpers, it's allowed.")
 
     return 1 if total_hits > 0 else 0

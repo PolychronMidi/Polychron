@@ -7,7 +7,7 @@ log/hme-errors.log and git log for evidence that any rule has been violated
 recently. Rules that are frequently violated are either too buried (need
 to move up) or poorly worded (need to be rewritten).
 
-Output: metrics/hme-memetic-drift.json — per-rule violation counts and a
+Output: metrics/hme-memetic-drift.json -- per-rule violation counts and a
 recommendation to adjust document structure.
 
 The goal is to make CLAUDE.md adapt to what agents actually read, not what
@@ -31,7 +31,7 @@ METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", 
 _CLAUDE_MD = os.path.join(_PROJECT, "CLAUDE.md")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-memetic-drift.json")
 
-# Violation signals — phrases in error log or commit messages that indicate
+# Violation signals -- phrases in error log or commit messages that indicate
 # a rule was broken. Each rule gets paired with one or more signal regexes.
 _VIOLATION_SIGNALS = {
     "never delete unused code": [r"deleted unused", r"deleted.*dead code"],

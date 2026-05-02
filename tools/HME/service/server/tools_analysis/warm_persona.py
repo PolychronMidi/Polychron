@@ -12,7 +12,7 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-# Hard cap on persona size (chars). 12K chars ≈ 4K tokens — keeps prompt eval under
+# Hard cap on persona size (chars). 12K chars ~= 4K tokens -- keeps prompt eval under
 # ~30s on M40, so interactive cancellation (via socket timeout in _cancellable_urlopen)
 # limits worst-case llama.cpp queue wait to ~30s. Larger personas (50K) caused ~120s prompt
 # eval during which llama.cpp ignores client disconnect, blocking interactive requests.
@@ -23,7 +23,7 @@ def _load_src_files_for_warm(patterns: list[str], token_budget: int) -> str:
     """Load src/ file contents up to a token budget for warm context expansion.
 
     Files loaded smallest-first to maximize file count within budget.
-    token_budget: approximate token ceiling (1 token ≈ 3 chars for mixed code+text).
+    token_budget: approximate token ceiling (1 token ~= 3 chars for mixed code+text).
     """
     import glob as _glob
     char_budget = token_budget * 3  # conservative: mixed code+text averages ~3 chars/token
@@ -91,7 +91,7 @@ def _gpu_persona(model: str) -> str:
             "Your role: extract FACTS. File paths (src/crossLayer/...), signal fields, "
             "correlation values, coupling dimensions, bridge status (VIRGIN/PARTIAL/SATURATED). "
             "Antagonism bridges couple BOTH modules of a negatively-correlated pair to the "
-            "SAME signal with OPPOSING effects. Never reason or opine — output raw data only.\n"
+            "SAME signal with OPPOSING effects. Never reason or opine -- output raw data only.\n"
             "Real crossLayer modules: " + modules_str + ".\n\n"
             "Full KB (ground truth, " + str(len(full_kb.split('\n'))) + " entries):\n" + full_kb
         )

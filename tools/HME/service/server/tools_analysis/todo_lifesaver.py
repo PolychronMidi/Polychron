@@ -1,4 +1,4 @@
-"""Lifesaver-todo bridge — registration, dedup, caps, pruning, onboarding tree.
+"""Lifesaver-todo bridge -- registration, dedup, caps, pruning, onboarding tree.
 
 Extracted from todo.py (was lines 285-715). External API: register_todo_from_lifesaver,
 resolve_lifesaver_todos, list_critical, list_carried_over, register_onboarding_tree,
@@ -34,7 +34,7 @@ from server.tools_analysis.todo import (
 
 
 # Lifesaver-todo store-protection knobs. Override via env if the defaults
-# need tuning per deployment. The defaults are conservative — chosen to
+# need tuning per deployment. The defaults are conservative -- chosen to
 # keep the open-set under 20 entries and the youngest-stale entry under
 # 24h, which together prevent the runaway-monitor flood that put 35
 # zombie llamacpp_offload_invariant entries in the store before this
@@ -43,7 +43,7 @@ _LIFESAVER_MAX_OPEN = int(os.environ.get("HME_LIFESAVER_TODO_MAX_OPEN", "20"))
 _LIFESAVER_TTL_SECONDS = int(os.environ.get("HME_LIFESAVER_TODO_TTL_SEC", str(24 * 3600)))
 # Prune-after: how long a DONE lifesaver entry stays in the store before
 # being deleted entirely. Once resolved, lifesaver entries have no
-# operational value — they're not historical lessons (those are KB
+# operational value -- they're not historical lessons (those are KB
 # entries / commits), they're just monitor-loop residue. Default 3 days
 # keeps recent context for debugging while preventing unbounded growth
 # of todos.json + todo-graph.md (the spam vector the user filed).
@@ -71,13 +71,13 @@ def _normalize_error_for_dedup(error: str) -> str:
     s = error
     # Memory sizes: "17342 MB", "22049 MB", "228GB", "1.5 GiB"
     s = re.sub(r"\b\d+(?:\.\d+)?\s*(?:[KMGT]i?B|[KMGT]B)\b", "<SIZE>", s, flags=re.IGNORECASE)
-    # Plain large numbers (>= 4 digits) — covers retry counts, line numbers,
+    # Plain large numbers (>= 4 digits) -- covers retry counts, line numbers,
     # raw byte values, port numbers, timestamps. Smaller numbers stay
     # because they often distinguish error classes (e.g. HTTP 503 vs 500).
     s = re.sub(r"\b\d{4,}\b", "<NUM>", s)
     # Hex pointers / addresses
     s = re.sub(r"\b0x[0-9a-fA-F]+\b", "<HEX>", s)
-    # Absolute paths down to filename — keep filename as it's often the
+    # Absolute paths down to filename -- keep filename as it's often the
     # error class signal, drop the variable directory prefix
     s = re.sub(r"/[A-Za-z0-9_\-./]+/([A-Za-z0-9_\-]+\.[A-Za-z0-9]+)", r"<PATH>/\1", s)
     # ISO timestamps and dates
@@ -94,7 +94,7 @@ def _enforce_lifesaver_caps(meta: dict, todos: list) -> int:
     1. TTL: lifesaver entries older than HME_LIFESAVER_TODO_TTL_SEC
        (default 24h) auto-resolve with reason=stale-ttl. The recurrence
        counter resets to 1 if the same error fires again later, so
-       chronic real failures don't get silently swept under the rug —
+       chronic real failures don't get silently swept under the rug --
        they re-enter as fresh entries when they recur.
     2. MAX_OPEN: at most HME_LIFESAVER_TODO_MAX_OPEN concurrently-open
        lifesaver entries. When the cap is hit, the OLDEST open entries
@@ -120,7 +120,7 @@ def _enforce_lifesaver_caps(meta: dict, todos: list) -> int:
             t["resolved_ts"] = now
             t["resolved_reason"] = "stale-ttl"
             resolved_count += 1
-    # MAX_OPEN pass — recompute open set after TTL sweep
+    # MAX_OPEN pass -- recompute open set after TTL sweep
     open_lifesavers = [
         t for t in todos
         if t.get("source") == "lifesaver" and not _check_main_done(t)
@@ -149,15 +149,15 @@ def _prune_done_todos_universal(meta: dict, todos: list) -> int:
     Per-source horizons:
       - lifesaver:  3 days  (HME_LIFESAVER_TODO_PRUNE_SEC)
       - everything else: 7 days (HME_DONE_TODO_PRUNE_SEC)
-        — set 0 to disable.
+        -- set 0 to disable.
 
-    Reference timestamp: min(ts, resolved_ts) — same as lifesaver path,
+    Reference timestamp: min(ts, resolved_ts) -- same as lifesaver path,
     so retroactive cleanup of old failures resolves immediately rather
     than waiting another N days from the resolve-now timestamp.
 
     Mutates `todos` in place; returns count pruned. Safe to call on
     every i/todo invocation: cheap (single pass over todos list) and
-    idempotent (no items to prune → no-op)."""
+    idempotent (no items to prune -> no-op)."""
     now = time.time()
     keep = []
     pruned = 0
@@ -191,7 +191,7 @@ def _prune_done_lifesavers(meta: dict, todos: list) -> int:
     for legacy entries) is older than HME_LIFESAVER_TODO_PRUNE_SEC.
 
     Once a lifesaver alert is resolved, it carries no operational value
-    — historical lessons live in commits / KB / docs. Keeping resolved
+    -- historical lessons live in commits / KB / docs. Keeping resolved
     entries in todos.json forever bloats both the JSON store and the
     rendered todo-graph.md (the spam vector the user reported). Pruning
     is safe because:
@@ -214,7 +214,7 @@ def _prune_done_lifesavers(meta: dict, todos: list) -> int:
             # reference. This makes retroactive cleanup work correctly:
             # a batch sweep that just marked many old entries done sets
             # resolved_ts=now, but their original ts (when the failure
-            # actually fired) may be weeks old — those should prune
+            # actually fired) may be weeks old -- those should prune
             # immediately, not wait another 3 days.
             ts_orig = float(t.get("ts") or now)
             ts_resolved = float(t.get("resolved_ts") or now)
@@ -232,7 +232,7 @@ def _prune_done_lifesavers(meta: dict, todos: list) -> int:
 
 
 def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITICAL"):
-    """LIFESAVER entry point — dedup-aware with store-protection caps.
+    """LIFESAVER entry point -- dedup-aware with store-protection caps.
 
     Dedup keys on the SEVERITY + SOURCE + NORMALIZED-ERROR-PREFIX. The
     error is normalized first (memory sizes, large numbers, paths,
@@ -250,7 +250,7 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
     alerts at the LIFESAVER log layer.
     """
     text = f"CRITICAL ERROR - LIFESAVER ALERT: [{severity}] {source}: {error}"
-    # Normalized dedup key — strips variable tokens before computing the
+    # Normalized dedup key -- strips variable tokens before computing the
     # 80-char prefix so memory-variant errors collapse into ONE entry.
     normalized_err = _normalize_error_for_dedup(error or "")
     dedup_key = f"{severity}|{source}|{normalized_err[:80]}"
@@ -260,12 +260,12 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
         # entries can't block a legitimate fresh-recurrence registration.
         cap_resolved = _enforce_lifesaver_caps(meta, todos)
         if cap_resolved:
-            logger.info(f"LIFESAVER→TODO store-protection auto-resolved {cap_resolved} entries (ttl/cap)")
+            logger.info(f"LIFESAVER->TODO store-protection auto-resolved {cap_resolved} entries (ttl/cap)")
         # Prune done-lifesaver residue after the TTL pass so newly-aged-out
         # entries get a chance to be observed once before deletion-on-next-call.
         pruned = _prune_done_lifesavers(meta, todos)
         if pruned:
-            logger.info(f"LIFESAVER→TODO pruned {pruned} done entries past prune horizon")
+            logger.info(f"LIFESAVER->TODO pruned {pruned} done entries past prune horizon")
         for existing in todos:
             if (
                 existing.get("source") == "lifesaver"
@@ -290,7 +290,7 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
                             existing_key = f"{sev}|{source}|{_normalize_error_for_dedup(existing_err)[:80]}"
                             break
                 if existing_key == dedup_key:
-                    # Match — increment recurrence and refresh ts. The TTL
+                    # Match -- increment recurrence and refresh ts. The TTL
                     # check above ran on the SAVED ts, so a refresh here
                     # legitimately keeps a chronically-recurring failure
                     # surfaced as long as it keeps firing. A failure that
@@ -311,7 +311,7 @@ def register_todo_from_lifesaver(source: str, error: str, severity: str = "CRITI
         entry["dedup_key"] = dedup_key
         todos.append(entry)
         _save_todos(meta, todos)
-    logger.info(f"LIFESAVER→TODO #{entry['id']}: {text[:120]}")
+    logger.info(f"LIFESAVER->TODO #{entry['id']}: {text[:120]}")
 
 
 def resolve_lifesaver_todos(source_substring: str) -> int:
@@ -337,12 +337,12 @@ def resolve_lifesaver_todos(source_substring: str) -> int:
         if resolved:
             _save_todos(meta, todos)
     if resolved:
-        logger.info(f"LIFESAVER→TODO auto-resolved {resolved} entries matching '{source_substring}'")
+        logger.info(f"LIFESAVER->TODO auto-resolved {resolved} entries matching '{source_substring}'")
     return resolved
 
 
 def list_critical() -> list:
-    """Return the list of open critical entries — used by userpromptsubmit to
+    """Return the list of open critical entries -- used by userpromptsubmit to
     surface LIFESAVER alerts at every turn start."""
     with _todo_lock:
         _meta, todos = _load_todos()
@@ -357,7 +357,7 @@ def list_critical() -> list:
 
 
 def list_carried_over() -> list:
-    """Return all open (non-completed) items from the store — used by sessionstart
+    """Return all open (non-completed) items from the store -- used by sessionstart
     to surface unfinished work from the prior session."""
     with _todo_lock:
         _meta, todos = _load_todos()
@@ -380,7 +380,7 @@ def register_onboarding_tree(steps: list) -> int:
     one sub per step. Called by onboarding_chain.py when the walkthrough
     initializes or advances. Returns the parent id.
 
-    steps: list of (text, status) tuples — e.g., [("boot check", "completed"),
+    steps: list of (text, status) tuples -- e.g., [("boot check", "completed"),
            ("pick target", "in_progress"), ("brief", "pending"), ...]
 
     On update, existing sub IDs are reused by matching on the step text, so
@@ -438,7 +438,7 @@ def clear_onboarding_tree() -> None:
 # Lifesaver-critical items that haven't been touched in this many seconds
 # are considered stale and auto-resolved on the next merge. Rationale:
 # register_todo_from_lifesaver dedupes repeating errors, so a stale entry
-# means the source stopped recurring — the agent isn't going to act on an
+# means the source stopped recurring -- the agent isn't going to act on an
 # alert about a transient GPU OOM from 8 days ago. Without this cleanup,
 # every TodoWrite call re-surfaces a mountain of ancient CRITICAL items.
 _LIFESAVER_STALE_SECONDS = 6 * 3600

@@ -1,4 +1,4 @@
-"""agent_local entry point — argparse + mode routing."""
+"""agent_local entry point -- argparse + mode routing."""
 from __future__ import annotations
 
 import json

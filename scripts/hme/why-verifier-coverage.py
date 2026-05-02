@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=verifier-coverage — Horizon VI continuation.
+"""i/why mode=verifier-coverage -- Horizon VI continuation.
 
 verifier-utility (last turn) asked: "which verifiers carry no signal?"
 This asks the inverse: "which file paths carry no verifier coverage?"
@@ -10,7 +10,7 @@ or path constants that would touch each directory. Surfaces
 uncovered/under-covered paths so the next verifier-author has a
 data-driven prune list.
 
-Heuristic only — a verifier that walks os.walk(_PROJECT) covers
+Heuristic only -- a verifier that walks os.walk(_PROJECT) covers
 everything but doesn't appear to mention any specific path. So this
 report flags POTENTIAL gaps, not certain ones."""
 from __future__ import annotations
@@ -23,7 +23,7 @@ from _common import PROJECT_ROOT
 
 
 def _count_files_per_dir() -> dict[str, int]:
-    """Top-level dir → file count, restricted to the dirs HME conceptually
+    """Top-level dir -> file count, restricted to the dirs HME conceptually
     governs."""
     targets = ["tools/HME", "src", "scripts", "i", "doc"]
     counts: dict[str, int] = {}
@@ -59,7 +59,7 @@ def _scan_verifier_path_mentions() -> dict[str, set[str]]:
             except OSError:
                 continue
             for t in targets:
-                # Match the directory string in source — could appear as
+                # Match the directory string in source -- could appear as
                 # "tools/HME/...", "src/...", or via PROJECT_ROOT joins.
                 if re.search(rf'["\']{re.escape(t)}/', src):
                     mentions[t].add(f)
@@ -76,7 +76,7 @@ def main(argv):
 
     out = [f"# Verifier coverage by directory"]
     out.append("")
-    out.append(f"  ({universal_count} verifier(s) walk PROJECT_ROOT — "
+    out.append(f"  ({universal_count} verifier(s) walk PROJECT_ROOT -- "
                f"considered universal coverage)")
     out.append("")
 
@@ -89,7 +89,7 @@ def main(argv):
     rows.sort(key=lambda r: -r[1])
     print(f"# Verifier coverage by directory")
     print()
-    print(f"  ({universal_count} verifier(s) walk PROJECT_ROOT — universal coverage)")
+    print(f"  ({universal_count} verifier(s) walk PROJECT_ROOT -- universal coverage)")
     print()
     print(f"  {'directory':16}  {'files':>6}  {'verifiers':>10}  ratio")
     for d, n_files, n_verifiers in rows:
@@ -98,7 +98,7 @@ def main(argv):
         print(f"  {marker} {d:14}  {n_files:>6}  {n_verifiers:>10}  {ratio:.1f} per 100 files")
 
     # Coverage gaps: dirs with 0 specific verifiers AND zero universal
-    # walkers (rare — usually at least one universal walker exists).
+    # walkers (rare -- usually at least one universal walker exists).
     gaps = [d for d, _n, v in rows if v == 0 and universal_count == 0]
     if gaps:
         print()
@@ -111,7 +111,7 @@ def main(argv):
 
     print()
     print("# Note:")
-    print("  This is a heuristic — verifiers that walk PROJECT_ROOT cover")
+    print("  This is a heuristic -- verifiers that walk PROJECT_ROOT cover")
     print("  every directory implicitly. Specific-path verifiers are still")
     print("  the right shape for fast targeted checks. Use this view to")
     print("  identify where DEEP coverage (multiple specialized verifiers)")

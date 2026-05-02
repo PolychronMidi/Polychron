@@ -2,14 +2,14 @@
 """Ban silent-swallow patterns on `source` lines in shell hooks.
 
 The exact bug this session caught: _safety.sh:6 used
-    source $(…)/.env 2>/dev/null || true
+    source $(...)/.env 2>/dev/null || true
 and the path was wrong (`../..` vs `../../../..`). The `|| true` swallowed
 the file-not-found, so every hook for months ran with PROJECT_ROOT unset.
 That cascaded into broken auto-commit, broken PROJECT_ROOT-dependent
 paths in a dozen downstream hooks, etc.
 
 Rule: any `source X` line referencing a file that is CRITICAL
-infrastructure (helpers, env, safety preamble) must fail loud —
+infrastructure (helpers, env, safety preamble) must fail loud --
 specifically must NOT suffix with `2>/dev/null || true` or any variant
 that swallows the outcome.
 
@@ -79,7 +79,7 @@ def scan_file(path: Path) -> list[str]:
             continue
         if has_silent_swallow(line):
             violations.append(
-                f"{path}:{lineno}: silent `source` of infrastructure file — "
+                f"{path}:{lineno}: silent `source` of infrastructure file -- "
                 f"remove `2>/dev/null || true` / `|| true` so missing or broken "
                 f"infra fails loud. Line: {line.strip()[:120]}"
             )

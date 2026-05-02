@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""HME activity event emitter — Phase 1 of openshell_features_to_mimic.md.
+"""HME activity event emitter -- Phase 1 of openshell_features_to_mimic.md.
 
 Appends one JSON line per invocation to metrics/hme-activity.jsonl. Used by
 bash hooks and the inference proxy (Phase 2) as the shared write channel for
-the native activity bridge — the HME-scoped equivalent of OpenShell's OCSF
+the native activity bridge -- the HME-scoped equivalent of OpenShell's OCSF
 event stream.
 
 Usage (from shell):
   python3 tools/HME/activity/emit.py --event=file_written \
       --session="$SESSION_ID" --file="$FILE" --hme_read_prior=1
 
-Fields are free-form — any `--key=value` pair becomes a top-level JSON field.
-Value parsing: "true"/"false"/"1"/"0" → bool, integer-ish → int, else str.
+Fields are free-form -- any `--key=value` pair becomes a top-level JSON field.
+Value parsing: "true"/"false"/"1"/"0" -> bool, integer-ish -> int, else str.
 
 ts is injected automatically (unix seconds, int). Writes are atomic via a
 single append O_APPEND open; no locking needed (kernel serializes appends
@@ -69,7 +69,7 @@ def main(argv: list[str]) -> int:
         return 0
 
     # PROJECT_ROOT fallback: callers who don't source .env (manual
-    # invocations from agents) shouldn't KeyError — derive from the
+    # invocations from agents) shouldn't KeyError -- derive from the
     # script's own location (this file lives at
     # <PROJECT_ROOT>/tools/HME/activity/emit.py). env-ok.
     project_root = os.environ.get("PROJECT_ROOT") or os.path.abspath(

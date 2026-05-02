@@ -1,21 +1,21 @@
-"""HME unified health topology — Layer 3 of the self-coherence stack.
+"""HME unified health topology -- Layer 3 of the self-coherence stack.
 
 Assembles health status from all components into a dependency-aware snapshot.
 When a parent node is unhealthy, downstream nodes are marked UNKNOWN rather
-than assumed healthy — preventing false confidence from stale checks.
+than assumed healthy -- preventing false confidence from stale checks.
 
 Topology:
   MCP Server
-    └ RAG Proxy
-          └ HTTP worker (9098) — absorbs former shim role
-                ├ ProjectEngine
-                ├ GlobalEngine
-                └ File Watcher
-    └ Startup Chain
-          └ llama.cpp Daemon (7735)
-                ├ GPU0 Extractor (11434)
-                ├ GPU1 Reasoner  (11435)
-                └ CPU Arbiter    (11436)
+    + RAG Proxy
+          + HTTP worker (9098) -- absorbs former shim role
+                + ProjectEngine
+                + GlobalEngine
+                + File Watcher
+    + Startup Chain
+          + llama.cpp Daemon (7735)
+                + GPU0 Extractor (11434)
+                + GPU1 Reasoner  (11435)
+                + CPU Arbiter    (11436)
 
 Layer 7 (Predictive Health): tracks shim response time EMA and warns when
 trending toward OOM/timeout before the crash actually happens.
@@ -41,7 +41,7 @@ _HEALTH_TIMEOUT = 2
 _last_topology: dict = {}
 _topology_lock = threading.Lock()
 _topology_ts: float = 0.0
-_TOPOLOGY_CACHE_TTL = 30.0  # seconds — longer TTL; background refresh keeps it fresh
+_TOPOLOGY_CACHE_TTL = 30.0  # seconds -- longer TTL; background refresh keeps it fresh
 _refresh_lock = threading.Lock()
 _refresh_running: bool = False
 
@@ -49,7 +49,7 @@ _refresh_running: bool = False
 _shim_response_ms: list[float] = []  # recent response times
 _shim_response_lock = threading.Lock()
 _RESPONSE_HISTORY = 20
-_SLOWDOWN_WARN_THRESHOLD = 3.0  # shim response time EMA > 3× baseline → warn
+_SLOWDOWN_WARN_THRESHOLD = 3.0  # shim response time EMA > 3* baseline -> warn
 
 
 def get_topology(force: bool = False) -> dict:
@@ -104,13 +104,13 @@ def _trigger_background_refresh() -> None:
 def _build_topology() -> dict:
     t0 = time.time()
 
-    # Check shim — root of RAG dependency tree
+    # Check shim -- root of RAG dependency tree
     shim = _check_shim()
 
     # Track response time for Layer 7 predictive health
     _record_shim_response_ms(shim.get("response_ms", _HEALTH_TIMEOUT * 1000))
 
-    # Check local inference — llama-server instances (arbiter + coder) replaced
+    # Check local inference -- llama-server instances (arbiter + coder) replaced
     # llamacpp in commit 0577c0f7. The old llamacpp/daemon checks probed dead ports
     # and flooded LIFESAVER with coherence-below-threshold warnings.
     daemon = {"healthy": True, "note": "retired; llama-server is authoritative"}
@@ -250,7 +250,7 @@ def _auto_resolve_stale_failures(shim: dict, llamacpp: dict) -> None:
 def _check_llamacpp_instances() -> dict:
     """Probe both llama-server instances (arbiter + coder) via their /health
     endpoints. URLs come from .env (HME_LLAMACPP_ARBITER_URL /
-    HME_LLAMACPP_CODER_URL) via the central loader — no silent fallbacks.
+    HME_LLAMACPP_CODER_URL) via the central loader -- no silent fallbacks.
     """
     arbiter_url = ENV.require("HME_LLAMACPP_ARBITER_URL")
     coder_url   = ENV.require("HME_LLAMACPP_CODER_URL")
@@ -316,7 +316,7 @@ def _check_shim_slowdown() -> dict | None:
     """Return a slowdown warning dict if shim response time is trending dangerously high.
 
     Compares recent 5-call EMA against baseline (first half of history).
-    If recent EMA > 3× baseline AND > 1000ms absolute, warn.
+    If recent EMA > 3* baseline AND > 1000ms absolute, warn.
     """
     with _shim_response_lock:
         if len(_shim_response_ms) < 6:
@@ -328,7 +328,7 @@ def _check_shim_slowdown() -> dict | None:
             "baseline_ms": round(baseline, 1),
             "recent_ms": round(recent, 1),
             "ratio": round(recent / baseline, 1),
-            "message": f"Shim response time trending up ({recent:.0f}ms vs {baseline:.0f}ms baseline) — may OOM soon",
+            "message": f"Shim response time trending up ({recent:.0f}ms vs {baseline:.0f}ms baseline) -- may OOM soon",
         }
     return None
 
@@ -357,10 +357,10 @@ def describe_topology(topo: dict) -> str:
         parts.append(f"llamacpp {llamacpp_up}/{llamacpp_total} ({names}) OK")
     else:
         down = [k for k, v in llamacpp.items() if not v.get("healthy")]
-        parts.append(f"llamacpp {llamacpp_up}/{llamacpp_total} — DOWN: {','.join(down)}")
+        parts.append(f"llamacpp {llamacpp_up}/{llamacpp_total} -- DOWN: {','.join(down)}")
 
     slowdown = topo.get("slowdown_warning")
     if slowdown:
-        parts.append(f"⚠ shim slowdown {slowdown['ratio']}×")
+        parts.append(f"[!] shim slowdown {slowdown['ratio']}*")
 
     return f"[coherence={coherence:.0%}] " + " | ".join(parts)

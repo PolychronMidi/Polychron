@@ -8,8 +8,8 @@ down table opens.
 
 Compaction strategy: `table.optimize()` rewrites data files and drops
 _deletions/ entries without changing row contents or embeddings. Safe to run
-with the worker running — LanceDB's MVCC makes compaction atomic.
-(Older LanceDB versions used `compact_files()` — we fall back if `optimize`
+with the worker running -- LanceDB's MVCC makes compaction atomic.
+(Older LanceDB versions used `compact_files()` -- we fall back if `optimize`
 isn't present so this script works across a version bump.)
 
 Usage:
@@ -28,7 +28,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 KB_DIR = PROJECT_ROOT / "tools" / "HME" / "KB"
 
 TABLES = ["code_chunks", "knowledge", "symbols"]
-DELETIONS_CAP = 50  # invariant threshold — compaction recommended above this
+DELETIONS_CAP = 50  # invariant threshold -- compaction recommended above this
 
 
 def _deletion_count(table_path: Path) -> int:
@@ -53,11 +53,11 @@ def main() -> None:
         lancedb = None  # type: ignore
 
     if _lance is None and lancedb is None:
-        print("compact-lance-tables: neither lance nor lancedb installed — skipping", flush=True)
+        print("compact-lance-tables: neither lance nor lancedb installed -- skipping", flush=True)
         sys.exit(0)
 
     if not KB_DIR.is_dir():
-        print(f"compact-lance-tables: KB dir missing ({KB_DIR}) — skipping", flush=True)
+        print(f"compact-lance-tables: KB dir missing ({KB_DIR}) -- skipping", flush=True)
         sys.exit(0)
 
     db = lancedb.connect(str(KB_DIR)) if lancedb else None
@@ -82,7 +82,7 @@ def main() -> None:
             continue
 
         try:
-            # Use low-level lance.dataset for reliable cleanup — lancedb's
+            # Use low-level lance.dataset for reliable cleanup -- lancedb's
             # optimize() requires the separate pylance package which may not
             # be installed. lance.dataset.cleanup_old_versions() works without it.
             if _lance is not None:
@@ -96,7 +96,7 @@ def main() -> None:
                 elif hasattr(tbl, "compact_files"):
                     tbl.compact_files()
             after = _deletion_count(table_path)
-            compacted.append(f"{name} ({count}→{after} deletions)")
+            compacted.append(f"{name} ({count}->{after} deletions)")
         except Exception as e:
             errors.append(f"{name}: {e}")
 

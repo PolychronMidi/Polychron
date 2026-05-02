@@ -60,7 +60,7 @@ class SubagentModeVerifier(Verifier):
             )
         return _result(
             PASS, 1.0,
-            f"hook routes {sorted(routed)} → agent_local declares {sorted(declared_modes)}",
+            f"hook routes {sorted(routed)} -> agent_local declares {sorted(declared_modes)}",
             [f"unused mode configs: {sorted(extra)}"] if extra else [],
         )
 
@@ -69,7 +69,7 @@ class SubagentPassthroughVerifier(Verifier):
     """The general-purpose subagent type must remain a passthrough because it
     needs Write/Edit/Bash capabilities, which the read-only agent_local.py
     cannot provide. If someone hastily adds 'general-purpose' to the
-    interception case, the verifier fails at weight 3.0 — this regression
+    interception case, the verifier fails at weight 3.0 -- this regression
     would downgrade every general-purpose agent call to a read-only stub."""
     name = "subagent-general-purpose-passthrough"
     category = "coverage"
@@ -100,14 +100,14 @@ class SubagentPassthroughVerifier(Verifier):
             m = pat.search(src)
             if m:
                 violations.append(
-                    f"{forbidden} → intercepted as mode={m.group(1)} "
+                    f"{forbidden} -> intercepted as mode={m.group(1)} "
                     f"(read-only replacement = capability downgrade)"
                 )
 
         if violations:
             return _result(
                 FAIL, 0.0,
-                f"{len(violations)} forbidden intercept(s) — read-only replacement",
+                f"{len(violations)} forbidden intercept(s) -- read-only replacement",
                 violations + [
                     "RULE: general-purpose and statusline-setup must passthrough to Claude.",
                     "general-purpose needs Edit/Write/Bash which local agent cannot provide.",
@@ -137,12 +137,12 @@ class SubagentGuardVerifier(Verifier):
         script = os.path.join(_SCRIPTS_DIR, "stress-test-subagent.py")
         if not os.path.isfile(script):
             return _result(SKIP, 1.0, "stress-test script not found")
-        # Skip if agent_local backend is unreachable — a missing backend makes
+        # Skip if agent_local backend is unreachable -- a missing backend makes
         # the JSON decode fail (empty stdout), which is a backend outage not a
         # guard regression. The subagent-backends verifier covers this separately.
         agent = os.path.join(os.path.dirname(_SCRIPTS_DIR), "mcp", "agent_local.py")
         if not os.path.isfile(agent):
-            return _result(SKIP, 1.0, "agent_local.py not found — skip guard test")
+            return _result(SKIP, 1.0, "agent_local.py not found -- skip guard test")
         try:
             probe = subprocess.run(
                 ["python3", agent, "--stdin", "--json", "--project", _PROJECT],
@@ -151,9 +151,9 @@ class SubagentGuardVerifier(Verifier):
                 env={**os.environ, "PROJECT_ROOT": _PROJECT},
             )
             if not probe.stdout.strip():
-                return _result(SKIP, 1.0, "agent_local returned empty — backend down, skipping guard test")
+                return _result(SKIP, 1.0, "agent_local returned empty -- backend down, skipping guard test")
         except (subprocess.TimeoutExpired, Exception):
-            return _result(SKIP, 1.0, "agent_local unreachable — backend down, skipping guard test")
+            return _result(SKIP, 1.0, "agent_local unreachable -- backend down, skipping guard test")
         try:
             rc = subprocess.run(
                 ["python3", script, "--only", "1"],
@@ -163,7 +163,7 @@ class SubagentGuardVerifier(Verifier):
         except subprocess.TimeoutExpired:
             return _result(
                 FAIL, 0.0,
-                "short-prompt guard didn't fire in 15s — agent_local may be missing the early-exit",
+                "short-prompt guard didn't fire in 15s -- agent_local may be missing the early-exit",
                 ["regression: len<3 or words<2 prompts must return immediately"],
             )
         except Exception as e:
@@ -222,7 +222,7 @@ class SubagentBackendsVerifier(Verifier):
         except Exception:
             backends["llamacpp_arbiter"] = None
 
-        # 4. HME worker (port 9098 — absorbs former shim role)
+        # 4. HME worker (port 9098 -- absorbs former shim role)
         try:
             import urllib.request
             req = urllib.request.Request("http://127.0.0.1:9098/health")
@@ -240,7 +240,7 @@ class SubagentBackendsVerifier(Verifier):
         if "grep" in missing:
             return _result(
                 FAIL, score,
-                f"subagent grep backend missing — agent will silently fail every search",
+                f"subagent grep backend missing -- agent will silently fail every search",
                 details + ["install ripgrep or ensure GNU grep is on PATH"],
             )
         return _result(

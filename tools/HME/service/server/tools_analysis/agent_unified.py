@@ -1,4 +1,4 @@
-"""HME agent tool — dispatches local agentic research via agent_local.run_agent().
+"""HME agent tool -- dispatches local agentic research via agent_local.run_agent().
 
 Thin wrapper that exposes `mcp__HME__agent` to Claude. Internally uses
 agent_local.py which now routes through synthesis_reasoning.call() (the
@@ -21,8 +21,8 @@ logger = logging.getLogger("HME")
 def agent(prompt: str, mode: str = "explore") -> str:
     """Run a local research subagent with best-available model routing.
 
-    mode='explore' (default) — code research, grep/glob/read/kb tools, read-only.
-    mode='plan'              — architecture planner, multi-file analysis synthesis.
+    mode='explore' (default) -- code research, grep/glob/read/kb tools, read-only.
+    mode='plan'              -- architecture planner, multi-file analysis synthesis.
 
     Model selection walks the 22-slot quality cascade (cerebras, groq, gemini,
     openrouter, mistral, nvidia) with circuit breakers, falling through to
@@ -39,7 +39,7 @@ def agent(prompt: str, mode: str = "explore") -> str:
 
     ctx.ensure_ready_sync()
 
-    # agent_local lives at tools/HME/service/agent_local.py — one level above server/.
+    # agent_local lives at tools/HME/service/agent_local.py -- one level above server/.
     import sys, os
     _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if _mcp_root not in sys.path:
@@ -57,7 +57,7 @@ def agent(prompt: str, mode: str = "explore") -> str:
     model = result.get("model", "?")
 
     header = (
-        f"[HME Agent — mode={mode} model={model} iters={iterations} "
+        f"[HME Agent -- mode={mode} model={model} iters={iterations} "
         f"tools={len(tools_used)} elapsed={elapsed}s]\n\n"
     )
     return _budget_gate(header + str(answer), budget=BUDGET_COMPOUND)

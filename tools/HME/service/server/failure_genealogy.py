@@ -1,12 +1,12 @@
-"""HME failure genealogy — Layer 4 of the self-coherence stack.
+"""HME failure genealogy -- Layer 4 of the self-coherence stack.
 
 Every failure gets a unique failure_id (8-char UUID fragment). Downstream failures
 caused by an upstream failure carry a caused_by reference, forming a causal tree.
 
-The LIFESAVER drain groups failures by causal chain — showing:
+The LIFESAVER drain groups failures by causal chain -- showing:
   [CRITICAL] worker: OOM during index_directory (#7a3b)
-    → [CRITICAL] rag.project: ConnectionRefusedError (#8c4d)
-    → [WARNING]  supervisor: worker unhealthy (#9e5f)
+    -> [CRITICAL] rag.project: ConnectionRefusedError (#8c4d)
+    -> [WARNING]  supervisor: worker unhealthy (#9e5f)
 
 Instead of three orphaned error entries (audit finding 8.7 deduplication gap).
 
@@ -20,7 +20,7 @@ import logging
 
 logger = logging.getLogger("HME")
 
-_failures: dict[str, dict] = {}  # failure_id → failure record
+_failures: dict[str, dict] = {}  # failure_id -> failure record
 _failures_lock = threading.Lock()
 _DEDUP_WINDOW = 30.0   # seconds; same source+error within this window = duplicate
 _MAX_FAILURES = 500    # prune oldest beyond this
@@ -34,7 +34,7 @@ def record_failure(
 ) -> tuple[str, bool]:
     """Record a failure. Returns (failure_id, is_new).
 
-    is_new=False means the caller hit an existing dedup entry — the count was
+    is_new=False means the caller hit an existing dedup entry -- the count was
     incremented but no new record was created. Callers can use this to
     suppress duplicate log lines so the same alert doesn't spam hme.log on
     every monitor tick.
@@ -46,7 +46,7 @@ def record_failure(
         pass
     with _failures_lock:
         now = time.time()
-        # Deduplication: same source + error text within window → increment count only
+        # Deduplication: same source + error text within window -> increment count only
         for fid, f in _failures.items():
             if (
                 f["source"] == source
@@ -142,17 +142,17 @@ def format_tree_as_banner(trees: list[list[dict]]) -> str:
     if not trees:
         return ""
     lines = [
-        "  LIFESAVER: CRITICAL FAILURES DETECTED — ADDRESS NOW",
+        "  LIFESAVER: CRITICAL FAILURES DETECTED -- ADDRESS NOW",
     ]
     for tree in trees:
         if not tree:
             continue
         root = tree[0]
-        count_str = f" ×{root.get('count', 1)}" if root.get("count", 1) > 1 else ""
+        count_str = f" *{root.get('count', 1)}" if root.get("count", 1) > 1 else ""
         lines.append(f"  [{root['severity']}] {root['source']}: {root['error']}{count_str} (#{root['id']})")
         for child in tree[1:]:
-            count_str = f" ×{child.get('count', 1)}" if child.get("count", 1) > 1 else ""
-            lines.append(f"    → [{child['severity']}] {child['source']}: {child['error']}{count_str}")
+            count_str = f" *{child.get('count', 1)}" if child.get("count", 1) > 1 else ""
+            lines.append(f"    -> [{child['severity']}] {child['source']}: {child['error']}{count_str}")
     lines += [
         "  These failures occurred in background threads and were queued",
         "  for your attention. Diagnose and fix before proceeding.",

@@ -37,9 +37,9 @@ _SYNTHESIS_PATTERN_INTERVAL = 1800  # 30 minutes
 _INTENT_INTERVAL = 120              # 2 minutes
 _ARCHAEOLOGY_INTERVAL = 21600       # 6 hours
 
-# Mutable module-level state — assigned from meta_observer at startup
+# Mutable module-level state -- assigned from meta_observer at startup
 # and mutated by submodule functions during the loop.
-_ms = None  # type: ignore — MetaState set by meta_observer.start()
+_ms = None  # type: ignore -- MetaState set by meta_observer.start()
 
 # L13: monitor-thread watchdog
 _monitor_thread_ref: threading.Thread | None = None

@@ -1,4 +1,4 @@
-"""Tool execution — grep / glob / read / kb (read-only)."""
+"""Tool execution -- grep / glob / read / kb (read-only)."""
 from __future__ import annotations
 
 import json
@@ -38,7 +38,7 @@ _GREP_BIN: str | None = None  # cached resolved binary
 
 
 def _resolve_grep() -> str | None:
-    """Find an available grep binary — prefer ripgrep, fall back to GNU grep.
+    """Find an available grep binary -- prefer ripgrep, fall back to GNU grep.
     Cached after first resolution so we don't re-probe on every call."""
     global _GREP_BIN
     if _GREP_BIN is not None:
@@ -56,7 +56,7 @@ def _resolve_grep() -> str | None:
 
 
 def _exec_grep(pattern: str, path: str = "src/") -> str:
-    """Execute grep search — read-only. Uses ripgrep if available, falls
+    """Execute grep search -- read-only. Uses ripgrep if available, falls
     back to GNU grep. Both produce comparable output for the common case."""
     target = _validate_path(path)
     if not target:
@@ -85,7 +85,7 @@ def _exec_grep(pattern: str, path: str = "src/") -> str:
             return f"No matches for '{pattern}' in {path}"
         # Trim project root prefix for readability
         output = output.replace(_project_root() + "/", "")
-        # GNU grep lines may be very long — cap each line at 200 chars so the
+        # GNU grep lines may be very long -- cap each line at 200 chars so the
         # synthesizer doesn't choke on a single huge minified blob.
         capped = []
         for ln in output.split("\n"):
@@ -101,7 +101,7 @@ def _exec_grep(pattern: str, path: str = "src/") -> str:
 
 
 def _exec_glob(pattern: str) -> str:
-    """Execute glob search — read-only."""
+    """Execute glob search -- read-only."""
     if not pattern.startswith("/"):
         pattern = os.path.join(_project_root(), pattern)
     matches = sorted(_glob_mod.glob(pattern, recursive=True))
@@ -115,7 +115,7 @@ def _exec_glob(pattern: str) -> str:
 
 
 def _exec_read(filepath: str, start: int = 0, end: int = 0) -> str:
-    """Read file contents — read-only."""
+    """Read file contents -- read-only."""
     abs_path = _validate_path(filepath)
     if not abs_path:
         return f"ERROR: path '{filepath}' is outside project root"

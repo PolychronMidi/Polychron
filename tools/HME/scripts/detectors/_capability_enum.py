@@ -59,10 +59,10 @@ DELEGATION_CAPABILITIES = (
     "Subagent",                 # general-purpose / Plan / Explore subagent
     "BackgroundJob",            # run_in_background bash
     "Worktree",                 # EnterWorktree / ExitWorktree
-    "Buddy",                    # buddy_handoff consult — primary/senior
+    "Buddy",                    # buddy_handoff consult -- primary/senior
 )
 
-# Phantom-detection signal phrases — patterns that LOOK like declared
+# Phantom-detection signal phrases -- patterns that LOOK like declared
 # capabilities but are NOT in the closed list. Used by the detector to
 # flag suspect labels in agent text.
 PHANTOM_PATTERNS = (

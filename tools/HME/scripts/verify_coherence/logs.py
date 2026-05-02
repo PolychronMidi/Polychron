@@ -18,12 +18,12 @@ from ._base import (
 class LogSizeVerifier(Verifier):
     """The key HME logs (hme-proxy.out, hme-errors.log,
     hme-proxy-lifecycle.log, hme-activity.jsonl) are all append-only
-    and never rotate. Left unchecked they fill disk — at which point
+    and never rotate. Left unchecked they fill disk -- at which point
     every log-writing hook silently fails (another silent-failure
     class the autocommit hardening was meant to close).
 
     WARN above 50MB per file, FAIL above 200MB. The thresholds are
-    generous — noisy proxies can produce tens of MB per day, so an
+    generous -- noisy proxies can produce tens of MB per day, so an
     unattended run hits 50MB in a few weeks and 200MB only after
     months of neglect. Action on FAIL: truncate or rotate. A simple
     `: > log/hme-proxy.out` is safe; the proxy reopens in append mode
@@ -53,15 +53,15 @@ class LogSizeVerifier(Verifier):
             try:
                 size = os.path.getsize(path)
             except OSError as e:
-                # Unreadable — still signals a problem worth surfacing,
+                # Unreadable -- still signals a problem worth surfacing,
                 # not silently skipping. Narrow catch.
                 warn_hits.append(f"{rel}: stat failed ({e})")
                 continue
             mb = size / (1024 * 1024)
             if size >= self.FAIL_BYTES:
-                fail_hits.append(f"{rel}: {mb:.1f} MB (≥200 MB)")
+                fail_hits.append(f"{rel}: {mb:.1f} MB (>=200 MB)")
             elif size >= self.WARN_BYTES:
-                warn_hits.append(f"{rel}: {mb:.1f} MB (≥50 MB)")
+                warn_hits.append(f"{rel}: {mb:.1f} MB (>=50 MB)")
 
         if fail_hits:
             return _result(FAIL, 0.0,
@@ -100,7 +100,7 @@ class ErrorLogVerifier(Verifier):
                     last = int(raw)
             except (OSError, ValueError, TypeError):
                 # Unreadable watermark, non-numeric content, or a bizarre
-                # non-string from a mocked read() — treat as unset.
+                # non-string from a mocked read() -- treat as unset.
                 # Narrow catch so MemoryError / KeyboardInterrupt surface.
                 last = 0
         unread = max(0, len(lines) - last)
@@ -112,7 +112,7 @@ class ErrorLogVerifier(Verifier):
 
 
 
-# Verifiers — TOPOLOGY category
+# Verifiers -- TOPOLOGY category
 
 
 class LifesaverRateVerifier(Verifier):
@@ -131,7 +131,7 @@ class LifesaverRateVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no effectiveness data yet — run analyze-tool-effectiveness.py")
+            return _result(SKIP, 1.0, "no effectiveness data yet -- run analyze-tool-effectiveness.py")
         try:
             with open(data_path) as f:
                 data = json.load(f)
@@ -151,7 +151,7 @@ class LifesaverRateVerifier(Verifier):
         if acute >= 3:
             return _result(
                 FAIL, score, summary,
-                ["3+ LIFESAVER events in the last HOUR — acute problem",
+                ["3+ LIFESAVER events in the last HOUR -- acute problem",
                  "investigate log/hme-errors.log"],
             )
         if acute >= 1 or medium >= 5:
@@ -165,7 +165,7 @@ class PipelineBgScriptHealthVerifier(Verifier):
     """Surfaces silent failures from main-pipeline.js's bg-spawn analytics.
 
     Each background script (snapshot-holograph, analyze-tool-effectiveness,
-    etc.) writes its stderr to log/hme-bg-<name>.err — truncated each round.
+    etc.) writes its stderr to log/hme-bg-<name>.err -- truncated each round.
     A non-empty file means the script crashed during the most recent pipeline
     run. Until this verifier existed those errors went unread; the loop was
     visible only as days-stale metrics that nobody traced back to the
@@ -193,7 +193,7 @@ class PipelineBgScriptHealthVerifier(Verifier):
         except OSError as e:
             return _result(ERROR, 0.0, f"listdir failed: {e}")
         if not err_files:
-            return _result(SKIP, 1.0, "no hme-bg-*.err files yet — pipeline hasn't run since hardening")
+            return _result(SKIP, 1.0, "no hme-bg-*.err files yet -- pipeline hasn't run since hardening")
         failing = []
         for name in sorted(err_files):
             path = os.path.join(log_dir, name)

@@ -20,12 +20,12 @@ from ._base import (
 class SettingsJsonVerifier(Verifier):
     """~/.claude/settings.json is the entry point for every Claude Code
     hook. A malformed JSON edit breaks hook dispatch entirely on next
-    session start — but the breakage is silent during the current
+    session start -- but the breakage is silent during the current
     session (hooks already registered stay registered). This verifier
     parses the file fresh on every HCI run and confirms the top-level
     shape matches what the hook stack depends on.
 
-    Weight 2.0 — a broken settings.json silently disables every hook
+    Weight 2.0 -- a broken settings.json silently disables every hook
     the next time Claude Code reads it."""
     name = "settings-json"
     category = "state"
@@ -60,7 +60,7 @@ class SettingsJsonVerifier(Verifier):
 
         hooks = data.get("hooks")
         if hooks is None:
-            issues.append("no 'hooks' key — all hooks are effectively disabled")
+            issues.append("no 'hooks' key -- all hooks are effectively disabled")
         elif not isinstance(hooks, dict):
             issues.append(f"'hooks' is {type(hooks).__name__}, expected object")
         else:
@@ -107,11 +107,11 @@ class OAuthTokenExpiryVerifier(Verifier):
     before it happens.
 
     Thresholds:
-      - expired / absent      → FAIL (overdrive is dead)
-      - <1h remaining         → WARN (refresh soon)
-      - ≥1h remaining         → PASS
+      - expired / absent      -> FAIL (overdrive is dead)
+      - <1h remaining         -> WARN (refresh soon)
+      - >=1h remaining         -> PASS
 
-    Weight 1.0 — the degradation is graceful (cascade fallback), so
+    Weight 1.0 -- the degradation is graceful (cascade fallback), so
     this is informational, not catastrophic."""
     name = "oauth-token-expiry"
     category = "state"
@@ -123,7 +123,7 @@ class OAuthTokenExpiryVerifier(Verifier):
         path = os.path.expanduser("~/.claude/.credentials.json")
         if not os.path.isfile(path):
             return _result(SKIP, 1.0,
-                           "~/.claude/.credentials.json not present — overdrive disabled")
+                           "~/.claude/.credentials.json not present -- overdrive disabled")
         try:
             with open(path) as f:
                 data = json.load(f)
@@ -133,7 +133,7 @@ class OAuthTokenExpiryVerifier(Verifier):
         expires_at = oauth.get("expiresAt")
         if not isinstance(expires_at, (int, float)):
             return _result(WARN, 0.5,
-                           "claudeAiOauth.expiresAt missing/non-numeric — cannot verify",
+                           "claudeAiOauth.expiresAt missing/non-numeric -- cannot verify",
                            [f"keys: {sorted(oauth.keys())}"])
         # expiresAt is milliseconds since epoch per Claude Code's format.
         now_ms = time.time() * 1000
@@ -141,11 +141,11 @@ class OAuthTokenExpiryVerifier(Verifier):
         remaining_h = remaining_ms / 3_600_000
         if remaining_h <= 0:
             return _result(FAIL, 0.0,
-                           f"OAuth token expired {-remaining_h:.1f}h ago — overdrive dead",
+                           f"OAuth token expired {-remaining_h:.1f}h ago -- overdrive dead",
                            ["start Claude Code to trigger token refresh"])
         if remaining_h < 1:
             return _result(WARN, 0.5,
-                           f"OAuth token expires in {remaining_h:.1f}h — refresh soon",
+                           f"OAuth token expires in {remaining_h:.1f}h -- refresh soon",
                            [f"remaining_ms={int(remaining_ms)}"])
         return _result(PASS, 1.0, f"OAuth token valid for {remaining_h:.1f}h")
 
@@ -159,9 +159,9 @@ class EnvTamperVerifier(Verifier):
     --snapshot-env-sha` (or simply deleting .env.sha256 before the next
     run); unplanned drift surfaces as a FAIL.
 
-    Weight 2.0 — silent .env mutation (rogue process, sloppy .env
+    Weight 2.0 -- silent .env mutation (rogue process, sloppy .env
     editor, merge conflict resolution) is a whole class of hard-to-
-    debug failures. The verifier isn't cryptographic integrity — it's
+    debug failures. The verifier isn't cryptographic integrity -- it's
     change-detection for ops confidence.
     """
     name = "env-tamper"
@@ -174,14 +174,14 @@ class EnvTamperVerifier(Verifier):
         env_path = os.path.join(_PROJECT, ".env")
         sha_path = os.path.join(_PROJECT, ".env.sha256")
         if not os.path.isfile(env_path):
-            return _result(SKIP, 1.0, ".env missing — EnvLoadVerifier flags this")
+            return _result(SKIP, 1.0, ".env missing -- EnvLoadVerifier flags this")
         try:
             with open(env_path, "rb") as f:
                 current = hashlib.sha256(f.read()).hexdigest()
         except OSError as e:
             return _result(ERROR, 0.0, f".env unreadable: {e}")
         if not os.path.isfile(sha_path):
-            # First run — establish baseline.
+            # First run -- establish baseline.
             try:
                 with open(sha_path, "w") as f:
                     f.write(current + "\n")
@@ -217,7 +217,7 @@ class EnvLoadVerifier(Verifier):
     - PROJECT_ROOT must be declared and equal the detected project root
     - The file must be parseable by `set -a; source .env`
 
-    Weight 3.0 — a broken .env makes every other verifier's diagnosis
+    Weight 3.0 -- a broken .env makes every other verifier's diagnosis
     untrustworthy, so the score hit should be substantial."""
     name = "env-load"
     category = "state"
@@ -229,10 +229,10 @@ class EnvLoadVerifier(Verifier):
         if not os.path.isfile(env_path):
             return _result(FAIL, 0.0,
                            f".env missing at {env_path}",
-                           [f"every downstream hook runs without PROJECT_ROOT — "
+                           [f"every downstream hook runs without PROJECT_ROOT -- "
                             f"silent failure class"])
 
-        # Parse the .env file manually — no `source` subshell, no shell
+        # Parse the .env file manually -- no `source` subshell, no shell
         # injection surface. KEY=VALUE per line, comments start with #,
         # blank lines ignored. Quoted values are accepted but the quotes
         # are not stripped (verifier is checking for the KEY's presence,
@@ -278,7 +278,7 @@ class EnvLoadVerifier(Verifier):
 
         if issues:
             return _result(FAIL, 0.0,
-                           f"{len(issues)} .env issue(s) — silent-failure class",
+                           f"{len(issues)} .env issue(s) -- silent-failure class",
                            issues)
         return _result(PASS, 1.0,
                        f".env loads cleanly ({len(declared)} keys)")

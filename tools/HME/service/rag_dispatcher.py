@@ -1,10 +1,10 @@
-"""RAG engine setup — model loading, GPU/CPU routing, reranker adapters.
+"""RAG engine setup -- model loading, GPU/CPU routing, reranker adapters.
 
 Extracted from hme_http.py. Contains:
-  _RagDispatcher    — routes embedding calls to GPU or CPU mirror
-  _MxbaiRerankerAdapter — wraps mxbai-rerank-base-v2 as CrossEncoder API
-  _load_engines     — background thread that loads all models + starts indexing
-  _ensure_llamacpp_daemon / _ensure_vram_monitor — daemon launchers
+  _RagDispatcher    -- routes embedding calls to GPU or CPU mirror
+  _MxbaiRerankerAdapter -- wraps mxbai-rerank-base-v2 as CrossEncoder API
+  _load_engines     -- background thread that loads all models + starts indexing
+  _ensure_llamacpp_daemon / _ensure_vram_monitor -- daemon launchers
 """
 import os
 import sys
@@ -78,7 +78,7 @@ class _RagDispatcher:
     If only one worker exists (CPU load failed, or GPU-only mode), the
     dispatcher degrades to that single worker with straightforward blocking
     acquire. Full interface compatibility with SentenceTransformer /
-    CrossEncoder — .encode, .predict, .device, and arbitrary attribute
+    CrossEncoder -- .encode, .predict, .device, and arbitrary attribute
     delegation via __getattr__.
 
     managed_model (optional): the VramManager.ManagedModel registered for
@@ -90,7 +90,7 @@ class _RagDispatcher:
 
     # GPU:CPU speed ratio for embedding on this hardware (M40 fp16 storage
     # vs multi-core CPU). Only overflow to CPU when GPU queue is deeper
-    # than this — sequential GPU is faster than parallel CPU until then.
+    # than this -- sequential GPU is faster than parallel CPU until then.
     # Measured empirically: M40 ~3x faster than Ryzen 7950X for bge-code
     # fp16 encode batches. Tune via HME_RAG_GPU_CPU_RATIO in .env.
     _GPU_CPU_OVERFLOW_THRESHOLD = 3
@@ -137,7 +137,7 @@ class _RagDispatcher:
 
         GPU is faster than CPU for embedding, so we prefer queuing on GPU
         over immediately overflowing to CPU. Only overflow to CPU when the
-        GPU queue depth exceeds the GPU:CPU speed ratio threshold — at
+        GPU queue depth exceeds the GPU:CPU speed ratio threshold -- at
         that point, waiting for GPU would be slower than using CPU.
 
         route="cpu" (arbiter generating or low VRAM) gates GPU off entirely
@@ -149,7 +149,7 @@ class _RagDispatcher:
         gpu_at_start = self._current_gpu()
         if gpu_at_start is None and cpu is None:
             raise RuntimeError(
-                f"_RagDispatcher({self._label}): both GPU and CPU instances are None — "
+                f"_RagDispatcher({self._label}): both GPU and CPU instances are None -- "
                 f"cannot serve any requests. Check model loading in _load_engines."
             )
         if gpu_at_start is None and cpu is not None:
@@ -167,7 +167,7 @@ class _RagDispatcher:
 
                 if gpu_ok and self._gpu_sem is not None:
                     if self._gpu_sem.acquire(blocking=False):
-                        # Got GPU immediately — pressure check then use it.
+                        # Got GPU immediately -- pressure check then use it.
                         if self._vram is not None and self._mm is not None:
                             ok = self._vram.request_room(self._mm.headroom_gb, caller=self._mm)
                             if not ok:
@@ -179,7 +179,7 @@ class _RagDispatcher:
                             return gpu, self._release_gpu
                     elif self._gpu_waiting < self._overflow_threshold:
                         # GPU sem taken but queue isn't deep enough to
-                        # justify CPU overflow — wait for GPU. Sequential
+                        # justify CPU overflow -- wait for GPU. Sequential
                         # GPU is faster than parallel CPU until the queue
                         # exceeds the speed ratio.
                         self._gpu_waiting += 1
@@ -202,13 +202,13 @@ class _RagDispatcher:
                                     return gpu, self._release_gpu
                         finally:
                             self._gpu_waiting -= 1
-                    # else: GPU queue deep enough — fall through to CPU overflow
+                    # else: GPU queue deep enough -- fall through to CPU overflow
 
-                # Overflow to CPU — either route="cpu", VRAM pressure,
+                # Overflow to CPU -- either route="cpu", VRAM pressure,
                 # or GPU queue exceeds threshold
                 if self._cpu_sem is not None and self._cpu_sem.acquire(blocking=False):
                     return cpu, self._release_cpu
-                # Both paths unavailable — wait for any release
+                # Both paths unavailable -- wait for any release
                 self._cv.wait(timeout=1.0)
 
     def _release_gpu(self):

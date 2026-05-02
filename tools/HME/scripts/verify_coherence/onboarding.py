@@ -30,7 +30,7 @@ class StatesSyncVerifier(Verifier):
             return _result(PASS, 1.0, "Python and shell STATES match",
                            [out.splitlines()[0] if out else ""])
         if rc == 1:
-            return _result(FAIL, 0.0, "Python ↔ shell STATES drift", out.splitlines())
+            return _result(FAIL, 0.0, "Python <-> shell STATES drift", out.splitlines())
         return _result(ERROR, 0.0, "verifier returned unexpected code", out.splitlines())
 
 
@@ -100,7 +100,7 @@ class OnboardingChainImportVerifier(Verifier):
         import ast
         path = os.path.join(_SERVER_DIR, "onboarding_chain.py")
         if not os.path.isfile(path):
-            return _result(FAIL, 0.0, "onboarding_chain.py missing — state machine broken")
+            return _result(FAIL, 0.0, "onboarding_chain.py missing -- state machine broken")
         try:
             with open(path) as f:
                 tree = ast.parse(f.read())
@@ -115,7 +115,7 @@ class OnboardingChainImportVerifier(Verifier):
                     if pat in src_snippet:
                         return _result(
                             WARN, 0.5,
-                            f"top-level {pat} — would block standalone import",
+                            f"top-level {pat} -- would block standalone import",
                         )
         return _result(PASS, 1.0, "onboarding_chain parses and has no risky top-level calls")
 

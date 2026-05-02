@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Meta-Coherence Audit — the detector-of-detectors.
+"""Meta-Coherence Audit -- the detector-of-detectors.
 
 Every HME detector/invariant/extractor embeds assumptions about source
 structure (regex against a target file, path reference, phrase list, tool
 decorator form). When the source shifts (refactor, rename, new pattern,
-hook reorg) these assumptions rot SILENTLY — a dead regex returns null,
+hook reorg) these assumptions rot SILENTLY -- a dead regex returns null,
 a missing path returns "not found", a stale phrase list never triggers.
 None of those look like failures. They just become invisible cruft.
 
@@ -15,21 +15,21 @@ stale. Missing path referenced by an invariant = stale.
 
 What it covers:
   (A) invariants.json pattern_in_file / file_exists / patterns_all_in_file
-      — every path must exist and every pattern must match at least once.
-  (B) check-tuning-invariants.js extractConst regexes — each must produce
+      -- every path must exist and every pattern must match at least once.
+  (B) check-tuning-invariants.js extractConst regexes -- each must produce
       a non-null extraction against its target file.
-  (C) health.py doc-sync regex + tool-decorator scanner — must find the
+  (C) health.py doc-sync regex + tool-decorator scanner -- must find the
       expected structural markers.
-  (D) evolution_strategies.py stress probe file references — every hook
+  (D) evolution_strategies.py stress probe file references -- every hook
       path, every RELOADABLE name must resolve.
   (E) detectors/*.py phrase lists (ADMIT_PHRASES, PERMISSION_ASK_PHRASES,
-      BG_KEYWORDS) — for each phrase, check if it appears in any recent
+      BG_KEYWORDS) -- for each phrase, check if it appears in any recent
       transcript (corpus-coverage sampling, not strict liveness).
 
 Exit codes:
-    0 — all patterns live
-    1 — one or more stale patterns detected
-    2 — unexpected error
+    0 -- all patterns live
+    1 -- one or more stale patterns detected
+    2 -- unexpected error
 
 Usage:
     python3 tools/HME/scripts/meta_coherence_audit.py
@@ -170,7 +170,7 @@ def audit_tuning_extractors(root: Path) -> list[dict]:
                 "id": name.strip(),
                 "type": "extractConst",
                 "status": "STALE",
-                "detail": "extractor regex returned null — target pattern likely drifted",
+                "detail": "extractor regex returned null -- target pattern likely drifted",
             })
     return findings
 
@@ -292,7 +292,7 @@ def audit_stress_probe_refs(root: Path) -> list[dict]:
 
 
 
-# Re-exports — secondary audits extracted to sibling.
+# Re-exports -- secondary audits extracted to sibling.
 from meta_coherence_audits import (  # noqa: F401, E402
     audit_detector_phrases, audit_hme_log_errors,
     audit_hook_sources, audit_module_imports,

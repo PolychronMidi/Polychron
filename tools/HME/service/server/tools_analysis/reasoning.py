@@ -1,4 +1,4 @@
-"""HME reasoning tools — module biography (module_story, module_intel, build_evolutionary_potential)."""
+"""HME reasoning tools -- module biography (module_story, module_intel, build_evolutionary_potential)."""
 import os
 import logging
 
@@ -42,15 +42,15 @@ def build_evolutionary_potential(module_name: str) -> list[str]:
 
         evo_parts: list[str] = []
         if not m_info.get("melodic"):
-            evo_parts.append(f"  Not melodically coupled — top dims: {', '.join(_ALL_MELODIC[:4])}...")
+            evo_parts.append(f"  Not melodically coupled -- top dims: {', '.join(_ALL_MELODIC[:4])}...")
         elif unused_m:
             evo_parts.append(f"  Unused melodic dims: {', '.join(unused_m[:5])}")
         if not m_info.get("rhythm"):
-            evo_parts.append(f"  Not rhythmically coupled — top fields: {', '.join(_ALL_RHYTHM[:4])}...")
+            evo_parts.append(f"  Not rhythmically coupled -- top fields: {', '.join(_ALL_RHYTHM[:4])}...")
         elif unused_r:
             evo_parts.append(f"  Unused rhythm fields: {', '.join(unused_r[:4])}")
         if not m_info.get("phase"):
-            evo_parts.append(f"  Not phase-coupled — add rhythmicPhaseLock.getMode() for lock/drift/repel awareness")
+            evo_parts.append(f"  Not phase-coupled -- add rhythmicPhaseLock.getMode() for lock/drift/repel awareness")
 
         for b in my_bridges[:2]:
             partner_raw = b["pair_b"] if _is_this(b["pair_a"]) else b["pair_a"]
@@ -69,7 +69,7 @@ def build_evolutionary_potential(module_name: str) -> list[str]:
 
 
 def module_story(module_name: str) -> str:
-    """Living biography of a module. Internal — call via module_intel(target, mode='story')."""
+    """Living biography of a module. Internal -- call via module_intel(target, mode='story')."""
     ctx.ensure_ready_sync()
     _track("module_story")
     if not module_name.strip():
@@ -77,12 +77,12 @@ def module_story(module_name: str) -> str:
     budget = get_context_budget()
     limits = BUDGET_LIMITS[budget]
     parts = [f"# Module Story: {module_name} (context: {budget})\n"]
-    # Definition — FILE LOOKUP FIRST (cheap). Previously we ran
+    # Definition -- FILE LOOKUP FIRST (cheap). Previously we ran
     # collect_all_symbols() up-front, which walks ~1000 files and re-extracts
     # symbols for each on every cache-miss (auto-commits invalidate mtime
     # signatures constantly). That added 2-3 minutes per call on the
     # 2026-04-23 measurement. If a file named <module_name>.js exists in
-    # src/, that's the definition — no global scan needed. Only fall back
+    # src/, that's the definition -- no global scan needed. Only fall back
     # to the symbol scan if the file-lookup miss AND a prefix-match search
     # is needed.
     import glob as _glob
@@ -91,7 +91,7 @@ def module_story(module_name: str) -> str:
     if candidates:
         matching = [{"name": module_name, "kind": "module", "file": candidates[0], "line": 1, "signature": ""}]
     if not matching:
-        # Fall-back to full symbol scan — rare path when the module's symbol
+        # Fall-back to full symbol scan -- rare path when the module's symbol
         # name doesn't match any file basename (inner functions, renamed,
         # etc). This is the slow branch but it's no longer on every call.
         syms = collect_all_symbols(ctx.PROJECT_ROOT)
@@ -127,7 +127,7 @@ def module_story(module_name: str) -> str:
             if len(result["symbols"]) > sym_limit:
                 parts.append(f"    ... and {len(result['symbols']) - sym_limit} more")
         parts.append("")
-    # Evolution history from KB — filtered for actual relevance to this module.
+    # Evolution history from KB -- filtered for actual relevance to this module.
     # KB search + caller scan dominate the wall-clock on a cold worker
     # (2-3 minutes observed). Under HME_READ_FAST, cap the search depth
     # aggressively and skip the global KB lookup. The structural sections
@@ -150,12 +150,12 @@ def module_story(module_name: str) -> str:
             parts.append("")
     else:
         parts.append("## Evolution History: no KB entries mention this module\n")
-    # Callers — grep-like scan across ~1000 files, 20-30s on cold cache.
+    # Callers -- grep-like scan across ~1000 files, 20-30s on cold cache.
     # Skip under HME_READ_FAST; the raw caller count is available via
     # `i/trace mode=impact` for humans who want the detailed list.
     caller_files: list = []
     if _fast:
-        parts.append("## Dependents — SKIPPED (HME_READ_FAST=1; use `i/trace target=<name> mode=impact` for full caller list)")
+        parts.append("## Dependents -- SKIPPED (HME_READ_FAST=1; use `i/trace target=<name> mode=impact` for full caller list)")
     else:
         callers = _find_callers(module_name, ctx.PROJECT_ROOT)
         callers = [r for r in callers
@@ -168,7 +168,7 @@ def module_story(module_name: str) -> str:
             parts.append(f"  {f}")
         if len(caller_files) > caller_limit:
             parts.append(f"  ... and {len(caller_files) - caller_limit} more")
-    # L0 signal I/O — channels this module reads and posts
+    # L0 signal I/O -- channels this module reads and posts
     if matching:
         try:
             import re as _re
@@ -190,12 +190,12 @@ def module_story(module_name: str) -> str:
         except Exception as _err1:
             logger.debug(f"parts.append: {type(_err1).__name__}: {_err1}")
 
-    # Musical impact — compositional awareness + runtime trace
+    # Musical impact -- compositional awareness + runtime trace
     comp = _get_compositional_context(module_name)
     if comp:
         parts.append(f"\n## Musical Impact (last run)")
         parts.append(comp)
-    # Runtime trace summary — what the module ACTUALLY DID
+    # Runtime trace summary -- what the module ACTUALLY DID
     # Gate behind greedy budget AND NOT fast: trace_query calls synthesis
     # model (300-600s on local model). Even in greedy mode, fast=true means
     # the caller wants a snapshot, not a full synthesis run.
@@ -238,7 +238,7 @@ def module_story(module_name: str) -> str:
     except Exception as _err3:
         logger.debug(f"parts.append: {type(_err3).__name__}: {_err3}")
 
-    # Semantic neighbors — requires another embedder query (first call on
+    # Semantic neighbors -- requires another embedder query (first call on
     # cold worker can be 5-10s). Skip under fast.
     sim_limit = 0 if _fast else limits["similar"]
     if matching and sim_limit > 0:
@@ -248,7 +248,7 @@ def module_story(module_name: str) -> str:
             similar = _find_similar(content, ctx.project_engine, top_k=sim_limit + 5)
             if similar:
                 source_file = matching[0]["file"]
-                # Filter to src/ files only — tools/HME Python files are false positives
+                # Filter to src/ files only -- tools/HME Python files are false positives
                 # Dedup by source path (embedding index returns multiple chunks per file)
                 seen_sources: set = set()
                 filtered = []
@@ -267,15 +267,15 @@ def module_story(module_name: str) -> str:
         except Exception as _err4:
             logger.debug(f"parts.append: {type(_err4).__name__}: {_err4}")
 
-    # Blind spots — what HME can't see about this module
+    # Blind spots -- what HME can't see about this module
     blind_spots = []
     if len(caller_files) >= 5 and not relevant:
-        blind_spots.append(f"KNOWLEDGE GAP: {len(caller_files)} dependents but zero KB entries — this module needs documented constraints")
+        blind_spots.append(f"KNOWLEDGE GAP: {len(caller_files)} dependents but zero KB entries -- this module needs documented constraints")
     if not relevant and matching:
         blind_spots.append("No calibration anchors, decisions, or known bugs in KB for this module")
     # Re-use cached trace result rather than calling trace_query a second time
     if _trace_result is not None and "No trace data" in _trace_result:
-        blind_spots.append("NO RUNTIME DATA: this module doesn't emit to trace.jsonl — runtime behavior is invisible")
+        blind_spots.append("NO RUNTIME DATA: this module doesn't emit to trace.jsonl -- runtime behavior is invisible")
     # Check if module is mentioned in key docs
     for doc_name in ["TUNING_MAP.md", "ARCHITECTURE.md"]:
         doc_path = os.path.join(ctx.PROJECT_ROOT, "doc", doc_name)
@@ -293,7 +293,7 @@ def module_story(module_name: str) -> str:
         for bs in blind_spots:
             parts.append(f"  - {bs}")
 
-    # Evolutionary Potential — only show when actionable (mirrors before_editing gate)
+    # Evolutionary Potential -- only show when actionable (mirrors before_editing gate)
     evo_lines = build_evolutionary_potential(module_name)
     if any("OPPORTUNITY" in l or "Unused" in l or "Not " in l for l in evo_lines):
         parts.append(f"\n## Evolutionary Potential")
@@ -310,7 +310,7 @@ def module_story(module_name: str) -> str:
     from .synthesis import _read_module_source
     source_code = _read_module_source(module_name, max_chars=1500)
     source_block = f"\nSource code (first 1500 chars):\n```\n{source_code}\n```\n" if source_code else ""
-    # Subsystem-aware synthesis prompt — ask questions relevant to what this module DOES
+    # Subsystem-aware synthesis prompt -- ask questions relevant to what this module DOES
     file_path = matching[0]["file"] if matching else ""
     subsystem_prompt = ""
     if "/trust/" in file_path or "Trust" in module_name:
@@ -318,7 +318,7 @@ def module_story(module_name: str) -> str:
     elif "/rhythm/" in file_path or "/convergence" in file_path.lower():
         subsystem_prompt = "How does this affect the rhythmic dialogue between layers? What happens to convergence/divergence patterns?"
     elif "/harmony/" in file_path:
-        subsystem_prompt = "How does this affect harmonic choices? What would the listener hear — key changes, dissonance, resolution?"
+        subsystem_prompt = "How does this affect harmonic choices? What would the listener hear -- key changes, dissonance, resolution?"
     elif "/form/" in file_path or "section" in module_name.lower():
         subsystem_prompt = "How does this shape the large-scale musical form? Which sections would sound different? Would the arc change?"
     elif "/signal/" in file_path or "/profiling/" in file_path:
@@ -326,7 +326,7 @@ def module_story(module_name: str) -> str:
     elif "/meta/" in file_path:
         subsystem_prompt = "How does this self-calibration affect the system's overall behavior? What would drift if this controller breaks?"
     elif "/dynamics/" in file_path or "/stutter/" in file_path:
-        subsystem_prompt = "How does this affect musical expressiveness — velocity, articulation, micro-timing? What would feel different?"
+        subsystem_prompt = "How does this affect musical expressiveness -- velocity, articulation, micro-timing? What would feel different?"
     else:
         subsystem_prompt = "What are the hidden invariants and caller contracts?"
     user_text = (
@@ -335,17 +335,17 @@ def module_story(module_name: str) -> str:
         f"KB evolution history:\n{kb_summary}\n"
         + source_block
         + f"\nRules:\n"
-        "- If this module has 0 dependents and no KB history, respond: 'No constraints — leaf module.'\n"
+        "- If this module has 0 dependents and no KB history, respond: 'No constraints -- leaf module.'\n"
         "- Otherwise, in 1-3 bullet points: " + subsystem_prompt + "\n"
         "- Only reference behaviors visible in the code above. Do NOT speculate.\n"
     )
     # Adaptive synthesis is slow (45-115s depending on cascade). Allow the
-    # caller to skip it for fast reads — HME_READ_FAST=1 returns everything
+    # caller to skip it for fast reads -- HME_READ_FAST=1 returns everything
     # except the synthesis section in ~seconds. The structural sections above
     # (KB constraints, callers, interactions, evolutionary potential) are
     # already complete without the LLM.
     if os.environ.get("HME_READ_FAST") in ("1", "true", "yes"):  # env-ok: read transient per-call flag set by read_unified
-        parts.append(f"\n## Key Constraints *(adaptive)* — SKIPPED (HME_READ_FAST=1)")
+        parts.append(f"\n## Key Constraints *(adaptive)* -- SKIPPED (HME_READ_FAST=1)")
     else:
         import time as _time_mod
         _t0 = _time_mod.time()
@@ -362,20 +362,20 @@ def module_story(module_name: str) -> str:
             parts.append(synthesis)
         else:
             logger.warning(f"module_story({module_name!r}): adaptive synthesis unavailable after {_elapsed:.0f}s")
-            parts.append(f"\n## Key Constraints *(adaptive)* — synthesis unavailable ({_elapsed:.0f}s)")
+            parts.append(f"\n## Key Constraints *(adaptive)* -- synthesis unavailable ({_elapsed:.0f}s)")
 
     return "\n".join(parts)
 
 
 def module_intel(target: str, mode: str = "story") -> str:
     """Unified module intelligence. Replaces module_story + impact_analysis in one call.
-    mode='story' (default): full living biography — definition, KB evolution history, callers,
+    mode='story' (default): full living biography -- definition, KB evolution history, callers,
     runtime behavior, interactions, semantic neighbors, blind spots, adaptive synthesis.
     Output scales with context budget (greedy when plentiful, minimal when tight).
-    mode='impact': blast radius — who calls it, what it calls, KB constraints, definition site.
+    mode='impact': blast radius -- who calls it, what it calls, KB constraints, definition site.
     Lighter than story; use when you just need caller graph + constraint check before a quick edit.
     mode='both': story first, then impact analysis. Use before a high-stakes edit to a
-    well-connected module — you get the full biography AND the caller blast radius."""
+    well-connected module -- you get the full biography AND the caller blast radius."""
     ctx.ensure_ready_sync()
     _track("module_intel")
     if not target.strip():

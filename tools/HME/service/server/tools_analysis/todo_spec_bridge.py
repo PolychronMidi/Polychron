@@ -1,9 +1,9 @@
-"""Spec/TODO/devlog bridge — re-exports from the three sub-modules.
+"""Spec/TODO/devlog bridge -- re-exports from the three sub-modules.
 
 Split (2026-05-01) into:
-  todo_spec_ingest.py   — A. spec ↔ todo store sync (ingest_from_spec, promote_to_spec)
-  todo_spec_archive.py  — B. archive_set + devlog + reset_to_fresh_slate
-  todo_spec_phase.py    — C. phase detection + close_with_spec_update
+  todo_spec_ingest.py   -- A. spec <-> todo store sync (ingest_from_spec, promote_to_spec)
+  todo_spec_archive.py  -- B. archive_set + devlog + reset_to_fresh_slate
+  todo_spec_phase.py    -- C. phase detection + close_with_spec_update
 
 todo.py re-exports from this shim, so external callers
 (`from server.tools_analysis.todo import _close_with_spec_update`) continue to work.

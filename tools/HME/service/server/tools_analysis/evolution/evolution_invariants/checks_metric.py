@@ -22,14 +22,14 @@ def _check_correlation_direction(inv: dict) -> tuple[bool, str]:
     improving while the music gets worse).
 
     Config:
-      path              — JSON file containing the correlations dict
-      correlations_key  — top-level key holding the correlations object
+      path              -- JSON file containing the correlations dict
+      correlations_key  -- top-level key holding the correlations object
                           (default: 'correlations')
-      name              — correlation name (e.g. 'hme_coherence__verdict_numeric')
-      direction         — 'positive' (r > threshold) or 'negative' (r < -threshold)
+      name              -- correlation name (e.g. 'hme_coherence__verdict_numeric')
+      direction         -- 'positive' (r > threshold) or 'negative' (r < -threshold)
                           (default: 'positive')
-      threshold         — minimum |r| required (default: 0.0 — any matching sign)
-      min_n             — minimum sample size required to enforce (default: 10)
+      threshold         -- minimum |r| required (default: 0.0 -- any matching sign)
+      min_n             -- minimum sample size required to enforce (default: 10)
     """
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT, inv["path"])
@@ -40,7 +40,7 @@ def _check_correlation_direction(inv: dict) -> tuple[bool, str]:
     min_n = int(inv.get("min_n", 10))
 
     if not os.path.isfile(path):
-        return True, f"{inv['path']} missing — can't check correlation"
+        return True, f"{inv['path']} missing -- can't check correlation"
     try:
         with open(path, encoding="utf-8") as f:
             data = _json.load(f)
@@ -52,26 +52,26 @@ def _check_correlation_direction(inv: dict) -> tuple[bool, str]:
     n = entry.get("n", 0)
     if r is None or entry.get("degenerate"):
         # Degenerate is a separate invariant's concern (metric_has_variance).
-        return True, f"{name!r} degenerate or missing — covered by variance check"
+        return True, f"{name!r} degenerate or missing -- covered by variance check"
     if n < min_n:
         return True, f"{name!r} has n={n} < min_n={min_n}, too early to judge"
     if direction == "positive":
         if r < threshold:
             return False, (
-                f"{name!r} r={r:+.3f} (want ≥{threshold:+.3f}, n={n}). "
+                f"{name!r} r={r:+.3f} (want >={threshold:+.3f}, n={n}). "
                 f"HME's self-metric is NOT tracking the expected outcome. "
                 f"If this is the musical anchor and r is near 0 or negative, "
-                f"HME's discipline is not producing better music — the whole "
+                f"HME's discipline is not producing better music -- the whole "
                 f"optimization direction is wrong."
             )
         return True, f"{name!r} r={r:+.3f}  n={n}  (positive, as expected)"
     if direction == "negative":
         if r > -threshold:
             return False, (
-                f"{name!r} r={r:+.3f} (want ≤{-threshold:+.3f}, n={n})"
+                f"{name!r} r={r:+.3f} (want <={-threshold:+.3f}, n={n})"
             )
         return True, f"{name!r} r={r:+.3f}  n={n}  (negative, as expected)"
-    return False, f"unknown direction {direction!r} — use 'positive' or 'negative'"
+    return False, f"unknown direction {direction!r} -- use 'positive' or 'negative'"
 
 
 def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
@@ -80,14 +80,14 @@ def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
     once enough data has accumulated.
 
     Config:
-      path                     — metric JSON file path
-      history_key              — top-level array key (default: 'rounds')
-      field                    — field inside each snapshot to check
-      min_value                — required minimum (exclusive: value > min)
-      max_value                — required maximum (exclusive: value < max)
-      min_rounds               — only evaluate when ≥ this many data points
+      path                     -- metric JSON file path
+      history_key              -- top-level array key (default: 'rounds')
+      field                    -- field inside each snapshot to check
+      min_value                -- required minimum (exclusive: value > min)
+      max_value                -- required maximum (exclusive: value < max)
+      min_rounds               -- only evaluate when >= this many data points
                                  (default: 3)
-      require_positive_shifts  — only count rounds where 'shifted_modules'
+      require_positive_shifts  -- only count rounds where 'shifted_modules'
                                  has >= 1 entry (for reconcile metrics that
                                  are null/0 on idle rounds)
     """
@@ -101,7 +101,7 @@ def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
     require_positive_shifts = bool(inv.get("require_positive_shifts", False))
 
     if not os.path.isfile(path):
-        return True, f"metric file {inv['path']} missing — can't check"
+        return True, f"metric file {inv['path']} missing -- can't check"
     try:
         with open(path, encoding="utf-8") as f:
             data = _json.load(f)
@@ -109,7 +109,7 @@ def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
         return False, f"cannot read {inv['path']}: {e}"
     history = data.get(history_key, [])
     if not isinstance(history, list):
-        return True, f"{inv['path']}.{history_key} is not a list — skip"
+        return True, f"{inv['path']}.{history_key} is not a list -- skip"
     qualifying = []
     for entry in history:
         if not isinstance(entry, dict):
@@ -123,8 +123,8 @@ def _check_metric_threshold(inv: dict) -> tuple[bool, str]:
             continue
         qualifying.append(v)
     if len(qualifying) < min_rounds:
-        return True, f"only {len(qualifying)} qualifying rounds, need ≥{min_rounds}"
-    # Check the most-recent round (strict) — we care about current state, not historical.
+        return True, f"only {len(qualifying)} qualifying rounds, need >={min_rounds}"
+    # Check the most-recent round (strict) -- we care about current state, not historical.
     # R16 #2: thresholds are inclusive (>= min_val, <= max_val). Previously used
     # strict inequality which caused off-by-one failures (recall=0.5 with min_value=0.5
     # incorrectly flagged as "below threshold").
@@ -144,15 +144,15 @@ def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
     correlations degenerate.
 
     Config keys:
-      path              — JSON file path (relative to PROJECT_ROOT)
-      history_key       — top-level array field holding round snapshots
+      path              -- JSON file path (relative to PROJECT_ROOT)
+      history_key       -- top-level array field holding round snapshots
                           (default: 'history')
-      field             — the field inside each snapshot to check
-      min_distinct      — minimum distinct values required (default: 2)
-      min_rounds        — only evaluate when history has >= this many entries
-                          (default: 5 — don't fail cold-start pipelines)
-      allow_null        — if True, null entries don't count against variance
-                          (default: True — nulls are "no data", not "stuck")
+      field             -- the field inside each snapshot to check
+      min_distinct      -- minimum distinct values required (default: 2)
+      min_rounds        -- only evaluate when history has >= this many entries
+                          (default: 5 -- don't fail cold-start pipelines)
+      allow_null        -- if True, null entries don't count against variance
+                          (default: True -- nulls are "no data", not "stuck")
     """
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT, inv["path"])
@@ -163,7 +163,7 @@ def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
     allow_null = bool(inv.get("allow_null", True))
 
     if not os.path.isfile(path):
-        return True, f"metric file {inv['path']} missing — can't check variance"
+        return True, f"metric file {inv['path']} missing -- can't check variance"
     try:
         with open(path, encoding="utf-8") as f:
             data = _json.load(f)
@@ -173,7 +173,7 @@ def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
     if not isinstance(history, list):
         return False, f"{inv['path']}.{history_key} is not a list"
     if len(history) < min_rounds:
-        return True, f"only {len(history)} rounds, need ≥{min_rounds} for variance check"
+        return True, f"only {len(history)} rounds, need >={min_rounds} for variance check"
     values = []
     for entry in history:
         if not isinstance(entry, dict):
@@ -189,8 +189,8 @@ def _check_metric_has_variance(inv: dict) -> tuple[bool, str]:
         sample = sorted(distinct)[:5]
         return False, (
             f"{field!r} stuck at {sample} across {len(values)} rounds "
-            f"(need ≥{min_distinct} distinct values). Upstream input is "
-            f"likely producing a constant — trace the metric's computation."
+            f"(need >={min_distinct} distinct values). Upstream input is "
+            f"likely producing a constant -- trace the metric's computation."
         )
     return True, f"{field!r} has {len(distinct)} distinct values over {len(values)} rounds"
 

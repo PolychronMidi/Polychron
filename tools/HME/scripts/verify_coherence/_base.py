@@ -52,7 +52,7 @@ def _result(status: str, score: float, summary: str, details=None) -> VerdictRes
 class Verifier:
     """Each subclass declares name, category, weight, and run().
 
-    `subtag` is an optional finer-grained classifier within a category —
+    `subtag` is an optional finer-grained classifier within a category --
     e.g. `regression-prevention`, `drift-detection`, `freshness`,
     `structural-integrity`, `interface-contract`. Defaults to "" for
     backwards compat; surfaced in text/JSON output so an agent can scan

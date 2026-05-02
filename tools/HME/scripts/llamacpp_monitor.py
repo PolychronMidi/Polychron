@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""llama.cpp fleet monitor — logs per-instance health, VRAM/RAM, thermals.
+"""llama.cpp fleet monitor -- logs per-instance health, VRAM/RAM, thermals.
 
 Writes JSONL to log/llamacpp-monitor.jsonl. Alerts on:
   - Instance /health not 'ok' or unreachable
@@ -9,7 +9,7 @@ Writes JSONL to log/llamacpp-monitor.jsonl. Alerts on:
   - RAM pressure (available < 8GB)
 
 HME architecture: each model owns its GPU end-to-end. Partial offload is a
-critical failure — never a graceful degradation. This monitor verifies the
+critical failure -- never a graceful degradation. This monitor verifies the
 invariant every tick.
 
 Run: python3 tools/HME/scripts/llamacpp_monitor.py [--interval 60] [--once]
@@ -69,7 +69,7 @@ def _query_llamacpp(port: int) -> dict:
                 result["active_slots"] = sum(
                     1 for s in slots if isinstance(s, dict) and s.get("state") == 1
                 )
-                # Longest-running active slot — surface if stuck
+                # Longest-running active slot -- surface if stuck
                 longest = 0.0
                 for s in slots:
                     if isinstance(s, dict) and s.get("state") == 1:
@@ -212,7 +212,7 @@ def monitor_tick() -> dict:
             )
 
         # Invariant check: the GPU assigned to this instance must hold the
-        # model weights — if VRAM is suspiciously low, the process probably
+        # model weights -- if VRAM is suspiciously low, the process probably
         # fell back to CPU offload.
         gpu = gpu_by_idx.get(inst["cuda_idx"])
         if gpu:
@@ -226,7 +226,7 @@ def monitor_tick() -> dict:
             if vram_used < min_expected:
                 entry["alerts"].append(
                     f"{inst['name']} OFFLOAD INVARIANT VIOLATED: only {vram_used} MB "
-                    f"on cuda:{inst['cuda_idx']} ({inst['vulkan']}) — expected >= {min_expected} MB. "
+                    f"on cuda:{inst['cuda_idx']} ({inst['vulkan']}) -- expected >= {min_expected} MB. "
                     f"Model likely fell back to CPU."
                 )
 
@@ -247,18 +247,18 @@ def monitor_tick() -> dict:
         t = g.get("temp_c", 0)
         idx = g.get("idx", "?")
         if t >= GPU_TEMP_CRIT:
-            entry["alerts"].append(f"GPU{idx} THERMAL CRITICAL: {t}°C (>{GPU_TEMP_CRIT}°C)")
+            entry["alerts"].append(f"GPU{idx} THERMAL CRITICAL: {t} degC (>{GPU_TEMP_CRIT} degC)")
         elif t >= GPU_TEMP_WARN:
-            entry["alerts"].append(f"GPU{idx} THERMAL WARNING: {t}°C (>{GPU_TEMP_WARN}°C)")
+            entry["alerts"].append(f"GPU{idx} THERMAL WARNING: {t} degC (>{GPU_TEMP_WARN} degC)")
 
     # CPU temp
     entry["cpu_temp_c"] = _cpu_temp()
     if entry["cpu_temp_c"]:
         ct = entry["cpu_temp_c"]
         if ct >= CPU_TEMP_CRIT:
-            entry["alerts"].append(f"CPU THERMAL CRITICAL: {ct:.0f}°C — kernel throttling/eviction likely")
+            entry["alerts"].append(f"CPU THERMAL CRITICAL: {ct:.0f} degC -- kernel throttling/eviction likely")
         elif ct >= CPU_TEMP_WARN:
-            entry["alerts"].append(f"CPU THERMAL WARNING: {ct:.0f}°C")
+            entry["alerts"].append(f"CPU THERMAL WARNING: {ct:.0f} degC")
 
     # RAM
     entry["ram"] = _ram_info()
@@ -286,10 +286,10 @@ def _fmt_summary(entry: dict) -> str:
             f"slots={active}/{n} vram={vram}MB"
         )
     gpu_temps = [
-        f"GPU{g['idx']}:{g.get('temp_c','?')}°C/{g.get('power_w','?')}W"
+        f"GPU{g['idx']}:{g.get('temp_c','?')} degC/{g.get('power_w','?')}W"
         for g in entry.get("gpu", []) if isinstance(g, dict) and "idx" in g
     ]
-    cpu_t = f"CPU:{entry['cpu_temp_c']:.0f}°C" if entry.get("cpu_temp_c") else ""
+    cpu_t = f"CPU:{entry['cpu_temp_c']:.0f} degC" if entry.get("cpu_temp_c") else ""
     ram = entry.get("ram", {})
     ram_t = f"RAM:{ram.get('used_mb', 0)//1024}G/{ram.get('total_mb', 0)//1024}G" if ram else ""
     buf_parts = [
@@ -306,7 +306,7 @@ def run_daemon(interval: int = 60):
     print(f"llama.cpp monitor started (interval={interval}s, log={LOG_PATH})")
     _inst_desc = ", ".join(f"{i['name']}@:{i['port']}" for i in INSTANCES)
     print(f"Instances: {_inst_desc}")
-    print(f"Thresholds: GPU {GPU_TEMP_WARN}/{GPU_TEMP_CRIT}°C, CPU {CPU_TEMP_WARN}/{CPU_TEMP_CRIT}°C, RAM<{RAM_LOW_MB}MB")
+    print(f"Thresholds: GPU {GPU_TEMP_WARN}/{GPU_TEMP_CRIT} degC, CPU {CPU_TEMP_WARN}/{CPU_TEMP_CRIT} degC, RAM<{RAM_LOW_MB}MB")
     print("")
     while True:
         try:

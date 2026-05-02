@@ -1,4 +1,4 @@
-"""Antagonism bridge intelligence — leverage analysis, bridge cache, field guides, and design synthesis."""
+"""Antagonism bridge intelligence -- leverage analysis, bridge cache, field guides, and design synthesis."""
 import glob as _glob_mod
 import logging
 import os
@@ -310,10 +310,10 @@ def antagonism_leverage(pair_limit: int = 6) -> str:
         if kb_rounds:
             last_round_num = max(int(r_str[1:]) for r_str in kb_rounds if r_str[1:].isdigit())
             rounds_ago = _latest_round - last_round_num if _latest_round else 0
-            staleness = "" if rounds_ago <= 3 else f" ⚠ {rounds_ago} rounds stale" if rounds_ago <= 10 else f" 🔴 {rounds_ago} rounds stale — may need re-evaluation"
+            staleness = "" if rounds_ago <= 3 else f" [!] {rounds_ago} rounds stale" if rounds_ago <= 10 else f" [!] {rounds_ago} rounds stale -- may need re-evaluation"
             out.append(f"   KB history: {', '.join(sorted(kb_rounds))}{staleness}")
         else:
-            out.append(f"   KB history: none — unexplored pair (high discovery potential)")
+            out.append(f"   KB history: none -- unexplored pair (high discovery potential)")
         out.append(f"   {a} dims: [{', '.join(sorted(used_a)) or 'none'}]")
         out.append(f"   {b} dims: [{', '.join(sorted(used_b)) or 'none'}]")
         if already_bridged:

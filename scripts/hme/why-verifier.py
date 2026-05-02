@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=verifier <name> — explain why a verifier is in its current
+"""i/why mode=verifier <name> -- explain why a verifier is in its current
 status by surfacing source + recent timeseries.
 
 Reads:
@@ -30,7 +30,7 @@ def _read_json(path: str) -> dict | None:
 def _find_verifier_source(name: str) -> tuple[str, list[str]] | None:
     """Walk verify_coherence/ for class with this name attr; return (path,
     source_lines). Always includes the class header + docstring + def run().
-    The run() method body is the load-bearing part — readers want to see
+    The run() method body is the load-bearing part -- readers want to see
     WHAT the verifier checks, not just its weight/category metadata."""
     pkg = os.path.join(PROJECT_ROOT, "tools", "HME", "scripts",
                        "verify_coherence")
@@ -107,7 +107,7 @@ def main(argv):
                                    "hci-verifier-snapshot.json"))
     if not snap:
         print(f"# i/why mode=verifier {name}")
-        print("No snapshot found — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+        print("No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
         return 1
     entry = snap.get("verifiers", {}).get(name)
     if not entry:

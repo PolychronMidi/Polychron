@@ -18,7 +18,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                    _caused_by: str = "") -> str:
     """Hot-reload HME tool modules without restarting the server.
 
-    Works against the dict-backed `tool_registry._TOOLS` — the FastMCP
+    Works against the dict-backed `tool_registry._TOOLS` -- the FastMCP
     replacement. Re-importing a module causes its `@ctx.mcp.tool()` calls
     to overwrite the registry entries, so the only state we need to manage
     is stale-pyc nuking and the before/after tool-name diff for reporting.
@@ -110,7 +110,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                             logger.debug(f"pycache nuke {_pyc_entry}: {type(_unlink_err).__name__}: {_unlink_err}")
         try:
             # For packages that ship their logic across submodules (e.g.
-            # `symbols` → symbols/patterns.py + symbols/extractor.py),
+            # `symbols` -> symbols/patterns.py + symbols/extractor.py),
             # reloading only the top-level `__init__.py` leaves the stale
             # submodule objects in sys.modules. Reload submodules FIRST so
             # the package re-import below picks up the fresh versions.
@@ -121,7 +121,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
                 _sub_mod = sys.modules.get(_sub_name)
                 if _sub_mod is None:
                     continue
-                # Nuke the submodule's pycache too — stale bytecode defeats
+                # Nuke the submodule's pycache too -- stale bytecode defeats
                 # reload silently just like at the top level.
                 _sub_file = getattr(_sub_mod, "__file__", None)
                 if _sub_file:
@@ -175,7 +175,7 @@ def hme_hot_reload(modules: str = "", _trigger: str = "manual",
             "trigger": _trigger,  # "auto" from watcher, "manual" from i/hme-admin
             "summary": summary.split("\n\n")[-1][:160],
         }
-        # Horizon VII: explicit caused_by — the specific file that
+        # Horizon VII: explicit caused_by -- the specific file that
         # triggered this reload. Watcher fills this in with the path
         # whose change scheduled the reload. Manual invocations leave
         # it empty. Consumers prefer caused_by over heuristic chains.

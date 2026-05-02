@@ -1,13 +1,13 @@
-"""Shared server state — engines, model, config, MCP app instance.
+"""Shared server state -- engines, model, config, MCP app instance.
 
 Initialized by main.py at startup. Tool modules import from here.
 
 Self-coherence stack wired here:
-  Layer 0 — system_phase: lifecycle state machine
-  Layer 2 — operational_state: persistent operational memory
-  Layer 4 — failure_genealogy: causal failure trees (replaces flat _critical_failures list)
-  Layer 6 — self_narration: rich status narrative prepended to tool responses
-  Layer 10 — resonance_detector: cascade detection (called from register_critical_failure)
+  Layer 0 -- system_phase: lifecycle state machine
+  Layer 2 -- operational_state: persistent operational memory
+  Layer 4 -- failure_genealogy: causal failure trees (replaces flat _critical_failures list)
+  Layer 6 -- self_narration: rich status narrative prepended to tool responses
+  Layer 10 -- resonance_detector: cascade detection (called from register_critical_failure)
 """
 import os
 import time
@@ -25,7 +25,7 @@ logger = logging.getLogger("HME")
 SESSION_ID: str = str(uuid.uuid4())[:12]
 
 
-# LIFESAVER: register_critical_failure → failure_genealogy (Layer 4)
+# LIFESAVER: register_critical_failure -> failure_genealogy (Layer 4)
 
 def register_critical_failure(
     source: str,
@@ -44,10 +44,10 @@ def register_critical_failure(
         fid, is_new = fg.record_failure(source, error, severity, caused_by)
     except Exception as _fge:
         fid, is_new = "?", True
-        logger.error(f"LIFESAVER failure_genealogy.record_failure failed — failure may be lost: {_fge}")
+        logger.error(f"LIFESAVER failure_genealogy.record_failure failed -- failure may be lost: {_fge}")
     # Only log the first occurrence of a dedup group. The count is tracked
     # inside failure_genealogy; the LIFESAVER banner at drain time already
-    # shows ×N repeats. Logging every call flooded hme.log (see
+    # shows *N repeats. Logging every call flooded hme.log (see
     # health_topology coherence-below-threshold stampede).
     if is_new:
         logger.error(f"LIFESAVER QUEUED [{severity}] {source}: {error}" + (f" (#{fid})" if fid != "?" else ""))
@@ -96,15 +96,15 @@ def drain_critical_failures() -> str:
     """Drain all queued failures into a LIFESAVER banner string (causal tree format).
 
     Returns empty string if no failures. Called by _LoggingMCP on every tool response.
-    Failures are grouped into causal trees (Layer 4) and deduplicated (×N counts).
+    Failures are grouped into causal trees (Layer 4) and deduplicated (*N counts).
     """
     try:
         from server import failure_genealogy as fg
         trees = fg.drain_as_causal_trees()
         return fg.format_tree_as_banner(trees)
     except Exception as e:
-        logger.error(f"LIFESAVER drain failed — queued failures may be lost: {e}")
-        return f"\n[LIFESAVER DRAIN FAILED: {e} — check hme.log for queued failures]\n"
+        logger.error(f"LIFESAVER drain failed -- queued failures may be lost: {e}")
+        return f"\n[LIFESAVER DRAIN FAILED: {e} -- check hme.log for queued failures]\n"
 
 
 def is_degraded() -> bool:
@@ -141,7 +141,7 @@ class _LoggingMCP:
                     result = fn(*args, **kwargs)
                     elapsed = time.time() - t0
                     if result is None:
-                        logger.error(f"ERR  {name} returned None — tool must return a string")
+                        logger.error(f"ERR  {name} returned None -- tool must return a string")
                         result = f"Error: {name} returned None (bug in tool implementation)"
                     # Layer 2: track tool response time EMA (feeds Layer 7 predictive health)
                     try:
@@ -149,13 +149,13 @@ class _LoggingMCP:
                         ops.update_ema("tool_response_ms_ema", elapsed * 1000)
                     except (ImportError, AttributeError) as _ema_err:
                         logger.debug(f"operational_state EMA update unavailable: {_ema_err}")
-                    # Log immediately — post-processing must not delay this timestamp
+                    # Log immediately -- post-processing must not delay this timestamp
                     logger.info(f"RESP {name} [{elapsed:.1f}s] {str(result)[:200]}")
                     # Layer 4: LIFESAVER drain with causal tree format
                     lifesaver_banner = drain_critical_failures()
                     if lifesaver_banner:
                         result = lifesaver_banner + str(result)
-                    # Layer 6: rich self-narration — non-blocking (topology refreshes in background)
+                    # Layer 6: rich self-narration -- non-blocking (topology refreshes in background)
                     try:
                         from server import self_narration as sn
                         narration = sn.build_status_narrative()
@@ -165,7 +165,7 @@ class _LoggingMCP:
                         logger.debug(f"unnamed-except context.py:152: {type(_err).__name__}: {_err}")
                         # Fallback: bare degraded flag if narration fails
                         if is_degraded():
-                            result = "[DEGRADED] RAG proxy unhealthy — shim may be restarting.\n" + str(result)
+                            result = "[DEGRADED] RAG proxy unhealthy -- shim may be restarting.\n" + str(result)
                     return result
                 except Exception as e:
                     import traceback as _tb
@@ -186,8 +186,8 @@ class _NullMCP:
 
     Every `@ctx.mcp.tool(...)` in a tool module evaluates at import time.
     Before this stand-in, `mcp` was `None`, so daemon-side imports crashed
-    with `'NoneType' object has no attribute 'tool'` — fatal for the
-    LIFESAVER→todo bridge (logged on every CRITICAL alert). A _NullMCP
+    with `'NoneType' object has no attribute 'tool'` -- fatal for the
+    LIFESAVER->todo bridge (logged on every CRITICAL alert). A _NullMCP
     lets the decorator resolve as a no-op while the plain Python function
     (the bridge actually uses) stays callable.
     """
@@ -198,7 +198,7 @@ class _NullMCP:
 
     def __getattr__(self, name):
         raise AttributeError(
-            f"_NullMCP has no attribute {name!r} — this process is not a full "
+            f"_NullMCP has no attribute {name!r} -- this process is not a full "
             f"MCP worker. Only the @ctx.mcp.tool(...) decorator is stubbed."
         )
 
@@ -214,14 +214,14 @@ global_engine = None   # RAGEngine
 shared_model = None    # SentenceTransformer
 lib_engines: dict = {}
 
-# Pre-edit brief cache — callers and KB hits are expensive; cache them per file+mtime.
+# Pre-edit brief cache -- callers and KB hits are expensive; cache them per file+mtime.
 # kb_version increments on add_knowledge/remove_knowledge so KB-derived caches auto-invalidate.
 _kb_version: int = 0
-# _caller_cache: (abs_path, mtime) → list[caller dicts]
-# _kb_hits_cache: (module_name, kb_version) → list[kb result dicts]
+# _caller_cache: (abs_path, mtime) -> list[caller dicts]
+# _kb_hits_cache: (module_name, kb_version) -> list[kb result dicts]
 # Both live on ctx so they survive module hot-reloads.
 
-# Background startup synchronization — set by main.py after background load completes
+# Background startup synchronization -- set by main.py after background load completes
 _startup_done: threading.Event | None = None
 _startup_error: Exception | None = None
 
@@ -245,7 +245,7 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
     """Block until background model/engine initialization completes.
 
     FastMCP runs sync tools via asyncio.to_thread(), so this blocking wait
-    is safe — it never blocks the async event loop. Zero-cost after first call.
+    is safe -- it never blocks the async event loop. Zero-cost after first call.
     """
     if _startup_done is None or _startup_done.is_set():
         if _startup_error:
@@ -263,6 +263,6 @@ def ensure_ready_sync(timeout: float = 45.0) -> None:
         raise RuntimeError(f"HME startup failed: {_fmt_startup_error(_startup_error)}")
     if project_engine is None or global_engine is None or shared_model is None:
         raise RuntimeError(
-            "HME startup completed but engines are not initialized — "
+            "HME startup completed but engines are not initialized -- "
             "check hme.log for background thread errors"
         )

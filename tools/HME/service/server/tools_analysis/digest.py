@@ -1,4 +1,4 @@
-"""HME pipeline digest — one-call post-pipeline summary."""
+"""HME pipeline digest -- one-call post-pipeline summary."""
 import json
 import os
 import logging
@@ -12,7 +12,7 @@ logger = logging.getLogger("HME")
 
 from . import _load_trace as _load_trace_impl  # shared helper
 
-# Files written by every pipeline run — used to detect freshness.
+# Files written by every pipeline run -- used to detect freshness.
 # pipeline.log is written LAST (the "Pipeline finished" line), so it detects completion
 # even when digest was called mid-run and already consumed the early metrics files.
 _METRICS_DIR = os.environ.get("METRICS_DIR", os.path.join(ctx.PROJECT_ROOT, "output", "metrics"))
@@ -30,7 +30,7 @@ def _pipeline_outputs_fresh() -> bool:
     """Return True if pipeline has run since the last pipeline_digest call."""
     sentinel = os.path.join(ctx.PROJECT_ROOT, _DIGEST_SENTINEL)
     if not os.path.exists(sentinel):
-        return True  # first call ever — allow through
+        return True  # first call ever -- allow through
     sentinel_mtime = os.path.getmtime(sentinel)
     for rel in _PIPELINE_OUTPUT_FILES:
         p = os.path.join(ctx.PROJECT_ROOT, rel)
@@ -74,11 +74,11 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     status = check_pipeline()
     if "IN PROGRESS" in status:
         return (
-            "pipeline_digest: pipeline is still running — cannot digest partial results.\n"
+            "pipeline_digest: pipeline is still running -- cannot digest partial results.\n"
             f"{status}\n\n"
             "Do substantive work while waiting (implement next evolution, run what_did_i_forget, "
             "update KB/docs, explore with module_intel). The background task fires a notification "
-            "when done — then call pipeline_digest."
+            "when done -- then call pipeline_digest."
         )
 
     # Freshness guard: only run if pipeline has produced new output since last digest.
@@ -180,7 +180,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
             active_hp = sum(1 for sv in trust.values()
                            if isinstance(sv, dict) and sv.get("hotspotPressure", 0) > 0.2)
             tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
-            drama_events.append((10 + active_hp * 0.5 + tension * 3, bk, f"{prev_regime}→{regime}", 0, 0))
+            drama_events.append((10 + active_hp * 0.5 + tension * 3, bk, f"{prev_regime}->{regime}", 0, 0))
         prev_regime = regime
 
     total_beats = sum(regime_total.values())
@@ -191,7 +191,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
                             sorted(regime_total.items(), key=lambda x: -x[1]))
     out.append(f"**Regimes:** {regime_str}")
     if regime_total.get("coherent", 0) == 0:
-        out.append("⚠ **ZERO coherent beats** — possible regime classification failure")
+        out.append("[!] **ZERO coherent beats** -- possible regime classification failure")
     out.append("")
 
     # Section arc
@@ -202,7 +202,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
         dom_profile = max(s["profiles"].items(), key=lambda x: x[1])[0] if s["profiles"] else "?"
         tensions = s["tensions"]
         avg_t = sum(tensions) / len(tensions) if tensions else 0
-        bar = "█" * int(avg_t * 15) + "░" * (15 - int(avg_t * 15))
+        bar = "#" * int(avg_t * 15) + "." * (15 - int(avg_t * 15))
         top_trust = sorted(((n, sum(ws) / len(ws)) for n, ws in s["trust_weights"].items()),
                            key=lambda x: -x[1])[:2]
         trust_str = ", ".join(f"{n}({w:.2f})" for n, w in top_trust)
@@ -232,7 +232,7 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
                 continue
             seen.add(bk)
             if pw and w:
-                out.append(f"  {bk}: {detail} {pw:.3f}→{w:.3f} (drama={score:.1f})")
+                out.append(f"  {bk}: {detail} {pw:.3f}->{w:.3f} (drama={score:.1f})")
             else:
                 out.append(f"  {bk}: {detail} (drama={score:.1f})")
             shown += 1
@@ -242,10 +242,10 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     alerts: list = []
     for expected in ["coherent", "evolving", "exploring"]:
         if regime_total.get(expected, 0) == 0:
-            alerts.append(f"🔴 DEATH SPIRAL: 0% {expected} — check regimeClassifier warm-start")
+            alerts.append(f"[!] DEATH SPIRAL: 0% {expected} -- check regimeClassifier warm-start")
     for regime, count in regime_total.items():
         if regime != "initializing" and count / total_beats > 0.75:
-            alerts.append(f"🟡 MONOPOLY: {regime} at {count*100//total_beats}% ({count}/{total_beats})")
+            alerts.append(f"[?] MONOPOLY: {regime} at {count*100//total_beats}% ({count}/{total_beats})")
     trust_inflation: list = []
     for rec in records:
         for sys, data in rec.get("trust", {}).items():
@@ -262,13 +262,13 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
     for sys, cnt in inflated.most_common(2):
         pct = cnt * 100 // total_beats
         if pct > 20:
-            alerts.append(f"🟡 TRUST INFLATION: {sys} high weight / low score on {pct}% of beats")
+            alerts.append(f"[?] TRUST INFLATION: {sys} high weight / low score on {pct}% of beats")
     if alerts:
         out.append("## Regime Alerts")
         out.extend(f"  {a}" for a in alerts)
         out.append("")
     else:
-        out.append("## Regime Health: ✓ ALL CLEAR\n")
+        out.append("## Regime Health: [ok] ALL CLEAR\n")
 
     #  Run Delta (last 2 snapshots)
     history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
@@ -297,23 +297,23 @@ def pipeline_digest(critique: bool = False, evolve: bool = True) -> str:
                         d = new_v - old_v
                         sign = "+" if d >= 0 else ""
                         delta_lines.append(
-                            f"  {label:<16} {format(old_v, fmt)} → {format(new_v, fmt)}  ({sign}{format(d, fmt)})"
+                            f"  {label:<16} {format(old_v, fmt)} -> {format(new_v, fmt)}  ({sign}{format(d, fmt)})"
                         )
                 for regime in ["coherentShare", "exploringShare", "evolvingShare"]:
                     old_v, new_v = pf.get(regime, 0), cf.get(regime, 0)
                     d = new_v - old_v
                     sign = "+" if d >= 0 else ""
                     delta_lines.append(
-                        f"  {regime:<16} {old_v:.1%} → {new_v:.1%}  ({sign}{d:.1%})"
+                        f"  {regime:<16} {old_v:.1%} -> {new_v:.1%}  ({sign}{d:.1%})"
                     )
                 old_cb0 = pp.get("cb0_entropy")
                 new_cb0 = cp.get("cb0_entropy")
                 if old_cb0 is not None and new_cb0 is not None:
                     d = new_cb0 - old_cb0
                     sign = "+" if d >= 0 else ""
-                    delta_lines.append(f"  CB0 entropy      {old_cb0:.3f} → {new_cb0:.3f}  ({sign}{d:.3f})")
+                    delta_lines.append(f"  CB0 entropy      {old_cb0:.3f} -> {new_cb0:.3f}  ({sign}{d:.3f})")
                 if delta_lines:
-                    out.append(f"## Run Delta  ({prev.get('timestamp','?')[:16]} → {cur.get('timestamp','?')[:16]})")
+                    out.append(f"## Run Delta  ({prev.get('timestamp','?')[:16]} -> {cur.get('timestamp','?')[:16]})")
                     out.extend(delta_lines)
                     out.append("")
             except Exception as _err3:

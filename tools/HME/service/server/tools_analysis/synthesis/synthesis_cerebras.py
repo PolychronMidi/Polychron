@@ -1,8 +1,8 @@
-"""Cerebras synthesis tier — Wafer-Scale Engine inference.
+"""Cerebras synthesis tier -- Wafer-Scale Engine inference.
 
 Free tier: 30 RPM, 1000 RPD, 1M tokens/day.
-    T1: qwen-3-235b-a22b-instruct-2507 — 235B MoE, strongest on Cerebras
-    T2: llama3.1-8b                      — fast 8B fallback
+    T1: qwen-3-235b-a22b-instruct-2507 -- 235B MoE, strongest on Cerebras
+    T2: llama3.1-8b                      -- fast 8B fallback
 
 Config: CEREBRAS_API_KEY, CEREBRAS_RPM_LIMIT_*, CEREBRAS_DAILY_LIMIT_*
 """

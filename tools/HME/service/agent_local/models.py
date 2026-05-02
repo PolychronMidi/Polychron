@@ -28,7 +28,7 @@ def _route_model(prompt: str) -> tuple[str, int, str]:
         return _REASONER_MODEL, _REASONER_PORT, "reasoner"
     if code_score > reason_score:
         return _CODER_MODEL, _CODER_PORT, "coder"
-    # Tie or no signals — default to reasoner (broader capability)
+    # Tie or no signals -- default to reasoner (broader capability)
     return _REASONER_MODEL, _REASONER_PORT, "reasoner"
 
 
@@ -38,12 +38,12 @@ def _infer_directories(prompt: str) -> list[str]:
     to `src/` even when the prompt talks about `tools/HME/` or `doc/`."""
     dirs: list[str] = []
     lower = prompt.lower()
-    # Direct path mentions — extract anything that looks like a / path
+    # Direct path mentions -- extract anything that looks like a / path
     for m in re.finditer(r'(?:^|[\s`])(tools/HME/\w*/?|src/\w*/?|doc/?|metrics/?|scripts/?|tmp/?|log/?)', prompt):
         p = m.group(1).rstrip("/") + "/"
         if p not in dirs:
             dirs.append(p)
-    # Topical keyword → directory mapping
+    # Topical keyword -> directory mapping
     if "hook" in lower or "pretooluse" in lower or "posttooluse" in lower or "sessionstart" in lower:
         if "tools/HME/hooks/" not in dirs:
             dirs.append("tools/HME/hooks/")
@@ -87,7 +87,7 @@ def _strip_think(text: str) -> str:
 def _dedup_output(text: str, max_repeats: int = 2) -> str:
     """Detect and truncate consecutive repetition loops in model output.
 
-    Only removes lines that repeat consecutively — scattered mentions of the
+    Only removes lines that repeat consecutively -- scattered mentions of the
     same string are kept. Fixes runaway loops (550 identical lines) without
     stripping legitimate repeated references.
     """
@@ -125,7 +125,7 @@ def _call_model(prompt: str, model: str, port: int, system: str = "",
                 max_tokens: int = 4096, temperature: float = 0.3, timeout: int = 180) -> str:
     """Unified model call with think-tag stripping.
     All dispatch uses llama-server /v1/chat/completions. The `port` argument
-    is retained for legacy tuple shape but ignored — routing is by model name.
+    is retained for legacy tuple shape but ignored -- routing is by model name.
     """
     messages = []
     if system:
@@ -194,7 +194,7 @@ _cascade_load_attempted = False
 def _call_synthesizer(prompt: str, system: str = "", max_tokens: int = 4096,
                       query_prompt: str = "") -> tuple[str, str]:
     """Call the best-available model. Tries the free-API cascade first
-    (synthesis_reasoning.call() — 22-slot ranked list with per-model circuit
+    (synthesis_reasoning.call() -- 22-slot ranked list with per-model circuit
     breakers across cerebras/groq/gemini/openrouter/mistral/nvidia), falling
     through to local llama-server only when every ranked slot is exhausted."""
     global _cascade_mod, _cascade_load_attempted
@@ -211,7 +211,7 @@ def _call_synthesizer(prompt: str, system: str = "", max_tokens: int = 4096,
             )
             if cascade_out:
                 # Prefer the fine-grained source the dispatcher now exposes
-                # — distinguishes 'overdrive/opus' from '<provider>/<model>'
+                # -- distinguishes 'overdrive/opus' from '<provider>/<model>'
                 # slots. Falls back to the generic cascade/<profile> label
                 # when last_source() isn't implemented (older module).
                 try:
@@ -220,14 +220,14 @@ def _call_synthesizer(prompt: str, system: str = "", max_tokens: int = 4096,
                     src = f"cascade/{profile}"
                 return _strip_think(cascade_out), src
         except Exception as _e:
-            logger.warning(f"cascade dispatcher failed ({type(_e).__name__}: {_e}) — falling back to local")
+            logger.warning(f"cascade dispatcher failed ({type(_e).__name__}: {_e}) -- falling back to local")
     response = _call_model(prompt, model, port, system=system,
                            max_tokens=max_tokens, timeout=_REASONER_TIMEOUT)
     return response, local_label
 
 
 def _get_rag_context(query: str) -> str:
-    """Get RAG context from HME shim — KB entries + code search."""
+    """Get RAG context from HME shim -- KB entries + code search."""
     parts = []
     # KB search
     try:

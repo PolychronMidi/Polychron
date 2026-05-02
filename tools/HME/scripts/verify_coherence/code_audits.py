@@ -1,10 +1,10 @@
 """Code-audit verifiers (split). All Verifier classes now live in
-sibling modules — this file re-exports them so existing
+sibling modules -- this file re-exports them so existing
 `from .code_audits import X` imports in __init__.py keep working.
 
-  code_audits_style.py    — code-style/heuristic verifiers
-  code_audits_state.py    — state/lifecycle/integration verifiers
-  code_audits_runtime.py  — runtime/test/syntax verifiers
+  code_audits_style.py    -- code-style/heuristic verifiers
+  code_audits_state.py    -- state/lifecycle/integration verifiers
+  code_audits_runtime.py  -- runtime/test/syntax verifiers
 """
 from .code_audits_style import (  # noqa: F401
     CorePrinciplesAuditVerifier,

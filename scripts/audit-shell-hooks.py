@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Shell-hook audit — static analysis for tools/HME/hooks/**/*.sh.
+"""Shell-hook audit -- static analysis for tools/HME/hooks/**/*.sh.
 
 Sister of scripts/audit-core-principles.py for shell code. ESLint covers
 .js, `_scan_python_bug_patterns` in workflow_audit.py covers .py, and
-audit-core-principles.py covers src/ architecture — .sh hooks were the
+audit-core-principles.py covers src/ architecture -- .sh hooks were the
 blind spot. This script closes it.
 
 Why this exists: shell hooks that resolve paths via
 `${BASH_SOURCE[0]}`-relative ascents ("`$(dirname ${BASH_SOURCE[0]})/
-../../..`") are fragile — they break the moment the hook is symlinked,
+../../..`") are fragile -- they break the moment the hook is symlinked,
 cached, or invoked from an unusual cwd. The fix is to resolve via
 `$PROJECT_ROOT` (set by .env load) or `$CLAUDE_PROJECT_DIR` (set by
 Claude Code in every hook invocation) and fall back to walk-up-to-.git
 only when those are absent. This audit enforces that fix.
 
 Rules:
-  R1 — BASH_SOURCE-ascent-outside-hooks
+  R1 -- BASH_SOURCE-ascent-outside-hooks
        `${BASH_SOURCE[0]}` combined with `../..` (or deeper) OR a
        reference to a repo-root target (.env, .git, /src, /scripts,
        /proxy, /output, /tmp, /log, /tools/HME/<non-hooks>) is fragile
@@ -125,7 +125,7 @@ def _scan_file(abs_path):
                 "reason": (
                     "BASH_SOURCE-relative path with "
                     + " and ".join(reason_parts)
-                    + " — resolves into plugin cache when hook is invoked from there. "
+                    + " -- resolves into plugin cache when hook is invoked from there. "
                     "Use $PROJECT_ROOT or walk-up-to-.git instead."
                 ),
             })

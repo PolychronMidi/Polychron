@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compute blindspots JSON — structured output for propose-next-actions.
+"""Compute blindspots JSON -- structured output for propose-next-actions.
 
 The blindspots logic already exists in tools_analysis/blindspots.py but
 emits markdown for the status tool. This script computes the same data

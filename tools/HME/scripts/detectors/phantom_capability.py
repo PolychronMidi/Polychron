@@ -1,32 +1,35 @@
 #!/usr/bin/env python3
-"""Detect "phantom capability" declarations — agent text that names
+"""Detect "phantom capability" declarations -- agent text that names
 thinking/delegation capabilities NOT in the closed enumeration.
 
 PAI v6.3.0 rule: the agent must declare which thinking capability it
 used at E2+ tier, from a verbatim closed list. Inventing generic
 labels ("decomposition", "tradeoff analysis", "deep reasoning") is a
-CRITICAL FAILURE — it does NOT contribute to the tier floor.
+CRITICAL FAILURE -- it does NOT contribute to the tier floor.
+
+Polychron's ASCII-first project rule replaces PAI's emoji declaration
+prefix with a `[CAP]` text marker. Same role, regex-friendly, no Unicode.
 
 Detection logic:
-  (1) parse closing-block-style declarations: lines that match
-      r'^[\\s🏹•]*\\*\\*([A-Z][A-Za-z0-9]+)\\*\\*\\b' (PAI's exact format
-      `🏹 **CapabilityName** → PHASE | …`),
-      r'^[\\s•-]*([A-Z][A-Za-z0-9]+):\\s*$',
+  (1) parse closing-block-style declarations:
+      r'\\[CAP\\]\\s*\\*\\*([A-Z][A-Za-z0-9]+)\\*\\*\\b' (Polychron format
+      `[CAP] **CapabilityName** -> PHASE | reason`),
+      r'^[\\s*-]*([A-Z][A-Za-z0-9]+):\\s*$',
       r'\\bcapability:\\s*([A-Za-z0-9]+)\\b' (looser).
   (2) collect all such declared names.
   (3) report names NOT in _capability_enum.all_known() as PHANTOMS.
-  (4) report PHANTOM_PATTERNS as separate "paraphrase phantoms" — the
+  (4) report PHANTOM_PATTERNS as separate "paraphrase phantoms" -- the
       shape signals an agent paraphrased a real capability instead of
       using the verbatim name.
 
 Verdicts:
   ok                    no declared capabilities OR all declared are known
-  phantom_capability    ≥1 declared capability is not in the enumeration
+  phantom_capability    >=1 declared capability is not in the enumeration
   phantom_paraphrase    paraphrase pattern matched (still suspect)
 
 Rescue: any declaration immediately followed by an evidence anchor
 (`(verified)`, a code-quoted command, a Read result, a tool-call line
-"`Bash:`") is treated as legitimate — the bar is "phantom" means
+"`Bash:`") is treated as legitimate -- the bar is "phantom" means
 "named without backing it up."
 
 Usage: phantom_capability.py <transcript_path>
@@ -44,12 +47,12 @@ from _capability_enum import (  # noqa: E402
 )
 
 
-# Multiple declaration shapes — the detector accepts any of them.
+# Multiple declaration shapes -- the detector accepts any of them.
 _DECL_RES = (
-    # PAI exact: `🏹 **CapabilityName** → PHASE | reason`
-    re.compile(r"🏹\s*\*\*([A-Z][A-Za-z0-9]+)\*\*"),
-    # Loose: `**CapabilityName**:` or `**CapabilityName** —`
-    re.compile(r"\*\*([A-Z][A-Za-z0-9]+)\*\*\s*[:—-]"),
+    # Polychron format: `[CAP] **CapabilityName** -> PHASE | reason`
+    re.compile(r"\[CAP\]\s*\*\*([A-Z][A-Za-z0-9]+)\*\*"),
+    # Loose: `**CapabilityName**:` or `**CapabilityName** --`
+    re.compile(r"\*\*([A-Z][A-Za-z0-9]+)\*\*\s*[:\-]"),
     # Inline: `capability: CapabilityName`
     re.compile(r"\bcapability:\s*([A-Za-z][A-Za-z0-9]+)\b", re.IGNORECASE),
 )
@@ -102,7 +105,7 @@ def main() -> int:
             declared.append((m.group(1), m.start()))
 
     if not declared:
-        # No declarations at all — paraphrase phantoms still warrant a
+        # No declarations at all -- paraphrase phantoms still warrant a
         # softer flag if the prose-shape is right.
         for ph in PHANTOM_PATTERNS:
             if ph.lower() in text.lower():

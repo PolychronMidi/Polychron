@@ -1,13 +1,13 @@
-"""Drift envelope math — extracted from compute-legendary-drift.py in R31.
+"""Drift envelope math -- extracted from compute-legendary-drift.py in R31.
 
 Pure computation: flatten snapshot into numeric leaf fields, build the
 exponentially-weighted envelope, compute per-field z-scores + overall drift.
-No I/O, no side effects — separation for testability and main-file clarity.
+No I/O, no side effects -- separation for testability and main-file clarity.
 
 Decay history:
-  0.9 — too slow (R25 density drift grew unchecked under 0.9 adaptation)
-  0.7 — too fast (R28 density sign-flipped: envelope oscillation)
-  0.85 — stable middle (R29+): newest=1.0, 3-old=0.61, 5-old=0.44. Regime
+  0.9 -- too slow (R25 density drift grew unchecked under 0.9 adaptation)
+  0.7 -- too fast (R28 density sign-flipped: envelope oscillation)
+  0.85 -- stable middle (R29+): newest=1.0, 3-old=0.61, 5-old=0.44. Regime
          shifts absorbed in ~4 rounds; single-round noise doesn't flip the
          envelope center.
 """
@@ -36,7 +36,7 @@ def compute_envelope(snaps: list[dict]) -> dict[str, dict]:
 
     weight = DECAY^age where age=0 is the most-recent snapshot. Weighted
     median via cumulative-weight lookup; weighted stdev via
-    Σ(w·(x-μ)²) / Σw where μ is the weighted mean.
+    Sigma(w.(x-mu)^2) / Sigmaw where mu is the weighted mean.
     """
     if not snaps:
         return {}
@@ -75,7 +75,7 @@ def compute_drift(current_flat: dict[str, float], envelope: dict[str, dict]
                   ) -> tuple[float, list[dict]]:
     """Mean |z-score| across fields with meaningful variance, plus outliers.
 
-    Fields with sub-floor stdev are skipped — dividing by near-zero produces
+    Fields with sub-floor stdev are skipped -- dividing by near-zero produces
     NaN-grade z-scores. STDEV_FLOOR=1e-4 caught this in R27 when tight HCI
     clustering collapsed weighted stdev to ~1e-14.
     """

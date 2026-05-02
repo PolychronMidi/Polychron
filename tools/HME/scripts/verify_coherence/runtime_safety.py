@@ -29,7 +29,7 @@ class LifesaverIntegrityVerifier(Verifier):
     This verifier scans the call sites of register_critical_failure and the
     Meta-observer L14 alert emission loop. If it finds any gating logic
     (cooldowns, last_fired timestamps, _seen sets, dedup flags) in the call
-    path, it FAILs with score 0 and weight 5 — enough to break HCI on its own.
+    path, it FAILs with score 0 and weight 5 -- enough to break HCI on its own.
 
     Reason: if this fails, LIFESAVER is lying about how bad things are,
     which is worse than the original problem.
@@ -37,7 +37,7 @@ class LifesaverIntegrityVerifier(Verifier):
     name = "lifesaver-integrity"
     category = "runtime"
     subtag = "regression-prevention"
-    weight = 5.0  # highest weight — silencing LIFESAVER is a category-killing bug
+    weight = 5.0  # highest weight -- silencing LIFESAVER is a category-killing bug
 
     def run(self) -> VerdictResult:
         # Files that contain LIFESAVER firing sites
@@ -47,7 +47,7 @@ class LifesaverIntegrityVerifier(Verifier):
         ]
         # Patterns that would indicate LIFESAVER gating / dampening
         # Note: _ALERT_LOG_COOLDOWN is an existing, intentional 30-min cooldown
-        # on Meta-observer L14 ALERT LOGGING — not on LIFESAVER fires. That's
+        # on Meta-observer L14 ALERT LOGGING -- not on LIFESAVER fires. That's
         # allowed because it only throttles the log message, not the
         # condition detection. But any NEW pattern matching "cooldown" near a
         # register_critical_failure call is a violation.
@@ -81,7 +81,7 @@ class LifesaverIntegrityVerifier(Verifier):
                 for pat in forbidden_near_fire:
                     if re.search(pat, window, re.IGNORECASE | re.DOTALL):
                         violations.append(
-                            f"{os.path.basename(path)}:{i+1} — potential LIFESAVER gating near register_critical_failure: matched /{pat}/"
+                            f"{os.path.basename(path)}:{i+1} -- potential LIFESAVER gating near register_critical_failure: matched /{pat}/"
                         )
                         break
                 # Explicit check: any `if _now - X >=` pattern within 3 lines
@@ -90,7 +90,7 @@ class LifesaverIntegrityVerifier(Verifier):
                     if re.search(r"if\s+.*(now|time\.time\(\)).*(>=|>|<|<=).*\d", lines[j]):
                         if "register_critical_failure" in "\n".join(lines[j:i + 1]):
                             violations.append(
-                                f"{os.path.basename(path)}:{j+1}-{i+1} — time-based guard immediately before register_critical_failure (possible cooldown subversion)"
+                                f"{os.path.basename(path)}:{j+1}-{i+1} -- time-based guard immediately before register_critical_failure (possible cooldown subversion)"
                             )
                             break
         if not violations:
@@ -98,10 +98,10 @@ class LifesaverIntegrityVerifier(Verifier):
                            "LIFESAVER fire paths are ungated (no cooldown/dampening detected)")
         return _result(
             FAIL, 0.0,
-            f"{len(violations)} LIFESAVER gating pattern(s) found — CRITICAL: signal dilution subversion",
+            f"{len(violations)} LIFESAVER gating pattern(s) found -- CRITICAL: signal dilution subversion",
             violations + [
                 "RULE: LIFESAVER must fire for every real occurrence. Dampening hides pain from the agent.",
-                "If alert is 'false positive', fix the detector at life-critical urgency — do NOT silence it.",
+                "If alert is 'false positive', fix the detector at life-critical urgency -- do NOT silence it.",
             ],
         )
 
@@ -109,7 +109,7 @@ class LifesaverIntegrityVerifier(Verifier):
 class TrajectoryTrendVerifier(Verifier):
     """Reads metrics/hme-trajectory.json and scores the HCI trend direction.
     A prolonged downward trend or a predicted drift below threshold 80 is a
-    FAIL even if the CURRENT HCI is still green — predictive coherence."""
+    FAIL even if the CURRENT HCI is still green -- predictive coherence."""
     name = "trajectory-trend"
     category = "runtime"
     subtag = "regression-prevention"
@@ -118,13 +118,13 @@ class TrajectoryTrendVerifier(Verifier):
     def run(self) -> VerdictResult:
         data_path = os.path.join(METRICS_DIR, "hme-trajectory.json")
         if not os.path.isfile(data_path):
-            return _result(SKIP, 1.0, "no trajectory data — run analyze-hci-trajectory.py")
+            return _result(SKIP, 1.0, "no trajectory data -- run analyze-hci-trajectory.py")
         try:
             with open(data_path) as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             return _result(ERROR, 0.0, f"read error: {e}")
-        # Explicit None check — a missing key is SKIP (insufficient
+        # Explicit None check -- a missing key is SKIP (insufficient
         # history), not silently treated as 0 < 2 = True.
         holo_count = data.get("holograph_count")
         if holo_count is None:
@@ -153,7 +153,7 @@ class TrajectoryTrendVerifier(Verifier):
         if direction == "down":
             return _result(
                 PASS, 0.9,
-                f"HCI flat-ish downward ({slope:.2f}/day) — monitor",
+                f"HCI flat-ish downward ({slope:.2f}/day) -- monitor",
             )
         return _result(PASS, 1.0, f"HCI trend {direction} ({slope:+.2f}/day)")
 

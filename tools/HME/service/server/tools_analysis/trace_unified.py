@@ -1,4 +1,4 @@
-"""HME trace — unified signal flow tracing.
+"""HME trace -- unified signal flow tracing.
 
 Merges trace_query (module/causal) + coupling_intel(cascade:X) + delta comparison into one tool.
 """
@@ -17,17 +17,17 @@ logger = logging.getLogger("HME")
 @chained("trace")
 def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 15) -> str:
     """Trace signal flow through the system.
-    'channelName' → L0 cascade trace (follow signal through consumers 3 hops deep).
-    'moduleName' → per-section trace (regime, tension, notes, profile per section).
-    'S3' / '2:1:3:0' / '400' → beat snapshot: full system state at one beat (regime,
+    'channelName' -> L0 cascade trace (follow signal through consumers 3 hops deep).
+    'moduleName' -> per-section trace (regime, tension, notes, profile per section).
+    'S3' / '2:1:3:0' / '400' -> beat snapshot: full system state at one beat (regime,
     trust scores, coupling labels, notes emitted). Auto-detected from target format.
-    mode='auto' (default) detects from target: L0 channel names → cascade,
-    beat keys (S3, 2:1:3:0, plain number) → snapshot, otherwise → module trace.
+    mode='auto' (default) detects from target: L0 channel names -> cascade,
+    beat keys (S3, 2:1:3:0, plain number) -> snapshot, otherwise -> module trace.
     mode='cascade'|'module'|'causal'|'snapshot' to force.
     mode='impact': forward-causal chain across dependency graph + feedback
-    loops + firewall ports — predicts 2nd/3rd-order consequences of editing
+    loops + firewall ports -- predicts 2nd/3rd-order consequences of editing
     a module (Phase 2.5 of openshell feature mapping).
-    mode='delta': compare current vs previous pipeline run — shows feature deltas,
+    mode='delta': compare current vs previous pipeline run -- shows feature deltas,
     section regime shifts, and trust score changes for changed modules.
     Pass target='' or target='auto' for delta mode (auto-detects changed modules from git)."""
     _track("trace")
@@ -39,14 +39,14 @@ def trace(target: str = "", mode: str = "auto", section: int = -1, limit: int = 
 
     if not target or not target.strip():
         return (
-            "i/trace — trace signal flow through the system.\n\n"
+            "i/trace -- trace signal flow through the system.\n\n"
             "Usage:\n"
             "  i/trace target=<name> [mode=auto|cascade|module|causal|snapshot|impact|delta]\n\n"
             "Target forms (auto-detected):\n"
-            "  channelName      → L0 cascade trace (3 hops deep)\n"
-            "  moduleName       → per-section module trace (regime, tension, notes, profile)\n"
-            "  S3 | 2:1:3:0     → beat snapshot (full system state at one beat)\n"
-            "  (omit target)    → this help\n\n"
+            "  channelName      -> L0 cascade trace (3 hops deep)\n"
+            "  moduleName       -> per-section module trace (regime, tension, notes, profile)\n"
+            "  S3 | 2:1:3:0     -> beat snapshot (full system state at one beat)\n"
+            "  (omit target)    -> this help\n\n"
             "Modes:\n"
             "  auto (default)   detect from target shape\n"
             "  impact           forward-causal chain: who gets affected when you edit target\n"
@@ -120,10 +120,10 @@ def _detect_trace_type(target: str) -> str:
         return "cascade"
     # camelCase starting with uppercase = likely a module (e.g. "crossLayerClimaxEngine")
     # camelCase starting with lowercase but has uppercase = could be module or channel
-    # Heuristic: if it matches a JS module naming pattern (multi-word camel) → module
+    # Heuristic: if it matches a JS module naming pattern (multi-word camel) -> module
     if re.search(r'[A-Z][a-z]', target[1:]) and len(target) > 15:
         return "module"  # long camelCase = almost always a module name
-    # All lowercase, no hyphens — check known channels
+    # All lowercase, no hyphens -- check known channels
     _KNOWN_CHANNELS = {
         "articulation", "chord", "coherence", "density", "entropy",
         "harmonic", "onset", "spectral", "tension", "velocity",
@@ -221,7 +221,7 @@ def _trace_delta(focus: str = "") -> str:
             elif cs:
                 parts.append(f"  S{i}: {cs.get('dominantRegime', '?')} (NEW section)")
             elif ps:
-                parts.append(f"  S{i}: (REMOVED — was {ps.get('dominantRegime', '?')})")
+                parts.append(f"  S{i}: (REMOVED -- was {ps.get('dominantRegime', '?')})")
         parts.append("")
 
     # Trust score changes for changed modules
@@ -289,11 +289,11 @@ def _round_trace(round_id: str) -> str:
     Cross-references metrics/hme-musical-correlation.json for the snapshot
     signals and metrics/hme-activity.jsonl for the activity window that
     produced them. Requires deterministic round IDs (commit a-of-10-point
-    sweep) to work — rounds without IDs won't match.
+    sweep) to work -- rounds without IDs won't match.
     """
     corr_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-musical-correlation.json")
     if not os.path.isfile(corr_path):
-        return f"Error: metrics/hme-musical-correlation.json not found — no round history."
+        return f"Error: metrics/hme-musical-correlation.json not found -- no round history."
     try:
         with open(corr_path, encoding="utf-8") as f:
             corr = json.load(f)
@@ -321,11 +321,11 @@ def _round_trace(round_id: str) -> str:
     act_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
     if os.path.isfile(act_path):
         try:
-            # Map round_id → approximate ts from timestamp field
+            # Map round_id -> approximate ts from timestamp field
             import datetime as _dt
             snap_ts = match.get("timestamp")
             snap_epoch = int(_dt.datetime.fromisoformat(snap_ts.replace("Z", "+00:00")).timestamp()) if snap_ts else 0
-            # Scan for pipeline events in a ±30min window around snapshot time
+            # Scan for pipeline events in a +/-30min window around snapshot time
             events_in_window = []
             with open(act_path, encoding="utf-8") as f:
                 for line in f:
@@ -341,7 +341,7 @@ def _round_trace(round_id: str) -> str:
                 # Counts by event type
                 from collections import Counter
                 by_event = Counter(e.get("event", "?") for e in events_in_window)
-                parts.append(f"## Activity window (±30min around snapshot, {len(events_in_window)} events)")
+                parts.append(f"## Activity window (+/-30min around snapshot, {len(events_in_window)} events)")
                 for event, n in by_event.most_common(10):
                     parts.append(f"  {event:<30} {n}")
         except Exception as _err:

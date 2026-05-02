@@ -9,7 +9,7 @@ that imports a name NOT in the public API is reaching into internals.
 Why this matters: every LOC-driven file split this codebase has done
 produced "bare-name reference between sibling files" bugs because
 there was no enforced answer to "which names cross the boundary?"
-We landed audit-python-undefined-names to catch the symptoms — this
+We landed audit-python-undefined-names to catch the symptoms -- this
 audit catches the cause: the import that shouldn't exist in the first
 place.
 
@@ -32,7 +32,7 @@ Design notes:
   - Imports that target an internal SUBMODULE (e.g. `from
     coupling.coupling_data import _pearson`) are flagged unless the
     importing file is itself inside that subsystem.
-  - The audit doesn't try to MOVE imports automatically — it surfaces
+  - The audit doesn't try to MOVE imports automatically -- it surfaces
     drift so the developer can decide whether to expand the public
     surface or refactor the caller. Same posture as audit-loc /
     audit-python-undefined-names: report, don't enforce silently.
@@ -55,7 +55,7 @@ _SKIP_DIRS = {"__pycache__", ".git", "node_modules", "venv", ".venv"}
 
 
 def _find_subsystems(roots):
-    """Return list of subsystem directories — any dir with __init__.py
+    """Return list of subsystem directories -- any dir with __init__.py
     that isn't itself the top-level of a root."""
     subsystems = []
     for root in roots:
@@ -77,7 +77,7 @@ def _is_flat_package(subsystem_dir: Path) -> bool:
     sentinel `# audit: flat-package` in its __init__.py. Used for runtime
     packages that are architecturally a flat namespace (sibling-to-sibling
     imports are normal, no public/private API split). The audit treats
-    every name in such a package as public — in-package imports from
+    every name in such a package as public -- in-package imports from
     outside the directory are still allowed, but submodule names aren't
     checked against a surface.
 
@@ -96,7 +96,7 @@ def _is_flat_package(subsystem_dir: Path) -> bool:
 def _public_surface(subsystem_dir: Path) -> set:
     """Names re-exported from __init__.py via `from .submodule import X`
     or `from .submodule import X as Y`. These are the subsystem's public
-    API. Star-imports widen to "everything" — represented as a sentinel.
+    API. Star-imports widen to "everything" -- represented as a sentinel.
 
     Loud on parse error: a corrupt __init__.py used to give an empty
     public surface, which then made every import into the subsystem
@@ -109,7 +109,7 @@ def _public_surface(subsystem_dir: Path) -> set:
     except (OSError, SyntaxError) as e:
         raise SystemExit(
             f"audit-import-boundaries: __init__.py at {init} failed to "
-            f"parse — refusing to use empty surface (would mass-flag "
+            f"parse -- refusing to use empty surface (would mass-flag "
             f"every import as boundary-crossing). Fix the file or "
             f"remove __init__.py to declassify {subsystem_dir.name} as "
             f"a subsystem.\n  cause: {type(e).__name__}: {e}"
@@ -117,7 +117,7 @@ def _public_surface(subsystem_dir: Path) -> set:
     surface = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.level == 1:
-            # `from .x import y` → exposes y
+            # `from .x import y` -> exposes y
             for alias in node.names:
                 if alias.name == "*":
                     surface.add("*")
@@ -136,7 +136,7 @@ def _public_surface(subsystem_dir: Path) -> set:
 
 def _scan_imports(file_path: Path) -> list:
     """Return list of (line_no, target_module, imported_names) for every
-    `from X import Y, Z` in the file. Skips relative imports — they're
+    `from X import Y, Z` in the file. Skips relative imports -- they're
     intra-subsystem by definition.
 
     Loud on parse error: silently swallowing a SyntaxError used to mean
@@ -158,7 +158,7 @@ def _scan_imports(file_path: Path) -> list:
                 continue
             names = [alias.name for alias in node.names]
             out.append((node.lineno, node.module, names))
-        # `import x.y.z` rarely targets HME internals — module attribute
+        # `import x.y.z` rarely targets HME internals -- module attribute
         # access at use sites would surface those separately.
     return out
 
@@ -264,9 +264,9 @@ def main(argv: list) -> int:
                     if target_subsystem in flat_packages:
                         continue
                     # Target IS a subsystem boundary. Two cases:
-                    # (a) `from <target_subsystem package> import name` — name
+                    # (a) `from <target_subsystem package> import name` -- name
                     #     must be on the public surface.
-                    # (b) `from <target_subsystem>.<inner> import name` — the
+                    # (b) `from <target_subsystem>.<inner> import name` -- the
                     #     caller is reaching past the public API directly,
                     #     unconditionally a boundary violation.
                     target_pkg_name = ".".join(
@@ -276,7 +276,7 @@ def main(argv: list) -> int:
                     target_is_init = (target_path.name == "__init__.py")
                     surface = surfaces.get(target_subsystem, set())
                     if target_is_init:
-                        # Public-API access — check each imported name.
+                        # Public-API access -- check each imported name.
                         if "*" in surface:
                             continue
                         for n in names:
@@ -334,7 +334,7 @@ def main(argv: list) -> int:
                       f"from {f['target']} import {f['name']}  "
                       f"(subsystem: {f['subsystem']})")
             if len(items) > 30:
-                print(f"    … (+{len(items) - 30} more)")
+                print(f"    ... (+{len(items) - 30} more)")
     if strict and findings:
         return 1
     return 0

@@ -103,7 +103,7 @@ class DecoratorOrderVerifier(Verifier):
 
 
 
-# Verifiers — STATE category
+# Verifiers -- STATE category
 
 
 class HookRegistrationVerifier(Verifier):
@@ -148,7 +148,7 @@ class HookMatcherValidityVerifier(Verifier):
     (b) be explicitly known-not-to-have-a-posthook. Conversely, every
     dispatch branch in `posttooluse_bash.sh` must reference a wrapper that
     actually exists. Catches the drift where a wrapper is renamed but the
-    hook still dispatches on the old name (or vice versa) — silently dead
+    hook still dispatches on the old name (or vice versa) -- silently dead
     hook path.
     """
     name = "hook-matcher-validity"
@@ -158,10 +158,10 @@ class HookMatcherValidityVerifier(Verifier):
 
     # Wrappers that have no posttooluse side-effect by design. Claude just
     # reads the response; there's no nexus state to update.
-    #   help / why       — static / rationale-lookup; read-only
-    #   freeze           — flips a flag file; posttooluse doesn't need to know
-    #   pattern          — pattern-file reader; read-only
-    #   substrate        — four-arc status; read-only
+    #   help / why       -- static / rationale-lookup; read-only
+    #   freeze           -- flips a flag file; posttooluse doesn't need to know
+    #   pattern          -- pattern-file reader; read-only
+    #   substrate        -- four-arc status; read-only
     _NO_POSTHOOK_OK = {
         "status", "trace", "evolve", "hme-admin", "todo", "hme",
         "help", "why", "freeze", "pattern", "substrate",
@@ -173,7 +173,7 @@ class HookMatcherValidityVerifier(Verifier):
         project_root = os.environ.get("PROJECT_ROOT", _PROJECT)
         i_dir = os.path.join(project_root, "i")
         if not os.path.isdir(i_dir):
-            return _result(FAIL, 0.0, "i/ directory missing — HME tool wrappers not installed")
+            return _result(FAIL, 0.0, "i/ directory missing -- HME tool wrappers not installed")
 
         # Enumerate wrappers (executable shell scripts in i/).
         wrappers = set()
@@ -217,7 +217,7 @@ class HookMatcherValidityVerifier(Verifier):
         if not errors:
             return _result(
                 PASS, 1.0,
-                f"{len(wrappers)} wrappers × {len(dispatched)} dispatches all resolve"
+                f"{len(wrappers)} wrappers * {len(dispatched)} dispatches all resolve"
             )
         score = 1.0 - len(errors) / total_checks
         return _result(FAIL, score, f"{len(errors)} wrapper/dispatch mismatch(es)", errors)

@@ -49,13 +49,13 @@ def _track(name: str):
 
 def get_session_intent() -> str:
     """Return the detected session intent: audit, editing, exploring, or unknown.
-    Tools can use this to adjust verbosity — audit sessions want maximum data density,
+    Tools can use this to adjust verbosity -- audit sessions want maximum data density,
     editing sessions want concise KB constraints only."""
     return _session_intent
 
 
 
-# Tool output budgets — per-tool char limits. Compound tools split budget across sub-reports.
+# Tool output budgets -- per-tool char limits. Compound tools split budget across sub-reports.
 # These are generous enough to never lose actionable data, tight enough to prevent context bloat.
 BUDGET_TOOL = 5000       # single-mode tools (find, trace, review:digest, etc.)
 BUDGET_COMPOUND = 8000   # compound tools (review:full, status:all, evolve:all)
@@ -75,7 +75,7 @@ def _budget_gate(text: str, budget: int = BUDGET_TOOL) -> str:
 
     sections = _re_budget.split(r'(?=^## )', text, flags=_re_budget.MULTILINE)
     if not sections:
-        return text[:budget] + f"\n…(+{len(text) - budget} chars)"
+        return text[:budget] + f"\n...(+{len(text) - budget} chars)"
 
     # Proportional budget per section, minimum 400 chars
     n = max(len(sections), 1)
@@ -99,11 +99,11 @@ def _budget_gate(text: str, budget: int = BUDGET_TOOL) -> str:
                 line_cost = len(line) + 1
                 if size + line_cost > per_section and not line.startswith("## "):
                     if not kept or (len(kept) == 1 and kept[0].startswith("## ")):
-                        # First content line is oversized — truncate line, don't skip
-                        kept.append(line[:per_section - size - 30] + "…")
+                        # First content line is oversized -- truncate line, don't skip
+                        kept.append(line[:per_section - size - 30] + "...")
                     remaining = len(lines) - len(kept)
                     if remaining > 0:
-                        kept.append(f"  …(+{remaining} lines)")
+                        kept.append(f"  ...(+{remaining} lines)")
                     break
                 kept.append(line)
                 size += line_cost
@@ -112,7 +112,7 @@ def _budget_gate(text: str, budget: int = BUDGET_TOOL) -> str:
 
     result = "".join(compressed)
     if len(result) > budget:
-        result = result[:budget] + f"\n…(+{len(text) - budget} chars)"
+        result = result[:budget] + f"\n...(+{len(text) - budget} chars)"
     return result
 
 
@@ -149,14 +149,14 @@ def _cap_list_items(text: str, max_items: int = 12) -> str:
                 total_remaining += 1
         else:
             if list_count > max_items and not capped:
-                result.append(f"  …(+{total_remaining} more items)")
+                result.append(f"  ...(+{total_remaining} more items)")
                 capped = True
                 total_remaining = 0
             list_count = 0
             capped = False
             result.append(line)
     if list_count > max_items and not capped:
-        result.append(f"  …(+{total_remaining} more items)")
+        result.append(f"  ...(+{total_remaining} more items)")
     return "\n".join(result)
 
 
@@ -177,7 +177,7 @@ def _budget_local_think(text: str) -> str:
         if idx != -1 and len(text) - idx <= BUDGET_LOCAL_THINK:
             return text[idx:]
     # No marker: keep last BUDGET_LOCAL_THINK chars (conclusions tend to be at the end)
-    return "…" + text[-(BUDGET_LOCAL_THINK - 1):]
+    return "..." + text[-(BUDGET_LOCAL_THINK - 1):]
 
 
 def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
@@ -204,10 +204,10 @@ def _filter_kb_relevance(kb_results: list, module_name: str) -> list:
         # Word-boundary match: "section" should match "section memory" but not "maxPerSection"
         if any(re.search(r'(?<![a-z])' + re.escape(term) + r'(?![a-z])', haystack) for term in terms):
             filtered.append(entry)
-    return filtered  # no fallback — irrelevant KB entries are worse than no entries
+    return filtered  # no fallback -- irrelevant KB entries are worse than no entries
 
 
-_compositional_context_cache: dict = {}  # (module_name, digest_mtime, summary_mtime) → str
+_compositional_context_cache: dict = {}  # (module_name, digest_mtime, summary_mtime) -> str
 
 
 def _get_compositional_context(module_name: str) -> str:
@@ -280,7 +280,7 @@ def _get_compositional_context(module_name: str) -> str:
             logger.debug(f"parts.append: {type(_err2).__name__}: {_err2}")
     result = "\n".join(parts) if parts else ""
     _compositional_context_cache[cache_key] = result
-    # Evict stale entries (keep cache bounded — only current mtime matters)
+    # Evict stale entries (keep cache bounded -- only current mtime matters)
     stale = [k for k in _compositional_context_cache if k != cache_key and k[0] == module_name]
     for k in stale:
         del _compositional_context_cache[k]
@@ -289,7 +289,7 @@ def _get_compositional_context(module_name: str) -> str:
 
 _trace_cache: dict = {"path": "", "mtime": 0.0, "records": []}
 
-# Git subprocess result cache — keyed by (cwd, args_tuple), TTL 30s
+# Git subprocess result cache -- keyed by (cwd, args_tuple), TTL 30s
 _git_cache: dict = {}
 _GIT_CACHE_TTL = 30.0
 
@@ -335,7 +335,7 @@ def _load_trace(trace_path: str) -> list[dict]:
 
 
 # Journal archive freshness
-# `output/metrics/journal.md` is a deprecated archive — no new entries land
+# `output/metrics/journal.md` is a deprecated archive -- no new entries land
 # there. The activity bridge (`output/metrics/hme-activity.jsonl`) is the
 # live machine-readable per-round record. These helpers let journal-reading
 # tools annotate their output when the archive is staler than the activity
@@ -392,7 +392,7 @@ def _journal_freshness_banner() -> str:
     if live > archived:
         return (
             f"  > NOTE: journal.md is a frozen archive (last entry R{archived}). "
-            f"Activity bridge has round_complete events through R{live} — "
+            f"Activity bridge has round_complete events through R{live} -- "
             f"the data below is HISTORICAL, not the current round.\n"
         )
     return ""

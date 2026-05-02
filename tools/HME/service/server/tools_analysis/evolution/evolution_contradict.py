@@ -1,4 +1,4 @@
-"""Evolution strategies — curate, contradict, adversarial stress.
+"""Evolution strategies -- curate, contradict, adversarial stress.
 
 Split from evolution_evolve.py. These are the heavy analysis functions
 that each focus on a different evolution mode.
@@ -17,7 +17,7 @@ logger = logging.getLogger("HME")
 
 
 def _detect_contradictions() -> str:
-    """Full KB contradiction scan — find entries that are related but conflicting.
+    """Full KB contradiction scan -- find entries that are related but conflicting.
 
     Two passes: (1) semantic similarity band for topically-related pairs,
     (2) same-category pairs with shared title keywords (catches rephrased conflicts).
@@ -51,7 +51,7 @@ def _detect_contradictions() -> str:
     seen_pairs = set()
     candidates = []
 
-    # Pass 1: similarity band — topically related but not redundant
+    # Pass 1: similarity band -- topically related but not redundant
     for i in range(len(entries)):
         for j in range(i + 1, len(entries)):
             sim = float(sim_matrix[i, j])
@@ -86,7 +86,7 @@ def _detect_contradictions() -> str:
         a_tags = (a.get("tags") or "").split(",")
         b_tags = (b.get("tags") or "").split(",")
         # If EITHER entry is a synthesis/supersedes/clarifies entry, skip the pair entirely.
-        # Synthesis entries summarize many specific entries and will always look similar to them —
+        # Synthesis entries summarize many specific entries and will always look similar to them --
         # that similarity is intentional, not a contradiction.
         for tag in a_tags + b_tags:
             rel = tag.strip().split(":", 1)[0]
@@ -140,7 +140,7 @@ def _detect_contradictions() -> str:
             "- Different coupling bridges involving the same module but different partners or dimensions\n\n"
             + "\n".join(batch_items) + "\n\n"
             "For each pair, respond with EXACTLY one line:\n"
-            "PAIR N: CONTRADICT — <the specific incompatible claims>\n"
+            "PAIR N: CONTRADICT -- <the specific incompatible claims>\n"
             "or\n"
             "PAIR N: OK\n"
             "Nothing else."
@@ -148,7 +148,7 @@ def _detect_contradictions() -> str:
 
         result = _local_think(
             prompt, max_tokens=400, model=_LOCAL_MODEL,
-            system="You are a strict KB consistency auditor. You RARELY flag contradictions — only when two entries make genuinely incompatible claims about the same specific thing. When in doubt, say OK.",
+            system="You are a strict KB consistency auditor. You RARELY flag contradictions -- only when two entries make genuinely incompatible claims about the same specific thing. When in doubt, say OK.",
             temperature=0.05,
         )
 
@@ -163,7 +163,7 @@ def _detect_contradictions() -> str:
                 if "CONTRADICT" in line:
                     try:
                         pair_num = int(line.split("PAIR")[1].split(":")[0].strip()) - 1
-                        explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                        explanation = line.split("CONTRADICT")[1].strip().lstrip("--").lstrip("-").strip()
                         if any(m in explanation.lower() for m in omission_markers):
                             continue
                         if 0 <= pair_num < len(batch):
@@ -226,8 +226,8 @@ def _detect_contradictions() -> str:
         for _m in code_mismatches:
             parts.append(f"  [{_m['id']}] \"{_m['title']}\"")
             parts.append(f"    Symbol `{_m['symbol']}` not found in tools/HME/service/server/")
-            parts.append(f"    → Verify manually: grep -r '{_m['symbol']}' tools/HME/service/server/")
-            parts.append(f"    → If removed: remove_knowledge(entry_id='{_m['id']}')")
+            parts.append(f"    -> Verify manually: grep -r '{_m['symbol']}' tools/HME/service/server/")
+            parts.append(f"    -> If removed: remove_knowledge(entry_id='{_m['id']}')")
             parts.append("")
 
     return "\n".join(parts)

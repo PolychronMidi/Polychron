@@ -3,18 +3,18 @@
 a recognizer in the paired detector.
 
 Pattern observed during 2026-05-01 detector audit: deny prompts say
-"if X, do A; if Y, do B" — but the detector only recognizes A. The
+"if X, do A; if Y, do B" -- but the detector only recognizes A. The
 detector then fires on legitimate B-shape responses. The agent learns
 to never use the alternative the rule advertised. Drift between prompt
 and detector is silent until an agent's reasoning gets pattern-matched
 as a punt.
 
 This test parses each deny message in tools/HME/proxy/stop_chain/policies/
-*.js for "(a) … (b) … (c) …"-shape alternatives, then asserts that for
+*.js for "(a) ... (b) ... (c) ..."-shape alternatives, then asserts that for
 each alternative, the paired detector's RESCUE pattern set has at least
 one recognizer that matches a representative sentence.
 
-This isn't an exhaustive proof-of-correctness — false positives in
+This isn't an exhaustive proof-of-correctness -- false positives in
 either direction (prompts using "(a)" decoratively, detectors with
 broader recognizers than the test's representative sentence covers)
 need targeted suppression. The point is structural: when a NEW
@@ -31,11 +31,11 @@ import sys
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
-# _HERE = tools/HME/scripts/detectors → up 4 = repo root
+# _HERE = tools/HME/scripts/detectors -> up 4 = repo root
 _PROJECT = _HERE.parent.parent.parent.parent
 _POLICY_DIR = _PROJECT / "tools" / "HME" / "proxy" / "stop_chain" / "policies"
 
-# Map deny-prompt KEY (in REASONS dict) → detector module name.
+# Map deny-prompt KEY (in REASONS dict) -> detector module name.
 # These are the deny-prompt families that have rescue paths. PSYCHO_STOP
 # is a parent label; the (b)-clause/admit-and-stop coverage was added
 # to psycho_stop's pattern B in the 2026-05-01 sweep.
@@ -57,7 +57,7 @@ _DETECTOR_FOR_KEY = {
 # Per-alternative representative sentence + which detector test must accept
 # it. Each entry says: "if the agent writes this, the detector MUST NOT
 # fire on it" (i.e. the alternative path the prompt advertises is real).
-# Probe sentences are intentionally minimal — they exist to verify the
+# Probe sentences are intentionally minimal -- they exist to verify the
 # recognizer fires, not to be linguistically exhaustive.
 # Each probe must be long enough (>= 200 chars) that the closing-40%
 # heuristic in scope_escape / exhaust_check actually engages, AND
@@ -77,7 +77,7 @@ _PROBES = {
          "All green."),
         ("b-clause-not-doing",
          _PADDING + "Pre-existing complexity. Not doing this is the right "
-         "call — it duplicates the existing audit and would be unrelated "
+         "call -- it duplicates the existing audit and would be unrelated "
          "scope creep."),
     ],
     "EXHAUST": [
@@ -93,7 +93,7 @@ _PROBES = {
     ],
     "PSYCHO_STOP": [
         ("b-clause-pattern-b",
-         _PADDING + "Items 1-4 done. #5 skipped — not doing this is the "
+         _PADDING + "Items 1-4 done. #5 skipped -- not doing this is the "
          "right call. Already covered by the existing audit, so this "
          "won't be addressed here."),
     ],
@@ -120,14 +120,14 @@ _PROBES = {
         ("narrow-scope-override", None),
     ],
     "PHANTOM_CAPABILITY": [
-        # (a) verbatim known capability name — should pass.
+        # (a) verbatim known capability name -- should pass.
         ("verbatim-known-name",
-         _PADDING + "🏹 **FirstPrinciples** — walked the constraints and "
+         _PADDING + "[CAP] **FirstPrinciples** -- walked the constraints and "
          "rebuilt the design from base axioms."),
         # (b) phantom name anchored with a verification marker within 240
-        # chars — rescue should accept.
+        # chars -- rescue should accept.
         ("rescue-verified-anchor",
-         _PADDING + "**CustomLabel** — (verified) ran the audit and "
+         _PADDING + "**CustomLabel** -- (verified) ran the audit and "
          "confirmed the output: green across all 7 checks."),
     ],
     "ADVISOR_MISSING_PRE_BUILD": [
@@ -149,38 +149,38 @@ _PROBES = {
         ("e4-solo-rationale", None),
     ],
     "SUMMARY_MISSING": [
-        # (a) emit the block — full closing summary should make the detector pass.
+        # (a) emit the block -- full closing summary should make the detector pass.
         ("emit-block",
          _PADDING +
-         "\n\n━━━ 📃 SUMMARY ━━━\n"
-         "🔄 ITERATION: 1/1\n"
-         "📃 CONTENT: closing block content\n"
-         "🖊️ STORY:\n"
+         "\n\n=== SUMMARY ===\n"
+         "[ITERATION]: 1/1\n"
+         "[CONTENT]: closing block content\n"
+         "[STORY]:\n"
          "- problem: needed to validate rescue\n"
          "- what we did: emitted the block\n"
          "- how it went: cleanly\n"
          "- what's next: stop\n"
-         "🗣️ Polychron: probe demonstrates closing block format works correctly.",
+         "[VOICE] Polychron: probe demonstrates closing block format works correctly.",
          {"SUMMARY_FORMAT_TIER": "E3"}),
-        # (b) tier below threshold — detector short-circuits to ok regardless.
+        # (b) tier below threshold -- detector short-circuits to ok regardless.
         ("re-classify-tier",
          _PADDING + "Done.",
          {"SUMMARY_FORMAT_TIER": "E1"}),
     ],
     "SUMMARY_MALFORMED": [
-        # Same probe content as the emit-block case — verifies a complete
+        # Same probe content as the emit-block case -- verifies a complete
         # block doesn't trip the malformed detector either.
         ("complete-block",
          _PADDING +
-         "\n\n━━━ 📃 SUMMARY ━━━\n"
-         "🔄 ITERATION: 1/1\n"
-         "📃 CONTENT: complete block\n"
-         "🖊️ STORY:\n"
+         "\n\n=== SUMMARY ===\n"
+         "[ITERATION]: 1/1\n"
+         "[CONTENT]: complete block\n"
+         "[STORY]:\n"
          "- problem: x\n"
          "- what we did: y\n"
          "- how it went: z\n"
          "- what's next: w\n"
-         "🗣️ Polychron: full closing block with every required field populated cleanly.",
+         "[VOICE] Polychron: full closing block with every required field populated cleanly.",
          {"SUMMARY_FORMAT_TIER": "E3"}),
     ],
 }
@@ -189,7 +189,7 @@ _PROBES = {
 def _extract_reason(policy_src: str, key: str) -> str | None:
     """Find `KEY:` in a `REASONS = { ... }` block and return the string body."""
     # Match `KEY:` followed by a string literal possibly spanning multiple
-    # lines (concatenated across breaks via `'…' + '…'` or just `"…"`).
+    # lines (concatenated across breaks via `'...' + '...'` or just `"..."`).
     pat = re.compile(
         rf"\b{re.escape(key)}\s*:\s*("                     # key:
         r"(?:'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\")"      # first string
@@ -210,7 +210,7 @@ def _extract_reason(policy_src: str, key: str) -> str | None:
 def _probe_detector(detector_module: str, probe_text: str,
                     env_overrides: dict | None = None) -> bool:
     """Run the detector against a synthetic transcript and return True if
-    the verdict is 'ok' (rescue accepted) — i.e. the recognizer fired.
+    the verdict is 'ok' (rescue accepted) -- i.e. the recognizer fired.
 
     env_overrides applies temporary env vars (restored in finally) so
     tier-gated detectors like summary_format / advisor_doctrine can be
@@ -289,7 +289,7 @@ def main() -> int:
             continue
 
         # Walk probes. A None probe text means "covered by an existing
-        # test fixture, not a string probe" — skip the lookup but require
+        # test fixture, not a string probe" -- skip the lookup but require
         # that we documented the probe's existence above.
         # Probe entries: (label, text) for plain probes, OR
         # (label, text, env_dict) when the detector requires env-injected state.
@@ -309,7 +309,7 @@ def main() -> int:
                 )
 
     if failures:
-        print("DENY-LINK FAILURES — advertised alternative not honored by detector:")
+        print("DENY-LINK FAILURES -- advertised alternative not honored by detector:")
         for f in failures:
             print(f)
         print("\nEvery alternative path the deny prompt advertises must have a "

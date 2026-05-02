@@ -1,4 +1,4 @@
-"""Primary status() dispatcher — routes mode= to handlers in mode_handlers.py
+"""Primary status() dispatcher -- routes mode= to handlers in mode_handlers.py
 and sub-reports in the various report modules. Registered with MCP at
 import time; submodules must be loaded BEFORE __init__.py exposes
 status() so their decorators run."""
@@ -43,14 +43,14 @@ def status(mode: str = "all") -> str:
     if handler:
         return handler()
 
-    # mode == "all" — unified overview below
+    # mode == "all" -- unified overview below
     if mode != "all":
         return f"Unknown mode '{mode}'. Available: {', '.join(sorted(_STATUS_MODES.keys()))} (or mode=list for grouped descriptions)"
 
-    # mode == "all" — unified overview
+    # mode == "all" -- unified overview
     parts = []
 
-    # R22 #2: Auto-proposed next actions — the emergent fifth behavior.
+    # R22 #2: Auto-proposed next actions -- the emergent fifth behavior.
     # Sits above individual arc surfaces because it's the synthesis.
     try:
         import json as _json_na
@@ -65,12 +65,12 @@ def status(mode: str = "all") -> str:
                     _bits.append(f"  [p{_a.get('priority')}] {_a.get('id')}: {_a.get('summary', '')[:120]}")
                 parts.append("\n".join(_bits))
             else:
-                parts.append("## Next Actions\n  [empty — substrate reports healthy quiescent state]")
+                parts.append("## Next Actions\n  [empty -- substrate reports healthy quiescent state]")
     except Exception as _na_err:
         logger.debug(f'silent-except status_unified next-actions: {type(_na_err).__name__}: {_na_err}')
 
-    # Arc III: Legendary state drift — preemptive detection from inverse
-    # reasoning. If current state drifted >2σ from legendary envelope, the
+    # Arc III: Legendary state drift -- preemptive detection from inverse
+    # reasoning. If current state drifted >2sigma from legendary envelope, the
     # outliers name the exact dimensions that departed. Appears above pattern
     # matches because drift is the signal patterns react to.
     try:
@@ -99,12 +99,12 @@ def status(mode: str = "all") -> str:
                 parts.append(
                     f"## Legendary Drift [ok]\n"
                     f"  drift={_score} envelope_n={_n} "
-                    f"(within {_drift.get('drift_threshold')}σ)"
+                    f"(within {_drift.get('drift_threshold')}sigma)"
                 )
     except Exception as _drift_err:
         logger.debug(f'silent-except status_unified drift: {type(_drift_err).__name__}: {_drift_err}')
 
-    # Arc II: Matched patterns — the MOST actionable surface in status output.
+    # Arc II: Matched patterns -- the MOST actionable surface in status output.
     # Each match names a specific action script. Sits at the top because if
     # any pattern fires, THAT is what the next turn should address.
     try:
@@ -152,7 +152,7 @@ def status(mode: str = "all") -> str:
     except Exception as _eff_err:
         logger.debug(f'silent-except status_unified efficacy: {type(_eff_err).__name__}: {_eff_err}')
 
-    # Arc I: Cross-substrate consensus — surface at the TOP (above retirement,
+    # Arc I: Cross-substrate consensus -- surface at the TOP (above retirement,
     # above HCI alert) since divergence is the most actionable hidden signal.
     try:
         import json as _json_con
@@ -170,7 +170,7 @@ def status(mode: str = "all") -> str:
                 f"  mean={_con.get('mean')} stdev={_con.get('stdev')} divergence={_con.get('divergence')} "
                 f"(n={_con.get('active_count')})\n"
                 f"  voters: {_vtr_bits}\n"
-                + (f"  outliers: {_outs}" if _outs else "  (no outliers — substrates agree)")
+                + (f"  outliers: {_outs}" if _outs else "  (no outliers -- substrates agree)")
             )
     except Exception as _con_err:
         logger.debug(f'silent-except status_unified consensus: {type(_con_err).__name__}: {_con_err}')
@@ -213,7 +213,7 @@ def status(mode: str = "all") -> str:
     except Exception as _re_err:
         logger.debug(f'silent-except status_unified retirement: {type(_re_err).__name__}: {_re_err}')
 
-    # HCI regression alert — surface FIRST since it demands action. Cleared
+    # HCI regression alert -- surface FIRST since it demands action. Cleared
     # automatically by compute-musical-correlation.js when HCI stabilizes.
     try:
         import json as _json_alert
@@ -230,7 +230,7 @@ def status(mode: str = "all") -> str:
     except Exception as _ae:
         logger.debug(f'silent-except status_unified hci-regression: {type(_ae).__name__}: {_ae}')
 
-    # Compact freshness summary — surface STALE/MISSING/SYNC issues upfront
+    # Compact freshness summary -- surface STALE/MISSING/SYNC issues upfront
     try:
         import glob as _gl
         from datetime import datetime as _dt
@@ -253,7 +253,7 @@ def status(mode: str = "all") -> str:
         if os.path.exists(_as_path):
             _as_age = _dt.now().timestamp() - os.path.getmtime(_as_path)
             if _as_age > 86400 * 7:
-                _flags.append(f"adaptive-state:VERY_STALE({_as_age/86400:.0f}d — warm-start EMAs may be stale)")
+                _flags.append(f"adaptive-state:VERY_STALE({_as_age/86400:.0f}d -- warm-start EMAs may be stale)")
         _snaps = sorted(_gl.glob(os.path.join(_m, "run-history", "*.json")))
         if _snaps:
             _delta = abs(os.path.getmtime(os.path.join(_m, "trace.jsonl"))
@@ -265,7 +265,7 @@ def status(mode: str = "all") -> str:
     except Exception as _err2:
         logger.debug(f'silent-except status_unified.py:120: {type(_err2).__name__}: {_err2}')
 
-    # VRAM snapshot — one-line summary from the monitor's latest sample
+    # VRAM snapshot -- one-line summary from the monitor's latest sample
     try:
         import json as _json_vram
         _vram_hist = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "vram-history.jsonl")
@@ -339,7 +339,7 @@ def status(mode: str = "all") -> str:
     except Exception as _err4:
         logger.debug(f'silent-except status_unified.py:194: {type(_err4).__name__}: {_err4}')
 
-    # Reasoning tier cascade — global quality ranking across all providers
+    # Reasoning tier cascade -- global quality ranking across all providers
     try:
         lines = ["## Reasoning Cascade (absolute quality order)"]
         from ..synthesis.synthesis_reasoning import get_status as _rank_status
@@ -379,7 +379,7 @@ def status(mode: str = "all") -> str:
 
         if not any_up:
             lines.append("")
-            lines.append("  → Fallback: local qwen3:30b-a3b")
+            lines.append("  -> Fallback: local qwen3:30b-a3b")
         parts.append("\n".join(lines))
     except Exception as e:
         parts.append(f"## Reasoning Cascade\n  error: {e}")

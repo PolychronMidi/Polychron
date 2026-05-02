@@ -1,4 +1,4 @@
-"""Mode handlers — extracted from mode_handlers.py.
+"""Mode handlers -- extracted from mode_handlers.py.
 mode_handlers.py imports back and registers in _STATUS_MODES.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ logger = logging.getLogger("HME")
 
 
 def _mode_multi_axis_band():
-    """Horizon II expansion — multi-axis bands.
+    """Horizon II expansion -- multi-axis bands.
 
     Today's chaordic band is [55, 85] for the aggregate HCI score, one
     homeostat across all dimensions. The chaordic edge is N-dimensional;
@@ -31,7 +31,7 @@ def _mode_multi_axis_band():
     This view computes the per-subtag HCI sub-score (sum of weighted
     PASS/FAIL/WARN scores within each subtag) and reports each axis's
     position relative to a default [0.55, 0.85] band. Turns the single
-    homeostat into N independent ones — agent reads which axes are
+    homeostat into N independent ones -- agent reads which axes are
     saturated, which are starving, which are healthy.
     """
     import os as _os
@@ -43,7 +43,7 @@ def _mode_multi_axis_band():
     snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
     if not _os.path.isfile(snap_path):
         return ("# i/status mode=multi-axis-band\n"
-                "No snapshot — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+                "No snapshot -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
     try:
         with open(snap_path) as _f:
             snap = _json.load(_f)
@@ -68,7 +68,7 @@ def _mode_multi_axis_band():
 
     # Aggregate per subtag: weighted-score sum / weighted-max sum.
     # Track raw scores too for the confidence column (Horizon II asymptote
-    # — confidence dimension exposes whether high score is uniformly
+    # -- confidence dimension exposes whether high score is uniformly
     # high vs barely-passing; a uniform-high subtag is genuinely strong,
     # a barely-passing one is precarious).
     by_subtag: dict[str, list[tuple[float, float]]] = defaultdict(list)
@@ -84,7 +84,7 @@ def _mode_multi_axis_band():
 
     LO, HI = 0.55, 0.85
 
-    # Read persisted band proposal (Horizon IX × II compounding) — if a
+    # Read persisted band proposal (Horizon IX * II compounding) -- if a
     # band-tuning run wrote per-axis proposed bands, use them; otherwise
     # fall back to the aggregate [LO, HI] for every axis.
     proposal_path = _os.path.join(_root, "tmp", "hme-band-proposal.json")
@@ -135,9 +135,9 @@ def _mode_multi_axis_band():
         out.append(f"  {marker} {subtag:22}  {n:>9}  {score:>5.2f}  {min_raw:>5.2f}  {state:>9}  {band_str:>14}")
 
     out.append("")
-    # Conjugate-channel quadrant inline (Horizon V × II compounding):
+    # Conjugate-channel quadrant inline (Horizon V * II compounding):
     # the multi-axis view is per-subtag; the conjugate quadrant is per-
-    # round (HCI × perceptual). Surface it as a one-liner so the agent
+    # round (HCI * perceptual). Surface it as a one-liner so the agent
     # sees both the multi-axis and the joint-coupling picture together.
     snap_v = snap.get("verifiers", {}).get("conjugate-channel")
     if snap_v:
@@ -153,12 +153,12 @@ def _mode_multi_axis_band():
     out.append("")
     out.append("  The default [0.55, 0.85] band is shared across axes today.")
     out.append("  Future expansion: per-axis learned bands tuned from ground-truth")
-    out.append("  signature per subtag (Horizon IX × Horizon II compounding).")
+    out.append("  signature per subtag (Horizon IX * Horizon II compounding).")
     return "\n".join(out)
 
 
 def _mode_conjugate():
-    """Horizon V seed — composition⇔HME conjugate channel.
+    """Horizon V seed -- composition<=>HME conjugate channel.
 
     The two coherences (HCI = HME's self-coherence, perceptual = the
     music's coherence) have always been tracked in parallel but never
@@ -206,7 +206,7 @@ def _mode_conjugate():
         return ("# i/status mode=conjugate\n"
                 "No rounds carry both hme_coherence + perceptual_complexity_avg.")
 
-    # Quadrant thresholds — data-driven medians since `hme_coherence`
+    # Quadrant thresholds -- data-driven medians since `hme_coherence`
     # in musical-correlation history is on a different scale (0-1) than
     # the verifier-snapshot HCI (0-100). Use the median of each axis
     # over the joined rounds so quadrants always partition meaningfully.
@@ -232,8 +232,8 @@ def _mode_conjugate():
             return None
         return sum(r[key] for r in rs) / len(rs)
 
-    out = [f"# Conjugate channel — composition ⇔ HME ({len(rounds)} rounds joined)"]
-    out.append(f"  thresholds: HCI ≥ {HCI_T:.2f} · perceptual ≥ {PERC_T:.2f}  (medians; partition is data-driven)")
+    out = [f"# Conjugate channel -- composition <=> HME ({len(rounds)} rounds joined)"]
+    out.append(f"  thresholds: HCI >= {HCI_T:.2f} . perceptual >= {PERC_T:.2f}  (medians; partition is data-driven)")
     out.append("")
     out.append(f"  {'quadrant':18}  {'rounds':>6}  {'avg HCI':>8}  {'avg perc':>9}  meaning")
     rows = [
@@ -245,8 +245,8 @@ def _mode_conjugate():
     for label, rs, meaning in rows:
         avg_hci = _avg(rs, "hci")
         avg_perc = _avg(rs, "perc")
-        avg_hci_s = f"{avg_hci:.2f}" if avg_hci is not None else "─"
-        avg_perc_s = f"{avg_perc:.2f}" if avg_perc is not None else "─"
+        avg_hci_s = f"{avg_hci:.2f}" if avg_hci is not None else "-"
+        avg_perc_s = f"{avg_perc:.2f}" if avg_perc is not None else "-"
         out.append(f"  {label:18}  {len(rs):>6}  {avg_hci_s:>8}  {avg_perc_s:>9}  {meaning}")
 
     # Latest round
@@ -267,7 +267,7 @@ def _mode_conjugate():
 
 
 def _compute_per_axis_band(sentiment_buckets: dict) -> list:
-    """Given a per-axis sentiment→[hci] mapping, compute proposed band
+    """Given a per-axis sentiment->[hci] mapping, compute proposed band
     bounds. Lower = median of negative-axis verdicts; upper = median of
     positive-axis verdicts. Falls back to default [0.55, 0.85] when
     not enough per-axis data."""

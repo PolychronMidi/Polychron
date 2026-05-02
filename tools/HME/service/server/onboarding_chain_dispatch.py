@@ -1,24 +1,24 @@
-"""HME onboarding chain — per-session walkthrough state machine.
+"""HME onboarding chain -- per-session walkthrough state machine.
 
 The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
 MCP server so tool handlers can invoke each other directly (hooks cannot).
 
 Linear state machine with silent prerequisite auto-chaining:
 
-    boot            fresh session — waiting for selftest
-    selftest_ok     selftest passed — waiting for evolve(focus='design')
-    targeted        target picked — waiting for read(target, mode='before')
-    briefed         KB briefing absorbed — waiting for Edit(s) on target
-    edited          Edit done — waiting for review(mode='forget')
-    reviewed        review clean — waiting for npm run main
-    piped           pipeline running in background — waiting for verdict
-    verified        STABLE/EVOLVED — waiting for learn(title=, content=)
-    graduated       loop complete — blocks relax, state file deleted
+    boot            fresh session -- waiting for selftest
+    selftest_ok     selftest passed -- waiting for evolve(focus='design')
+    targeted        target picked -- waiting for read(target, mode='before')
+    briefed         KB briefing absorbed -- waiting for Edit(s) on target
+    edited          Edit done -- waiting for review(mode='forget')
+    reviewed        review clean -- waiting for npm run main
+    piped           pipeline running in background -- waiting for verdict
+    verified        STABLE/EVOLVED -- waiting for learn(title=, content=)
+    graduated       loop complete -- blocks relax, state file deleted
 
 Design rules:
   * Agents see ONE tool call per logical step. Prerequisites run silently
     inside the tool handler and their output is prepended to the result.
-  * Advancement is automatic — tools and hooks write state, agent never does.
+  * Advancement is automatic -- tools and hooks write state, agent never does.
   * Missing state file = graduated (permissive). Hooks create it on SessionStart.
   * Chain never HARD-blocks a tool. Failures are reported, tool still runs.
     Hard gates live in shell hooks (for Edit/Bash, which this module can't reach).
@@ -93,15 +93,15 @@ STATES = [
 STEP_LABELS = {
     "boot":        f"1/7 boot check (run {_action_form('selftest')})",
     "selftest_ok": f"2/7 pick evolution target (run {_i_form('evolve', primer=True)})",
-    "targeted":    "3/7 edit target module (Edit tool — briefing auto-chains)",
+    "targeted":    "3/7 edit target module (Edit tool -- briefing auto-chains)",
     "edited":      f"4/7 audit changes (run {_i_form('review', primer=True)})",
     "reviewed":    "5/7 run pipeline (Bash: npm run main)",
     "piped":       "6/7 await verdict (hooks advance automatically)",
     "verified":    f"7/7 persist learning (run {_i_form('learn', primer=True)})",
-    "graduated":   "graduated — blocks relax",
+    "graduated":   "graduated -- blocks relax",
 }
 
-# Ordered step list for the todo tree mirror — index matches STATES order
+# Ordered step list for the todo tree mirror -- index matches STATES order
 STEP_SHORT = [
     f"boot check ({_action_form('selftest')})",
     f"pick evolution target ({_i_form('evolve', primer=True)})",
@@ -113,7 +113,7 @@ STEP_SHORT = [
 ]
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-# Flat per-field state files — kept separate (not merged into JSON) so shell
+# Flat per-field state files -- kept separate (not merged into JSON) so shell
 # helpers can read them via `cat` without pulling in `jq` or Python. The
 # tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
@@ -121,7 +121,7 @@ _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
 
 
-# State I/O — single-file flat storage, never raises
+# State I/O -- single-file flat storage, never raises
 
 
 
@@ -130,7 +130,7 @@ def chain_enter(tool: str, args: dict) -> Optional[str]:
     """Auto-run prerequisites for `tool` based on current state.
 
     Returns prereq output text to be prepended to the tool's own result, or
-    None if no chaining needed. Never raises. Never hard-aborts the tool —
+    None if no chaining needed. Never raises. Never hard-aborts the tool --
     if a prereq fails, the output is still prepended but the tool runs.
     """
     s = state()
@@ -138,7 +138,7 @@ def chain_enter(tool: str, args: dict) -> Optional[str]:
         return None
 
     # Prerequisite rule: every HME tool except selftest auto-runs selftest
-    # when state is 'boot'. This is the single chaining rule — everything
+    # when state is 'boot'. This is the single chaining rule -- everything
     # else is state advancement, not prerequisite chaining.
     if s == "boot":
         needs_selftest = not (
@@ -153,7 +153,7 @@ def chain_enter(tool: str, args: dict) -> Optional[str]:
 def chain_exit(tool: str, args: dict, output: str) -> str:
     """Advance state based on tool completion. Append status line.
 
-    Never raises. Advancement is strictly forward — never moves state
+    Never raises. Advancement is strictly forward -- never moves state
     backwards, never skips steps it doesn't understand.
     """
     if not isinstance(output, str):
@@ -182,7 +182,7 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
             return
 
     # evolve(focus=<target-picking>) -> targeted. Diagnostic foci
-    # (stress, invariants, coupling, loc, patterns) are forensic — they
+    # (stress, invariants, coupling, loc, patterns) are forensic -- they
     # don't pick a target, so they MUST NOT advance onboarding state.
     # Advancing on them skips the "pick evolution target" step entirely.
     if tool == "evolve":
@@ -218,7 +218,7 @@ def _advance(tool: str, args: dict, output: str, s: str) -> None:
 
 
 
-# Decorator — the clean wrap point for @ctx.mcp.tool() functions
+# Decorator -- the clean wrap point for @ctx.mcp.tool() functions
 
 
 def chained(tool_name: str) -> Callable:
@@ -230,14 +230,14 @@ def chained(tool_name: str) -> Callable:
         def evolve(focus: str = "all", query: str = "") -> str:
             ...
 
-    Decorator order matters — @ctx.mcp.tool() must be OUTERMOST so FastMCP
+    Decorator order matters -- @ctx.mcp.tool() must be OUTERMOST so FastMCP
     registers the wrapped function. functools.wraps preserves __wrapped__ so
     inspect.signature() still sees the original signature for MCP schema.
     """
     def decorator(fn: Callable) -> Callable:
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            # Build arg dict from kwargs — positional args rare for MCP tools
+            # Build arg dict from kwargs -- positional args rare for MCP tools
             arg_dict = dict(kwargs)
             prereq = None
             try:
@@ -269,11 +269,11 @@ def chained(tool_name: str) -> Callable:
 
 
 
-# External API — for shell hooks to drive Edit/Bash state transitions
+# External API -- for shell hooks to drive Edit/Bash state transitions
 
 
 def force_state(s: str) -> bool:
-    """External state advance — used by hooks via `python3 -c`.
+    """External state advance -- used by hooks via `python3 -c`.
     Only advances forward; refuses backward moves. Returns True on success.
     """
     if s not in STATES:
@@ -290,7 +290,7 @@ def force_state(s: str) -> bool:
 
 
 
-# Re-exports — helpers extracted.
+# Re-exports -- helpers extracted.
 from .onboarding_chain_helpers import (  # noqa: F401, E402
     _run_selftest_prereq, _selftest_clean, _review_clean,
     _extract_target_from_evolve,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""H9: Predictive HCI — forecasts next HCI score from recent holograph history.
+"""H9: Predictive HCI -- forecasts next HCI score from recent holograph history.
 
 Reads metrics/holograph/*.json, extracts the HCI time series, and fits a
 simple linear regression on the last N snapshots (default 5). Predicts
@@ -114,9 +114,9 @@ def predict() -> dict:
     if predicted < 80 and current >= 80:
         warning = f"predicted HCI {predicted:.1f} will cross below 80 threshold"
     elif direction == "falling" and predicted < current - 5:
-        warning = f"sustained drop predicted: {current:.1f} → {predicted:.1f}"
+        warning = f"sustained drop predicted: {current:.1f} -> {predicted:.1f}"
     elif volatility > 15:
-        warning = f"HCI volatile (stddev={volatility:.1f}) — prediction unreliable"
+        warning = f"HCI volatile (stddev={volatility:.1f}) -- prediction unreliable"
 
     return {
         "generated_at": time.time(),

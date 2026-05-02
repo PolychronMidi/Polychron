@@ -100,7 +100,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
     grep_patterns = []
     glob_patterns = []
     # Always include directories inferred from the prompt as a baseline,
-    # then let the arbiter ADD to that set. Prevents the "arbiter failed →
+    # then let the arbiter ADD to that set. Prevents the "arbiter failed ->
     # default to src/ only" failure mode where audits targeting tools/HME/
     # silently search the wrong place.
     inferred_dirs = _infer_directories(prompt)
@@ -115,18 +115,18 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                 search_terms = plan.get("terms", [])[:6]
                 grep_patterns = plan.get("grep_patterns", [])[:6]
                 glob_patterns = plan.get("glob_patterns", [])[:4]
-                # Union arbiter-proposed dirs with inferred dirs — never
+                # Union arbiter-proposed dirs with inferred dirs -- never
                 # shrink the search scope below what the prompt implies
                 arbiter_dirs = plan.get("directories", []) or []
                 for d in arbiter_dirs[:4]:
                     if d not in directories:
                         directories.append(d)
         except (json.JSONDecodeError, AttributeError) as _plan_err:
-            # Arbiter plan malformed — we just lost its directory scope
+            # Arbiter plan malformed -- we just lost its directory scope
             # hints and will search the fallback set instead, which is
             # often the wrong directories for the query. This is a real
             # arbiter regression signal, not a benign miss.
-            logger.error(f"arbiter plan parse FAILED — search scope degraded to keyword fallback: {type(_plan_err).__name__}: {_plan_err}")
+            logger.error(f"arbiter plan parse FAILED -- search scope degraded to keyword fallback: {type(_plan_err).__name__}: {_plan_err}")
 
     # Fall back to keyword extraction if arbiter didn't produce useful terms
     if not search_terms and not grep_patterns:
@@ -150,7 +150,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
         tools_used.append("KB(query)")
 
     # Grep with arbiter-planned patterns across inferred directories.
-    # Parallel: 6 patterns × 4 directories = 24 possible greps. I/O bound,
+    # Parallel: 6 patterns * 4 directories = 24 possible greps. I/O bound,
     # thread-safe (subprocess), safe to parallelize. Typical saving: 5-10s
     # per query on warm cache. ThreadPoolExecutor bounds at 8 concurrent so
     # we don't blow out file descriptors.
@@ -206,7 +206,7 @@ def run_agent(prompt: str, project_root: str = None, mode: str = "explore") -> d
                 sections.append(f"=== Files matching '*{term}*' ===\n{result}")
                 tools_used.append(f"GLOB(*{term}*)")
 
-    # Read key files found in grep. Budget varies by mode: explore=6×80, plan=12×150.
+    # Read key files found in grep. Budget varies by mode: explore=6*80, plan=12*150.
     _max_files = mode_cfg.get("max_files", 6)
     _file_lines = mode_cfg.get("file_lines", 80)
     files_seen = set()
@@ -261,7 +261,7 @@ Question: {prompt}
     # Fallback 1: swap models if the primary synthesizer returned empty
     if not answer or not answer.strip():
         try:
-            # Swap — if we routed to reasoner, try coder (and vice versa)
+            # Swap -- if we routed to reasoner, try coder (and vice versa)
             primary_model, _port, primary_label = _route_model(prompt)
             if primary_label == "reasoner":
                 fallback_model, fallback_port, fallback_label = (_CODER_MODEL, _CODER_PORT, "coder")
@@ -308,7 +308,7 @@ Question: {prompt}
         "iterations": 1,
         "tools_used": tools_used,
         "elapsed_s": round(elapsed, 1),
-        "model": f"{_ARBITER_MODEL} → {model_label}({_route_model(prompt)[0]})",
+        "model": f"{_ARBITER_MODEL} -> {model_label}({_route_model(prompt)[0]})",
     }
 
 

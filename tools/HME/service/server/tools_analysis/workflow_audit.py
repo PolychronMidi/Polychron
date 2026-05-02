@@ -1,4 +1,4 @@
-"""HME post-edit audit tools — what_did_i_forget and diagnose_error."""
+"""HME post-edit audit tools -- what_did_i_forget and diagnose_error."""
 import os
 import logging
 
@@ -14,7 +14,7 @@ from .synthesis_session import append_session_narrative
 from .tool_cache import cached_kb_search, cached_find_callers
 from . import _track
 
-# workflow.py imports US too — same lazy-shim pattern as workflow_before_editing.
+# workflow.py imports US too -- same lazy-shim pattern as workflow_before_editing.
 def _build_edit_risks(*a, **kw):
     from . import workflow as _w; return _w._build_edit_risks(*a, **kw)
 def _hme_self_aware_context(*a, **kw):
@@ -87,7 +87,7 @@ def what_did_i_forget(changed_files: str) -> str:
     doc_updates_needed = set()
     # Per-review dedup set for scaffolding reminders (HOOK CHANGE, DOC
     # CHECK). Seeing the same reminder repeated N times for N edits of
-    # the same file in one session adds noise without new signal — once
+    # the same file in one session adds noise without new signal -- once
     # the operator has acknowledged "hook changed, check siblings",
     # the second and third repeats are friction.
     _emitted_scaffold = set()
@@ -99,8 +99,8 @@ def what_did_i_forget(changed_files: str) -> str:
         rel_path = abs_path.replace(os.path.realpath(ctx.PROJECT_ROOT) + "/", "")
         module_name = (os.path.basename(abs_path)
                        .replace(".js", "").replace(".ts", "").replace(".sh", "").replace(".py", ""))
-        # Hook files: KB search won't find relevant entries by filename — emit structural reminders instead.
-        # Dedup HOOK CHANGE and DOC CHECK — repeat edits to the same hook in
+        # Hook files: KB search won't find relevant entries by filename -- emit structural reminders instead.
+        # Dedup HOOK CHANGE and DOC CHECK -- repeat edits to the same hook in
         # one session produce identical reminders, which pile up in the
         # review output for no signal. `_emitted_scaffold` tracks which
         # (prefix, rel_path) pairs have already fired this run.
@@ -122,10 +122,10 @@ def what_did_i_forget(changed_files: str) -> str:
         elif rel_path.startswith(("tools/", "scripts/", "lab/")):
             # KB constraints are for the composition system (src/). Tooling files (chat
             # plugin, MCP server, scripts) have different semantics and produce spurious
-            # matches against src/ architecture entries (e.g. "router" → "gateway").
+            # matches against src/ architecture entries (e.g. "router" -> "gateway").
             pass
         else:
-            # Check KB for constraints on this module — split actionable vs historical
+            # Check KB for constraints on this module -- split actionable vs historical
             kb_results = cached_kb_search(module_name, min(limits["kb_entries"], 5), ctx.project_engine)
             _CONSTRAINT_MARKERS = ("never", "must", "always", "do not", "don't", "forbidden", "violation", "constraint:", "ban", "prevent")
             for k in kb_results[:3]:
@@ -152,13 +152,13 @@ def what_did_i_forget(changed_files: str) -> str:
                 import re as _re
                 has_arch_comment = bool(_re.search(r'//\s*R\d+.*rhyth', content, _re.IGNORECASE))
                 if not has_arch_comment:
-                    all_warnings.append(f"[{rel_path}] RHYTHM COUPLING: L0.getLast('emergentRhythm') present — add R-comment and update ARCHITECTURE.md emergentRhythm consumers list")
+                    all_warnings.append(f"[{rel_path}] RHYTHM COUPLING: L0.getLast('emergentRhythm') present -- add R-comment and update ARCHITECTURE.md emergentRhythm consumers list")
                 # Check known rhythm field usage
                 used_fields = set(_re.findall(r'(?:rhythmEntry|emergentEntry)\w*\.(\w+)', content))
                 _KNOWN_FIELDS = {"density", "complexity", "biasStrength", "densitySurprise", "hotspots", "complexityEma"}
                 unknown = used_fields - _KNOWN_FIELDS
                 if unknown:
-                    all_warnings.append(f"[{rel_path}] UNKNOWN RHYTHM FIELDS: {unknown} — add to _KNOWN_RHYTHM_FIELDS in coupling.py")
+                    all_warnings.append(f"[{rel_path}] UNKNOWN RHYTHM FIELDS: {unknown} -- add to _KNOWN_RHYTHM_FIELDS in coupling.py")
             # Check HME Python tool registration (tools/HME/ .py files with @ctx.mcp.tool())
             if "/tools/HME/" in rel_path and rel_path.endswith(".py"):
                 import re as _re2
@@ -173,7 +173,7 @@ def what_did_i_forget(changed_files: str) -> str:
                             if module_stem not in init_content:
                                 all_warnings.append(
                                     f"[{rel_path}] HME TOOL REGISTRATION: '{module_stem}' not imported in "
-                                    f"__init__.py — tools {tool_funcs} will be invisible to MCP"
+                                    f"__init__.py -- tools {tool_funcs} will be invisible to MCP"
                                 )
                         except Exception as _err1:
                             logger.debug(f'silent-except workflow_audit.py:212: {type(_err1).__name__}: {_err1}')
@@ -189,7 +189,7 @@ def what_did_i_forget(changed_files: str) -> str:
     # MUST run BEFORE the Warnings display section below, otherwise warnings
     # added here get counted in total_issues but never rendered to the user,
     # causing the nexus REVIEW_ISSUES count to get stuck with invisible
-    # failures. (Historical bug — the scan used to run after the display.)
+    # failures. (Historical bug -- the scan used to run after the display.)
     py_files = [f.strip() for f in changed_files.split(",") if f.strip().endswith(".py")]
     for py_path in py_files:
         abs_py = validate_project_path(py_path, ctx.PROJECT_ROOT)
@@ -205,7 +205,7 @@ def what_did_i_forget(changed_files: str) -> str:
             # coverage gap. Surface so the audit report calls it out
             # instead of quietly dropping the file.
             logger.warning(f"audit skip {rel_py} (read failed): {type(_audit_err).__name__}: {_audit_err}")
-            all_warnings.append(f"{rel_py}: audit skipped — file unreadable ({type(_audit_err).__name__})")
+            all_warnings.append(f"{rel_py}: audit skipped -- file unreadable ({type(_audit_err).__name__})")
 
     if all_warnings:
         parts.append(f"## Warnings ({len(all_warnings)})")
@@ -224,13 +224,13 @@ def what_did_i_forget(changed_files: str) -> str:
         def _i_form(name, primer=False, value=""): return f"i/{name} action={value}" if value else f"i/{name}"
     parts.append(f"\n## Reminders")
     parts.append(f"  - `{_action_form('index')}` after batch changes (file watcher handles individual saves)")
-    parts.append(f"  - `{_i_form('learn', value='add')} title=… content=…` for any new calibration anchors or decisions")
+    parts.append(f"  - `{_i_form('learn', value='add')} title=... content=...` for any new calibration anchors or decisions")
 
     # Collect git diff for synthesis context (bounded to 4000 chars).
     # This project runs a direct-autocommit hook that commits edits before the
     # review fires, so `git diff HEAD` is often empty. When that happens, fall
     # back to `HEAD~1..HEAD` so the reviewer has the just-committed diff to
-    # ground its adaptive synthesis against — otherwise the LLM has no source
+    # ground its adaptive synthesis against -- otherwise the LLM has no source
     # material and confabulates phantom files.
     diff_context = ""
     try:
@@ -249,7 +249,7 @@ def what_did_i_forget(changed_files: str) -> str:
     except Exception as _err3:
         logger.debug(f'silent-except workflow_audit.py:259: {type(_err3).__name__}: {_err3}')
 
-    # Parse diff for ±20-line hunk context in changed .py files (up to 1000 chars total).
+    # Parse diff for +/-20-line hunk context in changed .py files (up to 1000 chars total).
     # Skipped when diff is already large (>2000 chars) to keep synthesis prompt within
     # the local model's comfortable context range and avoid 10+ minute hangs.
     hunk_context = ""
@@ -294,7 +294,7 @@ def what_did_i_forget(changed_files: str) -> str:
                 except (OSError, ValueError):  # silent-ok: hunk-size counter; early break on unreadable hunk continues with next file
                     pass
             if hunk_parts:
-                hunk_context = "\nChanged file context (±10 lines around diff hunks):\n" + "\n\n".join(hunk_parts)
+                hunk_context = "\nChanged file context (+/-10 lines around diff hunks):\n" + "\n\n".join(hunk_parts)
         except Exception as _err4:
             logger.debug(f'silent-except workflow_audit.py:308: {type(_err4).__name__}: {_err4}')
 
@@ -305,18 +305,18 @@ def what_did_i_forget(changed_files: str) -> str:
     # on single-language reviews.
     _PROBE_CLASSES = [
         ("Empty-value masquerading as default",
-         {"py": "dict.get(k, D) returns None when k present-but-None — prefer (d.get(k) or D)",
-          "js": "obj[k] ?? D vs obj[k] || D — || treats 0/'' as falsy",
+         {"py": "dict.get(k, D) returns None when k present-but-None -- prefer (d.get(k) or D)",
+          "js": "obj[k] ?? D vs obj[k] || D -- || treats 0/'' as falsy",
           "sh": "${VAR:-D} fires on unset AND empty; ${VAR-D} fires only on unset"}),
-        ("Exception / error handling gaps — narrow except/catch/trap that silently drops unnamed types, or missing error paths for parse/subprocess/IO/HTTP", {}),
-        ("Append-only growth — writes to a log/jsonl/history without a size or age cap", {}),
-        ("Truthy/falsy coercion after a lookup — `x or fallback` where 0/''/False/[] could legitimately match", {}),
-        ("Path/filesystem assumptions — assumes a path is a file when it could be dir/symlink/missing, or assumes a particular cwd", {}),
-        ("Variable used before assignment — set inside a conditional branch and read where that branch may not fire", {}),
-        ("Key mismatch across reads/writes — dedup/lookup key constructed one way on insert and another on retrieval", {}),
-        ("Null-guarded arithmetic / comparison — arithmetic on possibly-None/undefined, or implicit-coercion comparison", {}),
-        ("Race on shared state — read-modify-write without serialization, or async captures mutated across awaits", {}),
-        ("Control-flow swallowing —",
+        ("Exception / error handling gaps -- narrow except/catch/trap that silently drops unnamed types, or missing error paths for parse/subprocess/IO/HTTP", {}),
+        ("Append-only growth -- writes to a log/jsonl/history without a size or age cap", {}),
+        ("Truthy/falsy coercion after a lookup -- `x or fallback` where 0/''/False/[] could legitimately match", {}),
+        ("Path/filesystem assumptions -- assumes a path is a file when it could be dir/symlink/missing, or assumes a particular cwd", {}),
+        ("Variable used before assignment -- set inside a conditional branch and read where that branch may not fire", {}),
+        ("Key mismatch across reads/writes -- dedup/lookup key constructed one way on insert and another on retrieval", {}),
+        ("Null-guarded arithmetic / comparison -- arithmetic on possibly-None/undefined, or implicit-coercion comparison", {}),
+        ("Race on shared state -- read-modify-write without serialization, or async captures mutated across awaits", {}),
+        ("Control-flow swallowing --",
          {"py": "try/except-pass that hides failures",
           "js": "uncaught promise rejections",
           "sh": "`set -e` + `||`/`&&` chains that mask failing commands"}),
@@ -325,7 +325,7 @@ def what_did_i_forget(changed_files: str) -> str:
     def _detect_languages(diff: str, files: str) -> set:
         # Parse language from file headers in the diff (+++ b/path.ext)
         # and the changed_files list, not substring scans over the whole
-        # diff body — a prose mention of `.py` inside a docstring was
+        # diff body -- a prose mention of `.py` inside a docstring was
         # falsely marking Python as present.
         import re as _re_lang
         langs = set()
@@ -339,7 +339,7 @@ def what_did_i_forget(changed_files: str) -> str:
                 for ext, lang in ext_lang.items():
                     if path.endswith(ext):
                         langs.add(lang)
-        return langs  # empty set → probes render without lang-hint blocks
+        return langs  # empty set -> probes render without lang-hint blocks
 
     _diff_langs = _detect_languages(diff_context, changed_files)
 
@@ -351,13 +351,13 @@ def what_did_i_forget(changed_files: str) -> str:
         # even when only one applied. Collapsed to one inline sentence
         # naming the lens kinds WITHOUT ordering or gates; categories
         # below continue as vocabulary. Principle: vocabulary describes,
-        # gates enumerate — keep them distinct.
+        # gates enumerate -- keep them distinct.
         lines = [
             "A tier-1 finding is a quote+divergence pair. The divergence is "
             "typically one of: a promise the docstring/name makes that the "
             "code doesn't deliver; a caller-contract the change breaks; or "
             "a silent fallback that swallows a load-bearing signal. If you "
-            "find no quote+divergence pair, say 'no tier-1 issues' — that "
+            "find no quote+divergence pair, say 'no tier-1 issues' -- that "
             "is the calibrated answer. Do NOT invent one to match the "
             "categories below; they are descriptive grammar.",
             "",
@@ -374,8 +374,8 @@ def what_did_i_forget(changed_files: str) -> str:
     warnings_text = "\n".join(all_warnings[:20]) if all_warnings else "none"
     docs_text = ", ".join(sorted(doc_updates_needed)) if doc_updates_needed else "none flagged"
 
-    # Diff is never embedded in the reasoning prompt — it's redundant
-    # with hunk_section (±10 surrounding lines with line numbers,
+    # Diff is never embedded in the reasoning prompt -- it's redundant
+    # with hunk_section (+/-10 surrounding lines with line numbers,
     # strictly more useful for bug reasoning). The diff remains
     # available server-side for symbol extraction / identifier
     # whitelist construction, and the reasoning model can always run
@@ -388,7 +388,7 @@ def what_did_i_forget(changed_files: str) -> str:
     synthesis = None
     _synthesis_timed_out = False
     if not diff_context:
-        # Nothing concrete to probe against — refuse to synthesize. Prior
+        # Nothing concrete to probe against -- refuse to synthesize. Prior
         # behavior asked the model to speculate without evidence, which is
         # where hallucinations came from.
         logger.info("what_did_i_forget: empty diff context; skipping adaptive synthesis")
@@ -434,13 +434,13 @@ def what_did_i_forget(changed_files: str) -> str:
             f"{hunk_section}\n"
             f"{allowed_block}"
             f"{probes}"
-            "OUTPUT FORMAT — for each tier-1 issue:\n"
-            "  • Quote the offending line(s) verbatim from the hunks above (or `git diff`).\n"
-            "  • State the divergence: what the surroundings imply vs what the line does.\n"
-            "  • Cite file:line.\n"
+            "OUTPUT FORMAT -- for each tier-1 issue:\n"
+            "  * Quote the offending line(s) verbatim from the hunks above (or `git diff`).\n"
+            "  * State the divergence: what the surroundings imply vs what the line does.\n"
+            "  * Cite file:line.\n"
             f"{_symbols_rule.strip() or ''}\n"
             "Say 'no tier-1 issues' ONLY if no line in scope admits a quote "
-            "+ specific-divergence pair. Not because you're uncertain — "
+            "+ specific-divergence pair. Not because you're uncertain -- "
             "uncertainty about whether a quoted divergence is a 'real bug' "
             "is what the human reviewer resolves. Your job is to surface "
             "quote+divergence pairs you can actually construct. Do NOT "
@@ -474,15 +474,15 @@ def what_did_i_forget(changed_files: str) -> str:
         # "audit skipped" is added because file-move/rename in a session
         # leaves the static-audit referencing paths that no longer exist
         # at audit time (resolved on next commit). Those warnings are
-        # transient and not actionable — same scaffolding-class as the
+        # transient and not actionable -- same scaffolding-class as the
         # existing prefixes.
         _scaffold_prefixes = ("] HOOK CHANGE:", "] DOC CHECK:", "] SKIPPED:", "] KB:",
-                              "audit skipped —", "audit skipped:")
+                              "audit skipped --", "audit skipped:")
         _actionable = [w for w in all_warnings if not any(p in w for p in _scaffold_prefixes)]
         total_issues = len(_actionable) + synthesis.count("\n- ") + synthesis.count("\n* ")
         if total_issues >= 4:
             parts.append(
-                f"\n_Found {total_issues} issues total — run `review(mode='forget')` again after fixing "
+                f"\n_Found {total_issues} issues total -- run `review(mode='forget')` again after fixing "
                 "to surface any remaining bugs (iterate until 0 remaining)._"
             )
     else:
@@ -490,12 +490,12 @@ def what_did_i_forget(changed_files: str) -> str:
             from server.failure_genealogy import record_failure
             _fid, _is_new = record_failure(
                 source="review(mode='forget')",
-                error="synthesis timed out — coder model unavailable or GPU busy; adaptive 'What You May Have Missed' section skipped",
+                error="synthesis timed out -- coder model unavailable or GPU busy; adaptive 'What You May Have Missed' section skipped",
                 severity="WARN",
             )
             if _is_new:
-                logger.warning("what_did_i_forget: synthesis timed out — LIFESAVER recorded")
-            parts.append("\n## What You May Have Missed *(adaptive)*\nSkipped — coder model timed out (GPU busy or service down).")
+                logger.warning("what_did_i_forget: synthesis timed out -- LIFESAVER recorded")
+            parts.append("\n## What You May Have Missed *(adaptive)*\nSkipped -- coder model timed out (GPU busy or service down).")
         else:
             logger.warning("what_did_i_forget: adaptive synthesis unavailable (timeout or llama.cpp down)")
 

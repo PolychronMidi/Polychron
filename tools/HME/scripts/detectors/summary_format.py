@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
-"""Stop-the-Line mandatory output format — PAI v6.3.0 import #9.
+"""Stop-the-Line mandatory output format -- PAI v6.3.0 import #9.
 
-PAI rule: "Every Algorithm run MUST close with ━━━ 📃 SUMMARY ━━━ 7/7
-block. Format violations outrank output length, output quality, and
-output detail."
+PAI rule: "Every Algorithm run MUST close with a structured 7-field summary
+block. Format violations outrank output length, output quality, and output
+detail." The original PAI doctrine uses emoji markers; Polychron's
+ASCII-first project rule (project-wide no-non-ascii audit, no emoji
+allowlist) requires the same structure with text labels:
 
-Polychron mapping: tier ≥ E3 (the Algorithm threshold the tier
-classifier emits) requires the closing block. Below E3, the format gate
-is skipped (light-touch turns shouldn't carry summary boilerplate).
+    === SUMMARY ===
+    [ITERATION]: <round/turn marker>
+    [CONTENT]: <one-line content summary>
+    [STORY]:
+      - problem: <...>
+      - what we did: <...>
+      - how it went: <...>
+      - what's next: <...>
+    [VOICE] <name>: <8-16 word closing line>
 
-Block schema (case + whitespace tolerant; emoji required):
-    ━━━ 📃 SUMMARY ━━━
-    🔄 ITERATION: <round/turn marker>
-    📃 CONTENT: <one-line content summary>
-    🖊️ STORY:
-      - problem: <…>
-      - what we did: <…>
-      - how it went: <…>
-      - what's next: <…>
-    🗣️ <name>: <8-16 word closing line>
+Polychron mapping: tier >= E3 (the Algorithm threshold the tier classifier
+emits) requires the closing block. Below E3, the format gate is skipped
+(light-touch turns shouldn't carry summary boilerplate).
 
 Verdicts:
   ok                     tier < E3 OR block present and well-formed
-  summary_missing        tier ≥ E3 AND no closing block detected
-  summary_malformed      tier ≥ E3 AND block present but missing fields
+  summary_missing        tier >= E3 AND no closing block detected
+  summary_malformed      tier >= E3 AND block present but missing fields
 
 The detector reads tier from output/metrics/mode-classifier.jsonl
 (latest line) or the SUMMARY_FORMAT_TIER env override (used by tests).
@@ -45,20 +46,21 @@ _HERE = Path(__file__).resolve().parent
 _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.parent)
 _MODE_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 
-# Trigger tiers — E3+ is the Algorithm floor where the format is required.
+# Trigger tiers - E3+ is the Algorithm floor where the format is required.
 _TRIGGER_TIERS = {"E3", "E4", "E5"}
 
-_BANNER_RE = re.compile(r"━━━\s*📃\s*SUMMARY\s*━━━")
-_ITER_RE   = re.compile(r"🔄\s*ITERATION\s*:", re.IGNORECASE)
-_CONTENT_RE = re.compile(r"📃\s*CONTENT\s*:", re.IGNORECASE)
-_STORY_RE  = re.compile(r"🖊️\s*STORY\s*:", re.IGNORECASE)
-_VOICE_RE  = re.compile(r"🗣️\s*[^\n:]{1,40}\s*:")
+_BANNER_RE = re.compile(r"={3,}\s*SUMMARY\s*={3,}")
+_ITER_RE   = re.compile(r"\[ITERATION\]\s*:", re.IGNORECASE)
+_CONTENT_RE = re.compile(r"\[CONTENT\]\s*:", re.IGNORECASE)
+_STORY_RE  = re.compile(r"\[STORY\]\s*:", re.IGNORECASE)
+_VOICE_RE  = re.compile(r"\[VOICE\]\s+\S[^\n:]{0,40}:")
 
 _STORY_BULLETS = (
-    re.compile(r"^\s*[-*•]\s*problem\s*:", re.IGNORECASE | re.MULTILINE),
-    re.compile(r"^\s*[-*•]\s*what\s+we\s+did\s*:", re.IGNORECASE | re.MULTILINE),
-    re.compile(r"^\s*[-*•]\s*how\s+it\s+went\s*:", re.IGNORECASE | re.MULTILINE),
-    re.compile(r"^\s*[-*•]\s*what['’]?s?\s+next\s*:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^\s*[-*]\s*problem\s*:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^\s*[-*]\s*what\s+we\s+did\s*:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^\s*[-*]\s*how\s+it\s+went\s*:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^\s*[-*]\s*what(?:'|\u2019)?s?\s+next\s*:",
+               re.IGNORECASE | re.MULTILINE),
 )
 
 

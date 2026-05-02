@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/substrate — unified four-arc view.
+"""i/substrate -- unified four-arc view.
 
 Rolls in what compute-consensus.js / propose-next-actions.py / auto-investigate.py /
 compute-legendary-drift.py produce, presented as the agent-facing surface.
@@ -44,7 +44,7 @@ def brief():
     lb = classes.get("load-bearing", 0)
     historical = classes.get("load-bearing-historical", 0)
     flappy = classes.get("flappy", 0)
-    # HCI trend arrow — compare to previous round if timeseries available.
+    # HCI trend arrow -- compare to previous round if timeseries available.
     hci_trend = ""
     try:
         rows = _load_jsonl_tail("output/metrics/hme-arc-timeseries.jsonl", n=3)
@@ -53,11 +53,11 @@ def brief():
             if isinstance(prev_hci, (int, float)):
                 delta = hci - prev_hci
                 if delta > 0.5:
-                    hci_trend = f" ↑{delta:+.1f}"
+                    hci_trend = f" ^{delta:+.1f}"
                 elif delta < -0.5:
-                    hci_trend = f" ↓{delta:+.1f}"
+                    hci_trend = f" v{delta:+.1f}"
                 else:
-                    hci_trend = f" →"
+                    hci_trend = f" ->"
     except Exception:
         pass
     lines = [
@@ -69,7 +69,7 @@ def brief():
         for a in (na.get("actions") or [])[:5]:
             # DEFERRED_BEYOND_EXPECTED previously appeared without explanation.
             # It means the action has been in the queue longer than its
-            # declared expected-resolution window — surfaces as a nudge to
+            # declared expected-resolution window -- surfaces as a nudge to
             # either act on it or formally retire the recommendation.
             beyond = " [OVERDUE]" if a.get("deferred_beyond_expected") else ""
             lines.append(f"  [p{a.get('priority')}] {a.get('id')}{beyond}")
@@ -115,7 +115,7 @@ def actions():
         lines.append(f"\n[p{a.get('priority')}] {a.get('id')}")
         lines.append(f"  {a.get('summary', '')}")
         for s in (a.get("steps") or [])[:5]:
-            lines.append(f"  · {s}")
+            lines.append(f"  . {s}")
     return "\n".join(lines)
 
 
@@ -203,7 +203,7 @@ def patterns_view():
 def diff_view():
     rows = _load_jsonl_tail("output/metrics/hme-arc-timeseries.jsonl", n=5)
     if len(rows) < 2:
-        return f"diff: need ≥2 timeseries rows (have {len(rows)})"
+        return f"diff: need >=2 timeseries rows (have {len(rows)})"
     cur, prev = rows[-1], rows[-2]
     lines = ["Arc-over-arc delta vs previous round:"]
     for arc in ("arc_i", "arc_ii", "arc_iii", "arc_iv"):
@@ -211,7 +211,7 @@ def diff_view():
         for k, v in c.items():
             pv = p.get(k)
             if isinstance(v, (int, float)) and isinstance(pv, (int, float)) and v != pv:
-                lines.append(f"  {arc}.{k}: {pv} → {v} (Δ={v - pv:+.3f})")
+                lines.append(f"  {arc}.{k}: {pv} -> {v} (Delta={v - pv:+.3f})")
     return "\n".join(lines)
 
 

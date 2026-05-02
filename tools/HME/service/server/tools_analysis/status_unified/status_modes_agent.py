@@ -1,4 +1,4 @@
-"""Mode handlers — extracted from mode_handlers.py.
+"""Mode handlers -- extracted from mode_handlers.py.
 mode_handlers.py imports back and registers in _STATUS_MODES.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ def _mode_activity():
 
 
 def _mode_tool_latency():
-    """Horizon I expansion — tool-cost preflighting.
+    """Horizon I expansion -- tool-cost preflighting.
 
     Reads recent tool_call + inference_call events from the activity log
     and computes per-tool latency distributions (p50/p95/p99). Surfaces
@@ -82,8 +82,8 @@ def _mode_tool_latency():
             p50 = s[len(s) // 2]
             p95 = s[int(len(s) * 0.95)]
             p99 = s[int(len(s) * 0.99)]
-            # Cold-start indicator (Horizon I asymptote): if max ≥ 3× p50,
-            # this tool has cold-start behavior — first call after idle
+            # Cold-start indicator (Horizon I asymptote): if max >= 3* p50,
+            # this tool has cold-start behavior -- first call after idle
             # is much slower. Heads-up to the agent: budget extra time
             # for the first invocation.
             cold = "yes" if (s[-1] >= p50 * 3 and len(s) >= 5) else " no"
@@ -93,11 +93,11 @@ def _mode_tool_latency():
     else:
         # Diagnostic: surface root-cause hypothesis and actionable
         # remediation path. The proxy middleware activity_log.js DOES
-        # emit `event=tool_call` in onToolResult — but that pipeline
+        # emit `event=tool_call` in onToolResult -- but that pipeline
         # is dispatched by the proxy daemon, not the in-process server.
         # If tool_call events stop, the daemon's tool_use/tool_result
         # routing has broken (or the daemon isn't running).
-        out.append("  (no tool_call events in window — falling back to inference cadence)")
+        out.append("  (no tool_call events in window -- falling back to inference cadence)")
         # Pin the regression's age: scan the FULL activity log for the
         # most recent tool_call event so the operator knows when it
         # last fired (and how far back the regression extends).
@@ -126,9 +126,9 @@ def _mode_tool_latency():
             else:
                 age_str = f"{int(age_s/86400)}d ago"
             ts_iso = _dt.fromtimestamp(last_tool_call_ts).strftime("%Y-%m-%d %H:%M")
-            out.append(f"  last tool_call: {ts_iso} ({age_str}) — regression extends back this far")
+            out.append(f"  last tool_call: {ts_iso} ({age_str}) -- regression extends back this far")
         else:
-            out.append("  last tool_call: NONE in entire log — instrumentation never fired")
+            out.append("  last tool_call: NONE in entire log -- instrumentation never fired")
         out.append("")
         out.append("  Root-cause hypothesis: proxy daemon not routing tool_use/tool_result")
         out.append("  pairs through the middleware pipeline. activity_log.js loads cleanly")
@@ -144,7 +144,7 @@ def _mode_tool_latency():
         median_gap = gaps[len(gaps) // 2]
         p95_gap = gaps[int(len(gaps) * 0.95)]
         out.append(f"  inference-call cadence (proxy for round-trip cost):")
-        out.append(f"    {len(inf_ts)} calls · median gap {median_gap:.1f}s · p95 {p95_gap:.1f}s")
+        out.append(f"    {len(inf_ts)} calls . median gap {median_gap:.1f}s . p95 {p95_gap:.1f}s")
         out.append("")
 
     out.append("# Reading the table:")
@@ -157,7 +157,7 @@ def _mode_tool_latency():
 
 
 def _mode_agent_loop():
-    """Horizon IV — agent behavior as a tracked dimension.
+    """Horizon IV -- agent behavior as a tracked dimension.
 
     The agent (the LLM running the session) has been invisible to HME
     except as a stream of tool calls. This mode aggregates per-session
@@ -230,12 +230,12 @@ def _mode_agent_loop():
         out.append(f"  bash error rate:       {err_rate:.1f}%  ({bash_errs}/{tool_calls})")
     else:
         # Known instrumentation gap: tool_call events emitted by the proxy
-        # middleware activity_log.js are intermittent — fs_watcher catches
+        # middleware activity_log.js are intermittent -- fs_watcher catches
         # file_written but tool_call hits aren't reliably appearing in the
         # log. Surface the gap rather than silently report zero, and use
         # file_written + brief_recorded as proxy signals for agent activity.
         fwrites = sum(1 for e in events if e.get("event") == "file_written")
-        out.append(f"  total tool calls:      ─  (proxy tool_call instrumentation degraded; see note)")
+        out.append(f"  total tool calls:      -  (proxy tool_call instrumentation degraded; see note)")
         out.append(f"  file writes (proxy):   {fwrites}  (via fs_watcher)")
         out.append(f"  briefs recorded:       {brief_rec}  (KB consultations)")
     out.append(f"  auto-brief injected:   {brief_inj}")
@@ -248,7 +248,7 @@ def _mode_agent_loop():
         gaps.sort()
         median = gaps[len(gaps) // 2]
         p90 = gaps[int(len(gaps) * 0.9)] if len(gaps) >= 10 else gaps[-1]
-        out.append(f"  inter-tool gap:        median {median:.1f}s · p90 {p90:.1f}s")
+        out.append(f"  inter-tool gap:        median {median:.1f}s . p90 {p90:.1f}s")
 
     # Stop-hook activity hints
     stop_hits = sum(1 for e in events if e.get("event") in (

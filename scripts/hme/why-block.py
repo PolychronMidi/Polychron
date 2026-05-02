@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=block — explain the most recent hook/policy block.
+"""i/why mode=block -- explain the most recent hook/policy block.
 
 Reads:
 - log/hme-errors.log (recent block reasons)
@@ -43,7 +43,7 @@ def main(argv):
         print("If a block fired this turn, check log/hme.log for the policy name.")
         return 0
 
-    print("# i/why mode=block — most recent block events")
+    print("# i/why mode=block -- most recent block events")
     for ln in block_lines[-5:]:
         print(f"  {ln.rstrip()}")
     print()

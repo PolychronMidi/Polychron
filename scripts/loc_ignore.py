@@ -1,4 +1,4 @@
-"""Shared loader for config/loc-ignore.txt — gitignore-style patterns
+"""Shared loader for config/loc-ignore.txt -- gitignore-style patterns
 that exempt files from the LOC target declared in CLAUDE.md.
 
 Single source of truth for LOC exemptions. Consumed by:
@@ -6,7 +6,7 @@ Single source of truth for LOC exemptions. Consumed by:
   - tools/HME/service/.../evolution_evolve.py (i/evolve focus=loc)
 
 JS/Node consumers (scripts/report-src-loc.js) implement the same
-gitignore-style match logic locally — keep that mirror in sync if you
+gitignore-style match logic locally -- keep that mirror in sync if you
 extend the syntax here.
 """
 from __future__ import annotations
@@ -44,13 +44,13 @@ def load_patterns(ignore_file: Path | None = None) -> list[tuple[re.Pattern[str]
     Loud on missing file: every consumer of loc_ignore expects exemptions
     to be respected. A missing config used to silently produce an empty
     pattern list, which made every previously-exempt file fail the LOC
-    audit. Refuse to silently disable the project's exemption layer —
+    audit. Refuse to silently disable the project's exemption layer --
     the operator should know if the config is gone."""
     if ignore_file is None:
         ignore_file = _project_root() / "config" / "loc-ignore.txt"
     if not ignore_file.exists():
         raise FileNotFoundError(
-            f"loc_ignore: expected config at {ignore_file} — refusing "
+            f"loc_ignore: expected config at {ignore_file} -- refusing "
             f"to return an empty pattern list (would invalidate every "
             f"exemption silently). Restore the file or pass an explicit "
             f"ignore_file= argument to load_patterns()."
@@ -92,7 +92,7 @@ def load_with_rationale(
     `rationale` is a dict parsed from the most-recent `# rationale: ...`
     comment line preceding the pattern. Empty dict if no rationale was
     declared. Used by audit-loc.py to surface intent + revisit-when
-    triggers in the report — see the architectural-rationale-diary
+    triggers in the report -- see the architectural-rationale-diary
     rationale at the top of loc-ignore.txt.
 
     Decoupled from load_patterns() so callers that only need match
@@ -110,7 +110,7 @@ def load_with_rationale(
     for raw in ignore_file.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
         if not line:
-            # Blank line — clears any pending rationale that wasn't paired
+            # Blank line -- clears any pending rationale that wasn't paired
             # to a pattern. Prevents rationale leakage between unrelated
             # blocks.
             pending_rationale = {}

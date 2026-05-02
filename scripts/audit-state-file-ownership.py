@@ -13,16 +13,16 @@ owner" must have writes only from the declared owner. Files listed under
 into `tmp/` or `log/` or `output/metrics/` that aren't in either table
 are flagged.
 
-This is a heuristic verifier — grep-based, not AST-aware. False
+This is a heuristic verifier -- grep-based, not AST-aware. False
 positives possible (e.g. a literal string mention not actually a write).
 False negatives possible (e.g. computed paths). The goal is monotonic
 improvement: any drift surfaces as a diff against the registry, the
 human resolves, the registry advances.
 
 Exit codes:
-  0 — all writes matched against registry
-  1 — unregistered writers detected
-  2 — usage error
+  0 -- all writes matched against registry
+  1 -- unregistered writers detected
+  2 -- usage error
 """
 import os
 import re
@@ -166,7 +166,7 @@ def main() -> int:
         return 2
     registry = _parse_registry()
     if not registry:
-        print("audit-state-file-ownership: registry parsed empty — check format",
+        print("audit-state-file-ownership: registry parsed empty -- check format",
               file=sys.stderr)
         return 2
 
@@ -175,18 +175,18 @@ def main() -> int:
     paths_checked = 0
     for path in KNOWN_PATHS:
         paths_checked += 1
-        # Take the basename for grep — full paths get computed at runtime
+        # Take the basename for grep -- full paths get computed at runtime
         # via PROJECT_ROOT/$file patterns and won't appear literally.
         basename = os.path.basename(path)
         writers = _find_writers(basename)
-        # Find the registry entry for this path (substring match — registry
+        # Find the registry entry for this path (substring match -- registry
         # keys may be the basename or a more elaborate description)
         registered_set: set[str] = set()
         for reg_path, reg_writers in registry.items():
             if basename in reg_path or path in reg_path:
                 registered_set.update(reg_writers)
         if not registered_set:
-            # Path is not in the registry at all — that's drift only if
+            # Path is not in the registry at all -- that's drift only if
             # there are real writers
             if writers:
                 drift.append(
@@ -197,7 +197,7 @@ def main() -> int:
         for writer_path, ln in writers:
             if not _writer_matches_registry(writer_path, registered_set):
                 drift.append(
-                    f"{path}:{writer_path}:{ln} — writer not declared in registry"
+                    f"{path}:{writer_path}:{ln} -- writer not declared in registry"
                 )
 
     print(f"audit-state-file-ownership: scanned {paths_checked} state paths "
@@ -209,7 +209,7 @@ def main() -> int:
         if len(drift) > 20:
             print(f"    ... and {len(drift) - 20} more")
         return 1
-    print("  no drift — every detected writer is declared in the registry")
+    print("  no drift -- every detected writer is declared in the registry")
     return 0
 
 

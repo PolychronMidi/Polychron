@@ -4,7 +4,7 @@ Each physical GPU (keyed by Vulkan tag) has its own busy flag. A generation
 call flips the flag for the GPU its target instance lives on; callers on
 that GPU (RAG stack on GPU0, audio models on GPU1, etc.) read the flag to
 route GPU (idle) or CPU mirror (busy). Flag is device-based, not name-
-based — so future instances scheduled onto either GPU participate without
+based -- so future instances scheduled onto either GPU participate without
 code changes.
 
 Watchdog: if any flag stays set for > WATCHDOG_S the daemon force-clears
@@ -12,7 +12,7 @@ with a warning so a bug in set/clear pairing can't permanently strand
 callers on CPU.
 
 Backcompat: the pre-existing single-flag API (_rag_gpu_busy,
-arbiter_busy_set/clear, rag_route()) still works — it targets the "default"
+arbiter_busy_set/clear, rag_route()) still works -- it targets the "default"
 device (arbiter's), so old callers behave exactly as before.
 """
 from __future__ import annotations
@@ -22,9 +22,9 @@ import time
 
 from ._boot import ENV, logger
 
-_gpu_busy_flags: dict[str, dict] = {}  # vulkan_tag → {event, set_ts}
+_gpu_busy_flags: dict[str, dict] = {}  # vulkan_tag -> {event, set_ts}
 _gpu_busy_lock = threading.Lock()
-_GPU_BUSY_WATCHDOG_S = 300.0  # 5 min max — longest legit arbiter/coder generation
+_GPU_BUSY_WATCHDOG_S = 300.0  # 5 min max -- longest legit arbiter/coder generation
 _default_device_cache: str | None = None  # first arbiter device we saw
 
 
@@ -53,7 +53,7 @@ def gpu_busy_clear(device: str) -> None:
 
 
 def gpu_busy_current(device: str) -> bool:
-    """Read device flag with watchdog — auto-clear if held past WATCHDOG_S."""
+    """Read device flag with watchdog -- auto-clear if held past WATCHDOG_S."""
     with _gpu_busy_lock:
         slot = _gpu_busy_flags.get(device)
         if slot is None:
@@ -63,7 +63,7 @@ def gpu_busy_current(device: str) -> bool:
             if age > _GPU_BUSY_WATCHDOG_S:
                 logger.warning(
                     f"gpu_busy watchdog ({device}): flag held {age:.0f}s > "
-                    f"{_GPU_BUSY_WATCHDOG_S:.0f}s — force-clearing. Check for "
+                    f"{_GPU_BUSY_WATCHDOG_S:.0f}s -- force-clearing. Check for "
                     f"a stuck generation or missing clear."
                 )
                 slot["event"].clear()
@@ -82,7 +82,7 @@ def gpu_busy_snapshot() -> dict[str, bool]:
 
 def _get_default_device() -> str:
     """Return the device used when callers don't specify one. Reads from the
-    central .env via ENV.require — no silent fallbacks, no supervisor-probe
+    central .env via ENV.require -- no silent fallbacks, no supervisor-probe
     inference. If HME_RAG_VULKAN is missing the process fails loud."""
     global _default_device_cache
     if _default_device_cache is not None:
@@ -133,5 +133,5 @@ def rag_route(device: str | None = None) -> str:
 
 def _resolve_rag_gpu_device(instances: list) -> str | None:
     """The Vulkan tag of the physical GPU that RAG lives on. Reads
-    HME_RAG_VULKAN from .env via ENV.require — no silent default."""
+    HME_RAG_VULKAN from .env via ENV.require -- no silent default."""
     return ENV.require("HME_RAG_VULKAN")

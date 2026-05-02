@@ -11,10 +11,10 @@ Looks at the LAST assistant message. Prints:
 EXEMPTION: when the user's most recent prompt is an explicit invitation to
 a short confirmation response (AUTO-COMPLETENESS round-2 "say so plainly
 and the turn will end", "confirm and stop", any direct yes/no question),
-TEXT_ONLY_SHORT does NOT fire — a short confirmation is the correct
+TEXT_ONLY_SHORT does NOT fire -- a short confirmation is the correct
 response shape, and forcing the agent to pad with tool calls or long
 prose IS the antipattern this codebase's behavioral discipline rejects.
-The DISMISSIVE classifier is unchanged — those phrases ("nothing to do",
+The DISMISSIVE classifier is unchanged -- those phrases ("nothing to do",
 "all done") are dismissive regardless of prompt context.
 
 Usage: stop_work.py <transcript_path>
@@ -42,7 +42,7 @@ DISMISSIVE_PHRASES = (
 # When matched, TEXT_ONLY_SHORT is exempted because brevity IS the
 # correct response shape. Includes the AUTO-COMPLETENESS round-2 hook
 # directive itself, which literally says "say so plainly and the turn
-# will end" — forcing the agent to pad against that directive is the
+# will end" -- forcing the agent to pad against that directive is the
 # false-positive this exemption closes.
 SHORT_CONFIRM_INVITATION_PATTERNS = (
     re.compile(r"\bsay\s+so\s+plainly\s+and\s+the\s+turn\s+will\s+end\b", re.IGNORECASE),
@@ -56,7 +56,7 @@ SHORT_CONFIRM_INVITATION_PATTERNS = (
 
 def _last_user_text(events: list) -> str:
     """Extract the last user message's text. Mirrors the helper in
-    exhaust_check.py — both detectors need the same user-prompt
+    exhaust_check.py -- both detectors need the same user-prompt
     introspection to apply context-aware exemptions."""
     last_u = None
     for ev in events:
@@ -120,7 +120,7 @@ def main() -> int:
         if isinstance(b, dict) and b.get("type") == "text"
     ]
     raw_text = " ".join(text_parts).strip()
-    # Strip quoted / code-fenced spans before phrase matching — same
+    # Strip quoted / code-fenced spans before phrase matching -- same
     # discipline as exhaust_check.py. Without this, a response that
     # describes a regex / quotes user prompt / shows code containing a
     # dismissive-phrase fragment (e.g. "All done" appearing inside a

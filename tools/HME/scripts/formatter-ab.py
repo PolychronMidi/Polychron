@@ -3,13 +3,13 @@
 
 Registers formatter variants for HME tool footers and records which
 variant was used per tool_result. When the agent's downstream tool
-calls are scanned, per-variant acted-upon rates can be compared —
-measuring whether `[HME:edit]` vs `<hme:edit>` vs `— hme edit —` has
+calls are scanned, per-variant acted-upon rates can be compared --
+measuring whether `[HME:edit]` vs `<hme:edit>` vs `-- hme edit --` has
 measurably different agent-attention behavior.
 
 MVP: registry of variants + selector + logger. Actual measurement of
 "downstream acted-upon" requires transcript-walking that comes with
-the agent-patterns DB (B) — see recent-turn scan logic there.
+the agent-patterns DB (B) -- see recent-turn scan logic there.
 
 Usage from middleware:
   from formatter_ab import select_variant, log_variant_usage
@@ -34,13 +34,13 @@ ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parent.pa
 LOG = ROOT / "output" / "metrics" / "hme-formatter-ab.jsonl"
 
 
-# Registry: formatter_name → list of variant strings. First entry is the
+# Registry: formatter_name -> list of variant strings. First entry is the
 # "control" (current production); subsequent are treatments.
 _VARIANTS = {
-    "edit_context":   ["[HME:edit]",  "<hme:edit>", "— hme edit —"],
-    "read_context":   ["[HME:read]",  "<hme:read>", "— hme read —"],
-    "dir_context":    ["[HME dir:",   "<hme dir ", "— hme dir "],
-    "bash_err":       ["[err]",       "<err>",     "— err —"],
+    "edit_context":   ["[HME:edit]",  "<hme:edit>", "-- hme edit --"],
+    "read_context":   ["[HME:read]",  "<hme:read>", "-- hme read --"],
+    "dir_context":    ["[HME dir:",   "<hme dir ", "-- hme dir "],
+    "bash_err":       ["[err]",       "<err>",     "-- err --"],
 }
 
 

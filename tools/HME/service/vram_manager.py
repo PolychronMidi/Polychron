@@ -8,13 +8,13 @@ Design contract:
     is optional and may be torn down to free VRAM under pressure.
   - Under pressure, lower-priority models are offloaded first. `priority=1`
     means first to go, higher numbers are sticky. LLMs (arbiter/coder) are
-    NOT managed by this system — they're too large and the wins don't
+    NOT managed by this system -- they're too large and the wins don't
     justify the eviction cost.
   - Reactive pressure: `request_room(...)` is called by a dispatcher before
     it uses the GPU instance. If free VRAM < needed headroom, offload lower-
     priority models until enough is free, OR fail (caller falls back to CPU).
   - Reload: `try_reload()` is called by a background poller when the
-    daemon's per-GPU busy flag transitions busy→idle. Offloaded models are
+    daemon's per-GPU busy flag transitions busy->idle. Offloaded models are
     reloaded in priority DESC order (highest priority = most-used first).
   - All operations on a manager instance are serialized by a lock so
     concurrent dispatcher threads don't race each other into offload/reload
@@ -22,11 +22,11 @@ Design contract:
 
 Callbacks, not tight coupling:
   - A managed model carries a `gpu_factory` callable that constructs a fresh
-    GPU instance when needed. The manager never knows the model's type — it
+    GPU instance when needed. The manager never knows the model's type -- it
     just calls `m.gpu_factory()` on reload, and assigns to `m.gpu_instance`.
   - The dispatcher that owns a model sets `m.gpu_instance = None` during
     offload (after calling torch.cuda.empty_cache()). The manager doesn't
-    touch the instance — only the pointer.
+    touch the instance -- only the pointer.
 """
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ class ManagedModel:
     """One small model registered with a VramManager.
 
     gpu_instance is mutable: set to a torch module when resident, None when
-    offloaded. The field is the single source of truth for current state —
+    offloaded. The field is the single source of truth for current state --
     dispatchers read it on every acquire, managers set it on offload/reload.
     """
     name: str                                    # human label for logging
@@ -122,7 +122,7 @@ class VramManager:
                 if free >= needed_gb:
                     return True
             logger.warning(
-                f"request_room({needed_gb:.1f}GB): exhausted — only {free:.1f}GB "
+                f"request_room({needed_gb:.1f}GB): exhausted -- only {free:.1f}GB "
                 f"free even after offloading all lower-priority residents"
             )
             return False
@@ -143,7 +143,7 @@ class VramManager:
                     logger.debug(
                         f"try_reload: {m.name} needs {need:.1f}GB "
                         f"(size={m.size_gb:.1f}+headroom={m.headroom_gb:.1f}), "
-                        f"only {free:.1f}GB free — skipping"
+                        f"only {free:.1f}GB free -- skipping"
                     )
                     continue
                 try:
@@ -152,7 +152,7 @@ class VramManager:
                     reloaded.append(m.name)
                 except Exception as _e:
                     logger.warning(
-                        f"try_reload: {m.name} factory failed ({type(_e).__name__}: {_e}) — "
+                        f"try_reload: {m.name} factory failed ({type(_e).__name__}: {_e}) -- "
                         f"staying offloaded"
                     )
         return reloaded
@@ -192,7 +192,7 @@ def start_reload_poller(
     poll_interval_s: float = 2.0,
 ) -> threading.Thread:
     """Spawn a daemon thread that watches the daemon's per-GPU busy flag for
-    `device_tag` and calls `manager.try_reload()` on every busy→idle edge.
+    `device_tag` and calls `manager.try_reload()` on every busy->idle edge.
 
     Also calls `try_reload` once on start so any cold boot that happened to
     be offloaded can come back as soon as VRAM permits.
@@ -225,8 +225,8 @@ def start_reload_poller(
                     reloaded = manager.try_reload()
                     if reloaded:
                         logger.info(
-                            f"reload poller ({device_tag}): busy→idle "
-                            f"→ reloaded {reloaded}"
+                            f"reload poller ({device_tag}): busy->idle "
+                            f"-> reloaded {reloaded}"
                         )
                 last_busy = busy
             except Exception as _e:

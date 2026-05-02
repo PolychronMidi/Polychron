@@ -1,4 +1,4 @@
-"""Mode handlers — extracted from mode_handlers.py.
+"""Mode handlers -- extracted from mode_handlers.py.
 mode_handlers.py imports back and registers in _STATUS_MODES.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ logger = logging.getLogger("HME")
 
 
 def _mode_hci_by_subtag():
-    """Aggregate verifier status by subtag — answers 'what KIND of broken
+    """Aggregate verifier status by subtag -- answers 'what KIND of broken
     is everything that's red?' Joins the live snapshot (status+score per
     verifier) with REGISTRY introspection (which has the subtag attribute
     declared on each verifier class)."""
@@ -34,7 +34,7 @@ def _mode_hci_by_subtag():
     snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
     if not _os.path.isfile(snap_path):
         return ("# i/status mode=hci-by-subtag\n"
-                "No snapshot found — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+                "No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
     try:
         with open(snap_path) as _f:
             snap = _json.load(_f)
@@ -64,7 +64,7 @@ def _mode_hci_by_subtag():
 
     out = [f"# HCI by subtag (HCI {snap.get('hci', '?')}/100)"]
     out.append("")
-    # Render: subtag → counts + names of non-PASS
+    # Render: subtag -> counts + names of non-PASS
     for subtag in sorted(by_subtag.keys()):
         statuses = by_subtag[subtag]
         total = sum(len(v) for v in statuses.values())
@@ -78,7 +78,7 @@ def _mode_hci_by_subtag():
                 if st in statuses:
                     for nm, sc in statuses[st]:
                         non_pass_names.append(f"{nm}({st}:{sc:.2f})")
-            summary += f"  → {', '.join(non_pass_names[:3])}"
+            summary += f"  -> {', '.join(non_pass_names[:3])}"
             if len(non_pass_names) > 3:
                 summary += f" (+{len(non_pass_names) - 3} more)"
         out.append(summary)
@@ -102,10 +102,10 @@ def _mode_hci_diff():
     prev_path = cur_path + ".prev"
     if not _os.path.isfile(cur_path):
         return ("# i/status mode=hci-diff\n"
-                "No snapshot found — run `python3 tools/HME/scripts/verify-coherence.py` first.")
+                "No snapshot found -- run `python3 tools/HME/scripts/verify-coherence.py` first.")
     if not _os.path.isfile(prev_path):
         return ("# i/status mode=hci-diff\n"
-                "No prior snapshot to diff — run the engine twice (once to seed .prev).")
+                "No prior snapshot to diff -- run the engine twice (once to seed .prev).")
     try:
         with open(cur_path) as _f:
             cur = _json.load(_f)
@@ -125,20 +125,20 @@ def _mode_hci_diff():
         cscore = float(cur_v[name].get("score") or 0)
         pscore = float(prev_v[name].get("score") or 0)
         if cs != ps:
-            status_changes.append(f"  {name:36}  {ps} → {cs}")
+            status_changes.append(f"  {name:36}  {ps} -> {cs}")
         elif abs(cscore - pscore) >= 0.05:
-            arrow = "↑" if cscore > pscore else "↓"
+            arrow = "^" if cscore > pscore else "v"
             score_moves.append(f"  {name:36}  {pscore:.2f} {arrow} {cscore:.2f}")
 
     out = ["# HCI verifier diff (current vs .prev snapshot)"]
-    out.append(f"  HCI: {prev.get('hci', '?')} → {cur.get('hci', '?')}")
+    out.append(f"  HCI: {prev.get('hci', '?')} -> {cur.get('hci', '?')}")
     out.append("")
     if status_changes:
         out.append("status changes:")
         out.extend(status_changes)
         out.append("")
     if score_moves:
-        out.append("score moves (≥0.05):")
+        out.append("score moves (>=0.05):")
         out.extend(score_moves)
         out.append("")
     if added:
@@ -146,14 +146,14 @@ def _mode_hci_diff():
     if removed:
         out.append(f"removed verifiers ({len(removed)}): {', '.join(removed)}")
     if not (status_changes or score_moves or added or removed):
-        out.append("(no verifier status changes; no score moves ≥0.05)")
+        out.append("(no verifier status changes; no score moves >=0.05)")
     return "\n".join(out)
 
 
 def _mode_race_stats():
     """Summarize recent local-vs-cloud race outcomes from
-    hme-race-outcomes.jsonl. Helps tune _RACE_CLOUD_DELAY_SEC — if local
-    wins ≥80% of races, the delay can probably be raised (less wasted
+    hme-race-outcomes.jsonl. Helps tune _RACE_CLOUD_DELAY_SEC -- if local
+    wins >=80% of races, the delay can probably be raised (less wasted
     cloud work); if cloud wins often, either delay is too long or local
     is the bottleneck for these query shapes."""
     import os as _os
@@ -163,7 +163,7 @@ def _mode_race_stats():
         getattr(_ctx, "PROJECT_ROOT", "."), "output", "metrics")
     path = _os.path.join(out_dir, "hme-race-outcomes.jsonl")
     if not _os.path.isfile(path):
-        return "## Race Stats\n  (no races run yet — hme-race-outcomes.jsonl absent)"
+        return "## Race Stats\n  (no races run yet -- hme-race-outcomes.jsonl absent)"
     try:
         # Scan last 128KB of the log
         size = _os.path.getsize(path)
@@ -217,8 +217,8 @@ def _mode_race_stats():
         lines.append(f"  cloud  latency: p50={p50}ms  p95={p95}ms  (n={len(lat_cloud)})")
     lines.append("")
     lines.append(f"  Tuning tip: `_RACE_CLOUD_DELAY_SEC` currently 2.5s. "
-                 f"If local wins ≥80% raise it; if cloud wins most races the delay "
-                 f"may be cutting local work off early — investigate.")
+                 f"If local wins >=80% raise it; if cloud wins most races the delay "
+                 f"may be cutting local work off early -- investigate.")
     return "\n".join(lines)
 
 

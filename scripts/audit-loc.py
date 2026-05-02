@@ -4,11 +4,11 @@
 audit-core-principles.py only audits `src/` because four of its five
 principles (P1 index.js, P3 self-registration, P4 single-manager hub,
 plus the subsystem load order) are src-specific. P5 (LOC <= 350) is
-universal — this script applies just that one principle to the entire
+universal -- this script applies just that one principle to the entire
 repo so the LOC discipline that took a session to establish doesn't
 re-rot anywhere outside src/.
 
-Thresholds: WARN 250, CRITICAL 350 — same source as audit-core-principles
+Thresholds: WARN 250, CRITICAL 350 -- same source as audit-core-principles
 (tools/HME/config/project-rules.json), so the two scripts can never drift.
 
 Usage:
@@ -17,9 +17,9 @@ Usage:
     python3 scripts/audit-loc.py --strict   # exit 1 on any CRITICAL
 
 Exit codes:
-    0 — no CRITICAL findings (WARN findings logged but do not fail)
-    1 — at least one CRITICAL finding when --strict
-    2 — usage error
+    0 -- no CRITICAL findings (WARN findings logged but do not fail)
+    1 -- at least one CRITICAL finding when --strict
+    2 -- usage error
 """
 import json
 import os
@@ -46,19 +46,19 @@ _EXTS = {".py", ".js", ".ts", ".sh"}
 
 
 def _load_thresholds():
-    """Single source of truth — same file audit-core-principles reads.
+    """Single source of truth -- same file audit-core-principles reads.
 
     Fail-fast: a malformed or missing config file used to silently
-    fall back to (250, 350) defaults. That hid drift — if someone
+    fall back to (250, 350) defaults. That hid drift -- if someone
     accidentally deleted line_count_thresholds the audit would keep
     reporting "0 critical" against the wrong threshold. The agent-layer
-    rule is "fail-fast, no silent fallbacks" — apply it to the audit.
+    rule is "fail-fast, no silent fallbacks" -- apply it to the audit.
     """
     path = os.path.join(_PROJECT, "tools", "HME", "config", "project-rules.json")
     if not os.path.isfile(path):
         raise SystemExit(
             f"audit-loc: project-rules.json missing at {path!r}. "
-            f"Refusing to use baked-in defaults — that's the silent "
+            f"Refusing to use baked-in defaults -- that's the silent "
             f"fallback this audit exists to prevent."
         )
     with open(path, encoding="utf-8") as f:
@@ -72,7 +72,7 @@ def _load_thresholds():
 
 
 def _loc(path: str) -> int:
-    """Count non-blank, non-comment lines. Loud on read failures —
+    """Count non-blank, non-comment lines. Loud on read failures --
     silent 0 used to hide files we couldn't read (perm errors, encoding
     explosions); the audit reported "0 LOC" and the file silently
     skipped the threshold check."""
@@ -144,7 +144,7 @@ def main(argv: list) -> int:
     # Build rationale lookup. Each exemption may carry a structured
     # rationale token (see config/loc-ignore.txt). When --rationale
     # is set we emit a separate report listing exempted files with
-    # their declared intent + revisit-when triggers — the architectural
+    # their declared intent + revisit-when triggers -- the architectural
     # rationale diary, queryable instead of buried in prose comments.
     exemption_records = load_with_rationale()
 
@@ -178,17 +178,17 @@ def main(argv: list) -> int:
                     items = by_intent[intent]
                     print(f"    {intent}: {len(items)}")
                     for r in items[:3]:
-                        revisit = r["rationale"].get("revisit-when", "—")
+                        revisit = r["rationale"].get("revisit-when", "--")
                         print(f"      {r['pattern']}  (revisit: {revisit})")
                     if len(items) > 3:
-                        print(f"      … (+{len(items) - 3} more)")
+                        print(f"      ... (+{len(items) - 3} more)")
             if without:
                 print(f"  Exemptions WITHOUT rationale tokens "
-                      f"({len(without)}) — consider declaring intent:")
+                      f"({len(without)}) -- consider declaring intent:")
                 for r in without[:5]:
                     print(f"    {r['pattern']}")
                 if len(without) > 5:
-                    print(f"    … (+{len(without) - 5} more)")
+                    print(f"    ... (+{len(without) - 5} more)")
 
     if strict and crit:
         return 1

@@ -1,4 +1,4 @@
-"""Local model inference API — _local_think, _local_chat, compress_for_claude.
+"""Local model inference API -- _local_think, _local_chat, compress_for_claude.
 
 Split from synthesis_llamacpp.py for maintainability. All functions here
 use the core infrastructure (circuit breaker, daemon routing, env config)
@@ -43,14 +43,14 @@ _PROSE_AND_KEYWORD_STOPWORDS = frozenset({
     "wherever", "whereas", "whoever", "whatever", "both", "each", "every",
     "either", "neither", "some", "many", "most", "much", "few", "fewer",
     "none", "just", "also", "only", "such", "very", "quite",
-    # generic verbs/adjectives commonly in docstrings — pruned hard
+    # generic verbs/adjectives commonly in docstrings -- pruned hard
     # after peer-review iter 118 caught that the prior list dropped
     # legitimate identifiers (`context`, `state`, `model`, `file`,
     # `system`, etc. all appear as parameter / attribute names in
     # this codebase). Conservative principle: false-positives in the
     # whitelist are tolerable; false-negatives (real identifiers
     # dropped) starve the post-filter and let prose through. Keep
-    # only words that are pure docstring filler — never identifiers.
+    # only words that are pure docstring filler -- never identifiers.
     "actually", "awareness", "checkpoints", "coherence",
     "counterfactual", "effectiveness", "entanglement",
     "extrospective", "interventions", "outcomes", "outward",
@@ -86,7 +86,7 @@ def _cancellable_urlopen(req_data, url, timeout, cancel_event):
     try:
         resp.fp.raw._sock.settimeout(2.0)
     except (AttributeError, Exception):
-        logger.debug("_cancellable_urlopen: could not set 2s socket timeout — cancel detection may be slow")
+        logger.debug("_cancellable_urlopen: could not set 2s socket timeout -- cancel detection may be slow")
     try:
         chunks = []
         final_result = {}
@@ -147,7 +147,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     """Call local llama.cpp model for synthesis tasks.
 
     Returns None if llama.cpp isn't running. Returns (text, context_array) when
-    return_context=True — context_array is the llama.cpp KV cache state for reuse.
+    return_context=True -- context_array is the llama.cpp KV cache state for reuse.
     On empty text (model used all tokens for thinking), returns (None, context_array)
     so warm priming can capture the KV state even without visible output.
     system: auto-swapped for warm KV context when system==_THINK_SYSTEM (transparent speedup).
@@ -159,7 +159,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
     _cb = _get_circuit_breaker(_effective_model_early)
     if not _cb.allow():
         if priority != "background":
-            logger.warning(f"_local_think REFUSED — circuit breaker OPEN for {_effective_model_early}")
+            logger.warning(f"_local_think REFUSED -- circuit breaker OPEN for {_effective_model_early}")
         return (_COOLDOWN_REFUSED, []) if return_context else None
 
     # "parallel" = two threads hitting different GPUs simultaneously. Treated like
@@ -187,7 +187,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             system = ""
             logger.debug(f"_local_think: warm ctx hit ({len(warm)} tokens, {_effective_model})")
 
-    # Inject session narrative — filtered by relevance to the call type.
+    # Inject session narrative -- filtered by relevance to the call type.
     if priority != "background" and (system == _THINK_SYSTEM or (system == "" and context is not None)):
         from .synthesis_session import get_session_narrative
         _narrative_cats = ["think", "edit", "search"] if "callers" in prompt.lower() or "find" in prompt.lower() else None
@@ -233,7 +233,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
             if thinking:
                 text = thinking
             else:
-                # Return context even on empty text — warm priming needs KV state
+                # Return context even on empty text -- warm priming needs KV state
                 return (None, result.get("context", [])) if return_context else None
         _hallucination_markers = [
             "in this hypothetical scenario", "as an AI", "I don't have access",
@@ -274,7 +274,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         if not text:
             return (None, []) if return_context else None
         _cb.record_success()
-        # Trim verbose output before returning — callers shouldn't receive
+        # Trim verbose output before returning -- callers shouldn't receive
         # unbounded text that inflates Claude's context window.
         from .. import BUDGET_LOCAL_THINK
         if len(text) > BUDGET_LOCAL_THINK:
@@ -301,7 +301,7 @@ def _local_think(prompt: str, max_tokens: int = 8192, model: str | None = None,
         if _is_timeout:
             if priority != "background":
                 logger.warning(
-                    f"_local_think TIMEOUT ({_effective_model}) — circuit breaker: {_cb.state}. "
+                    f"_local_think TIMEOUT ({_effective_model}) -- circuit breaker: {_cb.state}. "
                     f"Error: {type(e).__name__}: {e}"
                 )
         elif not _is_critical:
@@ -329,13 +329,13 @@ def _local_chat(messages: list[dict], model: str | None = None,
                 max_tokens: int = 4096, temperature: float = 0.2) -> str | None:
     """Call a local model with a multi-turn messages array.
 
-    Model sees prior outputs as assistant turns — better coherence for multi-stage synthesis.
-    Wall-clock enforcement lives in llamacpp_daemon.py — this function never sets its own timeout.
+    Model sees prior outputs as assistant turns -- better coherence for multi-stage synthesis.
+    Wall-clock enforcement lives in llamacpp_daemon.py -- this function never sets its own timeout.
     """
     _m = model or _REASONING_MODEL
     _cb = _get_circuit_breaker(_m)
     if not _cb.allow():
-        logger.warning(f"_local_chat REFUSED — circuit breaker OPEN for {_m}")
+        logger.warning(f"_local_chat REFUSED -- circuit breaker OPEN for {_m}")
         return None
     _is_arbiter_request = (_llamacpp_url_for(_m) == _LLAMACPP_ARBITER_URL)
     try:
@@ -360,14 +360,14 @@ def _local_chat(messages: list[dict], model: str | None = None,
     return text if text else None
 
 
-# Race-mode threshold. Requests asking for ≤ RACE_MAX_TOKENS tokens are
-# short enough that the local reasoner can answer them in ≤ ~2s on a warm
-# GPU, while the cloud cascade adds ≥10s of slot-walking latency. For
-# short requests we RACE both — fire them in parallel and take whichever
+# Race-mode threshold. Requests asking for <= RACE_MAX_TOKENS tokens are
+# short enough that the local reasoner can answer them in <= ~2s on a warm
+# GPU, while the cloud cascade adds >=10s of slot-walking latency. For
+# short requests we RACE both -- fire them in parallel and take whichever
 # returns first. Long requests keep the cloud-first path for quality.
 
 
-# Re-exports — race + output utilities moved to siblings.
+# Re-exports -- race + output utilities moved to siblings.
 from .synthesis_race import (  # noqa: F401, E402
     _adaptive_cloud_delay, _reasoning_think, _race_local_vs_cloud,
     _emit_race_outcome, _local_think_with_system,

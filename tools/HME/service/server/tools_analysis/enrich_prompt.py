@@ -1,4 +1,4 @@
-"""enrich_prompt — KB assembly → reasoning enrichment → compression."""
+"""enrich_prompt -- KB assembly -> reasoning enrichment -> compression."""
 import json
 import logging
 import os
@@ -101,7 +101,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
         "- Add specificity (module names, file paths, signal fields) where the KB provides them\n"
         "- Do NOT add instructions the user didn't ask for\n"
         "- Do NOT add meta-commentary about the enrichment\n"
-        "- Keep it concise — enriched should be at most 2x the original length"
+        "- Keep it concise -- enriched should be at most 2x the original length"
     )
 
     enriched = _reasoning_think(
@@ -113,25 +113,25 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
     if not enriched or len(enriched.strip()) < 10:
         return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
-                "unchanged": True, "reason": "Reasoning model returned empty — original preserved"}
+                "unchanged": True, "reason": "Reasoning model returned empty -- original preserved"}
 
     # Stage 4: Arbiter compression (if enriched is too long)
     t3 = time.monotonic()
     max_len = max(len(prompt) * 10, 2000)
     if len(enriched) > max_len:
         enriched = compress_for_claude(enriched, max_chars=max_len,
-                                       hint="prompt enrichment — preserve specificity and intent")
+                                       hint="prompt enrichment -- preserve specificity and intent")
     trace["compress_ms"] = int((time.monotonic() - t3) * 1000)
 
     total_ms = int((time.monotonic() - t0) * 1000)
     logger.info(
-        f"enrich_prompt: {len(prompt)}→{len(enriched)} chars, "
+        f"enrich_prompt: {len(prompt)}->{len(enriched)} chars, "
         f"modes={'|'.join(k for k, v in triage.items() if v and k != 'raw')}, "
         f"{total_ms}ms (triage:{trace['triage_ms']} assembly:{trace['assembly_ms']} "
         f"enrich:{trace['enrich_ms']} compress:{trace['compress_ms']})"
     )
 
-    # Stage 5: Grounding check — flag hallucinated paths
+    # Stage 5: Grounding check -- flag hallucinated paths
     hallucinated = []
     import re as _re
     for m in _re.finditer(r'(?:src/|tools/)[^\s,)]+\.(?:js|py|ts)', enriched):
@@ -146,7 +146,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
 def enrich_prompt(prompt: str, frame: str = "") -> str:
     """Enrich a prompt with KB grounding, structural clarity, and session context.
-    Runs entirely on local models — zero Claude token cost.
+    Runs entirely on local models -- zero Claude token cost.
     Arbiter triages which enrichment modes are needed, reasoning model enriches.
     frame: optional instruction for how to enrich (e.g. 'focus on coupling dimensions').
     """
@@ -170,7 +170,7 @@ def enrich_prompt(prompt: str, frame: str = "") -> str:
     out = [f"## Enriched Prompt\n\n{result['enriched']}"]
     bad_paths = result.get("hallucinated_paths", [])
     if bad_paths:
-        out.append(f"\n\n⚠ *Grounding check: these paths don't exist — verify before using:*")
+        out.append(f"\n\n[!] *Grounding check: these paths don't exist -- verify before using:*")
         for p in bad_paths:
             out.append(f"  - `{p}`")
     out.append(f"\n\n\n*Modes: {', '.join(modes)} | "

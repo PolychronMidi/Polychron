@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tool Effectiveness Analyzer — co-occurrence and session-level stats from hme.log.
+"""Tool Effectiveness Analyzer -- co-occurrence and session-level stats from hme.log.
 
 Parses log/hme.log for:
   - Session boundaries (HME session=...)
@@ -51,7 +51,7 @@ _LIFESAVER_PAT = re.compile(r"LIFESAVER QUEUED")
 _COHERENCE_PAT = re.compile(r"Meta-observer L14: (\w+)")
 
 # Recency windows for scoring. The HCI verifiers score based on how RECENT
-# the health signals are — a LIFESAVER fire 10 minutes ago is strong evidence
+# the health signals are -- a LIFESAVER fire 10 minutes ago is strong evidence
 # that HME is currently unhealthy; a fire from 20 hours ago is weak evidence
 # that the system WAS unhealthy. Multiple buckets let the verifier
 # distinguish acute current problems from historical residue.
@@ -249,7 +249,7 @@ def compute_effectiveness() -> dict:
         tools_in_session = sorted(set(c["tool"] for c in s["tool_calls"]))
         for i in range(len(tools_in_session)):
             for j in range(i + 1, len(tools_in_session)):
-                pair_counts[f"{tools_in_session[i]}×{tools_in_session[j]}"] += 1
+                pair_counts[f"{tools_in_session[i]}*{tools_in_session[j]}"] += 1
 
     # LIFESAVER rate
     sessions_with_errors = sum(1 for s in sessions if s["lifesaver_count"] > 0)

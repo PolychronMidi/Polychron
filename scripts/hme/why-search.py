@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why <free-text> — Tier-2 retrieval catch-all.
+"""i/why <free-text> -- Tier-2 retrieval catch-all.
 
 Fires when the question doesn't match a known mode or invariant ID.
 Performs deterministic retrieval (no LLM): grep over source for
@@ -46,7 +46,7 @@ def _grep_source(keywords: list[str]) -> list[tuple[str, int, str]]:
         os.path.join(PROJECT_ROOT, "doc"),
     ]
     out = []
-    for kw in keywords[:3]:  # only first 3 keywords — too many → noise
+    for kw in keywords[:3]:  # only first 3 keywords -- too many -> noise
         for root in roots:
             if not os.path.isdir(root):
                 continue
@@ -71,7 +71,7 @@ def _grep_source(keywords: list[str]) -> list[tuple[str, int, str]]:
 
 
 def _kb_hits(question: str) -> str:
-    """Use i/learn query=… to surface KB matches."""
+    """Use i/learn query=... to surface KB matches."""
     learn = os.path.join(PROJECT_ROOT, "i", "learn")
     if not os.path.isfile(learn):
         return ""
@@ -124,9 +124,9 @@ def main(argv):
         print("Usage: i/why <question> [--deep]", file=sys.stderr)
         return 2
 
-    print(f"# i/why search — '{question}'")
+    print(f"# i/why search -- '{question}'")
     print()
-    print("(Tier-2 retrieval. No LLM in the loop — the citations below are")
+    print("(Tier-2 retrieval. No LLM in the loop -- the citations below are")
     print("from grep, KB search, and the activity log. Synthesize from them.)")
     print()
 
@@ -157,11 +157,11 @@ def main(argv):
         print()
 
     if not (grep_hits or kb or activity):
-        print("(No deterministic retrieval matches — try rephrasing or use")
+        print("(No deterministic retrieval matches -- try rephrasing or use")
         print("i/why mode=<block|state|verifier|hci-drop|hook> for narrow questions.)")
         return 0
 
-    # Tier 3 — opt-in subagent synthesis. Writes a queue entry containing
+    # Tier 3 -- opt-in subagent synthesis. Writes a queue entry containing
     # the packet + question; emits the [[HME_AGENT_TASK ...]] sentinel that
     # subagent_bridge.js looks for. The agent that runs i/why sees the
     # sentinel in its tool result, fires Agent(...) on its next turn, and
@@ -216,7 +216,7 @@ def _emit_subagent_task(question, grep_hits, kb, activity):
         "TASK:",
         "Synthesize a terse answer to the user's question using the cited",
         "evidence. Cite specific files/lines. If the evidence is insufficient,",
-        "say so explicitly — do not invent citations. 3-6 sentences max.",
+        "say so explicitly -- do not invent citations. 3-6 sentences max.",
     ])
 
     entry = {

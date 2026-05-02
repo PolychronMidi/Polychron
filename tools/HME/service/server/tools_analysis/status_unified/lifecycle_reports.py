@@ -74,7 +74,7 @@ def _resume_briefing() -> str:
                 if pipeline_v in ("STABLE", "EVOLVED") and not has_commit:
                     pending.append(f"Pipeline {pipeline_v} but NOT committed")
                 if pipeline_v in ("FAILED", "DRIFTED"):
-                    pending.append(f"Pipeline {pipeline_v} — needs diagnosis before continuing")
+                    pending.append(f"Pipeline {pipeline_v} -- needs diagnosis before continuing")
                 if pending:
                     parts.append("\n## Lifecycle Pending")
                     for p in pending:
@@ -112,17 +112,17 @@ def _resume_briefing() -> str:
 
 
 def _evolution_priority_report() -> str:
-    """Render metrics/hme-evolution-priority.json — HME's self-directed roadmap."""
+    """Render metrics/hme-evolution-priority.json -- HME's self-directed roadmap."""
     _track("evolution_priority_report")
     ppath = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-evolution-priority.json")
     if not os.path.exists(ppath):
-        return "# Evolution Priorities\n\nNo priority data — run pipeline first.\n"
+        return "# Evolution Priorities\n\nNo priority data -- run pipeline first.\n"
     try:
         data = json.load(open(ppath))
         priorities = data.get("priorities", [])
         if not priorities:
             return "# Evolution Priorities\n\nNo priorities generated.\n"
-        # Compute staleness of the report — the underlying file only
+        # Compute staleness of the report -- the underlying file only
         # regenerates on pipeline runs. Without a freshness indicator the
         # user can't tell whether w=0.65 reflects the current session
         # or a snapshot from 8 hours ago.
@@ -136,7 +136,7 @@ def _evolution_priority_report() -> str:
             ts = datetime.fromisoformat(_norm)
             age_h = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
             if age_h > 24:
-                stale_note = f"  ⚠ STALE ({age_h:.1f}h old — re-run `npm run main` for current priorities)"
+                stale_note = f"  [!] STALE ({age_h:.1f}h old -- re-run `npm run main` for current priorities)"
             elif age_h > 2:
                 stale_note = f"  ({age_h:.1f}h old)"
         except Exception as _ts_err:
@@ -147,8 +147,8 @@ def _evolution_priority_report() -> str:
             f"*{data['meta']['priorities_generated']} priorities from {data['meta']['signals_aggregated']} signal sources*",
             f"*Generated: {ts_str}*{stale_note}",
             "",
-            "*Weight scale: 0.0–1.0. ≥0.60 = high-signal / act soon. "
-            "0.30–0.59 = notable but not urgent. <0.30 = background noise.*",
+            "*Weight scale: 0.0-1.0. >=0.60 = high-signal / act soon. "
+            "0.30-0.59 = notable but not urgent. <0.30 = background noise.*",
             "",
         ]
         for p in priorities[:10]:
@@ -160,7 +160,7 @@ def _evolution_priority_report() -> str:
             lines.append(f"**#{p['rank']}** [{p['category']}] **{p['target']}** (w={w:.2f} {tier})")
             if r:
                 lines.append(f"  {r}")
-            lines.append(f"  evidence: {ev.get('source', '?')} → {ev.get('signal', '?')}")
+            lines.append(f"  evidence: {ev.get('source', '?')} -> {ev.get('signal', '?')}")
             lines.append("")
         return "\n".join(lines)
     except Exception as e:
@@ -220,8 +220,8 @@ def _trajectory_report() -> str:
     _GUIDANCE = {
         "GROWING": "Composition is acquiring more variety/complexity over the window. Confirm the perceptual signal you're tracking is the one you intended to grow.",
         "DECLINING": "Composition is losing variety/intensity. Likely causes: a recent change reduced the signal it was driving, a regime is overstaying, or a recent profile shift dampened diversity. Inspect with `i/status mode=accuracy` (which predictions failed?) and `i/review mode=regime` (which sections went monotone?).",  # tool-form-ok: prose with embedded command examples
-        "PLATEAU": "Slope near zero — the signal is stable, not necessarily good. If you wanted growth, this means the lever is broken; if you wanted equilibrium, this is success.",
-        "OSCILLATING": "Signal is bouncing — likely a feedback loop tuning back-and-forth. Look at `i/substrate diff` to see what changed last round and `i/status mode=trust` for the destabilizing system.",  # tool-form-ok: prose with embedded command examples
+        "PLATEAU": "Slope near zero -- the signal is stable, not necessarily good. If you wanted growth, this means the lever is broken; if you wanted equilibrium, this is success.",
+        "OSCILLATING": "Signal is bouncing -- likely a feedback loop tuning back-and-forth. Look at `i/substrate diff` to see what changed last round and `i/status mode=trust` for the destabilizing system.",  # tool-form-ok: prose with embedded command examples
     }
     if verdict in _GUIDANCE:
         lines.append("")

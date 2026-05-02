@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Consolidated stop-hook detector runner — invokes every stop-side
+"""Consolidated stop-hook detector runner -- invokes every stop-side
 detector in a single Python process instead of 6 subprocess fork+imports.
 
 Stop hook p95 was 5.5s (n=78) because 6-8 serial `python3 <detector>.py`
@@ -8,7 +8,7 @@ Running them all in-process shares the interpreter (one Python startup
 for the whole batch) and amortizes repeated imports of common helpers
 like `_transcript`.
 
-Each detector's `main()` is reused as-is — we swap `sys.argv` + redirect
+Each detector's `main()` is reused as-is -- we swap `sys.argv` + redirect
 stdout per call and parse the single verdict line. This keeps the
 individual detector files runnable standalone (stop.sh can fall back
 to invoking them one at a time if run_all.py crashes).
@@ -46,12 +46,12 @@ DETECTORS = [
     ("senior_consult_debt", "senior_consult_debt"),
     ("ignore_and_trample", "ignore_and_trample"),
     # PAI-import detectors (added in PAI-integration sweep). Both gate at
-    # tier ≥ E2 internally — at MINIMAL/NATIVE/E1 they short-circuit to
+    # tier >= E2 internally -- at MINIMAL/NATIVE/E1 they short-circuit to
     # "ok" so they're cheap when the prompt doesn't warrant scrutiny.
     ("phantom_capability", "phantom_capability"),
     ("advisor_doctrine", "advisor_doctrine"),
     # PAI-import #9: stop-the-line mandatory output format. Gates at
-    # tier ≥ E3 internally; lighter turns short-circuit to "ok".
+    # tier >= E3 internally; lighter turns short-circuit to "ok".
     ("summary_format", "summary_format"),
 ]
 
@@ -68,7 +68,7 @@ def _run_detector(name: str, module_name: str, transcript: str) -> str:
         with redirect_stdout(buf):
             mod.main()
     except SystemExit:
-        # detector main() calls sys.exit() after printing — that's normal
+        # detector main() calls sys.exit() after printing -- that's normal
         pass
     except Exception as e:
         return f"ERR:{type(e).__name__}:{str(e)[:50]}"
@@ -85,7 +85,7 @@ def _run_detector(name: str, module_name: str, transcript: str) -> str:
 
 def main() -> int:
     if len(sys.argv) < 2:
-        # No transcript — print default verdicts so the hook can keep going.
+        # No transcript -- print default verdicts so the hook can keep going.
         for name, _ in DETECTORS:
             print(f"{name}=ok" if name != "poll_count" else f"{name}=0")
         return 0

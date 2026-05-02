@@ -1,4 +1,4 @@
-"""Mode handlers — extracted from mode_handlers.py.
+"""Mode handlers -- extracted from mode_handlers.py.
 mode_handlers.py imports back and registers in _STATUS_MODES.
 """
 from __future__ import annotations
@@ -29,7 +29,7 @@ def _mode_health():
 
 def _mode_coupling():
     from ..coupling import coupling_intel as _ci
-    # Status surface uses the lighter `network` view (just topology — the
+    # Status surface uses the lighter `network` view (just topology -- the
     # one sub-section users actually consume in a status check). The full
     # 4-section view (network + antagonists + personalities + gaps) takes
     # ~45s and belongs behind an explicit `i/hme coupling_intel mode=full`.
@@ -40,7 +40,7 @@ def _mode_trust():
     return _tr("", "")
 
 def _mode_hme():
-    """HME session state — distinct from selftest (pre-flight readiness).
+    """HME session state -- distinct from selftest (pre-flight readiness).
     Surfaces: onboarding step, last activity events, current verdict.
     For pre-flight readiness (PASS/FAIL count + warnings), use
     `i/hme-admin action=selftest`."""  # tool-form-ok (static docstring)
@@ -91,7 +91,7 @@ def _mode_hme():
                 if _last_key:
                     _ev, _src = _last_key
                     _label = f"{_ev}  {_src}".strip()
-                    out.append(f"  {f'{_count}× ' if _count > 1 else ''}{_label}")
+                    out.append(f"  {f'{_count}* ' if _count > 1 else ''}{_label}")
             for _ln in _lines:
                 try:
                     _e = _json.loads(_ln)
@@ -186,7 +186,7 @@ def _mode_multi_agent():
 
 def _list_modes():
     """Grouped catalogue of mode= options. The bare 'Unknown mode' error
-    used to be the only way to discover what was available — that error
+    used to be the only way to discover what was available -- that error
     list isn't grouped, isn't described, and gave no hint of aliases."""
     groups = [
         ("Pipeline / data freshness", [
@@ -246,7 +246,7 @@ def _list_modes():
 
 
 def _mode_perceptual():
-    # Status is a "quick look" surface — reading the cached report from the
+    # Status is a "quick look" surface -- reading the cached report from the
     # last pipeline run is what users actually want, not triggering a fresh
     # (multi-minute) EnCodec+CLAP inference pass. For a live re-run, call
     # `audio_analyze(analysis='both')` directly via i/hme.
@@ -259,7 +259,7 @@ def _mode_perceptual():
             confidence = data.get("confidence", 0)
             sections = (data.get("encodec", {}) or {}).get("sections", {}) or {}
             parts = [
-                f"# Perceptual Analysis — cached (confidence: {confidence:.0%})",
+                f"# Perceptual Analysis -- cached (confidence: {confidence:.0%})",
                 f"Source: metrics/perceptual-report.json  (ts={ts})",
                 "For a fresh analysis: `i/hme audio_analyze analysis=both`  (takes ~2-5 min)",
                 "",
@@ -284,7 +284,7 @@ def _mode_introspect():
 
 
 def _mode_signals() -> str:
-    """Tail the unified signal bus — the one-file truth of hook + middleware
+    """Tail the unified signal bus -- the one-file truth of hook + middleware
     + lifecycle events for the current and recent sessions."""
     import json as _json
     path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-signals.jsonl")

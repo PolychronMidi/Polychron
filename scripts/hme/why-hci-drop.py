@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""i/why mode=hci-drop — explain HCI score regression.
+"""i/why mode=hci-drop -- explain HCI score regression.
 
 Reads the timeseries to find the most recent rows where HCI dropped, then
 diffs the verifier set across that drop to surface which verifier(s)
 caused it. Stronger than mode=hci-diff (which only compares last vs
-.prev snapshots) — this scans further back to find a regression even if
+.prev snapshots) -- this scans further back to find a regression even if
 several runs have happened since.
 """
 from __future__ import annotations
@@ -33,7 +33,7 @@ def main(argv):
 
     if len(rows) < 2:
         print("# i/why mode=hci-drop")
-        print(f"Only {len(rows)} run(s) recorded — need ≥2 to compute drops.")
+        print(f"Only {len(rows)} run(s) recorded -- need >=2 to compute drops.")
         return 0
 
     # Find the most-recent drop (current row's HCI < some earlier row's max)
@@ -49,11 +49,11 @@ def main(argv):
     peak = max(recent, key=lambda r: r.get("hci", 0))
     if peak is current or peak.get("hci", 0) <= cur_hci:
         print("# i/why mode=hci-drop")
-        print(f"  Current HCI ({cur_hci}) is at or above recent peak — no drop to explain.")
+        print(f"  Current HCI ({cur_hci}) is at or above recent peak -- no drop to explain.")
         print(f"  Recent peak: {peak.get('hci')} at {datetime.fromtimestamp(peak.get('ts', 0)).strftime('%Y-%m-%d %H:%M')}")
         return 0
 
-    # We have a drop: peak → current. Diff their probes.
+    # We have a drop: peak -> current. Diff their probes.
     peak_probes = peak.get("probes", {})
     cur_probes = current.get("probes", {})
     regressed = []  # was-PASS now-FAIL/WARN
@@ -65,15 +65,15 @@ def main(argv):
                               cur_probes.get(name, {}).get("detail", "")[:80]))
 
     print(f"# i/why mode=hci-drop")
-    print(f"  HCI: {peak.get('hci')} (peak, {datetime.fromtimestamp(peak.get('ts', 0)).strftime('%H:%M')}) → {cur_hci} (now)")
+    print(f"  HCI: {peak.get('hci')} (peak, {datetime.fromtimestamp(peak.get('ts', 0)).strftime('%H:%M')}) -> {cur_hci} (now)")
     print(f"  Drop of {peak.get('hci') - cur_hci} points across {len(rows[rows.index(peak):]) - 1} run(s).")
     print()
     if regressed:
         print(f"  Regressed verifiers ({len(regressed)}):")
         for name, p, c, detail in regressed:
-            print(f"    {name:36}  {p} → {c}  {detail}")
+            print(f"    {name:36}  {p} -> {c}  {detail}")
     else:
-        print("  (no PASS-to-FAIL transitions; drop is likely score-only — use mode=verifier <name> for the lowest-scoring ones)")
+        print("  (no PASS-to-FAIL transitions; drop is likely score-only -- use mode=verifier <name> for the lowest-scoring ones)")
     print()
     print("# Next:")
     print("  i/why mode=verifier <name>           inspect a regressed verifier")

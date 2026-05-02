@@ -19,7 +19,7 @@ def post_tool(handler, name: str, args: dict, *, tool_call,
     """Dispatch a single MCP tool call with the two-phase watchdog described
     in the boot-time comment. Phase A: graceful Thread.join with HME_TOOL_WATCHDOG_S
     timeout returns 504 if exceeded. Phase B: a separate watchdog thread
-    self-SIGTERMs the worker if HME_TOOL_HARDKILL_S is exceeded — the proxy
+    self-SIGTERMs the worker if HME_TOOL_HARDKILL_S is exceeded -- the proxy
     supervisor respawns. This is the only reliable path under GIL-starvation
     (heavy reasoning synthesis can prevent the handler thread from getting
     scheduled to check Thread.join's clock; OS signal delivery isn't blocked
@@ -183,5 +183,5 @@ def post_validate(handler, body: dict, *, executor: concurrent.futures.Executor,
     try:
         result = _fut.result(timeout=3.0)
     except concurrent.futures.TimeoutError:
-        result = {"warnings": [], "blocks": [], "deferred": "search timeout — engine under load"}
+        result = {"warnings": [], "blocks": [], "deferred": "search timeout -- engine under load"}
     handler._json(200, result)

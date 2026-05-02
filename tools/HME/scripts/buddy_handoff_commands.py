@@ -33,14 +33,14 @@ def cmd_status(args: argparse.Namespace) -> int:
     if primary:
         ctx = bd._buddy_context_used(primary["sid"])
         if ctx is None:
-            ctx_str = "ctx=missing  (transcript purged — primary is stale)"
+            ctx_str = "ctx=missing  (transcript purged -- primary is stale)"
             ctx_pct = 0.0
         else:
             bar_width = 10
             ctx_pct = ctx["used_pct"]
             filled = int(round(min(ctx_pct, 100.0) / 100.0 * bar_width))
             bar = "#" * filled + "." * (bar_width - filled)
-            warn = "  ⚠ RETIRE-DUE" if ctx_pct >= threshold else ""
+            warn = "  [!] RETIRE-DUE" if ctx_pct >= threshold else ""
             ctx_str = f"ctx={ctx['tokens']:>7,}/{ctx['ctx_window']:,} [{bar}] {ctx_pct:5.1f}%{warn}"
         print(f"primary: sid={primary['sid']} floor={primary['floor']} "
               f"effort={primary['effort_floor']} {ctx_str}")
@@ -91,7 +91,7 @@ def cmd_retire(args: argparse.Namespace) -> int:
 
 
 def cmd_ensure_primary(args: argparse.Namespace) -> int:
-    """Lazy-spawn a primary if none exists. Idempotent — when primary.sid
+    """Lazy-spawn a primary if none exists. Idempotent -- when primary.sid
     is already alive, returns 0 immediately."""
     primary = _bh()._read_primary()
     if primary is not None:

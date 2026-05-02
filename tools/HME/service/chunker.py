@@ -164,7 +164,7 @@ def _chunk_js_iife_functions(source: str) -> list[dict]:
     for i, m in enumerate(matches):
         start_line = source[:m.start()].count("\n") + 1
         if i + 1 < len(matches):
-            # Byte offset of next function → convert to 0-indexed line count
+            # Byte offset of next function -> convert to 0-indexed line count
             end_line = source[:matches[i + 1].start()].count("\n")
         else:
             end_line = len(lines)  # last function extends to EOF

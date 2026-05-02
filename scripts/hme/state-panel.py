@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/state — unified panel: every state machine in one ~15-line view.
+"""i/state -- unified panel: every state machine in one ~15-line view.
 
 Aggregates the 5+ state files an agent currently has to mentally
 reconcile (onboarding, NEXUS lifecycle, pipeline lock, fingerprint
@@ -63,7 +63,7 @@ def main(argv):
     onb = _read_text(os.path.join(PROJECT_ROOT, "tmp", "hme-onboarding.state")) or "graduated"
     out.append(f"  onboarding         {onb}")
 
-    # 2. Pipeline lock — is npm run main currently running?
+    # 2. Pipeline lock -- is npm run main currently running?
     lock = os.path.join(PROJECT_ROOT, "tmp", "run.lock")
     if os.path.isfile(lock):
         pid = _read_text(lock)
@@ -79,7 +79,7 @@ def main(argv):
         suffix = "  (first run; no prior to compare)" if verdict == "BASELINE_MISSING" else ""
         out.append(f"  last verdict       {verdict}{suffix}")
     else:
-        out.append(f"  last verdict       (no baseline yet — run pipeline once)")
+        out.append(f"  last verdict       (no baseline yet -- run pipeline once)")
 
     # 4. NEXUS lifecycle (briefed/edited/reviewed/committed counts)
     nexus = _read_text(os.path.join(PROJECT_ROOT, "tmp", "hme-nexus.state"))
@@ -98,7 +98,7 @@ def main(argv):
     else:
         out.append(f"  nexus              (clean)")
 
-    # 5. KB freshness — last update time of the lance dir
+    # 5. KB freshness -- last update time of the lance dir
     kb_dir = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
     lance_dirs = []
     if os.path.isdir(kb_dir):
@@ -132,13 +132,13 @@ def main(argv):
     # 7. HCI score with multi-timescale phase view. A single delta throws
     # away signal: HCI can dip this turn while rising over the day. The
     # multi-horizon view (1m, 1h, 1d, peak) reveals the actual phase
-    # coherence — analogous to a piano chord vs a single tone.
+    # coherence -- analogous to a piano chord vs a single tone.
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if snap:
         hci = snap.get("hci", "?")
         n = len(snap.get("verifiers", {})) or snap.get("verifier_count", "?")
-        # Horizon II maturity — confidence dimension on HCI line.
+        # Horizon II maturity -- confidence dimension on HCI line.
         # Min raw score across all verifiers = "weakest link" reading.
         # If HCI is 90 but min=0.30, the average obscures a fragile
         # member; if HCI is 90 and min=0.85, the score is genuinely
@@ -186,7 +186,7 @@ def main(argv):
                         sign = "+" if d > 0 else ""
                         segments.append(f"{label} {sign}{d:.1f}")
                     else:
-                        segments.append(f"{label} ─")
+                        segments.append(f"{label} -")
                 # Add all-time peak vs current
                 peak = max(rows, key=lambda r: r.get("hci", 0))
                 peak_hci = peak.get("hci", 0)
@@ -196,8 +196,8 @@ def main(argv):
                 else:
                     peak_str = f"peak {peak_hci:.0f} ({peak_age_h/24:.0f}d ago)"
                 segments.append(peak_str)
-                out.append(f"                     {' · '.join(segments)}")
-        # Always check for PASS→non-PASS verifier flips, even when the
+                out.append(f"                     {' . '.join(segments)}")
+        # Always check for PASS->non-PASS verifier flips, even when the
         # aggregate HCI hasn't dropped (a single FAIL can be offset by
         # gains elsewhere; the flipped verifier still matters). Diff
         # current vs .prev snapshot for direct causality.
@@ -217,9 +217,9 @@ def main(argv):
                 shown = ", ".join(regressed[:3])
                 if len(regressed) > 3:
                     shown += f" (+{len(regressed) - 3} more)"
-                out.append(f"    → regressed: {shown}")
+                out.append(f"    -> regressed: {shown}")
 
-    # 8. KB add cadence — proves the round-trip is working. Annotate stale
+    # 8. KB add cadence -- proves the round-trip is working. Annotate stale
     # acceptances (>24h) so the line doesn't read as fresh forever.
     accepted = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json.accepted")
     if os.path.isfile(accepted):
@@ -242,10 +242,10 @@ def main(argv):
         if alq:
             status = alq.get("status", "?")
             score = alq.get("score", 0)
-            marker = "·" if status == "PASS" else "!"
+            marker = "." if status == "PASS" else "!"
             out.append(f"  agent-loop {marker}      {status}  score={score:.2f}  (i/status mode=agent-loop for detail)")
 
-    # 9. Last hot-reload — auto-reload fires on .py edits under
+    # 9. Last hot-reload -- auto-reload fires on .py edits under
     # tools/HME/service/server/ but is otherwise silent. Surfacing it
     # here means an agent can confirm "the code I just edited is
     # loaded" without firing `i/hme-admin action=reload` redundantly.
@@ -264,7 +264,7 @@ def main(argv):
         except (OSError, TypeError):
             pass
 
-    # 10. Pending KB draft — visibility for the auto-suggest after
+    # 10. Pending KB draft -- visibility for the auto-suggest after
     # STABLE/EVOLVED verdict. Without surfacing it, drafts written by
     # posttooluse_bash sit unread.
     draft_path = os.path.join(PROJECT_ROOT, "tmp", "hme-learn-draft.json")
@@ -276,7 +276,7 @@ def main(argv):
                 f"{int(age_s/60)}m ago" if age_s < 3600 else
                 f"{age_s/3600:.1f}h ago"
             )
-            out.append(f"  pending KB draft   written {human_age}  → accept with `i/learn action=accept_draft`")
+            out.append(f"  pending KB draft   written {human_age}  -> accept with `i/learn action=accept_draft`")
         except OSError:
             pass
 

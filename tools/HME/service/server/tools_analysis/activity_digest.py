@@ -1,4 +1,4 @@
-"""HME activity digest — reads metrics/hme-activity.jsonl and summarizes it.
+"""HME activity digest -- reads metrics/hme-activity.jsonl and summarizes it.
 
 Exposes a single reader `activity_digest(window="round")` that surfaces:
   - event counts by type (file_written, edit_pending, pipeline_run, ...)
@@ -6,7 +6,7 @@ Exposes a single reader `activity_digest(window="round")` that surfaces:
   - round boundaries (last pipeline_run / round_complete)
   - recent files touched with their hme_read_prior flag
 
-Consumed by status_unified.status(mode="activity") — does not register as a
+Consumed by status_unified.status(mode="activity") -- does not register as a
 top-level MCP tool to preserve the 6-tool public surface.
 """
 from __future__ import annotations
@@ -55,9 +55,9 @@ def activity_digest(window: str = "round") -> str:
     """Summarize hme-activity.jsonl for the current session/round.
 
     window:
-      'round'   — events since the last round_complete (or full tail if none)
-      'session' — events since the last session start (falls back to last 500 lines)
-      'all'     — full tail (last 500 lines)
+      'round'   -- events since the last round_complete (or full tail if none)
+      'session' -- events since the last session start (falls back to last 500 lines)
+      'all'     -- full tail (last 500 lines)
     """
     _track("activity_digest")
 
@@ -80,7 +80,7 @@ def activity_digest(window: str = "round") -> str:
             # Always slice when a boundary was found, even if round_complete
             # IS the final event (yielding []). The previous guard
             # `last_round_idx < len(events) - 1` silently fell through to
-            # the FULL events list — mixing prior-round data into the
+            # the FULL events list -- mixing prior-round data into the
             # current-round window, the opposite of what window='round'
             # promises. An empty post-boundary slice is the honest answer:
             # "no events yet this round."
@@ -113,7 +113,7 @@ def activity_digest(window: str = "round") -> str:
         "# Activity Digest",
         "",
         f"Window:     {window}   Events: {len(events)}   "
-        f"Span: {_fmt_ts(first_ts)} → {_fmt_ts(last_ts)}",
+        f"Span: {_fmt_ts(first_ts)} -> {_fmt_ts(last_ts)}",
         "",
         "## Event counts",
     ]
@@ -129,7 +129,7 @@ def activity_digest(window: str = "round") -> str:
         )
         if writes_without_read:
             lines.append(
-                f"  ⚠ {writes_without_read} write(s) had no prior HME read this session"
+                f"  [!] {writes_without_read} write(s) had no prior HME read this session"
             )
     else:
         lines.append("  no file_written events in window")
@@ -139,7 +139,7 @@ def activity_digest(window: str = "round") -> str:
         lines.append(f"## Violations ({len(violations)})")
         for v in violations[-5:]:
             lines.append(
-                f"  {_fmt_ts(v.get('ts'))}  {v.get('file', '?')}  — {v.get('reason', '?')}"
+                f"  {_fmt_ts(v.get('ts'))}  {v.get('file', '?')}  -- {v.get('reason', '?')}"
             )
 
     if pipelines:
@@ -155,7 +155,7 @@ def activity_digest(window: str = "round") -> str:
         lines.append("")
         lines.append("## Recent writes")
         for w in recent_files:
-            flag = "✓" if w.get("hme_read_prior") is True else "✗"
+            flag = "[ok]" if w.get("hme_read_prior") is True else "[no]"
             rel = w.get("file", "?")
             # Trim long paths to the last 3 segments for compactness
             parts = rel.split("/")

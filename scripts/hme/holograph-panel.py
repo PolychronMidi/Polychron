@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""i/holograph — single-screen interstellar overview of HME's state.
+"""i/holograph -- single-screen interstellar overview of HME's state.
 
 One row per horizon. Each row pulls the most informative signal that
 horizon contributes. Together they answer "where is HME right now,
-across every dimension simultaneously?" — a question no other single
+across every dimension simultaneously?" -- a question no other single
 command answers today.
 
 Pure composition: zero new computation, all data already exists. This
-is the asymptote of the observability triad — `i/state` (snapshot),
-`i/timeline` (chronology), `i/why` (causality) — extended to span
+is the asymptote of the observability triad -- `i/state` (snapshot),
+`i/timeline` (chronology), `i/why` (causality) -- extended to span
 every architectural axis at once.
 """
 from __future__ import annotations
@@ -50,7 +50,7 @@ def _read_jsonl(path: str, tail: int = 1000):
 
 
 def _hci_phase() -> str:
-    """Horizon II — multi-timescale HCI."""
+    """Horizon II -- multi-timescale HCI."""
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
@@ -79,12 +79,12 @@ def _hci_phase() -> str:
         peak = max(r.get("hci", 0) for r in rows)
     else:
         peak = cur
-    delta_str = " · ".join(deltas) if deltas else ""
-    return f"{cur:.0f}  ({delta_str} · peak {peak:.0f})"
+    delta_str = " . ".join(deltas) if deltas else ""
+    return f"{cur:.0f}  ({delta_str} . peak {peak:.0f})"
 
 
 def _multi_axis_summary() -> str:
-    """Horizon II — per-subtag bands."""
+    """Horizon II -- per-subtag bands."""
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
@@ -105,7 +105,7 @@ def _multi_axis_summary() -> str:
 
 
 def _kb_summary() -> str:
-    """Horizon III — KB graph density."""
+    """Horizon III -- KB graph density."""
     sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "service"))
     try:
         from direct_lance import _open_table  # type: ignore
@@ -125,11 +125,11 @@ def _kb_summary() -> str:
     for tag in df.get("tags", []):
         if isinstance(tag, str) and _re.search(r"\w+:[a-f0-9]{12}", tag):
             edge_count += 1
-    return f"{n} entries · {edge_count} edges  ({(edge_count / n * 100):.0f}% density)" if n else "empty"
+    return f"{n} entries . {edge_count} edges  ({(edge_count / n * 100):.0f}% density)" if n else "empty"
 
 
 def _agent_loop_summary() -> str:
-    """Horizon IV — agent-loop quality + tier marker."""
+    """Horizon IV -- agent-loop quality + tier marker."""
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
@@ -143,12 +143,12 @@ def _agent_loop_summary() -> str:
     # both the verifier verdict AND the actionable tier label.
     tier = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-agent-loop-tier.json"))
     if tier:
-        base += f"  ·  tier={tier.get('tier', '?')}"
+        base += f"  .  tier={tier.get('tier', '?')}"
     return base
 
 
 def _conjugate_summary() -> str:
-    """Horizon V — composition⇔HME quadrant."""
+    """Horizon V -- composition<=>HME quadrant."""
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
@@ -160,7 +160,7 @@ def _conjugate_summary() -> str:
 
 
 def _verifier_meta_summary() -> str:
-    """Horizon VI — meta-meta verifier health + auto-prune marker."""
+    """Horizon VI -- meta-meta verifier health + auto-prune marker."""
     sys.path.insert(0, os.path.join(PROJECT_ROOT, "tools", "HME", "scripts"))
     try:
         from verify_coherence import REGISTRY  # type: ignore
@@ -170,7 +170,7 @@ def _verifier_meta_summary() -> str:
     snap = _read_json(os.path.join(PROJECT_ROOT, "output", "metrics",
                                    "hci-verifier-snapshot.json"))
     if not snap:
-        return f"{n} verifiers · no snapshot"
+        return f"{n} verifiers . no snapshot"
     statuses = defaultdict(int)
     for info in (snap.get("verifiers") or {}).values():
         statuses[info.get("status", "?")] += 1
@@ -178,7 +178,7 @@ def _verifier_meta_summary() -> str:
     for st in ("PASS", "FAIL", "WARN", "SKIP", "ERROR"):
         if statuses.get(st):
             parts.append(f"{st}={statuses[st]}")
-    base = f"{n} verifiers · " + " ".join(parts)
+    base = f"{n} verifiers . " + " ".join(parts)
     # Auto-prune marker (Horizon VI maturity): surface dead-weight
     # candidate count so the agent sees how many always-PASS verifiers
     # are diluting HCI without explicit drill-in.
@@ -186,12 +186,12 @@ def _verifier_meta_summary() -> str:
     if prune and isinstance(prune.get("candidates"), list):
         cand_n = len(prune["candidates"])
         if cand_n > 0:
-            base += f"  ·  prune-candidates={cand_n}"
+            base += f"  .  prune-candidates={cand_n}"
     return base
 
 
 def _causality_summary() -> str:
-    """Horizon VII — most recent caused_by."""
+    """Horizon VII -- most recent caused_by."""
     marker = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-last-reload.json"))
     if marker and "caused_by" in marker:
         age_s = time.time() - marker.get("ts", 0)
@@ -208,7 +208,7 @@ def _causality_summary() -> str:
 
 
 def _conscience_summary() -> str:
-    """Horizon VIII — ground-truth verdict count."""
+    """Horizon VIII -- ground-truth verdict count."""
     p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-ground-truth.jsonl")
     rows = _read_jsonl(p, tail=200) if os.path.isfile(p) else []
     pos = sum(1 for r in rows
@@ -219,29 +219,29 @@ def _conscience_summary() -> str:
 
 
 def _band_summary() -> str:
-    """Horizon IX — band proposal + V→IX tightening signal."""
+    """Horizon IX -- band proposal + V->IX tightening signal."""
     p = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-band-proposal.json"))
-    # V→IX bidirectional coupling: surface active tightening signal so
+    # V->IX bidirectional coupling: surface active tightening signal so
     # the agent sees the conjugate-channel verifier's recommendation
     # alongside the static proposal.
     tightening = _read_json(os.path.join(PROJECT_ROOT, "tmp", "hme-band-tightening.json"))
     if not p:
         if tightening:
-            return f"⚠ tightening signal active ({tightening.get('reason', '?')[:50]})"
+            return f"[!] tightening signal active ({tightening.get('reason', '?')[:50]})"
         return "no proposal yet"
     cur = p.get("current_band", [0.55, 0.85])
     proposed = p.get("proposed_band", cur)
-    base = (f"current [{cur[0]:.2f}, {cur[1]:.2f}] → proposed [{proposed[0]:.2f}, {proposed[1]:.2f}]"
+    base = (f"current [{cur[0]:.2f}, {cur[1]:.2f}] -> proposed [{proposed[0]:.2f}, {proposed[1]:.2f}]"
             if proposed != cur else
             f"current [{cur[0]:.2f}, {cur[1]:.2f}]  (no change)")
     if tightening:
         delta = tightening.get("band_delta", 0)
-        base += f"  ⚠ V-tightening: {delta:+.2f}"
+        base += f"  [!] V-tightening: {delta:+.2f}"
     return base
 
 
 def _fractal_summary() -> str:
-    """Horizon X — fractal Gini trend."""
+    """Horizon X -- fractal Gini trend."""
     p = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-fractal-history.jsonl")
     rows = _read_jsonl(p, tail=50) if os.path.isfile(p) else []
     if not rows:
@@ -257,7 +257,7 @@ def _fractal_summary() -> str:
 
 
 def _predict_summary() -> str:
-    """Horizon I — tool latency p50."""
+    """Horizon I -- tool latency p50."""
     activity = _read_jsonl(os.path.join(PROJECT_ROOT, "output", "metrics",
                                         "hme-activity.jsonl"), tail=2000)
     if not activity:
@@ -269,7 +269,7 @@ def _predict_summary() -> str:
         return f"{len(inf_ts)} recent inference calls (insufficient for stats)"
     gaps = sorted(inf_ts[i + 1] - inf_ts[i] for i in range(len(inf_ts) - 1))
     median = gaps[len(gaps) // 2]
-    return f"{len(inf_ts)} calls/6h · median gap {median:.0f}s"
+    return f"{len(inf_ts)} calls/6h . median gap {median:.0f}s"
 
 
 def _persist_snapshot(rows: list[tuple]) -> None:
@@ -294,9 +294,9 @@ def _persist_snapshot(rows: list[tuple]) -> None:
 
 
 def _render_trajectory(n: int = 5) -> int:
-    """Render the last n holograph snapshots as a trajectory — for each
+    """Render the last n holograph snapshots as a trajectory -- for each
     horizon row, the value across recent invocations. Cross-horizon
-    time-series in one view (Horizon X × cross-horizon compounding)."""
+    time-series in one view (Horizon X * cross-horizon compounding)."""
     history_path = os.path.join(PROJECT_ROOT, "output", "metrics",
                                 "hme-holograph-history.jsonl")
     if not os.path.isfile(history_path):
@@ -311,7 +311,7 @@ def _render_trajectory(n: int = 5) -> int:
         return 1
     if len(rows) < 2:
         print(f"# i/holograph mode=trajectory")
-        print(f"  Only {len(rows)} snapshot(s) recorded — need ≥2 for trajectory.")
+        print(f"  Only {len(rows)} snapshot(s) recorded -- need >=2 for trajectory.")
         return 0
 
     print(f"# Holograph trajectory  (last {len(rows)} snapshots)")
@@ -359,10 +359,10 @@ def main(argv):
         ("IX",   "Chaordic band",             _band_summary()),
         ("X",    "Fractal-shape Gini",        _fractal_summary()),
     ]
-    # Persist this snapshot for `mode=trajectory`. Cheap — append-only.
+    # Persist this snapshot for `mode=trajectory`. Cheap -- append-only.
     _persist_snapshot(rows)
 
-    print("# HME Holograph — interstellar overview")
+    print("# HME Holograph -- interstellar overview")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     for hid, label, summary in rows:
@@ -371,7 +371,7 @@ def main(argv):
     print("# Drill-in:")
     print("  i/state                    state-machine snapshot")
     print("  i/timeline window=10m      chronological audit trail")
-    print("  i/why mode=<…>             causality / per-horizon detail")
+    print("  i/why mode=<...>             causality / per-horizon detail")
     print("  i/holograph mode=trajectory   horizon-evolution over recent runs")
     return 0
 

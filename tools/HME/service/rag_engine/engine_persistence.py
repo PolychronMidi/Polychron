@@ -1,4 +1,4 @@
-"""RAGEngine persistence mixin — file hash cache, per-file chunk cache, table validation."""
+"""RAGEngine persistence mixin -- file hash cache, per-file chunk cache, table validation."""
 import json
 import logging
 import os

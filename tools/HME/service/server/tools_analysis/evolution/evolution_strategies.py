@@ -1,4 +1,4 @@
-"""Evolution strategies — curate, contradict, adversarial stress.
+"""Evolution strategies -- curate, contradict, adversarial stress.
 
 Split from evolution_evolve.py. These are the heavy analysis functions
 that each focus on a different evolution mode.
@@ -15,7 +15,7 @@ logger = logging.getLogger("HME")
 
 
 
-# Re-exports — strategies split into focused siblings.
+# Re-exports -- strategies split into focused siblings.
 from .evolution_curate import _auto_curate  # noqa: F401, E402
 from .evolution_contradict import _detect_contradictions  # noqa: F401, E402
 from .evolution_stress import _adversarial_stress  # noqa: F401, E402

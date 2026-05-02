@@ -1,4 +1,4 @@
-"""HME learn — unified KB tool.
+"""HME learn -- unified KB tool.
 
 Merges add_knowledge, remove_knowledge, and search_knowledge
 into one tool with action auto-detection.
@@ -22,22 +22,22 @@ def learn(query: str = "", title: str = "", content: str = "",
           listening_notes: str = "", top_k: int = 5,
           action: str = "") -> str:
     """Unified KB interface. Auto-detects action from parameters:
-    learn(query='coupling') → search KB.
-    learn(title='...', content='...') → add entry.
-    learn(remove='entry_id') → delete entry.
-    action='list' → list all entries (category filters).
-    action='compact' → deduplicate similar entries.
-    action='export' → export KB as markdown.
-    action='graph' → spreading-activation knowledge graph (uses query).
-    action='dream' → pairwise similarity pass, find hidden connections.
-    action='health' → KB staleness check.
-    action='hypothesize' → register a hypothesis (title=claim, content=
+    learn(query='coupling') -> search KB.
+    learn(title='...', content='...') -> add entry.
+    learn(remove='entry_id') -> delete entry.
+    action='list' -> list all entries (category filters).
+    action='compact' -> deduplicate similar entries.
+    action='export' -> export KB as markdown.
+    action='graph' -> spreading-activation knowledge graph (uses query).
+    action='dream' -> pairwise similarity pass, find hidden connections.
+    action='health' -> KB staleness check.
+    action='hypothesize' -> register a hypothesis (title=claim, content=
       falsification criterion, tags=modules, query=round tag,
       listening_notes=initial evidence).
-    action='hypothesis_test' → record a test verdict (remove=id,
+    action='hypothesis_test' -> record a test verdict (remove=id,
       content=CONFIRMED|REFUTED|INCONCLUSIVE, query=round,
       listening_notes=evidence).
-    action='hypotheses' → list hypotheses (category=OPEN|CONFIRMED|...)."""
+    action='hypotheses' -> list hypotheses (category=OPEN|CONFIRMED|...)."""
     _track("learn")
     _act = action or ("add" if title else "search" if query else "other")
     append_session_narrative("kb_add" if _act == "add" else "search", f"learn({_act}): {title or query or action}")
@@ -68,7 +68,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         from server.tools_knowledge import kb_health as _kbh
         return _kbh()
 
-    # Hypothesis lifecycle — Phase 3.1 of openshell_features_to_mimic.md
+    # Hypothesis lifecycle -- Phase 3.1 of openshell_features_to_mimic.md
     if action == "hypothesize":
         # title = claim, content = falsification criterion, tags = modules,
         # query = proposer round tag (R93 etc), listening_notes = initial evidence
@@ -101,11 +101,11 @@ def learn(query: str = "", title: str = "", content: str = "",
         return _cc()
 
     if action == "promote_discovery":
-        # Phase 6.4 (R97) — promote a synthesized discovery draft from
+        # Phase 6.4 (R97) -- promote a synthesized discovery draft from
         # metrics/hme-discoveries-draft.jsonl into the human-curated
         # doc/hme-discoveries.md. Requires:
         #   - `remove` = draft id (12-char hex)
-        #   - draft must have promotable=true (stable across ≥3 runs)
+        #   - draft must have promotable=true (stable across >=3 runs)
         # Optional:
         #   - `listening_notes` = human annotation appended to the entry
         from .discovery_promote import promote_discovery as _pd
@@ -120,7 +120,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         return _ld()
 
     if action == "suggest_predecessors":
-        # Horizon III asymptote — KB edge densification via semantic
+        # Horizon III asymptote -- KB edge densification via semantic
         # similarity. Given a candidate title+content, computes the
         # embedding and reports top-k existing entries above a similarity
         # threshold. Agent consumes the suggestions to populate
@@ -138,7 +138,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         except Exception as e:
             return f"Embedding failed: {type(e).__name__}: {e}"
         # Walk all entries and rank by cosine similarity. list_knowledge_full
-        # strips the vector field, so use direct lance access — gives us
+        # strips the vector field, so use direct lance access -- gives us
         # title + content + vector together in one pass without re-encoding.
         try:
             tbl = ctx.project_engine.knowledge_table
@@ -148,7 +148,7 @@ def learn(query: str = "", title: str = "", content: str = "",
         except Exception as e:
             return f"KB read failed: {type(e).__name__}: {e}"
         if len(df) == 0:
-            return "KB empty — first entry has no predecessors. Add freely."
+            return "KB empty -- first entry has no predecessors. Add freely."
         import math as _math
         cand_norm = _math.sqrt(sum(float(x) * float(x) for x in cand_vec)) or 1.0
         ranked = []
@@ -170,7 +170,7 @@ def learn(query: str = "", title: str = "", content: str = "",
                 "title": str(row.get("title", "")),
             }))
         ranked.sort(key=lambda kv: -kv[0])
-        # Return top 5 with similarity ≥ 0.50; below that the suggestion
+        # Return top 5 with similarity >= 0.50; below that the suggestion
         # is too weak to act on without manual review.
         suggestions = [r for r in ranked[:5] if r[0] >= 0.50]
         out = ["# Predecessor suggestions (Horizon III seed)"]
@@ -188,7 +188,7 @@ def learn(query: str = "", title: str = "", content: str = "",
             t = r["title"][:55]
             relation = "derived_from" if sim < 0.85 else "supersedes"
             out.append(f"  {sim:.2f}  [{kid[:8]}] {t}")
-            out.append(f"           → consider tag: tags=\"{relation}:{kid}\"")
+            out.append(f"           -> consider tag: tags=\"{relation}:{kid}\"")
         out.append("")
         out.append("# Next:")
         out.append("  Pick the strongest match (or none); copy its `tags=...:<id>` form")
@@ -196,11 +196,11 @@ def learn(query: str = "", title: str = "", content: str = "",
         return "\n".join(out)
 
     if action == "ground_truth":
-        # Phase 5.5 — human ground-truth feedback. We reuse the learn()
+        # Phase 5.5 -- human ground-truth feedback. We reuse the learn()
         # parameter surface: title=section, tags[0]=moment_type,
         # tags[1]=sentiment, query=round_tag, content=comment,
         # listening_notes=also-comment (either works).
-        # Horizon IX × II asymptote: tags[2] (if present) carries an
+        # Horizon IX * II asymptote: tags[2] (if present) carries an
         # HCI subtag (e.g. "structural-integrity"). Per-axis verdicts
         # let band-tuning compute per-axis bands.
         from .ground_truth import record_ground_truth as _gt
@@ -252,7 +252,7 @@ def learn(query: str = "", title: str = "", content: str = "",
             _os.replace(_draft_path, _draft_path + ".accepted")
         except OSError:
             pass
-        return f"draft accepted → {_ret}"
+        return f"draft accepted -> {_ret}"
 
     # Add action (title + content provided)
     if title and content:
@@ -268,9 +268,9 @@ def learn(query: str = "", title: str = "", content: str = "",
         # Only filter by category if explicitly set (not the default 'general')
         search_cat = category if category and category != "general" else ""
         # Tool-layer BRIEF emission: a KB search IS a read-prior signal if
-        # the query mentions a module name. Emit for any camelCase token ≥6
+        # the query mentions a module name. Emit for any camelCase token >=6
         # chars that looks like a module identifier. Narrow try around
-        # each token — the previous single outer try meant one bad emit
+        # each token -- the previous single outer try meant one bad emit
         # aborted the whole loop so later tokens in the same query were
         # never recorded.
         try:
@@ -284,7 +284,7 @@ def learn(query: str = "", title: str = "", content: str = "",
                 except Exception as _emit_err:
                     logger.warning(f"brief-recorded emit failed for {_token!r}: {type(_emit_err).__name__}: {_emit_err}")
         except ImportError as _brief_err:
-            # read_unified is optional — log at debug so planned
+            # read_unified is optional -- log at debug so planned
             # environments without it don't spam but any regression
             # (module vanished mid-session) is still visible.
             logger.debug(f"brief-recorded import unavailable: {_brief_err}")

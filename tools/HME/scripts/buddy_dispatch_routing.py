@@ -1,4 +1,4 @@
-"""Buddy routing — list_buddies + effective tier/effort + pick_buddy_for_task.
+"""Buddy routing -- list_buddies + effective tier/effort + pick_buddy_for_task.
 
 Extracted from buddy_dispatcher.py (was lines 258-422). The "which buddy gets
 this task" cluster, separated from the queue lifecycle and drain orchestration.
@@ -26,7 +26,7 @@ def _list_buddies() -> list[dict]:
     {slot, sid, floor, effort_floor, sid_file, processing_dir}.
 
     When mode=synthesis, returns a single virtual worker that dispatches
-    via synthesis_reasoning.call() — no SID, no buddy session, no
+    via synthesis_reasoning.call() -- no SID, no buddy session, no
     Anthropic API quota required. Lets the queue/manifest/orphan-sweep
     infrastructure stay useful when BUDDY_SYSTEM=0.
     """
@@ -34,7 +34,7 @@ def _list_buddies() -> list[dict]:
         return []
     # Synthesis pseudo-buddy: present when (a) full-synthesis mode OR
     # (b) per-tier override is non-empty. In the per-tier case it
-    # coexists with real buddies — `_pick_buddy_for_task` routes each
+    # coexists with real buddies -- `_pick_buddy_for_task` routes each
     # task to the right worker based on the task's tier.
     synthesis_buddy = {
         "slot": 0,  # 0 distinguishes from real-buddy slots (1..N)
@@ -54,7 +54,7 @@ def _list_buddies() -> list[dict]:
     def _read_floor_pair(sid_file: Path):
         """Read companion .floor and .effort_floor files. effort_floor
         defaults to the canonical effort level for the model floor when
-        absent (e.g. model-floor=easy → effort-floor=low). Missing/
+        absent (e.g. model-floor=easy -> effort-floor=low). Missing/
         invalid files default to easy/low so the buddy stays dynamic
         rather than being silently escalated."""
         floor_file = sid_file.with_suffix(".floor")
@@ -120,11 +120,11 @@ def _effective_tier(item_tier: str, buddy_floor: str) -> str:
 def _effective_effort(item_tier: str, effort_floor: str) -> str:
     """Apply `effective = max(item_effort, buddy_effort_floor)` rule
     (effort axis, parallel to model axis). Item tier is mapped to its
-    canonical effort level (easy→low, medium→medium, hard→high) and
+    canonical effort level (easy->low, medium->medium, hard->high) and
     then escalated against the buddy's effort floor. Skill-set Phase
     19 keeps these axes independent so a buddy declared with
     `model-floor: medium` + `effort-floor: high` runs Sonnet at high
-    effort even on easy-tier items (intentional — quality over speed)."""
+    effort even on easy-tier items (intentional -- quality over speed)."""
     item_effort = TIER_TO_EFFORT.get(item_tier, "medium")
     item_n = EFFORT_ORDER.get(item_effort, 1)
     floor_n = EFFORT_ORDER.get(effort_floor, 1)
@@ -137,7 +137,7 @@ def _pick_buddy_for_task(task: dict, buddies: list[dict], busy: set[int]) -> dic
 
     Per-tier synthesis routing: if the task's tier is in
     `HME_DISPATCH_SYNTHESIS_TIERS`, prefer the synthesis pseudo-buddy
-    (sid='synthesis', slot=0) — it routes through the free cascade
+    (sid='synthesis', slot=0) -- it routes through the free cascade
     without burning the buddy session's quota. The real buddy is the
     fallback when synthesis is busy or not present.
 
@@ -162,13 +162,13 @@ def _pick_buddy_for_task(task: dict, buddies: list[dict], busy: set[int]) -> dic
         for b in free:
             if b.get("sid") == "synthesis":
                 return b
-        # Synthesis not available — fall through to real-buddy selection
+        # Synthesis not available -- fall through to real-buddy selection
         # rather than refusing the task. Logged in stats by the caller.
         free = [b for b in free if b.get("sid") != "synthesis"]
         if not free:
             return None
     else:
-        # Tier doesn't route to synthesis — exclude synthesis pseudo
+        # Tier doesn't route to synthesis -- exclude synthesis pseudo
         # from candidates so a medium/hard task never lands on the
         # free cascade unintentionally.
         free = [b for b in free if b.get("sid") != "synthesis"]

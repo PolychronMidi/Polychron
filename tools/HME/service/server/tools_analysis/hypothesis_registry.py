@@ -1,11 +1,11 @@
-"""HME hypothesis lifecycle registry — Phase 3.1 of openshell_features_to_mimic.md.
+"""HME hypothesis lifecycle registry -- Phase 3.1 of openshell_features_to_mimic.md.
 
 Tracks the Evolver's causal claims as first-class machine-queryable records
 rather than prose buried in the journal. Every hypothesis has a proposer
 round, a claim, a falsification criterion, a list of rounds in which it was
 tested, a status, and a list of modules it applies to.
 
-Stored in `metrics/hme-hypotheses.json` (plain JSON, not lance — small
+Stored in `metrics/hme-hypotheses.json` (plain JSON, not lance -- small
 structured data, human-editable, survives schema evolution).
 
 Exposed via:
@@ -13,8 +13,8 @@ Exposed via:
         modules=[...], round=..., relation_type='open')
   learn(action='hypothesis_test', remove=<id>, content=<CONFIRMED|REFUTED|
         INCONCLUSIVE>, round=..., listening_notes=<evidence>)
-  status(mode='hypotheses')      — all, grouped by status
-  status(mode='hypotheses-open') — only OPEN
+  status(mode='hypotheses')      -- all, grouped by status
+  status(mode='hypotheses-open') -- only OPEN
 
 Reserve the 6-tool public surface: no new top-level tools, new modes and
 actions piggyback on `learn` and `status`.
@@ -149,7 +149,7 @@ def test_hypothesis(
     found["evidence"] = evidence_list
     _save(data)
     return (
-        f"# Hypothesis `{hypothesis_id}` → **{verdict_u}**\n\n"
+        f"# Hypothesis `{hypothesis_id}` -> **{verdict_u}**\n\n"
         f"**Claim:** {found.get('claim', '?')}\n\n"
         f"**Tested in:** {', '.join(tested_in) or '(none recorded)'}\n\n"
         f"**Evidence:** {evidence or '(none provided)'}"
@@ -217,6 +217,6 @@ def hypotheses_report(status_filter: str = "") -> str:
             if tested:
                 lines.append(f"    tested:    {', '.join(tested[-5:])}")
         if len(hs) > 15:
-            lines.append(f"  … and {len(hs) - 15} more")
+            lines.append(f"  ... and {len(hs) - 15} more")
         lines.append("")
     return "\n".join(lines)

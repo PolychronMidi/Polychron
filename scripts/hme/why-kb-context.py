@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""i/why mode=kb-context <entry-id-or-prefix> — Horizon III expansion.
+"""i/why mode=kb-context <entry-id-or-prefix> -- Horizon III expansion.
 
 Pairs with `i/why mode=kb-graph` (graph stats). This view is per-entry:
 given an entry ID (or 8-char prefix), traverses outgoing + incoming
-citation edges and surfaces the entry's full context — what it cites,
+citation edges and surfaces the entry's full context -- what it cites,
 what cites it, supersedes/superseded-by, related-by-category.
 
 Today the KB has 0 live citation edges (kb-graph reports), so this
@@ -74,7 +74,7 @@ def main(argv):
         if len(kid) >= 8:
             by_prefix[kid[:8]].append(kid)
 
-    # Resolve target — exact, prefix, or fuzzy
+    # Resolve target -- exact, prefix, or fuzzy
     target_lower = target.lower()
     resolved = None
     if target_lower in by_id:
@@ -84,7 +84,7 @@ def main(argv):
             resolved = by_prefix[target_lower][0]
         else:
             print(f"# i/why mode=kb-context {target}")
-            print(f"  Prefix '{target_lower}' is ambiguous — matches:")
+            print(f"  Prefix '{target_lower}' is ambiguous -- matches:")
             for kid in by_prefix[target_lower]:
                 title = str(by_id[kid].get("title", ""))[:60]
                 print(f"    [{kid[:8]}]  {title}")
@@ -112,7 +112,7 @@ def main(argv):
     tags = str(entry.get("tags", ""))
     content = str(entry.get("content", ""))
 
-    print(f"# KB context — [{resolved[:8]}] {title[:60]}")
+    print(f"# KB context -- [{resolved[:8]}] {title[:60]}")
     print(f"  category: {cat}  tags: {tags or '(none)'}")
     print()
     # Content preview
@@ -131,7 +131,7 @@ def main(argv):
                 t_title = str(target_row.get("title", ""))[:50]
                 print(f"  --{kind}--> [{target_id[:8]}] {t_title}")
             else:
-                print(f"  --{kind}--> [{target_id[:8]}] (missing — superseded entry was removed)")
+                print(f"  --{kind}--> [{target_id[:8]}] (missing -- superseded entry was removed)")
         print()
 
     # Incoming edges (entries whose tags point to this one)

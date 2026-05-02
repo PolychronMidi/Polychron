@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""HME tool worker — plain HTTP server, no FastMCP.
+"""HME tool worker -- plain HTTP server, no FastMCP.
 
 Reuses main.py's bootstrap (env, pyc purge, RAG engine loading, llamacpp
 supervisor) but swaps FastMCP for a dict-backed tool registry. Exposes:
 
-  GET  /health         — readiness probe (used by supervisor)
-  GET  /version        — {"version": WORKER_VERSION, "cli_compat": CLI_VERSION}
-  GET  /tools/list     — MCP tools/list payload (schema list)
-  POST /tool/<name>    — invoke a tool with JSON body as kwargs
+  GET  /health         -- readiness probe (used by supervisor)
+  GET  /version        -- {"version": WORKER_VERSION, "cli_compat": CLI_VERSION}
+  GET  /tools/list     -- MCP tools/list payload (schema list)
+  POST /tool/<name>    -- invoke a tool with JSON body as kwargs
                           returns {"ok": true, "result": "..."} or
                           {"ok": false, "error": "...", "trace": "..."}
 
@@ -29,7 +29,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # Shared thread pool for /validate requests. Previous implementation
 # spawned a fresh ThreadPoolExecutor per request with cancel_futures=True,
-# but Python threads can't be interrupted — on timeout, the running
+# but Python threads can't be interrupted -- on timeout, the running
 # _validate kept executing past the 3s deadline and leaked an engine-
 # bound thread. With a bounded shared pool + semaphore, concurrent
 # validates are capped, so overload cycles can't accumulate runaway
@@ -47,7 +47,7 @@ def _bounded_validate(query: str) -> dict:
     from hme_http_handlers import _validate as _inner
     if not _VALIDATE_SEMAPHORE.acquire(timeout=2.5):
         return {"warnings": [], "blocks": [],
-                "deferred": "validate semaphore exhausted — engine saturated"}
+                "deferred": "validate semaphore exhausted -- engine saturated"}
     try:
         return _inner(query)
     finally:
@@ -63,7 +63,7 @@ def _load_versions() -> dict:
         with open(_p) as _f:
             return _j.load(_f)
     except Exception as _ver_err:
-        # Module-init time — logger isn't set up yet (line ~83). Use stderr.
+        # Module-init time -- logger isn't set up yet (line ~83). Use stderr.
         print(f"worker: versions.json read failed: {type(_ver_err).__name__}: {_ver_err}", file=__import__("sys").stderr)
         return {}
 _VERSIONS = _load_versions()
@@ -76,7 +76,7 @@ if _tool_root not in sys.path:
     sys.path.insert(0, _tool_root)
 
 from hme_env import ENV  # noqa: E402
-# Force .env load NOW — before any torch/SentenceTransformer import — so
+# Force .env load NOW -- before any torch/SentenceTransformer import -- so
 # values like PYTORCH_CUDA_ALLOC_CONF land in os.environ in time for
 # PyTorch's first CUDA initialization. Lazy load (on first ENV.require)
 # would happen too late: by then torch has already initialized its
@@ -109,7 +109,7 @@ def _purge_stale_server_pyc() -> None:
         if os.path.exists(src) and os.path.getmtime(src) > os.path.getmtime(pyc_path):
             try:
                 os.unlink(pyc_path)
-            except OSError:  # silent-ok: stale pyc cleanup; best-effort — worst case is one stale bytecode file that rebuilds next run
+            except OSError:  # silent-ok: stale pyc cleanup; best-effort -- worst case is one stale bytecode file that rebuilds next run
                 pass
 
 
@@ -129,7 +129,7 @@ logger.setLevel(logging.INFO)
 
 # PROJECT_ROOT MUST be set by the proxy supervisor. Falling back to os.getcwd()
 # silently creates duplicate log/ directories wherever the worker was spawned
-# from (e.g. tools/HME/log/, tools/HME/service/log/) — fragmenting telemetry.
+# from (e.g. tools/HME/log/, tools/HME/service/log/) -- fragmenting telemetry.
 PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 if not os.path.isdir(os.path.join(PROJECT_ROOT, "src")):
     raise RuntimeError(
@@ -186,7 +186,7 @@ ctx.lib_engines = {}
 
 logger.info(f"HME session={ctx.SESSION_ID} | project={PROJECT_ROOT}")
 
-# Register tools (imports trigger @ctx.mcp.tool() → Registry.tool()).
+# Register tools (imports trigger @ctx.mcp.tool() -> Registry.tool()).
 from server import tools_search  # noqa: E402, F401
 from server import tools_index  # noqa: E402, F401
 from server import tools_knowledge  # noqa: E402, F401
@@ -201,7 +201,7 @@ _startup_t0 = time.time()
 
 
 def _background_load():
-    """Direct RAG engine load — no shim, no HTTP hop. `rag_engines` module
+    """Direct RAG engine load -- no shim, no HTTP hop. `rag_engines` module
     starts its `_load_engines` thread on import; we wait for ready, then wire
     the globals into ctx so tool code sees real engine instances (not an
     HTTP-delegating proxy)."""
@@ -224,7 +224,7 @@ def _background_load():
             f"project={PROJECT_ROOT} | libs={list(ctx.lib_engines.keys())}"
         )
         # llama-server lifecycle (arbiter + coder) is owned exclusively by
-        # tools/HME/service/llamacpp_daemon/ — the worker MUST NOT spawn its
+        # tools/HME/service/llamacpp_daemon/ -- the worker MUST NOT spawn its
         # own llama-server processes. A duplicate worker-side supervisor
         # caused PID-collision races during /indexing-mode (worker spawned
         # a coder onto the GPU the daemon was trying to use for embedding,
@@ -245,13 +245,13 @@ def _background_load():
 threading.Thread(target=_background_load, daemon=True, name="HME-worker-startup").start()
 
 
-# Phase-B watchdog — reliable-under-GIL-contention brute-force timeout.
+# Phase-B watchdog -- reliable-under-GIL-contention brute-force timeout.
 #
-# _active_tools maps tool-thread-id → {"name", "start_ts", "hard_kill_s"}.
+# _active_tools maps tool-thread-id -> {"name", "start_ts", "hard_kill_s"}.
 # _post_tool registers each tool-thread it spawns and deregisters on
 # completion. A dedicated watchdog thread polls every 5s; if any
 # registered tool has been running longer than its hard_kill_s budget,
-# the watchdog sends SIGTERM to os.getpid() — the entire worker process
+# the watchdog sends SIGTERM to os.getpid() -- the entire worker process
 # exits and the supervisor respawns it. Brute, but OS-signal-driven and
 # independent of the GIL, so it fires EVEN WHEN Python's Thread.join
 # timeout mechanism is starved.
@@ -298,7 +298,7 @@ def _watchdog_loop():
                     logger.critical(
                         f"watchdog PHASE B: tool {entry['name']!r} (tid={tid}) has been "
                         f"running {elapsed:.0f}s > hard_kill {entry['hard_kill_s']:.0f}s. "
-                        f"Self-terminating worker — supervisor will respawn. "
+                        f"Self-terminating worker -- supervisor will respawn. "
                         f"Phase A graceful-504 did not fire, likely GIL-starved."
                     )
                 # Flush logger before signaling ourselves.
@@ -318,7 +318,7 @@ threading.Thread(target=_watchdog_loop, daemon=True, name="HME-worker-watchdog")
 
 # HTTP server
 
-# Re-exports — HTTP handler classes extracted to sibling.
+# Re-exports -- HTTP handler classes extracted to sibling.
 from worker_handler import _ThreadingServer, _Handler  # noqa: F401, E402
 
 def main():
@@ -332,7 +332,7 @@ def main():
     logger.info(f"HME worker listening on http://{args.host}:{args.port}")
     print(f"HME worker listening on http://{args.host}:{args.port}", flush=True)
 
-    # Filesystem-IPC queue watcher — accepts jobs via tmp/hme-worker-queue/
+    # Filesystem-IPC queue watcher -- accepts jobs via tmp/hme-worker-queue/
     # in parallel with the HTTP path. Decouples callers from worker
     # liveness at request time: caller drops a job file, polls for the
     # result, gracefully degrades on timeout. Daemon thread, idempotent

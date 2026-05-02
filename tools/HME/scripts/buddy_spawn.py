@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Buddy spawn — single source of truth for invoking `claude -p` and
+"""Buddy spawn -- single source of truth for invoking `claude -p` and
 recording the resulting session as a buddy. Used by both:
 
   - `tools/HME/hooks/helpers/buddy_init.sh` (backgrounded at SessionStart
@@ -26,20 +26,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Canonical model-floor → effort-floor mapping. Mirrors TIER_TO_EFFORT
+# Canonical model-floor -> effort-floor mapping. Mirrors TIER_TO_EFFORT
 # in buddy_dispatcher.py; duplicated here to keep this module
 # free of dispatcher imports (which pulls hme_env validation chain).
 _FLOOR_TO_EFFORT = {"easy": "low", "medium": "medium", "hard": "high"}
 
 
 def _build_role_prompt(slot: int, floor: str, buddy_count: int) -> str:
-    """Per-buddy role prompt — same shape as the proven single-buddy
+    """Per-buddy role prompt -- same shape as the proven single-buddy
     init, with floor + slot annotated so the buddy knows its role from
     the outset. The dispatcher routes by tier; the prompt frames the
     buddy as a peer that may receive any-tier work but never below its
     floor."""
     return (
-        f"You are co-buddy {slot}/{buddy_count} (model floor: {floor}) — "
+        f"You are co-buddy {slot}/{buddy_count} (model floor: {floor}) -- "
         "a persistent peer subagent for the Polychron codebase across "
         "this entire HME session. Reasoning tasks (review reflection, "
         "OVERDRIVE cascades, suggest_evolution, what_did_i_forget) "
@@ -61,7 +61,7 @@ def _parse_session_id(claude_json_output: str) -> str | None:
     """Extract session_id from `claude -p --output-format json` output.
     Output may be a list of events (init, message, ...) or a single
     dict; tolerate both shapes. Returns None on any parse failure or
-    missing field — callers are expected to treat None as 'spawn
+    missing field -- callers are expected to treat None as 'spawn
     failed, do not record sid'."""
     try:
         data = json.loads(claude_json_output)
@@ -96,7 +96,7 @@ def spawn_buddy(slot: int, floor: str, buddy_count: int,
     JSON parse failure, no session_id in output). Caller decides
     whether to retry, fall through, or surface the failure.
 
-    File writes (atomic-ish — single open+write per file):
+    File writes (atomic-ish -- single open+write per file):
       - sid_file (e.g. tmp/hme-buddy.sid)
       - sid_file.with_suffix('.floor') with the model floor
       - When mark_inaugural_primary=True (HANDOFF=1, slot=1):

@@ -43,7 +43,7 @@ def evolution_patterns() -> str:
 
     Journal is a deprecated archive; live per-round state is in the activity
     bridge. This function intentionally operates on the frozen archive for
-    historical pattern mining — the output is prefixed with a banner if the
+    historical pattern mining -- the output is prefixed with a banner if the
     archive is staler than the activity bridge's last round_complete event.
     """
     from .. import _journal_freshness_banner
@@ -62,7 +62,7 @@ def evolution_patterns() -> str:
 
     # Extract round data
     round_sections = re.findall(
-        r'## (R\d+)\s+.*?—\s+\d{4}-\d{2}-\d{2}\s+—\s+(\w+)',
+        r'## (R\d+)\s+.*?--\s+\d{4}-\d{2}-\d{2}\s+--\s+(\w+)',
         content
     )
     if not round_sections:

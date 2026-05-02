@@ -1,4 +1,4 @@
-"""HME reasoning — think tool and blast_radius analysis."""
+"""HME reasoning -- think tool and blast_radius analysis."""
 import os
 import logging
 
@@ -27,7 +27,7 @@ def _ground_file_paths(text: str) -> str:
             seen[path] = os.path.isfile(full)
     hallucinated = [p for p, exists in seen.items() if not exists]
     if hallucinated:
-        text += "\n\n⚠ *Grounding check: the following paths were referenced but do not exist:*"
+        text += "\n\n[!] *Grounding check: the following paths were referenced but do not exist:*"
         for p in hallucinated:
             text += f"\n  - `{p}` (hallucinated by local model)"
     return text
@@ -36,8 +36,8 @@ def _ground_file_paths(text: str) -> str:
 def think(about: str, context: str = "") -> str:
     """Structured reflection tool. Uses llama.cpp hybrid synthesis (qwen3-coder extract +
     qwen3:30b-a3b reason) with project-grounded context injection. Routes by question type:
-    meta-HME tool questions → single-stage with HME doc+KB injection; evolution/coupling →
-    parallel two-stage with antagonist map + dimension gaps; channel questions → topology +
+    meta-HME tool questions -> single-stage with HME doc+KB injection; evolution/coupling ->
+    parallel two-stage with antagonist map + dimension gaps; channel questions -> topology +
     producer source injection. Shortcut keys: task_adherence, completeness, constraints,
     impact, conventions, recent_changes."""
     ctx.ensure_ready_sync()
@@ -93,7 +93,7 @@ def think(about: str, context: str = "") -> str:
         kb_block = "Relevant KB patterns and constraints:\n" + "\n".join(lines)
 
     # Detect meta-HME questions (about improving HME tools themselves, not the music src).
-    # Route AWAY from coupling state injection — inject HME doc summary instead.
+    # Route AWAY from coupling state injection -- inject HME doc summary instead.
     _about_lower = about.lower()
     _is_meta_hme = (
         ("hme" in _about_lower and any(t in _about_lower for t in
@@ -103,10 +103,10 @@ def think(about: str, context: str = "") -> str:
              "what_did_i_forget", "think tool", "tool evolution", "hme evolution"])
     )
 
-    # Detect pipeline/ML/perceptual infrastructure questions — about snapshot-run.js,
+    # Detect pipeline/ML/perceptual infrastructure questions -- about snapshot-run.js,
     # train-verdict-predictor.js, perceptual-analysis.js, CLAP, EnCodec, verdict model.
     # These need no coupling state injection (not about src/ module pairing) and no
-    # HME tool doc either — they're about the pipeline scripts themselves.
+    # HME tool doc either -- they're about the pipeline scripts themselves.
     _is_pipeline_infra = any(t in _about_lower for t in [
         "verdict predictor", "verdict model", "clap", "encodec", "cb0", "cb1",
         "perceptual", "snapshot", "run-history", "train-verdict", "ml pipeline",
@@ -162,7 +162,7 @@ def think(about: str, context: str = "") -> str:
             if dead_start == -1:
                 dead_start = topo.find("0 consumers")
             channel_block = topo[dead_start:dead_start + 800] if dead_start != -1 else topo[:600]
-            injected_state = (injected_state or "") + "\n\n## L0 Dead-End Channels (no consumers — prime harvest targets):\n" + channel_block
+            injected_state = (injected_state or "") + "\n\n## L0 Dead-End Channels (no consumers -- prime harvest targets):\n" + channel_block
 
             # Inject producer source for mentioned channels so model sees real L0.post field names
             src_root = os.path.join(ctx.PROJECT_ROOT, "src")
@@ -197,7 +197,7 @@ def think(about: str, context: str = "") -> str:
         )
         prompt = (
             f"Question: {about}\n\n"
-            f"You are reasoning about HME (HyperMeta Ecstasy) tooling improvements — "
+            f"You are reasoning about HME (HyperMeta Ecstasy) tooling improvements -- "
             f"NOT about music source code changes. {_HME_TOOL_INVENTORY} "
             f"Focus on: tool UX gaps, missing capabilities, workflows that still require manual "
             f"mental work, and new tool ideas that would make the system feel more alive and "
@@ -220,7 +220,7 @@ def think(about: str, context: str = "") -> str:
     # llama.cpp path: route by question type for best quality
     raw_context = ""
 
-    # Inject query-aware session narrative — callers/search queries get search+think
+    # Inject query-aware session narrative -- callers/search queries get search+think
     # history; architectural questions get edit+review+pipeline context.
     from .synthesis_session import get_session_narrative as _get_narr
     _about_lower = about.lower()
@@ -234,7 +234,7 @@ def think(about: str, context: str = "") -> str:
     if _narr:
         raw_context += _narr
 
-    # Inject think continuation history — cross-call session memory
+    # Inject think continuation history -- cross-call session memory
     _hist = get_think_history_context()
     if _hist:
         raw_context += _hist
@@ -248,7 +248,7 @@ def think(about: str, context: str = "") -> str:
     if _is_meta_hme:
         # Meta-HME: single-stage reasoning (qwen3:30b-a3b) with HME doc+KB context.
         # _two_stage_think falls back to single-stage anyway (no src/ paths in meta-HME context)
-        # so skip Stage 1 entirely — faster and equally accurate for tool UX questions.
+        # so skip Stage 1 entirely -- faster and equally accurate for tool UX questions.
         # Inject _THINK_SYSTEM so the model knows the alien music + HME domain from the start.
         local_answer = _reasoning_think(
             raw_context[:10000] + "\n\n" + prompt,
@@ -261,9 +261,9 @@ def think(about: str, context: str = "") -> str:
             return f"# Think: {about} *(meta-hme)*\n\n{local_answer}"
     elif not is_evolution_q and not is_channel_q and not _is_pipeline_infra:
         # Route by complexity (heuristic, zero latency):
-        # ≥ 3 → cascade (arbiter plan + source injection + coder + reasoner)
-        # == 2 → enrich raw_context with live source, then parallel two-stage
-        # < 2 → parallel two-stage with KB context only
+        # >= 3 -> cascade (arbiter plan + source injection + coder + reasoner)
+        # == 2 -> enrich raw_context with live source, then parallel two-stage
+        # < 2 -> parallel two-stage with KB context only
         _complexity = _assess_complexity(about)
         if _complexity["complexity"] >= 3:
             logger.info(f"think: routing to cascade (complexity={_complexity['complexity']})")
@@ -286,14 +286,14 @@ def think(about: str, context: str = "") -> str:
 
     if not _is_meta_hme:
         # Code/evolution questions: parallel two-stage (GPU 0 + GPU 1 simultaneously)
-        # Pipeline infrastructure questions skip the crossLayer file list — injecting
+        # Pipeline infrastructure questions skip the crossLayer file list -- injecting
         # src/ module paths causes the models to hallucinate crossLayer answers for
         # questions that are actually about scripts/pipeline/*.js files.
         if not _is_pipeline_infra:
             if is_channel_q:
                 raw_context += (
                     "TERMINOLOGY: 'dead-end channel' means an L0 channel that is posted (produced) but has "
-                    "ZERO consumers — no module reads it. 'Consuming' a dead-end channel means adding "
+                    "ZERO consumers -- no module reads it. 'Consuming' a dead-end channel means adding "
                     "L0.getLast('channelName', {layer:'both'}) to a new consumer module to read its data.\n\n"
                 )
             import glob as _cl_glob
@@ -306,13 +306,13 @@ def think(about: str, context: str = "") -> str:
                 "Polychron crossLayer module FILE PATHS (auto-generated):\n  "
                 + ",\n  ".join(_cl_rel[:32]) + ".\n"
                 "L0 channels read via: const entry = L0.getLast('channelName', {layer:'both'}); "
-                "Each channel posts specific fields — check the producer source code above for exact field names. "
+                "Each channel posts specific fields -- check the producer source code above for exact field names. "
                 "Common patterns: emergentRhythm posts {density, complexity, hotspots}, "
                 "harmonicFunction posts {fn, chordRoot, keyRoot}, motifEcho posts {delayBeats, interval}."
             )
         # Parallel synthesis: GPU 0 (extract) + GPU 1 (analyze) run simultaneously,
         # then GPU 1 produces final answer from merged brief. ~2x faster than sequential.
-        # max_tokens=1024: final answer is ≤4 items → caps chat stage at ~70s (vs 8192=546s).
+        # max_tokens=1024: final answer is <=4 items -> caps chat stage at ~70s (vs 8192=546s).
         # All processing from Stage 1 threads is preserved in the merged brief fallback.
         local_answer = _parallel_two_stage_think(raw_context, prompt, max_tokens=2048)
         if local_answer:
@@ -321,14 +321,14 @@ def think(about: str, context: str = "") -> str:
             return f"# Think: {about} *(parallel-two-stage)*\n\n{local_answer}"
 
     # Template fallback (llama.cpp unavailable): minimal context, no injected_state echo
-    # Access _last_think_failure via module reference — direct import gives stale value after mutation.
+    # Access _last_think_failure via module reference -- direct import gives stale value after mutation.
     from . import synthesis_llamacpp as _syn_mod
     _fallback_label = (
-        "llama.cpp TIMEOUT — queue may be stacked. Do NOT retry. Wait for queue to drain or restart llama.cpp."
+        "llama.cpp TIMEOUT -- queue may be stacked. Do NOT retry. Wait for queue to drain or restart llama.cpp."
         if _syn_mod._last_think_failure == "timeout"
-        else "llama.cpp unavailable — fallback"
+        else "llama.cpp unavailable -- fallback"
     )
-    logger.warning(f"think({about!r}): synthesis unavailable — returning KB-only template fallback")
+    logger.warning(f"think({about!r}): synthesis unavailable -- returning KB-only template fallback")
     parts = [f"# Think: {about} *({_fallback_label})*\n"]
     if kb_hits:
         parts.append("**Relevant KB:**")
@@ -338,5 +338,5 @@ def think(about: str, context: str = "") -> str:
 
 
 
-# Re-export — blast_radius extracted.
+# Re-export -- blast_radius extracted.
 from .reasoning_blast import blast_radius  # noqa: F401, E402

@@ -1,4 +1,4 @@
-"""Local model inference API — _local_think, _local_chat, compress_for_claude.
+"""Local model inference API -- _local_think, _local_chat, compress_for_claude.
 
 Split from synthesis_llamacpp.py for maintainability. All functions here
 use the core infrastructure (circuit breaker, daemon routing, env config)
@@ -20,7 +20,7 @@ from .synthesis_llamacpp import (  # noqa: F401
     _LLAMACPP_ARBITER_URL, _num_ctx_for,
     _interactive_event,
 )
-# synthesis_inference imports US at line 377 — top-level back-import would
+# synthesis_inference imports US at line 377 -- top-level back-import would
 # partial-load. Lazy lookup at call time keeps bare-name resolution working.
 def _PROSE_AND_KEYWORD_STOPWORDS():
     from . import synthesis_inference as _si
@@ -49,11 +49,11 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
     hint_prefix = f"Context: {hint}\n\n" if hint else ""
     prompt = (
         hint_prefix +
-        f"Compress the following to ≤{max_chars} characters. "
+        f"Compress the following to <={max_chars} characters. "
         "Preserve: file paths (src/...), signal field names, module names, numbers, "
         "and concrete action verbs. Remove: prose preamble, redundant explanation, "
         "verbose 'why' sections that repeat what the action already implies. "
-        "Output the compressed version ONLY — no meta-commentary.\n\n"
+        "Output the compressed version ONLY -- no meta-commentary.\n\n"
         f"INPUT:\n{text[:4000]}"
     )
     payload = {
@@ -66,7 +66,7 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
         payload["context"] = arbiter_ctx
     _cb = _get_circuit_breaker(_ARBITER_MODEL)
     if not _cb.allow():
-        return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
+        return text[:max_chars] + f"...(+{len(text) - max_chars} chars)"
     # Daemon-only: wall-clock enforced, no direct llama.cpp fallback.
     daemon_result = _daemon_generate(payload, wall_timeout=10)
     if daemon_result:
@@ -75,9 +75,9 @@ def compress_for_claude(text: str, max_chars: int = 600, hint: str = "") -> str:
         if compressed and len(compressed) < len(text):
             _cb.record_success()
             if len(compressed) > max_chars:
-                return compressed[:max_chars] + f"…(+{len(compressed) - max_chars} chars)"
+                return compressed[:max_chars] + f"...(+{len(compressed) - max_chars} chars)"
             return compressed
-    return text[:max_chars] + f"…(+{len(text) - max_chars} chars)"
+    return text[:max_chars] + f"...(+{len(text) - max_chars} chars)"
 
 
 def filter_ungrounded_bullets(synthesis: str, source_text: str,
@@ -85,14 +85,14 @@ def filter_ungrounded_bullets(synthesis: str, source_text: str,
                               log_label: str = "synthesis") -> str:
     """Drop LLM synthesis bullets whose cited identifiers are not grounded
     in the source material. Generalization of workflow_audit's
-    _drop_hallucinated_bullets — any adaptive-synthesis call site can
+    _drop_hallucinated_bullets -- any adaptive-synthesis call site can
     pipe its output through this filter to suppress the "correctly-cites-
     file, invents-symbol" hallucination class.
 
     Two layers:
-      1. FILE PATHS — must appear in source_text verbatim. Citing a file
+      1. FILE PATHS -- must appear in source_text verbatim. Citing a file
          that isn't in the source is pure invention.
-      2. BACKTICKED IDENTIFIERS — each backticked token must appear in
+      2. BACKTICKED IDENTIFIERS -- each backticked token must appear in
          source_text OR in symbol_whitelist (arbiter-extracted set from
          extract_diff_symbols). Supports dotted-access component-wise
          check for `foo.bar.baz`.
@@ -165,7 +165,7 @@ def ground_synthesis(synthesis: str, source_text: str,
     """One-shot convenience: extract symbols from source_text via arbiter
     (with regex fallback), then filter synthesis bullets against that
     whitelist + raw source. Use this at any adaptive-synthesis site that
-    can hallucinate identifiers — e.g. `diagnose_error`, `module_story`,
+    can hallucinate identifiers -- e.g. `diagnose_error`, `module_story`,
     `tools_knowledge` cluster analysis, `drama_map`, etc.
 
     Call shape: `synthesis = ground_synthesis(synthesis, source_text,
@@ -221,10 +221,10 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
                 continue
             if ln.startswith(('+', '-')):
                 body = ln[1:]  # strip the +/- marker
-                # Drop comment lines — they're prose-heavy and would
+                # Drop comment lines -- they're prose-heavy and would
                 # pollute the whitelist with every English word in the
                 # author's explanation ("accept", "actual", "covers",
-                # "production", "reviews"…). Language-agnostic heuristic:
+                # "production", "reviews"...). Language-agnostic heuristic:
                 # a line whose first non-space chars are a comment prefix.
                 stripped = body.lstrip()
                 if stripped.startswith(('#', '//', '/*', '*', '--')):
@@ -237,7 +237,7 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     if not source.strip():
         return set()
 
-    # Regex-based fallback — always produced, merged with arbiter output.
+    # Regex-based fallback -- always produced, merged with arbiter output.
     # Catches most identifiers without a model round-trip, so the filter
     # keeps working even if the daemon is down.
     fallback: set[str] = set()
@@ -252,7 +252,7 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
             return False
         # Drop regex-fragment / metadata noise: anything containing
         # obvious non-identifier characters is garbage from the source.
-        # `@` rejects git hunk markers like `@@`. Do NOT reject on `/` —
+        # `@` rejects git hunk markers like `@@`. Do NOT reject on `/` --
         # real file paths (tools/HME/foo.py) must pass this filter.
         if any(c in tok for c in '\\[](){}<>^$|?*+=@'):
             return False
@@ -272,20 +272,20 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
         for grp in tok:
             if grp and ' ' not in grp and _looks_identifier(grp.strip()):
                 fallback.add(grp.strip().lower())
-    # file paths (a/b/c.ext) — strip git a/ b/ prefixes that survive
+    # file paths (a/b/c.ext) -- strip git a/ b/ prefixes that survive
     # because changed_files and diff headers reference them.
     for tok in _re_sx.findall(r'[\w./-]+\.(?:js|ts|py|md|json|sh|yml|yaml|html)', source):
         _path = _re_sx.sub(r'^[ab]/', '', tok.lower())
         if _looks_identifier(_path):
             fallback.add(_path)
 
-    # Arbiter pass — augment with model-extracted symbols. Bounded prompt
+    # Arbiter pass -- augment with model-extracted symbols. Bounded prompt
     # size + temperature=0 keeps latency low and output deterministic.
     prompt = (
         "Extract every identifier that APPEARS VERBATIM in the following "
         "diff. Include: function names, variable names, file paths, quoted "
         "string literals, backticked tokens, config keys. One per line, no "
-        "bullets, no prose, no explanation. Do NOT invent or normalize — "
+        "bullets, no prose, no explanation. Do NOT invent or normalize -- "
         "only tokens you can point to in the diff text. Cap output at 200 "
         "lines.\n\nDIFF:\n" + source[:6000]
     )
@@ -318,17 +318,17 @@ def extract_diff_symbols(diff_context: str, hunk_context: str = "",
     _cb.record_success()
     extracted: set[str] = set()
     for ln in raw.splitlines():
-        tok = ln.strip().strip("-*• \t`\"'")
+        tok = ln.strip().strip("-** \t`\"'")
         if not tok or len(tok) < 3:
             continue
-        # Reject outputs with spaces — those are fabricated prose
+        # Reject outputs with spaces -- those are fabricated prose
         # ("a Python script", "the diff"), not identifiers.
         if " " in tok:
             continue
         # Apply the same structural filter as the fallback path. Without
         # this, the LLM arbiter was shoving `import`, `file`, `the`, `why`,
         # git SHAs like `fdd82f1d`, regex fragments, and hunk markers into
-        # the whitelist — all the junk the post-filter is supposed to
+        # the whitelist -- all the junk the post-filter is supposed to
         # reject for the reasoning model's output.
         if not _looks_identifier(tok):
             continue

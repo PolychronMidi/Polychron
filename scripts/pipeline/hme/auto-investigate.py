@@ -5,7 +5,7 @@ matched patterns.
 When Arc II matches a pattern, its `action.steps` include read-only
 diagnostics (inspect trajectory, compute deltas, name the driver) before
 the agent-action steps (fix code, recalibrate, retire). Running those
-diagnostics automatically produces findings the agent can review —
+diagnostics automatically produces findings the agent can review --
 one level of cognitive work moved from the agent to the substrate.
 
 For each matched pattern, this script runs a set of diagnostic probes
@@ -14,13 +14,13 @@ metrics/hme-investigation-reports.jsonl. Agent then synthesizes from
 findings instead of gathering data manually.
 
 Currently supports:
-  category=investigation, trigger=consensus_threshold → read arc-timeseries,
+  category=investigation, trigger=consensus_threshold -> read arc-timeseries,
     extract outlier-voter trajectory, identify direction (rising/falling)
     and whether the issue is recent or systemic.
-  category=investigation, trigger=legendary_drift_threshold → read legendary-
+  category=investigation, trigger=legendary_drift_threshold -> read legendary-
     states trajectory for outlier fields, compute the change from prior
     snapshot vs envelope drift.
-  category=retirement → no auto-investigation needed (retirement actions
+  category=retirement -> no auto-investigation needed (retirement actions
     are agent decisions on already-computed data).
 """
 from __future__ import annotations
@@ -87,15 +87,15 @@ def _investigate_consensus(pattern: dict) -> dict:
         delta = last - first
         findings["consensus_mean_delta"] = round(delta, 3)
         if abs(delta) < 0.05:
-            findings["verdict"] = "blip — mean stable, single-round excursion"
+            findings["verdict"] = "blip -- mean stable, single-round excursion"
         elif delta < -0.05:
-            findings["verdict"] = "trending-down — consensus has degraded over recent rounds"
+            findings["verdict"] = "trending-down -- consensus has degraded over recent rounds"
         else:
-            findings["verdict"] = "recovering — consensus improved vs earlier rounds"
+            findings["verdict"] = "recovering -- consensus improved vs earlier rounds"
 
         # R25 #3: propose action class. If consensus degraded but HCI rose
         # across the same rounds, composition is improving WHILE substrate-
-        # agreement drops — that's regime shift, not degradation. Accept.
+        # agreement drops -- that's regime shift, not degradation. Accept.
         hci_traj = [r.get("arc_iv", {}).get("pass_rate") for r in tail]
         # Better: use top-outlier-field from arc_iii.top_outlier_field history
         # + consensus trajectory + HCI from pipeline-summary. HCI isn't in
@@ -109,7 +109,7 @@ def _investigate_consensus(pattern: dict) -> dict:
                     hci_now = ps.get("hci")
             if isinstance(hci_now, (int, float)) and hci_now >= 96 and delta < -0.05:
                 findings["proposed_action_class"] = "accept_regime_shift"
-                findings["proposed_reason"] = f"consensus trending down but HCI={hci_now}≥96"
+                findings["proposed_reason"] = f"consensus trending down but HCI={hci_now}>=96"
             elif delta < -0.05:
                 findings["proposed_action_class"] = "correct_outlier_via_controller"
                 findings["proposed_reason"] = "consensus trending down AND HCI below 96 threshold"
@@ -142,14 +142,14 @@ def _investigate_drift(pattern: dict) -> dict:
             first_half_avg = sum(values[:len(values) // 2]) / max(len(values) // 2, 1)
             second_half_avg = sum(values[len(values) // 2:]) / max(len(values) - len(values) // 2, 1)
             if abs(second_half_avg - first_half_avg) / max(abs(first_half_avg), 1e-6) < 0.10:
-                traj_verdict = "blip — recent values stable, outlier is single-round"
+                traj_verdict = "blip -- recent values stable, outlier is single-round"
             elif second_half_avg > first_half_avg:
                 traj_verdict = "rising trend"
             else:
                 traj_verdict = "falling trend"
         # R24 #7: propose a structural change class based on persistence +
-        # HCI health. 3+ rounds of same outlier AND HCI stable → accept
-        # (envelope update). 3+ rounds AND HCI dropping → correct (code change).
+        # HCI health. 3+ rounds of same outlier AND HCI stable -> accept
+        # (envelope update). 3+ rounds AND HCI dropping -> correct (code change).
         hci_tail = [s.get("hci") for s in tail if isinstance(s.get("hci"), (int, float))]
         hci_healthy = hci_tail and all(h >= 95 for h in hci_tail[-3:])
         proposal = None
@@ -200,7 +200,7 @@ def main() -> int:
         })
 
     if not reports:
-        print("auto-investigate: no investigable matches — nothing to report")
+        print("auto-investigate: no investigable matches -- nothing to report")
         return 0
 
     os.makedirs(os.path.dirname(REPORTS), exist_ok=True)

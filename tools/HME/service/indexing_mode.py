@@ -1,4 +1,4 @@
-"""Indexing mode — tells the daemon to dedicate GPU1 for full reindexing.
+"""Indexing mode -- tells the daemon to dedicate GPU1 for full reindexing.
 
 ALL GPU allocation goes through the daemon. This module NEVER loads models
 or touches GPUs directly. It only sends HTTP requests to the daemon's
@@ -28,7 +28,7 @@ def request_full_reindex() -> dict:
     """Ask the daemon to orchestrate a GPU-dedicated full reindex.
     Returns the index result dict. Blocks until complete, or coalesces
     with an in-progress run (returned dict carries `coalesced=True`).
-    Concurrent reindex triggers are EXPECTED — the daemon serializes
+    Concurrent reindex triggers are EXPECTED -- the daemon serializes
     them, this function never errors on overlap alone."""
     try:
         req = urllib.request.Request(
@@ -42,7 +42,7 @@ def request_full_reindex() -> dict:
             return resp
         if resp.get("coalesced"):
             # Another reindex was in flight; we waited and inherited
-            # its result. Log at info, not warning — this is the design.
+            # its result. Log at info, not warning -- this is the design.
             logger.info(
                 f"Indexing mode coalesced into in-progress run: "
                 f"{resp.get('indexed', '?')} files"

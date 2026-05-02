@@ -29,7 +29,7 @@ def _load_current_turn(transcript_path: str) -> list:
     """Return events from the last REAL user prompt onward.
 
     The default load_turn_events slices after the LAST user event, which
-    includes tool_result-wrapper user events — that loses the
+    includes tool_result-wrapper user events -- that loses the
     tool_results we need to scan for CRITICAL/FAIL surface markers.
     senior_consult_debt has the same issue and the same fix.
     """
@@ -106,7 +106,7 @@ def main() -> int:
     for i, event in enumerate(events):
         # Once a surface has been observed, _is_surface (which does
         # `text.upper()` on multi-KB tool_result bodies) is wasted work
-        # — short-circuit to skip the allocation. Combined with the
+        # -- short-circuit to skip the allocation. Combined with the
         # early-break below, scan stops at first edit-after-surface.
         if surfaced_at == -1:
             for tr in iter_tool_results(event):
@@ -118,14 +118,14 @@ def main() -> int:
                 edit_after = True
                 break
         if edit_after:
-            break  # verdict decided — remaining events can't change it
+            break  # verdict decided -- remaining events can't change it
     fires = surfaced_at >= 0 and not edit_after
     if fires and _has_self_resolve_rationale(_last_assistant_text(events)):
         # Self-resolve rescue: the deny prompt explicitly sanctions
         # "if the CRITICAL is from a long-running background process
         # that will resolve itself, say so EXPLICITLY in text before
         # stopping". When the agent does exactly that, the detector
-        # must not fire — the alternative path the deny advertises has
+        # must not fire -- the alternative path the deny advertises has
         # to actually exist.
         print("ok")
         return 0

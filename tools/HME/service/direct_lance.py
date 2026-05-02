@@ -7,13 +7,13 @@ this module which opens lance shards directly via lancedb. No daemon
 dependency at all.
 
 Coverage in this first cut: read-only tools only.
-    list_knowledge        → scan KB/knowledge.lance, return recent rows
-    knowledge_count       → row count by category
-    knowledge_lookup_id   → fetch one row by knowledge_id
+    list_knowledge        -> scan KB/knowledge.lance, return recent rows
+    knowledge_count       -> row count by category
+    knowledge_lookup_id   -> fetch one row by knowledge_id
 
 Tools that mutate state (learn, compact_knowledge, remove_knowledge) or
 require the LLM (search_knowledge with embeddings, review, evolve) keep
-requiring the worker — cold-loading embeddings + RAG models per CLI
+requiring the worker -- cold-loading embeddings + RAG models per CLI
 invocation would defeat the point. Best to surface a clear error.
 
 Usage:
@@ -59,7 +59,7 @@ def _open_table():
 
 def list_knowledge(limit: int = 20, category: str | None = None) -> list[dict[str, Any]]:
     """List recent KB rows. Read-only. Falls back gracefully when lance
-    isn't accessible (returns empty list rather than throwing — caller
+    isn't accessible (returns empty list rather than throwing -- caller
     decides degradation)."""
     table = _open_table()
     if table is None:

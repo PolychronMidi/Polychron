@@ -15,9 +15,9 @@ Tests:
     6. Graduation deletes the state file and clears the onboarding tree.
 
 Exit codes:
-    0 — all tests pass
-    1 — one or more tests failed
-    2 — unexpected error
+    0 -- all tests pass
+    1 -- one or more tests failed
+    2 -- unexpected error
 
 Usage:
     python3 tools/HME/scripts/verify-onboarding-flow.py

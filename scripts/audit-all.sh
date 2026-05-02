@@ -40,6 +40,11 @@ run "audit-loc"                  python3 scripts/audit-loc.py $([ "$STRICT" = "1
 # Python F821-class undefined names.
 run "audit-python-undefined"     python3 scripts/audit-python-undefined-names.py $([ "$STRICT" = "1" ] && echo --strict)
 
+# Project-wide ASCII enforcement. The check has a curated allowlist of
+# legitimate non-emoji typography (em-dash, arrows, math, Greek, box-drawing);
+# all emojis are findings. Mirrors the JS `no-non-ascii` ESLint rule.
+run "audit-py-ascii"             python3 tools/HME/scripts/check-py-no-non-ascii.py src scripts tools/HME
+
 # Shell `set -u` undefined-var references.
 run "audit-shell-undefined"      python3 scripts/audit_shell_undefined_vars.py
 

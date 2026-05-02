@@ -1,4 +1,4 @@
-"""HME warm KV context — priming, incremental updates, GC, and status.
+"""HME warm KV context -- priming, incremental updates, GC, and status.
 
 Warm context = each model's specialized persona + full KB pre-tokenized into llama.cpp's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
@@ -67,7 +67,7 @@ _incremental_update_lock = _threading.Lock()
 _MAX_INCREMENTAL_APPENDS = 8       # schedule GC re-prime after N incremental appends
 _GC_TOKEN_GROWTH_RATIO = 0.20      # or if token count grew > 20% above full-prime baseline
 
-# Batch debounce queue — coalesces rapid-fire learn() calls into one llama.cpp round-trip (#3)
+# Batch debounce queue -- coalesces rapid-fire learn() calls into one llama.cpp round-trip (#3)
 _pending_entries: list = []
 _batch_timer = None
 _batch_lock = _threading.Lock()
@@ -80,8 +80,8 @@ _reprime_lock = _threading.Lock()
 # Rate tracking for adaptive debounce window (#3)
 _queue_timestamps: list = []
 _RATE_WINDOW_S = 10.0
-_DEBOUNCE_LOW = 1.0    # rate < 0.5/s → fast feedback
-_DEBOUNCE_HIGH = 10.0  # rate > 3/s → aggressive batching (compact/bulk)
+_DEBOUNCE_LOW = 1.0    # rate < 0.5/s -> fast feedback
+_DEBOUNCE_HIGH = 10.0  # rate > 3/s -> aggressive batching (compact/bulk)
 
 # GPU0 VRAM prefetch throttle (#4)
 _last_prefetch_ts = 0.0
@@ -120,10 +120,10 @@ def queue_incremental_update(title: str, content: str, category: str, new_kb_ver
 
 
 def queue_tombstone(entry_id: str, new_kb_ver: int):
-    """Queue a tombstone marker for a removed KB entry — same mechanism as incremental add."""
+    """Queue a tombstone marker for a removed KB entry -- same mechanism as incremental add."""
     queue_incremental_update(
         title=f"REMOVED entry {entry_id}",
-        content="This KB entry has been deleted — disregard it in all future analysis.",
+        content="This KB entry has been deleted -- disregard it in all future analysis.",
         category="TOMBSTONE",
         new_kb_ver=new_kb_ver,
     )
@@ -135,7 +135,7 @@ def _prefetch_gpu0_if_needed():
     The old llamacpp flow evicted models when GPU memory got tight, so this
     function used to ping the coder to force a reload before the real
     incremental KB update landed. llama-server mmap's the GGUF and never
-    evicts — the warm-prefetch is moot. Kept as a stub so callers don't break.
+    evicts -- the warm-prefetch is moot. Kept as a stub so callers don't break.
     """
     global _last_prefetch_ts
     _last_prefetch_ts = _time.time()
@@ -153,7 +153,7 @@ def _flush_pending_entries():
     """
     global _batch_timer
     if _priming_in_progress.is_set():
-        logger.debug("incr KB flush: skipped — full prime in progress")
+        logger.debug("incr KB flush: skipped -- full prime in progress")
         return
 
     with _incremental_update_lock:
@@ -180,7 +180,7 @@ def _flush_pending_entries():
             # models that actually have a warm_ctx entry. Previous
             # behavior advanced the marker for every active model
             # regardless of whether priming had populated _warm_ctx[model]
-            # — so a model that was never primed (or whose cache was
+            # -- so a model that was never primed (or whose cache was
             # evicted / never loaded from disk) now claimed to be at
             # the new KB version despite holding no KV state. Downstream
             # `warm_context_status` then reported "fresh at kb_ver=N"
@@ -201,7 +201,7 @@ def _flush_pending_entries():
         if skipped_uninitialized:
             logger.info(
                 f"incr KB marker: skipped {skipped_uninitialized} uninitialized "
-                f"model(s) — they need a cold warm before claiming kb_ver={new_kb_ver}")
+                f"model(s) -- they need a cold warm before claiming kb_ver={new_kb_ver}")
 
         if updated > 0:
             try:
@@ -230,7 +230,7 @@ def _check_and_schedule_gc(model: str):
     if count >= _MAX_INCREMENTAL_APPENDS or growth >= _GC_TOKEN_GROWTH_RATIO:
         logger.info(
             f"warm GC: {model} ({count} appends, {growth:.0%} token growth) "
-            "— scheduling background full re-prime"
+            "-- scheduling background full re-prime"
         )
         def _gc_reprime():
             _warm_ctx_append_count.pop(model, None)
@@ -241,7 +241,7 @@ def _check_and_schedule_gc(model: str):
 
 
 
-# Re-exports — prime/reprime extracted.
+# Re-exports -- prime/reprime extracted.
 from .synthesis_warm_prime import (  # noqa: F401, E402
     _schedule_reprime_async, _prime_warm_context,
     _check_vram_headroom, _init_local_models, _prime_all_gpus,

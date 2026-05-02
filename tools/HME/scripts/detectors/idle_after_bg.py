@@ -69,7 +69,7 @@ def main() -> int:
             # Coerce run_in_background to a real boolean: the field can
             # arrive as True/False (bool) OR as "true"/"false" strings
             # (jq's _safe_jq path returns string). The previous truthy
-            # check treated the literal string "false" as truthy — a
+            # check treated the literal string "false" as truthy -- a
             # foreground call was misread as background, flipping the
             # detector to "idle" on short turns.
             _rib = inp.get("run_in_background")

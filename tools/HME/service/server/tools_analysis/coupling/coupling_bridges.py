@@ -1,4 +1,4 @@
-"""Antagonism bridge intelligence — leverage analysis, bridge cache, field guides, and design synthesis."""
+"""Antagonism bridge intelligence -- leverage analysis, bridge cache, field guides, and design synthesis."""
 import glob as _glob_mod
 import logging
 import os
@@ -158,7 +158,7 @@ def get_top_bridges(n: int = 3, threshold: float = -0.30) -> list:
     """Return top N antagonist bridge opportunities as structured dicts.
     Each dict: {pair_a, pair_b, r, arch_a, arch_b, field, eff_a, eff_b, why, already_bridged}.
     threshold: r-value cutoff (default -0.30 for global views; pass -0.20 for module-specific
-    lookups to surface weaker-but-real virgin tensions like feedbackOscillator↔motifEcho)."""
+    lookups to surface weaker-but-real virgin tensions like feedbackOscillator<->motifEcho)."""
     try:
         trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace.jsonl")
         trace_mtime = os.path.getmtime(trace_path) if os.path.isfile(trace_path) else 0
@@ -252,7 +252,7 @@ def get_top_bridges(n: int = 3, threshold: float = -0.30) -> list:
 
 
 
-# Re-export — antagonism_leverage extracted to sibling.
+# Re-export -- antagonism_leverage extracted to sibling.
 from .coupling_antagonism import antagonism_leverage  # noqa: F401, E402
 
 def _read_module_src(module_name: str, max_chars: int = 2000) -> str:
@@ -309,5 +309,5 @@ def _parse_design(raw: str) -> str:
 
 
 
-# Re-exports — design/forge extracted.
+# Re-exports -- design/forge extracted.
 from .coupling_design_bridges import design_bridges, forge_bridges  # noqa: F401, E402

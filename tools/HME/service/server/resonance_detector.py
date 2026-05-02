@@ -1,7 +1,7 @@
-"""HME resonance detector — Layer 10 of the self-coherence stack.
+"""HME resonance detector -- Layer 10 of the self-coherence stack.
 
 Detects cascading failure patterns where multiple components fail in rapid
-succession — a failure resonance that's worse than the sum of its parts.
+succession -- a failure resonance that's worse than the sum of its parts.
 
 Without detection: shim crash + llama.cpp eviction + MCP restart each spawn
 independent recovery threads that pile up, interfere, and amplify the failure.
@@ -12,7 +12,7 @@ seconds, a CASCADE is declared. During a cascade:
   - A single orchestrated recovery message is issued (not 3 separate LIFESAVER banners)
   - The cooldown window suppresses spurious restart races
 
-Analogous to feedbackRegistry in the conductor — without registration,
+Analogous to feedbackRegistry in the conductor -- without registration,
 resonance between recovery paths amplifies the failure instead of resolving it.
 """
 import threading
@@ -62,7 +62,7 @@ def is_cascade_active() -> bool:
     """Return True if a cascade is in progress.
 
     Called by individual restart handlers to avoid spawning duplicate recovery
-    threads during a cascade — let the orchestrated cascade recovery handle it.
+    threads during a cascade -- let the orchestrated cascade recovery handle it.
     Auto-resolves after _CASCADE_COOLDOWN seconds.
     """
     global _cascade_active

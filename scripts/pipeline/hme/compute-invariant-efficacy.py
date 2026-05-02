@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Arc IV: Meta-Measurement — measure the measurement substrate.
+"""Arc IV: Meta-Measurement -- measure the measurement substrate.
 
 The invariant battery has grown to 162 checks. Which ones actually catch real
 bugs that get fixed? Which ones flap without action? Which ones have never
 fired since creation? Return-on-investment of each invariant is itself
-unmeasured — until now.
+unmeasured -- until now.
 
 Computes a per-invariant efficacy score from three inputs:
   1. commits_citing:  git log scan for invariant-id in recent commit messages
@@ -49,7 +49,7 @@ def _load_invariants():
 def _scan_git_for_citations(ids: list[str]) -> dict[str, int]:
     """Count commits mentioning each invariant id in the last N commits.
 
-    Proxy for "this invariant caught something that got fixed" — commits
+    Proxy for "this invariant caught something that got fixed" -- commits
     typically cite the invariant id when a fix addresses it.
     """
     try:
@@ -79,7 +79,7 @@ def _efficacy_score(commits_citing: int, fail_streak: int, last_result: str,
       structural:    never fired BUT cited (existence prevents violations)
       decorative:    never fired AND never cited
       flappy:        fires but never cited (noise)
-      new:           fewer than MIN_RUNS_FOR_EFFICACY runs — insufficient data
+      new:           fewer than MIN_RUNS_FOR_EFFICACY runs -- insufficient data
     """
     if total_runs < MIN_RUNS_FOR_EFFICACY:
         return (0.5, "new")
@@ -90,11 +90,11 @@ def _efficacy_score(commits_citing: int, fail_streak: int, last_result: str,
     # Load-bearing-historical: cited but currently passing
     if commits_citing >= 1:
         return (min(1.0, 0.4 + 0.1 * commits_citing), "load-bearing-historical")
-    # Flappy: fails without ever being cited → noise
+    # Flappy: fails without ever being cited -> noise
     if fail_streak > 0 or last_result == "fail":
         return (0.1, "flappy")
     # R23 #8: distinguish structural (existence/validity checks that SHOULD
-    # never fire in healthy state — schema asserts, registered/importable/valid
+    # never fire in healthy state -- schema asserts, registered/importable/valid
     # checks) from truly-decorative (noise accumulation worth retiring).
     return (0.3, "decorative")
 
@@ -103,7 +103,7 @@ _STRUCTURAL_HINTS = (
     # Existence / validity
     "exists", "valid", "registered", "importable", "present",
     "reachable", "schema", "config", "manifest", "has-",
-    # R31 #10: structural guardrails discovered in decorative sample —
+    # R31 #10: structural guardrails discovered in decorative sample --
     # these patterns are by-design rarely-firing invariants that preserve
     # structural invariance, not noise to retire.
     "executable", "complete", "count", "points-to", "handlers",
@@ -125,11 +125,11 @@ def _reclassify_structural(inv_id: str, klass: str) -> str:
 def main() -> int:
     invariants = _load_invariants()
     if not invariants:
-        print("compute-invariant-efficacy: no invariants configured — skip")
+        print("compute-invariant-efficacy: no invariants configured -- skip")
         return 0
 
     if not os.path.isfile(HISTORY_PATH):
-        print("compute-invariant-efficacy: no history yet — skip")
+        print("compute-invariant-efficacy: no history yet -- skip")
         return 0
 
     with open(HISTORY_PATH, encoding="utf-8") as f:

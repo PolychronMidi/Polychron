@@ -1,4 +1,4 @@
-"""HME administration — selftest, hot-reload, introspection, antipattern enforcement."""
+"""HME administration -- selftest, hot-reload, introspection, antipattern enforcement."""
 import os
 import re
 import logging
@@ -42,7 +42,7 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         return (
             f"WRONG HOOK: '{antipattern}' is a code-content antipattern (file contents), not a bash-command antipattern.\n"
             f"Use hook_target='pretooluse_edit' (catches Edit new_string) or 'pretooluse_write' (catches Write content).\n"
-            f"pretooluse_bash only sees shell commands — it cannot reliably detect patterns inside source files."
+            f"pretooluse_bash only sees shell commands -- it cannot reliably detect patterns inside source files."
         )
     if hook_target in ("pretooluse_edit", "pretooluse_write") and any(s in _ap_lower for s in _bash_cmd_signals):
         return (
@@ -127,8 +127,8 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     # Preflight: survey all synthesis backends so an actionable diagnostic
     # names what's actually down. Two substrates:
     #   (1) local llama-server instances (coder on GPU1, arbiter on GPU0)
-    #   (2) the ranked API cascade (synthesis_reasoning) — gemini/groq/etc.
-    # "Reasoning" is NOT a local model — it lives entirely on the API side.
+    #   (2) the ranked API cascade (synthesis_reasoning) -- gemini/groq/etc.
+    # "Reasoning" is NOT a local model -- it lives entirely on the API side.
     _health = _daemon_health_snapshot()
     _ready_local = _health.get("ready_aliases", [])
     try:
@@ -142,12 +142,12 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
             f"local/{name}: {s}" for name, s in sorted(_statuses.items())
         ) or "local: (daemon unreachable)"
         return (
-            f"fix_antipattern preflight failed — no synthesis backend ready.\n"
+            f"fix_antipattern preflight failed -- no synthesis backend ready.\n"
             f"{_status_lines}\n"
             f"api/reasoning cascade: not reachable\n\n"
             f"Options: wait for local models to load (60-90s for cold MoE), "
             f"check llamacpp_daemon logs, or verify API keys for the ranked "
-            f"reasoning cascade (gemini/groq/etc. — see synthesis_reasoning).\n"
+            f"reasoning cascade (gemini/groq/etc. -- see synthesis_reasoning).\n"
             f"Manually add detection logic to: {hook_path}\n"
             f"Antipattern to prevent: {antipattern}"
         )
@@ -155,8 +155,8 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     # Fallback chain: try local coder first (fast on a warm GPU), then the
     # ranked API reasoning cascade (better quality, free tier), then arbiter
     # as last resort (always-on but weaker for synthesis). Each call is
-    # bounded by a 60s wall-clock timeout — without it, an unreachable
-    # llama-server makes the whole chain hang for 32s × 3 attempts (~96s)
+    # bounded by a 60s wall-clock timeout -- without it, an unreachable
+    # llama-server makes the whole chain hang for 32s * 3 attempts (~96s)
     # per call, which is the "hangs at 20s" rating bug.
     import concurrent.futures as _cf
     def _bounded(fn, *args, **kwargs):
@@ -190,7 +190,7 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
         snippet = _bounded(_local_think, synthesis_prompt, max_tokens=512, model=_ARBITER_MODEL)
     if not snippet:
         return (
-            f"Could not synthesize snippet — tried: {', '.join(_tried) or 'nothing'}. "
+            f"Could not synthesize snippet -- tried: {', '.join(_tried) or 'nothing'}. "
             f"All returned empty.\n"
             f"Manually add detection logic to: {hook_path}\n"
             f"Antipattern to prevent: {antipattern}"
@@ -213,14 +213,14 @@ def fix_antipattern(antipattern: str, hook_target: str = "pretooluse_bash") -> s
     else:
         new_content = stripped + insertion
 
-    # Validate bash syntax before writing — reject truncated/broken snippets
+    # Validate bash syntax before writing -- reject truncated/broken snippets
     check = subprocess.run(
         ["bash", "-n"],
         input=new_content, capture_output=True, text=True, timeout=5,
     )
     if check.returncode != 0:
         return (
-            f"REJECTED: Generated snippet has bash syntax errors — refusing to write broken code.\n"
+            f"REJECTED: Generated snippet has bash syntax errors -- refusing to write broken code.\n"
             f"bash -n stderr: {check.stderr.strip()}\n\n"
             f"**Snippet that failed:**\n```bash\n{snippet.strip()}\n```\n\n"
             f"Fix manually or retry. Hook file NOT modified: {hook_path}"

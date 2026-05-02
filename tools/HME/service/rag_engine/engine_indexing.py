@@ -1,4 +1,4 @@
-"""RAGEngine indexing mixin — file and directory indexing with chunk-level diffing."""
+"""RAGEngine indexing mixin -- file and directory indexing with chunk-level diffing."""
 import logging
 import os
 from pathlib import Path
@@ -17,8 +17,8 @@ class RAGEngineIndexingMixin:
     def _batch_encode(self, texts: list[str], kind: str = "code") -> list[list[float]]:
         """Encode texts using the appropriate embedder.
 
-        kind='code' → self.code_model (RAG_CODE_MODEL from .env) for code_chunks.
-        kind='text' → self.text_model (RAG_MODEL from .env) for knowledge + symbols.
+        kind='code' -> self.code_model (RAG_CODE_MODEL from .env) for code_chunks.
+        kind='text' -> self.text_model (RAG_MODEL from .env) for knowledge + symbols.
         """
         if kind == "code":
             batch_size = getattr(self, "_embed_batch_size_code", BATCH_SIZE)
@@ -45,7 +45,7 @@ class RAGEngineIndexingMixin:
         if not file_path.exists():
             return self._remove_file_from_index(file_key)
 
-        # Defensive gate — reject extensions that the language registry
+        # Defensive gate -- reject extensions that the language registry
         # does not recognize. This prevents the watcher (or any direct
         # caller) from feeding binary blobs or unsupported files into the
         # embedder. A stray .gguf/.safetensors/.bin would otherwise get
@@ -201,7 +201,7 @@ class RAGEngineIndexingMixin:
 
     def index_directory(self) -> dict:
         """Index all files from ragIndexDirs in tools/HME/config/rag.json.
-        No arguments — the allowlist is the only source of indexable paths."""
+        No arguments -- the allowlist is the only source of indexable paths."""
         self._bulk_indexing.set()
         try:
             with self._index_lock:
@@ -249,7 +249,7 @@ class RAGEngineIndexingMixin:
 
         # Phases 3+4: chunk, encode, and write in checkpoints of CHECKPOINT
         # files. Each checkpoint embeds its batch, writes to the table, and
-        # saves hashes — so a crash mid-run loses at most one checkpoint.
+        # saves hashes -- so a crash mid-run loses at most one checkpoint.
         CHECKPOINT = 5
         indexed_files = 0
         total_chunks_created = 0

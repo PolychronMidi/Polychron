@@ -1,4 +1,4 @@
-"""HME HTTP — error log and transcript store."""
+"""HME HTTP -- error log and transcript store."""
 import json
 import logging
 import os
@@ -22,7 +22,7 @@ _MAX_TRANSCRIPT_MEMORY = 500
 _transcript_entries: list[dict] = []
 _latest_narrative: str = ""
 
-# Append-write bounds — delegate to common.bounded_log for a single source
+# Append-write bounds -- delegate to common.bounded_log for a single source
 # of truth across hme_http_store, synthesis_pipeline, synthesis_reasoning.
 _ERRORS_MAX_LINES = 20_000
 _TRANSCRIPT_MAX_LINES = 50_000
@@ -42,7 +42,7 @@ def init_store(project_root: str) -> None:
 
 def _log_error(source: str, message: str, detail: str = "") -> None:
     """Append a critical error to the in-memory log and hme-errors.log.
-    Transient timeouts go to memory only (not disk) — they're operational, not code defects.
+    Transient timeouts go to memory only (not disk) -- they're operational, not code defects.
 
     Transient detection is SOURCE-based, not message-based. The source argument
     is exactly the dimension we want to filter on, and message formats drift
@@ -112,8 +112,8 @@ def _load_transcript() -> None:
             # Narrow to JSONDecodeError so real bugs (schema errors, etc.)
             # still propagate. JSONL corruption = lost transcript history
             # = lost session continuity. Fire a FAILFAST so the operator
-            # knows history is compromised — not a quiet debug line.
-            print(f"[HME FAILFAST] transcript load: {malformed} malformed JSONL lines DROPPED — session history partial", file=sys.stderr, flush=True)
+            # knows history is compromised -- not a quiet debug line.
+            print(f"[HME FAILFAST] transcript load: {malformed} malformed JSONL lines DROPPED -- session history partial", file=sys.stderr, flush=True)
         with _transcript_lock:
             _transcript_entries = entries
     except Exception as e:
@@ -152,7 +152,7 @@ def _get_transcript_context(query: str = "", max_chars: int = 3000) -> str:
     recent = _get_transcript(minutes=60, max_entries=40)
     if not recent:
         return ""
-    lines = ["[Session Transcript — recent activity]"]
+    lines = ["[Session Transcript -- recent activity]"]
     chars = len(lines[0])
 
     # Narratives first (most compact summary)

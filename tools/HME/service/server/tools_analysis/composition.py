@@ -1,4 +1,4 @@
-"""HME composition-level analysis — section arcs, trust rivalries, coupling evolution."""
+"""HME composition-level analysis -- section arcs, trust rivalries, coupling evolution."""
 import json
 import os
 import logging
@@ -10,7 +10,7 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
-from . import _load_trace  # noqa: F401 — shared helper, avoids duplicate in each trace tool
+from . import _load_trace  # noqa: F401 -- shared helper, avoids duplicate in each trace tool
 
 
 def composition_arc() -> str:
@@ -96,7 +96,7 @@ def composition_arc() -> str:
             tension_str = f"avg={avg_t:.3f} peak={peak_t:.3f}"
             # ASCII bar: 20 chars wide
             bar_len = int(avg_t * 20)
-            bar = "█" * bar_len + "░" * (20 - bar_len)
+            bar = "#" * bar_len + "." * (20 - bar_len)
             tension_str += f" [{bar}]"
         else:
             tension_str = "no data"
@@ -183,7 +183,7 @@ def hotspot_leaderboard() -> str:
         pressures = hotspot_pressure.get(name, [0])
         avg_p = sum(pressures) / len(pressures)
         peak_p = max(pressures)
-        bar = "▓" * int(pct / 5)  # 1 char per 5%
+        bar = "#" * int(pct / 5)  # 1 char per 5%
         parts.append(f"  {i:2d} | {name:<25} | {pct:5.1f}% {bar:<20} | {avg_p:.3f} | {peak_p:.3f}")
         if i >= 27:
             break

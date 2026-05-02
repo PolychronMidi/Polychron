@@ -1,4 +1,4 @@
-"""Adaptive multi-stage synthesis — complexity assessment, context injection, cascade.
+"""Adaptive multi-stage synthesis -- complexity assessment, context injection, cascade.
 
 Split from synthesis_llamacpp.py. Contains synthesize() (the highest-quality
 inference path in HME), cascade_synthesis, complexity assessment, quality gate,
@@ -28,9 +28,9 @@ from hme_env import ENV  # noqa: E402
 # Adaptive multi-stage synthesis
 # synthesize() auto-detects complexity, injects context, routes to optimal
 # strategy, and quality-gates output. Strategies:
-#   direct (1):   route_model() → single call (fast)
+#   direct (1):   route_model() -> single call (fast)
 #   enriched (2): source grounding + best model (balanced)
-#   cascade (3):  arbiter plan → coder kickstart → reasoner deep (thorough)
+#   cascade (3):  arbiter plan -> coder kickstart -> reasoner deep (thorough)
 
 _DEEP_SIGNALS = frozenset({
     "relationship", "interact", "coupling", "architectur",
@@ -58,15 +58,15 @@ _PATTERNS_CACHE_TTL = 300  # 5 minutes
 
 def _cascade_synthesis(prompt: str, enriched_prompt: str,
                        max_tokens: int = 8192) -> str | None:
-    """Three-stage: arbiter plan → coder kickstart → reasoner deep synthesis.
+    """Three-stage: arbiter plan -> coder kickstart -> reasoner deep synthesis.
 
     The coder provides verified structural facts (file paths, function names,
     signal fields). The reasoner uses those as grounded context for deep analysis,
     preventing hallucinated module names while enabling rich architectural reasoning.
 
     Grounding chain (all three must provide at least one source):
-    1. Pre-discovery: fuzzy module search → source in enriched_prompt
-    2. Arbiter plan: given module registry → names real modules → source injection
+    1. Pre-discovery: fuzzy module search -> source in enriched_prompt
+    2. Arbiter plan: given module registry -> names real modules -> source injection
     3. Stage 2 coder: receives BOTH pre-discovered AND plan-derived sources
     """
     from .synthesis_config import _THINK_SYSTEM
@@ -77,7 +77,7 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     _pre_source_block = "\n".join(_pre_sources[:2])[:3000]
 
     # Build arbiter module registry: fuzzy-find relevant modules so arbiter can name them.
-    # Lazy import — synthesis_cascade imports US, so a top-level back-import would cycle.
+    # Lazy import -- synthesis_cascade imports US, so a top-level back-import would cycle.
     from .synthesis_cascade import _fuzzy_find_modules
     _registry_mods = _fuzzy_find_modules(prompt, max_results=12)
     _registry_hint = (
@@ -85,15 +85,15 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         if _registry_mods else ""
     )
 
-    # Stage 1: Arbiter plans the investigation — context-aware via module registry
+    # Stage 1: Arbiter plans the investigation -- context-aware via module registry
     plan = _local_think_with_system(
         f"Break into 3-5 investigation steps:\n\n{prompt[:400]}"
         f"{_registry_hint}\n\n"
         "Each step: WHAT (exact module name from list above), WHERE (subsystem), WHY (relevance).\n"
         "CRITICAL: ONLY use module names from the Known list above. If the question mentions "
-        "a module not in the list, say 'not in registry' — do NOT guess or assume it exists.",
+        "a module not in the list, say 'not in registry' -- do NOT guess or assume it exists.",
         "Code investigation planner. ONLY reference modules from the Known list. "
-        "If a module is not in the list, refuse — say 'not in registry'. Never invent paths or locations.",
+        "If a module is not in the list, refuse -- say 'not in registry'. Never invent paths or locations.",
         500, _ARBITER_MODEL,
     )
     from .synthesis_config import strip_thinking_tags
@@ -131,7 +131,7 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
         f"plan_mods={len(_plan_modules)}"
     )
 
-    # Stage 2: Coder kickstart — structured fact extraction grounded in source
+    # Stage 2: Coder kickstart -- structured fact extraction grounded in source
     _coder_prefix = f"SOURCE CODE:\n{_source_block}\n\n" if _source_block else ""
     coder_out = _local_think(
         f"{_coder_prefix}"
@@ -148,7 +148,7 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
             max_tokens=max_tokens, system=_THINK_SYSTEM, profile="coder",
         )
 
-    # Stage 3: Deep synthesis — _reasoning_think cascades Gemini T1→T2→local automatically
+    # Stage 3: Deep synthesis -- _reasoning_think cascades Gemini T1->T2->local automatically
     _synthesis_prompt = (
         f"Question: {prompt[:300]}\n\n"
         f"VERIFIED FACTS (trust these paths/names):\n{coder_out}\n\n"
@@ -158,15 +158,15 @@ def _cascade_synthesis(prompt: str, enriched_prompt: str,
     result = _reasoning_think(_synthesis_prompt, max_tokens=max_tokens,
                               system=_THINK_SYSTEM, temperature=0.2)
     if result:
-        logger.info(f"cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→reasoning({len(result)}c)")
-        result += f"\n\n*cascade: arbiter({len(plan)}c)→coder({len(coder_out)}c)→reasoning({len(result)}c)*"
+        logger.info(f"cascade: arbiter({len(plan)}c)->coder({len(coder_out)}c)->reasoning({len(result)}c)")
+        result += f"\n\n*cascade: arbiter({len(plan)}c)->coder({len(coder_out)}c)->reasoning({len(result)}c)*"
     return result
 
 
 def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
     """Fire both GPUs in parallel on the same prompt. Arbiter picks the best.
 
-    Coder and reasoner analyze independently — if they agree, high confidence.
+    Coder and reasoner analyze independently -- if they agree, high confidence.
     If they disagree, the disagreement itself is a valuable finding.
     """
     from .synthesis_config import _THINK_SYSTEM
@@ -194,7 +194,7 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
     if not g1:
         return g0
 
-    # Both succeeded — arbiter picks winner
+    # Both succeeded -- arbiter picks winner
     pick = _local_think_with_system(
         f"Two analyses of: {prompt[:150]}\n\n"
         f"A (coder):\n{g0[:600]}\n\nB (reasoner):\n{g1[:600]}\n\n"
@@ -218,7 +218,7 @@ def dual_gpu_consensus(prompt: str, max_tokens: int = 4096) -> str | None:
 def _quality_gate(output: str, prompt: str) -> tuple[str, int, int]:
     """Deterministic quality gate: verify camelCase module names in output exist.
 
-    Zero latency — no model call. Extracts camelCase module references, verifies
+    Zero latency -- no model call. Extracts camelCase module references, verifies
     each resolves via _read_module_source. Skips modules embedded in file paths
     (directory names cause false phantoms). Flags if >50% are unresolvable.
 
@@ -248,7 +248,7 @@ def _quality_gate(output: str, prompt: str) -> tuple[str, int, int]:
 
     if len(unique) > 0 and phantom / len(unique[:5]) > 0.5:
         logger.info(f"quality_gate: {phantom}/{len(unique[:5])} module refs unresolvable")
-        return f"[unverified — {phantom} refs unresolved] {output}", phantom, verified
+        return f"[unverified -- {phantom} refs unresolved] {output}", phantom, verified
     return output, phantom, verified
 
 

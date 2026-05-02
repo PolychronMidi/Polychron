@@ -1,4 +1,4 @@
-"""Buddy dispatch — status command + transcript inspection helpers.
+"""Buddy dispatch -- status command + transcript inspection helpers.
 
 Extracted from buddy_dispatcher.py (was lines 1441-1668). buddy_handoff.py
 imports `_transcript_path_for_sid` and `_buddy_context_used` from here
@@ -57,7 +57,7 @@ def _buddy_context_used(sid: str) -> dict | None:
     Returns {"tokens": int, "ctx_window": int, "used_pct": float,
     "transcript": str, "lines": int} or None if no transcript / no usage
     data. The "tokens" field sums input + cache_creation + cache_read
-    from the most recent assistant event with a non-empty usage block —
+    from the most recent assistant event with a non-empty usage block --
     that is the authoritative count of context the model just saw.
 
     Context window defaults to 1_000_000 (Opus 4.7 1M context). Override
@@ -166,7 +166,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     With --json, write a structured snapshot to tmp/hme-buddy-session-log.json
     (and stdout) that includes per-buddy sid + used context %. The log
-    file is overwritten each call — caller can poll it to monitor every
+    file is overwritten each call -- caller can poll it to monitor every
     buddy's context usage and prepare for compactions.
     """
     _ensure_dirs()
@@ -189,7 +189,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     if _DISPATCH_MODE == "synthesis":
         print("workers: 1 synthesis-reasoning pseudo-buddy (no SID; routes through HME synthesis cascade)")
     elif _DISPATCH_MODE == "disabled":
-        print("dispatcher disabled — set BUDDY_SYSTEM=1 OR HME_DISPATCH_MODE=synthesis in .env to activate")
+        print("dispatcher disabled -- set BUDDY_SYSTEM=1 OR HME_DISPATCH_MODE=synthesis in .env to activate")
     elif workers:
         real = [w for w in workers if w.get("sid") != "synthesis"]
         synth_present = any(w.get("sid") == "synthesis" for w in workers)

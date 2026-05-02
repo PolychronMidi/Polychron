@@ -1,9 +1,9 @@
-"""Indexing-mode — full reindex with embedders pinned on their home GPU.
+"""Indexing-mode -- full reindex with embedders pinned on their home GPU.
 
-R97 rewrite: previously this suspended coder, migrated embedders cuda:0→
+R97 rewrite: previously this suspended coder, migrated embedders cuda:0->
 cuda:1, indexed, migrated back, resumed coder. That migration dance was
 the source of every CUDA-corruption incident and the reason "model
-pinning" got re-implemented ten different times — pinning is meaningless
+pinning" got re-implemented ten different times -- pinning is meaningless
 if this function violates it every reindex.
 
 New flow: DO NOT MIGRATE, DO NOT SUSPEND ANYTHING. Tell the shim to run
@@ -61,7 +61,7 @@ def _shim_post(endpoint: str, data: dict, timeout: float = 30) -> dict:
 
 def _run_indexing_mode_locked() -> dict:
     logger.info(
-        "indexing-mode: starting — embedders stay pinned on their home GPU "
+        "indexing-mode: starting -- embedders stay pinned on their home GPU "
         "(no migration, no coder suspend)"
     )
     try:
@@ -78,13 +78,13 @@ def _run_indexing_mode_locked() -> dict:
 
 
 def run_indexing_mode() -> dict:
-    """Concurrency-gated entrypoint. Concurrent callers coalesce — the
+    """Concurrency-gated entrypoint. Concurrent callers coalesce -- the
     second invocation waits for the first to finish and returns that
     same result tagged `coalesced=True`. No error response, no warning
     log; overlapping triggers (edit-watcher + scheduled + manual) are
     the design, not an aberration."""
     if not _indexing_mode_lock.acquire(blocking=False):
-        # Another caller already holds the lock — wait for them, then
+        # Another caller already holds the lock -- wait for them, then
         # return their result. logger.debug (not warning) so noise stays
         # out of hme-errors.log.
         logger.debug("indexing-mode: coalescing into in-progress run")

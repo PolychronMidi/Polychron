@@ -10,9 +10,9 @@ stopped") is far removed from the cause (one trailing comma), so it
 takes 40+ minutes of debugging to trace back.
 
 Scope:
-  R1 — settings.json parses as valid JSON
-  R2 — every hook event's `command` references an existing file
-  R3 — no hook uses relative paths (plugin cache path only)
+  R1 -- settings.json parses as valid JSON
+  R2 -- every hook event's `command` references an existing file
+  R3 -- no hook uses relative paths (plugin cache path only)
 
 Exit: 0 clean / 1 violation(s).
 
@@ -41,18 +41,18 @@ def _audit() -> list[str]:
     except OSError as e:
         return [f"{SETTINGS_PATH}: read failed: {e}"]
 
-    # R1 — JSON parse
+    # R1 -- JSON parse
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError as e:
         return [
-            f"{SETTINGS_PATH}:{e.lineno}:{e.colno} — invalid JSON: {e.msg} — "
+            f"{SETTINGS_PATH}:{e.lineno}:{e.colno} -- invalid JSON: {e.msg} -- "
             f"Claude Code CANNOT load this file and will silently disable hooks + "
             f"user-level settings (alwaysThinkingEnabled, verbose, etc.). Fix the "
             f"syntax error to restore."
         ]
 
-    # R2 — every hook command path exists
+    # R2 -- every hook command path exists
     hooks = parsed.get("hooks") if isinstance(parsed, dict) else None
     if isinstance(hooks, dict):
         for event, entries in hooks.items():
@@ -91,9 +91,9 @@ def main() -> int:
         }, indent=2))
     else:
         if not violations:
-            print(f"✓ {SETTINGS_PATH}: valid JSON, all hook commands resolve")
+            print(f"[ok] {SETTINGS_PATH}: valid JSON, all hook commands resolve")
             return 0
-        print(f"✗ {len(violations)} violation(s) in {SETTINGS_PATH}:")
+        print(f"[no] {len(violations)} violation(s) in {SETTINGS_PATH}:")
         for v in violations:
             print(f"  {v}")
     return 0 if not violations else 1

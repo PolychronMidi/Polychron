@@ -34,9 +34,9 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     tag_list = [str(t).strip() for t in tags if str(t).strip()] if tags else []
     results = []
 
-    # Horizon III asymptote — auto-densification. When the caller didn't
+    # Horizon III asymptote -- auto-densification. When the caller didn't
     # provide an explicit relation, run a semantic-similarity scan of
-    # the existing KB. Strong matches (≥0.70) become auto-relations
+    # the existing KB. Strong matches (>=0.70) become auto-relations
     # noted in the response; weaker matches (0.50-0.70) surface as a
     # suggestion the agent can act on after-the-fact. Cheap (single
     # encode + dot-products against in-memory vectors).
@@ -69,17 +69,17 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
                     if sim > top[1]:
                         top = (str(row.get("id", "")), sim, str(row.get("title", "")))
                 if top[0] and top[1] >= 0.70:
-                    # Strong match — auto-set related_to with derived_from.
+                    # Strong match -- auto-set related_to with derived_from.
                     related_to = top[0]
                     relation_type = relation_type or "derived_from"
                     auto_predecessor_note = (
-                        f"  ⓘ Auto-densification (Horizon III): linked as "
+                        f"  (i) Auto-densification (Horizon III): linked as "
                         f"`derived_from:{top[0][:8]}` ({top[1]:.2f} similarity, "
                         f"title: {top[2][:40]})"
                     )
                 elif top[0] and top[1] >= 0.50:
                     auto_predecessor_note = (
-                        f"  ⓘ Suggested predecessor (Horizon III): "
+                        f"  (i) Suggested predecessor (Horizon III): "
                         f"[{top[0][:8]}] {top[2][:40]} (similarity {top[1]:.2f})\n"
                         f"     Re-add with tags=\"derived_from:{top[0]}\" if confirming."
                     )
@@ -112,7 +112,7 @@ def add_knowledge(title: str, content: str, category: str = "general", tags: lis
     except Exception as e:
         logger.warning("append_session_narrative failed: %s", e)
 
-    # Incremental warm context update — batched and parallelized across all 3 models.
+    # Incremental warm context update -- batched and parallelized across all 3 models.
     # Debounced 3s so rapid-fire learn() calls coalesce into one llama.cpp round-trip.
     try:
         from server.tools_analysis.synthesis_warm import queue_incremental_update
@@ -161,7 +161,7 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
             "CONTRADICT = incompatible claims about the SAME thing (one says increase, other says decrease).\n"
             "OK = different topics, complementary, or one extends/supersedes the other.\n\n"
             "For each existing entry, respond with ONE line:\n"
-            "EXISTING N: CONTRADICT — <the specific incompatible claims>\n"
+            "EXISTING N: CONTRADICT -- <the specific incompatible claims>\n"
             "or\n"
             "EXISTING N: OK\n"
         )
@@ -186,28 +186,28 @@ def _check_kb_contradictions(title: str, content: str, engine) -> str:
     for line in result.strip().splitlines():
         if "CONTRADICT" in line:
             try:
-                explanation_text = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                explanation_text = line.split("CONTRADICT")[1].strip().lstrip("--").lstrip("-").strip()
                 if any(m in explanation_text.lower() for m in omission_markers):
                     continue
                 num = int(line.split("EXISTING")[1].split(":")[0].strip()) - 1
-                explanation = line.split("CONTRADICT")[1].strip().lstrip("—").lstrip("-").strip()
+                explanation = line.split("CONTRADICT")[1].strip().lstrip("--").lstrip("-").strip()
                 if 0 <= num < len(candidates):
                     e = candidates[num]
                     warnings.append(
-                        f"  ⚠ CONTRADICTS [{e['id']}] \"{e['title']}\": {explanation}\n"
-                        f"    → Tag: learn(..., related_to='{e['id']}', relation_type='contradicts')"
+                        f"  [!] CONTRADICTS [{e['id']}] \"{e['title']}\": {explanation}\n"
+                        f"    -> Tag: learn(..., related_to='{e['id']}', relation_type='contradicts')"
                     )
             except (ValueError, IndexError):
                 continue
 
     if not warnings:
         return ""
-    return "⚠ CONTRADICTION WARNING:\n" + "\n".join(warnings)
+    return "[!] CONTRADICTION WARNING:\n" + "\n".join(warnings)
 
 
 
 def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
-    """Search the persistent knowledge base for constraints, decisions, patterns, and bugfixes. MANDATORY before modifying any module — always check for existing constraints first. Returns matching entries from both project and global KBs, ranked by relevance. Filter by category ('architecture', 'decision', 'pattern', 'bugfix') to narrow results. Each result includes ID, title, content, tags, and relevance score."""
+    """Search the persistent knowledge base for constraints, decisions, patterns, and bugfixes. MANDATORY before modifying any module -- always check for existing constraints first. Returns matching entries from both project and global KBs, ranked by relevance. Filter by category ('architecture', 'decision', 'pattern', 'bugfix') to narrow results. Each result includes ID, title, content, tags, and relevance score."""
     _track("search_knowledge")
     ctx.ensure_ready_sync()
     top_k = max(1, min(20, top_k))
@@ -218,7 +218,7 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
 
     # Drop hard-zero scores: cross-encoder rerank clamps negatives to 0,
     # meaning the entry is irrelevant. Sub-1% entries with non-zero raw
-    # scores are kept — display rounds them to 0% but they're statistically
+    # scores are kept -- display rounds them to 0% but they're statistically
     # distinct from clamped noise. Mirrors helpers.format_knowledge_results.
     proj_results = [r for r in proj_results
                     if (_s := r.get("score")) is not None and _s > 0]
@@ -230,7 +230,7 @@ def search_knowledge(query: str, top_k: int = 5, category: str = "") -> str:
             from tool_invocations import i_form as _i_form
             _hint = _i_form('learn', primer=True)
         except ImportError:
-            _hint = "i/learn title=… content=…"
+            _hint = "i/learn title=... content=..."
         return f"No knowledge entries found. Use `{_hint}` to build the knowledge base."
 
     parts = []
@@ -273,7 +273,7 @@ def remove_knowledge(entry_id: str, scope: str = "project") -> str:
     ok = engine.remove_knowledge(entry_id)
     if ok:
         ctx._kb_version = getattr(ctx, "_kb_version", 0) + 1
-        # Inject tombstone into warm contexts — cheap (~1-2s) vs full re-prime (~30s).
+        # Inject tombstone into warm contexts -- cheap (~1-2s) vs full re-prime (~30s).
         # Models see "REMOVED entry X" and disregard it. GC re-prime cleans up tombstones.
         try:
             from server.tools_analysis.synthesis_warm import queue_tombstone
@@ -321,12 +321,12 @@ def list_knowledge(category: str = "", scope: str = "") -> str:
 
 
 def compact_knowledge(scope: str = "project", threshold: float = 0.85) -> str:
-    """Deduplicate the knowledge base by merging entries with high semantic similarity. Use after 30+ entries accumulate. The threshold (0.0-1.0) controls how similar entries must be to merge — 0.85 is a good default. Returns counts of removed vs kept entries. Scope can be 'project', 'global', or 'both'."""
+    """Deduplicate the knowledge base by merging entries with high semantic similarity. Use after 30+ entries accumulate. The threshold (0.0-1.0) controls how similar entries must be to merge -- 0.85 is a good default. Returns counts of removed vs kept entries. Scope can be 'project', 'global', or 'both'."""
     ctx.ensure_ready_sync()
     clamped = max(0.5, min(1.0, threshold))
     notes = []
     if clamped != threshold:
-        notes.append(f"Note: threshold {threshold} clamped to {clamped} (valid range 0.5–1.0).")
+        notes.append(f"Note: threshold {threshold} clamped to {clamped} (valid range 0.5-1.0).")
     threshold = clamped
     results = notes
     total_removed = 0
@@ -366,5 +366,5 @@ def export_knowledge(scope: str = "project", category: str = "") -> str:
 
 
 
-# Re-export — memory_dream extracted to sibling.
+# Re-export -- memory_dream extracted to sibling.
 from .tools_knowledge_dream import memory_dream  # noqa: F401, E402

@@ -60,7 +60,7 @@ def _causal_attribution() -> dict | None:
         }
 
         # Guard: if phantom_rate has near-zero variance, all correlations = 0
-        # and attribution is meaningless — report insufficient_variation instead
+        # and attribution is meaningless -- report insufficient_variation instead
         phantom_var = sum((p - avg_phantom) ** 2 for p in phantom_rates) / len(phantom_rates)
         if phantom_var < 1e-6:
             return {"status": "insufficient_variation", "avg_phantom": round(avg_phantom, 3),
@@ -123,7 +123,7 @@ def _anticipatory_lookahead() -> dict | None:
     result = {"projections": proj, "current": round(phrase_ema, 3), "trend": round(trend, 3)}
     if proj.get("T+30", 1.0) < 0.5:
         result["intervention_needed"] = True
-        result["suggestion"] = "coherence projected below 0.5 at T+30 — consider KB pre-warm or cascade-only routing"
+        result["suggestion"] = "coherence projected below 0.5 at T+30 -- consider KB pre-warm or cascade-only routing"
     return result
 
 

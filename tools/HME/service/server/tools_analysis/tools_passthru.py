@@ -1,7 +1,7 @@
-"""HME passthrough tools — drop-in replacements for native Claude Code tools.
+"""HME passthrough tools -- drop-in replacements for native Claude Code tools.
 
-Absorbs find's routing: search modes → grep, structural modes → glob_search,
-analysis modes → evolve. enrich='light' (default) for KB tags, 'full' for
+Absorbs find's routing: search modes -> grep, structural modes -> glob_search,
+analysis modes -> evolve. enrich='light' (default) for KB tags, 'full' for
 deep briefing (callers, boundaries, session narrative).
 """
 import os
@@ -26,7 +26,7 @@ def _dedup_check(key: tuple) -> str | None:
     cached = _recent.get(key)
     if cached and (time.monotonic() - cached[0]) < _DEDUP_WINDOW_S:
         age = int(time.monotonic() - cached[0])
-        return cached[1] + f"\n\n(cached — {age}s ago)"
+        return cached[1] + f"\n\n(cached -- {age}s ago)"
     return None
 
 
@@ -70,7 +70,7 @@ def _kb_full(query: str) -> str:
 
 
 
-# grep — absorbs find's search modes (callers, boundary, semantic, diagnose)
+# grep -- absorbs find's search modes (callers, boundary, semantic, diagnose)
 
 
 def _detect_search_intent(query: str) -> str:
@@ -92,8 +92,8 @@ def grep(pattern: str, path: str = "", glob: str = "", type: str = "",
          case_insensitive: bool = False, head_limit: int = 50,
          mode: str = "auto", enrich: str = "light") -> str:
     """Search with KB enrichment. Drop-in for native Grep + absorbs find().
-    mode='auto' (default): regex/symbol → ripgrep, 'callers of X' → callers,
-    'X should use Y' → boundary, natural language → semantic search.
+    mode='auto' (default): regex/symbol -> ripgrep, 'callers of X' -> callers,
+    'X should use Y' -> boundary, natural language -> semantic search.
     mode='grep'|'semantic'|'callers'|'boundary'|'diagnose' to force engine.
     enrich='light' (default): KB tags. enrich='full': deep KB + session narrative.
     output_mode: 'content'|'files_with_matches'|'count'. glob/type: file filters."""
@@ -185,7 +185,7 @@ def _rg_search(pattern, path, glob_filter, file_type, output_mode,
         raw = r.stdout.strip()
         if r.returncode == 2:
             err = r.stderr.strip()[:200] or "invalid pattern or argument"
-            return f"Error: rg failed — {err}"
+            return f"Error: rg failed -- {err}"
     except FileNotFoundError:
         return _grep_fallback(pattern, target, output_mode, head_limit)
     except Exception as e:
@@ -219,7 +219,7 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
         if r.returncode > 1:
             err = r.stderr.strip()[:200] or "grep error"
-            return f"Error: grep failed — {err}"
+            return f"Error: grep failed -- {err}"
         lines = r.stdout.strip().split("\n")
         if output_mode == "count":
             lines = [l for l in lines if not l.endswith(":0")]
@@ -232,7 +232,7 @@ def _grep_fallback(pattern, target, output_mode, head_limit):
 
 
 
-# glob_search — absorbs find's structural modes (map, hierarchy, symbols, etc.)
+# glob_search -- absorbs find's structural modes (map, hierarchy, symbols, etc.)
 
 
 @ctx.mcp.tool(meta={"hidden": True})
@@ -244,7 +244,7 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
     mode='hierarchy': type hierarchy for a symbol.
     mode='symbols': semantic symbol search.
     mode='lookup': exact symbol lookup.
-    mode='rename': bulk rename preview (pattern='old→new').
+    mode='rename': bulk rename preview (pattern='old->new').
     mode='xref': cross-language trace for a symbol.
     enrich='light' (default): KB tags per file. enrich='full': full module intel."""
     _track("glob")
@@ -271,11 +271,11 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
         return _ls(pattern)
 
     if mode == "rename":
-        parts = pattern.split("→") if "→" in pattern else pattern.split("->")
+        parts = pattern.split("->") if "->" in pattern else pattern.split("->")
         if len(parts) == 2:
             from .symbols import bulk_rename_preview as _brp
             return _brp(parts[0].strip(), parts[1].strip())
-        return "Error: rename needs 'old_name→new_name' format."
+        return "Error: rename needs 'old_name->new_name' format."
 
     if mode == "xref":
         from .symbols import cross_language_trace as _clt
@@ -329,7 +329,7 @@ def glob_search(pattern: str, path: str = "", mode: str = "auto",
 
 
 
-# edit — file editing with KB constraint surfacing
+# edit -- file editing with KB constraint surfacing
 
 
 @ctx.mcp.tool(meta={"hidden": True})
@@ -382,7 +382,7 @@ def edit(file_path: str, old_string: str, new_string: str,
         parts.append(f"Error: old_string not found in {file_path}")
         return "\n".join(parts)
     if count > 1 and not replace_all:
-        parts.append(f"Error: old_string found {count} times — use replace_all=True or provide more context.")
+        parts.append(f"Error: old_string found {count} times -- use replace_all=True or provide more context.")
         return "\n".join(parts)
 
     if replace_all:

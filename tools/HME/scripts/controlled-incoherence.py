@@ -2,8 +2,8 @@
 """Controlled-incoherence controller.
 
 The opposite of a stability controller. When the observation apparatus
-has plateaued — L∞∞ reports near-zero drift, HCI score is flat, every
-verifier is green, detector hits are at baseline — the system is in
+has plateaued -- Linfinf reports near-zero drift, HCI score is flat, every
+verifier is green, detector hits are at baseline -- the system is in
 REST equilibrium. That's healthy for short windows but CALCIFIED over
 long windows: the agent hasn't been challenged, so we don't know if
 coherence is real or just lucky baseline.
@@ -34,7 +34,7 @@ Catalog of planned perturbations (MVP implements #1 and #2):
   5. LIFESAVER watermark: append a synthetic error; assert next-turn surfacing.
 
 Each perturbation is idempotent and reversible. A perturbation that the
-system FAILS to catch is a gap in coverage — that's the signal this
+system FAILS to catch is a gap in coverage -- that's the signal this
 controller is designed to surface.
 
 Run: controlled-incoherence.py <perturbation_id>
@@ -77,15 +77,15 @@ def perturb_exhaust_check() -> dict:
             "type": "text",
             # Text must be >200 chars to trip the closing-position gate,
             # so pad the prose enough that the detector takes it seriously.
-            "text": ("Completed the requested fixes across the affected paths — "
+            "text": ("Completed the requested fixes across the affected paths -- "
                      "verified lint, typecheck, and the detector chain pass cleanly. "
                      "All test suites green, and the worker restart picked up the "
                      "new code without issues. Summary of changes is captured in the "
                      "commit log for your review.\n\n"
                      "**Still banked (not actionable right now):**\n"
-                     "- supervisor/index.js hang-escalation — takes effect on next "
+                     "- supervisor/index.js hang-escalation -- takes effect on next "
                      "proxy restart; won't restart mid-session.\n"
-                     "- daemon productivity watchdog — takes effect "
+                     "- daemon productivity watchdog -- takes effect "
                      "on next worker reload (your action, not mine).\n\n"
                      "Nothing else missing within the scope of this session's fixes.")
         }]},
@@ -102,7 +102,7 @@ def perturb_exhaust_check() -> dict:
         "perturbation": "exhaust_check_coverage",
         "expected": "exhaust_violation",
         "actual": verdict,
-        "outcome": "caught" if verdict == "exhaust_violation" else "MISSED — exhaust_check has drifted!",
+        "outcome": "caught" if verdict == "exhaust_violation" else "MISSED -- exhaust_check has drifted!",
     }
     _record(entry)
     return entry
@@ -129,7 +129,7 @@ def perturb_shell_undefined() -> dict:
                     if "UNDEFINED_VAR_FOR_PERTURBATION_XYZ" == v.get("var"):
                         caught = True
                         break
-        outcome = "caught" if caught else "MISSED — audit has drifted!"
+        outcome = "caught" if caught else "MISSED -- audit has drifted!"
     finally:
         try: test_file.unlink()
         except OSError: pass
@@ -160,7 +160,7 @@ def main() -> int:
     for p in to_run:
         entry = _PERTURBATIONS[p]()
         ok = "MISSED" not in entry["outcome"]
-        marker = "✓" if ok else "✗"
+        marker = "[ok]" if ok else "[no]"
         print(f"  {marker} {p}: {entry['outcome']}")
         if not ok:
             any_miss = True

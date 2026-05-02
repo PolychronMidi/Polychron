@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Core-principles audit — survey how well src/ actually follows the five
+"""Core-principles audit -- survey how well src/ actually follows the five
 core principles CLAUDE.md declares.
 
 The ESLint rules in scripts/eslint-rules/ enforce specific corners of each
@@ -9,22 +9,22 @@ say which principle has structural slack vs. which is airtight. This is
 that survey.
 
 Principles audited (numbered to match CLAUDE.md):
-  P1 — Globals via side-effect require() in index.js
+  P1 -- Globals via side-effect require() in index.js
         Cross-check: every .js under a subsystem with its own index.js
         must be either required from that index.js or declared helper/
         utility. Orphan files are flagged.
-  P2 — Fail fast (no silent fallbacks)
+  P2 -- Fail fast (no silent fallbacks)
         Mostly ESLint-covered. The audit counts remaining raw-typeof
         checks and `|| 0 / || []` patterns as a health indicator.
-  P3 — Self-registration
+  P3 -- Self-registration
         Files that export a module but do not self-register and are not
         consumed by anyone are flagged as dead.
-  P4 — Single-Manager Hub per subsystem
+  P4 -- Single-Manager Hub per subsystem
         Each subsystem (top-level under src/) and each nontrivial
         subsubsystem should have at most one *Manager.js file. Multiple
         managers at the same level without clearly disjoint scopes is a
         smell.
-  P5 — Coherent files (CLAUDE.md target: 150-350 LOC; 350 is the
+  P5 -- Coherent files (CLAUDE.md target: 150-350 LOC; 350 is the
         upper bound, files exceeding it are CRITICAL).
         Thresholds loaded from tools/HME/config/project-rules.json
         (defaults: WARN >250, CRITICAL >350). Files matched by
@@ -53,7 +53,7 @@ _PROJECT = os.environ.get("PROJECT_ROOT") or os.path.abspath(
 )
 _SRC = os.path.join(_PROJECT, "src")
 
-# Thresholds — single source of truth in tools/HME/config/project-rules.json.
+# Thresholds -- single source of truth in tools/HME/config/project-rules.json.
 # Same file consumed by `i/evolve focus=loc` via helpers.py.
 def _load_loc_thresholds():
     rules_path = os.path.join(_PROJECT, "tools", "HME", "config", "project-rules.json")
@@ -72,7 +72,7 @@ _LOAD_ORDER = [
     "composers", "fx", "crossLayer", "writer", "play",
 ]
 
-# LOC exemptions live in config/loc-ignore.txt — single source of truth
+# LOC exemptions live in config/loc-ignore.txt -- single source of truth
 # shared with i/evolve focus=loc and scripts/report-src-loc.js. Edit there.
 _LOC_IGNORE_PATTERNS = load_patterns()
 
@@ -95,7 +95,7 @@ _FAILFAST_PATTERNS = [
 
 
 def _loc(path):
-    """Return non-empty, non-comment line count. Quick, not exact —
+    """Return non-empty, non-comment line count. Quick, not exact --
     discounts full-line // comments and blank lines."""
     n = 0
     try:
@@ -158,7 +158,7 @@ def _index_requires(index_path):
 def _failfast_indicator(path):
     """Count matches of fail-fast anti-patterns in a single file. This is
     a rough indicator of P2 (fail fast) slack, not a precise violation
-    count — ESLint rules already hard-enforce the specific patterns they
+    count -- ESLint rules already hard-enforce the specific patterns they
     know about."""
     try:
         with open(path, encoding="utf-8") as f:
@@ -182,7 +182,7 @@ def audit_subsystem(subsystem_dir):
     all_files = list(_walk_js(subsystem_dir))
     total_loc = sum(_loc(p) for p in all_files)
     sizes = [(p, _loc(p)) for p in all_files]
-    # Separate data files from code files — the 200-line rule is about code
+    # Separate data files from code files -- the 200-line rule is about code
     # coherence, not about data-table size. Data files are tracked so the
     # large ones are still visible to a reader.
     code_sizes = [(p, n) for p, n in sizes if not _is_loc_exempt(_rel(p))]
@@ -219,14 +219,14 @@ def audit_subsystem(subsystem_dir):
     # Violation flags per principle.
     violations = {"P1": [], "P2": [], "P3": [], "P4": [], "P5": []}
 
-    # P1 — index.js should exist; required modules should exist on disk.
+    # P1 -- index.js should exist; required modules should exist on disk.
     if not has_index:
         violations["P1"].append(f"missing index.js (empty subsystem: {len(all_files)} .js files but no require graph)")
-    # P4 — single manager per subsystem level.
+    # P4 -- single manager per subsystem level.
     if len(managers_root) > 1:
         rels = ", ".join(_rel(m) for m in managers_root)
         violations["P4"].append(f"{len(managers_root)} managers at root: {rels}")
-    # P5 — oversized files.
+    # P5 -- oversized files.
     for p, n in oversize_warn:
         violations["P5"].append(f"WARN {p} ({n} LOC)")
     for p, n in oversize_critical:
@@ -271,7 +271,7 @@ def run(only_subsystem=None):
         if only_subsystem and entry != only_subsystem:
             continue
         s = audit_subsystem(p)
-        # Skip subsystems that contain zero .js files — they're empty
+        # Skip subsystems that contain zero .js files -- they're empty
         # placeholders, not violations. src/types is one such today.
         if s["file_count"] == 0:
             continue
@@ -286,7 +286,7 @@ def _format_report(subsystems):
     lines.append("=" * 70)
     lines.append("")
 
-    # Summary table — code stats only (data files excluded from size rules).
+    # Summary table -- code stats only (data files excluded from size rules).
     lines.append(f"{'subsystem':<14} {'code':>5} {'data':>5} {'cLOC':>6} "
                  f"{'avg':>4} {'max':>5} {'mgr':>4} {'>'+str(_LOC_WARN):>5} {'>'+str(_LOC_CRITICAL):>5}")
     lines.append("-" * 70)
@@ -335,7 +335,7 @@ def _format_report(subsystems):
                 for item in items[:12]:
                     lines.append(f"      - {item}")
                 if len(items) > 12:
-                    lines.append(f"      … {len(items) - 12} more")
+                    lines.append(f"      ... {len(items) - 12} more")
             if s["failfast_hot_files"]:
                 lines.append(
                     f"    P2 indicators: {s['failfast_hits']} total hits "
@@ -362,7 +362,7 @@ def _format_report(subsystems):
     lines.append(f"  P5 (coherent files <={_LOC_CRITICAL} lines):      "
                  f"{per_principle['P5']} (oversize files, code only)")
 
-    # Data file callout — if any data files are unusually large.
+    # Data file callout -- if any data files are unusually large.
     big_data = []
     for s in subsystems:
         for rel, n in s.get("data_files", []):
@@ -388,7 +388,7 @@ def main():
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
-    # Roll-up counts — the HCI verifier wrapper consumes these via JSON.
+    # Roll-up counts -- the HCI verifier wrapper consumes these via JSON.
     critical_count = sum(len(s["oversize_critical"]) for s in subsystems)
     warn_count = sum(len(s["oversize_warn"]) for s in subsystems)
     p1_count = sum(len(s["violations"]["P1"]) for s in subsystems)

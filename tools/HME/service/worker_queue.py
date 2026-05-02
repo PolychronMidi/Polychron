@@ -1,6 +1,6 @@
 """Filesystem-IPC queue watcher for the HME worker.
 
-Architectural intent (lesson #1 — proxy/worker as accelerators):
+Architectural intent (lesson #1 -- proxy/worker as accelerators):
 callers can address the worker via filesystem queue files instead of
 synchronous HTTP. The HTTP path remains for backward compatibility;
 this module provides a daemon thread that drains queued jobs in
@@ -27,7 +27,7 @@ Failure semantics:
       is unwritable. Worker keeps serving HTTP.
     - Job-level errors are caught and written to the result file as
       {error: "..."} so callers always see a response (or timeout).
-    - The watcher loop catches all exceptions and continues — a
+    - The watcher loop catches all exceptions and continues -- a
       malformed job file cannot wedge the queue.
 """
 
@@ -65,10 +65,10 @@ def _dispatch(endpoint: str, body: dict) -> dict:
     """Call the matching handler. Mirror of worker.py's _post_* methods.
 
     Endpoints:
-        - 'enrich', 'enrich_prompt', 'audit' → hme_http_handlers (the
+        - 'enrich', 'enrich_prompt', 'audit' -> hme_http_handlers (the
           original three the queue was designed for; same shape as
           /enrich, /audit HTTP endpoints).
-        - 'tool' → tool_call(name, args), the unified i/* tool dispatch.
+        - 'tool' -> tool_call(name, args), the unified i/* tool dispatch.
           Body: {name: str, args: dict}. Mirrors the /tool/<name> HTTP
           endpoint. This makes EVERY i/* CLI queue-addressable, which is
           the load-bearing piece for KB queries surviving worker HTTP
@@ -88,7 +88,7 @@ def _dispatch(endpoint: str, body: dict) -> dict:
 
         if endpoint == "tool":
             # Generic i/* tool dispatch via tool_call. Same protocol as
-            # /tool/<name> HTTP — body shape: {name, args}. Returns
+            # /tool/<name> HTTP -- body shape: {name, args}. Returns
             # {ok: bool, result?: any, error?: str}.
             tool_name = body.get("name", "")
             tool_args = body.get("args", {}) or {}
@@ -133,7 +133,7 @@ def _process_job(job_path: Path) -> None:
         with open(job_path) as f:
             job = json.load(f)
     except (json.JSONDecodeError, OSError):
-        # Partial write or corrupted file — delete and skip.
+        # Partial write or corrupted file -- delete and skip.
         try:
             job_path.unlink()
         except OSError:

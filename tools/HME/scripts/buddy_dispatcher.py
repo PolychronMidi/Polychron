@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Co-buddy fanout dispatcher — drains tmp/hme-buddy-queue/pending/ and
+"""Co-buddy fanout dispatcher -- drains tmp/hme-buddy-queue/pending/ and
 routes each task to the appropriate co-buddy based on the
 `effective = max(item_tier, buddy_floor)` rule.
 
@@ -42,7 +42,7 @@ files concurrently (filesystem-IPC philosophy).
 from __future__ import annotations
 
 # When invoked as a script (`python3 buddy_dispatcher.py <cmd>`), the
-# module name is "__main__" — sibling modules importing
+# module name is "__main__" -- sibling modules importing
 # `from buddy_dispatcher import X` would otherwise re-execute the file
 # and hit a circular import. Register self under the canonical name so
 # they find the in-progress module instead.
@@ -62,7 +62,7 @@ import time
 import uuid
 from pathlib import Path
 
-# Project paths — derived from PROJECT_ROOT or relative to this script.
+# Project paths -- derived from PROJECT_ROOT or relative to this script.
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT") or Path(__file__).resolve().parents[3])
 QUEUE_ROOT = PROJECT_ROOT / "tmp" / "hme-buddy-queue"
 QUEUE_PENDING = QUEUE_ROOT / "pending"
@@ -75,14 +75,14 @@ ERROR_LOG = PROJECT_ROOT / "log" / "hme-errors.log"
 # Floor-based escalation: these strings map to ordinal levels for the
 # `effective = max(item_tier, buddy_floor)` rule. Higher ordinal = more
 # capable model + more effort. Compared per axis (model and effort
-# resolved independently — see doc/SPEC.md "Difficulty labels").
+# resolved independently -- see doc/SPEC.md "Difficulty labels").
 TIER_ORDER = {"easy": 0, "medium": 1, "hard": 2}
 TIER_NAMES = ("easy", "medium", "hard")
 
 # Effort axis is parallel and independent (skill-set Phase 19 model+
 # effort routing). Each tier maps to an effort level that the buddy's
 # effort_floor governs. By keeping it parallel, a hard-effort task on
-# a low-effort-floor buddy still bumps the effort to hard — same shape
+# a low-effort-floor buddy still bumps the effort to hard -- same shape
 # as model-floor escalation. When `effort-floor` is not declared in
 # the buddy config, defaults to the same value as the model floor.
 EFFORT_ORDER = {"low": 0, "medium": 1, "high": 2}
@@ -104,7 +104,7 @@ CHAIN_DIRS = [
 
 # Rate-limit detection patterns (lifted from skill-set Phase 13). When
 # a buddy subprocess exits with stderr matching one of these, the task
-# isn't a real failure — it's quota exhaustion that resets in the future.
+# isn't a real failure -- it's quota exhaustion that resets in the future.
 # Pause-and-resume re-dispatches the same task after the reset window.
 RATE_LIMIT_TEXT_RE = re.compile(
     r"rate.?limit|"
@@ -115,7 +115,7 @@ RATE_LIMIT_TEXT_RE = re.compile(
     r"too many requests",
     re.IGNORECASE,
 )
-# Field-name aliases for rate-limit signals — Anthropic's harness has
+# Field-name aliases for rate-limit signals -- Anthropic's harness has
 # drifted across versions (resetsAt / reset_time / resetTime / resets_at;
 # retryAfterSeconds / retry_after_seconds / retryAfter). Defensive
 # extraction tries each in priority order. Lifted from skill-set
@@ -146,7 +146,7 @@ _RATE_LIMIT_MODE = os.environ.get("HME_BUDDY_ON_RATE_LIMIT", "pause")  # fail|pa
 _MAX_RATE_LIMIT_PAUSE_SECONDS = int(os.environ.get("HME_BUDDY_MAX_PAUSE_SEC", str(8 * 3600)))
 _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 
-# Dispatch mode — decouples the dispatcher from the buddy fanout's
+# Dispatch mode -- decouples the dispatcher from the buddy fanout's
 # `claude --resume <sid>` worker so the queue + orphan-sweep + verdict
 # infrastructure stays useful even when BUDDY_SYSTEM=0.
 #
@@ -158,7 +158,7 @@ _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 #   claude-resume  default when BUDDY_SYSTEM=1; spawns the `claude` CLI
 #                  per task against the buddy's persistent session
 #                  (model+effort routing, etc.). Original behavior.
-#   synthesis      routes each task through synthesis_reasoning.call() —
+#   synthesis      routes each task through synthesis_reasoning.call() --
 #                  HME's local/cascade reasoning path. No Anthropic
 #                  involvement at all. Effective when Max session quota
 #                  is exhausted but cascade providers are still healthy.
@@ -166,8 +166,8 @@ _MAX_PAUSES_PER_TASK = int(os.environ.get("HME_BUDDY_MAX_PAUSES_PER_TASK", "3"))
 #                  refuses. Default when BUDDY_SYSTEM=0 + no override.
 #                  Equivalent to pre-integration behavior.
 #
-# Resolution: HME_DISPATCH_MODE env wins; otherwise BUDDY_SYSTEM=1 →
-# claude-resume, BUDDY_SYSTEM=0 → disabled.
+# Resolution: HME_DISPATCH_MODE env wins; otherwise BUDDY_SYSTEM=1 ->
+# claude-resume, BUDDY_SYSTEM=0 -> disabled.
 _BUDDY_SYSTEM_FLAG = os.environ.get("BUDDY_SYSTEM", "0").strip()
 _DISPATCH_MODE = os.environ.get("HME_DISPATCH_MODE", "").strip().lower()
 if not _DISPATCH_MODE:
@@ -178,7 +178,7 @@ if _DISPATCH_MODE not in ("claude-resume", "synthesis", "disabled"):
 # Per-tier routing override: tasks at tiers in this set route through
 # synthesis_reasoning (free cascade) regardless of HME_DISPATCH_MODE,
 # while remaining tiers go to whichever worker the mode selects. The
-# canonical use case is `easy` — quotas on the buddy session are
+# canonical use case is `easy` -- quotas on the buddy session are
 # precious, easy tasks don't need them. Empty (default) = no per-tier
 # override; HME_DISPATCH_MODE alone decides routing.
 def _parse_tier_set(raw: str) -> set:
@@ -191,7 +191,7 @@ def _parse_tier_set(raw: str) -> set:
 
 _SYNTHESIS_TIERS = _parse_tier_set(os.environ.get("HME_DISPATCH_SYNTHESIS_TIERS", ""))
 # When HME_DISPATCH_MODE=synthesis is set explicitly, treat it as
-# "all tiers go to synthesis" — equivalent to TIERS=easy,medium,hard.
+# "all tiers go to synthesis" -- equivalent to TIERS=easy,medium,hard.
 if _DISPATCH_MODE == "synthesis":
     _SYNTHESIS_TIERS = set(TIER_NAMES)
 
@@ -216,7 +216,7 @@ def _atomic_write(target: Path, content: str) -> None:
     os.replace(str(tmp), str(target))
 
 
-# ANSI escape sequence stripper — claude-cli emits color codes when its
+# ANSI escape sequence stripper -- claude-cli emits color codes when its
 # stdout is a TTY *or* when its parent doesn't pass through a non-TTY
 # signal cleanly. Captured stdout/stderr land in JSON manifests +
 # verdict markdown; ANSI codes there are noise that makes diff/grep
@@ -232,7 +232,7 @@ def _strip_ansi(text: str) -> str:
 
 
 def _is_pid_alive(pid: int) -> bool:
-    """Liveness probe via os.kill(pid, 0) — distinguishes stale PID
+    """Liveness probe via os.kill(pid, 0) -- distinguishes stale PID
     files from live processes. PermissionError = alive but other-user;
     ProcessLookupError = dead. Lifted from skill-set drive-chain.py;
     drop-in upgrade for any PID-file consumer."""

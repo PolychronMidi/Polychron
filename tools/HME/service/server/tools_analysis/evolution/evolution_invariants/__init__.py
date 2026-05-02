@@ -1,4 +1,4 @@
-"""Declarative invariant battery — package split R103.
+"""Declarative invariant battery -- package split R103.
 
 Original 1070-line evolution_invariants.py split into:
   _base.py      invariant loader + path resolution + exclusion helper

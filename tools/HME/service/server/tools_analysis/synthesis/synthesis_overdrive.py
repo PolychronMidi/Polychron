@@ -1,13 +1,13 @@
-"""Reasoning/coder tier dispatcher — two quality-ranked cascades across providers.
+"""Reasoning/coder tier dispatcher -- two quality-ranked cascades across providers.
 
-Two profiles — callers pass `profile="reasoning"` (default) or `profile="coder"`.
+Two profiles -- callers pass `profile="reasoning"` (default) or `profile="coder"`.
 Each profile has its own ordered (provider, model) list so reasoning fallbacks
 pick reasoning-strong models and coder fallbacks pick code-strong models.
 
-Both rankings share the same provider modules and quota pools — splitting the
+Both rankings share the same provider modules and quota pools -- splitting the
 order only changes which slot fires first, not which free tiers are consumed.
 
-profile="reasoning" — general analysis, architecture, deep think:
+profile="reasoning" -- general analysis, architecture, deep think:
      1. nvidia     deepseek-ai/deepseek-v3.2              full DeepSeek V3.2
      2. nvidia     mistralai/mistral-large-3-675b-...     675B Mistral Large 3
      3. openrouter deepseek/deepseek-r1:free              R1 reasoning
@@ -31,7 +31,7 @@ profile="reasoning" — general analysis, architecture, deep think:
     21. cerebras   llama3.1-8b                            weak fallback
     22. gemini     gemini-2.5-flash-lite                  last before local
 
-profile="coder" — structural code extraction, verified facts, file-aware work:
+profile="coder" -- structural code extraction, verified facts, file-aware work:
      1. nvidia     qwen/qwen3-coder-480b-a35b-instruct    480B Qwen3 coder flagship
      2. nvidia     mistralai/devstral-2-123b-instruct     123B agentic coder
      3. nvidia     deepseek-ai/deepseek-v3.2              strong all-round coder
@@ -60,7 +60,7 @@ because they waste output tokens on chain-of-thought that then gets discarded
 when the caller only wants file paths and function names.
 
 Z.ai provider omitted: all GLM models on z.ai are paywalled despite "free tier"
-marketing — API returns "insufficient balance" on every request.
+marketing -- API returns "insufficient balance" on every request.
 
 Local qwen3-coder:30b-a3b is the final fallback handled by the caller.
 """
@@ -80,7 +80,7 @@ logger = logging.getLogger("HME.reasoning")
 
 # Constants/helpers (_OVERDRIVE_CHAIN_DEFAULT, _OVERDRIVE_MAX_TOKENS_SLACK,
 # _overdrive_think_budget, _overdrive_timeout) live on synthesis_reasoning,
-# which imports US at line 310 for re-export — top-level back-import would
+# which imports US at line 310 for re-export -- top-level back-import would
 # partial-load. Use sites resolve via `_sr.<name>` at call time after a
 # local `from . import synthesis_reasoning as _sr`.
 
@@ -91,8 +91,8 @@ _env_last_refresh = 0.0
 
 
 def _label_for_model(model_id: str) -> str:
-    """Turn 'claude-opus-4-7' → 'overdrive/opus', 'claude-sonnet-4-6' →
-    'overdrive/sonnet', 'claude-haiku-4-5-20251001' → 'overdrive/haiku'.
+    """Turn 'claude-opus-4-7' -> 'overdrive/opus', 'claude-sonnet-4-6' ->
+    'overdrive/sonnet', 'claude-haiku-4-5-20251001' -> 'overdrive/haiku'.
     Falls back to the full model id when the slug isn't recognizable."""
     for slug in ("opus", "sonnet", "haiku"):
         if slug in model_id.lower():
@@ -112,11 +112,11 @@ def _resolve_overdrive_chain() -> tuple[tuple[str, str], ...]:
 
 # Circuit-breaker state. When a model rate-limits, record the wall-clock
 # monotonic time at which it should be retried. Subsequent overdrive calls
-# short-circuit that model's slot until the window passes — avoids the
-# N×2 retry tax during sustained rate-limit windows.
+# short-circuit that model's slot until the window passes -- avoids the
+# N*2 retry tax during sustained rate-limit windows.
 #
 # Cooldown tunable via OVERDRIVE_RATE_LIMIT_COOLDOWN (seconds, default 60).
-# Not thread-safe (module-global dict) — acceptable because the MCP server
+# Not thread-safe (module-global dict) -- acceptable because the MCP server
 # is single-process and the overdrive path is called serially per request.
 _model_cooldown_until: dict[str, float] = {}
 
@@ -148,7 +148,7 @@ def _emit_overdrive_activity(source_label: str, model_id: str,
                               budget: int, char_count: int) -> None:
     """Append an inference_call event to hme-activity.jsonl so overdrive
     rounds show up in the same per-round analytics as cascade slots.
-    Best-effort: any failure is swallowed — activity logging must never
+    Best-effort: any failure is swallowed -- activity logging must never
     block or fail the inference call."""
     try:
         import json as _json
@@ -189,11 +189,11 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     Returns (text_or_None, rate_limited). `rate_limited` is True iff the
     upstream returned HTTP 429 OR the JSON body is an `error` object with
     type `rate_limit_error` OR the circuit breaker is tripped for this
-    model — the caller uses that flag to decide whether to try the next
+    model -- the caller uses that flag to decide whether to try the next
     model in the chain or give up on overdrive entirely.
 
     Non-429 failures (proxy down, timeout, 5xx, malformed JSON, empty
-    content) return (None, False) — not worth retrying another model, the
+    content) return (None, False) -- not worth retrying another model, the
     problem is structural. Caller falls through to the free cascade."""
     import json as _json
     import os as _os
@@ -204,7 +204,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     # without hitting the network. Returns "rate_limited=True" so the
     # chain advances to the next model immediately.
     if _circuit_open(model_id):
-        logger.info(f"OVERDRIVE {model_id} in cooldown — skipping")
+        logger.info(f"OVERDRIVE {model_id} in cooldown -- skipping")
         return (None, True)
 
     base_url = _os.environ.get("ANTHROPIC_BASE_URL", "http://127.0.0.1:9099").rstrip("/")
@@ -243,7 +243,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
         with _req.urlopen(request, timeout=timeout_secs) as resp:
             data = _json.loads(resp.read())
     except _urllib_error.HTTPError as e:
-        # 429 = rate limit — try next model in the chain.
+        # 429 = rate limit -- try next model in the chain.
         is_rate = (e.code == 429)
         try:
             body = e.read().decode(errors="replace")[:200]
@@ -263,7 +263,7 @@ def _try_overdrive_model(model_id: str, prompt: str, system: str,
     if isinstance(data, dict) and data.get("type") == "error":
         err = data.get("error", {}) or {}
         is_rate = err.get("type") == "rate_limit_error"
-        logger.warning(f"OVERDRIVE {model_id} error-body: {err.get('type', '?')} — {err.get('message', '?')[:120]}")
+        logger.warning(f"OVERDRIVE {model_id} error-body: {err.get('type', '?')} -- {err.get('message', '?')[:120]}")
         if is_rate:
             _circuit_trip(model_id)
         return (None, is_rate)
@@ -288,11 +288,11 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # tmp/hme-thread.sid exists; every reasoning call flows synchronously
     # through that one long-lived claude session so context accumulates
     # across review/OVERDRIVE/suggest_evolution dispatches. The result
-    # comes back inline as a normal reasoning response — no sentinel,
+    # comes back inline as a normal reasoning response -- no sentinel,
     # no separate dispatch step on the agent side. Falls through to
     # direct/sentinel paths if the thread dispatch fails or no sid.
     #
-    # ImportError / AttributeError are logged at WARNING — they signal
+    # ImportError / AttributeError are logged at WARNING -- they signal
     # the thread-dispatch module is structurally unreachable (misnamed
     # symbol, refactor breakage, etc.) which must not silently demote
     # to debug. Runtime failures (timeouts, subprocess errors) are
@@ -311,7 +311,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
         logger.debug(f"thread dispatch errored: {type(_thr_err).__name__}: {_thr_err}")
 
     # PRIORITY 2: feature-flagged ephemeral direct path (OVERDRIVE_DIRECT_AGENT=1)
-    # — spawns a fresh claude subprocess per call. No context accumulation.
+    # -- spawns a fresh claude subprocess per call. No context accumulation.
     try:
         from .agent_direct import dispatch_direct as _direct
         direct_result = _direct(prompt, system, max_tokens, subagent_type=subagent_type)
@@ -320,7 +320,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     except Exception as _dir_err:
         logger.debug(f"agent_direct path errored: {type(_dir_err).__name__}: {_dir_err}")
 
-    """OVERDRIVE_VIA_SUBAGENT path — queue the prompt for Claude to dispatch
+    """OVERDRIVE_VIA_SUBAGENT path -- queue the prompt for Claude to dispatch
     via its own Agent tool rather than hitting api.anthropic.com directly.
 
     Writes prompt + system to tmp/hme-subagent-queue/<uuid>.json. Returns a
@@ -332,7 +332,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     bucket that OVERDRIVE's direct calls hit. The user confirmed session
     budget has headroom when RPM is exhausted.
 
-    Returns (sentinel, 'overdrive/subagent') — the sentinel IS the
+    Returns (sentinel, 'overdrive/subagent') -- the sentinel IS the
     synthesis result from HME's perspective; Claude will fulfill it on
     its next turn."""
     import json as _json
@@ -375,7 +375,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     except Exception as e:
         logger.warning(f"OVERDRIVE_VIA_SUBAGENT: queue write failed: {e}")
         return None
-    # Compact self-instructing sentinel — single line. The tag contains
+    # Compact self-instructing sentinel -- single line. The tag contains
     # all fields the proxy middleware needs to route the result back;
     # the trailing call-form is a dispatch hint the agent can execute
     # directly without needing a separate system-message.
@@ -383,7 +383,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
     # Routing switch: when `tmp/hme-thread.sid` exists, the user has
     # initialized a persistent subagent thread via `i/thread init`. All
     # subsequent reasoning dispatches go through that thread instead of
-    # spawning ephemeral Agent calls — context accumulates across tasks.
+    # spawning ephemeral Agent calls -- context accumulates across tasks.
     # When the sid file is absent, behavior is identical to pre-thread
     # (ephemeral Agent dispatch with middleware-side result capture).
     project_root = _os.environ.get("PROJECT_ROOT", "")
@@ -394,7 +394,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
         sentinel = (
             f"\n[[HME_AGENT_TASK req_id={req_id} "
             f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
-            f"subagent_type={subagent_type} mode=thread]] → "
+            f"subagent_type={subagent_type} mode=thread]] -> "
             f"Bash(command='i/thread send tmp/hme-subagent-queue/{req_id}.json', "
             f"description='HME reasoning for {req_id} via thread')"
         )
@@ -402,7 +402,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
         sentinel = (
             f"\n[[HME_AGENT_TASK req_id={req_id} "
             f"prompt_file=tmp/hme-subagent-queue/{req_id}.json "
-            f"subagent_type={subagent_type}]] → "
+            f"subagent_type={subagent_type}]] -> "
             f"Agent(subagent_type='{subagent_type}', "
             f"description='HME reasoning for {req_id}', "
             f"prompt=<Read {prompt_file}>)"
@@ -415,7 +415,7 @@ def _dispatch_via_subagent(prompt: str, system: str, max_tokens: int, subagent_t
 def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
                           chain_override: tuple[str, ...] | None = None,
                           allow_subagent: bool = True) -> tuple[str, str] | None:
-    """OVERDRIVE_MODE path — Opus-then-Sonnet chain with max extended thinking.
+    """OVERDRIVE_MODE path -- Opus-then-Sonnet chain with max extended thinking.
 
     Triggered when OVERDRIVE_MODE=1 in .env. Bypasses the free-tier cascade
     and spends Claude Code subscription credits for highest-quality output.
@@ -425,16 +425,16 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     falls through to the free cascade.
 
     OVERDRIVE_VIA_SUBAGENT=1 short-circuits direct API calls and routes
-    through Claude Code's Agent tool instead (different rate-limit bucket —
+    through Claude Code's Agent tool instead (different rate-limit bucket --
     session budget, not per-minute RPM). See _dispatch_via_subagent.
 
-    chain_override: optional explicit (model_id, ...) tuple — overrides the
+    chain_override: optional explicit (model_id, ...) tuple -- overrides the
     .env-resolved chain. Used by OVERDRIVE_MODE=2 (tier-aware routing) to
     pin specific models per task tier (e.g. Sonnet-only for tier=medium).
     Source labels are auto-generated via _label_for_model.
 
     allow_subagent: when False, force direct API even if OVERDRIVE_VIA_SUBAGENT=1.
-    Used by OVERDRIVE_MODE=2 to pin model selection per tier — subagent
+    Used by OVERDRIVE_MODE=2 to pin model selection per tier -- subagent
     dispatch runs at whatever /model is set, so it can't honor a Sonnet-
     specific chain. Hard-tier (Opus chain) keeps subagent compatibility.
 
@@ -447,7 +447,7 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
     because loopback out-of-band requests arrive with no Authorization
     header, auto-injects the Claude Code OAuth token from
     ~/.claude/.credentials.json. Same credential Claude Code's live
-    session uses — your subscription covers both paths identically.
+    session uses -- your subscription covers both paths identically.
     The user configures nothing; auth is ambient."""
     from hme_env import ENV as _ENV_OD
     if allow_subagent and _ENV_OD.optional("OVERDRIVE_VIA_SUBAGENT", "0") == "1":
@@ -461,12 +461,12 @@ def _call_opus_overdrive(prompt: str, system: str, max_tokens: int,
         if result:
             return (result, source_label)
         if not rate_limited:
-            # Non-rate-limit failure — the problem is not model-specific.
+            # Non-rate-limit failure -- the problem is not model-specific.
             # Don't bother the next model; fall through to cascade.
             return None
         # Rate-limited (or circuit-open): move to the next model in the chain.
     # Every model in the chain rate-limited or was in cooldown.
-    logger.warning("OVERDRIVE: every model in chain rate-limited — falling through to cascade")
+    logger.warning("OVERDRIVE: every model in chain rate-limited -- falling through to cascade")
     return None
 
 

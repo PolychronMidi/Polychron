@@ -22,14 +22,14 @@ _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
 _NEXUS_FILE = Path(_PROJECT_ROOT) / "tmp" / "hme-nexus.state"
 
 # BRIEF TTL: briefs older than this count as stale. A BRIEF from 3 sessions
-# ago shouldn't mark a current edit as "read-prior" — the agent doesn't
+# ago shouldn't mark a current edit as "read-prior" -- the agent doesn't
 # remember what it read yesterday. 2h matches a typical chat session span.
 _BRIEF_TTL_SEC = ENV.optional_int("HME_BRIEF_TTL_SEC", 7200)
 
 
 def has_brief(target: str) -> bool:
     """True when tmp/hme-nexus.state contains a NON-STALE `BRIEF:<ts>:<target>`.
-    Matches against the full payload — callers should pass the module name
+    Matches against the full payload -- callers should pass the module name
     OR the abs path, depending on which form the BRIEF was registered with.
     Stale BRIEFs (> HME_BRIEF_TTL_SEC old, default 2h) don't count.
     """
@@ -53,7 +53,7 @@ def has_brief(target: str) -> bool:
                 except ValueError:
                     continue
                 if ts < cutoff:
-                    continue  # stale — skip
+                    continue  # stale -- skip
                 if parts[2] == target:
                     return True
     except OSError:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shim — delegates to verify_coherence package (folder).
+"""Shim -- delegates to verify_coherence package (folder).
 
 Original 2842-line file split into tools/HME/scripts/verify_coherence/
 per package structure. This thin wrapper preserves the

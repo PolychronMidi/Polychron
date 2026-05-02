@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Meta-Coherence Audit — the detector-of-detectors.
+"""Meta-Coherence Audit -- the detector-of-detectors.
 
 Every HME detector/invariant/extractor embeds assumptions about source
 structure (regex against a target file, path reference, phrase list, tool
 decorator form). When the source shifts (refactor, rename, new pattern,
-hook reorg) these assumptions rot SILENTLY — a dead regex returns null,
+hook reorg) these assumptions rot SILENTLY -- a dead regex returns null,
 a missing path returns "not found", a stale phrase list never triggers.
 None of those look like failures. They just become invisible cruft.
 
@@ -15,21 +15,21 @@ stale. Missing path referenced by an invariant = stale.
 
 What it covers:
   (A) invariants.json pattern_in_file / file_exists / patterns_all_in_file
-      — every path must exist and every pattern must match at least once.
-  (B) check-tuning-invariants.js extractConst regexes — each must produce
+      -- every path must exist and every pattern must match at least once.
+  (B) check-tuning-invariants.js extractConst regexes -- each must produce
       a non-null extraction against its target file.
-  (C) health.py doc-sync regex + tool-decorator scanner — must find the
+  (C) health.py doc-sync regex + tool-decorator scanner -- must find the
       expected structural markers.
-  (D) evolution_strategies.py stress probe file references — every hook
+  (D) evolution_strategies.py stress probe file references -- every hook
       path, every RELOADABLE name must resolve.
   (E) detectors/*.py phrase lists (ADMIT_PHRASES, PERMISSION_ASK_PHRASES,
-      BG_KEYWORDS) — for each phrase, check if it appears in any recent
+      BG_KEYWORDS) -- for each phrase, check if it appears in any recent
       transcript (corpus-coverage sampling, not strict liveness).
 
 Exit codes:
-    0 — all patterns live
-    1 — one or more stale patterns detected
-    2 — unexpected error
+    0 -- all patterns live
+    1 -- one or more stale patterns detected
+    2 -- unexpected error
 
 Usage:
     python3 tools/HME/scripts/meta_coherence_audit.py
@@ -69,7 +69,7 @@ def audit_detector_phrases(root: Path) -> list[dict]:
     corpus and report phrases that never appear. A phrase that has never
     triggered across the corpus might be stale (real antipattern moved on)
     or might be defensive (expected to catch future variants). We flag but
-    don't fail — this is a coverage report, not a liveness assertion."""
+    don't fail -- this is a coverage report, not a liveness assertion."""
     findings: list[dict] = []
     det_dir = root / "tools" / "HME" / "scripts" / "detectors"
     if not det_dir.is_dir():
@@ -79,7 +79,7 @@ def audit_detector_phrases(root: Path) -> list[dict]:
     transcripts_root = Path.home() / ".claude" / "projects"
     corpus: str = ""
     if transcripts_root.is_dir():
-        # Cheap sampling — concatenate last-100-modified .jsonl files.
+        # Cheap sampling -- concatenate last-100-modified .jsonl files.
         candidates: list[Path] = []
         for p in transcripts_root.rglob("*.jsonl"):
             try:
@@ -195,7 +195,7 @@ def audit_hme_log_errors(root: Path) -> list[dict]:
 
 
 
-# (G) Hook source-path validity — the bug that almost killed this session
+# (G) Hook source-path validity -- the bug that almost killed this session
 
 
 def audit_hook_sources(root: Path) -> list[dict]:
@@ -234,7 +234,7 @@ def audit_hook_sources(root: Path) -> list[dict]:
                 sub_path = m_dyn.group(1)
                 resolved = (hook.parent / sub_path).resolve(strict=False)
             elif m_script_dir:
-                # `$SCRIPT_DIR/...` — SCRIPT_DIR is almost always set to the
+                # `$SCRIPT_DIR/...` -- SCRIPT_DIR is almost always set to the
                 # dir of BASH_SOURCE[0] via `$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)`.
                 # Treat the hook's own dir as the anchor. Catches the exact
                 # class of bug where `$SCRIPT_DIR/_nexus.sh` resolves into
@@ -243,7 +243,7 @@ def audit_hook_sources(root: Path) -> list[dict]:
                 resolved = (hook.parent / sub_path).resolve(strict=False)
             elif raw.startswith("/"):
                 resolved = Path(raw)
-            # else: contains other $VAR — skip (can't verify without shell eval)
+            # else: contains other $VAR -- skip (can't verify without shell eval)
             if resolved is None:
                 continue
             if not resolved.exists():
@@ -252,13 +252,13 @@ def audit_hook_sources(root: Path) -> list[dict]:
                     "id": f"line {lineno}",
                     "type": "broken_source_path",
                     "status": "STALE",
-                    "detail": f"`source {raw}` at line {lineno} resolves to {resolved} which does not exist — hook will run with undefined helpers",
+                    "detail": f"`source {raw}` at line {lineno} resolves to {resolved} which does not exist -- hook will run with undefined helpers",
                 })
     return findings
 
 
 
-# (H) Module-load smoke test — catches NameError/ImportError in module
+# (H) Module-load smoke test -- catches NameError/ImportError in module
 #     top-level code OR in any function body that references a missing
 #     global (shutil, subprocess, ENV) before a daemon discovers it
 
@@ -318,7 +318,7 @@ def audit_module_imports(root: Path) -> list[dict]:
 
         # Walk module-level statements (not deep into nested scopes; function
         # bodies get their own pass). A real undefined-name check requires
-        # scope-aware analysis we don't want to reimplement here — so this
+        # scope-aware analysis we don't want to reimplement here -- so this
         # check is intentionally conservative: it ONLY flags Name-loads at
         # MODULE scope that aren't bound anywhere in the module, and skips
         # comprehension internals (Python 3 gives comprehensions their own
@@ -345,7 +345,7 @@ def audit_module_imports(root: Path) -> list[dict]:
                             "id": f"{sub.id} @ line {sub.lineno}",
                             "type": "undefined_name",
                             "status": "STALE",
-                            "detail": f"module-scope reference to `{sub.id}` that isn't imported/defined — will NameError at import",
+                            "detail": f"module-scope reference to `{sub.id}` that isn't imported/defined -- will NameError at import",
                         })
     return findings
 

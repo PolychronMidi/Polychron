@@ -1,4 +1,4 @@
-"""Native TodoWrite ↔ HME merge — bridges Claude Code's native TodoWrite
+"""Native TodoWrite <-> HME merge -- bridges Claude Code's native TodoWrite
 tool to HME's persistent todo store via the pretooluse_todowrite hook.
 
 Extracted from todo.py (was lines 717-849). todo.py re-exports merge_native_todowrite.
@@ -41,12 +41,12 @@ def merge_native_todowrite(incoming: list) -> list:
     Preserves HME-only items (lifesaver, onboarding, hme_todo) that native
     TodoWrite doesn't know about and returns a MERGED list that becomes the
     updatedInput for the real TodoWrite call. Result is ordered:
-      1. critical items first (lifesaver, etc.) — capped at _MAX_CRITICAL_IN_MERGE
+      1. critical items first (lifesaver, etc.) -- capped at _MAX_CRITICAL_IN_MERGE
       2. onboarding walkthrough (flattened: parent + indented subs)
       3. agent's incoming native items
       4. other hme_todo items the agent didn't include
 
-    Native items the agent IS submitting win for matching text — their status
+    Native items the agent IS submitting win for matching text -- their status
     updates flow through to the store. Stale lifesaver items auto-resolve
     before merge so ancient alerts don't drown current intent.
     """
@@ -142,9 +142,9 @@ def merge_native_todowrite(incoming: list) -> list:
                 "status": t.get("status", "pending"),
             })
             for s in t.get("subs", []):
-                sub_prefix = "  └ "
+                sub_prefix = "  + "
                 if t.get("source") == "onboarding":
-                    sub_prefix = "  └ [HME] "
+                    sub_prefix = "  + [HME] "
                 flat.append({
                     "content": sub_prefix + s["text"],
                     "activeForm": s.get("activeForm") or (sub_prefix + s["text"]),
@@ -158,7 +158,7 @@ def merge_native_todowrite(incoming: list) -> list:
                 _signals_hint = "i/status mode=signals"  # tool-form-ok: fallback when helper unavailable
             summary_text = (
                 f"[CRITICAL] +{critical_overflow} older critical alert(s) "
-                f"suppressed — run `{_signals_hint}` or check todos.json"
+                f"suppressed -- run `{_signals_hint}` or check todos.json"
             )
             flat.insert(critical_shown, {
                 "content": summary_text,

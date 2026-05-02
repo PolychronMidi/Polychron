@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/pattern — query the pattern registry.
+"""i/pattern -- query the pattern registry.
 
 Usage:
   i/pattern                # list all patterns
@@ -62,7 +62,7 @@ def main(argv):
             for _, p in _load_patterns():
                 pid = p.get("id", "?")
                 # Real pattern schema is `trigger: {kind, matches_when, ...}`
-                # — prefer the human-readable `matches_when` line, fall
+                # -- prefer the human-readable `matches_when` line, fall
                 # back to `kind` or to the legacy fields.
                 trig_obj = p.get("trigger")
                 if isinstance(trig_obj, dict):

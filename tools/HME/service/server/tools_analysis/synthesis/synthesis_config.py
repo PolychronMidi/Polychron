@@ -1,4 +1,4 @@
-"""HME synthesis configuration — model names, system prompt, budget tables, shared text helpers."""
+"""HME synthesis configuration -- model names, system prompt, budget tables, shared text helpers."""
 import json
 import os
 import re
@@ -11,7 +11,7 @@ logger = logging.getLogger("HME")
 
 
 # These names are retained for import compatibility (callers import them by name).
-# All synthesis goes through llama.cpp — see synthesis_llamacpp.py for _LOCAL_MODEL/_REASONING_MODEL.
+# All synthesis goes through llama.cpp -- see synthesis_llamacpp.py for _LOCAL_MODEL/_REASONING_MODEL.
 _THINK_MODEL = "llamacpp/qwen3-coder:30b"
 _DEEP_MODEL = "llamacpp/qwen3:30b-a3b"
 
@@ -19,7 +19,7 @@ _DEEP_MODEL = "llamacpp/qwen3:30b-a3b"
 def _build_think_system() -> str:
     project_name = os.path.basename(os.path.realpath(ctx.PROJECT_ROOT)) if ctx.PROJECT_ROOT else "project"
     return (
-        f"You are the structured reflection engine for '{project_name}' — a self-evolving alien "
+        f"You are the structured reflection engine for '{project_name}' -- a self-evolving alien "
         "generative music system producing xenolinguistic texture. Architecture: 19 hypermeta "
         "self-calibrating controllers, 26 cross-layer modules, and an antagonism bridge evolution "
         "loop that converts negative trust correlations into constructive musical tension via "
@@ -30,7 +30,7 @@ def _build_think_system() -> str:
         "coupling_intel, codebase_health), pre/post-edit workflow (before_editing, what_did_i_forget), "
         "and synthesis (think, pipeline_digest, suggest_evolution, diagnose_error). "
         "All synthesis runs on local llama.cpp: qwen3-coder:30b (GPU0, extraction) + "
-        "qwen3:30b-a3b (GPU1, reasoning) — parallel two-stage for evolution questions, "
+        "qwen3:30b-a3b (GPU1, reasoning) -- parallel two-stage for evolution questions, "
         "single-stage for meta-HME and constraint questions. "
         "Ground every claim in KB constraints or injected code. "
         "Cite exact file paths, function names, and KB entry titles. "
@@ -40,7 +40,7 @@ def _build_think_system() -> str:
 
 _THINK_SYSTEM = _build_think_system()
 
-# Code-review system prompt — calibrated against patterns that produced
+# Code-review system prompt -- calibrated against patterns that produced
 # real-bug signal vs hallucination during the 100-iteration sweep across
 # the HME codebase.
 #
@@ -54,11 +54,11 @@ _THINK_SYSTEM = _build_think_system()
 #
 #   - QUOTE-GROUND: requiring the reviewer to QUOTE the suspicious line
 #     verbatim before reasoning about it dramatically reduces line-number
-#     hallucination. "Cite file:line" alone wasn't enough — the reviewer
+#     hallucination. "Cite file:line" alone wasn't enough -- the reviewer
 #     would invent the line content. "Quote the line + explain why" works.
 #
 #   - PROMISE-VS-DELIVERS: the strongest single framing was "compare the
-#     file's docstring/comments to its actual behavior — find divergence."
+#     file's docstring/comments to its actual behavior -- find divergence."
 #     Three real divergences in cascade_analysis.py, two in
 #     posttooluse_hme_review.sh, all confirmed.
 #
@@ -74,14 +74,14 @@ _THINK_SYSTEM = _build_think_system()
 # This system prompt bakes those four positive patterns in. Per-call
 # user prompts can still narrow the focus, but the framing here makes
 # "clean" a first-class answer and grounds every claim.
-# Partner-review system prompt — complementary to _REVIEW_SYSTEM.
+# Partner-review system prompt -- complementary to _REVIEW_SYSTEM.
 #
 # Peer-review iter 144 identified that the forensic register
 # (_REVIEW_SYSTEM) cannot perform six human cognitive operations:
 # aesthetic judgment, future-maintainer empathy, sustained
 # puzzlement, suspicion of design intent, affection for elegant
 # code, asking "should this exist." Forensic review is good at what
-# it does — quote-grounded tier-1 findings — but it's structurally
+# it does -- quote-grounded tier-1 findings -- but it's structurally
 # cold, and the codebase's cultural and aesthetic dimensions degrade
 # silently along axes forensic review can't even attempt to police.
 #
@@ -104,23 +104,23 @@ _PARTNER_SYSTEM = (
     "going to be the next maintainer, with affection for what works "
     "and concern for the future-self who will inherit. You perform "
     "operations a forensic reviewer cannot: "
-    "(1) Mark beauty — name lines or functions that are well-shaped, "
+    "(1) Mark beauty -- name lines or functions that are well-shaped, "
     "with one sentence on what makes them so. The codebase needs "
     "this signal to know what to preserve. "
-    "(2) Mark cultural artifacts — load-bearing comments, names, "
+    "(2) Mark cultural artifacts -- load-bearing comments, names, "
     "idioms that aren't strictly correctness-relevant but carry the "
     "codebase's history. Flag them as protected during refactors. "
-    "(3) Read aloud — articulate what the code says (its shape, "
+    "(3) Read aloud -- articulate what the code says (its shape, "
     "claims, mood) so the author or future maintainer can hear "
     "how it lands. Closer to literary criticism than auditing. "
     "(4) Hold puzzlement publicly. When something is confusing, "
     "stay confused without resolving to a finding or non-finding. "
-    "(5) Ask 'should this exist' — the project of the file before "
+    "(5) Ask 'should this exist' -- the project of the file before "
     "the implementation. "
-    "(6) Future-maintainer empathy — what will someone reading this "
+    "(6) Future-maintainer empathy -- what will someone reading this "
     "in six months when they're tired feel? What names, idioms, or "
     "naming-conventions might trip them? "
-    "Do NOT produce tier-1 bug findings — _REVIEW_SYSTEM owns that "
+    "Do NOT produce tier-1 bug findings -- _REVIEW_SYSTEM owns that "
     "register. Output is a brief partner-letter: 2-4 paragraphs, "
     "first-person, addressed to the author or next maintainer."
 )
@@ -136,7 +136,7 @@ _REVIEW_SYSTEM = (
     "skip TIER-2/TIER-3 entirely. "
     # The test for flagging is STRUCTURAL, not probabilistic: if you can
     # quote a line AND state a specific divergence it creates, flag it.
-    # A prior iteration used a ≥95%-confidence floor, but self-reported
+    # A prior iteration used a >=95%-confidence floor, but self-reported
     # LM confidence is unmeasurable, and that framing pushed toward
     # silence on exactly the subtle contract/promise divergences this
     # reviewer exists to catch (peer-review iter 105 caught this as an
@@ -144,7 +144,7 @@ _REVIEW_SYSTEM = (
     # a 70-90% finding that's actually correct). Quote+divergence is a
     # binary gate a reviewer CAN reliably answer.
     "Say 'no tier-1 issues' ONLY if no line in scope admits a quote + "
-    "specific-divergence pair. Not because you feel uncertain — "
+    "specific-divergence pair. Not because you feel uncertain -- "
     "uncertainty about whether a quoted divergence is a 'real bug' is "
     "what the human reviewer resolves; your job is to surface the "
     "quote+divergence pairs you can actually construct. "
@@ -210,7 +210,7 @@ def strip_thinking_tags(text: str) -> str:
         return ""
     # Fenced + XML thinking blocks
     text = _THINK_RE.sub('', text).strip()
-    # <|answer|> delimiter — keep only content after it
+    # <|answer|> delimiter -- keep only content after it
     if "<|answer|>" in text:
         text = text[text.rfind("<|answer|>") + len("<|answer|>"):].strip()
     # Bare </think> without opening tag (streaming artifact)
@@ -236,7 +236,7 @@ def strip_non_ascii(text: str) -> str:
 
 
 def clean_model_output(text: str) -> str:
-    """Full cleanup pipeline: thinking tags → non-ASCII → whitespace."""
+    """Full cleanup pipeline: thinking tags -> non-ASCII -> whitespace."""
     text = strip_thinking_tags(text)
     text = strip_non_ascii(text)
     return text

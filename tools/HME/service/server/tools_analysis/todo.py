@@ -1,7 +1,7 @@
-"""HME hierarchical todo list — MCP tool with sub-todo support, criticality, and
+"""HME hierarchical todo list -- MCP tool with sub-todo support, criticality, and
 lifecycle side effects. Unified with native TodoWrite via pretooluse_todowrite.sh.
 
-Schema (authoritative — all producers use _write_todo_entry to create items):
+Schema (authoritative -- all producers use _write_todo_entry to create items):
 
     {
       "id": int,                           monotonically increasing, never recycled
@@ -23,9 +23,9 @@ The store also carries a metadata header at key "_meta":
 Refactor split (2026-05-01): bolt-on integrations now live in sibling modules,
 with todo.py keeping the core CRUD + dispatcher + on_done triggers and re-exporting
 their public symbols so existing callers don't change.
-  todo_lifesaver.py    — lifesaver-error registration, dedup, caps, pruning, onboarding
-  todo_native_merge.py — native TodoWrite payload merge
-  todo_spec_bridge.py  — SPEC.md/TODO.md/devlog lifecycle bridge
+  todo_lifesaver.py    -- lifesaver-error registration, dedup, caps, pruning, onboarding
+  todo_native_merge.py -- native TodoWrite payload merge
+  todo_spec_bridge.py  -- SPEC.md/TODO.md/devlog lifecycle bridge
 
 Main todos are done only when all their subs are done. Marking a parent done
 while subs are open raises a refusal message that names the blocking subs.
@@ -60,7 +60,7 @@ _GRAPH_FILE = os.path.join(
 _todo_lock = threading.RLock()
 
 # Lifecycle triggers the on_done field may reference. Arbitrary shell is NOT
-# allowed — only entries in this dispatch table fire. Each value is a callable
+# allowed -- only entries in this dispatch table fire. Each value is a callable
 # taking (entry_dict) and returning a short status string for the caller.
 ON_DONE_DISPATCH: dict = {}
 
@@ -80,7 +80,7 @@ def _split_meta(raw: list) -> tuple[dict, list]:
     """Separate the metadata header from the todo list. Creates one if missing."""
     if raw and isinstance(raw[0], dict) and raw[0].get("id") == 0 and "_meta" in raw[0]:
         return raw[0]["_meta"], raw[1:]
-    # Legacy file (no header) — synthesize meta from existing entries
+    # Legacy file (no header) -- synthesize meta from existing entries
     meta = _default_meta()
     if raw:
         max_id = 0
@@ -97,7 +97,7 @@ def _split_meta(raw: list) -> tuple[dict, list]:
 def _load_todos() -> tuple[dict, list]:
     meta, todos = _split_meta(_load_raw())
     # Backfill `tier` for legacy entries that predate the field. Pure
-    # in-memory normalization — does not write back to disk on its own;
+    # in-memory normalization -- does not write back to disk on its own;
     # the next save (any mutating action) persists the backfilled values.
     # Default tier="medium" matches SPEC.md's graceful-degradation rule.
     for t in todos:
@@ -132,7 +132,7 @@ _VALID_TIERS = ("easy", "medium", "hard")
 
 def _normalize_tier(tier: str) -> str:
     """Coerce a tier value to one of {easy, medium, hard}. Defaults to
-    'medium' for unknown / empty / legacy entries — matches SPEC.md's
+    'medium' for unknown / empty / legacy entries -- matches SPEC.md's
     'graceful degradation' rule for unlabeled items."""
     t = (tier or "").strip().lower()
     if t in _VALID_TIERS:
@@ -144,7 +144,7 @@ def _write_todo_entry(meta: dict, *, text: str, status: str = "pending",
                       active_form: str = "", critical: bool = False,
                       source: str = "hme_todo", on_done: str = "",
                       parent_id: int = 0, tier: str = "medium") -> dict:
-    """Canonical entry constructor — every producer goes through this to ensure
+    """Canonical entry constructor -- every producer goes through this to ensure
     schema stability across LIFESAVER, native mirror, hme_todo, and onboarding.
 
     `tier` is one of {easy, medium, hard} (SPEC.md "Difficulty labels").
@@ -182,7 +182,7 @@ def _find_main(todos: list, todo_id: int) -> dict | None:
 
 
 def _find_any(todos: list, todo_id: int) -> tuple[dict | None, dict | None]:
-    """Find an entry by id — returns (main, sub) where sub is None if top-level."""
+    """Find an entry by id -- returns (main, sub) where sub is None if top-level."""
     for t in todos:
         if t.get("id") == todo_id:
             return t, None
@@ -212,11 +212,11 @@ def _format_todos(todos: list) -> str:
             "No todos.\n\n"
             "Available actions:\n"
             "  i/todo action=add text=\"...\" [tier=easy|medium|hard] [critical=true]\n"
-            "  i/todo action=list                       — list all\n"
-            "  i/todo action=critical                   — list open critical only\n"
-            "  i/todo action=done todo_id=N             — mark #N done\n"
-            "  i/todo action=clear                      — drop completed (auto-archives full sets)\n"
-            "  i/todo action=ingest_from_spec           — pull doc/TODO.md Next-up\n"
+            "  i/todo action=list                       -- list all\n"
+            "  i/todo action=critical                   -- list open critical only\n"
+            "  i/todo action=done todo_id=N             -- mark #N done\n"
+            "  i/todo action=clear                      -- drop completed (auto-archives full sets)\n"
+            "  i/todo action=ingest_from_spec           -- pull doc/TODO.md Next-up\n"
             "  i/todo action=close_with_spec_update todo_id=N\n"
             "  i/todo action=phase_complete todo_id=N text=\"...\"\n"
             "\nSee i/help todo for full registry entry."
@@ -248,14 +248,14 @@ def _format_todos_mermaid(todos: list) -> str:
         label = t["text"][:42].replace('"', "'")
         cls = "done" if auto_done else ("crit" if t.get("critical") else "open")
         seen_cls.add(cls)
-        suffix = " ✓" if auto_done else (" !!!" if t.get("critical") else "")
+        suffix = " [ok]" if auto_done else (" !!!" if t.get("critical") else "")
         lines.append(f'    {nid}["#{t["id"]} {label}{suffix}"]:::{cls}')
         for s in t.get("subs", []):
             sid = f"T{s['id']}"
             s_label = s["text"][:38].replace('"', "'")
             s_cls = "done" if s.get("done") else ("crit" if s.get("critical") else "open")
             seen_cls.add(s_cls)
-            s_suffix = " ✓" if s.get("done") else (" !!!" if s.get("critical") else "")
+            s_suffix = " [ok]" if s.get("done") else (" !!!" if s.get("critical") else "")
             lines.append(f'    {sid}["#{s["id"]} {s_label}{s_suffix}"]:::{s_cls}')
             lines.append(f"    {nid} --> {sid}")
     styles = {
@@ -326,7 +326,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         'commit'|'learn' to trigger a lifecycle hook when marked done.
         Pass tier=easy|medium|hard for model+effort routing (default medium).
         Identical-text duplicate adds collapse to recurrence increment.
-    action='done': mark #todo_id done. Sub-todo done → checks if parent auto-
+    action='done': mark #todo_id done. Sub-todo done -> checks if parent auto-
         completes. Fires on_done trigger if set.
     action='undo': unmark #todo_id as done (also clears parent if it was auto-
         completed).
@@ -355,7 +355,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         When all phases gain sentinels, next clear auto-archives the set.
 
     Changes to this store propagate back to native TodoWrite via the
-    pretooluse_todowrite.sh merge — items appear in the agent's native view
+    pretooluse_todowrite.sh merge -- items appear in the agent's native view
     on the next TodoWrite call.
     """
     _track("hme_todo")
@@ -390,7 +390,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 rendered = (
                     f"<system-reminder>\n"
                     f"i/todo store has {done_count} done entries pending cleanup. "
-                    f"Run `i/todo clear` to drop them — or wait for the auto-prune "
+                    f"Run `i/todo clear` to drop them -- or wait for the auto-prune "
                     f"horizon ({_DONE_TODO_PRUNE_AFTER_SECONDS // 86400}d for native, "
                     f"{_LIFESAVER_PRUNE_AFTER_SECONDS // 86400}d for lifesaver).\n"
                     f"</system-reminder>\n\n{rendered}"
@@ -411,7 +411,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             # entry with identical text + parent_id already exists,
             # increment its recurrence_count instead of creating a
             # duplicate. Prevents the spam class the user reported
-            # ("absolutely riddled with spam — fix it so it never
+            # ("absolutely riddled with spam -- fix it so it never
             # happens again") from re-emerging via a different source.
             # The lifesaver path has its own normalization-aware dedup;
             # this exact-match dedup covers the agent/user-driven path
@@ -473,7 +473,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 undone = [s for s in main["subs"] if not s.get("done")]
                 if undone:
                     names = ", ".join(f"#{s['id']}" for s in undone)
-                    return f"Cannot complete #{todo_id} — sub-todos not done: {names}\n\n{_render(todos)}"
+                    return f"Cannot complete #{todo_id} -- sub-todos not done: {names}\n\n{_render(todos)}"
             _mark_status(target_entry, "completed")
             # If it was a sub, check if parent auto-completes
             auto_note = ""
@@ -497,7 +497,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             target_entry = sub or main
             _mark_status(target_entry, "pending")
             if sub is not None:
-                # Parent was possibly auto-completed — reset if so
+                # Parent was possibly auto-completed -- reset if so
                 _mark_status(main, "in_progress" if any(s.get("status") == "in_progress" for s in main.get("subs", [])) else "pending")
             _save_todos(meta, todos)
             return f"Undone: #{todo_id}\n\n{_render(todos)}"
@@ -529,31 +529,31 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             # removes completed i/todo entries (the original behavior).
             # No archive happens because the set isn't done.
             #
-            # The archive is "built into" clear — one action, one
+            # The archive is "built into" clear -- one action, one
             # mental model: "I'm done with this list, clean up."
             detection = _detect_complete_set()
             archive_msg = ""
             if detection["complete"]:
-                # Set is fully done — perform the archive + reset.
+                # Set is fully done -- perform the archive + reset.
                 # Pass set_name from text= argument if provided, else
                 # auto-derive from the first phase header in _archive_set.
                 archive_result = _archive_set(set_name=text)
                 if archive_result["ok"]:
                     archive_msg = (
-                        f"\n\n📦 Set archived to KB devlog:\n  {archive_result['devlog_path']}\n"
+                        f"\n\n[ARCHIVE] Set archived to KB devlog:\n  {archive_result['devlog_path']}\n"
                         f"doc/SPEC.md and doc/TODO.md reset to fresh slate."
                     )
                 else:
-                    # Detection said complete but archive refused —
+                    # Detection said complete but archive refused --
                     # surface the reason instead of silently skipping.
-                    archive_msg = f"\n\n⚠ Archive refused: {archive_result['message']}"
+                    archive_msg = f"\n\n[!] Archive refused: {archive_result['message']}"
             elif detection["phases"]:
                 # Mid-set: surface what's still pending so the user
                 # knows why clear isn't archiving yet.
                 missing_count = len(detection["missing"])
                 if missing_count:
                     archive_msg = (
-                        f"\n\n(Set not yet complete — {missing_count} blocker(s); "
+                        f"\n\n(Set not yet complete -- {missing_count} blocker(s); "
                         f"archive will fire on next `clear` once SPEC.md is fully checked. "
                         f"First blocker: {detection['missing'][0]})"
                     )
@@ -609,7 +609,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
                 if completed:
                     headers = "\n  ".join(c["header"] for c in completed)
                     phase_complete_msg = (
-                        f"\n\n🎉 Phase complete (no remaining `[ ]` items):\n  {headers}\n"
+                        f"\n\n[DONE] Phase complete (no remaining `[ ]` items):\n  {headers}\n"
                         f"Run `i/todo phase_complete phase=<N> summary=\"...\"` to append "
                         f"the completion paragraph (1-paragraph result + bulleted file "
                         f"citations + test-count delta)."
@@ -619,7 +619,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
         if action == "phase_complete":
             # Append the phase-completion sentinel paragraph to a
             # fully-checked Phase block in doc/SPEC.md. Caller passes
-            # phase=N (via todo_id arg) and summary (via text arg —
+            # phase=N (via todo_id arg) and summary (via text arg --
             # the 1-paragraph result; bulleted file citations and
             # test-count delta should be embedded by the caller).
             #
@@ -671,7 +671,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
             tail = ""
             if redetect["complete"]:
                 tail = (
-                    f"\n\n📦 All phases now complete — next `i/todo clear` will archive "
+                    f"\n\n[ARCHIVE] All phases now complete -- next `i/todo clear` will archive "
                     f"the set to KB devlog and reset SPEC/TODO to fresh slate."
                 )
             return f"Phase {phase_n} marked complete in {_SPEC_FILE}.{tail}\n"
@@ -681,7 +681,7 @@ def hme_todo(action: str = "list", text: str = "", todo_id: int = 0,
 
 
 
-# on_done dispatch — E6: lifecycle triggers fire when entries are completed
+# on_done dispatch -- E6: lifecycle triggers fire when entries are completed
 
 
 def _fire_on_done(entry: dict) -> str:

@@ -1,10 +1,10 @@
-"""RAG engine setup — model loading, GPU/CPU routing, reranker adapters.
+"""RAG engine setup -- model loading, GPU/CPU routing, reranker adapters.
 
 Extracted from hme_http.py. Contains:
-  _RagDispatcher    — routes embedding calls to GPU or CPU mirror
-  _MxbaiRerankerAdapter — wraps mxbai-rerank-base-v2 as CrossEncoder API
-  _load_engines     — background thread that loads all models + starts indexing
-  _ensure_llamacpp_daemon / _ensure_vram_monitor — daemon launchers
+  _RagDispatcher    -- routes embedding calls to GPU or CPU mirror
+  _MxbaiRerankerAdapter -- wraps mxbai-rerank-base-v2 as CrossEncoder API
+  _load_engines     -- background thread that loads all models + starts indexing
+  _ensure_llamacpp_daemon / _ensure_vram_monitor -- daemon launchers
 """
 import os
 import sys
@@ -57,7 +57,7 @@ class _MxbaiRerankerAdapter:
 
     mxbai-rerank-v2 is a Qwen2-based listwise reranker, NOT a standard
     CrossEncoder. Loading it via sentence_transformers.CrossEncoder leaves
-    the score head randomly initialized (silent corruption — outputs look
+    the score head randomly initialized (silent corruption -- outputs look
     plausible but are noise). The official mxbai_rerank library loads the
     real score head and exposes .rank(query, docs).
 

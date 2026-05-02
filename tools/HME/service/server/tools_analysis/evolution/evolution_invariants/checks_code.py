@@ -26,8 +26,8 @@ def _check_public_functions_reachable(inv: dict) -> tuple[bool, str]:
     this reason).
 
     Config:
-      scan_dir         — directory to walk for .py files
-      allowed_internals — list of function names that are legitimately
+      scan_dir         -- directory to walk for .py files
+      allowed_internals -- list of function names that are legitimately
                           internal-but-undecorated (dispatch-table-called,
                           test harness, etc.)
     """

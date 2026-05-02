@@ -3,10 +3,10 @@
 
 The failure mode this catches: `try: from X import Y; except: fallback`
 where `X` is critical infrastructure (hme_env, synthesis_config, context).
-If Y is unavailable, the module genuinely can't function — silently
+If Y is unavailable, the module genuinely can't function -- silently
 falling back to `os.environ.get(...)` or similar HIDES the breakage,
 often for weeks. The exact bug this session had: `from .synthesis_config
-import ENV` wrapped in `except Exception: fallback to os.environ` —
+import ENV` wrapped in `except Exception: fallback to os.environ` --
 synthesis_config never exported ENV, so every call silently routed
 through os.environ, defeating the .env-as-single-source-of-truth rule.
 
@@ -20,8 +20,8 @@ Allowed:
     from hme_env import ENV   # let import fail loud if hme_env is broken
 
 Exit codes:
-    0 — no violations (output is empty, shell_output_empty invariant PASS)
-    non-0 — violations found (printed to stdout, invariant FAIL)
+    0 -- no violations (output is empty, shell_output_empty invariant PASS)
+    non-0 -- violations found (printed to stdout, invariant FAIL)
 """
 from __future__ import annotations
 
@@ -101,7 +101,7 @@ def scan_file(path: Path) -> list[str]:
         if not catches:
             continue
         # Does any handler contain a "fallback-like" substitute (anything
-        # other than pure `raise` / `raise X` — logging is fine as long
+        # other than pure `raise` / `raise X` -- logging is fine as long
         # as it still re-raises)?
         for h in node.handlers:
             reraises = False
@@ -111,7 +111,7 @@ def scan_file(path: Path) -> list[str]:
                     break
             if not reraises:
                 violations.append(
-                    f"{path}:{node.lineno}: silent-fallback wrap of `{detail}` — "
+                    f"{path}:{node.lineno}: silent-fallback wrap of `{detail}` -- "
                     f"infrastructure imports must fail loud; remove try/except."
                 )
                 break
@@ -127,7 +127,7 @@ def main() -> int:
     for py in root.rglob("*.py"):
         if "__pycache__" in py.parts:
             continue
-        # hme_env.py itself is the loader — bootstrap exemption.
+        # hme_env.py itself is the loader -- bootstrap exemption.
         if py.name == "hme_env.py":
             continue
         all_violations.extend(scan_file(py))

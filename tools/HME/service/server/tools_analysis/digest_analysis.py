@@ -1,4 +1,4 @@
-"""HME digest analysis — regime_anomaly and composition_critique."""
+"""HME digest analysis -- regime_anomaly and composition_critique."""
 import json
 import os
 import logging
@@ -19,7 +19,7 @@ def _load_trace_local() -> list[dict]:
 def regime_anomaly() -> str:
     """Auto-detect regime pathologies: death spirals (0% of any expected regime),
     monopolies (>75% single regime), forced-transition storms, and trust inflation.
-    Run after every pipeline — catches problems before they require hours of debugging."""
+    Run after every pipeline -- catches problems before they require hours of debugging."""
     ctx.ensure_ready_sync()
     _track("regime_anomaly")
 
@@ -59,13 +59,13 @@ def regime_anomaly() -> str:
     # Death spiral: 0% of an expected regime
     for expected in ["coherent", "evolving", "exploring"]:
         if regime_total.get(expected, 0) == 0:
-            alerts.append(f"🔴 DEATH SPIRAL: 0% {expected} regime ({total} beats). "
+            alerts.append(f"[!] DEATH SPIRAL: 0% {expected} regime ({total} beats). "
                           "Check regimeClassifier warm-start and threshold scale.")
 
     # Monopoly: >75% single regime
     for regime, count in regime_total.items():
         if regime != "initializing" and count / total > 0.75:
-            alerts.append(f"🟡 MONOPOLY: {regime} at {count*100//total}% ({count}/{total} beats). "
+            alerts.append(f"[?] MONOPOLY: {regime} at {count*100//total}% ({count}/{total} beats). "
                           "Regime self-balancer may be stuck.")
 
     # Trust inflation: high weight despite low score
@@ -77,14 +77,14 @@ def regime_anomaly() -> str:
         if pct > 20:
             avg_w = sum(w for w, _ in samples) / len(samples)
             avg_s = sum(s for _, s in samples) / len(samples)
-            alerts.append(f"🟡 TRUST INFLATION: {sys} — weight {avg_w:.2f} but score {avg_s:.2f} "
+            alerts.append(f"[?] TRUST INFLATION: {sys} -- weight {avg_w:.2f} but score {avg_s:.2f} "
                           f"on {pct}% of beats. EMA floor may be propping it up.")
 
     # Extreme weight swings
     weight_swings.sort(reverse=True)
     if weight_swings and weight_swings[0][0] > 0.7:
         d, bk, sys = weight_swings[0]
-        alerts.append(f"🟡 WEIGHT SWING: {sys} Δ{d:.3f} at {bk}. "
+        alerts.append(f"[?] WEIGHT SWING: {sys} Delta{d:.3f} at {bk}. "
                       "Check for EMA alpha spike or sudden score inversion.")
 
     if not alerts:

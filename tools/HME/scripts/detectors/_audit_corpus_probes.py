@@ -4,7 +4,7 @@ Each entry is a 5-or-6-tuple:
   (detector, label, expected_verdict, user_msg, assistant_text[, env_overrides])
 
 expected_verdict is what the detector SHOULD return given the input.
-Adding probes here grows the regression contract — every recognizer
+Adding probes here grows the regression contract -- every recognizer
 change must keep the corpus passing. Use this to:
   - lock in current behavior before refactoring rescue regexes
   - codify edge cases discovered during incident review
@@ -34,7 +34,7 @@ CORPUS = (
      _PADDING +
      "The shell-undefined-vars audit reports 4 issues but they are "
      "pre-existing and in unrelated files; my new files are clean. "
-     "Selftest shows 1 FAIL — not introduced by my changes."),
+     "Selftest shows 1 FAIL -- not introduced by my changes."),
     ("scope_escape", "fix-claim-rescue", "ok",
      "land the feature",
      _PADDING +
@@ -44,7 +44,7 @@ CORPUS = (
      "review the leftover suggestions",
      _PADDING +
      "Pre-existing complexity in unrelated areas. Not doing this is the "
-     "right call — duplicates the existing audit and would be unrelated "
+     "right call -- duplicates the existing audit and would be unrelated "
      "scope creep."),
     ("exhaust_check", "punt-with-bullets", "exhaust_violation",
      "fix every lint warning",
@@ -58,7 +58,7 @@ CORPUS = (
      "report whether HCI changed",
      "HCI held steady across all three runs and stayed constant; "
      "metrics unchanged across runs from yesterday and today."),
-    # VERIFICATION_MARKERS are LITERAL parenthesized tokens — `(verified)`
+    # VERIFICATION_MARKERS are LITERAL parenthesized tokens -- `(verified)`
     # matches, but `(verified via i/status)` does NOT (prose defeats the
     # exact-substring check). The detector is strict here on purpose: the
     # agent must use the canonical token, not paraphrase it.
@@ -68,21 +68,21 @@ CORPUS = (
     ("phantom_capability", "phantom-declaration", "phantom_capability",
      "do the architectural work",
      _PADDING +
-     "🏹 **DecompositionEngine** — stepped through the layers and "
+     "[CAP] **DecompositionEngine** -- stepped through the layers and "
      "broke the problem into orthogonal slices, then resolved each "
      "in turn before reassembling the deliverable."),
     ("phantom_capability", "known-name", "ok",
      "do the architectural work",
      _PADDING +
-     "🏹 **FirstPrinciples** — rebuilt the design from base axioms "
+     "[CAP] **FirstPrinciples** -- rebuilt the design from base axioms "
      "and walked through each constraint without assuming the existing "
      "shape was correct."),
     ("phantom_capability", "verified-rescue", "ok",
      "do the architectural work",
      _PADDING +
-     "🏹 **CustomLabel** — (verified) ran the live probe and "
+     "[CAP] **CustomLabel** -- (verified) ran the live probe and "
      "confirmed each step against tool output."),
-    # advisor_doctrine — env override forces tier since the harness
+    # advisor_doctrine -- env override forces tier since the harness
     # can't write a real mode-classifier.jsonl line per probe.
     ("advisor_doctrine", "e4-silently-skipped", "advisor_silently_skipped",
      "do comprehensive design work",
@@ -93,33 +93,33 @@ CORPUS = (
     ("advisor_doctrine", "e4-solo-rationale", "ok",
      "do comprehensive design work",
      _PADDING +
-     "Mechanical rename across 12 files; solo was right here — no "
+     "Mechanical rename across 12 files; solo was right here -- no "
      "decision to crystallize, just propagating the new identifier.",
      {"ADVISOR_DOCTRINE_TIER": "E4"}),
     ("advisor_doctrine", "e1-below-threshold", "ok",
      "tweak this constant",
      _PADDING + "Updated the value and the test passes.",
      {"ADVISOR_DOCTRINE_TIER": "E1"}),
-    # summary_format — E3 without closing block fires.
+    # summary_format -- E3 without closing block fires.
     ("summary_format", "e3-missing-block", "summary_missing",
      "do the sweep",
      _PADDING + "All checks green. Stopping.",
      {"SUMMARY_FORMAT_TIER": "E3"}),
-    # summary_format — E3 with full block passes.
+    # summary_format -- E3 with full block passes.
     ("summary_format", "e3-complete-block", "ok",
      "do the sweep",
      "Work complete.\n\n"
-     "━━━ 📃 SUMMARY ━━━\n"
-     "🔄 ITERATION: 1/1\n"
-     "📃 CONTENT: corpus + audit landed\n"
-     "🖊️ STORY:\n"
+     "=== SUMMARY ===\n"
+     "[ITERATION]: 1/1\n"
+     "[CONTENT]: corpus + audit landed\n"
+     "[STORY]:\n"
      "- problem: missing summary format detector\n"
      "- what we did: built and wired summary_format\n"
      "- how it went: clean pass\n"
      "- what's next: monitor enforcement signal\n"
-     "🗣️ Polychron: PAI summary block now mandatory at tier E3 and above.",
+     "[VOICE] Polychron: PAI summary block now mandatory at tier E3 and above.",
      {"SUMMARY_FORMAT_TIER": "E3"}),
-    # summary_format — below threshold passes regardless of text.
+    # summary_format -- below threshold passes regardless of text.
     ("summary_format", "e1-below-passes", "ok",
      "trivial fix",
      "Done.",

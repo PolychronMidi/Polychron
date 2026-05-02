@@ -1,4 +1,4 @@
-"""NVIDIA NIM synthesis tier — free-tier cascade via integrate.api.nvidia.com.
+"""NVIDIA NIM synthesis tier -- free-tier cascade via integrate.api.nvidia.com.
 
 190+ open-weight models. 8-tier cascade best-first.
     T1: deepseek-v3.2  T2: mistral-large-3-675b  T3: qwen3-coder-480b

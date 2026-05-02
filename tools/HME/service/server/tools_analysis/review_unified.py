@@ -1,4 +1,4 @@
-"""HME review — unified post-pipeline analysis tool.
+"""HME review -- unified post-pipeline analysis tool.
 
 Merges pipeline_digest, regime_report, trust_report, section_compare,
 and audio_analyze into one tool with mode routing.
@@ -30,7 +30,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     mode='symbols': symbol audit (dead code + importance).
     mode='docs': doc sync check.
     mode='evolve': unified evolution recommender (dead-ends + bypasses + gaps + bridges + trust).
-    mode='partner': partner-review register — aesthetic / cultural / future-maintainer
+    mode='partner': partner-review register -- aesthetic / cultural / future-maintainer
         empathy on changed files. Complementary to mode='forget' (forensic register).
         Outputs a brief partner-letter, not tier-1 findings.
     mode='full': digest + regime + trust in one call."""
@@ -43,7 +43,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
     modes = [mode] if mode != "full" else ["digest", "regime", "trust"]
     # mode=full concatenates three subsections; emit explicit `# ` headers
     # before each so they don't blur together. Single-mode calls don't need
-    # the header — the subsection's own output is the whole response.
+    # the header -- the subsection's own output is the whole response.
     _HEADERS = {
         "digest": "# Pipeline Digest",
         "regime": "# Regime Timeline",
@@ -61,7 +61,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                 result = f"pipeline_digest error: {e}"
             # In 'full' mode, truncate verbose blocking messages to a single line
             if mode == "full" and ("BLOCKED" in result or "STOP POLLING" in result or "IN PROGRESS" in result):
-                parts.append("pipeline_digest: pipeline is still running — cannot digest partial results.")
+                parts.append("pipeline_digest: pipeline is still running -- cannot digest partial results.")
             else:
                 parts.append(result)
             continue
@@ -75,7 +75,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             if section_a < 0 or section_b < 0:
                 # tool-form-ok: multi-line usage doc; literal command strings are the contract
                 parts.append(
-                    "i/review mode=sections — compare two sections side-by-side.\n\n"
+                    "i/review mode=sections -- compare two sections side-by-side.\n\n"
                     "Usage: i/review mode=sections section_a=<N> section_b=<M>\n"
                     "  section_a, section_b: 0-indexed section numbers to compare.\n\n"
                     "Example: i/review mode=sections section_a=0 section_b=3"
@@ -94,7 +94,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             from .composition import composition_events as _ce
             # drama_finder inside composition_events does a 60s LLM
             # "What the Listener Hears" call. Review is a snapshot surface,
-            # not a synthesis surface — skip the narrative here. Users
+            # not a synthesis surface -- skip the narrative here. Users
             # wanting it can call `i/hme drama_finder` directly.
             import os as _os
             _prev = _os.environ.get("HME_DRAMA_NO_SYNTHESIS")
@@ -165,7 +165,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                         # _actionable filter already treats those as
                         # non-defects; the verdict marker should honor the
                         # same filter. Without this, every edit creates two
-                        # boilerplate reminders → stop.sh blocks forever.
+                        # boilerplate reminders -> stop.sh blocks forever.
                         warnings_section = _re_vw.search(
                             r'^## Warnings \(\d+\)\s*\n((?:^[ \t]*-.*\n?)+)',
                             _wdif_out, _re_vw.MULTILINE,
@@ -177,23 +177,23 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             ]
                             # Single-space after ] to match the regex in
                             # posttooluse_hme_review.sh and the tuple in
-                            # workflow_audit.py — the three consumers of
+                            # workflow_audit.py -- the three consumers of
                             # this scaffold convention previously used
                             # \s+ here, exact-string prefixes elsewhere,
                             # which made a two-space producer emission
                             # scaffold-only on THIS side but actionable
                             # on the others. Peer-review iter 111.
-                            # "audit skipped" added — same scaffolding
+                            # "audit skipped" added -- same scaffolding
                             # class, surfaces on file-move artifacts
                             # where static audit references a path that
                             # was renamed mid-session.
                             scaffold_re = _re_vw.compile(
                                 r'\] (HOOK CHANGE|DOC CHECK|SKIPPED|KB):'
-                                r'|audit skipped\s*[:—]'
+                                r'|audit skipped\s*[:--]'
                             )
                             if not bullets:
                                 # "## Warnings (N)" matched but no dash-
-                                # bullets extracted — empty list is clean.
+                                # bullets extracted -- empty list is clean.
                                 verdict = "clean"
                             elif all(scaffold_re.search(b) for b in bullets):
                                 verdict = "clean"
@@ -204,10 +204,10 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             # `## Warnings (N)` regex didn't match. Two
                             # cases distinguish:
                             #   (a) Output is "## Warnings: none found" or
-                            #       "## Warnings: 0 (clean)" — a clean-shape
+                            #       "## Warnings: 0 (clean)" -- a clean-shape
                             #       header where the regex fails because it
                             #       requires `(N)` with paren+digit.
-                            #   (b) Format drift — workflow_audit.py changed
+                            #   (b) Format drift -- workflow_audit.py changed
                             #       its emission shape, regex is now stale,
                             #       all reviews silently fall here.
                             # Distinguish by checking for a header line
@@ -223,7 +223,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
                             else:
                                 verdict = "warnings"
                     else:
-                        verdict = "clean"  # No explicit warnings → treat as clean
+                        verdict = "clean"  # No explicit warnings -> treat as clean
                     parts.append(emit_review_verdict_marker(verdict))
                 except Exception as _err3:
                     logger.debug(f'silent-except review_unified.py:116: {type(_err3).__name__}: {_err3}')
@@ -238,7 +238,7 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
             if not file_path:
                 # tool-form-ok: multi-line usage doc; literal command strings are the contract
                 parts.append(
-                    "i/review mode=convention — check a single file against project conventions.\n\n"
+                    "i/review mode=convention -- check a single file against project conventions.\n\n"
                     "Usage: i/review mode=convention file_path=<relative/path.js>\n"
                     "  file_path: path relative to project root (e.g. src/utils/clamps.js).\n\n"
                     "Example: i/review mode=convention file_path=src/utils/clamps.js"
@@ -255,11 +255,11 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
         elif m == "evolve":
             parts.append(_unified_evolution_recommender())
         elif m == "partner":
-            # Partner-review register — complementary to 'forget' (forensic).
+            # Partner-review register -- complementary to 'forget' (forensic).
             # Uses _PARTNER_SYSTEM instead of _REVIEW_SYSTEM. Reads the diff
             # of changed files and produces a partner-letter (aesthetic /
             # cultural / future-maintainer empathy) rather than tier-1 bug
-            # findings. The two registers don't compete — partner output
+            # findings. The two registers don't compete -- partner output
             # is intended for cultural feedback, not correctness.
             from .synthesis import _reasoning_think, _PARTNER_SYSTEM
             _cf = changed_files
@@ -324,5 +324,5 @@ def review(mode: str = "digest", section_a: int = -1, section_b: int = -1,
 
 
 
-# Re-export — recommender extracted.
+# Re-export -- recommender extracted.
 from .review_unified_recommender import _unified_evolution_recommender  # noqa: F401, E402

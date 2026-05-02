@@ -45,14 +45,14 @@ def record_prediction(prediction_type: str, predicted_outcome: str,
         "outcome": None,
     }
     _shared._predictions.append(pred)
-    logger.info(f"Meta-observer L18: prediction {pred_id} — {prediction_type}: "
+    logger.info(f"Meta-observer L18: prediction {pred_id} -- {prediction_type}: "
                 f"expecting '{predicted_outcome}' within {window_s}s"
                 f"{f', intervening with: {intervention}' if intervention else ''}")
     return pred_id
 
 
 def resolve_prediction(pred_id: str, outcome_occurred: bool) -> None:
-    """Mark a prediction as resolved — did the predicted outcome happen?"""
+    """Mark a prediction as resolved -- did the predicted outcome happen?"""
     for pred in _shared._predictions:
         if pred["id"] == pred_id and pred["outcome"] is None:
             pred["outcome"] = {
@@ -70,13 +70,13 @@ def resolve_prediction(pred_id: str, outcome_occurred: bool) -> None:
             except Exception as _err5:
                 logger.debug(f"operational_state.record_prediction_brie: {type(_err5).__name__}: {_err5}")
             verb = "occurred" if outcome_occurred else "was prevented"
-            logger.info(f"Meta-observer L18: {pred_id} resolved — predicted outcome {verb}"
+            logger.info(f"Meta-observer L18: {pred_id} resolved -- predicted outcome {verb}"
                         f"{' (intervention: ' + pred['intervention'] + ')' if pred['intervention'] else ''}")
             return
 
 
 def _expire_predictions() -> None:
-    """Check for predictions past their deadline — if no outcome recorded, assume prevented.
+    """Check for predictions past their deadline -- if no outcome recorded, assume prevented.
 
     All predictions are phrased as negative outcomes ('bad thing happens within X').
     Expiry with no explicit resolution means the bad thing was prevented: occurred=False.
@@ -92,7 +92,7 @@ def _expire_predictions() -> None:
                 "auto_expired": True,
             }
             _write_counterfactual(pred)
-            # L29: expired predictions count toward Brier — outcome_occurred=False (prevented)
+            # L29: expired predictions count toward Brier -- outcome_occurred=False (prevented)
             try:
                 from server import operational_state
                 predicted_prob = (pred["confidence"] if pred.get("confidence") is not None
@@ -160,7 +160,7 @@ def _compute_effectiveness() -> dict:
 
         # Predictions where we intervened and the bad outcome was prevented
         successful_interventions = [p for p in intervened if not p["outcome"]["occurred"]]
-        # Predictions where we didn't intervene — how often did the bad thing happen?
+        # Predictions where we didn't intervene -- how often did the bad thing happen?
         natural_occurrence_rate = (
             sum(1 for p in not_intervened if p["outcome"]["occurred"]) / max(len(not_intervened), 1)
         )
@@ -177,7 +177,7 @@ def _compute_effectiveness() -> dict:
 
 
 def _detect_synthesis_patterns() -> None:
-    """Layer ∞: build a grounding self-model from accumulated synthesis call records.
+    """Layer inf: build a grounding self-model from accumulated synthesis call records.
 
     After 20+ synthesis calls, identifies per-strategy phantom rates and the most
     common prompt words in quality-gate-triggered calls. Writes findings to
@@ -239,16 +239,16 @@ def _detect_synthesis_patterns() -> None:
             json.dump(patterns, f, indent=2)
         os.replace(tmp, _shared._ms.synthesis_patterns_file)
         logger.debug(
-            f"Meta-observer L∞: synthesis self-model updated "
+            f"Meta-observer Linf: synthesis self-model updated "
             f"({total} calls, gate_rate={patterns['quality_gate_rate']:.0%}, "
             f"top_phantom_words={[w for w, _ in top_phantom_words[:3]]})"
         )
     except (OSError, json.JSONDecodeError) as e:
-        logger.debug(f"Meta-observer L∞: pattern detection failed: {e}")
+        logger.debug(f"Meta-observer Linf: pattern detection failed: {e}")
 
 
 def _auto_predictions_from_correlator() -> None:
-    """Generate predictions from L14 correlator alerts — feeding L18 automatically.
+    """Generate predictions from L14 correlator alerts -- feeding L18 automatically.
 
     Also emits a baseline healthy-state prediction every 15min so L29 Brier score
     updates during normal operation (not only when the system is under stress).
@@ -264,7 +264,7 @@ def _auto_predictions_from_correlator() -> None:
                 "coherence_stable",
                 "coherence drops below 0.6 within 15 minutes",
                 window_s=900,
-                confidence=0.1,  # healthy system — bad outcome is unlikely; low prob → low Brier on expiry
+                confidence=0.1,  # healthy system -- bad outcome is unlikely; low prob -> low Brier on expiry
             )
 
     if not _shared._last_correlations or not _shared._last_correlations.get("alerts"):
@@ -276,7 +276,7 @@ def _auto_predictions_from_correlator() -> None:
             for p in _shared._predictions:
                 if p["type"] == "coherence_stable" and p["outcome"] is None:
                     resolve_prediction(p["id"], outcome_occurred=True)
-        # Don't duplicate — stored prediction type equals atype (consistent naming)
+        # Don't duplicate -- stored prediction type equals atype (consistent naming)
         if any(p["type"] == atype and p["outcome"] is None for p in _shared._predictions):
             continue
         if atype == "shim_decay_precursor":

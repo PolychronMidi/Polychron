@@ -1,4 +1,4 @@
-"""HME post-edit audit tools — what_did_i_forget and diagnose_error."""
+"""HME post-edit audit tools -- what_did_i_forget and diagnose_error."""
 import os
 import logging
 
@@ -55,7 +55,7 @@ def diagnose_error(error_text: str) -> str:
                         parts.append("  ```")
                     except Exception as _err5:
                         logger.debug(f'silent-except workflow_audit.py:408: {type(_err5).__name__}: {_err5}')
-    # Search KB for similar bugs — by error message AND by module names from stack
+    # Search KB for similar bugs -- by error message AND by module names from stack
     kb_query = error_type.group(2)[:60] if error_type else error_text[:80]
     kb_results = cached_kb_search(kb_query, 5, ctx.project_engine)
     # Also search global KB for cross-project patterns

@@ -84,14 +84,14 @@ def _scan_environment() -> dict:
     # Generate alerts
     alerts = []
     if env.get("disk_pct_used", 0) > 90:
-        alerts.append({"type": "disk_pressure", "message": f"Disk {env['disk_pct_used']}% full — index operations may fail"})
+        alerts.append({"type": "disk_pressure", "message": f"Disk {env['disk_pct_used']}% full -- index operations may fail"})
     for gpu in env.get("gpus", []):
         if gpu["free_mb"] < 500:
-            alerts.append({"type": "gpu_memory_pressure", "message": f"GPU{gpu['index']} only {gpu['free_mb']}MB free — OOM imminent on next model load"})
+            alerts.append({"type": "gpu_memory_pressure", "message": f"GPU{gpu['index']} only {gpu['free_mb']}MB free -- OOM imminent on next model load"})
     if env.get("load_1m", 0) > os.cpu_count() * 2:
-        alerts.append({"type": "cpu_overload", "message": f"Load {env['load_1m']} exceeds 2x CPU count — system thrashing"})
+        alerts.append({"type": "cpu_overload", "message": f"Load {env['load_1m']} exceeds 2x CPU count -- system thrashing"})
     if env.get("process_rss_mb", 0) > 8192:
-        alerts.append({"type": "memory_bloat", "message": f"MCP process at {env['process_rss_mb']}MB RSS — possible memory leak"})
+        alerts.append({"type": "memory_bloat", "message": f"MCP process at {env['process_rss_mb']}MB RSS -- possible memory leak"})
     env["alerts"] = alerts
     return env
 
@@ -175,7 +175,7 @@ def _checkpoint_entanglement() -> None:
                 logger.debug(f"LIFESAVER register failed: {_life_err}")
 
         # Last narrative (the system's own interpretation). Lazy imports
-        # from sibling submodules — explicit cross-submodule imports here
+        # from sibling submodules -- explicit cross-submodule imports here
         # would create a circular graph when every module initializes at
         # the same time.
         from .narrative import _read_last_narrative

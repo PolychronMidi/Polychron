@@ -8,8 +8,8 @@ false-fire as if the agent declared/wrote the pattern.
 
 Caught failure mode (April 2026 stress test):
   - Agent writes: 'matches no-op shapes: `^(All done|...)$`'
-  - stop_work without strip: matches 'all done' → DISMISSIVE
-  - With strip: backticked span removed → no match → ok
+  - stop_work without strip: matches 'all done' -> DISMISSIVE
+  - With strip: backticked span removed -> no match -> ok
 
 Apply via `strip_quoted(text)` before any phrase / regex check that
 isn't intentionally matching code/quoted content.

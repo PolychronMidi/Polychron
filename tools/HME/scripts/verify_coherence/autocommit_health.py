@@ -20,14 +20,14 @@ from ._base import (
 
 class AutocommitHealthVerifier(Verifier):
     """Autocommit must succeed every attempt. Catastrophic silent failure
-    has been observed — autocommits dying without a single LIFESAVER
+    has been observed -- autocommits dying without a single LIFESAVER
     alert, because the original failure path depended on the very
     environment that was broken.
 
     The _autocommit.sh helper now records every failure to four
     independent channels (sticky fail flag, hme-errors.log, stderr,
-    activity bridge). This verifier checks the most durable of those —
-    the sticky fail flag and the attempt counter under tmp/ — which are
+    activity bridge). This verifier checks the most durable of those --
+    the sticky fail flag and the attempt counter under tmp/ -- which are
     independent of PROJECT_ROOT, .env loading, log-dir writability, and
     _proxy_bridge stderr filtering. FAILs at weight 5.0 (same tier as
     LifesaverIntegrity) because autocommit going silent is the exact
@@ -46,7 +46,7 @@ class AutocommitHealthVerifier(Verifier):
 
         issues = []
 
-        # 1. Sticky fail flag — exists iff last autocommit failed.
+        # 1. Sticky fail flag -- exists iff last autocommit failed.
         if os.path.isfile(fail_flag):
             try:
                 with open(fail_flag) as f:
@@ -54,7 +54,7 @@ class AutocommitHealthVerifier(Verifier):
             except OSError as e:
                 issues.append(f"fail flag exists but unreadable: {e}")
 
-        # 2. Attempt counter — monotonic increment on every attempt, reset
+        # 2. Attempt counter -- monotonic increment on every attempt, reset
         # on success. 3+ attempts without a reset = wedged state.
         if os.path.isfile(counter_file):
             try:
@@ -75,9 +75,9 @@ class AutocommitHealthVerifier(Verifier):
                         issues.append(f"counter file has non-numeric content: {raw[:40]!r}")
                     else:
                         if n >= 3:
-                            issues.append(f"attempt counter at {n} (≥3 attempts without success)")
+                            issues.append(f"attempt counter at {n} (>=3 attempts without success)")
 
-        # 3. Last-success freshness — if the repo has a .git and history
+        # 3. Last-success freshness -- if the repo has a .git and history
         # of autocommits, the last-success file should not be far older
         # than a day in active use. Missing entirely is tolerated (fresh
         # clone, pre-first-commit state).

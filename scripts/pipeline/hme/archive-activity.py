@@ -6,7 +6,7 @@ Strategy: events older than HME_ACTIVITY_KEEP_DAYS (default 14) go into
 metrics/hme-activity-archive.jsonl. The live file keeps everything more
 recent, ensuring sliders see clean boundaries without losing provenance.
 
-Runs idempotently — on re-invocation, only events newer than the archive's
+Runs idempotently -- on re-invocation, only events newer than the archive's
 tail survive-check get moved. Never deletes events; moves them.
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ KEEP_DAYS = float(os.environ.get("HME_ACTIVITY_KEEP_DAYS", "14"))
 
 def main() -> int:
     if not os.path.isfile(ACTIVITY):
-        print("archive-activity: no activity log yet — nothing to archive")
+        print("archive-activity: no activity log yet -- nothing to archive")
         return 0
     cutoff = time.time() - (KEEP_DAYS * 86400)
     keep: list[str] = []
@@ -40,7 +40,7 @@ def main() -> int:
             try:
                 e = json.loads(s)
             except ValueError:
-                # Corrupt line — keep in live file so it's visible
+                # Corrupt line -- keep in live file so it's visible
                 keep.append(s)
                 continue
             ts = e.get("ts", 0)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SatisfactionAnalyzer — aggregator for satisfaction_capture.py output.
+"""SatisfactionAnalyzer -- aggregator for satisfaction_capture.py output.
 
 Reads output/metrics/satisfaction.jsonl (one entry per turn, never null
 per the PAI rule) and reports rolling-window trends:
@@ -104,7 +104,7 @@ def main(argv: list) -> int:
                    help="recent-window size for drift comparison (default 20)")
     p.add_argument("--json", action="store_true")
     p.add_argument("--notable-only", action="store_true",
-                   help="only print extreme-score turns (≤2 or ≥9)")
+                   help="only print extreme-score turns (<=2 or >=9)")
     args = p.parse_args(argv)
 
     events = _load()
@@ -122,7 +122,7 @@ def main(argv: list) -> int:
 
     if args.notable_only:
         for n in s["notable"]:
-            print(f"  turn {n['turn']}: {n['score']} ({n['signal']}) — "
+            print(f"  turn {n['turn']}: {n['score']} ({n['signal']}) -- "
                   f"{n['excerpt']!r}")
         return 0
 
@@ -143,7 +143,7 @@ def main(argv: list) -> int:
         print()
         print(f"  notable turns ({len(s['notable'])} extreme-score):")
         for n in s["notable"][-10:]:
-            print(f"    turn {n['turn']}: {n['score']} ({n['signal']}) — "
+            print(f"    turn {n['turn']}: {n['score']} ({n['signal']}) -- "
                   f"{n['excerpt']!r}")
     return 0
 

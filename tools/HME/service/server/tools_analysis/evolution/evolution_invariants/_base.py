@@ -1,4 +1,4 @@
-"""Declarative invariant battery — loads checks from config/invariants.json.
+"""Declarative invariant battery -- loads checks from config/invariants.json.
 
 No LLM, pure programmatic. Add new invariants by editing the JSON file.
 """

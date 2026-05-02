@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tier classifier for UserPromptSubmit — heuristic baseline + Sonnet hook.
+"""Tier classifier for UserPromptSubmit -- heuristic baseline + Sonnet hook.
 
 PAI v6.3.0 runs a Sonnet classifier on every prompt that emits:
     MODE: MINIMAL | NATIVE | ALGORITHM
@@ -9,7 +9,7 @@ PAI v6.3.0 runs a Sonnet classifier on every prompt that emits:
 
 This module is the Polychron-side scaffold:
 
-  - heuristic-only classifier (default) — fast, no LLM call
+  - heuristic-only classifier (default) -- fast, no LLM call
   - Sonnet-classifier wrapper (opt-in via $POLYCHRON_TIER_VIA_SONNET=1)
     that delegates to a separate process that calls the API
   - additionalContext writer for hook integration
@@ -20,7 +20,7 @@ This module is the Polychron-side scaffold:
     output/metrics/mode-classifier.jsonl with prompt excerpt + tier +
     reason + source + latency
 
-The heuristic baseline is intentionally simple — pattern-match against
+The heuristic baseline is intentionally simple -- pattern-match against
 the user's prompt for shape signals (build/create/refactor/multi-file,
 narrow rename, single-fact lookup). It under-classifies on ambiguous
 prompts and the fail-safe handles those by escalating to E3.
@@ -42,26 +42,26 @@ _PROJECT = Path(os.environ.get("PROJECT_ROOT") or
                 Path(__file__).resolve().parent.parent.parent.parent)
 _TELEMETRY = (_PROJECT / "output" / "metrics" / "mode-classifier.jsonl")
 
-# Explicit tier override in user prompt — `/e1` … `/e5` (case-insensitive,
+# Explicit tier override in user prompt -- `/e1` ... `/e5` (case-insensitive,
 # anywhere in the message). Per-PAI: explicit override forces ALGORITHM
 # mode at the named tier even if the classifier said MINIMAL/NATIVE.
 _TIER_OVERRIDE_RE = re.compile(r"(?i)\B/e([1-5])\b")
 
-# MINIMAL signals — single-token acknowledgments, ratings, greetings.
+# MINIMAL signals -- single-token acknowledgments, ratings, greetings.
 _MINIMAL_RES = (
     re.compile(r"^\s*\d+\s*$"),                                # bare number (rating)
     re.compile(r"(?i)^\s*(thanks|thank you|ok|okay|cool|nice|great|hi|hello|hey)\s*[.!?]?\s*$"),
     re.compile(r"(?i)^\s*(yes|no|yep|nope|y|n)\s*[.!?]?\s*$"),
 )
 
-# NATIVE signals — single fact lookup OR single-line edit on a named file.
+# NATIVE signals -- single fact lookup OR single-line edit on a named file.
 # These are heuristics; the classifier biases UP when ambiguous.
 _NATIVE_RES = (
     re.compile(r"(?i)^\s*(what|where|who|when)\s+is\s+\w+[?]?\s*$"),
     re.compile(r"(?i)\b(rename)\s+\S+\s+to\s+\S+\b"),
 )
 
-# ALGORITHM-shape verbs — anything matching these is at least E2; the
+# ALGORITHM-shape verbs -- anything matching these is at least E2; the
 # downstream tier-up rules promote further from there.
 _ALGORITHM_VERBS = (
     "build", "create", "make", "implement", "design", "refactor",
@@ -70,7 +70,7 @@ _ALGORITHM_VERBS = (
     "fix", "debug", "trace", "instrument",
 )
 
-# Tier-promotion signals — strings whose presence pushes the tier UP.
+# Tier-promotion signals -- strings whose presence pushes the tier UP.
 _E5_SIGNALS = (
     "comprehensive", "across the codebase", "every file", "everything",
     "exhaustive", "all subsystems", "no time pressure", "thorough sweep",
@@ -103,7 +103,7 @@ def classify_heuristic(prompt: str) -> dict:
     p = prompt.strip()
     if not p:
         return {"mode": "ALGORITHM", "tier": "E3",
-                "reason": "empty prompt → fail-safe E3",
+                "reason": "empty prompt -> fail-safe E3",
                 "source": "fail-safe"}
 
     # Explicit /eN override anywhere in the prompt.
@@ -114,14 +114,14 @@ def classify_heuristic(prompt: str) -> dict:
                 "reason": f"explicit {m.group(0)} override",
                 "source": "heuristic"}
 
-    # MINIMAL — short, ack-shaped.
+    # MINIMAL -- short, ack-shaped.
     for r in _MINIMAL_RES:
         if r.match(p):
             return {"mode": "MINIMAL", "tier": None,
                     "reason": "ack/rating/greeting shape",
                     "source": "heuristic"}
 
-    # NATIVE — single fact lookup or single-line rename, no algorithm verb.
+    # NATIVE -- single fact lookup or single-line rename, no algorithm verb.
     if not _has_algorithm_verb(p):
         for r in _NATIVE_RES:
             if r.search(p):
@@ -129,7 +129,7 @@ def classify_heuristic(prompt: str) -> dict:
                         "reason": "single-fact-lookup / single-line-edit shape",
                         "source": "heuristic"}
 
-    # ALGORITHM — pick a tier.
+    # ALGORITHM -- pick a tier.
     if _has_any(p, _E5_SIGNALS):
         tier = "E5"
         reason = "comprehensive/exhaustive scope signal"

@@ -10,8 +10,8 @@ across any fixed threshold value.
 The shared upstream the antagonism bridge principle says we need to find:
 *did the last banner result in a real fix, or in the agent ignoring it?*
 Measurable from the LIFESAVER state files:
-  tmp/hme-errors.turnstart  — line count at the start of a turn
-  tmp/hme-errors.lastread   — watermark advanced by stop.sh only after a fix
+  tmp/hme-errors.turnstart  -- line count at the start of a turn
+  tmp/hme-errors.lastread   -- watermark advanced by stop.sh only after a fix
 
 Resolution-velocity proxy: for each turn where errors were surfaced, did
 the watermark advance to match the turn-end line count? That means fixed.
@@ -21,7 +21,7 @@ unresolved.
 Bridge behavior (both modules driven by resolution_velocity):
   - When resolution_velocity is HIGH (banners resolve fast):
       streak_threshold LOWERS (surface earlier; agent is handling it well)
-      signal_trust RAISES (banners are reliable — treat as authoritative)
+      signal_trust RAISES (banners are reliable -- treat as authoritative)
   - When resolution_velocity is LOW (banners sit unresolved):
       streak_threshold RAISES (be more conservative about surfacing)
       signal_trust LOWERS (treat banners as suggestions; may need consolidation)
@@ -33,7 +33,7 @@ This script:
   - Emits a recommended HME_STREAK_WARN value based on recent history
   - Writes output/metrics/hme-streak-calibration.json for audit
   - Does NOT auto-apply changes; sessionstart.sh can optionally source the
-    recommendation. OBSERVE-ONLY first run — the user confirms whether the
+    recommendation. OBSERVE-ONLY first run -- the user confirms whether the
     recommendations track reality before we wire in auto-application.
 
 Usage:
@@ -55,7 +55,7 @@ TURNSTART = PROJECT_ROOT / "tmp" / "hme-errors.turnstart"
 HISTORY = METRICS_DIR / "hme-streak-calibration-history.jsonl"
 OUTPUT = METRICS_DIR / "hme-streak-calibration.json"
 
-# Bounds on recommended threshold. Bridges are constrained — an uncontrolled
+# Bounds on recommended threshold. Bridges are constrained -- an uncontrolled
 # controller violates hypermeta jurisdiction. These locked ranges prevent the
 # bridge from recommending values outside safe operating envelope.
 MIN_THRESHOLD = 2
@@ -198,7 +198,7 @@ def main() -> None:
     with open(OUTPUT, "w") as f:
         json.dump(result, f, indent=2)
 
-    # Close the observation→action loop: write the recommended threshold
+    # Close the observation->action loop: write the recommended threshold
     # to tmp/hme-streak-warn.txt. _safety.sh reads HME_STREAK_WARN from .env
     # at hook-fire time; having the calibrator write a tmp/ file and
     # having _safety.sh prefer that file over the env value turns the

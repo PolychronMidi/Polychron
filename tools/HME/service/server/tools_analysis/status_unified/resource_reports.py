@@ -76,7 +76,7 @@ def _vram_report() -> str:
         sampled = frees[::step][:20]
         lo, hi = min(sampled), max(sampled)
         rng = max(hi - lo, 1)
-        spark = "".join("▁▂▃▄▅▆▇█"[min(7, int((v - lo) / rng * 7))] for v in sampled)
+        spark = "".join("...#####"[min(7, int((v - lo) / rng * 7))] for v in sampled)
 
         parts.append(
             f"GPU{idx}: {cur_used/1024:.1f} GB used / {total_mb/1024:.1f} GB total  "
@@ -85,9 +85,9 @@ def _vram_report() -> str:
         parts.append(f"  free trend [{spark}]  min_free={min_free/1024:.1f} GB  max_used={max_used/1024:.1f} GB")
         # Flag pressure
         if min_free / 1024 < 1.0:
-            parts.append(f"  ⚠ min_free dipped below 1 GB — consider partial offload or model shuffle")
+            parts.append(f"  [!] min_free dipped below 1 GB -- consider partial offload or model shuffle")
         elif min_free / 1024 < 3.0:
-            parts.append(f"  ⚡ min_free dipped below 3 GB — watch for pressure during next compute spike")
+            parts.append(f"  [bolt] min_free dipped below 3 GB -- watch for pressure during next compute spike")
 
     # Monitor daemon liveness
     pid_file = "/tmp/hme-vram-monitor.pid"
@@ -99,7 +99,7 @@ def _vram_report() -> str:
         parts.append(f"Monitor daemon: alive (pid {_pid})")
     except Exception as _err:
         logger.debug(f"unnamed-except status_unified.py:329: {type(_err).__name__}: {_err}")
-        parts.append("Monitor daemon: NOT running — restart shim to respawn")
+        parts.append("Monitor daemon: NOT running -- restart shim to respawn")
 
     return "\n".join(parts)
 
@@ -139,7 +139,7 @@ def _freshness_report() -> str:
         ("narrative-digest.md",  os.path.join(m, "narrative-digest.md")),
     ]
 
-    # Latest snapshot — prefer metrics/current-run.json named pointer (written by snapshot-run.js),
+    # Latest snapshot -- prefer metrics/current-run.json named pointer (written by snapshot-run.js),
     # fall back to latest run-history glob for pre-existing runs.
     rh_dir = os.path.join(m, "run-history")
     snapshots = sorted(_glob.glob(os.path.join(rh_dir, "*.json"))) if os.path.isdir(rh_dir) else []
@@ -174,7 +174,7 @@ def _freshness_report() -> str:
             t_ts = _dt.fromtimestamp(_ts(trace_path)).strftime("%Y-%m-%d %H:%M") if _ts(trace_path) else "missing"
             s_ts = _dt.fromtimestamp(_ts(snapshots[-1])).strftime("%Y-%m-%d %H:%M")
             parts.append(f"\n**SYNC WARNING**: trace.jsonl ({t_ts}) and run-history ({s_ts}) "
-                         f"differ by {delta/60:.0f}m — different pipeline runs. Run `npm run main` to sync.")
+                         f"differ by {delta/60:.0f}m -- different pipeline runs. Run `npm run main` to sync.")
         else:
             parts.append(f"\nSync: trace.jsonl and run-history are in sync (delta={delta:.0f}s).")
 

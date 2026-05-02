@@ -1,4 +1,4 @@
-"""HME adversarial self-probing — Phase 4.5 of openshell_features_to_mimic.md.
+"""HME adversarial self-probing -- Phase 4.5 of openshell_features_to_mimic.md.
 
 Generates probe *candidates*: deliberately boundary-pushing evolution
 proposals that HME expects its current model to be wrong about. The
@@ -8,14 +8,14 @@ model.
 
 Candidates are drawn from the intersection of three signals:
 
-  1. **Blind spots** — subsystems untouched in the last N rounds, or
+  1. **Blind spots** -- subsystems untouched in the last N rounds, or
      modules never read-before-write (from blindspots.py).
-  2. **Low cascade confidence** — modules at a subsystem intersection
-     whose forward reach crosses ≥3 subsystems (from cascade_analysis).
-  3. **Low trust coverage** — modules with no high-trust KB entries
+  2. **Low cascade confidence** -- modules at a subsystem intersection
+     whose forward reach crosses >=3 subsystems (from cascade_analysis).
+  3. **Low trust coverage** -- modules with no high-trust KB entries
      (from kb-trust-weights.json when available).
 
-This module never *runs* a probe — it only produces candidates. The
+This module never *runs* a probe -- it only produces candidates. The
 Evolver decides which (if any) to execute in a lab sketch.
 
 Output: metrics/hme-probes.json with candidate list and provenance.
@@ -51,7 +51,7 @@ def _load_json(rel: str):
 
 
 def _collect_intersection_modules() -> list[dict]:
-    """Return modules whose forward edges span ≥3 distinct subsystems.
+    """Return modules whose forward edges span >=3 distinct subsystems.
     These are structural intersection points where cascade confidence is
     most likely to be wrong."""
     dep = _load_json(DEP_GRAPH_REL) or {}
@@ -97,7 +97,7 @@ def _collect_intersection_modules() -> list[dict]:
 
 
 def _trust_by_module() -> dict[str, str]:
-    """Map module-stem → best-tier KB entry we have. Stems with no matching
+    """Map module-stem -> best-tier KB entry we have. Stems with no matching
     entry get tier 'NONE'."""
     trust = _load_json(TRUST_REL) or {}
     entries = trust.get("entries", {}) or {}
@@ -132,8 +132,8 @@ def generate_probes(max_candidates: int = 5) -> dict:
     accuracy_ema = _cascade_accuracy_estimate()
 
     # Score candidates: higher score = better probe target
-    # Score = intersection_count × (2 if trust is NONE/LOW else 1)
-    #                         × (2 if accuracy_ema < 0.5 or unknown else 1)
+    # Score = intersection_count * (2 if trust is NONE/LOW else 1)
+    #                         * (2 if accuracy_ema < 0.5 or unknown else 1)
     scored: list[dict] = []
     for m in intersections:
         stem = m["module"]
@@ -207,7 +207,7 @@ def probes_report() -> str:
         "",
     ]
     if not candidates:
-        lines.append("No probe candidates — HME either has high cascade accuracy or")
+        lines.append("No probe candidates -- HME either has high cascade accuracy or")
         lines.append("there are no subsystem-intersection modules without strong KB coverage.")
         return "\n".join(lines)
     for i, c in enumerate(candidates, 1):

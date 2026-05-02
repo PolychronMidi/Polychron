@@ -24,15 +24,15 @@ from hme_env import ENV
 
 logger = logging.getLogger("HME")
 
-# Shared grounding header — identical for all providers.
+# Shared grounding header -- identical for all providers.
 GROUNDING_HEADER = """\
 You are operating as the HME (Hybrid Model Engine) synthesis tier for the Polychron project.
 Polychron is a JavaScript algorithmic composition system: all source files are .js IIFEs \
 under src/, organized as globals (no imports/exports). Subsystems load in order: \
-utils → conductor → rhythm → time → composers → fx → crossLayer → writer → play.
+utils -> conductor -> rhythm -> time -> composers -> fx -> crossLayer -> writer -> play.
 HME is the evolutionary nervous system: a 6-tool MCP server that enriches queries with \
 KB constraints, source code, and caller graphs before synthesis. You receive pre-extracted \
-VERIFIED FACTS from real source files — treat them as ground truth.
+VERIFIED FACTS from real source files -- treat them as ground truth.
 CRITICAL: never invent file paths, function names, or module names. \
 If a name does not appear in VERIFIED FACTS, do not use it.\
 """
@@ -147,7 +147,7 @@ class OpenAIProvider:
                 return
             oldest = min((ts for ts in tier.timestamps if ts > cutoff), default=now)
             wait = max(0.1, oldest + 60.0 - now)
-            logger.debug(f"{self.name} {tier.label} RPM throttle: {recent}/{tier.rpm_limit} — sleep {wait:.1f}s")
+            logger.debug(f"{self.name} {tier.label} RPM throttle: {recent}/{tier.rpm_limit} -- sleep {wait:.1f}s")
             time.sleep(min(wait, 5.0))
 
     def _cb_allow(self, tier: _Tier) -> bool:
@@ -257,7 +257,7 @@ class OpenAIProvider:
                 if e.code == 429:
                     with self._lock:
                         tier.tokens_used = tier.daily_limit
-                    logger.info(f"{self.name} {model} 429 — marking exhausted")
+                    logger.info(f"{self.name} {model} 429 -- marking exhausted")
                 else:
                     self._cb_failure(tier)
                 return None
@@ -292,7 +292,7 @@ class OpenAIProvider:
                 if e.code == 429:
                     with self._lock:
                         tier.tokens_used = tier.daily_limit
-                    logger.info(f"{self.name} {tier.label} 429 — marking exhausted, trying next")
+                    logger.info(f"{self.name} {tier.label} 429 -- marking exhausted, trying next")
                 else:
                     self._cb_failure(tier)
                     logger.info(f"{self.name} {tier.label} failed ({e.code}), trying next")

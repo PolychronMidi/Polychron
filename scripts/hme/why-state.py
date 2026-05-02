@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=state — explain the current onboarding state and what
+"""i/why mode=state -- explain the current onboarding state and what
 advanced HME into it.
 
 Reads:
@@ -24,7 +24,7 @@ _STATE_DESC = {
     "edited":      "Edit applied. Forward: i/review mode=forget with no warnings.",
     "reviewed":    "Review clean. Forward: Bash npm run main (run_in_background=true).",
     "piped":       "Pipeline running. Forward: STABLE/EVOLVED verdict from fingerprint-comparison.json.",
-    "verified":    "Pipeline passed. Forward: i/learn title=… content=… (both non-empty) → graduates.",
+    "verified":    "Pipeline passed. Forward: i/learn title=... content=... (both non-empty) -> graduates.",
     "graduated":   "Onboarding complete; gates relax. State file deleted; bypass mode active.",
 }
 
@@ -39,7 +39,7 @@ def main(argv):
         except OSError:
             pass
 
-    print(f"# i/why mode=state — onboarding state")
+    print(f"# i/why mode=state -- onboarding state")
     print()
     print(f"  Current state: {state}")
     print(f"  Meaning: {_STATE_DESC.get(state, '(unknown state)')}")
@@ -66,7 +66,7 @@ def main(argv):
                     ev = e.get("event", "?")
                     extra = e.get("from", e.get("session", ""))
                     to = e.get("to", "")
-                    arrow = f" → {to}" if to else ""
+                    arrow = f" -> {to}" if to else ""
                     print(f"  {ts}  {ev}  {extra}{arrow}")
                 print()
         except OSError:

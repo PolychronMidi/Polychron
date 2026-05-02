@@ -1,24 +1,24 @@
-"""HME onboarding chain — per-session walkthrough state machine.
+"""HME onboarding chain -- per-session walkthrough state machine.
 
 The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
 MCP server so tool handlers can invoke each other directly (hooks cannot).
 
 Linear state machine with silent prerequisite auto-chaining:
 
-    boot            fresh session — waiting for selftest
-    selftest_ok     selftest passed — waiting for evolve(focus='design')
-    targeted        target picked — waiting for read(target, mode='before')
-    briefed         KB briefing absorbed — waiting for Edit(s) on target
-    edited          Edit done — waiting for review(mode='forget')
-    reviewed        review clean — waiting for npm run main
-    piped           pipeline running in background — waiting for verdict
-    verified        STABLE/EVOLVED — waiting for learn(title=, content=)
-    graduated       loop complete — blocks relax, state file deleted
+    boot            fresh session -- waiting for selftest
+    selftest_ok     selftest passed -- waiting for evolve(focus='design')
+    targeted        target picked -- waiting for read(target, mode='before')
+    briefed         KB briefing absorbed -- waiting for Edit(s) on target
+    edited          Edit done -- waiting for review(mode='forget')
+    reviewed        review clean -- waiting for npm run main
+    piped           pipeline running in background -- waiting for verdict
+    verified        STABLE/EVOLVED -- waiting for learn(title=, content=)
+    graduated       loop complete -- blocks relax, state file deleted
 
 Design rules:
   * Agents see ONE tool call per logical step. Prerequisites run silently
     inside the tool handler and their output is prepended to the result.
-  * Advancement is automatic — tools and hooks write state, agent never does.
+  * Advancement is automatic -- tools and hooks write state, agent never does.
   * Missing state file = graduated (permissive). Hooks create it on SessionStart.
   * Chain never HARD-blocks a tool. Failures are reported, tool still runs.
     Hard gates live in shell hooks (for Edit/Bash, which this module can't reach).
@@ -41,7 +41,7 @@ from hme_env import ENV  # noqa: E402
 
 # Sibling state-machine state. Lazy module-attr access avoids the circular
 # load order between onboarding_chain / onboarding_chain_dispatch / this
-# helpers module — see onboarding_chain_dispatch.py for the same pattern.
+# helpers module -- see onboarding_chain_dispatch.py for the same pattern.
 def state():
     from . import onboarding_chain as _oc; return _oc.state()
 def set_state(s):
@@ -90,15 +90,15 @@ STATES = [
 STEP_LABELS = {
     "boot":        f"1/7 boot check (run {_action_form('selftest')})",
     "selftest_ok": f"2/7 pick evolution target (run {_i_form('evolve', primer=True)})",
-    "targeted":    "3/7 edit target module (Edit tool — briefing auto-chains)",
+    "targeted":    "3/7 edit target module (Edit tool -- briefing auto-chains)",
     "edited":      f"4/7 audit changes (run {_i_form('review', primer=True)})",
     "reviewed":    "5/7 run pipeline (Bash: npm run main)",
     "piped":       "6/7 await verdict (hooks advance automatically)",
     "verified":    f"7/7 persist learning (run {_i_form('learn', primer=True)})",
-    "graduated":   "graduated — blocks relax",
+    "graduated":   "graduated -- blocks relax",
 }
 
-# Ordered step list for the todo tree mirror — index matches STATES order
+# Ordered step list for the todo tree mirror -- index matches STATES order
 STEP_SHORT = [
     f"boot check ({_action_form('selftest')})",
     f"pick evolution target ({_i_form('evolve', primer=True)})",
@@ -110,7 +110,7 @@ STEP_SHORT = [
 ]
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-# Flat per-field state files — kept separate (not merged into JSON) so shell
+# Flat per-field state files -- kept separate (not merged into JSON) so shell
 # helpers can read them via `cat` without pulling in `jq` or Python. The
 # tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
@@ -118,7 +118,7 @@ _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
 
 
-# State I/O — single-file flat storage, never raises
+# State I/O -- single-file flat storage, never raises
 
 
 
@@ -128,7 +128,7 @@ _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 def _run_selftest_prereq() -> str:
     """Run selftest in-process and format its output.
 
-    Calls the undecorated hme_selftest directly — going through the
+    Calls the undecorated hme_selftest directly -- going through the
     @chained hme_admin dispatcher would append another status_line, which
     the outer tool's chain_exit also appends, causing a duplicate banner.
     Advances state to 'selftest_ok' manually on clean pass (the side
@@ -156,12 +156,12 @@ def _selftest_clean(output: str) -> bool:
     from historical WARN log summaries ('default backend failed' inside a
     benign ONNX-fallback WARNING was blocking onboarding graduation)."""
     # Look for explicit FAIL-status lines in the structured selftest output.
-    # These have the form "  FAIL: <check name> -- <detail>" — case-sensitive
+    # These have the form "  FAIL: <check name> -- <detail>" -- case-sensitive
     # "FAIL:" distinguishes them from the word "failed" in prose.
     import re as _re
     if _re.search(r'^\s*FAIL:\s', output, flags=_re.MULTILINE):
         return False
-    # No explicit FAIL lines — READY verdict or only WARN/INFO.
+    # No explicit FAIL lines -- READY verdict or only WARN/INFO.
     return True
 
 
@@ -189,7 +189,7 @@ def _review_clean(output: str) -> bool:
 def _extract_target_from_evolve(output: str) -> str:
     """Parse a target module name out of evolve() output.
 
-    Robust layered lookup — tries structured markers first, falls back to
+    Robust layered lookup -- tries structured markers first, falls back to
     regex heuristics. When upstream generators start emitting markers via
     `emit_target_marker()`, the structured path takes over and brittle
     regex fallbacks become unnecessary.
@@ -199,7 +199,7 @@ def _extract_target_from_evolve(output: str) -> str:
     m = re.search(r'<!--\s*HME_TARGET:\s*([a-zA-Z_][a-zA-Z0-9_]+)\s*-->', output)
     if m:
         return m.group(1)
-    # Layer 2: fenced marker — used when HTML comments would break rendering
+    # Layer 2: fenced marker -- used when HTML comments would break rendering
     #   [HME_TARGET:moduleName]
     m = re.search(r'\[HME_TARGET:\s*([a-zA-Z_][a-zA-Z0-9_]+)\s*\]', output)
     if m:
@@ -236,7 +236,7 @@ def emit_review_verdict_marker(verdict: str) -> str:
 
     Producers should append this line to `review(mode='forget')` output so
     the chain decider can advance state deterministically:
-        clean:      agent may proceed (edited → reviewed)
+        clean:      agent may proceed (edited -> reviewed)
         warnings:   agent must fix warnings first (stay at edited)
         error:      verifier itself failed (stay at edited, surface error)
     """
@@ -246,7 +246,7 @@ def emit_review_verdict_marker(verdict: str) -> str:
 
 
 
-# CLI — callable from shell hooks via `python3 -m server.onboarding_chain ...`
+# CLI -- callable from shell hooks via `python3 -m server.onboarding_chain ...`
 
 
 def _cli():

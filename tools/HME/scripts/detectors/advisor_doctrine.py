@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect missing advisor calls at commitment boundaries — PAI Verification
+"""Detect missing advisor calls at commitment boundaries -- PAI Verification
 Doctrine Rule 2 + Rule 3 (conflict-cap).
 
 PAI v6.3.0 doctrine: on Extended+ effort (E2+) tasks, the advisor MUST be
@@ -12,7 +12,7 @@ Polychron analog: the advisor IS the buddy. `i/consult` invocations are
 the wire format.
 
 Rule 3 hard cap: max 2 re-calls of the advisor on the SAME conflict. The
-third re-call is a violation — escalate to the user instead.
+third re-call is a violation -- escalate to the user instead.
 
 This detector fires post-turn. Inputs:
   - tier (from mode-classifier.jsonl most-recent line, or override env)
@@ -55,12 +55,12 @@ _ADVISOR_LOG = _PROJECT / "tmp" / "hme-advisor-conflicts.jsonl"
 # subset). Detection is best-effort: if the agent doesn't emit the
 # markers, this detector falls back to soft signals (commitment verbs).
 _PRE_BUILD_RE = re.compile(
-    r"━━━ 🛠️ BUILD ━━━|^\s*phase:\s*build\b|"
+    r"={3,}\s*BUILD\s*={3,}|^\s*phase:\s*build\b|"
     r"\b(committing to (the )?approach|going with this approach)\b",
     re.IGNORECASE | re.MULTILINE,
 )
 _POST_DELIVER_RE = re.compile(
-    r"━━━ 📚 LEARN ━━━|^\s*phase:\s*complete\b|"
+    r"={3,}\s*LEARN\s*={3,}|^\s*phase:\s*complete\b|"
     r"\bbefore (setting|marking) phase: complete\b|"
     r"\bdurable deliverable\b",
     re.IGNORECASE | re.MULTILINE,
@@ -136,7 +136,7 @@ def _consult_invocations(events: list) -> int:
 
 def _conflict_cap_exceeded() -> bool:
     """Read tmp/hme-advisor-conflicts.jsonl for any conflict_id with
-    re-call count ≥ 3 (violates Rule 3's max-2 cap). Best-effort: the
+    re-call count >= 3 (violates Rule 3's max-2 cap). Best-effort: the
     log file may not exist yet."""
     if not _ADVISOR_LOG.is_file():
         return False
@@ -157,7 +157,7 @@ def _conflict_cap_exceeded() -> bool:
 
 
 def _load_current_turn(transcript_path: str) -> list[dict]:
-    """Slice from the last REAL user prompt onward — same pattern as
+    """Slice from the last REAL user prompt onward -- same pattern as
     senior_consult_debt, so tool_result wrapper events don't lose the
     consult tool_use that preceded them."""
     events = _parse_all(transcript_path)
@@ -190,7 +190,7 @@ def main() -> int:
     n_consults = _consult_invocations(events)
     text_lower = text.lower()
 
-    # Rule 3 cap — historic violation across turns.
+    # Rule 3 cap -- historic violation across turns.
     if _conflict_cap_exceeded():
         print("advisor_conflict_cap_exceeded")
         return 0

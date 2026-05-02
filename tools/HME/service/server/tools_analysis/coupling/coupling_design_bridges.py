@@ -1,4 +1,4 @@
-"""Antagonism bridge intelligence — leverage analysis, bridge cache, field guides, and design synthesis."""
+"""Antagonism bridge intelligence -- leverage analysis, bridge cache, field guides, and design synthesis."""
 import glob as _glob_mod
 import logging
 import os
@@ -332,7 +332,7 @@ def forge_bridges(top_n: int = 2) -> str:
                 except Exception as _err4:
                     logger.debug(f'silent-except coupling_bridges.py:687: {type(_err4).__name__}: {_err4}')
 
-            # Re-prompt if too many unknown API calls — inject valid symbol list as constraint
+            # Re-prompt if too many unknown API calls -- inject valid symbol list as constraint
             if len(unknown_refs) > 2 and ctx.project_engine.symbol_table is not None:
                 api_constraints = []
                 for mod_name, methods in module_methods.items():
@@ -367,11 +367,11 @@ def forge_bridges(top_n: int = 2) -> str:
                         ]
                         sketch = corrected_sketch
                         unknown_refs = still_unknown
-                        parts.append(f"  _(Re-prompted with valid symbol list — {len(still_unknown)} unverified remaining)_")
+                        parts.append(f"  _(Re-prompted with valid symbol list -- {len(still_unknown)} unverified remaining)_")
 
             parts.append(f"\n```javascript\n{sketch}\n```\n")
             if unknown_refs:
-                parts.append(f"  ⚠ **API WARNING**: {len(unknown_refs)} unverified method call(s): {', '.join(unknown_refs[:5])}")
+                parts.append(f"  [!] **API WARNING**: {len(unknown_refs)} unverified method call(s): {', '.join(unknown_refs[:5])}")
                 parts.append(f"    Verify these methods exist before running the sketch.")
             parts.append(f"  Add to `lab/sketches.js` array, then: `node lab/run.js forge-{pair_a}-{pair_b}`")
             parts.append(f"  If STABLE: integrate bridge code into src/{pair_a}.js and src/{pair_b}.js")

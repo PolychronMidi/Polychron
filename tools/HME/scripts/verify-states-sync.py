@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""States sync verifier — catches STATES drift between Python and shell.
+"""States sync verifier -- catches STATES drift between Python and shell.
 
 onboarding_chain.py defines the authoritative STATES list. _onboarding.sh
 has a mirror _ONB_STATES array for shell helpers that can't import Python.
@@ -9,9 +9,9 @@ This script parses both files, compares the state lists, and exits non-zero
 on mismatch. Runs as part of hme_admin(action='selftest').
 
 Exit codes:
-    0 — lists match
-    1 — drift detected
-    2 — parse error
+    0 -- lists match
+    1 -- drift detected
+    2 -- parse error
 """
 import os
 import re
@@ -60,7 +60,7 @@ def main() -> int:
         return 2
 
     if py_states == sh_states:
-        print(f"OK — STATES match ({len(py_states)} entries): {py_states}")
+        print(f"OK -- STATES match ({len(py_states)} entries): {py_states}")
         return 0
 
     print("DRIFT DETECTED:")

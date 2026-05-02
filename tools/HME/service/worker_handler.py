@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""HME tool worker — plain HTTP server, no FastMCP.
+"""HME tool worker -- plain HTTP server, no FastMCP.
 
 Reuses main.py's bootstrap (env, pyc purge, RAG engine loading, llamacpp
 supervisor) but swaps FastMCP for a dict-backed tool registry. Exposes:
 
-  GET  /health         — readiness probe (used by supervisor)
-  GET  /version        — {"version": WORKER_VERSION, "cli_compat": CLI_VERSION}
-  GET  /tools/list     — MCP tools/list payload (schema list)
-  POST /tool/<name>    — invoke a tool with JSON body as kwargs
+  GET  /health         -- readiness probe (used by supervisor)
+  GET  /version        -- {"version": WORKER_VERSION, "cli_compat": CLI_VERSION}
+  GET  /tools/list     -- MCP tools/list payload (schema list)
+  POST /tool/<name>    -- invoke a tool with JSON body as kwargs
                           returns {"ok": true, "result": "..."} or
                           {"ok": false, "error": "...", "trace": "..."}
 
@@ -28,12 +28,12 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 # `logger` and `ENV` were referenced as bare module globals in the original
-# split — they're cheap module-level resolves with no circular-import risk
+# split -- they're cheap module-level resolves with no circular-import risk
 # (hme_env is leaf-level, logging is stdlib), so import them at top.
 # worker.py-side state (_sp, _startup_done, WORKER_VERSION, CLI_COMPAT_VERSION,
 # names, list_schemas, _bounded_validate, _active_tool_register / _unregister)
 # is resolved lazily inside method bodies because worker.py imports US for
-# _Handler — a top-level back-import would cycle.
+# _Handler -- a top-level back-import would cycle.
 logger = logging.getLogger("HME")
 _tool_root = os.path.dirname(os.path.abspath(__file__))
 if _tool_root not in sys.path:
@@ -42,7 +42,7 @@ from hme_env import ENV  # noqa: E402
 
 # Shared thread pool for /validate requests. Previous implementation
 # spawned a fresh ThreadPoolExecutor per request with cancel_futures=True,
-# but Python threads can't be interrupted — on timeout, the running
+# but Python threads can't be interrupted -- on timeout, the running
 # _validate kept executing past the 3s deadline and leaked an engine-
 # bound thread. With a bounded shared pool + semaphore, concurrent
 # validates are capped, so overload cycles can't accumulate runaway
@@ -145,7 +145,7 @@ class _Handler(BaseHTTPRequestHandler):
     # POST dispatch
     def _read_body(self):
         # Explicit None-check for Content-Length instead of the old
-        # truthy-falsy-fallback idiom — matches the fail-fast style the
+        # truthy-falsy-fallback idiom -- matches the fail-fast style the
         # rest of the codebase uses and passes the Python-bug probe in
         # workflow_audit.
         _cl = self.headers.get("Content-Length")
@@ -156,7 +156,7 @@ class _Handler(BaseHTTPRequestHandler):
         return json.loads(raw)
 
     def _post_tool(self, name: str, args: dict):
-        # Lazy imports — these symbols live on the worker module (which
+        # Lazy imports -- these symbols live on the worker module (which
         # imports US for _Handler), so a top-level import would cycle.
         # Resolving at call time also matches the "lazy import in hot path"
         # comment that surrounds _post_validate / _post_audit.
@@ -220,7 +220,7 @@ class _Handler(BaseHTTPRequestHandler):
             self._json(400, {"error": "device required (e.g. 'cuda:1' or 'restore')"})
             return
         if device != "restore" and not device.startswith("cuda:"):
-            self._json(400, {"error": f"invalid device '{device}' — must be 'cuda:N' or 'restore'"})
+            self._json(400, {"error": f"invalid device '{device}' -- must be 'cuda:N' or 'restore'"})
             return
         try:
             result = rag_engines.reload_on_device(device)
@@ -272,7 +272,7 @@ class _Handler(BaseHTTPRequestHandler):
             else:
                 cutoff = int(time.time() * 1000) - int(older_than_ms)
                 # Every entry in _error_log has "ts" (set by _log_error on
-                # creation). Use [] not .get() — malformed entries throw.
+                # creation). Use [] not .get() -- malformed entries throw.
                 _store._error_log = [e for e in _store._error_log if e["ts"] >= cutoff]
             cleared = before - len(_store._error_log)
         self._json(200, {"cleared": cleared, "remaining": len(_store._error_log)})

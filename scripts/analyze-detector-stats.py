@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analyze output/metrics/detector-stats.jsonl — surface dead phrase
+"""Analyze output/metrics/detector-stats.jsonl -- surface dead phrase
 lists, firing patterns, and coverage gaps in the stop-hook detectors.
 
 Each detector that writes telemetry (psycho_stop, early_stop, etc.)
@@ -68,14 +68,14 @@ def summary(rows: list[dict]) -> str:
             lines.append("  - top details:")
             for detail, n in top_details:
                 detail_show = detail or "(empty)"
-                lines.append(f"    - {n}× `{detail_show}`")
+                lines.append(f"    - {n}* `{detail_show}`")
         lines.append("")
     return "\n".join(lines)
 
 
 def coverage_audit(rows: list[dict]) -> dict:
     """Compare early_stop's known phrase lists against detail strings
-    from live fires — surface phrases that NEVER fired (dead weight) and
+    from live fires -- surface phrases that NEVER fired (dead weight) and
     fires whose detail doesn't reference any known phrase (phrase-list
     gap). Returns dict with 'never_fired' + 'unknown_details'."""
     try:

@@ -8,7 +8,7 @@ at the next turn boundary. Each alert type cools down for
 `cooldown_sec` so a persistent outage writes one line, not thousands.
 
 Why: a worker that is ALIVE but GIL-saturated never fires any existing
-LIFESAVER path — hooks only log rc!=0 on _safe_curl, and no caller was
+LIFESAVER path -- hooks only log rc!=0 on _safe_curl, and no caller was
 necessarily running against the hung endpoint. The pulse closes that
 gap by probing proactively from outside the affected process.
 """
@@ -79,11 +79,11 @@ _log_counter = {"n": 0}
 
 
 def _trim_error_log() -> None:
-    r"""Bound hme-errors.log to _ERROR_LOG_MAX_LINES — keeps tail half when
+    r"""Bound hme-errors.log to _ERROR_LOG_MAX_LINES -- keeps tail half when
     exceeded. Called every _ERROR_LOG_TRIM_EVERY appends. Named with the
     _trim_ prefix so workflow_audit's pattern detector recognizes this
     as a legitimate bound (it greps `_trim_\w+`). Mirrors common.bounded_log
-    but inlined — pulse runs as a standalone process outside the MCP
+    but inlined -- pulse runs as a standalone process outside the MCP
     worker's Python path."""
     try:
         with open(ERROR_LOG, "rb") as f:
@@ -165,7 +165,7 @@ _last_maintenance_seen: dict = {"ts": 0.0}
 
 def _in_startup_grace(now: float, grace_sec: float = 120.0) -> bool:
     """True if we're within grace_sec of the most recent maintenance
-    window — skip CPU saturation checks during this window so cold-boot
+    window -- skip CPU saturation checks during this window so cold-boot
     work (checkpoint load, model warmup) doesn't trip the hang-alarm."""
     if _maintenance_active():
         _last_maintenance_seen["ts"] = now
@@ -190,7 +190,7 @@ def _probe_http(url: str, timeout_sec: float) -> tuple[bool, str]:
 
 def _ps_cpu_instant(cmd_pattern: str) -> float:
     """Return MAX CPU% across processes whose args match cmd_pattern,
-    measured via a ~1s sample (the second `ps` reading is what we use —
+    measured via a ~1s sample (the second `ps` reading is what we use --
     first reading is cumulative since process start, which is useless)."""
     regex = re.compile(cmd_pattern)
     def _snapshot() -> float:
@@ -215,7 +215,7 @@ def _ps_cpu_instant(cmd_pattern: str) -> float:
                     best = pcpu
         return best
     # Single call: `ps` reports CPU% as cpu-time / wall-time since process
-    # start by default. That's fine for sustained-saturation detection —
+    # start by default. That's fine for sustained-saturation detection --
     # a thread that has been at 99% for 48 minutes will be near 99% in
     # this reading too. Rolling-buffer math below filters transient spikes.
     return _snapshot()
@@ -238,7 +238,7 @@ class _CpuRollingBuffer:
         arr = self._samples.get(name, [])
         cutoff = now - window_sec
         relevant = [p for ts, p in arr if ts >= cutoff]
-        # Need at least 3 samples covering the window to declare saturation —
+        # Need at least 3 samples covering the window to declare saturation --
         # prevents false-alert on first tick after fresh start.
         if len(relevant) < 3:
             return False, 0.0
@@ -262,7 +262,7 @@ class _StreakTracker:
         """Update streak. Return True iff an alert should be emitted now."""
         if ok:
             if self._streak.get(key, 0) >= self.threshold:
-                # Recovered — emit recovery line so LIFESAVER sees motion.
+                # Recovered -- emit recovery line so LIFESAVER sees motion.
                 self._streak[key] = 0
                 self._last_alert_ts.pop(key, None)
                 return False  # don't re-alert on recovery (separate log line)
@@ -279,12 +279,12 @@ class _StreakTracker:
         return True
 
     def recovered(self, key: str) -> bool:
-        """Return True iff we just transitioned from alerting → healthy."""
+        """Return True iff we just transitioned from alerting -> healthy."""
         return key in self._last_alert_ts and self._streak.get(key, 0) == 0
 
 
 
-# Re-exports — tick + hook latency extracted.
+# Re-exports -- tick + hook latency extracted.
 from universal_pulse_tick import (  # noqa: F401, E402
     _tick, _hook_latency_per_hook, _hook_latency_p95,
 )

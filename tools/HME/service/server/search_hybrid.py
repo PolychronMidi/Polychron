@@ -1,4 +1,4 @@
-"""HME search tools — hybrid semantic+keyword search: search_code."""
+"""HME search tools -- hybrid semantic+keyword search: search_code."""
 import logging
 import os
 
@@ -12,7 +12,7 @@ logger = logging.getLogger("HME")
 
 
 def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", scope: str = "main", path: str = "", response_format: str = "detailed") -> str:
-    """Semantic natural-language code search across the indexed codebase. Use this for intent-based queries like 'where does convergence detection happen' — it uses vector similarity, not string matching. Set path='src/crossLayer' to scope results to a directory. Set lib='<name>' to search an indexed library. Set scope='all' to include both main and libs. Results include chunk summaries, relevance scores, and any KB constraints tagged to matching modules. For exact string/regex matching, use grep instead. Set response_format='concise' to get file:line locations only (saves ~2/3 tokens); 'detailed' (default) includes full summaries and KB tags."""
+    """Semantic natural-language code search across the indexed codebase. Use this for intent-based queries like 'where does convergence detection happen' -- it uses vector similarity, not string matching. Set path='src/crossLayer' to scope results to a directory. Set lib='<name>' to search an indexed library. Set scope='all' to include both main and libs. Results include chunk summaries, relevance scores, and any KB constraints tagged to matching modules. For exact string/regex matching, use grep instead. Set response_format='concise' to get file:line locations only (saves ~2/3 tokens); 'detailed' (default) includes full summaries and KB tags."""
     _track("search_code")
     ctx.ensure_ready_sync()
     if not query or not query.strip():
@@ -190,7 +190,7 @@ def search_code(query: str, top_k: int = 10, language: str = "", lib: str = "", 
                 results = ctx.project_engine.search(short_query, top_k=top_k, language=lang)
                 if results:
                     retry_results = results[:top_k]
-                    retry_query = f"{short_query} (path filter '{path_filter}' dropped — no matches there)"
+                    retry_query = f"{short_query} (path filter '{path_filter}' dropped -- no matches there)"
                     break
         if retry_results:
             code_lines = []

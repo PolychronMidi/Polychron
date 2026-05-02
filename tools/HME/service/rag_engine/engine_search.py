@@ -1,4 +1,4 @@
-"""RAGEngine search mixin — semantic, budgeted, and token-counting search."""
+"""RAGEngine search mixin -- semantic, budgeted, and token-counting search."""
 import logging
 import os
 import sys
@@ -14,11 +14,11 @@ from .utils import _bm25_search, _rrf_fuse, _sanitize
 logger = logging.getLogger(__name__)
 
 # Instruction prefixes for asymmetric (instruction-tuned) embedders.
-# bge-code-v1 requires a manual prefix per its model card — its
+# bge-code-v1 requires a manual prefix per its model card -- its
 # config_sentence_transformers.json has empty prompts, so prompt_name=
 # kwarg is a no-op. Prefix the QUERY only; documents are indexed raw.
 # Swap both strings if you change model. Qwen3-Embedding-0.6B has a
-# built-in "query" prompt in its config — we call encode(prompt_name=
+# built-in "query" prompt in its config -- we call encode(prompt_name=
 # "query") for the text model to trigger it automatically.
 _CODE_QUERY_PREFIX = ENV.optional(
     "RAG_CODE_QUERY_PREFIX",
@@ -28,7 +28,7 @@ _CODE_QUERY_PREFIX = ENV.optional(
 
 def _encode_code_query(code_model, query: str):
     """Encode a user query for code retrieval, applying the required
-    bge-code-v1 instruction prefix. Dispatcher transparent — the prefix
+    bge-code-v1 instruction prefix. Dispatcher transparent -- the prefix
     is added on the text BEFORE encode() so it doesn't need special
     support from the _RagDispatcher."""
     return code_model.encode(_CODE_QUERY_PREFIX + query)
@@ -107,7 +107,7 @@ class RAGEngineSearchMixin:
             bm25_score = next((s for j, s in bm25_hits if j == i), 0.0)
             combined = 0.6 * sem_score + 0.4 * min(bm25_score / 10.0, 1.0)
             fname = os.path.basename(r["source"]).lower().replace(".js", "").replace(".ts", "").replace(".py", "")
-            # Exact filename match: score 1.5 (above any natural score ceiling of 1.0) → ranks first
+            # Exact filename match: score 1.5 (above any natural score ceiling of 1.0) -> ranks first
             if fname in query_tokens_lower:
                 combined = 1.5
             results.append({
@@ -180,7 +180,7 @@ class RAGEngineSearchMixin:
 
         # Auto-KB enrichment: tag each result with relevant knowledge constraints
         # Module-name embeddings are cached to avoid re-encoding the same module name
-        # for every search call (up to 30 per call without cache → O(1) with cache).
+        # for every search call (up to 30 per call without cache -> O(1) with cache).
         if self.knowledge_table is not None:
             for r in results:
                 module = os.path.basename(r["source"]).replace(".js", "").replace(".ts", "")
@@ -207,7 +207,7 @@ class RAGEngineSearchMixin:
         return results
 
     def _count_tokens(self, text: str) -> int:
-        """Count tokens: API (precise) → BERT tokenizer (accurate, free) → char estimate."""
+        """Count tokens: API (precise) -> BERT tokenizer (accurate, free) -> char estimate."""
         cache_key = hash(text)
         if cache_key in self._token_cache:
             return self._token_cache[cache_key]

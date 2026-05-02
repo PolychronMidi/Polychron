@@ -3,19 +3,19 @@
 
 Single append-only JSONL at output/metrics/hme-agent-patterns.jsonl.
 Every session contributes signatures about the agent's behavior in that
-session — tool-count histograms, deferral phrases seen, race outcomes,
+session -- tool-count histograms, deferral phrases seen, race outcomes,
 review cleanliness, hook-latency p95. These accumulate across sessions
 so:
 
-  - Drift detection: "this agent said 'banked for later' 2× / session in
+  - Drift detection: "this agent said 'banked for later' 2* / session in
     the last month" is visible cumulatively.
   - Priors for the next session: sessionstart can read this and warn
-    the agent "your last 5 sessions had p95>600ms on stop.sh — expect
+    the agent "your last 5 sessions had p95>600ms on stop.sh -- expect
     slow turns until you profile it."
 
 MVP API:
-  record(signature: str, value: dict) → append one line
-  recent(signature: str, n: int) → list of last-n value dicts
+  record(signature: str, value: dict) -> append one line
+  recent(signature: str, n: int) -> list of last-n value dicts
 
 CLI:
   agent_patterns.py record <signature> <json>    # stdin ok via -

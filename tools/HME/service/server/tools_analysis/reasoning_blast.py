@@ -1,4 +1,4 @@
-"""HME reasoning — think tool and blast_radius analysis."""
+"""HME reasoning -- think tool and blast_radius analysis."""
 import os
 import logging
 
@@ -53,7 +53,7 @@ def blast_radius(symbol_name: str, max_depth: int = 3) -> str:
         grep_result = _grep_fn(symbol_name, path="src/", regex=False, files_only=True)
         if grep_result and "No matches" not in grep_result:
             return (f"# Blast Radius: {symbol_name}\n\n"
-                    f"'{symbol_name}' is not an IIFE global — falling back to grep.\n"
+                    f"'{symbol_name}' is not an IIFE global -- falling back to grep.\n"
                     f"Found as property/field reference:\n\n{grep_result}")
         return f"No callers found for '{symbol_name}'. Blast radius = 0."
     parts = [f"# Blast Radius: {symbol_name}\n"]

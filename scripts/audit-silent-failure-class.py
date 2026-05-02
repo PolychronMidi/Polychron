@@ -5,15 +5,15 @@ Pattern B (from the architectural review): silent-on-failure observability
 that drops the very signals it exists to surface. Catches like `except
 Exception: pass` are correct for telemetry hot-paths but wrong for
 load-bearing safety checks. The codebase has no convention to distinguish
-the two — every author falls back to broad-except + log-and-continue.
+the two -- every author falls back to broad-except + log-and-continue.
 
 This audit doesn't auto-fix; it surfaces every catch-and-swallow site so
 a reviewer can decide whether each is "telemetry (silence ok)" or
 "safety-belt (must surface)".
 
 Convention (proposed): mark intentionally-silent catches with one of:
-  # silent-ok: telemetry-only — failure does not affect correctness
-  # silent-ok: best-effort enrichment — caller has fallback
+  # silent-ok: telemetry-only -- failure does not affect correctness
+  # silent-ok: best-effort enrichment -- caller has fallback
   # silent-ok: <one-line reason>
 Anything without a `silent-ok:` marker that swallows broad Exception
 should either log + raise, or convert to a typed except.
@@ -55,7 +55,7 @@ def _scan_python(path: Path) -> list[tuple[int, str]]:
     for i, line in enumerate(lines, 1):
         if not PYTHON_SWALLOW.match(line):
             continue
-        # Look at the next 3 lines — a `pass` or empty body without a
+        # Look at the next 3 lines -- a `pass` or empty body without a
         # silent-ok marker on the except line, body, or comment block
         # within 5 lines is a candidate.
         body = lines[i:i + 5]
@@ -102,7 +102,7 @@ def _scan_sh(path: Path) -> list[tuple[int, str]]:
     # the broad audit non-actionable.
     # Note: `\|\|\s*echo` was deliberately DROPPED from BENIGN after peer
     # review caught that `cat FILE 2>/dev/null || echo 0` is the exact
-    # safety-belt-as-default pattern the audit exists to surface — a
+    # safety-belt-as-default pattern the audit exists to surface -- a
     # transient read failure converts silently to the default value.
     # If a specific site is truly benign, it should carry an explicit
     # `silent-ok: <reason>` annotation, not be silently suppressed here.

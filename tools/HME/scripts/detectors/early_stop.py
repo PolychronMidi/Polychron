@@ -5,15 +5,15 @@ Pattern (the "enumerate-and-ceremony" antipattern from 2026-04-23):
 
   1. User message signals open-ended continuation of prior HME work
      ("do all", "anything missing", "next suggestions", "push further",
-     "followups", "keep going", "improve X", "make Y better", …).
+     "followups", "keep going", "improve X", "make Y better", ...).
 
   2. Agent's FINAL assistant text contains a "what remains" checklist
      ("what's missing", "here's what's left", "pick any to queue",
-     "deferred for dedicated review", "remaining gaps", …) AND the
+     "deferred for dedicated review", "remaining gaps", ...) AND the
      enumerated items are the same kind of substantive work the user
      just asked to continue.
 
-  3. No tool calls fire after that final text block — the agent stopped
+  3. No tool calls fire after that final text block -- the agent stopped
      after writing the checklist instead of executing through it.
 
 That pattern triggered six-plus "anything missing? / do all" ceremony
@@ -21,7 +21,7 @@ rounds in a row before the user asked for enforcement. This detector
 makes the Stop hook flip to block when those three signals align.
 
 Narrow-scope user prompts ("rename foo to bar", "just fix the one bug",
-"don't touch X") explicitly override — the protocol is for open-ended
+"don't touch X") explicitly override -- the protocol is for open-ended
 "improve HME" rounds where the user signalled continuous motion.
 
 Usage: early_stop.py <transcript_path>
@@ -39,7 +39,7 @@ from _transcript import (  # noqa: E402
 )
 
 
-# ─── Signal 1: user prompt signals open-ended continuation ───
+# --- Signal 1: user prompt signals open-ended continuation ---
 
 OPEN_ENDED_PROMPTS = (
     "do all",
@@ -100,7 +100,7 @@ OPEN_ENDED_PROMPTS = (
     "catostrophic failure",
 )
 
-# Narrow-scope overrides — if these appear, the user has bounded the
+# Narrow-scope overrides -- if these appear, the user has bounded the
 # work and early-stop is legitimate.
 NARROW_SCOPE_OVERRIDES = (
     "rename",
@@ -118,7 +118,7 @@ NARROW_SCOPE_OVERRIDES = (
 )
 
 
-# ─── Signal 2: final text shows "enumerated-but-didn't-execute" shape ───
+# --- Signal 2: final text shows "enumerated-but-didn't-execute" shape ---
 
 ENUMERATION_PHRASES = (
     "what remains",
@@ -158,7 +158,7 @@ ENUMERATION_PHRASES = (
     "genuinely low-leverage",
     # Expanded 2026-04-23 from the catastrophic-failure debut turn. The
     # final text of that turn used these exact phrases without them
-    # triggering the detector — they are now load-bearing members of
+    # triggering the detector -- they are now load-bearing members of
     # the list.
     "pick any to spin",
     "queue next",
@@ -186,7 +186,7 @@ ENUMERATION_PHRASES = (
     "nice-to-have",
     "nice to have",
     # Expanded 2026-04-23 (round 2). The closing of the prior turn used
-    # "Round complete... two minor UX gaps left as-is" — explicit
+    # "Round complete... two minor UX gaps left as-is" -- explicit
     # enumeration-with-deferral that the detector missed because none of
     # those exact phrasings were members. Adding the smoking-gun closures
     # plus the "minor"/"small"/"polish" minimizers that pair with them.
@@ -210,7 +210,7 @@ ENUMERATION_PHRASES = (
     "wont fix",
     "skipped for",
     "skipping for",
-    "skipped — ",
+    "skipped -- ",
     "skipped --",
     "out of scope for this",
     "outside scope of this",
@@ -266,7 +266,7 @@ def _last_assistant_text(events: list) -> str:
 
 def _has_tool_call_after_last_text(events: list) -> bool:
     """True if any tool_use appears after the last text block in the turn.
-    Mirrors the same logic psycho_stop uses — "said it and did it" vs
+    Mirrors the same logic psycho_stop uses -- "said it and did it" vs
     "said it and stopped"."""
     last_text_event_idx = -1
     last_text_block_idx = -1
@@ -316,7 +316,7 @@ def _emit_stats(pattern: str, detail: str) -> None:
                 "verdict": pattern, "detail": detail,
             }) + "\n")
     except (OSError, TypeError, ValueError) as _emit_err:
-        # Observability only, never block — but narrowed so real bugs
+        # Observability only, never block -- but narrowed so real bugs
         # surface to stderr instead of vanishing into a bare except.
         import sys as _sys
         print(f"[early_stop] stats emit failed: "
@@ -355,7 +355,7 @@ def main() -> int:
 
     # Signal 2: does the final assistant text show enumerate-but-didnt-execute?
     # Strip code-fenced / backticked / quoted spans before phrase-
-    # matching — same discipline stop_work + exhaust_check + psycho_stop
+    # matching -- same discipline stop_work + exhaust_check + psycho_stop
     # + fabrication_check apply. A response that DESCRIBES enumerated
     # remaining items (in a regex example or quoted block) shouldn't
     # false-fire as if the agent left work undone in their own prose.

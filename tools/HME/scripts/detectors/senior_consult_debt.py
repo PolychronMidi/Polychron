@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect "design-space changes shipped without consulting senior" — the
+"""Detect "design-space changes shipped without consulting senior" -- the
 exact anti-pattern that motivated this detector's existence.
 
 The buddy paradigm rests on two-way collaboration. When a turn touches
@@ -8,7 +8,7 @@ files in the buddy/handoff design space (`buddy_handoff.py`,
 in `BUDDY_SYSTEM.md`, the `i/consult` and `i/handoff` wrappers) but
 NEVER invokes `i/consult`, the operator's design intent gets bypassed
 silently. This detector flips the default from "consulting is opt-in"
-to "checkpointing is opt-out for this code area" — the behavioral
+to "checkpointing is opt-out for this code area" -- the behavioral
 inversion proposed by 0e7fbf4d during a review consult.
 
 First fire is informational (verdict surfaces in detector output but
@@ -20,16 +20,16 @@ counts `# crystallized: ...` markers in tool_result content, which
 land when a consult's response contained `[[KB-CRYSTALLIZE]]` blocks
 that `cmd_consult` auto-extracted into the KB. A consult that produced
 zero crystallized blocks AND happened on a design-space-edit turn
-triggers `consult-thin` instead of `ok` — surfacing the
+triggers `consult-thin` instead of `ok` -- surfacing the
 satisfy-the-detector-cheaply path that would otherwise become
 Goodhart-bait.
 
 Usage: senior_consult_debt.py <transcript_path>
 Verdicts:
-  ok               — either no design-space edit, or consult invoked
-                     AND produced ≥1 crystallized block.
-  consult-debt     — design-space edits with NO i/consult invocation.
-  consult-thin     — design-space edits with consult invoked but ZERO
+  ok               -- either no design-space edit, or consult invoked
+                     AND produced >=1 crystallized block.
+  consult-debt     -- design-space edits with NO i/consult invocation.
+  consult-thin     -- design-space edits with consult invoked but ZERO
                      crystallized blocks (low-quality consult).
 """
 from __future__ import annotations
@@ -47,14 +47,14 @@ from _transcript import (  # noqa: E402
 # Solo-rationale rescue: the deny prompt sanctions "explicitly note why
 # solo was right" as an alternative to invoking i/consult. When the
 # agent's text in the same turn explains why a checkpoint wasn't needed,
-# fold to ok — the alternative path the deny advertises must actually
+# fold to ok -- the alternative path the deny advertises must actually
 # exist. Patterns are sentence-shaped because the justification is
 # rarely terse.
 SOLO_RATIONALE_RES = (
     re.compile(r"\bsolo\s+(was|is)\s+(the\s+)?right\b", re.IGNORECASE),
     re.compile(r"\bdidn'?t\s+(need\s+to\s+)?consult\b[^.\n]{0,80}\bbecause\b", re.IGNORECASE),
     re.compile(r"\b(no|skipped?\s+the?)\s+consult\b[^.\n]{0,80}\bbecause\b", re.IGNORECASE),
-    re.compile(r"\bskipping\s+(the\s+)?consult\b[^.\n]{0,60}\b(because|since|—)\b", re.IGNORECASE),
+    re.compile(r"\bskipping\s+(the\s+)?consult\b[^.\n]{0,60}\b(because|since|--)\b", re.IGNORECASE),
     re.compile(r"\b(mechanical|trivial|deterministic|narrow|bounded)\s+(rename|edit|change|fix)\b", re.IGNORECASE),
 )
 
@@ -89,7 +89,7 @@ def _load_current_turn(transcript_path: str) -> list[dict]:
     tool_result wrappers (`message.content` is a list with tool_result
     blocks). load_turn_events / load_full_turn_with_user use the LAST
     user-typed event regardless of shape, which incorrectly slices off
-    tool_uses that happened before tool_result wrappers — wrong for a
+    tool_uses that happened before tool_result wrappers -- wrong for a
     detector that needs to see the whole turn's tool activity.
     """
     events = _parse_all(transcript_path)
@@ -134,7 +134,7 @@ def _touches_design_space(path: str) -> bool:
 
 def _is_consult_invocation(cmd: str) -> bool:
     """Match `i/consult ...` invocations whether direct or piped/chained.
-    The wrapper accepts `sid=`, `primary=`, `buddy=`, `senior=` aliases —
+    The wrapper accepts `sid=`, `primary=`, `buddy=`, `senior=` aliases --
     we don't care which form was used, only that the command ran."""
     if not cmd:
         return False
@@ -208,7 +208,7 @@ def main() -> int:
         # Consult fired but produced no crystallized blocks. The agent
         # may have asked a low-content question, or the senior didn't
         # see anything worth crystallizing. Either way, the consult
-        # doesn't carry quality weight — surface the gap so the
+        # doesn't carry quality weight -- surface the gap so the
         # operator can see if it's chronic.
         print("consult-thin")
     else:

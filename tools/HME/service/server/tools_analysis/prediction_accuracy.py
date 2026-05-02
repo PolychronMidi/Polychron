@@ -1,4 +1,4 @@
-"""HME prediction accuracy reader — Phase 3.4 of openshell_features_to_mimic.md.
+"""HME prediction accuracy reader -- Phase 3.4 of openshell_features_to_mimic.md.
 
 Renders `metrics/hme-prediction-accuracy.json` (populated by
 `scripts/pipeline/reconcile-predictions.js`) as a markdown digest.
@@ -40,7 +40,7 @@ def prediction_accuracy_report() -> str:
     lines = [
         "# HME Prediction Accuracy",
         "",
-        f"**EMA:** {ema_s}  ({len(rounds)} round(s) recorded, α={data.get('meta', {}).get('ema_alpha', '?')})",
+        f"**EMA:** {ema_s}  ({len(rounds)} round(s) recorded, alpha={data.get('meta', {}).get('ema_alpha', '?')})",
         "",
     ]
 
@@ -69,7 +69,7 @@ def prediction_accuracy_report() -> str:
             f"{len(r.get('missed') or []):>5}"
         )
 
-    # Most recent round — show specifics
+    # Most recent round -- show specifics
     latest = rounds[-1]
     lines.append("")
     lines.append("## Latest round detail")
@@ -77,13 +77,13 @@ def prediction_accuracy_report() -> str:
     ref = latest.get("refuted") or []
     miss = latest.get("missed") or []
     if conf:
-        lines.append(f"  ✓ confirmed: {', '.join(conf[:15])}" + (f" (+{len(conf)-15})" if len(conf) > 15 else ""))
+        lines.append(f"  [ok] confirmed: {', '.join(conf[:15])}" + (f" (+{len(conf)-15})" if len(conf) > 15 else ""))
     if ref:
-        lines.append(f"  ✗ refuted:   {', '.join(ref[:15])}" + (f" (+{len(ref)-15})" if len(ref) > 15 else ""))
+        lines.append(f"  [no] refuted:   {', '.join(ref[:15])}" + (f" (+{len(ref)-15})" if len(ref) > 15 else ""))
     if miss:
         lines.append(f"  ? missed:    {', '.join(miss[:15])}" + (f" (+{len(miss)-15})" if len(miss) > 15 else ""))
 
     lines.append("")
     lines.append("Interpretation: EMA rising = HME's causal model is learning.")
-    lines.append("EMA falling = predictions diverging from reality — KB likely wrong.")
+    lines.append("EMA falling = predictions diverging from reality -- KB likely wrong.")
     return "\n".join(lines)

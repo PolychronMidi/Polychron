@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""H12: Global KB promotion — cross-project learning.
+"""H12: Global KB promotion -- cross-project learning.
 
 Scans the project KB (tools/HME/KB) for entries that look domain-independent
 (antipatterns, meta-rules, process lessons) and proposes promoting them to
@@ -8,7 +8,7 @@ tools/HME/KB/global_kb). Domain-specific entries (music composition,
 Polychron-specific modules) stay in the project KB.
 
 Heuristic for "domain-independent":
-  1. Category ∈ {"antipattern", "decision", "pattern"} AND
+  1. Category  in  {"antipattern", "decision", "pattern"} AND
   2. Content doesn't mention project-specific identifiers (Polychron,
      crossLayer, conductor, stutter, binaural, etc.) AND
   3. Contains process/meta keywords (always, never, rule, principle,
@@ -37,7 +37,7 @@ METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", 
 _OUTPUT = os.path.join(METRICS_DIR, "hme-global-kb-promotions.json")
 _SHIM_URL = "http://127.0.0.1:9098/rag"
 
-# Project-specific terms — presence indicates domain-bound entry
+# Project-specific terms -- presence indicates domain-bound entry
 _DOMAIN_TERMS = {
     "polychron", "crosslayer", "conductor", "stutter", "binaural",
     "rhythm", "composer", "composition", "lab/sketches", "beat",
@@ -46,7 +46,7 @@ _DOMAIN_TERMS = {
     "feedbackregistry", "playProb", "signalReader", "stutterVariants",
 }
 
-# Meta/process keywords — presence supports generalizability
+# Meta/process keywords -- presence supports generalizability
 _META_TERMS = {
     "always", "never", "rule", "principle", "workflow", "antipattern",
     "debug", "regression", "lifesaver", "drift", "verifier", "hook",
@@ -153,7 +153,7 @@ def main(argv: list) -> int:
 
     if "--approve" in argv:
         if not os.path.isfile(_OUTPUT):
-            sys.stderr.write("no proposals file — run without --approve first\n")
+            sys.stderr.write("no proposals file -- run without --approve first\n")
             return 2
         with open(_OUTPUT) as f:
             data = json.load(f)

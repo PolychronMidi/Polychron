@@ -55,7 +55,7 @@ def _audit_one(path: Path) -> dict:
         except ValueError as e:
             findings["error"] = str(e)
     if not tier:
-        findings["error"] = "frontmatter missing 'tier' — completeness gate cannot evaluate"
+        findings["error"] = "frontmatter missing 'tier' -- completeness gate cannot evaluate"
     return findings
 
 
@@ -100,7 +100,7 @@ def main(argv: list) -> int:
             }, indent=2))
         else:
             if not violations:
-                print(f"audit-isa --diff: id-stability OK ({len(old.iscs)} → {len(new.iscs)} ISCs)")
+                print(f"audit-isa --diff: id-stability OK ({len(old.iscs)} -> {len(new.iscs)} ISCs)")
             else:
                 if id_violations:
                     print(f"audit-isa --diff: {len(id_violations)} id-stability violation(s)")
@@ -144,7 +144,7 @@ def main(argv: list) -> int:
                 print(f"  [DEFERRED-VERIFY] ISCs (linked task must close before "
                       f"phase: complete):")
                 for isc_id, task in f["deferred"]:
-                    print(f"    {isc_id} → task {task}")
+                    print(f"    {isc_id} -> task {task}")
     if strict and any_fail:
         return 1
     return 0

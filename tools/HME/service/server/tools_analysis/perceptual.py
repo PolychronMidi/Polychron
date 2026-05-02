@@ -1,4 +1,4 @@
-"""HME perceptual intelligence — audio analysis via EnCodec + CLAP.
+"""HME perceptual intelligence -- audio analysis via EnCodec + CLAP.
 
 Three-phase perceptual stack:
   Phase 1: Trace-based quality predictor (gradient-boosted tree on run-history)
@@ -63,11 +63,11 @@ def _load_audio_sections(wav_path: str, sr: int = 22050) -> list[tuple[int, any]
 
 def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int = 3) -> str:
     """Unified perceptual audio analysis. Runs EnCodec, CLAP, or both on combined.wav.
-    analysis: 'encodec' (neural token entropy per section), 'clap' (text↔audio similarity),
+    analysis: 'encodec' (neural token entropy per section), 'clap' (text<->audio similarity),
     'both' (default), or 'intent_loop' (CLAP character drift across last N run-history
-    snapshots — shows whether the perceptual feedback loop is converging, oscillating, or stalled).
+    snapshots -- shows whether the perceptual feedback loop is converging, oscillating, or stalled).
     queries: comma-separated CLAP queries (CLAP only).
-    Replaces calling audio_encodec + audio_clap separately — one call, one model-load cycle."""
+    Replaces calling audio_encodec + audio_clap separately -- one call, one model-load cycle."""
     ctx.ensure_ready_sync()
     _track("audio_analyze")
     if analysis == "intent_loop":
@@ -76,7 +76,7 @@ def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int =
     if not os.path.isfile(wav_path):
         return "No combined.wav found. Run `npm run render` first."
 
-    # Confidence banner — front and center
+    # Confidence banner -- front and center
     header = (
         f"# Perceptual Analysis (confidence: {_PERCEPTUAL_CONFIDENCE:.0%})\n"
         f"All perceptual outputs are UNVERIFIED until correlated with listening verdicts.\n"
@@ -95,7 +95,7 @@ def audio_analyze(analysis: str = "both", queries: str = "", top_sections: int =
 
 def _run_intent_loop(max_runs: int = 6) -> str:
     """Track CLAP section character across consecutive run-history snapshots.
-    Detects whether the perceptual feedback loop (CLAP→sectionIntentCurves→character)
+    Detects whether the perceptual feedback loop (CLAP->sectionIntentCurves->character)
     is converging, oscillating, or stalled per section."""
     history_dir = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "run-history")
     if not os.path.isdir(history_dir):
@@ -108,7 +108,7 @@ def _run_intent_loop(max_runs: int = 6) -> str:
     if len(snapshots) < 2:
         return f"Need at least 2 perceptual snapshots (found {len(snapshots)}). Run pipeline with --perceptual flag."
 
-    # Load snapshots oldest→newest
+    # Load snapshots oldest->newest
     snapshots = list(reversed(snapshots))
     run_data: list[dict] = []
     for fname in snapshots:
@@ -161,15 +161,15 @@ def _run_intent_loop(max_runs: int = 6) -> str:
         first_dominant = chars[0][0]
 
         if all(d < -0.03 for d in deltas):
-            loop_state = "CONVERGING ▼ (intent suppression working)"
+            loop_state = "CONVERGING v (intent suppression working)"
         elif all(d > 0.03 for d in deltas):
-            loop_state = "CONVERGING ▲ (intent amplification)"
+            loop_state = "CONVERGING ^ (intent amplification)"
         elif all(abs(d) < 0.03 for d in deltas):
             loop_state = "STALLED (no character shift across runs)"
         elif any(d > 0 for d in deltas) and any(d < 0 for d in deltas):
             loop_state = "OSCILLATING (loop not settling)"
         else:
-            loop_state = f"unclear ({first_dominant}→{last_dominant})"
+            loop_state = f"unclear ({first_dominant}->{last_dominant})"
 
         out.append(f"**S{sec_id}** {loop_state}")
         for char, score, ts in chars:
@@ -215,11 +215,11 @@ def evolution_delta() -> str:
     cur_p = current.get("perceptual", {}).get("encodec", {})
     prev_p = previous.get("perceptual", {}).get("encodec", {})
 
-    lines = [f"# Evolution Delta: {prev_ts[:16]} → {cur_ts[:16]}\n"]
+    lines = [f"# Evolution Delta: {prev_ts[:16]} -> {cur_ts[:16]}\n"]
 
     cv, pv = current.get("verdict"), previous.get("verdict")
     if cv or pv:
-        lines.append(f"**Verdict:** {pv or '?'} → {cv or '(unlabeled)'}")
+        lines.append(f"**Verdict:** {pv or '?'} -> {cv or '(unlabeled)'}")
 
     def _delta_row(label: str, key: str, fmt: str = ".3f", pct: bool = False) -> str:
         old = prev_f.get(key)
@@ -229,7 +229,7 @@ def evolution_delta() -> str:
         delta = new - old
         sign = "+" if delta >= 0 else ""
         suffix = "%" if pct else ""
-        return (f"  {label:<28} {format(old, fmt)}{suffix} → {format(new, fmt)}{suffix}  "
+        return (f"  {label:<28} {format(old, fmt)}{suffix} -> {format(new, fmt)}{suffix}  "
                 f"({sign}{format(delta, fmt)}{suffix})")
 
     lines.append("\n## Composition Structure")
@@ -245,17 +245,17 @@ def evolution_delta() -> str:
         old_val = prev_f.get(regime, 0)
         new_val = cur_f.get(regime, 0)
         delta = new_val - old_val
-        bar_old = "█" * int(old_val * 20) + "░" * (20 - int(old_val * 20))
-        bar_new = "█" * int(new_val * 20) + "░" * (20 - int(new_val * 20))
+        bar_old = "#" * int(old_val * 20) + "." * (20 - int(old_val * 20))
+        bar_new = "#" * int(new_val * 20) + "." * (20 - int(new_val * 20))
         sign = "+" if delta >= 0 else ""
-        lines.append(f"  {label:<12} [{bar_old}] {old_val:.1%} → [{bar_new}] {new_val:.1%}  ({sign}{delta:.1%})")
+        lines.append(f"  {label:<12} [{bar_old}] {old_val:.1%} -> [{bar_new}] {new_val:.1%}  ({sign}{delta:.1%})")
 
     lines.append("\n## Trust Ecology")
     old_top = prev_f.get("topTrustSystem", "?")
     new_top = cur_f.get("topTrustSystem", "?")
     old_tw = prev_f.get("topTrustWeight", 0)
     new_tw = cur_f.get("topTrustWeight", 0)
-    lines.append(f"  Top system: {old_top}({old_tw:.3f}) → {new_top}({new_tw:.3f})")
+    lines.append(f"  Top system: {old_top}({old_tw:.3f}) -> {new_top}({new_tw:.3f})")
     lines.append(_delta_row("trustConvergence", "trustConvergence"))
     lines.append(_delta_row("trustWeightSpread", "trustWeightSpread"))
     lines.append(_delta_row("axisGini", "axisGini"))
@@ -266,13 +266,13 @@ def evolution_delta() -> str:
     if old_cb0 is not None and new_cb0 is not None:
         delta = new_cb0 - old_cb0
         sign = "+" if delta >= 0 else ""
-        lines.append(f"  CB0 entropy: {old_cb0:.3f} → {new_cb0:.3f}  ({sign}{delta:.3f})")
+        lines.append(f"  CB0 entropy: {old_cb0:.3f} -> {new_cb0:.3f}  ({sign}{delta:.3f})")
     old_cb1 = prev_p.get("cb1_entropy")
     new_cb1 = cur_p.get("cb1_entropy")
     if old_cb1 is not None and new_cb1 is not None:
         delta = new_cb1 - old_cb1
         sign = "+" if delta >= 0 else ""
-        lines.append(f"  CB1 entropy: {old_cb1:.3f} → {new_cb1:.3f}  ({sign}{delta:.3f})")
+        lines.append(f"  CB1 entropy: {old_cb1:.3f} -> {new_cb1:.3f}  ({sign}{delta:.3f})")
 
     cur_secs = cur_f.get("sections", [])
     prev_secs = prev_f.get("sections", [])
@@ -285,9 +285,9 @@ def evolution_delta() -> str:
             sign = "+" if delta >= 0 else ""
             cr = cs.get("dominantRegime", "?")[:3]
             pr = ps.get("dominantRegime", "?")[:3]
-            regime_note = f" ({pr}→{cr})" if cr != pr else f" ({cr})"
-            bar = "█" * int(ct * 10) + "░" * (10 - int(ct * 10))
-            lines.append(f"  S{i}: {pt:.2f}→{ct:.2f} ({sign}{delta:.2f}) [{bar}]{regime_note}")
+            regime_note = f" ({pr}->{cr})" if cr != pr else f" ({cr})"
+            bar = "#" * int(ct * 10) + "." * (10 - int(ct * 10))
+            lines.append(f"  S{i}: {pt:.2f}->{ct:.2f} ({sign}{delta:.2f}) [{bar}]{regime_note}")
 
     lines.append(f"\n*Snapshots: {snapshots[1]} | {snapshots[0]}*")
     return "\n".join(lines)

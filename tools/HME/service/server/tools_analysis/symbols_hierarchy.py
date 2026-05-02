@@ -125,7 +125,7 @@ def type_hierarchy(type_name: str = "") -> str:
     parts.append("Modules sorted by outbound dependency count (most coupled first):\n")
     for mod, deps in sorted_modules[:30]:
         n_users = len(rev_graph.get(mod, set()))
-        parts.append(f"  {mod} → [{len(deps)} deps, {n_users} users]: {', '.join(sorted(deps)[:6])}"
+        parts.append(f"  {mod} -> [{len(deps)} deps, {n_users} users]: {', '.join(sorted(deps)[:6])}"
                      + (" ..." if len(deps) > 6 else ""))
     # Roots: globals with most dependents (most fundamental)
     parts.append(f"\n## Most Depended-On Globals (top 10):")
@@ -151,7 +151,7 @@ def type_hierarchy(type_name: str = "") -> str:
             hlp_str = f" + {hlp}" if hlp else " (no helpers file)"
             parts.append(f"  {mgr}{hlp_str} [{users} dependents]")
 
-    # De-facto managers by caller count: modules with >2x the subsystem median — architectural hubs
+    # De-facto managers by caller count: modules with >2x the subsystem median -- architectural hubs
     # regardless of filename convention.
     defacto = []
     for js_file in _glob_mod.glob(os.path.join(ctx.PROJECT_ROOT, "src", "**", "*.js"), recursive=True):
@@ -163,7 +163,7 @@ def type_hierarchy(type_name: str = "") -> str:
             continue
         n_users = len(rev_graph.get(basename, set()))
         defacto.append((basename, subsystem, n_users))
-    # Compute per-subsystem median — exclude single-use helpers (<=1 caller) and
+    # Compute per-subsystem median -- exclude single-use helpers (<=1 caller) and
     # known helper-naming patterns so the median represents real module usage distribution.
     import statistics as _stats
     _helper_suffixes = ('Helpers', 'Config', 'Data', 'Values', 'Priors', 'Profiles', 'Scorers', 'Analyzers')
@@ -186,10 +186,10 @@ def type_hierarchy(type_name: str = "") -> str:
     ]
     defacto_hubs.sort(key=lambda x: -x[2])
     if defacto_hubs:
-        parts.append(f"\n## De-facto Hubs by Caller Ratio (>2× subsystem median, not *Manager named):")
+        parts.append(f"\n## De-facto Hubs by Caller Ratio (>2* subsystem median, not *Manager named):")
         for name, sub, nu in defacto_hubs[:15]:
             med = sub_median.get(sub, 0)
-            parts.append(f"  {name} [{sub}] {nu} users (median={med:.0f}, ratio={nu/max(med,1):.1f}×)")
+            parts.append(f"  {name} [{sub}] {nu} users (median={med:.0f}, ratio={nu/max(med,1):.1f}*)")
 
     # Subsystem rollup: group module dep counts by src/ subdirectory
     subsystem_totals: dict[str, dict] = {}
@@ -215,8 +215,8 @@ def type_hierarchy(type_name: str = "") -> str:
 
 
 def cross_language_trace(symbol_name: str) -> str:
-    """Trace a symbol's call chain. For Rust/WASM projects: Rust definition → WASM bridge → JS callers.
-    For pure-JS CommonJS projects (like this one): IIFE global definition → direct callers → require chain.
+    """Trace a symbol's call chain. For Rust/WASM projects: Rust definition -> WASM bridge -> JS callers.
+    For pure-JS CommonJS projects (like this one): IIFE global definition -> direct callers -> require chain.
     Also attaches KB constraints for the symbol and flags hot-path callers."""
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."
@@ -240,7 +240,7 @@ def cross_language_trace(symbol_name: str) -> str:
             parts.append(f"\nCall chain:\n  " + "\n  -> ".join(result["chain"]))
         return "\n".join(parts)
 
-    # Pure-JS CommonJS path: IIFE global → callers → require chain
+    # Pure-JS CommonJS path: IIFE global -> callers -> require chain
     parts = [f"## JS Module Trace: '{symbol_name}'"]
 
     # 1. Find definition via symbol table
@@ -275,7 +275,7 @@ def cross_language_trace(symbol_name: str) -> str:
         label = f"  [{len(hot_callers)} HOT PATH]" if hot_callers else ""
         parts.append(f"\n**Direct callers** ({len(callers)} sites in {len(caller_files)} files){label}:")
         for f in caller_files[:20]:
-            flag = " [HOT PATH — per-beat]" if f in _hot else ""
+            flag = " [HOT PATH -- per-beat]" if f in _hot else ""
             parts.append(f"  {f}{flag}")
         if len(caller_files) > 20:
             parts.append(f"  ... and {len(caller_files) - 20} more")
@@ -305,7 +305,7 @@ def cross_language_trace(symbol_name: str) -> str:
             req_str = f" via {reqs[0]}" if reqs else ""
             parts.append(f"  {rel}{req_str}")
 
-    # 4. Outgoing dependencies — what architectural globals does this module read?
+    # 4. Outgoing dependencies -- what architectural globals does this module read?
     # Complements callers (who reads me) with what I read from others.
     if ctx.project_engine.symbol_table is not None:
         try:

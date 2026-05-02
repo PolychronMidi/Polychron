@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""i/why mode=verifier-drift — Horizon VI third leg.
+"""i/why mode=verifier-drift -- Horizon VI third leg.
 
 Detects verifiers whose source-hash AND status-hash have both remained
 unchanged across the most recent N runs. The detection criterion is
-purely factual (two hashes frozen for N rounds); interpretation —
+purely factual (two hashes frozen for N rounds); interpretation --
 whether the frozen verifier is still actually checking what its name
-claims — is left to the reader. Pairs with verifier-utility (always-PASS
+claims -- is left to the reader. Pairs with verifier-utility (always-PASS
 detection) and verifier-coverage (path coverage gaps) to complete the
 meta-meta layer.
 
@@ -107,9 +107,9 @@ def main(argv):
     src_hashes = _verifier_source_hashes()
 
     # The timeseries `probes` field carries TWO kinds of entries:
-    #   1. HCI verifiers from verify_coherence/ — kebab-case names,
+    #   1. HCI verifiers from verify_coherence/ -- kebab-case names,
     #      mapped to source files this script can hash.
-    #   2. selftest probes from evolution_selftest/selftest.py — names
+    #   2. selftest probes from evolution_selftest/selftest.py -- names
     #      like "15 tools registered" or "doc sync" with spaces; these
     #      live in selftest.py as result-string parsing, not as classes.
     # Distinguish them: an entry whose name is in src_hashes is an HCI
@@ -125,7 +125,7 @@ def main(argv):
             "name": name,
             "status": seq[0],
             "runs": len(seq),
-            "source_hash": src_hashes.get(name, "─"),
+            "source_hash": src_hashes.get(name, "-"),
         }
         if name in src_hashes:
             frozen_hci.append(entry)
@@ -144,7 +144,7 @@ def main(argv):
         return 0
     if not frozen and frozen_selftest:
         print(f"  No HCI verifier (verify_coherence/*) is frozen for {n_runs} runs.")
-        print(f"  ({len(frozen_selftest)} selftest probe(s) are frozen — see below)")
+        print(f"  ({len(frozen_selftest)} selftest probe(s) are frozen -- see below)")
         print()
 
     # Bucket by status
@@ -156,7 +156,7 @@ def main(argv):
         rs = by_status.get(status, [])
         if not rs:
             continue
-        print(f"## Status frozen at {status} for ≥{n_runs} runs ({len(rs)})")
+        print(f"## Status frozen at {status} for >={n_runs} runs ({len(rs)})")
         for r in rs[:10]:
             print(f"  {r['name']:36}  src_hash={r['source_hash']}")
         if len(rs) > 10:
@@ -166,7 +166,7 @@ def main(argv):
     # Selftest probes (different code path than HCI verifiers; reported
     # for completeness but distinguished from the HCI report above).
     if frozen_selftest:
-        print(f"## Selftest probes also frozen at PASS for ≥{n_runs} runs ({len(frozen_selftest)})")
+        print(f"## Selftest probes also frozen at PASS for >={n_runs} runs ({len(frozen_selftest)})")
         print(f"  (these live in evolution_selftest/selftest.py, not verify_coherence/)")
         for r in frozen_selftest[:8]:
             print(f"  {r['name']:36}  src=selftest")
@@ -174,14 +174,14 @@ def main(argv):
             print(f"  (+{len(frozen_selftest) - 8} more)")
         print()
 
-    # Detection criterion only — no inference about meaning
+    # Detection criterion only -- no inference about meaning
     print("# Note:")
     print("  This reports the factual (frozen status, current source-hash)")
     print("  pair per verifier. To detect SOURCE drift (verifier was")
     print("  edited recently while its status remained frozen), compare")
     print("  the src_hash here against an earlier snapshot you took.")
     print("  Future expansion: persist src_hash history per round so the")
-    print("  combined (status-frozen × source-changed) intersection can")
+    print("  combined (status-frozen * source-changed) intersection can")
     print("  surface automatically.")
     return 0
 

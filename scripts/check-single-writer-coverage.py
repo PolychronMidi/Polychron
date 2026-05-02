@@ -5,16 +5,16 @@ Walks the HME Python tree and flags any mutation of a protected domain
 that isn't preceded by an assert_writer call in the same function.
 
 Protected mutation patterns (per lifecycle_writers._OWNERS):
-  llama-server       → subprocess.Popen() of llama-server binary
-  embedders          → SentenceTransformer(..., device=...)
-  kb                 → knowledge_table.add / remove
-  hme-todo-store     → _write_todo_entry / _save_todos
-  lifesaver-registry → _failures[...] =  (in failure_genealogy)
-  onboarding-state   → _STATE_FILE write (in onboarding_chain)
+  llama-server       -> subprocess.Popen() of llama-server binary
+  embedders          -> SentenceTransformer(..., device=...)
+  kb                 -> knowledge_table.add / remove
+  hme-todo-store     -> _write_todo_entry / _save_todos
+  lifesaver-registry -> _failures[...] =  (in failure_genealogy)
+  onboarding-state   -> _STATE_FILE write (in onboarding_chain)
 
 Exit 0 on clean, 1 on violations. Intended to run in CI and via a
 selftest probe. Catches the next duplicate-supervisor-class bug before
-it ships — not after it races in production.
+it ships -- not after it races in production.
 """
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def _scan_file(path: str, checks: list[tuple[str, str, callable]]) -> list[str]:
     for domain, owner_stem, predicate in checks:
         # Core invariant: only the OWNER module may contain mutations for
         # this domain. Within the owner, we trust its internal organization
-        # (not every private helper needs its own assert_writer — the
+        # (not every private helper needs its own assert_writer -- the
         # module's public entry points are already gated and the existence
         # of the module-level `from server.lifecycle_writers import`
         # confirms the contract is acknowledged).
@@ -152,7 +152,7 @@ def _match_todo_write(node: ast.Call, src: str) -> bool:
 
 
 def _match_onboarding_write(node: ast.Call, src: str) -> bool:
-    """open(_STATE_FILE, 'w') — write-mode only. Read-mode open() on a
+    """open(_STATE_FILE, 'w') -- write-mode only. Read-mode open() on a
     same-named variable in an unrelated module (operational_state has
     its own _STATE_FILE) must not flag as a violation."""
     fn = node.func
@@ -199,7 +199,7 @@ def main() -> int:
         for v in violations:
             print(f"  {v}")
         return 1
-    print("check-single-writer-coverage: CLEAN — all protected mutations gated by assert_writer")
+    print("check-single-writer-coverage: CLEAN -- all protected mutations gated by assert_writer")
     return 0
 
 

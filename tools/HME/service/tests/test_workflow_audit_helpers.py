@@ -32,7 +32,7 @@ class ScaffoldPrefixContract(unittest.TestCase):
     """
 
     def setUp(self):
-        # Read the prefix tuple from the source — don't duplicate the
+        # Read the prefix tuple from the source -- don't duplicate the
         # definition here (duplicating would itself be Pattern A drift).
         import re
         src = Path(PROJECT_ROOT, "tools/HME/service/server/tools_analysis/workflow_audit.py").read_text()
@@ -43,11 +43,11 @@ class ScaffoldPrefixContract(unittest.TestCase):
                               for s in raw.split(',') if s.strip())
 
     def test_tuple_contains_known_prefixes(self):
-        # Names pinned — if review_unified.py gains / drops a category,
+        # Names pinned -- if review_unified.py gains / drops a category,
         # this test catches the python-side divergence.
         for expected in ("] HOOK CHANGE:", "] DOC CHECK:", "] SKIPPED:", "] KB:"):
             self.assertIn(expected, self.prefixes,
-                          f"scaffold prefix {expected!r} missing — cross-layer drift")
+                          f"scaffold prefix {expected!r} missing -- cross-layer drift")
 
     def test_warning_matching_scaffold_classifies_nonactionable(self):
         prefixes = self.prefixes
@@ -77,12 +77,12 @@ class DiffLanguageDetectionContract(unittest.TestCase):
     """_detect_languages must parse extensions from diff headers, not
     substring-scan the entire diff body. Peer-review earlier this
     session caught that substring-matching against `.py` was triggered
-    by docstring prose like "see the .py version of X" — falsely
+    by docstring prose like "see the .py version of X" -- falsely
     marking Python as present and loading python-specific probe hints
     into a pure-shell review."""
 
     def test_header_based_detection(self):
-        # Source inspection — a dynamic import of workflow_audit requires
+        # Source inspection -- a dynamic import of workflow_audit requires
         # the full server context stack (which these tests don't set
         # up). Instead verify the source contains the header-anchored
         # tokens, since the nested function body is what we're pinning.

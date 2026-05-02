@@ -1,6 +1,6 @@
-"""HME human ground truth — Phase 5.5 of openshell_features_to_mimic.md.
+"""HME human ground truth -- Phase 5.5 of openshell_features_to_mimic.md.
 
-Everything in HME ultimately grounds out in its own outputs — a circular
+Everything in HME ultimately grounds out in its own outputs -- a circular
 self-model that can drift into self-consistent but musically empty
 equilibrium. The one signal that isn't automated is a human listener
 finding the composition genuinely moving. This module makes that signal
@@ -16,9 +16,9 @@ feedback record from a human listener:
   round_tag        which round this was assessed against (R...)
 
 Stored in two places:
-  1. `metrics/hme-ground-truth.jsonl` — append-only stream for history
+  1. `metrics/hme-ground-truth.jsonl` -- append-only stream for history
   2. The KB, via learn() with tag `human_ground_truth` and category
-     `decision` — queryable via normal KB search
+     `decision` -- queryable via normal KB search
 
 Ground-truth KB entries always inherit trust tier HIGH regardless of the
 normal trust weight formula. When an HME prediction conflicts with a
@@ -60,7 +60,7 @@ def record_ground_truth(
     """Record a structured human feedback entry and write it into the KB
     with an unconditional high-trust flag.
 
-    Horizon IX × II asymptote: optional `subtag` parameter labels the
+    Horizon IX * II asymptote: optional `subtag` parameter labels the
     verdict by HCI verifier subtag (structural-integrity, drift-detection,
     regression-prevention, freshness, performance, interface-contract,
     data-integrity). When present, band-tuning can compute per-axis
@@ -81,7 +81,7 @@ def record_ground_truth(
             f"Error: sentiment is required. Suggested: {sorted(VALID_SENTIMENTS)}."
         )
     if moment_n not in VALID_MOMENT_TYPES:
-        # Don't reject — just flag non-canonical types
+        # Don't reject -- just flag non-canonical types
         pass
     if sentiment_n not in VALID_SENTIMENTS:
         pass
@@ -188,7 +188,7 @@ def ground_truth_report() -> str:
         "",
     ]
     # Distribution by sentiment / moment type. Records stored from
-    # malformed CLI calls have stub values like "c" or "[" — bucketing
+    # malformed CLI calls have stub values like "c" or "[" -- bucketing
     # those as "(unparsed)" stops the distribution from looking like
     # legitimate sentiments. Recognized vocabulary lives in the help
     # text; anything outside it is suspect input.

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Self-improvement scout — agent-facing hook/invariant proposer.
+"""Self-improvement scout -- agent-facing hook/invariant proposer.
 
 Scans recent activity + hook-latency + detector stats for RECURRING
 patterns that could be formalized as new hooks, invariants, or
 detector rules. Emits proposals to
-`output/metrics/hme-self-improvement-proposals.jsonl` — each proposal
+`output/metrics/hme-self-improvement-proposals.jsonl` -- each proposal
 is a JSON object the agent can read and decide whether to accept.
 
 Closing the bootstrapping loop: the system scans its own traces,
@@ -14,16 +14,16 @@ scan.
 
 MVP pattern detectors:
 
-1. **Recurring warning signature** — same `[foo] CRITICAL ...`
-   message ≥ 5x in hme-errors.log over last 7 days → propose
+1. **Recurring warning signature** -- same `[foo] CRITICAL ...`
+   message >= 5x in hme-errors.log over last 7 days -> propose
    detector-level gate or root-cause invariant.
 
-2. **Tool-pair co-firings** — Bash:{X} often followed by Edit:{same file}
-   ≥ 10x → propose a proxy middleware that auto-injects read context
+2. **Tool-pair co-firings** -- Bash:{X} often followed by Edit:{same file}
+   >= 10x -> propose a proxy middleware that auto-injects read context
    for that Bash-then-Edit pair.
 
-3. **Slow-hook outliers** — hook with sustained p95 > 2× median of
-   other hooks → propose a performance invariant.
+3. **Slow-hook outliers** -- hook with sustained p95 > 2* median of
+   other hooks -> propose a performance invariant.
 
 Each proposal includes: `pattern`, `evidence_count`, `first_seen`,
 `last_seen`, `suggested_action`, `estimated_leverage` (high/medium/low).
@@ -56,7 +56,7 @@ def _recurring_warnings(min_count: int = 5) -> list[dict]:
     for raw in ERRORS_LOG.read_text(encoding="utf-8", errors="replace").splitlines():
         if not raw.strip():
             continue
-        # Normalize numeric tails: "streak=31" → "streak=N"
+        # Normalize numeric tails: "streak=31" -> "streak=N"
         sig = re.sub(r'(streak|rc|age)=\d+', r'\1=N', raw)
         sig = re.sub(r'\[\d{4}-\d{2}-\d{2}T[\d:.]+Z?\]\s*', '', sig)
         sig_to_lines[sig].append(raw)
@@ -71,7 +71,7 @@ def _recurring_warnings(min_count: int = 5) -> list[dict]:
             "evidence_count": len(lines),
             "first_seen_sample": first[:120],
             "last_seen_sample": last[:120],
-            "suggested_action": "Formalize as detector/invariant — if this warning always fires with the same class, its root cause is a stable pattern; either auto-fix, suppress, or escalate to a class-A gate.",
+            "suggested_action": "Formalize as detector/invariant -- if this warning always fires with the same class, its root cause is a stable pattern; either auto-fix, suppress, or escalate to a class-A gate.",
             "estimated_leverage": "high" if len(lines) > 20 else "medium",
         })
     return proposals
@@ -110,7 +110,7 @@ def _slow_hook_outliers() -> list[dict]:
                 "median_ms": med,
                 "p95_ms": p95,
                 "global_median_ms": global_median,
-                "suggested_action": f"Profile {h} — its latency is ≥2× global median. Consider splitting, caching, or moving work to a background thread.",
+                "suggested_action": f"Profile {h} -- its latency is >=2* global median. Consider splitting, caching, or moving work to a background thread.",
                 "estimated_leverage": "medium",
             })
     return proposals
@@ -118,7 +118,7 @@ def _slow_hook_outliers() -> list[dict]:
 
 def _tool_pair_cofiring(min_count: int = 10) -> list[dict]:
     """Walks hook-latency log in order, detects X-then-Y pairs where X
-    and Y happen close in time (same turn). Fragile — real coupling
+    and Y happen close in time (same turn). Fragile -- real coupling
     detection would need transcript analysis; MVP uses latency-log
     proximity."""
     if not LATENCY_LOG.is_file():
@@ -150,7 +150,7 @@ def _tool_pair_cofiring(min_count: int = 10) -> list[dict]:
             "a": pair[0],
             "b": pair[1],
             "count": n,
-            "suggested_action": f"Hooks {pair[0]} → {pair[1]} co-fire {n}x. If one is enrichment and the other is action, consider fusing them (single proxy middleware that does both) to reduce hop count.",
+            "suggested_action": f"Hooks {pair[0]} -> {pair[1]} co-fire {n}x. If one is enrichment and the other is action, consider fusing them (single proxy middleware that does both) to reduce hop count.",
             "estimated_leverage": "low" if n < 25 else "medium",
         })
     return proposals
@@ -172,7 +172,7 @@ def main() -> int:
     print(f"self-improvement-scout: {len(proposals)} proposal(s) written to {OUT.relative_to(ROOT)}")
     for p in proposals[:10]:
         tag = p.get("pattern", "?")
-        key = p.get("signature") or p.get("hook") or f"{p.get('a')}→{p.get('b')}" or "?"
+        key = p.get("signature") or p.get("hook") or f"{p.get('a')}->{p.get('b')}" or "?"
         lev = p.get("estimated_leverage", "?")
         print(f"  [{tag}] [{lev}] {str(key)[:80]}")
     return 0

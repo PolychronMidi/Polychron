@@ -1,4 +1,4 @@
-"""Syntax + undefined-var verifiers — ShellUndefinedVars, PythonSyntax,
+"""Syntax + undefined-var verifiers -- ShellUndefinedVars, PythonSyntax,
 ShellSyntax, StalePathRename. Extracted from code_audits_runtime.py.
 """
 from __future__ import annotations
@@ -47,15 +47,15 @@ class ShellUndefinedVarsVerifier(Verifier):
         for fileinfo in payload.get("files", []):
             for finding in fileinfo.get("findings", []):
                 detail.append(
-                    f"{fileinfo['file']}:{finding['line']} ${finding['var']} — {finding['snippet'][:100]}"
+                    f"{fileinfo['file']}:{finding['line']} ${finding['var']} -- {finding['snippet'][:100]}"
                 )
         if count == 0:
             return _result(PASS, 1.0, f"no undefined-variable references across {files_scanned} hook(s)")
         # Each undefined ref drops score by 0.25; floor at 0. Any violation
-        # is FAIL — even a single one can silently kill an entire hook chain.
+        # is FAIL -- even a single one can silently kill an entire hook chain.
         score = max(0.0, 1.0 - 0.25 * count)
         return _result(FAIL, score,
-                       f"{count} undefined-variable reference(s) — silent set-u crash risk",
+                       f"{count} undefined-variable reference(s) -- silent set-u crash risk",
                        detail[:20])
 
 
@@ -114,8 +114,8 @@ class ShellSyntaxVerifier(Verifier):
 
 
 # Banned: 4+ identical non-word, non-whitespace, non-paren/bracket characters
-# in a row. Targets visual-decoration spam — runs of equals, dashes, hashes,
-# pipes, tildes, slashes, or unicode box-drawing — without false-positiving
+# in a row. Targets visual-decoration spam -- runs of equals, dashes, hashes,
+# pipes, tildes, slashes, or unicode box-drawing -- without false-positiving
 # on legitimate code structure (stacked closing parens, identifiers with
 # repeated underscores, hex constants like 0xFFFFFFFF).
 _SPAM_RE = re.compile(r"([^\w\s()\[\]{}])\1{3,}")
@@ -148,14 +148,14 @@ _SPAM_EXTS = (
 
 class StalePathRenameVerifier(Verifier):
     """Catches stale references to renamed-but-still-cited paths across
-    the entire repo. Surfaced after a `mcp/server → service/server`
+    the entire repo. Surfaced after a `mcp/server -> service/server`
     rename left 3 sites broken in scripts/ and hooks/ that no other
-    verifier caught (silent ImportError → battery skipped → invariant
-    history stale → only surfaced 5 days later via downstream FAIL).
+    verifier caught (silent ImportError -> battery skipped -> invariant
+    history stale -> only surfaced 5 days later via downstream FAIL).
 
     Path patterns that have been renamed live in
     project-rules.json under `stale_path_patterns`: each entry maps
-    a pattern (regex) → reason. The verifier greps the whole repo
+    a pattern (regex) -> reason. The verifier greps the whole repo
     for the pattern; any match in a non-comment, non-keyword-list
     context is a violation.
 

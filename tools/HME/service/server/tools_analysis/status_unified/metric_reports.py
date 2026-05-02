@@ -59,7 +59,7 @@ def _staleness_report() -> str:
                 f"{m.get('kb_entries_matched', 0)} hits  {m.get('file_path', '?')}"
             )
         if len(stale) > 25:
-            lines.append(f"  … and {len(stale) - 25} more")
+            lines.append(f"  ... and {len(stale) - 25} more")
     if missing:
         lines.append("")
         lines.append(f"## Modules with no KB coverage ({len(missing)} total, showing first 20)")
@@ -94,7 +94,7 @@ def _coherence_report() -> str:
             return "N/A"
 
     # Headline line: when score is null (not enough data), show "N/A" without
-    # the "/100" suffix — the slash implies a denominator that doesn't apply
+    # the "/100" suffix -- the slash implies a denominator that doesn't apply
     # when the numerator is missing.
     delta_s = ""
     if isinstance(delta, (int, float)):
@@ -105,7 +105,7 @@ def _coherence_report() -> str:
         headline = f"**{_pct(score)}/100**{delta_s}  ({window_events} events in window)"
     else:
         null_reason = data.get("score_null_reason") or comps.get("read_coverage_null_reason") or ""
-        headline = f"**N/A** — score unavailable ({window_events} events in window)"
+        headline = f"**N/A** -- score unavailable ({window_events} events in window)"
         if null_reason:
             headline += f"\nReason: {null_reason}"
     # Display labels use *_score (higher=better, 100=perfect) so the "penalty"
@@ -115,7 +115,7 @@ def _coherence_report() -> str:
     _vd = comps.get('violation_detail') if isinstance(comps.get('violation_detail'), dict) else {}
     _sd = comps.get('staleness_detail') if isinstance(comps.get('staleness_detail'), dict) else {}
     _v_count = _vd['count'] if 'count' in _vd else 0
-    _v_saturated = " — SATURATED, >=10 violations indistinguishable" if _v_count >= 10 else ""
+    _v_saturated = " -- SATURATED, >=10 violations indistinguishable" if _v_count >= 10 else ""
     _rc_prior = _rcd['writes_with_prior_read'] if 'writes_with_prior_read' in _rcd else 0
     _rc_total = _rcd['total_writes'] if 'total_writes' in _rcd else 0
     _st_touched = _sd['touches_on_stale_or_missing'] if 'touches_on_stale_or_missing' in _sd else 0
@@ -133,25 +133,25 @@ def _coherence_report() -> str:
         f"  kb_freshness    {_pct(comps.get('staleness_penalty'))}   "
         f"({_st_touched}/{_st_withinfo} writes touched stale/missing-KB modules)",
     ]
-    # Gentle interpretation line — helps users who aren't steeped in the scoring.
+    # Gentle interpretation line -- helps users who aren't steeped in the scoring.
     if isinstance(score, (int, float)):
         if score >= 90:
             lines.append("")
-            lines.append("Interpretation: HEALTHY — high read-coverage, few violations, KB tracks code.")
+            lines.append("Interpretation: HEALTHY -- high read-coverage, few violations, KB tracks code.")
         elif score >= 70:
             lines.append("")
-            lines.append("Interpretation: ACCEPTABLE — one or two components dragging; see the lowest above.")
+            lines.append("Interpretation: ACCEPTABLE -- one or two components dragging; see the lowest above.")
         elif score >= 50:
             lines.append("")
-            lines.append("Interpretation: DEGRADED — address the lowest component before next major change.")
+            lines.append("Interpretation: DEGRADED -- address the lowest component before next major change.")
         else:
             lines.append("")
-            lines.append("Interpretation: POOR — KB/code alignment is breaking down. Do `i/status mode=staleness` + `i/status mode=blindspots` for specifics.")  # tool-form-ok: prose with embedded command examples
+            lines.append("Interpretation: POOR -- KB/code alignment is breaking down. Do `i/status mode=staleness` + `i/status mode=blindspots` for specifics.")  # tool-form-ok: prose with embedded command examples
     if prev is not None:
         lines.append("")
         if isinstance(prev, (int, float)) and isinstance(score, (int, float)):
             delta = score - prev
-            arrow = "↑" if delta > 0.5 else ("↓" if delta < -0.5 else "→")
+            arrow = "^" if delta > 0.5 else ("v" if delta < -0.5 else "->")
             lines.append(f"Previous round: {_pct(prev)}  ({arrow} {delta:+.1f})")
         else:
             lines.append(f"Previous round: {_pct(prev)}")

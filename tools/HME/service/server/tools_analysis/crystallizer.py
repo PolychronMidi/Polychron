@@ -1,15 +1,15 @@
-"""HME pattern crystallization — Phase 3.5 of openshell_features_to_mimic.md.
+"""HME pattern crystallization -- Phase 3.5 of openshell_features_to_mimic.md.
 
 Scans the KB for multi-round patterns the Evolver has to rediscover each
 session. The promotion rule is deliberately simple in v1:
 
-  1. Group KB entries by overlapping tags (Jaccard ≥ 0.5 pairwise).
+  1. Group KB entries by overlapping tags (Jaccard >= 0.5 pairwise).
   2. Within each group, collect every round reference (R\\d+) found in the
      entries' content.
-  3. If a group has ≥3 entries AND references ≥3 distinct rounds, it
+  3. If a group has >=3 entries AND references >=3 distinct rounds, it
      qualifies as a crystallized pattern.
 
-Output: `metrics/hme-crystallized.json` — a list of crystallized patterns
+Output: `metrics/hme-crystallized.json` -- a list of crystallized patterns
 with their constituent KB entry ids, shared tags, round set, and a
 one-line synthesis (first non-stopword sentence from the most recent
 member). Surfaced via `status(mode='crystallized')`.
@@ -83,7 +83,7 @@ def _cluster_by_tag_membership(entries: list[dict]) -> dict[str, list[int]]:
     {A, B, C} participates in three groups. Metadata tags on the blacklist
     are skipped because they span too many unrelated entries.
 
-    Returns {tag → [entry_index, ...]}.
+    Returns {tag -> [entry_index, ...]}.
     """
     groups: dict[str, list[int]] = {}
     for idx, e in enumerate(entries):
@@ -203,8 +203,8 @@ def crystallize_cli() -> str:
     if n == 0:
         return (
             "# Crystallizer\n\n"
-            f"Scanned {report['meta']['kb_entries']} KB entries — no patterns "
-            f"qualified (need ≥{MIN_ENTRIES} entries across ≥{MIN_ROUNDS} distinct "
+            f"Scanned {report['meta']['kb_entries']} KB entries -- no patterns "
+            f"qualified (need >={MIN_ENTRIES} entries across >={MIN_ROUNDS} distinct "
             "rounds with shared tags)."
         )
     lines = [
@@ -224,7 +224,7 @@ def crystallize_cli() -> str:
 
 
 def crystallized_report() -> str:
-    """status(mode='crystallized') — render the current report file."""
+    """status(mode='crystallized') -- render the current report file."""
     _track("crystallized_report")
     path = os.path.join(ctx.PROJECT_ROOT, OUT_REL)
     if not os.path.exists(path):

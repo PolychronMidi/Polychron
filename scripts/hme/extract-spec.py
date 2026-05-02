@@ -4,17 +4,17 @@
 Walks a directory of JS/TS files and emits a JSON specification
 describing the public API surface: per-file exports, classes with their
 methods, top-level functions, and imports. Intended as a starting
-point for spec-driven refactors — the spec becomes a contract the
+point for spec-driven refactors -- the spec becomes a contract the
 codebase must satisfy.
 
 Usage:
-  extract-spec.py <dir>       → JSON on stdout
-  extract-spec.py <dir> --md  → markdown summary on stdout
+  extract-spec.py <dir>       -> JSON on stdout
+  extract-spec.py <dir> --md  -> markdown summary on stdout
 
 The parser is regex-based, not a full AST. Covers the idioms actually
 used in this project (IIFE self-registering modules, `const X = class`,
 `module.exports = ...`, ES6 imports) without pulling in a JS runtime.
-On ambiguity, favors over-inclusion — better to list something that's
+On ambiguity, favors over-inclusion -- better to list something that's
 not really exported than to miss a real API surface.
 """
 import json
@@ -61,7 +61,7 @@ def _parse_file(path, project_root):
     brace_depth = 0
     in_class = False
     for ln, raw in enumerate(lines, 1):
-        # Imports — collected from anywhere in the file (module scope assumed)
+        # Imports -- collected from anywhere in the file (module scope assumed)
         for m in _RE_IMPORT_REQUIRE.finditer(raw):
             mod = m.group(1)
             if mod not in spec['imports']:
@@ -130,17 +130,17 @@ def _render_markdown(specs):
         out.append(f'## {spec["path"]}\n')
         if spec['imports']:
             out.append(f'**Imports** ({len(spec["imports"])}): ' + ', '.join(spec['imports'][:10])
-                       + ('…' if len(spec['imports']) > 10 else ''))
+                       + ('...' if len(spec['imports']) > 10 else ''))
         if spec['classes']:
             out.append(f'\n**Classes**:')
             for c in spec['classes']:
                 ext = f' extends {c["extends"]}' if c['extends'] else ''
                 methods = ', '.join(m['name'] for m in c['methods'][:8])
                 more = f' +{len(c["methods"])-8}' if len(c['methods']) > 8 else ''
-                out.append(f'  - `{c["name"]}`{ext} — {methods}{more}')
+                out.append(f'  - `{c["name"]}`{ext} -- {methods}{more}')
         if spec['functions']:
             out.append(f'\n**Functions**: ' + ', '.join(f['name'] for f in spec['functions'][:10])
-                       + ('…' if len(spec['functions']) > 10 else ''))
+                       + ('...' if len(spec['functions']) > 10 else ''))
         if spec['exports']:
             out.append(f'\n**Exports**: ' + ', '.join(e['name'] for e in spec['exports']))
         out.append('')

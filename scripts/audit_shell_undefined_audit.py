@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shell undefined-variable audit — static analysis for tools/HME/hooks/**/*.sh.
+"""Shell undefined-variable audit -- static analysis for tools/HME/hooks/**/*.sh.
 
 Scans every hook script for `$VAR` / `${VAR}` references that have no
 assignment anywhere in scope (the file itself, any file it sources, or the
@@ -10,22 +10,22 @@ history, and under `set -u` in `_safety.sh`, it crashed `stop.sh` before the
 completeness gate (in `work_checks.sh`) ever got a chance to run.
 
 Why not shellcheck: shellcheck isn't in the HME baseline toolchain (the
-audit-shell-hooks.py sister script chose the same path — custom Python
+audit-shell-hooks.py sister script chose the same path -- custom Python
 analyzer tailored to this project's source chain). This script follows
 `source X/Y.sh` references transitively so a var defined in `_safety.sh`
 is visible in every hook that sources it.
 
 Rules:
-  R1 — REF without DEFN in scope
-       `$VAR` / `${VAR}` reference with no matching `VAR=…`, `local VAR=`,
+  R1 -- REF without DEFN in scope
+       `$VAR` / `${VAR}` reference with no matching `VAR=...`, `local VAR=`,
        `readonly VAR=`, `export VAR=`, `declare VAR=`, `typeset VAR=`,
        loop-var `for VAR in`, `while read VAR`, arithmetic
-       `for ((VAR=…))`, `[[ -v VAR ]]`, case-setup assignments, nor
+       `for ((VAR=...))`, `[[ -v VAR ]]`, case-setup assignments, nor
        function-parameter bind, nor `.env` entry.
-       Exempt: references with an explicit default (`${VAR:-…}`,
-       `${VAR-…}`, `${VAR:?…}`, `${VAR:+…}`) — bash expands those safely
+       Exempt: references with an explicit default (`${VAR:-...}`,
+       `${VAR-...}`, `${VAR:?...}`, `${VAR:+...}`) -- bash expands those safely
        even under `set -u`. Exempt: positional args `$0..$9 $@ $* $#`,
-       special `$? $$ $! $_ $-`, special env `HOME PATH PWD …`.
+       special `$? $$ $! $_ $-`, special env `HOME PATH PWD ...`.
 
 Output:
   Default: human-readable summary to stdout, exit 0 on clean, 1 on
@@ -45,7 +45,7 @@ from pathlib import Path
 # constants (_SAFETY_SH, _DISPATCHER_FOR) live in the partner module
 # audit_shell_undefined_vars.py, which imports US at its bottom for
 # re-export of main/audit_file/_dispatcher_defs. A top-level back-import
-# here would cycle. _vars() resolves the partner at call time — by then
+# here would cycle. _vars() resolves the partner at call time -- by then
 # the parent has fully loaded under either its module name (when imported)
 # or __main__ (when invoked as a script).
 def _vars():
@@ -66,7 +66,7 @@ ENV_FILE = REPO_ROOT / ".env"
 # Additional shell-script trees that run under the same `set -u` risk
 # class as hooks/. Launcher scripts, proxy test scripts, and one-shot
 # setup scripts all use the same bash + may also use `set -euo pipefail`
-# — an undefined variable there crashes the same way and is equally
+# -- an undefined variable there crashes the same way and is equally
 # undetected until runtime. Scope expanded April 2026 after observing
 # that the _AC_PROJECT-class bug isn't hooks-specific.
 EXTRA_SCAN_DIRS = [
@@ -114,15 +114,15 @@ _WHILE_READ_RE  = re.compile(r"\bread\s+(?:-[A-Za-z]+\s+)*(?:-[A-Za-z]+\s+\S+\s+
 _LET_RE         = re.compile(r"\blet\s+['\"]?([A-Za-z_][A-Za-z0-9_]*)")
 _TESTV_RE       = re.compile(r"\[\[\s+-v\s+([A-Za-z_][A-Za-z0-9_]*)\s+\]\]")
 _GETOPTS_RE     = re.compile(r"\bgetopts\s+\S+\s+([A-Za-z_][A-Za-z0-9_]*)")
-_FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional — always defined
+_FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional -- always defined
 
 # Variable REFERENCES. Captures:
 #   $VAR
 #   ${VAR}
-#   ${VAR:-default}  — flagged as SAFE (default)
-#   ${VAR:+value}    — flagged as SAFE (conditional)
-#   ${VAR:?err}      — flagged as SAFE (explicit-error)
-#   ${VAR%pattern}   — flagged as SAFE (expansion that doesn't crash under set -u if var is set)
+#   ${VAR:-default}  -- flagged as SAFE (default)
+#   ${VAR:+value}    -- flagged as SAFE (conditional)
+#   ${VAR:?err}      -- flagged as SAFE (explicit-error)
+#   ${VAR%pattern}   -- flagged as SAFE (expansion that doesn't crash under set -u if var is set)
 _REF_RE = re.compile(
     r"""(?x)
     \$
@@ -137,7 +137,7 @@ _REF_RE = re.compile(
     """
 )
 
-# Suffixes that provide a safe default — reference never crashes under set -u.
+# Suffixes that provide a safe default -- reference never crashes under set -u.
 _SAFE_SUFFIX_RE = re.compile(r"^(?::-|:=|:\?|:\+|-|=|\?|\+)")
 
 # Source-line extraction. Matches `source X`, `. X`, handling quoted paths.
@@ -145,7 +145,7 @@ _SOURCE_RE = re.compile(
     r'(?m)^\s*(?:source|\.)\s+("([^"]+)"|\x27([^\x27]+)\x27|([^\s#;&|]+))'
 )
 
-# Heredoc body extraction — skip var references inside `<<EOF`/`<<-EOF` bodies
+# Heredoc body extraction -- skip var references inside `<<EOF`/`<<-EOF` bodies
 # because those are payloads to other interpreters (python/jq/etc.), not the
 # shell's own expansions. Bash only expands heredoc contents when the tag is
 # unquoted; skip both cases conservatively to avoid false positives from
@@ -216,7 +216,7 @@ def main() -> int:
     files = list(HOOKS_DIR.rglob("*.sh"))
     for extra_dir in EXTRA_SCAN_DIRS:
         if extra_dir.is_dir():
-            # Shallow + one-level deep, not recursive — avoid grabbing node_modules,
+            # Shallow + one-level deep, not recursive -- avoid grabbing node_modules,
             # venvs, or output/ files that happen to be named .sh.
             files.extend(extra_dir.glob("*.sh"))
             for sub in extra_dir.iterdir():
@@ -243,13 +243,13 @@ def main() -> int:
         }, indent=2))
     else:
         if total_viol == 0:
-            print(f"✓ {len(files)} shell hook(s) scanned — no undefined-variable references")
+            print(f"[ok] {len(files)} shell hook(s) scanned -- no undefined-variable references")
             return 0
-        print(f"✗ {total_viol} undefined-var reference(s) across {len(results)} file(s):\n")
+        print(f"[no] {total_viol} undefined-var reference(s) across {len(results)} file(s):\n")
         for f in results:
             print(f"  {f['file']}:")
             for v in f["findings"][:10]:
-                print(f"    line {v['line']}: ${v['var']}  —  {v['snippet']}")
+                print(f"    line {v['line']}: ${v['var']}  --  {v['snippet']}")
             if len(f["findings"]) > 10:
                 print(f"    ... and {len(f['findings']) - 10} more")
             print()

@@ -48,17 +48,17 @@ _STRING_CHAR = {'"', "'", '`'}
 # keyed by (symbol, lang_filter, file_list_signature) so repeated calls for
 # the same symbol within one BFS pass are O(1).
 # Invalidation: the file_list_signature is the sorted-file-list count + sum
-# of mtimes — a cheap proxy that changes whenever any code file is
+# of mtimes -- a cheap proxy that changes whenever any code file is
 # added/removed/touched. This is worker-lifetime cache, cleared implicitly
 # on worker restart.
-_FILE_LIST_CACHE: dict = {}     # lang_filter → (signature, [Path, ...])
-_CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) → [caller dict, ...]
+_FILE_LIST_CACHE: dict = {}     # lang_filter -> (signature, [Path, ...])
+_CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) -> [caller dict, ...]
 
 
 def _file_list_with_signature(lang_filter: str) -> tuple[tuple, list]:
     """Return (signature, file_list). Signature is a cheap invalidation key
     derived from file count + sum of mtimes. Re-computes walk_code_files
-    every call because mtime-sum is ~10ms for ~700 files — cheaper than
+    every call because mtime-sum is ~10ms for ~700 files -- cheaper than
     the 100ms+ we'd spend on stale cache hits after a real code change."""
     from os import stat as _stat
     files = list(walk_code_files(lang_filter=lang_filter))
@@ -101,7 +101,7 @@ def find_callers(symbol_name: str, project_root: str, lang_filter: str = "") -> 
 
     # Fast pre-filter: files that don't contain the symbol name literally
     # can't possibly match any regex pattern above. Read bytes and check
-    # with `in` — one scan per file, skips regex entirely for non-matches.
+    # with `in` -- one scan per file, skips regex entirely for non-matches.
     symbol_bytes = symbol_name.encode("utf-8")
     callers = []
     for fpath in files:
@@ -275,5 +275,5 @@ def get_type_hierarchy(project_root: str) -> dict:
 
 
 
-# Re-exports — find_dead_code + preview_rename extracted.
+# Re-exports -- find_dead_code + preview_rename extracted.
 from .analysis_rename import find_dead_code, preview_rename  # noqa: F401, E402

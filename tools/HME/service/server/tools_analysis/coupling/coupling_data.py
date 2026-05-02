@@ -1,4 +1,4 @@
-"""Coupling data loading — trust scores, coupling state, module detection, Pearson correlation."""
+"""Coupling data loading -- trust scores, coupling state, module detection, Pearson correlation."""
 import json
 import os
 import re

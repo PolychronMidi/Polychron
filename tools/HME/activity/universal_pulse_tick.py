@@ -8,7 +8,7 @@ at the next turn boundary. Each alert type cools down for
 `cooldown_sec` so a persistent outage writes one line, not thousands.
 
 Why: a worker that is ALIVE but GIL-saturated never fires any existing
-LIFESAVER path — hooks only log rc!=0 on _safe_curl, and no caller was
+LIFESAVER path -- hooks only log rc!=0 on _safe_curl, and no caller was
 necessarily running against the hung endpoint. The pulse closes that
 gap by probing proactively from outside the affected process.
 """
@@ -44,7 +44,7 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
     bad_count = 0
 
     if _maintenance_active():
-        # Planned proxy/worker restart — skip this tick. Don't bump streaks,
+        # Planned proxy/worker restart -- skip this tick. Don't bump streaks,
         # don't fire alerts; the operator owns the window.
         return 0, 0
 
@@ -71,7 +71,7 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
                     f"{tracker.threshold * cfg.get('interval_sec', 30)}s"
                 )
 
-    # Process-level CPU saturation — each tick takes ONE instantaneous sample
+    # Process-level CPU saturation -- each tick takes ONE instantaneous sample
     # per tracked process and feeds a rolling buffer. Sustained saturation is
     # declared when every sample within the saturation window is at/above
     # threshold. This keeps the tick bounded (~1 ps call per process) while
@@ -107,7 +107,7 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
             _log_error(
                 f"[universal_pulse] CRITICAL {name} CPU-saturated "
                 f"(avg={avg:.0f}% over {int(window_s)}s, threshold={int(thresh)}%) "
-                f"— GIL/event-loop hang; process alive but starving handlers. "
+                f"-- GIL/event-loop hang; process alive but starving handlers. "
                 f"Supervisor will SIGTERM after 60s of failed health probes."
             )
             bad_count += 1
@@ -131,15 +131,15 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
         except OSError:
             stale = True
         # Paired-staleness gating: if both files are equally stale (or the
-        # pair is staler), suppress the alert — the session is idle.
+        # pair is staler), suppress the alert -- the session is idle.
         if stale and paired_path is not None:
             try:
                 paired_mtime = paired_path.stat().st_mtime
                 paired_stale = (now - paired_mtime) > max_stale
                 if paired_stale:
-                    stale = False  # both stale → idle, not broken
+                    stale = False  # both stale -> idle, not broken
             except (FileNotFoundError, OSError):
-                # Paired file missing — fall through to flag the original.
+                # Paired file missing -- fall through to flag the original.
                 pass
         key = f"fresh:{name}"
         alert = tracker.record(key, not stale, now)
@@ -152,10 +152,10 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
         elif not stale:
             ok_count += 1
 
-    # Hook-latency probes — per-hook p95 grouped by hook name. The first
+    # Hook-latency probes -- per-hook p95 grouped by hook name. The first
     # iteration aggregated across ALL hooks which obscured which specific
     # hook was slow (the alert named a random "sample_hook" that often
-    # wasn't the real offender — e.g. reported pretooluse_bash at 50ms
+    # wasn't the real offender -- e.g. reported pretooluse_bash at 50ms
     # while the actual culprit was stop at 676ms). Now we compute p95
     # per hook and fire per-hook alerts, each with an accurate name.
     # Per-hook thresholds overridable via cfg[hook_thresholds][<hook>].
@@ -198,7 +198,7 @@ def _tick(cfg: dict, tracker: _StreakTracker) -> tuple[int, int]:
 
 def _hook_latency_per_hook(log_path: Path, window_sec: float, now: float) -> dict[str, list[float]]:
     """Scan the last ~256KB of hme-hook-latency.jsonl within the window and
-    return {hook_name: [durations_ms, …]}. Grouped so we can compute per-hook
+    return {hook_name: [durations_ms, ...]}. Grouped so we can compute per-hook
     p95 rather than an aggregate that hides which hook is actually slow."""
     if not log_path.is_file():
         return {}

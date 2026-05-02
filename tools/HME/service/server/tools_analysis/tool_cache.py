@@ -1,9 +1,9 @@
 """Shared TTL cache for cross-tool KB search and caller scan results.
 
 Prevents redundant llama.cpp/RAG work when the same module or query is accessed
-by multiple tools within a short window (e.g. read(before) → review(forget)).
+by multiple tools within a short window (e.g. read(before) -> review(forget)).
 
-Keys are independent of file mtime — the TTL handles expiry.
+Keys are independent of file mtime -- the TTL handles expiry.
 workflow.py's mtime-keyed caches remain authoritative for synthesis results;
 this cache covers raw KB and caller lookups shared across tools.
 """
@@ -13,8 +13,8 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-_TTL_KB = 60.0       # KB search results — 1 min (KB rarely updated mid-session)
-_TTL_CALLERS = 120.0  # caller scan results — 2 min (callers don't change between saves)
+_TTL_KB = 60.0       # KB search results -- 1 min (KB rarely updated mid-session)
+_TTL_CALLERS = 120.0  # caller scan results -- 2 min (callers don't change between saves)
 
 
 def _get_ttl_cache() -> dict:
@@ -40,8 +40,8 @@ def _cache_set(key: tuple, value, ttl: float):
 
 
 def cached_kb_search(query: str, top_k: int, engine) -> list:
-    """KB search with 60s TTL — avoids redundant scans when the same module is
-    looked up by multiple tools in sequence (e.g. read → review → diagnose)."""
+    """KB search with 60s TTL -- avoids redundant scans when the same module is
+    looked up by multiple tools in sequence (e.g. read -> review -> diagnose)."""
     key = ("kb", id(engine), query[:120], top_k)
     result, hit = _cache_get(key)
     if hit:
@@ -53,7 +53,7 @@ def cached_kb_search(query: str, top_k: int, engine) -> list:
 
 
 def cached_find_callers(module_name: str, project_root: str, find_fn) -> list:
-    """Caller scan with 120s TTL — callers don't change between individual file saves."""
+    """Caller scan with 120s TTL -- callers don't change between individual file saves."""
     key = ("callers", module_name, project_root)
     result, hit = _cache_get(key)
     if hit:
@@ -65,7 +65,7 @@ def cached_find_callers(module_name: str, project_root: str, find_fn) -> list:
 
 
 def cache_invalidate_kb(query: str | None = None):
-    """Invalidate KB entries — call after add_knowledge or index rebuild.
+    """Invalidate KB entries -- call after add_knowledge or index rebuild.
     Pass query=None to clear all KB cache entries."""
     cache = _get_ttl_cache()
     if query is None:

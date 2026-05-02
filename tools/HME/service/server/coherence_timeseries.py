@@ -1,19 +1,19 @@
-"""Coherence timeseries — every selftest run appends a row here.
+"""Coherence timeseries -- every selftest run appends a row here.
 
 Point-in-time probes (selftest, health) are photographs. This module
 turns them into a filmstrip so three temporal failure modes become
 detectable:
 
-  1. Slow drift — probe X PASSes but its measurement (e.g. GPU residual
+  1. Slow drift -- probe X PASSes but its measurement (e.g. GPU residual
      MB, error-log count, chunks_indexed) has degraded monotonically
      over N runs. The system is getting worse even though no single
      run flags a failure.
 
-  2. New-failure-class alert — a probe that PASSed for M runs just
+  2. New-failure-class alert -- a probe that PASSed for M runs just
      flipped WARN/FAIL. The regression is fresh; investigate before
      the failure class hardens into "normal."
 
-  3. Coverage entropy — out of N registered probes, only K have EVER
+  3. Coverage entropy -- out of N registered probes, only K have EVER
      caught a real issue in history. The other N-K may be dead weight
      or waiting for their moment; explicit coverage tracking prevents
      the selftest suite from growing into ritual.
@@ -64,7 +64,7 @@ def _parse_result_line(line: str) -> tuple[str, str, str]:
 
 
 def record_run(project_root: str, hci: int | None, result_lines: Iterable[str]) -> None:
-    """Append one row to the timeseries. Never raises — coherence logging
+    """Append one row to the timeseries. Never raises -- coherence logging
     must not break selftest itself."""
     try:
         probes: dict[str, dict] = {}
@@ -145,8 +145,8 @@ def detect_drift(project_root: str, min_runs: int = 5) -> list[str]:
         was_passing = hist_statuses.count("PASS") >= max(3, len(hist_statuses) - 1)
         if was_passing and cur_status in ("FAIL", "WARN"):
             alerts.append(
-                f"new-regression: {name} flipped {hist_statuses[-1]}→{cur_status} "
-                f"after {len(hist_statuses)} PASSes (fresh regression — investigate now)"
+                f"new-regression: {name} flipped {hist_statuses[-1]}->{cur_status} "
+                f"after {len(hist_statuses)} PASSes (fresh regression -- investigate now)"
             )
         was_failing = hist_statuses.count("PASS") == 0 and len(hist_statuses) >= 3
         if was_failing and cur_status == "PASS":
@@ -160,7 +160,7 @@ def coverage_entropy(project_root: str, tail: int = 100) -> dict:
     """Return (total_probes_seen, n_probes_that_ever_failed, dead_weight_list).
 
     Probes that have never failed in the last `tail` runs may be dead
-    weight — they may never catch a real issue, or the failure class
+    weight -- they may never catch a real issue, or the failure class
     they guard against became architecturally impossible. Worth auditing
     periodically via the retirement pattern.
     """

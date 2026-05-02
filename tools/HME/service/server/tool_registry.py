@@ -1,4 +1,4 @@
-"""Tool registry — dict-backed replacement for FastMCP's @mcp.tool() decorator.
+"""Tool registry -- dict-backed replacement for FastMCP's @mcp.tool() decorator.
 
 Keeps the decorator syntax (`@ctx.mcp.tool()`) so every existing tool_*.py
 module works without modification. Wraps each registered function with the
@@ -17,7 +17,7 @@ import typing
 
 logger = logging.getLogger("HME")
 
-# name → {"fn": wrapped callable, "schema": JSON schema dict}
+# name -> {"fn": wrapped callable, "schema": JSON schema dict}
 _TOOLS: dict = {}
 
 _TYPE_MAP = {
@@ -44,7 +44,7 @@ def _annotation_to_schema(ann) -> dict:
     origin = typing.get_origin(ann)
     args = typing.get_args(ann)
 
-    # Union / Optional — Optional[T] == Union[T, None], PEP 604 X|Y == types.UnionType
+    # Union / Optional -- Optional[T] == Union[T, None], PEP 604 X|Y == types.UnionType
     if origin is typing.Union or isinstance(ann, types.UnionType):
         non_none = [a for a in args if a is not type(None)]
         if len(non_none) == 1:
@@ -65,11 +65,11 @@ def _annotation_to_schema(ann) -> dict:
             return {"type": "object", "additionalProperties": _annotation_to_schema(args[1])}
         return {"type": "object"}
 
-    # tuple[T1, T2, ...] — degrade to array (MCP tools rarely use tuples)
+    # tuple[T1, T2, ...] -- degrade to array (MCP tools rarely use tuples)
     if origin in (tuple, typing.Tuple):
         return {"type": "array"}
 
-    logger.debug(f"tool_registry: no schema rule for annotation {ann!r} — falling back to string")
+    logger.debug(f"tool_registry: no schema rule for annotation {ann!r} -- falling back to string")
     return {"type": "string"}
 
 
@@ -124,7 +124,7 @@ class Registry:
                     result = fn(*args, **kwargs)
                     elapsed = time.time() - t0
                     if result is None:
-                        logger.error(f"ERR  {name} returned None — tool must return a string")
+                        logger.error(f"ERR  {name} returned None -- tool must return a string")
                         result = f"Error: {name} returned None (bug in tool implementation)"
                     # Layer 2: tool response EMA
                     try:
@@ -147,7 +147,7 @@ class Registry:
                     except Exception as _err:
                         logger.debug(f"narration failed: {type(_err).__name__}: {_err}")
                         if is_degraded():
-                            result = "[DEGRADED] RAG proxy unhealthy — shim may be restarting.\n" + str(result)
+                            result = "[DEGRADED] RAG proxy unhealthy -- shim may be restarting.\n" + str(result)
                     return result
                 except Exception as e:
                     import traceback as _tb
@@ -162,7 +162,7 @@ class Registry:
     # FastMCP had other methods; none are used by tool modules today, but keep
     # __getattr__ as a no-op fallback so stray references don't crash.
     def __getattr__(self, name):
-        raise AttributeError(f"Registry has no attribute '{name}' — FastMCP compatibility stub")
+        raise AttributeError(f"Registry has no attribute '{name}' -- FastMCP compatibility stub")
 
 
 def call(name: str, args: dict):
@@ -186,7 +186,7 @@ def call(name: str, args: dict):
         # TypeError from kwargs-mismatch has a recognizable shape:
         # "<name>() got an unexpected keyword argument 'X'"
         # OR "<name>() missing 1 required positional argument: 'X'".
-        # Catch ONLY those — re-raise other TypeErrors (real bugs).
+        # Catch ONLY those -- re-raise other TypeErrors (real bugs).
         msg = str(e)
         if ("unexpected keyword argument" in msg
                 or "missing" in msg and "required" in msg

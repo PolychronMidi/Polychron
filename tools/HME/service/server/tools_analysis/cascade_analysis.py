@@ -1,11 +1,11 @@
-"""HME causal chain indexing — Phase 2.5 of openshell_features_to_mimic.md.
+"""HME causal chain indexing -- Phase 2.5 of openshell_features_to_mimic.md.
 
 Forward-causal traversal: given a module, predict the impact chain of
 changing it. Merges two topology sources:
 
-  1. metrics/dependency-graph.json — global producer→consumer edges
+  1. metrics/dependency-graph.json -- global producer->consumer edges
      between files
-  2. metrics/feedback_graph.json   — declared feedback loops + firewall ports
+  2. metrics/feedback_graph.json   -- declared feedback loops + firewall ports
 
 (A previous version of this docstring listed metrics/conductor-map.md as
 a third source. There is no _load_conductor_map function and no md
@@ -40,7 +40,7 @@ _CACHE: dict[str, Any] = {}
 
 
 def _log_prediction(target_module: str, affected_modules: list[str], injected: bool = False) -> None:
-    """Phase 3.4 — append one prediction record to hme-predictions.jsonl so
+    """Phase 3.4 -- append one prediction record to hme-predictions.jsonl so
     the post-pipeline reconciler can later compare against fingerprint shifts.
     Best-effort; never raises.
 
@@ -88,7 +88,7 @@ def _log_prediction(target_module: str, affected_modules: list[str], injected: b
 def _stale_or_missing(cache_key: str, path: str) -> bool:
     """Return True if the cached entry is missing OR the source file's
     mtime is newer than what we last loaded. Replaces the
-    invalidate_cache() pattern that had no actual subscribers — relying
+    invalidate_cache() pattern that had no actual subscribers -- relying
     on someone to call invalidate meant the cache served stale graphs
     indefinitely from first load until process restart.
     """
@@ -97,7 +97,7 @@ def _stale_or_missing(cache_key: str, path: str) -> bool:
     try:
         cur_mtime = os.path.getmtime(path)
     except OSError:
-        return False  # file gone — keep last-known-good
+        return False  # file gone -- keep last-known-good
     cached_mtime = _CACHE.get(cache_key + ":_mtime", 0)
     return cur_mtime > cached_mtime
 
@@ -121,7 +121,7 @@ def _load_dep_graph() -> dict:
     except (OSError, json.JSONDecodeError):
         # Peer-review iter 125: prior code didn't set the mtime cache
         # key on parse failure, so every subsequent call re-read AND
-        # re-parsed AND re-failed forever — repeated CPU + IO on every
+        # re-parsed AND re-failed forever -- repeated CPU + IO on every
         # invocation while serving the same cached empty. Now: cache
         # both data AND the corrupting file's mtime, so we re-attempt
         # only when the file is actually rewritten.
@@ -147,7 +147,7 @@ def _load_feedback_graph() -> dict:
             data = json.load(f)
         _CACHE["fb:_mtime"] = os.path.getmtime(path)
     except (OSError, json.JSONDecodeError):
-        # Same parse-failure cache hole as _load_dep_graph above —
+        # Same parse-failure cache hole as _load_dep_graph above --
         # iter 125 fix applied symmetrically.
         data = {}
         try:
@@ -161,7 +161,7 @@ def _load_feedback_graph() -> dict:
 def invalidate_cache() -> None:
     """Force reloads of the graphs on next access. Retained for
     callers that explicitly know they invalidated upstream state, but
-    no longer load-bearing — _stale_or_missing() now self-invalidates
+    no longer load-bearing -- _stale_or_missing() now self-invalidates
     via mtime so absent subscribers don't strand stale data."""
     _CACHE.clear()
 
@@ -190,7 +190,7 @@ def _normalize_target(target: str) -> tuple[str, str]:
 
 
 def _forward_bfs(start: str, depth: int) -> list[tuple[int, str, list[str]]]:
-    """BFS from `start` following producer→consumer edges, up to `depth`
+    """BFS from `start` following producer->consumer edges, up to `depth`
     hops. Returns [(hop, node, globals_bridging_edge), ...]."""
     dep = _load_dep_graph()
     edges = dep.get("edges", [])
@@ -324,7 +324,7 @@ def cascade_report(target: str, depth: int = 3) -> str:
                 via_s = f" via {','.join(via[:3])}" if via else ""
                 lines.append(f"    - {node}{via_s}")
             if len(hits) > 15:
-                lines.append(f"    … and {len(hits) - 15} more")
+                lines.append(f"    ... and {len(hits) - 15} more")
         # Tabulate top subsystems affected
         sub_count: dict[str, int] = {}
         for _hop, node, _via in forward:
@@ -378,7 +378,7 @@ def cascade_report(target: str, depth: int = 3) -> str:
 
 def cascade_summary(target: str) -> dict:
     """Compact machine-readable summary for use by the proxy / injection
-    layer. Returns a dict — not a markdown string."""
+    layer. Returns a dict -- not a markdown string."""
     path, stem = _normalize_target(target)
     dep = _load_dep_graph()
     nodes = dep.get("nodes", {})

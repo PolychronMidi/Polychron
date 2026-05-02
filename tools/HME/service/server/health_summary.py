@@ -1,10 +1,10 @@
-"""Operator-facing health summary — consolidates signals scattered across
+"""Operator-facing health summary -- consolidates signals scattered across
 selftest, hme-errors.log, daemon.out, worker.out, and /health endpoints
 into one view.
 
 Tonight's debugging required tailing 5 separate logs to answer "is the
 system healthy?"; this module turns that into a single `i/hme-admin
-action=health` call. Distinct from selftest — selftest is pre-flight
+action=health` call. Distinct from selftest -- selftest is pre-flight
 validation (0 FAIL = ready to use), health is triage ("what's going on
 RIGHT NOW"). Overlapping signals are OK; the two views optimize for
 different questions.
@@ -155,7 +155,7 @@ def health() -> str:
     )
     lines: list[str] = ["## HME Health Summary", ""]
 
-    # Version consistency — surfaced top so drift is unmissable.
+    # Version consistency -- surfaced top so drift is unmissable.
     v_banner, v_mismatches = _probe_versions(project_root)
     lines.append("### Versions")
     lines.append(v_banner)
@@ -172,9 +172,9 @@ def health() -> str:
     if len(daemon_pids) == 1:
         lines.append(f"  daemon:  PID {daemon_pids[0]}  up {_fmt_uptime(_proc_start_time(daemon_pids[0]))}")
     elif len(daemon_pids) == 0:
-        lines.append("  daemon:  NOT RUNNING ← lifecycle authority absent")
+        lines.append("  daemon:  NOT RUNNING <- lifecycle authority absent")
     else:
-        lines.append(f"  daemon:  ** {len(daemon_pids)} INSTANCES ** {daemon_pids} ← single-writer violation")
+        lines.append(f"  daemon:  ** {len(daemon_pids)} INSTANCES ** {daemon_pids} <- single-writer violation")
     if len(worker_pids) == 1:
         lines.append(f"  worker:  PID {worker_pids[0]}  up {_fmt_uptime(_proc_start_time(worker_pids[0]))}")
     elif len(worker_pids) == 0:
@@ -192,7 +192,7 @@ def health() -> str:
         except Exception:
             lines.append(f"  llama:   PID {pid} (cmdline unreadable)")
     if len(ls_pids) > 2:
-        lines.append(f"  ** {len(ls_pids)} llama-server processes — topology declares 2 (arbiter + coder)")
+        lines.append(f"  ** {len(ls_pids)} llama-server processes -- topology declares 2 (arbiter + coder)")
     lines.append("")
 
     # Ports / endpoints
@@ -205,7 +205,7 @@ def health() -> str:
     ]:
         body = _http_get(url)
         status = "ok" if body and "unreachable" not in body else (body or "?")
-        lines.append(f"  {name}{url}  →  {status[:80]}")
+        lines.append(f"  {name}{url}  ->  {status[:80]}")
     lines.append("")
 
     # GPU
@@ -245,7 +245,7 @@ def health() -> str:
     try:
         from server.lifecycle_writers import all_domains
         for domain, owner in sorted(all_domains().items()):
-            lines.append(f"  {domain:<20} → {owner}")
+            lines.append(f"  {domain:<20} -> {owner}")
     except Exception as e:
         lines.append(f"  (registry unavailable: {e})")
 

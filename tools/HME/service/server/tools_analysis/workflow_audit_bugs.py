@@ -1,4 +1,4 @@
-"""HME post-edit audit tools — what_did_i_forget and diagnose_error."""
+"""HME post-edit audit tools -- what_did_i_forget and diagnose_error."""
 import os
 import logging
 
@@ -28,7 +28,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
 
     Self-exclusion: this scanner lives in workflow_audit.py and contains the
     patterns it looks for AS REGEX STRINGS. Scanning the scanner produces
-    hits on those literals — not real bugs. Skip.
+    hits on those literals -- not real bugs. Skip.
     """
     if rel_path.endswith("workflow_audit.py"):
         return []
@@ -36,7 +36,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     warnings = []
 
     # 1. dict.get(key, non-None-default) used in a context where a returned
-    # None would cause a TypeError — i.e. arithmetic or comparison against a
+    # None would cause a TypeError -- i.e. arithmetic or comparison against a
     # number. Display-only .get (f-string interpolation, print, return-value
     # aggregation) is safe: None formats fine and doesn't raise.
     # Heuristic: look for `.get(...,N) + X` / `X - .get(...,N)` / comparisons.
@@ -48,18 +48,18 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     if null_sentinel:
         warnings.append(
             f"[{rel_path}] PYTHON: {len(null_sentinel)} .get(key, default) call(s) in "
-            "arithmetic/comparison context — silent fallback. "
+            "arithmetic/comparison context -- silent fallback. "
             "If the key is always present, use `d[key]` (fail-fast). "
             "For legitimately-optional boundary inputs, use an explicit named "
             "check: `x = d.get(key); if x is None: x = default`. "
-            "Do NOT swap to `.get(key) or X` — that's the same silent fallback."
+            "Do NOT swap to `.get(key) or X` -- that's the same silent fallback."
         )
 
     # 2. int()/float() conversion inside a try block that only catches OSError-family.
     # ValueError from bad string conversion won't be caught.
     #
     # Implementation: walk every `try:` in the file, find its matching
-    # `except` (the FIRST one at the same indent — NOT a later `except
+    # `except` (the FIRST one at the same indent -- NOT a later `except
     # (...)` that belongs to a different try block), check whether that
     # except is narrow and whether the try body does int()/float().
     # Previously a regex that required parenthesized excepts would skip
@@ -70,7 +70,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         indent = try_match.group(1)
         start = try_match.end()
         # Find the FIRST except at exactly the same indent as the try:.
-        # Matching any except-clause form — bare, `except Name`, `except
+        # Matching any except-clause form -- bare, `except Name`, `except
         # Name as e`, `except (A, B)`, `except (A, B) as e`. The regex
         # must reach the trailing colon so it cannot accidentally stop
         # partway through a clause like `except Exception as e:`.
@@ -94,7 +94,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         if has_os and not has_value_or_type:
             warnings.append(
                 f"[{rel_path}] PYTHON: `except {exc_types}` around int()/float() "
-                "conversion — ValueError/TypeError not caught; "
+                "conversion -- ValueError/TypeError not caught; "
                 "malformed values will escape to the outer exception handler."
             )
             break  # one warning per file is enough
@@ -104,7 +104,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     has_trim = bool(re.search(r'_trim_\w+|\.writelines\(.*\[truncate\(', content))
     if append_opens and not has_trim:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(append_opens)} append-only write(s) with no trim — "
+            f"[{rel_path}] PYTHON: {len(append_opens)} append-only write(s) with no trim -- "
             "file will grow without bound over time."
         )
 
@@ -112,12 +112,12 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     zero_or = re.findall(r'\.get\([^)]+\)\s+or\s+(?:[0-9]+\.?[0-9]*|time\.\w+\(\))', content)
     if zero_or:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(zero_or)} `.get() or X` — silent fallback. "
+            f"[{rel_path}] PYTHON: {len(zero_or)} `.get() or X` -- silent fallback. "
             "Returns fallback for 0, 0.0, and '' too, not just None. "
             "If the key is always present, use `d[key]` (fail-fast). "
             "For legitimately-optional boundary inputs, use an explicit named "
             "check: `x = d.get(key); if x is None: x = default`. "
-            "Do NOT swap to `.get(key, X)` — that's the same silent fallback."
+            "Do NOT swap to `.get(key, X)` -- that's the same silent fallback."
         )
 
     # 5. Bare variable reference that might be used outside the `if` guard defining it.
@@ -128,7 +128,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         if content.count(f"\n    {var}") + content.count(f"\n        {var}") > 1:
             warnings.append(
                 f"[{rel_path}] PYTHON: `{var}` assigned inside `if len() >= N` guard "
-                "— verify it's not referenced where the guard is False (NameError risk)."
+                "-- verify it's not referenced where the guard is False (NameError risk)."
             )
 
     # 6. time.time() - d.get(...) or reverse: arithmetic on potentially-None value.
@@ -140,40 +140,40 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     )
     if none_arith:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(none_arith)} `time.time() ± d.get(...)` — "
+            f"[{rel_path}] PYTHON: {len(none_arith)} `time.time() +/- d.get(...)` -- "
             "if key is absent or None, arithmetic raises TypeError. "
             "Guard with `if d.get(key) is not None` or `(d.get(key) or 0.0)`."
         )
 
-    # 7. except Exception: pass or bare except: pass — silent catch-all.
+    # 7. except Exception: pass or bare except: pass -- silent catch-all.
     # These swallow all errors without logging, making bugs invisible in production.
     silent_except = re.findall(r'except\s+(?:Exception\s*)?:\s*pass\b', content)
     if silent_except:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(silent_except)} silent `except ... pass` — "
+            f"[{rel_path}] PYTHON: {len(silent_except)} silent `except ... pass` -- "
             "swallows all errors. At minimum log the exception; "
             "narrow the type or re-raise if possible."
         )
 
     # 8. Attribute access directly on .get() result without a None guard.
-    # Pattern: d.get('key').something — raises AttributeError when key absent or value is None.
+    # Pattern: d.get('key').something -- raises AttributeError when key absent or value is None.
     none_attr = re.findall(r'\.get\(["\'][^"\']+["\']\)\.[a-zA-Z_]', content)
     if none_attr:
         warnings.append(
-            f"[{rel_path}] PYTHON: {len(none_attr)} `.get(...).attribute` without None guard — "
+            f"[{rel_path}] PYTHON: {len(none_attr)} `.get(...).attribute` without None guard -- "
             "absent/None key raises AttributeError. Use `x = d.get(key); "
             "if x is None: ...` or ensure the key is guaranteed and use `d[key].attr`."
         )
 
     # 8b. Dispatcher-bypass: direct use of the `_shared_*` RAG model globals
     # from call positions (`_shared_model.encode(...)`, etc.) is a load-bearing
-    # anti-pattern — it bypasses the VramManager + _RagDispatcher, holds a
+    # anti-pattern -- it bypasses the VramManager + _RagDispatcher, holds a
     # strong GPU reference that blocks offload, and ignores the daemon's
     # per-GPU busy flag. Callers must go through the dispatcher (either
     # `engine.text_model` / `engine.code_model` / `engine.reranker`, or the
     # `_text_model_router` / `_code_model_router` / `_reranker_router` locals
     # in hme_http.py). The module-level definitions of the dispatchers
-    # themselves reference `_shared_*` — that's the one legitimate site and
+    # themselves reference `_shared_*` -- that's the one legitimate site and
     # it gets excluded by the regex below.
     _bypass_pattern = re.compile(
         r'(?<!_)_shared_(?:model|code_model|reranker)(?:_cpu)?'
@@ -183,7 +183,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
     if _bypass:
         warnings.append(
             f"[{rel_path}] PYTHON: {len(_bypass)} direct `_shared_*.encode/"
-            "predict/…` call(s) — bypasses _RagDispatcher + VramManager. "
+            "predict/...` call(s) -- bypasses _RagDispatcher + VramManager. "
             "Route through `engine.text_model` / `engine.code_model` / "
             "`engine.reranker` (or the `_*_router` locals in hme_http.py "
             "construction). Direct use blocks active-offload and ignores "
@@ -191,9 +191,9 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         )
 
     # 9. Operator-swap evasion of the silent-fallback rule.
-    # Detect: the same `.get("k", N)` → `.get("k") or N` (or the reverse)
+    # Detect: the same `.get("k", N)` -> `.get("k") or N` (or the reverse)
     # flipped in an uncommitted change. Swapping the operator does NOT
-    # address "no silent fallback" — it's the same pattern in a different
+    # address "no silent fallback" -- it's the same pattern in a different
     # shape. Runs via `git diff HEAD -- <file>`, so it only fires when the
     # evasion is in the current uncommitted delta.
     try:
@@ -236,7 +236,7 @@ def _scan_python_bug_patterns(rel_path: str, content: str) -> list[str]:
         if _swap_hits:
             warnings.append(
                 f"[{rel_path}] PYTHON: {len(_swap_hits)} operator-swap evasion(s) "
-                f"on key(s) {sorted(set(_swap_hits))} — "
+                f"on key(s) {sorted(set(_swap_hits))} -- "
                 "`.get(key, X)` and `.get(key) or X` are the SAME silent fallback "
                 "in different shapes. Swapping the operator to dodge one rule while "
                 "tripping the other is rule-gaming, not fixing. "

@@ -1,4 +1,4 @@
-"""HME evolve — unified 'what should I work on next?' mega-tool.
+"""HME evolve -- unified 'what should I work on next?' mega-tool.
 
 Merges three data sources into one ranked evolution view:
 1. LOC offenders (from codebase_health logic)
@@ -25,19 +25,19 @@ def evolve(focus: str = "all", query: str = "") -> str:
     focus='pipeline': pipeline suggestions only.
     focus='patterns': journal meta-patterns across all rounds.
     focus='seed': auto-generate starter KB entries for high-dependency uncovered modules.
-    focus='design': bridge design synthesis — proposes specific dimension, direction,
+    focus='design': bridge design synthesis -- proposes specific dimension, direction,
     code location, and musical rationale for top unsaturated antagonist pairs.
-focus='curate': living memory curation — detects KB-worthy patterns from recent
+focus='curate': living memory curation -- detects KB-worthy patterns from recent
     pipeline runs (trust gaps, feature extremes, verdict transitions) and proposes entries.
-    focus='forge': verified skill recipes — generates lab sketches for top unsaturated
+    focus='forge': verified skill recipes -- generates lab sketches for top unsaturated
     antagonist bridges with executable monkey-patch code, ready to test.
-    focus='contradict': contradiction detection — full KB pairwise scan finds entries
+    focus='contradict': contradiction detection -- full KB pairwise scan finds entries
     that are semantically related but make conflicting claims. Surfaces contradictions
     with resolution suggestions (merge, supersede, or tag contradicts).
-    focus='stress': adversarial self-play — runs enforcement probes against LIFESAVER,
+    focus='stress': adversarial self-play -- runs enforcement probes against LIFESAVER,
     boundary rules, doc sync, hook registration, selftest, and other guardrails.
     Reports gaps in enforcement that could let violations slip through.
-    focus='invariants': declarative invariant battery — loads checks from
+    focus='invariants': declarative invariant battery -- loads checks from
     config/invariants.json and evaluates each one. Add new invariants as JSON
     without modifying Python.
     focus='think': deep reasoning about a question (pass question in query param).
@@ -137,7 +137,7 @@ def _loc_offenders(top_n: int = 8) -> str:
 
     from file_walker import walk_code_files
     from server.helpers import LINE_COUNT_TARGET, LINE_COUNT_CRITICAL
-    # Project loc-ignore list — same source consumed by audit-core-principles.py.
+    # Project loc-ignore list -- same source consumed by audit-core-principles.py.
     import sys as _sys, os as _os
     _scripts_dir = _os.path.join(ctx.PROJECT_ROOT, "scripts")
     if _scripts_dir not in _sys.path:
@@ -200,7 +200,7 @@ def _coupling_opportunities() -> str:
         elif "SATURATED" in lev:
             parts.append("\n## Antagonist Pairs: all top pairs fully saturated")
     except Exception as e:
-        parts.append(f"## Coupling: error — {e}")
+        parts.append(f"## Coupling: error -- {e}")
     return "\n".join(parts) if parts else "## Coupling: no data"
 
 
@@ -219,7 +219,7 @@ def _pipeline_suggestions() -> str:
             return result[proposals_start:proposals_start + 2000]
         return "## Pipeline Suggestions: no fresh data (run pipeline first)"
     except Exception as e:
-        return f"## Pipeline Suggestions: error — {e}"
+        return f"## Pipeline Suggestions: error -- {e}"
 
 
 def _synthesis() -> str:

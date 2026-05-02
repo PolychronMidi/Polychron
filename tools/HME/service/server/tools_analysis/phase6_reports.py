@@ -1,4 +1,4 @@
-"""HME Phase 6 readers — constitution / doc_drift / generalizations /
+"""HME Phase 6 readers -- constitution / doc_drift / generalizations /
 reflexivity. Thin markdown renderers.
 """
 from __future__ import annotations
@@ -44,7 +44,7 @@ def constitution_report() -> str:
         f"Source: {meta.get('source_patterns', 0)} crystallized patterns, "
         f"{meta.get('source_ground_truth', 0)} ground-truth entries",
         "",
-        "Positive affirmations of what Polychron IS (not what it can't be —",
+        "Positive affirmations of what Polychron IS (not what it can't be --",
         "CLAUDE.md covers prohibitions).",
         "",
     ]
@@ -53,7 +53,7 @@ def constitution_report() -> str:
     for c in claims:
         by_kind.setdefault(c.get("kind", "?"), []).append(c)
     # Musical first: constitutional identity is what Polychron IS.
-    # Structural claims come later — they hold the identity in place but aren't
+    # Structural claims come later -- they hold the identity in place but aren't
     # the identity itself. See derive-constitution.py for the ordering rationale.
     for kind in ("musical", "methodological", "structural", "behavioral"):
         kc = by_kind.get(kind) or []
@@ -63,7 +63,7 @@ def constitution_report() -> str:
         for c in kc[:15]:
             lines.append(f"  ({c.get('confidence', 0):.2f}) {c.get('text', '?')[:140]}")
         if len(kc) > 15:
-            lines.append(f"  … and {len(kc) - 15} more")
+            lines.append(f"  ... and {len(kc) - 15} more")
         lines.append("")
     return "\n".join(lines)
 
@@ -105,7 +105,7 @@ def doc_drift_report() -> str:
     lines.append("")
     lines.append(
         "These are DETECTION signals only. Human review required before "
-        "claiming any doc change. v1 detector is deliberately noisy — "
+        "claiming any doc change. v1 detector is deliberately noisy -- "
         "only backtick-fenced module-name tokens are checked, not prose."
     )
     return "\n".join(lines)
@@ -129,9 +129,9 @@ def generalizations_report() -> str:
         f"Candidates below specificity {meta.get('specificity_threshold', '?')}: "
         f"{len(candidates)}",
         "",
-        "Patterns that might generalize beyond Polychron — these go through",
-        "synthesize-generalizations → `hme-discoveries-draft.jsonl` → human promotion",
-        "via `learn(action='promote_discovery')` → `doc/hme-discoveries.md`.",
+        "Patterns that might generalize beyond Polychron -- these go through",
+        "synthesize-generalizations -> `hme-discoveries-draft.jsonl` -> human promotion",
+        "via `learn(action='promote_discovery')` -> `doc/hme-discoveries.md`.",
         "",
     ]
     for c in candidates[:15]:
@@ -146,7 +146,7 @@ def generalizations_report() -> str:
 
 
 def reflexivity_report() -> str:
-    """Phase 6.1 — show how much of this round's prediction accuracy was
+    """Phase 6.1 -- show how much of this round's prediction accuracy was
     contaminated by proxy injection vs clean post-hoc scoring."""
     _track("reflexivity_report")
     data = _load(ACCURACY_REL)
@@ -171,14 +171,14 @@ def reflexivity_report() -> str:
         f"**Reflexivity ratio:** {latest.get('reflexivity_ratio', 0) * 100:.0f}%  "
         f"(fraction of predictions that were injected)",
         "",
-        "## Clean bucket (post-hoc predictions — true accuracy)",
+        "## Clean bucket (post-hoc predictions -- true accuracy)",
         f"  predictions:  {clean.get('total', 0)}",
         f"  confirmed:    {clean.get('confirmed', 0)}",
         f"  refuted:      {clean.get('refuted', 0)}",
         f"  accuracy:     "
         f"{clean['accuracy'] * 100:.0f}%" if isinstance(clean.get("accuracy"), (int, float)) else "  accuracy:     n/a",
         "",
-        "## Injected bucket (contaminated — measures influence, not accuracy)",
+        "## Injected bucket (contaminated -- measures influence, not accuracy)",
         f"  predictions:  {injected.get('total', 0)}",
         f"  confirmed:    {injected.get('confirmed', 0)}",
         f"  refuted:      {injected.get('refuted', 0)}",
@@ -188,6 +188,6 @@ def reflexivity_report() -> str:
         "Rising clean-bucket accuracy = HME's causal model genuinely learning.",
         "High injected-bucket confirmation but flat clean-bucket accuracy = ",
         "HME is changing what the Evolver does without actually predicting",
-        "better — influence without understanding.",
+        "better -- influence without understanding.",
     ]
     return "\n".join(lines)

@@ -1,4 +1,4 @@
-"""HME architectural negative-space discovery — Phase 5.3.
+"""HME architectural negative-space discovery -- Phase 5.3.
 
 Finds structural gaps in Polychron's topology that aren't blind spots
 (omissions the Evolver never considered) but genuine theoretical absences
@@ -6,15 +6,15 @@ the system's own structure predicts.
 
 v1 scopes to two mechanical detectors (no semantic similarity):
 
-  1. **Feedback loop near-misses** — feedback_graph.json feedbackLoops
+  1. **Feedback loop near-misses** -- feedback_graph.json feedbackLoops
      entries list participant modules. For each loop, we compute the set
      of "co-referenced" modules: modules whose dependency-graph edges
-     touch ≥K of the loop participants but who are NOT themselves listed
-     in the loop. If the co-reference count is ≥ floor(|loop|/2) and the
+     touch >=K of the loop participants but who are NOT themselves listed
+     in the loop. If the co-reference count is >= floor(|loop|/2) and the
      candidate isn't in the loop, it's a near-miss.
 
-  2. **Co-consumed pairs** — the dependency-graph has producer→consumer
-     edges. For every pair of modules that are consumed by ≥5 shared
+  2. **Co-consumed pairs** -- the dependency-graph has producer->consumer
+     edges. For every pair of modules that are consumed by >=5 shared
      consumers but have no direct edge between them, we emit a negative-
      space candidate. These are modules the rest of the architecture
      treats as functionally related without an explicit wiring.
@@ -79,12 +79,12 @@ def find_feedback_loop_near_misses() -> list[dict]:
     nodes = dep.get("nodes", {}) or {}
     _edges, out_by_from, in_by_to = _dep_graph_edges()
 
-    # Index: stem → file path (first match wins)
+    # Index: stem -> file path (first match wins)
     stem_to_path: dict[str, str] = {}
     for p in nodes:
         stem_to_path.setdefault(_module_stem(p), p)
 
-    # Universality filter — a module whose provided globals are imported
+    # Universality filter -- a module whose provided globals are imported
     # by more than UNIVERSAL_THRESHOLD files is infrastructure, not a loop
     # candidate. validator, clamps, index, l0Channels get filtered out
     # this way without hand-maintained blacklists. Note: for a producer P,
@@ -99,10 +99,10 @@ def find_feedback_loop_near_misses() -> list[dict]:
 
     for loop in loops:
         loop_id = loop.get("id", "?")
-        # feedbackLoops entries don't have a canonical 'modules' list — we
+        # feedbackLoops entries don't have a canonical 'modules' list -- we
         # pull stems out of the whole JSON blob. Skip metadata keys.
         blob = json.dumps(loop)
-        # Find every CamelCase-ish identifier ≥4 chars
+        # Find every CamelCase-ish identifier >=4 chars
         import re
         stems = set(re.findall(r"\b([a-z][a-zA-Z0-9]{3,})\b", blob))
         # Only keep stems we recognize as real modules
@@ -113,7 +113,7 @@ def find_feedback_loop_near_misses() -> list[dict]:
 
         # For each loop member, collect all files they depend on (out) and
         # all files that depend on them (in). Near-miss candidates are
-        # files that touch ≥threshold loop members but aren't in the loop.
+        # files that touch >=threshold loop members but aren't in the loop.
         touch_count: dict[str, int] = defaultdict(int)
         for member in loop_paths:
             for neighbor in out_by_from.get(member, set()) | in_by_to.get(member, set()):
@@ -148,7 +148,7 @@ def find_feedback_loop_near_misses() -> list[dict]:
 def find_co_consumed_pairs(min_shared: int = 5, max_results: int = 50) -> list[dict]:
     _edges, out_by_from, in_by_to = _dep_graph_edges()
 
-    # Universality filter — same logic as above. Core utilities like
+    # Universality filter -- same logic as above. Core utilities like
     # validator / clamps / l0Channels get consumed by every file and
     # would otherwise dominate the pair rankings.
     UNIVERSAL_THRESHOLD = 30
@@ -159,10 +159,10 @@ def find_co_consumed_pairs(min_shared: int = 5, max_results: int = 50) -> list[d
 
     # For each consumer, list the set of modules it consumes from. Then
     # invert: for each pair (A, B) of modules, count how many consumers
-    # import BOTH. Finally, require that (A, B) has no direct producer→
+    # import BOTH. Finally, require that (A, B) has no direct producer->
     # consumer edge between them.
 
-    # Step 1: map producer → set of consumers (already have out_by_from,
+    # Step 1: map producer -> set of consumers (already have out_by_from,
     # where out_by_from[A] = {files A depends on}). Invert: for each
     # consumer X, list the set of producers it pulls from.
     producers_by_consumer: dict[str, set[str]] = defaultdict(set)
@@ -176,7 +176,7 @@ def find_co_consumed_pairs(min_shared: int = 5, max_results: int = 50) -> list[d
     # Step 2: for each pair of producers, count shared consumers.
     pair_shared: dict[tuple[str, str], int] = defaultdict(int)
     for consumer, producers in producers_by_consumer.items():
-        # Skip consumers with huge producer sets — they blow up the count
+        # Skip consumers with huge producer sets -- they blow up the count
         # without revealing meaningful structure.
         if len(producers) > 20:
             continue
@@ -185,7 +185,7 @@ def find_co_consumed_pairs(min_shared: int = 5, max_results: int = 50) -> list[d
             for j in range(i + 1, len(plist)):
                 pair_shared[(plist[i], plist[j])] += 1
 
-    # Step 3: keep pairs with ≥min_shared AND no direct edge
+    # Step 3: keep pairs with >=min_shared AND no direct edge
     candidates: list[dict] = []
     for (a, b), n in pair_shared.items():
         if n < min_shared:
@@ -205,7 +205,7 @@ def find_co_consumed_pairs(min_shared: int = 5, max_results: int = 50) -> list[d
             "shared_consumers": n,
             "confidence": round(confidence, 3),
             "reasoning": (
-                f"{n} files consume from both but no direct edge exists — "
+                f"{n} files consume from both but no direct edge exists -- "
                 f"functional relationship treated as implicit by the rest "
                 f"of the architecture"
             ),
@@ -256,7 +256,7 @@ def negative_space_report() -> str:
         lines.append("")
         for c in near[:15]:
             lines.append(
-                f"  {c['confidence']:.2f}  `{c['candidate_module']}`  → "
+                f"  {c['confidence']:.2f}  `{c['candidate_module']}`  -> "
                 f"{c['loop_id']}  ({c['touches_loop_members']}/{c['loop_size']})"
             )
             lines.append(f"    {c['reasoning']}")
@@ -269,7 +269,7 @@ def negative_space_report() -> str:
         lines.append("")
         for c in cop[:15]:
             lines.append(
-                f"  {c['shared_consumers']:>3} shared  `{c['module_a']}` ↔ `{c['module_b']}`"
+                f"  {c['shared_consumers']:>3} shared  `{c['module_a']}` <-> `{c['module_b']}`"
             )
         lines.append("")
     if not near and not cop:

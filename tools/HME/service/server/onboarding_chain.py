@@ -1,24 +1,24 @@
-"""HME onboarding chain — per-session walkthrough state machine.
+"""HME onboarding chain -- per-session walkthrough state machine.
 
 The "chain decider middleman" from HME_ONBOARDING_FLOW.md. Lives INSIDE the
 MCP server so tool handlers can invoke each other directly (hooks cannot).
 
 Linear state machine with silent prerequisite auto-chaining:
 
-    boot            fresh session — waiting for selftest
-    selftest_ok     selftest passed — waiting for evolve(focus='design')
-    targeted        target picked — waiting for read(target, mode='before')
-    briefed         KB briefing absorbed — waiting for Edit(s) on target
-    edited          Edit done — waiting for review(mode='forget')
-    reviewed        review clean — waiting for npm run main
-    piped           pipeline running in background — waiting for verdict
-    verified        STABLE/EVOLVED — waiting for learn(title=, content=)
-    graduated       loop complete — blocks relax, state file deleted
+    boot            fresh session -- waiting for selftest
+    selftest_ok     selftest passed -- waiting for evolve(focus='design')
+    targeted        target picked -- waiting for read(target, mode='before')
+    briefed         KB briefing absorbed -- waiting for Edit(s) on target
+    edited          Edit done -- waiting for review(mode='forget')
+    reviewed        review clean -- waiting for npm run main
+    piped           pipeline running in background -- waiting for verdict
+    verified        STABLE/EVOLVED -- waiting for learn(title=, content=)
+    graduated       loop complete -- blocks relax, state file deleted
 
 Design rules:
   * Agents see ONE tool call per logical step. Prerequisites run silently
     inside the tool handler and their output is prepended to the result.
-  * Advancement is automatic — tools and hooks write state, agent never does.
+  * Advancement is automatic -- tools and hooks write state, agent never does.
   * Missing state file = graduated (permissive). Hooks create it on SessionStart.
   * Chain never HARD-blocks a tool. Failures are reported, tool still runs.
     Hard gates live in shell hooks (for Edit/Bash, which this module can't reach).
@@ -72,15 +72,15 @@ STATES = [
 STEP_LABELS = {
     "boot":        f"1/7 boot check (run {_action_form('selftest')})",
     "selftest_ok": f"2/7 pick evolution target (run {_i_form('evolve', primer=True)})",
-    "targeted":    "3/7 edit target module (Edit tool — briefing auto-chains)",
+    "targeted":    "3/7 edit target module (Edit tool -- briefing auto-chains)",
     "edited":      f"4/7 audit changes (run {_i_form('review', primer=True)})",
     "reviewed":    "5/7 run pipeline (Bash: npm run main)",
     "piped":       "6/7 await verdict (hooks advance automatically)",
     "verified":    f"7/7 persist learning (run {_i_form('learn', primer=True)})",
-    "graduated":   "graduated — blocks relax",
+    "graduated":   "graduated -- blocks relax",
 }
 
-# Ordered step list for the todo tree mirror — index matches STATES order
+# Ordered step list for the todo tree mirror -- index matches STATES order
 STEP_SHORT = [
     f"boot check ({_action_form('selftest')})",
     f"pick evolution target ({_i_form('evolve', primer=True)})",
@@ -92,7 +92,7 @@ STEP_SHORT = [
 ]
 
 _PROJECT_ROOT = ENV.require("PROJECT_ROOT")
-# Flat per-field state files — kept separate (not merged into JSON) so shell
+# Flat per-field state files -- kept separate (not merged into JSON) so shell
 # helpers can read them via `cat` without pulling in `jq` or Python. The
 # tradeoff: two files instead of one, but much simpler hook code.
 _STATE_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.state")
@@ -100,7 +100,7 @@ _TARGET_FILE = os.path.join(_PROJECT_ROOT, "tmp", "hme-onboarding.target")
 
 
 
-# State I/O — single-file flat storage, never raises
+# State I/O -- single-file flat storage, never raises
 
 
 def state() -> str:
@@ -261,17 +261,17 @@ def _substrate_brief_line() -> str:
                 bits.append(f"next: {top['id']}")
         return f"\n\n[HME substrate: {' | '.join(bits)}]"
     except Exception as _brief_err:
-        # Silent — briefing is opportunistic; never break tool output.
+        # Silent -- briefing is opportunistic; never break tool output.
         _ = _brief_err
         return ""
 
 
 
-# Chain enter/exit — the "middleman" that decides when to chain prerequisites
+# Chain enter/exit -- the "middleman" that decides when to chain prerequisites
 
 
 
-# Re-exports — chain dispatch logic extracted to sibling.
+# Re-exports -- chain dispatch logic extracted to sibling.
 from .onboarding_chain_dispatch import (  # noqa: F401, E402
     chain_enter, chain_exit, chained, force_state,
     emit_target_marker, emit_review_verdict_marker,

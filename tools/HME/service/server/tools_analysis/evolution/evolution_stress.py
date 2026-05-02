@@ -1,4 +1,4 @@
-"""Evolution strategies — curate, contradict, adversarial stress.
+"""Evolution strategies -- curate, contradict, adversarial stress.
 
 Split from evolution_evolve.py. These are the heavy analysis functions
 that each focus on a different evolution mode.
@@ -43,7 +43,7 @@ def _adversarial_stress() -> str:
     results.append(("LIFESAVER: grep catches FAIL in output", p.returncode == 0, ""))
 
     # Probe 2: LIFESAVER watermark arithmetic is sound
-    # Simulate: turnstart=10, total=15 → should detect 5 new errors
+    # Simulate: turnstart=10, total=15 -> should detect 5 new errors
     results.append(("LIFESAVER: watermark detects new errors (15 > 10)", 15 > 10, ""))
 
     # Probe 3: Stop hook has all enforcement sections
@@ -64,20 +64,20 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("Stop hook: readable", False, str(e)))
 
-    # Probe 4: FAIL→hme-errors.log pipeline lives in proxy middleware
+    # Probe 4: FAIL->hme-errors.log pipeline lives in proxy middleware
     # (moved from log-tool-call.sh when HME decoupled from Claude Code MCP).
     try:
         fail_scan_path = os.path.join(ctx.PROJECT_ROOT, "tools", "HME", "proxy", "middleware", "mcp_fail_scan.js")
         if not os.path.isfile(fail_scan_path):
-            results.append(("FAIL→hme-errors pipeline", False, f"missing: {fail_scan_path}"))
+            results.append(("FAIL->hme-errors pipeline", False, f"missing: {fail_scan_path}"))
         else:
             with open(fail_scan_path, encoding="utf-8") as f:
                 fs_content = f.read()
             has_fail_scan = "FAIL" in fs_content and "hme-errors.log" in fs_content
-            results.append(("FAIL→hme-errors pipeline (proxy middleware)", has_fail_scan,
+            results.append(("FAIL->hme-errors pipeline (proxy middleware)", has_fail_scan,
                             "" if has_fail_scan else "FAIL detection not wired to error log"))
     except Exception as e:
-        results.append(("FAIL→hme-errors pipeline: readable", False, str(e)))
+        results.append(("FAIL->hme-errors pipeline: readable", False, str(e)))
 
     # Probe 5: Doc sync runs and produces actionable output
     try:
@@ -102,7 +102,7 @@ def _adversarial_stress() -> str:
     # Post-migration layout: LIFESAVER moved to proxy middleware (no more
     # pretooluse_lifesaver.sh), posttooluse_read.sh renamed to
     # posttooluse_read_kb.sh, log-tool-call.sh fully implemented
-    # (sources _safety.sh, posts to /transcript, triggers /reindex —
+    # (sources _safety.sh, posts to /transcript, triggers /reindex --
     # the prior "stub" comment was stale).
     critical_hooks = [
         "stop.sh", "sessionstart.sh", "userpromptsubmit.sh",
@@ -118,7 +118,7 @@ def _adversarial_stress() -> str:
         results.append((f"Hook: {hook}", ok,
                         "" if ok else ("missing" if not exists else "not executable")))
 
-    # Probe 8: hooks.json coverage — post-migration, all events route through
+    # Probe 8: hooks.json coverage -- post-migration, all events route through
     # _proxy_bridge.sh which dispatches internally to the real handlers. So
     # the check is inverted: every event declared in hooks.json must point to
     # _proxy_bridge.sh (otherwise the proxy-based dispatch is bypassed).
@@ -176,7 +176,7 @@ def _adversarial_stress() -> str:
             else:
                 results.append(("KB: similarity search", True, "no hits (empty KB)"))
         elif hasattr(engine, 'search_knowledge'):
-            # Proxy mode: verify via HTTP API (routes through shim→engine→vector-search)
+            # Proxy mode: verify via HTTP API (routes through shim->engine->vector-search)
             proxy_hits = engine.search_knowledge("contradiction detection probe", top_k=1)
             results.append(("KB: similarity search", True,
                             f"proxy search OK ({len(proxy_hits)} result(s))"))
@@ -219,7 +219,7 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("RELOADABLE: importable", False, str(e)))
 
-    # Probe 14: L0_CHANNELS consistency — l0Channels.js exists and declares channels
+    # Probe 14: L0_CHANNELS consistency -- l0Channels.js exists and declares channels
     l0_path = os.path.join(ctx.PROJECT_ROOT, "src", "time", "l0Channels.js")
     try:
         with open(l0_path, encoding="utf-8") as f:
@@ -258,7 +258,7 @@ def _adversarial_stress() -> str:
         results.append(("Run-history: directory exists", False, "output/metrics/run-history/ missing"))
 
     # Probe 17: Journal archive exists and has historical rounds
-    # Journal is a deprecated archive — live round state is in the activity bridge.
+    # Journal is a deprecated archive -- live round state is in the activity bridge.
     journal_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "journal.md")
     try:
         with open(journal_path, encoding="utf-8") as f:
@@ -329,7 +329,7 @@ def _adversarial_stress() -> str:
     except Exception as e:
         results.append(("CLAUDE.md: readable", False, str(e)))
 
-    # Probe 23: Infrastructure evolution — scan ops + coherence for actionable trends (Layer 12)
+    # Probe 23: Infrastructure evolution -- scan ops + coherence for actionable trends (Layer 12)
     try:
         ops_path = os.path.join(ctx.PROJECT_ROOT, "tmp", "hme-ops.json")
         with open(ops_path) as f:
@@ -343,16 +343,16 @@ def _adversarial_stress() -> str:
         startup_ms = ops.get("startup_ms_ema")
 
         if crashes >= 2:
-            suggestions.append(f"[HIGH] {crashes} shim crashes today — investigate OOM or index_directory volume")
+            suggestions.append(f"[HIGH] {crashes} shim crashes today -- investigate OOM or index_directory volume")
         if restarts >= 6:
-            suggestions.append(f"[MEDIUM] {restarts} MCP restarts today — consider crash loop root cause")
+            suggestions.append(f"[MEDIUM] {restarts} MCP restarts today -- consider crash loop root cause")
         if recovery_rate < 0.7:
-            suggestions.append(f"[HIGH] Recovery rate {recovery_rate:.0%} — shim revive often failing; check startup logs")
+            suggestions.append(f"[HIGH] Recovery rate {recovery_rate:.0%} -- shim revive often failing; check startup logs")
         if cb_total >= 3:
             top_model = max(cb_trips, key=cb_trips.get)
-            suggestions.append(f"[MEDIUM] {cb_total} circuit breaker trips today ({top_model}: {cb_trips[top_model]}) — llama.cpp model unstable")
+            suggestions.append(f"[MEDIUM] {cb_total} circuit breaker trips today ({top_model}: {cb_trips[top_model]}) -- llama.cpp model unstable")
         if startup_ms and startup_ms > 15000:
-            suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms — shim cold-start is slow; consider keepalive")
+            suggestions.append(f"[LOW] Startup EMA {startup_ms:.0f}ms -- shim cold-start is slow; consider keepalive")
 
         # Coherence trend from JSONL
         coherence_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "hme-coherence.jsonl")
@@ -368,19 +368,19 @@ def _adversarial_stress() -> str:
             if scores:
                 avg_coh = sum(scores) / len(scores)
                 if avg_coh < 0.6:
-                    suggestions.append(f"[HIGH] Avg coherence {avg_coh:.0%} over last {len(scores)} monitor cycles — multiple components degraded")
+                    suggestions.append(f"[HIGH] Avg coherence {avg_coh:.0%} over last {len(scores)} monitor cycles -- multiple components degraded")
                 elif avg_coh < 0.8:
-                    suggestions.append(f"[LOW] Avg coherence {avg_coh:.0%} — llama.cpp partially unavailable; shim healthy")
+                    suggestions.append(f"[LOW] Avg coherence {avg_coh:.0%} -- llama.cpp partially unavailable; shim healthy")
 
         label = f"Infrastructure trends ({len(suggestions)} suggestion(s))"
         detail = "; ".join(suggestions) if suggestions else "no anomalies detected"
         results.append((label, True, detail))
     except FileNotFoundError:
-        results.append(("Infrastructure trends: hme-ops.json exists", False, "tmp/hme-ops.json missing — run HME once first"))
+        results.append(("Infrastructure trends: hme-ops.json exists", False, "tmp/hme-ops.json missing -- run HME once first"))
     except Exception as e:
         results.append(("Infrastructure trends: readable", False, str(e)))
 
-    # Probe 24: Meta-coherence audit — detector-of-detectors. Every regex,
+    # Probe 24: Meta-coherence audit -- detector-of-detectors. Every regex,
     # path reference, phrase list in the HME diagnostic layer is exercised
     # against its target corpus. Stale/missing patterns = silent drift.
     # Run as subprocess so a crashed audit doesn't take out the stress test.
@@ -425,7 +425,7 @@ def _adversarial_stress() -> str:
                 parts.append(f"        {detail}")
         parts.append("")
 
-    # Enumerate PASSes only when there are no failures — the full listing
+    # Enumerate PASSes only when there are no failures -- the full listing
     # is reassurance signal on clean runs. When failures exist, the
     # 30+ PASS lines are ~2k chars of filler; the failures are what the
     # agent needs to act on.
@@ -437,8 +437,8 @@ def _adversarial_stress() -> str:
                 line += f" ({detail})"
             parts.append(line)
     elif passes:
-        parts.append(f"## Verified ({len(passes)} probes passed — detail suppressed when failures exist)")
+        parts.append(f"## Verified ({len(passes)} probes passed -- detail suppressed when failures exist)")
         parts.append(f"\n## Action Required")
-        parts.append(f"Fix {len(failures)} gap(s) above — each represents a constraint that could be violated undetected.")
+        parts.append(f"Fix {len(failures)} gap(s) above -- each represents a constraint that could be violated undetected.")
 
     return "\n".join(parts)

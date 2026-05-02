@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Buddy hand-off paradigm — primary/senior lifecycle management.
+"""Buddy hand-off paradigm -- primary/senior lifecycle management.
 
 Replaces the multi-buddy floor-pinning model with a single dynamic
 primary that retires to a senior pool when its context approaches
-auto-compaction. Senior buddies are on standby — their accumulated
+auto-compaction. Senior buddies are on standby -- their accumulated
 context is preserved and only consulted manually for tough problems
-(via `i/consult sid=<sid>` — works for both the active primary and
+(via `i/consult sid=<sid>` -- works for both the active primary and
 retired seniors; role-named aliases `primary=`, `buddy=`, `senior=`
 are equivalent).
 
 Files (under PROJECT_ROOT/tmp/):
-  hme-buddy-primary.sid          — current primary buddy's session id
-  hme-buddy-primary.floor        — primary's model floor (default: easy)
-  hme-buddy-primary.effort_floor — primary's effort floor (default: low)
-  hme-buddy-seniors/<sid>.json   — one file per retired senior with metadata
-  hme-buddy-seniors/_index.jsonl — append-only retirement log
+  hme-buddy-primary.sid          -- current primary buddy's session id
+  hme-buddy-primary.floor        -- primary's model floor (default: easy)
+  hme-buddy-primary.effort_floor -- primary's effort floor (default: low)
+  hme-buddy-seniors/<sid>.json   -- one file per retired senior with metadata
+  hme-buddy-seniors/_index.jsonl -- append-only retirement log
 
 Lifecycle:
   - SessionStart: buddy_init.sh reads primary.sid and points the legacy
@@ -28,7 +28,7 @@ Lifecycle:
   - Consult: senior sessions are NOT auto-routed. They're invoked
     manually via `claude --resume <senior-sid> -p "<question>"` (the
     `consult` command here wraps that). Each consult call grows the
-    senior's transcript like normal — beware of pushing a senior past
+    senior's transcript like normal -- beware of pushing a senior past
     its retire threshold during heavy consultation.
 
 Usage:
@@ -86,7 +86,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
         print("--sid=<senior-sid> AND --question=\"...\" both required")
         return 2
     # Q8a addendum: archived seniors must remain callable via i/consult
-    # — archiving means "hidden from default status," not "removed from
+    # -- archiving means "hidden from default status," not "removed from
     # the consultable pool." Search both the active pool and the archive
     # before deciding the target is unknown.
     senior_file = SENIORS_DIR / f"{args.sid}.json"
@@ -103,13 +103,13 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # Prepend the KB-crystallization directive so the senior knows to
     # emit structured [[KB-CRYSTALLIZE]] blocks for findings worth
     # preserving. The parent extracts those blocks post-response and
-    # calls `i/learn add` for each — converting fragile transcript
+    # calls `i/learn add` for each -- converting fragile transcript
     # wisdom into durable KB entries.
     framed_question = _KB_DIRECTIVE + args.question
     cmd = ["claude", "--resume", args.sid, "-p", framed_question]
     # Identify the target's role correctly. In this paradigm a buddy
     # might be the active primary (not yet retired) or a senior in the
-    # pool — the print should reflect actual state, not assume "senior".
+    # pool -- the print should reflect actual state, not assume "senior".
     # Unknown sids (neither in pool nor matching primary) get "buddy" as
     # a neutral fallback rather than misleading "primary".
     primary = _read_primary()
@@ -122,7 +122,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # Q7 resolution: per-sid lockfile prevents concurrent consults from
     # invoking `claude --resume` on the same session simultaneously
     # (re-entrancy not guaranteed). Stale-detection: if a lockfile is
-    # older than the maximum reasonable consult duration (1 hour —
+    # older than the maximum reasonable consult duration (1 hour --
     # well past the dynamic timeout's worst case), assume the prior
     # holder crashed and reclaim. Lockfile is best-effort: a TOCTOU
     # race between two consults ~1ms apart could let both through, but
@@ -141,7 +141,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
                   f"double-invoke claude --resume on the same session",
                   file=sys.stderr)
             return 3
-        # Stale lock — prior consult must have crashed.
+        # Stale lock -- prior consult must have crashed.
         try:
             lock_file.unlink()
         except OSError:
@@ -152,14 +152,14 @@ def cmd_consult(args: argparse.Namespace) -> int:
         pass  # best-effort lock; proceed without if filesystem refuses
     print(f"# consulting {role} sid={args.sid}", file=sys.stderr)
     # Q9 resolution: when consulting a senior whose ctx has grown past
-    # the pre-compaction floor, warn-and-proceed (NOT refuse — refuse
+    # the pre-compaction floor, warn-and-proceed (NOT refuse -- refuse
     # is too aggressive without manifest harm). Cool-down: first warn
     # for a senior at >80% goes loud (stderr); subsequent warns for the
     # same senior within 1h go to debug only so we don't train the
     # operator to ignore them. mtime on tmp/hme-consult-warn-cooldown/
     # <sid> is the cool-down state (no parsing needed).
     # Compute ctx once for both the Q9 warn check (senior-only) and the
-    # end-of-consult activity emit (any role) — saves a duplicate
+    # end-of-consult activity emit (any role) -- saves a duplicate
     # transcript walk and avoids the NameError if the warn branch was
     # skipped.
     bd_for_warn = _import_dispatcher()
@@ -187,7 +187,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
                         f"is past the pre-compaction floor "
                         f"({pre_compaction_floor:.0f}%). Each consult adds "
                         f"tokens; auto-compaction will wipe accumulated "
-                        f"context if it crosses ~90%. Proceeding anyway — "
+                        f"context if it crosses ~90%. Proceeding anyway -- "
                         f"see BUDDY_SYSTEM.md Q9.")
             if recently_warned:
                 print(f"# [debug] {warn_msg}", file=sys.stderr)
@@ -207,7 +207,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # wait on a rare hung process; too-tight silently wastes tokens on
     # every long consult. timeout=None was a footgun; fixed-300s killed
     # valid consults mid-response. Idle watchdog via Popen+select that
-    # resets on every byte received is the better primitive — open
+    # resets on every byte received is the better primitive -- open
     # follow-up if the formula tuning turns out to be load-bearing.
     # If transcript_path is None (stale senior, transcript purged),
     # transcript_mb stays 0 and consult_timeout falls back to the floor.
@@ -223,7 +223,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
     # try/finally so the lockfile is released even on subprocess.run
     # timeout (TimeoutExpired raised) or unexpected error. Without this,
     # a timeout would orphan the lock for 1h until stale-detection
-    # reclaims it — blocking legitimate retries in the meantime.
+    # reclaims it -- blocking legitimate retries in the meantime.
     try:
         result = subprocess.run(cmd, capture_output=True, text=True,
                                 env={**os.environ, "HME_THREAD_CHILD": "1"},
@@ -233,7 +233,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
         if result.stderr:
             sys.stderr.write(result.stderr)
         if result.returncode == 0:
-            # Track only successful senior consults — failed invocations
+            # Track only successful senior consults -- failed invocations
             # and consults to the active primary (no metadata file) are
             # skipped. Surfaces heavy-consultation patterns in
             # `i/handoff status`.
@@ -252,7 +252,7 @@ def cmd_consult(args: argparse.Namespace) -> int:
         # HME integration: emit an activity event regardless of outcome
         # so the activity bridge can see consultation cadence
         # (cross-session forensics, rate analytics). Best-effort,
-        # non-fatal — the consult itself already succeeded or failed.
+        # non-fatal -- the consult itself already succeeded or failed.
         # Payload kept lean: target sid, role, exit code, question
         # excerpt. Heavy data (full Q+A) lives in transcripts.
         _emit_activity("buddy_consult", {

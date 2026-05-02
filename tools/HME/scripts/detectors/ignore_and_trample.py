@@ -7,16 +7,16 @@ system-reminder inside the next tool_result, with the marker:
     The user sent a new message while you were working
 
 Required behavior: the agent's very next assistant text MUST acknowledge
-the input immediately — either:
+the input immediately -- either:
 
   - opens with `Acknowledged <one-word> input` (per user directive), OR
   - opens with `Wrapping up this quickly first.` (only when current
     work doesn't conflict with the new message)
 
-Failing to acknowledge — continuing the prior work as if no message
-arrived — is the violation. The exact incident this detector exists to
+Failing to acknowledge -- continuing the prior work as if no message
+arrived -- is the violation. The exact incident this detector exists to
 prevent: agent received a course-correction mid-tool-call, finished the
-in-flight work, and wrote "Sorry — you sent the new message and I just
+in-flight work, and wrote "Sorry -- you sent the new message and I just
 kept going" only after being yelled at.
 
 Verdicts:
@@ -128,7 +128,7 @@ def main() -> int:
                 next_text = t
                 break
         if next_text is None:
-            # Interrupt fired but no follow-up text yet — agent may still
+            # Interrupt fired but no follow-up text yet -- agent may still
             # be mid-tool-call. Don't penalize; the Stop hook fires AFTER
             # the agent's reply lands, so by then there should be text.
             continue

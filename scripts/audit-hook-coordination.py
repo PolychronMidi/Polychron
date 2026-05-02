@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit hook coordination — PAI v6.3.0 import #10.
+"""Audit hook coordination -- PAI v6.3.0 import #10.
 
 PAI hooks declare their lifecycle position via docstring directives:
 
@@ -16,7 +16,7 @@ This audit:
   (5) For stop-chain policies, cross-checks declared edges against the
       actual POLICY_NAMES order in tools/HME/proxy/stop_chain/index.js.
 
-COORDINATES WITH is informational (no ordering implication) — surfaces
+COORDINATES WITH is informational (no ordering implication) -- surfaces
 shared per-turn state that could fight with another hook silently. The
 audit reports declared coordinations so a developer can read dependency
 relationships without tracing execution.
@@ -74,7 +74,7 @@ def _read_policy_order() -> list[str]:
 
 
 def _read_head(path: Path, max_lines: int = 80) -> str:
-    """Read the first N lines — enough to span any leading docstring /
+    """Read the first N lines -- enough to span any leading docstring /
     comment block without scanning the whole file."""
     out = []
     try:
@@ -118,14 +118,14 @@ def _scan_files() -> dict[str, dict]:
 
 
 def _build_graph(decls: dict[str, dict]) -> dict[str, set[str]]:
-    """Edge a→b means 'a must run before b'."""
+    """Edge a->b means 'a must run before b'."""
     g: dict[str, set[str]] = defaultdict(set)
     for src, d in decls.items():
         bare_src = src.split(":", 1)[1]
         for tgt in d["before"]:
             g[bare_src].add(tgt)
         for tgt in d["after"]:
-            # `src must run after tgt` ⇒ tgt must run before src
+            # `src must run after tgt` => tgt must run before src
             g[tgt].add(bare_src)
     return g
 
@@ -140,7 +140,7 @@ def _detect_cycle(g: dict[str, set[str]]) -> list[str] | None:
         color[u] = GRAY
         for v in sorted(g.get(u, set())):
             if color[v] == GRAY:
-                # back-edge: reconstruct cycle u→…→v→u
+                # back-edge: reconstruct cycle u->...->v->u
                 cycle = [v, u]
                 p = parent[u]
                 while p and p != v:
@@ -182,7 +182,7 @@ def _validate_against_runtime(decls: dict[str, dict],
             if pos[bare] >= pos[tgt]:
                 violations.append(
                     f"{bare}: declared MUST RUN BEFORE {tgt}, but runtime "
-                    f"order has {bare} at index {pos[bare]} ≥ {tgt} at {pos[tgt]}"
+                    f"order has {bare} at index {pos[bare]} >= {tgt} at {pos[tgt]}"
                 )
         for tgt in d["after"]:
             if tgt not in pos:
@@ -190,7 +190,7 @@ def _validate_against_runtime(decls: dict[str, dict],
             if pos[bare] <= pos[tgt]:
                 violations.append(
                     f"{bare}: declared MUST RUN AFTER {tgt}, but runtime "
-                    f"order has {bare} at index {pos[bare]} ≤ {tgt} at {pos[tgt]}"
+                    f"order has {bare} at index {pos[bare]} <= {tgt} at {pos[tgt]}"
                 )
     return violations
 
@@ -224,7 +224,7 @@ def main(argv: list) -> int:
     else:
         print(f"audit-hook-coordination: {len(decls)} annotated hook(s) scanned")
         if not decls:
-            print("  no docstring directives found — annotate hooks with")
+            print("  no docstring directives found -- annotate hooks with")
             print("  'MUST RUN BEFORE/AFTER/COORDINATES WITH: <name>'")
         else:
             for name, d in sorted(decls.items()):
@@ -237,7 +237,7 @@ def main(argv: list) -> int:
                     parts.append("coord " + ", ".join(d["coordinates"]))
                 print(f"  {name}: " + "; ".join(parts))
         if cycle:
-            print(f"\n  CYCLE detected: {' → '.join(cycle)}")
+            print(f"\n  CYCLE detected: {' -> '.join(cycle)}")
         if runtime_violations:
             print(f"\n  runtime-order violations ({len(runtime_violations)}):")
             for v in runtime_violations:

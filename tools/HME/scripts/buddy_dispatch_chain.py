@@ -1,4 +1,4 @@
-"""Buddy dispatch — `chain` subcommand: run a YAML-defined skill chain on the
+"""Buddy dispatch -- `chain` subcommand: run a YAML-defined skill chain on the
 buddy. Extracted from buddy_dispatcher.py (was lines 1114-1380). The chain
 feature is its own concern: parses chain manifests, validates, sequences
 i/<skill> invocations with rate-limit-aware pauses. buddy_dispatcher.py
@@ -108,7 +108,7 @@ def _parse_minimal_yaml(text: str) -> dict:
                     out[key] = []
                 i += 1
                 continue
-            # Scalar — strip quotes, coerce booleans/numbers
+            # Scalar -- strip quotes, coerce booleans/numbers
             v = val.strip("'\"")
             if v.lower() in ("true", "yes"):
                 out[key] = True
@@ -133,7 +133,7 @@ def _validate_chain(chain: dict) -> str:
 
     Validation rules (lifted from skill-set/schema/skill-chain.schema.json):
       - Required fields: name, description, version, skills
-      - description: minimum 20 chars (forces specificity — generic
+      - description: minimum 20 chars (forces specificity -- generic
         descriptions defeat any router that picks chains from a list)
       - version: semver-pattern (X.Y.Z, optional pre-release suffix)
       - skills: non-empty list
@@ -165,7 +165,7 @@ def _validate_chain(chain: dict) -> str:
 def cmd_chain(args: argparse.Namespace) -> int:
     """Run a chain: load YAML, execute skills sequentially, honor loop
     + loop-delay-random + on-rate-limit semantics. Each skill is a
-    Bash command (Polychron's domain — i/* invocations, npm scripts,
+    Bash command (Polychron's domain -- i/* invocations, npm scripts,
     test runners). The chain runner spawns each as a subprocess in
     sequence; non-zero exit aborts the rest of the chain (same skill-
     set semantics).
@@ -179,7 +179,7 @@ def cmd_chain(args: argparse.Namespace) -> int:
         return 2
     err = _validate_chain(chain)
     if err:
-        print(f"chain: invalid {args.chain_name}.yaml — {err}", file=sys.stderr)
+        print(f"chain: invalid {args.chain_name}.yaml -- {err}", file=sys.stderr)
         return 2
     _ensure_dirs()
     loop = int(args.loop) if args.loop is not None else int(chain.get("loop", 1))

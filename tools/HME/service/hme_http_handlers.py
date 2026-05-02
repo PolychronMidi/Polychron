@@ -1,4 +1,4 @@
-"""HME HTTP — engine operations: enrich, validate, audit, reindex."""
+"""HME HTTP -- engine operations: enrich, validate, audit, reindex."""
 import concurrent.futures
 import logging
 import os
@@ -6,7 +6,7 @@ import subprocess
 import sys
 import threading
 
-# Central .env loader — fail-fast semantics.
+# Central .env loader -- fail-fast semantics.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hme_env import ENV  # noqa: E402
 
@@ -58,7 +58,7 @@ def _is_indexable(abs_path: str) -> str | None:
         # File was path-valid but stat failed. Without size-check, a
         # downstream read may pull a huge file into memory and OOM.
         # Treat as an error and let the caller handle absence explicitly.
-        logger.error(f"size probe FAILED for {abs_path} — downstream read may OOM: {type(_size_err).__name__}: {_size_err}")
+        logger.error(f"size probe FAILED for {abs_path} -- downstream read may OOM: {type(_size_err).__name__}: {_size_err}")
         return f"size probe failed: {type(_size_err).__name__}"
 
     return None
@@ -73,7 +73,7 @@ def _reindex_files(files: list[str]) -> dict:
     if not _engine_ready.is_set():
         return {"indexed": [], "count": 0, "deferred": "engines starting"}
     if _project_engine is None:
-        _log_error("reindex", "engines not ready — cannot reindex files")
+        _log_error("reindex", "engines not ready -- cannot reindex files")
         return {"error": "engines not ready", "indexed": [], "count": 0}
 
     if _project_engine._bulk_indexing.is_set():
@@ -102,7 +102,7 @@ def _reindex_files(files: list[str]) -> dict:
             if not abs_path.startswith(os.path.realpath(PROJECT_ROOT) + os.sep):
                 skipped.append(filepath)
                 continue
-            # Enforce file_walker indexing rules — reject anything walk_code_files wouldn't find
+            # Enforce file_walker indexing rules -- reject anything walk_code_files wouldn't find
             reject = _is_indexable(abs_path)
             if reject:
                 logger.info(f"reindex: rejected {filepath} ({reject})")
@@ -122,7 +122,7 @@ def _reindex_files(files: list[str]) -> dict:
                             break
                 if found:
                     abs_path = os.path.realpath(found)
-                    logger.info(f"reindex: resolved {filepath} → {found}")
+                    logger.info(f"reindex: resolved {filepath} -> {found}")
                     # Re-check resolved path against indexing rules
                     reject = _is_indexable(abs_path)
                     if reject:
@@ -143,7 +143,7 @@ def _reindex_files(files: list[str]) -> dict:
                 continue
             # Content gate: skip files with auto-generated markers at top.
             # These are lookup tables / bootstrap code that pollute semantic
-            # search — the embedder clusters them because they look similar
+            # search -- the embedder clusters them because they look similar
             # to each other. Detect via "AUTO-GENERATED" or "GENERATED FILE
             # - DO NOT EDIT" in the first 5 lines of the file.
             try:
@@ -247,5 +247,5 @@ def _validate(query: str) -> dict:
 
 
 
-# Re-exports — enrich_prompt + post_audit extracted.
+# Re-exports -- enrich_prompt + post_audit extracted.
 from hme_http_enrich_audit import _enrich_prompt, _post_audit  # noqa: F401, E402

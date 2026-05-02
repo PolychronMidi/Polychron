@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Detect psychopathic-stop patterns — deferring work instead of doing it.
+"""Detect psychopathic-stop patterns -- deferring work instead of doing it.
 
 Fires when ANY of these conditions hold in the current turn:
 
-  Pattern A: "Schedule-and-run" — agent launches a long background job
+  Pattern A: "Schedule-and-run" -- agent launches a long background job
   (training, pip install, nohup, reindex, HF download, etc.) and calls
   ScheduleWakeup in the same turn. The wakeup defers work instead of
   continuing with other productive tasks while the background job runs.
 
-  Pattern B: "Admit-and-stop" — agent's final assistant message enumerates
+  Pattern B: "Admit-and-stop" -- agent's final assistant message enumerates
   pending / remaining / can't-do-mid-turn work, but no tool calls follow
   that message. The agent told itself what to do next and then didn't do
-  it. This is the most common antipattern variant — verbal procrastination
+  it. This is the most common antipattern variant -- verbal procrastination
   disguised as a status report.
 
 Usage: psycho_stop.py <transcript_path>
@@ -31,14 +31,14 @@ from _transcript import (  # noqa: E402
 BG_KEYWORDS = (
     "train", "pip install", "pip3 install", "nohup", "accelerate", "axolotl",
     "unsloth", "merge_", "convert_hf_to_gguf", "finetune", "stress-test",
-    # Generic long-running python scripts — `python3 /tmp/foo.py` or inline
+    # Generic long-running python scripts -- `python3 /tmp/foo.py` or inline
     # `python3 <<EOF ... EOF` in a background command. Catches reindex
     # loops, download scripts, migration wrappers, and anything launched
     # from /tmp as a batch one-shot. The presence of `&` at end OR heredoc
     # marker also indicates the command was intended to run long.
     "python3 /tmp/", "python3 <<", "python <<",
     # Shim / daemon restarts deferred via nohup are not the same pattern
-    # (those are quick) — they're caught elsewhere. But if a nohup or
+    # (those are quick) -- they're caught elsewhere. But if a nohup or
     # disown appears in the command AND there's a wakeup, that's defer.
     "disown", "/reindex", "reindex",
     # HF / large model downloads
@@ -46,11 +46,11 @@ BG_KEYWORDS = (
 )
 
 
-# Pattern B: "admit-and-stop" — final assistant text enumerates pending /
+# Pattern B: "admit-and-stop" -- final assistant text enumerates pending /
 # remaining / cant-do-mid-turn work but no tool calls follow it.
 #
 # Sourced from _phrase_lists.py to align with sibling detectors
-# (exhaust_check, early_stop) — peer-review iter 135 caught that 9
+# (exhaust_check, early_stop) -- peer-review iter 135 caught that 9
 # detectors measuring the same "deferral" signal had drift-prone
 # private phrase lists. ADMIT_PHRASES = future-tense + flag-for-later
 # + ack-no-fix + cant-do, which together cover what this detector
@@ -71,7 +71,7 @@ ADMIT_PHRASES = (
 )
 
 
-# Pattern C: "survey-and-ask" — agent executes a hardening / audit / refactor
+# Pattern C: "survey-and-ask" -- agent executes a hardening / audit / refactor
 # directive, identifies violations, then asks the user for permission to
 # fix them instead of fixing. The user's directive already granted authority;
 # stopping to ask is a covert defer. Triggers when the final assistant text
@@ -79,7 +79,7 @@ ADMIT_PHRASES = (
 # follow. Distinct from ADMIT_PHRASES: those announce the agent won't do the
 # work; these pretend the agent is helpfully checking in.
 # Migrated to shared phrase lists per peer-review iter 135. Pattern C
-# = soliciting permission OR enumerating "didn't fix yet" surveys —
+# = soliciting permission OR enumerating "didn't fix yet" surveys --
 # the union of SURVEY_PERMISSION_ASK + the survey-shape subset of
 # DEFERRAL_ACK_NO_FIX + DEFERRAL_FLAG_FOR_LATER captures both.
 PERMISSION_ASK_PHRASES = (
@@ -93,11 +93,11 @@ def _is_assistant_event(event: dict) -> bool:
     return is_assistant(event)
 
 
-# Ideation markers — when the user's last message asks for ideas /
+# Ideation markers -- when the user's last message asks for ideas /
 # opinions / comparisons / explanations rather than giving a directive,
 # Pattern C ("survey-and-ask") becomes a legitimate collaborative
 # response, not deferral. Without this gate, psycho_stop fires on every
-# "what would you suggest" → "here are options, which?" turn — exactly
+# "what would you suggest" -> "here are options, which?" turn -- exactly
 # the wrong incentive for a brainstorming exchange.
 _IDEATION_MARKERS = (
     # Question stems that signal "tell me / show me, don't do"
@@ -117,7 +117,7 @@ _IDEATION_MARKERS = (
     "rather than that",
 )
 
-# Directive markers — when these appear (even alongside a question),
+# Directive markers -- when these appear (even alongside a question),
 # the user IS giving an action directive and survey-and-ask is defer.
 # Removed words (too broad in normal prose): "run " (false-positives on
 # "those run on", "we run a pipeline"), "apply " (false-positives on
@@ -159,7 +159,7 @@ def _is_ideation_prompt(user_text: str) -> bool:
     Pattern C ("survey-and-ask") should be suppressed: the agent
     legitimately surveys options and asks which to prioritize.
 
-    Logic: directive markers DOMINATE — if the user said "fix it" they
+    Logic: directive markers DOMINATE -- if the user said "fix it" they
     want action, even if they also asked "what's the best approach?".
     Otherwise, ideation markers gate the suppression. Hook-injected
     system reminders are stripped before classification (they often
@@ -167,7 +167,7 @@ def _is_ideation_prompt(user_text: str) -> bool:
     """
     if not user_text:
         return False
-    # Strip system-reminder envelopes — those carry hook language, not
+    # Strip system-reminder envelopes -- those carry hook language, not
     # user intent. The actual user prompt sits between/around them.
     import re as _re
     cleaned = _re.sub(
@@ -177,12 +177,12 @@ def _is_ideation_prompt(user_text: str) -> bool:
         flags=_re.DOTALL,
     )
     low = cleaned.lower()
-    # Directive markers win — agent must act regardless of any "what's best"
+    # Directive markers win -- agent must act regardless of any "what's best"
     # framing the user appended.
     for marker in _DIRECTIVE_MARKERS:
         if marker in low:
             return False
-    # No directive — does the prompt read as ideation?
+    # No directive -- does the prompt read as ideation?
     for marker in _IDEATION_MARKERS:
         if marker in low:
             return True
@@ -228,9 +228,9 @@ def _has_tool_call_after_last_text(events: list) -> bool:
                 last_text_event_idx = i
                 last_text_block_idx = bi
     if last_text_event_idx < 0:
-        return False  # no text at all — nothing to guard against
+        return False  # no text at all -- nothing to guard against
 
-    # Case 1: interleaved in same event — check blocks after last_text_block_idx
+    # Case 1: interleaved in same event -- check blocks after last_text_block_idx
     last_ev = events[last_text_event_idx]
     content = event_content(last_ev)
     for bi in range(last_text_block_idx + 1, len(content)):
@@ -249,7 +249,7 @@ def _has_tool_call_after_last_text(events: list) -> bool:
 def _emit_stats(pattern: str, detail: str) -> None:
     """Append a detector-run line to metrics/detector-stats.jsonl so dead
     phrase lists + dead patterns become quantitatively visible over time.
-    Silent on write failures — this is observability, not correctness."""
+    Silent on write failures -- this is observability, not correctness."""
     try:
         import json
         import time
@@ -308,7 +308,7 @@ def main() -> int:
     # Read the transcript once into both views so later Pattern-C ideation
     # gate and earlier Pattern-B tool-call check see the SAME snapshot.
     # Previously `load_turn_events` and `load_full_turn_with_user` were
-    # called separately — if the transcript file was appended between
+    # called separately -- if the transcript file was appended between
     # reads (active session), the views diverged and a directive turn
     # could ideation-pass on a stale read while the tool-call guard
     # inspected a newer view. Caught by thread-routed self-review.
@@ -351,7 +351,7 @@ def main() -> int:
         print("psycho")
         return 0
 
-    # Pattern B/C scan against the agent's OWN voice — strip quoted/code
+    # Pattern B/C scan against the agent's OWN voice -- strip quoted/code
     # content before phrase-matching. Without this, a response that
     # described a test fixture or quoted user input (e.g. `"Want me to
     # apply the fix?"` inside a list of test cases) would be flagged as
@@ -365,14 +365,14 @@ def main() -> int:
     stripped = _re_psy.sub(r'"[^"\n]*"', " ", stripped)
     stripped = _re_psy.sub(r"'[^'\n]*'", " ", stripped)
     final_text = stripped.lower()
-    # Compute ideation gate ONCE — used by both Pattern B and Pattern C.
+    # Compute ideation gate ONCE -- used by both Pattern B and Pattern C.
     # When the user's prompt asks for ideas / opinions / comparisons /
     # discussion (no directive verbs), the agent legitimately uses
     # ADMIT-phrase-like language to describe options ("their approach
     # writes to next session, yours is better"). Without this gate,
     # comparison talk gets flagged as deferral. Directive markers in the
-    # user prompt still override — "fix this" + admit-phrase still psycho.
-    # Use events_with_user captured at the top of main — re-reading the
+    # user prompt still override -- "fix this" + admit-phrase still psycho.
+    # Use events_with_user captured at the top of main -- re-reading the
     # transcript here would create a race where the slice and this view
     # could diverge if the file was appended between reads.
     user_text = _last_user_text(events_with_user)
@@ -387,7 +387,7 @@ def main() -> int:
                         # message family that fires SCOPE_ESCAPE allows
                         # explicit refusal-with-reason. When the admit
                         # phrase sits next to (b)-clause justification
-                        # ("not doing this is the right call because…",
+                        # ("not doing this is the right call because...",
                         # "duplicates the existing X"), the agent took
                         # the sanctioned alternative path, not the
                         # punt. Suppress to keep detector behavior
@@ -405,7 +405,7 @@ def main() -> int:
                         print("psycho")
                         return 0
 
-        # Pattern C: survey-and-ask — same ideation gate as Pattern B above.
+        # Pattern C: survey-and-ask -- same ideation gate as Pattern B above.
         # When the user's prompt is ideation/discussion, survey-and-ask is
         # collaborative (here are 3 options, which fits?), not defer.
         if user_is_ideating:

@@ -2,7 +2,7 @@
 """Detect plan abandonment via Agent spawned for KB/HME work.
 
 If the current turn spawned a subagent with KB/HME-related keywords in
-its prompt, this is the abandonment antipattern — HME tools should be
+its prompt, this is the abandonment antipattern -- HME tools should be
 used directly, not delegated. Matches case-insensitively against these
 keywords in the agent prompt:
     knowledge, kb , hme, search_knowledge, compact, remove_knowledge

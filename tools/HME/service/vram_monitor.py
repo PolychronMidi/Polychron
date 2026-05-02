@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 
-# Central .env loader — fail-fast semantics.
+# Central .env loader -- fail-fast semantics.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hme_env import ENV  # noqa: E402
 

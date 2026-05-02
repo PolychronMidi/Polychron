@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=verifier-utility — Horizon VI seed (meta-meta verifiers).
+"""i/why mode=verifier-utility -- Horizon VI seed (meta-meta verifiers).
 
 Reads the per-verifier status history from
 output/metrics/hme-coherence-timeseries.jsonl and computes
@@ -15,7 +15,7 @@ or attention. The full Horizon VI vision adds: incident-correlation
 ("did this verifier's FAIL catch a real bug, or did the agent ignore
 it?"), coverage gaps, drift detection ("a verifier that passed for
 100 runs may no longer be checking what it used to"). Today this
-ships the cheapest of those four — and demonstrates the horizon is
+ships the cheapest of those four -- and demonstrates the horizon is
 actually within reach.
 """
 from __future__ import annotations
@@ -56,7 +56,7 @@ def main(argv):
         print(f"Failed to read timeseries: {e}")
         return 1
 
-    # Per-verifier history: name → list of (status, score)
+    # Per-verifier history: name -> list of (status, score)
     history: dict[str, list[tuple[str, float]]] = defaultdict(list)
     for row in rows:
         for name, info in row.get("probes", {}).items():
@@ -107,16 +107,16 @@ def main(argv):
     always_pass = [m for m in metrics if m["pass"] == m["n"] and m["n"] >= 10]
     if always_pass:
         always_pass.sort(key=lambda m: -m["n"])
-        print(f"## Always-PASS ({len(always_pass)}) — zero information ever; candidates for downweighting")
+        print(f"## Always-PASS ({len(always_pass)}) -- zero information ever; candidates for downweighting")
         for m in always_pass[:cap]:
             print(_fmt_row(m, f"{m['n']} runs, never flipped"))
         if len(always_pass) > cap:
-            print(f"  (+{len(always_pass) - cap} more — pass verbose=true to show)")
+            print(f"  (+{len(always_pass) - cap} more -- pass verbose=true to show)")
         print()
         # Horizon VI maturity: persist auto-prune marker so downstream
         # weight-computation can halve these verifiers' contribution to
         # HCI without removing them from the registry. State hand-off
-        # via tmp/, atomic write, advisory only — composition behavior
+        # via tmp/, atomic write, advisory only -- composition behavior
         # remains unchanged until a consumer explicitly reads this.
         try:
             import time as _time
@@ -124,7 +124,7 @@ def main(argv):
             tmp_path = prune_path + ".tmp"
             payload = {
                 "ts": _time.time(),
-                "rationale": "verifiers passing for ≥10 consecutive runs without flipping carry zero information",
+                "rationale": "verifiers passing for >=10 consecutive runs without flipping carry zero information",
                 "weight_multiplier": 0.5,
                 "candidates": [
                     {"name": m["name"], "runs": m["n"], "subtag": name_to_subtag.get(m["name"], "(none)")}
@@ -145,26 +145,26 @@ def main(argv):
     # Bucket 2: always-FAIL (broken or signal we ignore)
     always_fail = [m for m in metrics if m["fail"] == m["n"] and m["n"] >= 10]
     if always_fail:
-        print(f"## Always-FAIL ({len(always_fail)}) — broken, alarmist, or chronically ignored")
+        print(f"## Always-FAIL ({len(always_fail)}) -- broken, alarmist, or chronically ignored")
         for m in always_fail[:cap]:
             print(_fmt_row(m, f"{m['n']} runs, all FAIL"))
         if len(always_fail) > cap:
-            print(f"  (+{len(always_fail) - cap} more — pass verbose=true to show)")
+            print(f"  (+{len(always_fail) - cap} more -- pass verbose=true to show)")
         print()
 
-    # Bucket 3: flapping — high flip rate signals noise or genuine instability
+    # Bucket 3: flapping -- high flip rate signals noise or genuine instability
     flappers = [
         m for m in metrics
         if m["n"] >= 10 and m["flips"] >= max(3, m["n"] * 0.15)
     ]
     flappers.sort(key=lambda m: -m["flips"])
     if flappers:
-        print(f"## Flapping ({len(flappers)}) — flips ≥15% of runs; either noisy or catching real instability")
+        print(f"## Flapping ({len(flappers)}) -- flips >=15% of runs; either noisy or catching real instability")
         for m in flappers[:cap]:
             rate = m["flips"] / m["n"] * 100
-            print(_fmt_row(m, f"{m['flips']}/{m['n']} flips ({rate:.0f}%) · last={m['last']}"))
+            print(_fmt_row(m, f"{m['flips']}/{m['n']} flips ({rate:.0f}%) . last={m['last']}"))
         if len(flappers) > cap:
-            print(f"  (+{len(flappers) - cap} more — pass verbose=true to show)")
+            print(f"  (+{len(flappers) - cap} more -- pass verbose=true to show)")
         print()
 
     # Bucket 4: high score variance (mode oscillating even when status stable)
@@ -172,11 +172,11 @@ def main(argv):
     variant.sort(key=lambda m: -m["var"])
     if variant:
         cap2 = 999 if verbose else 5
-        print(f"## High score variance ({len(variant)}) — score oscillates even when status doesn't")
+        print(f"## High score variance ({len(variant)}) -- score oscillates even when status doesn't")
         for m in variant[:cap2]:
-            print(_fmt_row(m, f"var={m['var']:.3f} · last={m['last']}"))
+            print(_fmt_row(m, f"var={m['var']:.3f} . last={m['last']}"))
         if len(variant) > cap2:
-            print(f"  (+{len(variant) - cap2} more — pass verbose=true to show)")
+            print(f"  (+{len(variant) - cap2} more -- pass verbose=true to show)")
         print()
 
     # Summary
@@ -219,7 +219,7 @@ def main(argv):
                         incident_hits[name] += 1
             if incident_hits:
                 print("## Incident-correlation (heuristic)")
-                print("  Verifiers mentioned by name in KB bugfix/fix entries —")
+                print("  Verifiers mentioned by name in KB bugfix/fix entries --")
                 print("  weak-signal proof the verifier has helped surface real bugs.")
                 ranked = sorted(incident_hits.items(), key=lambda kv: -kv[1])
                 for name, count in ranked[:5]:

@@ -1,4 +1,4 @@
-"""HME self-narration — Layer 6 of the self-coherence stack.
+"""HME self-narration -- Layer 6 of the self-coherence stack.
 
 Assembles a rich, contextual status narrative from all available signals:
   - System phase and lifecycle history (Layer 0)
@@ -10,7 +10,7 @@ Assembles a rich, contextual status narrative from all available signals:
 The narration is prepended to tool responses when the system is not READY,
 giving Claude actionable context instead of a bare "[DEGRADED]" status flag.
 
-Format: compact paragraph (not a table) — enough context to reason about
+Format: compact paragraph (not a table) -- enough context to reason about
 trustworthiness of search results without overwhelming the tool response.
 """
 import time
@@ -22,14 +22,14 @@ logger = logging.getLogger("HME")
 def build_status_narrative() -> str:
     """Assemble rich status narrative from all self-coherence layers.
 
-    Returns empty string if system is fully READY — no banner needed.
+    Returns empty string if system is fully READY -- no banner needed.
     All imports are lazy to avoid circular imports at module load time.
     """
     try:
         from server import system_phase as sp
         phase = sp.get_phase()
         if phase == sp.SystemPhase.READY:
-            return ""  # healthy — suppress banner entirely
+            return ""  # healthy -- suppress banner entirely
 
         from server import operational_state as ops
         from server import health_topology as ht
@@ -71,7 +71,7 @@ def build_status_narrative() -> str:
         slowdown = topo.get("slowdown_warning")
         if slowdown:
             lines.append(
-                f"⚠ Predictive: {slowdown['message']}."
+                f"[!] Predictive: {slowdown['message']}."
             )
 
         # Cascade (Layer 10)
@@ -85,14 +85,14 @@ def build_status_narrative() -> str:
         # Recovery health
         if recovery_rate < 0.8:
             lines.append(
-                f"Recovery success rate is {recovery_rate:.0%} — the system has been struggling to self-heal. "
+                f"Recovery success rate is {recovery_rate:.0%} -- the system has been struggling to self-heal. "
                 "Consider restarting the shim manually: kill $(cat /tmp/hme-http-shim.pid)"
             )
 
         # Crash loop (Layer 5)
         if ops.is_crash_loop():
             lines.append(
-                "Crash loop pattern detected (≥3 shim crashes or ≥8 restarts today). "
+                "Crash loop pattern detected (>=3 shim crashes or >=8 restarts today). "
                 "Expensive startup steps (llama.cpp priming, cache warm) are being skipped. "
                 "Check system resources: OOM, disk full, CUDA errors."
             )
@@ -100,7 +100,7 @@ def build_status_narrative() -> str:
         # Coherence summary (Layer 8)
         if coherence < 0.5:
             lines.append(
-                f"System coherence {coherence:.0%} — multiple components degraded simultaneously."
+                f"System coherence {coherence:.0%} -- multiple components degraded simultaneously."
             )
 
         # Phase-specific guidance
@@ -117,7 +117,7 @@ def build_status_narrative() -> str:
                 "If this persists, check log/hme.log for the startup error."
             )
         elif phase == sp.SystemPhase.WARMING:
-            lines.append("Engines initializing — tool calls will block up to 45s.")
+            lines.append("Engines initializing -- tool calls will block up to 45s.")
 
         return " ".join(lines) + "\n\n"
 

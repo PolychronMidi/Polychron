@@ -1,4 +1,4 @@
-"""HME review — unified post-pipeline analysis tool.
+"""HME review -- unified post-pipeline analysis tool.
 
 Merges pipeline_digest, regime_report, trust_report, section_compare,
 and audio_analyze into one tool with mode routing.
@@ -55,7 +55,7 @@ def _unified_evolution_recommender() -> str:
     # Originally this called _count_direct_callers(prod) for each producer,
     # and each call walked ~500 src files. With ~40 producers that's 20k
     # file reads per evolve call = ~4s. Batch version reads each src file
-    # once and checks all producer names in a single pass — ~500 reads
+    # once and checks all producer names in a single pass -- ~500 reads
     # total instead of 20k.
     try:
         import re as _re_bulk
@@ -98,7 +98,7 @@ def _unified_evolution_recommender() -> str:
                         "priority": 8.0 + min(bypass_ratio, 5.0),
                         "type": "bypass",
                         "title": f"Route {prod} callers through L0 '{ch}'",
-                        "detail": f"{direct} direct callers vs {l0_count} L0 consumers — {direct - l0_count} bypass L0.",
+                        "detail": f"{direct} direct callers vs {l0_count} L0 consumers -- {direct - l0_count} bypass L0.",
                     })
     except Exception as _err6:
         logger.debug(f'silent-except review_unified.py:209: {type(_err6).__name__}: {_err6}')
@@ -151,7 +151,7 @@ def _unified_evolution_recommender() -> str:
                         "priority": 5.0,
                         "type": "low-trust",
                         "title": f"Investigate low-trust system '{name}' (score={score:.2f})",
-                        "detail": "Consistently underperforming — may need outcome scoring recalibration.",
+                        "detail": "Consistently underperforming -- may need outcome scoring recalibration.",
                     })
     except Exception as _err9:
         logger.debug(f'silent-except review_unified.py:262: {type(_err9).__name__}: {_err9}')
@@ -165,8 +165,8 @@ def _unified_evolution_recommender() -> str:
 
     out.append(f"Found {len(recommendations)} evolution opportunities, ranked by impact:\n")
     for i, rec in enumerate(recommendations[:12], 1):
-        icon = {"dead-end": "📡", "orphan": "👻", "bypass": "⚡", "dimension-gap": "🔲",
-                "virgin-pair": "🌉", "low-trust": "📉"}.get(rec["type"], "•")
+        icon = {"dead-end": "[ANT]", "orphan": "[GHOST]", "bypass": "[bolt]", "dimension-gap": "[BLOCK]",
+                "virgin-pair": "[BRIDGE]", "low-trust": "[DOWN]"}.get(rec["type"], "*")
         out.append(f"**{i}. {icon} [{rec['type']}] {rec['title']}** (priority: {rec['priority']:.1f})")
         out.append(f"   {rec['detail']}")
         out.append("")

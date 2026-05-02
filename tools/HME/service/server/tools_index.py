@@ -90,7 +90,7 @@ def recent_changes(since: str = "1 hour ago") -> str:
 def index_codebase(directory: str = "", lib: str = "") -> str:
     """Reindex all code chunks and symbols for semantic search. Called via hme_admin(action='index').
     Run after batch code changes when file watcher hasn't caught up.
-    The directory parameter is ignored — always indexes from PROJECT_ROOT
+    The directory parameter is ignored -- always indexes from PROJECT_ROOT
     to prevent bypassing the file_walker whitelist."""
     ctx.ensure_ready_sync()
     if lib:
@@ -110,12 +110,12 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
             f"  Chunks created: {result['chunks_created']}"
         )
 
-    # Always use PROJECT_ROOT — never allow directory override
+    # Always use PROJECT_ROOT -- never allow directory override
     target = ctx.PROJECT_ROOT
     if not os.path.isdir(target):
         return f"Error: directory not found: {target}"
 
-    # Main-tree reindex goes through the daemon's indexing-mode — SAME path
+    # Main-tree reindex goes through the daemon's indexing-mode -- SAME path
     # clear_index uses. indexing-mode owns:
     #   1. suspend coder (kill + disable auto-restart)
     #   2. migrate embedders to cuda:1 in the vacuum
@@ -126,7 +126,7 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
     # directly against the worker's default device, which raced coder on
     # GPU1 and produced CUDA-illegal-memory cascades every single reindex
     # (logged as "WHY THE FUCK DO I HAVE TO GO OVER THIS EVERY TIME").
-    # Lib engines still take the thread-pool path — they run on CPU / shared
+    # Lib engines still take the thread-pool path -- they run on CPU / shared
     # GPU0 and don't contend with coder.
     try:
         from indexing_mode import request_full_reindex
@@ -137,10 +137,10 @@ def index_codebase(directory: str = "", lib: str = "") -> str:
         return (
             f"index error: daemon refused indexing-mode: {main_result['error']}\n"
             f"Check log/hme-llamacpp_daemon.out for traceback. The daemon "
-            f"owns GPU allocation — do not bypass it."
+            f"owns GPU allocation -- do not bypass it."
         )
     if main_result.get("coalesced"):
-        # An overlapping reindex finished while we waited — its result
+        # An overlapping reindex finished while we waited -- its result
         # IS our result, no second pass needed. Surface at info-level
         # so the agent knows their request was honored without spurious
         # error framing. If `total_files` is missing on the coalesced
@@ -236,14 +236,14 @@ def clear_index() -> str:
     except Exception as e:
         return f"clear_index error: daemon request failed: {e}"
     if result.get("error"):
-        # Surface daemon errors explicitly — do NOT fall back to default device.
+        # Surface daemon errors explicitly -- do NOT fall back to default device.
         # A half-full GPU (arbiter or other models still loaded) would OOM
         # on a raw _index_main call. The daemon is the only sanctioned path:
         # fix the daemon/log-diagnosed issue and retry.
         return (
             f"clear_index error: daemon refused indexing-mode: {result['error']}\n"
             f"Check log/hme-llamacpp_daemon.out for traceback. The daemon "
-            f"owns GPU allocation — do not bypass it by indexing on the "
+            f"owns GPU allocation -- do not bypass it by indexing on the "
             f"default device (risk of OOM against loaded models)."
         )
     if "total_files" not in result:
@@ -293,10 +293,10 @@ def index_symbols() -> str:
     kind_str = ", ".join(_plural(v, k) for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
     return f"Symbol index built: {result['indexed']} symbols ({kind_str})"
 
-# index_codebase now also rebuilds symbols — reindex() just provides a cleaner API
+# index_codebase now also rebuilds symbols -- reindex() just provides a cleaner API
 def reindex(what: str = "codebase") -> str:
     """Rebuild the search index. what: 'codebase' (code chunks + symbols, handles both),
-    'symbols' (symbol index only — faster for symbol-only changes). Replaces calling
+    'symbols' (symbol index only -- faster for symbol-only changes). Replaces calling
     index_codebase + index_symbols separately. File watcher handles individual saves."""
     ctx.ensure_ready_sync()
     if what == "symbols":

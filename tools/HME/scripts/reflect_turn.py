@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Per-turn reflection writer — appends one structured line to
+"""Per-turn reflection writer -- appends one structured line to
 output/metrics/reflections.jsonl summarising the turn just completed.
 
 Schema (every line):
@@ -13,7 +13,7 @@ Schema (every line):
       "criteria_passed": <int>,
       "criteria_failed": <int>,   # done with [DEFERRED-VERIFY] or unverified
       "doctrine_fired": {
-          "live_probe":           <bool>,  # ≥1 ISC marked done with verification entry
+          "live_probe":           <bool>,  # >=1 ISC marked done with verification entry
           "advisor":              <bool>,  # i/consult invoked this turn
           "cato":                 <bool>,  # cross-vendor audit invoked (E4/E5 only)
           "conflict":             <bool>,  # advisor re-called after conflict
@@ -63,7 +63,7 @@ _MODE_CLASSIFIER_LOG = _PROJECT / "output" / "metrics" / "mode-classifier.jsonl"
 
 def _read_detector_verdicts() -> dict:
     """Read tmp/hme-stop-detector-verdicts.env (the file work_checks.js
-    consumes). Returns dict of detector_name → verdict."""
+    consumes). Returns dict of detector_name -> verdict."""
     out: dict = {}
     if not _DETECTOR_VERDICTS.is_file():
         return out
@@ -237,7 +237,7 @@ def main(argv: list) -> int:
             _REFLECTIONS.parent.mkdir(parents=True, exist_ok=True)
             with open(_REFLECTIONS, "a", encoding="utf-8") as f:
                 f.write(compact + "\n")
-            print(f"reflect_turn: appended → {_REFLECTIONS}")
+            print(f"reflect_turn: appended -> {_REFLECTIONS}")
     return 0
 
 

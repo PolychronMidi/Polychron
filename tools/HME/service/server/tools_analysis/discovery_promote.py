@@ -1,4 +1,4 @@
-"""Phase 6.4 (R97) — discovery draft → human-curated markdown promotion.
+"""Phase 6.4 (R97) -- discovery draft -> human-curated markdown promotion.
 
 Drafts live in `output/metrics/hme-discoveries-draft.jsonl` (auto-generated
 by `scripts/pipeline/hme/synthesize-generalizations.py`, gitignored).
@@ -6,10 +6,10 @@ Confirmed discoveries live in `doc/hme-discoveries.md` (human-curated,
 permanent).
 
 A draft becomes eligible for promotion only when its synthesized invariant
-has been stable across ≥3 consecutive pipeline runs. The stability counter
+has been stable across >=3 consecutive pipeline runs. The stability counter
 is maintained by the synthesize step and persists in the jsonl.
 
-The agent cannot promote drafts — only humans can, via
+The agent cannot promote drafts -- only humans can, via
 `learn(action='promote_discovery', remove=<draft_id>)`. This keeps the
 auto-generated sludge strictly out of the claims file.
 """
@@ -68,7 +68,7 @@ def list_discoveries() -> str:
     for d in drafts:
         stable = d.get("stable_runs", 0)
         ready = "READY" if d.get("promotable") else f"stable={stable}/3"
-        lines.append(f"## [{d.get('id', '?')}] — {ready}")
+        lines.append(f"## [{d.get('id', '?')}] -- {ready}")
         lines.append(f"  pattern: {d.get('pattern_id', '?')}")
         lines.append(f"  specificity: {d.get('specificity', 0):.2f}")
         lines.append(f"  rounds: {', '.join(d.get('rounds', [])[:6])}")
@@ -82,7 +82,7 @@ def promote_discovery(draft_id: str, annotation: str = "") -> str:
     """Append a stable draft to doc/hme-discoveries.md and remove it from
     the draft stream. Requires the draft to have promotable=true."""
     _track("promote_discovery")
-    # Single-writer guard — same pattern kb mutations use.
+    # Single-writer guard -- same pattern kb mutations use.
     try:
         from server.lifecycle_writers import assert_writer
         assert_writer("kb", __file__)
@@ -103,7 +103,7 @@ def promote_discovery(draft_id: str, annotation: str = "") -> str:
         return (
             f"Error: draft '{draft_id}' is not promotable yet "
             f"(stable_runs={target.get('stable_runs', 0)}/3). "
-            f"Pipeline must produce the same invariant ≥3 times before promotion."
+            f"Pipeline must produce the same invariant >=3 times before promotion."
         )
 
     # Append to curated doc. First promotion strips the "No entries yet"
@@ -118,7 +118,7 @@ def promote_discovery(draft_id: str, annotation: str = "") -> str:
     entry_title = target.get("tags", ["(untagged)"])[0] if target.get("tags") else "(untagged)"
     rounds_s = ", ".join(target.get("rounds", [])[:8])
     entry = [
-        f"## {entry_title} — promoted {timestamp}",
+        f"## {entry_title} -- promoted {timestamp}",
         "",
         f"**Source:** crystallized pattern `{target.get('pattern_id', '?')}`  ",
         f"**Evidence:** {len(target.get('rounds', []))} rounds ({rounds_s})  ",
@@ -162,7 +162,7 @@ def promote_discovery(draft_id: str, annotation: str = "") -> str:
             f.write(json.dumps(d) + "\n")
 
     return (
-        f"Promoted draft '{draft_id}' → {os.path.relpath(curated_path, ctx.PROJECT_ROOT)}\n"
+        f"Promoted draft '{draft_id}' -> {os.path.relpath(curated_path, ctx.PROJECT_ROOT)}\n"
         f"  pattern: {target.get('pattern_id', '?')}\n"
         f"  invariant: {(target.get('invariant') or '').strip()[:180]}\n"
         f"Remaining drafts: {len(remaining)}"

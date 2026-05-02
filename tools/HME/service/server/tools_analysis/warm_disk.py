@@ -23,14 +23,14 @@ _warm_ctx_baseline_tokens: dict = {}
 _warm_ctx_incr_latency: dict = {}
 
 # Disk persistence config
-# Prefer tmpfs buffer (instant I/O) → fallback to project disk.
+# Prefer tmpfs buffer (instant I/O) -> fallback to project disk.
 _TMPFS_PATHS = ["/mnt/llamacpp-buffer-gpu0", "/mnt/llamacpp-buffer-gpu1"]
 _DISK_CACHE_DIR = None  # lazily initialized
-_MODEL_CACHE_NAMES = {}  # model → cache file stem, set after model constants load
+_MODEL_CACHE_NAMES = {}  # model -> cache file stem, set after model constants load
 
 
 def _cache_dir() -> str:
-    """Return the best available cache directory — tmpfs if mounted, else disk."""
+    """Return the best available cache directory -- tmpfs if mounted, else disk."""
     global _DISK_CACHE_DIR
     for tp in _TMPFS_PATHS:
         if os.path.ismount(tp):
@@ -43,7 +43,7 @@ def _cache_dir() -> str:
 
 
 def _model_cache_stem(model: str) -> str:
-    """Stable filename stem for a model (e.g. 'qwen3-coder:30b' → 'qwen3-coder-30b')."""
+    """Stable filename stem for a model (e.g. 'qwen3-coder:30b' -> 'qwen3-coder-30b')."""
     return model.replace(":", "-").replace("/", "-")
 
 
@@ -62,7 +62,7 @@ def _save_warm_cache(model: str):
         }
         with open(cache_file, "w") as f:
             _json.dump(data, f)
-        logger.info(f"warm cache SAVED: {model} → {cache_file} ({len(_warm_ctx[model])} tokens)")
+        logger.info(f"warm cache SAVED: {model} -> {cache_file} ({len(_warm_ctx[model])} tokens)")
     except Exception as e:
         logger.warning(f"warm cache save failed: {model}: {e}")
 
@@ -88,7 +88,7 @@ def _load_warm_cache(model: str) -> bool:
     """Try to restore a model's warm context from disk. Returns True if cache was fresh and loaded.
 
     Cross-restart resilience: _kb_version resets to 0 on each MCP server start.
-    When cached_kb_ver != 0, check KB file mtimes — if no KB file changed since
+    When cached_kb_ver != 0, check KB file mtimes -- if no KB file changed since
     the cache was saved, the cache is still valid and _kb_version is realigned.
     """
     cache_file = os.path.join(_cache_dir(), f"warm-kv-{_model_cache_stem(model)}.json")
@@ -111,11 +111,11 @@ def _load_warm_cache(model: str) -> bool:
             if _kb_newest_mtime() > cached_ts:
                 logger.info(f"warm cache STALE: {model} kb_ver {cached_kb_ver} != {current_kb_ver}, KB modified since save")
                 return False
-            # KB unchanged since cache was saved — realign session counter and use cache.
+            # KB unchanged since cache was saved -- realign session counter and use cache.
             ctx._kb_version = max(current_kb_ver, cached_kb_ver)
             logger.info(
                 f"warm cache CROSS-RESTART: {model} kb_ver {cached_kb_ver} vs session {current_kb_ver} "
-                f"— KB unchanged, cache valid, _kb_version → {ctx._kb_version}"
+                f"-- KB unchanged, cache valid, _kb_version -> {ctx._kb_version}"
             )
         if not cached_ctx or len(cached_ctx) < 10:
             logger.debug(f"warm cache SKIP: empty context for {model}")
@@ -132,7 +132,7 @@ def _load_warm_cache(model: str) -> bool:
 
 
 def _save_checkpoint(model: str):
-    """Persist a GC checkpoint — used for fast recovery when main cache is stale."""
+    """Persist a GC checkpoint -- used for fast recovery when main cache is stale."""
     if model not in _warm_ctx:
         return
     ckpt_file = os.path.join(_cache_dir(), f"warm-kv-checkpoint-{_model_cache_stem(model)}.json")
@@ -152,7 +152,7 @@ def _save_checkpoint(model: str):
 
 
 def _try_checkpoint_recovery(model: str) -> bool:
-    """Load a GC checkpoint when main cache is stale — instant availability while
+    """Load a GC checkpoint when main cache is stale -- instant availability while
     a background full re-prime catches up to current kb_ver.
 
     Only loads if the checkpoint is within 20 kb_ver versions of current.
@@ -170,7 +170,7 @@ def _try_checkpoint_recovery(model: str) -> bool:
             return False
         ver_gap = target_kb_ver - ckpt_kb_ver
         if ver_gap > 20 or ver_gap <= 0:
-            logger.debug(f"warm checkpoint SKIP: {model} — gap {ver_gap} out of range")
+            logger.debug(f"warm checkpoint SKIP: {model} -- gap {ver_gap} out of range")
             return False
         _warm_ctx[model] = ckpt_ctx
         _warm_ctx_kb_ver[model] = ckpt_kb_ver
@@ -179,7 +179,7 @@ def _try_checkpoint_recovery(model: str) -> bool:
         _warm_ctx_baseline_tokens[model] = len(ckpt_ctx)
         logger.info(
             f"warm checkpoint RECOVERED: {model} ({len(ckpt_ctx)} tokens, "
-            f"kb_ver={ckpt_kb_ver}, gap={ver_gap} — usable while re-prime catches up)"
+            f"kb_ver={ckpt_kb_ver}, gap={ver_gap} -- usable while re-prime catches up)"
         )
         return True
     except Exception as e:
@@ -190,7 +190,7 @@ def _try_checkpoint_recovery(model: str) -> bool:
 def _load_all_warm_caches() -> int:
     """Try to restore all model caches from disk. Returns count of successfully restored.
 
-    Deduplicates by model name — _LOCAL_MODEL and _REASONING_MODEL can resolve to the
+    Deduplicates by model name -- _LOCAL_MODEL and _REASONING_MODEL can resolve to the
     same alias (e.g. both set to qwen3-coder:30b in .env), and double-counting caused
     `_prime_all_gpus` to short-circuit past an unprimed arbiter when local+reasoner
     already satisfied n.

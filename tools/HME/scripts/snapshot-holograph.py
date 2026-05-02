@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HME Self-Coherence Holograph — full machine-readable snapshot of HME state.
+"""HME Self-Coherence Holograph -- full machine-readable snapshot of HME state.
 
 Captures EVERY observable dimension of HME at a single moment, producing a
 JSON file that can be:

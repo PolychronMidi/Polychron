@@ -14,7 +14,7 @@ _CHANNEL_SEMANTICS: dict[str, str] = {
     "emergentRhythm": "grid density/complexity from accumulated rhythmic events",
     "emergentMelody": "contour/freshness/tessiture/counterpoint melodic context",
     "motifEcho": "imitative counterpoint: delay, interval, voice pairs",
-    "stutterContagion": "stutter spread across voices — rhythmic infection",
+    "stutterContagion": "stutter spread across voices -- rhythmic infection",
     "emergentDownbeat": "spontaneous accent from event accumulation",
     "feedbackLoop": "oscillatory feedback between modules",
     "onset": "note attack timing and velocity",
@@ -218,9 +218,9 @@ def _format_cascade_trace(topo: dict, ch: str) -> str:
             direct = _count_direct_callers(prod)
             l0_cons = len(cons_top)
             if direct > l0_cons * 2:
-                out.append(f"  ⚡ BYPASS ALERT: {prod} has {direct} direct callers but "
+                out.append(f"  [bolt] BYPASS ALERT: {prod} has {direct} direct callers but "
                            f"only {l0_cons} L0 consumers on '{ch}'")
-                out.append(f"     {direct - l0_cons} modules bypass L0 — signal not observable\n")
+                out.append(f"     {direct - l0_cons} modules bypass L0 -- signal not observable\n")
 
     def _show_level(channels: list, depth: int) -> None:
         if depth > 3 or not channels:

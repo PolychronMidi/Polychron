@@ -1,4 +1,4 @@
-"""Health analysis helpers — compute-intensive functions extracted from health.py."""
+"""Health analysis helpers -- compute-intensive functions extracted from health.py."""
 import logging
 import os
 import re
@@ -16,7 +16,7 @@ from symbols import collect_all_symbols
 
 logger = logging.getLogger("HME")
 
-# Files called on every beat — changes that affect these callers are highest-risk
+# Files called on every beat -- changes that affect these callers are highest-risk
 _HOT_PATH_FILES = {
     "src/play/processBeat.js",
     "src/play/crossLayerBeatRecord.js",
@@ -30,17 +30,17 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
     """Single-pass caller count for all IIFE globals.
 
     Returns:
-      sym_files:  name → defining file path
-      caller_counts: name → external caller count
+      sym_files:  name -> defining file path
+      caller_counts: name -> external caller count
 
     Algorithm:
       Pass 1 (src/ only): collect all IIFE global names and their defining files.
       Pass 2 (full project): read each file ONCE, find all symbol references
-        simultaneously using a combined regex — O(files) not O(symbols × files).
+        simultaneously using a combined regex -- O(files) not O(symbols * files).
     """
     from file_walker import walk_code_files
 
-    # Pass 1 — collect symbols
+    # Pass 1 -- collect symbols
     sym_files: dict[str, str] = {}
     sym_registrations: dict[str, bool] = {}
     _reg_pats = REGISTRATION_PATTERNS
@@ -67,7 +67,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
     if not sym_files:
         return {}, {}, {}
 
-    # Pass 2 — count references in one scan
+    # Pass 2 -- count references in one scan
     import re as _re
     name_list = list(sym_files.keys())
     combined = _re.compile(r'\b(' + '|'.join(_re.escape(n) for n in name_list) + r')\b')
@@ -91,7 +91,7 @@ def _compute_iife_caller_counts(src_root: str, project_root: str) -> tuple[dict,
 
 
 def impact_analysis(symbol_name: str, language: str = "") -> str:
-    """Analyze impact of changing a symbol: callers, references, KB constraints. Internal — call via module_intel(target, mode='impact')."""
+    """Analyze impact of changing a symbol: callers, references, KB constraints. Internal -- call via module_intel(target, mode='impact')."""
     ctx.ensure_ready_sync()
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."
@@ -100,19 +100,19 @@ def impact_analysis(symbol_name: str, language: str = "") -> str:
     parts = []
     # Who calls this?
     callers = _find_callers(symbol_name, ctx.PROJECT_ROOT, lang_filter=language)
-    # Filter out documentation files — .md mentions are not callers
+    # Filter out documentation files -- .md mentions are not callers
     callers = [r for r in callers if not r['file'].endswith('.md')]
     caller_files = sorted(set(r['file'].replace(ctx.PROJECT_ROOT + '/', '') for r in callers))
     hot_callers = [f for f in caller_files if f in _HOT_PATH_FILES]
     parts.append(f"## Callers ({len(callers)} sites in {len(caller_files)} files)"
-                 + (f" — {len(hot_callers)} HOT PATH" if hot_callers else ""))
+                 + (f" -- {len(hot_callers)} HOT PATH" if hot_callers else ""))
     for f in caller_files[:15]:
-        label = " [HOT PATH — per-beat execution]" if f in _HOT_PATH_FILES else ""
+        label = " [HOT PATH -- per-beat execution]" if f in _HOT_PATH_FILES else ""
         parts.append(f"  {f}{label}")
     if len(caller_files) > 15:
         parts.append(f"  ... and {len(caller_files) - 15} more files")
     if hot_callers:
-        parts.append(f"  !! This module is called from per-beat hot-path code — any signature or behavior change propagates on every beat.")
+        parts.append(f"  !! This module is called from per-beat hot-path code -- any signature or behavior change propagates on every beat.")
     # What does it call? (via cross_language_trace)
     trace = _trace_cross_lang(symbol_name, ctx.PROJECT_ROOT)
     if trace.get("ts_callers"):
@@ -168,7 +168,7 @@ def convention_check(file_path: str) -> str:
     if ".couplingMatrix" in content:
         if not any(ap in rel_path for ap in COUPLING_MATRIX_EXEMPT_PATHS):
             if any(lp in rel_path for lp in COUPLING_MATRIX_LEGACY_PATHS):
-                issues.append(f"COUPLING FIREWALL: reads .couplingMatrix [legacy — tracked for refactor, not a blocker].")
+                issues.append(f"COUPLING FIREWALL: reads .couplingMatrix [legacy -- tracked for refactor, not a blocker].")
             else:
                 issues.append(f"COUPLING FIREWALL: reads .couplingMatrix directly. Only allowed in coupling engine, meta-controllers, profiler, diagnostics.")
     # Check for Object.freeze that should use deepFreeze
@@ -184,23 +184,23 @@ def convention_check(file_path: str) -> str:
         stamp_match = _re.search(r"validator\.create\(['\"](\w+)['\"]\)", content)
         if stamp_match and stamp_match.group(1) != fname:
             issues.append(f"CONVENTION: Validator stamp '{stamp_match.group(1)}' doesn't match filename '{fname}'.")
-    # console.warn format — must be 'Acceptable warning: ...'
+    # console.warn format -- must be 'Acceptable warning: ...'
     warn_matches = re.findall(r'console\.warn\(([^\)]+)\)', content)
     for wm in warn_matches:
         if "Acceptable warning:" not in wm:
             issues.append(f"CONVENTION: console.warn must use 'Acceptable warning: ...' format.")
             break
 
-    # Fallback patterns — ad-hoc || 0, || [], || '' instead of validator
+    # Fallback patterns -- ad-hoc || 0, || [], || '' instead of validator
     fallback_hits = re.findall(r'\|\|\s*(?:0(?:\.\d+)?|(?:\[\])|(?:\{\})|(?:["\']["\']))\b', content)
     if fallback_hits and "validator" not in content.lower():
         issues.append(f"CONVENTION: {len(fallback_hits)} fallback pattern(s) (|| 0, || [], etc). Use validator methods.")
 
-    # Comment verbosity — JSDoc blocks and multi-line comments
+    # Comment verbosity -- JSDoc blocks and multi-line comments
     jsdoc_blocks = re.findall(r'/\*\*[\s\S]*?\*/', content)
     long_jsdoc = [b for b in jsdoc_blocks if b.count('\n') > 3]
     if long_jsdoc:
-        issues.append(f"CONVENTION: {len(long_jsdoc)} verbose JSDoc block(s). Keep comments terse — one-line inline only.")
+        issues.append(f"CONVENTION: {len(long_jsdoc)} verbose JSDoc block(s). Keep comments terse -- one-line inline only.")
 
     # Self-registration check for src/ modules
     if rel_path.startswith("src/") and rel_path.endswith(".js") and "/index.js" not in rel_path:

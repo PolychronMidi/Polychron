@@ -1,4 +1,4 @@
-"""HME trust ecology analysis — trajectories, rivalries, system-level trust dynamics."""
+"""HME trust ecology analysis -- trajectories, rivalries, system-level trust dynamics."""
 import json
 import os
 import logging
@@ -10,10 +10,10 @@ from . import _track
 logger = logging.getLogger("HME")
 
 
-from . import _load_trace  # noqa: F401 — shared helper
+from . import _load_trace  # noqa: F401 -- shared helper
 
 
-# Trust system → what the listener hears (shared with section_compare drama_map)
+# Trust system -> what the listener hears (shared with section_compare drama_map)
 TRUST_MUSICAL_MEANING: dict[str, str] = {
     "restSynchronizer": "coordinated breathing/silence",
     "stutterContagion": "rhythmic infection spreading",
@@ -52,7 +52,7 @@ TRUST_MUSICAL_MEANING: dict[str, str] = {
 
 def trust_trajectory(system_name: str) -> str:
     """Show how a trust system's weight and score evolved section-by-section across the
-    full run — its 'career arc'. Reveals if a system is gaining trust, losing it, or
+    full run -- its 'career arc'. Reveals if a system is gaining trust, losing it, or
     oscillating. Useful for diagnosing chronic underperformers (high hotspot, low score)
     vs rising stars. Use hotspot_leaderboard first to pick interesting systems."""
     ctx.ensure_ready_sync()
@@ -96,22 +96,22 @@ def trust_trajectory(system_name: str) -> str:
             sections[sec]["hotspot"].append(hp)
 
     if not all_weights:
-        return f"Trust system '{system_name}' not found in trace. Check spelling — use trust_report() (no args) for valid system names."
+        return f"Trust system '{system_name}' not found in trace. Check spelling -- use trust_report() (no args) for valid system names."
 
     role = TRUST_MUSICAL_MEANING.get(system_name, "")
-    role_s = f" — {role}" if role else ""
+    role_s = f" -- {role}" if role else ""
     parts_out = [f"# Trust Trajectory: {system_name}{role_s}\n"]
 
     # Global stats
     avg_w = sum(all_weights) / len(all_weights)
     avg_s = sum(all_scores) / len(all_scores) if all_scores else 0
     trend = all_weights[-1] - all_weights[0] if len(all_weights) > 1 else 0
-    trend_str = f"▲{trend:+.3f}" if trend > 0.01 else (f"▼{trend:+.3f}" if trend < -0.01 else "→ flat")
+    trend_str = f"^{trend:+.3f}" if trend > 0.01 else (f"v{trend:+.3f}" if trend < -0.01 else "-> flat")
     parts_out.append(f"Overall: avg_weight={avg_w:.3f} avg_score={avg_s:.3f} run_trend={trend_str}")
     parts_out.append("")
 
     # Per-section table
-    parts_out.append("Sec | AvgWeight (Δ)         | AvgScore | Hotspot% | Dominant Regime    | Weight Arc")
+    parts_out.append("Sec | AvgWeight (Delta)         | AvgScore | Hotspot% | Dominant Regime    | Weight Arc")
     parts_out.append("-")
     prev_avg_w = None
     for sec_num in sorted(sections.keys()):
@@ -131,9 +131,9 @@ def trust_trajectory(system_name: str) -> str:
         w_min = min(sampled) if sampled else 0
         w_max = max(sampled) if sampled else 0
         w_range = w_max - w_min or 0.001
-        spark = "".join("▁▂▃▄▅▆▇█"[min(7, int((v - w_min) / w_range * 7))] for v in sampled)
+        spark = "".join("...#####"[min(7, int((v - w_min) / w_range * 7))] for v in sampled)
 
-        delta = f" Δ{avg_w_s - prev_avg_w:+.3f}" if prev_avg_w is not None else ""
+        delta = f" Delta{avg_w_s - prev_avg_w:+.3f}" if prev_avg_w is not None else ""
         parts_out.append(
             f"  {sec_num} | {avg_w_s:9.3f}{delta:<9} | {avg_s_s:8.3f} | {hp_pct:7.1f}% | {dom_regime:<18} | {spark}"
         )
@@ -148,10 +148,10 @@ def trust_trajectory(system_name: str) -> str:
         beats = len(ws) if ws else 1
         if ws and ss:
             if sum(ss) / len(ss) < 0.35 and sum(ws) / len(ws) > 1.1:
-                concerns.append(f"  S{sec_num}: low score ({sum(ss)/len(ss):.3f}) but weight {sum(ws)/len(ws):.3f} — trust inflation")
+                concerns.append(f"  S{sec_num}: low score ({sum(ss)/len(ss):.3f}) but weight {sum(ws)/len(ws):.3f} -- trust inflation")
             hp_pct = len(hs) / beats
             if hp_pct > 0.5:
-                concerns.append(f"  S{sec_num}: {hp_pct*100:.0f}% hotspot rate — chronic underperformance vs pair")
+                concerns.append(f"  S{sec_num}: {hp_pct*100:.0f}% hotspot rate -- chronic underperformance vs pair")
 
     if concerns:
         parts_out.append("\n## Concerns")
@@ -178,7 +178,7 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
 
     stats: dict = {system_a: defaultdict(list), system_b: defaultdict(list)}
     overtakes: list = []
-    section_leads: dict = {}  # section_idx → {system_a: beats, system_b: beats}
+    section_leads: dict = {}  # section_idx -> {system_a: beats, system_b: beats}
     prev_leader = None
 
     for rec in records:
@@ -215,8 +215,8 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
         if not ws:
             return f"{name}: not found"
         return (f"{name}: weight avg={sum(ws)/len(ws):.3f} "
-                f"[{min(ws):.3f}–{max(ws):.3f}] | "
-                f"score avg={sum(ss)/len(ss):.3f} [{min(ss):.3f}–{max(ss):.3f}]")
+                f"[{min(ws):.3f}-{max(ws):.3f}] | "
+                f"score avg={sum(ss)/len(ss):.3f} [{min(ss):.3f}-{max(ss):.3f}]")
 
     role_a = TRUST_MUSICAL_MEANING.get(system_a, "")
     role_b = TRUST_MUSICAL_MEANING.get(system_b, "")
@@ -260,9 +260,9 @@ def trust_rivalry(system_a: str, system_b: str) -> str:
 
 
 def trust_report(system_a: str = "", system_b: str = "", mode: str = "both") -> str:
-    """Unified trust analysis. No args → leaderboard overview of all systems.
-    system_a only → trajectory (weight/score arc, hotspot patterns, concerns).
-    system_a + system_b → rivalry (head-to-head, overtakes, dominance).
+    """Unified trust analysis. No args -> leaderboard overview of all systems.
+    system_a only -> trajectory (weight/score arc, hotspot patterns, concerns).
+    system_a + system_b -> rivalry (head-to-head, overtakes, dominance).
     mode='rivalry': force rivalry mode. mode='trajectory': trajectory only."""
     ctx.ensure_ready_sync()
     _track("trust_report")

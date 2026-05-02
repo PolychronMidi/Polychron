@@ -1,4 +1,4 @@
-"""HME persistent operational memory — Layer 2 of the self-coherence stack.
+"""HME persistent operational memory -- Layer 2 of the self-coherence stack.
 
 Tracks system health metrics that survive across MCP server restarts:
   - restart count per day
@@ -20,7 +20,7 @@ rolling EMAs so long-term trends survive day boundaries.
 Layer 5 (Temporal Rhythm) reads is_crash_loop() and restarts_today to adapt
 the startup chain aggressiveness. Layer 7 (Predictive Health) updates EMAs here.
 Layer 19 (Synthesis Observability) records routing decisions + quality outcomes.
-Layer 21 (CB Flap Detection) tracks HALF_OPEN→OPEN transitions per model.
+Layer 21 (CB Flap Detection) tracks HALF_OPEN->OPEN transitions per model.
 Layer 23 (Multi-Timescale) maintains coherence EMAs at beat/phrase/section/structure scales.
 Layer 29 (Second-Order Accuracy) tracks Brier score of prediction calibration.
 Layer 34 (Thermodynamic) models information-theoretic efficiency of synthesis.
@@ -39,10 +39,10 @@ logger = logging.getLogger("HME")
 # at runtime). The bare-name references throughout this file are leftover
 # from when both lived in one module before the LOC split.
 #
-# `_state` is a dict — mutations via shared reference work after a plain
-# import. `_save_unlocked` is a function — same. `_ops._SESSIONS_FILE` /
+# `_state` is a dict -- mutations via shared reference work after a plain
+# import. `_save_unlocked` is a function -- same. `_ops._SESSIONS_FILE` /
 # `_ops._SYNTHESIS_FILE` are reassigned by init() AFTER our module loads, so
-# we must look them up dynamically — accessed as `_ops._SESSIONS_FILE`
+# we must look them up dynamically -- accessed as `_ops._SESSIONS_FILE`
 # (module-attribute lookup is live).
 from . import operational_state as _ops
 from .operational_state import _state, _state_lock, _save_unlocked  # noqa: F401
@@ -92,7 +92,7 @@ def is_crash_loop() -> bool:
     """Return True if shim crash frequency suggests a crash loop.
 
     Layer 5 (Temporal Rhythm): used to skip expensive startup steps when the
-    system is clearly in trouble — don't waste time on llama.cpp priming if the
+    system is clearly in trouble -- don't waste time on llama.cpp priming if the
     shim crashes every 2 minutes.
 
     MCP restarts are routine (~70/day from Claude Code kill/restart cycle).
@@ -128,9 +128,9 @@ def record_circuit_breaker_trip(model: str) -> int:
 
 
 def record_circuit_breaker_flap(model: str) -> int:
-    """Record a HALF_OPEN → OPEN flap for a model (probe fired but failed immediately).
+    """Record a HALF_OPEN -> OPEN flap for a model (probe fired but failed immediately).
 
-    Layer 21: Flapping is distinct from steady-state OPEN — it means llama.cpp is partially
+    Layer 21: Flapping is distinct from steady-state OPEN -- it means llama.cpp is partially
     available but too unstable for recovery. Tracked separately from trips so the
     L14 correlator can detect sustained instability vs one-time outages.
     """
@@ -204,10 +204,10 @@ def _trim_synthesis_file() -> None:
 def record_coherence_multiscale(coherence: float) -> dict:
     """Update coherence EMAs at all four timescales. Returns the current multi-scale snapshot.
 
-    Beat (α=0.8): reacts within 2-3 samples — captures per-call quality.
-    Phrase (α=0.3): smooths over ~10 samples — session health trend.
-    Section (α=0.1): smooths over ~30 samples — daily operational rhythm.
-    Structure (α=0.05): smooths over ~60 samples — weekly drift detection.
+    Beat (alpha=0.8): reacts within 2-3 samples -- captures per-call quality.
+    Phrase (alpha=0.3): smooths over ~10 samples -- session health trend.
+    Section (alpha=0.1): smooths over ~30 samples -- daily operational rhythm.
+    Structure (alpha=0.05): smooths over ~60 samples -- weekly drift detection.
     """
     with _state_lock:
         for key, alpha in [
@@ -238,12 +238,12 @@ def get_multiscale_coherence() -> dict:
 
 
 def is_coherence_ceiling() -> bool:
-    """L∞∞: detect when the system's predictions are too perfect to generate
-    learning signal — i.e. the Brier score EMA has stayed near zero long
+    """Linfinf: detect when the system's predictions are too perfect to generate
+    learning signal -- i.e. the Brier score EMA has stayed near zero long
     enough that novel inputs are no longer perturbing the self-model.
 
     Historically this was wired to the shim-health multi-scale coherence
-    EMAs, which trivially saturate at 1.0 whenever the shim is stable —
+    EMAs, which trivially saturate at 1.0 whenever the shim is stable --
     producing spurious "over-modeled" warnings on a perfectly-ordinary
     healthy process. Brier score is the real "am I predicting too well"
     signal: it's derived from resolved predictions, so it only saturates
@@ -264,7 +264,7 @@ def is_coherence_ceiling() -> bool:
 # Layer 29: Prediction Accuracy (Brier Score)
 
 def record_prediction_brier(predicted_prob: float, occurred: bool) -> float:
-    """Record a prediction outcome via Brier score: (predicted_prob - actual)².
+    """Record a prediction outcome via Brier score: (predicted_prob - actual)^2.
 
     Returns the updated Brier score EMA. Lower = better calibrated (0.0 = perfect).
     """

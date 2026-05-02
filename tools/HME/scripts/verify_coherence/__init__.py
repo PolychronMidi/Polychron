@@ -101,7 +101,7 @@ from .graph import (  # noqa: F401
     FeedbackGraphVerifier, ReloadableModuleSyncVerifier,
 )
 
-# Preserves the ordering from the original verify-coherence.py — a few
+# Preserves the ordering from the original verify-coherence.py -- a few
 # downstream consumers (dashboard, diff scripts) expect this sequence.
 REGISTRY = [
     DocDriftVerifier(),

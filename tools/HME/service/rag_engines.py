@@ -1,10 +1,10 @@
-"""RAG engine setup — model loading, GPU/CPU routing, reranker adapters.
+"""RAG engine setup -- model loading, GPU/CPU routing, reranker adapters.
 
 Extracted from hme_http.py. Contains:
-  _RagDispatcher    — routes embedding calls to GPU or CPU mirror
-  _MxbaiRerankerAdapter — wraps mxbai-rerank-base-v2 as CrossEncoder API
-  _load_engines     — background thread that loads all models + starts indexing
-  _ensure_llamacpp_daemon / _ensure_vram_monitor — daemon launchers
+  _RagDispatcher    -- routes embedding calls to GPU or CPU mirror
+  _MxbaiRerankerAdapter -- wraps mxbai-rerank-base-v2 as CrossEncoder API
+  _load_engines     -- background thread that loads all models + starts indexing
+  _ensure_llamacpp_daemon / _ensure_vram_monitor -- daemon launchers
 """
 import os
 import sys
@@ -84,7 +84,7 @@ def _rag_route() -> str:
             _rag_route_fail_count = 0
     except Exception as _e:
         _rag_route_fail_count += 1
-        # Escalate to WARNING every 10 failures — persistent daemon outage
+        # Escalate to WARNING every 10 failures -- persistent daemon outage
         # means no CPU fallback during arbiter generation (GPU contention risk)
         if _rag_route_fail_count <= 3 or _rag_route_fail_count % 10 == 0:
             _log = logger.warning if _rag_route_fail_count >= 3 else logger.debug
@@ -99,7 +99,7 @@ def _rag_route() -> str:
 
 
 
-# Re-exports — _RagDispatcher and _MxbaiRerankerAdapter moved to siblings.
+# Re-exports -- _RagDispatcher and _MxbaiRerankerAdapter moved to siblings.
 from rag_dispatcher import _RagDispatcher  # noqa: F401, E402
 from rag_reranker import _MxbaiRerankerAdapter  # noqa: F401, E402
 
@@ -161,7 +161,7 @@ def _ensure_vram_monitor():
             env=env, start_new_session=True,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-        logger.info("VRAM monitor started (30s polling → metrics/vram-history.jsonl)")
+        logger.info("VRAM monitor started (30s polling -> metrics/vram-history.jsonl)")
     except Exception as e:
         logger.warning(f"VRAM monitor start failed: {e}")
 
@@ -188,7 +188,7 @@ def _load_engines():
         # (coder, Vulkan2 = GPU1) plus compute buffers. Never land a
         # sentence-transformer on a GPU that doesn't have at least _MIN_FREE_GB
         # free AFTER those are loaded. llamacpp_daemon owns that allocation
-        # — see tools/HME/service/llamacpp_daemon.py for the authoritative
+        # -- see tools/HME/service/llamacpp_daemon.py for the authoritative
         # topology. Declared in .env (HME_RAG_MIN_FREE_GB).
         _MIN_FREE_GB = ENV.require_float("HME_RAG_MIN_FREE_GB")
         _rag_device = "cpu"
@@ -214,7 +214,7 @@ def _load_engines():
                         _rag_device = f"cuda:{_best_gpu}"
                     else:
                         logger.info(
-                            f"No GPU has >= {_MIN_FREE_GB} GB free — RAG stack stays on CPU "
+                            f"No GPU has >= {_MIN_FREE_GB} GB free -- RAG stack stays on CPU "
                             f"(llama-server instances own the GPUs)"
                         )
                 else:
@@ -227,7 +227,7 @@ def _load_engines():
                     else:
                         logger.warning(
                             f"HME_RAG_GPU={_gpu_idx} has only {_free_gb:.1f} GB free "
-                            f"(< {_MIN_FREE_GB}) — RAG stack falling back to CPU"
+                            f"(< {_MIN_FREE_GB}) -- RAG stack falling back to CPU"
                         )
         except Exception as e:
             logger.warning(f"GPU detection failed, using CPU: {type(e).__name__}: {e}")
@@ -237,16 +237,16 @@ def _load_engines():
         # on GPU0. SentenceTransformer defaults to fp32 which DOUBLES VRAM
         # for no quality benefit on our inference workload. M40 Maxwell
         # emulates fp16 math in software (no speed win) but fp16 storage is
-        # native — we pay ~10% throughput for ~50% VRAM savings. Worth it
+        # native -- we pay ~10% throughput for ~50% VRAM savings. Worth it
         # because fp32 loads caused active-offload to churn continuously.
         import torch as _torch_fp16
         _fp16_kwargs = {"torch_dtype": _torch_fp16.float16}
 
-        # Text embedder (Qwen3-Embedding-0.6B) — knowledge_table + symbol_table.
+        # Text embedder (Qwen3-Embedding-0.6B) -- knowledge_table + symbol_table.
         # 1024-dim, Apache 2.0. Prefer ONNX backend when the export is actually
         # shipped; otherwise go straight to torch fp16 without the failed-try
         # warning that used to fire on every startup (12 times per selftest
-        # window — pure noise masking real warnings).
+        # window -- pure noise masking real warnings).
         _onnx_path = os.path.join(MODEL_NAME, "onnx", "model.onnx") \
                      if os.path.isabs(MODEL_NAME) \
                      else None
@@ -254,7 +254,7 @@ def _load_engines():
         if MODEL_BACKEND != "default" and not _has_onnx:
             logger.info(
                 f"Text embedder: ONNX backend requested ({MODEL_BACKEND}) but "
-                f"no onnx/model.onnx found — using torch fp16 directly"
+                f"no onnx/model.onnx found -- using torch fp16 directly"
             )
         if _has_onnx and MODEL_BACKEND != "default":
             try:
@@ -266,24 +266,24 @@ def _load_engines():
             except Exception as _onnx_err:
                 logger.warning(
                     f"{MODEL_BACKEND} backend load failed ({type(_onnx_err).__name__}: "
-                    f"{_onnx_err}) — falling back to torch fp16 on {_rag_device}"
+                    f"{_onnx_err}) -- falling back to torch fp16 on {_rag_device}"
                 )
                 _shared_model = SentenceTransformer(
                     MODEL_NAME, device=_rag_device, trust_remote_code=True,
                     model_kwargs=_fp16_kwargs,
                 )
         else:
-            # Direct torch fp16 load — no failed ONNX attempt, no spam warning.
+            # Direct torch fp16 load -- no failed ONNX attempt, no spam warning.
             _shared_model = SentenceTransformer(
                 MODEL_NAME, device=_rag_device, trust_remote_code=True,
                 model_kwargs=_fp16_kwargs,
             )
             logger.info(f"Text embedder: {MODEL_NAME} (torch fp16 on {_rag_device})")
 
-        # Code embedder (BAAI/bge-code-v1) — code_chunks table.
+        # Code embedder (BAAI/bge-code-v1) -- code_chunks table.
         # 1536-dim, Apache 2.0, Qwen2-based, 32K context. fp16 to fit in VRAM.
         # Cap max_seq_length: a single 32K-token chunk builds an attention
-        # matrix that would request ~64 GiB FP16 — instant OOM. Code chunks
+        # matrix that would request ~64 GiB FP16 -- instant OOM. Code chunks
         # in this repo top out around 1-2K tokens (MAX_CHUNK_LINES=120),
         # so 2048 leaves headroom without exposing the killer tail.
         try:
@@ -297,9 +297,9 @@ def _load_engines():
             logger.warning(f"Code embedder load failed ({e}), falling back to text embedder for code_chunks")
             _shared_code_model = _shared_model
 
-        # Listwise reranker (mxbai-rerank-base-v2) — rerank top candidates.
+        # Listwise reranker (mxbai-rerank-base-v2) -- rerank top candidates.
         # 500M params, Apache 2.0, Qwen2.5-based. fp16 to fit in VRAM.
-        # MUST load via mxbai_rerank lib — CrossEncoder leaves score head
+        # MUST load via mxbai_rerank lib -- CrossEncoder leaves score head
         # randomly initialized (silent corruption).
         try:
             import torch as _torch
@@ -308,10 +308,10 @@ def _load_engines():
             )
             logger.info(f"Reranker: {RERANKER_NAME} on {_rag_device}")
         except Exception as e:
-            logger.warning(f"Reranker load failed ({e}) — search will fall back to RRF-only")
+            logger.warning(f"Reranker load failed ({e}) -- search will fall back to RRF-only")
             _shared_reranker = None
 
-        # CPU mirrors — loaded when RAG primary is on GPU so embedding / rerank
+        # CPU mirrors -- loaded when RAG primary is on GPU so embedding / rerank
         # requests can fall back to CPU instances whenever the GPU is contended
         # or the model has been offloaded by the VramManager.
         _shared_model_cpu = None
@@ -324,19 +324,19 @@ def _load_engines():
                 )
                 logger.info(f"Text embedder (CPU mirror): {MODEL_NAME}")
             except Exception as e:
-                logger.warning(f"CPU-mirror text embedder load failed ({e}) — GPU-only fallback")
+                logger.warning(f"CPU-mirror text embedder load failed ({e}) -- GPU-only fallback")
             try:
                 _shared_code_model_cpu = SentenceTransformer(
                     CODE_MODEL_NAME, trust_remote_code=True, device="cpu",
                 )
                 logger.info(f"Code embedder (CPU mirror): {CODE_MODEL_NAME}")
             except Exception as e:
-                logger.warning(f"CPU-mirror code embedder load failed ({e}) — GPU-only fallback")
+                logger.warning(f"CPU-mirror code embedder load failed ({e}) -- GPU-only fallback")
             try:
                 _shared_reranker_cpu = _MxbaiRerankerAdapter(RERANKER_NAME, device="cpu")
                 logger.info(f"Reranker (CPU mirror): {RERANKER_NAME}")
             except Exception as e:
-                logger.warning(f"CPU-mirror reranker load failed ({e}) — GPU-only fallback")
+                logger.warning(f"CPU-mirror reranker load failed ({e}) -- GPU-only fallback")
 
         # Reduce jina code-embedding batch size on GPU to avoid OOM spikes when
         # arbiter f16 co-resides on the shared GPU. BGE/ONNX (CPU) stays at BATCH_SIZE=64.
@@ -387,13 +387,13 @@ def _load_engines():
                 )
 
             # Register in smallest-first priority order (priority=1 offloads
-            # first). Register order doesn't matter — VramManager.register
+            # first). Register order doesn't matter -- VramManager.register
             # sorts by priority internally.
             if _shared_reranker is not None:
                 _mm_rerank = ManagedModel(
                     name="mxbai-rerank-base-v2",
                     gpu_idx=_gpu_idx,
-                    priority=1,        # smallest → first to offload
+                    priority=1,        # smallest -> first to offload
                     size_gb=1.0,
                     headroom_gb=0.5,
                     gpu_factory=_make_rerank_gpu,
@@ -402,7 +402,7 @@ def _load_engines():
                 )
                 _vram_mgr.register(_mm_rerank)
 
-            # Text embedder on GPU — only register if it's actually on cuda.
+            # Text embedder on GPU -- only register if it's actually on cuda.
             # The ONNX backend path loads to CPU and wouldn't be a managed
             # GPU instance; detect via `.device`.
             _text_is_gpu = False
@@ -426,7 +426,7 @@ def _load_engines():
             _mm_code = ManagedModel(
                 name="bge-code-v1",
                 gpu_idx=_gpu_idx,
-                priority=3,        # largest → last to offload
+                priority=3,        # largest -> last to offload
                 size_gb=4.0,
                 headroom_gb=1.5,
                 gpu_factory=_make_code_gpu,
@@ -435,7 +435,7 @@ def _load_engines():
             )
             _vram_mgr.register(_mm_code)
 
-            # Background poller: reload offloaded models on busy→idle edge
+            # Background poller: reload offloaded models on busy->idle edge
             # of the RAG GPU's Vulkan device.
             _rag_vulkan_tag = ENV.require("HME_RAG_VULKAN")
             start_reload_poller(
@@ -499,9 +499,9 @@ def _load_engines():
         _engine_ready.set()
         from hme_http_handlers import init_handlers
         init_handlers(_engine_ready, _project_engine, _global_engine, PROJECT_ROOT)
-    # Start llama.cpp daemon after engines ready — non-blocking
+    # Start llama.cpp daemon after engines ready -- non-blocking
     threading.Thread(target=_ensure_llamacpp_daemon, daemon=True, name="HME-llamacpp-daemon-start").start()
-    # Start VRAM monitor (lightweight 30s polling) — non-blocking
+    # Start VRAM monitor (lightweight 30s polling) -- non-blocking
     threading.Thread(target=_ensure_vram_monitor, daemon=True, name="HME-vram-monitor-start").start()
 
 
@@ -524,10 +524,10 @@ def reload_on_device(target_device: str) -> dict:
     cuda:1 and back every full reindex. That migration churned CUDA
     contexts enough to trigger "illegal memory access" corruption
     regularly, which is why the user re-implemented "model pinning" ten
-    times — each implementation was defeated by this function.
+    times -- each implementation was defeated by this function.
 
     R97: embedders PIN to their boot-time device (HME_RAG_GPU). The only
-    legitimate caller is HME_ALLOW_EMBEDDER_MIGRATION=1 — an opt-in env
+    legitimate caller is HME_ALLOW_EMBEDDER_MIGRATION=1 -- an opt-in env
     for humans who know what they're doing. Without the opt-in, any
     migration request is refused so a regression can't silently resurrect
     the old failure mode.
@@ -535,11 +535,11 @@ def reload_on_device(target_device: str) -> dict:
     target_device: "cuda:0", "cuda:1", or "restore" to go back to original.
     """
     # Pinning enforcement. If someone explicitly sets the escape hatch,
-    # allow migration — they've acknowledged the risk. Otherwise refuse.
+    # allow migration -- they've acknowledged the risk. Otherwise refuse.
     if os.environ.get("HME_ALLOW_EMBEDDER_MIGRATION") not in ("1", "true", "yes"):
         return {
             "error": (
-                "embedder migration refused — models are pinned to HME_RAG_GPU. "
+                "embedder migration refused -- models are pinned to HME_RAG_GPU. "
                 "Set HME_ALLOW_EMBEDDER_MIGRATION=1 only if you know why the "
                 "pin needs to lift; every prior migration caused CUDA corruption."
             )
@@ -559,12 +559,12 @@ def reload_on_device(target_device: str) -> dict:
         return {"error": "engines not ready"}
 
     if _project_engine is None:
-        return {"error": "project engine is None — engines never loaded successfully"}
+        return {"error": "project engine is None -- engines never loaded successfully"}
 
     with _reload_lock:
         if target_device == "restore":
             if _original_rag_device is None:
-                return {"error": "no original device saved — nothing to restore"}
+                return {"error": "no original device saved -- nothing to restore"}
             target_device = _original_rag_device
             _original_rag_device = None
             restoring = True
@@ -619,7 +619,7 @@ def reload_on_device(target_device: str) -> dict:
             if _torch.cuda.is_available():
                 _torch.cuda.empty_cache()
 
-        # Reload code embedder. Cap max_seq_length here too — fresh
+        # Reload code embedder. Cap max_seq_length here too -- fresh
         # SentenceTransformer instances default to the model's
         # max_position_embeddings (32K for bge-code-v1) which OOMs the
         # attention matrix for long inputs. Match the boot-time cap.
@@ -632,26 +632,26 @@ def reload_on_device(target_device: str) -> dict:
             freed = _swap_gpu_instance("code_model", new_code)
             _flush_cuda()
             reloaded.append(f"code:{CODE_MODEL_NAME}")
-            logger.info(f"reload_on_device: code embedder → {target_device} (freed {freed} old refs)")
+            logger.info(f"reload_on_device: code embedder -> {target_device} (freed {freed} old refs)")
         except Exception as e:
             # CUDA illegal memory access is terminal: torch's allocator pool
             # is corrupted and every subsequent reload/encode will fail the
             # same way. Only a fresh Python process clears it. Hard-exit so
-            # the proxy supervisor respawns the worker — which is what the
+            # the proxy supervisor respawns the worker -- which is what the
             # LIFESAVER message tells the user to do manually anyway
             # ("Manual remediation: restart the worker"). Self-healing.
             _err_str = str(e)
             if "illegal memory access" in _err_str or "CUDNN_STATUS_EXECUTION_FAILED" in _err_str:
                 logger.error(
                     f"reload_on_device: CUDA context corrupted ({_err_str[:120]}). "
-                    f"Hard-exiting worker — proxy supervisor will respawn with a fresh CUDA context. "
+                    f"Hard-exiting worker -- proxy supervisor will respawn with a fresh CUDA context. "
                     f"Indexing will continue automatically after restart."
                 )
                 try:
                     from server import context as _ctx
                     _ctx.register_critical_failure(
                         "cuda_context_corruption",
-                        f"CUDA illegal memory access during reload_on_device({target_device}) — worker auto-restart initiated",
+                        f"CUDA illegal memory access during reload_on_device({target_device}) -- worker auto-restart initiated",
                         severity="CRITICAL",
                     )
                 except Exception as _life_err:
@@ -672,10 +672,10 @@ def reload_on_device(target_device: str) -> dict:
             freed = _swap_gpu_instance("text_model", new_text)
             _flush_cuda()
             reloaded.append(f"text:{MODEL_NAME}")
-            logger.info(f"reload_on_device: text embedder → {target_device} (freed {freed} old refs)")
+            logger.info(f"reload_on_device: text embedder -> {target_device} (freed {freed} old refs)")
         except Exception as e:
             logger.warning(f"reload_on_device: text embedder failed: {e}")
-            # Non-fatal — code embedder is the primary indexing model
+            # Non-fatal -- code embedder is the primary indexing model
 
         # Reload reranker
         try:
@@ -685,10 +685,10 @@ def reload_on_device(target_device: str) -> dict:
             freed = _swap_gpu_instance("reranker", new_reranker)
             _flush_cuda()
             reloaded.append(f"reranker:{RERANKER_NAME}")
-            logger.info(f"reload_on_device: reranker → {target_device} (freed {freed} old refs)")
+            logger.info(f"reload_on_device: reranker -> {target_device} (freed {freed} old refs)")
         except Exception as e:
             logger.warning(f"reload_on_device: reranker failed: {e}")
-            # Non-fatal — indexing doesn't use reranker
+            # Non-fatal -- indexing doesn't use reranker
 
         # On restore, the GPU we just vacated still holds our CUDA context
         # (~150 MB). That's enough to push coder's spawn fit-check past its

@@ -1,4 +1,4 @@
-"""HME status — unified system health and status hub (package split R101).
+"""HME status -- unified system health and status hub (package split R101).
 
 Merges check_pipeline + hme_admin(selftest) + coupling overview + trust
 ecology into one 'is everything OK?' call with mode selection.

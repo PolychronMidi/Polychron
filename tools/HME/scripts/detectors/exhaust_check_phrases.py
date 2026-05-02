@@ -1,4 +1,4 @@
-"""Deferral phrase + regex tables — extracted from exhaust_check.py."""
+"""Deferral phrase + regex tables -- extracted from exhaust_check.py."""
 from __future__ import annotations
 import re
 
@@ -90,7 +90,7 @@ DEFERRAL_PHRASES = (
     "another turn",
     # "Banked / waiting-on-user-action" register. Added after a session where
     # the agent closed with "Still banked (not actionable right now): supervisor
-    # fix — takes effect on next proxy restart" and similar "needs an external
+    # fix -- takes effect on next proxy restart" and similar "needs an external
     # action before it lands" handoffs. Those ARE handoffs, but they wore
     # technical garb and slipped every deferral pattern above. This register
     # catches the "I did my part, waiting on you" frame.
@@ -153,7 +153,7 @@ DEFERRAL_REGEXES = (
         r"\b(pass|review|look|investigation|run|follow-?up|round|session)\b",
         re.IGNORECASE,
     ),
-    # "Takes effect on next …" / "requires a restart" handoffs — the "I did
+    # "Takes effect on next ..." / "requires a restart" handoffs -- the "I did
     # my part, waiting on you" frame. Structural because the specific
     # wording varies (next proxy restart / next reload / next session / etc.).
     re.compile(

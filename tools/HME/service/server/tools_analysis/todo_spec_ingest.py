@@ -1,8 +1,8 @@
-"""SPEC.md / TODO.md / devlog lifecycle bridge — connects ephemeral todo state
+"""SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
 to durable handoff documentation. Surface (via i/todo dispatcher actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
-Extracted from todo.py (was lines 851-1508). Zero external Python callers — all
+Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
 entry is via the i/todo command surface. todo.py re-exports the public symbols.
 See doc/SPEC.md Phase 0 for the workflow this bridge implements.
 """
@@ -33,13 +33,13 @@ from server.tools_analysis.todo import (
 )
 
 
-# SPEC/TODO bridge — connects ephemeral i/todo state to durable
+# SPEC/TODO bridge -- connects ephemeral i/todo state to durable
 # doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
 
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
 _TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "TODO.md")
-# Archive lives under KB as the "devlog" arm — searchable through the
+# Archive lives under KB as the "devlog" arm -- searchable through the
 # same substrate as other knowledge entries, decoupled from the active
 # doc/ directory so completed work doesn't tax agents reading the spec.
 # Each archive event writes ONE timestamped file containing the
@@ -59,7 +59,7 @@ _SPEC_OPEN_RE = re.compile(
 
 
 
-# Spec/TODO ingest + promote — sub-cluster A.
+# Spec/TODO ingest + promote -- sub-cluster A.
 
 def _read_section(md_text: str, header: str) -> list[str]:
     """Return the lines of a section (between '## <header>' and the
@@ -125,7 +125,7 @@ def _ingest_from_spec(meta: dict, todos: list) -> list[dict]:
             continue
         text_with_provenance = body
         if reason:
-            text_with_provenance = f"{body} (from spec — {reason})"
+            text_with_provenance = f"{body} (from spec -- {reason})"
         entry = _write_todo_entry(
             meta, text=text_with_provenance, status="pending",
             critical=False, source="spec", tier=tier_str.lower(),
@@ -142,7 +142,7 @@ def _promote_to_spec(entry: dict) -> str:
     text = entry.get("text", "").strip()
     line = f"- [{tier}] {text}. Reason: i/todo #{entry.get('id')} promoted at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
     if not os.path.exists(_TODOMD_FILE):
-        logger.warning(f"promote_to_spec: {_TODOMD_FILE} missing — creating")
+        logger.warning(f"promote_to_spec: {_TODOMD_FILE} missing -- creating")
         with open(_TODOMD_FILE, "w", encoding="utf-8") as f:
             f.write("# TODO\n\n## In flight\n\n## Just shipped (last cycle)\n\n## Next up (queued for next cycle)\n\n")
     with open(_TODOMD_FILE, encoding="utf-8") as f:
@@ -175,7 +175,7 @@ def _normalize_for_match(s: str) -> str:
     differently between the two docs (e.g. one has backticks around
     `i/todo` and the other doesn't), so a strict equality match misses
     legitimately-paired items. This normalization is the same shape as
-    the lifesaver dedup normalizer — strip noise before comparing.
+    the lifesaver dedup normalizer -- strip noise before comparing.
     """
     if not s:
         return ""

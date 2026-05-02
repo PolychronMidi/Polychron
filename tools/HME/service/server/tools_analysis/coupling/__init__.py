@@ -274,19 +274,19 @@ def bridge_ledger() -> str:
 def coupling_intel(mode: str = "full") -> str:
     """Unified coupling intelligence hub. Replaces coupling_network + antagonist_map +
     cluster_personality + dimension_gap_finder. mode='full' (default): all four views in one
-    call — topology, antagonist tensions, cluster biographies, dimension gaps. Use 'full' before
+    call -- topology, antagonist tensions, cluster biographies, dimension gaps. Use 'full' before
     planning a new coupling round: you get the complete picture in one shot.
     mode='network': coupling topology only (which modules are coupled to which engines, dims used,
     uncoupled sorted by trust). mode='antagonists': negative-correlation pairs (creative tensions,
     dark matter of alien texture). mode='personalities': cluster biographies (each cluster as
-    emergent organism — members, dims, tightest bond, primary antagonist). mode='gaps': underused
+    emergent organism -- members, dims, tightest bond, primary antagonist). mode='gaps': underused
     melodic/rhythmic dimensions sorted by coverage count (highest-yield next targets).
     mode='leverage': for each top antagonist pair, recommend the bridge field that creates
-    maximum constructive opposition — with concrete opposing-response recipes and musical rationale.
-    mode='channels': full L0 channel map — every channel with its producers, consumers, and loop
-    detection. mode='cascade:channelName': cascade trace from a specific L0 channel — follow the
+    maximum constructive opposition -- with concrete opposing-response recipes and musical rationale.
+    mode='channels': full L0 channel map -- every channel with its producers, consumers, and loop
+    detection. mode='cascade:channelName': cascade trace from a specific L0 channel -- follow the
     signal through consumers and their downstream outputs up to 3 hops deep.
-    mode='ledger': bridge completion ledger — confirmed KB bridges vs proposed, per pair."""
+    mode='ledger': bridge completion ledger -- confirmed KB bridges vs proposed, per pair."""
     ctx.ensure_ready_sync()
     _track("coupling_intel")
     if mode == "full":

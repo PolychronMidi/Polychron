@@ -3,7 +3,7 @@
 When HME_PROXY_ENABLED=1 and the proxy is healthy, rewrites outbound
 requests to route through http://127.0.0.1:{proxy_port} with an
 X-HME-Upstream header carrying the original target URL. This makes the
-proxy the authoritative filter for ALL inference — not just Anthropic.
+proxy the authoritative filter for ALL inference -- not just Anthropic.
 
 When the proxy is down or disabled, returns the original URL unchanged
 so synthesis modules degrade to direct calls automatically.
@@ -38,7 +38,7 @@ def _is_proxy_enabled():
 
 
 def _check_proxy_health():
-    """Lightweight health probe — cached for _CHECK_INTERVAL seconds."""
+    """Lightweight health probe -- cached for _CHECK_INTERVAL seconds."""
     global _PROXY_HEALTHY, _PROXY_CHECKED_AT
     import time
     now = time.monotonic()

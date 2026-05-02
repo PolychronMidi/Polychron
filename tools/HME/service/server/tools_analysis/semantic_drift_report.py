@@ -1,4 +1,4 @@
-"""HME semantic drift reader — Phase 3.3 of openshell_features_to_mimic.md.
+"""HME semantic drift reader -- Phase 3.3 of openshell_features_to_mimic.md.
 
 Renders `metrics/hme-semantic-drift.json` (populated by
 `scripts/pipeline/check-kb-semantic-drift.py`) as a markdown digest. Surfaced
@@ -54,7 +54,7 @@ def semantic_drift_report() -> str:
     for d in drifted[:30]:
         lines.append("")
         lines.append(
-            f"### `{d.get('entry_id', '?')[:12]}` — {d.get('module', '?')}"
+            f"### `{d.get('entry_id', '?')[:12]}` -- {d.get('module', '?')}"
         )
         if d.get("kb_title"):
             lines.append(f"  title: {d['kb_title']}")
@@ -74,10 +74,10 @@ def semantic_drift_report() -> str:
                 lines.append(line)
             elif "baseline" in diff and "current" in diff:
                 lines.append(
-                    f"    - {field}: {diff['baseline']} → {diff['current']}"
-                    + (f" (Δ{diff['delta']:+d})" if "delta" in diff else "")
+                    f"    - {field}: {diff['baseline']} -> {diff['current']}"
+                    + (f" (Delta{diff['delta']:+d})" if "delta" in diff else "")
                 )
     if len(drifted) > 30:
         lines.append("")
-        lines.append(f"… and {len(drifted) - 30} more")
+        lines.append(f"... and {len(drifted) - 30} more")
     return "\n".join(lines)

@@ -1,4 +1,4 @@
-"""Code-audit verifiers — extracted cluster. Imports re-export back to
+"""Code-audit verifiers -- extracted cluster. Imports re-export back to
 the parent code_audits.py for stable __init__.py imports."""
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ class StateFileOwnershipVerifier(Verifier):
     until this verifier existed nothing automated guarded against an
     unregistered writer.
 
-    Weight 1.5 — gating: a new writer of `hme-errors.log` or
+    Weight 1.5 -- gating: a new writer of `hme-errors.log` or
     `hme-nexus.state` without coordination is a real risk class
     (concurrent append/truncate, source-tag confusion). FAIL on any
     detected drift; the doc is the authoritative registry.
@@ -45,9 +45,9 @@ class StateFileOwnershipVerifier(Verifier):
         if rc == 0:
             return _result(PASS, 1.0,
                            out.splitlines()[-1] if out else "all writers declared")
-        # Drift detected — failed verifier. Surface the drift lines.
+        # Drift detected -- failed verifier. Surface the drift lines.
         drift_lines = [l for l in out.splitlines()
-                       if "drift" in l or " — writer not declared" in l
+                       if "drift" in l or " -- writer not declared" in l
                        or "writes detected but not in registry" in l]
         return _result(FAIL,
                        max(0.0, 1.0 - 0.1 * len(drift_lines)),
@@ -90,7 +90,7 @@ class ClaudeSettingsJsonVerifier(Verifier):
 
 
 class HumanDeferredAuditVerifier(Verifier):
-    """Delegates to scripts/audit-human-deferred.py — the human-side
+    """Delegates to scripts/audit-human-deferred.py -- the human-side
     parallel of the agent-policing detector chain. Pattern surfaced by
     peer-review iter 145: HME has nine detectors for agent failure
     modes (psycho_stop / exhaust_check / abandon_check / etc.) and
@@ -101,7 +101,7 @@ class HumanDeferredAuditVerifier(Verifier):
     Same cognitive pattern, scored only on one side until this verifier
     existed. Advisory weight (0.5): goal is monotonic decrease over
     time, not zero. New entries should ideally come with a deadline
-    or tracking issue. PASS regardless of count — the signal is the
+    or tracking issue. PASS regardless of count -- the signal is the
     DELTA across runs, surfaced via verifier history.
     """
     name = "human-deferred"
@@ -122,13 +122,13 @@ class HumanDeferredAuditVerifier(Verifier):
                            [out[:200], err[:200]])
         total = int(m.group(1))
         cats = int(m.group(2))
-        # Always PASS — this is observability, not a gate. Score reflects
+        # Always PASS -- this is observability, not a gate. Score reflects
         # the count for trending purposes but doesn't fail.
         score = max(0.0, 1.0 - total / 1000.0)
         sample_lines = [l for l in out.splitlines()
                         if l.strip().startswith("[") and "]" in l[:8]][:8]
         return _result(PASS, score,
-                       f"{total} human-side deferral marker(s) across {cats} categories — "
+                       f"{total} human-side deferral marker(s) across {cats} categories -- "
                        "advisory; trend across runs is the signal",
                        sample_lines)
 
@@ -174,7 +174,7 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
         # Attempt to require() each middleware in a fresh Node subprocess.
         # The proxy logs only show the LAST load attempt; this verifier
         # independently confirms every file can be loaded. Using subprocess
-        # directly because _run_subprocess prepends python3 — we need node.
+        # directly because _run_subprocess prepends python3 -- we need node.
         import subprocess as _sp_mr
         load_failures = []
         for fname in files:
@@ -213,10 +213,10 @@ class ProxyMiddlewareRegistryVerifier(Verifier):
 
 
 class InterControllerCoherenceVerifier(Verifier):
-    """L∞∞∞ — observes the observation apparatus. Delegates to
+    """Linfinfinf -- observes the observation apparatus. Delegates to
     scripts/audit-intercontroller-coherence.py which scans per-controller
     per-axis effects and surfaces pairs working at cross-purposes
-    (cancellation). Silent no-data is PASS — no false alarms while the
+    (cancellation). Silent no-data is PASS -- no false alarms while the
     snapshot pipeline hasn't populated effect fields yet."""
     name = "intercontroller-coherence"
     category = "code"
@@ -239,7 +239,7 @@ class InterControllerCoherenceVerifier(Verifier):
             return _result(PASS, 1.0, f"{payload.get('controllers_observed')} controllers, no cancellation detected")
         top = cancelling[0]
         detail = [f"{'/'.join(p['controllers'])} score={p['cancellation_score']}" for p in cancelling[:5]]
-        # Cancellation isn't a FAIL — it's signal. Controllers may legitimately
+        # Cancellation isn't a FAIL -- it's signal. Controllers may legitimately
         # oppose on some axes. Score accumulates as more pairs oppose.
         score = max(0.5, 1.0 - 0.1 * len(cancelling))
         return _result(PASS, score,
@@ -251,7 +251,7 @@ class InterControllerCoherenceVerifier(Verifier):
 
 class ShellHookAuditVerifier(Verifier):
     """Delegates to scripts/audit-shell-hooks.py, which statically scans
-    tools/HME/hooks/**/*.sh for cache-trap patterns — most notably
+    tools/HME/hooks/**/*.sh for cache-trap patterns -- most notably
     BASH_SOURCE-relative path ascents that resolve INTO the plugin cache
     tree when Claude Code invokes a hook from there. Closes the blind
     spot that let _safety.sh, _autocommit.sh, stop.sh, and every file in
@@ -282,11 +282,11 @@ class ShellHookAuditVerifier(Verifier):
         if count == 0:
             return _result(PASS, 1.0, "no shell-hook cache-trap violations", [])
         # Each violation drops score by 0.2; floor at 0. Any violation at
-        # all is FAIL — the bugs these rules catch are silent-disable
+        # all is FAIL -- the bugs these rules catch are silent-disable
         # class, not ergonomic nits.
         score = max(0.0, 1.0 - 0.2 * count)
         return _result(FAIL, score,
-                       f"{count} shell-hook violation(s) — BASH_SOURCE cache-trap risk",
+                       f"{count} shell-hook violation(s) -- BASH_SOURCE cache-trap risk",
                        detail[:20])
 
 
@@ -369,7 +369,7 @@ class ActivityEventsDocSyncVerifier(Verifier):
             details.append(f"doc-only ({len(doc_only)}): {', '.join(doc_only)}")
         if code_only:
             details.append(f"code-only ({len(code_only)}): {', '.join(code_only[:20])}"
-                           + ("…" if len(code_only) > 20 else ""))
+                           + ("..." if len(code_only) > 20 else ""))
         if doc_only:
             score = max(0.0, 1.0 - len(doc_only) / 10.0)
             return _result(FAIL, score, f"{len(doc_only)} stale doc reference(s)", details)

@@ -1,4 +1,4 @@
-"""HME HTTP — engine operations: enrich, validate, audit, reindex."""
+"""HME HTTP -- engine operations: enrich, validate, audit, reindex."""
 import concurrent.futures
 import logging
 import os
@@ -6,7 +6,7 @@ import subprocess
 import sys
 import threading
 
-# Central .env loader — fail-fast semantics.
+# Central .env loader -- fail-fast semantics.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hme_env import ENV  # noqa: E402
 
@@ -23,7 +23,7 @@ METRICS_DIR: str = os.environ.get("METRICS_DIR", "")
 
 
 def _enrich_prompt(prompt: str, frame: str = "") -> dict:
-    """Prompt enrichment via local models — self-contained, no MCP server imports.
+    """Prompt enrichment via local models -- self-contained, no MCP server imports.
 
     Uses the shim's own _project_engine for KB and calls llama.cpp directly.
     Returns {enriched, original, triage, trace}.
@@ -41,7 +41,7 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
     t0 = _time.monotonic()
 
     # Stage 1: Skip arbiter triage in HTTP shim
-    # The user clicked Enrich explicitly — always run all modes.
+    # The user clicked Enrich explicitly -- always run all modes.
     # Arbiter triage is reserved for the MCP tool path (where warm KV context
     # makes it fast); in the shim the thinking model is cold and unreliable.
     triage = {"kb": True, "structural": True, "contextual": True, "raw": "explicit"}
@@ -147,17 +147,17 @@ def _enrich_prompt(prompt: str, frame: str = "") -> dict:
 
     if not enriched or len(enriched.strip()) < 10:
         return {"enriched": prompt, "original": prompt, "triage": triage, "trace": trace,
-                "unchanged": True, "reason": "Reasoning model returned empty — original preserved"}
+                "unchanged": True, "reason": "Reasoning model returned empty -- original preserved"}
 
     # Stage 4: Hard truncate only if absurdly long
-    # Min floor of 2000 chars — short prompts can legitimately expand significantly.
+    # Min floor of 2000 chars -- short prompts can legitimately expand significantly.
     max_len = max(len(prompt) * 10, 2000)
     if len(enriched) > max_len:
         enriched = enriched[:max_len]
 
     total_ms = int((_time.monotonic() - t0) * 1000)
     logger.info(
-        f"enrich_prompt: {len(prompt)}→{len(enriched)} chars, "
+        f"enrich_prompt: {len(prompt)}->{len(enriched)} chars, "
         f"modes={'|'.join(k for k, v in triage.items() if v and k != 'raw')}, "
         f"{total_ms}ms"
     )

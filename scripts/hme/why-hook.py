@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=hook — surface what hook activity has happened recently.
+"""i/why mode=hook -- surface what hook activity has happened recently.
 
 Broader than mode=block (which only shows error/deny events). Reads
 the activity log for posttooluse/pretooluse events + the hme.log for
@@ -19,7 +19,7 @@ def main(argv):
     activity = os.path.join(PROJECT_ROOT, "output", "metrics", "hme-activity.jsonl")
     hme_log = os.path.join(PROJECT_ROOT, "log", "hme.log")
 
-    out = ["# i/why mode=hook — recent hook activity"]
+    out = ["# i/why mode=hook -- recent hook activity"]
     out.append("")
 
     if os.path.isfile(activity):

@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""Phase 6.4 — generalization synthesizer (R97 rewrite).
+"""Phase 6.4 -- generalization synthesizer (R97 rewrite).
 
 Takes generalization candidates from `metrics/hme-generalizations.json` and
 produces draft universal-principle entries in
 `metrics/hme-discoveries-draft.jsonl` (gitignored, regenerated every run).
 
 Six R97 tweaks replace the R96 spam path:
-  1. **Model** — synthesis_reasoning.call(profile='reasoning') cascade
-     (Groq → Cerebras → Mistral → NVIDIA → OpenRouter → arbiter fallback).
+  1. **Model** -- synthesis_reasoning.call(profile='reasoning') cascade
+     (Groq -> Cerebras -> Mistral -> NVIDIA -> OpenRouter -> arbiter fallback).
      R96 used arbiter directly, which is phi-4-Q4_K_M (4GB, weak at
      conceptual reasoning). Free-tier reasoning APIs handle this far better.
-  2. **Scoring** — see extract-generalizations.py. Fixed in that file.
-  3. **Novelty gate** — every candidate synthesis is compared against every
+  2. **Scoring** -- see extract-generalizations.py. Fixed in that file.
+  3. **Novelty gate** -- every candidate synthesis is compared against every
      existing draft by cosine similarity on the raw text. Drafts whose
      principles duplicate (>0.90) an existing one are dropped.
-  4. **Actionability** — prompt asks for three structured fields
+  4. **Actionability** -- prompt asks for three structured fields
      (invariant, falsifiable prediction, counterexample). Output missing
      any of them is rejected as tautology/waffle.
-  5. **Stability** — each draft tracks `stable_runs`. When a principle
-     text is unchanged across ≥3 consecutive runs, `promotable=true` flips
+  5. **Stability** -- each draft tracks `stable_runs`. When a principle
+     text is unchanged across >=3 consecutive runs, `promotable=true` flips
      and the entry becomes eligible for human-triggered promotion via
      `learn(action='promote_discovery', id=<draft_id>)`.
-  6. **Separation** — drafts live in `metrics/hme-discoveries-draft.jsonl`
+  6. **Separation** -- drafts live in `metrics/hme-discoveries-draft.jsonl`
      (ephemeral). `doc/hme-discoveries.md` is now human-curated only.
 
 Non-fatal: skips the pipeline step without aborting if the cascade fails.
@@ -71,9 +71,9 @@ def _load_existing_drafts() -> list[dict]:
 
 
 def _simple_cosine(a: str, b: str) -> float:
-    """Token-overlap cosine (Jaccard-like). No external model needed —
+    """Token-overlap cosine (Jaccard-like). No external model needed --
     we're measuring 'are these two sentences essentially the same claim?'
-    not semantic nuance. Tokens ≥4 chars, lowercased, stopwords dropped."""
+    not semantic nuance. Tokens >=4 chars, lowercased, stopwords dropped."""
     _STOP = {"the", "and", "for", "with", "this", "that", "from",
              "into", "when", "then", "where", "have", "will", "would",
              "their", "these", "those", "such", "each", "which", "also"}
@@ -108,7 +108,7 @@ REQUIRED OUTPUT FORMAT (exactly this structure, no preamble, no epilogue):
 
 INVARIANT:
 <one sentence stating a structural property that holds whenever the listed
-conditions are met. Use ONLY generic terms — no Polychron module names, no
+conditions are met. Use ONLY generic terms -- no Polychron module names, no
 "IIFE", no "L0", no "regime", no "crossLayer". Write for a reader who has
 never heard of Polychron.>
 
@@ -126,14 +126,14 @@ an observation the reader could actually make. Bad: "if emergence stops".
 Good: "any multi-agent system where removing any one agent produces
 proportionate rather than sub-proportionate output degradation.">
 
-If the pattern does NOT support a non-tautological principle — if the
+If the pattern does NOT support a non-tautological principle -- if the
 honest three-field answer would be "this pattern is just restating its
-own recurrence" — output exactly the single token REJECT and nothing else."""
+own recurrence" -- output exactly the single token REJECT and nothing else."""
 
 
 def _parse_structured(text: str) -> dict | None:
     """Extract INVARIANT / PREDICTION / COUNTEREXAMPLE blocks. Returns None
-    if any field is missing — that's the actionability gate."""
+    if any field is missing -- that's the actionability gate."""
     if not text:
         return None
     t = text.strip()
@@ -178,7 +178,7 @@ def _load_kb_members(member_ids: list) -> list[str]:
 
 
 def _draft_id(candidate: dict, invariant: str) -> str:
-    """Stable ID across runs — hash of (pattern_id, first-120-chars of
+    """Stable ID across runs -- hash of (pattern_id, first-120-chars of
     invariant). If the synthesizer rewrites the invariant materially, a
     fresh ID is generated and the old draft ages out."""
     import hashlib
@@ -219,7 +219,7 @@ def main() -> int:
     dup = 0
     carried = 0
 
-    for c in candidates[:20]:  # hard cap per run — cascade time isn't free
+    for c in candidates[:20]:  # hard cap per run -- cascade time isn't free
         kb_texts = _load_kb_members(c.get("member_ids", []))
         kb_context = "\n\n".join(f"- {t[:300]}" for t in kb_texts[:6]) or "(none)"
         prompt = _STRUCTURED_PROMPT.format(
@@ -234,13 +234,13 @@ def main() -> int:
         )
         raw = _invoke_cascade(prompt)
         if not raw:
-            continue  # cascade exhausted — try again next run
+            continue  # cascade exhausted -- try again next run
         fields = _parse_structured(raw)
         if fields is None:
             rejected += 1
             continue
         invariant = fields["invariant"]
-        # Novelty check — reject near-duplicates of anything already in drafts.
+        # Novelty check -- reject near-duplicates of anything already in drafts.
         is_dup = False
         for prev in existing:
             if _simple_cosine(invariant, prev.get("invariant", "")) >= NOVELTY_MAX_COSINE:
@@ -258,7 +258,7 @@ def main() -> int:
         draft_id = _draft_id(c, invariant)
         existing_hit = by_id.get(draft_id)
         if existing_hit:
-            # Same synthesis as last run — increment stability.
+            # Same synthesis as last run -- increment stability.
             existing_hit["stable_runs"] = existing_hit.get("stable_runs", 0) + 1
             existing_hit["last_seen_ts"] = int(time.time())
             existing_hit["promotable"] = (

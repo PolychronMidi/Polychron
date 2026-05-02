@@ -5,7 +5,7 @@ detector chain.
 Pattern surfaced by peer-review iter 145: HME has nine detectors for
 agent failure modes (psycho_stop, exhaust_check, abandon_check,
 fabrication_check, ack_skip, idle_after_bg, stop_work, early_stop,
-poll_count) and zero detectors for the human-side parallel patterns —
+poll_count) and zero detectors for the human-side parallel patterns --
 unwired remediation arms documented as load-bearing, MVP-scope
 admissions left in production for months, "Phase N" deferrals where
 phase N never arrived. Same cognitive pattern, scored only on one side.
@@ -20,7 +20,7 @@ This audit makes the asymmetry visible. Counts and lists:
   - "should be" / "would be" / "could be" (subjunctive design statements
     that often mark unbuilt features)
 
-Output: count + sample lines per category, advisory only — does not
+Output: count + sample lines per category, advisory only -- does not
 gate. The point is making the human-side deferral surface visible
 the way the agent-side one already is, not blocking commits.
 
@@ -67,7 +67,7 @@ CATEGORIES = {
         r"is a stub\b)",
         re.IGNORECASE,
     ),
-    # Phase deferrals — only matches "Phase N" when the surrounding text
+    # Phase deferrals -- only matches "Phase N" when the surrounding text
     # claims phase N is incomplete or aspirational (not when phase N is
     # being delivered or referenced as historical context).
     "PHASE_DEFERRAL": re.compile(
@@ -82,7 +82,7 @@ CATEGORIES = {
         r"defer (this|it|until))",
         re.IGNORECASE,
     ),
-    # Subjunctive-design markers — speculative future improvements.
+    # Subjunctive-design markers -- speculative future improvements.
     "SUBJUNCTIVE_DESIGN": re.compile(
         r"\b(should be wired|would be useful|could be extended|"
         r"TODO when|TODO once|TODO if|once .* lands|once .* is built)",
@@ -90,7 +90,7 @@ CATEGORIES = {
     ),
 }
 
-# Filter — line is NOT a real deferral if it matches one of these
+# Filter -- line is NOT a real deferral if it matches one of these
 # (it's describing/detecting deferral patterns, not BEING one).
 DETECTION_CONTEXT = re.compile(
     r"_emit_block|grep|regex|re\.compile|re\.findall|re\.search|"
@@ -136,7 +136,7 @@ def main() -> int:
                         counts[cat] += 1
                         if len(samples[cat]) < 8:
                             rel = str(p.relative_to(PROJECT_ROOT))
-                            samples[cat].append(f"{rel}:{ln} — {line.strip()[:120]}")
+                            samples[cat].append(f"{rel}:{ln} -- {line.strip()[:120]}")
 
     total = sum(counts.values())
     print(f"audit-human-deferred: scanned {files_scanned} files; "
@@ -150,7 +150,7 @@ def main() -> int:
         for s in samples[cat][:3]:
             print(f"         {s}")
     print()
-    print("Advisory only — these are the human-side parallel of the "
+    print("Advisory only -- these are the human-side parallel of the "
           "agent-policing detectors. Goal is monotonic decrease over time, "
           "not zero. New entries should ideally come with a deadline or "
           "tracking issue. Compare across runs to see if deferral debt is "

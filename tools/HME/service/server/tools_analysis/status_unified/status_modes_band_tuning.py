@@ -1,4 +1,4 @@
-"""Mode handlers — extracted from mode_handlers.py.
+"""Mode handlers -- extracted from mode_handlers.py.
 mode_handlers.py imports back and registers in _STATUS_MODES.
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ logger = logging.getLogger("HME")
 
 
 def _mode_band_tuning():
-    """Horizon IX seed — chaordic band as a learned controllable.
+    """Horizon IX seed -- chaordic band as a learned controllable.
 
     Reads output/metrics/hme-ground-truth.jsonl (human verdicts with
     sentiment tags) and joins each verdict against the HCI timeseries
@@ -54,7 +54,7 @@ def _mode_band_tuning():
                 f"Add verdicts via `{_hint}` first.")
     if not _os.path.isfile(ts_path):
         return ("# i/status mode=band-tuning\n"
-                "No HCI timeseries — nothing to join verdicts against.")
+                "No HCI timeseries -- nothing to join verdicts against.")
 
     try:
         with open(gt_path) as _f:
@@ -78,9 +78,9 @@ def _mode_band_tuning():
         return float(best["hci"])
 
     # Bucket verdicts by sentiment, and per-axis if subtag is present.
-    # Horizon IX × II asymptote: per-axis verdicts → per-axis bands.
+    # Horizon IX * II asymptote: per-axis verdicts -> per-axis bands.
     buckets: dict[str, list[float]] = {}
-    per_axis_buckets: dict[str, dict[str, list[float]]] = {}  # subtag → sentiment → [hci]
+    per_axis_buckets: dict[str, dict[str, list[float]]] = {}  # subtag -> sentiment -> [hci]
     for v in verdicts:
         sentiment = v.get("sentiment", "?")
         ts = v.get("ts")
@@ -125,13 +125,13 @@ def _mode_band_tuning():
     if pos_hcis:
         pos_hcis.sort()
         upper = pos_hcis[len(pos_hcis) // 2]
-        out.append(f"  upper bound  ≈ {upper:.0f}  (median HCI of {len(pos_hcis)} positive verdicts)")
+        out.append(f"  upper bound  ~= {upper:.0f}  (median HCI of {len(pos_hcis)} positive verdicts)")
     else:
         out.append(f"  upper bound  not enough positive verdicts")
     if neg_hcis:
         neg_hcis.sort()
         lower = neg_hcis[len(neg_hcis) // 2]
-        out.append(f"  lower bound  ≈ {lower:.0f}  (median HCI of {len(neg_hcis)} negative verdicts)")
+        out.append(f"  lower bound  ~= {lower:.0f}  (median HCI of {len(neg_hcis)} negative verdicts)")
     else:
         try:
             from tool_invocations import i_form as _i_form
@@ -140,13 +140,13 @@ def _mode_band_tuning():
             _gt_hint = "i/learn action=ground_truth"  # tool-form-ok: fallback
         out.append(f"  lower bound  not enough negative verdicts; current default 55 retained")
         out.append(f"               (to inform: tag a flat/mechanical/boring round via")
-        out.append(f"                `{_gt_hint} tags=[flat]` when one occurs —")
+        out.append(f"                `{_gt_hint} tags=[flat]` when one occurs --")
         out.append(f"                even one negative verdict starts the calibration)")
     # Persist the proposal to tmp/hme-band-proposal.json so downstream
     # code (coherence-budget consumer, future self-tuner) can read it
     # without re-deriving. Establishes the data hand-off without forcing
     # composition behavior change yet.
-    # Per-axis proposals (Horizon IX × II asymptote-deepening): for each
+    # Per-axis proposals (Horizon IX * II asymptote-deepening): for each
     # subtag, find rounds whose snapshot had high score in that subtag at
     # the time of the verdict, propose a band per axis. Today we have one
     # ground-truth axis (overall HCI) but the persisted shape allows
@@ -156,7 +156,7 @@ def _mode_band_tuning():
     per_axis: dict[str, list[float]] = {}
     # Read the snapshot to get current per-subtag scores; use them as
     # the "current observed" anchor. Per-axis proposed bounds aren't
-    # learnable until we have per-axis verdicts — until then, the
+    # learnable until we have per-axis verdicts -- until then, the
     # aggregate proposed_band is the best signal per axis.
     snap_path = _os.path.join(_root, "output", "metrics", "hci-verifier-snapshot.json")
     if _os.path.isfile(snap_path):
@@ -192,7 +192,7 @@ def _mode_band_tuning():
         "per_axis": {
             # For each subtag: current observed_median (from snapshot) AND
             # the proposed_band learned from per-axis verdicts when present.
-            # Horizon IX × II compounding: subtag-tagged verdicts produce
+            # Horizon IX * II compounding: subtag-tagged verdicts produce
             # axis-specific bands; absent that data, falls back to aggregate.
             subtag: {
                 "observed_median": (sorted(scores)[len(scores) // 2] if scores else 0.0),

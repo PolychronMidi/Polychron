@@ -3,7 +3,7 @@
 for in metrics/hme-suspected-upstreams.json (candidates / confirmed / refuted).
 
 If the detector finds a pair with r <= -0.4 that isn't in ANY bucket of the
-registry, that's drift — the system is observing a tension it hasn't named.
+registry, that's drift -- the system is observing a tension it hasn't named.
 Either:
   - Add it as a candidate (hypothesize the shared upstream)
   - Add it as refuted (document why it's coincidence)
@@ -45,7 +45,7 @@ def _pearson(xs, ys):
 
 def main() -> None:
     if not TRACE_PATH.is_file():
-        # No trace yet — skip (pre-first-run).
+        # No trace yet -- skip (pre-first-run).
         sys.exit(0)
     if not REGISTRY_PATH.is_file():
         print(f"FAIL: registry missing at {REGISTRY_PATH}", file=sys.stderr)

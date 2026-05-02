@@ -1,4 +1,4 @@
-"""Evolution strategies — curate, contradict, adversarial stress.
+"""Evolution strategies -- curate, contradict, adversarial stress.
 
 Split from evolution_evolve.py. These are the heavy analysis functions
 that each focus on a different evolution mode.
@@ -60,7 +60,7 @@ def _auto_curate() -> str:
         candidates.append({
             "type": "trust_undocumented",
             "title": f"Top trust system: {top_trust}",
-            "detail": f"#1 trust (weight={feats.get('topTrustWeight', '?')}) — no KB entry",
+            "detail": f"#1 trust (weight={feats.get('topTrustWeight', '?')}) -- no KB entry",
             "category": "pattern",
             "draft": (
                 f"{top_trust} is the current top trust system with weight "
@@ -163,14 +163,14 @@ def _auto_curate() -> str:
                 "detail": f"Top system {feats.get('topTrustSystem', '?')} dominates",
                 "category": "pattern",
                 "draft": (
-                    f"Trust weight spread is only {spread:.3f} — monopoly by "
+                    f"Trust weight spread is only {spread:.3f} -- monopoly by "
                     f"{feats.get('topTrustSystem', '?')}. Document whether this "
                     f"concentration is desired or limiting musical diversity."
                 ),
             })
 
     if not candidates:
-        return "# Auto-Curate\n\nKB coverage is comprehensive — no novel patterns in recent runs."
+        return "# Auto-Curate\n\nKB coverage is comprehensive -- no novel patterns in recent runs."
 
     parts = [f"# Auto-Curate: {len(candidates)} KB Candidates\n"]
 

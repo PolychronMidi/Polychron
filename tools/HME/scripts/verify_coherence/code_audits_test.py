@@ -1,4 +1,4 @@
-"""Test/runtime verifiers — SilentFailureClass, TestIsolation, TestEnvUndefined.
+"""Test/runtime verifiers -- SilentFailureClass, TestIsolation, TestEnvUndefined.
 Extracted from code_audits_runtime.py.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ class SilentFailureClassVerifier(Verifier):
     broad-except / catch-and-swallow sites that lack a `silent-ok:`
     annotation. Pattern B from the architectural review: telemetry-class
     catches are correct but safety-belt catches must surface. The audit
-    can't tell which is which automatically — it asks for a written
+    can't tell which is which automatically -- it asks for a written
     justification (silent-ok: <reason>) on each intentional silence.
 
     Weight is ADVISORY (0.5) not gating: the codebase has many unannotated
@@ -32,7 +32,7 @@ class SilentFailureClassVerifier(Verifier):
     name = "silent-failure-class"
     category = "code"
     subtag = "regression-prevention"
-    weight = 0.5  # advisory — annotate over time, don't block merges yet
+    weight = 0.5  # advisory -- annotate over time, don't block merges yet
 
     def run(self) -> VerdictResult:
         script = os.path.join(_PROJECT, "scripts", "audit-silent-failure-class.py")
@@ -45,16 +45,16 @@ class SilentFailureClassVerifier(Verifier):
         if m:
             count = int(m.group(1))
             files = int(m.group(2))
-            # Logarithmic scaling — expected count is in the hundreds today;
+            # Logarithmic scaling -- expected count is in the hundreds today;
             # goal is monotonic improvement, not zero. A 10% reduction = +1
             # to the score. Below 50 sites = fully passing.
             if count <= 50:
                 return _result(PASS, 1.0,
-                               f"only {count} unmarked silent-catch sites (≤50 threshold)")
+                               f"only {count} unmarked silent-catch sites (<=50 threshold)")
             score = max(0.0, 1.0 - (count - 50) / 1000.0)
             detail_lines = [l for l in out.splitlines() if ":" in l and "audit-silent-failure-class" not in l][:15]
             return _result(WARN, score,
-                           f"{count} unmarked silent-catch sites across {files} files — annotate with `silent-ok:` over time",
+                           f"{count} unmarked silent-catch sites across {files} files -- annotate with `silent-ok:` over time",
                            detail_lines)
         return _result(SKIP, 1.0, "could not parse audit output", [out[:200], err[:200]])
 
@@ -128,7 +128,7 @@ class TestIsolationVerifier(Verifier):
 
 class TestEnvUndefinedVerifier(Verifier):
     """In Node test files, `process.env.X = undefined` does NOT delete the
-    var — it sets the literal string 'undefined' (truthy). Later tests
+    var -- it sets the literal string 'undefined' (truthy). Later tests
     inherit it and break || fallback patterns. The correct pattern when
     restoring an originally-unset env var is `delete process.env.X`.
 

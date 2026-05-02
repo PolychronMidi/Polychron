@@ -1,4 +1,4 @@
-"""HME perceptual engines — EnCodec and CLAP model inference, called by audio_analyze.
+"""HME perceptual engines -- EnCodec and CLAP model inference, called by audio_analyze.
 
 Placement contract:
   - Audio models are pinned to the audio GPU (HME_AUDIO_GPU env, default 1)
@@ -10,7 +10,7 @@ Placement contract:
   - Each model registers with a shared VramManager for the audio GPU;
     under VRAM pressure (coder KV cache growing), lower-priority audio
     models are offloaded first (EnCodec before CLAP) to free room, and a
-    background poller reloads them on busy→idle edges of the daemon's
+    background poller reloads them on busy->idle edges of the daemon's
     per-GPU flag.
   - Audio generations flip the daemon's per-GPU busy flag for the audio
     GPU so any coder generate concurrently scheduled there routes
@@ -27,7 +27,7 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-# Perceptual confidence starts low — earns trust through verified accuracy
+# Perceptual confidence starts low -- earns trust through verified accuracy
 _PERCEPTUAL_CONFIDENCE = 0.15  # raised as predictions correlate with verdicts
 
 # VramManager integration
@@ -41,7 +41,7 @@ _audio_lock = threading.Lock()                    # serialize audio_analyze call
 _audio_init_lock = threading.Lock()               # one-shot eager init gate
 _audio_init_done = False
 
-# Device selection — read from central .env via ENV.require (fail-fast).
+# Device selection -- read from central .env via ENV.require (fail-fast).
 # The hme_env module lives at tools/HME/service/hme_env.py; add the mcp dir to
 # sys.path so we can import it from server/tools_analysis/ without a
 # cross-package relative import.
@@ -138,7 +138,7 @@ def _ensure_audio_initialized() -> None:
         try:
             import torch
             if not torch.cuda.is_available():
-                logger.warning("audio init: no CUDA — both GPU and CPU mirrors will load to CPU")
+                logger.warning("audio init: no CUDA -- both GPU and CPU mirrors will load to CPU")
         except Exception as _e:
             logger.warning(f"audio init: torch unavailable ({_e})")
 
@@ -161,12 +161,12 @@ def _ensure_audio_initialized() -> None:
             encodec_gpu = _build_encodec_gpu()
             logger.info(f"EnCodec GPU loaded on cuda:{_AUDIO_GPU_IDX}.")
         except Exception as _e:
-            logger.warning(f"EnCodec GPU load failed: {type(_e).__name__}: {_e} — CPU-only")
+            logger.warning(f"EnCodec GPU load failed: {type(_e).__name__}: {_e} -- CPU-only")
         try:
             clap_gpu = _build_clap_gpu()
             logger.info(f"CLAP GPU loaded on cuda:{_AUDIO_GPU_IDX}.")
         except Exception as _e:
-            logger.warning(f"CLAP GPU load failed: {type(_e).__name__}: {_e} — CPU-only")
+            logger.warning(f"CLAP GPU load failed: {type(_e).__name__}: {_e} -- CPU-only")
 
         # Register with VramManager
         try:
@@ -208,7 +208,7 @@ def _ensure_audio_initialized() -> None:
             )
         except Exception as _e:
             logger.warning(
-                f"audio VramManager init failed ({type(_e).__name__}: {_e}) — "
+                f"audio VramManager init failed ({type(_e).__name__}: {_e}) -- "
                 f"audio tools will use static device selection without active offload"
             )
 
@@ -225,7 +225,7 @@ def _audio_gpu_ok() -> bool:
             return json.loads(resp.read()).get("route") == "gpu"
     except Exception as _e:
         logger.debug(f"rag-route probe: {type(_e).__name__}: {_e}")
-        return True  # daemon unreachable — assume idle, GPU was the fast path
+        return True  # daemon unreachable -- assume idle, GPU was the fast path
 
 
 @contextmanager
@@ -236,7 +236,7 @@ def _acquire_audio_model(mm, cpu_fallback, label: str):
     allocates large intermediate tensors, and two simultaneous CLAP calls
     would either OOM or thrash. We take a process-wide lock so only one
     audio tool call runs at a time (RAG stack and arbiter run in
-    parallel to audio — this lock only governs audio).
+    parallel to audio -- this lock only governs audio).
     """
     with _audio_lock:
         # Pressure check before using GPU
@@ -255,7 +255,7 @@ def _acquire_audio_model(mm, cpu_fallback, label: str):
         elif cpu_fallback is not None:
             yield cpu_fallback, "cpu"
         elif mm is not None and mm.gpu_instance is not None:
-            # CPU mirror missing but GPU still exists — use GPU unconditionally
+            # CPU mirror missing but GPU still exists -- use GPU unconditionally
             yield mm.gpu_instance, f"cuda:{_AUDIO_GPU_IDX}"
         else:
             raise RuntimeError(f"{label}: no instance available (neither GPU nor CPU)")
@@ -313,7 +313,7 @@ def _set_audio_busy(busy: bool) -> None:
     """POST to daemon's /gpu-busy endpoint to flip the audio GPU's busy
     flag. Concurrent generators on the audio GPU (coder generations, other
     future workloads) read this flag via /rag-route?device=<audio> and
-    route accordingly. Silent on failure — daemon may be down during probes.
+    route accordingly. Silent on failure -- daemon may be down during probes.
     """
     try:
         import urllib.request
@@ -332,5 +332,5 @@ def _set_audio_busy(busy: bool) -> None:
 
 
 
-# Re-exports — inference funcs extracted.
+# Re-exports -- inference funcs extracted.
 from .perceptual_inference import _run_encodec, _run_clap  # noqa: F401, E402

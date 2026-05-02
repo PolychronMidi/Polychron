@@ -10,8 +10,8 @@ from lang_registry import SUPPORTED_EXTENSIONS, SUPPORTED_FILENAMES, ext_to_lang
 
 logger = logging.getLogger(__name__)
 
-# Baseline fallback — used only when HME_IGNORE_DIRS env var is absent.
-# "doc" and "hooks" intentionally NOT here — HME indexes its own enforcement
+# Baseline fallback -- used only when HME_IGNORE_DIRS env var is absent.
+# "doc" and "hooks" intentionally NOT here -- HME indexes its own enforcement
 # hooks (tools/HME/hooks/) and project docs (doc/) for full self-awareness.
 _BUILTIN_IGNORE_DIRS = {
     "node_modules", ".git", "target", "dist", "build",
@@ -59,7 +59,7 @@ def _build_ignore_dirs(project_root: str = "") -> set[str]:
     return base | gitignore_dirs
 
 
-# Module-level default (no project_root yet — gitignore dirs added in init_config).
+# Module-level default (no project_root yet -- gitignore dirs added in init_config).
 DEFAULT_IGNORE_DIRS = _build_ignore_dirs()
 
 _BUILTIN_IGNORE_FILES = {
@@ -89,7 +89,7 @@ _config: dict = {
     "rag_ignore": None,
     "rag_libs": [],
     "rag_lib_abs": [],
-    "rag_index_dirs": [],      # explicit allowlist — ONLY these dirs get indexed
+    "rag_index_dirs": [],      # explicit allowlist -- ONLY these dirs get indexed
     "rag_index_dirs_abs": [],  # resolved absolute paths
     "max_file_size": _max_file_size_from_env(),
     "project_root": "",
@@ -101,7 +101,7 @@ def init_config(project_root: str):
     # Rebuild ignore_dirs now that we have project_root for .gitignore parsing.
     _config["ignore_dirs"] = _build_ignore_dirs(project_root)
     logger.info(f"ignore_dirs: {len(_config['ignore_dirs'])} entries (env+gitignore merged)")
-    # RAG config migrated from .mcp.json → tools/HME/config/rag.json (owned by HME,
+    # RAG config migrated from .mcp.json -> tools/HME/config/rag.json (owned by HME,
     # independent of Claude Code's MCP system). Schema is flat (no mcpServers.HME
     # wrapper): ragIndexDirs, ragIgnoreDirs, ragIgnore, ragLibs, ragMaxFileSize.
     rag_path = os.path.join(project_root, "tools", "HME", "config", "rag.json")
@@ -136,14 +136,14 @@ def init_config(project_root: str):
         logger.info(f"ragLibs loaded: {libs}")
 
     # ragIndexDirs: explicit allowlist of directories to index (relative to project root).
-    # When set, ONLY these directories are indexed — no directory argument can override this.
+    # When set, ONLY these directories are indexed -- no directory argument can override this.
     index_dirs = rag_cfg.get("ragIndexDirs")
     if index_dirs and isinstance(index_dirs, list):
         _config["rag_index_dirs"] = index_dirs
         _config["rag_index_dirs_abs"] = [
             os.path.normpath(os.path.join(project_root, d)) for d in index_dirs
         ]
-        logger.info(f"ragIndexDirs loaded: {index_dirs} — ONLY these directories will be indexed")
+        logger.info(f"ragIndexDirs loaded: {index_dirs} -- ONLY these directories will be indexed")
 
 
 def get_ignore_dirs() -> set[str]:
@@ -198,12 +198,12 @@ def walk_code_files(
             if p.is_dir():
                 roots.append(p)
         if not roots:
-            logger.warning("ragIndexDirs configured but no valid directories found — indexing nothing")
+            logger.warning("ragIndexDirs configured but no valid directories found -- indexing nothing")
             return
     else:
         project_root = _config.get("project_root")
         if not project_root:
-            logger.error("project_root not initialized — call init_config() before walking")
+            logger.error("project_root not initialized -- call init_config() before walking")
             return
         roots.append(Path(project_root))
 

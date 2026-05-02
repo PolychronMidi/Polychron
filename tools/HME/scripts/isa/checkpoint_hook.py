@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""CheckpointPerISC auto-commit hook — PAI v6.3.0 import #6.
+"""CheckpointPerISC auto-commit hook -- PAI v6.3.0 import #6.
 
-Fires when an ISC transitions [ ]→[x]. For each opted-in ISA, every
+Fires when an ISC transitions [ ]->[x]. For each opted-in ISA, every
 verified-criterion transition triggers an atomic git commit so a
 multi-criterion task lays down one commit per criterion rather than one
 turn-grained commit at the end.
@@ -12,7 +12,7 @@ time. Idempotent: if the state already records `[x]` for an ISC, no
 new commit fires.
 
 Allowlist: ISA frontmatter must contain `checkpoint: enabled` for the
-hook to act on it. Default opt-out — this is a deliberate gate so old
+hook to act on it. Default opt-out -- this is a deliberate gate so old
 ISAs don't suddenly start auto-committing.
 
 Fail-closed: any unexpected error (no git, no ISA, parse failure,
@@ -87,7 +87,7 @@ def _create_checkpoint_commit(repo: Path, slug: str, isc_ids: list[str],
     msg_lines = [
         f"checkpoint: {slug}",
         "",
-        f"Auto-commit triggered by [ ]→[x] transition on:",
+        f"Auto-commit triggered by [ ]->[x] transition on:",
     ]
     for isc_id in isc_ids:
         msg_lines.append(f"  - {isc_id}")
@@ -121,7 +121,7 @@ def _create_checkpoint_commit(repo: Path, slug: str, isc_ids: list[str],
 
 
 def process_isa(isa_path: Path, dry_run: bool = False) -> dict:
-    """Inspect one ISA, find new [ ]→[x] transitions vs. saved state,
+    """Inspect one ISA, find new [ ]->[x] transitions vs. saved state,
     create a checkpoint commit if any. Returns a result dict for
     reporting."""
     result = {"path": str(isa_path), "skipped": None, "transitions": [],
@@ -147,7 +147,7 @@ def process_isa(isa_path: Path, dry_run: bool = False) -> dict:
             new_transitions.append(isc.id)
 
     if not new_transitions:
-        result["skipped"] = "no new [ ]→[x] transitions"
+        result["skipped"] = "no new [ ]->[x] transitions"
         return result
 
     result["transitions"] = new_transitions

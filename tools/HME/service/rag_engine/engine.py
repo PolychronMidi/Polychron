@@ -44,7 +44,7 @@ def _pick_embed_device() -> str:
             if best_idx >= 0:
                 return f"cuda:{best_idx}"
     except Exception as _cuda_err:
-        # Silent CPU-fallback was the root of a 100× embedding slowdown
+        # Silent CPU-fallback was the root of a 100* embedding slowdown
         # that went unnoticed for weeks. Fire a CRITICAL LIFESAVER so
         # the next tool response surfaces the regression instead of
         # letting it be discovered via "why is indexing slow."
@@ -57,7 +57,7 @@ def _pick_embed_device() -> str:
             from server import context as _ctx
             _ctx.register_critical_failure(
                 "rag_engine.pick_embed_device",
-                f"CUDA probe failed ({type(_cuda_err).__name__}: {_cuda_err}); embedding dropped to CPU — expect 50-100× slowdown on index/search",
+                f"CUDA probe failed ({type(_cuda_err).__name__}: {_cuda_err}); embedding dropped to CPU -- expect 50-100* slowdown on index/search",
                 severity="CRITICAL",
             )
         except Exception as _life_err:
@@ -77,14 +77,14 @@ class RAGEngine(
                  code_model: "Optional[SentenceTransformer]" = None,
                  reranker=None):
         """
-        model / text_model     — general-text embedder (RAG_MODEL from .env) for knowledge + symbols.
-        code_model             — code-specialized embedder (RAG_CODE_MODEL) for code_chunks.
-        reranker               — listwise reranker (RAG_RERANKER_MODEL) for search rerank.
+        model / text_model     -- general-text embedder (RAG_MODEL from .env) for knowledge + symbols.
+        code_model             -- code-specialized embedder (RAG_CODE_MODEL) for code_chunks.
+        reranker               -- listwise reranker (RAG_RERANKER_MODEL) for search rerank.
 
         `model` is the legacy kwarg; it maps to text_model. If code_model is None
-        it falls back to text_model — guarantees correctness while still
+        it falls back to text_model -- guarantees correctness while still
         letting callers opt into the dual-index by passing code_model explicitly.
-        All model paths come from .env via hme_env.ENV — no hardcoded names.
+        All model paths come from .env via hme_env.ENV -- no hardcoded names.
         """
         import lancedb as _lancedb
         self.db_path = db_path
@@ -102,19 +102,19 @@ class RAGEngine(
         else:
             _device = str(getattr(getattr(model, "device", None), "type", "cpu"))
         self.text_model = model
-        self.model = model  # legacy alias — external callers still reference self.model
+        self.model = model  # legacy alias -- external callers still reference self.model
         self.code_model = code_model if code_model is not None else model
         self.reranker = reranker
-        # Per-kind batch caps. bge-code-v1 is a 2.7B-param FP16 model — at
+        # Per-kind batch caps. bge-code-v1 is a 2.7B-param FP16 model -- at
         # batch=256 with 8K-token code chunks it OOMs a 22 GB GPU during a
         # full reindex (single forward-pass allocation can hit 12+ GiB).
         # Keep code conservative; text uses qwen3-embedding-0.6b which is
-        # ~4× smaller and tolerates larger batches.
+        # ~4* smaller and tolerates larger batches.
         self._embed_batch_size_text = 128 if _device.startswith("cuda") else 64
         self._embed_batch_size_code = 16 if _device.startswith("cuda") else 16
         # Legacy alias retained for any external readers.
         self._embed_batch_size = self._embed_batch_size_text
-        # Dynamic vector dimension from the actual models — both must match the table schema
+        # Dynamic vector dimension from the actual models -- both must match the table schema
         self._text_dim = self.text_model.get_sentence_embedding_dimension()
         self._code_dim = self.code_model.get_sentence_embedding_dimension()
         self._dim = self._text_dim  # legacy: some callers read self._dim
@@ -130,7 +130,7 @@ class RAGEngine(
         self._per_file_chunks: dict[str, set[str]] = {}  # file_key -> chunk content hashes
         self._search_cache = _TTLCache(maxsize=256, ttl=CACHE_TTL)
         self._knowledge_cache = _TTLCache(maxsize=128, ttl=CACHE_TTL)
-        self._module_embed_cache = _TTLCache(maxsize=512, ttl=CACHE_TTL)  # module-name → vector
+        self._module_embed_cache = _TTLCache(maxsize=512, ttl=CACHE_TTL)  # module-name -> vector
         self._access_log: dict[str, int] = {}  # FSRS-6: per-entry retrieval count (persisted to knowledge_access.json)
         self._index_lock = threading.Lock()
         self._bulk_indexing = threading.Event()
@@ -153,7 +153,7 @@ class RAGEngine(
         except Exception as e:
             logger.warning(f"get_status count_rows failed: {e}")
             count = 0
-        # Use file_hashes as source of truth for file count — resilient to
+        # Use file_hashes as source of truth for file count -- resilient to
         # Lance deletion log corruption that crashes to_arrow() full scans.
         sources = len(self._file_hashes)
         return {"indexed": True, "total_chunks": count, "total_files": sources}

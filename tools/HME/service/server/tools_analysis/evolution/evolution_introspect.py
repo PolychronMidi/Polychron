@@ -1,4 +1,4 @@
-"""HME session introspection — tool usage patterns, workflow discipline, KB health."""
+"""HME session introspection -- tool usage patterns, workflow discipline, KB health."""
 import os
 import re
 import logging

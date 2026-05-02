@@ -10,7 +10,7 @@ lets HME detect:
   - Antagonist bridges: tool pairs that appear to reinforce each other but
     are under-coupled (rarely co-occur despite predicting success).
   - Redundant pairs: tools that co-occur so often they may be duplicating work.
-  - Dead zones: tools that never co-occur with anything — suspect isolation.
+  - Dead zones: tools that never co-occur with anything -- suspect isolation.
 
 The matrix is empirical, not prescriptive: it measures what the system does,
 not what you think it should do. Feed the antagonist bridges to the
@@ -46,7 +46,7 @@ METRICS_DIR = os.environ.get("METRICS_DIR") or os.path.join(_PROJECT, "output", 
 _EFFECTIVENESS = os.path.join(METRICS_DIR, "hme-tool-effectiveness.json")
 _OUTPUT = os.path.join(METRICS_DIR, "hme-coupling.json")
 
-# Tools we consider "HME surface" — both the public HME tools and the hooks
+# Tools we consider "HME surface" -- both the public HME tools and the hooks
 # that dispatch on native tool calls. Any tool co-occurring with these is a
 # candidate for coupling analysis.
 _HME_PUBLIC_TOOLS = {"evolve", "review", "learn", "trace", "hme_admin"}
@@ -64,17 +64,17 @@ def _load_sessions() -> list:
 
 
 def _reconstruct_sessions(data: dict) -> list:
-    """Older effectiveness files only have aggregate stats — try to reconstruct
+    """Older effectiveness files only have aggregate stats -- try to reconstruct
     a session list from the raw tool_invocation_counts + session_count."""
     return []
 
 
 def build_matrix() -> dict:
-    # Load the effectiveness JSON directly — sessions are nested inside
+    # Load the effectiveness JSON directly -- sessions are nested inside
     if not os.path.isfile(_EFFECTIVENESS):
         return {
             "generated_at": time.time(),
-            "_error": "no effectiveness data — run analyze-tool-effectiveness.py first",
+            "_error": "no effectiveness data -- run analyze-tool-effectiveness.py first",
         }
 
     try:
@@ -120,7 +120,7 @@ def build_matrix() -> dict:
             "_warning": "no tool events found in session data",
         }
 
-    # Build per-session tool sets (ignore order — binary presence per session)
+    # Build per-session tool sets (ignore order -- binary presence per session)
     session_tool_sets: list = []
     session_has_error: list = []
     for s in sessions:
@@ -200,7 +200,7 @@ def build_matrix() -> dict:
                 "expected": round(expected, 2),
                 "actual": actual,
                 "gap": round(expected - actual, 2),
-                "reason": "under-coupled — expected co-occurrence based on individual frequencies",
+                "reason": "under-coupled -- expected co-occurrence based on individual frequencies",
             })
     bridges.sort(key=lambda x: -x["gap"])
 

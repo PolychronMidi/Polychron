@@ -1,11 +1,11 @@
-"""HME epistemic status readers — Phase 4 of openshell_features_to_mimic.md.
+"""HME epistemic status readers -- Phase 4 of openshell_features_to_mimic.md.
 
 Thin markdown renderers for the three JSON files produced by Phase 4
 pipeline scripts:
 
-  - metrics/hme-musical-correlation.json  → music_truth_report()
-  - metrics/kb-trust-weights.json         → kb_trust_report()
-  - metrics/hme-intention-gap.json        → intention_gap_report()
+  - metrics/hme-musical-correlation.json  -> music_truth_report()
+  - metrics/kb-trust-weights.json         -> kb_trust_report()
+  - metrics/hme-intention-gap.json        -> intention_gap_report()
 
 Surfaced via status(mode='music_truth' | 'kb_trust' | 'intention_gap').
 Reading-only; no computation here beyond formatting.
@@ -75,7 +75,7 @@ def music_truth_report() -> str:
     if corr:
         lines.append("")
         lines.append("## Rolling-window correlations (Pearson r)")
-        # Split so non-degenerate correlations lead the list — they're the
+        # Split so non-degenerate correlations lead the list -- they're the
         # scientifically meaningful ones. Degenerate pairs (too few distinct
         # values in x or y, n<3, etc.) get collapsed to a summary at the
         # bottom. Previously a 20-pair list was 17 degenerates drowning out
@@ -100,7 +100,7 @@ def music_truth_report() -> str:
             elif ar < 0.60: base = "moderate"
             elif ar < 0.80: base = "strong"
             else: base = "very strong"
-            return f"{base}{' +' if r_val > 0 else ' −'}"
+            return f"{base}{' +' if r_val > 0 else ' -'}"
         for k, c in computable:
             r = c.get("r")
             n = c.get("n", 0)
@@ -113,12 +113,12 @@ def music_truth_report() -> str:
             lines.append(f"  {k:<55} r={r_s}  n={n}{tier}")
         if degenerate_items:
             lines.append("")
-            lines.append(f"  ── {len(degenerate_items)} degenerate pair(s) suppressed ──")
+            lines.append(f"  -- {len(degenerate_items)} degenerate pair(s) suppressed --")
             for k, c in degenerate_items[:3]:
                 reason = c.get("reason", "")
                 lines.append(f"     {k}  ({reason})")
             if len(degenerate_items) > 3:
-                lines.append(f"     …and {len(degenerate_items) - 3} more")
+                lines.append(f"     ...and {len(degenerate_items) - 3} more")
 
     if strongest is not None:
         lines.append("")
@@ -126,7 +126,7 @@ def music_truth_report() -> str:
 
     if warning:
         lines.append("")
-        lines.append(f"⚠ {warning}")
+        lines.append(f"[!] {warning}")
 
     return "\n".join(lines)
 
@@ -205,7 +205,7 @@ def intention_gap_report() -> str:
     if isinstance(gap, (int, float)):
         lines.append(f"  gap                    {gap * 100:.0f}%")
 
-    # Explain "untrackable" — previously users saw a high count with no idea
+    # Explain "untrackable" -- previously users saw a high count with no idea
     # what it meant. A todo is untrackable when its text doesn't mention any
     # expected-artifact pattern the gap-computer knows how to verify
     # (file paths, module names, git-log tokens, etc.). They're not failures;
@@ -215,7 +215,7 @@ def intention_gap_report() -> str:
     if n_untrackable and n_total:
         lines.append("")
         lines.append(
-            f"  note: {n_untrackable}/{n_total} todos are UNTRACKABLE — their text "
+            f"  note: {n_untrackable}/{n_total} todos are UNTRACKABLE -- their text "
             f"doesn't match any artifact pattern the gap-computer can verify "
             f"(file paths, module names, commit tokens). Not failures; just "
             f"outside introspection range. See scripts/pipeline/compute-intention-gap.js "

@@ -1,4 +1,4 @@
-"""HME runtime intelligence — drama finder, beat snapshots, trace-intensive tools."""
+"""HME runtime intelligence -- drama finder, beat snapshots, trace-intensive tools."""
 import json
 import os
 import logging
@@ -64,7 +64,7 @@ def drama_finder(top_n: int = 10) -> str:
                 tension = snap.get("tension", 0.5) if isinstance(snap, dict) else 0.5
                 note_count = len(record.get("notes", []))
 
-                # Regime transition — highest base drama (system fundamental shift)
+                # Regime transition -- highest base drama (system fundamental shift)
                 if regime != prev_regime and prev_regime is not None:
                     hotspots = [(n, round(d.get("hotspotPressure", 0), 3))
                                 for n, d in trust.items()
@@ -73,11 +73,11 @@ def drama_finder(top_n: int = 10) -> str:
                     events.append({
                         "beat": beat_key, "drama": drama,
                         "type": "regime_transition",
-                        "detail": f"{prev_regime} → {regime} | {len(hotspots)} hotspots | tension={tension:.3f}",
+                        "detail": f"{prev_regime} -> {regime} | {len(hotspots)} hotspots | tension={tension:.3f}",
                         "hotspots": hotspots[:3],
                     })
 
-                # Weight swings — trust system seizing or losing control
+                # Weight swings -- trust system seizing or losing control
                 for sys_name, sys_data in trust.items():
                     if not isinstance(sys_data, dict):
                         continue
@@ -89,11 +89,11 @@ def drama_finder(top_n: int = 10) -> str:
                         events.append({
                             "beat": beat_key, "drama": drama,
                             "type": "weight_swing",
-                            "detail": f"{sys_name}: {prev_w:.3f}→{weight:.3f} (Δ{swing:.3f}) | tension={tension:.3f}",
+                            "detail": f"{sys_name}: {prev_w:.3f}->{weight:.3f} (Delta{swing:.3f}) | tension={tension:.3f}",
                         })
                     prev_weights[sys_name] = weight
 
-                # Multiple simultaneous hotspots — sustained systemic stress
+                # Multiple simultaneous hotspots -- sustained systemic stress
                 active_hotspots = sum(1 for s in trust.values()
                                       if isinstance(s, dict) and s.get("hotspotPressure", 0) > 0.2)
                 if active_hotspots >= 3:
@@ -117,7 +117,7 @@ def drama_finder(top_n: int = 10) -> str:
     # Sort by drama score descending
     events.sort(key=lambda e: -e["drama"])
 
-    # Deduplicate consecutive same-type same-beat-key runs — keep highest, skip the rest
+    # Deduplicate consecutive same-type same-beat-key runs -- keep highest, skip the rest
     deduped = []
     seen_run: dict = {}  # type -> last beat key that was emitted
     for ev in events:
@@ -159,7 +159,7 @@ def drama_finder(top_n: int = 10) -> str:
     top.sort(key=lambda e: -e["drama"])
     top = top[:top_n]
 
-    parts = [f"## Drama Finder — Top {len(top)} Most Dramatic Moments\n"]
+    parts = [f"## Drama Finder -- Top {len(top)} Most Dramatic Moments\n"]
     for i, ev in enumerate(top, 1):
         parts.append(f"**{i}. Beat {ev['beat']}** [{ev['type']}] (drama: {ev['drama']:.1f})")
         parts.append(f"  {ev['detail']}")
@@ -202,10 +202,10 @@ def beat_snapshot(beat_key: str) -> str:
     at one moment in the composition.
 
     beat_key formats (flexible):
-      '2:1:3:0' — exact section:phrase:measure:beat key
-      '2:1'     — prefix match (finds first beat starting with '2:1:')
-      '400'     — plain number: finds the 400th trace record (0-indexed)
-      'S3'      — section shorthand: finds first beat in section 3"""
+      '2:1:3:0' -- exact section:phrase:measure:beat key
+      '2:1'     -- prefix match (finds first beat starting with '2:1:')
+      '400'     -- plain number: finds the 400th trace record (0-indexed)
+      'S3'      -- section shorthand: finds first beat in section 3"""
     ctx.ensure_ready_sync()
     _track("beat_snapshot")
 
@@ -282,7 +282,7 @@ def beat_snapshot(beat_key: str) -> str:
     parts.append(f"**Layer:** {record.get('layer', '?')}")
     parts.append(f"**Time:** {record.get('timeMs', '?')}ms")
 
-    # Trust scores — sorted by weight (most influential first)
+    # Trust scores -- sorted by weight (most influential first)
     trust = record.get("trust", {})
     if trust:
         trust_sorted = sorted(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SatisfactionCapture — PAI v6.3.0 import #8.
+"""SatisfactionCapture -- PAI v6.3.0 import #8.
 
 Rate every non-system prompt 1-10. The user's NEW prompt scores their
 satisfaction with the PRIOR turn (the previous assistant response). Wire
@@ -12,11 +12,11 @@ prompt gets a rating. Neutral = 5, not null." We never emit null.
 
 Heuristics, in priority order:
   1. Explicit bare integer 1-10 ("8", "rate: 7", "score 9")
-  2. Strong-positive markers ("perfect", "excellent", "amazing") → 9
-  3. Mild-positive markers ("great", "good", "thanks") → 7-8
-  4. Correction openers ("actually", "wait", "no,") → 4
-  5. Strong-negative markers ("wrong", "broken", "terrible") → 2
-  6. Neutral / unmatched → 5
+  2. Strong-positive markers ("perfect", "excellent", "amazing") -> 9
+  3. Mild-positive markers ("great", "good", "thanks") -> 7-8
+  4. Correction openers ("actually", "wait", "no,") -> 4
+  5. Strong-negative markers ("wrong", "broken", "terrible") -> 2
+  6. Neutral / unmatched -> 5
 
 Output: append one JSONL line per scored prompt to
 output/metrics/satisfaction.jsonl. Schema:
@@ -63,7 +63,7 @@ _MILD_POS = (
     "ok great", "lgtm", "looks good", "ship it", "well done",
 )
 _CORRECTION_OPENERS = (
-    "actually", "wait,", "wait —", "no,", "no —", "instead",
+    "actually", "wait,", "wait --", "no,", "no --", "instead",
     "hmm,", "not quite", "almost", "close, but",
 )
 _STRONG_NEG = (
@@ -81,7 +81,7 @@ def _score_prompt(text: str) -> tuple[int, str]:
     """Score a prompt 1-10 with the matched signal bucket label.
 
     Never returns None. Unmatched prompts score 5 (neutral) per the PAI
-    fix — null was the bug we're explicitly importing the patch for."""
+    fix -- null was the bug we're explicitly importing the patch for."""
     if not text:
         return 5, "empty"
     head = text[:600]  # only head matters; long prompts dilute signal

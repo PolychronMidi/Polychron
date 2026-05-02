@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Phase 6.2 — HME constitutional identity layer.
+"""Phase 6.2 -- HME constitutional identity layer.
 
 Derives positive identity claims about Polychron from:
-  1. Crystallized patterns with strong multi-round evidence (≥4 rounds)
+  1. Crystallized patterns with strong multi-round evidence (>=4 rounds)
   2. Human ground-truth entries with compelling/surprising sentiment
   3. Feedback graph loops and firewall ports (structural invariants)
 
 Each claim has an evidence trail so the proxy can cite it when
-flagging identity-risk proposals. Rule-based extraction — no LLM
+flagging identity-risk proposals. Rule-based extraction -- no LLM
 synthesis in v1. The rules are deliberately conservative: only very
 strong evidence promotes a claim, so the constitution reflects what
 the system has become, not what any single round tried.
@@ -86,7 +86,7 @@ def extract_claims_from_patterns(patterns: list[dict]) -> list[dict]:
         tags = p.get("shared_tags") or []
         seed = p.get("seed_tag") or (tags[0] if tags else "unknown")
         synth = (p.get("synthesis") or "").strip()
-        # Evidence breadth → confidence
+        # Evidence breadth -> confidence
         confidence = min(1.0, (len(rounds) / 10.0) + (len(members) / 10.0))
         claim_text = (
             f"`{seed}` has established itself as an architectural fixture: "
@@ -130,7 +130,7 @@ def extract_claims_from_ground_truth(gt_stream: list[dict]) -> list[dict]:
             "id": f"const_music_{section}_{moment}",
             "text": (
                 f"In {section}, {moment} moments register as compelling to "
-                f"human listeners — {sample_comment[:140] or '(no comment)'}"
+                f"human listeners -- {sample_comment[:140] or '(no comment)'}"
             ),
             "kind": "musical",
             "confidence": round(confidence, 3),
@@ -144,7 +144,7 @@ def extract_claims_from_ground_truth(gt_stream: list[dict]) -> list[dict]:
 
 
 def extract_claims_from_pipeline() -> list[dict]:
-    """Pipeline observability contract — what events must fire, what files
+    """Pipeline observability contract -- what events must fire, what files
     must be written, what order they come in. These are structural invariants
     of the system's own instrumentation; they belong in the constitution
     alongside feedback loops.
@@ -163,9 +163,9 @@ def extract_claims_from_pipeline() -> list[dict]:
     out: list[dict] = []
     contract = [
         ("pipeline_emits_start",
-         "Every pipeline run emits exactly one `pipeline_start` activity event at launch — agent-independent via main-pipeline.js"),
+         "Every pipeline run emits exactly one `pipeline_start` activity event at launch -- agent-independent via main-pipeline.js"),
         ("pipeline_emits_run",
-         "Every pipeline run emits exactly one `pipeline_run` activity event at finish, carrying verdict + hci — agent-independent"),
+         "Every pipeline run emits exactly one `pipeline_run` activity event at finish, carrying verdict + hci -- agent-independent"),
         ("pipeline_emits_round_complete",
          "Every pipeline run emits exactly one `round_complete` activity event at finish, carrying verdict (distinguishes it from pre-pipeline-era markers without verdict)"),
         ("pipeline_writes_summary",
@@ -191,7 +191,7 @@ def extract_claims_from_pipeline() -> list[dict]:
 
 def extract_claims_from_feedback_graph() -> list[dict]:
     """Feedback loops + firewall ports are structural invariants. Any
-    loop present in the graph is constitutional — the system REQUIRES it."""
+    loop present in the graph is constitutional -- the system REQUIRES it."""
     fb = _load_json(FEEDBACK_GRAPH) or {}
     loops = fb.get("feedbackLoops", []) or []
     ports = fb.get("firewallPorts", []) or []
@@ -242,7 +242,7 @@ def main() -> int:
     # composition system), not what holds it together (feedback loops,
     # firewall ports). Structural claims are prerequisites, not the identity.
     # Previous ordering put structural first which flattened musical identity
-    # into a footnote — an inverted priority that shaped every downstream
+    # into a footnote -- an inverted priority that shaped every downstream
     # self-model (crystallizer, self_audit, trust weights) toward structure
     # over sound.
     kind_order = {"musical": 0, "methodological": 1, "structural": 2, "behavioral": 3}
@@ -268,7 +268,7 @@ def main() -> int:
         json.dump(report, f, indent=2)
         f.write("\n")
     print(
-        f"derive-constitution: {len(claims)} claim(s) — "
+        f"derive-constitution: {len(claims)} claim(s) -- "
         f"{by_kind}"
     )
     return 0

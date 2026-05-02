@@ -1,4 +1,4 @@
-"""Adaptive multi-stage synthesis — complexity assessment, context injection, cascade.
+"""Adaptive multi-stage synthesis -- complexity assessment, context injection, cascade.
 
 Split from synthesis_llamacpp.py. Contains synthesize() (the highest-quality
 inference path in HME), cascade_synthesis, complexity assessment, quality gate,
@@ -28,9 +28,9 @@ from hme_env import ENV  # noqa: E402
 # Adaptive multi-stage synthesis
 # synthesize() auto-detects complexity, injects context, routes to optimal
 # strategy, and quality-gates output. Strategies:
-#   direct (1):   route_model() → single call (fast)
+#   direct (1):   route_model() -> single call (fast)
 #   enriched (2): source grounding + best model (balanced)
-#   cascade (3):  arbiter plan → coder kickstart → reasoner deep (thorough)
+#   cascade (3):  arbiter plan -> coder kickstart -> reasoner deep (thorough)
 
 _DEEP_SIGNALS = frozenset({
     "relationship", "interact", "coupling", "architectur",
@@ -81,8 +81,8 @@ def _assess_complexity(prompt: str) -> dict:
     L25 Adaptive Routing: consults hme-synthesis-patterns.json for historical
     per-strategy phantom rates. If direct strategy has phantom_rate > 0.4 for
     similar prompts, boosts score toward cascade. If cascade has high phantom
-    rate, doesn't penalize — cascade is already the safest route.
-    Score >= 3.0 → cascade, >= 1.5 → enriched, else direct.
+    rate, doesn't penalize -- cascade is already the safest route.
+    Score >= 3.0 -> cascade, >= 1.5 -> enriched, else direct.
     """
     words_lower = prompt.lower()
 
@@ -131,7 +131,7 @@ def _assess_complexity(prompt: str) -> dict:
 
 def _camel_acronym(name: str) -> str:
     """Compute first-letter acronym of a camelCase name.
-    coordinationIndependenceManager → 'cim'
+    coordinationIndependenceManager -> 'cim'
     """
     if not name:
         return ""
@@ -176,7 +176,7 @@ def _fuzzy_find_modules(prompt: str, max_results: int = 3) -> list[str]:
 def _inject_context(prompt: str) -> str:
     """Enrich prompt with source code grounding + operational health.
 
-    Session narrative is NOT added here — _local_think handles that separately.
+    Session narrative is NOT added here -- _local_think handles that separately.
     Extracts module names from prompt (camelCase-first), falls back to fuzzy
     search when prompt uses plain English terms for known modules.
     """
@@ -210,7 +210,7 @@ def _inject_context(prompt: str) -> str:
         if _crashes is not None and _crashes > 0:
             alerts.append(f"shim_crashes={_crashes}")
         _recovery = ops.get("recovery_success_rate_ema")
-        # 0.0 recovery rate is worse than "unknown" — must trigger alert,
+        # 0.0 recovery rate is worse than "unknown" -- must trigger alert,
         # so we branch on `is not None` rather than `or 1.0` which would
         # mask 0.0 as "healthy" and hide the alert.
         if _recovery is not None and _recovery < 0.8:
@@ -220,7 +220,7 @@ def _inject_context(prompt: str) -> str:
     except Exception as _err5:
         logger.debug(f"parts.append: {type(_err5).__name__}: {_err5}")
 
-    # L26: morphogenetic pre-loading — inject semantic field from intent + patterns
+    # L26: morphogenetic pre-loading -- inject semantic field from intent + patterns
     try:
         from server import meta_observer
         intent = meta_observer.get_current_intent()
@@ -228,11 +228,11 @@ def _inject_context(prompt: str) -> str:
             field_parts = []
             mode = intent["mode"]
             if mode == "debugging" and intent.get("hints"):
-                field_parts.append(f"[Intent: debugging — {', '.join(intent['hints'][:3])}]")
+                field_parts.append(f"[Intent: debugging -- {', '.join(intent['hints'][:3])}]")
             elif mode == "design":
-                field_parts.append("[Intent: architectural design — prioritize boundary constraints]")
+                field_parts.append("[Intent: architectural design -- prioritize boundary constraints]")
             elif mode == "stress_testing":
-                field_parts.append("[Intent: stress testing — be precise about enforcement gaps]")
+                field_parts.append("[Intent: stress testing -- be precise about enforcement gaps]")
             if field_parts:
                 parts = field_parts + parts
     except Exception as _err6:
@@ -251,20 +251,20 @@ def _inject_context(prompt: str) -> str:
 
 
 
-# Re-exports — cascade dispatch extracted.
+# Re-exports -- cascade dispatch extracted.
 from .synthesis_cascade_dispatch import (  # noqa: F401, E402
     _cascade_synthesis, dual_gpu_consensus, _quality_gate,
 )
 
 def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive",
                auto_context: bool = True, quality_check: bool = True) -> str | None:
-    """Adaptive multi-stage synthesis — highest-quality inference path in HME.
+    """Adaptive multi-stage synthesis -- highest-quality inference path in HME.
 
     1. Assesses complexity (arbiter scores 1-3)
     2. Injects source grounding + operational context
     3. Routes: direct (1) / enriched (2) / cascade (3)
     4. Quality-gates output via arbiter
-    5. Auto-escalates strategy on failure (direct→enriched→cascade)
+    5. Auto-escalates strategy on failure (direct->enriched->cascade)
     """
     import time as _t
     from .synthesis_config import _THINK_SYSTEM
@@ -290,7 +290,7 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
         result = _local_think(prompt, max_tokens=min(max_tokens, 4096), model=model,
                              system=_THINK_SYSTEM, priority=priority)
 
-    # Auto-escalate on failure: try reasoning tier (Gemini T1→T2→local) with enriched context → cascade
+    # Auto-escalate on failure: try reasoning tier (Gemini T1->T2->local) with enriched context -> cascade
     if not result and strategy != "cascade":
         enriched = _inject_context(prompt) if auto_context else prompt
         result = _reasoning_think(enriched, max_tokens=max_tokens,
@@ -334,7 +334,7 @@ def synthesize(prompt: str, max_tokens: int = 8192, priority: str = "interactive
 
     from .synthesis_session import append_session_narrative
     append_session_narrative(
-        "think", f"synthesize({strategy},c={complexity}): {prompt[:50]}→{len(result)}c"
+        "think", f"synthesize({strategy},c={complexity}): {prompt[:50]}->{len(result)}c"
     )
 
     return result

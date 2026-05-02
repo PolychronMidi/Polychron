@@ -1,4 +1,4 @@
-"""HME Evolver cognitive load modeling — Phase 5.4.
+"""HME Evolver cognitive load modeling -- Phase 5.4.
 
 The previous phases gave HME models of the system and of itself. This
 module gives HME a model of the *agent* running the loop. Reads the
@@ -131,7 +131,7 @@ def compute_load() -> dict:
     closed = [r for r in rounds if r and r[-1].get("event") == "round_complete"]
     sigs_history = [_round_signatures(r) for r in closed]
 
-    # Current (open) round signature — the one we're in right now
+    # Current (open) round signature -- the one we're in right now
     open_round = rounds[-1] if rounds and rounds[-1][-1].get("event") != "round_complete" else []
     current_sig = _round_signatures(open_round) if open_round else {
         "tool_calls": 0,
@@ -153,7 +153,7 @@ def compute_load() -> dict:
     # Need at least 5 closed rounds for a meaningful percentile
     if len(sigs_history) < 5:
         level = "INSUFFICIENT_DATA"
-        reason = f"need ≥5 closed rounds, have {len(sigs_history)}"
+        reason = f"need >=5 closed rounds, have {len(sigs_history)}"
         percent = None
     else:
         above_tool_p75 = current_sig["tool_calls"] > tool_call_stats["p75"]
@@ -163,7 +163,7 @@ def compute_load() -> dict:
             level = "HIGH"
             reason = (
                 f"tool_calls={current_sig['tool_calls']} exceeds p90={tool_call_stats['p90']} "
-                f"— session is in the top decile of historical workloads"
+                f"-- session is in the top decile of historical workloads"
             )
         elif above_tool_p75 and above_write_p75:
             level = "MEDIUM_HIGH"

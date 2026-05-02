@@ -1,8 +1,8 @@
 """Shared phrase vocabularies for the detector chain.
 
 Peer-review iter 135 found that ~9 detectors in the chain measure the
-same underlying signal — "agent verbal-stopped without doing the
-work" — using overlapping but subtly different phrase lists. Concrete
+same underlying signal -- "agent verbal-stopped without doing the
+work" -- using overlapping but subtly different phrase lists. Concrete
 examples surfaced:
 
   - psycho_stop.ADMIT_PHRASES (~20 phrases)
@@ -13,7 +13,7 @@ examples surfaced:
 The phrase lists shared ~40% of their vocabulary but had no shared
 source. Adding "noted" to one detector but not the other shifted
 detector behavior asymmetrically. This module is the consolidation
-point for phrases that belong to a SHARED signal — currently the
+point for phrases that belong to a SHARED signal -- currently the
 deferral / verbal-stop class. New detectors measuring this signal
 must import from here; existing detectors are migrated incrementally
 to avoid behavior regression.
@@ -21,12 +21,12 @@ to avoid behavior regression.
 The categories are designed to be SUBSETS, not overlapping:
 
   - DEFERRAL_FUTURE_TENSE: "will do X next session", "next turn",
-    "follow-up task" — schedules work for later.
+    "follow-up task" -- schedules work for later.
   - DEFERRAL_FLAG_FOR_LATER: "flagging for later", "deferred to",
-    "out of scope for this session" — explicit deferral.
+    "out of scope for this session" -- explicit deferral.
   - DEFERRAL_ACK_NO_FIX: "noted", "acknowledged", "I'll keep in mind"
-    without follow-through — verbal acknowledgment without action.
-  - SURVEY_PERMISSION_ASK: "want me to", "shall I", "should I X" —
+    without follow-through -- verbal acknowledgment without action.
+  - SURVEY_PERMISSION_ASK: "want me to", "shall I", "should I X" --
     soliciting permission instead of acting.
 
 Use as appropriate to the detector's scope. Importing the union as
@@ -138,7 +138,7 @@ ALL_DEFERRAL: tuple[str, ...] = (
 # task ("4 pre-existing undefined-var issues", "pre-existing FAIL on
 # index"), characterized them as out-of-scope, and stopped. Each enumerated
 # instance is real work the agent SAW and chose not to do; the rule is
-# "if you saw it, fix it" — escape phrases mark the intent to skip.
+# "if you saw it, fix it" -- escape phrases mark the intent to skip.
 #
 # Detection target: the phrases attached to a problem the agent just
 # named. Closing-text position counts as evidence the agent is summarizing

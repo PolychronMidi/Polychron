@@ -1,4 +1,4 @@
-"""HME analysis tools — split into focused modules.
+"""HME analysis tools -- split into focused modules.
 
 Import order matters: synthesis first (no tool dependencies), then modules that
 register @ctx.mcp.tool() decorators. All tools auto-register at import time.
@@ -10,7 +10,7 @@ from server import context as ctx
 
 logger = logging.getLogger("HME")
 
-# Shared helpers — re-exported so `from . import _track, _budget_gate` works
+# Shared helpers -- re-exported so `from . import _track, _budget_gate` works
 from ._helpers import (  # noqa: F401
     _track, _usage_stats, get_session_intent,
     BUDGET_TOOL, BUDGET_COMPOUND, BUDGET_SECTION, BUDGET_LOCAL_THINK,
@@ -33,7 +33,7 @@ def _alias_subpackage(subpkg_name, module_names):
     """Register sys.modules aliases so `from .module_name import X` works
     even though module_name.py moved into a subpackage directory.
 
-    HARD RULE: never alias `name == subpkg_name` — that would overwrite
+    HARD RULE: never alias `name == subpkg_name` -- that would overwrite
     the subpackage entry in sys.modules with a plain .py module (no
     __path__), which breaks importlib.reload() for every submodule whose
     parent resolves back through this key. The hub API for each subpackage
@@ -54,7 +54,7 @@ def _alias_subpackage(subpkg_name, module_names):
     if _pkg_entry is not None and not hasattr(_pkg_entry, "__path__"):
         raise RuntimeError(
             f"_alias_subpackage: sys.modules[{_PKG}.{subpkg_name!r}] lost "
-            f"__path__ — a .py module is clobbering the subpackage entry. "
+            f"__path__ -- a .py module is clobbering the subpackage entry. "
             f"This silently breaks importlib.reload() for every submodule. "
             f"Check the alias list for a self-name collision."
         )
@@ -63,7 +63,7 @@ def _alias_subpackage(subpkg_name, module_names):
 # Import order: subpackages first (subpackage __init__.py is the hub), then flat modules
 from . import tool_cache  # noqa: E402, F401
 
-# synthesis/ — the subpackage __init__ IS the hub (was synthesis.py; inlined to fix reload).
+# synthesis/ -- the subpackage __init__ IS the hub (was synthesis.py; inlined to fix reload).
 from . import synthesis  # noqa: E402, F401
 from .synthesis import synthesis_config  # noqa: E402, F401
 from .synthesis import synthesis_llamacpp  # noqa: E402, F401
@@ -89,7 +89,7 @@ _alias_subpackage("synthesis", [
     "synthesis_inference", "synthesis_cascade", "synthesis_provider_base",
 ])
 
-# coupling/ — subpackage __init__ IS the hub.
+# coupling/ -- subpackage __init__ IS the hub.
 from . import coupling  # noqa: E402, F401
 from .coupling import coupling_bridges  # noqa: E402, F401
 from .coupling import coupling_channels  # noqa: E402, F401
@@ -100,7 +100,7 @@ _alias_subpackage("coupling", [
     "coupling_clusters", "coupling_data",
 ])
 
-# evolution/ — subpackage __init__ IS the hub.
+# evolution/ -- subpackage __init__ IS the hub.
 from . import evolution  # noqa: E402, F401
 from .evolution import evolution_admin  # noqa: E402, F401
 from .evolution import evolution_evolve  # noqa: E402, F401
@@ -151,7 +151,7 @@ from .synthesis import (  # noqa: E402, F401
 # in-package callers; these public names exist so external subsystems can
 # import without tripping the audit's private-import check (which treats
 # any leading-underscore name as internal regardless of __init__ surface).
-# The aliases are the SAME function — both forms remain interchangeable.
+# The aliases are the SAME function -- both forms remain interchangeable.
 track = _track
 think_local_or_claude = _think_local_or_claude
 local_think = _local_think

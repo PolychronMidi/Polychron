@@ -1,4 +1,4 @@
-"""HME search tools — basic: grep, file_lines, count_lines."""
+"""HME search tools -- basic: grep, file_lines, count_lines."""
 import os
 import logging
 
@@ -12,7 +12,7 @@ logger = logging.getLogger("HME")
 
 
 def grep(pattern: str, path: str = "", file_type: str = "", context: int = 0, regex: bool = False, files_only: bool = False) -> str:
-    """Exact string or regex search across project files, enriched with KB cross-references. Use this instead of built-in Grep for all exact-match searches — it automatically surfaces relevant knowledge constraints alongside results. Set regex=True for extended regex (-E), context=N for surrounding lines (-C), files_only=True for file paths only (-l). Returns up to 30 matching lines plus any KB entries related to the search pattern. For semantic/intent-based searches, use search_code instead."""
+    """Exact string or regex search across project files, enriched with KB cross-references. Use this instead of built-in Grep for all exact-match searches -- it automatically surfaces relevant knowledge constraints alongside results. Set regex=True for extended regex (-E), context=N for surrounding lines (-C), files_only=True for file paths only (-l). Returns up to 30 matching lines plus any KB entries related to the search pattern. For semantic/intent-based searches, use search_code instead."""
     import subprocess
     ctx.ensure_ready_sync()
     if not pattern:
@@ -69,7 +69,7 @@ def grep(pattern: str, path: str = "", file_type: str = "", context: int = 0, re
 
 
 def file_lines(file_path: str, start: int = 1, end: int = 0) -> str:
-    """Read specific line ranges of a file with automatic KB context for the module. Use this instead of Bash cat/head/tail/sed — it surfaces any knowledge constraints associated with the file's module. Accepts relative paths (resolved against ctx.PROJECT_ROOT) or absolute paths. Specify start and end line numbers to read a range; omit end to read to EOF. Returns numbered lines plus any matching KB entries."""
+    """Read specific line ranges of a file with automatic KB context for the module. Use this instead of Bash cat/head/tail/sed -- it surfaces any knowledge constraints associated with the file's module. Accepts relative paths (resolved against ctx.PROJECT_ROOT) or absolute paths. Specify start and end line numbers to read a range; omit end to read to EOF. Returns numbered lines plus any matching KB entries."""
     ctx.ensure_ready_sync()
     abs_path = validate_project_path(file_path, ctx.PROJECT_ROOT)
     if abs_path is None:

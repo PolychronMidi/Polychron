@@ -1,4 +1,4 @@
-"""HME local agentic research — package split R104.
+"""HME local agentic research -- package split R104.
 
 Read-only agentic loop: llama.cpp reasons over RAG context and can issue
 grep/glob/read/kb commands, iterating until the answer is complete.
@@ -16,7 +16,7 @@ Advantages over Claude subagents:
   - No context window limit (can read as many files as needed)
   - Project-specific knowledge that Claude agents lack
 
-Safety: NO edit/write/bash — strictly read-only research.
+Safety: NO edit/write/bash -- strictly read-only research.
 """
 from __future__ import annotations
 

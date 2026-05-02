@@ -6,7 +6,7 @@ import logging.handlers
 class FlushFileHandler(logging.handlers.RotatingFileHandler):
     """RotatingFileHandler that also flushes after every record.
 
-    Rotates at 5MB, keeps 3 backups → max 20MB on disk.
+    Rotates at 5MB, keeps 3 backups -> max 20MB on disk.
     Flush-on-emit ensures logs reach disk even if process hangs.
     """
     def __init__(self, filename, **kwargs):

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Phase 6.4 — generalization extractor (R97 rewrite).
+"""Phase 6.4 -- generalization extractor (R97 rewrite).
 
 Scans the crystallized pattern registry and separates project-specific
 patterns (depend on Polychron's particular architecture) from structurally
 general ones (would apply to any similar topological system).
 
 Output:
-  output/metrics/hme-generalizations.json — machine-readable, per-pattern
+  output/metrics/hme-generalizations.json -- machine-readable, per-pattern
   scores + candidate list. Consumed by `synthesize-generalizations.py`,
   `render-generalizations.py` was retired in R97 along with the spam path
   that appended vague LLM waffle to `doc/hme-discoveries.md`.
@@ -50,7 +50,7 @@ SPECIFICITY_THRESHOLD = float(
 
 # Dynamic project vocabulary
 #
-# Instead of a hardcoded list (the R96 bug — missed everything not in a
+# Instead of a hardcoded list (the R96 bug -- missed everything not in a
 # fixed 40-token set), we build vocab at run time from the three places
 # Polychron-specific identifiers actually live.
 
@@ -58,9 +58,9 @@ _CAMEL_SPLITTER = re.compile(r'(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
 
 
 def _camel_split(token: str) -> list[str]:
-    """camelCase / PascalCase → lowercase parts. 'emergentMelodicEngine' →
+    """camelCase / PascalCase -> lowercase parts. 'emergentMelodicEngine' ->
     ['emergent', 'melodic', 'engine']. Existing all-lowercase tokens are
-    returned as-is (as a 1-element list). Keeps tokens of length ≥ 3 —
+    returned as-is (as a 1-element list). Keeps tokens of length >= 3 --
     shorter fragments are too generic to be diagnostic."""
     parts = _CAMEL_SPLITTER.split(token)
     out: list[str] = []
@@ -75,7 +75,7 @@ def _camel_split(token: str) -> list[str]:
 def _build_project_vocab() -> set[str]:
     vocab: set[str] = set()
 
-    # 1. Bias-bounds registrations — "module:field" pairs. Both halves
+    # 1. Bias-bounds registrations -- "module:field" pairs. Both halves
     # count (module names like "climaxProximityPredictor" AND field names
     # like "density" are both specific to Polychron's topology).
     bias_path = os.path.join(PROJECT_ROOT, "scripts", "pipeline", "bias-bounds-manifest.json")
@@ -89,7 +89,7 @@ def _build_project_vocab() -> set[str]:
     except (OSError, json.JSONDecodeError):
         pass  # env-ok: vocab source optional, missing just means narrower match
 
-    # 2. L0 channel names — canonical inter-module signal identifiers.
+    # 2. L0 channel names -- canonical inter-module signal identifiers.
     l0_path = os.path.join(PROJECT_ROOT, "src", "time", "l0Channels.js")
     try:
         with open(l0_path) as f:
@@ -119,7 +119,7 @@ def _build_project_vocab() -> set[str]:
 
     # 4. Hand-curated seeds for concepts that don't live in code but are
     # Polychron-native (regime names, verdict labels, etc.). Small
-    # anchor list — everything else comes from the dynamic sources.
+    # anchor list -- everything else comes from the dynamic sources.
     vocab.update({
         "polychron", "regime", "coherent", "evolving", "exploring", "initializing",
         "legendary", "stable", "evolved", "drifted", "baseline",

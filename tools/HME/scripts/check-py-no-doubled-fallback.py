@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Python equivalent of ESLint rule `no-doubled-fallback`.
 
-Detect `get(key, default) or something` patterns — either the `or` is dead
+Detect `get(key, default) or something` patterns -- either the `or` is dead
 code (the default is non-falsy) or, worse, it silently rewrites legitimate
 falsy values (empty list, 0, False, '') to the outer fallback. The JS rule
 was added after an incident where `safePreBoot.call(..., 0.5) || 0.5`
@@ -9,7 +9,7 @@ coerced every legit 0-tension reading to 0.5, skewing regime logic. Same
 class of bug in Python.
 
 Matches:
-    d.get(k, DEFAULT) or X          # default is already present — doubled
+    d.get(k, DEFAULT) or X          # default is already present -- doubled
     dict_expr.get(k, DEFAULT) or X
 
 Doesn't match (legitimate patterns):
@@ -28,14 +28,14 @@ import sys
 def _is_nontrivial_default(node: ast.AST) -> bool:
     """A 'nontrivial' default is anything that isn't None or a falsy literal
     that would flow through `or` identically. None or empty-collection as
-    default is fine — the outer `or` catches them intentionally."""
+    default is fine -- the outer `or` catches them intentionally."""
     if isinstance(node, ast.Constant):
-        # None, False, 0, '' → trivial — outer `or` is equivalent to `or`-on-None
+        # None, False, 0, '' -> trivial -- outer `or` is equivalent to `or`-on-None
         if node.value in (None, False, 0, ""):
             return False
         return True
     if isinstance(node, (ast.List, ast.Dict, ast.Set, ast.Tuple)):
-        # Empty collections are falsy → trivial
+        # Empty collections are falsy -> trivial
         elts = node.elts if hasattr(node, "elts") else node.keys
         return len(elts) > 0
     # Any expression (call, name, attr) is nontrivial
@@ -47,7 +47,7 @@ def _check_boolop(node: ast.BoolOp) -> list[tuple[int, str]]:
     hits = []
     if not isinstance(node.op, ast.Or):
         return hits
-    # Examine each value except the last — the last is the fallback, the
+    # Examine each value except the last -- the last is the fallback, the
     # preceding ones are the "primary" reads that might have inner defaults.
     for v in node.values[:-1]:
         if (isinstance(v, ast.Call)

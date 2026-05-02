@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Buddy hand-off paradigm — primary/senior lifecycle management.
+"""Buddy hand-off paradigm -- primary/senior lifecycle management.
 
 Replaces the multi-buddy floor-pinning model with a single dynamic
 primary that retires to a senior pool when its context approaches
-auto-compaction. Senior buddies are on standby — their accumulated
+auto-compaction. Senior buddies are on standby -- their accumulated
 context is preserved and only consulted manually for tough problems
-(via `i/consult sid=<sid>` — works for both the active primary and
+(via `i/consult sid=<sid>` -- works for both the active primary and
 retired seniors; role-named aliases `primary=`, `buddy=`, `senior=`
 are equivalent).
 
 Files (under PROJECT_ROOT/tmp/):
-  hme-buddy-primary.sid          — current primary buddy's session id
-  hme-buddy-primary.floor        — primary's model floor (default: easy)
-  hme-buddy-primary.effort_floor — primary's effort floor (default: low)
-  hme-buddy-seniors/<sid>.json   — one file per retired senior with metadata
-  hme-buddy-seniors/_index.jsonl — append-only retirement log
+  hme-buddy-primary.sid          -- current primary buddy's session id
+  hme-buddy-primary.floor        -- primary's model floor (default: easy)
+  hme-buddy-primary.effort_floor -- primary's effort floor (default: low)
+  hme-buddy-seniors/<sid>.json   -- one file per retired senior with metadata
+  hme-buddy-seniors/_index.jsonl -- append-only retirement log
 
 Lifecycle:
   - SessionStart: buddy_init.sh reads primary.sid and points the legacy
@@ -28,7 +28,7 @@ Lifecycle:
   - Consult: senior sessions are NOT auto-routed. They're invoked
     manually via `claude --resume <senior-sid> -p "<question>"` (the
     `consult` command here wraps that). Each consult call grows the
-    senior's transcript like normal — beware of pushing a senior past
+    senior's transcript like normal -- beware of pushing a senior past
     its retire threshold during heavy consultation.
 
 Usage:
@@ -66,12 +66,12 @@ _FINDING_MARKERS = (
 
 
 # KB-crystallization directive prefixed to every consult question. Per
-# 0e7fbf4d's HME integration analysis — this is the "heavy" version
+# 0e7fbf4d's HME integration analysis -- this is the "heavy" version
 # that converts the senior into an active KB contributor rather than
 # just emitting findings into a fragile transcript. Each extracted
 # block calls `i/learn add` automatically post-consult.
 _KB_DIRECTIVE = (
-    "[FRAMEWORK DIRECTIVE — KB CRYSTALLIZATION]\n"
+    "[FRAMEWORK DIRECTIVE -- KB CRYSTALLIZATION]\n"
     "If your response contains findings worth preserving in HME's "
     "durable KB (calibration anchors, design decisions, gotchas, "
     "architectural patterns), append one or more crystallization "
@@ -84,7 +84,7 @@ _KB_DIRECTIVE = (
     "  [[/KB-CRYSTALLIZE]]\n"
     "The parent agent auto-extracts these blocks and calls "
     "`i/learn add` for each. Skip blocks if no crystallization-worthy "
-    "finding exists — don't manufacture them. The transcript dies on "
+    "finding exists -- don't manufacture them. The transcript dies on "
     "compaction; the KB doesn't.\n"
     "[/FRAMEWORK DIRECTIVE]\n\n"
 )
@@ -133,7 +133,7 @@ def _extract_and_crystallize(response: str) -> int:
     # the canonical i/ wrapper location.
     learn_script = (PROJECT_ROOT / "i" / "learn").resolve()
     if not learn_script.exists():
-        # Couldn't find the wrapper — fall back to the underlying CLI.
+        # Couldn't find the wrapper -- fall back to the underlying CLI.
         learn_script = None
     crystallized = 0
     import subprocess as _sp
@@ -172,7 +172,7 @@ def _extract_and_crystallize(response: str) -> int:
 def _findings_nudge(response: str) -> None:
     """Scan a consult response for finding-shaped markers and emit a
     stderr nudge if any are present. Light version of the KB
-    crystallization integration — operator-driven, not auto-write.
+    crystallization integration -- operator-driven, not auto-write.
     Silent when no markers found (no noise on routine consults)."""
     if not response:
         return
@@ -183,7 +183,7 @@ def _findings_nudge(response: str) -> None:
         return
     print(f"# consult produced {len(matches)} finding-shaped marker(s) "
           f"({', '.join(sorted(set(m.strip(':').lower() for m in matches)))})"
-          f" — consider `i/learn add title=… content=…` to crystallize "
+          f" -- consider `i/learn add title=... content=...` to crystallize "
           f"into KB before transcript compaction.",
           file=sys.stderr)
 
@@ -197,7 +197,7 @@ def _record_consult(sid: str, question: str) -> None:
     who initiated) so cross-session forensics can answer 'who's been
     hammering this senior'. Falls back to None when no primary is
     recorded (e.g. test sandbox or pre-paradigm session)."""
-    # Q8a: search active pool first, fall back to archive — archived
+    # Q8a: search active pool first, fall back to archive -- archived
     # seniors stay callable, and consult history should accrue to
     # whichever file represents them. If neither exists, no-op (consult
     # to active primary or unknown sid).
@@ -219,7 +219,7 @@ def _record_consult(sid: str, question: str) -> None:
         # PRIMARY_SID is missing. Surfacing the gap beats silently
         # absorbing it.
         print(f"# debug: caller_sid resolved to None (no active primary "
-              f"recorded at consult time) — record will lack caller info",
+              f"recorded at consult time) -- record will lack caller info",
               file=sys.stderr)
     try:
         rec = json.loads(senior_file.read_text())

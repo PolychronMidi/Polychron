@@ -1,10 +1,10 @@
-"""OpenRouter synthesis tier — free :free-suffix models via OpenAI-compatible endpoint.
+"""OpenRouter synthesis tier -- free :free-suffix models via OpenAI-compatible endpoint.
 
 OpenRouter aggregates providers; ":free" models are rate-limited by RPD
 (200 requests/day shared across all tiers), not by tokens.
 
-    T1: deepseek/deepseek-r1:free           — DeepSeek R1 (free)
-    T2: meta-llama/llama-3.3-70b-instruct:free — Meta 70B (free)
+    T1: deepseek/deepseek-r1:free           -- DeepSeek R1 (free)
+    T2: meta-llama/llama-3.3-70b-instruct:free -- Meta 70B (free)
 
 Config: OPENROUTER_API_KEY, OPENROUTER_RPD_LIMIT
 """

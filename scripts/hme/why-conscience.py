@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why mode=conscience — Horizon VIII seed (architectural conscience).
+"""i/why mode=conscience -- Horizon VIII seed (architectural conscience).
 
 The user's verdicts ("legendary", "compelling", "surprising", "moving",
 "flat", "mechanical", ...) live in output/metrics/hme-ground-truth.jsonl.
@@ -8,7 +8,7 @@ This seed turns those verdicts into queryable patterns:
   - Which verifier statuses were prevalent at the moment of approval?
   - What characterized the approved-move signature?
 
-The first version is descriptive — it surfaces the historical signature
+The first version is descriptive -- it surfaces the historical signature
 of approved/rejected moves. The full vision (Horizon VIII) layers in:
 move-similarity scoring of new edits against the ledger, soft warnings
 when a new edit shape resembles a rejected pattern.
@@ -134,12 +134,12 @@ def main(argv):
         print(f"  ({matched_verdicts}/{len(pos_verdicts)} positive verdicts had "
               f"activity-log overlap)")
         print(f"  No file_written events found in 1h windows before any positive")
-        print(f"  verdict — likely the activity log doesn't go back to when the")
+        print(f"  verdict -- likely the activity log doesn't go back to when the")
         print(f"  verdicts were recorded. Verdicts are ~7-10 days old; the log's")
         print(f"  retention may be shorter.")
         print()
 
-    # If we have negative verdicts too, contrast — which dirs appear in
+    # If we have negative verdicts too, contrast -- which dirs appear in
     # negatives that are absent or rare in positives.
     if neg_verdicts:
         neg_dirs: Counter = Counter()
@@ -206,19 +206,19 @@ def main(argv):
             # Threshold-warning (Horizon VIII asymptote): when similarity
             # is high but unique-to-recent dirs dominate, warn about
             # divergence from approved-move signature. When low, warn
-            # outright. The thresholds are deliberately conservative —
+            # outright. The thresholds are deliberately conservative --
             # this is a soft signal, not a gate.
             if similarity < 0.30:
                 marker = "!"
-                warn = "  ⚠ low similarity — recent edits diverge from approved-move signature"
+                warn = "  [!] low similarity -- recent edits diverge from approved-move signature"
             elif similarity < 0.60:
-                marker = "·"
-                warn = "  · partial similarity — review unique-to-recent dirs below"
+                marker = "."
+                warn = "  . partial similarity -- review unique-to-recent dirs below"
             else:
                 marker = " "
                 warn = ""
             print()
-            print(f"## Move similarity — recent edits vs approved-move signature")
+            print(f"## Move similarity -- recent edits vs approved-move signature")
             print(f" {marker} similarity score: {similarity:.2f}  (1.0 = identical signature, 0.0 = orthogonal)")
             if warn:
                 print(warn)

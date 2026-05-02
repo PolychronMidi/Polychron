@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Verify HME coherence-registry — validate the 'no layer is optional' promise.
+"""Verify HME coherence-registry -- validate the 'no layer is optional' promise.
 
 Reads tools/HME/config/coherence-registry.json and checks each subsystem's
 declared artifacts exist (and are fresh where freshness is specified).
 Reports per-subsystem health. Writes output/metrics/hme-coherence-health.json
 so consumers (status tool, session banner) can surface coherence gaps.
 
-This is distinct from verify-coherence.py (the HCI verifier substrate) —
+This is distinct from verify-coherence.py (the HCI verifier substrate) --
 THAT computes the Coherence Index from runtime signals. THIS confirms each
 declared subsystem has backing artifacts, turning the registry into a
 testable contract.
@@ -91,7 +91,7 @@ def main() -> int:
     print(f"HME coherence-registry: {health['healthy_count']}/{health['total']} subsystems healthy")
     for r in results:
         marker = "OK " if r["healthy"] else "!! "
-        issues = f" — {'; '.join(r['issues'][:3])}" if r["issues"] else ""
+        issues = f" -- {'; '.join(r['issues'][:3])}" if r["issues"] else ""
         print(f"  {marker}{r['id']}{issues}")
     return 0 if all_healthy else 1
 

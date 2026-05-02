@@ -1,4 +1,4 @@
-"""Atomic state-writes verifier — extracted from code_audits_state.py.
+"""Atomic state-writes verifier -- extracted from code_audits_state.py.
 code_audits.py re-exports.
 """
 from __future__ import annotations

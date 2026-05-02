@@ -3,18 +3,18 @@
 
 Reads every metrics/hme-*.json and metrics/holograph/*.json and produces a
 single interactive HTML file with multi-panel plotly.js charts. Multi-layered,
-sortable, overlayable — opens in any browser without dependencies.
+sortable, overlayable -- opens in any browser without dependencies.
 
 Data sources:
-  - metrics/holograph/*.json      → HCI over time, per-category scores
-  - metrics/hme-tool-effectiveness.json → session / lifesaver / tool invocation stats
-  - log/hme-hook-latency.jsonl → per-hook wall time distribution
-  - metrics/hme-trajectory.json   → trend analysis
-  - metrics/hme-coupling.json     → tool pair effectiveness matrix
-  - metrics/hme-coherence.jsonl   → coherence history from old rag_proxy monitor (may be stale after shim deprecation)
-  - metrics/hme-hci-forecast.json → predicted HCI
-  - metrics/hme-memetic-drift.json → rule violation counts
-  - metrics/hme-verifier-coverage.json → fix commit coverage gaps
+  - metrics/holograph/*.json      -> HCI over time, per-category scores
+  - metrics/hme-tool-effectiveness.json -> session / lifesaver / tool invocation stats
+  - log/hme-hook-latency.jsonl -> per-hook wall time distribution
+  - metrics/hme-trajectory.json   -> trend analysis
+  - metrics/hme-coupling.json     -> tool pair effectiveness matrix
+  - metrics/hme-coherence.jsonl   -> coherence history from old rag_proxy monitor (may be stale after shim deprecation)
+  - metrics/hme-hci-forecast.json -> predicted HCI
+  - metrics/hme-memetic-drift.json -> rule violation counts
+  - metrics/hme-verifier-coverage.json -> fix commit coverage gaps
 
 Output: metrics/hme-dashboard.html
 
@@ -162,7 +162,7 @@ def _collect_data() -> dict:
     }
 
 
-# HTML template with plotly.js via CDN — extracted to build_dashboard_template.html
+# HTML template with plotly.js via CDN -- extracted to build_dashboard_template.html
 _TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_dashboard_template.html")
 
 

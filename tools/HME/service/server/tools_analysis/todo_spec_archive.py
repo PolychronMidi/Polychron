@@ -1,8 +1,8 @@
-"""SPEC.md / TODO.md / devlog lifecycle bridge — connects ephemeral todo state
+"""SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
 to durable handoff documentation. Surface (via i/todo dispatcher actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
-Extracted from todo.py (was lines 851-1508). Zero external Python callers — all
+Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
 entry is via the i/todo command surface. todo.py re-exports the public symbols.
 See doc/SPEC.md Phase 0 for the workflow this bridge implements.
 """
@@ -33,13 +33,13 @@ from server.tools_analysis.todo import (
 )
 
 
-# SPEC/TODO bridge — connects ephemeral i/todo state to durable
+# SPEC/TODO bridge -- connects ephemeral i/todo state to durable
 # doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
 
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
 _TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "TODO.md")
-# Archive lives under KB as the "devlog" arm — searchable through the
+# Archive lives under KB as the "devlog" arm -- searchable through the
 # same substrate as other knowledge entries, decoupled from the active
 # doc/ directory so completed work doesn't tax agents reading the spec.
 # Each archive event writes ONE timestamped file containing the
@@ -61,7 +61,7 @@ _SPEC_OPEN_RE = re.compile(
 from .todo_spec_ingest import _normalize_for_match  # noqa: E402
 
 
-# Archive + devlog + reset — sub-cluster B.
+# Archive + devlog + reset -- sub-cluster B.
 
 _JUST_SHIPPED_LIMIT = int(os.environ.get("HME_JUST_SHIPPED_LIMIT", "10"))
 
@@ -108,7 +108,7 @@ def _detect_complete_set() -> dict:
     Returns {complete: bool, phases: [(n, header, start, end)], missing: [reason...]}.
 
     A "set" = all phases currently in SPEC.md. The archive trigger fires
-    only when the entire set is complete — that's the "fresh slate"
+    only when the entire set is complete -- that's the "fresh slate"
     moment the user asked for. Half-completed sets stay in place."""
     out = {"complete": False, "phases": [], "missing": []}
     if not os.path.exists(_SPEC_FILE):
@@ -151,7 +151,7 @@ def _archive_set(set_name: str = "") -> dict:
     Layout: tools/HME/KB/devlog/<YYYY-MM-DDTHHMMSSZ>-<slug>.md
     Contents: all phase blocks verbatim + the SPEC's preamble (Goal /
     Architecture / Phases header) + any closing sections (Glossary,
-    Three-loop NEVER lists, etc.) — the FULL spec snapshot at archive
+    Three-loop NEVER lists, etc.) -- the FULL spec snapshot at archive
     time. Future agents can grep the devlog for "how did we land
     Phase X" without paying the active-spec context tax.
 
@@ -189,7 +189,7 @@ def _archive_set(set_name: str = "") -> dict:
     todo_md = open(_TODOMD_FILE, encoding="utf-8").read() if os.path.exists(_TODOMD_FILE) else ""
     phase_count = len(detection["phases"])
     devlog_content = [
-        f"# Devlog — {set_name}",
+        f"# Devlog -- {set_name}",
         "",
         f"_Archived: {ts}_",
         f"_Phases: {phase_count} ({', '.join(str(p['n']) for p in detection['phases'])})_",
@@ -205,11 +205,11 @@ def _archive_set(set_name: str = "") -> dict:
     ]
     with open(devlog_path, "w", encoding="utf-8") as f:
         f.write("\n".join(devlog_content) + "\n")
-    # Reset active SPEC.md to a fresh-slate template — preserves the
+    # Reset active SPEC.md to a fresh-slate template -- preserves the
     # preamble (Goal / Architecture) and trailing sections (Glossary,
     # Three-loop NEVER lists, How this file evolves, Difficulty labels,
     # Empty-queue bail) since those are stable across sets. Drops only
-    # the Phase blocks — those moved to the devlog.
+    # the Phase blocks -- those moved to the devlog.
     _reset_spec_to_fresh_slate(set_name, ts, devlog_path)
     _reset_todo_to_fresh_slate()
     return {
@@ -232,7 +232,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
 
     Why reset the preamble too: the previous set's Goal / Architecture
     sections are set-specific narrative ("Evolve buddy_system into
-    co-buddies", etc.) — preserving them frames the NEXT set as if
+    co-buddies", etc.) -- preserving them frames the NEXT set as if
     it's a continuation of the PREVIOUS one, which it usually isn't.
     Each set should declare its own Goal at the start; the placeholder
     text invites that.
@@ -244,11 +244,11 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
     lines = spec_md.split("\n")
     # Find boundary lines: end of preamble (just before "## Phases" or
     # the first "### Phase N:"), start of post-phases trailing block
-    # (the first "## " after the last "### Phase N:" — i.e., a top-level
+    # (the first "## " after the last "### Phase N:" -- i.e., a top-level
     # section after the Phases section).
     blocks = _phase_blocks(spec_md)
     if not blocks:
-        # No phases yet — only reset the title + preamble, leave rest.
+        # No phases yet -- only reset the title + preamble, leave rest.
         # Caller already verified set is complete; without phases this
         # is a degenerate case (nothing to archive). No-op.
         return
@@ -264,7 +264,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
         if lines[i].strip() == "## Phases":
             phases_header_idx = i
             break
-    # Generic preamble template — initiative-agnostic.
+    # Generic preamble template -- initiative-agnostic.
     rel_devlog = os.path.relpath(devlog_path, ENV.require('PROJECT_ROOT'))
     fresh_preamble = [
         "# Polychron Active SPEC",
@@ -273,13 +273,13 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
         ">",
         "> Background context that's stable across initiatives (project goals, architecture, system invariants) lives in [doc/HME.md](HME.md), [doc/ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md), and [CLAUDE.md](../CLAUDE.md). This SPEC is for time-bounded WORK, not durable knowledge.",
         ">",
-        "> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/) — each `i/todo clear` (when all phases are checked + sentinel-marked) timestamps the SPEC+TODO state into a single devlog file and resets the active doc to a fresh-slate template.",
+        "> Completed sets live as searchable snapshots under [tools/HME/KB/devlog/](../tools/HME/KB/devlog/) -- each `i/todo clear` (when all phases are checked + sentinel-marked) timestamps the SPEC+TODO state into a single devlog file and resets the active doc to a fresh-slate template.",
         "",
         f"_Previous set ({prev_set_name}) archived {prev_ts} to {rel_devlog}._",
         "",
         "## Goal",
         "",
-        "<One paragraph naming the current initiative — what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>",
+        "<One paragraph naming the current initiative -- what's being built or fixed, for whom, and why this set is grouped together. Should change at every set boundary.>",
         "",
         "## Architecture / stack (one-liner each, current-initiative-relevant)",
         "",
@@ -291,7 +291,7 @@ def _reset_spec_to_fresh_slate(prev_set_name: str, prev_ts: str, devlog_path: st
         "",
         "## Phases",
         "",
-        "### Phase 0: <next initiative — name>",
+        "### Phase 0: <next initiative -- name>",
         "",
         "<1-paragraph context for the new initiative.>",
         "",
@@ -326,7 +326,7 @@ def _reset_todo_to_fresh_slate() -> None:
         "## Next up (queued for next cycle)\n\n"
         "<!-- One line per queued item:\n"
         "  - [<difficulty>] <description>. Reason: <source> -->\n\n"
-        "(empty — populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)\n\n"
+        "(empty -- populate from the new set's SPEC Phase 0 via `i/todo ingest_from_spec`)\n\n"
         "---\n\n"
         "When this Next up is empty AND every `- [ ]` in [doc/SPEC.md](SPEC.md) has been "
         "flipped to `[x]`, the dev cycle exits with `[no-work] <reason>`. See SPEC.md "
@@ -367,7 +367,7 @@ def _archive_just_shipped_overflow(trimmed_entries: list[str]) -> str:
 def _trim_just_shipped(md: str) -> tuple[str, int]:
     """Trim the Just shipped section to most recent N entries (per
     skill-set's rolling-window pattern). Older entries live in SPEC.md
-    phase blocks + git log — the user said the file should not bloat
+    phase blocks + git log -- the user said the file should not bloat
     over time. Mutates the section in-place; non-list lines (HTML
     comments, blank lines) are preserved. Returns (new_md, trimmed_count)."""
     marker = "## Just shipped (last cycle)"
@@ -392,7 +392,7 @@ def _trim_just_shipped(md: str) -> tuple[str, int]:
                 in_section = False
                 out.append(line)
                 continue
-            # Track comment blocks — never trim inside them.
+            # Track comment blocks -- never trim inside them.
             if "<!--" in line and "-->" not in line:
                 in_comment = True
                 out.append(line)

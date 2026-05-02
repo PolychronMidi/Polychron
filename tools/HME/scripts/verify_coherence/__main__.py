@@ -1,13 +1,13 @@
-"""Entry point — `python3 -m verify_coherence [--json|--score|--threshold=N]`.
+"""Entry point -- `python3 -m verify_coherence [--json|--score|--threshold=N]`.
 
 Runs REGISTRY end-to-end, aggregates weighted scores per category and
 overall, persists a per-verifier snapshot (hci-verifier-snapshot.json)
 for diff-across-runs, and prints in text / JSON / score-only modes.
 
 Exit codes:
-  0 — HCI >= threshold (default 80)
-  1 — HCI < threshold
-  2 — engine error (internal failure, not a coherence failure)
+  0 -- HCI >= threshold (default 80)
+  1 -- HCI < threshold
+  2 -- engine error (internal failure, not a coherence failure)
 """
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def run_engine() -> dict:
 def format_text(report: dict) -> str:
     lines = []
     hci = report["hci"]
-    bar = "█" * int(hci / 5) + "░" * (20 - int(hci / 5))
+    bar = "#" * int(hci / 5) + "." * (20 - int(hci / 5))
     lines.append("# HME Coherence Index")
     lines.append("")
     lines.append(f"  HCI: {hci:5.1f} / 100  [{bar}]")

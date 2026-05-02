@@ -1,4 +1,4 @@
-"""Conjugate-channel coherence verifier — extracted from code_audits_runtime.py.
+"""Conjugate-channel coherence verifier -- extracted from code_audits_runtime.py.
 Includes _count_legendary_streak helper. code_audits.py re-exports.
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ def _count_legendary_streak(project_root: str) -> int:
     """Count consecutive 'legendary' ground-truth verdicts ending at the
     most recent verdict. Used by ConjugateChannelVerifier's license-to-
     explore branch to scale band-widening proportionally to recent
-    productive-territory evidence (V × VIII × IX compounding)."""
+    productive-territory evidence (V * VIII * IX compounding)."""
     gt_path = os.path.join(project_root, "output", "metrics",
                            "hme-ground-truth.jsonl")
     if not os.path.isfile(gt_path):
@@ -41,7 +41,7 @@ def _count_legendary_streak(project_root: str) -> int:
 
 
 class ConjugateChannelVerifier(Verifier):
-    """Horizon V expansion — composition⇔HME conjugate-channel feedback.
+    """Horizon V expansion -- composition<=>HME conjugate-channel feedback.
 
     Couples HCI to perceptual coherence by reading the latest
     musical-correlation row and FAILing when the system is in the
@@ -50,7 +50,7 @@ class ConjugateChannelVerifier(Verifier):
     fields exist in `output/metrics/hme-musical-correlation.json`.
 
     This is the FIRST verifier whose status depends on the composition
-    signal — the conjugate channel previously was a passive view
+    signal -- the conjugate channel previously was a passive view
     (`i/status mode=conjugate`) but didn't feed back into HCI. With
     this verifier the two coherences become a coupled system: a
     sustained 'lost' state degrades HCI, which signals the agent to
@@ -82,7 +82,7 @@ class ConjugateChannelVerifier(Verifier):
             return _result(SKIP, 1.0, "no rounds carry both signals")
         if not isinstance(latest.get("hme_coherence"), (int, float)) or \
            not isinstance(latest.get("perceptual_complexity_avg"), (int, float)):
-            # SKIP path — but DON'T let the streak-aware license signal go
+            # SKIP path -- but DON'T let the streak-aware license signal go
             # stale just because the quantitative signals are pending.
             # If a ground-truth legendary streak exists, keep the band-
             # widening proposal fresh based on streak alone (composition-
@@ -104,7 +104,7 @@ class ConjugateChannelVerifier(Verifier):
                         "expires_after_rounds": _expiry,
                         "streak": {
                             "legendary_consecutive": _streak,
-                            "policy": "magnitude +0.025/streak (cap +0.10) · duration +1/streak (cap 4)",
+                            "policy": "magnitude +0.025/streak (cap +0.10) . duration +1/streak (cap 4)",
                         },
                     }
                     _refresh_tmp = _refresh_path + ".tmp"
@@ -116,7 +116,7 @@ class ConjugateChannelVerifier(Verifier):
                 # regardless.
                 pass
             return _result(SKIP, 1.0, "latest round missing one of the two signals")
-        # Data-driven thresholds — medians across history
+        # Data-driven thresholds -- medians across history
         sorted_h = sorted(r["hme_coherence"] for r in all_rounds)
         sorted_p = sorted(r["perceptual_complexity_avg"] for r in all_rounds)
         h_thr = sorted_h[len(sorted_h) // 2]
@@ -127,9 +127,9 @@ class ConjugateChannelVerifier(Verifier):
             # Bidirectional V-coupling (Horizon V asymptote): on lost-
             # quadrant FAIL, write a band-tightening proposal so the
             # NEXT round's coherence-budget consumer can opt to narrow
-            # the chaordic edge. Composition→HCI was the seed; this
-            # closes the HCI→composition direction. The marker file is
-            # advisory — composition behavior remains driven by the
+            # the chaordic edge. Composition->HCI was the seed; this
+            # closes the HCI->composition direction. The marker file is
+            # advisory -- composition behavior remains driven by the
             # configured band until a consumer explicitly reads this.
             try:
                 tightening = {
@@ -153,7 +153,7 @@ class ConjugateChannelVerifier(Verifier):
                            f"latest round in 'lost' quadrant "
                            f"(HCI={cur_h:.2f} < {h_thr:.2f} AND "
                            f"perc={cur_p:.2f} < {p_thr:.2f})",
-                           ["wrote tmp/hme-band-tightening.json (V→IX bidirectional coupling)",
+                           ["wrote tmp/hme-band-tightening.json (V->IX bidirectional coupling)",
                             "consider: i/status mode=conjugate for full quadrant view",
                             "consider: i/why mode=hci-drop to identify regressed axes",
                             "consider: i/why mode=conscience for ground-truth context"])
@@ -194,10 +194,10 @@ class ConjugateChannelVerifier(Verifier):
                 _above = sum(1 for vals in _by_subtag.values()
                              if vals and (sum(vals) / len(vals)) > _HI)
                 _total = sum(1 for vals in _by_subtag.values() if vals)
-                # ≥ 5 of 7 axes saturated → license-to-explore signal.
+                # >= 5 of 7 axes saturated -> license-to-explore signal.
                 # Persist a loosening proposal mirroring the tightening
                 # one. Composition consumer applies opposite-sign delta.
-                # Streak-aware sizing (V × VIII × IX compounding): consecutive
+                # Streak-aware sizing (V * VIII * IX compounding): consecutive
                 # legendary ground-truth verdicts indicate the wider band
                 # is producing real composition wins, so the license should
                 # extend in both magnitude and duration. Without this, every
@@ -214,13 +214,13 @@ class ConjugateChannelVerifier(Verifier):
                         "ts": time.time(),
                         "trigger": "conjugate-channel-license-to-explore",
                         "reason": (f"{_above} of {_total} subtags ABOVE band "
-                                   f"(saturated → license to explore)"),
+                                   f"(saturated -> license to explore)"),
                         "recommended_action": "widen_band",
                         "band_delta": streak_delta,
                         "expires_after_rounds": streak_expiry,
                         "streak": {
                             "legendary_consecutive": legendary_streak,
-                            "policy": "magnitude +0.025/streak (cap +0.10) · duration +1/streak (cap 4)",
+                            "policy": "magnitude +0.025/streak (cap +0.10) . duration +1/streak (cap 4)",
                         },
                     }
                     loosen_tmp = loosen_path + ".tmp"

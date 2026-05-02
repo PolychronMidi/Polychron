@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""i/why <invariant-id> — explain an invariant's state.
+"""i/why <invariant-id> -- explain an invariant's state.
 
 Reads: hme-invariant-history.json (current state, streak), hme-invariant-efficacy.json
 (class + citation count + role), and git log for recent commit references.
@@ -14,7 +14,7 @@ from _common import PROJECT_ROOT, METRICS_DIR, load_json as _load
 def main(argv):
     if len(argv) < 2:
         # Surface available invariant IDs instead of just printing usage
-        # — the user has no way to discover valid IDs otherwise.
+        # -- the user has no way to discover valid IDs otherwise.
         eff = _load("output/metrics/hme-invariant-efficacy.json") or {}
         ids = sorted((eff.get("per_invariant") or {}).keys())
         print("Usage: i/why <invariant-id>", file=sys.stderr)
@@ -25,7 +25,7 @@ def main(argv):
             if len(ids) > 30:
                 print(f"  ... +{len(ids) - 30} more", file=sys.stderr)
         else:
-            print("  (no efficacy report found at output/metrics/hme-invariant-efficacy.json — run pipeline first)",
+            print("  (no efficacy report found at output/metrics/hme-invariant-efficacy.json -- run pipeline first)",
                   file=sys.stderr)
         return 2
     inv_id = argv[1]
@@ -61,11 +61,11 @@ def main(argv):
 
     # Class-to-meaning map for readers unfamiliar with Arc IV taxonomy.
     _CLASS_GLOSS = {
-        "load-bearing": "actively cited in fix commits — removing this would hide real regressions",
+        "load-bearing": "actively cited in fix commits -- removing this would hide real regressions",
         "load-bearing-historical": "cited in fix commits within the last 90 days but quiet recently",
         "structural": "never-failing sanity check; hard to regress against",
-        "decorative": "never-failing; no fix-commit citations ever — ornamental",
-        "flappy": "fires repeatedly without being cited in fix commits — candidate for retirement",
+        "decorative": "never-failing; no fix-commit citations ever -- ornamental",
+        "flappy": "fires repeatedly without being cited in fix commits -- candidate for retirement",
     }
     klass_gloss = _CLASS_GLOSS.get(klass, "")
 

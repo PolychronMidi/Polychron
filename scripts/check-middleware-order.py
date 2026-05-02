@@ -4,7 +4,7 @@ index.js) MUST be listed in order.json, and every entry in order.json
 MUST correspond to an existing file.
 
 Without this, new middleware gets silently appended in alphabetical
-fallback position — which may break a dependency chain (lifesaver_inject
+fallback position -- which may break a dependency chain (lifesaver_inject
 must run before proxy_autocommit). The dogfooding probe inside selftest
 warns; this lint rule hard-fails so a commit introducing drift is caught.
 
@@ -25,7 +25,7 @@ _ORDER_PATH = os.path.join(_MW_DIR, "order.json")
 def main() -> int:
     if not os.path.isdir(_MW_DIR):
         print(f"check-middleware-order: middleware dir not found: {_MW_DIR}")
-        return 0  # not fatal — repo may be stripped
+        return 0  # not fatal -- repo may be stripped
     if not os.path.isfile(_ORDER_PATH):
         print(f"FAIL: middleware/order.json missing. Create it to declare explicit load order.")
         return 1
@@ -49,7 +49,7 @@ def main() -> int:
     if unlisted:
         issues.append(
             f"{len(unlisted)} file(s) present but not in order.json: {unlisted} "
-            f"— they load alphabetically AFTER the manifest, potentially breaking dependencies"
+            f"-- they load alphabetically AFTER the manifest, potentially breaking dependencies"
         )
     if stale:
         issues.append(
@@ -63,7 +63,7 @@ def main() -> int:
         print(f"Fix: edit {os.path.relpath(_ORDER_PATH, _PROJECT_ROOT)} to add unlisted "
               f"files at the right position, or remove stale entries.")
         return 1
-    print(f"check-middleware-order: CLEAN — {len(manifest)}/{len(present)} files declared in order.json")
+    print(f"check-middleware-order: CLEAN -- {len(manifest)}/{len(present)} files declared in order.json")
     return 0
 
 

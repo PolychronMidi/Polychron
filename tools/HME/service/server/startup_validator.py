@@ -1,4 +1,4 @@
-"""HME startup self-test — fail-fast validation after engines are initialized.
+"""HME startup self-test -- fail-fast validation after engines are initialized.
 
 Runs once after _background_load() completes. Any failure here aborts startup by
 raising into _startup_error, ensuring tools crash loudly rather than silently
@@ -29,21 +29,21 @@ def validate_startup(context, project_root: str) -> None:
     _check_project_root(project_root)
     _check_required_metrics_dirs(project_root)
     _check_registry_api_surface()  # catches stale FastMCP refs at boot, not call time
-    _check_llamacpp_connectivity()  # warning only — llama.cpp may start later
+    _check_llamacpp_connectivity()  # warning only -- llama.cpp may start later
     logger.info("HME startup validation PASSED")
 
 
 def _check_engines(context) -> None:
     """All three required engines must be initialized and functional."""
     if context.project_engine is None:
-        raise RuntimeError("project_engine is None — RAGEngine failed to initialize")
+        raise RuntimeError("project_engine is None -- RAGEngine failed to initialize")
     if context.global_engine is None:
-        raise RuntimeError("global_engine is None — RAGEngine failed to initialize")
+        raise RuntimeError("global_engine is None -- RAGEngine failed to initialize")
     if context.shared_model is None:
-        raise RuntimeError("shared_model is None — SentenceTransformer failed to load")
+        raise RuntimeError("shared_model is None -- SentenceTransformer failed to load")
 
     # Smoke-test: ensure the embedding model actually works. With the shim
-    # gone, engines are always in-process — no proxy-mode branch to skip.
+    # gone, engines are always in-process -- no proxy-mode branch to skip.
     try:
         result = context.shared_model.encode(["test"], show_progress_bar=False)
         if result is None or len(result) == 0:
@@ -55,11 +55,11 @@ def _check_engines(context) -> None:
 
 
 def _check_kb_accessible(context) -> None:
-    """KB must be queryable — catches DB corruption or engine initialization failure."""
+    """KB must be queryable -- catches DB corruption or engine initialization failure."""
     try:
-        # list_knowledge is lightweight — just reads index, no embedding needed
+        # list_knowledge is lightweight -- just reads index, no embedding needed
         result = context.project_engine.list_knowledge()
-        # result can be empty list (new project) — that's fine
+        # result can be empty list (new project) -- that's fine
         if not isinstance(result, list):
             raise RuntimeError(f"project_engine.list_knowledge() returned {type(result).__name__}, expected list")
     except RuntimeError:
@@ -71,10 +71,10 @@ def _check_kb_accessible(context) -> None:
 def _check_project_root(project_root: str) -> None:
     """PROJECT_ROOT must exist and contain expected Polychron directories."""
     if not project_root:
-        raise RuntimeError("PROJECT_ROOT is empty — set PROJECT_ROOT env var")
+        raise RuntimeError("PROJECT_ROOT is empty -- set PROJECT_ROOT env var")
     if not os.path.isdir(project_root):
         raise RuntimeError(f"PROJECT_ROOT does not exist: {project_root}")
-    # Must have src/ (core codebase) — indicates this is actually a Polychron project
+    # Must have src/ (core codebase) -- indicates this is actually a Polychron project
     src_dir = os.path.join(project_root, "src")
     if not os.path.isdir(src_dir):
         raise RuntimeError(
@@ -144,7 +144,7 @@ def _check_registry_api_surface() -> None:
             if target in _legit_attrs:
                 continue
             rel = os.path.relpath(py, mcp_dir)
-            offenders.append(f"{rel}:{node.lineno} → ctx.mcp.{target}")
+            offenders.append(f"{rel}:{node.lineno} -> ctx.mcp.{target}")
     if offenders:
         joined = "\n  ".join(offenders[:10])
         more = f"\n  ... and {len(offenders) - 10} more" if len(offenders) > 10 else ""
@@ -159,7 +159,7 @@ def _check_registry_api_surface() -> None:
 
 def _attr_chain(node) -> list:
     """Return the dotted-attribute chain rooted at a Name, e.g.
-    `ctx.mcp.foo.bar` → ['ctx', 'mcp', 'foo', 'bar']. Returns [] for any
+    `ctx.mcp.foo.bar` -> ['ctx', 'mcp', 'foo', 'bar']. Returns [] for any
     non-Name-rooted chain (function call results, subscripts, etc.)."""
     import ast
     parts: list = []
@@ -177,10 +177,10 @@ def _attr_chain(node) -> list:
 def _probe_llamacpp_instance(base: str) -> str:
     """Return one of: 'healthy', 'loading', 'unreachable'.
 
-    - 'healthy'     — GET /health returns 200 with status:ok
-    - 'loading'     — port bound, any HTTP response (200 with other status,
-                      or 503 "loading") — model weights still loading
-    - 'unreachable' — ConnectionRefused / timeout; the server process is
+    - 'healthy'     -- GET /health returns 200 with status:ok
+    - 'loading'     -- port bound, any HTTP response (200 with other status,
+                      or 503 "loading") -- model weights still loading
+    - 'unreachable' -- ConnectionRefused / timeout; the server process is
                       dead or not yet spawned
     """
     import urllib.request
@@ -199,15 +199,15 @@ def _probe_llamacpp_instance(base: str) -> str:
 
 
 def _check_llamacpp_connectivity() -> None:
-    """Warn if local inference models are not loaded — synthesis will fall back to templates.
+    """Warn if local inference models are not loaded -- synthesis will fall back to templates.
 
     Probes the llama-server /health endpoints for arbiter (8080) and coder
     (8081). These URLs are owned exclusively by llamacpp_daemon.
 
     Distinguishes three states:
-      healthy     — model ready for requests
-      loading     — port bound, weights still loading (cold boot / restart)
-      unreachable — no process listening (real failure)
+      healthy     -- model ready for requests
+      loading     -- port bound, weights still loading (cold boot / restart)
+      unreachable -- no process listening (real failure)
 
     Retries briefly during warmup: if an instance is loading, we poll up to
     HME_SELFTEST_WARMUP_WAIT seconds before classifying it as still-loading.
@@ -230,7 +230,7 @@ def _check_llamacpp_connectivity() -> None:
         if all(v == "healthy" for v in states.values()):
             break
         if any(v == "unreachable" for v in states.values()):
-            # Real failure (not loading) — no point polling further.
+            # Real failure (not loading) -- no point polling further.
             break
         if time.time() >= deadline:
             break
@@ -247,12 +247,12 @@ def _check_llamacpp_connectivity() -> None:
     elif loading:
         logger.warning(
             f"llama-server connectivity: {len(loading)} still LOADING after "
-            f"{warmup_wait}s: {loading}. Not a failure — cold-start MoE models "
+            f"{warmup_wait}s: {loading}. Not a failure -- cold-start MoE models "
             f"can take 60-90s. Healthy: {healthy}."
         )
     else:
         logger.info(f"llama-server connectivity: OK ({', '.join(healthy)} healthy)")
 
 
-# Legacy alias — some callers still import _check_llamacpp_connectivity.
+# Legacy alias -- some callers still import _check_llamacpp_connectivity.
 _check_llamacpp_connectivity = _check_llamacpp_connectivity

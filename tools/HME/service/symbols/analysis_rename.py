@@ -48,11 +48,11 @@ _STRING_CHAR = {'"', "'", '`'}
 # keyed by (symbol, lang_filter, file_list_signature) so repeated calls for
 # the same symbol within one BFS pass are O(1).
 # Invalidation: the file_list_signature is the sorted-file-list count + sum
-# of mtimes — a cheap proxy that changes whenever any code file is
+# of mtimes -- a cheap proxy that changes whenever any code file is
 # added/removed/touched. This is worker-lifetime cache, cleared implicitly
 # on worker restart.
-_FILE_LIST_CACHE: dict = {}     # lang_filter → (signature, [Path, ...])
-_CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) → [caller dict, ...]
+_FILE_LIST_CACHE: dict = {}     # lang_filter -> (signature, [Path, ...])
+_CALLERS_CACHE: dict = {}       # (symbol, lang_filter, signature) -> [caller dict, ...]
 
 
 
@@ -122,7 +122,7 @@ def find_dead_code(project_root: str, language: str = "") -> list[dict]:
         except (IndexError, AttributeError) as _export_err:
             # Narrowed from `Exception`: these are the only plausible
             # failures in a slice-and-check. Anything else is a real bug
-            # we want to surface. Log at debug — per-symbol skip here is
+            # we want to surface. Log at debug -- per-symbol skip here is
             # expected for lines past EOF.
             logger.debug(f"export-detection skip for {sym_file}:{sym_line}: {type(_export_err).__name__}: {_export_err}")
 

@@ -1,4 +1,4 @@
-"""HME suggest_evolution — full signal synthesis into ranked next-evolution proposals."""
+"""HME suggest_evolution -- full signal synthesis into ranked next-evolution proposals."""
 import json
 import os
 import logging
@@ -39,7 +39,7 @@ def suggest_evolution() -> str:
 
     signals = {}
 
-    # 1. Trace summary — regime, trust, hotspots, coupling
+    # 1. Trace summary -- regime, trust, hotspots, coupling
     trace_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "trace-summary.json")
     if os.path.isfile(trace_path):
         try:
@@ -58,7 +58,7 @@ def suggest_evolution() -> str:
         except Exception as _err1:
             logger.debug(f'silent-except evolution_suggest.py:58: {type(_err1).__name__}: {_err1}')
 
-    # 2. Perceptual report — CLAP character + CB0
+    # 2. Perceptual report -- CLAP character + CB0
     perc_path = os.path.join(ctx.PROJECT_ROOT, "output", "metrics", "perceptual-report.json")
     if os.path.isfile(perc_path):
         try:
@@ -180,7 +180,7 @@ def suggest_evolution() -> str:
                 signals["evolution_rut"] = {
                     "type": last3[0],
                     "consecutive": len([t for t in rut_types if t == last3[0]]),
-                    "warning": (f"Last {len(last3)}+ evolutions are all '{last3[0]}' — "
+                    "warning": (f"Last {len(last3)}+ evolutions are all '{last3[0]}' -- "
                                 "consider orthogonal target (architecture, perceptual loop, "
                                 "new engine, or structural refactor)")
                 }
@@ -198,7 +198,7 @@ def suggest_evolution() -> str:
     if signals.get("cb0_entropy_mean"):
         parts.append(f"**CB0 entropy:** {signals['cb0_entropy_mean']}")
     if signals.get("recent_evo_arc"):
-        parts.append(f"**Recent arc:** {' → '.join(signals['recent_evo_arc'])}")
+        parts.append(f"**Recent arc:** {' -> '.join(signals['recent_evo_arc'])}")
     if signals.get("evolution_rut"):
         parts.append(f"**RUT ALERT:** {signals['evolution_rut']['warning']}")
     parts.append("")
@@ -206,7 +206,7 @@ def suggest_evolution() -> str:
     cluster_targets_list = signals.get("cluster_priority_targets", [])
     is_rhythm_fallback = bool(cluster_targets_list and cluster_targets_list[0].endswith("[+rhythm]"))
     if cluster_targets_list:
-        heading = ("## Ranked by Cluster Pull — Rhythm Gap Targets\n"
+        heading = ("## Ranked by Cluster Pull -- Rhythm Gap Targets\n"
                    if is_rhythm_fallback else
                    "## Ranked by Cluster Pull (cooperative correlation with coupled modules)\n")
         parts.append(heading)
@@ -225,7 +225,7 @@ def suggest_evolution() -> str:
             suggested_r = next((f for f in _RHYTHM_FIELD_PRIORITY if f not in existing_r), None)
             if is_rhythm_fallback and suggested_r:
                 rhythm_effect = _describe_rhythm_effect(name, suggested_r)
-                parts.append(f"**Rhythm coupling:** `{suggested_r}` → {rhythm_effect}")
+                parts.append(f"**Rhythm coupling:** `{suggested_r}` -> {rhythm_effect}")
                 parts.append(f"  (x{len([n for n, i in coupling_state.items() if suggested_r in i.get('rhythm_dims', [])])} modules currently)")
             else:
                 parts.append(f"**Coupling effect:** {coupling_effect}")
@@ -237,10 +237,10 @@ def suggest_evolution() -> str:
             if is_rhythm_fallback:
                 parts.append(f"**Pattern:** `const rhythmEntry = L0.getLast('emergentRhythm', {{layer: 'both'}}); const val = rhythmEntry?.{suggested_r or 'density'} ?? 0;`")
             else:
-                parts.append(f"**Pattern:** `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` → multiplier on key parameter")
+                parts.append(f"**Pattern:** `safePreBoot.call(() => emergentMelodicEngine.getContext(), null)` -> multiplier on key parameter")
             parts.append("")
     else:
-        parts.append("## Uncoupled Modules (no cluster data — run pipeline first)\n")
+        parts.append("## Uncoupled Modules (no cluster data -- run pipeline first)\n")
         for name in melodic_uncoupled_names[:8]:
             info = coupling_state.get(name, {})
             fpath = info.get("path", "?").replace(os.path.join(ctx.PROJECT_ROOT, "src/"), "")
@@ -272,7 +272,7 @@ def suggest_evolution() -> str:
             parts.append("\n## Dead Signal Channels  (posted but never consumed)\n")
             parts.append("*Adding L0.getLast consumers to these channels unlocks existing data flows.*\n")
             for ch, prods in sorted(dead):
-                parts.append(f"  `{ch}` — posted by {', '.join(sorted(prods))}")
+                parts.append(f"  `{ch}` -- posted by {', '.join(sorted(prods))}")
     except Exception as _err9:
         logger.debug(f'silent-except evolution_suggest.py:276: {type(_err9).__name__}: {_err9}')
 
@@ -285,7 +285,7 @@ def suggest_evolution() -> str:
             parts.append("*Couple both sides of an antagonist pair to the SAME signal with opposing effects.*\n")
             for br in bridges:
                 already_s = f"  already bridged: {', '.join(br['already_bridged'])}" if br['already_bridged'] else ""
-                parts.append(f"**{br['pair_a']} [{br['arch_a']}] ↔ {br['pair_b']} [{br['arch_b']}]**  r={br['r']:+.3f}{already_s}")
+                parts.append(f"**{br['pair_a']} [{br['arch_a']}] <-> {br['pair_b']} [{br['arch_b']}]**  r={br['r']:+.3f}{already_s}")
                 parts.append(f"  Bridge field: `{br['field']}`")
                 parts.append(f"  {br['pair_a']}: {br['eff_a']}")
                 parts.append(f"  {br['pair_b']}: {br['eff_b']}")
@@ -304,7 +304,7 @@ def suggest_evolution() -> str:
             if _bt:
                 _a = _TRUST_FILE_ALIASES.get(_bt[0]["pair_a"], _bt[0]["pair_a"])
                 _b = _TRUST_FILE_ALIASES.get(_bt[0]["pair_b"], _bt[0]["pair_b"])
-                _bridge_top = f"{_a}↔{_b} r={_bt[0]['r']:+.3f} via `{_bt[0]['field']}`"
+                _bridge_top = f"{_a}<->{_b} r={_bt[0]['r']:+.3f} via `{_bt[0]['field']}`"
         except Exception as _err11:
             logger.debug(f'silent-except evolution_suggest.py:308: {type(_err11).__name__}: {_err11}')
         _rut = signals.get("evolution_rut", {})
@@ -318,7 +318,7 @@ def suggest_evolution() -> str:
                 if _m2:
                     _num_kb2.append((int(_m2.group(1)), _k2.get("title", ""), _k2.get("content", "")[:80]))
             _num_kb2.sort(key=lambda x: -x[0])
-            _recent_kb_titles = "\n".join(f"  R{r}: {t} — {c}" for r, t, c in _num_kb2[:6])
+            _recent_kb_titles = "\n".join(f"  R{r}: {t} -- {c}" for r, t, c in _num_kb2[:6])
         except Exception as _err12:
             logger.debug(f'silent-except evolution_suggest.py:322: {type(_err12).__name__}: {_err12}')
         from ..synthesis_session import get_session_narrative
@@ -326,7 +326,7 @@ def suggest_evolution() -> str:
         _synthesis_ctx = (
             (_session_ctx if _session_ctx else "")
             + f"Recent KB evolutions (newest first):\n{_recent_kb_titles}\n\n"
-            f"Recent arc categories: {' → '.join(_arc) if _arc else 'unknown'}\n"
+            f"Recent arc categories: {' -> '.join(_arc) if _arc else 'unknown'}\n"
             + (f"Rut alert: {_rut.get('warning', '')} (consecutive: {_rut.get('consecutive', 0)})\n" if _rut else "")
             + f"Top cluster-pull targets: {', '.join(_cluster_top)}\n"
             + (f"Top bridge opportunity: {_bridge_top}\n" if _bridge_top else "")
@@ -355,5 +355,5 @@ def suggest_evolution() -> str:
 
     result = "\n".join(parts)
     if len(result) > 20000:
-        result = result[:20000] + f"\n*(truncated — {len(result) - 20000} chars omitted)*"
+        result = result[:20000] + f"\n*(truncated -- {len(result) - 20000} chars omitted)*"
     return result

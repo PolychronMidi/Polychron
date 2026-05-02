@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HME Chain Snapshot — the compaction-replacement engine.
+"""HME Chain Snapshot -- the compaction-replacement engine.
 
 Produces a structured YAML chain-link artifact that preserves session state
 across context compactions. Cheap to build (deterministic sections + optional
@@ -46,7 +46,7 @@ _CTX_FILE = Path(os.environ.get("HME_CTX_FILE", "/tmp/claude-context.json"))
 def _session_start_sha() -> str:
     if _SESSION_SHA.exists():
         return _SESSION_SHA.read_text().strip()
-    # First run — pin current HEAD as session start
+    # First run -- pin current HEAD as session start
     try:
         sha = subprocess.run(
             ["git", "-C", _PROJECT, "log", "-1", "--format=%H"],
@@ -150,7 +150,7 @@ def _hci_section() -> dict:
 
 
 def _kb_section() -> dict:
-    """Optimization 13: KB writes as persistent state — reference titles only."""
+    """Optimization 13: KB writes as persistent state -- reference titles only."""
     recent_kb = []
     try:
         # Fetch last 10 entries by creation time via shim
@@ -241,7 +241,7 @@ def _next_seq() -> int:
 
 
 def _prior_link_summary() -> dict:
-    """Optimization 3: delta-only — reference the previous link, don't re-summarize."""
+    """Optimization 3: delta-only -- reference the previous link, don't re-summarize."""
     if not _HISTORY.exists():
         return {}
     existing = sorted(_HISTORY.glob("link-*.yaml"))
@@ -257,7 +257,7 @@ def _prior_link_summary() -> dict:
 
 
 def _narrative_via_local_llm(mode: str, sections: dict) -> str:
-    """Optimization 4: use local LLM for the ONE part that needs prose —
+    """Optimization 4: use local LLM for the ONE part that needs prose --
     the why-we-made-these-decisions distillation. Zero Claude tokens."""
     if mode == "eager":
         return ""  # eager snapshots skip LLM entirely
@@ -293,13 +293,13 @@ def build_snapshot(mode: str = "imminent") -> dict:
         "captured_at_human": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
         "mode": mode,
         "project_root": _PROJECT,
-        # Seed — the persistent self-model (optimization 7)
+        # Seed -- the persistent self-model (optimization 7)
         "entanglement": _entanglement_section(),
-        # Ground truth — what the session did to the code (optimization 5)
+        # Ground truth -- what the session did to the code (optimization 5)
         "git_delta": _git_diff_section(),
-        # Critical preservation — user corrections (optimization 6)
+        # Critical preservation -- user corrections (optimization 6)
         "user_corrections": _corrections_section(),
-        # Persistent state — KB entry titles, content fetchable (optimization 13)
+        # Persistent state -- KB entry titles, content fetchable (optimization 13)
         "kb": _kb_section(),
         # Session metadata
         "onboarding": _onboarding_section(),
@@ -322,7 +322,7 @@ def write_snapshot(snap: dict) -> Path:
     out = _HISTORY / f"link-{seq:04d}-{ts}.yaml"
     # Use a minimal YAML format (JSON is valid YAML)
     out.write_text(json.dumps(snap, indent=2, default=str))
-    # Update latest pointer (optimization 11 — versioning)
+    # Update latest pointer (optimization 11 -- versioning)
     latest = _HISTORY / "latest.yaml"
     try:
         if latest.exists() or latest.is_symlink():

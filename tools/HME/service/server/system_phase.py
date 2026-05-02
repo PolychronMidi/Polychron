@@ -1,4 +1,4 @@
-"""HME lifecycle state machine — Layer 0 of the self-coherence stack.
+"""HME lifecycle state machine -- Layer 0 of the self-coherence stack.
 
 SystemPhase is the single authoritative lifecycle state of the HME system.
 All components read and transition through this machine. Transitions are logged
@@ -6,12 +6,12 @@ with timestamps and reasons, creating an audit trail the previous boolean flags
 completely lacked.
 
 States:
-  COLD       — process just started, no engines initialized
-  WARMING    — background load / recovery in progress
-  READY      — all engines available, tools fully functional
-  DEGRADED   — proxy unhealthy or repeated errors; tools may return empty results
-  RECOVERING — shim/proxy restart in progress; temporary degradation expected
-  FAILED     — unrecoverable startup failure; tools blocked until restart
+  COLD       -- process just started, no engines initialized
+  WARMING    -- background load / recovery in progress
+  READY      -- all engines available, tools fully functional
+  DEGRADED   -- proxy unhealthy or repeated errors; tools may return empty results
+  RECOVERING -- shim/proxy restart in progress; temporary degradation expected
+  FAILED     -- unrecoverable startup failure; tools blocked until restart
 """
 import threading
 import time
@@ -57,7 +57,7 @@ def set_phase(new_phase: SystemPhase, reason: str = "") -> None:
         if len(_phase_history) > _MAX_HISTORY:
             _phase_history.pop(0)
     logger.info(
-        f"HME phase: {old.value} → {new_phase.value}"
+        f"HME phase: {old.value} -> {new_phase.value}"
         + (f" ({reason})" if reason else "")
     )
 
@@ -67,7 +67,7 @@ def is_ready() -> bool:
 
 
 def is_operational() -> bool:
-    """True if tools should be served (READY or DEGRADED — degraded tools return empty but don't block)."""
+    """True if tools should be served (READY or DEGRADED -- degraded tools return empty but don't block)."""
     return get_phase() in (SystemPhase.READY, SystemPhase.DEGRADED)
 
 
@@ -104,7 +104,7 @@ def describe_phase() -> str:
     if p == SystemPhase.FAILED:
         h = get_phase_history(5)
         reason = h[-1].get("reason", "") if h else ""
-        return f"failed — restart required" + (f" ({reason})" if reason else "")
+        return f"failed -- restart required" + (f" ({reason})" if reason else "")
     return p.value
 
 

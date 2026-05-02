@@ -1,12 +1,12 @@
-"""Groq synthesis tier — free-tier cascade via Groq's OpenAI-compatible endpoint.
+"""Groq synthesis tier -- free-tier cascade via Groq's OpenAI-compatible endpoint.
 
 Groq's custom silicon runs large open-weight models at extreme speed. Free tier
 is throttled by RPM / RPD (requests per minute / day), NOT by token count.
 
 Free tier cascade (best-first):
-    T1: openai/gpt-oss-120b             — 120B OpenAI-open, strongest reasoning
-    T2: moonshotai/kimi-k2-instruct-0905 — Moonshot K2, 262k context
-    T3: llama-3.3-70b-versatile          — Meta 70B general fallback
+    T1: openai/gpt-oss-120b             -- 120B OpenAI-open, strongest reasoning
+    T2: moonshotai/kimi-k2-instruct-0905 -- Moonshot K2, 262k context
+    T3: llama-3.3-70b-versatile          -- Meta 70B general fallback
 
 Config: GROQ_API_KEY, GROQ_RPM_LIMIT_*, GROQ_RPD_LIMIT_*
 """

@@ -1,4 +1,4 @@
-"""Status-mode handlers — registry only. Handlers live in status_modes_*.py siblings."""
+"""Status-mode handlers -- registry only. Handlers live in status_modes_*.py siblings."""
 from __future__ import annotations
 
 import logging
@@ -80,7 +80,7 @@ _STATUS_MODES: dict[str, callable] = {
     "constitution": _mode_constitution,
     "doc_drift": _mode_doc_drift,
     "generalizations": _mode_generalizations,
-    # `priorities` and `next` are intentional aliases — the underlying signal
+    # `priorities` and `next` are intentional aliases -- the underlying signal
     # is the same (output/metrics/evolution-priorities.json). Both names exist
     # because users reach for either word; aliasing avoids a "wait, which one?"
     # context-switch and is documented in the mode=list output.
@@ -93,7 +93,7 @@ _STATUS_MODES: dict[str, callable] = {
     "introspect": _mode_introspect,
     "signals": _mode_signals,
     # Exploratory-edit signal: modules you edited this round that lack KB
-    # coverage — `learn()` candidates that the old loop never surfaced.
+    # coverage -- `learn()` candidates that the old loop never surfaced.
     "learn_suggestions": _mode_learn_suggestions,
     "novel_modules": _mode_learn_suggestions,   # alias
     # Local-vs-cloud race outcomes from _reasoning_think's race-mode path.

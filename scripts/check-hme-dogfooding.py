@@ -6,7 +6,7 @@ The premise: if HME's architectural principle is "no silent failures,
 fail-fast, single-writer, no bare except," then HME itself must obey
 those rules in its Python code. Tonight's incident had HME swallowing
 its own invariant-setup ImportError via `try/except ImportError: pass`
-— the tool that enforces rules violated the rule it enforces.
+-- the tool that enforces rules violated the rule it enforces.
 
 Rules enforced here (Python-side analogs of the ESLint rules HME runs
 on Polychron JS):
@@ -17,13 +17,13 @@ on Polychron JS):
     on the same line.
 
   no-bare-except:
-    `except:` without a type is catastrophically broad — catches
+    `except:` without a type is catastrophically broad -- catches
     KeyboardInterrupt, SystemExit, etc.
 
   exception-logging-coverage:
     `except Exception as e: ...` must mention `e` / `err` / `logger`
     in its body (some evidence the exception is inspected, not
-    memory-holed). Rough heuristic; false positives OK — goal is
+    memory-holed). Rough heuristic; false positives OK -- goal is
     to surface candidates.
 
 Exit 0 clean, 1 on violations. Selftest runs this as a probe.
@@ -82,7 +82,7 @@ def _scan_file(path: str) -> list[str]:
         if node.type is None:
             violations.append(
                 f"{rel}:{node.lineno}: bare `except:` catches KeyboardInterrupt "
-                f"and SystemExit — use `except Exception:` instead."
+                f"and SystemExit -- use `except Exception:` instead."
             )
             continue
 
@@ -91,9 +91,9 @@ def _scan_file(path: str) -> list[str]:
         if node.name:
             body_src = "\n".join(ast.unparse(b) for b in node.body)
             if node.name not in body_src:
-                # Exception bound but never used — probably should just
+                # Exception bound but never used -- probably should just
                 # be `except Exception:` (no bind) or should log it.
-                # Skip this — high false-positive rate, chase via the
+                # Skip this -- high false-positive rate, chase via the
                 # silent-swallow rule instead.
                 pass
 
@@ -119,7 +119,7 @@ def main() -> int:
         print("Fix each by either (a) logging the exception, or (b) marking "
               "the except line with `# silent-ok: <why this is genuinely safe>`.")
         return 1
-    print("check-hme-dogfooding: CLEAN — HME's own Python obeys the rules it enforces on Polychron")
+    print("check-hme-dogfooding: CLEAN -- HME's own Python obeys the rules it enforces on Polychron")
     return 0
 
 

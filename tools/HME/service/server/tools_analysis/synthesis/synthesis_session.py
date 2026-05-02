@@ -1,4 +1,4 @@
-"""HME session state — think history, unified session narrative, disk persistence."""
+"""HME session state -- think history, unified session narrative, disk persistence."""
 import json
 import os
 import logging
@@ -30,7 +30,7 @@ def _session_state_path() -> str | None:
 
 
 def _load_session_state():
-    """Lazy load from disk — no-ops after first successful load."""
+    """Lazy load from disk -- no-ops after first successful load."""
     global _session_narrative, _session_narrative_seq, _think_history, _session_state_loaded
     if _session_state_loaded:
         return
@@ -57,7 +57,7 @@ def _load_session_state():
 def _save_session_state():
     path = _session_state_path()
     if not path:
-        logger.warning("session state save SKIPPED — no path (PROJECT_ROOT not set?)")
+        logger.warning("session state save SKIPPED -- no path (PROJECT_ROOT not set?)")
         return
     try:
         with open(path, "w") as f:
@@ -83,7 +83,7 @@ def get_think_history_context() -> str:
     _load_session_state()
     if not _think_history:
         return ""
-    lines = [f"  Q: {h['about'][:80]} → {h['answer'][:150]}" for h in _think_history]
+    lines = [f"  Q: {h['about'][:80]} -> {h['answer'][:150]}" for h in _think_history]
     return "Previous think exchanges this session:\n" + "\n".join(lines) + "\n\n"
 
 
@@ -108,7 +108,7 @@ def append_session_narrative(event: str, content: str):
     _load_session_state()
     cat = _EVENT_CATEGORIES.get(event, None)
     if cat is None:
-        logger.warning(f"session narrative: unknown event type '{event}' — add to _EVENT_CATEGORIES")
+        logger.warning(f"session narrative: unknown event type '{event}' -- add to _EVENT_CATEGORIES")
         cat = "other"
     _session_narrative_seq += 1
     _session_narrative.append({

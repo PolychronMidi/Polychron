@@ -133,7 +133,7 @@ def _suggest_stub(commit: dict, uncovered_files: list) -> str:
 
     def run(self) -> VerdictResult:
         # TODO: implement regression check for {file_sample}
-        return _result(SKIP, 1.0, "stub — implement regression check")'''
+        return _result(SKIP, 1.0, "stub -- implement regression check")'''
 
 
 def scan() -> dict:

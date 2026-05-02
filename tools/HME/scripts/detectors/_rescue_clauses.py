@@ -7,7 +7,7 @@ TWO valid responses:
   (b) explain why fixing is the wrong move.
 
 (a) was already covered (per-detector RESCUE_RES variants). (b) was
-not — every legitimate refusal-with-reason got pattern-matched as a
+not -- every legitimate refusal-with-reason got pattern-matched as a
 punt, which trained agents to stop refusing even when refusing was
 correct. This module gives all three detectors a uniform recognizer
 for (b) so the path the deny advertises actually exists.
@@ -20,7 +20,7 @@ clause:" / "(b)" labels, "shouldn't do this because", etc.
 
 Conservative: the patterns require the agent to NAME the alternative
 or the consequence. A bare "won't do it" without justification doesn't
-qualify — that's the punt the detectors are supposed to catch.
+qualify -- that's the punt the detectors are supposed to catch.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ import re
 
 # (b)-clause rescue patterns. Bidirectional scan: justifications can
 # appear before the deferral phrase ("Not doing this is the right call ...
-# pre-existing complexity") OR after ("pre-existing — duplicates the
+# pre-existing complexity") OR after ("pre-existing -- duplicates the
 # existing audit"). Use _b_clause_window to scan both directions.
 B_CLAUSE_RES = (
     # explicit "not doing X is the right (call|move|thing|choice)"
@@ -79,7 +79,7 @@ B_CLAUSE_RES = (
     re.compile(
         r"\b(shouldn'?t|should\s+not|won'?t)\s+"
         r"(do|fix|touch|change|modify|implement)\s+(this|that|it)\b"
-        r"[^.\n]{0,40}\b(because|since|as|—)",
+        r"[^.\n]{0,40}\b(because|since|as|--)",
         re.IGNORECASE,
     ),
 )

@@ -1,4 +1,4 @@
-"""drama_map — find the composition's most dramatically intense moments."""
+"""drama_map -- find the composition's most dramatically intense moments."""
 import os
 import logging
 
@@ -63,7 +63,7 @@ def drama_map(top_n: int = 5) -> str:
     if spike_events:
         out.append(f"## Tension Spikes (top {min(top_n, len(spike_events))})")
         for delta, b in spike_events[:top_n]:
-            direction = "▲" if delta > 0 else "▼"
+            direction = "^" if delta > 0 else "v"
             # Annotate section-boundary drops (first 2 beats of a new section)
             bk_parts = b["bk"].split(":")
             beat_in_section = int(bk_parts[2]) if len(bk_parts) > 2 and bk_parts[2].isdigit() else 99
@@ -71,7 +71,7 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"  {direction}{delta:+.3f}  beat {b['bk']}  S{b['sec']}  t={b['tension']:.3f}  {b['regime']}  {b['notes']}n{ctx_note}")
         out.append("")
 
-    #  Sustained coherent blocks (consecutive coherent beats ≥ 8)
+    #  Sustained coherent blocks (consecutive coherent beats >= 8)
     coherent_blocks: list[tuple[int, int, int]] = []  # (start_idx, length, sec)
     i = 0
     while i < len(beats):
@@ -87,15 +87,15 @@ def drama_map(top_n: int = 5) -> str:
             i += 1
     coherent_blocks.sort(key=lambda x: -x[1])
     if coherent_blocks:
-        out.append(f"## Sustained Coherent Blocks (top {min(top_n, len(coherent_blocks))}, ≥8 beats)")
+        out.append(f"## Sustained Coherent Blocks (top {min(top_n, len(coherent_blocks))}, >=8 beats)")
         for start, length, sec in coherent_blocks[:top_n]:
             b_start = beats[start]
             b_end = beats[min(start + length - 1, len(beats) - 1)]
             avg_tension = sum(beats[k]["tension"] for k in range(start, start + length)) / length
-            out.append(f"  {length:3d}b  {b_start['bk']} → {b_end['bk']}  S{sec}  avg_t={avg_tension:.3f}")
+            out.append(f"  {length:3d}b  {b_start['bk']} -> {b_end['bk']}  S{sec}  avg_t={avg_tension:.3f}")
         out.append("")
 
-    #  Trust reversals: one system rose ≥0.04 while another fell ≥0.04 in same beat
+    #  Trust reversals: one system rose >=0.04 while another fell >=0.04 in same beat
     reversal_events: list[tuple[float, dict, str, str, float, float]] = []
     for i in range(1, len(beats)):
         prev_t = beats[i - 1]["trust"]
@@ -120,7 +120,7 @@ def drama_map(top_n: int = 5) -> str:
             out.append(f"  magnitude={magnitude:.3f}  beat {b['bk']}  S{b['sec']}  {b['regime']}")
             w_label = f" ({w_meaning})" if w_meaning else ""
             l_label = f" ({l_meaning})" if l_meaning else ""
-            out.append(f"    ▲ {winner}{w_label} (+{w_d:.3f})  ▼ {loser}{l_label} ({l_d:.3f})")
+            out.append(f"    ^ {winner}{w_label} (+{w_d:.3f})  v {loser}{l_label} ({l_d:.3f})")
         out.append("")
 
     #  Peak tension moments: beats with highest absolute tension (narrative peaks)
@@ -142,7 +142,7 @@ def drama_map(top_n: int = 5) -> str:
                 break
         out.append("")
 
-    #  Density contrast pairs: find atmospheric valley (≤2 notes) within 10 beats of dense peak (≥6 notes)
+    #  Density contrast pairs: find atmospheric valley (<=2 notes) within 10 beats of dense peak (>=6 notes)
     # Filter out warmup beats (S0 first 8 beats) and zero-tension beats (section silence)
     contrast_pairs: list[tuple[float, int, int]] = []
     for i in range(len(beats)):
@@ -153,7 +153,7 @@ def drama_map(top_n: int = 5) -> str:
             continue
         if b["sec"] == 0 and b["idx"] < 8:  # skip S0 warmup ramp
             continue
-        # Look for valley within ±10 beats
+        # Look for valley within +/-10 beats
         window_start = max(0, i - 10)
         window_end = min(len(beats), i + 11)
         for j in range(window_start, window_end):
@@ -168,12 +168,12 @@ def drama_map(top_n: int = 5) -> str:
             seen_peaks.add(peak_i)
             unique_pairs.append((contrast, peak_i, valley_j))
     if unique_pairs:
-        out.append(f"## Density Contrast Pairs (peak→valley, top {min(top_n, len(unique_pairs))})")
+        out.append(f"## Density Contrast Pairs (peak->valley, top {min(top_n, len(unique_pairs))})")
         for contrast, peak_i, valley_j in unique_pairs[:top_n]:
             b_peak = beats[peak_i]
             b_valley = beats[valley_j]
             gap = abs(peak_i - valley_j)
-            direction = "→" if valley_j > peak_i else "←"
+            direction = "->" if valley_j > peak_i else "<-"
             out.append(f"  +{contrast}n  dense={b_peak['bk']}({b_peak['notes']}n,t={b_peak['tension']:.2f}) {direction}{gap}b valley={b_valley['bk']}({b_valley['notes']}n,t={b_valley['tension']:.2f})")
         out.append("")
 

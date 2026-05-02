@@ -1,12 +1,12 @@
 """Direct server-side Agent dispatch.
 
 ALTERNATIVE to the sentinel-bounce path (`_dispatch_via_subagent`).
-Instead of emitting a `[[HME_AGENT_TASK …]]` sentinel that the agent
+Instead of emitting a `[[HME_AGENT_TASK ...]]` sentinel that the agent
 must then actively dispatch via the Agent tool, we spawn a `claude -p`
 subprocess directly from the MCP server and capture its stdout.
 
 Tradeoffs vs sentinel-bounce:
-  + Synchronous — HME gets the reasoning result without a round-trip
+  + Synchronous -- HME gets the reasoning result without a round-trip
     through the agent's turn.
   + No visual noise in the agent's tool_result.
   + Budget accounting is clearer (the CLI invocation spawned from here
@@ -14,7 +14,7 @@ Tradeoffs vs sentinel-bounce:
   - Requires `claude` CLI on PATH + authentication + permission to
     spawn subprocesses from the worker. Some sandboxed deployments
     may block this.
-  - Loses the "agent chose to dispatch" escape hatch — if the model
+  - Loses the "agent chose to dispatch" escape hatch -- if the model
     judges the reasoning task trivial and wants to answer directly,
     it can't (we went around it).
 
@@ -39,7 +39,7 @@ logger = logging.getLogger("HME")
 # by agent turn cadence) there's no organic budget choke.
 #
 # Peer-review "anything missing?" (iter 115) flagged that a module-level
-# counter resets on proxy/worker restart — a restart during a burst
+# counter resets on proxy/worker restart -- a restart during a burst
 # silently re-opens the whole budget. The counter is now mirrored to
 # tmp/hme-thread-call-count (atomic rewrite + fsync) so a restart sees
 # the accumulated count. Stale counts auto-expire after 24h so one
@@ -81,7 +81,7 @@ def _hydrate_call_count() -> None:
 
 def _persist_call_count() -> None:
     """Atomic-rewrite the persisted counter. Called after each increment.
-    Best-effort — write failure is logged but does not block dispatch."""
+    Best-effort -- write failure is logged but does not block dispatch."""
     path = _count_file()
     if not path:
         return
@@ -103,7 +103,7 @@ _hydrate_call_count()
 def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
     """Synchronously route a reasoning prompt through the buddy session
     whose sid is recorded in tmp/hme-buddy.sid (legacy: tmp/hme-thread.sid,
-    one-time fallback during the rename window — see code below).
+    one-time fallback during the rename window -- see code below).
 
     Used by synthesis_reasoning when the buddy system is active
     (.env BUDDY_SYSTEM=1, default). Sessionstart auto-inits the buddy
@@ -115,7 +115,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
 
     Returns the assistant's text reply (possibly empty) on success, or
     None if the thread path is unavailable / failed. Empty replies are
-    a valid result — we return the empty string, NOT None — so callers
+    a valid result -- we return the empty string, NOT None -- so callers
     don't re-bill by falling through to the ephemeral dispatch when the
     thread legitimately returned nothing. HME_THREAD_CHILD=1 prevents
     the spawned subprocess from re-entering our own stop hooks.
@@ -154,23 +154,23 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
         # cleared it. Recovery: delete the file (next sessionstart
         # re-inits) or set .env BUDDY_SYSTEM=0 to disable.
         logger.warning(f"dispatch_thread: sid file {sid_file} exists but is empty "
-                       "— rm the file (next sessionstart re-inits) or set "
+                       "-- rm the file (next sessionstart re-inits) or set "
                        ".env BUDDY_SYSTEM=0 to disable the buddy")
         return None
 
-    # Budget cap — returning None past the ceiling forces fallback.
+    # Budget cap -- returning None past the ceiling forces fallback.
     if _DISPATCH_THREAD_CALL_COUNT >= _DISPATCH_THREAD_CALL_CAP:
         logger.warning(f"dispatch_thread: per-process cap reached "
                        f"({_DISPATCH_THREAD_CALL_COUNT}/{_DISPATCH_THREAD_CALL_CAP}) "
-                       f"— falling through. Raise HME_THREAD_CALL_CAP to extend.")
+                       f"-- falling through. Raise HME_THREAD_CALL_CAP to extend.")
         return None
 
     env = dict(os.environ)
     env["HME_THREAD_CHILD"] = "1"
-    # Count the call BEFORE the subprocess — the cap's job is to bound
+    # Count the call BEFORE the subprocess -- the cap's job is to bound
     # "claude --resume subprocesses spawned," which is what bills the
     # user's account. Previous placement (after success) meant the
-    # most expensive failure mode (TimeoutExpired — full 120s consumed,
+    # most expensive failure mode (TimeoutExpired -- full 120s consumed,
     # subscription tokens already streamed) bypassed the counter.
     # The cap now bounds subprocess spawns, which matches the docstring.
     _DISPATCH_THREAD_CALL_COUNT += 1
@@ -191,7 +191,7 @@ def dispatch_thread(prompt: str, timeout_sec: float = 120.0) -> str | None:
         logger.warning(f"dispatch_thread: claude exited {result.returncode}: "
                        f"{(result.stderr or '')[:200]}")
         return None
-    # Empty stdout on returncode=0 is a valid (if odd) result — e.g.
+    # Empty stdout on returncode=0 is a valid (if odd) result -- e.g.
     # post-filter drop or the session replying with nothing. Preserve
     # it as-is so callers don't fall through and re-bill. Prior
     # behavior returned None on empty, which caused double-dispatch.
@@ -212,11 +212,11 @@ def dispatch_direct(prompt: str, system: str, max_tokens: int,
     if os.environ.get("OVERDRIVE_DIRECT_AGENT") != "1":
         return None  # feature-flag gated
     # Assemble a minimal settings JSON that requests the subagent type
-    # HME wants for this task. `alwaysThinkingEnabled` left off — HME
+    # HME wants for this task. `alwaysThinkingEnabled` left off -- HME
     # reasoning prompts typically don't need thinking blocks.
     settings = json.dumps({"subagent_type": subagent_type})
     # Claude CLI consumes `-p` with prompt as final positional arg.
-    # stream-json isn't needed here — we want the blocking final result.
+    # stream-json isn't needed here -- we want the blocking final result.
     try:
         t0 = time.monotonic()
         result = subprocess.run(

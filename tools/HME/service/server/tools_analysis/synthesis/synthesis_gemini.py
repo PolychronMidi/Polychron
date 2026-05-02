@@ -1,11 +1,11 @@
-"""Gemini synthesis tiers — free-tier cascade, best quality first.
+"""Gemini synthesis tiers -- free-tier cascade, best quality first.
 
 Free tier cascade (Google AI Studio free, 15 RPM, ~1M tok/day per model):
-    T1: gemini-3-flash-preview   — newest, strongest free flash
-    T2: gemini-flash-latest      — floating alias to current flagship flash
-    T3: gemini-2.5-flash         — stable 2.5 flash
-    T4: gemini-2.0-flash         — older overflow
-    T5: gemini-2.5-flash-lite    — lite fallback
+    T1: gemini-3-flash-preview   -- newest, strongest free flash
+    T2: gemini-flash-latest      -- floating alias to current flagship flash
+    T3: gemini-2.5-flash         -- stable 2.5 flash
+    T4: gemini-2.0-flash         -- older overflow
+    T5: gemini-2.5-flash-lite    -- lite fallback
 
 Config: GEMINI_API_KEY, GEMINI_DAILY_LIMIT_*, GEMINI_RPM_LIMIT_*
 """
@@ -14,7 +14,7 @@ from .synthesis_provider_base import OpenAIProvider, GROUNDING_HEADER
 
 
 class _GeminiProvider(OpenAIProvider):
-    """Google Gemini — overrides request format, URL, auth, and response parsing."""
+    """Google Gemini -- overrides request format, URL, auth, and response parsing."""
 
     def _build_request_body(self, model, prompt, system, max_tokens, temperature):
         full_system = GROUNDING_HEADER + ("\n\n" + system if system else "")

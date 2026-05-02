@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Phase 3.3 — Capture baseline structural signatures for existing KB entries.
+"""Phase 3.3 -- Capture baseline structural signatures for existing KB entries.
 
 Walks the lance `knowledge` table, guesses a module per entry (by scanning
 the title first, then the `tags` field, then the content for a filename-
 shaped token), and records the module's current structural signature into
 `metrics/kb-signatures.json` keyed by entry id.
 
-This is a one-shot bootstrapping script and an ongoing maintenance tool —
+This is a one-shot bootstrapping script and an ongoing maintenance tool --
 re-run it whenever new KB entries are added to refresh the baseline set.
 Subsequent drift checks compare live state against these baselines.
 
 Running it preserves entries already captured. Only entries whose signature
 field differs (or is missing) are (re)written. Capturing an entry again
-overwrites its baseline — the principle is "baseline = signature at most
+overwrites its baseline -- the principle is "baseline = signature at most
 recent `learn(add)` event", so the newest capture wins.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 OUT_PATH = os.path.join(METRICS_DIR, "kb-signatures.json")
 
-# Import current_signature() from the sibling drift checker — that's the
+# Import current_signature() from the sibling drift checker -- that's the
 # single source of truth for signature composition. runpy handles the
 # hyphenated filename that regular import can't.
 import runpy
@@ -81,7 +81,7 @@ def _extract_candidate_modules(title: str, tags: str, content: str) -> list[str]
             if tok not in seen:
                 seen.add(tok)
                 out.append(tok)
-    # Content matches are weaker — only pull a few
+    # Content matches are weaker -- only pull a few
     content_limit = 3
     ct = content or ""
     for m in _MODULE_TOKEN_RE.finditer(ct):

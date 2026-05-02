@@ -1,4 +1,4 @@
-"""HME search tools — symbol search: find_callers, find_anti_pattern."""
+"""HME search tools -- symbol search: find_callers, find_anti_pattern."""
 import logging
 import os
 
@@ -13,7 +13,7 @@ def find_callers(symbol_name: str, language: str = "", path: str = "", exclude_p
     if not symbol_name.strip():
         return "Error: symbol_name cannot be empty."
     if len(symbol_name.strip()) < 2:
-        return f"Error: symbol_name '{symbol_name}' is too short (min 2 chars) — would match too many sites."
+        return f"Error: symbol_name '{symbol_name}' is too short (min 2 chars) -- would match too many sites."
     results = _find_callers(symbol_name, ctx.PROJECT_ROOT, lang_filter=language)
     # Scoped filtering
     if path:

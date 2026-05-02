@@ -37,9 +37,9 @@ SIGNATURES = os.path.join(METRICS_DIR, "hme-dir-signatures.json")
 SKIP_DIRS = {
     ".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build",
     "out", ".claude", "tmp", "log", ".pytest_cache", "output",
-    # Vendored libs / third-party code — we don't author READMEs here
+    # Vendored libs / third-party code -- we don't author READMEs here
     "py_midicsv", "site-packages", "vendor", "third_party",
-    # Data dirs — not code boundaries
+    # Data dirs -- not code boundaries
     "training", "metrics", "holograph",
 }
 
@@ -50,9 +50,9 @@ BOUNDARY_MARKERS = ("index.js", "index.ts", "__init__.py", "Manager.js")
 SOURCE_EXTS = {".js", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".sh"}
 
 # Metadata block is hidden in an HTML comment at the bottom of README.md. The
-# content above the block is captured verbatim as `intro` — the file doubles as
+# content above the block is captured verbatim as `intro` -- the file doubles as
 # a normal README for GitHub/human viewing. Anything outside this block is not
-# parsed (YAML frontmatter at the top is ignored — HF model cards use that).
+# parsed (YAML frontmatter at the top is ignored -- HF model cards use that).
 INTENT_BLOCK_RE = re.compile(
     r"(.*?)\n?<!--\s*HME-DIR-INTENT\s*\n(.*?)\n\s*-->\s*$",
     re.DOTALL,
@@ -74,7 +74,7 @@ def _parse_readme(path: str) -> Optional[dict]:
     raw_yaml = m.group(2)
     # YAML treats a leading backtick as a tag. Authors naturally write rules
     # with inline code `like this` at the start. Auto-quote list items whose
-    # first non-whitespace char after `- ` is a backtick — transparent to the
+    # first non-whitespace char after `- ` is a backtick -- transparent to the
     # author, avoids a pitfall that trips every review.
     raw_yaml = re.sub(
         r"^(\s*-\s+)(`[^'\"]*?)$",
@@ -126,7 +126,7 @@ def _dir_signature(dir_abs: str) -> dict:
 
 
 def _is_boundary(dir_abs: str) -> bool:
-    """Heuristic: a dir is a cohesion boundary if it has ≥5 source files AND
+    """Heuristic: a dir is a cohesion boundary if it has >=5 source files AND
     has an index/manager file (indicating it exposes an API)."""
     try:
         entries = os.listdir(dir_abs)
@@ -154,11 +154,11 @@ def _is_boundary(dir_abs: str) -> bool:
 RULE_MAX_CHARS = 160        # middleware footer budget is ~180; leave room for delimiter
 RULE_COUNT_MAX = 6          # only first 2 are injected; more than 6 is bloat
 INTRO_MAX_CHARS = 4000      # intros are for on-demand read, not injection, but keep bounded
-TRIGRAM_OVERLAP_THRESHOLD = 0.50  # word-trigram Jaccard — catches actual duplication, not shared vocab
+TRIGRAM_OVERLAP_THRESHOLD = 0.50  # word-trigram Jaccard -- catches actual duplication, not shared vocab
 
 
 def _trigrams(text: str) -> set:
-    """Word-trigram shingles — insensitive to filler words, catches near-identical phrasing."""
+    """Word-trigram shingles -- insensitive to filler words, catches near-identical phrasing."""
     words = re.findall(r"[a-z0-9]+", text.lower())
     return {tuple(words[i:i+3]) for i in range(len(words) - 2)} if len(words) >= 3 else set()
 
@@ -166,7 +166,7 @@ def _trigrams(text: str) -> set:
 def _load_claude_md_rules() -> list:
     """Extract imperative bullet points from CLAUDE.md as individual rules.
     We match against each rule separately so shared vocabulary in CLAUDE.md
-    doesn't cause false positives — only actual near-duplication trips the check.
+    doesn't cause false positives -- only actual near-duplication trips the check.
     """
     path = os.path.join(PROJECT, "CLAUDE.md")
     try:
@@ -218,24 +218,24 @@ def _validate(rel_dir: str, data: dict, claude_rules: list) -> tuple[list, list]
     elif not isinstance(rules, list) or not all(isinstance(r, str) for r in rules):
         errors.append("rules must be a list of strings")
     elif not rules:
-        errors.append("rules list is empty — if there are no local rules, this dir shouldn't have an HME-DIR-INTENT block")
+        errors.append("rules list is empty -- if there are no local rules, this dir shouldn't have an HME-DIR-INTENT block")
     else:
         if len(rules) > RULE_COUNT_MAX:
-            warnings.append(f"{len(rules)} rules — middleware only injects first 2; keep ≤ {RULE_COUNT_MAX} with most important first")
+            warnings.append(f"{len(rules)} rules -- middleware only injects first 2; keep <= {RULE_COUNT_MAX} with most important first")
         for i, r in enumerate(rules):
             if len(r) > RULE_MAX_CHARS:
-                errors.append(f"rule[{i}] is {len(r)} chars — max {RULE_MAX_CHARS}; won't fit footer budget")
+                errors.append(f"rule[{i}] is {len(r)} chars -- max {RULE_MAX_CHARS}; won't fit footer budget")
             elif len(r) > RULE_MAX_CHARS - 20:
-                warnings.append(f"rule[{i}] is {len(r)} chars — tight against the {RULE_MAX_CHARS}-char budget")
+                warnings.append(f"rule[{i}] is {len(r)} chars -- tight against the {RULE_MAX_CHARS}-char budget")
             overlap = _claude_overlap(r, claude_rules)
             if overlap >= TRIGRAM_OVERLAP_THRESHOLD:
-                preview = r[:70] + ("…" if len(r) > 70 else "")
-                warnings.append(f"rule[{i}] {overlap:.0%} trigram overlap with a CLAUDE.md rule — may be redundant: {preview!r}")
+                preview = r[:70] + ("..." if len(r) > 70 else "")
+                warnings.append(f"rule[{i}] {overlap:.0%} trigram overlap with a CLAUDE.md rule -- may be redundant: {preview!r}")
     intro = data.get("intro", "")
     if not intro:
-        errors.append("intro is empty — put a normal README description above the HME-DIR-INTENT block")
+        errors.append("intro is empty -- put a normal README description above the HME-DIR-INTENT block")
     elif len(intro) > INTRO_MAX_CHARS:
-        warnings.append(f"intro is {len(intro)} chars — consider tightening (max {INTRO_MAX_CHARS})")
+        warnings.append(f"intro is {len(intro)} chars -- consider tightening (max {INTRO_MAX_CHARS})")
     return errors, warnings
 
 
@@ -359,7 +359,7 @@ def main() -> int:
         for rel in index["candidates_missing_readme"][:10]:
             print(f"    - {rel}")
         if c["missing_candidates"] > 10:
-            print(f"    … (+{c['missing_candidates'] - 10} more)")
+            print(f"    ... (+{c['missing_candidates'] - 10} more)")
     return 0 if (c["invalid"] == 0) else 1
 
 

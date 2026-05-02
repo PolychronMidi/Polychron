@@ -1,4 +1,4 @@
-"""ISA (Ideal State Artifact) library — parse / validate / scaffold.
+"""ISA (Ideal State Artifact) library -- parse / validate / scaffold.
 
 The ISA is a per-task articulation document with a fixed 12-section
 structure. Each ISC (Ideal State Criterion) is one binary tool-probe
@@ -14,15 +14,15 @@ Polychron-side conventions:
   - The Verification section gets one row per ISC at completion.
 
 Public API:
-  parse_isa(path)        — return structured dict
-  check_completeness(d, tier) — list of missing required sections
-  list_isc(d)            — every criterion + status
-  unverified_iscs(d)     — ISCs marked [x] without a Verification entry
-  scaffold(slug, ...)    — produce a fresh ISA from TEMPLATE.md
+  parse_isa(path)        -- return structured dict
+  check_completeness(d, tier) -- list of missing required sections
+  list_isc(d)            -- every criterion + status
+  unverified_iscs(d)     -- ISCs marked [x] without a Verification entry
+  scaffold(slug, ...)    -- produce a fresh ISA from TEMPLATE.md
 
 ID-stability check (`audit_id_stability(old, new)`) refuses any change
 that re-numbers an existing ISC id; the only legal additions are
-tombstones (DROPPED markers) or splits (ISC-N → ISC-N.M).
+tombstones (DROPPED markers) or splits (ISC-N -> ISC-N.M).
 """
 from __future__ import annotations
 
@@ -36,14 +36,14 @@ _PROJECT = Path(os.environ.get("PROJECT_ROOT") or _HERE.parent.parent.parent.par
 _TEMPLATE = _PROJECT / "tools" / "HME" / "skills" / "ISA" / "TEMPLATE.md"
 
 # Twelve canonical sections in ORDER. Order is enforced by the structural
-# parser — out-of-order sections are flagged.
+# parser -- out-of-order sections are flagged.
 SECTIONS = (
     "Problem", "Vision", "Out of Scope", "Principles", "Constraints",
     "Goal", "Criteria", "Test Strategy", "Features",
     "Decisions", "Changelog", "Verification",
 )
 
-# Tier completeness gate — which sections MUST be populated at each tier.
+# Tier completeness gate -- which sections MUST be populated at each tier.
 # E1 is the fast lane; E5 requires the full surface. Drawn directly from
 # PAI v6.3.0; calibrated against Polychron's existing audit posture.
 TIER_REQUIRED = {
@@ -97,7 +97,7 @@ class ParsedISA:
 
 
 def parse_isa(path: str | Path) -> ParsedISA:
-    """Parse an ISA.md file into structured form. Loud on missing file —
+    """Parse an ISA.md file into structured form. Loud on missing file --
     silent fallbacks at this layer would mask whether the artifact exists
     (the agent rule we just hardened in audit-loc applies here too)."""
     p = Path(path)
@@ -153,7 +153,7 @@ def deferred_iscs(d: ParsedISA) -> list[ISC]:
 
 def deferred_resolution_violations(d: ParsedISA, prev: "ParsedISA | None"
                                    ) -> list[str]:
-    """Refuse silent [DEFERRED-VERIFY:<task>] → [x] flips.
+    """Refuse silent [DEFERRED-VERIFY:<task>] -> [x] flips.
 
     PAI rule: "Cannot be marked [x] until the deferred probe runs."
     Enforced by requiring the Verification section to mention the
@@ -181,7 +181,7 @@ def deferred_resolution_violations(d: ParsedISA, prev: "ParsedISA | None"
         if task not in verif:
             violations.append(
                 f"{isc.id}: previously [DEFERRED-VERIFY:{task}], now [x] "
-                f"but Verification section doesn't reference task {task!r} — "
+                f"but Verification section doesn't reference task {task!r} -- "
                 f"resolved-task evidence is required to close a deferred ISC"
             )
     return violations
@@ -261,14 +261,14 @@ def audit_id_stability(old: ParsedISA, new: ParsedISA) -> list[str]:
     for isc_id, old_isc in old_by_id.items():
         if isc_id not in new_by_id:
             violations.append(
-                f"{isc_id}: removed from new ISA without tombstone — "
+                f"{isc_id}: removed from new ISA without tombstone -- "
                 f"renumber/silent-drop is forbidden by ID-stability rule"
             )
             continue
         new_isc = new_by_id[isc_id]
         if old_isc.is_anti and not new_isc.is_anti:
             violations.append(
-                f"{isc_id}: 'Anti:' prefix removed — anti-criteria are "
+                f"{isc_id}: 'Anti:' prefix removed -- anti-criteria are "
                 f"derived probes; flipping their kind silently changes the "
                 f"test surface"
             )

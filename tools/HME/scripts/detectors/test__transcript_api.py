@@ -5,7 +5,7 @@ but-fragile file in the HME detector chain: imported by 9 detectors plus
 the consolidator, with subtly different boundary semantics across helpers
 (load_turn_events vs load_full_turn_with_user vs last_assistant_event).
 The historical "dual-shape is_assistant" bug silently disabled 5 detectors
-for months — a regression that should have been caught by tests.
+for months -- a regression that should have been caught by tests.
 
 These tests exercise both real Claude Code transcript shapes AND the
 test-fixture shape, so any future refactor that drops one form fails
@@ -159,7 +159,7 @@ class LastAssistantEventContract(unittest.TestCase):
     Peer-review iter 110 caught that the prior implementation early-
     returned on the first user-after-assistant, returning the OLDEST
     completed assistant in a multi-turn transcript rather than the most
-    recent — silently evaluating the wrong turn in stop_work detection.
+    recent -- silently evaluating the wrong turn in stop_work detection.
     These tests pin the fix so a future "cleanup" can't silently
     regress the semantic.
     """

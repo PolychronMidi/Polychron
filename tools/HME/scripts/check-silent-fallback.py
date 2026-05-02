@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Silent-fallback detector — the R33-class silent failure.
+"""Silent-fallback detector -- the R33-class silent failure.
 
 Bare `except Exception: return <default>` without any logger call swallows
 real errors and returns a fake-healthy value. R33 found three instances in
@@ -26,7 +26,7 @@ import sys
 
 
 FALLBACK_VALUES = {
-    # Literal returns that look "empty" — the tell-tale silent default.
+    # Literal returns that look "empty" -- the tell-tale silent default.
     "[]", "None", "False", "True", "0", "{}", "''", '""',
     "dict()", "list()", "set()", "tuple()",
 }
@@ -41,10 +41,10 @@ def _has_log_call(node: ast.ExceptHandler) -> bool:
             if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
                 if func.value.id == "logger":
                     return True
-            # print(...) — also surfaces, acceptable for diagnostic scripts
+            # print(...) -- also surfaces, acceptable for diagnostic scripts
             if isinstance(func, ast.Name) and func.id == "print":
                 return True
-        # Stop at return — anything after is unreachable
+        # Stop at return -- anything after is unreachable
         if isinstance(stmt, ast.Return):
             return False
     return False
@@ -52,7 +52,7 @@ def _has_log_call(node: ast.ExceptHandler) -> bool:
 
 def _is_silent_fallback_return(node: ast.ExceptHandler) -> str | None:
     """Return a description of the silent fallback, or None if block is fine."""
-    # Must catch Exception (bare or `as name`) — too-narrow catches are OK
+    # Must catch Exception (bare or `as name`) -- too-narrow catches are OK
     if node.type is None:
         caught = "bare except"
     elif isinstance(node.type, ast.Name) and node.type.id == "Exception":
@@ -86,7 +86,7 @@ def _is_silent_fallback_return(node: ast.ExceptHandler) -> str | None:
     if _has_log_call(node):
         return None
 
-    return f"{caught} → return {return_repr} (no logger call before return)"
+    return f"{caught} -> return {return_repr} (no logger call before return)"
 
 
 def scan(path: pathlib.Path) -> list[str]:

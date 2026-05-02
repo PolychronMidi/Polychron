@@ -1,6 +1,6 @@
 """R32: Shared project walkers for pipeline/hme scripts.
 
-Available for reuse — currently called opportunistically. Two walkers exist
+Available for reuse -- currently called opportunistically. Two walkers exist
 in the codebase (build-dir-intent-index + build-kb-staleness-index) with
 different filter semantics, so full consolidation would require generalizing
 to both patterns. Rather than forcing that, provide the helper here and let

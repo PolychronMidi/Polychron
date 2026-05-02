@@ -3,7 +3,7 @@
 
 Reads check-unnamed-except.py output from stdin or runs the checker itself.
 Rewrites each offending except clause in-place using line offsets from the check script.
-Uses static file:line labels — never scrapes surrounding code.
+Uses static file:line labels -- never scrapes surrounding code.
 """
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def fix_file(path: pathlib.Path, linenos: list[int]) -> int:
             continue
         m = EXCEPT_LINE_RE.match(lines[idx])
         if not m:
-            # Already fixed by a previous iteration or misdetected — skip.
+            # Already fixed by a previous iteration or misdetected -- skip.
             continue
         indent = m.group("indent")
         label = f"{path.name}:{lineno}"

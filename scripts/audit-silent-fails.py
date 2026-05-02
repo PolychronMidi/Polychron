@@ -44,12 +44,12 @@ LEGITIMATE_PATTERNS = [
     # `git rev-parse ... || echo unknown` for diagnostic SHA display.
     # Fallback is a literal "unknown" used only in audit/log output.
     re.compile(r"git\s+rev-parse[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?unknown"),
-    # `whoami ... || echo shell` — fallback identifier for non-interactive
+    # `whoami ... || echo shell` -- fallback identifier for non-interactive
     # contexts where whoami may not resolve a real user.
     re.compile(r"whoami\b[^|]*?2>/dev/null\s*\|\|\s*echo\s+\"?shell"),
-    # `unset VAR 2>/dev/null` — unsetting a possibly-already-unset var.
+    # `unset VAR 2>/dev/null` -- unsetting a possibly-already-unset var.
     re.compile(r"unset\s+\w+\s*2>/dev/null"),
-    # `disown 2>/dev/null || true` — disown fails if no recent jobspec; ok.
+    # `disown 2>/dev/null || true` -- disown fails if no recent jobspec; ok.
     re.compile(r"disown\b[^|]*?2>/dev/null\s*\|\|\s*true"),
     # `kill -0 <pid>` is a probe; failure means "process not running",
     # which is the EXPECTED case the caller is checking for.

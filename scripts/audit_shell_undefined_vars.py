@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shell undefined-variable audit — static analysis for tools/HME/hooks/**/*.sh.
+"""Shell undefined-variable audit -- static analysis for tools/HME/hooks/**/*.sh.
 
 Scans every hook script for `$VAR` / `${VAR}` references that have no
 assignment anywhere in scope (the file itself, any file it sources, or the
@@ -10,22 +10,22 @@ history, and under `set -u` in `_safety.sh`, it crashed `stop.sh` before the
 completeness gate (in `work_checks.sh`) ever got a chance to run.
 
 Why not shellcheck: shellcheck isn't in the HME baseline toolchain (the
-audit-shell-hooks.py sister script chose the same path — custom Python
+audit-shell-hooks.py sister script chose the same path -- custom Python
 analyzer tailored to this project's source chain). This script follows
 `source X/Y.sh` references transitively so a var defined in `_safety.sh`
 is visible in every hook that sources it.
 
 Rules:
-  R1 — REF without DEFN in scope
-       `$VAR` / `${VAR}` reference with no matching `VAR=…`, `local VAR=`,
+  R1 -- REF without DEFN in scope
+       `$VAR` / `${VAR}` reference with no matching `VAR=...`, `local VAR=`,
        `readonly VAR=`, `export VAR=`, `declare VAR=`, `typeset VAR=`,
        loop-var `for VAR in`, `while read VAR`, arithmetic
-       `for ((VAR=…))`, `[[ -v VAR ]]`, case-setup assignments, nor
+       `for ((VAR=...))`, `[[ -v VAR ]]`, case-setup assignments, nor
        function-parameter bind, nor `.env` entry.
-       Exempt: references with an explicit default (`${VAR:-…}`,
-       `${VAR-…}`, `${VAR:?…}`, `${VAR:+…}`) — bash expands those safely
+       Exempt: references with an explicit default (`${VAR:-...}`,
+       `${VAR-...}`, `${VAR:?...}`, `${VAR:+...}`) -- bash expands those safely
        even under `set -u`. Exempt: positional args `$0..$9 $@ $* $#`,
-       special `$? $$ $! $_ $-`, special env `HOME PATH PWD …`.
+       special `$? $$ $! $_ $-`, special env `HOME PATH PWD ...`.
 
 Output:
   Default: human-readable summary to stdout, exit 0 on clean, 1 on
@@ -49,7 +49,7 @@ ENV_FILE = REPO_ROOT / ".env"
 # Additional shell-script trees that run under the same `set -u` risk
 # class as hooks/. Launcher scripts, proxy test scripts, and one-shot
 # setup scripts all use the same bash + may also use `set -euo pipefail`
-# — an undefined variable there crashes the same way and is equally
+# -- an undefined variable there crashes the same way and is equally
 # undetected until runtime. Scope expanded April 2026 after observing
 # that the _AC_PROJECT-class bug isn't hooks-specific.
 EXTRA_SCAN_DIRS = [
@@ -97,15 +97,15 @@ _WHILE_READ_RE  = re.compile(r"\bread\s+(?:-[A-Za-z]+\s+)*(?:-[A-Za-z]+\s+\S+\s+
 _LET_RE         = re.compile(r"\blet\s+['\"]?([A-Za-z_][A-Za-z0-9_]*)")
 _TESTV_RE       = re.compile(r"\[\[\s+-v\s+([A-Za-z_][A-Za-z0-9_]*)\s+\]\]")
 _GETOPTS_RE     = re.compile(r"\bgetopts\s+\S+\s+([A-Za-z_][A-Za-z0-9_]*)")
-_FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional — always defined
+_FUNC_PARAM_RE  = re.compile(r'"\$\{?([1-9])\}?"|"\$([@*])"')  # positional -- always defined
 
 # Variable REFERENCES. Captures:
 #   $VAR
 #   ${VAR}
-#   ${VAR:-default}  — flagged as SAFE (default)
-#   ${VAR:+value}    — flagged as SAFE (conditional)
-#   ${VAR:?err}      — flagged as SAFE (explicit-error)
-#   ${VAR%pattern}   — flagged as SAFE (expansion that doesn't crash under set -u if var is set)
+#   ${VAR:-default}  -- flagged as SAFE (default)
+#   ${VAR:+value}    -- flagged as SAFE (conditional)
+#   ${VAR:?err}      -- flagged as SAFE (explicit-error)
+#   ${VAR%pattern}   -- flagged as SAFE (expansion that doesn't crash under set -u if var is set)
 _REF_RE = re.compile(
     r"""(?x)
     \$
@@ -120,7 +120,7 @@ _REF_RE = re.compile(
     """
 )
 
-# Suffixes that provide a safe default — reference never crashes under set -u.
+# Suffixes that provide a safe default -- reference never crashes under set -u.
 _SAFE_SUFFIX_RE = re.compile(r"^(?::-|:=|:\?|:\+|-|=|\?|\+)")
 
 # Source-line extraction. Matches `source X`, `. X`, handling quoted paths.
@@ -128,7 +128,7 @@ _SOURCE_RE = re.compile(
     r'(?m)^\s*(?:source|\.)\s+("([^"]+)"|\x27([^\x27]+)\x27|([^\s#;&|]+))'
 )
 
-# Heredoc body extraction — skip var references inside `<<EOF`/`<<-EOF` bodies
+# Heredoc body extraction -- skip var references inside `<<EOF`/`<<-EOF` bodies
 # because those are payloads to other interpreters (python/jq/etc.), not the
 # shell's own expansions. Bash only expands heredoc contents when the tag is
 # unquoted; skip both cases conservatively to avoid false positives from
@@ -225,7 +225,7 @@ def _strip_single_quoted(text: str) -> str:
             continue
         if c == "'" and not in_double:
             # Find matching close quote. Bash single quotes can't contain
-            # escaped quotes — first unescaped ' ends the string.
+            # escaped quotes -- first unescaped ' ends the string.
             j = text.find("'", i + 1)
             if j == -1:
                 out.append(text[i:])
@@ -258,7 +258,7 @@ def _collect_defs(text: str) -> set[str]:
 
 
 def _find_sources(text: str, base_dir: Path) -> list[Path]:
-    """Return resolved paths of files this text `source`s. Best-effort —
+    """Return resolved paths of files this text `source`s. Best-effort --
     $PROJECT_ROOT / $_HME_HELPERS_DIR etc. are resolved to their common
     literal expansions for this project."""
     out: list[Path] = []
@@ -316,7 +316,7 @@ def _find_refs(text: str, defs: set[str], env_vars: set[str]) -> list[tuple[int,
     known = defs | env_vars | _BUILTIN_VARS
     # `jq --arg NAME value 'jq-script-using-$NAME'` declares jq-script-scope
     # vars. The `$NAME` lives inside a single-quoted bash string, so bash
-    # doesn't expand it — but our regex flags it. Harvest declared names
+    # doesn't expand it -- but our regex flags it. Harvest declared names
     # so they're treated as known. Same for --argjson (typed) and --slurpfile.
     for jm in re.finditer(r"--(?:arg|argjson|slurpfile)\s+([A-Za-z_][A-Za-z0-9_]*)\b", text):
         known = known | {jm.group(1)}
@@ -341,7 +341,7 @@ def _find_refs(text: str, defs: set[str], env_vars: set[str]) -> list[tuple[int,
 
 _SAFETY_SH = HOOKS_DIR / "helpers" / "_safety.sh"
 
-# Dispatcher → sub-file-dir map. Sub-files in these dirs are SOURCED BY
+# Dispatcher -> sub-file-dir map. Sub-files in these dirs are SOURCED BY
 # their dispatcher, so they inherit the dispatcher's defs plus anything the
 # dispatcher itself sources. Without this, every `$INPUT`, `$CMD`,
 # `$POLL_COUNT`, `$_STOP_DIR`, etc. in sub-files looks undefined.
@@ -353,7 +353,7 @@ _DISPATCHER_FOR = {
 
 # Vars set by JS-side dispatcher wrappers BEFORE sourcing a sub-file.
 # proxy/stop_chain/shell_policy.js's wrapper template assigns these env
-# vars in the bash -c preamble — they're definitionally in scope for
+# vars in the bash -c preamble -- they're definitionally in scope for
 # every stop-stage script but invisible to a pure shell-script walk.
 _JS_DISPATCHER_VARS = {
     HOOKS_DIR / "lifecycle" / "stop": {
@@ -364,7 +364,7 @@ _JS_DISPATCHER_VARS = {
 
 
 
-# Re-exports — audit + main extracted.
+# Re-exports -- audit + main extracted.
 import sys; sys.path.insert(0, "/home/jah/Polychron/scripts")
 from audit_shell_undefined_audit import _dispatcher_defs, audit_file, main  # noqa: F401, E402
 

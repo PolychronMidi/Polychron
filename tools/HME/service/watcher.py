@@ -32,7 +32,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     _changed_files: set = set()
     _lock = threading.Lock()
 
-    # Stay in sync with file_walker.DEFAULT_IGNORE_DIRS — the watcher must
+    # Stay in sync with file_walker.DEFAULT_IGNORE_DIRS -- the watcher must
     # not feed paths to engine.index_file() that walk_code_files() would
     # have rejected. Otherwise the watcher becomes a back door that
     # bypasses every ignore rule (e.g. indexing binary model weights
@@ -42,7 +42,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         IGNORE_DIRS = set(_FW_IGNORE_DIRS) | {
             # LanceDB internals churn constantly (transactions, versions,
             # manifests, tmp writes). These must never reach the reindexer
-            # OR the file_written emission — they're not code.
+            # OR the file_written emission -- they're not code.
             "_transactions", "_versions", "_deletions", "_indices", "data",
         }
     except ImportError:
@@ -54,11 +54,11 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     _BUILTIN_IGNORE_EXTS = {
         ".log", ".lock", ".json", ".jsonl", ".md", ".wav", ".mid",
         ".csv", ".png", ".jpg", ".gif", ".mp3", ".ogg",
-        # Binary model artifacts — must never hit the embedder.
+        # Binary model artifacts -- must never hit the embedder.
         ".gguf", ".safetensors", ".bin", ".pt", ".pth", ".ckpt",
         ".h5", ".onnx", ".tflite", ".pb",
         ".gz", ".tar", ".zip", ".xz", ".zst", ".bz2",
-        # LanceDB internal files — churn on every index write.
+        # LanceDB internal files -- churn on every index write.
         ".manifest", ".txn", ".lance",
     }
     _env_exts_raw = os.environ.get("HME_IGNORE_EXTS", "")
@@ -93,7 +93,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     }
 
     def _pipeline_running() -> bool:
-        """True while tmp/run.lock exists — pipeline is executing. Writes
+        """True while tmp/run.lock exists -- pipeline is executing. Writes
         during this window are pipeline-mechanical, not human edits."""
         return os.path.exists(os.path.join(project_root, "tmp", "run.lock"))
 
@@ -151,7 +151,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         # analyzers can filter pipeline writes out of the human-edit signal.
         source = "pipeline_script" if _pipeline_running() else "fs_watcher"
 
-        # Spawn emit.py detached — never block the watcher thread
+        # Spawn emit.py detached -- never block the watcher thread
         import subprocess as _subp
         try:
             _subp.Popen(
@@ -174,7 +174,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
         except Exception as _emit_err:
             logger.debug(f"file_written emit failed: {_emit_err}")
 
-    # Noise-ratio tracker — periodically emit file_watcher_filtered so the
+    # Noise-ratio tracker -- periodically emit file_watcher_filtered so the
     # volume of dropped-vs-emitted is visible. Lets us tune the allow-list
     # without guessing.
     _filter_counts = {"emitted": 0, "ignored_dir": 0, "ignored_ext": 0,
@@ -229,7 +229,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                 return
             # Only emit file_written for real content changes, not access/open.
             # "moved" catches atomic-rename writes (Edit tool writes to .tmp.<pid>
-            # then renames to the final path — watchdog fires "moved" on the rename).
+            # then renames to the final path -- watchdog fires "moved" on the rename).
             # Use dest_path (the final path) for moved events.
             etype = getattr(event, "event_type", "")
             is_write = etype in ("modified", "created", "moved")
@@ -272,7 +272,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             # rag_engines.py:738). Edits to start_watcher() itself only
             # take effect after a full server restart, not after
             # `i/hme-admin action=reload` (which only re-imports tool
-            # modules — the watcher closure was already bound).
+            # modules -- the watcher closure was already bound).
             if (
                 ext == ".py"
                 and "/tools/HME/service/server/" in abs_path.replace(os.sep, "/")
@@ -280,7 +280,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             ):
                 # Capture the triggering file for explicit caused_by
                 # instrumentation (Horizon VII). The watcher knows
-                # which file caused the reload — pass it down so the
+                # which file caused the reload -- pass it down so the
                 # hot-reload marker carries the real cause, not just
                 # "auto" as a category.
                 _reload_cause[0] = abs_path
@@ -350,7 +350,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             # Many files changed at once (git checkout, branch switch)
             if elapsed < MIN_DIR_INTERVAL:
                 logger.debug(
-                    f"Batch reindex deferred — {len(files)} files, "
+                    f"Batch reindex deferred -- {len(files)} files, "
                     f"cooldown {MIN_DIR_INTERVAL - elapsed:.0f}s remaining"
                 )
                 with _lock:
@@ -362,7 +362,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
                 return
             _do_dir_reindex()
         else:
-            # Small number of files — fast per-file reindex
+            # Small number of files -- fast per-file reindex
             if elapsed < MIN_FILE_INTERVAL:
                 with _lock:
                     _changed_files.update(files)
@@ -401,7 +401,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
     def _do_dir_reindex():
         # Route bulk dir reindex through the daemon's GPU-orchestrated
         # indexing-mode so embedding doesn't compete with the arbiter on
-        # cuda:0 — calling engine.index_directory() directly here OOM'd
+        # cuda:0 -- calling engine.index_directory() directly here OOM'd
         # repeatedly when the embedder shared a GPU with another model.
         try:
             logger.info(f"Auto-reindex (full) triggered for {project_root}")

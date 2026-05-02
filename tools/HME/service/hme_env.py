@@ -2,22 +2,22 @@
 
 Design rule (AGENT_PRIMER + project-wide): every HME configuration value
 lives in the project-root `.env` file. No silent fallbacks. If a required
-key is missing the process dies at import or at the first accessor call —
+key is missing the process dies at import or at the first accessor call --
 we fail fast rather than drift through a broken run with a wrong default.
 
 Usage:
 
     from hme_env import ENV
 
-    # Required — raises KeyError on miss
+    # Required -- raises KeyError on miss
     ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
     ARBITER_PORT  = ENV.require_int("HME_ARBITER_PORT")
 
-    # Optional — explicit opt-in to a default
+    # Optional -- explicit opt-in to a default
     WARM_REASONER = ENV.optional_bool("HME_REASONER_WARM", default=False)
 
 Deliberate deviations:
-  - API keys (GEMINI_API_KEY, GROQ_API_KEY, …) are accessed via the same
+  - API keys (GEMINI_API_KEY, GROQ_API_KEY, ...) are accessed via the same
     loader so a missing credential surfaces at startup instead of on the
     first API call.
   - The loader overwrites os.environ with .env values (not the inverse),
@@ -70,7 +70,7 @@ class _EnvLoader:
         if not env_path.is_file():
             raise RuntimeError(
                 f"hme_env: no .env file at {env_path}. HME requires a central "
-                f".env for all configuration — create it or set HME_PROJECT_ROOT."
+                f".env for all configuration -- create it or set HME_PROJECT_ROOT."
             )
         parsed: dict[str, str] = {}
         with open(env_path, encoding="utf-8") as f:
@@ -84,7 +84,7 @@ class _EnvLoader:
                 # Strip matched surrounding quotes but not partial ones.
                 # Quoted values preserve `#` literally; unquoted values treat
                 # ` #` (hash preceded by whitespace) as start of a line comment
-                # per dotenv convention — otherwise `PORT=9098 # note` would
+                # per dotenv convention -- otherwise `PORT=9098 # note` would
                 # silently propagate the comment into the numeric value.
                 if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
                     val = val[1:-1]
@@ -117,7 +117,7 @@ class _EnvLoader:
         self._loaded = True
         # Push into os.environ so child processes (subprocess, llama-server,
         # etc.) inherit the declared config. .env WINS over pre-existing
-        # shell exports — the whole point is central truth.
+        # shell exports -- the whole point is central truth.
         for key, val in parsed.items():
             os.environ[key] = val
 
@@ -133,7 +133,7 @@ class _EnvLoader:
         if val is None or val == "":
             raise KeyError(
                 f"hme_env: required key {key!r} is missing from {self._path}. "
-                f"Add it to .env — no silent defaults are permitted."
+                f"Add it to .env -- no silent defaults are permitted."
             )
         return val
 
@@ -169,7 +169,7 @@ class _EnvLoader:
     # Optional accessors (explicit opt-in to a default)
     #
     # Use ONLY for truly optional knobs that don't need to be declared.
-    # Every use is a liability — prefer `require` and add to .env.
+    # Every use is a liability -- prefer `require` and add to .env.
 
     def optional(self, key: str, default: str) -> str:
         val = self._raw(key)
@@ -231,14 +231,14 @@ ENV.load()
 def _validate_local_model_aliases() -> None:
     """Invariant: arbiter and coder are distinct llama-server aliases.
 
-    Reasoning does NOT live in a local llama-server — it's served by the
+    Reasoning does NOT live in a local llama-server -- it's served by the
     ranked API cascade (gemini/groq/etc. via synthesis_reasoning). So the
     local-instance invariant is binary: arbiter vs coder. HME_REASONING_MODEL
     is kept for legacy callers but is not a local instance alias; don't
     validate it against the local aliases.
 
     Why this matters: the fallback chain in fix_antipattern is
-    local-coder → api-reasoning-cascade → local-arbiter. If arbiter == coder,
+    local-coder -> api-reasoning-cascade -> local-arbiter. If arbiter == coder,
     the first and third hop are the same instance and the "fallback" is
     actually a retry. Abort at boot so this can't silently degrade.
     """
@@ -246,7 +246,7 @@ def _validate_local_model_aliases() -> None:
     coder = ENV.require("HME_CODER_MODEL")
     if arbiter == coder:
         raise RuntimeError(
-            f"hme_env: local llama-server alias collision in {ENV.path()} — "
+            f"hme_env: local llama-server alias collision in {ENV.path()} -- "
             f"HME_ARBITER_MODEL={arbiter!r} equals HME_CODER_MODEL={coder!r}. "
             f"The arbiter and coder must be distinct local instances so the "
             f"synthesis fallback chain has a real last resort. Fix by setting "

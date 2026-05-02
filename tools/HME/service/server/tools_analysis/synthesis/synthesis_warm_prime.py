@@ -1,4 +1,4 @@
-"""HME warm KV context — priming, incremental updates, GC, and status.
+"""HME warm KV context -- priming, incremental updates, GC, and status.
 
 Warm context = each model's specialized persona + full KB pre-tokenized into llama.cpp's KV
 cache via the context= array. Avoids re-tokenizing the same persona text on every call.
@@ -22,7 +22,7 @@ from ..warm_disk import (
 )
 from ..warm_persona import _MAX_PERSONA_CHARS, _gpu_persona  # noqa: F401
 
-# synthesis_warm imports US at line 245 — top-level back-import would
+# synthesis_warm imports US at line 245 -- top-level back-import would
 # partial-load. Bodies that reference bare-name `_priming_in_progress` /
 # `_reprime_lock` / `_warm_ctx_fresh_p` resolve via the live module at
 # call time. Use module-attribute access in the function bodies below
@@ -43,7 +43,7 @@ logger = logging.getLogger("HME")
 
 
 def _schedule_reprime_async(delay: float = 5.0):
-    """Debounced background full re-prime — coalesces multiple KB removes into one re-prime (#2).
+    """Debounced background full re-prime -- coalesces multiple KB removes into one re-prime (#2).
 
     Resets timer on each call so a burst of removes produces exactly one re-prime
     after delay seconds of silence.
@@ -84,13 +84,13 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
             return True
         if _try_checkpoint_recovery(model):
             return True
-    logger.info(f"warm ctx priming: {model} (kb_ver={kb_ver}) — building persona...")
+    logger.info(f"warm ctx priming: {model} (kb_ver={kb_ver}) -- building persona...")
     try:
         persona = _gpu_persona(model)
     except Exception as e:
         logger.warning(f"warm ctx priming FAILED: {model} (_gpu_persona crashed: {type(e).__name__}: {e})")
         return False
-    logger.info(f"warm ctx priming: {model} — persona built ({len(persona)} chars), sending request...")
+    logger.info(f"warm ctx priming: {model} -- persona built ({len(persona)} chars), sending request...")
     result = _local_think(
         persona + "\n\nI understand this codebase context. Ready.",
         max_tokens=8, model=model, priority="background",
@@ -102,16 +102,16 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
     else:
         text_result, ctx_array = result, None
     if text_result == _COOLDOWN_REFUSED:
-        logger.info(f"warm ctx priming SKIPPED: {model} — cooldown active, will retry next cycle")
+        logger.info(f"warm ctx priming SKIPPED: {model} -- cooldown active, will retry next cycle")
         return False
     if text_result is None and not ctx_array:
         from .synthesis_llamacpp import _interactive_event
         cause = "cancelled by interactive call" if _interactive_event.is_set() else "backend took too long"
-        logger.info(f"warm ctx priming CANCELLED: {model} — {cause} ({len(persona)} char persona)")
+        logger.info(f"warm ctx priming CANCELLED: {model} -- {cause} ({len(persona)} char persona)")
         return False
     # A text response proves llama-server primed its cache_prompt KV.
     # llama-server doesn't expose a context[] array, so we store an
-    # approximate token count derived from the persona length (≈4 chars/token).
+    # approximate token count derived from the persona length (~=4 chars/token).
     # This keeps warm_context_status reporting honest.
     if text_result is not None:
         approx_tokens = max(1, len(persona) // 4)
@@ -125,7 +125,7 @@ def _prime_warm_context(model: str, force: bool = False) -> bool:
         )
         _save_warm_cache(model)
         return True
-    logger.warning(f"warm ctx priming FAILED: {model} — no text response")
+    logger.warning(f"warm ctx priming FAILED: {model} -- no text response")
     return False
 
 
@@ -160,7 +160,7 @@ def _check_vram_headroom(model: str, url: str, min_headroom_mb: int = 800) -> st
                 if min_free is None or free_mb < min_free:
                     min_free = free_mb
         if min_free is not None and min_free < min_headroom_mb:
-            return (f"VRAM TIGHT: {model} — only {min_free}MB free "
+            return (f"VRAM TIGHT: {model} -- only {min_free}MB free "
                     f"(need {min_headroom_mb}MB). KV cache may be in RAM, crippling speed.")
     except Exception as _err:
         logger.debug(f"unnamed-except synthesis_warm.py:404: {type(_err).__name__}: {_err}")
@@ -225,16 +225,16 @@ def _init_local_models() -> str:
     return summary
 
 
-# Legacy alias — some callers still import _init_local_models.
+# Legacy alias -- some callers still import _init_local_models.
 _init_local_models = _init_local_models
 
 
 def _prime_all_gpus() -> str:
     """Prime active models sequentially. Yields to interactive between each model.
 
-    Sequential so each model finishes before the next starts — interactive calls
+    Sequential so each model finishes before the next starts -- interactive calls
     cancel the active priming via _interactive_event and _cancellable_urlopen.
-    Reasoner priming only runs when HME_REASONER_WARM=1 (default: skip — cloud handles reasoning).
+    Reasoner priming only runs when HME_REASONER_WARM=1 (default: skip -- cloud handles reasoning).
     """
     from . import synthesis_warm as _sw
     if _sw._priming_in_progress.is_set():
@@ -314,7 +314,7 @@ def warm_context_status() -> dict:
 
 
 def ensure_warm(model: str):
-    """Lazy warm priming — fires background thread on first synthesis call if not primed."""
+    """Lazy warm priming -- fires background thread on first synthesis call if not primed."""
     global _lazy_prime_attempted
     if model in _warm_ctx:
         return

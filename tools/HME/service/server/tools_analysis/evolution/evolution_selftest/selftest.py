@@ -10,7 +10,7 @@ from ._shared import RELOADABLE, TOP_LEVEL_RELOADABLE, ROOT_RELOADABLE, ENV
 from .hot_reload import hme_hot_reload
 from ...synthesis import _local_think
 
-# Canonical invocation rendering — single source of truth at
+# Canonical invocation rendering -- single source of truth at
 # tools/HME/config/tool-invocations.json. Falls back to direct strings
 # if the helper isn't importable (e.g. legacy install layout) so this
 # import never breaks selftest.
@@ -43,7 +43,7 @@ def hme_selftest(verbose: bool = False) -> str:
     tool_count = 0
     # Walk the mcp/server/ root (not the selftest package we're inside).
     # __file__ = .../mcp/server/tools_analysis/evolution/evolution_selftest/selftest.py
-    # dirname × 4 = .../mcp/server/
+    # dirname * 4 = .../mcp/server/
     server_root = os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
     for root, dirs, files in os.walk(server_root):
@@ -63,7 +63,7 @@ def hme_selftest(verbose: bool = False) -> str:
         from ...health import doc_sync_check
         sync = doc_sync_check("doc/HME.md")
         is_sync = "IN SYNC" in sync
-        # Don't truncate the sync report — identifier names can be long and
+        # Don't truncate the sync report -- identifier names can be long and
         # the truncation masks the actual symbol being flagged.
         if is_sync:
             results.append(f"PASS: doc sync -- {sync[:80]}")
@@ -110,7 +110,7 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as e:
         results.append(f"WARN: doc stale-ref scan -- {e}")
 
-    # Onboarding flow dry-run — simulates a full walkthrough in isolation and
+    # Onboarding flow dry-run -- simulates a full walkthrough in isolation and
     # verifies every state transition + todo-tree mirror + graduation path.
     # Catches integration bugs in the chain decider before real agents hit them.
     try:
@@ -135,7 +135,7 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as e:
         results.append(f"WARN: onboarding flow dry-run -- {e}")
 
-    # STATES sync verifier — catches Python-shell state list drift.
+    # STATES sync verifier -- catches Python-shell state list drift.
     try:
         import subprocess
         verifier = os.path.join(_project_root, "tools", "HME", "scripts", "verify-states-sync.py")
@@ -156,7 +156,7 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as e:
         results.append(f"WARN: STATES sync -- {e}")
 
-    # Unified HME Coherence Index — runs ALL 15 verifiers (subsumes the three
+    # Unified HME Coherence Index -- runs ALL 15 verifiers (subsumes the three
     # individual verifiers above into a single weighted score 0-100). This is
     # the subquantum-depth dimension that treats HME's own coherence the way
     # Polychron treats musical coherence: as a continuous signal, not a binary
@@ -208,7 +208,7 @@ def hme_selftest(verbose: bool = False) -> str:
         else:
             results.append(
                 f"WARN: hash cache -- {hash_count} hashes vs {table_files} indexed files "
-                f"(stale entries from deleted/renamed files — fix: {_action_form('clear_index')})"
+                f"(stale entries from deleted/renamed files -- fix: {_action_form('clear_index')})"
             )
     except Exception as e:
         results.append(f"FAIL: hash cache -- {e}")
@@ -226,7 +226,7 @@ def hme_selftest(verbose: bool = False) -> str:
         _any_loading = "loading" in (_arb, _cod)
         _any_unreachable = "unreachable" in (_arb, _cod)
         if _any_healthy and not _any_unreachable:
-            # At least one instance ready, none dead — try real synthesis.
+            # At least one instance ready, none dead -- try real synthesis.
             try:
                 test = _local_think("respond with OK", max_tokens=5)
                 if test:
@@ -262,7 +262,7 @@ def hme_selftest(verbose: bool = False) -> str:
 
     # fix_antipattern plumbing check: verify the preflight daemon probe works
     # and the code path can reach synthesis. We deliberately DON'T call the
-    # full synthesis — a 30-60s LLM round-trip in selftest would push total
+    # full synthesis -- a 30-60s LLM round-trip in selftest would push total
     # selftest time past reasonable bounds. The full smoke test runs from the
     # dedicated selftest script: scripts/selftest-fix-antipattern.py
     try:
@@ -308,7 +308,7 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"INFO: think history -- {wcs.get('think_history', 0)} exchanges")
         results.append(f"INFO: session narrative -- {wcs.get('session_narrative', 0)} events")
     except Exception as _err:
-        logger.debug(f"warm ctx unavailable ({type(_err).__name__}: {_err}) — llama-server may still be starting")
+        logger.debug(f"warm ctx unavailable ({type(_err).__name__}: {_err}) -- llama-server may still be starting")
 
     try:
         kb = ctx.project_engine.list_knowledge()
@@ -415,7 +415,7 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _err3:
         logger.debug(f"results.append: {type(_err3).__name__}: {_err3}")
 
-    # Self-coherence probes — detect the failure modes that tonight's
+    # Self-coherence probes -- detect the failure modes that tonight's
     # incident exposed. Each probe fails SELFTEST (not just warns) because
     # any of these three means the system's own description of its health
     # is a lie and investigation is blocked.
@@ -426,7 +426,7 @@ def hme_selftest(verbose: bool = False) -> str:
     # racing to spawn the same models; catching "more than 2 llama-servers"
     # or "more than 1 daemon" flags that class of bug directly.
     # (Can't check ppid because llama-server is spawned start_new_session=True,
-    # so systemd reparents it after daemon restart — legitimate behavior.)
+    # so systemd reparents it after daemon restart -- legitimate behavior.)
     try:
         import subprocess as _sp_probe
         daemon_out = _sp_probe.run(
@@ -458,7 +458,7 @@ def hme_selftest(verbose: bool = False) -> str:
                     )
                 elif len(daemon_pids) == 0:
                     _w.asserted(False)
-                    _w.caveat("no daemon at all — pgrep returned nothing; could be ephemeral test")
+                    _w.caveat("no daemon at all -- pgrep returned nothing; could be ephemeral test")
                     results.append("WARN: daemon uniqueness -- no llamacpp_daemon running")
                 else:
                     _w.asserted(True, positive_evidence=f"exactly 1 daemon process at PID {daemon_pids[0]}")
@@ -474,14 +474,14 @@ def hme_selftest(verbose: bool = False) -> str:
                     results.append(
                         f"FAIL: llama-server count -- {len(ls_pids)} processes running "
                         f"(PIDs {ls_pids}); topology declares arbiter + coder = 2. "
-                        f"A rogue spawner is active — check for duplicate supervisor modules."
+                        f"A rogue spawner is active -- check for duplicate supervisor modules."
                     )
                 else:
-                    _w.asserted(True, positive_evidence=f"{len(ls_pids)} llama-server processes ≤ topology cap of 2")
+                    _w.asserted(True, positive_evidence=f"{len(ls_pids)} llama-server processes <= topology cap of 2")
                     _w.caveat("count <2 = transient cold-boot or genuine missing instance; both look alike here")
                     results.append(f"PASS[{_w.confidence()}]: llama-server count -- {len(ls_pids)}/2 expected")
         except ImportError:
-            # probe_witness unavailable — fall back to plain reporting.
+            # probe_witness unavailable -- fall back to plain reporting.
             if len(daemon_pids) > 1:
                 results.append(
                     f"FAIL: daemon uniqueness -- {len(daemon_pids)} llamacpp_daemon "
@@ -530,7 +530,7 @@ def hme_selftest(verbose: bool = False) -> str:
 
     # Probe 3: every GPU's reported memory usage must be attributable to
     # a declared process. Unattributed VRAM means a dead process left
-    # stuck allocations or a user-space CUDA context is squatting — both
+    # stuck allocations or a user-space CUDA context is squatting -- both
     # block coder/arbiter respawn with silent spawn_failed. Uses
     # nvidia-smi sum vs per-process used to compute residual.
     try:
@@ -543,13 +543,13 @@ def hme_selftest(verbose: bool = False) -> str:
             ["nvidia-smi", "--query-compute-apps=pid,gpu_uuid,used_memory", "--format=csv,noheader,nounits"],
             stderr=_sp_probe2.DEVNULL, timeout=3,
         ).decode().strip().splitlines()
-        # Map gpu index → used, attributed
+        # Map gpu index -> used, attributed
         used_by_idx = {}
         for ln in gpu_totals:
             parts = [p.strip() for p in ln.split(",")]
             if len(parts) >= 2:
                 used_by_idx[int(parts[0])] = (int(parts[1]), 0)  # total_used, attributed
-        # Attribute per-process memory back to indices via uuid→index.
+        # Attribute per-process memory back to indices via uuid->index.
         uuid_to_idx = {}
         uuid_out = _sp_probe2.check_output(
             ["nvidia-smi", "--query-gpu=index,gpu_uuid", "--format=csv,noheader"],
@@ -567,7 +567,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 try:
                     used_by_idx[idx] = (tot, attr + int(parts[2]))
                 except ValueError as _attr_err:
-                    # nvidia-smi emitted non-integer memory — the probe's
+                    # nvidia-smi emitted non-integer memory -- the probe's
                     # unattributed-VRAM computation is corrupted. Log so
                     # a silent "GPU attribution always PASSes" is visible
                     # as a probe regression instead of a real green light.
@@ -596,7 +596,7 @@ def hme_selftest(verbose: bool = False) -> str:
         results.append(f"WARN: GPU attribution -- probe failed: {type(_e).__name__}: {_e}")
 
     # Probe 4: single-writer registry must be loadable and non-empty.
-    # Adopts Witness for confidence reporting — a registry that loads
+    # Adopts Witness for confidence reporting -- a registry that loads
     # but has 0 domains is structurally indistinguishable from "invariant
     # disabled," so an explicit positive-evidence requirement matters here.
     try:
@@ -615,7 +615,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 _w.caveat("registry loaded does NOT prove assert_writer is called at every protected mutation site (probe 5 covers that)")
                 results.append(
                     f"PASS[{_w.confidence()}]: single-writer registry -- {len(domains)} domains registered "
-                    f"({', '.join(sorted(domains.keys())[:4])}{'…' if len(domains) > 4 else ''})"
+                    f"({', '.join(sorted(domains.keys())[:4])}{'...' if len(domains) > 4 else ''})"
                 )
     except ImportError as _imp_err:
         results.append(f"WARN: single-writer registry -- module not importable: {_imp_err}")
@@ -634,7 +634,7 @@ def hme_selftest(verbose: bool = False) -> str:
         mcp_root = os.path.abspath(os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "..", "..", "..", "..",
-            # evolution_selftest/ → evolution/ → tools_analysis/ → server/ → mcp/
+            # evolution_selftest/ -> evolution/ -> tools_analysis/ -> server/ -> mcp/
         ))
         missing_calls = []
         for domain, owner_stem in _all_domains().items():
@@ -652,7 +652,7 @@ def hme_selftest(verbose: bool = False) -> str:
                         sources.extend(os.path.join(sub_root, f)
                                        for f in sub_files if f.endswith(".py"))
             if not sources:
-                missing_calls.append(f"{domain} → source for {owner_stem!r} not found")
+                missing_calls.append(f"{domain} -> source for {owner_stem!r} not found")
                 continue
             combined = ""
             try:
@@ -660,13 +660,13 @@ def hme_selftest(verbose: bool = False) -> str:
                     with open(path, encoding="utf-8", errors="replace") as _of:
                         combined += _of.read() + "\n"
             except OSError as _ro_err:
-                missing_calls.append(f"{domain} → {path}: {_ro_err}")
+                missing_calls.append(f"{domain} -> {path}: {_ro_err}")
                 continue
             # Match assert_writer("domain", ...) OR assert_writer('domain', ...)
             if (f'assert_writer("{domain}"' not in combined
                 and f"assert_writer('{domain}'" not in combined):
                 missing_calls.append(
-                    f"{domain} → {owner_stem} (checked {len(sources)} file(s)) "
+                    f"{domain} -> {owner_stem} (checked {len(sources)} file(s)) "
                     f"has no assert_writer({domain!r}, ...) call"
                 )
         if missing_calls:
@@ -675,7 +675,7 @@ def hme_selftest(verbose: bool = False) -> str:
                 "without any assert_writer() call in owner source:\n"
                 + "\n".join(f"    - {m}" for m in missing_calls)
                 + "\n    (registered but unenforced invariants are worse than "
-                "not declaring them — future callers will trust the registry)"
+                "not declaring them -- future callers will trust the registry)"
             )
         else:
             results.append(
@@ -732,10 +732,10 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _e:
         results.append(f"WARN: version consistency -- probe failed: {type(_e).__name__}: {_e}")
 
-    # MCP symlink check removed in the MCP decoupling — HME no longer registers
+    # MCP symlink check removed in the MCP decoupling -- HME no longer registers
     # itself as an MCP server, so ~/.claude/mcp/HME is gone by design.
 
-    # Probe: HME dogfooding — HME's own Python must obey the rules HME
+    # Probe: HME dogfooding -- HME's own Python must obey the rules HME
     # enforces on Polychron (no silent catch-all, no bare except, etc.).
     # Reports count as WARN; the timeseries drift detector turns any
     # INCREASE into a new-regression FAIL.
@@ -754,14 +754,14 @@ def hme_selftest(verbose: bool = False) -> str:
                 if _m:
                     _vcount = int(_m.group(1))
                 results.append(
-                    f"WARN: HME dogfooding -- {_vcount} violation(s) — HME enforces "
+                    f"WARN: HME dogfooding -- {_vcount} violation(s) -- HME enforces "
                     f"anti-silent-failure rules on Polychron but has {_vcount} open "
                     f"violations in its own Python. Fix or mark with `# silent-ok: <reason>`."
                 )
     except Exception as _e:
         results.append(f"WARN: HME dogfooding -- probe failed: {type(_e).__name__}: {_e}")
 
-    # Probe: meta-invariant — no module outside the registered owner
+    # Probe: meta-invariant -- no module outside the registered owner
     # calls protected mutations. Runs the static analyzer as a subprocess
     # so analyzer crashes don't break selftest; rc=0 clean, rc=1 violations.
     try:
@@ -790,7 +790,7 @@ def hme_selftest(verbose: bool = False) -> str:
 
     # Probe: stop-hook detectors are alive and firing.
     # If detector-stats.jsonl hasn't gotten a row in the last 7 days, the
-    # hook dispatch chain or the telemetry path is silently broken — every
+    # hook dispatch chain or the telemetry path is silently broken -- every
     # detector will say "ok" and the antipatterns go uncaught.
     try:
         import json as _json_ds
@@ -837,7 +837,7 @@ def hme_selftest(verbose: bool = False) -> str:
 
     # Probe: middleware load-order manifest covers every present file.
     # Without this, a new middleware silently runs in alphabetical fallback
-    # position — which may break a dependency chain (lifesaver_inject must
+    # position -- which may break a dependency chain (lifesaver_inject must
     # run before proxy_autocommit so a failed autocommit surfaces as a
     # banner on the same turn). The probe is FAIL when files exist that
     # aren't listed AND aren't accepted-as-fallback.
@@ -905,10 +905,10 @@ def hme_selftest(verbose: bool = False) -> str:
                 results.append(
                     "WARN: log size -- files >150% of rotation cap: "
                     + "; ".join(offenders)
-                    + " (rotation may not be firing — check worker.py boot path)"
+                    + " (rotation may not be firing -- check worker.py boot path)"
                 )
             else:
-                results.append(f"PASS: log size -- all {len(_LOG_POLICIES)} policies within 1.5× cap")
+                results.append(f"PASS: log size -- all {len(_LOG_POLICIES)} policies within 1.5* cap")
         else:
             results.append("INFO: log size -- log dir absent")
     except ImportError:
@@ -920,7 +920,7 @@ def hme_selftest(verbose: bool = False) -> str:
     # Every invariant should declare the incident/KB entry that birthed it
     # via the optional `born_from` field. Invariants without genealogy
     # can't be safely retired when their originating concern is resolved
-    # — they persist as background noise forever. The first pass counts
+    # -- they persist as background noise forever. The first pass counts
     # coverage; over time we raise the threshold or deprecate unclaimed
     # invariants.
     try:
@@ -975,7 +975,7 @@ def hme_selftest(verbose: bool = False) -> str:
     except Exception as _ts_err:
         results.append(f"WARN: temporal drift -- timeseries unavailable: {type(_ts_err).__name__}: {_ts_err}")
 
-    # Static fix-hint map: FAIL/WARN line prefix → next-move suggestion.
+    # Static fix-hint map: FAIL/WARN line prefix -> next-move suggestion.
     # Match by substring (after the "FAIL: "/"WARN: " label) to keep this
     # robust to inline "(run X for details)" suffixes already present.
     _FIX_HINTS = {
@@ -998,7 +998,7 @@ def hme_selftest(verbose: bool = False) -> str:
         body = line.split(": ", 1)[1] if ": " in line else line
         for key, hint in _FIX_HINTS.items():
             if body == key or body.startswith(key + " ") or body.startswith(key + "-"):
-                return f"{line}\n      → fix: {hint}"
+                return f"{line}\n      -> fix: {hint}"
         return line
 
     passed = sum(1 for r in results if r.startswith("PASS"))
@@ -1020,5 +1020,5 @@ def hme_selftest(verbose: bool = False) -> str:
     if has_issues and non_pass and not verbose:
         # Show only non-PASS lines + a summary count of PASSes.
         body = "\n".join(f"  {_annotate(r)}" for r in non_pass)
-        return header + body + f"\n  ({passed} PASS suppressed — use i/hme-admin action=selftest verbose=true for full listing)"
+        return header + body + f"\n  ({passed} PASS suppressed -- use i/hme-admin action=selftest verbose=true for full listing)"
     return header + "\n".join(f"  {_annotate(r)}" for r in results)

@@ -4,9 +4,9 @@
 Runs as a POST_COMPOSITION step in main-pipeline.js. Cross-references three
 signals to produce `metrics/kb-staleness.json`:
 
-  1. KB entries (lance table `knowledge`) — each row has a `timestamp`.
+  1. KB entries (lance table `knowledge`) -- each row has a `timestamp`.
   2. Source file mtimes under `src/`.
-  3. `metrics/hme-activity.jsonl` — `file_written` events from the Phase 1
+  3. `metrics/hme-activity.jsonl` -- `file_written` events from the Phase 1
      activity bridge (more recent than mtime when the file was modified by
      the Evolver this session).
 
@@ -15,13 +15,13 @@ For every module (one JS file under src/ keyed by stem), computes:
     by title, tags, or content
   - last_file_write_ts: max(file mtime, most-recent file_written event)
   - staleness_delta_s: last_file_write_ts - last_kb_update_ts (can be
-    negative if KB is newer than the code — that's FRESH)
+    negative if KB is newer than the code -- that's FRESH)
   - status: FRESH | STALE | MISSING
 
 Thresholds (tunable via env):
-  HME_STALENESS_STALE_DAYS   default 7 — module edited this long after KB
-                             entry last touched → STALE
-  HME_STALENESS_MISSING      no KB entry at all → MISSING
+  HME_STALENESS_STALE_DAYS   default 7 -- module edited this long after KB
+                             entry last touched -> STALE
+  HME_STALENESS_MISSING      no KB entry at all -> MISSING
 
 Output schema (metrics/kb-staleness.json):
   {
@@ -45,7 +45,7 @@ PROJECT_ROOT = os.environ.get("CLAUDE_PROJECT_DIR") or os.environ.get(
 METRICS_DIR = os.path.join(PROJECT_ROOT, "output", "metrics")
 KB_PATH = os.path.join(PROJECT_ROOT, "tools", "HME", "KB")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
-# Tools/HME subtrees ALSO count as project territory — edits to them should
+# Tools/HME subtrees ALSO count as project territory -- edits to them should
 # show up in the coherence score as FRESH/STALE/MISSING too. Previously
 # excluded, which made tools/HME/ writes always score touches_with_index_info=0.
 HME_DIRS = [
@@ -125,7 +125,7 @@ def load_activity_writes() -> dict[str, float]:
 
 
 def load_kb_entries() -> list[dict]:
-    """Load every KB entry. Uses lancedb directly — this script only runs
+    """Load every KB entry. Uses lancedb directly -- this script only runs
     inside the pipeline, so the dependency is acceptable."""
     try:
         import lancedb  # noqa: WPS433
@@ -171,14 +171,14 @@ def _word_pattern(stem: str) -> _re.Pattern:
 
 def kb_mentions(entries: list[dict], module_stem: str) -> list[dict]:
     """Return KB entries that mention this module stem. Word-boundary match
-    across title / tags / content. Stems shorter than 4 chars are skipped —
+    across title / tags / content. Stems shorter than 4 chars are skipped --
     they would over-match common words."""
     if len(module_stem) < 4:
         return []
     pat = _word_pattern(module_stem)
     matched: list[dict] = []
     for e in entries:
-        # Title/tags match is strongest signal — always counts.
+        # Title/tags match is strongest signal -- always counts.
         if pat.search(e["title"]) or pat.search(e["tags"]):
             matched.append(e)
             continue
@@ -193,7 +193,7 @@ def main() -> int:
     now = time.time()
     src_files = walk_src_files()
     if not src_files:
-        print("build-kb-staleness-index: no src files found — nothing to audit")
+        print("build-kb-staleness-index: no src files found -- nothing to audit")
         return 0
 
     activity_writes = load_activity_writes()

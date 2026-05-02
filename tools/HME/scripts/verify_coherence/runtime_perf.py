@@ -18,21 +18,21 @@ from ._base import (
 class HookLatencyVerifier(Verifier):
     """H3: flag hooks whose p95 wall-time exceeds a per-hook budget.
 
-    Hook latency is silent tax — every tool call pays it. A hook that
+    Hook latency is silent tax -- every tool call pays it. A hook that
     regresses from 50ms to 500ms adds half a second to every Edit, which
     compounds across a session. This verifier reads
     log/hme-hook-latency.jsonl (populated by hooks themselves via the
     _timestamp_hook helper) and flags hooks exceeding their budget.
 
     Per-hook budgets calibrated to legitimate workload:
-      - stop:            4000ms — runs detector chain, autocommit, nexus
+      - stop:            4000ms -- runs detector chain, autocommit, nexus
                           audit, holograph diff, activity bridge, plus
                           proxy lifecycle dispatch
-      - sessionstart:    2500ms — proxy watchdog (up to 8s on cold spawn,
+      - sessionstart:    2500ms -- proxy watchdog (up to 8s on cold spawn,
                           but p50 under 2s), supervisor kickoff, proxy
                           primer flag, holograph snapshot
-      - precompact:      2000ms — chain snapshot + warm-context flush
-      - default (else):   500ms — every other hook should be fast
+      - precompact:      2000ms -- chain snapshot + warm-context flush
+      - default (else):   500ms -- every other hook should be fast
     """
     name = "hook-latency"
     category = "runtime"
@@ -107,7 +107,7 @@ class HookLatencyVerifier(Verifier):
 class GitCommitTestCoverageVerifier(Verifier):
     """H5: Check that recent 'fix'/'bug' commits add or modify a
     test/verifier in the same commit. Commits that claim fixes without a
-    regression guard are a class of drift — next time the bug comes back
+    regression guard are a class of drift -- next time the bug comes back
     there's nothing to catch it."""
     name = "git-commit-test-coverage"
     category = "runtime"
@@ -136,7 +136,7 @@ class GitCommitTestCoverageVerifier(Verifier):
             if any(kw in msg.lower() for kw in self._FIX_KEYWORDS):
                 fix_commits.append((sha, msg))
         if not fix_commits:
-            return _result(PASS, 1.0, "no fix commits in last 50 — nothing to check")
+            return _result(PASS, 1.0, "no fix commits in last 50 -- nothing to check")
         uncovered = []
         for sha, msg in fix_commits[:10]:  # sample last 10 fix commits
             try:
@@ -156,7 +156,7 @@ class GitCommitTestCoverageVerifier(Verifier):
                 uncovered.append(f"{sha[:8]} {msg[:60]}")
         if not uncovered:
             return _result(PASS, 1.0, f"{len(fix_commits)} fix commits, all include test/verifier changes")
-        # WARN not FAIL — this is aspirational, not mandatory. Small project
+        # WARN not FAIL -- this is aspirational, not mandatory. Small project
         # code fixes don't always need new tests.
         return _result(
             WARN, max(0.0, 1.0 - len(uncovered) / 10.0),
@@ -212,7 +212,7 @@ class ToolResponseLatencyVerifier(Verifier):
             history = []
 
         # Record the current reading (persist after scoring so the FIRST run
-        # sees its own history as empty — baseline establishes on 2nd run)
+        # sees its own history as empty -- baseline establishes on 2nd run)
         new_history = history + [{"ts": time.time(), "ema_ms": ema_ms}]
         # Keep at most 50 entries
         new_history = new_history[-50:]
@@ -222,7 +222,7 @@ class ToolResponseLatencyVerifier(Verifier):
                 json.dump(new_history, hf)
         except (OSError, TypeError):
             # Unwritable tmp/ (OSError) or unserializable entry
-            # (TypeError) — history persistence is best-effort; the
+            # (TypeError) -- history persistence is best-effort; the
             # current run's score doesn't depend on it. Narrow catch so
             # unexpected errors propagate.
             pass
@@ -232,7 +232,7 @@ class ToolResponseLatencyVerifier(Verifier):
             return _result(
                 PASS, 1.0,
                 f"tool response EMA {ema_ms:.0f}ms (baseline forming: {len(history)}/3 samples)",
-                [f"no FAIL until baseline established — {3 - len(history)} more samples needed"],
+                [f"no FAIL until baseline established -- {3 - len(history)} more samples needed"],
             )
 
         prior_values = sorted(h["ema_ms"] for h in history)
@@ -248,20 +248,20 @@ class ToolResponseLatencyVerifier(Verifier):
         details = [
             f"current={ema_ms:.0f}ms",
             f"baseline_median={median:.0f}ms ({len(history)} samples)",
-            f"ratio={ratio_med:.2f}× median",
+            f"ratio={ratio_med:.2f}* median",
         ]
 
         if ratio_med >= 3.0 or ratio_p75 >= 3.0:
             score = max(0.0, 1.0 - (ratio_med - 1.5) / 3.0)
             return _result(
                 FAIL, score,
-                f"latency regression: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}×)",
-                details + ["latency spiked — investigate recent changes"],
+                f"latency regression: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)",
+                details + ["latency spiked -- investigate recent changes"],
             )
         if ratio_med >= 1.5:
             return _result(
                 WARN, 0.7,
-                f"latency elevated: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}×)",
+                f"latency elevated: {ema_ms:.0f}ms vs {median:.0f}ms baseline ({ratio_med:.1f}*)",
                 details,
             )
         return _result(

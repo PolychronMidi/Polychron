@@ -11,15 +11,15 @@ The signal lives in metrics/hme-composition-signal.json and contains:
   - hci_normalized: 0.0-1.0 for direct use as a multiplier
   - category_scores: per-category 0.0-1.0
   - interpretation: suggested compositional effect
-    - hci > 95 → "stable/assured" (stronger cadence resolution)
-    - hci 80-95 → "normal" (no modulation)
-    - hci 60-80 → "searching/uncertain" (slight dissonance)
-    - hci < 60 → "disturbed" (noticeable degradation)
+    - hci > 95 -> "stable/assured" (stronger cadence resolution)
+    - hci 80-95 -> "normal" (no modulation)
+    - hci 60-80 -> "searching/uncertain" (slight dissonance)
+    - hci < 60 -> "disturbed" (noticeable degradation)
 
 CRITICAL: this is a one-way read-only signal. HME writes it; composition
 modules may or may not consume it. The firewall port is declared in
 metrics/feedback_graph.json under firewallPorts as "hci_composition_signal"
-with direction=hme→composition.
+with direction=hme->composition.
 
 This file does NOT auto-activate the signal in any compositional module.
 Enabling the signal requires:
@@ -29,7 +29,7 @@ Enabling the signal requires:
      validated by scripts/validate-feedback-graph.js
   3. A biasBoundsSnapshot update via check-hypermeta-jurisdiction.js
 
-Until those steps happen, the signal is INFORMATIONAL — written but unread.
+Until those steps happen, the signal is INFORMATIONAL -- written but unread.
 That's intentional: H15 puts the pipe in place without changing any existing
 musical behavior. Activation is a conscious future choice.
 
@@ -86,7 +86,7 @@ def main() -> int:
         "category_scores": {k: v.get("score", 0) for k, v in cats.items()},
         "interpretation": interpret(hci_score),
         "firewall_port": "hci_composition_signal",
-        "direction": "hme→composition",
+        "direction": "hme->composition",
         "read_only": True,
         "consumers": [],  # filled by future composition modules
         "note": (

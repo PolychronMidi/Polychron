@@ -2,7 +2,7 @@
 
 Confirms every hook command path declared in ~/.claude/settings.json
 resolves to an existing, executable file. Catches the failure class
-where a typo in settings.json silently disables the hook — Claude Code
+where a typo in settings.json silently disables the hook -- Claude Code
 doesn't surface "script not found"; bash errors, hook never runs,
 operator never knows.
 """
@@ -25,7 +25,7 @@ from ._base import (
 class HookCommandExistenceVerifier(Verifier):
     """Every hook command path declared in ~/.claude/settings.json
     must resolve to an existing, executable file. Typos in the hook path
-    make Claude Code silently invoke a nonexistent script — bash errors,
+    make Claude Code silently invoke a nonexistent script -- bash errors,
     Claude Code ignores the error, and the hook quietly does nothing.
 
     Specifically tracks the `bash <path> <args>` pattern used throughout
@@ -46,7 +46,7 @@ class HookCommandExistenceVerifier(Verifier):
         except (OSError, json.JSONDecodeError) as e:
             return _result(ERROR, 0.0, f"settings.json unreadable: {e}")
 
-        # Explicit key check — fail-fast if the schema diverges rather
+        # Explicit key check -- fail-fast if the schema diverges rather
         # than silently defaulting to an empty dict.
         hooks = settings.get("hooks")
         if hooks is None:
@@ -83,7 +83,7 @@ class HookCommandExistenceVerifier(Verifier):
                     # Match the `bash <script> <args>` pattern.
                     tokens = cmd.split()
                     if len(tokens) < 2 or tokens[0] != "bash":
-                        # Non-bash hook — not in scope for this check.
+                        # Non-bash hook -- not in scope for this check.
                         continue
                     script = tokens[1]
                     checked += 1

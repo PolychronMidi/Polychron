@@ -1,4 +1,4 @@
-"""HME administration — selftest, hot-reload, introspection, antipattern enforcement."""
+"""HME administration -- selftest, hot-reload, introspection, antipattern enforcement."""
 import os
 import re
 import logging
@@ -26,8 +26,8 @@ def hme_admin(action: str = "selftest", modules: str = "",
     reindex all code chunks and symbols (run after batch code changes when file watcher
     hasn't caught up). action='clear_index': wipe hash cache + chunk store then rebuild.
     action='warm': pre-populate before_editing caches for all src/ files AND prime GPU KV contexts.
-    action='introspect': self-benchmarking — tool usage patterns, workflow discipline, KB health.
-    action='validate': empirical self-validation — runs golden queries through MCP tools
+    action='introspect': self-benchmarking -- tool usage patterns, workflow discipline, KB health.
+    action='validate': empirical self-validation -- runs golden queries through MCP tools
     and checks output quality (expected sections, no errors, minimum length).
     action='fix_antipattern': synthesize bash detection logic for a behavioral rule and append
     to a hook script (antipattern=, hook_target= one of: pretooluse_bash/edit/read/grep/write,
@@ -38,7 +38,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
     from ..synthesis_session import append_session_narrative
     append_session_narrative("admin", f"hme_admin({action}): {modules or 'default'}")
     # Normalize common aliases. `restart` is the instinct-reach, but hot-reload
-    # is cheap enough that that's what users actually want — no reason to make
+    # is cheap enough that that's what users actually want -- no reason to make
     # the wrong action name fail instead of quietly doing the right thing.
     if action == "restart":
         action = "reload"
@@ -48,7 +48,7 @@ def hme_admin(action: str = "selftest", modules: str = "",
         parts.append(hme_hot_reload(modules))
     if action in ("selftest", "both"):
         # `modules` is overloaded as the verbose-flag carrier for selftest
-        # since the action takes no other params — keeps the tool surface
+        # since the action takes no other params -- keeps the tool surface
         # small. Pass modules='verbose' to see all PASS lines; default
         # trims them when any failure/warning is present.
         parts.append(hme_selftest(verbose=("verbose" in (modules or "").lower())))
@@ -226,7 +226,7 @@ def _daemon_health_snapshot() -> dict:
     Queries the llamacpp daemon's /health and translates instance-level
     data (last_health_ok age, pid) into the same three-state taxonomy used
     by startup_validator. Returns an empty snapshot if the daemon itself
-    is unreachable — callers treat that as "nothing ready."
+    is unreachable -- callers treat that as "nothing ready."
     """
     import json as _json
     import time as _time
@@ -260,5 +260,5 @@ def _daemon_health_snapshot() -> dict:
 
 
 
-# Re-export — fix_antipattern extracted.
+# Re-export -- fix_antipattern extracted.
 from .evolution_fix_antipattern import fix_antipattern  # noqa: F401, E402

@@ -1,4 +1,4 @@
-"""Buddy rate-limit detection — extracted from buddy_dispatch_lifecycle.py.
+"""Buddy rate-limit detection -- extracted from buddy_dispatch_lifecycle.py.
 Single function but ~90 lines of regex parsing distinct from the dispatch loop.
 """
 from __future__ import annotations
@@ -31,13 +31,13 @@ def _detect_rate_limit(stderr: str, stdout: str) -> dict | None:
     reset_epoch = None
     m = RATE_LIMIT_RESET_RE.search(combined)
     if m:
-        # retry-after-seconds field (relative from now) — group 7
+        # retry-after-seconds field (relative from now) -- group 7
         if m.group(7):
             try:
                 reset_epoch = time.time() + float(m.group(7))
             except ValueError:
                 reset_epoch = None
-        # epoch field present? (reset_time/resetsAt/etc.) — group 6
+        # epoch field present? (reset_time/resetsAt/etc.) -- group 6
         elif m.group(6):
             try:
                 # If the value is small (< 10 years from epoch), treat
@@ -61,12 +61,12 @@ def _detect_rate_limit(stderr: str, stdout: str) -> dict | None:
                     reset_epoch = time.time() + n * 3600
             except ValueError:
                 reset_epoch = None
-        # "resets at HH:MM [am|pm] [(tz)]" form — interpret as next
+        # "resets at HH:MM [am|pm] [(tz)]" form -- interpret as next
         # occurrence of that wall-clock time, TZ-aware when an IANA
         # zone name is captured (e.g. "7:50pm (Asia/Tokyo)"). Falls back
         # to local time when no TZ given OR when zoneinfo can't resolve
         # the captured name. Skill-set's live-failure traces show
-        # Anthropic emits localized banners for non-US users — without
+        # Anthropic emits localized banners for non-US users -- without
         # TZ-aware parsing those resets get misinterpreted by N hours.
         elif m.group(1) and m.group(2):
             try:

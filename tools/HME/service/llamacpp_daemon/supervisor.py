@@ -1,4 +1,4 @@
-"""Supervisor — owns llama-server processes.
+"""Supervisor -- owns llama-server processes.
 
 Adopts externally-launched survivors, spawns missing ones, restarts
 unhealthy ones, fires LIFESAVER on failures. All stateless probing /
@@ -61,7 +61,7 @@ class Supervisor:
         intentionally killed the process.
         """
         # Single-writer invariant: only llamacpp_daemon may spawn llama-server.
-        # Pass the package name explicitly — __file__ would now resolve to
+        # Pass the package name explicitly -- __file__ would now resolve to
         # `supervisor.py` (post-split), which doesn't match the registered
         # owner stem "llamacpp_daemon" in lifecycle_writers._OWNERS.
         try:
@@ -71,7 +71,7 @@ class Supervisor:
             pass
         if spec.suspended:
             logger.error(
-                f"supervisor: refusing to spawn suspended instance {spec.name} — "
+                f"supervisor: refusing to spawn suspended instance {spec.name} -- "
                 f"only resume() may clear the suspended flag"
             )
             return False
@@ -83,7 +83,7 @@ class Supervisor:
             return False
         if spec.lora_path and not os.path.isfile(spec.lora_path):
             logger.warning(
-                f"supervisor: {spec.name} lora missing: {spec.lora_path} — "
+                f"supervisor: {spec.name} lora missing: {spec.lora_path} -- "
                 f"launching without lora"
             )
             spec.lora_path = None
@@ -158,7 +158,7 @@ class Supervisor:
                 if pid is None:
                     break
                 if pid == os.getpid():
-                    return {"error": f"{name}: spec.port {spec.port} is held by the daemon itself — config bug"}
+                    return {"error": f"{name}: spec.port {spec.port} is held by the daemon itself -- config bug"}
                 try:
                     os.kill(pid, signal.SIGTERM)
                 except ProcessLookupError:
@@ -260,7 +260,7 @@ class Supervisor:
                         "restart_count": spec.restart_count,
                     }
                     continue
-                logger.warning(f"supervisor: {spec.name} unhealthy — attempting restart")
+                logger.warning(f"supervisor: {spec.name} unhealthy -- attempting restart")
                 spawn_ok = self._spawn(spec)
                 out[spec.name] = {
                     "healthy": False, "url": spec.base_url(),

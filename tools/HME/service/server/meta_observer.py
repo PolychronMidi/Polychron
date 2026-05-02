@@ -1,16 +1,16 @@
-"""HME meta-observer — Layers 13-18 of the self-coherence stack.
+"""HME meta-observer -- Layers 13-18 of the self-coherence stack.
 
 Layers 13-15: Recursive self-observation (introspective)
-  L13 — Self-Observing Monitor: watches the health monitor thread
-  L14 — Temporal Correlator: pattern detection across coherence history
-  L15 — Prescriptive Narrator: synthesizes WHY + WHAT TO DO, persists across restarts
+  L13 -- Self-Observing Monitor: watches the health monitor thread
+  L14 -- Temporal Correlator: pattern detection across coherence history
+  L15 -- Prescriptive Narrator: synthesizes WHY + WHAT TO DO, persists across restarts
 
 Layers 16-18: Extrospective self-coherence (outward-facing)
-  L16 — Environmental Awareness: GPU memory, disk space, system load.
+  L16 -- Environmental Awareness: GPU memory, disk space, system load.
         The system adapts to its host, not just its own state.
-  L17 — Conversation Entanglement: checkpoints conversation-relevant state
+  L17 -- Conversation Entanglement: checkpoints conversation-relevant state
         so the system's self-model survives context compaction.
-  L18 — Counterfactual Reasoning: tracks whether interventions actually
+  L18 -- Counterfactual Reasoning: tracks whether interventions actually
         prevented predicted outcomes, building a causal effectiveness model.
 """
 import json
@@ -49,7 +49,7 @@ class MetaState:
     counterfactual_file: str = ""
     entanglement_file: str = ""
     synthesis_file: str = ""           # hme-synthesis.jsonl (L19/L20)
-    synthesis_patterns_file: str = ""  # hme-synthesis-patterns.json (L∞)
+    synthesis_patterns_file: str = ""  # hme-synthesis-patterns.json (Linf)
 
 
 _active = False
@@ -82,14 +82,14 @@ def start(project_root: str) -> None:
 
     gap = meta_layers._detect_observation_gap()
     if gap:
-        logger.warning(f"Meta-observer: observation gap detected — {gap}")
+        logger.warning(f"Meta-observer: observation gap detected -- {gap}")
 
     if not os.path.exists(_ms.synthesis_file):
-        logger.info("Meta-observer: hme-synthesis.jsonl absent — L22/L25/L∞ layers dormant until first synthesis call")
+        logger.info("Meta-observer: hme-synthesis.jsonl absent -- L22/L25/Linf layers dormant until first synthesis call")
     _active = True
     _thread = threading.Thread(target=_meta_loop, daemon=True, name="hme-meta-observer")
     _thread.start()
-    logger.info("Meta-observer started (L13-L35+L∞∞: monitor, correlator, narrator, causal, lookahead, intent, routing, thermo, archaeology, ceiling)")
+    logger.info("Meta-observer started (L13-L35+Linfinf: monitor, correlator, narrator, causal, lookahead, intent, routing, thermo, archaeology, ceiling)")
 
 
 def stop() -> None:
@@ -110,7 +110,7 @@ def get_status() -> dict:
         "intent": _current_intent.copy(),
         "unprovable_claims": len(_UNPROVABLE_CLAIMS),
     }
-    # L∞∞: coherence ceiling
+    # Linfinf: coherence ceiling
     ceiling = meta_layers._check_coherence_ceiling()
     if ceiling:
         status["coherence_ceiling"] = ceiling
@@ -129,7 +129,7 @@ record_prediction = meta_layers.record_prediction
 resolve_prediction = meta_layers.resolve_prediction
 get_current_intent = meta_layers.get_current_intent
 
-# Loop state — maintained here since meta_layers functions are stateless callables
+# Loop state -- maintained here since meta_layers functions are stateless callables
 _last_correlations: dict = {}
 _last_env_snapshot: dict = {}
 _last_narration_ts: float = 0.0
@@ -160,7 +160,7 @@ def _read_entanglement() -> dict:
 
 
 def _compute_effectiveness() -> dict:
-    return {}  # placeholder — full implementation in meta_layers
+    return {}  # placeholder -- full implementation in meta_layers
 
 
 def _meta_loop() -> None:
@@ -171,7 +171,7 @@ def _meta_loop() -> None:
     _alert_last_logged: dict[str, float] = {}
     # Crashloop detection: track a rolling window of exception fingerprints.
     # If the SAME error repeats _CRASHLOOP_THRESHOLD times in a row, the
-    # loop is stuck — escalate to CRITICAL LIFESAVER and kill the thread
+    # loop is stuck -- escalate to CRITICAL LIFESAVER and kill the thread
     # so it stops spamming hme.log and so an operator knows to look.
     _CRASHLOOP_WINDOW = 5
     _CRASHLOOP_THRESHOLD = 3
@@ -191,7 +191,7 @@ def _meta_loop() -> None:
             if cycle % max(1, _MONITOR_CHECK_INTERVAL // _HEARTBEAT_INTERVAL) == 0:
                 monitor_status = meta_layers._check_monitor_alive()
 
-            # L14: temporal correlation (every 2 minutes) — includes L23 multi-timescale update
+            # L14: temporal correlation (every 2 minutes) -- includes L23 multi-timescale update
             if cycle % max(1, 120 // _HEARTBEAT_INTERVAL) == 0:
                 history = meta_layers._load_coherence_history()
                 _last_correlations = meta_layers._correlate(history)
@@ -200,10 +200,10 @@ def _meta_loop() -> None:
                         atype = alert["type"]
                         last = _alert_last_logged.get(atype, 0)
                         if now - last >= _ALERT_LOG_COOLDOWN:
-                            logger.warning(f"Meta-observer L14: {atype} — {alert['message']}")
+                            logger.warning(f"Meta-observer L14: {atype} -- {alert['message']}")
                             _alert_last_logged[atype] = now
 
-            # L15: narrative synthesis + L24 anticipatory lookahead + L∞∞ ceiling check
+            # L15: narrative synthesis + L24 anticipatory lookahead + Linfinf ceiling check
             if now - _last_narration_ts >= _NARRATION_INTERVAL and _last_correlations:
                 if not monitor_status:
                     monitor_status = meta_layers._check_monitor_alive()
@@ -214,10 +214,10 @@ def _meta_loop() -> None:
                 lookahead = meta_layers._anticipatory_lookahead()
                 if lookahead and lookahead.get("intervention_needed"):
                     logger.warning(f"Meta-observer L24: {lookahead['suggestion']}")
-                # L∞∞: coherence ceiling check
+                # Linfinf: coherence ceiling check
                 ceiling = meta_layers._check_coherence_ceiling()
                 if ceiling:
-                    logger.warning(f"Meta-observer L∞∞: {ceiling['recommendation'][:120]}")
+                    logger.warning(f"Meta-observer Linfinf: {ceiling['recommendation'][:120]}")
                 logger.debug(f"Meta-observer L15: {narrative[:120]}...")
 
             # L16: environment scan
@@ -225,7 +225,7 @@ def _meta_loop() -> None:
                 _last_env_snapshot = meta_layers._scan_environment()
                 _last_env_ts = now
                 for alert in _last_env_snapshot.get("alerts", []):
-                    logger.warning(f"Meta-observer L16: {alert['type']} — {alert['message']}")
+                    logger.warning(f"Meta-observer L16: {alert['type']} -- {alert['message']}")
 
             # L17: conversation entanglement checkpoint
             if now - _last_entangle_ts >= _ENTANGLE_INTERVAL:
@@ -237,13 +237,13 @@ def _meta_loop() -> None:
                 meta_layers._classify_intent()
                 _last_intent_ts = now
 
-            # L∞: synthesis self-model + L22 causal attribution + L27 composition correlation
+            # Linf: synthesis self-model + L22 causal attribution + L27 composition correlation
             if now - _last_synthesis_pattern_ts >= _SYNTHESIS_PATTERN_INTERVAL:
                 meta_layers._detect_synthesis_patterns()
                 attrib = meta_layers._causal_attribution()
                 if attrib and attrib.get("status") == "attributed":
                     logger.debug(
-                        f"Meta-observer L22: phantom attribution — "
+                        f"Meta-observer L22: phantom attribution -- "
                         f"primary={attrib['primary_cause']} (r={attrib['primary_correlation']:.2f})"
                     )
                 meta_layers._correlate_composition_runs()
@@ -274,7 +274,7 @@ def _meta_loop() -> None:
                     logger.debug(f"operational_state.write_session_document: {type(_err7).__name__}: {_err7}")
 
             # Periodic log rotation (every 30 minutes). Boot rotation
-            # alone is insufficient for long-lived workers — a worker
+            # alone is insufficient for long-lived workers -- a worker
             # running for a week will accumulate hundreds of MB of logs
             # without this. rotate_on_boot is safe-to-call-always and
             # only actually trims when a policy cap is exceeded.
@@ -290,7 +290,7 @@ def _meta_loop() -> None:
 
         except Exception as e:
             logger.error(f"Meta-observer loop error: {e}")
-            # Crashloop detection: same message repeats → escalate + kill.
+            # Crashloop detection: same message repeats -> escalate + kill.
             _fingerprint = f"{type(e).__name__}: {str(e)[:80]}"
             _exc_history.append(_fingerprint)
             if len(_exc_history) > _CRASHLOOP_WINDOW:
@@ -300,7 +300,7 @@ def _meta_loop() -> None:
             if (len(_exc_history) >= _CRASHLOOP_THRESHOLD
                     and _recent_same >= _CRASHLOOP_THRESHOLD):
                 logger.critical(
-                    f"Meta-observer CRASHLOOP DETECTED — `{_fingerprint}` "
+                    f"Meta-observer CRASHLOOP DETECTED -- `{_fingerprint}` "
                     f"repeated {_recent_same}x consecutively. Killing daemon "
                     f"thread to stop log spam. Operator intervention required."
                 )
@@ -308,7 +308,7 @@ def _meta_loop() -> None:
                     from server import context as _ctx
                     _ctx.register_critical_failure(
                         "meta_observer",
-                        f"daemon crashloop: `{_fingerprint}` × {_recent_same} — thread killed, fix the underlying bug and restart server",
+                        f"daemon crashloop: `{_fingerprint}` * {_recent_same} -- thread killed, fix the underlying bug and restart server",
                         severity="CRITICAL",
                     )
                 except Exception as _life_err:

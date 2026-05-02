@@ -24,7 +24,7 @@ import sys
 
 # Matches `except Exception:` (no `as NAME`) followed by `:` end-of-line
 UNNAMED = re.compile(r"^(?P<indent>\s*)except\s+Exception:\s*(#.*)?$")
-# pass is already handled by the other invariant — ignore here
+# pass is already handled by the other invariant -- ignore here
 PASS_ONLY = re.compile(r"^\s*pass\s*(#.*)?$")
 
 
@@ -39,10 +39,10 @@ def scan(root: pathlib.Path) -> list[str]:
             m = UNNAMED.match(line)
             if not m:
                 continue
-            # Look ahead to the body — skip if it's just `pass` (handled elsewhere)
+            # Look ahead to the body -- skip if it's just `pass` (handled elsewhere)
             if i + 1 < len(src) and PASS_ONLY.match(src[i + 1]):
                 continue
-            # Otherwise this is an unnamed non-pass handler — flag it
+            # Otherwise this is an unnamed non-pass handler -- flag it
             hits.append(f"{f}:{i+1}: {line.strip()}")
     return hits
 

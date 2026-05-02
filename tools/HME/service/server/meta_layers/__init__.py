@@ -1,8 +1,8 @@
-"""Meta-observer layer implementations (L13-L∞∞) — package split R100.
+"""Meta-observer layer implementations (L13-Linfinf) -- package split R100.
 
 Extracted from meta_observer.py; the original monolithic 1412-line
 meta_layers.py lives here as a package. Each submodule covers one
-meta-layer family. Shared state lives in _shared.py — SUBMODULES
+meta-layer family. Shared state lives in _shared.py -- SUBMODULES
 MUST access mutable state via `from . import _shared` + `_shared.<name>`
 so external reassignment (`meta_layers._shared._ms = ms`) is visible
 to every function.
@@ -13,7 +13,7 @@ Public API (re-exported for caller compatibility):
   record_prediction, resolve_prediction, get_current_intent
 
 The caller (meta_observer.py) also reaches into private symbols
-(_ms, _check_monitor_alive, _correlate, _narrate, etc.) — all those
+(_ms, _check_monitor_alive, _correlate, _narrate, etc.) -- all those
 are re-exported below so `meta_layers._X` access still works.
 
 Submodule layout:

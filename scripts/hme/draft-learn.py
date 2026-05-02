@@ -7,7 +7,7 @@ Reads:
 - git log (last commit's changed files + message)
 
 Writes:
-- $OUT (defaults to tmp/hme-learn-draft.json) — JSON {title, content, tags}
+- $OUT (defaults to tmp/hme-learn-draft.json) -- JSON {title, content, tags}
 
 Intended caller: posttooluse_bash.sh on STABLE/EVOLVED verdict.
 The agent then accepts via `i/learn action=add accept_draft=true`.
@@ -63,23 +63,23 @@ def main() -> int:
 
     # Title: short, dated, verdict-tagged.
     msg = git.get("last_commit_msg", "").strip() or "round"
-    title = f"R-? {args.verdict} — {msg[:60]}"
+    title = f"R-? {args.verdict} -- {msg[:60]}"
 
     # Content: structured paragraph the agent can edit before accepting.
     content_lines = [
         f"Pipeline verdict: {args.verdict}",
         f"Session: {args.session}",
-        f"Wall time: {wall}s · Drift delta: {delta}",
+        f"Wall time: {wall}s . Drift delta: {delta}",
         f"Changed files: {file_summary}",
         "",
         "What changed (one sentence):",
         f"  {msg}",
         "",
         "Why it mattered (fill in before accepting):",
-        "  …",
+        "  ...",
         "",
         "Calibration anchor (what to look for next round):",
-        "  …",
+        "  ...",
     ]
     content = "\n".join(content_lines)
 

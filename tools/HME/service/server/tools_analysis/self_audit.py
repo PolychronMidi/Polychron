@@ -1,4 +1,4 @@
-"""HME self-audit — Phase 4.4 of openshell_features_to_mimic.md.
+"""HME self-audit -- Phase 4.4 of openshell_features_to_mimic.md.
 
 The first four phases gave HME the ability to model the system. This
 module gives HME the ability to model its own *utility*: which of its
@@ -14,14 +14,14 @@ Data sources (all read-only, all already generated elsewhere):
 
 The audit looks for three structural inefficiencies:
 
-  1. **Unused KB categories** — >15 entries in a category with zero total
+  1. **Unused KB categories** -- >15 entries in a category with zero total
      retrievals, or retrieval count < entries/10
-  2. **Silent injections** — proxy jurisdiction_inject events with no
+  2. **Silent injections** -- proxy jurisdiction_inject events with no
      subsequent mcp__HME__read tool call in the same session
-  3. **Cascade overconfidence** — prediction accuracy EMA below 0.5 on
+  3. **Cascade overconfidence** -- prediction accuracy EMA below 0.5 on
      modules where the cascade has been invoked >3 times
 
-Surfaced via `status(mode='self_audit')`. Non-destructive — reports
+Surfaced via `status(mode='self_audit')`. Non-destructive -- reports
 inefficiencies as self-evolution *candidates*, never modifies anything.
 """
 from __future__ import annotations
@@ -108,7 +108,7 @@ def _audit_kb_categories() -> dict:
                 "entries": n,
                 "retrievals": retrievals,
                 "verdict": "UNUSED",
-                "recommendation": f"{cat} has {n} entries but zero retrievals — consider merging with an adjacent category",
+                "recommendation": f"{cat} has {n} entries but zero retrievals -- consider merging with an adjacent category",
             })
         elif n >= 10 and retrievals > 0 and retrievals < n / 10:
             candidates.append({
@@ -116,7 +116,7 @@ def _audit_kb_categories() -> dict:
                 "entries": n,
                 "retrievals": retrievals,
                 "verdict": "UNDER_QUERIED",
-                "recommendation": f"{cat} has {n} entries but only {retrievals} retrievals — content may be too abstract or poorly titled",
+                "recommendation": f"{cat} has {n} entries but only {retrievals} retrievals -- content may be too abstract or poorly titled",
             })
     return {
         "by_category": dict(by_category),
@@ -128,7 +128,7 @@ def _audit_kb_categories() -> dict:
 def _audit_silent_injections(events: list[dict]) -> dict:
     """For every jurisdiction_inject event, check if the same session had a
     subsequent mcp__HME__read before the next round_complete. An inject
-    that isn't followed by a read in the same session is 'silent' — the
+    that isn't followed by a read in the same session is 'silent' -- the
     Evolver saw the context but didn't act on it by deepening its read."""
     by_session: dict[str, list[dict]] = {}
     for e in events:
@@ -159,7 +159,7 @@ def _audit_silent_injections(events: list[dict]) -> dict:
             "silent": silent,
             "follow_rate": round(rate, 3),
             "recommendation": (
-                "proxy jurisdiction injections are being ignored — the Evolver "
+                "proxy jurisdiction injections are being ignored -- the Evolver "
                 "sees the context but doesn't deepen with read(mode='before'). "
                 "Consider making the injection more explicit or adding a "
                 "block-until-read gate for high-stakes zones."
@@ -211,7 +211,7 @@ def _audit_musical_anchor() -> dict:
     history = data.get("history") or []
     candidates: list[dict] = []
 
-    # Primary anchor: coherence ↔ verdict correlation. Missing or degenerate
+    # Primary anchor: coherence <-> verdict correlation. Missing or degenerate
     # (null r from zero-variance inputs) is the top-priority red flag.
     primary_key = "hme_coherence__verdict_numeric"
     primary = corrs.get(primary_key) or {}
@@ -227,7 +227,7 @@ def _audit_musical_anchor() -> dict:
                 "rounds": primary_n or len(history),
                 "reason": primary.get("reason", "null r"),
                 "recommendation": (
-                    "hme_coherence ↔ musical-verdict correlation is degenerate "
+                    "hme_coherence <-> musical-verdict correlation is degenerate "
                     "(typically because coherence is stuck at one value). "
                     "HME's external anchor is unusable: self-score can't be "
                     "validated against real musical outcomes. Diagnose the "
@@ -242,7 +242,7 @@ def _audit_musical_anchor() -> dict:
                 "r": round(primary_r, 3),
                 "rounds": primary_n,
                 "recommendation": (
-                    f"hme_coherence ↔ verdict correlation |r|={abs(primary_r):.2f} "
+                    f"hme_coherence <-> verdict correlation |r|={abs(primary_r):.2f} "
                     f"over {primary_n} rounds. HME's self-score is weakly "
                     f"tracking musical outcome. Either the coherence formula "
                     f"doesn't capture what drives verdict, or verdict itself "
@@ -286,7 +286,7 @@ def self_audit_report() -> str:
     if kb_audit["candidates"]:
         lines.append("")
         for c in kb_audit["candidates"]:
-            lines.append(f"  ⚠ {c['verdict']}: {c['recommendation']}")
+            lines.append(f"  [!] {c['verdict']}: {c['recommendation']}")
 
     # Injection section
     lines.append("")
@@ -302,7 +302,7 @@ def self_audit_report() -> str:
             f"silent={inject_audit['silent']}"
         )
         for c in inject_audit["candidates"]:
-            lines.append(f"  ⚠ {c['verdict']}: {c['recommendation']}")
+            lines.append(f"  [!] {c['verdict']}: {c['recommendation']}")
 
     # Cascade confidence section
     lines.append("")
@@ -315,15 +315,15 @@ def self_audit_report() -> str:
             f"  EMA: {ema * 100:.1f}%  over {pred_audit['rounds_observed']} rounds"
         )
         for c in pred_audit["candidates"]:
-            lines.append(f"  ⚠ {c['verdict']}: {c['recommendation']}")
+            lines.append(f"  [!] {c['verdict']}: {c['recommendation']}")
 
-    # Musical anchor section — the external-anchor check: does HME's
+    # Musical anchor section -- the external-anchor check: does HME's
     # self-score correlate with the music it produces?
     lines.append("")
     lines.append("## Musical anchor correlation")
     if music_audit["rounds"] < 5:
         lines.append(
-            f"  Only {music_audit['rounds']} round(s) of history — need ≥5 "
+            f"  Only {music_audit['rounds']} round(s) of history -- need >=5 "
             f"for meaningful anchor check."
         )
     else:
@@ -335,9 +335,9 @@ def self_audit_report() -> str:
         elif r is None:
             lines.append(f"  r=n/a  n={n}  (no data)")
         else:
-            lines.append(f"  r={r:+.3f}  n={n}  (hme_coherence ↔ musical verdict)")
+            lines.append(f"  r={r:+.3f}  n={n}  (hme_coherence <-> musical verdict)")
         for c in music_audit["candidates"]:
-            lines.append(f"  ⚠ {c['verdict']}: {c['recommendation']}")
+            lines.append(f"  [!] {c['verdict']}: {c['recommendation']}")
 
     if all_candidates:
         lines.append("")
@@ -347,5 +347,5 @@ def self_audit_report() -> str:
     else:
         lines.append("")
         lines.append("## Self-Evolution Candidates")
-        lines.append("  None — HME architecture passes all self-audit thresholds.")
+        lines.append("  None -- HME architecture passes all self-audit thresholds.")
     return "\n".join(lines)

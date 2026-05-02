@@ -1,4 +1,4 @@
-"""HME read — unified code reading tool.
+"""HME read -- unified code reading tool.
 
 Merges file_intel, file_lines, get_function_body, and module_intel
 into one tool with auto-detection by input format.
@@ -67,33 +67,33 @@ def _emit_brief_recorded(target: str, source: str = "hme_read") -> None:
 @ctx.mcp.tool(meta={"hidden": True})
 @chained("read")
 def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
-    """Smart code reader — auto-routes by target format.
-    'src/path/file.js' → file_intel (structure + KB).
-    'src/path/file.js:10-50' → file_lines (line range).
-    'functionName' → get_function_body (search all files).
-    'moduleName' with mode='story'|'impact'|'both' → module_intel.
-    mode='before' → before_editing pre-edit briefing (KB constraints, callers, risks).
+    """Smart code reader -- auto-routes by target format.
+    'src/path/file.js' -> file_intel (structure + KB).
+    'src/path/file.js:10-50' -> file_lines (line range).
+    'functionName' -> get_function_body (search all files).
+    'moduleName' with mode='story'|'impact'|'both' -> module_intel.
+    mode='before' -> before_editing pre-edit briefing (KB constraints, callers, risks).
     mode='auto' (default) detects from target format.
     fast=True skips the slow adaptive-synthesis section (~60-120s saved).
     Structural sections (KB constraints, callers, interactions, evolutionary
-    potential) are always included — only the LLM-generated summary is gated."""
+    potential) are always included -- only the LLM-generated summary is gated."""
     _track("read")
     if mode != "before":
         append_session_narrative("search", f"read({mode}): {target[:60]}")
     ctx.ensure_ready_sync()
     if not target or not target.strip():
         return (
-            "i/hme-read — KB-briefed code reader.\n\n"
+            "i/hme-read -- KB-briefed code reader.\n\n"
             "Usage:\n"
             "  i/hme-read target=<name> [mode=auto|before|story|impact|both|lines|function|structure|callers|deps] [fast=true]\n\n"
             "Target forms (auto-detected):\n"
-            "  src/path/file.js           → file_intel (structure + KB)\n"
-            "  src/path/file.js:10-50     → file_lines (line range)\n"
-            "  functionName               → get_function_body (search all files)\n"
-            "  moduleName                 → module_intel\n\n"
+            "  src/path/file.js           -> file_intel (structure + KB)\n"
+            "  src/path/file.js:10-50     -> file_lines (line range)\n"
+            "  functionName               -> get_function_body (search all files)\n"
+            "  moduleName                 -> module_intel\n\n"
             "Modes:\n"
             "  auto (default)             detect from target shape\n"
-            "  before                     pre-edit briefing: KB constraints, callers, risks — MANDATORY before edits\n"
+            "  before                     pre-edit briefing: KB constraints, callers, risks -- MANDATORY before edits\n"
             "  fast=true                  skip slow adaptive-synthesis (~60-120s faster)\n"
             "\nExample: i/hme-read target=harmonicIntervalGuard mode=before"
         )
@@ -103,7 +103,7 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
     if fast:
         os.environ["HME_READ_FAST"] = "1"  # env-ok: transient per-call flag, not persistent config
 
-    # Tool-layer BRIEF emission — agent-independent. When the agent calls
+    # Tool-layer BRIEF emission -- agent-independent. When the agent calls
     # i/hme-read (or the Edit pre-hook auto-chains this), that IS a BRIEF.
     # Emit from the tool itself so BRIEFs don't depend on hook substrate or
     # proxy middleware being active. Stores both bare module AND abs path so
@@ -141,7 +141,7 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
         from .symbols import file_intel as _fi
         return _fi(target)
 
-    # camelCase or PascalCase with no spaces — could be function or module
+    # camelCase or PascalCase with no spaces -- could be function or module
     if re.match(r'^[a-zA-Z_]\w*$', target) and not target.islower():
         # Check if it's a known src/ module first
         import glob as _gl
@@ -153,7 +153,7 @@ def read(target: str = "", mode: str = "auto", fast: bool = False) -> str:
         from .symbols import get_function_body as _gfb
         return _gfb(target)
 
-    # All lowercase single word — try as function/symbol
+    # All lowercase single word -- try as function/symbol
     if re.match(r'^[a-z]\w*$', target):
         from .symbols import get_function_body as _gfb
         return _gfb(target)

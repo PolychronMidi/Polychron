@@ -1,15 +1,15 @@
 """Coupling label display helpers for section analysis."""
 
-# Coupling label → musical meaning (from Polychron coupling engine semantics)
+# Coupling label -> musical meaning (from Polychron coupling engine semantics)
 _COUPLING_LABEL_MEANING: dict[str, str] = {
-    "locked": "tightly synchronized — movements mirror each other",
-    "drifting": "loosely coupled — independent but aware",
-    "opposing": "antagonistic — one rises as other falls",
-    "converging": "approaching sync — building toward lock",
-    "diverging": "separating — increasing independence",
-    "resonant": "harmonic reinforcement — shared frequency peaks",
-    "decoupled": "fully independent — no interaction",
-    "entangled": "complex bidirectional — hard to predict one from other",
+    "locked": "tightly synchronized -- movements mirror each other",
+    "drifting": "loosely coupled -- independent but aware",
+    "opposing": "antagonistic -- one rises as other falls",
+    "converging": "approaching sync -- building toward lock",
+    "diverging": "separating -- increasing independence",
+    "resonant": "harmonic reinforcement -- shared frequency peaks",
+    "decoupled": "fully independent -- no interaction",
+    "entangled": "complex bidirectional -- hard to predict one from other",
 }
 
 

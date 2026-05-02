@@ -1,8 +1,8 @@
-"""SPEC.md / TODO.md / devlog lifecycle bridge — connects ephemeral todo state
+"""SPEC.md / TODO.md / devlog lifecycle bridge -- connects ephemeral todo state
 to durable handoff documentation. Surface (via i/todo dispatcher actions):
 ingest_from_spec, promote_to_spec, close_with_spec_update, phase_complete.
 
-Extracted from todo.py (was lines 851-1508). Zero external Python callers — all
+Extracted from todo.py (was lines 851-1508). Zero external Python callers -- all
 entry is via the i/todo command surface. todo.py re-exports the public symbols.
 See doc/SPEC.md Phase 0 for the workflow this bridge implements.
 """
@@ -36,13 +36,13 @@ from server.tools_analysis.todo_spec_ingest import (  # noqa: F401
 )
 
 
-# SPEC/TODO bridge — connects ephemeral i/todo state to durable
+# SPEC/TODO bridge -- connects ephemeral i/todo state to durable
 # doc/SPEC.md + doc/TODO.md handoff docs. See doc/SPEC.md Phase 0.
 
 
 _SPEC_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "SPEC.md")
 _TODOMD_FILE = os.path.join(ENV.require("PROJECT_ROOT"), "doc", "TODO.md")
-# Archive lives under KB as the "devlog" arm — searchable through the
+# Archive lives under KB as the "devlog" arm -- searchable through the
 # same substrate as other knowledge entries, decoupled from the active
 # doc/ directory so completed work doesn't tax agents reading the spec.
 # Each archive event writes ONE timestamped file containing the
@@ -69,14 +69,14 @@ from .todo_spec_archive import (  # noqa: E402
 )
 
 
-# Phase detection + close-with-spec-update — sub-cluster C.
+# Phase detection + close-with-spec-update -- sub-cluster C.
 
 def _detect_phase_complete(spec_md: str) -> list[dict]:
     """For each Phase block, return one entry per phase that:
        - has at least one `- [x]` item AND
        - has zero `- [ ]` items AND
        - does NOT yet have a "phase complete" sentinel paragraph.
-    Caller can use this to surface "Phase N is now complete — add a
+    Caller can use this to surface "Phase N is now complete -- add a
     completion paragraph" reminders. Pure detection; no mutation.
     """
     open_re = re.compile(r"^\s*-\s+\[\s\]")
@@ -116,7 +116,7 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     SPEC.md phase blocks + git log). Returns (flipped_spec_line,
     shipped_line); flipped is empty if no SPEC item matched."""
     text = entry.get("text", "").strip()
-    # Strip the "(from spec — Reason)" provenance suffix if present.
+    # Strip the "(from spec -- Reason)" provenance suffix if present.
     text_root = re.sub(r"\s+\(from spec.*?\)\s*$", "", text)
     text_norm = _normalize_for_match(text_root)
     flipped = ""
@@ -155,7 +155,7 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
     # Append to TODO.md Just shipped at the FIRST entry slot (newest-first).
     # Skip past HTML comment blocks (`<!-- ... -->`) so the insertion
     # lands in real content space, not inside the template stub.
-    shipped = f"- {text_root} — by i/todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
+    shipped = f"- {text_root} -- by i/todo #{entry.get('id')} at {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}"
     if os.path.exists(_TODOMD_FILE):
         with open(_TODOMD_FILE, encoding="utf-8") as f:
             md = f.read()
@@ -183,7 +183,7 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
                             if "-->" in line:
                                 in_comment = False
                             continue
-                        # Real content line within Just shipped — insert
+                        # Real content line within Just shipped -- insert
                         # `shipped` BEFORE it, then continue normally.
                         if s and not s.startswith("##"):
                             out.append(shipped)
@@ -198,7 +198,7 @@ def _close_with_spec_update(entry: dict) -> tuple[str, str]:
                             inserted = True
                             in_section = False
                             continue
-                        # Blank line inside section — keep going.
+                        # Blank line inside section -- keep going.
                         out.append(line)
                         continue
                 out.append(line)

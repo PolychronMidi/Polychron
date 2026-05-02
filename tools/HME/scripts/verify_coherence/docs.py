@@ -66,7 +66,7 @@ class NumericClaimDriftVerifier(Verifier):
         if drift_count == 0:
             return _result(PASS, 1.0,
                            f"all numeric claims match code (truth: {payload.get('truth', {})})")
-        # 10 drifts = score 0. The threshold is tight — each drift is a
+        # 10 drifts = score 0. The threshold is tight -- each drift is a
         # specific doc claim that now misleads readers.
         score = max(0.0, 1.0 - drift_count / 10.0)
         examples = [f"{d['file']}:{d['line']} {d['claim']} stated={d['stated']} actual={d['actual']}"
@@ -124,6 +124,6 @@ class DocstringPresenceVerifier(Verifier):
 
 
 
-# Verifiers — CODE category
+# Verifiers -- CODE category
 
 

@@ -53,7 +53,7 @@ class TodoStoreSchemaVerifier(Verifier):
 
 
 
-# Verifiers — COVERAGE category
+# Verifiers -- COVERAGE category
 
 
 class ToolSurfaceCoverageVerifier(Verifier):
@@ -118,11 +118,11 @@ class ToolSurfaceCoverageVerifier(Verifier):
 
 
 
-# Verifiers — RUNTIME category
+# Verifiers -- RUNTIME category
 
 
 class TodoMergeHookConsistencyVerifier(Verifier):
-    """The TodoWrite hook should NOT block — it should exit 0 so native
+    """The TodoWrite hook should NOT block -- it should exit 0 so native
     TodoWrite proceeds. If it ever goes back to exit 2 / decision:block the
     agent's session-visible todo list freezes. This regression check."""
     name = "todowrite-hook-nonblock"
@@ -142,11 +142,11 @@ class TodoMergeHookConsistencyVerifier(Verifier):
         # Regression check: must NOT contain a blocking decision
         if '"decision":"block"' in src or "'decision':'block'" in src:
             return _result(FAIL, 0.0,
-                           "TodoWrite hook has a blocking decision — native TodoWrite will be frozen",
+                           "TodoWrite hook has a blocking decision -- native TodoWrite will be frozen",
                            ["remove the decision: block to restore native TodoWrite"])
         if "exit 2" in src:
             return _result(FAIL, 0.5,
-                           "TodoWrite hook has exit 2 — may block native TodoWrite",
+                           "TodoWrite hook has exit 2 -- may block native TodoWrite",
                            ["replace exit 2 with exit 0 so native TodoWrite proceeds"])
         if "exit 0" not in src:
             return _result(WARN, 0.5, "TodoWrite hook has no explicit exit 0")

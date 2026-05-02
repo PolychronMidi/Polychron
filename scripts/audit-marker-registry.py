@@ -6,7 +6,7 @@ Pattern A (from the architectural review): cross-layer convention drift.
 Producers and consumers agree on a marker string by convention; a rename
 on either side silently breaks the pair. The _markers.js registry was
 supposed to fix this but peer-review caught that the registry is only
-documentation — python/bash sides cannot import it, and nothing enforces
+documentation -- python/bash sides cannot import it, and nothing enforces
 that its `sentinel` / `pattern` / `reqIdRegex` values actually appear in
 the declared producer/consumer source files.
 
@@ -15,7 +15,7 @@ producer + consumers + marker string, and grep-checks that the string
 literally appears in each referenced file. Missing reference = error.
 
 Exit 0 if every marker is coherent with its references. Exit 1 on the
-first drift — failing the verifier gates merges.
+first drift -- failing the verifier gates merges.
 """
 import json
 import os
@@ -30,7 +30,7 @@ MARKERS_FILE = PROJECT_ROOT / "tools/HME/proxy/middleware/_markers.js"
 
 def _extract_marker_blocks(text: str) -> list[dict]:
     """Parse _markers.js MARKERS object into entries. Regex-based extraction
-    — not a full JS parser, tuned to the specific shape of this file. If
+    -- not a full JS parser, tuned to the specific shape of this file. If
     _markers.js is restructured meaningfully, this parser must be updated
     (and THIS verifier's own staleness is Pattern A in miniature)."""
     # Find each top-level key in MARKERS: NAME: { ... },
@@ -40,7 +40,7 @@ def _extract_marker_blocks(text: str) -> list[dict]:
     if m_start < 0:
         return entries
     body = text[m_start:]
-    # match NAME: { ... }, — brace matching via depth counter
+    # match NAME: { ... }, -- brace matching via depth counter
     i = 0
     while i < len(body):
         km = re.match(r"\s+(\w+):\s*\{", body[i:])
@@ -128,11 +128,11 @@ def main() -> int:
                 marker_field = (candidate, val)
                 break
         if marker_field is None:
-            # Marker with no observable string — advisory entry only
+            # Marker with no observable string -- advisory entry only
             continue
 
         field_name, marker_str = marker_field
-        # Choose a grep-friendly substring — the first 8+ char run of
+        # Choose a grep-friendly substring -- the first 8+ char run of
         # non-meta literal chars from the marker. This avoids trying to
         # match regex-meta characters as literals.
         literals = re.findall(r"[a-zA-Z0-9_.\-:\[\]/]{8,}", marker_str)

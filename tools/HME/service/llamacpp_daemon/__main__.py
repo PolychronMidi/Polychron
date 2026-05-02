@@ -1,4 +1,4 @@
-"""Entry point — `python3 -m llamacpp_daemon [--port N]`."""
+"""Entry point -- `python3 -m llamacpp_daemon [--port N]`."""
 from __future__ import annotations
 
 import argparse
@@ -14,7 +14,7 @@ from .http_server import _ThreadingHTTPServer, make_handler, health_loop
 
 def _logged_thread(name: str, fn):
     """Wrap a thread target so exceptions get logged with traceback.
-    Bare threading.Thread(target=fn) silently swallows exceptions —
+    Bare threading.Thread(target=fn) silently swallows exceptions --
     this is the pattern behind the original 'not started' indexing-mode
     bug that went unnoticed for so long. Every thread surfaces its
     own failure or it might as well not run."""
@@ -54,7 +54,7 @@ def main():
     try:
         supervisor.assert_topology_ready()
     except RuntimeError as _topo_err:
-        logger.error(f"daemon: topology assertion failed — refusing to start:\n  {_topo_err}")
+        logger.error(f"daemon: topology assertion failed -- refusing to start:\n  {_topo_err}")
         try:
             os.unlink(PID_FILE)
         except OSError:  # silent-ok: boot-abort PID cleanup after assertion failure

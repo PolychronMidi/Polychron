@@ -75,7 +75,7 @@ class RAGKnowledgeMixin:
                         self.knowledge_table = None  # force rebuild with new dimension
                         return
             except Exception:  # silent-ok: empty or unreadable KB table; fallback path rebuilds with new dimension
-                pass  # empty table or read error — proceed normally
+                pass  # empty table or read error -- proceed normally
             self.knowledge_table = tbl
         except Exception:
             self.knowledge_table = None
@@ -109,7 +109,7 @@ class RAGKnowledgeMixin:
                         except Exception as _e:
                             logger.debug(f"knowledge merge: delete {ex['id']} failed ({type(_e).__name__}: {_e})")
                         if not deleted:
-                            # Delete failed — don't proceed with merge to avoid duplicates
+                            # Delete failed -- don't proceed with merge to avoid duplicates
                             prediction_action = "store"
                             superseded_id = None
                             break
@@ -126,7 +126,7 @@ class RAGKnowledgeMixin:
                         new_tokens = _title_tokens(title)
                         old_tokens = _title_tokens(ex.get("title", ""))
                         if not (new_tokens & old_tokens):
-                            # No shared title keywords — different modules, don't supersede
+                            # No shared title keywords -- different modules, don't supersede
                             break
                         superseded_candidate = ex["id"]
                         deleted = False
@@ -136,13 +136,13 @@ class RAGKnowledgeMixin:
                         except Exception as _e:
                             logger.debug(f"knowledge supersede: delete {ex['id']} failed ({type(_e).__name__}: {_e})")
                         if not deleted:
-                            # Delete failed — don't supersede to avoid losing the original
+                            # Delete failed -- don't supersede to avoid losing the original
                             break
                         prediction_action = "supersede"
                         superseded_id = superseded_candidate
                         break
             except Exception as _e:
-                logger.debug(f"knowledge gating: search failed ({type(_e).__name__}: {_e}) — storing normally")
+                logger.debug(f"knowledge gating: search failed ({type(_e).__name__}: {_e}) -- storing normally")
 
         entry_id = uuid.uuid4().hex[:12]
         tags_str = ",".join(tags) if tags else ""
@@ -180,7 +180,7 @@ class RAGKnowledgeMixin:
 
         cache_key = ("kb", query, top_k, category)
         cached = self._knowledge_cache.get(cache_key)
-        if cached:  # don't cache empty results — empty could be stale from pre-init
+        if cached:  # don't cache empty results -- empty could be stale from pre-init
             return cached
 
         fetch_k = min(top_k * 3, 30)
@@ -233,7 +233,7 @@ class RAGKnowledgeMixin:
             self._access_log[r["id"]] = access_count + 1
             staleness_tag = ""
             if age_days > 30 and access_count == 0:
-                staleness_tag = " [UNVERIFIED — last confirmed >30d ago]"
+                staleness_tag = " [UNVERIFIED -- last confirmed >30d ago]"
             results.append({
                 "id": r["id"],
                 "title": r["title"] + staleness_tag,
@@ -333,7 +333,7 @@ class RAGKnowledgeMixin:
                 "categories": categories,
             }
         except Exception as _status_err:
-            # R33: same LIFESAVER lesson — surface the exception instead of
+            # R33: same LIFESAVER lesson -- surface the exception instead of
             # silently lying "has_knowledge=False" when the table exists.
             logger.warning(f"get_knowledge_status failed: {type(_status_err).__name__}: {_status_err}")
             return {"has_knowledge": False, "total_entries": 0, "categories": []}

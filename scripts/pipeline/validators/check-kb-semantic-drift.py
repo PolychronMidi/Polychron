@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 3.3 — KB semantic drift verifier.
+"""Phase 3.3 -- KB semantic drift verifier.
 
 For every module that has a baseline signature in `metrics/kb-signatures.json`,
 re-derives the current structural signature from the live repo (callers from
@@ -40,7 +40,7 @@ FEEDBACK_GRAPH = os.path.join(METRICS_DIR, "feedback_graph.json")
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 
 # A drift is flagged when the structural signature differs by at least this
-# many components. 1 → any single change triggers. Default 2 avoids
+# many components. 1 -> any single change triggers. Default 2 avoids
 # nickel-and-dime churn while still catching meaningful shifts.
 DRIFT_THRESHOLD = int(os.environ.get("HME_DRIFT_THRESHOLD", "2"))
 
@@ -133,7 +133,7 @@ def current_signature(module: str) -> dict:
     fw_ports = _firewall_ports(module, feedback)
     l0 = _l0_io(file_path)
 
-    # A small content fingerprint — first 8 hex chars of BLAKE2b over the
+    # A small content fingerprint -- first 8 hex chars of BLAKE2b over the
     # file bytes. Not full content; just enough to detect "same structure,
     # totally rewritten body".
     content_hash = ""
@@ -186,7 +186,7 @@ def _diff_signatures(baseline: dict, current: dict) -> list[dict]:
                 "added": sorted(added),
                 "removed": sorted(removed),
             })
-    # Content hash is informational — always report if it changed
+    # Content hash is informational -- always report if it changed
     if baseline.get("content_hash_prefix") != current.get("content_hash_prefix"):
         diffs.append({
             "field": "content_hash_prefix",
@@ -242,14 +242,14 @@ def main() -> int:
 
     status = "PASS" if not drift_records else "WARN"
     print(
-        f"check-kb-semantic-drift: {status} — {verified} signature(s) checked, "
+        f"check-kb-semantic-drift: {status} -- {verified} signature(s) checked, "
         f"{len(drift_records)} entry(s) drifted (threshold={DRIFT_THRESHOLD})"
     )
     for d in drift_records[:10]:
         fields = ",".join(sorted({x["field"] for x in d["diffs"]}))
         print(f"  - {d['module']} ({d['entry_id'][:8]}): drifted [{fields}]")
     if len(drift_records) > 10:
-        print(f"  … and {len(drift_records) - 10} more")
+        print(f"  ... and {len(drift_records) - 10} more")
     return 0  # non-fatal; drift is a warning, not a pipeline blocker
 
 

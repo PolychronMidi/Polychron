@@ -55,12 +55,12 @@ def main() -> int:
 
     hci = ps.get("hci")
     if not isinstance(hci, (int, float)) or hci < 95:
-        print(f"auto-apply-regime-shift: hci={hci} < 95 — guard blocks auto-apply")
+        print(f"auto-apply-regime-shift: hci={hci} < 95 -- guard blocks auto-apply")
         return 0
 
     outliers = drift.get("outliers") or []
     if not outliers:
-        print("auto-apply-regime-shift: no drift outliers — nothing to accept")
+        print("auto-apply-regime-shift: no drift outliers -- nothing to accept")
         return 0
 
     current_sha = _git_sha()
@@ -77,7 +77,7 @@ def main() -> int:
 
     # Dedupe: if we've already logged an epoch transition for this SHA, skip
     if existing and existing[-1].get("sha") == current_sha:
-        print(f"auto-apply-regime-shift: epoch already logged for {current_sha} — skip")
+        print(f"auto-apply-regime-shift: epoch already logged for {current_sha} -- skip")
         return 0
 
     # Append epoch transition

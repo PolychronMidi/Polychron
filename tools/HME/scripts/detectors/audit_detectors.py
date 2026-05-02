@@ -2,7 +2,7 @@
 """Meta-detector: audit the detector suite against its own emitted history.
 
 The detectors observe agent behavior and emit verdicts. Nothing observes the
-detectors. This script closes the loop — Rung 4 of the hypermeta ladder.
+detectors. This script closes the loop -- Rung 4 of the hypermeta ladder.
 
 Two modes:
 
@@ -10,18 +10,18 @@ Two modes:
     reports per-detector fire-rate, rescue-rate, drift, and notable signals.
 
 (2) CORPUS MODE (--corpus): runs each detector against an in-memory corpus
-    of LABELED probes — known-positive (should fire) and known-negative
+    of LABELED probes -- known-positive (should fire) and known-negative
     (should not fire). Reports false-positive and false-negative counts.
     The corpus is the regression contract for the detectors themselves;
     silent recognizer drift surfaces here as a verdict mismatch.
 
 Probes overlap with test_detector_chain.py and test_deny_alternatives.py
-INTENTIONALLY — those tests assert behavior on individual fixtures; this
+INTENTIONALLY -- those tests assert behavior on individual fixtures; this
 script aggregates, classifies, and computes accuracy metrics across all
 fixtures so you can see "scope_escape's recall fell from 100% to 87%
 since I added the b-clause rescue" without manually diffing test output.
 
-Output: human-readable summary. No --strict — this is a diagnostic.
+Output: human-readable summary. No --strict -- this is a diagnostic.
 
 Usage:
     python3 tools/HME/scripts/detectors/audit_detectors.py
@@ -307,7 +307,7 @@ def main(argv: list) -> int:
     for det, s in sorted(summary.items()):
         drift_marker = ""
         if abs(s["fire_rate_drift"]) >= 0.10:
-            drift_marker = "  ← shifted >=10%"
+            drift_marker = "  <- shifted >=10%"
         print(f"  {det:<28} {s['fire_rate_recent']:>10.2%} "
               f"{s['fire_rate_all']:>10.2%} {s['fire_rate_drift']:>+10.2%} "
               f"{s['rescue_rate_recent']:>11.2%} {s['rescue_rate_all']:>11.2%}  "
@@ -323,11 +323,11 @@ def main(argv: list) -> int:
                            f"vs all-time {s['fire_rate_all']:.2%})")
         if s["rescue_rate_recent"] == 0 and s["recent_events"] >= 20:
             notable.append(f"{det}: 0% rescue rate over last "
-                           f"{s['recent_events']} events — rescue regexes "
+                           f"{s['recent_events']} events -- rescue regexes "
                            f"may be dead code")
         if s["fire_rate_recent"] == 0 and s["recent_events"] >= 30:
             notable.append(f"{det}: 0% fire rate over last "
-                           f"{s['recent_events']} events — detector silent; "
+                           f"{s['recent_events']} events -- detector silent; "
                            f"either codebase clean or recognizer broken")
     if notable:
         print()

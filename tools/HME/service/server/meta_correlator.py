@@ -1,4 +1,4 @@
-"""HME meta-observer Layer 14 — Temporal Correlator (pure computation).
+"""HME meta-observer Layer 14 -- Temporal Correlator (pure computation).
 
 Accepts a pre-loaded coherence history list and ops dict; no file I/O or
 global state. Called by meta_observer._correlate() after loading history.
@@ -14,7 +14,7 @@ def correlate(
     correlation_window: int,
     synthesis_history: list[dict] | None = None,
 ) -> dict:
-    """Pure temporal correlator — no file I/O, accepts pre-loaded data.
+    """Pure temporal correlator -- no file I/O, accepts pre-loaded data.
 
     Args:
         history: List of coherence entries (each has 'coherence', 'shim_ms', 'ts').
@@ -51,13 +51,13 @@ def correlate(
     if trend < -0.1:
         result["alerts"].append({
             "type": "coherence_declining",
-            "message": f"Coherence trending down ({trend:+.3f} from mean) — degradation likely",
+            "message": f"Coherence trending down ({trend:+.3f} from mean) -- degradation likely",
         })
 
     if min_coherence < 0.3:
         result["alerts"].append({
             "type": "deep_degradation",
-            "message": f"Coherence hit {min_coherence:.0%} in last hour — system was severely impaired",
+            "message": f"Coherence hit {min_coherence:.0%} in last hour -- system was severely impaired",
         })
 
     # Shim latency correlation
@@ -67,7 +67,7 @@ def correlate(
         if recent_ms > avg_ms * 2 and recent_ms > 500:
             result["alerts"].append({
                 "type": "shim_latency_spike",
-                "message": f"Shim latency rising ({recent_ms:.0f}ms vs {avg_ms:.0f}ms avg) — precursor to crash",
+                "message": f"Shim latency rising ({recent_ms:.0f}ms vs {avg_ms:.0f}ms avg) -- precursor to crash",
             })
         result["shim_ms_avg"] = round(avg_ms, 1)
         result["shim_ms_recent"] = round(recent_ms, 1)
@@ -80,10 +80,10 @@ def correlate(
         if dips >= 5:
             result["alerts"].append({
                 "type": "frequent_instability",
-                "message": f"{dips} coherence dips (<0.7) in last hour — systemic instability",
+                "message": f"{dips} coherence dips (<0.7) in last hour -- systemic instability",
             })
 
-    # Ops cross-reference — distinguish protocol-level reconnects (benign,
+    # Ops cross-reference -- distinguish protocol-level reconnects (benign,
     # expected behavior of MCP stdio transport) from real crash loops. The
     # MCP protocol itself may cycle the server process several times per
     # day as a normal part of session handshaking. Restarts ALONE are not a
@@ -102,26 +102,26 @@ def correlate(
             "type": "restart_churn",
             "message": (
                 f"{restarts} MCP restarts + {shim_crashes} shim crashes + "
-                f"{recovery_failures} failed recoveries — real crash loop"
+                f"{recovery_failures} failed recoveries -- real crash loop"
             ),
         })
     if shim_crashes >= 2 and len(shim_ms_values) >= 5 and recent_ms_val > 1000:
         result["alerts"].append({
             "type": "shim_decay_precursor",
-            "message": f"{shim_crashes} shim crashes + rising latency — next crash imminent",
+            "message": f"{shim_crashes} shim crashes + rising latency -- next crash imminent",
         })
 
     # L21: circuit breaker flap detection
     flaps = ops.get("circuit_breaker_flaps", {})
     flap_total = ops.get("circuit_breaker_flaps_total_today", 0)
     if flap_total >= 3:
-        flap_models = [f"{m}×{n}" for m, n in flaps.items() if n >= 2]
+        flap_models = [f"{m}*{n}" for m, n in flaps.items() if n >= 2]
         result["alerts"].append({
             "type": "cb_flapping",
             "message": (
-                f"Circuit breaker flapping ({flap_total} HALF_OPEN→OPEN today"
+                f"Circuit breaker flapping ({flap_total} HALF_OPEN->OPEN today"
                 + (f": {', '.join(flap_models)}" if flap_models else "")
-                + ") — model recovering but unstable, possible GPU thrash"
+                + ") -- model recovering but unstable, possible GPU thrash"
             ),
         })
 
@@ -138,7 +138,7 @@ def correlate(
             result["alerts"].append({
                 "type": "synthesis_phantom_surge",
                 "message": (
-                    f"Synthesis phantom rate {phantom_ema:.0%} EMA — module grounding degraded. "
+                    f"Synthesis phantom rate {phantom_ema:.0%} EMA -- module grounding degraded. "
                     "Fuzzy discovery may be missing relevant modules or source files moved."
                 ),
             })
@@ -146,7 +146,7 @@ def correlate(
             result["alerts"].append({
                 "type": "synthesis_escalation_high",
                 "message": (
-                    f"Synthesis escalation rate {escalation_ema:.0%} EMA — primary model "
+                    f"Synthesis escalation rate {escalation_ema:.0%} EMA -- primary model "
                     "failing frequently. Check circuit breaker state and GPU availability."
                 ),
             })

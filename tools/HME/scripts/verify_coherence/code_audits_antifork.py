@@ -1,4 +1,4 @@
-"""Anti-fork heuristic verifier — extracted from code_audits_style.py."""
+"""Anti-fork heuristic verifier -- extracted from code_audits_style.py."""
 from __future__ import annotations
 
 import json
@@ -66,7 +66,7 @@ class AntiForkHeuristicListVerifier(Verifier):
                             lines = fp.readlines()
                     except OSError:
                         continue
-                    open_blocks = {}  # name → (min, start_line, count)
+                    open_blocks = {}  # name -> (min, start_line, count)
                     for idx, line in enumerate(lines, start=1):
                         m_begin = self._BEGIN_RE.match(line)
                         m_end = self._END_RE.match(line)

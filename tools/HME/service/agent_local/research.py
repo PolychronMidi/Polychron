@@ -53,7 +53,7 @@ def _extract_search_terms(prompt: str) -> list[str]:
     > plain words. Identifiers are strong signals; words are noise.
 
     The hardcoded stopword set is augmented at load time by learned
-    stopwords from tools/models/training/hme-learned-stopwords.json (H7 — prompt-history-
+    stopwords from tools/models/training/hme-learned-stopwords.json (H7 -- prompt-history-
     driven stopword tuning). To refresh: run learn-stopwords.py.
     """
     stop = {
@@ -107,7 +107,7 @@ def _extract_search_terms(prompt: str) -> list[str]:
         if low not in seen:
             seen.add(low)
             unique.append(t)
-    return unique[:8]  # cap 8 instead of 6 — more signal when arbiter skipped
+    return unique[:8]  # cap 8 instead of 6 -- more signal when arbiter skipped
 
 
 def _pre_research(prompt: str) -> tuple[str, list[str]]:
@@ -178,13 +178,13 @@ _MODE_CONFIGS = {
         "system": (
             "You are a code research expert. Synthesize the search results into a comprehensive answer. "
             "Critical rule: GREP RESULTS ARE GROUND TRUTH. Knowledge Base entries are metadata and may be "
-            "incomplete — never say 'no info' just because the KB is silent if there are grep results. "
+            "incomplete -- never say 'no info' just because the KB is silent if there are grep results. "
             "Always cite exact file paths and line numbers from grep matches. Count matches when asked."
         ),
         "synth_suffix": (
             "INSTRUCTIONS:\n"
             "- Answer the question using the search results above.\n"
-            "- 'Grep Results' are LITERAL file:line:content — ground truth.\n"
+            "- 'Grep Results' are LITERAL file:line:content -- ground truth.\n"
             "- 'Knowledge Base' entries are metadata, may be incomplete. KB silence means 'unknown', NOT 'absent'.\n"
             "- Cite every relevant file, line number, and function. Count matches when asked.\n"
         ),
@@ -205,10 +205,10 @@ _MODE_CONFIGS = {
             "(3) architectural tradeoffs and risks, "
             "(4) verification criteria (how will we know this worked). "
             "Do NOT write code. Propose the plan; the human will implement. "
-            "GREP RESULTS are ground truth — every file path you mention must come from the search results."
+            "GREP RESULTS are ground truth -- every file path you mention must come from the search results."
         ),
         "synth_suffix": (
-            "INSTRUCTIONS — PLANNING MODE:\n"
+            "INSTRUCTIONS -- PLANNING MODE:\n"
             "Produce a structured implementation plan:\n"
             "## Summary\n"
             "1-3 sentences describing the proposed change\n\n"
@@ -230,5 +230,5 @@ _MODE_CONFIGS = {
 
 
 
-# Re-export — run_agent extracted.
+# Re-export -- run_agent extracted.
 from .research_run import run_agent  # noqa: F401, E402

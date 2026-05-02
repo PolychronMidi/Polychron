@@ -1,4 +1,4 @@
-"""Buddy drain — main queue-drain loop + guidance reader + fast-path-clean.
+"""Buddy drain -- main queue-drain loop + guidance reader + fast-path-clean.
 
 Extracted from buddy_dispatcher.py (was lines 425-689). The "many tasks
 through queue" orchestrator, separated from the per-task lifecycle
@@ -35,7 +35,7 @@ _GUIDANCE_MAX_BYTES = int(os.environ.get("HME_BUDDY_GUIDANCE_MAX_BYTES", "1024")
 
 
 def _read_guidance() -> str:
-    """Phase 2.5: manager-guidance file. Cross-run directive channel —
+    """Phase 2.5: manager-guidance file. Cross-run directive channel --
     the operator can edit tmp/hme-operator-guidance.md to nudge buddy
     behavior on the next drain. Each task prompt is prefixed with the
     guidance content (if present and non-empty).
@@ -43,7 +43,7 @@ def _read_guidance() -> str:
     Bounded shaping (skill-set sst-manager pattern): the guidance file
     is capped at HME_BUDDY_GUIDANCE_MAX_BYTES (default 1KB). Content
     over the cap is truncated from the START so the most-recent
-    guidance survives — the file is treated as a rolling-newest
+    guidance survives -- the file is treated as a rolling-newest
     window rather than an unbounded accumulator. Without this cap,
     long-running operators paste new directives without trimming and
     the prompt prefix grows unbounded over time, taxing every buddy
@@ -82,7 +82,7 @@ def _fast_path_clean(buddies: list[dict]) -> bool:
        3. Pending queue is empty.
        4. Failed/ has no entries newer than 1h.
     When all hold, the deep walk (verdict generation, manifest snapshot
-    spam, etc.) is skipped — return True to indicate fast-path applies."""
+    spam, etc.) is skipped -- return True to indicate fast-path applies."""
     if list(QUEUE_PENDING.glob("*.json")):
         return False
     if QUEUE_PROCESSING.exists():
@@ -119,10 +119,10 @@ def cmd_drain(args: argparse.Namespace) -> int:
     # primary.sid is empty (e.g. just retired mid-session), trigger
     # ensure_primary BEFORE discovery so drain has a buddy to route to.
     # Status-only callers (`i/dispatch status` at the other call site,
-    # line ~1539) deliberately skip this — they should reflect actual
+    # line ~1539) deliberately skip this -- they should reflect actual
     # state, not silently mutate it. The 10-30s spawn cost lands as
     # first-task latency, which would otherwise be paid through ephemeral
-    # fall-through anyway — same total cost, different code path.
+    # fall-through anyway -- same total cost, different code path.
     if os.environ.get("BUDDY_HANDOFF") == "1":
         primary_sid_file = PROJECT_ROOT / "tmp" / "hme-buddy-primary.sid"
         primary_alive = (primary_sid_file.exists()
@@ -157,7 +157,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
         }
         _write_manifest(run_id, manifest, in_progress=False)
         _write_verdict(run_id, manifest)
-        print(f"buddy_dispatcher: fast-path clean — no work needed (run {run_id})")
+        print(f"buddy_dispatcher: fast-path clean -- no work needed (run {run_id})")
         return 0
     run_id = f"{int(time.time())}-{uuid.uuid4().hex[:6]}"
     manifest = {
@@ -177,7 +177,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
         # Mid-drain re-check (BUDDY_SYSTEM.md Q1 followup): re-list
         # buddies each iteration so a primary that went away between
         # iterations (manual retire, claude-cli crash) doesn't leave the
-        # drain dispatching to a dead session. Cheap — _list_buddies
+        # drain dispatching to a dead session. Cheap -- _list_buddies
         # reads a handful of files. If empty under HANDOFF=1, lazy-spawn
         # a fresh primary and re-list. If still empty, abort the drain
         # cleanly and let the next drain pick up the remaining tasks.
@@ -221,7 +221,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
             busy.add(buddy["slot"])
             # Per-task render-error isolation: a malformed task payload,
             # claude-cli crash, or transient subprocess hang must NOT
-            # crash the whole drain — it should fail just THIS task and
+            # crash the whole drain -- it should fail just THIS task and
             # let the loop continue to others. Lifted from skill-set
             # skill-chain.py:862 (per-event try/except). Without this,
             # one buddy choking on a poison task could wedge the
@@ -268,7 +268,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
             drained += 1
             progressed = True
             # If the buddy emitted the sentinel, treat as natural-end
-            # signal — the queue should be empty too. Loop continues
+            # signal -- the queue should be empty too. Loop continues
             # until pending/ is actually empty.
             if verdict["sentinel_seen"] and not list(QUEUE_PENDING.glob("*.json")):
                 manifest["loop"]["terminated_by"] = "no_work_bail"
@@ -288,7 +288,7 @@ def cmd_drain(args: argparse.Namespace) -> int:
     manifest["finished_ts"] = time.time()
     _write_manifest(run_id, manifest, in_progress=False)
     # Phase 2.2: write the per-run verdict file. Required exit-contract
-    # artifact — if missing, the next sweep flags it as a violation.
+    # artifact -- if missing, the next sweep flags it as a violation.
     verdict_path = _write_verdict(run_id, manifest)
     print(f"buddy_dispatcher: drained {drained} task(s) in run {run_id}")
     print(f"  manifest: {FANOUT_ROOT / run_id / 'manifest.json'}")

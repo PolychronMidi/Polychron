@@ -1,6 +1,6 @@
 """Diff and replay logic for snapshot-holograph.
 
-Pure functions — no side effects beyond stdout/stderr writes from _replay's
+Pure functions -- no side effects beyond stdout/stderr writes from _replay's
 human-readable summary mode.
 """
 import json
@@ -8,7 +8,7 @@ import os
 import sys
 
 
-# Fields that vary between runs but don't represent real drift —
+# Fields that vary between runs but don't represent real drift --
 # excluded from diff output to keep signal-to-noise high.
 _NOISE_KEYS = {
     "captured_at", "captured_at_human", "timestamp",
@@ -41,7 +41,7 @@ def _diff(a: dict, b: dict, path: str = "") -> list:
 
 def _replay(path: str) -> int:
     """Load an old holograph and display its state as if it were current.
-    Time-travel debugging — see exactly what HCI + verifier state was at that
+    Time-travel debugging -- see exactly what HCI + verifier state was at that
     moment. Useful for answering "what broke at time X?" after the fact."""
     if not os.path.isfile(path):
         sys.stderr.write(f"replay path not found: {path}\n")

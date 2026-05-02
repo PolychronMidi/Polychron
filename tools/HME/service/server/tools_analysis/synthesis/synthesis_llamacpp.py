@@ -1,12 +1,12 @@
-"""HME llama.cpp synthesis layer — local model inference, priority queue, compress_for_claude.
+"""HME llama.cpp synthesis layer -- local model inference, priority queue, compress_for_claude.
 
 All local inference routes through llama-server (Vulkan) instances managed by
 the llamacpp_daemon + supervisor:
-  arbiter → 127.0.0.1:8080 (phi-4 + HME v6 LoRA, Vulkan1/GPU0)
-  coder   → 127.0.0.1:8081 (qwen3-coder:30b, Vulkan2/GPU1)
+  arbiter -> 127.0.0.1:8080 (phi-4 + HME v6 LoRA, Vulkan1/GPU0)
+  coder   -> 127.0.0.1:8081 (qwen3-coder:30b, Vulkan2/GPU1)
 
 Requests use llama-server's OpenAI-compatible /v1/chat/completions shape.
-Each model owns its GPU end-to-end — partial offload is a hard invariant
+Each model owns its GPU end-to-end -- partial offload is a hard invariant
 violation enforced by llamacpp_daemon._check_gpu_fits.
 """
 import json
@@ -31,7 +31,7 @@ _COOLDOWN_REFUSED = "cooldown_refused"
 
 
 class _CircuitBreaker:
-    """3-state circuit breaker: CLOSED → OPEN (after failures) → HALF_OPEN (probe) → CLOSED."""
+    """3-state circuit breaker: CLOSED -> OPEN (after failures) -> HALF_OPEN (probe) -> CLOSED."""
     CLOSED, OPEN, HALF_OPEN = "CLOSED", "OPEN", "HALF_OPEN"
 
     def __init__(self, name: str, failure_threshold: int = 3,
@@ -52,7 +52,7 @@ class _CircuitBreaker:
                 import time as _t
                 if _t.monotonic() - self._opened_at >= self._recovery_s:
                     self._state = self.HALF_OPEN
-                    logger.info(f"CircuitBreaker({self.name}): OPEN → HALF_OPEN (probe allowed)")
+                    logger.info(f"CircuitBreaker({self.name}): OPEN -> HALF_OPEN (probe allowed)")
             return self._state
 
     def allow(self) -> bool:
@@ -67,7 +67,7 @@ class _CircuitBreaker:
         global _last_think_failure
         with self._lock:
             if self._state == self.HALF_OPEN:
-                logger.info(f"CircuitBreaker({self.name}): HALF_OPEN → CLOSED (probe succeeded)")
+                logger.info(f"CircuitBreaker({self.name}): HALF_OPEN -> CLOSED (probe succeeded)")
             self._state = self.CLOSED
             self._failures.clear()
             _last_think_failure = None
@@ -87,8 +87,8 @@ class _CircuitBreaker:
             if self._state == self.HALF_OPEN:
                 self._state = self.OPEN
                 self._opened_at = now
-                logger.info(f"CircuitBreaker({self.name}): HALF_OPEN → OPEN (probe failed)")
-                # Layer 21: flap = probe fired but failed immediately → distinct from cold OPEN
+                logger.info(f"CircuitBreaker({self.name}): HALF_OPEN -> OPEN (probe failed)")
+                # Layer 21: flap = probe fired but failed immediately -> distinct from cold OPEN
                 try:
                     from server import operational_state as _ops
                     _ops.record_circuit_breaker_flap(self.name)
@@ -98,7 +98,7 @@ class _CircuitBreaker:
                 self._state = self.OPEN
                 self._opened_at = now
                 logger.warning(
-                    f"CircuitBreaker({self.name}): CLOSED → OPEN "
+                    f"CircuitBreaker({self.name}): CLOSED -> OPEN "
                     f"({len(self._failures)} failures in {self._failure_window_s}s)"
                 )
                 # Layer 2: persist trip in operational state (survives MCP restarts)
@@ -119,7 +119,7 @@ def _get_circuit_breaker(model: str) -> _CircuitBreaker:
 
 
 # All routing config comes from the central .env loader. No defaults.
-# See tools/HME/service/hme_env.py — fail-fast if any key is missing.
+# See tools/HME/service/hme_env.py -- fail-fast if any key is missing.
 import sys as _sys
 _mcp_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _mcp_root not in _sys.path:
@@ -137,7 +137,7 @@ _ARBITER_MODEL = ENV.require("HME_ARBITER_MODEL")
 def _refresh_arbiter() -> None:
     """Reload .env so routing constants reflect any in-session .env edits.
     Kept as a thin wrapper around ENV.load(force=True) for call-site
-    backwards compatibility — the module-level constants themselves are
+    backwards compatibility -- the module-level constants themselves are
     re-bound from the refreshed ENV."""
     global _ARBITER_MODEL, _LLAMACPP_ARBITER_URL, _LLAMACPP_CODER_URL
     global _LOCAL_MODEL, _REASONING_MODEL
@@ -150,8 +150,8 @@ def _refresh_arbiter() -> None:
 
 # keep_alive=-1: pin models permanently. num_ctx sized to fit KV cache in VRAM.
 # 30B Q4_K_M on M40 24GB: model weights ~18.5GB, KV ~69KB/token.
-# At 32K ctx: KV ≈ 2.2GB, total ≈ 20.7GB, leaving ~1.8GB headroom.
-# At 65K ctx: KV ≈ 4.3GB, total ≈ 22.8GB — overflows VRAM, KV spills to RAM,
+# At 32K ctx: KV ~= 2.2GB, total ~= 20.7GB, leaving ~1.8GB headroom.
+# At 65K ctx: KV ~= 4.3GB, total ~= 22.8GB -- overflows VRAM, KV spills to RAM,
 # inference drops to ~0.02 tok/s (114s for 2 tokens). Never exceed VRAM.
 _KEEP_ALIVE = ENV.require_int("HME_KEEP_ALIVE")
 _NUM_CTX_30B = ENV.require_int("HME_NUM_CTX_30B")
@@ -198,14 +198,14 @@ def _llamacpp_generate(payload: dict, wall_timeout: float = 30.0,
     OpenAI chat-completions and call a dedicated request_coordinator with
     its own thread-abandon wall-clock machinery. That duplicated the daemon's
     enforcement and produced stacked timeouts (caller + coordinator + daemon)
-    that let tool calls hang 3-4× longer than any single configured budget.
+    that let tool calls hang 3-4* longer than any single configured budget.
 
     Per the architectural rule "all llama.cpp timeouts live in
     llamacpp_daemon.py", we now delegate the entire call (translation,
     wall-clock enforcement, and routing) to the daemon's /generate endpoint.
     Priority is still exposed in the signature for caller-side use (arbiter
     busy flag, interactive event) but the daemon currently handles
-    requests FIFO — if preemption becomes important again it must be added
+    requests FIFO -- if preemption becomes important again it must be added
     to the daemon, not re-invented at this layer.
     """
     model = payload.get("model", "")
@@ -226,7 +226,7 @@ def _set_arbiter_busy(busy: bool) -> None:
 
     The daemon uses this flag to route RAG embedding / rerank requests to
     the CPU mirror whenever the arbiter is actively using its GPU. Silently
-    ignores daemon unreachability — the routing degrades to GPU-only, which
+    ignores daemon unreachability -- the routing degrades to GPU-only, which
     is the pre-migration behavior and safe.
     """
     try:
@@ -239,7 +239,7 @@ def _set_arbiter_busy(busy: bool) -> None:
         _ur.urlopen(req, timeout=0.3).read()
     except Exception as _e:
         # Daemon unreachable is expected during boot / upgrades. Log at
-        # debug level only — the routing degrades safely to GPU-only.
+        # debug level only -- the routing degrades safely to GPU-only.
         import logging as _l
         _l.getLogger("HME").debug(f"arbiter-busy signal failed: {type(_e).__name__}: {_e}")
 
@@ -249,7 +249,7 @@ def _daemon_generate(payload: dict, wall_timeout: float = 30.0) -> dict | None:
 
     This is the ONE canonical path for local llama.cpp synthesis. The
     daemon is the single source of truth for wall-clock enforcement
-    (see doc/HME.md — "all llama.cpp timeouts live in llamacpp_daemon.py").
+    (see doc/HME.md -- "all llama.cpp timeouts live in llamacpp_daemon.py").
     The urllib client timeout here is a trivial grace on top of the
     daemon's own wall_timeout: if the daemon is alive it will have
     already returned a {"error": "wall timeout"} JSON by then.
@@ -290,8 +290,8 @@ def route_model(prompt: str) -> str:
     """Pick coder vs reasoner based on query intent. Returns model name.
 
     Callers that currently hardcode model= can use this instead for adaptive routing.
-    Code-focused queries → _LOCAL_MODEL (coder, GPU0).
-    Architecture/reasoning queries → _REASONING_MODEL (reasoner, GPU1).
+    Code-focused queries -> _LOCAL_MODEL (coder, GPU0).
+    Architecture/reasoning queries -> _REASONING_MODEL (reasoner, GPU1).
     """
     words = set(prompt.lower().split())
     code_score = len(words & _CODE_SIGNALS)
@@ -306,7 +306,7 @@ def route_model(prompt: str) -> str:
 # llama.cpp priority
 # _interactive_event: set by interactive callers. Background checks this flag and
 # yields (before sending) or cancels mid-stream (via socket timeout in _cancellable_urlopen).
-# No Python locks — llama.cpp handles its own per-model FIFO queue.
+# No Python locks -- llama.cpp handles its own per-model FIFO queue.
 _interactive_event = _threading.Event()
 
 

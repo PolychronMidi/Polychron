@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Phase 6.3 — living documentation drift detector.
+"""Phase 6.3 -- living documentation drift detector.
 
 Scope: DETECTION, not generation. Cross-references architectural claims
 from the KB against the project's hand-maintained docs and surfaces
-mismatches. Never rewrites docs — just flags where they've diverged
+mismatches. Never rewrites docs -- just flags where they've diverged
 from the more-current knowledge in the KB.
 
 Four check classes:
@@ -12,9 +12,9 @@ Four check classes:
   2. Module names mentioned in HME.md / ARCHITECTURE.md / CLAUDE.md
      that no longer have a matching file
   3. Hard rules in CLAUDE.md that have generated productive_incoherence
-     events (rule is blocking legitimate exploration — promotion candidate)
+     events (rule is blocking legitimate exploration -- promotion candidate)
   4. Hard rules in CLAUDE.md that have ZERO coherence_violation events
-     over the last N closed rounds (rule is being consistently honored —
+     over the last N closed rounds (rule is being consistently honored --
      constitutional promotion candidate)
 
 Output: metrics/hme-doc-drift.json with per-doc findings + rule
@@ -61,7 +61,7 @@ def _existing_module_stems() -> set[str]:
 def _find_module_references(text: str) -> set[str]:
     """Return the set of module-name-shaped tokens that appear in the
     document's BACKTICK-FENCED spans. Bare prose mentions produce too
-    many false positives (`setupHooks`, `fileSystem`, etc.) — we only
+    many false positives (`setupHooks`, `fileSystem`, etc.) -- we only
     flag intentional doc claims, which are always fenced."""
     refs: set[str] = set()
     for m in _CODE_FENCE_RE.finditer(text):
@@ -127,7 +127,7 @@ def _load_kb_module_refs() -> set[str]:
 
 def _analyze_rule_usage(events: list[dict], lookback_rounds: int = 20) -> dict:
     """Per-round counts of coherence_violation and productive_incoherence
-    events — the activity stream is our proxy for 'did a hard rule fire
+    events -- the activity stream is our proxy for 'did a hard rule fire
     usefully'."""
     rounds = _split_into_rounds(events)
     closed = [r for r in rounds if r and r[-1].get("event") == "round_complete"]
@@ -193,7 +193,7 @@ def main() -> int:
                 "kind": "rule_blocking_exploration",
                 "message": (
                     f"{rule_stats['productive_incoherence']} productive_incoherence "
-                    "events — rules may be blocking legitimate exploration in "
+                    "events -- rules may be blocking legitimate exploration in "
                     "uncovered territory. Consider scoping refinement."
                 ),
             })
@@ -224,7 +224,7 @@ def main() -> int:
     return 0
 
 
-# Common CamelCase tokens that look like module names but aren't — don't
+# Common CamelCase tokens that look like module names but aren't -- don't
 # flag these as orphans.
 _BUILTINS = {
     "CamelCase", "JavaScript", "TypeScript", "OpenShell", "OpenCSF", "LoRA",
