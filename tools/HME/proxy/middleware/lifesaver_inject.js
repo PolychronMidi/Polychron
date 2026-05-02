@@ -98,21 +98,34 @@ module.exports = {
       'LIFESAVER -- unresolved errors in hme-errors.log, fix root-cause before proceeding:\n' +
       unread.join('\n');
 
-    // Inject as a system-level block. Anthropic's system field accepts
-    // either a string or an array of { type:'text', text, cache_control? }
-    // blocks. Normalize to array and append.
-    const systemBlock = { type: 'text', text: banner };
-    if (typeof payload.system === 'string' && payload.system.length > 0) {
-      payload.system = [{ type: 'text', text: payload.system }, systemBlock];
-    } else if (Array.isArray(payload.system)) {
-      payload.system.push(systemBlock);
-    } else {
-      payload.system = [systemBlock];
+    // CRITICAL cache fix: append the banner to the LAST USER MESSAGE
+    // instead of payload.system. Anthropic's prompt cache hashes
+    // (system + tools) as the prefix; mutating system invalidates the
+    // entire cached prefix on every turn -- which it would, because
+    // unread error lines arrive between turns. The previous version
+    // pushed a system block here and rebilled the entire system prefix
+    // (~tens of thousands of tokens) at full rate every turn, hitting
+    // 10%-per-message and rate-limiting the user in ~10 turns.
+    //
+    // User messages do not break the system+tools cache. Cache savings
+    // are 10x or more depending on system size.
+    const lastUser = [...payload.messages].reverse().find(
+      (m) => m && m.role === 'user'
+    );
+    if (lastUser) {
+      const note = `\n\n[lifesaver inject from proxy]\n${banner}\n`;
+      if (typeof lastUser.content === 'string') {
+        lastUser.content = lastUser.content + note;
+      } else if (Array.isArray(lastUser.content)) {
+        lastUser.content.push({ type: 'text', text: note });
+      } else {
+        lastUser.content = [{ type: 'text', text: note }];
+      }
+      ctx.markDirty();
     }
-    ctx.markDirty();
 
     console.warn(
-      `Acceptable warning: [middleware] lifesaver_inject: injected ${unread.length} unread error(s) into system context`
+      `Acceptable warning: [middleware] lifesaver_inject: injected ${unread.length} unread error(s) into last-user-message (cache-safe path)`
     );
   },
 };

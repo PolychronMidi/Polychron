@@ -192,14 +192,16 @@ async function _injectHmeTools(payload) {
   if (!Array.isArray(payload.tools)) payload.tools = [];
   try {
     const schemas = await hmeDispatcher.getSchemasCached();
-    // Strip any cache_control markers from the tools array -- Claude Code may
-    // put ttl='1h' markers on messages, and adding ttl='5m' (ephemeral) to
-    // tools triggers a 400: "ttl='1h' block must not come after ttl='5m' block"
-    // since tools are processed before messages. Leave cache_control entirely
-    // to Claude Code; don't add our own markers.
-    for (const t of payload.tools) {
-      if (t && t.cache_control) delete t.cache_control;
-    }
+    // CACHE FIX: do NOT strip cache_control markers Claude Code attached.
+    // Stripping them invalidates Anthropic's prompt cache on every
+    // request -- the tools prefix is part of the cache key, and removing
+    // the breakpoint tells Anthropic "no cache" for that prefix. The
+    // previous comment claimed this prevented a 400 error, but the 400
+    // only fires when WE add a ttl=5m marker AFTER a ttl=1h marker
+    // Claude Code already placed. Solution: don't add our own markers
+    // (we don't need to -- Claude Code's are sufficient), and leave the
+    // existing markers alone.
+    // [no cache_control mutation here]
     // Skip any HME_ tool that's already present (idempotent on retries).
     const existing = new Set(payload.tools.map((t) => t && t.name).filter(Boolean));
     let injected = 0;

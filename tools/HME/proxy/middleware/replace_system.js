@@ -82,7 +82,18 @@ module.exports = {
     if (!payload) return;
     const canonical = _loadCanonical();
     if (canonical === null) return; // file missing/empty -> no-op
-    payload.system = [{ type: 'text', text: canonical }];
+    // CRITICAL cache fix: attach an ephemeral cache_control breakpoint
+    // so Anthropic caches our canonical text. Without this, every
+    // request re-bills the full system prefix at 100% rate (Claude Code
+    // attaches its own cache_control to its system; replace_system
+    // wipes that, and previously left the new system unmarked -> no
+    // cache breakpoint -> no cache hit -> 10x billing per turn). Diagnosed
+    // empirically when the user hit rate-limit lockout in ~10 turns.
+    payload.system = [{
+      type: 'text',
+      text: canonical,
+      cache_control: { type: 'ephemeral' },
+    }];
     ctx.markDirty();
   },
 };
