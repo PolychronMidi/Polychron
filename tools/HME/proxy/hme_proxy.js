@@ -619,10 +619,14 @@ function handleRequest(clientReq, clientRes) {
           xform.pipe(clientRes);
           xform.end(outBuf);
         } else {
-          // Non-streaming path: also strip bare-ack text blocks when the
-          // prior user message was a hook-deny payload. Mirrors the SSE
-          // rewriter's gate. Without this, non-streaming "ok" responses
-          // bypass the strip and reach the chat client verbatim.
+          // Non-streaming path: scan the buffered response body for
+          // bare-ack text blocks AND emit a LIFESAVER entry to
+          // hme-errors.log every time one is detected. The agent must
+          // see this alert next turn so the underlying spam-cause is
+          // diagnosed and fixed (per user directive: "make these spam
+          // messages raise a lifesaver alert telling you to fix it").
+          // The strip itself ALSO runs when conditions match -- defense
+          // in depth.
           try {
             const msgs = (payload && payload.messages) || [];
             let lastUserText = '';
@@ -643,27 +647,42 @@ function handleRequest(clientReq, clientRes) {
               'PreToolUse:',
               'PostToolUse:',
             ];
-            if (lastUserText && denyMarkers.some((m) => lastUserText.includes(m))) {
-              const outStr = outBuf.toString('utf8');
-              if (outStr.trimStart().startsWith('{')) {
-                const parsed = JSON.parse(outStr);
-                if (parsed && Array.isArray(parsed.content)) {
-                  const ackPats = [/^\s*ok[.!]?\s*$/i, /^\s*done[.!]?\s*$/i,
-                                   /^\s*noted[.!]?\s*$/i, /^\s*got\s+it[.!]?\s*$/i,
-                                   /^\s*ack[.!]?\s*$/i, /^\s*acknowledged[.!]?\s*$/i];
-                  parsed.content = parsed.content.filter((b) => {
-                    if (!b || b.type !== 'text' || typeof b.text !== 'string') return true;
-                    return !ackPats.some((p) => p.test(b.text));
-                  });
-                  const newBuf = Buffer.from(JSON.stringify(parsed), 'utf8');
-                  // Strip stale content-length so the client doesn't truncate.
-                  // Headers were already written; can't change them. Best
-                  // option: forward the rewritten body and let the client
-                  // handle it. If content-length was advertised, this can
-                  // race -- accept the risk; the alternative is leaving
-                  // the spam in.
-                  clientRes.end(newBuf);
-                  return;
+            const userIsDeny = lastUserText && denyMarkers.some((m) => lastUserText.includes(m));
+            const outStr = outBuf.toString('utf8');
+            if (outStr.trimStart().startsWith('{')) {
+              const parsed = JSON.parse(outStr);
+              if (parsed && Array.isArray(parsed.content)) {
+                const ackPats = [/^\s*ok[.!]?\s*$/i, /^\s*done[.!]?\s*$/i,
+                                 /^\s*noted[.!]?\s*$/i, /^\s*got\s+it[.!]?\s*$/i,
+                                 /^\s*ack[.!]?\s*$/i, /^\s*acknowledged[.!]?\s*$/i];
+                let detectedAck = false;
+                for (const b of parsed.content) {
+                  if (b && b.type === 'text' && typeof b.text === 'string'
+                      && ackPats.some((p) => p.test(b.text))) {
+                    detectedAck = true;
+                    break;
+                  }
+                }
+                if (detectedAck) {
+                  // Always-emit LIFESAVER alert -- regardless of whether
+                  // the strip succeeded. The agent must SEE the alert.
+                  try {
+                    const _logTs = new Date().toISOString();
+                    const _ackContext = userIsDeny ? 'cascade-after-deny' : 'cascade-no-deny';
+                    fs.appendFileSync(
+                      path.join(PROJECT_ROOT, 'log', 'hme-errors.log'),
+                      `[${_logTs}] [bare-ack-spam] agent emitted bare-ack response (${_ackContext}); diagnose and fix the underlying detector cascade -- this is the spam pattern the user explicitly flagged\n`,
+                    );
+                  } catch (_e2) { /* alert is best-effort */ }
+                  if (userIsDeny) {
+                    parsed.content = parsed.content.filter((b) => {
+                      if (!b || b.type !== 'text' || typeof b.text !== 'string') return true;
+                      return !ackPats.some((p) => p.test(b.text));
+                    });
+                    const newBuf = Buffer.from(JSON.stringify(parsed), 'utf8');
+                    clientRes.end(newBuf);
+                    return;
+                  }
                 }
               }
             }
