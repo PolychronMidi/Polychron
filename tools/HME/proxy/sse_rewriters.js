@@ -237,6 +237,19 @@ function ackStripRewrite(eventName, data, ctx) {
       }
     }
     if (_isBareAck(text)) {
+      // Emit LIFESAVER alert so the next turn surfaces this as a bug
+      // to diagnose, not noise to dodge. The append is best-effort --
+      // log dir may not exist on a fresh checkout.
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const { PROJECT_ROOT } = require('./shared');
+        const ts = new Date().toISOString();
+        fs.appendFileSync(
+          path.join(PROJECT_ROOT, 'log', 'hme-errors.log'),
+          `[${ts}] [bare-ack-spam] agent emitted bare-ack via SSE stream (cascade-after-deny); diagnose and fix the underlying detector cascade -- this is the spam pattern the user explicitly flagged\n`,
+        );
+      } catch (_e) { /* alert is best-effort */ }
       // Drop the whole block -- the chat client never sees this "ok".
       return null;
     }
