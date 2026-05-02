@@ -460,26 +460,40 @@ function handleRequest(clientReq, clientRes) {
     upstreamHeaders.host = upstream.host;
     if (outBody.length > 0) upstreamHeaders['content-length'] = String(outBody.length);
 
-    // OAuth beta tag fix-up. When an OAuth Bearer authorization is
-    // being forwarded to Anthropic (which Claude Code sends from
-    // ~/.claude/.credentials.json), Anthropic requires the request to
-    // carry `anthropic-beta: oauth-2025-04-20`. Two failure modes the
-    // proxy has to handle when sitting between Claude Code and Anthropic:
+    // OAuth Bearer + Claude-Code body-shape fix-up. When an OAuth Bearer
+    // authorization is being forwarded to Anthropic (which Claude Code
+    // sends from ~/.claude/.credentials.json), the public api.anthropic.com
+    // OAuth endpoint is stricter than Claude Code's direct path:
     //
-    //   1. Claude Code sends `claude-code-20250908` as anthropic-beta.
-    //      That tag is recognized on Claude Code's direct-to-Anthropic
-    //      path but PUBLIC api.anthropic.com rejects it as "Unexpected
-    //      value(s) `claude-code-20250908`".
-    //   2. Without `oauth-2025-04-20`, OAuth-Bearer auth itself is
-    //      rejected as "OAuth authentication is currently not supported."
+    //   1. anthropic-beta MUST be `oauth-2025-04-20` -- not Claude Code's
+    //      `claude-code-20250908`. (Anthropic 400: "Unexpected value(s)
+    //      `claude-code-20250908`".) Without any beta, OAuth itself is
+    //      rejected: "OAuth authentication is currently not supported."
+    //   2. Body MUST NOT contain Claude-Code-only fields like
+    //      `context_management`. (Anthropic 400: "context_management:
+    //      Extra inputs are not permitted".)
     //
-    // Both produce auth-error lockouts. Verified empirically with curl:
-    // the only beta value that the public endpoint accepts alongside an
-    // OAuth Bearer is `oauth-2025-04-20`. Drop everything else and
-    // substitute oauth-2025-04-20.
+    // Verified empirically with curl. Drop the Claude-Code-only beta tag
+    // and the Claude-Code-only body fields when forwarding OAuth.
     if (isAnthropic && typeof upstreamHeaders['authorization'] === 'string'
         && upstreamHeaders['authorization'].startsWith('Bearer ')) {
       upstreamHeaders['anthropic-beta'] = 'oauth-2025-04-20';
+      // Strip Claude-Code-only fields the OAuth-public endpoint rejects.
+      // Only mutate when we actually have a JSON payload to edit.
+      if (payload && typeof payload === 'object') {
+        const _CC_ONLY_FIELDS = ['context_management'];
+        let _stripped = false;
+        for (const k of _CC_ONLY_FIELDS) {
+          if (k in payload) {
+            delete payload[k];
+            _stripped = true;
+          }
+        }
+        if (_stripped) {
+          outBody = Buffer.from(JSON.stringify(payload), 'utf8');
+          upstreamHeaders['content-length'] = String(outBody.length);
+        }
+      }
     }
 
     // Out-of-band auth injection. Loopback callers (e.g. the MCP
