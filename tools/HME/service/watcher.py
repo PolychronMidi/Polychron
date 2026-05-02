@@ -305,8 +305,11 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             _timer[0] = t
             t.start()
 
-    # Hot-reload debounce: 5s (longer than reindex's 3s so a burst of
-    # edits coalesces into one reload).
+    # Hot-reload debounce: 30s. Coalesces multi-file edits (test sweeps,
+    # bulk renames, sed-and-restage flows) into one reload instead of one
+    # per file. Reload itself is ~200ms but the cumulative noise +
+    # log-spam from per-file reloads was high. 30s gives a wide enough
+    # window that "edit batch" patterns settle before the reload fires.
     _reload_timer: list = [None]
     _reload_pending: list[bool] = [False]
     # Triggering file path for explicit caused_by (Horizon VII).
@@ -317,7 +320,7 @@ def start_watcher(project_root: str, engine, debounce: float = 3.0):
             _reload_pending[0] = True
             if _reload_timer[0] is not None:
                 _reload_timer[0].cancel()
-            t = threading.Timer(5.0, _do_hot_reload)
+            t = threading.Timer(30.0, _do_hot_reload)
             t.daemon = True
             _reload_timer[0] = t
             t.start()
